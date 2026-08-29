@@ -28,6 +28,14 @@ import {
   Target,
   Package,
   Box,
+  Sliders,
+  Move,
+  Maximize2,
+  ChevronUp,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
 } from 'lucide-react';
 import { AssetManager, type GameAssetItem } from '@/engine/assets/AssetManager';
 import { savePrefab, listPrefabs, type PrefabTileData } from '@/app/actions/prefabs';
@@ -64,7 +72,219 @@ export interface TileDefinition {
   thumbnailUrl?: string;
 }
 
-interface TilesetPickerProps {
+export interface TileVisualThumbnailProps {
+  sourceSheet: string;
+  sourceX: number;
+  sourceY: number;
+  sourceWidth: number;
+  sourceHeight: number;
+  zoom?: number;
+  size?: number;
+  className?: string;
+}
+
+export const TileVisualThumbnail: React.FC<TileVisualThumbnailProps> = ({
+  sourceSheet,
+  sourceX,
+  sourceY,
+  sourceWidth,
+  sourceHeight,
+  zoom,
+  size = 48,
+  className = '',
+}) => {
+  const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null);
+  const [imgErr, setImgErr] = useState(false);
+
+  const imgUrl =
+    sourceSheet.startsWith('/') || sourceSheet.startsWith('http')
+      ? sourceSheet
+      : `/game-assets/tilesets/${sourceSheet}`;
+
+  useEffect(() => {
+    let active = true;
+    const img = new Image();
+    img.onload = () => {
+      if (active) {
+        setImgSize({ w: img.naturalWidth, h: img.naturalHeight });
+        setImgErr(false);
+      }
+    };
+    img.onerror = () => {
+      if (active) setImgErr(true);
+    };
+    img.src = imgUrl;
+    return () => {
+      active = false;
+    };
+  }, [imgUrl]);
+
+  const tileW = Math.max(1, sourceWidth || 16);
+  const tileH = Math.max(1, sourceHeight || 16);
+  const calcZoom =
+    zoom ?? Math.max(1, Math.min(4, Math.floor((size - 4) / Math.max(tileW, tileH))));
+
+  return (
+    <div
+      className={`relative flex items-center justify-center overflow-hidden rounded-lg bg-[#050b14] border border-slate-800 shrink-0 select-none ${className}`}
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        backgroundImage: `
+          linear-gradient(45deg, #111827 25%, transparent 25%),
+          linear-gradient(-45deg, #111827 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, #111827 75%),
+          linear-gradient(-45deg, transparent 75%, #111827 75%)
+        `,
+        backgroundSize: '8px 8px',
+        backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px',
+      }}
+    >
+      {!imgErr && imgSize ? (
+        <div
+          style={{
+            width: `${tileW}px`,
+            height: `${tileH}px`,
+            backgroundImage: `url('${imgUrl}')`,
+            backgroundPosition: `-${sourceX}px -${sourceY}px`,
+            backgroundSize: `${imgSize.w}px ${imgSize.h}px`,
+            backgroundRepeat: 'no-repeat',
+            imageRendering: 'pixelated',
+            transform: `scale(${calcZoom})`,
+            transformOrigin: 'center center',
+          }}
+        />
+      ) : (
+        <Grid className="w-4 h-4 text-amber-500/40" />
+      )}
+    </div>
+  );
+};
+
+export function getStarterTilePresets(activeTs?: TilesetMeta | null): TileDefinition[] {
+  const sheet = activeTs?.imageSource || 'Terrain_by_George.png';
+  const tw = activeTs?.tilewidth || 16;
+  const th = activeTs?.tileheight || 16;
+  const fg = activeTs?.firstgid || 1;
+  const cols = activeTs?.columns || 8;
+
+  return [
+    {
+      id: 'preset-grass-01',
+      name: 'Lush Grass',
+      sourceSheet: sheet,
+      sourceX: 0,
+      sourceY: 0,
+      sourceWidth: tw,
+      sourceHeight: th,
+      gid: fg,
+      tags: ['terrain', 'grass', 'ground'],
+      collision: 'NONE',
+      gameplayFlags: ['walkable'],
+      material: 'GRASS',
+    },
+    {
+      id: 'preset-grass-02',
+      name: 'Wild Turf Grass',
+      sourceSheet: sheet,
+      sourceX: tw,
+      sourceY: 0,
+      sourceWidth: tw,
+      sourceHeight: th,
+      gid: fg + 1,
+      tags: ['terrain', 'grass'],
+      collision: 'NONE',
+      gameplayFlags: ['walkable'],
+      material: 'GRASS',
+    },
+    {
+      id: 'preset-dirt-path',
+      name: 'Dirt Path',
+      sourceSheet: sheet,
+      sourceX: tw * 2,
+      sourceY: 0,
+      sourceWidth: tw,
+      sourceHeight: th,
+      gid: fg + 2,
+      tags: ['terrain', 'path', 'dirt'],
+      collision: 'NONE',
+      gameplayFlags: ['walkable'],
+      material: 'DIRT',
+    },
+    {
+      id: 'preset-stone-cobble',
+      name: 'Cobblestone Road',
+      sourceSheet: sheet,
+      sourceX: tw * 3,
+      sourceY: 0,
+      sourceWidth: tw,
+      sourceHeight: th,
+      gid: fg + 3,
+      tags: ['structures', 'path', 'stone'],
+      collision: 'NONE',
+      gameplayFlags: ['walkable'],
+      material: 'STONE',
+    },
+    {
+      id: 'preset-solid-wall',
+      name: 'Stone Fortress Wall',
+      sourceSheet: sheet,
+      sourceX: 0,
+      sourceY: th,
+      sourceWidth: tw,
+      sourceHeight: th,
+      gid: fg + cols,
+      tags: ['structures', 'wall', 'solid'],
+      collision: 'SOLID',
+      gameplayFlags: ['blocking'],
+      material: 'STONE',
+    },
+    {
+      id: 'preset-wood-wall',
+      name: 'Wood Cabin Wall',
+      sourceSheet: sheet,
+      sourceX: tw,
+      sourceY: th,
+      sourceWidth: tw,
+      sourceHeight: th,
+      gid: fg + cols + 1,
+      tags: ['structures', 'wall', 'wood'],
+      collision: 'SOLID',
+      gameplayFlags: ['blocking'],
+      material: 'WOOD',
+    },
+    {
+      id: 'preset-water-pond',
+      name: 'Clear Water Pool',
+      sourceSheet: sheet,
+      sourceX: tw * 2,
+      sourceY: th,
+      sourceWidth: tw,
+      sourceHeight: th,
+      gid: fg + cols + 2,
+      tags: ['nature', 'water'],
+      collision: 'WATER',
+      gameplayFlags: ['swimmable'],
+      material: 'WATER',
+    },
+    {
+      id: 'preset-ledge-cliff',
+      name: 'Rocky Ledge',
+      sourceSheet: sheet,
+      sourceX: tw * 3,
+      sourceY: th,
+      sourceWidth: tw,
+      sourceHeight: th,
+      gid: fg + cols + 3,
+      tags: ['nature', 'cliff', 'ledge'],
+      collision: 'LEDGE',
+      gameplayFlags: ['jump_down'],
+      material: 'STONE',
+    },
+  ];
+}
+
+export interface TilesetPickerProps {
   tilesets: TilesetMeta[];
   activeBrushTileId: number;
   onBrushSelect: (gid: number) => void;
@@ -103,8 +323,6 @@ export default function TilesetPicker({
   const [imgError, setImgError] = useState(false);
   const [showGridOverlay, setShowGridOverlay] = useState<boolean>(true);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
-  const [gridOffsetX, setGridOffsetX] = useState<number>(0);
-  const [gridOffsetY, setGridOffsetY] = useState<number>(0);
   const [selectionMode, setSelectionMode] = useState<'grid' | 'slicer'>('grid');
   const [isCalibratingOrigin, setIsCalibratingOrigin] = useState<boolean>(false);
   const [slicerSelection, setSlicerSelection] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
@@ -132,6 +350,7 @@ export default function TilesetPicker({
 
   // Tile Library state
   const [tileDefinitions, setTileDefinitions] = useState<TileDefinition[]>([]);
+  const [selectedTileDefId, setSelectedTileDefId] = useState<string | null>(null);
   const [libraryFilter, setLibraryFilter] = useState('');
   const [libraryTagFilter, setLibraryTagFilter] = useState('ALL');
   const [isSaveDefModalOpen, setIsSaveDefModalOpen] = useState(false);
@@ -145,19 +364,40 @@ export default function TilesetPicker({
 
   const ts = tilesets && tilesets.length > 0 ? tilesets[Math.min(activeTsIdx, tilesets.length - 1)] : null;
   const imgRef = useRef<HTMLImageElement>(null);
+  const isPointerDownRef = useRef<boolean>(false);
+  const dragStartRef = useRef<{ r: number; c: number } | null>(null);
+  const lastSoundPlayRef = useRef<number>(0);
 
-  // Load canonical tile definitions from AssetManager
+  const tsRef = useRef<TilesetMeta | null>(ts);
+  tsRef.current = ts;
+  const naturalRef = useRef<{ w: number; h: number }>(natural);
+  naturalRef.current = natural;
+  const selectionModeRef = useRef<'grid' | 'slicer'>(selectionMode);
+  selectionModeRef.current = selectionMode;
+
+  // Selected tile definition object
+  const selectedDef = useMemo(() => {
+    if (!tileDefinitions.length) return null;
+    if (selectedTileDefId) {
+      const match = tileDefinitions.find((d) => d.id === selectedTileDefId);
+      if (match) return match;
+    }
+    return tileDefinitions[0] || null;
+  }, [tileDefinitions, selectedTileDefId]);
+
+  // Load tile definitions from AssetManager (fallback to presets if empty)
   const loadTileLibrary = useCallback(async () => {
     try {
       const manager = AssetManager.getInstance();
       const res = await manager.searchAssets({ type: 'TILE' }, 0, 100);
-      if (res?.items) {
+      if (res?.items && res.items.length > 0) {
         const defs: TileDefinition[] = res.items.map((item) => {
           let region = { x: 0, y: 0, w: 16, h: 16 };
           if (item.metadata?.sourceRegion) {
-            region = typeof item.metadata.sourceRegion === 'string'
-              ? JSON.parse(item.metadata.sourceRegion)
-              : item.metadata.sourceRegion;
+            region =
+              typeof item.metadata.sourceRegion === 'string'
+                ? JSON.parse(item.metadata.sourceRegion)
+                : item.metadata.sourceRegion;
           }
           return {
             id: item.id,
@@ -176,19 +416,33 @@ export default function TilesetPicker({
           };
         });
         setTileDefinitions(defs);
+        if (!selectedTileDefId && defs.length > 0) {
+          setSelectedTileDefId(defs[0].id);
+        }
+      } else {
+        // Seed default starter presets so library is immediately rich & populated
+        const starter = getStarterTilePresets(ts);
+        setTileDefinitions(starter);
+        if (!selectedTileDefId && starter.length > 0) {
+          setSelectedTileDefId(starter[0].id);
+        }
       }
     } catch (e) {
-      // Non-blocking
+      const starter = getStarterTilePresets(ts);
+      setTileDefinitions(starter);
+      if (!selectedTileDefId && starter.length > 0) {
+        setSelectedTileDefId(starter[0].id);
+      }
     }
-  }, []);
+  }, [ts, selectedTileDefId]);
 
   useEffect(() => {
     void loadTileLibrary();
   }, [loadTileLibrary]);
 
-
-  // Auto-select tileset tab if activeBrushTileId changes (e.g. via Eyedropper or on mount)
+  // Auto-select tileset tab if activeBrushTileId changes (when NOT dragging)
   useEffect(() => {
+    if (isPointerDownRef.current) return;
     if (!tilesets || tilesets.length === 0 || activeBrushTileId <= 0) return;
     for (let i = tilesets.length - 1; i >= 0; i--) {
       if (activeBrushTileId >= tilesets[i].firstgid) {
@@ -201,9 +455,9 @@ export default function TilesetPicker({
         break;
       }
     }
-  }, [activeBrushTileId, tilesets]);
+  }, [activeBrushTileId, tilesets, activeTsIdx]);
 
-  // Listen for studio_add_tileset event from Asset Browser or other panels
+  // Listen for studio_add_tileset event
   useEffect(() => {
     const handleAddEvent = (e: Event) => {
       const customEvent = e as CustomEvent<{ source: string; filename?: string }>;
@@ -246,7 +500,6 @@ export default function TilesetPicker({
       if (normalized.startsWith('/')) normalized = normalized.substring(1);
     }
 
-    // Check if already in active tilesets
     const existingIdx = tilesets.findIndex((t) => t.imageSource.toLowerCase().includes(normalized.toLowerCase()));
     if (existingIdx !== -1) {
       setActiveTsIdx(existingIdx);
@@ -254,7 +507,6 @@ export default function TilesetPicker({
       return;
     }
 
-    // Calculate firstgid
     let nextFirstGid = 1;
     if (tilesets.length > 0) {
       const last = tilesets[tilesets.length - 1];
@@ -268,7 +520,6 @@ export default function TilesetPicker({
 
     const img = new Image();
     img.onload = () => {
-      // Default to 16px standard tile unit for RPG maps so granular 1-block selection works seamlessly
       const tilewidth = 16;
       const tileheight = 16;
       const columns = Math.max(1, Math.floor(img.width / tilewidth));
@@ -281,6 +532,9 @@ export default function TilesetPicker({
         tileheight,
         imagewidth: img.width,
         imageheight: img.height,
+        offsetX: 0,
+        offsetY: 0,
+        spacing: 0,
       };
 
       const updated = [...tilesets, newTileset];
@@ -310,12 +564,30 @@ export default function TilesetPicker({
     soundSynth?.playActionSound?.();
   };
 
-  const handleUpdateTilesetSettings = (meta: Partial<TilesetMeta>) => {
+  const handleUpdateTilesetSettings = useCallback((meta: Partial<TilesetMeta>) => {
     if (!tilesets || activeTsIdx < 0 || activeTsIdx >= tilesets.length) return;
     const updated = [...tilesets];
-    updated[activeTsIdx] = { ...updated[activeTsIdx], ...meta };
+    const current = updated[activeTsIdx];
+    const newWidth = meta.tilewidth ?? current.tilewidth;
+    const newHeight = meta.tileheight ?? current.tileheight;
+    const newOffsetX = meta.offsetX !== undefined ? meta.offsetX : (current.offsetX ?? current.margin ?? 0);
+    const newOffsetY = meta.offsetY !== undefined ? meta.offsetY : (current.offsetY ?? current.margin ?? 0);
+    const newSpacing = meta.spacing !== undefined ? meta.spacing : (current.spacing ?? 0);
+    const imgW = natural.w || current.imagewidth || 512;
+    const newCols = meta.columns ?? Math.max(1, Math.floor((imgW - newOffsetX) / (newWidth + newSpacing)));
+
+    updated[activeTsIdx] = {
+      ...current,
+      ...meta,
+      tilewidth: newWidth,
+      tileheight: newHeight,
+      offsetX: newOffsetX,
+      offsetY: newOffsetY,
+      spacing: newSpacing,
+      columns: newCols,
+    };
     onUpdateTilesets?.(updated);
-  };
+  }, [tilesets, activeTsIdx, natural.w, onUpdateTilesets]);
 
   const handleRemoveTileset = (idx: number) => {
     if (!tilesets[idx]) return;
@@ -350,7 +622,6 @@ export default function TilesetPicker({
     const col = local % ts.columns;
     const row = Math.floor(local / ts.columns);
 
-    // If an active brush pattern is selected, render the multi-tile selection box
     const spanW = activeBrushPattern?.w || 1;
     const spanH = activeBrushPattern?.h || 1;
 
@@ -365,6 +636,8 @@ export default function TilesetPicker({
       widthPct: (widthPx / natural.w) * 100,
       heightPct: (heightPx / natural.h) * 100,
       local,
+      col,
+      row,
       w: spanW,
       h: spanH,
     };
@@ -375,20 +648,18 @@ export default function TilesetPicker({
   const onBrushSelectPatternRef = useRef(onBrushSelectPattern);
   onBrushSelectPatternRef.current = onBrushSelectPattern;
 
-  const dragStartRef = useRef<{ r: number; c: number } | null>(null);
-  const isPointerDownRef = useRef<boolean>(false);
-  const lastSoundPlayRef = useRef<number>(0);
-
   const selectTileRegion = useCallback(
     (startRow: number, startCol: number, width: number, height: number) => {
-      if (!ts || !natural.w || !natural.h) return;
-      const offY = ts.offsetY ?? ts.margin ?? 0;
-      const spacing = ts.spacing ?? 0;
-      const maxRows = Math.floor((natural.h - offY) / (ts.tileheight + spacing));
+      const currentTs = tsRef.current;
+      const nat = naturalRef.current;
+      if (!currentTs || !nat.w || !nat.h) return;
+      const offY = currentTs.offsetY ?? currentTs.margin ?? 0;
+      const spacing = currentTs.spacing ?? 0;
+      const maxRows = Math.max(1, Math.floor((nat.h - offY) / (currentTs.tileheight + spacing)));
       const safeRow = Math.max(0, Math.min(startRow, maxRows - 1));
-      const safeCol = Math.max(0, Math.min(startCol, ts.columns - 1));
+      const safeCol = Math.max(0, Math.min(startCol, currentTs.columns - 1));
       const endRow = Math.min(safeRow + height - 1, maxRows - 1);
-      const endCol = Math.min(safeCol + width - 1, ts.columns - 1);
+      const endCol = Math.min(safeCol + width - 1, currentTs.columns - 1);
       const spanW = endCol - safeCol + 1;
       const spanH = endRow - safeRow + 1;
 
@@ -396,93 +667,396 @@ export default function TilesetPicker({
       for (let r = safeRow; r <= endRow; r++) {
         const rowGids: number[] = [];
         for (let c = safeCol; c <= endCol; c++) {
-          rowGids.push(ts.firstgid + r * ts.columns + c);
+          rowGids.push(currentTs.firstgid + r * currentTs.columns + c);
         }
         gids.push(rowGids);
       }
 
-      const topGid = gids[0]?.[0] ?? (ts.firstgid + safeRow * ts.columns + safeCol);
+      const topGid = gids[0]?.[0] ?? (currentTs.firstgid + safeRow * currentTs.columns + safeCol);
       const now = Date.now();
       if (now - lastSoundPlayRef.current > 150) {
         lastSoundPlayRef.current = now;
         soundSynth?.playSelectSound?.();
       }
-      onBrushSelectRef.current(topGid);
-      if (onBrushSelectPatternRef.current) {
-        if (spanW > 1 || spanH > 1) {
-          onBrushSelectPatternRef.current({ w: spanW, h: spanH, gids });
-        } else {
-          onBrushSelectPatternRef.current(null);
-        }
+
+      if (spanW > 1 || spanH > 1) {
+        onBrushSelectPatternRef.current?.({ w: spanW, h: spanH, gids });
+      } else {
+        onBrushSelectRef.current(topGid);
+        onBrushSelectPatternRef.current?.(null);
       }
     },
-    [ts, natural]
+    []
   );
 
+  // Set Brush Scale changing handler
+  const handleSetBrushScale = (scaleW: number, scaleH: number = scaleW) => {
+    if (!ts || !natural.w || !natural.h) return;
+    const local = activeBrushTileId - ts.firstgid;
+    const row = local >= 0 ? Math.floor(local / ts.columns) : 0;
+    const col = local >= 0 ? local % ts.columns : 0;
+    selectTileRegion(row, col, scaleW, scaleH);
+    soundSynth?.playSelectSound?.();
+    showToast(`Brush scale set to ${scaleW}×${scaleH} (${scaleW * ts.tilewidth}×${scaleH * ts.tileheight}px)`);
+  };
+
   const handlePointerDown = (e: React.PointerEvent<HTMLImageElement>) => {
-    if (e.button !== 0) return; // Only primary left click
-    if (!ts || imgError || !imgRef.current || !natural.w || !natural.h) return;
+    if (e.button !== 0) return;
+    const currentTs = tsRef.current;
+    const nat = naturalRef.current;
+    if (!currentTs || imgError || !imgRef.current || !nat.w || !nat.h) return;
     e.preventDefault();
     e.stopPropagation();
 
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      /* ignore */
-    }
+    } catch {}
 
     const rect = imgRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
     const y = Math.max(0, Math.min(rect.height - 1, e.clientY - rect.top));
-    const scaleX = imgRef.current.naturalWidth / rect.width;
-    const scaleY = imgRef.current.naturalHeight / rect.height;
+    const scaleX = nat.w / rect.width;
+    const scaleY = nat.h / rect.height;
     const nativeX = Math.floor(x * scaleX);
     const nativeY = Math.floor(y * scaleY);
 
-    // 🎯 ORIGIN CALIBRATION CLICK
+    // Origin alignment click
     if (isCalibratingOrigin) {
       const ox = Math.max(0, nativeX);
       const oy = Math.max(0, nativeY);
-      setGridOffsetX(ox);
-      setGridOffsetY(oy);
-      const cols = Math.max(1, Math.floor((natural.w - ox) / (ts.tilewidth + (ts.spacing || 0))));
+      const cols = Math.max(1, Math.floor((nat.w - ox) / (currentTs.tilewidth + (currentTs.spacing || 0))));
       handleUpdateTilesetSettings({
         offsetX: ox,
         offsetY: oy,
         columns: cols,
-        imagewidth: natural.w,
-        imageheight: natural.h,
+        imagewidth: nat.w,
+        imageheight: nat.h,
       });
       setIsCalibratingOrigin(false);
-      showToast(`🎯 Origin calibrated to X:${ox}px, Y:${oy}px (${cols} cols)`);
+      showToast(`Grid origin set to X:${ox}px, Y:${oy}px (${cols} columns)`);
       soundSynth?.playSelectSound?.();
       return;
     }
 
     isPointerDownRef.current = true;
 
-    // ✂ FREEFORM VISUAL SLICER MODE
+    // Freeform Slicer mode
     if (selectionMode === 'slicer') {
       slicerDragStartRef.current = { x: nativeX, y: nativeY };
       setSlicerSelection({
         x0: nativeX,
         y0: nativeY,
-        x1: Math.min(natural.w, nativeX + ts.tilewidth),
-        y1: Math.min(natural.h, nativeY + ts.tileheight),
+        x1: Math.min(nat.w, nativeX + currentTs.tilewidth),
+        y1: Math.min(nat.h, nativeY + currentTs.tileheight),
       });
       return;
     }
 
-    // ⊞ GRID SNAPPING MODE
+    // Grid Mode
+    const offX = currentTs.offsetX ?? currentTs.margin ?? 0;
+    const offY = currentTs.offsetY ?? currentTs.margin ?? 0;
+    const spacing = currentTs.spacing ?? 0;
+    const col = Math.min(currentTs.columns - 1, Math.max(0, Math.floor((nativeX - offX) / (currentTs.tilewidth + spacing))));
+    const maxRows = Math.max(1, Math.floor((nat.h - offY) / (currentTs.tileheight + spacing)));
+    const row = Math.min(maxRows - 1, Math.max(0, Math.floor((nativeY - offY) / (currentTs.tileheight + spacing))));
+
+    dragStartRef.current = { r: row, c: col };
+    setDragStart({ r: row, c: col });
+
+    const gid = currentTs.firstgid + row * currentTs.columns + col;
+    const leftPx = offX + col * (currentTs.tilewidth + spacing);
+    const topPx = offY + row * (currentTs.tileheight + spacing);
+
+    setHoveredTile({
+      leftPct: (leftPx / nat.w) * 100,
+      topPct: (topPx / nat.h) * 100,
+      widthPct: (currentTs.tilewidth / nat.w) * 100,
+      heightPct: (currentTs.tileheight / nat.h) * 100,
+      gid,
+      col,
+      row,
+      w: 1,
+      h: 1,
+    });
+
+    selectTileRegion(row, col, 1, 1);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLImageElement>) => {
+    if (!isPointerDownRef.current) return;
+    isPointerDownRef.current = false;
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {}
+
+    const start = dragStartRef.current;
+    if (start && hoveredTile) {
+      selectTileRegion(hoveredTile.row, hoveredTile.col, hoveredTile.w, hoveredTile.h);
+    }
+    slicerDragStartRef.current = null;
+    dragStartRef.current = null;
+    setDragStart(null);
+  };
+
+  // Window-level smooth dragging listener so pointer captures never drop
+  useEffect(() => {
+    const onWindowPointerMove = (e: PointerEvent) => {
+      if (!isPointerDownRef.current) return;
+      const currentTs = tsRef.current;
+      const nat = naturalRef.current;
+      if (!currentTs || !imgRef.current || !nat.w || !nat.h) return;
+
+      const rect = imgRef.current.getBoundingClientRect();
+      const x = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
+      const y = Math.max(0, Math.min(rect.height - 1, e.clientY - rect.top));
+      const scaleX = nat.w / rect.width;
+      const scaleY = nat.h / rect.height;
+      const nativeX = Math.floor(x * scaleX);
+      const nativeY = Math.floor(y * scaleY);
+
+      if (selectionModeRef.current === 'slicer') {
+        const start = slicerDragStartRef.current;
+        if (start) {
+          const x0 = Math.max(0, Math.min(start.x, nativeX));
+          const x1 = Math.min(nat.w, Math.max(start.x, nativeX));
+          const y0 = Math.max(0, Math.min(start.y, nativeY));
+          const y1 = Math.min(nat.h, Math.max(start.y, nativeY));
+          setSlicerSelection({ x0, y0, x1: Math.max(x0 + 4, x1), y1: Math.max(y0 + 4, y1) });
+        }
+        return;
+      }
+
+      // Grid Mode Drag Selection
+      const offX = currentTs.offsetX ?? currentTs.margin ?? 0;
+      const offY = currentTs.offsetY ?? currentTs.margin ?? 0;
+      const spacing = currentTs.spacing ?? 0;
+      const col = Math.min(currentTs.columns - 1, Math.max(0, Math.floor((nativeX - offX) / (currentTs.tilewidth + spacing))));
+      const maxRows = Math.max(1, Math.floor((nat.h - offY) / (currentTs.tileheight + spacing)));
+      const row = Math.min(maxRows - 1, Math.max(0, Math.floor((nativeY - offY) / (currentTs.tileheight + spacing))));
+
+      let minRow = row;
+      let maxRow = row;
+      let minCol = col;
+      let maxCol = col;
+
+      const start = dragStartRef.current;
+      if (start) {
+        minRow = Math.min(start.r, row);
+        maxRow = Math.max(start.r, row);
+        minCol = Math.min(start.c, col);
+        maxCol = Math.max(start.c, col);
+      }
+
+      maxRow = Math.min(maxRow, maxRows - 1);
+      maxCol = Math.min(maxCol, currentTs.columns - 1);
+
+      const spanW = maxCol - minCol + 1;
+      const spanH = maxRow - minRow + 1;
+      const gid = currentTs.firstgid + minRow * currentTs.columns + minCol;
+      const leftPx = offX + minCol * (currentTs.tilewidth + spacing);
+      const topPx = offY + minRow * (currentTs.tileheight + spacing);
+      const widthPx = spanW * currentTs.tilewidth + (spanW - 1) * spacing;
+      const heightPx = spanH * currentTs.tileheight + (spanH - 1) * spacing;
+
+      setHoveredTile({
+        leftPct: (leftPx / nat.w) * 100,
+        topPct: (topPx / nat.h) * 100,
+        widthPct: (widthPx / nat.w) * 100,
+        heightPct: (heightPx / nat.h) * 100,
+        gid,
+        col: minCol,
+        row: minRow,
+        w: spanW,
+        h: spanH,
+      });
+
+      if (start) {
+        selectTileRegion(minRow, minCol, spanW, spanH);
+      }
+    };
+
+    const onWindowPointerUp = () => {
+      if (isPointerDownRef.current) {
+        isPointerDownRef.current = false;
+        slicerDragStartRef.current = null;
+        dragStartRef.current = null;
+        setDragStart(null);
+      }
+    };
+
+    window.addEventListener('pointermove', onWindowPointerMove);
+    window.addEventListener('pointerup', onWindowPointerUp);
+    return () => {
+      window.removeEventListener('pointermove', onWindowPointerMove);
+      window.removeEventListener('pointerup', onWindowPointerUp);
+    };
+  }, [selectTileRegion]);
+
+  // Tile Library Selection Handler with accurate GID mapping
+  const handleSelectTileDefinition = useCallback(
+    (def: TileDefinition) => {
+      soundSynth?.playSelectSound?.();
+      setSelectedTileDefId(def.id);
+
+      // Match against active map tilesets
+      const cleanSource = def.sourceSheet.replace(/^\/game-assets\/tilesets\//i, '').replace(/^tilesets\//i, '');
+      const matchingTsIdx = tilesets.findIndex(
+        (t) =>
+          t.imageSource.toLowerCase().includes(cleanSource.toLowerCase()) ||
+          cleanSource.toLowerCase().includes(t.imageSource.toLowerCase())
+      );
+
+      const targetTs = matchingTsIdx !== -1 ? tilesets[matchingTsIdx] : ts;
+
+      if (targetTs) {
+        if (matchingTsIdx !== -1 && matchingTsIdx !== activeTsIdx) {
+          setActiveTsIdx(matchingTsIdx);
+          setNatural({ w: 0, h: 0 });
+          setHoveredTile(null);
+          setImgError(false);
+        }
+
+        const offX = targetTs.offsetX ?? targetTs.margin ?? 0;
+        const offY = targetTs.offsetY ?? targetTs.margin ?? 0;
+        const spacing = targetTs.spacing ?? 0;
+        const col = Math.max(
+          0,
+          Math.min(targetTs.columns - 1, Math.floor((def.sourceX - offX) / (targetTs.tilewidth + spacing)))
+        );
+        const maxRows = Math.max(
+          1,
+          Math.floor((natural.h || targetTs.imageheight || 512) / (targetTs.tileheight + spacing))
+        );
+        const row = Math.max(
+          0,
+          Math.min(maxRows - 1, Math.floor((def.sourceY - offY) / (targetTs.tileheight + spacing)))
+        );
+
+        const spanW = Math.max(1, Math.round(def.sourceWidth / targetTs.tilewidth));
+        const spanH = Math.max(1, Math.round(def.sourceHeight / targetTs.tileheight));
+
+        if (spanW > 1 || spanH > 1) {
+          const gids: number[][] = [];
+          for (let r = row; r < row + spanH; r++) {
+            const rowGids: number[] = [];
+            for (let c = col; c < col + spanW; c++) {
+              rowGids.push(targetTs.firstgid + r * targetTs.columns + c);
+            }
+            gids.push(rowGids);
+          }
+          onBrushSelectRef.current(gids[0]?.[0] || targetTs.firstgid + row * targetTs.columns + col);
+          onBrushSelectPatternRef.current?.({ w: spanW, h: spanH, gids });
+        } else {
+          const gid = targetTs.firstgid + row * targetTs.columns + col;
+          onBrushSelectRef.current(gid);
+          onBrushSelectPatternRef.current?.(null);
+        }
+      } else {
+        onBrushSelectRef.current(def.gid);
+        onBrushSelectPatternRef.current?.(null);
+      }
+
+      showToast(`Selected Tile: ${def.name}`);
+    },
+    [tilesets, ts, activeTsIdx, natural.h, showToast]
+  );
+
+  // Delete tile definition from Library
+  const handleDeleteTileDefinition = useCallback(
+    async (defId: string, e?: React.MouseEvent) => {
+      e?.stopPropagation();
+      soundSynth?.playActionSound?.();
+      try {
+        setTileDefinitions((prev) => prev.filter((d) => d.id !== defId));
+        if (selectedTileDefId === defId) {
+          setSelectedTileDefId(null);
+        }
+        const manager = AssetManager.getInstance();
+        await manager.deleteAsset(defId);
+        showToast('Tile removed from Library.');
+      } catch {
+        showToast('Removed tile from Library view.');
+      }
+    },
+    [selectedTileDefId, showToast]
+  );
+
+  // Load / Seed Starter Presets
+  const handleLoadStarterPresets = useCallback(() => {
+    soundSynth?.playActionSound?.();
+    const presets = getStarterTilePresets(ts);
+    setTileDefinitions((prev) => {
+      const existingIds = new Set(prev.map((d) => d.id));
+      const newItems = presets.filter((p) => !existingIds.has(p.id));
+      return [...prev, ...newItems];
+    });
+    if (presets.length > 0) {
+      setSelectedTileDefId(presets[0].id);
+    }
+    showToast('Loaded Starter Tile Presets');
+  }, [ts, showToast]);
+
+  // Extract common tiles from active tileset sheet
+  const handleExtractTilesFromActiveSheet = useCallback(() => {
+    if (!ts || !natural.w || !natural.h) return;
+    soundSynth?.playActionSound?.();
+    const tw = ts.tilewidth || 16;
+    const th = ts.tileheight || 16;
+    const maxCols = Math.min(ts.columns, Math.floor(natural.w / tw));
+    const maxRows = Math.min(4, Math.floor(natural.h / th));
+    const extracted: TileDefinition[] = [];
+
+    const sheetName = ts.imageSource.split('/').pop()?.replace(/\.[^/.]+$/, '') || 'sheet';
+
+    for (let r = 0; r < maxRows; r++) {
+      for (let c = 0; c < Math.min(maxCols, 4); c++) {
+        const gid = ts.firstgid + r * ts.columns + c;
+        extracted.push({
+          id: `extracted-${sheetName}-${r}-${c}-${Date.now()}`,
+          name: `${sheetName.replace(/_/g, ' ')} [R${r}:C${c}]`,
+          sourceSheet: ts.imageSource,
+          sourceX: c * tw,
+          sourceY: r * th,
+          sourceWidth: tw,
+          sourceHeight: th,
+          gid,
+          tags: ['terrain', 'extracted', sheetName.toLowerCase()],
+          collision: r >= 2 ? 'SOLID' : 'NONE',
+          gameplayFlags: r >= 2 ? ['blocking'] : ['walkable'],
+          material: r === 0 ? 'GRASS' : r === 1 ? 'DIRT' : 'STONE',
+        });
+      }
+    }
+
+    setTileDefinitions((prev) => [...prev, ...extracted]);
+    if (extracted.length > 0) {
+      setSelectedTileDefId(extracted[0].id);
+    }
+    showToast(`Extracted ${extracted.length} tiles from active sheet`);
+  }, [ts, natural, showToast]);
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLImageElement>) => {
+    if (!ts || imgError || !imgRef.current || !natural.w || !natural.h) return;
+    if (isPointerDownRef.current) return; // Handled by window listener
+
+    const rect = imgRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
+    const y = Math.max(0, Math.min(rect.height - 1, e.clientY - rect.top));
+    const scaleX = natural.w / rect.width;
+    const scaleY = natural.h / rect.height;
+    const nativeX = Math.floor(x * scaleX);
+    const nativeY = Math.floor(y * scaleY);
+
+    if (isCalibratingOrigin || selectionMode === 'slicer') return;
+
     const offX = ts.offsetX ?? ts.margin ?? 0;
     const offY = ts.offsetY ?? ts.margin ?? 0;
     const spacing = ts.spacing ?? 0;
     const col = Math.min(ts.columns - 1, Math.max(0, Math.floor((nativeX - offX) / (ts.tilewidth + spacing))));
-    const maxRows = Math.floor((natural.h - offY) / (ts.tileheight + spacing));
+    const maxRows = Math.max(1, Math.floor((natural.h - offY) / (ts.tileheight + spacing)));
     const row = Math.min(maxRows - 1, Math.max(0, Math.floor((nativeY - offY) / (ts.tileheight + spacing))));
-
-    dragStartRef.current = { r: row, c: col };
-    setDragStart({ r: row, c: col });
 
     const gid = ts.firstgid + row * ts.columns + col;
     const leftPx = offX + col * (ts.tilewidth + spacing);
@@ -499,129 +1073,6 @@ export default function TilesetPicker({
       w: 1,
       h: 1,
     });
-
-    selectTileRegion(row, col, 1, 1);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLImageElement>) => {
-    if (!ts || imgError || !imgRef.current || !natural.w || !natural.h) return;
-    const rect = imgRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
-    const y = Math.max(0, Math.min(rect.height - 1, e.clientY - rect.top));
-    const scaleX = imgRef.current.naturalWidth / rect.width;
-    const scaleY = imgRef.current.naturalHeight / rect.height;
-    const nativeX = Math.floor(x * scaleX);
-    const nativeY = Math.floor(y * scaleY);
-
-    if (isCalibratingOrigin) {
-      return;
-    }
-
-    // ✂ FREEFORM VISUAL SLICER MODE
-    if (selectionMode === 'slicer') {
-      const start = slicerDragStartRef.current;
-      if (start && isPointerDownRef.current) {
-        const x0 = Math.max(0, Math.min(start.x, nativeX));
-        const x1 = Math.min(natural.w, Math.max(start.x, nativeX));
-        const y0 = Math.max(0, Math.min(start.y, nativeY));
-        const y1 = Math.min(natural.h, Math.max(start.y, nativeY));
-        setSlicerSelection({ x0, y0, x1: Math.max(x0 + 4, x1), y1: Math.max(y0 + 4, y1) });
-      }
-      return;
-    }
-
-    // ⊞ GRID SNAPPING MODE
-    const offX = ts.offsetX ?? ts.margin ?? 0;
-    const offY = ts.offsetY ?? ts.margin ?? 0;
-    const spacing = ts.spacing ?? 0;
-    const col = Math.min(ts.columns - 1, Math.max(0, Math.floor((nativeX - offX) / (ts.tilewidth + spacing))));
-    const maxRows = Math.floor((natural.h - offY) / (ts.tileheight + spacing));
-    const row = Math.min(maxRows - 1, Math.max(0, Math.floor((nativeY - offY) / (ts.tileheight + spacing))));
-
-    let minRow = row;
-    let maxRow = row;
-    let minCol = col;
-    let maxCol = col;
-
-    const start = dragStartRef.current;
-    if (start && isPointerDownRef.current) {
-      minRow = Math.min(start.r, row);
-      maxRow = Math.max(start.r, row);
-      minCol = Math.min(start.c, col);
-      maxCol = Math.max(start.c, col);
-    }
-
-    maxRow = Math.min(maxRow, maxRows - 1);
-    maxCol = Math.min(maxCol, ts.columns - 1);
-
-    const spanW = maxCol - minCol + 1;
-    const spanH = maxRow - minRow + 1;
-    const gid = ts.firstgid + minRow * ts.columns + minCol;
-    const leftPx = offX + minCol * (ts.tilewidth + spacing);
-    const topPx = offY + minRow * (ts.tileheight + spacing);
-    const widthPx = spanW * ts.tilewidth + (spanW - 1) * spacing;
-    const heightPx = spanH * ts.tileheight + (spanH - 1) * spacing;
-
-    setHoveredTile({
-      leftPct: (leftPx / natural.w) * 100,
-      topPct: (topPx / natural.h) * 100,
-      widthPct: (widthPx / natural.w) * 100,
-      heightPct: (heightPx / natural.h) * 100,
-      gid,
-      col: minCol,
-      row: minRow,
-      w: spanW,
-      h: spanH,
-    });
-
-    if (start && isPointerDownRef.current) {
-      selectTileRegion(minRow, minCol, spanW, spanH);
-    }
-  };
-
-  const handlePointerUp = (e: React.PointerEvent<HTMLImageElement>) => {
-    if (!isPointerDownRef.current) return;
-    isPointerDownRef.current = false;
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {
-      /* ignore */
-    }
-
-    if (selectionMode === 'slicer') {
-      slicerDragStartRef.current = null;
-      soundSynth?.playSelectSound?.();
-      return;
-    }
-
-    const start = dragStartRef.current;
-    if (start && ts && !imgError && imgRef.current && natural.w && natural.h) {
-      const rect = imgRef.current.getBoundingClientRect();
-      const x = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
-      const y = Math.max(0, Math.min(rect.height - 1, e.clientY - rect.top));
-      const scaleX = imgRef.current.naturalWidth / rect.width;
-      const scaleY = imgRef.current.naturalHeight / rect.height;
-      const nativeX = Math.floor(x * scaleX);
-      const nativeY = Math.floor(y * scaleY);
-      const offX = ts.offsetX ?? ts.margin ?? 0;
-      const offY = ts.offsetY ?? ts.margin ?? 0;
-      const spacing = ts.spacing ?? 0;
-      const col = Math.min(ts.columns - 1, Math.max(0, Math.floor((nativeX - offX) / (ts.tilewidth + spacing))));
-      const maxRows = Math.floor((natural.h - offY) / (ts.tileheight + spacing));
-      const row = Math.min(maxRows - 1, Math.max(0, Math.floor((nativeY - offY) / (ts.tileheight + spacing))));
-
-      const minRow = Math.min(start.r, row);
-      const maxRow = Math.max(start.r, row);
-      const minCol = Math.min(start.c, col);
-      const maxCol = Math.max(start.c, col);
-      const spanW = maxCol - minCol + 1;
-      const spanH = maxRow - minRow + 1;
-
-      selectTileRegion(minRow, minCol, spanW, spanH);
-    }
-
-    dragStartRef.current = null;
-    setDragStart(null);
   };
 
   // Slicer Action Handlers
@@ -631,13 +1082,17 @@ export default function TilesetPicker({
     const offX = ts.offsetX ?? ts.margin ?? 0;
     const offY = ts.offsetY ?? ts.margin ?? 0;
     const spacing = ts.spacing ?? 0;
-    const col = Math.min(ts.columns - 1, Math.max(0, Math.floor((slicerSelection.x0 - offX) / (ts.tilewidth + spacing))));
-    const maxRows = Math.floor((natural.h - offY) / (ts.tileheight + spacing));
-    const row = Math.min(maxRows - 1, Math.max(0, Math.floor((slicerSelection.y0 - offY) / (ts.tileheight + spacing))));
+    const minX = Math.min(slicerSelection.x0, slicerSelection.x1);
+    const minY = Math.min(slicerSelection.y0, slicerSelection.y1);
+    const col = Math.min(ts.columns - 1, Math.max(0, Math.floor((minX - offX) / (ts.tilewidth + spacing))));
+    const maxRows = Math.max(1, Math.floor((natural.h - offY) / (ts.tileheight + spacing)));
+    const row = Math.min(maxRows - 1, Math.max(0, Math.floor((minY - offY) / (ts.tileheight + spacing))));
     const gid = ts.firstgid + row * ts.columns + col;
     onBrushSelectRef.current(gid);
     onBrushSelectPatternRef.current?.(null);
-    showToast(`Equipped 1-Tile Stamp (GID ${gid})`);
+    useEditorStore.getState().setPrefabStampMode('1tile');
+    useEditorStore.getState().setBrushMode('paint');
+    showToast(`Selected 1 Tile (GID #${gid})`);
   };
 
   const handleSlicerStampMultiTile = () => {
@@ -646,15 +1101,35 @@ export default function TilesetPicker({
     const offX = ts.offsetX ?? ts.margin ?? 0;
     const offY = ts.offsetY ?? ts.margin ?? 0;
     const spacing = ts.spacing ?? 0;
-    const cropW = slicerSelection.x1 - slicerSelection.x0;
-    const cropH = slicerSelection.y1 - slicerSelection.y0;
-    const spanW = Math.max(1, Math.round(cropW / (ts.tilewidth + spacing)));
-    const spanH = Math.max(1, Math.round(cropH / (ts.tileheight + spacing)));
-    const startCol = Math.min(ts.columns - 1, Math.max(0, Math.floor((slicerSelection.x0 - offX) / (ts.tilewidth + spacing))));
-    const maxRows = Math.floor((natural.h - offY) / (ts.tileheight + spacing));
-    const startRow = Math.min(maxRows - 1, Math.max(0, Math.floor((slicerSelection.y0 - offY) / (ts.tileheight + spacing))));
-    selectTileRegion(startRow, startCol, spanW, spanH);
-    showToast(`Equipped ${spanW}×${spanH} Multi-Tile Stamp`);
+    const minX = Math.min(slicerSelection.x0, slicerSelection.x1);
+    const minY = Math.min(slicerSelection.y0, slicerSelection.y1);
+    const maxX = Math.max(slicerSelection.x0, slicerSelection.x1);
+    const maxY = Math.max(slicerSelection.y0, slicerSelection.y1);
+    const cropW = Math.max(1, maxX - minX);
+    const cropH = Math.max(1, maxY - minY);
+
+    const maxRows = Math.max(1, Math.floor((natural.h - offY) / (ts.tileheight + spacing)));
+    const startCol = Math.min(ts.columns - 1, Math.max(0, Math.floor((minX - offX) / (ts.tilewidth + spacing))));
+    const startRow = Math.min(maxRows - 1, Math.max(0, Math.floor((minY - offY) / (ts.tileheight + spacing))));
+    const endCol = Math.min(ts.columns - 1, Math.max(startCol, Math.floor(((maxX - 1) - offX) / (ts.tilewidth + spacing))));
+    const endRow = Math.min(maxRows - 1, Math.max(startRow, Math.floor(((maxY - 1) - offY) / (ts.tileheight + spacing))));
+    const spanW = endCol - startCol + 1;
+    const spanH = endRow - startRow + 1;
+
+    const gids: number[][] = [];
+    for (let r = startRow; r <= endRow; r++) {
+      const rowGids: number[] = [];
+      for (let c = startCol; c <= endCol; c++) {
+        rowGids.push(ts.firstgid + r * ts.columns + c);
+      }
+      gids.push(rowGids);
+    }
+    const topGid = gids[0]?.[0] ?? (ts.firstgid + startRow * ts.columns + startCol);
+    onBrushSelectRef.current(topGid);
+    onBrushSelectPatternRef.current?.({ w: spanW, h: spanH, gids });
+    useEditorStore.getState().setPrefabStampMode('footprint');
+    useEditorStore.getState().setBrushMode('paint');
+    showToast(`Selected ${spanW}×${spanH} Tile Stamp (${cropW}×${cropH}px)`);
   };
 
   const handleSlicerAutoPrefab = async () => {
@@ -663,13 +1138,20 @@ export default function TilesetPicker({
     const offX = ts.offsetX ?? ts.margin ?? 0;
     const offY = ts.offsetY ?? ts.margin ?? 0;
     const spacing = ts.spacing ?? 0;
-    const cropW = slicerSelection.x1 - slicerSelection.x0;
-    const cropH = slicerSelection.y1 - slicerSelection.y0;
-    const spanW = Math.max(1, Math.round(cropW / (ts.tilewidth + spacing)));
-    const spanH = Math.max(1, Math.round(cropH / (ts.tileheight + spacing)));
-    const startCol = Math.min(ts.columns - 1, Math.max(0, Math.floor((slicerSelection.x0 - offX) / (ts.tilewidth + spacing))));
-    const maxRows = Math.floor((natural.h - offY) / (ts.tileheight + spacing));
-    const startRow = Math.min(maxRows - 1, Math.max(0, Math.floor((slicerSelection.y0 - offY) / (ts.tileheight + spacing))));
+    const minX = Math.min(slicerSelection.x0, slicerSelection.x1);
+    const minY = Math.min(slicerSelection.y0, slicerSelection.y1);
+    const maxX = Math.max(slicerSelection.x0, slicerSelection.x1);
+    const maxY = Math.max(slicerSelection.y0, slicerSelection.y1);
+    const cropW = Math.max(1, maxX - minX);
+    const cropH = Math.max(1, maxY - minY);
+
+    const maxRows = Math.max(1, Math.floor((natural.h - offY) / (ts.tileheight + spacing)));
+    const startCol = Math.min(ts.columns - 1, Math.max(0, Math.floor((minX - offX) / (ts.tilewidth + spacing))));
+    const startRow = Math.min(maxRows - 1, Math.max(0, Math.floor((minY - offY) / (ts.tileheight + spacing))));
+    const endCol = Math.min(ts.columns - 1, Math.max(startCol, Math.floor(((maxX - 1) - offX) / (ts.tilewidth + spacing))));
+    const endRow = Math.min(maxRows - 1, Math.max(startRow, Math.floor(((maxY - 1) - offY) / (ts.tileheight + spacing))));
+    const spanW = endCol - startCol + 1;
+    const spanH = endRow - startRow + 1;
 
     const visualData: PrefabTileData[] = [];
     for (let r = 0; r < spanH; r++) {
@@ -684,11 +1166,11 @@ export default function TilesetPicker({
     }
 
     if (visualData.length === 0) {
-      showToast('Sliced region contains no valid tiles.');
+      showToast('Selected area contains no valid tiles.');
       return;
     }
 
-    const prefabName = `Slice-Prefab (${cropW}x${cropH}px)`;
+    const prefabName = `Custom Stamp (${cropW}x${cropH}px)`;
     const res = await savePrefab({
       name: prefabName,
       category: 'decor',
@@ -699,7 +1181,7 @@ export default function TilesetPicker({
     });
 
     if (res.success) {
-      showToast(`Prefab Created: ${prefabName}`);
+      showToast(`Stamp Created: ${prefabName}`);
       const listRes = await listPrefabs();
       if (listRes.success && listRes.data) {
         setPrefabs(listRes.data);
@@ -711,7 +1193,7 @@ export default function TilesetPicker({
       setBrushMode('prefab');
       openPanel('prefab');
     } else {
-      showToast(`Failed to create prefab: ${res.error}`);
+      showToast(`Failed to save stamp: ${res.error}`);
     }
   };
 
@@ -734,7 +1216,7 @@ export default function TilesetPicker({
     setIsSaveDefModalOpen(true);
   };
 
-  // Keyboard navigation: step 1 block over with arrow keys
+  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!ts || imgError || !natural.w || !natural.h) return;
@@ -749,9 +1231,9 @@ export default function TilesetPicker({
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         const local = activeBrushTileId - ts.firstgid;
         if (local < 0) return;
-        const maxRows = Math.floor(natural.h / ts.tileheight);
-        let col = local % ts.columns;
-        let row = Math.floor(local / ts.columns);
+        const maxRows = Math.max(1, Math.floor(natural.h / ts.tileheight));
+        const col = local % ts.columns;
+        const row = Math.floor(local / ts.columns);
 
         const stepX = 1;
         const stepY = 1;
@@ -802,14 +1284,17 @@ export default function TilesetPicker({
     const rect = imgRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    const scaleX = imgRef.current.naturalWidth / rect.width;
-    const scaleY = imgRef.current.naturalHeight / rect.height;
+    const scaleX = natural.w / rect.width;
+    const scaleY = natural.h / rect.height;
     const nativeX = Math.floor(x * scaleX);
     const nativeY = Math.floor(y * scaleY);
-    const col = Math.floor(nativeX / ts.tilewidth);
-    const row = Math.floor(nativeY / ts.tileheight);
+    const offX = ts.offsetX ?? ts.margin ?? 0;
+    const offY = ts.offsetY ?? ts.margin ?? 0;
+    const spacing = ts.spacing ?? 0;
+    const col = Math.floor((nativeX - offX) / (ts.tilewidth + spacing));
+    const row = Math.floor((nativeY - offY) / (ts.tileheight + spacing));
 
-    if (col < 0 || row < 0 || col >= ts.columns || nativeY >= imgRef.current.naturalHeight) return;
+    if (col < 0 || row < 0 || col >= ts.columns || nativeY >= natural.h) return;
 
     const spanW = 1;
     const spanH = 1;
@@ -826,8 +1311,8 @@ export default function TilesetPicker({
         ctx.imageSmoothingEnabled = false;
         ctx.drawImage(
           imgRef.current,
-          col * ts.tilewidth,
-          row * ts.tileheight,
+          offX + col * (ts.tilewidth + spacing),
+          offY + row * (ts.tileheight + spacing),
           ts.tilewidth * spanW,
           ts.tileheight * spanH,
           0,
@@ -838,7 +1323,7 @@ export default function TilesetPicker({
         dataUrl = canvas.toDataURL('image/png');
       }
     } catch {
-      /* cross-origin canvas fallback */
+      /* fallback */
     }
 
     soundSynth?.playUiClick?.();
@@ -858,7 +1343,7 @@ export default function TilesetPicker({
 
   const handleSaveAsTileDefinition = async (def: Partial<TileDefinition>) => {
     if (!def.name || !def.sourceSheet) {
-      showToast('Name and source sheet are required.');
+      showToast('Tile name and source sheet are required.');
       return;
     }
     try {
@@ -889,14 +1374,14 @@ export default function TilesetPicker({
         setPendingDef(null);
         void loadTileLibrary();
       }
-    } catch (error) {
-      showToast('Failed to save Tile Definition.');
+    } catch (error: any) {
+      showToast(error?.message || 'Failed to save Tile Definition.');
     }
   };
 
   return (
     <div className="flex flex-col gap-2 font-mono select-none">
-      {/* ─── PALETTE VS LIBRARY TAB SWITCHER ─── */}
+      {/* ─── TAB SWITCHER ─── */}
       <div className="flex items-center gap-1 bg-black/60 p-1 rounded-xl border border-amber-500/20">
         <button
           type="button"
@@ -934,7 +1419,7 @@ export default function TilesetPicker({
       {activeTab === 'palette' ? (
         <>
           <p className="text-[10px] leading-relaxed text-slate-400">
-            Left-click or drag on the sheet to select brush. <span className="text-amber-300 font-bold">Right-click any tile</span> for layer fill, Tile Definition export, & collision flags.
+            Click or drag across tiles to select a brush. <span className="text-amber-300 font-bold">Right-click any tile</span> for layer fill, options, and collision tags.
           </p>
 
           {/* TILE LAYERS */}
@@ -956,6 +1441,32 @@ export default function TilesetPicker({
                 Layer
               </button>
             </div>
+
+            {/* Logic / Collision Layer Quick Switch */}
+            <div
+              onClick={() => {
+                soundSynth?.playUiClick?.();
+                onLayerChange(-1);
+              }}
+              className={`group flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer border ${
+                activeLayerIdx === -1
+                  ? 'bg-rose-950/40 text-rose-200 border-rose-500/50 font-bold'
+                  : 'bg-[#0b1320] text-slate-400 hover:bg-white/5 border-transparent'
+              }`}
+              title="Switch to Logic Mode & Open Logic Painter"
+            >
+              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                <Shield className="w-3.5 h-3.5 text-rose-400" />
+                <span className="text-xs truncate">Logic Layer (−1)</span>
+                {activeLayerIdx === -1 && (
+                  <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 flex-shrink-0">
+                    ACTIVE
+                  </span>
+                )}
+              </div>
+              <span className="text-[9px] text-slate-500 font-mono">Open Logic Painter</span>
+            </div>
+
             {tileLayers.map((layer, idx) => (
               <div
                 key={idx}
@@ -981,7 +1492,7 @@ export default function TilesetPicker({
                   {onClearLayer && (
                     <button
                       type="button"
-                      title={`Clear all tiles on L${idx}`}
+                      title={`Clear all tiles on Layer ${idx}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         onClearLayer(idx);
@@ -994,7 +1505,7 @@ export default function TilesetPicker({
                   {idx > 0 && onDeleteLayer && (
                     <button
                       type="button"
-                      title={`Delete L${idx}`}
+                      title={`Delete Layer ${idx}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         onDeleteLayer(idx);
@@ -1009,7 +1520,7 @@ export default function TilesetPicker({
             ))}
           </div>
 
-          {/* ACTIVE TILESET HEADER & CONTROLS */}
+          {/* ACTIVE TILESET HEADER & SELECTION */}
           <div className="flex flex-col gap-1 bg-black/60 p-2 rounded-xl border border-amber-500/20">
             <div className="flex items-center justify-between mb-1">
               <label className="text-[10px] font-bold text-amber-400/80 flex items-center gap-1.5">
@@ -1034,7 +1545,7 @@ export default function TilesetPicker({
                       type="button"
                       onClick={() => setIsSettingsModalOpen(true)}
                       className="text-[10px] text-slate-400 hover:text-white hover:bg-slate-700/50 p-1 rounded transition cursor-pointer"
-                      title="Tileset Settings (Resize grid)"
+                      title="Tileset Dimensions & Properties"
                     >
                       <Settings className="w-3 h-3" />
                     </button>
@@ -1051,13 +1562,12 @@ export default function TilesetPicker({
               </div>
             </div>
 
-            {/* Quick Search */}
             {tilesets.length > 3 && (
               <div className="relative mb-1">
                 <Search className="w-3 h-3 absolute left-2 top-2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search tilesets in map..."
+                  placeholder="Search tilesets..."
                   value={tilesetSearch}
                   onChange={(e) => setTilesetSearch(e.target.value)}
                   className="w-full bg-[#050b14] border border-slate-700 rounded-lg pl-6 pr-2 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-amber-400"
@@ -1079,13 +1589,13 @@ export default function TilesetPicker({
               >
                 {filteredTilesets.map(({ t, originalIdx }) => (
                   <option key={originalIdx} value={originalIdx}>
-                    {t.imageSource} (GID {t.firstgid}+)
+                    {t.imageSource} (ID {t.firstgid}+)
                   </option>
                 ))}
               </select>
             ) : (
               <div className="text-[11px] text-amber-300/70 italic px-2 py-1.5 bg-black/40 border border-amber-500/20 rounded-lg flex items-center justify-between">
-                <span>{tilesets.length === 0 ? 'No tilesets in active map' : 'No matching tilesets'}</span>
+                <span>{tilesets.length === 0 ? 'No tilesets in map' : 'No matching tilesets'}</span>
                 {tilesets.length === 0 && (
                   <button
                     type="button"
@@ -1097,11 +1607,9 @@ export default function TilesetPicker({
                 )}
               </div>
             )}
-
-
           </div>
 
-          {/* MODE SELECTOR (GRID SNAPPING vs FREEFORM SLICER) */}
+          {/* MODE SELECTOR (GRID MODE vs FREEFORM CROP) */}
           {ts && !imgError && natural.w > 0 && (
             <div className="flex items-center justify-between gap-1 bg-black/80 p-1.5 rounded-xl border border-amber-500/20 text-[10px] mt-1">
               <div className="flex items-center gap-1 bg-black/60 p-0.5 rounded-lg border border-white/5">
@@ -1119,7 +1627,7 @@ export default function TilesetPicker({
                   }`}
                 >
                   <Grid className="w-3 h-3" />
-                  <span>Grid Snap</span>
+                  <span>Grid Mode</span>
                 </button>
                 <button
                   type="button"
@@ -1135,12 +1643,12 @@ export default function TilesetPicker({
                   }`}
                 >
                   <Scissors className="w-3 h-3" />
-                  <span>Visual Slicer</span>
+                  <span>Freeform Crop</span>
                 </button>
               </div>
 
               <div className="flex items-center gap-1.5">
-                {/* Calibrate Origin Button (in Grid Mode) */}
+                {/* Align Grid Origin Button */}
                 {selectionMode === 'grid' && (
                   <button
                     type="button"
@@ -1148,7 +1656,7 @@ export default function TilesetPicker({
                       soundSynth?.playUiClick?.();
                       setIsCalibratingOrigin((prev) => !prev);
                       if (!isCalibratingOrigin) {
-                        showToast('Click top-left corner of any tile/swatch on the image to align origin.');
+                        showToast('Click top-left corner of any tile on the sheet to align grid.');
                       }
                     }}
                     className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold transition cursor-pointer ${
@@ -1156,10 +1664,10 @@ export default function TilesetPicker({
                         ? 'bg-red-500 text-white animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.8)]'
                         : 'bg-white/5 text-amber-300 hover:bg-white/10 border border-amber-500/30'
                     }`}
-                    title="Click top-left of first tile to auto-align grid offset"
+                    title="Click top-left of first tile to align grid position"
                   >
                     <Target className="w-3 h-3" />
-                    <span>{isCalibratingOrigin ? 'Click Sheet...' : '🎯 Origin'}</span>
+                    <span>{isCalibratingOrigin ? 'Click Sheet...' : 'Align Grid'}</span>
                   </button>
                 )}
 
@@ -1175,10 +1683,10 @@ export default function TilesetPicker({
                       ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_8px_rgba(6,182,212,0.3)]'
                       : 'bg-white/5 text-slate-400 hover:text-slate-200 border border-white/10'
                   }`}
-                  title="Toggle visible grid overlay on tileset sheet"
+                  title="Toggle visible grid overlay"
                 >
                   <Grid className="w-3 h-3" />
-                  <span>{showGridOverlay ? 'Grid' : 'Off'}</span>
+                  <span>{showGridOverlay ? 'Grid On' : 'Grid Off'}</span>
                 </button>
 
                 {/* Zoom Steppers */}
@@ -1209,55 +1717,215 @@ export default function TilesetPicker({
                     +
                   </button>
                 </div>
-
-                {/* Settings Modal Toggle */}
-                <button
-                  type="button"
-                  onClick={() => setIsSettingsModalOpen(true)}
-                  className="p-1 rounded bg-black/40 hover:bg-black/60 text-slate-400 hover:text-amber-300 border border-slate-700/50 cursor-pointer"
-                  title="Tileset Dimensions & Properties"
-                >
-                  <Settings className="w-3.5 h-3.5" />
-                </button>
               </div>
             </div>
           )}
 
-          {/* GRID SIZE QUICK BAR (when in grid mode) */}
+          {/* ─── GRID ALIGNMENT & OFFSET CONTROLS ─── */}
+          {ts && natural.w > 0 && selectionMode === 'grid' && (
+            <div className="flex flex-col gap-1.5 bg-black/60 p-2 rounded-xl border border-amber-500/20 text-xs font-mono mt-0.5">
+              <div className="flex items-center justify-between">
+                <span className="text-amber-400 font-bold text-[10px] flex items-center gap-1.5">
+                  <Sliders className="w-3.5 h-3.5 text-amber-400" />
+                  GRID ALIGNMENT & OFFSETS
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundSynth?.playUiClick?.();
+                    const cols = Math.max(1, Math.floor(natural.w / ts.tilewidth));
+                    handleUpdateTilesetSettings({ offsetX: 0, offsetY: 0, spacing: 0, columns: cols });
+                    showToast('Reset grid alignment to 0,0');
+                  }}
+                  className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 flex items-center gap-1"
+                >
+                  <RotateCcw className="w-2.5 h-2.5" /> Reset
+                </button>
+              </div>
+
+              {/* Offset X & Offset Y Controls */}
+              <div className="grid grid-cols-2 gap-2 text-[10px]">
+                <div className="flex items-center justify-between bg-black/40 px-2 py-1 rounded-lg border border-slate-800">
+                  <span className="text-slate-400">Offset X:</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = Math.max(0, (ts.offsetX ?? 0) - 1);
+                        handleUpdateTilesetSettings({ offsetX: next });
+                      }}
+                      className="w-5 h-5 flex items-center justify-center bg-white/5 hover:bg-white/15 rounded text-slate-300 font-bold"
+                    >
+                      -
+                    </button>
+                    <span className="w-8 text-center font-bold text-amber-300 font-mono">{ts.offsetX ?? 0}px</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = (ts.offsetX ?? 0) + 1;
+                        handleUpdateTilesetSettings({ offsetX: next });
+                      }}
+                      className="w-5 h-5 flex items-center justify-center bg-white/5 hover:bg-white/15 rounded text-slate-300 font-bold"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between bg-black/40 px-2 py-1 rounded-lg border border-slate-800">
+                  <span className="text-slate-400">Offset Y:</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = Math.max(0, (ts.offsetY ?? 0) - 1);
+                        handleUpdateTilesetSettings({ offsetY: next });
+                      }}
+                      className="w-5 h-5 flex items-center justify-center bg-white/5 hover:bg-white/15 rounded text-slate-300 font-bold"
+                    >
+                      -
+                    </button>
+                    <span className="w-8 text-center font-bold text-amber-300 font-mono">{ts.offsetY ?? 0}px</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = (ts.offsetY ?? 0) + 1;
+                        handleUpdateTilesetSettings({ offsetY: next });
+                      }}
+                      className="w-5 h-5 flex items-center justify-center bg-white/5 hover:bg-white/15 rounded text-slate-300 font-bold"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Nudge Arrows & Tile Spacing */}
+              <div className="flex items-center justify-between gap-1 text-[10px]">
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-400 text-[9px] mr-1">Nudge:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = Math.max(0, (ts.offsetX ?? 0) - 1);
+                      handleUpdateTilesetSettings({ offsetX: next });
+                    }}
+                    className="px-2 py-0.5 rounded bg-white/5 hover:bg-white/15 border border-white/10 text-slate-200"
+                    title="Nudge Left 1px"
+                  >
+                    ←
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = (ts.offsetX ?? 0) + 1;
+                      handleUpdateTilesetSettings({ offsetX: next });
+                    }}
+                    className="px-2 py-0.5 rounded bg-white/5 hover:bg-white/15 border border-white/10 text-slate-200"
+                    title="Nudge Right 1px"
+                  >
+                    →
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = Math.max(0, (ts.offsetY ?? 0) - 1);
+                      handleUpdateTilesetSettings({ offsetY: next });
+                    }}
+                    className="px-2 py-0.5 rounded bg-white/5 hover:bg-white/15 border border-white/10 text-slate-200"
+                    title="Nudge Up 1px"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = (ts.offsetY ?? 0) + 1;
+                      handleUpdateTilesetSettings({ offsetY: next });
+                    }}
+                    className="px-2 py-0.5 rounded bg-white/5 hover:bg-white/15 border border-white/10 text-slate-200"
+                    title="Nudge Down 1px"
+                  >
+                    ↓
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-400 text-[9px]">Spacing:</span>
+                  <div className="flex items-center gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = Math.max(0, (ts.spacing ?? 0) - 1);
+                        handleUpdateTilesetSettings({ spacing: next });
+                      }}
+                      className="w-4 h-4 flex items-center justify-center bg-white/5 hover:bg-white/15 rounded text-slate-300 font-bold text-[9px]"
+                    >
+                      -
+                    </button>
+                    <span className="w-6 text-center font-bold text-amber-300 font-mono text-[9px]">{ts.spacing ?? 0}px</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = (ts.spacing ?? 0) + 1;
+                        handleUpdateTilesetSettings({ spacing: next });
+                      }}
+                      className="w-4 h-4 flex items-center justify-center bg-white/5 hover:bg-white/15 rounded text-slate-300 font-bold text-[9px]"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── BRUSH SCALE / DIMENSION CHANGING BAR ─── */}
           {ts && !imgError && natural.w > 0 && selectionMode === 'grid' && (
-            <div className="flex items-center justify-between gap-1 bg-black/60 px-2 py-1 rounded-lg border border-white/5 text-[9px] mt-0.5">
+            <div className="flex items-center justify-between gap-1 bg-black/60 px-2 py-1.5 rounded-lg border border-white/5 text-[9px] mt-0.5">
               <div className="flex items-center gap-1">
-                <span className="text-slate-400 font-bold uppercase text-[8px] mr-0.5">Grid Size:</span>
-                {[16, 24, 32, 48, 64, 128].map((size) => (
+                <span className="text-slate-400 font-bold uppercase text-[8px] mr-1">Brush Scale:</span>
+                {[1, 2, 3, 4].map((scale) => {
+                  const isCurrentScale = (selection?.w === scale && selection?.h === scale) || (!selection && scale === 1);
+                  return (
+                    <button
+                      key={scale}
+                      type="button"
+                      onClick={() => handleSetBrushScale(scale, scale)}
+                      className={`px-2 py-0.5 rounded text-[9px] font-bold transition cursor-pointer ${
+                        isCurrentScale
+                          ? 'bg-amber-500 text-black shadow-sm'
+                          : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-white/10'
+                      }`}
+                      title={`Scale selection to ${scale}×${scale} tiles (${scale * ts.tilewidth}×${scale * ts.tileheight}px)`}
+                    >
+                      {scale}×{scale}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Grid Size preset quick options */}
+              <div className="flex items-center gap-1">
+                <span className="text-slate-500 text-[8px]">Tile:</span>
+                {[16, 24, 32, 48].map((size) => (
                   <button
                     key={size}
                     type="button"
                     onClick={() => {
                       soundSynth?.playUiClick?.();
-                      const offX = ts.offsetX ?? ts.margin ?? 0;
-                      const spacing = ts.spacing ?? 0;
-                      const cols = Math.max(1, Math.floor((natural.w - offX) / (size + spacing)));
-                      handleUpdateTilesetSettings({
-                        tilewidth: size,
-                        tileheight: size,
-                        columns: cols,
-                        imagewidth: natural.w,
-                        imageheight: natural.h,
-                      });
-                      showToast(`Grid: ${size}×${size}px (${cols} cols)`);
+                      handleUpdateTilesetSettings({ tilewidth: size, tileheight: size });
+                      showToast(`Tile size: ${size}×${size}px`);
                     }}
-                    className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition cursor-pointer ${
+                    className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${
                       ts.tilewidth === size && ts.tileheight === size
-                        ? 'bg-amber-500 text-black shadow-sm'
-                        : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-white/10'
+                        ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-400/40'
+                        : 'text-slate-400 hover:text-white bg-black/40'
                     }`}
                   >
-                    {size}px
+                    {size}
                   </button>
                 ))}
-              </div>
-              <div className="text-[8px] text-slate-400 font-mono">
-                Off: {ts.offsetX ?? 0},{ts.offsetY ?? 0}px
               </div>
             </div>
           )}
@@ -1267,7 +1935,7 @@ export default function TilesetPicker({
             <div className="bg-red-500/20 border border-red-500/50 rounded-lg px-2.5 py-1.5 flex items-center justify-between text-[10px] text-red-200 animate-pulse mt-1">
               <div className="flex items-center gap-1.5">
                 <Crosshair className="w-3.5 h-3.5 text-red-400 animate-spin" />
-                <span>Click the top-left corner of any tile/swatch on the image to align grid</span>
+                <span>Click the top-left corner of any tile on the sheet to align grid</span>
               </div>
               <button
                 type="button"
@@ -1279,7 +1947,7 @@ export default function TilesetPicker({
             </div>
           )}
 
-          {/* SLICER INSTRUCTIONS & FLOATING ACTION BAR */}
+          {/* CROP ACTION BAR */}
           {selectionMode === 'slicer' && slicerSelection && ts && (
             <div className="bg-fuchsia-950/50 border border-fuchsia-500/40 rounded-xl p-2 flex flex-wrap items-center justify-between gap-2 shadow-lg backdrop-blur-md mt-1">
               <div className="flex items-center gap-2">
@@ -1296,47 +1964,47 @@ export default function TilesetPicker({
                   type="button"
                   onClick={handleSlicerStamp1Tile}
                   className="px-2 py-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-[10px] font-bold flex items-center gap-1 cursor-pointer shadow transition"
-                  title="Fit & stamp into 1 single tile cell"
+                  title="Use as single tile brush"
                 >
                   <Box className="w-3 h-3" />
-                  <span>Stamp 1-Tile</span>
+                  <span>1-Tile Brush</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleSlicerStampMultiTile}
                   className="px-2 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] font-bold flex items-center gap-1 cursor-pointer shadow transition"
-                  title="Stamp full pattern footprint across multiple tiles"
+                  title="Use as multi-tile stamp"
                 >
                   <Grid className="w-3 h-3" />
-                  <span>Stamp Multi-Tile</span>
+                  <span>Multi-Tile Stamp</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleSlicerAutoPrefab}
                   className="px-2 py-1 rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-[10px] font-bold flex items-center gap-1 cursor-pointer shadow transition"
-                  title="Save as stampable prefab"
+                  title="Save as reusable stamp"
                 >
                   <Package className="w-3 h-3" />
-                  <span>Auto-Prefab</span>
+                  <span>Save as Stamp</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleSlicerSaveDefinition}
                   className="px-2 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold flex items-center gap-1 cursor-pointer shadow transition"
-                  title="Save as custom tile definition in library"
+                  title="Save tile to library"
                 >
                   <Save className="w-3 h-3" />
-                  <span>Save Def</span>
+                  <span>Save Tile</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setSlicerSelection(null)}
                   className="p-1 rounded text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
-                  title="Clear Slice"
+                  title="Clear Selection"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -1401,16 +2069,16 @@ export default function TilesetPicker({
                     className="pointer-events-none absolute inset-0 z-10"
                     style={{
                       backgroundImage: `
-                        linear-gradient(to right, rgba(255, 255, 255, 0.16) 1px, transparent 1px),
-                        linear-gradient(to bottom, rgba(255, 255, 255, 0.16) 1px, transparent 1px)
+                        linear-gradient(to right, rgba(255, 255, 255, 0.18) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(255, 255, 255, 0.18) 1px, transparent 1px)
                       `,
-                      backgroundPosition: `${((ts.offsetX ?? ts.margin ?? 0) / natural.w) * 100}% ${((ts.offsetY ?? ts.margin ?? 0) / natural.h) * 100}%`,
-                      backgroundSize: `${((ts.tilewidth + (ts.spacing ?? 0)) / natural.w) * 100}% ${((ts.tileheight + (ts.spacing ?? 0)) / natural.h) * 100}%`,
+                      backgroundPosition: `${((ts.offsetX ?? ts.margin ?? 0) * zoomLevel)}px ${((ts.offsetY ?? ts.margin ?? 0) * zoomLevel)}px`,
+                      backgroundSize: `${((ts.tilewidth + (ts.spacing ?? 0)) * zoomLevel)}px ${((ts.tileheight + (ts.spacing ?? 0)) * zoomLevel)}px`,
                     }}
                   />
                 )}
 
-                {/* FREEFORM SLICER CYBER MARQUEE */}
+                {/* FREEFORM CROP SELECTION BOX */}
                 {selectionMode === 'slicer' && slicerSelection && (
                   <div
                     className="pointer-events-none absolute border-2 border-fuchsia-400 bg-fuchsia-400/20 shadow-[0_0_20px_rgba(217,70,239,0.7)] z-30 transition-all duration-75"
@@ -1421,13 +2089,11 @@ export default function TilesetPicker({
                       height: `${((slicerSelection.y1 - slicerSelection.y0) / natural.h) * 100}%`,
                     }}
                   >
-                    {/* Corner Brackets */}
                     <div className="absolute -top-1.5 -left-1.5 w-3 h-3 border-t-2 border-l-2 border-white shadow-[0_0_8px_#d946ef]" />
                     <div className="absolute -top-1.5 -right-1.5 w-3 h-3 border-t-2 border-r-2 border-white shadow-[0_0_8px_#d946ef]" />
                     <div className="absolute -bottom-1.5 -left-1.5 w-3 h-3 border-b-2 border-l-2 border-white shadow-[0_0_8px_#d946ef]" />
                     <div className="absolute -bottom-1.5 -right-1.5 w-3 h-3 border-b-2 border-r-2 border-white shadow-[0_0_8px_#d946ef]" />
 
-                    {/* Floating HUD Badge */}
                     <div className="absolute -top-7 left-0 flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/95 border border-fuchsia-400 text-[10px] font-bold text-fuchsia-300 shadow-2xl whitespace-nowrap z-40">
                       <Scissors className="w-3 h-3 text-fuchsia-400" />
                       <span>{slicerSelection.x1 - slicerSelection.x0} × {slicerSelection.y1 - slicerSelection.y0} px</span>
@@ -1435,7 +2101,7 @@ export default function TilesetPicker({
                   </div>
                 )}
 
-                {/* ACTIVE DRAGGING CYBER MARQUEE (Grid Mode) */}
+                {/* ACTIVE DRAGGING SELECTION BOX (Grid Mode) */}
                 {selectionMode === 'grid' && hoveredTile && dragStart && (
                   <div
                     className="pointer-events-none absolute border border-amber-400 bg-amber-400/20 shadow-[0_0_16px_rgba(245,158,11,0.6)] z-30 transition-all duration-75"
@@ -1446,13 +2112,11 @@ export default function TilesetPicker({
                       height: `${hoveredTile.heightPct}%`,
                     }}
                   >
-                    {/* Glowing L-brackets */}
                     <div className="absolute -top-1 -left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-white shadow-[0_0_6px_#f59e0b]" />
                     <div className="absolute -top-1 -right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-white shadow-[0_0_6px_#f59e0b]" />
                     <div className="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-b-2 border-l-2 border-white shadow-[0_0_6px_#f59e0b]" />
                     <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-b-2 border-r-2 border-white shadow-[0_0_6px_#f59e0b]" />
 
-                    {/* Floating HUD Badge */}
                     <div className="absolute -top-6 left-0 flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/90 border border-amber-400/80 text-[9px] font-bold text-amber-300 shadow-xl whitespace-nowrap z-40">
                       <span>{hoveredTile.w} × {hoveredTile.h} Tiles</span>
                       <span className="text-slate-400 font-mono text-[8px]">({hoveredTile.w * ts.tilewidth}×{hoveredTile.h * ts.tileheight}px)</span>
@@ -1460,7 +2124,7 @@ export default function TilesetPicker({
                   </div>
                 )}
 
-                {/* PERSISTENT COMMITTED SELECTION CYBER MARQUEE (Grid Mode) */}
+                {/* COMMITTED SELECTION BOX (Grid Mode) */}
                 {selectionMode === 'grid' && selection && !dragStart && (
                   <div
                     className="pointer-events-none absolute border border-cyan-400 bg-cyan-400/15 shadow-[0_0_14px_rgba(6,182,212,0.5)] z-20 transition-all duration-75"
@@ -1470,15 +2134,13 @@ export default function TilesetPicker({
                       width: `${selection.widthPct}%`,
                       height: `${selection.heightPct}%`,
                     }}
-                    title={`Selected local ${selection.local}`}
+                    title={`Selected tile ${selection.local}`}
                   >
-                    {/* Glowing L-brackets */}
                     <div className="absolute -top-1 -left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-white shadow-[0_0_6px_#38bdf8]" />
                     <div className="absolute -top-1 -right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-white shadow-[0_0_6px_#38bdf8]" />
                     <div className="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-b-2 border-l-2 border-white shadow-[0_0_6px_#38bdf8]" />
                     <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-b-2 border-r-2 border-white shadow-[0_0_6px_#38bdf8]" />
 
-                    {/* Floating HUD Badge */}
                     <div className="absolute -top-6 left-0 flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/90 border border-cyan-400/80 text-[9px] font-bold text-cyan-300 shadow-xl whitespace-nowrap z-40">
                       <span>{selection.w} × {selection.h} Tiles</span>
                       <span className="text-slate-400 font-mono text-[8px]">({selection.w * ts.tilewidth}×{selection.h * ts.tileheight}px)</span>
@@ -1520,12 +2182,12 @@ export default function TilesetPicker({
             </div>
           )}
 
-          {/* METADATA & SOURCE COORDINATE STRIP */}
+          {/* TILE DETAILS & SOURCE COORDINATES */}
           {ts && natural.w > 0 && (
             <div className="flex flex-col gap-1 px-2 py-1.5 bg-black/50 rounded-lg border border-slate-800 text-[9px] text-slate-400">
               <div className="flex items-center justify-between">
-                <span>Source: {natural.w}×{natural.h}px ({ts.columns} cols)</span>
-                <span>GID {ts.firstgid}..{ts.firstgid + Math.floor(natural.h / ts.tileheight) * ts.columns - 1}</span>
+                <span>Source: {natural.w}×{natural.h}px ({ts.columns} columns)</span>
+                <span>IDs {ts.firstgid}..{ts.firstgid + Math.floor(natural.h / ts.tileheight) * ts.columns - 1}</span>
               </div>
               {hoveredTile && (
                 <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-amber-300">
@@ -1552,7 +2214,7 @@ export default function TilesetPicker({
                     className="text-[9px] font-bold text-amber-400 hover:text-amber-200 underline cursor-pointer flex items-center gap-1"
                   >
                     <Save className="w-2.5 h-2.5" />
-                    <span>Save as Tile Def</span>
+                    <span>Save Tile to Library</span>
                   </button>
                 </div>
               )}
@@ -1561,10 +2223,10 @@ export default function TilesetPicker({
           
           {/* ACTIVE BRUSH FOOTER */}
           <div className="flex justify-between items-center text-[10px] text-amber-200 bg-[#0b1320] border border-amber-500/20 p-2 rounded-lg">
-            <span className="font-bold">Active Brush GID:</span>
+            <span className="font-bold">Active Tile ID:</span>
             <div className="flex items-center gap-2">
               {hoveredTile && !imgError && (
-                <span className="text-[10px] text-cyan-400 font-bold">Hover: GID {hoveredTile.gid}</span>
+                <span className="text-[10px] text-cyan-400 font-bold">Hover: ID {hoveredTile.gid}</span>
               )}
               <span className="font-bold text-black bg-amber-400 px-2 py-0.5 rounded shadow">{activeBrushTileId}</span>
             </div>
@@ -1572,29 +2234,41 @@ export default function TilesetPicker({
         </>
       ) : (
         /* ─── TILE LIBRARY VIEW ─── */
-        <div className="flex flex-col gap-2">
-          {/* Search & Tag filter */}
+        <div className="flex flex-col gap-2.5">
+          {/* SEARCH & CATEGORY CHIPS */}
           <div className="relative">
             <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
             <input
               type="text"
-              placeholder="Search Tile Library..."
+              placeholder="Search tiles by name, sheet, tag..."
               value={libraryFilter}
               onChange={(e) => setLibraryFilter(e.target.value)}
-              className="w-full bg-[#050b14] border border-slate-700 rounded-lg pl-8 pr-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400"
+              className="w-full bg-[#050b14] border border-amber-500/30 rounded-lg pl-8 pr-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400"
             />
+            {libraryFilter && (
+              <button
+                type="button"
+                onClick={() => setLibraryFilter('')}
+                className="absolute right-2 top-2 text-slate-400 hover:text-white"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none text-[9px]">
-            {['ALL', 'grass', 'water', 'path', 'wall', 'solid', 'wood', 'stone'].map((tag) => (
+            {['ALL', 'terrain', 'nature', 'structures', 'grass', 'water', 'path', 'wall', 'solid'].map((tag) => (
               <button
                 key={tag}
                 type="button"
-                onClick={() => setLibraryTagFilter(tag)}
-                className={`px-2 py-0.5 rounded-full border transition-all shrink-0 cursor-pointer font-bold ${
-                  libraryTagFilter === tag
-                    ? 'bg-amber-500 text-slate-950 border-amber-400'
-                    : 'bg-black/40 text-slate-400 border-slate-800 hover:text-slate-200'
+                onClick={() => {
+                  soundSynth?.playUiClick?.();
+                  setLibraryTagFilter(tag);
+                }}
+                className={`px-2.5 py-0.5 rounded-full border transition-all shrink-0 cursor-pointer font-bold ${
+                  libraryTagFilter.toLowerCase() === tag.toLowerCase()
+                    ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm'
+                    : 'bg-black/40 text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700'
                 }`}
               >
                 {tag.toUpperCase()}
@@ -1602,56 +2276,234 @@ export default function TilesetPicker({
             ))}
           </div>
 
-          {/* Tile Definitions Grid */}
-          <div className="grid grid-cols-2 gap-2 max-h-[360px] overflow-y-auto pr-1 custom-scrollbar">
-            {tileDefinitions
-              .filter((def) => {
-                if (libraryFilter && !def.name.toLowerCase().includes(libraryFilter.toLowerCase())) return false;
-                if (libraryTagFilter !== 'ALL' && !def.tags.includes(libraryTagFilter)) return false;
-                return true;
-              })
-              .map((def) => (
-                <div
-                  key={def.id}
-                  onClick={() => {
-                    soundSynth?.playSelectSound?.();
-                    onBrushSelect(def.gid);
-                    showToast(`Selected Tile Def: ${def.name}`);
-                  }}
-                  className={`p-2 rounded-xl border transition-all cursor-pointer flex flex-col gap-1.5 ${
-                    activeBrushTileId === def.gid
-                      ? 'bg-amber-500/20 border-amber-500 shadow-md ring-1 ring-amber-400'
-                      : 'bg-[#08101d] border-slate-800 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="font-bold truncate text-amber-300">{def.name}</span>
-                    <span className="text-[8px] px-1 py-0.2 rounded bg-black/60 border border-slate-700 text-slate-400">
-                      {def.sourceWidth}×{def.sourceHeight}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 text-[9px]">
-                    <span className={`px-1.5 py-0.2 rounded font-bold ${
-                      def.collision === 'SOLID' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' :
-                      def.collision === 'WATER' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' :
-                      'bg-slate-800 text-slate-400'
-                    }`}>
-                      {def.collision}
-                    </span>
-                    <span className="text-[9px] text-slate-500 truncate">{def.material}</span>
-                  </div>
-
-                  <div className="text-[8px] text-slate-500 truncate">
-                    Src: {def.sourceSheet.split('/').pop()} [X:{def.sourceX}, Y:{def.sourceY}]
+          {/* ─── SELECTED TILE LIVE PREVIEW INSPECTOR BANNER ─── */}
+          {selectedDef && (
+            <div className="flex flex-col gap-2 p-2.5 rounded-xl bg-[#091120] border border-amber-500/40 shadow-lg relative overflow-hidden">
+              <div className="flex items-start gap-3">
+                {/* Visual Cropped Thumbnail (Zoomed) */}
+                <div className="relative group shrink-0">
+                  <TileVisualThumbnail
+                    sourceSheet={selectedDef.sourceSheet}
+                    sourceX={selectedDef.sourceX}
+                    sourceY={selectedDef.sourceY}
+                    sourceWidth={selectedDef.sourceWidth}
+                    sourceHeight={selectedDef.sourceHeight}
+                    size={64}
+                    className="border-2 border-amber-400/80 shadow-[0_0_12px_rgba(245,158,11,0.3)] group-hover:border-amber-300 transition-all"
+                  />
+                  <div className="absolute -bottom-1 -right-1 bg-black/90 border border-amber-400/60 rounded px-1 text-[8px] font-bold text-amber-300 font-mono">
+                    {selectedDef.sourceWidth}×{selectedDef.sourceHeight}
                   </div>
                 </div>
-              ))}
+
+                {/* Info and Properties */}
+                <div className="flex flex-col flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="font-bold text-xs text-amber-300 truncate" title={selectedDef.name}>
+                      {selectedDef.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteTileDefinition(selectedDef.id, e)}
+                      className="text-slate-500 hover:text-rose-400 p-0.5 rounded transition cursor-pointer"
+                      title="Delete tile from library"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 mt-1 flex-wrap text-[9px]">
+                    <span
+                      className={`px-1.5 py-0.2 rounded font-bold uppercase ${
+                        selectedDef.collision === 'SOLID'
+                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                          : selectedDef.collision === 'WATER'
+                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                          : selectedDef.collision === 'LEDGE'
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                          : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                      }`}
+                    >
+                      {selectedDef.collision}
+                    </span>
+
+                    <span className="px-1.5 py-0.2 rounded bg-black/60 border border-slate-700 text-slate-300 uppercase font-bold">
+                      {selectedDef.material || 'GRASS'}
+                    </span>
+
+                    <span className="text-[9px] text-slate-400 truncate">
+                      Sheet: {selectedDef.sourceSheet.split('/').pop()}
+                    </span>
+                  </div>
+
+                  {selectedDef.tags && selectedDef.tags.length > 0 && (
+                    <div className="flex items-center gap-1 mt-1 flex-wrap text-[8px] text-slate-400">
+                      <Tag className="w-2.5 h-2.5 text-amber-400" />
+                      {selectedDef.tags.slice(0, 4).map((t, idx) => (
+                        <span key={idx} className="bg-white/5 px-1 py-0.2 rounded">
+                          #{t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Actions for Selected Tile */}
+              <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-800 text-[10px]">
+                <button
+                  type="button"
+                  onClick={() => handleSelectTileDefinition(selectedDef)}
+                  className="flex items-center justify-center gap-1 py-1 px-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow transition cursor-pointer"
+                >
+                  <Brush className="w-3 h-3" />
+                  <span>Use Brush</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundSynth?.playActionSound?.();
+                    onFillLayer?.(activeLayerIdx, selectedDef.gid);
+                    showToast(`Filled Layer ${activeLayerIdx} with ${selectedDef.name}`);
+                  }}
+                  className="flex items-center justify-center gap-1 py-1 px-2 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 font-bold transition cursor-pointer"
+                  title="Fill Active Layer"
+                >
+                  <PaintBucket className="w-3 h-3" />
+                  <span>Fill Layer</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundSynth?.playActionSound?.();
+                    onSetDefaultGroundGid?.(selectedDef.gid);
+                    showToast(`Set as Ground: ${selectedDef.name}`);
+                  }}
+                  className="flex items-center justify-center gap-1 py-1 px-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 font-bold transition cursor-pointer"
+                  title="Set as Default Ground GID"
+                >
+                  <Sparkles className="w-3 h-3 text-amber-400" />
+                  <span>Set Ground</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ─── TILE DEFINITIONS GRID ─── */}
+          <div className="grid grid-cols-2 gap-2 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar">
+            {tileDefinitions
+              .filter((def) => {
+                if (libraryFilter && !def.name.toLowerCase().includes(libraryFilter.toLowerCase()) && !def.sourceSheet.toLowerCase().includes(libraryFilter.toLowerCase())) {
+                  return false;
+                }
+                if (
+                  libraryTagFilter !== 'ALL' &&
+                  !def.tags.some((t) => t.toLowerCase() === libraryTagFilter.toLowerCase()) &&
+                  def.collision.toLowerCase() !== libraryTagFilter.toLowerCase() &&
+                  def.material.toLowerCase() !== libraryTagFilter.toLowerCase()
+                ) {
+                  return false;
+                }
+                return true;
+              })
+              .map((def) => {
+                const isSelected = (selectedTileDefId === def.id) || (!selectedTileDefId && selectedDef?.id === def.id);
+                return (
+                  <div
+                    key={def.id}
+                    onClick={() => handleSelectTileDefinition(def)}
+                    className={`group p-2 rounded-xl border transition-all cursor-pointer flex flex-col gap-1.5 relative overflow-hidden ${
+                      isSelected
+                        ? 'bg-amber-500/20 border-amber-400 shadow-md ring-1 ring-amber-400'
+                        : 'bg-[#08101d] border-slate-800 hover:border-amber-500/40 hover:bg-[#0b1626] text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <TileVisualThumbnail
+                        sourceSheet={def.sourceSheet}
+                        sourceX={def.sourceX}
+                        sourceY={def.sourceY}
+                        sourceWidth={def.sourceWidth}
+                        sourceHeight={def.sourceHeight}
+                        size={40}
+                        className={isSelected ? 'border-amber-400' : 'border-slate-700'}
+                      />
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="font-bold text-[10px] truncate text-amber-200 group-hover:text-amber-300" title={def.name}>
+                          {def.name}
+                        </span>
+                        <span className="text-[8px] text-slate-400 truncate">
+                          {def.sourceWidth}×{def.sourceHeight}px • {def.material}
+                        </span>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <span
+                            className={`px-1 py-0.2 rounded text-[7px] font-bold ${
+                              def.collision === 'SOLID'
+                                ? 'bg-rose-500/20 text-rose-300'
+                                : def.collision === 'WATER'
+                                ? 'bg-cyan-500/20 text-cyan-300'
+                                : 'bg-slate-800 text-slate-400'
+                            }`}
+                          >
+                            {def.collision}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
           </div>
 
-          {tileDefinitions.length === 0 && (
-            <div className="p-4 rounded-xl border border-slate-800 bg-black/40 text-center text-slate-500 text-xs">
-              No saved tile definitions in library. Select a region in the Tileset Palette and click &quot;Save as Tile Def&quot;.
+          {/* EMPTY STATE & GENERATOR TOOLBAR */}
+          {tileDefinitions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-800 bg-black/40 text-center gap-2">
+              <BookOpen className="w-6 h-6 text-amber-400/60" />
+              <p className="text-xs text-slate-300 font-bold">Tile Library is Empty</p>
+              <p className="text-[10px] text-slate-400 max-w-xs leading-relaxed">
+                Load starter terrain presets or extract tiles from your active tileset sheet.
+              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <button
+                  type="button"
+                  onClick={handleLoadStarterPresets}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500 text-black font-bold text-xs shadow hover:bg-amber-400 cursor-pointer"
+                >
+                  Load Starter Presets
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExtractTilesFromActiveSheet}
+                  className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-amber-300 cursor-pointer"
+                >
+                  Extract From Sheet
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between pt-1 border-t border-slate-800 text-[10px] text-slate-400">
+              <span>{tileDefinitions.length} Saved Tiles</span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleLoadStarterPresets}
+                  className="text-amber-400 hover:text-amber-300 font-bold underline cursor-pointer"
+                  title="Add standard starter presets to library"
+                >
+                  + Presets
+                </button>
+                <span>•</span>
+                <button
+                  type="button"
+                  onClick={handleExtractTilesFromActiveSheet}
+                  className="text-amber-400 hover:text-amber-300 font-bold underline cursor-pointer"
+                  title="Auto-extract top tiles from active tileset sheet"
+                >
+                  + Extract Sheet
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -1675,7 +2527,6 @@ export default function TilesetPicker({
               </button>
             </div>
 
-            {/* Search filter in catalog */}
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
               <input
@@ -1687,14 +2538,13 @@ export default function TilesetPicker({
               />
             </div>
 
-            {/* Asset List Grid */}
             <div className="flex-1 overflow-y-auto space-y-2 max-h-[350px] pr-1 custom-scrollbar">
               {loadingAssets ? (
-                <div className="text-center py-8 text-xs text-slate-500">Querying asset manager...</div>
+                <div className="text-center py-8 text-xs text-slate-500">Searching assets...</div>
               ) : availableTilesetAssets.length === 0 ? (
                 <div className="text-center py-8 text-xs text-slate-400 space-y-2">
                   <p>No tileset assets match your search.</p>
-                  <p className="text-[10px] text-slate-500">Upload new tilesets in Asset Manager or install bundled packs in Setup.</p>
+                  <p className="text-[10px] text-slate-500">Upload new tilesets in Asset Manager.</p>
                 </div>
               ) : (
                 availableTilesetAssets.map((asset) => {
@@ -1746,7 +2596,7 @@ export default function TilesetPicker({
             </div>
 
             <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px] text-slate-400">
-              <span>{availableTilesetAssets.length} tilesets available in library</span>
+              <span>{availableTilesetAssets.length} tilesets available</span>
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
@@ -1779,7 +2629,7 @@ export default function TilesetPicker({
 
             <div className="space-y-4 text-xs font-mono">
               <div>
-                <label className="block text-slate-400 mb-2 font-bold uppercase text-[10px]">Quick Grid Presets</label>
+                <label className="block text-slate-400 mb-2 font-bold uppercase text-[10px]">Tile Size Presets</label>
                 <div className="grid grid-cols-4 gap-2">
                   {[16, 32, 64, 128].map((size) => (
                     <button
@@ -1787,9 +2637,8 @@ export default function TilesetPicker({
                       type="button"
                       onClick={() => {
                         soundSynth?.playUiClick?.();
-                        const cols = Math.max(1, Math.floor(natural.w / size));
-                        handleUpdateTilesetSettings({ tilewidth: size, tileheight: size, columns: cols, imagewidth: natural.w, imageheight: natural.h });
-                        showToast(`Grid set to ${size}x${size}px`);
+                        handleUpdateTilesetSettings({ tilewidth: size, tileheight: size });
+                        showToast(`Tile size set to ${size}×${size}px`);
                       }}
                       className={`py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
                         ts.tilewidth === size && ts.tileheight === size
@@ -1804,7 +2653,7 @@ export default function TilesetPicker({
               </div>
 
               <div className="pt-2 border-t border-slate-800">
-                <label className="block text-slate-400 mb-2 font-bold uppercase text-[10px]">Custom Grid Size</label>
+                <label className="block text-slate-400 mb-2 font-bold uppercase text-[10px]">Custom Tile Dimensions</label>
                 <div className="flex items-center gap-2">
                   <div className="flex-1">
                     <span className="text-[9px] text-slate-500 uppercase mb-1 block">Width</span>
@@ -1814,12 +2663,7 @@ export default function TilesetPicker({
                       value={ts.tilewidth}
                       onChange={(e) => {
                         const val = parseInt(e.target.value) || 16;
-                        handleUpdateTilesetSettings({ 
-                          tilewidth: val,
-                          columns: Math.max(1, Math.floor(natural.w / val)),
-                          imagewidth: natural.w,
-                          imageheight: natural.h
-                        });
+                        handleUpdateTilesetSettings({ tilewidth: val });
                       }}
                       className="w-full bg-black/60 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500"
                     />
@@ -1854,7 +2698,7 @@ export default function TilesetPicker({
                   className="w-full bg-black/60 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500"
                 />
                 <p className="text-[10px] text-slate-500 mt-1">
-                  Adjusting width auto-calculates columns, but you can override it here if the image has margins.
+                  Adjusting width auto-calculates columns, but you can override it if the image has margins.
                 </p>
               </div>
             </div>
@@ -1872,14 +2716,13 @@ export default function TilesetPicker({
         </div>
       )}
 
-      {/* TILE PALETTE RIGHT-CLICK CONTEXT MENU */}
+      {/* TILE RIGHT-CLICK CONTEXT MENU */}
       {tileContextMenu && (
         <div
           className="fixed z-[9999] bg-[#0c1424] border border-amber-500/40 rounded-xl shadow-2xl p-2 flex flex-col gap-1 min-w-[240px] text-xs font-mono text-slate-200 backdrop-blur-md animate-in fade-in zoom-in-95 duration-100"
           style={{ left: tileContextMenu.x, top: tileContextMenu.y }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header with Tile Info & Mini Preview */}
           <div className="flex items-center gap-2.5 p-2 bg-black/60 rounded-lg border border-amber-500/20 mb-1">
             {tileContextMenu.dataUrl ? (
               <img
@@ -1894,9 +2737,9 @@ export default function TilesetPicker({
               </div>
             )}
             <div className="flex flex-col min-w-0">
-              <span className="text-amber-300 font-bold text-xs">Tile GID #{tileContextMenu.gid}</span>
+              <span className="text-amber-300 font-bold text-xs">Tile ID #{tileContextMenu.gid}</span>
               <span className="text-[10px] text-slate-400 truncate">
-                Local #{tileContextMenu.localId} ({tileContextMenu.ts.tilewidth}×{tileContextMenu.ts.tileheight}px)
+                Tile #{tileContextMenu.localId} ({tileContextMenu.ts.tilewidth}×{tileContextMenu.ts.tileheight}px)
               </span>
               <span className="text-[9px] text-slate-500 truncate">
                 Row {tileContextMenu.row}, Col {tileContextMenu.col}
@@ -1904,14 +2747,13 @@ export default function TilesetPicker({
             </div>
           </div>
 
-          {/* Quick Brush Selection */}
           <button
             type="button"
             onClick={() => {
               soundSynth?.playSelectSound?.();
               onBrushSelect(tileContextMenu.gid);
               setTileContextMenu(null);
-              showToast(`Selected Tile GID #${tileContextMenu.gid} as Brush`);
+              showToast(`Selected Tile ID #${tileContextMenu.gid} as Brush`);
             }}
             className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-500/20 text-slate-200 hover:text-amber-200 text-left transition cursor-pointer"
           >
@@ -1919,7 +2761,6 @@ export default function TilesetPicker({
             <span>Select as Active Brush</span>
           </button>
 
-          {/* Fill Active Layer */}
           <button
             type="button"
             onClick={() => {
@@ -1932,10 +2773,9 @@ export default function TilesetPicker({
             className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-500/20 text-slate-200 hover:text-amber-200 text-left transition cursor-pointer"
           >
             <PaintBucket className="w-3.5 h-3.5 text-amber-400" />
-            <span>Fill Active Layer (L{activeLayerIdx})</span>
+            <span>Fill Active Layer (Layer {activeLayerIdx})</span>
           </button>
 
-          {/* Fill Entire Ground (L0) */}
           <button
             type="button"
             onClick={() => {
@@ -1948,10 +2788,9 @@ export default function TilesetPicker({
             className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-500/20 text-slate-200 hover:text-amber-200 text-left transition cursor-pointer"
           >
             <Layers className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Fill Entire Map Ground (L0)</span>
+            <span>Fill Ground Layer (Layer 0)</span>
           </button>
 
-          {/* Save as Canonical Tile Definition */}
           <button
             type="button"
             onClick={() => {
@@ -1975,10 +2814,9 @@ export default function TilesetPicker({
             className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-500/20 text-slate-200 hover:text-amber-200 text-left transition cursor-pointer"
           >
             <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-            <span>Save as Tile Definition</span>
+            <span>Save Tile to Library</span>
           </button>
 
-          {/* Download / Export Individual Tile */}
           {tileContextMenu.dataUrl && (
             <button
               type="button"
@@ -1991,50 +2829,47 @@ export default function TilesetPicker({
                 a.download = `${name}_tile_${tileContextMenu.localId}_gid${tileContextMenu.gid}.png`;
                 a.click();
                 showToast(
-                  `Exported tile as individual PNG (${tileContextMenu.ts.tilewidth}×${tileContextMenu.ts.tileheight}px)`
+                  `Exported tile as PNG (${tileContextMenu.ts.tilewidth}×${tileContextMenu.ts.tileheight}px)`
                 );
                 setTileContextMenu(null);
               }}
               className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-500/20 text-slate-200 hover:text-amber-200 text-left transition cursor-pointer"
             >
               <Download className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Export Raw PNG</span>
+              <span>Export as PNG</span>
             </button>
           )}
 
-          {/* Set Default Ground GID */}
           {onSetDefaultGroundGid && (
             <button
               type="button"
               onClick={() => {
                 soundSynth?.playActionSound?.();
                 onSetDefaultGroundGid(tileContextMenu.gid);
-                showToast(`Set GID #${tileContextMenu.gid} as Realm Default Ground`);
+                showToast(`Set ID #${tileContextMenu.gid} as Default Ground`);
                 setTileContextMenu(null);
               }}
               className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-500/20 text-slate-200 hover:text-amber-200 text-left transition cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Set as Default Ground GID</span>
+              <span>Set as Default Ground</span>
             </button>
           )}
 
-          {/* Copy Tile GID */}
           <button
             type="button"
             onClick={() => {
               soundSynth?.playUiClick?.();
               navigator.clipboard.writeText(String(tileContextMenu.gid));
-              showToast(`Copied GID #${tileContextMenu.gid} to clipboard`);
+              showToast(`Copied Tile ID #${tileContextMenu.gid} to clipboard`);
               setTileContextMenu(null);
             }}
             className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-500/20 text-slate-200 hover:text-amber-200 text-left transition cursor-pointer"
           >
             <Copy className="w-3.5 h-3.5 text-slate-400" />
-            <span>Copy Tile GID</span>
+            <span>Copy Tile ID</span>
           </button>
 
-          {/* Per-Tile Gameplay & Collision Toggles */}
           {activeLayerIdx === -1 && (
             <div className="pt-1 mt-1 border-t border-slate-800 flex flex-col gap-1">
               <button
@@ -2046,13 +2881,13 @@ export default function TilesetPicker({
                       detail: { gid: tileContextMenu.gid, isSolid: true },
                     })
                   );
-                  showToast(`Marked GID #${tileContextMenu.gid} as Solid Collision`);
+                  showToast(`Marked Tile ID #${tileContextMenu.gid} as Solid`);
                   setTileContextMenu(null);
                 }}
                 className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-rose-500/20 text-slate-200 hover:text-rose-300 text-left transition cursor-pointer text-[11px]"
               >
                 <Shield className="w-3.5 h-3.5 text-rose-400" />
-                <span>Mark as Solid Collision</span>
+                <span>Make Solid (Blocking)</span>
               </button>
               <button
                 type="button"
@@ -2063,27 +2898,27 @@ export default function TilesetPicker({
                       detail: { gid: tileContextMenu.gid, isWater: true },
                     })
                   );
-                  showToast(`Marked GID #${tileContextMenu.gid} as Swimmable Water`);
+                  showToast(`Marked Tile ID #${tileContextMenu.gid} as Water`);
                   setTileContextMenu(null);
                 }}
                 className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-sky-500/20 text-slate-200 hover:text-sky-300 text-left transition cursor-pointer text-[11px]"
               >
                 <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-                <span>Mark as Swimmable Water</span>
+                <span>Make Swimmable Water</span>
               </button>
             </div>
           )}
         </div>
       )}
 
-      {/* SAVE AS TILE DEFINITION MODAL */}
+      {/* SAVE TILE DEFINITION MODAL */}
       {isSaveDefModalOpen && pendingDef && (
         <div className="fixed inset-0 z-[450] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
           <div className="w-full max-w-md rounded-2xl border border-amber-500/40 bg-[#050b14] p-5 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2 text-amber-300 font-bold text-sm">
                 <BookOpen className="w-4 h-4 text-amber-400" />
-                <span>Save Tile Definition to Library</span>
+                <span>Save Tile to Library</span>
               </div>
               <button
                 type="button"
@@ -2095,8 +2930,34 @@ export default function TilesetPicker({
             </div>
 
             <div className="space-y-3 text-xs font-mono">
+              {/* Visual Thumbnail & Source Info */}
+              <div className="flex items-center gap-3 p-2.5 rounded-xl bg-black/60 border border-amber-500/30">
+                {pendingDef.sourceSheet && (
+                  <TileVisualThumbnail
+                    sourceSheet={pendingDef.sourceSheet}
+                    sourceX={pendingDef.sourceX || 0}
+                    sourceY={pendingDef.sourceY || 0}
+                    sourceWidth={pendingDef.sourceWidth || 16}
+                    sourceHeight={pendingDef.sourceHeight || 16}
+                    size={56}
+                    className="border border-amber-400/60 shadow"
+                  />
+                )}
+                <div className="flex flex-col min-w-0 text-[10px]">
+                  <span className="text-amber-300 font-bold truncate">
+                    Sheet: {pendingDef.sourceSheet?.split('/').pop()}
+                  </span>
+                  <span className="text-slate-400">
+                    Area: X:{pendingDef.sourceX} Y:{pendingDef.sourceY} ({pendingDef.sourceWidth}×{pendingDef.sourceHeight}px)
+                  </span>
+                  <span className="text-slate-500 text-[9px]">
+                    GID #{pendingDef.gid || 1}
+                  </span>
+                </div>
+              </div>
+
               <div>
-                <label className="block text-slate-400 mb-1 text-[10px] uppercase font-bold">Tile Definition Name</label>
+                <label className="block text-slate-400 mb-1 text-[10px] uppercase font-bold">Tile Name</label>
                 <input
                   type="text"
                   value={pendingDef.name || ''}
@@ -2104,19 +2965,6 @@ export default function TilesetPicker({
                   placeholder="e.g. Forest Grass Tile"
                   className="w-full bg-black/60 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500"
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-[10px]">
-                <div className="p-2 rounded-lg bg-black/40 border border-slate-800">
-                  <span className="text-slate-500 block">Source Sheet:</span>
-                  <span className="text-slate-200 font-bold truncate block">{pendingDef.sourceSheet?.split('/').pop()}</span>
-                </div>
-                <div className="p-2 rounded-lg bg-black/40 border border-slate-800">
-                  <span className="text-slate-500 block">Source Rect:</span>
-                  <span className="text-amber-300 font-bold block">
-                    X:{pendingDef.sourceX} Y:{pendingDef.sourceY} ({pendingDef.sourceWidth}×{pendingDef.sourceHeight}px)
-                  </span>
-                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -2127,10 +2975,10 @@ export default function TilesetPicker({
                     onChange={(e) => setPendingDef({ ...pendingDef, collision: e.target.value as any })}
                     className="w-full bg-black/60 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500"
                   >
-                    <option value="NONE">None (Passable)</option>
-                    <option value="SOLID">Solid (Obstacle)</option>
+                    <option value="NONE">Passable (Walk Through)</option>
+                    <option value="SOLID">Solid (Blocking)</option>
                     <option value="WATER">Water (Swimmable)</option>
-                    <option value="LEDGE">Ledge</option>
+                    <option value="LEDGE">Ledge (Jump Down)</option>
                     <option value="CLIFF">Cliff</option>
                   </select>
                 </div>
@@ -2192,4 +3040,3 @@ export default function TilesetPicker({
     </div>
   );
 }
-

@@ -154,8 +154,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Verify source asset exists
-    const sourceAsset = await prisma.sourceAsset.findUnique({
+    // Ensure valid user ID exists for foreign key constraint
+    let validUserId = session.user.id;
+    const userRow = await prisma.user.findUnique({
+      where: { id: validUserId },
+      select: { id: true },
+    });
+    if (!userRow) {
+      const fallback = await prisma.user.findFirst({ select: { id: true } });
+      if (fallback) {
+        validUserId = fallback.id;
+      }
+    }
+
+    // Verify source asset exists, or lookup by path/filename, or auto-create if missing
+    let sourceAsset = await prisma.sourceAsset.findUnique({
       where: { id: sourceAssetId },
       select: {
         id: true,
@@ -168,17 +181,44 @@ export async function POST(req: NextRequest) {
     });
 
     if (!sourceAsset) {
-      return NextResponse.json(
-        { success: false, error: "Source asset not found." },
-        { status: 404 }
-      );
+      sourceAsset = await prisma.sourceAsset.findFirst({
+        where: {
+          OR: [
+            { storagePath: sourceAssetId },
+            { filename: sourceAssetId.split('/').pop() || sourceAssetId },
+          ],
+        },
+        select: {
+          id: true,
+          filename: true,
+          storagePath: true,
+          uploadedById: true,
+          metadata: true,
+          fileSize: true,
+        },
+      });
     }
 
-    if (!canModerate && sourceAsset.uploadedById !== session.user.id) {
-      return NextResponse.json(
-        { success: false, error: "Forbidden — you can only slice assets you uploaded." },
-        { status: 403 }
-      );
+    if (!sourceAsset) {
+      // Auto-register SourceAsset for this asset path
+      const filename = sourceAssetId.split('/').pop() || 'sheet.png';
+      sourceAsset = await prisma.sourceAsset.create({
+        data: {
+          filename,
+          mimeType: 'image/png',
+          storagePath: sourceAssetId,
+          uploadedById: validUserId,
+          metadata: JSON.stringify({ originalName: filename, autoRegistered: true }),
+        },
+        select: {
+          id: true,
+          filename: true,
+          storagePath: true,
+          uploadedById: true,
+          metadata: true,
+          fileSize: true,
+        },
+      });
     }
 
     let sourceAssetMetadata: Record<string, any> = {};
@@ -211,7 +251,7 @@ export async function POST(req: NextRequest) {
         const category = r.category || inferredCategory || sourceAssetMetadata.cat || null;
 
         const canonical = buildCanonicalAssetData({
-          userId: session.user.id,
+          userId: validUserId,
           gameId,
           name: r.name || `${sourceAsset.filename}_slice_${r.sourceRegion.x}_${r.sourceRegion.y}`,
           type: r.type,

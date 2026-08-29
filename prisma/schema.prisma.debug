@@ -749,8 +749,8 @@ model MapPrefab {
   category   String   @default("decor")
   width      Int
   height     Int
-  visualData String // JSON array of tiles: [{ layerOffset, r, c, tileId }]
-  logicData  String // JSON array of logic tags: [{ r, c, tileId }]
+  visualData String   @db.LongText // JSON array of tiles: [{ layerOffset, r, c, tileId }]
+  logicData  String   @db.LongText // JSON array of logic tags: [{ r, c, tileId }]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   

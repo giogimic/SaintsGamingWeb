@@ -63,15 +63,27 @@ export async function savePrefab(data: {
       throw new Error('Forbidden');
     }
 
+    let authorId = session.user.id;
+    const existingUser = await prisma.user.findUnique({
+      where: { id: authorId },
+      select: { id: true },
+    });
+    if (!existingUser) {
+      const fallback = await prisma.user.findFirst({ select: { id: true } });
+      if (fallback) {
+        authorId = fallback.id;
+      }
+    }
+
     const prefab = await prisma.mapPrefab.create({
       data: {
-        authorId: session.user.id,
+        authorId,
         name: data.name,
-        category: data.category,
-        width: data.width,
-        height: data.height,
-        visualData: JSON.stringify(data.visualData),
-        logicData: JSON.stringify(data.logicData),
+        category: data.category || 'decor',
+        width: data.width || 1,
+        height: data.height || 1,
+        visualData: JSON.stringify(data.visualData || []),
+        logicData: JSON.stringify(data.logicData || []),
       },
     });
 

@@ -153,7 +153,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
   };
 
   const isLogic = activeLayerIdx === -1;
-  const layerName = isLogic ? 'Logic (−1)' : `Layer ${activeLayerIdx}`;
+  const layerName = isLogic ? 'Collision Layer' : `Layer ${activeLayerIdx}`;
   const logicMeta = isLogic
     ? logicTiles[activeLogicTileId] || LOGIC_COMPONENT_PRESETS.find((p) => p.paintTileId === activeLogicTileId)
     : null;
@@ -254,7 +254,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
               onClick={async () => {
                 soundSynth?.playUiClick?.();
                 if (!activeBrushPattern || activeBrushPattern.w * activeBrushPattern.h <= 1) {
-                  showToast('Select a larger pattern in the Tileset first to auto-prefab.');
+                  showToast('Select a larger pattern in the Tileset first to save as a stamp.');
                   return;
                 }
                 
@@ -273,7 +273,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
                   return;
                 }
                 
-                const prefabName = `Auto-Prefab (${activeBrushPattern.w}x${activeBrushPattern.h})`;
+                const prefabName = `Custom Stamp (${activeBrushPattern.w}x${activeBrushPattern.h})`;
                 const res = await savePrefab({
                   name: prefabName,
                   category: 'decor',
@@ -284,7 +284,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
                 });
 
                 if (res.success) {
-                  showToast(`Auto-Prefab saved: ${prefabName}`);
+                  showToast(`Saved stamp: ${prefabName}`);
                   const listRes = await listPrefabs();
                   if (listRes.success && listRes.data) {
                     setPrefabs(listRes.data);
@@ -296,13 +296,13 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
                   setBrushMode('prefab');
                   openPanel('prefab');
                 } else {
-                  showToast(`Auto-Prefab failed: ${res.error}`);
+                  showToast(`Failed to save stamp: ${res.error}`);
                 }
               }}
               className="px-2 py-1 rounded transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
-              title="Auto-Prefab (Save selection as a stampable object)"
+              title="Save selection as a reusable stamp"
             >
-              TO PREFAB
+              SAVE STAMP
             </button>
             <button
               type="button"
@@ -322,7 +322,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
           </div>
         )}
 
-        {/* Stamp Mode Toggle: Full Multi-Tile Footprint vs 1-Tile Fit */}
+        {/* Stamp Mode Toggle: Multi-Tile Size vs 1-Tile */}
         {brushMode === 'paint' && activeBrushPattern && activeBrushPattern.w * activeBrushPattern.h > 1 && (
           <div className="flex items-center gap-0.5 bg-background/50 border border-border/60 rounded-lg p-0.5 text-[9px] font-bold">
             <button
@@ -330,7 +330,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
               onClick={() => {
                 soundSynth?.playUiClick?.();
                 setPrefabStampMode('footprint');
-                showToast(`Stamp: Full Footprint (${activeBrushPattern.w}×${activeBrushPattern.h})`);
+                showToast(`Stamp Size: ${activeBrushPattern.w}×${activeBrushPattern.h} Tiles`);
               }}
               className={`px-2 py-1 rounded transition-colors cursor-pointer ${
                 prefabStampMode === 'footprint'
@@ -339,23 +339,23 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
               }`}
               title="Stamp full pattern footprint across multiple tiles"
             >
-              FOOTPRINT ({activeBrushPattern.w}×{activeBrushPattern.h})
+              STAMP ({activeBrushPattern.w}×{activeBrushPattern.h})
             </button>
             <button
               type="button"
               onClick={() => {
                 soundSynth?.playUiClick?.();
                 setPrefabStampMode('1tile');
-                showToast('Stamp: 1-Tile Fit');
+                showToast('1-Tile Brush equipped');
               }}
               className={`px-2 py-1 rounded transition-colors cursor-pointer ${
                 prefabStampMode === '1tile'
                   ? 'bg-cyan-500 text-black shadow'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
-              title="Fit / stamp into 1 single tile cell"
+              title="Fit into 1 single tile cell"
             >
-              1-TILE FIT
+              1-TILE BRUSH
             </button>
           </div>
         )}

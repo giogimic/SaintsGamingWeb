@@ -28,21 +28,21 @@ export const LogicPainterPanel: React.FC = () => {
             Tag #{activeLogicTileId}
           </span>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setActiveLayerIdx(-1);
-            setStudioMode('logic');
-          }}
-          className={`flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold transition-colors cursor-pointer ${
-            activeLayerIdx === -1
-              ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/50'
-              : 'bg-muted/40 text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Tag className="h-3 w-3" />
-          <span>{activeLayerIdx === -1 ? 'Logic (−1) Active' : 'Switch to Logic'}</span>
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveLayerIdx(0);
+            }}
+            className="flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors cursor-pointer border border-border/50"
+            title="Switch to Visual Paint Mode & Open Tile Selector"
+          >
+            <span>Visual Layer</span>
+          </button>
+          <span className="text-[10px] font-bold text-cyan-300 bg-cyan-500/20 border border-cyan-500/50 px-2 py-0.5 rounded">
+            Logic (−1)
+          </span>
+        </div>
       </div>
 
       <div className="space-y-3">

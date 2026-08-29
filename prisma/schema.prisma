@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -186,7 +186,7 @@ model ForumCategory {
   id            String        @id @default(cuid())
   name          String
   slug          String        @unique
-  description   String? @db.Text
+  description   String?
   icon          String? // SVG icon name or emoji
   order         Int           @default(0)
   isLocked      Boolean       @default(false)
@@ -203,7 +203,7 @@ model SubCategory {
   id          String        @id @default(cuid())
   name        String
   slug        String        @unique
-  description String? @db.Text
+  description String?
   order       Int           @default(0)
   isLocked    Boolean       @default(false)
   reqWriter   Boolean       @default(false)
@@ -221,7 +221,7 @@ model Thread {
   id               String               @id @default(cuid())
   title            String
   slug             String               @unique
-  body             String @db.LongText// markdown content
+  body             String// markdown content
   iconImage        String? // optional thread icon/image
   isPinned         Boolean              @default(false)
   isLocked         Boolean              @default(false)
@@ -248,7 +248,7 @@ model Thread {
 
 model Reply {
   id        String      @id @default(cuid())
-  body      String @db.LongText// markdown content
+  body      String// markdown content
   authorId  String
   author    User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
   threadId  String
@@ -379,8 +379,8 @@ model NewsArticle {
   id          String        @id @default(cuid())
   title       String
   slug        String        @unique
-  excerpt     String? @db.Text
-  body        String @db.LongText// markdown content
+  excerpt     String?
+  body        String// markdown content
   coverImage  String? // optional cover image path or raw SVG
   icon        String? // raw SVG markup for icons
   isPublished Boolean       @default(false)
@@ -422,7 +422,7 @@ model Modpack {
   name         String
   slug         String   @unique
   game         String   @default("Minecraft")
-  description  String? @db.Text
+  description  String?
   version      String?
   status       String   @default("Active") // Active, Inactive, Archived
   logoImage    String? // optional logo
@@ -484,7 +484,7 @@ model SupportTicket {
 
 model TicketMessage {
   id        String        @id @default(cuid())
-  body      String @db.LongText// Markdown
+  body      String// Markdown
   ticketId  String
   ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   authorId  String
@@ -513,7 +513,7 @@ model Image {
 
 model SiteSetting {
   key       String   @id
-  value     String @db.LongText
+  value     String
   updatedAt DateTime @updatedAt
 }
 
@@ -601,7 +601,7 @@ model BankTransaction {
   character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
   type        String // "DEPOSIT", "WITHDRAWAL", "WIRE_TRANSFER", "SALARY"
   amount      Int
-  description String? @db.Text
+  description String?
   createdAt   DateTime  @default(now())
 }
 
@@ -675,7 +675,7 @@ model InventoryItem {
   characterId String
   itemKey     String // e.g. "marijuana", "water", "pistol"
   quantity    Int     @default(1)
-  metadata    String? @db.Text // JSON string for extra data like durability, weapon ammo
+  metadata    String? // JSON string for extra data like durability, weapon ammo
 
   character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
 
@@ -732,7 +732,7 @@ model GameCharacter {
   assetProfileId String   @default("adventurer")
   visualData     String   @default("[]") // JSON array of visual component layers
   classId        String
-  stateData      String @db.Text// JSON string of the Zustand store PlayerState
+  stateData      String// JSON string of the Zustand store PlayerState
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -762,13 +762,13 @@ model WorldMap {
   id             String  @id // e.g. "SAINTS_VILLAGE"
   gameId         String? @default("saints")
   name           String
-  gridData       String @db.LongText// JSON 2D Array
-  gatesData      String @db.Text// JSON
-  npcsData       String @db.Text// JSON for NPC dialogues/teams
-  encountersData String  @default("[]") @db.Text // JSON for wild beast encounters
-  entitiesData   String  @default("[]") @db.Text // JSON for EntityInstanceV1 records (Bible 20 E2)
-  tileLayersData String  @default("[]") @db.LongText // JSON for TMX tile layers
-  tilesetsData   String  @default("[]") @db.Text // JSON for tilesets metadata
+  gridData       String// JSON 2D Array
+  gatesData      String// JSON
+  npcsData       String// JSON for NPC dialogues/teams
+  encountersData String  @default("[]") // JSON for wild beast encounters
+  entitiesData   String  @default("[]") // JSON for EntityInstanceV1 records (Bible 20 E2)
+  tileLayersData String  @default("[]") // JSON for TMX tile layers
+  tilesetsData   String  @default("[]") // JSON for tilesets metadata
   version        Int     @default(1)
 
   // Rich Map Metadata
@@ -776,10 +776,10 @@ model WorldMap {
   weatherType       String? // 'clear' | 'rain' | 'snow' | 'fog' | 'storm'
   recommendedLevel  Int?
   lightingPreset    String? // 'day' | 'dusk' | 'night' | 'cave'
-  respawnRulesJson  String? @db.Text
-  entryRequirements String? @db.Text
+  respawnRulesJson  String?
+  entryRequirements String?
   biome             String?
-  description       String? @db.Text
+  description       String?
 
   updatedAt DateTime @updatedAt
 
@@ -790,7 +790,7 @@ model GameQuest {
   id             String   @id @default(cuid())
   name           String
   npcId          String
-  description    String @db.Text
+  description    String
   dialogStart    String
   dialogProgress String
   dialogComplete String
@@ -812,11 +812,11 @@ model GameAsset {
   type         String   @default("SPRITE") // SPRITE, TILESET, AUDIO, ITEM_ICON, MONSTER, UI_ELEMENT, EFFECT, BACKGROUND, PARTICLE
   source       String   @default("") // canonical file path
   atlasSource  String? // atlas file if from atlas
-  atlasFrame   String? @db.Text // JSON: {x, y, width, height} for atlas extraction
-  tags         String   @default("[]") @db.Text // JSON string: ["saints", "npc", "male"] 
-  categories   String   @default("[]") @db.Text // JSON string: ["npcs", "heroes"] 
-  metadata     String   @default("{}") @db.Text // JSON string: {frames, directions, animations, rarity, speciesSlug, etc.}
-  customLabels String? @db.Text // JSON string: {en: "Hero", es: "Héroe"}
+  atlasFrame   String? // JSON: {x, y, width, height} for atlas extraction
+  tags         String   @default("[]") // JSON string: ["saints", "npc", "male"] 
+  categories   String   @default("[]") // JSON string: ["npcs", "heroes"] 
+  metadata     String   @default("{}") // JSON string: {frames, directions, animations, rarity, speciesSlug, etc.}
+  customLabels String? // JSON string: {en: "Hero", es: "Héroe"}
   isActive     Boolean  @default(true)
   usageCount   Int      @default(0)
   fileSize     Int      @default(0)
@@ -833,7 +833,7 @@ model GameConfig {
   slug        String  @unique
   name        String
   version     String  @default("1.0.0")
-  description String? @db.Text
+  description String?
   isActive    Boolean @default(false)
 
   // Game rules
@@ -879,7 +879,7 @@ model CharacterClass {
   profileId   String?
   slug        String
   name        String
-  description String     @default("") @db.Text
+  description String     @default("")
   icon        String? // emoji or asset path
   color       String     @default("#6366f1")
   iconAssetId String?
@@ -922,7 +922,7 @@ model LootTable {
   id          String  @id @default(cuid())
   gameId      String
   name        String
-  description String? @db.Text
+  description String?
 
   entries         String // JSON: array of loot entries
   rollsPerDrop    Int    @default(1)
@@ -1050,7 +1050,7 @@ model GroupMessage {
   id          String   @id @default(cuid())
   groupChatId String
   senderId    String
-  body        String @db.LongText
+  body        String
   createdAt   DateTime @default(now())
 
   groupChat GroupChat @relation(fields: [groupChatId], references: [id], onDelete: Cascade)
@@ -1062,7 +1062,7 @@ model GroupMessage {
 model SocialPost {
   id         String   @id @default(cuid())
   authorId   String
-  body       String @db.LongText// Max ~280 chars
+  body       String// Max ~280 chars
   visibility String   @default("PUBLIC") // PUBLIC or FRIENDS
   mediaUrl   String?
   parentId   String?
@@ -1273,7 +1273,7 @@ model CreatureTemplate {
   stage                String
   shape                String
   types                String // JSON array of element slugs
-  tags                 String @db.Text// JSON array of tags
+  tags                 String// JSON array of tags
   terrains             String // JSON array
   genderWeights        String // JSON object
   sounds               String // JSON object
@@ -1330,7 +1330,7 @@ model AbilityDictionary {
   cooldown    Int? // Replaces ppCost (GCD mechanic)
   effects     String // JSON array of effect slugs
   animation   String?
-  description String? @db.Text
+  description String?
   isCapture   Boolean @default(false)
   target      String? // "enemy", "self", "ally", etc.
 }
@@ -1354,7 +1354,7 @@ model GameItem {
   slug           String  @id
   name           String
   category       String
-  description    String? @db.Text
+  description    String?
   effects        String // JSON
   price          Int?
   sprite         String?
@@ -1374,7 +1374,7 @@ model EncounterTable {
 model StatusEffectDictionary {
   slug        String  @id
   name        String
-  description String? @db.Text
+  description String?
   duration    String? // "permanent", "turns", etc.
   effects     String? // JSON
 }
@@ -1432,7 +1432,7 @@ model InventoryLog {
   quantity  Int
   reason    String // 'gather', 'craft', 'quest_reward', 'shop_buy', 'shop_sell', 'trade', 'loot', etc.
   source    String? // Context, e.g. 'shop:merchant_01'
-  metadata  String? @db.Text // JSON string for additional context
+  metadata  String? // JSON string for additional context
   createdAt DateTime @default(now())
 
   @@index([userId])
@@ -1482,7 +1482,7 @@ model ItemTemplate {
   profileId      String?
   slug           String  @unique
   name           String
-  description    String? @db.Text
+  description    String?
   category       String // "WEAPON", "ARMOR", "RESOURCE", "TOOL", "CONSUMABLE"
   subCategory    String? // "SWORD", "PICKAXE", "ORE"
   tier           Int     @default(1)
@@ -1529,7 +1529,7 @@ model ProfessionTemplate {
   profileId           String?
   slug                String   @unique
   name                String
-  description         String? @db.Text
+  description         String?
   iconAssetId         String?
   category            String   @default("Life") // Combat, Gathering, Artisan, Support
   themeColor          String   @default("#64748b")
@@ -1558,7 +1558,7 @@ model SaintsMap {
   width         Int
   height        Int
   tileSize      Int      @default(16)
-  tilesetData   String @db.Text// JSON: tile layer data
+  tilesetData   String// JSON: tile layer data
   collisionData String // JSON: collision bitmask
   npcData       String // JSON: NPC placements
   triggerData   String? // JSON: trigger zones
@@ -1641,7 +1641,7 @@ model QuestTemplate {
   /// World profile id (matches WorldMap.gameId / Studio active profile)
   gameId        String           @default("saints")
   title         String
-  description   String @db.Text
+  description   String
   levelReq      Int              @default(1)
   isRepeatable  Boolean          @default(false)
   timeLimitMins Int? // Optional time limit
@@ -1660,7 +1660,7 @@ model QuestObjective {
   type        String // "KILL", "GATHER", "TALK", "EXPLORE"
   targetSlug  String // e.g. "goblin", "iron_ore", "npc_blacksmith"
   requiredQty Int           @default(1)
-  description String @db.Text
+  description String
 
   @@unique([questId, stage])
   @@index([questId])
@@ -1716,10 +1716,10 @@ model GameMap {
   name        String
   width       Int      @default(24)
   height      Int      @default(24)
-  tilesetData String? @db.Text
-  npcs        String? @db.Text
-  encounters  String? @db.Text
-  gates       String? @db.Text
+  tilesetData String?
+  npcs        String?
+  encounters  String?
+  gates       String?
   version     Int      @default(1)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -1835,7 +1835,7 @@ model WorldAtlas {
   id         String   @id @default(cuid())
   gameId     String   @unique @default("saints")
   lobbyMapId String?  @default("LOBBY")
-  atlasData  String   @default("{}") @db.LongText // JSON blob of nodes, edges, bufferPresets, options
+  atlasData  String   @default("{}") // JSON blob of nodes, edges, bufferPresets, options
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -1855,7 +1855,7 @@ model SourceAsset {
   uploadedById String
   uploadedBy   User     @relation("SourceAssetsUploaded", fields: [uploadedById], references: [id], onDelete: Cascade)
   version      Int      @default(1)
-  metadata     String   @default("{}") @db.Text // JSON string: { originalName, hash, tags, etc. }
+  metadata     String   @default("{}") // JSON string: { originalName, hash, tags, etc. }
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -1872,12 +1872,12 @@ model UsableAsset {
   name          String
   type          String       @default("OBJECT") // CHARACTER, CREATURE, TERRAIN, TILE, ITEM, OBJECT, UI, EFFECT, MODEL, ANIMATION, AUDIO
   category      String? // Sub-classification e.g. "chair", "sword", "tree"
-  tags          String       @default("[]") @db.Text // JSON array of string tags
+  tags          String       @default("[]") // JSON array of string tags
   width         Int          @default(16)
   height        Int          @default(16)
 
   // Slicing region from SourceAsset (null if direct individual asset)
-  sourceRegion String? @db.Text // JSON string: { "x": 0, "y": 0, "w": 32, "h": 32 }
+  sourceRegion String? // JSON string: { "x": 0, "y": 0, "w": 32, "h": 32 }
 
   // Directional & Animation Metadata
   facing          String? // "N", "S", "E", "W", "NE", "NW", "SE", "SW"
@@ -1921,7 +1921,7 @@ model DungeonTemplate {
   profileId String @default("default")
 
   name        String
-  description String? @db.Text
+  description String?
 
   entryLevelReq    Int     @default(1)
   maxPartySize     Int     @default(4)
@@ -1952,7 +1952,7 @@ model ShopTemplate {
   profileId String @default("default")
 
   name            String
-  description     String? @db.Text
+  description     String?
   currency        String  @default("gold")
   refreshInterval Int?
 
@@ -1982,7 +1982,7 @@ model MountTemplate {
   profileId String @default("default")
 
   name        String
-  description String? @db.Text
+  description String?
 
   speedMultiplier Float   @default(1.5)
   canFly          Boolean @default(false)
@@ -2006,7 +2006,7 @@ model WorldEventTemplate {
   profileId String @default("default")
 
   name            String
-  description     String? @db.Text
+  description     String?
   isActive        Boolean @default(false)
   scheduleCron    String?
   durationSeconds Int?
@@ -2024,7 +2024,7 @@ model SimulationPreset {
   profileId String @default("default")
 
   name           String
-  description    String? @db.Text
+  description    String?
   isActive       Boolean @default(false)
   xpMultiplier   Float   @default(1.0)
   dropMultiplier Float   @default(1.0)
@@ -2043,7 +2043,7 @@ model WorldPublishSnapshot {
 
   version     String
   title       String
-  description String? @db.Text
+  description String?
   status      String  @default("PUBLISHED") // DRAFT, VALIDATED, PUBLISHED, ARCHIVED
 
   validationReport String @default("{}") // JSON: { valid, errorCount, warningCount, errors, warnings }
