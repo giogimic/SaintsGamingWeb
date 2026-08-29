@@ -48,6 +48,8 @@ import EmojiPicker from "emoji-picker-react";
 import { GiphyFetch } from "@giphy/js-fetch-api";
 import { Grid } from "@giphy/react-components";
 import { VideoPlayer } from "@/shared/components/video-player";
+import { UploadProgressBar } from "@/web/components/feed/UploadProgressBar";
+import { uploadSocialFileWithProgress, UploadProgressState } from "@/web/lib/upload-client";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
@@ -56,8 +58,25 @@ const gf = new GiphyFetch(process.env.NEXT_PUBLIC_GIPHY_API_KEY || "sXpGFDGZs0Dv
 
 type MutedKeyword = { id: string; keyword: string; type: string; createdAt: Date };
 
-const isArchive = (url: string) => /\.(zip|rar|7z|tar|bz2|gz)$/i.test(url);
-const isVideo = (url: string) => /\.(mp4|webm|mov|ogg|ogv|mkv)$/i.test(url);
+const isArchive = (url: string) => {
+  if (!url) return false;
+  try {
+    const cleanPath = url.split("?")[0].split("#")[0];
+    return /\.(zip|rar|7z|tar|bz2|gz)$/i.test(cleanPath);
+  } catch {
+    return /\.(zip|rar|7z|tar|bz2|gz)($|\?|#)/i.test(url);
+  }
+};
+
+const isVideo = (url: string) => {
+  if (!url) return false;
+  try {
+    const cleanPath = url.split("?")[0].split("#")[0];
+    return /\.(mp4|webm|mov|ogg|ogv|mkv|m4v)$/i.test(cleanPath);
+  } catch {
+    return /\.(mp4|webm|mov|ogg|ogv|mkv|m4v)($|\?|#)/i.test(url);
+  }
+};
 
 function FeedInlineVideo({
   id,
@@ -78,25 +97,42 @@ function FeedInlineVideo({
   const [isMuted, setIsMuted] = useState(true);
   const isCurrentlyActive = activePlayingId === id;
   const [hasRecordedView, setHasRecordedView] = useState(false);
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [currentTimeSec, setCurrentTimeSec] = useState(0);
+  const [durationSec, setDurationSec] = useState(0);
+  const [hasError, setHasError] = useState(false);
+
+  // Initialize muted to ensure reliable browser autoplay
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.defaultMuted = true;
+      videoRef.current.muted = true;
+    }
+  }, []);
 
   // Strictly sync video play/pause with active playing state
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || hasError) return;
 
     if (isCurrentlyActive) {
-      video.play().then(() => {
-        if (!hasRecordedView && onRecordView) {
-          onRecordView();
-          setHasRecordedView(true);
-        }
-      }).catch(() => {
-        // Autoplay may be deferred by browser policies
-      });
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            if (!hasRecordedView && onRecordView) {
+              onRecordView();
+              setHasRecordedView(true);
+            }
+          })
+          .catch(() => {
+            // Autoplay may be deferred by browser policies
+          });
+      }
     } else {
       video.pause();
     }
-  }, [isCurrentlyActive, hasRecordedView, onRecordView]);
+  }, [isCurrentlyActive, hasRecordedView, onRecordView, hasError]);
 
   // Strict Viewport Intersection Observer: Only plays when in viewport (>= 50% visible), pauses instantly when off-screen
   useEffect(() => {
@@ -121,6 +157,14 @@ function FeedInlineVideo({
     return () => observer.disconnect();
   }, [id, setActivePlayingId]);
 
+  const handleTimeUpdate = () => {
+    const video = videoRef.current;
+    if (!video || !isFinite(video.duration) || video.duration <= 0) return;
+    setCurrentTimeSec(video.currentTime);
+    setDurationSec(video.duration);
+    setProgressPercent((video.currentTime / video.duration) * 100);
+  };
+
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
     const video = videoRef.current;
@@ -140,6 +184,26 @@ function FeedInlineVideo({
     setIsMuted(video.muted);
   };
 
+  const formatVideoTime = (sec: number) => {
+    if (!isFinite(sec) || sec < 0) return "0:00";
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
+  if (hasError) {
+    return (
+      <div 
+        className="relative rounded-2xl overflow-hidden bg-muted/30 border border-border/50 p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/40 transition-colors"
+        onClick={onClick}
+      >
+        <Play className="w-10 h-10 text-primary/60 mb-2" />
+        <span className="text-sm font-semibold text-foreground mb-1">Play Video</span>
+        <span className="text-xs text-muted-foreground">Click to watch in Saints Reel viewer</span>
+      </div>
+    );
+  }
+
   return (
     <div
       className="relative rounded-2xl overflow-hidden bg-black group cursor-pointer border border-border/50 max-h-[520px] w-full flex items-center justify-center aspect-[9/16] sm:aspect-auto sm:max-h-[480px]"
@@ -151,29 +215,49 @@ function FeedInlineVideo({
         playsInline
         loop
         muted={isMuted}
+        preload="metadata"
+        onTimeUpdate={handleTimeUpdate}
+        onError={() => setHasError(true)}
         className="max-h-[520px] w-auto max-w-full object-contain"
       />
       
       {/* Overlay gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+
+      {/* Subtle Bottom Timeline Progress Bar */}
+      <div className="absolute bottom-0 inset-x-0 h-1 bg-white/20 overflow-hidden pointer-events-none">
+        <div 
+          className="h-full bg-primary transition-all duration-150 ease-linear"
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
 
       {/* Controls Overlay */}
       <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-auto opacity-0 group-hover:opacity-100 transition-opacity z-10">
-        <button
-          type="button"
-          onClick={togglePlay}
-          className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-sm transition-all"
-        >
-          {isCurrentlyActive ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={togglePlay}
+            className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-sm transition-all"
+            title={isCurrentlyActive ? "Pause" : "Play"}
+          >
+            {isCurrentlyActive ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
+          </button>
+          {durationSec > 0 && (
+            <span className="text-[11px] font-mono font-medium text-white/90 bg-black/50 px-2 py-0.5 rounded backdrop-blur-xs">
+              {formatVideoTime(currentTimeSec)} / {formatVideoTime(durationSec)}
+            </span>
+          )}
+        </div>
 
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={toggleMute}
             className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-sm transition-all"
+            title={isMuted ? "Unmute" : "Mute"}
           >
-            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            {isMuted ? <VolumeX className="w-4 h-4 text-red-300" /> : <Volume2 className="w-4 h-4 text-white" />}
           </button>
           <button
             type="button"
@@ -213,18 +297,22 @@ export function TheFeed() {
   const [captionsText, setCaptionsText] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
   
-  // Media / GIF
+  // Media / GIF & Upload Progress Tracking
   const [mediaUrl, setMediaUrl] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
+  const [mainUploadState, setMainUploadState] = useState<UploadProgressState | null>(null);
+  const mainUploadCancelRef = useRef<(() => void) | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showGiphy, setShowGiphy] = useState(false);
   const [giphySearch, setGiphySearch] = useState("");
 
-  // Interactions
+  // Interactions & Reply Uploads
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyBody, setReplyBody] = useState("");
   const [replyMediaUrl, setReplyMediaUrl] = useState("");
   const [isUploadingReply, setIsUploadingReply] = useState(false);
+  const [replyUploadStates, setReplyUploadStates] = useState<Record<string, UploadProgressState | null>>({});
+  const replyUploadCancelRefs = useRef<Record<string, () => void>>({});
   const [loadedReplies, setLoadedReplies] = useState<Record<string, any[]>>({});
   const [loadingReplies, setLoadingReplies] = useState<Record<string, boolean>>({});
   
@@ -580,47 +668,103 @@ export function TheFeed() {
     }
   }
 
-  async function uploadFileBlob(file: File, isReply = false) {
+  async function uploadFileBlob(file: File, isReply = false, replyPostId?: string) {
     if (!file) return;
-    if (isReply) setIsUploadingReply(true);
-    else setIsUploading(true);
 
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const res = await fetch("/api/upload/social", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Upload failed");
+    if (isReply && replyPostId) {
+      setIsUploadingReply(true);
+      if (replyUploadCancelRefs.current[replyPostId]) {
+        replyUploadCancelRefs.current[replyPostId]();
       }
 
-      const data = await res.json();
-      if (isReply) {
+      const { promise, cancel } = uploadSocialFileWithProgress(
+        file,
+        "/api/upload/social",
+        (state) => {
+          setReplyUploadStates(prev => ({ ...prev, [replyPostId]: state }));
+        }
+      );
+
+      replyUploadCancelRefs.current[replyPostId] = cancel;
+
+      try {
+        const data = await promise;
         setReplyMediaUrl(data.url);
-      } else {
-        setMediaUrl(data.url);
+        toast.success("Media attached successfully!");
+        setTimeout(() => {
+          setReplyUploadStates(prev => ({ ...prev, [replyPostId]: null }));
+        }, 1500);
+      } catch (err: any) {
+        if (err?.message !== "Upload cancelled by user") {
+          toast.error(err?.message || "Upload failed");
+        }
+      } finally {
+        setIsUploadingReply(false);
+        delete replyUploadCancelRefs.current[replyPostId];
       }
-      toast.success("Media attached successfully!");
-    } catch (err: any) {
-      toast.error(err.message || "Upload failed");
-    } finally {
-      if (isReply) setIsUploadingReply(false);
-      else setIsUploading(false);
+    } else {
+      setIsUploading(true);
+      if (mainUploadCancelRef.current) {
+        mainUploadCancelRef.current();
+      }
+
+      const { promise, cancel } = uploadSocialFileWithProgress(
+        file,
+        "/api/upload/social",
+        (state) => {
+          setMainUploadState(state);
+        }
+      );
+
+      mainUploadCancelRef.current = cancel;
+
+      try {
+        const data = await promise;
+        setMediaUrl(data.url);
+        toast.success("Media attached successfully!");
+        setTimeout(() => {
+          setMainUploadState(null);
+        }, 1500);
+      } catch (err: any) {
+        if (err?.message !== "Upload cancelled by user") {
+          toast.error(err?.message || "Upload failed");
+        }
+      } finally {
+        setIsUploading(false);
+        mainUploadCancelRef.current = null;
+      }
     }
   }
 
-  function handleMediaUpload(e: React.ChangeEvent<HTMLInputElement>, isReply = false) {
+  function handleCancelMainUpload() {
+    if (mainUploadCancelRef.current) {
+      mainUploadCancelRef.current();
+      mainUploadCancelRef.current = null;
+      setIsUploading(false);
+      setTimeout(() => setMainUploadState(null), 1000);
+      toast.info("Upload cancelled");
+    }
+  }
+
+  function handleCancelReplyUpload(postId: string) {
+    if (replyUploadCancelRefs.current[postId]) {
+      replyUploadCancelRefs.current[postId]();
+      delete replyUploadCancelRefs.current[postId];
+      setIsUploadingReply(false);
+      setTimeout(() => {
+        setReplyUploadStates(prev => ({ ...prev, [postId]: null }));
+      }, 1000);
+      toast.info("Reply upload cancelled");
+    }
+  }
+
+  function handleMediaUpload(e: React.ChangeEvent<HTMLInputElement>, isReply = false, replyPostId?: string) {
     const file = e.target.files?.[0];
-    if (file) uploadFileBlob(file, isReply);
+    if (file) uploadFileBlob(file, isReply, replyPostId);
     e.target.value = "";
   }
 
-  function handlePaste(e: React.ClipboardEvent, isReply = false) {
+  function handlePaste(e: React.ClipboardEvent, isReply = false, replyPostId?: string) {
     const items = e.clipboardData?.items;
     if (!items) return;
     for (let i = 0; i < items.length; i++) {
@@ -629,7 +773,7 @@ export function TheFeed() {
         const file = item.getAsFile();
         if (file) {
           e.preventDefault();
-          uploadFileBlob(file, isReply);
+          uploadFileBlob(file, isReply, replyPostId);
           break;
         }
       }
@@ -653,7 +797,7 @@ export function TheFeed() {
     e.stopPropagation();
     setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      uploadFileBlob(e.dataTransfer.files[0]);
+      uploadFileBlob(e.dataTransfer.files[0], false);
     }
   }
 
@@ -1135,7 +1279,7 @@ export function TheFeed() {
               <div className="flex-1">
                 <form 
                   onSubmit={(e) => handleReply(e, post.id)} 
-                  onPaste={(e) => handlePaste(e, true)}
+                  onPaste={(e) => handlePaste(e, true, post.id)}
                   className="bg-muted/30 p-3 rounded-xl border border-border/50 relative"
                 >
                   <Textarea 
@@ -1147,15 +1291,17 @@ export function TheFeed() {
                     autoFocus
                   />
 
-                  {/* Reply Media Preview */}
-                  {isUploadingReply && (
-                    <div className="my-2 p-4 rounded-lg border border-dashed border-primary/40 bg-primary/5 flex items-center justify-center gap-2 animate-pulse">
-                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                      <span className="text-xs font-medium text-primary">Uploading attachment...</span>
+                  {/* Reply Upload Progress Bar */}
+                  {replyUploadStates[post.id] && (
+                    <div className="my-2">
+                      <UploadProgressBar 
+                        uploadState={replyUploadStates[post.id]} 
+                        onCancel={() => handleCancelReplyUpload(post.id)} 
+                      />
                     </div>
                   )}
 
-                  {replyMediaUrl && !isUploadingReply && (
+                  {replyMediaUrl && !replyUploadStates[post.id] && (
                     <div className="relative my-2 rounded-lg overflow-hidden border border-border/50 bg-black/10 flex items-center justify-center max-h-[200px]">
                       <Button 
                         type="button" 
@@ -1187,10 +1333,10 @@ export function TheFeed() {
                          <input 
                            type="file" 
                            id={`social-reply-media-upload-${post.id}`} 
-                           accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime,video/ogg" 
+                           accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime,video/ogg,video/x-matroska,video/m4v" 
                            className="hidden" 
-                           onChange={(e) => handleMediaUpload(e, true)} 
-                           disabled={isUploadingReply}
+                           onChange={(e) => handleMediaUpload(e, true, post.id)} 
+                           disabled={Boolean(replyUploadStates[post.id]) || isPosting}
                          />
                          <Button asChild variant="ghost" size="icon" className="h-7 w-7 rounded-full text-muted-foreground hover:text-primary disabled:opacity-50" title="Attach Image or Video">
                            <label htmlFor={`social-reply-media-upload-${post.id}`} className="cursor-pointer">
@@ -1205,8 +1351,8 @@ export function TheFeed() {
                            id={`social-reply-archive-upload-${post.id}`} 
                            accept=".zip,.rar,.7z,.tar,.bz2,.gz,application/zip,application/x-zip-compressed,application/x-7z-compressed,application/vnd.rar,application/x-rar-compressed,application/x-tar,application/x-bzip2,application/gzip" 
                            className="hidden" 
-                           onChange={(e) => handleMediaUpload(e, true)} 
-                           disabled={isUploadingReply}
+                           onChange={(e) => handleMediaUpload(e, true, post.id)} 
+                           disabled={Boolean(replyUploadStates[post.id]) || isPosting}
                          />
                          <Button asChild variant="ghost" size="icon" className="h-7 w-7 rounded-full text-muted-foreground hover:text-primary disabled:opacity-50" title="Attach Archive">
                            <label htmlFor={`social-reply-archive-upload-${post.id}`} className="cursor-pointer">
@@ -1871,20 +2017,21 @@ export function TheFeed() {
                     onPaste={(e) => handlePaste(e, false)}
                     maxLength={1000}
                   />
-                  
-                  {/* Uploading Shimmer Preview */}
-                  {isUploading && (
-                    <div className="relative mx-4 mt-2 p-6 rounded-xl border border-dashed border-primary/40 bg-primary/5 flex flex-col items-center justify-center gap-2 animate-pulse">
-                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                      <span className="text-xs font-medium text-primary">Uploading attachment...</span>
+                            {/* Upload Progress Bar with Speed, ETA, Size & Cancel */}
+                  {mainUploadState && (
+                    <div className="mx-4 mt-3">
+                      <UploadProgressBar 
+                        uploadState={mainUploadState} 
+                        onCancel={handleCancelMainUpload} 
+                      />
                     </div>
                   )}
 
                   {/* Attached Media Preview */}
-                  {mediaUrl && !isUploading && (
+                  {mediaUrl && !mainUploadState && (
                     <div className="relative mx-4 mt-2 rounded-xl overflow-hidden border border-border/50 bg-black/10 flex items-center justify-center max-h-[320px]">
                       <Button 
-                        type="button"
+                        type="button" 
                         variant="destructive" 
                         size="icon" 
                         className="absolute top-2 right-2 w-8 h-8 rounded-full z-10 shadow-md"
@@ -1939,10 +2086,10 @@ export function TheFeed() {
                         <input 
                           type="file" 
                           id="social-media-upload-main" 
-                          accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime,video/ogg" 
+                          accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime,video/ogg,video/x-matroska,video/m4v" 
                           className="hidden" 
-                          onChange={handleMediaUpload} 
-                          disabled={isUploading}
+                          onChange={(e) => handleMediaUpload(e, false)} 
+                          disabled={Boolean(mainUploadState) || isPosting}
                         />
                         <Button asChild variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-primary disabled:opacity-50" title="Attach Image or Video">
                           <label htmlFor="social-media-upload-main" className="cursor-pointer">
@@ -1958,8 +2105,8 @@ export function TheFeed() {
                           id="social-archive-upload-main" 
                           accept=".zip,.rar,.7z,.tar,.bz2,.gz,application/zip,application/x-zip-compressed,application/x-7z-compressed,application/vnd.rar,application/x-rar-compressed,application/x-tar,application/x-bzip2,application/gzip" 
                           className="hidden" 
-                          onChange={handleMediaUpload} 
-                          disabled={isUploading}
+                          onChange={(e) => handleMediaUpload(e, false)} 
+                          disabled={Boolean(mainUploadState) || isPosting}
                         />
                         <Button asChild variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-primary disabled:opacity-50" title="Attach Archive">
                           <label htmlFor="social-archive-upload-main" className="cursor-pointer">

@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { uploadSocialMedia } from "@/web/lib/upload";
 
+export const dynamic = "force-dynamic";
+export const maxDuration = 300; // 5 minutes max execution time for high-res video uploads
+
 export async function POST(req: Request) {
   try {
     const session = await auth();

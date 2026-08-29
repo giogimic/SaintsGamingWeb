@@ -164,16 +164,63 @@ export async function uploadFile(file: File): Promise<UploadResult> {
   });
 }
 
+export function inferMimeType(fileName: string, providedType?: string): string {
+  if (providedType && providedType !== 'application/octet-stream' && providedType.trim() !== '') {
+    return providedType.toLowerCase();
+  }
+  const ext = path.extname(fileName).toLowerCase();
+  switch (ext) {
+    case '.mp4':
+    case '.m4v':
+      return 'video/mp4';
+    case '.webm':
+      return 'video/webm';
+    case '.mov':
+    case '.qt':
+      return 'video/quicktime';
+    case '.mkv':
+      return 'video/x-matroska';
+    case '.ogg':
+    case '.ogv':
+      return 'video/ogg';
+    case '.png':
+      return 'image/png';
+    case '.jpg':
+    case '.jpeg':
+      return 'image/jpeg';
+    case '.gif':
+      return 'image/gif';
+    case '.webp':
+      return 'image/webp';
+    case '.zip':
+      return 'application/zip';
+    case '.rar':
+      return 'application/vnd.rar';
+    case '.7z':
+      return 'application/x-7z-compressed';
+    case '.tar':
+      return 'application/x-tar';
+    case '.gz':
+      return 'application/gzip';
+    case '.bz2':
+      return 'application/x-bzip2';
+    default:
+      return providedType || 'application/octet-stream';
+  }
+}
+
 /** Upload a social media file (images up to 15MB, videos/archives up to 250MB) */
 export async function uploadSocialMedia(file: File): Promise<UploadResult> {
-  if (!ALLOWED_SOCIAL_MIME_TYPES.includes(file.type)) {
+  const mimeType = inferMimeType(file.name, file.type);
+
+  if (!ALLOWED_SOCIAL_MIME_TYPES.includes(mimeType)) {
     return {
       success: false,
-      error: `Invalid file type: ${file.type}. Allowed: images, videos, and archives.`,
+      error: `Invalid file type: ${mimeType}. Allowed: images, videos, and archives.`,
     };
   }
 
-  const isImage = ALLOWED_IMAGE_MIME_TYPES.includes(file.type);
+  const isImage = ALLOWED_IMAGE_MIME_TYPES.includes(mimeType);
   const maxSize = isImage ? 15 * 1024 * 1024 : MAX_SOCIAL_FILE_SIZE;
 
   if (file.size > maxSize) {
@@ -187,7 +234,7 @@ export async function uploadSocialMedia(file: File): Promise<UploadResult> {
   const uniqueName = generateUniqueFilename(sanitized);
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  if (!validateMagicBytes(buffer, file.type)) {
+  if (!validateMagicBytes(buffer, mimeType)) {
     return {
       success: false,
       error: "File content does not match its declared type",
@@ -197,7 +244,7 @@ export async function uploadSocialMedia(file: File): Promise<UploadResult> {
   return persistUpload({
     uniqueName,
     buffer,
-    contentType: file.type,
+    contentType: mimeType,
     sanitizedName: sanitized,
     sizeBytes: file.size,
   });
@@ -219,7 +266,11 @@ function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
   if (mimeType === "video/mp4" || mimeType === "video/quicktime") {
     if (buffer.length < 8) return false;
     const boxType = buffer.toString("latin1", 4, 8);
-    return ["ftyp", "moov", "mdat", "wide", "free", "skip"].includes(boxType);
+    const validBoxTypes = ["ftyp", "moov", "mdat", "wide", "free", "skip", "pnot", "pict"];
+    if (validBoxTypes.includes(boxType)) return true;
+    // Check if ftyp appears anywhere in first 32 bytes
+    const headerSlice = buffer.subarray(0, Math.min(32, buffer.length)).toString("latin1");
+    return headerSlice.includes("ftyp") || headerSlice.includes("moov") || headerSlice.includes("mdat");
   }
 
   // WebM & MKV (EBML Header)
