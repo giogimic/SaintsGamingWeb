@@ -39,6 +39,8 @@ import {
 } from 'lucide-react';
 import { AssetManager, type GameAssetItem } from '@/engine/assets/AssetManager';
 import { savePrefab, listPrefabs, type PrefabTileData } from '@/app/actions/prefabs';
+import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
+import { TILESET_SIZES } from '../data/tileset-sizes';
 import { useGameStore } from '../store';
 import { useEditorStore } from './editor-store';
 
@@ -1729,18 +1731,33 @@ export default function TilesetPicker({
                   <Sliders className="w-3.5 h-3.5 text-amber-400" />
                   GRID ALIGNMENT & OFFSETS
                 </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    soundSynth?.playUiClick?.();
-                    const cols = Math.max(1, Math.floor(natural.w / ts.tilewidth));
-                    handleUpdateTilesetSettings({ offsetX: 0, offsetY: 0, spacing: 0, columns: cols });
-                    showToast('Reset grid alignment to 0,0');
-                  }}
-                  className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 flex items-center gap-1"
-                >
-                  <RotateCcw className="w-2.5 h-2.5" /> Reset
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundSynth?.playActionSound?.();
+                      useEditorStore.getState().markMapDirty();
+                      window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
+                      showToast(`Saved grid offsets (${ts.offsetX ?? 0}px, ${ts.offsetY ?? 0}px) to map`);
+                    }}
+                    className="text-[9px] px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 flex items-center gap-1 font-bold shadow-sm cursor-pointer transition-all"
+                    title="Save current grid offsets and tileset settings to the active map"
+                  >
+                    <Save className="w-2.5 h-2.5" /> Save Offsets
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundSynth?.playUiClick?.();
+                      const cols = Math.max(1, Math.floor(natural.w / ts.tilewidth));
+                      handleUpdateTilesetSettings({ offsetX: 0, offsetY: 0, spacing: 0, columns: cols });
+                      showToast('Reset grid alignment to 0,0');
+                    }}
+                    className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 flex items-center gap-1"
+                  >
+                    <RotateCcw className="w-2.5 h-2.5" /> Reset
+                  </button>
+                </div>
               </div>
 
               {/* Offset X & Offset Y Controls */}
@@ -1758,7 +1775,17 @@ export default function TilesetPicker({
                     >
                       -
                     </button>
-                    <span className="w-8 text-center font-bold text-amber-300 font-mono">{ts.offsetX ?? 0}px</span>
+                    <input
+                      type="number"
+                      value={ts.offsetX ?? 0}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        if (!isNaN(val)) {
+                          handleUpdateTilesetSettings({ offsetX: Math.max(0, val) });
+                        }
+                      }}
+                      className="w-10 text-center font-bold text-amber-300 font-mono bg-black/60 border border-slate-700 rounded px-0.5 py-0 text-[10px] focus:outline-none focus:border-amber-400"
+                    />
                     <button
                       type="button"
                       onClick={() => {
@@ -1785,7 +1812,17 @@ export default function TilesetPicker({
                     >
                       -
                     </button>
-                    <span className="w-8 text-center font-bold text-amber-300 font-mono">{ts.offsetY ?? 0}px</span>
+                    <input
+                      type="number"
+                      value={ts.offsetY ?? 0}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        if (!isNaN(val)) {
+                          handleUpdateTilesetSettings({ offsetY: Math.max(0, val) });
+                        }
+                      }}
+                      className="w-10 text-center font-bold text-amber-300 font-mono bg-black/60 border border-slate-700 rounded px-0.5 py-0 text-[10px] focus:outline-none focus:border-amber-400"
+                    />
                     <button
                       type="button"
                       onClick={() => {
@@ -2044,8 +2081,15 @@ export default function TilesetPicker({
                   onDragStart={(e) => e.preventDefault()}
                   onLoad={(e) => {
                     const el = e.currentTarget;
-                    setNatural({ w: el.naturalWidth, h: el.naturalHeight });
+                    const nw = el.naturalWidth;
+                    const nh = el.naturalHeight;
+                    setNatural({ w: nw, h: nh });
                     setImgError(false);
+                    if (ts?.imageSource) {
+                      TILESET_SIZES[ts.imageSource] = { w: nw, h: nh };
+                      const base = ts.imageSource.split('/').pop() || '';
+                      TILESET_SIZES[base] = { w: nw, h: nh };
+                    }
                   }}
                   className={`${
                     isCalibratingOrigin

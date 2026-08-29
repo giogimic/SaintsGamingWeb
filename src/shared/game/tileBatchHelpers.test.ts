@@ -73,4 +73,29 @@ describe("tileBatchHelpers", () => {
     expect(worldToTileCoord(-1.4, 0, 30, 30)).toEqual({ r: 15, c: 14 });
     expect(worldToTileCoord(-0.6, 0, 30, 30)).toEqual({ r: 15, c: 14 });
   });
+
+  it("accurately shifts UVs according to offsetX, offsetY, and spacing", () => {
+    const ts = {
+      firstgid: 1,
+      imageSource: "Custom_Terrain.png",
+      columns: 4,
+      tilewidth: 32,
+      tileheight: 32,
+      offsetX: 20,
+      offsetY: 40,
+      spacing: 2,
+      imagewidth: 200,
+      imageheight: 200,
+    };
+    // GID 1 -> row 0, col 0 -> pixelX0 = 20, pixelY0 = 40
+    const uv0 = tilesetUvForGid(1, ts);
+    expect(uv0[0]).toBeCloseTo((20 + 0.5) / 200, 4);
+    expect(uv0[1]).toBeCloseTo((40 + 0.5) / 200, 4);
+    expect(uv0[2]).toBeCloseTo((52 - 0.5) / 200, 4);
+    expect(uv0[5]).toBeCloseTo((72 - 0.5) / 200, 4);
+
+    // GID 2 -> row 0, col 1 -> pixelX0 = 20 + 1 * (32 + 2) = 54
+    const uv1 = tilesetUvForGid(2, ts);
+    expect(uv1[0]).toBeCloseTo((54 + 0.5) / 200, 4);
+  });
 });
