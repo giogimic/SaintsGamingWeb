@@ -107,11 +107,20 @@ export function estimateTilesetRows(
 ): number {
   let estimatedRows = 24;
   const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, "");
-  const sizes = sizeLookup?.[rawSource];
-  if (sizes?.h && ts.tileheight) {
-    estimatedRows = Math.floor(sizes.h / ts.tileheight);
-  } else if (ts.imageheight && ts.tileheight) {
-    estimatedRows = Math.floor(ts.imageheight / ts.tileheight);
+  const baseName = ts.imageSource.split("/").pop() || "";
+  const sizes =
+    sizeLookup?.[rawSource] ||
+    sizeLookup?.[ts.imageSource] ||
+    sizeLookup?.[baseName];
+
+  const th = ts.tileheight || 16;
+  const offY = ts.offsetY ?? ts.margin ?? 0;
+  const spacing = ts.spacing ?? 0;
+
+  if (sizes?.h && th) {
+    estimatedRows = Math.max(1, Math.floor((sizes.h - offY) / (th + spacing)));
+  } else if (ts.imageheight && th) {
+    estimatedRows = Math.max(1, Math.floor((ts.imageheight - offY) / (th + spacing)));
   } else if (ts.tilecount && ts.columns) {
     estimatedRows = Math.ceil(ts.tilecount / ts.columns);
   } else if (ts.imageSource.includes("Terrain")) {
@@ -143,14 +152,40 @@ export function tilesetUvForGid(
   const col = localGid % ts.columns;
   const row = Math.floor(localGid / ts.columns);
   const estimatedRows = estimateTilesetRows(ts, localGid, sizeLookup);
-  const imgW = (ts as any).imagewidth || (ts.columns * (ts.tilewidth || 16));
-  const imgH = (ts as any).imageheight || (estimatedRows * (ts.tileheight || 16));
+
+  const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, "");
+  const baseName = ts.imageSource.split("/").pop() || "";
+  const sizeObj =
+    sizeLookup?.[rawSource] ||
+    sizeLookup?.[ts.imageSource] ||
+    sizeLookup?.[baseName];
+
+  const offX = ts.offsetX ?? ts.margin ?? 0;
+  const offY = ts.offsetY ?? ts.margin ?? 0;
+  const spacing = ts.spacing ?? 0;
+  const tw = ts.tilewidth || 16;
+  const th = ts.tileheight || 16;
+
+  const imgW =
+    (ts as any).imagewidth ||
+    sizeObj?.w ||
+    Math.max(1, offX + ts.columns * (tw + spacing));
+  const imgH =
+    (ts as any).imageheight ||
+    sizeObj?.h ||
+    Math.max(1, offY + estimatedRows * (th + spacing));
+
+  const pixelX0 = offX + col * (tw + spacing);
+  const pixelX1 = pixelX0 + tw;
+  const pixelY0 = offY + row * (th + spacing);
+  const pixelY1 = pixelY0 + th;
+
   const hpU = 0.5 / imgW;
   const hpV = 0.5 / imgH;
-  const u0 = (col * (ts.tilewidth || 16)) / imgW + hpU;
-  const u1 = ((col + 1) * (ts.tilewidth || 16)) / imgW - hpU;
-  const v0 = (row * (ts.tileheight || 16)) / imgH + hpV;
-  const v1 = ((row + 1) * (ts.tileheight || 16)) / imgH - hpV;
+  const u0 = pixelX0 / imgW + hpU;
+  const u1 = pixelX1 / imgW - hpU;
+  const v0 = pixelY0 / imgH + hpV;
+  const v1 = pixelY1 / imgH - hpV;
   return [u0, v0, u1, v0, u1, v1, u0, v1];
 }
 

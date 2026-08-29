@@ -119,6 +119,10 @@ export const TileSelectorPanel: React.FC = () => {
     const updated = { ...currentMap, tilesets: nextTilesets };
     setActiveMapData(updated);
     markMapDirty();
+    const engine = typeof window !== 'undefined' ? (window as any).__babylonEngine : null;
+    if (engine?.loadTilemap) {
+      engine.loadTilemap(updated);
+    }
     showToast('Updated map tilesets');
   };
 

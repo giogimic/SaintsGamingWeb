@@ -1,3 +1,8 @@
+# 2.1.488
+- **Tileset Offset & Spacing Synchronization in Babylon Engine**: Updated `tilesetUvForGid` and `estimateTilesetRows` in `tileBatchHelpers.ts` to fully incorporate `ts.offsetX`, `ts.offsetY`, `ts.spacing`, and natural image dimensions. Eliminates all coordinate drift between the Tile Selector / Freeform Slicer preview and the in-game canvas stamp.
+- **Tileset Offsets Persistence & Dedicated Save Offsets Button**: Added a prominent **Save Offsets** button in `TilesetPicker.tsx` that commits grid alignments directly to `WorldMap.tilesetsData` and marks the map dirty. Added direct number inputs for Offset X and Offset Y for pixel-exact calibration.
+- **Dynamic Dimension Registry & Live Babylon Mesh Refresh**: Enhanced `TilesetPicker` image loader to register natural texture dimensions into `TILESET_SIZES` upon sheet load and reload active Babylon tilemap meshes immediately whenever grid calibrations change.
+
 # 2.1.487
 - **Expanded LongText Mapping for SiteSetting & All System JSON**: Added `@db.LongText` mapping for `SiteSetting.value` and 40+ serialized JSON and content columns in `prepare-prisma.js` and `schema.prisma`. Resolves Prisma `P2000: The provided value for the column is too long for the column's type. Column: value` on MariaDB/MySQL.
 
