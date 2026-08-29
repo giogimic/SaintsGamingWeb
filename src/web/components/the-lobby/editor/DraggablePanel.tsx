@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { PanelId, useEditorStore, STUDIO_DOCK_META } from './editor-store';
 import { X, Minus, Maximize2 } from 'lucide-react';
 
@@ -23,12 +23,15 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({ id, children, ic
   const panelRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  // Track drag position in ref for GPU-composited transforms (no React re-renders during drag)
+  const dragPosRef = useRef({ x: 0, y: 0 });
+  const dragOffset = useRef({ x: 0, y: 0 });
   const resizeOrigin = useRef({ x: 0, y: 0, w: 0, h: 0 });
 
   if (!panelState?.isOpen) return null;
 
   const { x, y, width, height, title, isCollapsed, zIndex } = panelState;
+  const blurb = STUDIO_DOCK_META[id]?.blurb;
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     // Only drag from the header
@@ -37,10 +40,11 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({ id, children, ic
     
     bringToFront(id);
     setIsDragging(true);
-    setDragOffset({
+    dragPosRef.current = { x, y };
+    dragOffset.current = {
       x: e.clientX - x,
-      y: e.clientY - y
-    });
+      y: e.clientY - y,
+    };
     
     if (panelRef.current) {
       panelRef.current.setPointerCapture(e.pointerId);
@@ -59,10 +63,13 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({ id, children, ic
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (isDragging) {
-      // Clamp to screen bounds loosely
-      const newX = Math.max(0, Math.min(window.innerWidth - 100, e.clientX - dragOffset.x));
-      const newY = Math.max(0, Math.min(window.innerHeight - 50, e.clientY - dragOffset.y));
-      updatePanelPosition(id, newX, newY);
+      const newX = Math.max(0, Math.min(window.innerWidth - 100, e.clientX - dragOffset.current.x));
+      const newY = Math.max(0, Math.min(window.innerHeight - 50, e.clientY - dragOffset.current.y));
+      dragPosRef.current = { x: newX, y: newY };
+      // GPU-composited transform — no React re-render, no layout reflow
+      if (panelRef.current) {
+        panelRef.current.style.transform = `translate(${newX}px, ${newY}px)`;
+      }
     } else if (isResizing) {
       const dx = e.clientX - resizeOrigin.current.x;
       const dy = e.clientY - resizeOrigin.current.y;
@@ -73,6 +80,13 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({ id, children, ic
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isDragging) {
+      // Flush final position to Zustand store (single update, not 60/sec)
+      updatePanelPosition(id, dragPosRef.current.x, dragPosRef.current.y);
+      if (panelRef.current) {
+        panelRef.current.style.transform = '';
+      }
+    }
     if (isDragging || isResizing) {
       setIsDragging(false);
       setIsResizing(false);
@@ -81,6 +95,10 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({ id, children, ic
       }
     }
   };
+
+  const handleDoubleClick = useCallback(() => {
+    toggleCollapse(id);
+  }, [id, toggleCollapse]);
 
   return (
     <div
@@ -91,74 +109,78 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({ id, children, ic
       onMouseDown={() => bringToFront(id)}
       style={{
         position: 'fixed',
-        left: x,
-        top: y,
-        width: isCollapsed ? width : width,
+        left: isDragging ? 0 : x,
+        top: isDragging ? 0 : y,
+        transform: isDragging ? `translate(${dragPosRef.current.x}px, ${dragPosRef.current.y}px)` : undefined,
+        willChange: isDragging ? 'transform' : 'auto',
+        width,
         height: isCollapsed ? 'auto' : height,
         zIndex,
-        touchAction: 'none'
+        touchAction: 'none',
       }}
       className={`
-        sg-glass pointer-events-auto relative bg-[#050b14]/90 rounded-xl border flex flex-col overflow-hidden font-sans
-        transition-colors duration-200 shadow-2xl
+        sg-glass pointer-events-auto relative bg-[#050b14]/90 rounded-lg border flex flex-col overflow-hidden font-sans
+        transition-shadow duration-200 shadow-2xl
         ${isActive ? 'border-[#cbb26a]/60 shadow-[0_0_20px_rgba(203,178,106,0.1)]' : 'border-[#806f47]/30'}
       `}
     >
-      {/* Header / Drag Handle */}
+      {/* Compact Header / Drag Handle */}
       <div 
         onPointerDown={handlePointerDown}
+        onDoubleClick={handleDoubleClick}
         className={`
-          flex items-center justify-between px-3 py-2 cursor-move
+          flex items-center justify-between px-2 py-1 cursor-move
           bg-gradient-to-r select-none
           ${isActive ? 'from-[#162238] via-[#0b1320] to-[#162238] border-b border-[#cbb26a]/30' : 'from-[#0b1320] to-[#050b14] border-b border-[#806f47]/20'}
         `}
+        title={blurb || undefined}
       >
-        <div className="flex min-w-0 flex-col pointer-events-none">
-          <div className="flex items-center gap-2">
-            {icon && <span className="text-[#cbb26a]">{icon}</span>}
-            <span className={`font-bold text-xs tracking-wide uppercase font-mono ${isActive ? 'text-white' : 'text-slate-400'}`}>
-              {propsTitle || title}
-            </span>
-          </div>
-          {STUDIO_DOCK_META[id]?.blurb && (
-            <span className="mt-0.5 truncate text-[9px] font-medium normal-case tracking-normal text-slate-500">
-              {STUDIO_DOCK_META[id].blurb}
-            </span>
-          )}
+        <div className="flex min-w-0 items-center gap-1.5 pointer-events-none">
+          {icon && <span className="text-[#cbb26a] [&>svg]:w-3 [&>svg]:h-3">{icon}</span>}
+          <span className={`font-semibold text-[10px] tracking-wide uppercase font-mono truncate ${isActive ? 'text-white' : 'text-slate-400'}`}>
+            {propsTitle || title}
+          </span>
         </div>
         
         {/* Controls */}
-        <div className="panel-controls flex items-center gap-1">
+        <div className="panel-controls flex items-center gap-0.5 ml-2">
           <button 
             onClick={(e) => { e.stopPropagation(); toggleCollapse(id); }}
-            className="p-1 text-slate-400 hover:text-white hover:bg-white/10 rounded transition-colors"
+            className="p-0.5 text-slate-500 hover:text-white hover:bg-white/10 rounded transition-all duration-100 hover:scale-110"
           >
-            {isCollapsed ? <Maximize2 className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
+            {isCollapsed ? <Maximize2 className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
           </button>
           <button 
             onClick={(e) => { e.stopPropagation(); closePanel(id); }}
-            className="p-1 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
+            className="p-0.5 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded transition-all duration-100 hover:scale-110"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-3 h-3" />
           </button>
         </div>
       </div>
 
       {/* Body */}
       {!isCollapsed && (
-        <div className="flex-1 overflow-y-auto p-3 text-slate-300 relative custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-2.5 text-slate-300 relative custom-scrollbar">
           {children}
         </div>
       )}
 
-      {/* Corner resize — layout persisted via updatePanelSize */}
+      {/* Collapsed summary line */}
+      {isCollapsed && blurb && (
+        <div className="px-2 py-0.5 text-[9px] text-slate-500 truncate border-t border-[#806f47]/10">
+          {blurb}
+        </div>
+      )}
+
+      {/* Corner resize */}
       {!isCollapsed && (
         <div
-          className="panel-resize absolute bottom-0 right-0 h-4 w-4 cursor-se-resize"
+          className="panel-resize absolute bottom-0 right-0 h-3 w-3 cursor-se-resize"
           onPointerDown={handleResizeDown}
           title="Resize panel"
         >
-          <span className="pointer-events-none absolute bottom-1 right-1 h-2 w-2 border-b-2 border-r-2 border-[#806f47]/70" />
+          <span className="pointer-events-none absolute bottom-0.5 right-0.5 h-1.5 w-1.5 border-b-2 border-r-2 border-[#806f47]/50" />
         </div>
       )}
     </div>

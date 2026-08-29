@@ -169,12 +169,12 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
           <button
             type="button"
             onClick={() => setBrushMode('paint')}
-            className={`p-1 rounded transition-colors cursor-pointer ${
+            className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
               brushMode === 'paint'
-                ? 'bg-primary text-primary-foreground font-bold shadow'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-primary text-primary-foreground font-bold shadow-[0_0_12px_rgba(203,178,106,0.5)] scale-105'
+                : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
             }`}
-            title="Paint Brush (B)"
+            title="Brush Tool (B)"
           >
             <Brush className="h-3.5 w-3.5" />
           </button>
@@ -182,10 +182,10 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
           <button
             type="button"
             onClick={() => setBrushMode('erase')}
-            className={`p-1 rounded transition-colors cursor-pointer ${
+            className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
               brushMode === 'erase'
-                ? 'bg-destructive text-destructive-foreground font-bold shadow'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-destructive text-destructive-foreground font-bold shadow-[0_0_12px_rgba(239,68,68,0.5)] scale-105'
+                : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
             }`}
             title="Eraser (E)"
           >
@@ -195,10 +195,10 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
           <button
             type="button"
             onClick={() => setBrushMode('eyedropper')}
-            className={`p-1 rounded transition-colors cursor-pointer ${
+            className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
               brushMode === 'eyedropper'
-                ? 'bg-cyan-500 text-black font-bold shadow'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-cyan-500 text-black font-bold shadow-[0_0_12px_rgba(6,182,212,0.5)] scale-105'
+                : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
             }`}
             title="Eyedropper (I)"
           >
@@ -208,10 +208,10 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
           <button
             type="button"
             onClick={() => setBrushMode('select')}
-            className={`p-1 rounded transition-colors cursor-pointer ${
+            className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
               brushMode === 'select'
-                ? 'bg-amber-400 text-black font-bold shadow'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-amber-400 text-black font-bold shadow-[0_0_12px_rgba(245,158,11,0.5)] scale-105'
+                : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
             }`}
             title="Marquee Selection (M)"
           >
@@ -221,10 +221,10 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
           <button
             type="button"
             onClick={() => setBrushMode('prefab')}
-            className={`p-1 rounded transition-colors cursor-pointer ${
+            className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
               brushMode === 'prefab'
-                ? 'bg-primary text-primary-foreground font-bold shadow'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-primary text-primary-foreground font-bold shadow-[0_0_12px_rgba(203,178,106,0.5)] scale-105'
+                : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
             }`}
             title="Prefab Stamp (G)"
           >
@@ -237,10 +237,10 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
               setBrushMode('gate');
               setShowWarpOverlays(true);
             }}
-            className={`p-1 rounded transition-colors cursor-pointer ${
+            className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
               brushMode === 'gate'
-                ? 'bg-purple-600 text-white font-bold shadow'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-purple-600 text-white font-bold shadow-[0_0_12px_rgba(168,85,247,0.5)] scale-105'
+                : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
             }`}
             title="Warp Gate Tool"
           >

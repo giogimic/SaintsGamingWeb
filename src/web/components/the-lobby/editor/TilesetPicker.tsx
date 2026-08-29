@@ -757,14 +757,14 @@ export default function TilesetPicker({
 
     isPointerDownRef.current = true;
 
-    // Freeform Slicer mode
+    // Freeform Slicer mode — start as a 1px point, expand on drag
     if (selectionMode === 'slicer') {
       slicerDragStartRef.current = { x: nativeX, y: nativeY };
       setSlicerSelection({
         x0: nativeX,
         y0: nativeY,
-        x1: Math.min(nat.w, nativeX + currentTs.tilewidth),
-        y1: Math.min(nat.h, nativeY + currentTs.tileheight),
+        x1: nativeX + 1,
+        y1: nativeY + 1,
       });
       return;
     }
@@ -1015,34 +1015,41 @@ export default function TilesetPicker({
     showToast('Loaded Starter Tile Presets');
   }, [ts, showToast]);
 
-  // Extract common tiles from active tileset sheet
+  // Extract all tiles from active tileset sheet into the Library
   const handleExtractTilesFromActiveSheet = useCallback(() => {
     if (!ts || !natural.w || !natural.h) return;
     soundSynth?.playActionSound?.();
     const tw = ts.tilewidth || 16;
     const th = ts.tileheight || 16;
-    const maxCols = Math.min(ts.columns, Math.floor(natural.w / tw));
-    const maxRows = Math.min(4, Math.floor(natural.h / th));
+    const offX = ts.offsetX ?? ts.margin ?? 0;
+    const offY = ts.offsetY ?? ts.margin ?? 0;
+    const spacing = ts.spacing ?? 0;
+    const maxCols = Math.min(ts.columns, Math.max(1, Math.floor((natural.w - offX + spacing) / (tw + spacing))));
+    const maxRows = Math.max(1, Math.floor((natural.h - offY + spacing) / (th + spacing)));
+    // Cap at 128 tiles to avoid performance issues on massive sheets
+    const totalCap = 128;
     const extracted: TileDefinition[] = [];
 
     const sheetName = ts.imageSource.split('/').pop()?.replace(/\.[^/.]+$/, '') || 'sheet';
 
-    for (let r = 0; r < maxRows; r++) {
-      for (let c = 0; c < Math.min(maxCols, 4); c++) {
+    for (let r = 0; r < maxRows && extracted.length < totalCap; r++) {
+      for (let c = 0; c < maxCols && extracted.length < totalCap; c++) {
         const gid = ts.firstgid + r * ts.columns + c;
+        const srcX = offX + c * (tw + spacing);
+        const srcY = offY + r * (th + spacing);
         extracted.push({
           id: `extracted-${sheetName}-${r}-${c}-${Date.now()}`,
           name: `${sheetName.replace(/_/g, ' ')} [R${r}:C${c}]`,
           sourceSheet: ts.imageSource,
-          sourceX: c * tw,
-          sourceY: r * th,
+          sourceX: srcX,
+          sourceY: srcY,
           sourceWidth: tw,
           sourceHeight: th,
           gid,
           tags: ['terrain', 'extracted', sheetName.toLowerCase()],
-          collision: r >= 2 ? 'SOLID' : 'NONE',
-          gameplayFlags: r >= 2 ? ['blocking'] : ['walkable'],
-          material: r === 0 ? 'GRASS' : r === 1 ? 'DIRT' : 'STONE',
+          collision: 'NONE',
+          gameplayFlags: ['walkable'],
+          material: 'GRASS',
         });
       }
     }
@@ -1053,7 +1060,7 @@ export default function TilesetPicker({
       onBrushSelectRef.current(extracted[0].gid);
       setActiveTab('library');
     }
-    showToast(`Extracted ${extracted.length} tiles into Library`);
+    showToast(`Extracted ${extracted.length} tile${extracted.length !== 1 ? 's' : ''} into Library`);
   }, [ts, natural, showToast]);
 
   const handlePointerMove = (e: React.PointerEvent<HTMLImageElement>) => {
