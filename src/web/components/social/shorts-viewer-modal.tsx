@@ -28,7 +28,17 @@ interface ShortsViewerModalProps {
 }
 
 const isArchive = (url: string) => /\.(zip|rar|7z|tar|bz2|gz)$/i.test(url);
-const isVideo = (url: string) => /\.(mp4|webm|mov|ogg|ogv|mkv)$/i.test(url);
+const isVideo = (url: string) => /\.(mp4|webm|mov|ogg|ogv|mkv|m4v)$/i.test(url);
+
+function formatVideoSrc(url: string): string {
+  if (!url) return "";
+  if (url.includes("#t=")) return url;
+  const hashIndex = url.indexOf("#");
+  if (hashIndex !== -1) {
+    return `${url.substring(0, hashIndex)}#t=0.001`;
+  }
+  return `${url}#t=0.001`;
+}
 
 export function ShortsViewerModal({
   post,
@@ -290,13 +300,31 @@ export function ShortsViewerModal({
         </button>
       </div>
 
+      {/* Adjacent Video Prefetching to eliminate buffer delay and black flashes */}
+      {currentIndex < posts.length - 1 && posts[currentIndex + 1]?.mediaUrl && isVideo(posts[currentIndex + 1].mediaUrl) && (
+        <video
+          src={formatVideoSrc(posts[currentIndex + 1].mediaUrl)}
+          preload="auto"
+          muted
+          className="hidden"
+        />
+      )}
+      {currentIndex > 0 && posts[currentIndex - 1]?.mediaUrl && isVideo(posts[currentIndex - 1].mediaUrl) && (
+        <video
+          src={formatVideoSrc(posts[currentIndex - 1].mediaUrl)}
+          preload="auto"
+          muted
+          className="hidden"
+        />
+      )}
+
       {/* Main Shorts Container Frame */}
       <div className="w-full max-w-[480px] md:max-w-3xl lg:max-w-4xl xl:max-w-5xl h-[94vh] md:h-[88vh] md:max-h-[920px] relative rounded-3xl overflow-hidden bg-black/90 border border-white/20 shadow-2xl flex items-center justify-center mx-3 sm:mx-6">
         
         {/* Ambient Blurred Glow */}
         {currentPost.mediaUrl && !isArchive(currentPost.mediaUrl) && (
           <div 
-            className="absolute inset-0 bg-cover bg-center blur-3xl opacity-35 scale-125 pointer-events-none"
+            className="absolute inset-0 bg-cover bg-center blur-3xl opacity-35 scale-125 pointer-events-none transition-opacity duration-500"
             style={{ backgroundImage: `url(${currentPost.mediaUrl})` }}
           />
         )}
@@ -309,12 +337,12 @@ export function ShortsViewerModal({
           {currentPost.mediaUrl && isVideo(currentPost.mediaUrl) ? (
             <video
               key={currentPost.id}
-              src={currentPost.mediaUrl}
+              src={formatVideoSrc(currentPost.mediaUrl)}
               autoPlay={isPlaying}
               loop
               playsInline
               muted={isMuted}
-              className="max-h-[88vh] md:max-h-[84vh] w-auto max-w-full object-contain mx-auto bg-black rounded-2xl"
+              className="max-h-[88vh] md:max-h-[84vh] w-auto max-w-full object-contain mx-auto bg-black rounded-2xl transition-opacity duration-300"
             />
           ) : currentPost.mediaUrl && isArchive(currentPost.mediaUrl) ? (
             <div className="flex flex-col items-center justify-center p-8 text-center bg-card/60 backdrop-blur-md rounded-2xl border border-white/10 m-4">

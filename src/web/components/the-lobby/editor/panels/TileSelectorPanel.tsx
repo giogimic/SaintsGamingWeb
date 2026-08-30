@@ -42,7 +42,7 @@ export const TileSelectorPanel: React.FC = () => {
   const tileLayers = currentMap.tileLayers || [];
 
   const handleBrushSelect = React.useCallback((gid: number) => {
-    setActiveBrushTileId(gid);
+    setActiveBrushTileId(gid, true);
     if (useEditorStore.getState().activeLayerIdx === -1) {
       setActiveLayerIdx(0);
     }

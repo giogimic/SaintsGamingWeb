@@ -480,7 +480,8 @@ export default function TilesetPicker({
       if (activeBrushTileId >= tilesets[i].firstgid) {
         if (activeTsIdx !== i) {
           setActiveTsIdx(i);
-          setNatural({ w: 0, h: 0 });
+          const cached = tilesets[i]?.imageSource ? TILESET_SIZES[tilesets[i].imageSource] : null;
+          setNatural(cached || { w: imgRef.current?.naturalWidth || tilesets[i]?.imagewidth || 0, h: imgRef.current?.naturalHeight || tilesets[i]?.imageheight || 0 });
           setHoveredTile(null);
           setImgError(false);
         }
@@ -488,6 +489,14 @@ export default function TilesetPicker({
       }
     }
   }, [activeBrushTileId, tilesets, activeTsIdx, natural.h]);
+
+  // Sync natural dimensions from image ref if image is already cached/complete
+  useEffect(() => {
+    if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
+      setNatural({ w: imgRef.current.naturalWidth, h: imgRef.current.naturalHeight });
+      setImgError(false);
+    }
+  }, [activeTsIdx, ts?.imageSource]);
 
   // Listen for studio_add_tileset event
   useEffect(() => {
@@ -638,13 +647,16 @@ export default function TilesetPicker({
   }, [tilesets, tilesetSearch]);
 
   const selection = useMemo(() => {
-    if (!ts || imgError || !natural.w || !natural.h) return null;
+    if (!ts || imgError) return null;
+    const natW = natural.w || imgRef.current?.naturalWidth || ts.imagewidth || 512;
+    const natH = natural.h || imgRef.current?.naturalHeight || ts.imageheight || 512;
+    if (!natW || !natH) return null;
     const offX = ts.offsetX ?? ts.margin ?? 0;
     const offY = ts.offsetY ?? ts.margin ?? 0;
     const spacing = ts.spacing ?? 0;
     const local = activeBrushTileId - ts.firstgid;
     if (local < 0) return null;
-    const maxLocal = Math.floor((natural.h - offY) / (ts.tileheight + spacing)) * ts.columns;
+    const maxLocal = Math.floor((natH - offY) / (ts.tileheight + spacing)) * ts.columns;
     if (local >= maxLocal) return null;
     const col = local % ts.columns;
     const row = Math.floor(local / ts.columns);
@@ -658,10 +670,10 @@ export default function TilesetPicker({
     const heightPx = spanH * ts.tileheight + (spanH - 1) * spacing;
 
     return {
-      leftPct: (leftPx / natural.w) * 100,
-      topPct: (topPx / natural.h) * 100,
-      widthPct: (widthPx / natural.w) * 100,
-      heightPct: (heightPx / natural.h) * 100,
+      leftPct: (leftPx / natW) * 100,
+      topPct: (topPx / natH) * 100,
+      widthPct: (widthPx / natW) * 100,
+      heightPct: (heightPx / natH) * 100,
       local,
       col,
       row,
@@ -678,11 +690,12 @@ export default function TilesetPicker({
   const selectTileRegion = useCallback(
     (startRow: number, startCol: number, width: number, height: number) => {
       const currentTs = tsRef.current;
-      const nat = naturalRef.current;
-      if (!currentTs || !nat.w || !nat.h) return;
+      const nw = naturalRef.current.w || imgRef.current?.naturalWidth || currentTs?.imagewidth || 512;
+      const nh = naturalRef.current.h || imgRef.current?.naturalHeight || currentTs?.imageheight || 512;
+      if (!currentTs || !nw || !nh) return;
       const offY = currentTs.offsetY ?? currentTs.margin ?? 0;
       const spacing = currentTs.spacing ?? 0;
-      const maxRows = Math.max(1, Math.floor((nat.h - offY) / (currentTs.tileheight + spacing)));
+      const maxRows = Math.max(1, Math.floor((nh - offY) / (currentTs.tileheight + spacing)));
       const safeRow = Math.max(0, Math.min(startRow, maxRows - 1));
       const safeCol = Math.max(0, Math.min(startCol, currentTs.columns - 1));
       const endRow = Math.min(safeRow + height - 1, maxRows - 1);
@@ -710,8 +723,10 @@ export default function TilesetPicker({
       onBrushSelectRef.current(topGid);
       if (spanW > 1 || spanH > 1) {
         onBrushSelectPatternRef.current?.({ w: spanW, h: spanH, gids });
+        useEditorStore.getState().setPrefabStampMode('footprint');
       } else {
         onBrushSelectPatternRef.current?.(null);
+        useEditorStore.getState().setPrefabStampMode('1tile');
       }
     },
     []
@@ -719,7 +734,10 @@ export default function TilesetPicker({
 
   // Set Brush Scale changing handler
   const handleSetBrushScale = (scaleW: number, scaleH: number = scaleW) => {
-    if (!ts || !natural.w || !natural.h) return;
+    if (!ts) return;
+    const nw = natural.w || imgRef.current?.naturalWidth || ts.imagewidth || 512;
+    const nh = natural.h || imgRef.current?.naturalHeight || ts.imageheight || 512;
+    if (!nw || !nh) return;
     const local = activeBrushTileId - ts.firstgid;
     const row = local >= 0 ? Math.floor(local / ts.columns) : 0;
     const col = local >= 0 ? local % ts.columns : 0;
@@ -728,11 +746,54 @@ export default function TilesetPicker({
     showToast(`Brush scale set to ${scaleW}×${scaleH} (${scaleW * ts.tilewidth}×${scaleH * ts.tileheight}px)`);
   };
 
+  const commitSlicerSelectionToStamp = useCallback(() => {
+    const currentTs = tsRef.current;
+    if (!currentTs || !slicerSelection) return;
+    const nw = naturalRef.current.w || imgRef.current?.naturalWidth || currentTs.imagewidth || 512;
+    const nh = naturalRef.current.h || imgRef.current?.naturalHeight || currentTs.imageheight || 512;
+    const minX = Math.min(slicerSelection.x0, slicerSelection.x1);
+    const maxX = Math.max(slicerSelection.x0, slicerSelection.x1);
+    const minY = Math.min(slicerSelection.y0, slicerSelection.y1);
+    const maxY = Math.max(slicerSelection.y0, slicerSelection.y1);
+    const offX = currentTs.offsetX ?? currentTs.margin ?? 0;
+    const offY = currentTs.offsetY ?? currentTs.margin ?? 0;
+    const spacing = currentTs.spacing ?? 0;
+
+    const maxRows = Math.max(1, Math.floor((nh - offY) / (currentTs.tileheight + spacing)));
+    const startCol = Math.min(currentTs.columns - 1, Math.max(0, Math.floor((minX - offX) / (currentTs.tilewidth + spacing))));
+    const startRow = Math.min(maxRows - 1, Math.max(0, Math.floor((minY - offY) / (currentTs.tileheight + spacing))));
+    const endCol = Math.min(currentTs.columns - 1, Math.max(startCol, Math.floor(((maxX - 1) - offX) / (currentTs.tilewidth + spacing))));
+    const endRow = Math.min(maxRows - 1, Math.max(startRow, Math.floor(((maxY - 1) - offY) / (currentTs.tileheight + spacing))));
+    const spanW = endCol - startCol + 1;
+    const spanH = endRow - startRow + 1;
+
+    const gids: number[][] = [];
+    for (let r = startRow; r <= endRow; r++) {
+      const rowGids: number[] = [];
+      for (let c = startCol; c <= endCol; c++) {
+        rowGids.push(currentTs.firstgid + r * currentTs.columns + c);
+      }
+      gids.push(rowGids);
+    }
+    const topGid = gids[0]?.[0] ?? (currentTs.firstgid + startRow * currentTs.columns + startCol);
+    isInternalSelectionRef.current = true;
+    onBrushSelectRef.current(topGid);
+    if (spanW > 1 || spanH > 1) {
+      onBrushSelectPatternRef.current?.({ w: spanW, h: spanH, gids });
+      useEditorStore.getState().setPrefabStampMode('footprint');
+    } else {
+      onBrushSelectPatternRef.current?.(null);
+      useEditorStore.getState().setPrefabStampMode('1tile');
+    }
+  }, [slicerSelection]);
+
   const handlePointerDown = (e: React.PointerEvent<HTMLImageElement>) => {
     if (e.button !== 0) return;
     const currentTs = tsRef.current;
-    const nat = naturalRef.current;
-    if (!currentTs || imgError || !imgRef.current || !nat.w || !nat.h) return;
+    if (!currentTs || imgError || !imgRef.current) return;
+    const nw = natural.w || imgRef.current.naturalWidth || currentTs.imagewidth || 512;
+    const nh = natural.h || imgRef.current.naturalHeight || currentTs.imageheight || 512;
+    if (!nw || !nh) return;
     e.preventDefault();
     e.stopPropagation();
 
@@ -743,8 +804,8 @@ export default function TilesetPicker({
     const rect = imgRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
     const y = Math.max(0, Math.min(rect.height - 1, e.clientY - rect.top));
-    const scaleX = nat.w / rect.width;
-    const scaleY = nat.h / rect.height;
+    const scaleX = nw / rect.width;
+    const scaleY = nh / rect.height;
     const nativeX = Math.floor(x * scaleX);
     const nativeY = Math.floor(y * scaleY);
 
@@ -752,13 +813,13 @@ export default function TilesetPicker({
     if (isCalibratingOrigin) {
       const ox = Math.max(0, nativeX);
       const oy = Math.max(0, nativeY);
-      const cols = Math.max(1, Math.floor((nat.w - ox) / (currentTs.tilewidth + (currentTs.spacing || 0))));
+      const cols = Math.max(1, Math.floor((nw - ox) / (currentTs.tilewidth + (currentTs.spacing || 0))));
       handleUpdateTilesetSettings({
         offsetX: ox,
         offsetY: oy,
         columns: cols,
-        imagewidth: nat.w,
-        imageheight: nat.h,
+        imagewidth: nw,
+        imageheight: nh,
       });
       setIsCalibratingOrigin(false);
       showToast(`Grid origin set to X:${ox}px, Y:${oy}px (${cols} columns)`);
@@ -768,15 +829,32 @@ export default function TilesetPicker({
 
     isPointerDownRef.current = true;
 
-    // Freeform Slicer mode — start as a 1px point, expand on drag
+    // Freeform Slicer mode — snap click or begin drag
     if (selectionMode === 'slicer') {
       slicerDragStartRef.current = { x: nativeX, y: nativeY };
+      const offX = currentTs.offsetX ?? currentTs.margin ?? 0;
+      const offY = currentTs.offsetY ?? currentTs.margin ?? 0;
+      const spacing = currentTs.spacing ?? 0;
+      const col = Math.min(currentTs.columns - 1, Math.max(0, Math.floor((nativeX - offX) / (currentTs.tilewidth + spacing))));
+      const maxRows = Math.max(1, Math.floor((nh - offY) / (currentTs.tileheight + spacing)));
+      const row = Math.min(maxRows - 1, Math.max(0, Math.floor((nativeY - offY) / (currentTs.tileheight + spacing))));
+      const tileX0 = offX + col * (currentTs.tilewidth + spacing);
+      const tileY0 = offY + row * (currentTs.tileheight + spacing);
+      const tileX1 = tileX0 + currentTs.tilewidth;
+      const tileY1 = tileY0 + currentTs.tileheight;
+
       setSlicerSelection({
-        x0: nativeX,
-        y0: nativeY,
-        x1: nativeX + 1,
-        y1: nativeY + 1,
+        x0: tileX0,
+        y0: tileY0,
+        x1: tileX1,
+        y1: tileY1,
       });
+
+      const gid = currentTs.firstgid + row * currentTs.columns + col;
+      isInternalSelectionRef.current = true;
+      onBrushSelectRef.current(gid);
+      onBrushSelectPatternRef.current?.(null);
+      useEditorStore.getState().setPrefabStampMode('1tile');
       return;
     }
 
@@ -785,7 +863,7 @@ export default function TilesetPicker({
     const offY = currentTs.offsetY ?? currentTs.margin ?? 0;
     const spacing = currentTs.spacing ?? 0;
     const col = Math.min(currentTs.columns - 1, Math.max(0, Math.floor((nativeX - offX) / (currentTs.tilewidth + spacing))));
-    const maxRows = Math.max(1, Math.floor((nat.h - offY) / (currentTs.tileheight + spacing)));
+    const maxRows = Math.max(1, Math.floor((nh - offY) / (currentTs.tileheight + spacing)));
     const row = Math.min(maxRows - 1, Math.max(0, Math.floor((nativeY - offY) / (currentTs.tileheight + spacing))));
 
     dragStartRef.current = { r: row, c: col };
@@ -797,10 +875,10 @@ export default function TilesetPicker({
     const topPx = offY + row * (currentTs.tileheight + spacing);
 
     setHoveredTile({
-      leftPct: (leftPx / nat.w) * 100,
-      topPct: (topPx / nat.h) * 100,
-      widthPct: (currentTs.tilewidth / nat.w) * 100,
-      heightPct: (currentTs.tileheight / nat.h) * 100,
+      leftPct: (leftPx / nw) * 100,
+      topPct: (topPx / nh) * 100,
+      widthPct: (currentTs.tilewidth / nw) * 100,
+      heightPct: (currentTs.tileheight / nh) * 100,
       gid,
       col,
       row,
@@ -813,14 +891,16 @@ export default function TilesetPicker({
 
   const handlePointerMove = (e: React.PointerEvent<HTMLImageElement>) => {
     const currentTs = tsRef.current;
-    const nat = naturalRef.current;
-    if (!currentTs || imgError || !imgRef.current || !nat.w || !nat.h) return;
+    if (!currentTs || imgError || !imgRef.current) return;
+    const nw = natural.w || imgRef.current.naturalWidth || currentTs.imagewidth || 512;
+    const nh = natural.h || imgRef.current.naturalHeight || currentTs.imageheight || 512;
+    if (!nw || !nh) return;
 
     const rect = imgRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
     const y = Math.max(0, Math.min(rect.height - 1, e.clientY - rect.top));
-    const scaleX = nat.w / rect.width;
-    const scaleY = nat.h / rect.height;
+    const scaleX = nw / rect.width;
+    const scaleY = nh / rect.height;
     const nativeX = Math.floor(x * scaleX);
     const nativeY = Math.floor(y * scaleY);
 
@@ -828,9 +908,9 @@ export default function TilesetPicker({
       const start = slicerDragStartRef.current;
       if (start && isPointerDownRef.current) {
         const x0 = Math.max(0, Math.min(start.x, nativeX));
-        const x1 = Math.min(nat.w, Math.max(start.x, nativeX));
+        const x1 = Math.min(nw, Math.max(start.x, nativeX));
         const y0 = Math.max(0, Math.min(start.y, nativeY));
-        const y1 = Math.min(nat.h, Math.max(start.y, nativeY));
+        const y1 = Math.min(nh, Math.max(start.y, nativeY));
         setSlicerSelection({ x0, y0, x1: Math.max(x0 + 4, x1), y1: Math.max(y0 + 4, y1) });
       }
       return;
@@ -841,7 +921,7 @@ export default function TilesetPicker({
     const offY = currentTs.offsetY ?? currentTs.margin ?? 0;
     const spacing = currentTs.spacing ?? 0;
     const col = Math.min(currentTs.columns - 1, Math.max(0, Math.floor((nativeX - offX) / (currentTs.tilewidth + spacing))));
-    const maxRows = Math.max(1, Math.floor((nat.h - offY) / (currentTs.tileheight + spacing)));
+    const maxRows = Math.max(1, Math.floor((nh - offY) / (currentTs.tileheight + spacing)));
     const row = Math.min(maxRows - 1, Math.max(0, Math.floor((nativeY - offY) / (currentTs.tileheight + spacing))));
 
     let minRow = row;
@@ -870,13 +950,14 @@ export default function TilesetPicker({
 
     if (start && isPointerDownRef.current) {
       dragBoundsRef.current = { row: minRow, col: minCol, w: spanW, h: spanH };
+      selectTileRegion(minRow, minCol, spanW, spanH);
     }
 
     setHoveredTile({
-      leftPct: (leftPx / nat.w) * 100,
-      topPct: (topPx / nat.h) * 100,
-      widthPct: (widthPx / nat.w) * 100,
-      heightPct: (heightPx / nat.h) * 100,
+      leftPct: (leftPx / nw) * 100,
+      topPct: (topPx / nh) * 100,
+      widthPct: (widthPx / nw) * 100,
+      heightPct: (heightPx / nh) * 100,
       gid,
       col: minCol,
       row: minRow,
@@ -894,11 +975,15 @@ export default function TilesetPicker({
       }
     } catch {}
 
-    const bounds = dragBoundsRef.current;
-    if (bounds) {
-      selectTileRegion(bounds.row, bounds.col, bounds.w, bounds.h);
-    } else if (dragStartRef.current) {
-      selectTileRegion(dragStartRef.current.r, dragStartRef.current.c, 1, 1);
+    if (selectionModeRef.current === 'slicer') {
+      commitSlicerSelectionToStamp();
+    } else {
+      const bounds = dragBoundsRef.current;
+      if (bounds) {
+        selectTileRegion(bounds.row, bounds.col, bounds.w, bounds.h);
+      } else if (dragStartRef.current) {
+        selectTileRegion(dragStartRef.current.r, dragStartRef.current.c, 1, 1);
+      }
     }
 
     slicerDragStartRef.current = null;
@@ -912,14 +997,16 @@ export default function TilesetPicker({
     const onWindowPointerMove = (e: PointerEvent) => {
       if (!isPointerDownRef.current) return;
       const currentTs = tsRef.current;
-      const nat = naturalRef.current;
-      if (!currentTs || !imgRef.current || !nat.w || !nat.h) return;
+      if (!currentTs || !imgRef.current) return;
+      const nw = naturalRef.current.w || imgRef.current.naturalWidth || currentTs.imagewidth || 512;
+      const nh = naturalRef.current.h || imgRef.current.naturalHeight || currentTs.imageheight || 512;
+      if (!nw || !nh) return;
 
       const rect = imgRef.current.getBoundingClientRect();
       const x = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
       const y = Math.max(0, Math.min(rect.height - 1, e.clientY - rect.top));
-      const scaleX = nat.w / rect.width;
-      const scaleY = nat.h / rect.height;
+      const scaleX = nw / rect.width;
+      const scaleY = nh / rect.height;
       const nativeX = Math.floor(x * scaleX);
       const nativeY = Math.floor(y * scaleY);
 
@@ -927,9 +1014,9 @@ export default function TilesetPicker({
         const start = slicerDragStartRef.current;
         if (start) {
           const x0 = Math.max(0, Math.min(start.x, nativeX));
-          const x1 = Math.min(nat.w, Math.max(start.x, nativeX));
+          const x1 = Math.min(nw, Math.max(start.x, nativeX));
           const y0 = Math.max(0, Math.min(start.y, nativeY));
-          const y1 = Math.min(nat.h, Math.max(start.y, nativeY));
+          const y1 = Math.min(nh, Math.max(start.y, nativeY));
           setSlicerSelection({ x0, y0, x1: Math.max(x0 + 4, x1), y1: Math.max(y0 + 4, y1) });
         }
         return;
@@ -940,7 +1027,7 @@ export default function TilesetPicker({
       const offY = currentTs.offsetY ?? currentTs.margin ?? 0;
       const spacing = currentTs.spacing ?? 0;
       const col = Math.min(currentTs.columns - 1, Math.max(0, Math.floor((nativeX - offX) / (currentTs.tilewidth + spacing))));
-      const maxRows = Math.max(1, Math.floor((nat.h - offY) / (currentTs.tileheight + spacing)));
+      const maxRows = Math.max(1, Math.floor((nh - offY) / (currentTs.tileheight + spacing)));
       const row = Math.min(maxRows - 1, Math.max(0, Math.floor((nativeY - offY) / (currentTs.tileheight + spacing))));
 
       let minRow = row;
@@ -968,12 +1055,13 @@ export default function TilesetPicker({
       const heightPx = spanH * currentTs.tileheight + (spanH - 1) * spacing;
 
       dragBoundsRef.current = { row: minRow, col: minCol, w: spanW, h: spanH };
+      selectTileRegion(minRow, minCol, spanW, spanH);
 
       setHoveredTile({
-        leftPct: (leftPx / nat.w) * 100,
-        topPct: (topPx / nat.h) * 100,
-        widthPct: (widthPx / nat.w) * 100,
-        heightPct: (heightPx / nat.h) * 100,
+        leftPct: (leftPx / nw) * 100,
+        topPct: (topPx / nh) * 100,
+        widthPct: (widthPx / nw) * 100,
+        heightPct: (heightPx / nh) * 100,
         gid,
         col: minCol,
         row: minRow,
@@ -985,11 +1073,15 @@ export default function TilesetPicker({
     const onWindowPointerUp = () => {
       if (isPointerDownRef.current) {
         isPointerDownRef.current = false;
-        const bounds = dragBoundsRef.current;
-        if (bounds) {
-          selectTileRegion(bounds.row, bounds.col, bounds.w, bounds.h);
-        } else if (dragStartRef.current) {
-          selectTileRegion(dragStartRef.current.r, dragStartRef.current.c, 1, 1);
+        if (selectionModeRef.current === 'slicer') {
+          commitSlicerSelectionToStamp();
+        } else {
+          const bounds = dragBoundsRef.current;
+          if (bounds) {
+            selectTileRegion(bounds.row, bounds.col, bounds.w, bounds.h);
+          } else if (dragStartRef.current) {
+            selectTileRegion(dragStartRef.current.r, dragStartRef.current.c, 1, 1);
+          }
         }
         slicerDragStartRef.current = null;
         dragStartRef.current = null;
@@ -1004,7 +1096,7 @@ export default function TilesetPicker({
       window.removeEventListener('pointermove', onWindowPointerMove);
       window.removeEventListener('pointerup', onWindowPointerUp);
     };
-  }, [selectTileRegion]);
+  }, [selectTileRegion, commitSlicerSelectionToStamp]);
 
   // Tile Library Selection Handler with accurate GID mapping
   const handleSelectTileDefinition = useCallback(

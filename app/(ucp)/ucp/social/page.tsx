@@ -11,6 +11,19 @@ import { Input } from "@/shared/ui/input";
 import { createSocialPost, toggleReaction, deleteSocialPost } from "./actions";
 import { UiPresetEmbed } from "@/web/components/social/UiPresetEmbed";
 
+const isArchive = (url: string) => /\.(zip|rar|7z|tar|bz2|gz)$/i.test(url);
+const isVideo = (url: string) => /\.(mp4|webm|mov|ogg|ogv|mkv|m4v)$/i.test(url);
+
+function formatVideoSrc(url: string): string {
+  if (!url) return "";
+  if (url.includes("#t=")) return url;
+  const hashIndex = url.indexOf("#");
+  if (hashIndex !== -1) {
+    return `${url.substring(0, hashIndex)}#t=0.001`;
+  }
+  return `${url}#t=0.001`;
+}
+
 export default async function SocialDashboard(props: { searchParams: Promise<{ filter?: string; tag?: string; q?: string }> }) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -272,9 +285,19 @@ export default async function SocialDashboard(props: { searchParams: Promise<{ f
                           </p>
 
                           {post.mediaUrl && (
-                            <div className="mt-3 rounded-lg overflow-hidden border border-border max-h-96 relative">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={post.mediaUrl} alt="Post media" className="object-cover w-full max-h-96" />
+                            <div className="mt-3 rounded-xl overflow-hidden border border-border max-h-96 relative bg-black/40 flex items-center justify-center">
+                              {isVideo(post.mediaUrl) ? (
+                                <video 
+                                  src={formatVideoSrc(post.mediaUrl)} 
+                                  controls 
+                                  preload="metadata" 
+                                  playsInline 
+                                  className="w-auto max-w-full max-h-96 rounded-xl" 
+                                />
+                              ) : (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img src={post.mediaUrl} alt="Post media" className="object-contain w-auto max-w-full max-h-96 rounded-xl" />
+                              )}
                             </div>
                           )}
 

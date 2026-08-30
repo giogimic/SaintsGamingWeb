@@ -1,3 +1,24 @@
+# 2.1.503
+- **Seamless Video Playback & Zero-Black-Screen Overhaul**: Eliminated black video preview screens across the social feed and video player by implementing automatic `#t=0.001` media fragment decoding, smooth skeleton shimmer state, and opacity crossfade upon video data availability.
+- **Dedicated High-Performance FeedVideoPlayer**: Created `FeedVideoPlayer.tsx` featuring dynamic aspect ratio adaptation (9:16 portrait, 16:9 widescreen, 4:5 social), ambient blurred glow backdrop matching video content, strict viewport-centered auto-play/auto-pause (`IntersectionObserver`), interactive scrub bar, timestamp badges, tap-to-pause with central pop icon animation, and double-tap heart animations with floating particle bursts.
+- **Feed-Wide Sound Coordinator**: Unmuting any video in the feed persists across the browsing session (`localStorage`), allowing seamless audio playback while scrolling without needing to unmute each individual video.
+- **Adjacent Shorts Preloading**: Added background video prefetching (`preload="auto"`) in the Saints Reel / Shorts viewer for adjacent items (`currentIndex - 1` and `currentIndex + 1`), providing instant zero-lag scrolling between reels with zero buffer delay or black flashing.
+- **Integrated Social Timeline Redesign**: Transformed the social feed from disconnected chunky boxed cards into a fluid, cohesive social timeline stream (Twitter/X and Threads style) featuring unified hairline dividers, avatar gutter with vertical thread connector rails for nested replies, and streamlined interactive action bars.
+- **Stream Selector Navigation Tabs**: Added top stream tabs (**For You**, **Clips & Reels**, **Hot & Trending**) to quickly switch between algorithmic discovery, media-only clips, and trending posts.
+
+# 2.1.502
+- **Grid Mode & Freeform Crop Selection Engine Overhaul**: Fully restored seamless click and drag selection in both Grid Mode and Freeform Crop (Slicer) mode within `TilesetPicker.tsx`.
+- **Image Dimension Fallbacks & Cached Sync**: Added automatic natural dimension detection and image ref caching fallback (`imgRef.current?.naturalWidth` / `ts.imagewidth`) so pointer down, move, and drag calculations never block on zero dimensions.
+- **Live Drag Updates & Stamp Commitment**: Re-enabled live multi-tile pattern updates during dragging in Grid Mode, ensuring HUD preview, Babylon brush reticle, and committed selection state update in real-time.
+- **Freeform Crop Auto-Snapping & Stamp Activation**: Freeform Crop single-clicks now cleanly snap to the clicked tile, while dragged regions automatically compute and activate covered tile patterns for immediate stamping onto the canvas.
+- **Pattern Preservation**: Updated `TileSelectorPanel.tsx`'s `handleBrushSelect` to preserve multi-tile patterns when selecting brush GIDs (`keepPattern = true`).
+
+# 2.1.501
+- **Admin Dashboard Studio-Style Window Shell**: Transformed the website's Admin Dashboard from a static, full-screen lock into an authentic, floating, draggable, resizable, minimizable, and maximizable Studio Window OS.
+- **Window Controls & Multitasking**: Added GPU-accelerated dragging, bottom/corner resizing, double-click collapse/expand, full-screen maximize/restore, and background backdrop modes (Cinematic Dim, Frosted Glass, and Transparent Passthrough).
+- **Floating Minimized Admin Dock Capsule**: Added a floating bottom dock pill that collapses the admin console so administrators can freely browse and interact with the website while keeping admin tools one click away.
+- **Collapsible Sidebar & Tactile Audio**: Added compact icon rail sidebar toggle, live geometry and socket telemetries in the status footer, and tactile audio feedback with `soundSynth.playUiClick()`.
+
 # 2.1.500
 - **Studio Tileset Drag-Selection Restoration & Pointer Engine Overhaul**: Fixed a regression where `TileSelectorPanel.tsx`'s `handleBrushSelect` was clearing multi-tile patterns via `setActiveBrushPattern(null)`. Added dedicated element-level `handlePointerMove` on `TilesetPicker.tsx` and separated live dragging bounding box rendering from single-event release commitment, restoring seamless multi-tile click-and-drag selection in the Studio Tileset Picker.
 
