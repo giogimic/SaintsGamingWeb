@@ -56,6 +56,6 @@ Canonical documentation structure matching the live in-app wiki:
 
 ## 🎯 About the Platform & Technology
 
-**Saints Gaming** ([SaintsGaming.net](https://SaintsGaming.net)) is an open gaming community and full-stack platform created by **GioGimic**, fusing modern web technologies (Next.js 15, React 19, TypeScript, Prisma ORM) with a high-performance 2.5D browser MMORPG engine (Babylon.js WebGL, Go realtime daemon).
+**Saints Gaming** ([SaintsGaming.net](https://SaintsGaming.net)) is an open gaming community and full-stack platform created by **GioGimic**. Rooted in a community extending back to 2007 on TeamSpeak and SAMP, it now fuses modern web technologies (Next.js 15, React 19, TypeScript, Prisma ORM) with a high-performance 2.5D browser MMORPG engine (Babylon.js WebGL, Go realtime daemon).
 
 For questions, contributions, or suggestions, join our community on [Discord](https://discord.saintsgaming.net) or submit pull requests on [GitHub](https://github.com/giogimic/SaintsGamingWeb).

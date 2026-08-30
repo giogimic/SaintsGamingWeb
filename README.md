@@ -1,9 +1,9 @@
 # Saints Gaming Web (`saints-gaming-web`)
 ### Full-Stack Community Management System & Embedded 2.5D MMORPG Engine
 
-Saints Gaming Web (`saints-gaming-web`) is a full-stack community management system combined with an embedded 2.5D massively multiplayer online (MMO) game engine.
+Saints Gaming: Time To Play. The `saints-gaming-web` project is a full-stack community management system combined with an embedded 2.5D massively multiplayer online (MMO) game engine.
 
-This project solves the fragmentation of online gaming communities by unifying discussion forums, player support tools, content distribution, and real-time multiplayer browser gaming into a single integrated platform.
+Originating as a laid-back gaming community on TeamSpeak and SAMP in 2007, this project solves the fragmentation of modern online gaming communities by unifying discussion forums, player support tools, content distribution, and real-time multiplayer browser gaming into a single integrated platform.
 
 The core technology stack is built on Next.js 15, React 19, TypeScript, Prisma ORM, Socket.io, and Babylon.js WebGL, with an optional Go socket server for high-throughput spatial multiplayer networking.
 
@@ -13,7 +13,7 @@ The core technology stack is built on Next.js 15, React 19, TypeScript, Prisma O
 - **Live Platform:** [https://saintsgaming.net](https://saintsgaming.net)
 - **AI & LLM Context:** [`llms.txt`](llms.txt)
 - **License:** [Business Source License 1.1 (BSL-1.1)](LICENSE)
-- **Release Version:** `v2.1.535`
+- **Release Version:** `v2.1.536`
 - **Lead Developer:** **GioGimic**
 - **Community Discord:** [discord.saintsgaming.net](https://discord.saintsgaming.net)
 

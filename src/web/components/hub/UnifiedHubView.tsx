@@ -150,7 +150,7 @@ export function UnifiedHubView({
               The Nexus
             </h1>
             <p className="text-muted-foreground text-sm sm:text-base mt-2 max-w-2xl">
-              Your central operations center for community announcements, official game modpacks, and dedicated 24/7 multiplayer servers.
+              Saints Gaming: Time To Play. Your central hub since 2007 for community announcements, official game modpacks, and dedicated 24/7 multiplayer servers.
             </p>
           </div>
 
@@ -251,7 +251,7 @@ export function UnifiedHubView({
               <div className="flex items-center justify-between border-b border-border/40 pb-3">
                 <div>
                   <h2 className="text-xl font-bold text-foreground">Latest Announcements</h2>
-                  <p className="text-xs text-muted-foreground">Recent articles, patch notes, and community updates</p>
+                  <p className="text-xs text-muted-foreground">Recent dispatches, patch notes, and updates from the Saints Gaming network</p>
                 </div>
               </div>
 
@@ -330,7 +330,7 @@ export function UnifiedHubView({
               <div className="flex items-center justify-between border-b border-border/40 pb-3">
                 <div>
                   <h2 className="text-xl font-bold text-foreground">Community Modpacks</h2>
-                  <p className="text-xs text-muted-foreground">Official graphics enhancements and resource bundles</p>
+                  <p className="text-xs text-muted-foreground">Official mod packs for our community servers, built by the community</p>
                 </div>
               </div>
 

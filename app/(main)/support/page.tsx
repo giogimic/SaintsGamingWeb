@@ -36,7 +36,7 @@ export default async function SupportPage() {
             Support Center
           </h1>
           <p className="text-muted-foreground mt-2 text-lg">
-            Need help? Open a ticket to contact staff privately.
+            Need help? Open a ticket to contact our community staff privately. We're here to help.
           </p>
         </div>
       </div>
