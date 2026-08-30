@@ -1,3 +1,8 @@
+# 2.1.527
+- **Navbar Layout Refinement**:
+  - Removed Wiki link from top Navbar and mobile navigation drawer (`NAV_ITEMS`) for a cleaner header layout, while keeping it accessible in the Footer Resources menu.
+- **Version Bump**: Bumped release version to `v2.1.527` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.526
 - **Fluid & Responsive Walking Movement Pipeline**:
   - **Tile-Chaining & Elimination of Dead Stops**: Upgraded the movement game loop in `GameCanvasBabylon.tsx` to seamlessly chain consecutive grid steps as long as movement keys are held, eliminating the 16–33ms dead stop hitches at tile boundaries.
