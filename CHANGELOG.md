@@ -1,3 +1,31 @@
+# 2.1.530
+- **AI-Crawler & LLM Discovery Architecture**:
+  - **Plain-Text Descriptive README Optimization**: Re-authored `README.md` with plain-sentence opening statements explicitly defining project category (full-stack community management system combined with a 2.5D MMO engine), the problem solved (unifying fragmented gaming community tools into one platform), and the exact tech stack in plain text (Next.js 15, React 19, TypeScript, Prisma, Socket.io, Babylon.js).
+  - **Dedicated Repository `llms.txt`**: Added a machine-readable, factual context index at `/llms.txt` summarizing frontend pipelines, Go realtime networking, database schemas, and Studio tooling in high-density paragraphs for language models and AI crawlers.
+- **Version Bump**: Bumped release version to `v2.1.530` across all application layouts, headers, footers, settings, and documentation.
+
+# 2.1.529
+- **Repository SEO & Search Discovery Optimization**:
+  - **Comprehensive Technical README**: Restructured and enriched the primary `README.md` with natural technical keywords, canonical repository references (`giogimic/SaintsGamingWeb`), framework badges (Next.js 15, React 19, TypeScript, Babylon.js WebGL, Go realtime engine, Prisma ORM), architecture matrix, and local quick start.
+  - **Public Documentation Index Enhancement**: Enhanced `docs/README.md` with semantic category headings, deep wiki directory links, and cross-references to improve organic indexing on GitHub and external search engines.
+- **Version Bump**: Bumped release version to `v2.1.529` across all application layouts, headers, footers, settings, and documentation.
+
+# 2.1.528
+- **The Nexus (Unified Operations Hub)**:
+  - Combined News, Modpacks, and Dedicated Game Servers into a single unified operations hub (`/hub` - The Nexus) with responsive side-tab switching (`?tab=news|modpacks|servers`).
+  - Added seamless backwards compatibility across `/news`, `/modpacks`, and `/servers` routes.
+  - Consolidated top navigation bar to feature "The Nexus" (`/hub`).
+- **Persistent Global Bottom Bar (`GlobalBottomBar`)**:
+  - Implemented a persistent, frosted-glass (`sg-glass`) bottom bar across all platform layouts (`MainLayout` and `UcpLayout`).
+  - **Website Mode Dynamics**: Displays live Saints Network status, online player counts, contextual route pill (`Reading Nexus`, `Browsing Forum`, `Command Center`), and social messenger trigger.
+  - **Game Mode Dynamics (`/lobby`, `/studio`)**: Displays Game Name & Shard, real-time render FPS counter, ping latency, selected Saint status (Level, HP bar, credits pouch), and quick audio/fullscreen toggles.
+  - **Developer Pop-Out Console (`permissionLevel >= 400`)**: Interactive slide-up console with client error stream interceptor, React & session state inspector, performance metrics (FPS, resolution, DPR), and quick dev actions.
+  - **Moderator Drawer (`permissionLevel >= 200`)**: Fast moderation drawer with live presence and direct links to user directory and audit logs.
+- **Lobby UI Modernization**:
+  - Replaced noisy initial lobby header and duplicate footer with the website's unified Game-Mode Navbar and GlobalBottomBar.
+  - Positioned Social Messenger drawer above the bottom bar across both web and in-game exploration.
+- **Version Bump**: Bumped release version to `v2.1.528` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.527
 - **Navbar Layout Refinement**:
   - Removed Wiki link from top Navbar and mobile navigation drawer (`NAV_ITEMS`) for a cleaner header layout, while keeping it accessible in the Footer Resources menu.

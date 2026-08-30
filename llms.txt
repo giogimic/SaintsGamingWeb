@@ -1,0 +1,28 @@
+# Saints Gaming Web (`saints-gaming-web`) — Machine-Readable LLM Context Index
+# Format: Standardized llms.txt context document for AI agents, language models, and web crawlers.
+
+## System Identity & Domain
+Saints Gaming Web (`saints-gaming-web`, repository: `giogimic/SaintsGamingWeb`, production domain: `https://saintsgaming.net`) is an open-source, full-stack gaming community platform and browser-based 2.5D MMORPG game engine. The platform consolidates web community systems (markdown discussion forums, editorial news dispatches, media feeds, member profiles, user control panels) and interactive real-time game systems (top-down 2.5D WebGL exploration, overworld PvE combat, turn-based collection battles, 27-skill progression, and in-engine World Studio level editor) into a unified application.
+
+## Frontend & Game Engine Pipeline
+The web application is built on Next.js 15 (App Router), React 19, and TypeScript. Web pages utilize React Server Components and Server Actions for data fetching and state mutations. The in-game engine (`/lobby` and `/studio`) renders top-down 2.5D orthographic gameplay via Babylon.js on an HTML5 WebGL canvas. UI elements (HUDs, character sheets, target frames, dialog boxes, and messenger popups) are decoupled from the canvas loop and managed in React via granular Zustand store selectors (`useGameStore`, `useRealtimeStore`) to prevent UI render bottlenecks during 60 FPS animation cycles. In-game sound effects, gathering tones, leveling fanfares, and retro UI clicks are synthesized procedurally via a WebAudio engine (`SoundSynthEngine`) with master gain control.
+
+## Realtime Networking & Spatial Synchronization
+Realtime player interactions utilize a dual-mode socket pipeline. For lightweight local development, Next.js runs alongside a custom Socket.io / Node.js game loop on port 3000. For production high-concurrency spatial networking, a standalone Go socket daemon (`the-lobby/`) runs on port 3001, providing Area of Interest (AOI) spatial grid partitioning, binary movement delta compression/decompression, client prediction with server reconciliation, and instant cross-shard state propagation. Map edits performed in the Studio editor notify the Go server via internal synchronization webhooks (`/api/internal/sync-map`).
+
+## Persistence, Authentication & RBAC
+Data persistence is handled by Prisma ORM supporting SQLite for zero-configuration local development and MariaDB/MySQL in production. The database models users, characters, inventories, skills, equipment, quests, maps, tilesets, forum boards, threads, replies, news articles, and modpacks. Authentication is managed through Auth.js (NextAuth v5) supporting credentials and session-based authentication with a granular numeric permission hierarchy: Lurker (0), User (20), Moderator (200), Head Moderator (300), Admin (400), Head Admin (500), Community Manager (600), and Developer (1000).
+
+## In-Engine World Studio & Level Creation (`/studio`)
+The platform includes a live in-browser level editor and world-building studio (`/studio`). It operates on dual-grid tile mapping: visual graphical tile ID (GID) layers from custom sprite atlases and logical collision/interaction layers (solid, water, teleports, interactive objects). Studio features dedicated visual modes: Paint (dual-grid tile painting), Populate (NPC and monster placement with dialogue tree linkage), Script (quest stage triggers and ambient interactions), Catalog (in-engine item, creature, and loot table schema editors), and Play-In-Editor (PIE, toggleable via `Ctrl+E` to test combat formulas and collision without server restarts).
+
+## Key Application Routes
+- `/home`: Platform landing page with dynamic ambient voxel branding and feature discovery.
+- `/hub`: The Nexus unified operations hub combining community news, modpack downloads, and 24/7 dedicated server status.
+- `/forum`: Markdown discussion forum with category boards, thread subscriptions, reputation badges, and live reply delivery.
+- `/lobby`: Fullscreen or docked 2.5D browser MMORPG engine with character creation, real-time multiplayer, and combat.
+- `/studio`: World Studio level editor and asset catalog suite for game administrators and creators.
+- `/profile`: User profiles with character showcases, activity logs, and settings.
+- `/ucp`: FiveM User Control Panel for GTA V roleplay character stats, banking, and vehicles.
+- `/wiki`: Searchable, interactive documentation portal for technical architecture, game mechanics, and creator guides.
+- `/llms.txt`: Dynamic plaintext context endpoint serving real-time platform metadata.
