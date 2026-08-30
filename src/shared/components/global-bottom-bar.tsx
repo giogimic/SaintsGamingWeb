@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useRealtimeStore } from "@/web/hooks/useRealtimeStore";
@@ -9,6 +10,11 @@ import { useMessenger } from "@/web/components/messenger/messenger-provider";
 import { useGameStore } from "@/web/components/the-lobby/store";
 import { soundSynth } from "@/engine/sound-synth";
 import { getUserStatusStats, UserStatusStats } from "@/app/actions/user";
+
+const StudioBottomToolbar = dynamic(
+  () => import("@/web/components/the-lobby/editor/StudioBottomToolbar").then((m) => m.StudioBottomToolbar),
+  { ssr: false }
+);
 import {
   Activity,
   Terminal,
@@ -69,7 +75,7 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "v2.1.553",
+  siteVersion = "v2.1.554",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;
@@ -78,7 +84,11 @@ export function GlobalBottomBar({
   const { data: session } = useSession();
   const isStudioRoute = pathname?.startsWith("/studio");
   if (isStudioRoute) {
-    return null;
+    return (
+      <div className="fixed bottom-0 left-0 right-0 z-[120] pointer-events-none">
+        <StudioBottomToolbar />
+      </div>
+    );
   }
   const isGameRoute = pathname?.startsWith("/lobby");
 
@@ -254,20 +264,41 @@ export function GlobalBottomBar({
 
             {user ? (
               <div className="flex items-center gap-2 sm:gap-2.5 truncate">
-                <span className="font-bold text-foreground truncate max-w-[80px] sm:max-w-[120px] text-[11px]">
+                {/* Account Name & Level */}
+                <span className="font-bold text-foreground truncate max-w-[80px] sm:max-w-[120px] text-[11px]" title={`Account: ${username}`}>
                   {username}
                 </span>
                 <ActionTooltip label="Account Level">
                   <span className="px-1.5 py-0.2 rounded bg-primary/10 border border-primary/25 text-primary font-bold text-[10px] cursor-help">
-                    LVL {userLevel}
+                    {isGameRoute && player?.name ? `ACCT LVL ${userLevel}` : `LVL ${userLevel}`}
                   </span>
                 </ActionTooltip>
+
+                {/* Character Name & Level in Game Mode */}
+                {isGameRoute && player?.name && (
+                  <>
+                    <span className="text-muted-foreground/40 hidden sm:inline">|</span>
+                    <ActionTooltip label={`Active Hero: ${player.name} (Level ${player.level || 1})`}>
+                      <div className="hidden sm:flex items-center gap-1.5 text-amber-400 font-bold text-[11px] cursor-help">
+                        <Gamepad2 className="w-3 h-3 text-amber-400 shrink-0" />
+                        <span className="text-amber-300 truncate max-w-[110px]">{player.name}</span>
+                        <span className="px-1.5 py-0.2 rounded bg-amber-500/15 border border-amber-500/30 text-amber-400 font-bold text-[10px]">
+                          LVL {player.level || 1}
+                        </span>
+                      </div>
+                    </ActionTooltip>
+                  </>
+                )}
+
+                {/* Coins */}
                 <ActionTooltip label="Saints Coins">
                   <div className="hidden md:flex items-center gap-1 text-amber-400 font-bold text-[11px] cursor-help">
                     <Coins className="w-3 h-3" />
                     <span>{userCoins.toLocaleString()}</span>
                   </div>
                 </ActionTooltip>
+
+                {/* Achievements */}
                 <ActionTooltip label="Achievement Points">
                   <div className="hidden lg:flex items-center gap-1 text-yellow-400 font-bold text-[11px] cursor-help">
                     <Trophy className="w-3 h-3" />

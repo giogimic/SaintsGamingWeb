@@ -51,11 +51,9 @@ import { normalizeStudioMapVisuals, formatMapWriteError } from '@/shared/game/st
 import { isGoMmoSocketEnabled } from '@/shared/net/goMmoSocket';
 import { toBaseMapId } from '@/shared/net/mapIds';
 import { soundSynth } from '@/engine/sound-synth';
-import { StudioMenuBar } from './StudioMenuBar';
 import { PasteOptionsToolbar } from './PasteOptionsToolbar';
 import { StudioOmnisearch } from './StudioOmnisearch';
 import { StudioFavoritesStrip } from './StudioFavoritesStrip';
-import { StudioBottomToolbar } from './StudioBottomToolbar';
 import { AssetStudioSuite } from './AssetStudioSuite';
 import { HeroStudioSuite } from './hero-studio/HeroStudioSuite';
 import { StudioContextMenu } from './StudioContextMenu';
@@ -710,11 +708,7 @@ export const StudioEditorShell: React.FC = () => {
           </div>
         </div>
       )}
-      <div className={`fixed inset-0 pointer-events-none z-[100] flex flex-col ${!isStudioReady ? 'opacity-0' : 'opacity-100 transition-opacity duration-500'}`}>
-        <StudioMenuBar
-          onOpenMapBrowser={() => useEditorStore.getState().openPanel('maps')}
-          onOpenAssetBrowser={() => setStudioMode('assets')}
-        />
+      <div className={`fixed inset-0 pointer-events-none z-[100] flex flex-col pt-10 pb-9 ${!isStudioReady ? 'opacity-0' : 'opacity-100 transition-opacity duration-500'}`}>
         <PasteOptionsToolbar />
         <StudioFavoritesStrip />
         <StudioOmnisearch open={omnisearchOpen} onClose={() => setOmnisearchOpen(false)} />
@@ -925,13 +919,6 @@ export const StudioEditorShell: React.FC = () => {
         {studioMode === 'hero' && (
           <HeroStudioSuite />
         )}
-
-        {/* Unified Bottom Studio Toolbar */}
-        <StudioBottomToolbar
-          onOpenMapBrowser={() => setStudioMode('atlas')}
-          onOpenAssetBrowser={() => setStudioMode('assets')}
-          onOpenHeroStudio={() => setStudioMode('hero')}
-        />
       </div>
 
       <DestinationPlacementHUD />

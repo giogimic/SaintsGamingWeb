@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useEditorStore } from './editor-store';
 import { useGameStore } from '../store';
 import { useTheme } from 'next-themes';
+import Link from 'next/link';
+import { SGMicro3DLogo } from '@/web/components/landing/sg-logo-3d-micro';
 import {
   Folder,
   Box,
@@ -48,6 +50,8 @@ import {
   Sword,
   Store,
   Palette,
+  Home,
+  Gamepad2,
 } from 'lucide-react';
 
 
@@ -207,9 +211,33 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
     >
       {/* ─── ZONE 1: Identity, Project Context & Primary Menus ─── */}
       <div className="flex items-center gap-2.5">
-        {/* Studio Brand */}
-        <div className="flex items-center gap-1.5 pr-2.5 border-r border-border/40">
-          <span className="font-mono font-black text-xs tracking-wider text-primary">STUDIO</span>
+        {/* Studio Brand & Navigation Links */}
+        <div className="flex items-center gap-2 pr-2 border-r border-border/40">
+          <Link href="/home" className="flex items-center gap-1.5 group text-muted-foreground hover:text-primary transition-colors" title="Saints Gaming Home">
+            <div className="transition-transform group-hover:scale-110">
+              <SGMicro3DLogo size={20} />
+            </div>
+            <span className="font-mono font-black text-xs tracking-wider text-primary">STUDIO</span>
+          </Link>
+
+          <div className="flex items-center gap-1 ml-1">
+            <Link
+              href="/home"
+              className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-all"
+              title="Return to Saints Website Home"
+            >
+              <Home className="w-3 h-3 text-primary" />
+              <span className="hidden xl:inline">Home</span>
+            </Link>
+            <Link
+              href="/lobby"
+              className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-all shadow-sm"
+              title="Play MMO Game in The Lobby"
+            >
+              <Gamepad2 className="w-3 h-3" />
+              <span>Play Now</span>
+            </Link>
+          </div>
         </div>
 
         {/* Project / World Profile Selector */}

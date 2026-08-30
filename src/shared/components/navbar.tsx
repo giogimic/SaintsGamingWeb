@@ -1,6 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const StudioMenuBar = dynamic(
+  () => import("@/web/components/the-lobby/editor/StudioMenuBar").then((m) => m.StudioMenuBar),
+  { ssr: false }
+);
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
@@ -75,7 +81,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.553",
+  siteVersion = "v2.1.554",
 }: {
   session: any | null;
   dbPermissionLevel?: number;
@@ -113,7 +119,11 @@ export function Navbar({
 
   const isStudioRoute = pathname?.startsWith("/studio");
   if (isStudioRoute) {
-    return null;
+    return (
+      <div className="fixed top-0 z-[120] w-full pointer-events-none">
+        <StudioMenuBar />
+      </div>
+    );
   }
 
   const isGameRoute = pathname?.startsWith("/lobby");
