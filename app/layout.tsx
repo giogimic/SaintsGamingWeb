@@ -65,6 +65,14 @@ export const metadata: Metadata = {
     description: "Saints Gaming - Dedicated Game Servers, Custom Modpacks, Community Forums, Live Streams, and Embedded MMO Experience.",
     images: ["/og-image.jpg"],
   },
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export default async function RootLayout({
