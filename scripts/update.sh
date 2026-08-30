@@ -77,11 +77,27 @@ if grep -q "^DATABASE_URL=.*@db:3306" .env 2>/dev/null && command -v docker &>/d
     fi
 fi
 
+# --- Proactive Disk Space Check & Cleanup ---
+FREE_SPACE_KB=$(df -k / | tail -1 | awk '{print $4}')
+if [ -n "$FREE_SPACE_KB" ] && [ "$FREE_SPACE_KB" -lt 5242880 ]; then
+    echo -e "${YELLOW}[!] Low disk space detected (< 5GB free). Running automated cleanup...${NC}"
+    if command -v docker &>/dev/null; then
+        docker builder prune -a -f 2>/dev/null || true
+        docker image prune -f 2>/dev/null || true
+        docker network prune -f 2>/dev/null || true
+    fi
+    if command -v journalctl &>/dev/null; then
+        sudo journalctl --vacuum-size=100M 2>/dev/null || true
+    fi
+    if [ -f "docker_build.log" ]; then > docker_build.log; fi
+    echo -e "${GREEN}[✓] Low-disk cleanup completed.${NC}"
+fi
+
 # --- Git Pull ---
 echo -e "${CYAN}[*] Fetching latest code from Git...${NC}"
 git fetch --all
 if [ $? -ne 0 ]; then
-    echo -e "${RED}[!] git fetch failed. Check your internet connection.${NC}"
+    echo -e "${RED}[!] git fetch failed. Check your internet connection or disk space.${NC}"
     exit 1
 fi
 
@@ -242,8 +258,10 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
         fi
     fi
 
-    # Prune orphaned networks to prevent IPv4 pool exhaustion
+    # Prune orphaned networks, dangling images & excessive build cache before building
     docker network prune -f 2>/dev/null || true
+    docker image prune -f 2>/dev/null || true
+    docker builder prune -f --keep-storage 5GB 2>/dev/null || docker builder prune -a -f 2>/dev/null || true
 
     docker compose build web > docker_build.log 2>&1
     if [ $? -ne 0 ]; then
@@ -256,6 +274,9 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
         echo -e "${RED}[!] Failed to start web container. Check docker_build.log.${NC}"
         exit 1
     fi
+
+    # Post-build cleanup of dangling intermediate build layers
+    docker image prune -f 2>/dev/null || true
 
     echo -e "${GREEN}[✓] Web container rebuilt and restarted.${NC}\n"
 
