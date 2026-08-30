@@ -23,7 +23,7 @@ const GENRES = [
     id: 'CREATURE_MMO',
     name: 'Creature Collection MMO',
     description: 'Capture, train, and battle companion creatures across a living open world.',
-    similarTo: 'Pokémon MMO, Temtem, Palworld',
+    similarTo: 'Creature Collection, Pet Battler, Open-World Monster Taming',
     icon: Sparkles,
     badge: 'Popular',
   },
@@ -31,7 +31,7 @@ const GENRES = [
     id: 'ARPG',
     name: 'Action RPG / Dungeon Crawler',
     description: 'Real-time combat, equipment affixes, dungeon exploration, and boss encounters.',
-    similarTo: 'Diablo, Torchlight, RuneScape',
+    similarTo: 'Action RPG, Isometric Hack & Slash, Dungeon Crawler',
     icon: Swords,
     badge: 'Combat Heavy',
   },
@@ -39,7 +39,7 @@ const GENRES = [
     id: 'SOCIAL_METAVERSE',
     name: 'Social Hub & Metaverse',
     description: 'Community hangout spaces, customizable characters, mini-games, and player housing.',
-    similarTo: 'Habbo, Club Penguin, VRChat Worlds',
+    similarTo: 'Community Hangout, Virtual Worlds, Social Sandbox',
     icon: Users,
     badge: 'Social',
   },
@@ -47,7 +47,7 @@ const GENRES = [
     id: 'CLASSIC_RPG',
     name: 'Classic Story RPG',
     description: 'Narrative-driven quests, NPC dialogue trees, exploration, and turn-based progression.',
-    similarTo: 'Final Fantasy, EarthBound, Chrono Trigger',
+    similarTo: 'Story-Driven RPG, Tactical Adventure, Pixel Journey',
     icon: Compass,
     badge: 'Story',
   },
@@ -60,7 +60,7 @@ const GAMEPLAY_STYLES = [
     badge: 'Signature / Recommended',
     badgeColor: 'bg-amber-400/20 text-amber-300 border-amber-400/40',
     description: 'The signature Saints experience: seamless real-time overworld Hero Battles combined with tactical turn-based Saints Buddy Battles.',
-    similarTo: 'RuneScape overworld MMO action + Pokémon tactical creature encounters',
+    similarTo: 'Real-time Overworld MMO Action + Tactical Turn-Based Creature Encounters',
   },
   {
     id: 'ACTION_REALTIME',
@@ -68,7 +68,7 @@ const GAMEPLAY_STYLES = [
     badge: 'Fast-Paced',
     badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
     description: 'Direct keyboard/mouse movement with instant attack hotbars, cooldowns, and dodge mechanics directly on the open map.',
-    similarTo: 'Diablo, Path of Exile, Zelda: A Link to the Past',
+    similarTo: 'Real-Time Action RPG, Open-World Hack & Slash, Skill-Shot Combat',
   },
   {
     id: 'TURN_BASED',
@@ -76,7 +76,7 @@ const GAMEPLAY_STYLES = [
     badge: 'Strategic',
     badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
     description: 'Step into dedicated battle encounters with menu commands, action points, speed priority, and elemental advantages.',
-    similarTo: 'Classic Final Fantasy, Dragon Quest, Pokémon',
+    similarTo: 'Turn-Based Strategy, Tactical Menu Combat, Elemental Matrix',
   },
   {
     id: 'EXPLORATION',
@@ -84,7 +84,7 @@ const GAMEPLAY_STYLES = [
     badge: 'Cozy / Relaxed',
     badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
     description: 'Focus on gathering, artisan crafting, player housing, NPC questlines, and lore with pacifist or optional encounters.',
-    similarTo: 'Stardew Valley, Animal Crossing, Rune Factory',
+    similarTo: 'Farming & Life Sim, Sandbox Gathering, Cozy World Building',
   },
 ] as const;
 
@@ -93,13 +93,13 @@ const CAMERA_STYLES = [
     id: 'ISOMETRIC_25D',
     name: '2.5D Angled View',
     description: 'Smooth 3D perspective projection with 2.5D sprite billboards and depth.',
-    similarTo: 'Ragnarok Online, Tree of Savior, CrossCode',
+    similarTo: '2.5D Isometric Projection, Dynamic Angled Billboard View',
   },
   {
     id: 'TOPDOWN_2D',
     name: 'Top-Down 2D Grid',
     description: 'Classic pixel-grid top-down camera with crisp pixel snapping.',
-    similarTo: 'Pokémon Emerald, Zelda: Minish Cap, RPG Maker',
+    similarTo: 'Orthographic Top-Down Grid, Pixel-Perfect Camera',
   },
 ] as const;
 

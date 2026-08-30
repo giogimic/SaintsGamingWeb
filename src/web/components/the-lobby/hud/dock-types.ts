@@ -1,6 +1,6 @@
 /**
  * Modular HUD Dock Zone System — Types & Codec
- * RuneScape 3 / WoW Edit Mode architecture for Saints Gaming MMO
+ * Dynamic HUD Edit Mode architecture for Saints Gaming MMO
  */
 
 export type DockZoneId =

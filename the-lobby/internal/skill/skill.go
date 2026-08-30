@@ -75,7 +75,7 @@ func CombatLevelFromXP(xp int) int {
 	return lvl
 }
 
-// GatheringLevelFromXP — OSRS-style curve capped at 99.
+// GatheringLevelFromXP — Standard 99-cap exponential curve.
 func GatheringLevelFromXP(xp int) int {
 	level := 1
 	required := 0.0

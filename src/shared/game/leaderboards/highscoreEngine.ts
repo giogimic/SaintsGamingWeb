@@ -14,7 +14,7 @@ export interface HighscoreEntry {
 }
 
 /**
- * Calculates authoritative OSRS-style 1-126 combat level formula.
+ * Calculates authoritative 1-126 combat level formula.
  */
 export function calculateCombatLevel(skills: {
   attack?: number;

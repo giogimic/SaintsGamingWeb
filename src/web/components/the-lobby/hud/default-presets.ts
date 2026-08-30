@@ -331,10 +331,10 @@ export const DEFAULT_PRESET_MINIMAL: HudLayoutPreset = {
   },
 };
 
-// Aliases for backwards compatibility
+// Presets for HUD docking modes
 export const DEFAULT_PRESET_MODERN = DEFAULT_PRESET_COMMAND;
-export const DEFAULT_PRESET_RUNESCAPE = DEFAULT_PRESET_SIDEBAR;
-export const DEFAULT_PRESET_WOW = DEFAULT_PRESET_ACTION;
+export const DEFAULT_PRESET_RETRO = DEFAULT_PRESET_SIDEBAR;
+export const DEFAULT_PRESET_COMPACT = DEFAULT_PRESET_ACTION;
 
 export const BUILTIN_HUD_PRESETS: HudLayoutPreset[] = [
   DEFAULT_PRESET_COMMAND,
@@ -356,10 +356,10 @@ export function ensureCompletePreset(preset: Partial<HudLayoutPreset> | null | u
   if (id === 'preset-modern') {
     id = 'preset-command';
     name = DEFAULT_PRESET_COMMAND.name;
-  } else if (id === 'preset-runescape') {
+  } else if (id === 'preset-retro') {
     id = 'preset-sidebar';
     name = DEFAULT_PRESET_SIDEBAR.name;
-  } else if (id === 'preset-wow') {
+  } else if (id === 'preset-compact') {
     id = 'preset-action';
     name = DEFAULT_PRESET_ACTION.name;
   }

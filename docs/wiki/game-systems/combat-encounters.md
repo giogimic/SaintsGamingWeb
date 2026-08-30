@@ -1,6 +1,6 @@
 # Combat Systems & Creature Encounters
 
-Saints Gaming features **Saints Hybrid Combat**: a signature hybrid model uniting seamless real-time overworld MMO combat (**Hero Battles**, inspired by *RuneScape* and *Diablo*) with tactical turn-based creature battles (**Saints Buddy Battles**, inspired by *Pokémon* and *Cassette Beasts*).
+Saints Gaming features **Saints Hybrid Combat**: a signature hybrid model uniting seamless real-time overworld MMO combat (**Hero Battles**) with tactical turn-based creature battles (**Saints Buddy Battles**).
 
 > [!NOTE]
 > **Saints Hybrid Combat** allows players to roam the open world engaging in live hack-and-slash or spellcasting MMO combat, while also exploring tall grass, caves, and wild habitats to encounter and capture companion creatures in dedicated turn-based tactical duels.

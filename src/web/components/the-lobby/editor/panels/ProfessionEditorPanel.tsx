@@ -563,7 +563,7 @@ export const ProfessionEditorPanel: React.FC = () => {
                     setFormData({ ...formData, xpCurve: e.target.value });
                   }}
                 >
-                  <option value="exponential">Exponential (Runescape-like)</option>
+                  <option value="exponential">Exponential (Standard MMO Curve)</option>
                   <option value="linear">Linear</option>
                   <option value="flat">Flat</option>
                 </select>

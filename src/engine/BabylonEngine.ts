@@ -4063,7 +4063,7 @@ private resolveTilePick(
       }
     }
 
-    // Handle Chat Bubble (Runescape Style - Yellow text, no background)
+    // Handle Chat Bubble (Overhead Text - Yellow text, no background)
     let chatBubble = this.chatBubbles.get(entity.id);
     if (entity.chatMessage) {
       if (!chatBubble) {
@@ -4076,7 +4076,7 @@ private resolveTilePick(
         
         const text = new TextBlock();
         text.text = entity.chatMessage;
-        text.color = '#ffff00'; // Runescape yellow
+        text.color = '#ffff00'; // Overhead chat yellow
         text.fontSize = 14;
         text.fontFamily = 'Arial, sans-serif';
         text.fontWeight = 'bold';
