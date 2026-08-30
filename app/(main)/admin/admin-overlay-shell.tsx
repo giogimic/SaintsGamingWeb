@@ -88,6 +88,26 @@ export function AdminOverlayShell({
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Active page route visible behind the floating Admin OS window
+  const [underlyingUrl, setUnderlyingUrl] = useState<string>("/");
+
+  useEffect(() => {
+    try {
+      const fromParam = searchParams.get("from");
+      if (fromParam && fromParam.startsWith("/") && !fromParam.startsWith("/admin")) {
+        setUnderlyingUrl(fromParam);
+        return;
+      }
+      const saved = sessionStorage.getItem(STORAGE_KEY_LAST_NON_ADMIN);
+      if (saved && saved.startsWith("/") && !saved.startsWith("/admin")) {
+        setUnderlyingUrl(saved);
+        return;
+      }
+    } catch {
+      // ignore
+    }
+  }, [searchParams]);
+
   // Load favorites, recents, and window state on mount
   useEffect(() => {
     setMounted(true);
@@ -429,59 +449,80 @@ export function AdminOverlayShell({
   // ─── 1. MINIMIZED FLOATING DOCK CAPSULE ─────────────────────────────────────
   if (isMinimized) {
     return createPortal(
-      <div 
-        className="fixed bottom-6 right-6 z-[100] animate-in fade-in slide-in-from-bottom-5 duration-200"
-        style={{ touchAction: "none" }}
-      >
-        <div className="flex items-center gap-2 p-1.5 pr-2 rounded-full bg-[#050b14]/95 border border-[#cbb26a]/60 shadow-[0_0_25px_rgba(203,178,106,0.35)] backdrop-blur-xl text-slate-200">
-          <button
-            onClick={() => {
-              try { soundSynth?.playUiClick?.(); } catch {}
-              setIsMinimized(false);
-              persistWindowState({ isMinimized: false });
-            }}
-            className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-white/10 rounded-full transition-all group cursor-pointer"
-            title="Restore Admin Control Center"
-          >
-            <div className="p-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 group-hover:scale-110 transition-transform">
-              <Shield className="h-3.5 w-3.5" />
-            </div>
-            <div className="flex flex-col text-left">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-bold tracking-tight text-white font-mono uppercase">
-                  Admin OS
-                </span>
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              </div>
-              <span className="text-[9px] text-[#cbb26a] font-mono truncate max-w-[140px]">
-                {activeModule?.label || "Command Center"}
-              </span>
-            </div>
-            <Maximize2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-white transition-colors ml-1" />
-          </button>
-
-          <div className="h-4 w-[1px] bg-border/40 mx-0.5" />
-
-          <button
-            onClick={handleClose}
-            className="p-1.5 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-full transition-colors"
-            title="Exit Admin Panel"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
+      <>
+        {/* Underlying active page behind minimized admin dock */}
+        <div className="fixed inset-0 z-[40] pointer-events-auto bg-background overflow-hidden">
+          <iframe
+            src={underlyingUrl}
+            title="Active Website Page"
+            className="w-full h-full border-none select-auto"
+          />
         </div>
-      </div>,
+
+        <div 
+          className="fixed bottom-6 right-6 z-[100] animate-in fade-in slide-in-from-bottom-5 duration-200"
+          style={{ touchAction: "none" }}
+        >
+          <div className="flex items-center gap-2 p-1.5 pr-2 rounded-full bg-[#050b14]/95 border border-[#cbb26a]/60 shadow-[0_0_25px_rgba(203,178,106,0.35)] backdrop-blur-xl text-slate-200">
+            <button
+              onClick={() => {
+                try { soundSynth?.playUiClick?.(); } catch {}
+                setIsMinimized(false);
+                persistWindowState({ isMinimized: false });
+              }}
+              className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-white/10 rounded-full transition-all group cursor-pointer"
+              title="Restore Admin Control Center"
+            >
+              <div className="p-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 group-hover:scale-110 transition-transform">
+                <Shield className="h-3.5 w-3.5" />
+              </div>
+              <div className="flex flex-col text-left">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-bold tracking-tight text-white font-mono uppercase">
+                    Admin OS
+                  </span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                </div>
+                <span className="text-[9px] text-[#cbb26a] font-mono truncate max-w-[140px]">
+                  {activeModule?.label || "Command Center"}
+                </span>
+              </div>
+              <Maximize2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-white transition-colors ml-1" />
+            </button>
+
+            <div className="h-4 w-[1px] bg-border/40 mx-0.5" />
+
+            <button
+              onClick={handleClose}
+              className="p-1.5 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-full transition-colors"
+              title="Exit Admin Panel"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      </>,
       document.body
     );
   }
 
-  // ─── 2. FLOATING / MAXIMIZED STUDIO WINDOW SHELL (ZERO BLUR OVER PAGE) ────────
+  // ─── 2. FLOATING / MAXIMIZED STUDIO WINDOW SHELL (OVER ACTIVE WEBSITE PAGE) ───
   return createPortal(
-    <div 
-      className={`fixed inset-0 z-[100] pointer-events-none bg-black/20 ${
-        isMaximized ? "p-0" : "p-2 sm:p-4"
-      }`}
-    >
+    <>
+      {/* Underlying active page behind floating admin OS window */}
+      <div className="fixed inset-0 z-[40] pointer-events-auto bg-background overflow-hidden">
+        <iframe
+          src={underlyingUrl}
+          title="Active Website Page"
+          className="w-full h-full border-none select-auto"
+        />
+      </div>
+
+      <div 
+        className={`fixed inset-0 z-[100] pointer-events-none bg-black/25 ${
+          isMaximized ? "p-0" : "p-2 sm:p-4"
+        }`}
+      >
       <div
         ref={windowRef}
         onPointerMove={handlePointerMove}
@@ -668,6 +709,16 @@ export function AdminOverlayShell({
                 {roleName}
               </span>
             </div>
+
+            {/* Active Page Indicator */}
+            {underlyingUrl && (
+              <span
+                className="hidden xl:inline-flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-lg bg-background/50 border border-border/40 text-muted-foreground"
+                title={`Active page visible behind admin window: ${underlyingUrl}`}
+              >
+                <span className="text-[#cbb26a] font-semibold">Over:</span> {underlyingUrl}
+              </span>
+            )}
 
             {/* Collapse Body Button */}
             <button
@@ -888,7 +939,8 @@ export function AdminOverlayShell({
           </>
         )}
       </div>
-    </div>,
+    </div>
+    </>,
     document.body
   );
 }

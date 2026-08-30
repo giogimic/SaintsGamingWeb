@@ -1,3 +1,23 @@
+# 2.1.523
+- **Admin SEO Studio & Visual SERP Simulator**: Implemented a comprehensive, interactive Visual SEO Management Suite in the Admin Control Center (`/admin/seo`):
+  - **Live Google SERP Simulator**: Pixel-accurate desktop and mobile Google search snippet preview with dynamic blue link titles, sitelinks bar, review star ratings, date stamps, and breadcrumb trails.
+  - **Social Cards Preview**: Real-time interactive cards for Twitter / X (Large Image Summary) and OpenGraph Discord/Facebook embed previews with live domain badges and banner images.
+  - **Dynamic Route Presets & Length Gauges**: Fast-switch archetypes (Home, Forums, News, Modpacks, Streams, The Lobby MMO, User Profile) with character & estimated pixel meters (~580px desktop title, ~960px mobile description) and focus keyword analyzer.
+  - **Robots.txt Studio & AI Crawler Blocker**: Visual rule builder, AI scraping blocker matrix (GPTBot, ClaudeBot, PerplexityBot, CCBot, Google-Extended), live route path tester, copy/download, and dynamic Next.js `/robots.txt` generation.
+  - **Sitemap.xml Explorer**: Real-time database inventory of indexed content (core static pages, published news, active modpacks, forum boards, threads, member profiles) with XML inspector and Search Console submission guides.
+  - **Webmaster Verification Hub**: Google Search Console and Bing Webmaster Tools (`BingSiteAuth.xml`) token management, HTML/XML verification file generators, and dynamic Next.js `/BingSiteAuth.xml` route handler.
+  - **Schema.org JSON-LD Visual Studio**: Structured data generator for `WebSite` (with Sitelinks SearchBox), `Organization`, `VideoGame`, and `FAQPage` rich snippet accordions with direct links to Google Rich Results Test.
+  - **AI Discovery (`llms.txt`)**: Standardized machine-readable markdown context index for LLM search engines (Perplexity, ChatGPT Search, Gemini) with dynamic `/llms.txt` serving.
+  - **Version Bump**: Consolidated release version bump to `v2.1.523` across the platform.
+
+# 2.1.522
+- **Repository Optimization & Dead Weight Purge**: Conducted a deep codebase audit to remove stale scripts, temporary debug files, and obsolete scratch files across the repository:
+  - **Dead Script Removal**: Pruned 5 non-existent `saints-trail` scripts (`seed:saints-trail`, `smoke:saints-trail`, `smoke:saints-trail:play`, `visual:saints-trail`, `clone:saints-trail`) from `package.json`.
+  - **New Discoverable Script Aliases**: Added official npm script aliases in `package.json` for existing verified test suites (`smoke:lobby`, `smoke:studio`, `seed:dialogue`).
+  - **Root Throwaway File Purge**: Removed orphaned temporary test/migration files from workspace root (`check-npcs.js`, `debug-regex.js`, `test.js`, `tmp_diff.patch`, `refactor.js`, misplaced root `implementation_plan.md`).
+  - **Scratch Directory Cleanup**: Cleaned out 68 historical one-off helper scripts from `scratch/` to maintain a pristine, lightweight repository baseline.
+  - **Full Documentation & Version Synchronization**: Bumped release version to `v2.1.522` across `package.json`, `app/actions/settings.ts`, `app/(main)/admin/settings/page.tsx`, `app/(main)/layout.tsx`, `app/(ucp)/layout.tsx`, `src/shared/components/navbar.tsx`, `README.md`, and `docs/README.md`.
+
 # 2.1.521
 - **Immersive Mobile Messages Tab & Directory View**: Delivered a full-screen, mobile-optimized Messages Hub (`/profile/inbox`) for direct encrypted messaging and group chats on mobile devices:
   - **Mobile Stream / Messages Tab Switcher**: Added responsive pill tabs (`The Feed` vs `Messages` with live count) in the mobile stream header, fullscreen reel HUD, and reel top-bar.
