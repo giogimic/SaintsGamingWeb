@@ -312,7 +312,7 @@ export function AssetStudioSuite() {
   };
 
   return (
-    <div className="flex-1 flex h-full pointer-events-auto select-none overflow-hidden">
+    <div className="flex-1 flex h-full pointer-events-auto select-none overflow-hidden pb-9">
       {/* ─── Left Sidebar: Workspace Navigation ─── */}
       <div className="w-56 flex-shrink-0 flex flex-col bg-[#030810]/95 border-r border-slate-800/60 overflow-y-auto">
         {/* Sidebar Header */}
