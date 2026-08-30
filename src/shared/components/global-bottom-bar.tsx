@@ -75,7 +75,7 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "v2.1.556",
+  siteVersion = "v2.1.557",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;
@@ -252,7 +252,7 @@ export function GlobalBottomBar({
   return (
     <>
       {/* ── PERSISTENT GLOBAL BOTTOM BAR ──────────────────────────────── */}
-      <footer className="fixed bottom-0 left-0 right-0 z-40 h-7 sm:h-8 bg-card/85 backdrop-blur-2xl border-t border-border/50 shadow-2xl px-3 sm:px-6 flex items-center justify-between text-xs font-mono select-none pointer-events-auto transition-all duration-300">
+      <footer className="fixed bottom-0 left-0 right-0 z-40 h-12 sm:h-8 bg-[#050b14]/75 backdrop-blur-xl border-t border-white/[0.08] shadow-2xl px-3 sm:px-6 flex items-center justify-between text-xs font-mono select-none pointer-events-auto transition-all duration-300">
           
           {/* LEFT SECTION: Connected User & Account Stats / Online Orb */}
           <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
@@ -280,7 +280,7 @@ export function GlobalBottomBar({
                     <span className="text-muted-foreground/40 hidden sm:inline">|</span>
                     <ActionTooltip label={`Active Hero: ${player.name} (Level ${player.level || 1})`}>
                       <div className="hidden sm:flex items-center gap-1.5 text-amber-400 font-bold text-[11px] cursor-help">
-                        <Gamepad2 className="w-3 h-3 text-amber-400 shrink-0" />
+                        <Gamepad2 className="w-3.5 h-3.5 sm:w-3 sm:h-3 text-amber-400 shrink-0" />
                         <span className="text-amber-300 truncate max-w-[110px]">{player.name}</span>
                         <span className="px-1.5 py-0.2 rounded bg-amber-500/15 border border-amber-500/30 text-amber-400 font-bold text-[10px]">
                           LVL {player.level || 1}
@@ -326,13 +326,13 @@ export function GlobalBottomBar({
                     <Link
                       href={href}
                       prefetch={true}
-                      className={`flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 rounded-md text-[11px] font-sans font-medium transition-all duration-200 ${
+                      className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2 py-1.5 sm:py-0.5 rounded-md text-[11px] font-sans font-medium transition-all duration-200 ${
                         isActive
                           ? "bg-primary/20 text-primary border border-primary/40 shadow-[0_0_8px_rgba(203,178,106,0.25)] font-semibold"
                           : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
                       }`}
                     >
-                      <Icon className={`w-3 h-3 ${isActive ? "text-primary" : "opacity-70"}`} />
+                      <Icon className={`w-3.5 h-3.5 sm:w-3 sm:h-3 ${isActive ? "text-primary" : "opacity-70"}`} />
                       <span className="hidden sm:inline">{label}</span>
                     </Link>
                   </ActionTooltip>
@@ -361,13 +361,13 @@ export function GlobalBottomBar({
                     <Link
                       href={href}
                       prefetch={true}
-                      className={`flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 rounded-md text-[11px] font-sans font-medium transition-all duration-200 ${
+                      className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2 py-1.5 sm:py-0.5 rounded-md text-[11px] font-sans font-medium transition-all duration-200 ${
                         isActive
                           ? "bg-primary/20 text-primary border border-primary/40 shadow-[0_0_8px_rgba(203,178,106,0.25)] font-semibold"
                           : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
                       }`}
                     >
-                      <Icon className={`w-3 h-3 ${isActive ? "text-primary" : "opacity-70"}`} />
+                      <Icon className={`w-3.5 h-3.5 sm:w-3 sm:h-3 ${isActive ? "text-primary" : "opacity-70"}`} />
                       <span className="hidden sm:inline">{label}</span>
                     </Link>
                   </ActionTooltip>
