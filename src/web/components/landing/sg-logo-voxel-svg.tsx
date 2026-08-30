@@ -114,10 +114,10 @@ export function SGVoxelSvgLogo({ size = 36, className = "", animate = false }: S
 
         {/* INNER SG MONOGRAM (White Letters with Crisp Black Outlines) */}
         <g filter={`url(#${filterId})`}>
-          {/* 'S' Letter (Pure White with Crisp Black Border) */}
+          {/* 'S' Letter (Hot Pink with Crisp Black Border) */}
           <path
             d={S_PATH}
-            fill={BRAND_WHITE}
+            fill={BRAND_PINK}
             stroke={BRAND_BLACK}
             strokeWidth="3.5"
             strokeLinejoin="miter"
