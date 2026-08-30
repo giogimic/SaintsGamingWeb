@@ -1,8 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { 
   getTrendingTags, 
@@ -38,7 +37,7 @@ import {
   X, Image as ImageIcon, Share, Bookmark, Compass, Search, VolumeX, Volume2,
   MoreHorizontal, Eye, EyeOff, Plus, Trash2, Coins, Flag,
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ArrowRight, BarChart2, Pin, Play, Pause, Maximize2, UploadCloud,
-  BadgeCheck, Crown, ShieldCheck, FileArchive, Download, Music, Disc, Send, Copy, Sparkles, Check
+  BadgeCheck, Crown, ShieldCheck, FileArchive, Download, Music, Disc, Send, Copy, Sparkles, Check, Flame, Users
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -47,16 +46,18 @@ import { formatDistanceToNow } from "date-fns";
 import EmojiPicker from "emoji-picker-react";
 import { GiphyFetch } from "@giphy/js-fetch-api";
 import { Grid } from "@giphy/react-components";
-import { VideoPlayer } from "@/shared/components/video-player";
+import { FeedVideoPlayer } from "@/web/components/feed/FeedVideoPlayer";
 import { UploadProgressBar } from "@/web/components/feed/UploadProgressBar";
 import { uploadSocialFileWithProgress, UploadProgressState } from "@/web/lib/upload-client";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
+
 // Initialize Giphy Fetch
 const gf = new GiphyFetch(process.env.NEXT_PUBLIC_GIPHY_API_KEY || "sXpGFDGZs0Dv1mmz014D8zDvwYkE7a7A");
 
 type MutedKeyword = { id: string; keyword: string; type: string; createdAt: Date };
+type FeedTabType = "for-you" | "following" | "clips" | "trending";
 
 const isArchive = (url: string) => {
   if (!url) return false;
@@ -78,202 +79,15 @@ const isVideo = (url: string) => {
   }
 };
 
-function FeedInlineVideo({
-  id,
-  src,
-  activePlayingId,
-  setActivePlayingId,
-  onClick,
-  onRecordView,
-}: {
-  id: string;
-  src: string;
-  activePlayingId: string | null;
-  setActivePlayingId: React.Dispatch<React.SetStateAction<string | null>>;
-  onClick: () => void;
-  onRecordView?: () => void;
-}) {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [isMuted, setIsMuted] = useState(true);
-  const isCurrentlyActive = activePlayingId === id;
-  const [hasRecordedView, setHasRecordedView] = useState(false);
-  const [progressPercent, setProgressPercent] = useState(0);
-  const [currentTimeSec, setCurrentTimeSec] = useState(0);
-  const [durationSec, setDurationSec] = useState(0);
-  const [hasError, setHasError] = useState(false);
-
-  // Initialize muted to ensure reliable browser autoplay
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.defaultMuted = true;
-      videoRef.current.muted = true;
-    }
-  }, []);
-
-  // Strictly sync video play/pause with active playing state
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || hasError) return;
-
-    if (isCurrentlyActive) {
-      const playPromise = video.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            if (!hasRecordedView && onRecordView) {
-              onRecordView();
-              setHasRecordedView(true);
-            }
-          })
-          .catch(() => {
-            // Autoplay may be deferred by browser policies
-          });
-      }
-    } else {
-      video.pause();
-    }
-  }, [isCurrentlyActive, hasRecordedView, onRecordView, hasError]);
-
-  // Strict Viewport Intersection Observer: Only plays when in viewport (>= 50% visible), pauses instantly when off-screen
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
-            setActivePlayingId(id);
-          } else if (!entry.isIntersecting || entry.intersectionRatio < 0.25) {
-            setActivePlayingId((current: string | null) => (current === id ? null : current));
-            video.pause();
-          }
-        });
-      },
-      { threshold: [0.25, 0.5, 0.75] }
-    );
-
-    observer.observe(video);
-    return () => observer.disconnect();
-  }, [id, setActivePlayingId]);
-
-  const handleTimeUpdate = () => {
-    const video = videoRef.current;
-    if (!video || !isFinite(video.duration) || video.duration <= 0) return;
-    setCurrentTimeSec(video.currentTime);
-    setDurationSec(video.duration);
-    setProgressPercent((video.currentTime / video.duration) * 100);
-  };
-
-  const togglePlay = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const video = videoRef.current;
-    if (!video) return;
-    if (isCurrentlyActive) {
-      setActivePlayingId(null);
-    } else {
-      setActivePlayingId(id);
-    }
-  };
-
-  const toggleMute = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const video = videoRef.current;
-    if (!video) return;
-    video.muted = !video.muted;
-    setIsMuted(video.muted);
-  };
-
-  const formatVideoTime = (sec: number) => {
-    if (!isFinite(sec) || sec < 0) return "0:00";
-    const m = Math.floor(sec / 60);
-    const s = Math.floor(sec % 60);
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  };
-
-  if (hasError) {
-    return (
-      <div 
-        className="relative rounded-2xl overflow-hidden bg-muted/30 border border-border/50 p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/40 transition-colors"
-        onClick={onClick}
-      >
-        <Play className="w-10 h-10 text-primary/60 mb-2" />
-        <span className="text-sm font-semibold text-foreground mb-1">Play Video</span>
-        <span className="text-xs text-muted-foreground">Click to watch in Saints Reel viewer</span>
-      </div>
-    );
+// Force video decoder to immediately render frame 0 instead of black box
+function formatVideoSrc(url: string): string {
+  if (!url) return "";
+  if (url.includes("#t=")) return url;
+  const hashIndex = url.indexOf("#");
+  if (hashIndex !== -1) {
+    return `${url.substring(0, hashIndex)}#t=0.001`;
   }
-
-  return (
-    <div
-      className="relative rounded-2xl overflow-hidden bg-black group cursor-pointer border border-border/50 max-h-[520px] w-full flex items-center justify-center aspect-[9/16] sm:aspect-auto sm:max-h-[480px]"
-      onClick={onClick}
-    >
-      <video
-        ref={videoRef}
-        src={src}
-        playsInline
-        loop
-        muted={isMuted}
-        preload="metadata"
-        onTimeUpdate={handleTimeUpdate}
-        onError={() => setHasError(true)}
-        className="max-h-[520px] w-auto max-w-full object-contain"
-      />
-      
-      {/* Overlay gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-      {/* Subtle Bottom Timeline Progress Bar */}
-      <div className="absolute bottom-0 inset-x-0 h-1 bg-white/20 overflow-hidden pointer-events-none">
-        <div 
-          className="h-full bg-primary transition-all duration-150 ease-linear"
-          style={{ width: `${progressPercent}%` }}
-        />
-      </div>
-
-      {/* Controls Overlay */}
-      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-auto opacity-0 group-hover:opacity-100 transition-opacity z-10">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={togglePlay}
-            className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-sm transition-all"
-            title={isCurrentlyActive ? "Pause" : "Play"}
-          >
-            {isCurrentlyActive ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
-          </button>
-          {durationSec > 0 && (
-            <span className="text-[11px] font-mono font-medium text-white/90 bg-black/50 px-2 py-0.5 rounded backdrop-blur-xs">
-              {formatVideoTime(currentTimeSec)} / {formatVideoTime(durationSec)}
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={toggleMute}
-            className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-sm transition-all"
-            title={isMuted ? "Unmute" : "Mute"}
-          >
-            {isMuted ? <VolumeX className="w-4 h-4 text-red-300" /> : <Volume2 className="w-4 h-4 text-white" />}
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onClick();
-            }}
-            className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-sm transition-all"
-            title="Open Shorts Viewer"
-          >
-            <Maximize2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  return `${url}#t=0.001`;
 }
 
 export function TheFeed() {
@@ -285,6 +99,7 @@ export function TheFeed() {
   const [body, setBody] = useState("");
   const [isPosting, setIsPosting] = useState(false);
   const [filter, setFilter] = useState<string | null>(null);
+  const [feedTab, setFeedTab] = useState<FeedTabType>("for-you");
   const [loading, setLoading] = useState(true);
 
   // Advanced Options
@@ -316,8 +131,25 @@ export function TheFeed() {
   const [loadedReplies, setLoadedReplies] = useState<Record<string, any[]>>({});
   const [loadingReplies, setLoadingReplies] = useState<Record<string, boolean>>({});
   
-  // Single active playing video in feed timeline coordinator
+  // Feed-wide sound persistence and active video coordinator
   const [activePlayingVideoId, setActivePlayingVideoId] = useState<string | null>(null);
+  const [isFeedMuted, setIsFeedMuted] = useState<boolean>(true);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("saints_feed_muted");
+      if (saved !== null) {
+        setIsFeedMuted(saved === "true");
+      }
+    } catch {}
+  }, []);
+
+  const handleSetFeedMuted = useCallback((muted: boolean) => {
+    setIsFeedMuted(muted);
+    try {
+      localStorage.setItem("saints_feed_muted", String(muted));
+    } catch {}
+  }, []);
 
   // TikTok-style Shorts Swiper Overlay
   const [viewingShortsPost, setViewingShortsPost] = useState<any | null>(null);
@@ -480,7 +312,6 @@ export function TheFeed() {
       const entry = await addMutedKeyword(newMuteKeyword, newMuteType);
       setMutedKeywords(prev => [entry, ...prev]);
       setNewMuteKeyword("");
-      // Reload feed to apply filter
       loadFeed();
     } catch (e) {
       console.error(e);
@@ -563,7 +394,7 @@ export function TheFeed() {
 
   async function handleTip(postId: string) {
     try {
-      const res = await tipSocialPost(postId, 5); // Default 5 Gold tip for now
+      const res = await tipSocialPost(postId, 5);
       if (res && !res.success) {
         toast.error(res.error || "Failed to send tip");
         return;
@@ -577,8 +408,6 @@ export function TheFeed() {
   async function handleVote(pollId: string, optionId: string) {
     try {
       await votePoll(pollId, optionId);
-      // Optimistically update poll UI by re-fetching feed or locally patching state
-      // For simplicity here, we can just loadFeed() or specifically fetch the post
       loadFeed();
     } catch (e: any) {
       toast.error(e.message || "Failed to vote");
@@ -588,10 +417,10 @@ export function TheFeed() {
   async function handleSubscribe(creatorId: string) {
     try {
       await subscribeToCreator(creatorId);
-      alert("Subscribed successfully!");
+      toast.success("Subscribed successfully!");
       loadFeed();
     } catch (e: any) {
-      alert(e.message || "Failed to subscribe");
+      toast.error(e.message || "Failed to subscribe");
     }
   }
 
@@ -843,6 +672,7 @@ export function TheFeed() {
     }
     try {
       await toggleBookmark(postId);
+      toast.success("Bookmark updated");
     } catch (e) {
       console.error(e);
     }
@@ -856,7 +686,7 @@ export function TheFeed() {
         await navigator.share({ title: "Saints Gaming", text: "Check out this post!", url });
       } else {
         await navigator.clipboard.writeText(url);
-        alert("Link copied to clipboard!");
+        toast.success("Post link copied to clipboard!");
       }
     } catch (e) {
       console.error(e);
@@ -884,7 +714,7 @@ export function TheFeed() {
   }, []);
 
   const renderBody = (text: string) => {
-    // Split by both hashtags (#tag) and mentions (@username)
+    if (!text) return null;
     const parts = text.split(/(#[a-zA-Z0-9_]+|@[a-zA-Z0-9_]+)/g);
     return parts.map((part, i) => {
       if (part.startsWith("#")) {
@@ -921,31 +751,67 @@ export function TheFeed() {
     return gf.trending({ offset, limit: 10 });
   };
 
+  // Filter posts based on active feedTab
+  const basePosts = searchResults !== null ? searchResults : posts;
+  const displayPosts = useMemo(() => {
+    if (searchResults !== null) return searchResults;
+    if (feedTab === "clips") {
+      return basePosts.filter(p => p.mediaUrl && isVideo(p.mediaUrl));
+    }
+    if (feedTab === "trending") {
+      return [...basePosts].sort((a, b) => (b.likesCount + (b.shareCount || 0)) - (a.likesCount + (a.shareCount || 0)));
+    }
+    return basePosts;
+  }, [searchResults, feedTab, basePosts]);
+
   const renderPost = (post: any, isReply = false, parentId?: string) => {
     if (hiddenPostIds.has(post.id)) return null;
 
     const postHashtags = post.hashtags || [];
-    
+    const isShortsEligible = post.mediaUrl && (isVideo(post.mediaUrl) || !isArchive(post.mediaUrl));
+
     return (
       <motion.div 
         key={post.id} 
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className={`flex gap-4 p-4 border-b border-border/50 bg-card hover:bg-muted/5 transition-colors ${isReply ? 'ml-12 border-l border-t-0 rounded-none' : 'rounded-xl border'}`}
+        transition={{ duration: 0.25 }}
+        className={`p-4 sm:p-5 hover:bg-muted/10 transition-colors flex gap-3.5 sm:gap-4 relative group/post ${
+          isReply ? 'pl-8 sm:pl-12 bg-muted/5' : ''
+        }`}
       >
-        <div className="w-10 h-10 rounded-full bg-muted overflow-hidden relative shrink-0">
-          {post.author?.image ? (
-            <Image src={post.author.image} alt={post.author.username} fill className="object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center font-bold text-muted-foreground bg-muted">
-              {post.author?.username?.charAt(0).toUpperCase()}
-            </div>
+        {/* Left Column: Avatar & Thread Line */}
+        <div className="flex flex-col items-center shrink-0">
+          <Link 
+            href={`/user/${post.author?.username}`}
+            className="w-10 h-10 rounded-full bg-muted overflow-hidden relative ring-1 ring-border/60 hover:ring-primary/60 transition-all shrink-0 shadow-xs"
+          >
+            {post.author?.image ? (
+              <Image src={post.author.image} alt={post.author.username} fill className="object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center font-bold text-muted-foreground bg-muted text-sm">
+                {post.author?.username?.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </Link>
+          
+          {/* Thread connector rail if post has replies expanded */}
+          {!isReply && loadedReplies[post.id] && loadedReplies[post.id].length > 0 && (
+            <div className="w-0.5 flex-1 bg-border/60 my-2 rounded-full" />
           )}
         </div>
+
+        {/* Right Main Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-            <span className="font-bold truncate">{post.author?.username}</span>
+          {/* Header Row */}
+          <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+            <Link 
+              href={`/user/${post.author?.username}`}
+              className="font-bold text-sm hover:underline truncate text-foreground flex items-center gap-1"
+            >
+              {post.author?.username}
+            </Link>
+            
             {post.author?.isFounder && (
               <span title="Founder"><Crown className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" /></span>
             )}
@@ -955,64 +821,73 @@ export function TheFeed() {
             {post.author?.isTrusted && (
               <span title="Trusted User"><ShieldCheck className="w-3.5 h-3.5 text-green-500 fill-green-500" /></span>
             )}
+            
             {post.author?.achievements && post.author.achievements.length > 0 && (
-              <div className="ml-1">
+              <div className="ml-0.5">
                 <UserBadges achievements={post.author.achievements} inline={true} />
               </div>
             )}
+
+            <span className="text-xs text-muted-foreground truncate hidden sm:inline">
+              @{post.author?.username}
+            </span>
+
             {!post.isForumThread && (
               <button 
                 onClick={(e) => { e.stopPropagation(); handleSubscribe(post.author.id); }}
-                className="ml-2 text-xs text-primary font-medium hover:underline"
+                className="ml-1 text-xs text-primary font-medium hover:underline opacity-80 hover:opacity-100"
               >
-                Subscribe
+                Follow
               </button>
             )}
+
             {post.isForumThread && (
-              <span className="ml-2 text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-sm bg-primary/20 text-primary">
+              <span className="ml-1 text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-sm bg-primary/20 text-primary">
                 Forum Thread
               </span>
             )}
-            <span className="text-muted-foreground/50 mx-1.5">•</span>
+
+            <span className="text-muted-foreground/40 mx-1">•</span>
             <span className="text-xs text-muted-foreground shrink-0">
-              · {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+              {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
             </span>
+
             {post.viewCount > 0 && (
-              <span className="text-[10px] text-muted-foreground/60 flex items-center gap-0.5 ml-auto shrink-0">
+              <span className="text-[11px] text-muted-foreground/70 flex items-center gap-0.5 ml-auto shrink-0 font-mono">
                 <Eye className="w-3 h-3" /> {post.viewCount}
               </span>
             )}
             
             {post.isPinned && (
-              <span className="text-[10px] text-primary flex items-center gap-0.5 ml-2 shrink-0 border border-primary/30 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">
+              <span className="text-[10px] text-primary flex items-center gap-0.5 ml-2 shrink-0 border border-primary/30 px-1.5 py-0.5 rounded-full uppercase font-bold tracking-wider bg-primary/5">
                 <Pin className="w-3 h-3 fill-current" /> Pinned
               </span>
             )}
             
-            {/* Post menu (Not Interested / Mute) */}
+            {/* Post Context Menu */}
             {!isReply && (
               <div className="relative ml-1">
                 <button
                   onClick={() => setActivePostMenu(activePostMenu === post.id ? null : post.id)}
-                  className="p-1 rounded-full text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/50 transition-colors"
+                  className="p-1 rounded-full text-muted-foreground/60 hover:text-foreground hover:bg-muted/50 transition-colors"
                 >
                   <MoreHorizontal className="w-4 h-4" />
                 </button>
                 {activePostMenu === post.id && (
-                  <div className="absolute right-0 top-8 z-50 w-60 bg-popover border border-border rounded-lg shadow-xl py-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="absolute right-0 top-8 z-50 w-60 bg-popover border border-border rounded-xl shadow-2xl py-1 animate-in fade-in slide-in-from-top-2 duration-150 backdrop-blur-xl">
                     <button
                       onClick={() => handleNotInterested(post.id)}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted/50 transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-muted/50 transition-colors"
                     >
-                      <EyeOff className="w-4 h-4 text-muted-foreground" />
+                      <EyeOff className="w-3.5 h-3.5 text-muted-foreground" />
                       Not interested in this post
                     </button>
                     <button
                       onClick={() => handleReport(post.id)}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-destructive/10 text-destructive transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-destructive/10 text-destructive transition-colors"
                     >
-                      <Flag className="w-4 h-4" />
-                      Report as AI Sludge / Low Effort
+                      <Flag className="w-3.5 h-3.5" />
+                      Report Post
                     </button>
                     {post.isAuthor && (
                       <>
@@ -1022,16 +897,16 @@ export function TheFeed() {
                             setEditBody(post.body);
                             setActivePostMenu(null);
                           }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted/50 transition-colors"
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-muted/50 transition-colors"
                         >
-                          <MessageSquare className="w-4 h-4" />
+                          <MessageSquare className="w-3.5 h-3.5" />
                           Edit Post
                         </button>
                         <button
                           onClick={() => handleDeletePost(post.id)}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-destructive/10 text-destructive transition-colors"
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-destructive/10 text-destructive transition-colors"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                           Delete Post
                         </button>
                       </>
@@ -1039,9 +914,9 @@ export function TheFeed() {
                     {currentUserPermission >= 300 && (
                       <button
                         onClick={() => handlePinToggle(post.id, post.isPinned)}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted/50 transition-colors"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-muted/50 transition-colors"
                       >
-                        <Pin className={`w-4 h-4 ${post.isPinned ? "fill-current" : ""}`} />
+                        <Pin className={`w-3.5 h-3.5 ${post.isPinned ? "fill-current" : ""}`} />
                         {post.isPinned ? "Unpin Post" : "Pin Post"}
                       </button>
                     )}
@@ -1049,9 +924,9 @@ export function TheFeed() {
                       <button
                         key={tag}
                         onClick={() => handleMuteFromPost(tag, "HASHTAG")}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted/50 transition-colors"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-muted/50 transition-colors"
                       >
-                        <VolumeX className="w-4 h-4 text-muted-foreground" />
+                        <VolumeX className="w-3.5 h-3.5 text-muted-foreground" />
                         Mute #{tag}
                       </button>
                     ))}
@@ -1061,9 +936,9 @@ export function TheFeed() {
                         setActivePostMenu(null);
                         setShowMutedPopover(true);
                       }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted/50 transition-colors text-muted-foreground"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-muted/50 transition-colors text-muted-foreground"
                     >
-                      <VolumeX className="w-4 h-4" />
+                      <VolumeX className="w-3.5 h-3.5" />
                       Manage muted keywords...
                     </button>
                   </div>
@@ -1072,12 +947,13 @@ export function TheFeed() {
             )}
           </div>
           
+          {/* Post Content Body */}
           {editingPostId === post.id ? (
             <div className="mb-3 space-y-2">
               <Textarea
                 value={editBody}
                 onChange={(e) => setEditBody(e.target.value)}
-                className="w-full text-sm"
+                className="w-full text-sm rounded-xl"
               />
               <div className="flex gap-2 justify-end">
                 <Button size="sm" variant="ghost" onClick={() => setEditingPostId(null)}>Cancel</Button>
@@ -1085,7 +961,7 @@ export function TheFeed() {
               </div>
             </div>
           ) : (
-            <div className="text-sm leading-relaxed mb-3" style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+            <div className="text-sm leading-relaxed mb-3 text-foreground/95" style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
               {post.isForumThread ? (
                 <div className="prose prose-invert prose-sm max-w-none">
                   <ReactMarkdown>{post.body}</ReactMarkdown>
@@ -1094,13 +970,14 @@ export function TheFeed() {
             </div>
           )}
           
+          {/* Embedded Polls */}
           {post.polls && post.polls.length > 0 && (
             <div className="mb-3 space-y-2 mt-2">
               {post.polls.map((poll: any) => {
                 const totalVotes = poll.options.reduce((sum: number, o: any) => sum + (o._count?.votes || 0), 0);
                 return (
-                  <div key={poll.id} className="bg-muted/30 p-4 rounded-xl border border-border/50">
-                    <p className="font-bold mb-3">{poll.question}</p>
+                  <div key={poll.id} className="bg-muted/20 p-4 rounded-2xl border border-border/50 shadow-xs">
+                    <p className="font-bold text-sm mb-3">{poll.question}</p>
                     <div className="space-y-2">
                       {poll.options.map((opt: any) => {
                         const hasVoted = opt.votes && opt.votes.length > 0;
@@ -1111,24 +988,24 @@ export function TheFeed() {
                           <div 
                             key={opt.id} 
                             onClick={() => handleVote(poll.id, opt.id)}
-                            className="relative overflow-hidden rounded-lg border border-border/50 bg-background hover:bg-muted/50 transition-colors cursor-pointer p-3 flex justify-between items-center group"
+                            className="relative overflow-hidden rounded-xl border border-border/50 bg-background hover:bg-muted/40 transition-colors cursor-pointer p-3 flex justify-between items-center group"
                           >
                             <div 
                               className={`absolute inset-0 opacity-20 ${hasVoted ? 'bg-primary' : 'bg-muted-foreground'}`}
                               style={{ width: `${percentage}%`, transition: 'width 0.5s ease-out' }}
                             />
-                            <span className={`relative z-10 text-sm ${hasVoted ? 'font-bold text-primary' : 'font-medium'}`}>
+                            <span className={`relative z-10 text-xs font-semibold ${hasVoted ? 'text-primary' : ''}`}>
                               {opt.text}
                             </span>
-                            <span className="relative z-10 text-xs text-muted-foreground font-medium opacity-0 group-hover:opacity-100 transition-opacity md:opacity-100">
+                            <span className="relative z-10 text-xs text-muted-foreground font-mono">
                               {percentage}% ({votes})
                             </span>
                           </div>
                         );
                       })}
                     </div>
-                    <div className="mt-2 text-xs text-muted-foreground text-right">
-                      {totalVotes} total votes
+                    <div className="mt-2 text-[11px] text-muted-foreground text-right font-mono">
+                      {totalVotes} total vote{totalVotes !== 1 ? 's' : ''}
                     </div>
                   </div>
                 );
@@ -1138,57 +1015,63 @@ export function TheFeed() {
 
           {post.isForumThread && post.threadUrl && (
             <div className="mb-3">
-              <Link href={post.threadUrl} className="text-xs font-medium text-primary hover:underline flex items-center gap-1">
-                Read full thread <ArrowRight className="w-3 h-3" />
+              <Link href={post.threadUrl} className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+                Read full forum discussion <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
           )}
+
+          {/* Media Attachment (Video / Archive / Image) */}
           {post.mediaUrl && (
-            <div className="mb-3">
+            <div className="mb-3 mt-1.5">
               {isArchive(post.mediaUrl) ? (
                 <div 
-                  className="rounded-xl overflow-hidden border border-border/50 bg-muted/20 p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/30 transition-colors"
+                  className="rounded-2xl overflow-hidden border border-border/50 bg-muted/20 p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/30 transition-colors"
                   onClick={() => setViewingShortsPost(post)}
                 >
-                  <FileArchive className="w-12 h-12 text-primary mb-2" />
-                  <span className="text-sm font-semibold text-primary break-all px-4 mb-2">{post.mediaUrl.split('/').pop()}</span>
+                  <FileArchive className="w-10 h-10 text-primary mb-2" />
+                  <span className="text-xs font-semibold text-primary break-all px-4 mb-2">{post.mediaUrl.split('/').pop()}</span>
                   <a 
                     href={post.mediaUrl} 
                     download 
                     target="_blank" 
                     rel="noreferrer" 
-                    className="flex items-center gap-2 px-4 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary rounded-full transition-colors font-bold text-xs" 
+                    className="flex items-center gap-2 px-4 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary rounded-full transition-colors font-bold text-xs shadow-xs" 
                     onClick={(e) => e.stopPropagation()}
                   >
                     <Download className="w-3.5 h-3.5" /> Download Archive
                   </a>
                 </div>
               ) : isVideo(post.mediaUrl) ? (
-                <FeedInlineVideo
+                <FeedVideoPlayer
                   id={post.id}
                   src={post.mediaUrl}
                   activePlayingId={activePlayingVideoId}
                   setActivePlayingId={setActivePlayingVideoId}
-                  onClick={() => {
+                  onOpenReel={() => {
                     setViewingShortsPost(post);
                     handleRecordView(post.id);
                   }}
                   onRecordView={() => handleRecordView(post.id)}
+                  onLike={() => handleLike(post.id, isReply, parentId)}
+                  hasLiked={post.hasLiked}
+                  isSharedMuted={isFeedMuted}
+                  setIsSharedMuted={handleSetFeedMuted}
                 />
               ) : (
                 <div 
-                  className="rounded-2xl overflow-hidden border border-border/50 bg-black flex items-center justify-center max-h-[500px] relative group cursor-pointer"
+                  className="rounded-2xl overflow-hidden border border-border/40 bg-black/40 flex items-center justify-center max-h-[520px] relative group/img cursor-pointer shadow-xs"
                   onClick={() => setViewingShortsPost(post)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src={post.mediaUrl} 
                     alt="Post attachment" 
-                    className="max-h-[500px] w-auto max-w-full object-contain hover:scale-[1.01] transition-transform duration-200" 
+                    className="max-h-[520px] w-auto max-w-full object-contain hover:scale-[1.01] transition-transform duration-200" 
                   />
-                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                    <div className="p-2 rounded-full bg-black/60 text-white backdrop-blur-sm">
-                      <Maximize2 className="w-5 h-5" />
+                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                    <div className="p-2 rounded-full bg-black/60 text-white backdrop-blur-sm shadow-md">
+                      <Maximize2 className="w-4 h-4" />
                     </div>
                   </div>
                 </div>
@@ -1196,17 +1079,23 @@ export function TheFeed() {
             </div>
           )}
 
-          <div className="flex items-center gap-5 text-muted-foreground mt-2">
+          {/* Integrated Action Bar */}
+          <div className="flex items-center justify-between text-muted-foreground mt-2.5 max-w-md pt-1">
+            {/* Like */}
             {!post.isForumThread && (
               <button 
                 onClick={() => handleLike(post.id, isReply, parentId)}
-                className={`flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-red-500 ${post.hasLiked ? 'text-red-500' : ''}`}
+                className={`flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-red-500 group/btn ${post.hasLiked ? 'text-red-500' : ''}`}
+                title="Like"
               >
-                <Heart className={`w-4 h-4 ${post.hasLiked ? 'fill-current text-red-500' : ''}`} />
-                {post.likesCount > 0 && post.likesCount}
+                <div className={`p-1.5 rounded-full group-hover/btn:bg-red-500/10 transition-colors ${post.hasLiked ? 'text-red-500' : ''}`}>
+                  <Heart className={`w-4 h-4 ${post.hasLiked ? 'fill-current text-red-500 scale-110' : ''} transition-transform`} />
+                </div>
+                <span>{post.likesCount > 0 ? post.likesCount : ""}</span>
               </button>
             )}
             
+            {/* Reply */}
             {!isReply && !post.isForumThread && (
               <button 
                 onClick={() => {
@@ -1220,71 +1109,87 @@ export function TheFeed() {
                     setReplyMediaUrl("");
                   }
                 }}
-                className={`flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-primary ${replyingTo === post.id ? 'text-primary' : ''}`}
+                className={`flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-primary group/btn ${replyingTo === post.id ? 'text-primary' : ''}`}
+                title="Reply"
               >
-                <MessageSquare className="w-4 h-4" />
-                {post.repliesCount > 0 && post.repliesCount}
+                <div className="p-1.5 rounded-full group-hover/btn:bg-primary/10 transition-colors">
+                  <MessageSquare className="w-4 h-4" />
+                </div>
+                <span>{post.repliesCount > 0 ? post.repliesCount : ""}</span>
               </button>
             )}
 
+            {/* Share */}
             {!post.isForumThread && (
               <button 
                 onClick={() => handleShare(post)}
-                className="flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-primary"
+                className="flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-green-500 group/btn"
+                title="Share link"
               >
-                <Share className="w-4 h-4" />
-                {post.shareCount > 0 && post.shareCount}
+                <div className="p-1.5 rounded-full group-hover/btn:bg-green-500/10 transition-colors">
+                  <Share className="w-4 h-4" />
+                </div>
+                <span>{post.shareCount > 0 ? post.shareCount : ""}</span>
               </button>
             )}
 
-            {!post.isForumThread && (
+            {/* Shorts / Reel Launcher */}
+            {isShortsEligible && !post.isForumThread && (
               <button 
                 onClick={() => {
                   setViewingShortsPost(post);
                   handleRecordView(post.id);
                 }}
-                className="flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-primary"
-                title="Watch in full-screen Shorts / Reel mode"
+                className="flex items-center gap-1.5 text-xs font-semibold transition-colors text-primary hover:text-primary/80 group/btn"
+                title="Watch in full-screen Saints Reel mode"
               >
-                <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
-                <span className="hidden sm:inline">Shorts</span>
+                <div className="p-1.5 rounded-full group-hover/btn:bg-primary/10 transition-colors">
+                  <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                </div>
+                <span className="hidden sm:inline">Reel</span>
               </button>
             )}
 
+            {/* Gold Tip */}
             {!post.isForumThread && (
               <button 
                 onClick={() => handleTip(post.id)}
-                className="flex items-center gap-1.5 text-xs font-medium transition-colors text-yellow-500/80 hover:text-yellow-500"
+                className="flex items-center gap-1 text-xs font-medium transition-colors text-yellow-500/80 hover:text-yellow-500 group/btn"
+                title="Tip 5 Gold"
               >
-                <Coins className="w-4 h-4" />
-                Gold
+                <div className="p-1.5 rounded-full group-hover/btn:bg-yellow-500/10 transition-colors">
+                  <Coins className="w-4 h-4" />
+                </div>
+                <span className="hidden sm:inline">Tip</span>
               </button>
             )}
 
-            <div className="flex-1" />
-
+            {/* Bookmark */}
             {!isReply && !post.isForumThread && (
               <button 
                 onClick={() => handleBookmark(post.id)}
-                className={`flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-yellow-500 ml-auto ${post.hasBookmarked ? 'text-yellow-500' : ''}`}
+                className={`flex items-center gap-1 text-xs font-medium transition-colors hover:text-yellow-500 group/btn ${post.hasBookmarked ? 'text-yellow-500' : ''}`}
+                title="Bookmark"
               >
-                <Bookmark className={`w-4 h-4 ${post.hasBookmarked ? 'fill-current text-yellow-500' : ''}`} />
+                <div className="p-1.5 rounded-full group-hover/btn:bg-yellow-500/10 transition-colors">
+                  <Bookmark className={`w-4 h-4 ${post.hasBookmarked ? 'fill-current text-yellow-500' : ''}`} />
+                </div>
               </button>
             )}
           </div>
 
           {/* Inline Reply Box */}
           {replyingTo === post.id && !isReply && (
-            <div className="mt-4 flex gap-3 items-start animate-in fade-in slide-in-from-top-2">
+            <div className="mt-3 flex gap-3 items-start animate-in fade-in slide-in-from-top-2">
               <div className="flex-1">
                 <form 
                   onSubmit={(e) => handleReply(e, post.id)} 
                   onPaste={(e) => handlePaste(e, true, post.id)}
-                  className="bg-muted/30 p-3 rounded-xl border border-border/50 relative"
+                  className="bg-muted/30 p-3 rounded-2xl border border-border/50 relative shadow-xs"
                 >
                   <Textarea 
                     placeholder="Post your reply... (paste or drag image/video)"
-                    className="resize-none border-0 focus-visible:ring-0 px-0 bg-transparent text-sm min-h-[60px]"
+                    className="resize-none border-0 focus-visible:ring-0 px-0 bg-transparent text-xs min-h-[50px]"
                     value={replyBody}
                     onChange={(e) => setReplyBody(e.target.value)}
                     maxLength={1000}
@@ -1302,7 +1207,7 @@ export function TheFeed() {
                   )}
 
                   {replyMediaUrl && !replyUploadStates[post.id] && (
-                    <div className="relative my-2 rounded-lg overflow-hidden border border-border/50 bg-black/10 flex items-center justify-center max-h-[200px]">
+                    <div className="relative my-2 rounded-xl overflow-hidden border border-border/50 bg-black/10 flex items-center justify-center max-h-[200px]">
                       <Button 
                         type="button" 
                         variant="destructive" 
@@ -1310,7 +1215,7 @@ export function TheFeed() {
                         className="absolute top-2 right-2 w-6 h-6 rounded-full z-10 shadow-md"
                         onClick={() => setReplyMediaUrl("")}
                       >
-                        <X className="w-3.5 h-3.5" />
+                        <X className="w-3 h-3" />
                       </Button>
                       {isArchive(replyMediaUrl) ? (
                         <div className="flex flex-col items-center justify-center p-4 text-center w-full">
@@ -1319,7 +1224,7 @@ export function TheFeed() {
                           <span className="text-[10px] text-muted-foreground break-all max-w-[90%]">{replyMediaUrl.split('/').pop()}</span>
                         </div>
                       ) : isVideo(replyMediaUrl) ? (
-                        <video src={replyMediaUrl} controls className="max-h-[200px] w-auto max-w-full rounded" />
+                        <video src={formatVideoSrc(replyMediaUrl)} controls className="max-h-[200px] w-auto max-w-full rounded" />
                       ) : (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={replyMediaUrl} alt="Reply preview" className="max-h-[200px] w-auto max-w-full object-contain rounded" />
@@ -1340,7 +1245,7 @@ export function TheFeed() {
                          />
                          <Button asChild variant="ghost" size="icon" className="h-7 w-7 rounded-full text-muted-foreground hover:text-primary disabled:opacity-50" title="Attach Image or Video">
                            <label htmlFor={`social-reply-media-upload-${post.id}`} className="cursor-pointer">
-                             <ImageIcon className="w-4 h-4" />
+                             <ImageIcon className="w-3.5 h-3.5" />
                            </label>
                          </Button>
                        </div>
@@ -1356,18 +1261,18 @@ export function TheFeed() {
                          />
                          <Button asChild variant="ghost" size="icon" className="h-7 w-7 rounded-full text-muted-foreground hover:text-primary disabled:opacity-50" title="Attach Archive">
                            <label htmlFor={`social-reply-archive-upload-${post.id}`} className="cursor-pointer">
-                             <Paperclip className="w-4 h-4" />
+                             <Paperclip className="w-3.5 h-3.5" />
                            </label>
                          </Button>
                        </div>
 
-                       <span className={`text-xs ml-2 ${replyBody.length > 900 ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
+                       <span className={`text-[11px] ml-2 ${replyBody.length > 900 ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
                          {replyBody.length} / 1000
                        </span>
                      </div>
                      <div className="flex gap-2">
-                       <Button type="button" variant="ghost" size="sm" onClick={() => { setReplyingTo(null); setReplyBody(""); setReplyMediaUrl(""); }}>Cancel</Button>
-                       <Button type="submit" size="sm" disabled={(!replyBody.trim() && !replyMediaUrl) || isPosting || isUploadingReply}>Reply</Button>
+                       <Button type="button" variant="ghost" size="sm" className="h-7 text-xs rounded-full" onClick={() => { setReplyingTo(null); setReplyBody(""); setReplyMediaUrl(""); }}>Cancel</Button>
+                       <Button type="submit" size="sm" className="h-7 text-xs rounded-full font-bold px-4" disabled={(!replyBody.trim() && !replyMediaUrl) || isPosting || isUploadingReply}>Reply</Button>
                      </div>
                   </div>
                 </form>
@@ -1379,15 +1284,16 @@ export function TheFeed() {
           {!isReply && post.repliesCount > 0 && !loadedReplies[post.id] && (
             <button 
               onClick={() => handleLoadReplies(post.id)}
-              className="text-xs font-medium text-primary hover:underline mt-3"
+              className="text-xs font-semibold text-primary hover:underline mt-2.5 flex items-center gap-1"
             >
-              {loadingReplies[post.id] ? <Loader2 className="w-3 h-3 animate-spin inline mr-1" /> : "Show replies"}
+              {loadingReplies[post.id] ? <Loader2 className="w-3 h-3 animate-spin inline" /> : null}
+              <span>Show {post.repliesCount} repl{post.repliesCount === 1 ? 'y' : 'ies'}</span>
             </button>
           )}
 
-          {/* Render Replies */}
+          {/* Render Nested Replies */}
           {!isReply && loadedReplies[post.id] && (
-            <div className="mt-2 space-y-0 relative before:absolute before:inset-y-0 before:left-5 before:-ml-px before:w-0.5 before:bg-border/50">
+            <div className="mt-2 space-y-0 divide-y divide-border/30 border-t border-border/30">
               {loadedReplies[post.id].map(reply => renderPost(reply, true, post.id))}
             </div>
           )}
@@ -1405,8 +1311,6 @@ export function TheFeed() {
     return () => document.removeEventListener("click", handleClickOutside);
   }, [activePostMenu]);
 
-  const displayPosts = searchResults !== null ? searchResults : posts;
-
   const navigateShorts = useCallback((direction: number) => {
     if (!viewingShortsPost || !displayPosts.length) return;
     const currentIndex = displayPosts.findIndex((p: any) => p.id === viewingShortsPost.id);
@@ -1423,7 +1327,7 @@ export function TheFeed() {
     }
   }, [viewingShortsPost, displayPosts, handleRecordView]);
 
-  // Lock body scroll when Shorts Viewer is open so page never scrolls behind it
+  // Lock body scroll when Shorts Viewer is open
   useEffect(() => {
     if (viewingShortsPost) {
       const originalOverflow = document.body.style.overflow;
@@ -1434,12 +1338,11 @@ export function TheFeed() {
     }
   }, [viewingShortsPost]);
 
-  // Global mouse wheel listener for seamless scroll up/down navigation between posts
+  // Global mouse wheel listener for Shorts navigation
   useEffect(() => {
     if (!viewingShortsPost) return;
 
     const handleWheel = (e: WheelEvent) => {
-      // Don't intercept if scrolling inside comments
       const target = e.target as HTMLElement;
       if (target && target.closest(".shorts-comments-scroll")) return;
 
@@ -1449,10 +1352,10 @@ export function TheFeed() {
 
       if (e.deltaY > 15) {
         lastWheelTime.current = now;
-        navigateShorts(1); // Next
+        navigateShorts(1);
       } else if (e.deltaY < -15) {
         lastWheelTime.current = now;
-        navigateShorts(-1); // Previous
+        navigateShorts(-1);
       }
     };
 
@@ -1487,12 +1390,10 @@ export function TheFeed() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [viewingShortsPost, navigateShorts]);
 
-  // Double tap handler for instant like
   const lastTapRef = useRef<number>(0);
   const handleShortsTap = () => {
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
-      // Double tap -> like
       if (viewingShortsPost && !viewingShortsPost.hasLiked) {
         handleLike(viewingShortsPost.id);
       }
@@ -1509,10 +1410,14 @@ export function TheFeed() {
     }
   };
 
+  const currentShortsIndex = viewingShortsPost 
+    ? displayPosts.findIndex((p: any) => p.id === viewingShortsPost.id) 
+    : -1;
+
   return (
     <div className="w-full flex flex-col xl:flex-row items-start justify-center gap-6 relative min-h-screen">
       
-      {/* Full-Screen Immersive Shorts / Reel Swiper Modal rendered via Portal directly to body */}
+      {/* Full-Screen Immersive Shorts / Reel Swiper Modal with Adjacent Preloading */}
       {mounted && viewingShortsPost && createPortal(
         <div 
           className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[999999] bg-black/95 backdrop-blur-2xl flex items-center justify-center select-none overflow-hidden m-0 p-0 animate-in fade-in duration-200"
@@ -1523,9 +1428,9 @@ export function TheFeed() {
             if (touchStartY.current === null) return;
             const deltaY = touchStartY.current - e.changedTouches[0].clientY;
             if (deltaY > 35) {
-              navigateShorts(1); // Swiped UP -> Next
+              navigateShorts(1);
             } else if (deltaY < -35) {
-              navigateShorts(-1); // Swiped DOWN -> Previous
+              navigateShorts(-1);
             }
             touchStartY.current = null;
           }}
@@ -1537,10 +1442,10 @@ export function TheFeed() {
               className="p-2.5 bg-black/70 hover:bg-black/95 border border-white/20 rounded-full text-white backdrop-blur-md transition-all shadow-lg hover:scale-105"
               title="Close (Esc)"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
             <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/70 border border-white/20 text-white backdrop-blur-md text-xs font-bold shadow-md">
-              <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+              <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
               <span>Saints Reel</span>
             </div>
           </div>
@@ -1559,7 +1464,7 @@ export function TheFeed() {
           <div className="absolute right-4 lg:right-8 top-1/2 -translate-y-1/2 hidden md:flex flex-col items-center gap-3 z-40">
             <button 
               onClick={() => navigateShorts(-1)}
-              disabled={displayPosts.findIndex((p: any) => p.id === viewingShortsPost.id) === 0}
+              disabled={currentShortsIndex === 0}
               className="p-3.5 rounded-full bg-black/70 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all disabled:opacity-20 disabled:cursor-not-allowed hover:scale-110 shadow-xl"
               title="Previous (Scroll Up / ↑)"
             >
@@ -1570,7 +1475,7 @@ export function TheFeed() {
             </span>
             <button 
               onClick={() => navigateShorts(1)}
-              disabled={displayPosts.findIndex((p: any) => p.id === viewingShortsPost.id) === displayPosts.length - 1}
+              disabled={currentShortsIndex === displayPosts.length - 1}
               className="p-3.5 rounded-full bg-black/70 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all disabled:opacity-20 disabled:cursor-not-allowed hover:scale-110 shadow-xl"
               title="Next (Scroll Down / ↓)"
             >
@@ -1578,18 +1483,36 @@ export function TheFeed() {
             </button>
           </div>
 
-          {/* Main Shorts Container Frame: Responsive Width (Wide on Desktop, Centered and Fixed) */}
+          {/* Adjacent Video Prefetching to eliminate buffer delay and black flashes */}
+          {currentShortsIndex < displayPosts.length - 1 && displayPosts[currentShortsIndex + 1]?.mediaUrl && isVideo(displayPosts[currentShortsIndex + 1].mediaUrl) && (
+            <video
+              src={formatVideoSrc(displayPosts[currentShortsIndex + 1].mediaUrl)}
+              preload="auto"
+              muted
+              className="hidden"
+            />
+          )}
+          {currentShortsIndex > 0 && displayPosts[currentShortsIndex - 1]?.mediaUrl && isVideo(displayPosts[currentShortsIndex - 1].mediaUrl) && (
+            <video
+              src={formatVideoSrc(displayPosts[currentShortsIndex - 1].mediaUrl)}
+              preload="auto"
+              muted
+              className="hidden"
+            />
+          )}
+
+          {/* Main Shorts Container Frame */}
           <div className="w-full max-w-[480px] md:max-w-3xl lg:max-w-4xl xl:max-w-5xl h-[94vh] md:h-[88vh] md:max-h-[920px] relative rounded-3xl overflow-hidden bg-black/90 border border-white/20 shadow-2xl flex items-center justify-center mx-3 sm:mx-6">
             
-            {/* Ambient Blurred Background for Dynamic Glow */}
+            {/* Ambient Blurred Background */}
             {viewingShortsPost.mediaUrl && !isArchive(viewingShortsPost.mediaUrl) && (
               <div 
-                className="absolute inset-0 bg-cover bg-center blur-3xl opacity-35 scale-125 pointer-events-none"
+                className="absolute inset-0 bg-cover bg-center blur-3xl opacity-35 scale-125 pointer-events-none transition-opacity duration-500"
                 style={{ backgroundImage: `url(${viewingShortsPost.mediaUrl})` }}
               />
             )}
 
-            {/* Central Media / Content */}
+            {/* Central Media Content */}
             <div 
               className="w-full h-full relative flex items-center justify-center cursor-pointer"
               onClick={handleShortsTap}
@@ -1597,12 +1520,12 @@ export function TheFeed() {
               {viewingShortsPost.mediaUrl && isVideo(viewingShortsPost.mediaUrl) ? (
                 <video
                   key={viewingShortsPost.id}
-                  src={viewingShortsPost.mediaUrl}
+                  src={formatVideoSrc(viewingShortsPost.mediaUrl)}
                   autoPlay={shortsPlaying}
                   loop
                   playsInline
                   muted={isShortsMuted}
-                  className="max-h-[88vh] md:max-h-[84vh] w-auto max-w-full object-contain mx-auto bg-black rounded-2xl"
+                  className="max-h-[88vh] md:max-h-[84vh] w-auto max-w-full object-contain mx-auto bg-black rounded-2xl transition-opacity duration-300"
                 />
               ) : viewingShortsPost.mediaUrl && isArchive(viewingShortsPost.mediaUrl) ? (
                 <div className="flex flex-col items-center justify-center p-8 text-center bg-card/60 backdrop-blur-md rounded-2xl border border-white/10 m-4">
@@ -1612,7 +1535,7 @@ export function TheFeed() {
                   <a 
                     href={viewingShortsPost.mediaUrl} 
                     download 
-                    className="px-6 py-2.5 bg-primary text-primary-foreground rounded-full font-bold text-sm flex items-center gap-2 hover:bg-primary/90 transition-colors"
+                    className="px-6 py-2.5 bg-primary text-primary-foreground rounded-full font-bold text-sm flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-lg"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <Download className="w-4 h-4" /> Download File
@@ -1624,10 +1547,9 @@ export function TheFeed() {
                   key={viewingShortsPost.id}
                   src={viewingShortsPost.mediaUrl} 
                   alt="Shorts media" 
-                  className="max-h-[88vh] md:max-h-[84vh] w-auto max-w-full object-contain mx-auto rounded-2xl"
+                  className="max-h-[88vh] md:max-h-[84vh] w-auto max-w-full object-contain mx-auto rounded-2xl shadow-xl" 
                 />
               ) : (
-                /* Text-only Post in Shorts View */
                 <div className="w-full h-full flex flex-col justify-between p-8 bg-gradient-to-b from-primary/20 via-background/80 to-black text-white">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full overflow-hidden relative bg-muted border border-white/20">
@@ -1651,7 +1573,7 @@ export function TheFeed() {
 
                   <div className="my-auto py-6">
                     <p className="text-lg md:text-xl font-medium leading-relaxed drop-shadow-md whitespace-pre-wrap">
-                      {renderBody(viewingShortsPost.body)}
+                      {viewingShortsPost.body}
                     </p>
                   </div>
 
@@ -1683,7 +1605,7 @@ export function TheFeed() {
                 </div>
               )}
 
-              {/* Gradient Bottom Shadow for Captions */}
+              {/* Gradient Bottom Shadow */}
               <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
 
               {/* Bottom Caption & Author Details */}
@@ -1860,421 +1782,485 @@ export function TheFeed() {
         document.body
       )}
 
-      {/* Main Feed Column: Expanded to generous edge-to-edge max width on PC */}
+      {/* Main Feed Column */}
       <div className="flex-1 w-full max-w-4xl 2xl:max-w-5xl min-w-0 space-y-4">
-        {/* Header */}
-        <div className="p-4 border border-border/50 rounded-2xl sticky top-20 bg-background/80 backdrop-blur-xl z-10 shadow-sm">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="font-bold text-xl flex items-center gap-2">
-              {filter ? <><Hash className="w-5 h-5 text-primary"/> {filter}</> : "The Feed"}
-            </h2>
+        
+        {/* Stream Header & Navigation Tabs */}
+        <div className="p-4 border border-border/50 rounded-2xl sticky top-20 bg-background/85 backdrop-blur-xl z-10 shadow-sm">
+          
+          {/* Top Bar: Title & Search */}
+          <div className="flex justify-between items-center mb-3.5 gap-3 flex-wrap">
             <div className="flex items-center gap-2">
+              <h2 className="font-extrabold text-xl sm:text-2xl tracking-tight sg-text-gradient">
+                {filter ? `#${filter}` : "The Feed"}
+              </h2>
               {filter && (
-                <Button variant="ghost" size="sm" onClick={() => setFilter(null)}>
-                  Clear Filter
+                <Button variant="ghost" size="sm" className="h-7 text-xs rounded-full" onClick={() => setFilter(null)}>
+                  Clear
                 </Button>
               )}
             </div>
-          </div>
 
-          {/* Feed Controls Bar */}
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* Broaden Toggle */}
-            <button
-              onClick={handleBroadenToggle}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
-                broadenFeed 
-                  ? 'bg-primary/10 text-primary border-primary/30 shadow-sm' 
-                  : 'bg-muted/30 text-muted-foreground border-border/50 hover:border-primary/30 hover:text-foreground'
-              }`}
-            >
-              <Compass className={`w-3.5 h-3.5 ${broadenFeed ? 'animate-spin' : ''}`} style={broadenFeed ? { animationDuration: '3s' } : {}} />
-              Broaden
-            </button>
-
-            {/* Search */}
-            <form onSubmit={handleSearch} className="flex-1 max-w-sm flex items-center gap-1.5">
-              <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Search posts..."
-                  className="h-8 pl-8 pr-8 text-xs bg-muted/30 border-border/50"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={clearSearch}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-              <Button type="submit" size="sm" variant="ghost" className="h-8 px-2" disabled={isSearching}>
-                {isSearching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
-              </Button>
-            </form>
-
-            {/* Muted Keywords */}
-            <Popover open={showMutedPopover} onOpenChange={setShowMutedPopover}>
-              <PopoverTrigger className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
-                  mutedKeywords.length > 0
-                    ? 'bg-orange-500/10 text-orange-500 border-orange-500/30'
-                    : 'bg-muted/30 text-muted-foreground border-border/50 hover:border-primary/30'
-                }`}>
-                  <VolumeX className="w-3.5 h-3.5" />
-                  {mutedKeywords.length > 0 ? `${mutedKeywords.length} Muted` : "Mute"}
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-4" side="bottom" align="end">
-                <h4 className="font-bold text-sm mb-3">Muted Keywords & Hashtags</h4>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Posts containing these words or hashtags will be hidden from your feed.
-                </p>
-                
-                <div className="flex gap-2 mb-3">
+            {/* Quick Search & Controls */}
+            <div className="flex items-center gap-2 flex-1 max-w-md justify-end">
+              <form onSubmit={handleSearch} className="flex-1 max-w-xs flex items-center gap-1.5">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <Input
-                    placeholder="Enter keyword..."
-                    className="text-xs h-8 flex-1"
-                    value={newMuteKeyword}
-                    onChange={(e) => setNewMuteKeyword(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") handleAddMute(); }}
+                    placeholder="Search feed..."
+                    className="h-8 pl-8 pr-8 text-xs bg-muted/30 border-border/50 rounded-full"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                   />
-                  <select
-                    className="text-xs bg-muted rounded px-2 py-1 outline-none border border-border/50"
-                    value={newMuteType}
-                    onChange={(e) => setNewMuteType(e.target.value as "KEYWORD" | "HASHTAG")}
-                  >
-                    <option value="KEYWORD">Word</option>
-                    <option value="HASHTAG">Tag</option>
-                  </select>
-                  <Button size="sm" className="h-8 px-2" onClick={handleAddMute}>
-                    <Plus className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-
-                <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                  {mutedKeywords.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-4">No muted keywords yet.</p>
-                  ) : (
-                    mutedKeywords.map(mk => (
-                      <div key={mk.id} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
-                        <span className="text-xs font-medium">
-                          {mk.type === "HASHTAG" ? "#" : ""}{mk.keyword}
-                          <span className="text-muted-foreground ml-1.5 text-[10px] uppercase">{mk.type}</span>
-                        </span>
-                        <button
-                          onClick={() => handleRemoveMute(mk.id)}
-                          className="text-muted-foreground hover:text-destructive transition-colors p-1"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={clearSearch}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   )}
                 </div>
-              </PopoverContent>
-            </Popover>
+              </form>
+
+              {/* Broaden Discovery Toggle */}
+              <button
+                onClick={handleBroadenToggle}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border shrink-0 ${
+                  broadenFeed 
+                    ? 'bg-primary/10 text-primary border-primary/30 shadow-xs' 
+                    : 'bg-muted/30 text-muted-foreground border-border/50 hover:border-primary/30 hover:text-foreground'
+                }`}
+                title="Broaden Discovery (Interleave community recommendations)"
+              >
+                <Compass className={`w-3.5 h-3.5 ${broadenFeed ? 'animate-spin' : ''}`} style={broadenFeed ? { animationDuration: '3s' } : {}} />
+                <span className="hidden sm:inline">Discovery</span>
+              </button>
+
+              {/* Muted Keywords Popover */}
+              <Popover open={showMutedPopover} onOpenChange={setShowMutedPopover}>
+                <PopoverTrigger className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all border shrink-0 ${
+                    mutedKeywords.length > 0
+                      ? 'bg-orange-500/10 text-orange-500 border-orange-500/30'
+                      : 'bg-muted/30 text-muted-foreground border-border/50 hover:border-primary/30'
+                  }`}>
+                    <VolumeX className="w-3.5 h-3.5" />
+                    {mutedKeywords.length > 0 && <span className="text-[10px]">{mutedKeywords.length}</span>}
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-4" side="bottom" align="end">
+                  <h4 className="font-bold text-sm mb-3">Muted Keywords & Hashtags</h4>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Posts containing these words or hashtags will be hidden from your feed.
+                  </p>
+                  
+                  <div className="flex gap-2 mb-3">
+                    <Input
+                      placeholder="Enter keyword..."
+                      className="text-xs h-8 flex-1"
+                      value={newMuteKeyword}
+                      onChange={(e) => setNewMuteKeyword(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleAddMute(); }}
+                    />
+                    <select
+                      className="text-xs bg-muted rounded px-2 py-1 outline-none border border-border/50"
+                      value={newMuteType}
+                      onChange={(e) => setNewMuteType(e.target.value as "KEYWORD" | "HASHTAG")}
+                    >
+                      <option value="KEYWORD">Word</option>
+                      <option value="HASHTAG">Tag</option>
+                    </select>
+                    <Button size="sm" className="h-8 px-2" onClick={handleAddMute}>
+                      <Plus className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    {mutedKeywords.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-4">No muted keywords yet.</p>
+                    ) : (
+                      mutedKeywords.map(mk => (
+                        <div key={mk.id} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                          <span className="text-xs font-medium">
+                            {mk.type === "HASHTAG" ? "#" : ""}{mk.keyword}
+                            <span className="text-muted-foreground ml-1.5 text-[10px] uppercase">{mk.type}</span>
+                          </span>
+                          <button
+                            onClick={() => handleRemoveMute(mk.id)}
+                            className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
 
-          {/* Search results indicator */}
+          {/* Stream Selector Navigation Tabs */}
+          <div className="flex items-center gap-2 pt-1 border-t border-border/40 overflow-x-auto no-scrollbar">
+            <button
+              onClick={() => { setFeedTab("for-you"); setFilter(null); }}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all relative shrink-0 ${
+                feedTab === "for-you" && !filter
+                  ? "text-primary bg-primary/10 border border-primary/30 shadow-xs"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30 border border-transparent"
+              }`}
+            >
+              For You
+            </button>
+            <button
+              onClick={() => { setFeedTab("clips"); setFilter(null); }}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all relative shrink-0 flex items-center gap-1.5 ${
+                feedTab === "clips"
+                  ? "text-primary bg-primary/10 border border-primary/30 shadow-xs"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30 border border-transparent"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
+              Clips & Reels
+            </button>
+            <button
+              onClick={() => { setFeedTab("trending"); }}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all relative shrink-0 flex items-center gap-1.5 ${
+                feedTab === "trending"
+                  ? "text-primary bg-primary/10 border border-primary/30 shadow-xs"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30 border border-transparent"
+              }`}
+            >
+              <Flame className="w-3.5 h-3.5 text-orange-400" />
+              Hot & Trending
+            </button>
+          </div>
+
+          {/* Search results banner */}
           {searchResults !== null && (
-            <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-              <Search className="w-3 h-3" />
-              <span>{searchResults.length} result{searchResults.length !== 1 ? "s" : ""} for &quot;{searchQuery}&quot;</span>
-              <button onClick={clearSearch} className="text-primary hover:underline ml-auto">Clear</button>
+            <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center gap-2 text-xs text-muted-foreground">
+              <Search className="w-3.5 h-3.5 text-primary" />
+              <span>{searchResults.length} post{searchResults.length !== 1 ? "s" : ""} found for &quot;{searchQuery}&quot;</span>
+              <button onClick={clearSearch} className="text-primary hover:underline ml-auto font-medium">Clear search</button>
             </div>
           )}
         </div>
 
-        <div className="space-y-4">
-          {/* Post Composer */}
-          {searchResults === null && (
-            <Card 
-              className={`bg-card shadow-sm border-border/50 rounded-2xl overflow-hidden focus-within:ring-1 focus-within:ring-primary/50 transition-all relative ${
-                isDragging ? "ring-2 ring-primary border-primary bg-primary/5" : ""
-              }`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              {/* Drag & Drop Visual Overlay */}
-              {isDragging && (
-                <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary rounded-2xl flex flex-col items-center justify-center z-30 pointer-events-none backdrop-blur-xs animate-in fade-in duration-150">
-                  <UploadCloud className="w-10 h-10 text-primary animate-bounce mb-2" />
-                  <span className="text-sm font-bold text-primary">Drop images, videos, or archives here</span>
+        {/* Integrated Post Composer */}
+        {searchResults === null && (
+          <Card 
+            className={`bg-card/60 backdrop-blur-md shadow-sm border-border/50 rounded-2xl overflow-hidden focus-within:ring-1 focus-within:ring-primary/50 transition-all relative ${
+              isDragging ? "ring-2 ring-primary border-primary bg-primary/5" : ""
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            {/* Drag & Drop Visual Overlay */}
+            {isDragging && (
+              <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary rounded-2xl flex flex-col items-center justify-center z-30 pointer-events-none backdrop-blur-xs animate-in fade-in duration-150">
+                <UploadCloud className="w-10 h-10 text-primary animate-bounce mb-2" />
+                <span className="text-sm font-bold text-primary">Drop media or files to attach</span>
+              </div>
+            )}
+
+            <CardContent className="p-0">
+              <form onSubmit={handlePost}>
+                <div className="p-4 flex gap-3 items-start">
+                  <div className="w-10 h-10 rounded-full bg-muted overflow-hidden relative shrink-0 ring-1 ring-border/60">
+                    {session?.user?.image ? (
+                      <Image src={session.user.image} alt={session.user.name || "You"} fill className="object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center font-bold text-muted-foreground bg-muted text-sm">
+                        {session?.user?.name?.charAt(0).toUpperCase() || "U"}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <Textarea 
+                      placeholder="What's happening in Saints Gaming? Drop a clip, use #hashtags..."
+                      className="resize-none border-0 focus-visible:ring-0 p-0 bg-transparent text-sm sm:text-base min-h-[75px]"
+                      value={body}
+                      onChange={(e) => setBody(e.target.value)}
+                      onPaste={(e) => handlePaste(e, false)}
+                      maxLength={1000}
+                    />
+                  </div>
                 </div>
-              )}
 
-              <CardContent className="p-0">
-                <form onSubmit={handlePost}>
-                  <Textarea 
-                    placeholder="What's happening? Use #hashtags, paste or drop media!"
-                    className="resize-none border-0 focus-visible:ring-0 p-4 bg-transparent text-base min-h-[100px]"
-                    value={body}
-                    onChange={(e) => setBody(e.target.value)}
-                    onPaste={(e) => handlePaste(e, false)}
-                    maxLength={1000}
-                  />
-                            {/* Upload Progress Bar with Speed, ETA, Size & Cancel */}
-                  {mainUploadState && (
-                    <div className="mx-4 mt-3">
-                      <UploadProgressBar 
-                        uploadState={mainUploadState} 
-                        onCancel={handleCancelMainUpload} 
+                {/* Upload Progress Bar */}
+                {mainUploadState && (
+                  <div className="mx-4 mb-3">
+                    <UploadProgressBar 
+                      uploadState={mainUploadState} 
+                      onCancel={handleCancelMainUpload} 
+                    />
+                  </div>
+                )}
+
+                {/* Attached Media Preview with Zero Black Box */}
+                {mediaUrl && !mainUploadState && (
+                  <div className="relative mx-4 mb-3 rounded-2xl overflow-hidden border border-border/50 bg-black/10 flex items-center justify-center max-h-[320px]">
+                    <Button 
+                      type="button" 
+                      variant="destructive" 
+                      size="icon" 
+                      className="absolute top-2 right-2 w-7 h-7 rounded-full z-10 shadow-md"
+                      onClick={() => setMediaUrl("")}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                    {isArchive(mediaUrl) ? (
+                      <div className="flex flex-col items-center justify-center p-6 text-center w-full">
+                        <FileArchive className="w-10 h-10 text-primary mb-2" />
+                        <span className="text-sm font-semibold text-primary/90">Archive Attached</span>
+                        <span className="text-xs text-muted-foreground mt-1 break-all max-w-[80%]">{mediaUrl.split('/').pop()}</span>
+                      </div>
+                    ) : isVideo(mediaUrl) ? (
+                      <video src={formatVideoSrc(mediaUrl)} controls className="max-h-[320px] w-auto max-w-full rounded-xl" />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={mediaUrl} alt="Upload preview" className="max-h-[320px] w-auto max-w-full object-contain rounded-xl" />
+                    )}
+                  </div>
+                )}
+
+                {/* Poll Form Overlay */}
+                {showPollForm && (
+                  <div className="mx-4 mb-3 p-4 bg-muted/20 border border-border/50 rounded-2xl space-y-3">
+                    <Input placeholder="Ask a poll question..." value={pollQuestion} onChange={e => setPollQuestion(e.target.value)} className="bg-background rounded-xl text-xs" />
+                    {pollOptions.map((opt, i) => (
+                      <div key={i} className="flex gap-2">
+                        <Input placeholder={`Option ${i + 1}`} value={opt} onChange={e => {
+                          const newOpts = [...pollOptions];
+                          newOpts[i] = e.target.value;
+                          setPollOptions(newOpts);
+                        }} className="bg-background rounded-xl text-xs" />
+                        {pollOptions.length > 2 && (
+                          <Button type="button" variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => setPollOptions(pollOptions.filter((_, idx) => idx !== i))}>
+                            <X className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    {pollOptions.length < 4 && (
+                      <Button type="button" variant="outline" size="sm" className="rounded-xl text-xs" onClick={() => setPollOptions([...pollOptions, ""])}>
+                        <Plus className="w-3.5 h-3.5 mr-1" /> Add Option
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {/* Bottom Toolbar & Post Button */}
+                <div className="flex justify-between items-center px-4 py-3 bg-muted/20 border-t border-border/50">
+                  <div className="flex items-center gap-1">
+                    {/* Media Upload */}
+                    <div>
+                      <input 
+                        type="file" 
+                        id="social-media-upload-main" 
+                        accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime,video/ogg,video/x-matroska,video/m4v" 
+                        className="hidden" 
+                        onChange={(e) => handleMediaUpload(e, false)} 
+                        disabled={Boolean(mainUploadState) || isPosting}
                       />
-                    </div>
-                  )}
-
-                  {/* Attached Media Preview */}
-                  {mediaUrl && !mainUploadState && (
-                    <div className="relative mx-4 mt-2 rounded-xl overflow-hidden border border-border/50 bg-black/10 flex items-center justify-center max-h-[320px]">
-                      <Button 
-                        type="button" 
-                        variant="destructive" 
-                        size="icon" 
-                        className="absolute top-2 right-2 w-8 h-8 rounded-full z-10 shadow-md"
-                        onClick={() => setMediaUrl("")}
-                      >
-                        <X className="w-4 h-4" />
+                      <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary disabled:opacity-50" title="Attach Media (Image / Video)">
+                        <label htmlFor="social-media-upload-main" className="cursor-pointer">
+                          <ImageIcon className="w-4 h-4" />
+                        </label>
                       </Button>
-                      {isArchive(mediaUrl) ? (
-                        <div className="flex flex-col items-center justify-center p-8 text-center w-full">
-                          <FileArchive className="w-12 h-12 text-primary mb-2" />
-                          <span className="text-sm font-medium text-primary/80">Archive Attached</span>
-                          <span className="text-xs text-muted-foreground mt-1 break-all max-w-[80%]">{mediaUrl.split('/').pop()}</span>
-                        </div>
-                      ) : isVideo(mediaUrl) ? (
-                        <video src={mediaUrl} controls className="max-h-[320px] w-auto max-w-full rounded-lg" />
-                      ) : (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={mediaUrl} alt="Upload preview" className="max-h-[320px] w-auto max-w-full object-contain rounded-lg" />
-                      )}
                     </div>
-                  )}
 
-                  {showPollForm && (
-                    <div className="mx-4 mt-2 p-4 bg-muted/20 border border-border/50 rounded-xl space-y-3">
-                      <Input placeholder="Ask a question..." value={pollQuestion} onChange={e => setPollQuestion(e.target.value)} className="bg-background" />
-                      {pollOptions.map((opt, i) => (
-                        <div key={i} className="flex gap-2">
-                          <Input placeholder={`Option ${i + 1}`} value={opt} onChange={e => {
-                            const newOpts = [...pollOptions];
-                            newOpts[i] = e.target.value;
-                            setPollOptions(newOpts);
-                          }} className="bg-background" />
-                          {pollOptions.length > 2 && (
-                            <Button type="button" variant="ghost" size="icon" onClick={() => setPollOptions(pollOptions.filter((_, idx) => idx !== i))}>
-                              <X className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                      {pollOptions.length < 4 && (
-                        <Button type="button" variant="outline" size="sm" onClick={() => setPollOptions([...pollOptions, ""])}>
-                          <Plus className="w-4 h-4 mr-2" /> Add Option
-                        </Button>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center p-3 bg-muted/20 border-t border-border/50">
-                    <div className="flex items-center gap-1">
-                      {/* Image / Video Upload */}
-                      <div>
-                        <input 
-                          type="file" 
-                          id="social-media-upload-main" 
-                          accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime,video/ogg,video/x-matroska,video/m4v" 
-                          className="hidden" 
-                          onChange={(e) => handleMediaUpload(e, false)} 
-                          disabled={Boolean(mainUploadState) || isPosting}
-                        />
-                        <Button asChild variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-primary disabled:opacity-50" title="Attach Image or Video">
-                          <label htmlFor="social-media-upload-main" className="cursor-pointer">
-                            <ImageIcon className="w-5 h-5" />
-                          </label>
-                        </Button>
-                      </div>
-
-                      {/* Archive Upload */}
-                      <div>
-                        <input 
-                          type="file" 
-                          id="social-archive-upload-main" 
-                          accept=".zip,.rar,.7z,.tar,.bz2,.gz,application/zip,application/x-zip-compressed,application/x-7z-compressed,application/vnd.rar,application/x-rar-compressed,application/x-tar,application/x-bzip2,application/gzip" 
-                          className="hidden" 
-                          onChange={(e) => handleMediaUpload(e, false)} 
-                          disabled={Boolean(mainUploadState) || isPosting}
-                        />
-                        <Button asChild variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-primary disabled:opacity-50" title="Attach Archive">
-                          <label htmlFor="social-archive-upload-main" className="cursor-pointer">
-                            <Paperclip className="w-5 h-5" />
-                          </label>
-                        </Button>
-                      </div>
-
-                      {/* Emoji Picker */}
-                      <Popover>
-                        <PopoverTrigger className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors" title="Add Emoji">
-                          <Smile className="w-5 h-5" />
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 border-none shadow-none bg-transparent" side="bottom" align="start">
-                          <EmojiPicker onEmojiClick={(e) => setBody(prev => prev + e.emoji)} />
-                        </PopoverContent>
-                      </Popover>
-
-                      {/* Giphy Picker */}
-                      <Popover open={showGiphy} onOpenChange={setShowGiphy}>
-                        <PopoverTrigger className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors" title="Choose a GIF">
-                          <span className="font-extrabold text-[11px] border border-current px-1 rounded">GIF</span>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80 p-3 h-96 overflow-y-auto" side="bottom" align="start">
-                          <input 
-                            type="text" 
-                            placeholder="Search GIFs..." 
-                            className="w-full p-2 mb-3 bg-muted rounded-md text-sm outline-none"
-                            value={giphySearch}
-                            onChange={(e) => setGiphySearch(e.target.value)}
-                          />
-                          <Grid 
-                            width={290} 
-                            columns={2} 
-                            fetchGifs={fetchGifs} 
-                            key={giphySearch} 
-                            onGifClick={(gif, e) => {
-                              e.preventDefault();
-                              setMediaUrl(gif.images.original.url);
-                              setShowGiphy(false);
-                            }}
-                          />
-                        </PopoverContent>
-                      </Popover>
-
-                      {/* Poll Button */}
-                      <Button type="button" variant="ghost" size="icon" className={`rounded-full hover:text-primary transition-colors ${showPollForm ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`} onClick={() => setShowPollForm(!showPollForm)} title="Create Poll">
-                        <BarChart2 className="w-5 h-5" />
+                    {/* Archive Upload */}
+                    <div>
+                      <input 
+                        type="file" 
+                        id="social-archive-upload-main" 
+                        accept=".zip,.rar,.7z,.tar,.bz2,.gz,application/zip,application/x-zip-compressed,application/x-7z-compressed,application/vnd.rar,application/x-rar-compressed,application/x-tar,application/x-bzip2,application/gzip" 
+                        className="hidden" 
+                        onChange={(e) => handleMediaUpload(e, false)} 
+                        disabled={Boolean(mainUploadState) || isPosting}
+                      />
+                      <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary disabled:opacity-50" title="Attach Archive (.zip/.rar)">
+                        <label htmlFor="social-archive-upload-main" className="cursor-pointer">
+                          <Paperclip className="w-4 h-4" />
+                        </label>
                       </Button>
+                    </div>
 
-                      {/* Advanced Tools */}
-                      <Popover open={showAdvanced} onOpenChange={setShowAdvanced}>
-                        <PopoverTrigger className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors" title="Advanced Creator Tools">
-                          <Plus className="w-5 h-5" />
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80 p-4 max-h-[400px] overflow-y-auto" side="top" align="start">
-                          <h4 className="font-bold text-sm mb-3">Advanced Creator Tools</h4>
-                          
-                          <div className="space-y-4">
-                            <label className="flex items-center gap-2 text-sm">
-                              <input type="checkbox" checked={isSubscriberOnly} onChange={(e) => setIsSubscriberOnly(e.target.checked)} />
-                              Subscriber-Only Post
-                            </label>
+                    {/* Emoji Picker */}
+                    <Popover>
+                      <PopoverTrigger className="p-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors" title="Add Emoji">
+                        <Smile className="w-4 h-4" />
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 border-none shadow-none bg-transparent" side="bottom" align="start">
+                        <EmojiPicker onEmojiClick={(e) => setBody(prev => prev + e.emoji)} />
+                      </PopoverContent>
+                    </Popover>
 
-                            <div className="space-y-1">
-                              <label className="text-xs font-semibold">Voiceover URL (Stem)</label>
-                              <Input className="h-7 text-xs" value={voiceoverUrl} onChange={(e) => setVoiceoverUrl(e.target.value)} placeholder="https://..." />
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px]">Vol:</span>
-                                <input type="range" min="0" max="2" step="0.1" value={voiceoverVolume} onChange={(e) => setVoiceoverVolume(parseFloat(e.target.value))} className="flex-1" />
-                              </div>
-                            </div>
+                    {/* Giphy Picker */}
+                    <Popover open={showGiphy} onOpenChange={setShowGiphy}>
+                      <PopoverTrigger className="p-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors" title="Choose GIF">
+                        <span className="font-extrabold text-[10px] border border-current px-1 rounded">GIF</span>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 p-3 h-96 overflow-y-auto" side="bottom" align="start">
+                        <input 
+                          type="text" 
+                          placeholder="Search GIFs..." 
+                          className="w-full p-2 mb-3 bg-muted rounded-md text-xs outline-none"
+                          value={giphySearch}
+                          onChange={(e) => setGiphySearch(e.target.value)}
+                        />
+                        <Grid 
+                          width={290} 
+                          columns={2} 
+                          fetchGifs={fetchGifs} 
+                          key={giphySearch} 
+                          onGifClick={(gif, e) => {
+                            e.preventDefault();
+                            setMediaUrl(gif.images.original.url);
+                            setShowGiphy(false);
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
 
-                            <div className="space-y-1">
-                              <label className="text-xs font-semibold">Background Track URL (Stem)</label>
-                              <Input className="h-7 text-xs" value={backgroundTrackUrl} onChange={(e) => setBackgroundTrackUrl(e.target.value)} placeholder="https://..." />
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px]">Vol:</span>
-                                <input type="range" min="0" max="2" step="0.1" value={backgroundTrackVolume} onChange={(e) => setBackgroundTrackVolume(parseFloat(e.target.value))} className="flex-1" />
-                              </div>
-                            </div>
+                    {/* Poll Toggle */}
+                    <Button type="button" variant="ghost" size="icon" className={`h-8 w-8 rounded-full hover:text-primary transition-colors ${showPollForm ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`} onClick={() => setShowPollForm(!showPollForm)} title="Create Poll">
+                      <BarChart2 className="w-4 h-4" />
+                    </Button>
 
-                            <div className="space-y-1">
-                              <label className="text-xs font-semibold">Captions / Transcript</label>
-                              <Textarea className="min-h-[60px] text-xs p-2" value={captionsText} onChange={(e) => setCaptionsText(e.target.value)} placeholder="Enter full transcript for searchability and burned-in captions..." />
-                            </div>
+                    {/* Advanced Creator Tools */}
+                    <Popover open={showAdvanced} onOpenChange={setShowAdvanced}>
+                      <PopoverTrigger className="p-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors" title="Advanced Audio / Stems / Chapters">
+                        <Plus className="w-4 h-4" />
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 p-4 max-h-[400px] overflow-y-auto" side="top" align="start">
+                        <h4 className="font-bold text-sm mb-3">Advanced Creator Tools</h4>
+                        
+                        <div className="space-y-4">
+                          <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer">
+                            <input type="checkbox" checked={isSubscriberOnly} onChange={(e) => setIsSubscriberOnly(e.target.checked)} />
+                            Subscriber-Only Post
+                          </label>
 
-                            <div className="space-y-1">
-                              <label className="text-xs font-semibold">Smart Chapters (JSON)</label>
-                              <Textarea className="min-h-[60px] text-xs p-2 font-mono" value={chapters} onChange={(e) => setChapters(e.target.value)} placeholder={'[{"time": 0, "title": "Intro"}, {"time": 10, "title": "Hook"}]'} />
+                          <div className="space-y-1">
+                            <label className="text-xs font-semibold">Voiceover Audio Stem URL</label>
+                            <Input className="h-7 text-xs" value={voiceoverUrl} onChange={(e) => setVoiceoverUrl(e.target.value)} placeholder="https://..." />
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px]">Vol:</span>
+                              <input type="range" min="0" max="2" step="0.1" value={voiceoverVolume} onChange={(e) => setVoiceoverVolume(parseFloat(e.target.value))} className="flex-1" />
                             </div>
                           </div>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
 
-                    <div className="flex items-center gap-3">
-                      <span className={`ml-3 text-xs font-medium ${body.length > 900 ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
-                        {body.length} / 1000
-                      </span>
-                      <Button type="submit" disabled={(!body.trim() && !mediaUrl) || isPosting || isUploading || body.length > 1000} className="rounded-full px-6 font-bold shadow-md">
-                        {isPosting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Post"}
-                      </Button>
-                    </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-semibold">Background Music Stem URL</label>
+                            <Input className="h-7 text-xs" value={backgroundTrackUrl} onChange={(e) => setBackgroundTrackUrl(e.target.value)} placeholder="https://..." />
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px]">Vol:</span>
+                              <input type="range" min="0" max="2" step="0.1" value={backgroundTrackVolume} onChange={(e) => setBackgroundTrackVolume(parseFloat(e.target.value))} className="flex-1" />
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-xs font-semibold">Captions / Transcript</label>
+                            <Textarea className="min-h-[60px] text-xs p-2" value={captionsText} onChange={(e) => setCaptionsText(e.target.value)} placeholder="Enter transcript..." />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-xs font-semibold">Smart Chapters (JSON)</label>
+                            <Textarea className="min-h-[60px] text-xs p-2 font-mono" value={chapters} onChange={(e) => setChapters(e.target.value)} placeholder={'[{"time": 0, "title": "Intro"}]'} />
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
-                </form>
-              </CardContent>
-            </Card>
-          )}
 
-          {/* Feed */}
-          {loading ? (
-            <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
-          ) : displayPosts.length === 0 ? (
-            <div className="text-center p-12 bg-muted/10 rounded-2xl border border-border/50 border-dashed">
-              <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-20 text-primary" />
-              <p className="text-muted-foreground font-medium">
-                {searchResults !== null ? "No posts match your search." : "No posts found. Be the first to start a conversation!"}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4 pb-20">
-              {displayPosts.map(post => renderPost(post))}
-              
-              {/* Infinite Scroll Sentinel */}
-              {searchResults === null && (
-                <div ref={sentinelRef} className="py-8 flex flex-col items-center justify-center min-h-[60px] text-muted-foreground">
-                  {isFetchingMore && (
-                    <div className="flex items-center gap-2 text-sm font-medium text-primary bg-primary/10 px-4 py-2 rounded-full border border-primary/20 animate-pulse">
-                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                      <span>Streaming more posts...</span>
-                    </div>
-                  )}
-                  {!hasMore && displayPosts.length > 0 && (
-                    <div className="text-center py-6">
-                      <div className="w-12 h-1 bg-border/60 rounded-full mx-auto mb-3" />
-                      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-                        You&apos;re all caught up
-                      </p>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs font-mono ${body.length > 900 ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
+                      {body.length} / 1000
+                    </span>
+                    <Button type="submit" disabled={(!body.trim() && !mediaUrl) || isPosting || isUploading || body.length > 1000} className="rounded-full px-6 font-bold shadow-md h-9 text-xs">
+                      {isPosting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Post"}
+                    </Button>
+                  </div>
                 </div>
-              )}
+              </form>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Integrated Social Feed Stream Container */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center p-16 bg-card/30 rounded-2xl border border-border/40 backdrop-blur-sm">
+            <Loader2 className="w-8 h-8 animate-spin text-primary mb-2" />
+            <span className="text-xs text-muted-foreground font-medium">Connecting to stream...</span>
+          </div>
+        ) : displayPosts.length === 0 ? (
+          <div className="text-center p-14 bg-card/30 rounded-2xl border border-border/50 border-dashed backdrop-blur-sm">
+            <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-20 text-primary" />
+            <p className="text-muted-foreground font-semibold text-sm">
+              {searchResults !== null 
+                ? "No posts match your search query." 
+                : feedTab === "clips" 
+                  ? "No video clips found in this feed view."
+                  : "No posts found. Be the first to start a conversation!"}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4 pb-20">
+            {/* Unified Stream Container with Hairline Dividers */}
+            <div className="bg-card/40 backdrop-blur-xl border border-border/50 rounded-2xl shadow-sm overflow-hidden divide-y divide-border/30">
+              {displayPosts.map(post => renderPost(post))}
             </div>
-          )}
-        </div>
+            
+            {/* Infinite Scroll Sentinel */}
+            {searchResults === null && (
+              <div ref={sentinelRef} className="py-8 flex flex-col items-center justify-center min-h-[60px] text-muted-foreground">
+                {isFetchingMore && (
+                  <div className="flex items-center gap-2 text-xs font-semibold text-primary bg-primary/10 px-4 py-2 rounded-full border border-primary/20 animate-pulse">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                    <span>Streaming more posts...</span>
+                  </div>
+                )}
+                {!hasMore && displayPosts.length > 0 && (
+                  <div className="text-center py-4">
+                    <div className="w-8 h-1 bg-border/60 rounded-full mx-auto mb-2.5" />
+                    <p className="text-[11px] text-muted-foreground/80 font-bold uppercase tracking-widest">
+                      You&apos;re all caught up
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Trending Sidebar */}
+      {/* Right Trending Sidebar */}
       <div className="w-80 hidden xl:block sticky top-20 h-fit max-h-[calc(100vh-6rem)] overflow-y-auto bg-card/40 border border-border/50 rounded-2xl p-5 shadow-sm space-y-4 shrink-0 backdrop-blur-md">
-        <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-primary" /> Trending Now
+        <h3 className="font-extrabold text-base mb-1 flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-primary" /> Trending Now
         </h3>
-        <div className="space-y-2.5">
+        <p className="text-xs text-muted-foreground mb-3">Popular hashtags across Saints Gaming</p>
+        <div className="space-y-2">
           {trending.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No trends yet.</p>
+            <p className="text-xs text-muted-foreground py-4 text-center">No trends yet.</p>
           ) : (
             trending.map((t, idx) => (
               <button 
                 key={t.name}
-                onClick={() => setFilter(t.name)}
-                className="w-full flex items-center justify-between p-3 rounded-xl bg-background/60 border border-border/50 hover:border-primary/50 transition-colors text-left group shadow-xs"
+                onClick={() => {
+                  setFilter(t.name);
+                  setFeedTab("for-you");
+                }}
+                className="w-full flex items-center justify-between p-3 rounded-xl bg-background/50 border border-border/40 hover:border-primary/40 hover:bg-muted/30 transition-all text-left group shadow-2xs"
               >
                 <div>
-                  <div className="text-xs text-muted-foreground mb-0.5 font-medium">{idx + 1} · Trending</div>
-                  <div className="font-bold group-hover:text-primary transition-colors">#{t.name}</div>
+                  <div className="text-[10px] text-muted-foreground mb-0.5 font-medium">{idx + 1} · Trending</div>
+                  <div className="font-bold text-xs group-hover:text-primary transition-colors">#{t.name}</div>
                 </div>
-                <div className="text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-md font-medium">
+                <div className="text-[11px] text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md font-mono font-medium">
                   {t.usageCount}
                 </div>
               </button>

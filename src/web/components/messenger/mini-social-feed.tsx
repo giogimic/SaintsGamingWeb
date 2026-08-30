@@ -23,7 +23,17 @@ type MiniPost = {
   shareCount?: number;
 };
 
-const isVideo = (url: string) => /\.(mp4|webm|mov|ogg|ogv|mkv)$/i.test(url);
+const isVideo = (url: string) => /\.(mp4|webm|mov|ogg|ogv|mkv|m4v)$/i.test(url);
+
+function formatVideoSrc(url: string): string {
+  if (!url) return "";
+  if (url.includes("#t=")) return url;
+  const hashIndex = url.indexOf("#");
+  if (hashIndex !== -1) {
+    return `${url.substring(0, hashIndex)}#t=0.001`;
+  }
+  return `${url}#t=0.001`;
+}
 
 export function MiniSocialFeed() {
   const [posts, setPosts] = useState<MiniPost[]>([]);
@@ -187,7 +197,13 @@ export function MiniSocialFeed() {
               >
                 {isVideo(post.mediaUrl) ? (
                   <>
-                    <video src={post.mediaUrl} className="w-full max-h-32 object-cover opacity-80 group-hover/media:opacity-100 transition-opacity" />
+                    <video 
+                      src={formatVideoSrc(post.mediaUrl)} 
+                      preload="metadata" 
+                      playsInline 
+                      muted 
+                      className="w-full max-h-32 object-cover opacity-85 group-hover/media:opacity-100 transition-opacity" 
+                    />
                     <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover/media:bg-black/10 transition-all">
                       <div className="p-2 rounded-full bg-primary text-primary-foreground shadow-lg group-hover/media:scale-110 transition-transform">
                         <Play className="w-4 h-4 fill-current" />
