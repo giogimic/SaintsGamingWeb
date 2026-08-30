@@ -1,6 +1,6 @@
 # 2.1.513
-- **Contrast & Text Outline Enhancement**: Audited text rendering across logos, SVG badges, and HUD indicators. Replaced dark-on-dark fills with crisp pure white text (`#FFFFFF`) with solid black pixel outlines (`#000000`) and soft drop-shadows across `SGLogo`, `SGVoxelSvgLogo`, `SGLogo3D`, `public/images/sg-logo.svg`, World Atlas badges, and Studio indicator pills.
-- **Studio System Integrity Audit**: Conducted an exhaustive audit of Studio tile authoring, selection layers, grid/freeform slicing, footprint stamping, and Babylon live map data binding to guarantee zero regressions or broken selection states.
+- **Navbar Interactive Micro 3D Voxel Logo**: Integrated `SGMicro3DLogo` into the navigation bar and mobile drawer. Renders the exact 3D metallic voxel hexagon frame and 'SG' glyphs with real-time ambient lighting, point-light glow, continuous auto-rotation, and accelerated spin on hover.
+- **Landing Page Protection**: Preserved the original landing page (`app/page.tsx`) untouched, isolating the micro-3D instance in a dedicated high-performance client component.
 
 # 2.1.512
 - **Studio Freeform Crop Stamping Fix**: Re-architected Slicer Mode in `TilesetPicker.tsx` to ensure unconstrained, pixel-accurate freeform dragging across custom tilesheets without premature grid-snapping.
