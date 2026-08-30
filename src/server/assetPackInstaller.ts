@@ -47,8 +47,8 @@ export const AVAILABLE_ASSET_PACKS: AssetPackDefinition[] = [
   },
   {
     id: 'npc',
-    name: 'NPC Walk Cycles (LPC)',
-    description: 'Liberated Pixel Cup citizen, guard, and vendor walk animations.',
+    name: 'NPC Walk Cycles',
+    description: 'Modular citizen, guard, and vendor walk animations.',
     category: 'character',
     relativeDir: 'npc',
     estimatedCount: 221,

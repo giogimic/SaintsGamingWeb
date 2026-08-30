@@ -36,10 +36,9 @@ export function inferAssetPack(sourceOrRel: string): AssetPackId {
 }
 
 /** Prisma/SQLite-friendly source substring matchers for a pack (pagination-safe). */
-export function packSourceMatchers(pack: AssetPackId | "lpc"): string[] {
+export function packSourceMatchers(pack: AssetPackId): string[] {
   switch (pack) {
     case "modular":
-    case "lpc":
       return ["/npc/", "/monster/player/", "/player/"];
     case "legacy":
       return ["/monster/", "/creatures/", "/world-monsters/", "/tilesets/", "/items/", "/objects/", "/ui/"];

@@ -543,9 +543,9 @@ export function parseCreditsText(rawText: string): SpriteCreditEntry[] {
     if (author || fileName || license || url) {
       credits.push({
         fileName,
-        authors: author ? [author] : ["Liberated Pixel Cup Contributors"],
-        licenses: license ? [license] : ["CC-BY-SA 3.0"],
-        urls: url ? [url] : ["https://opengameart.org"],
+        authors: author ? [author] : ["Community Contributor"],
+        licenses: license ? [license] : ["Custom"],
+        urls: url ? [url] : [],
       });
     }
   }

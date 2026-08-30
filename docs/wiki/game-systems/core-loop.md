@@ -54,7 +54,7 @@ Entities (other players, roaming monsters, harvestable resource nodes) transitio
                                └──────────────┘
 ```
 
-- **Spawn:** The client instantiates a quad mesh, binds the corresponding LPC sprite atlas, and attaches a billboarded nameplate.
+- **Spawn:** The client instantiates a quad mesh, binds the corresponding modular sprite atlas, and attaches a billboarded nameplate.
 - **Despawn:** When an entity departs the player's Area-of-Interest chunk, mesh geometries and dynamic materials are explicitly disposed of to prevent memory leaks.
 
 ---

@@ -12,7 +12,8 @@ The core technology stack is built on Next.js 15, React 19, TypeScript, Prisma O
 - **Repository:** [giogimic/SaintsGamingWeb](https://github.com/giogimic/SaintsGamingWeb)
 - **Live Platform:** [https://saintsgaming.net](https://saintsgaming.net)
 - **AI & LLM Context:** [`llms.txt`](llms.txt)
-- **Release Version:** `v2.1.530`
+- **License:** [Business Source License 1.1 (BSL-1.1)](LICENSE)
+- **Release Version:** `v2.1.531`
 - **Lead Developer:** **GioGimic**
 - **Community Discord:** [discord.saintsgaming.net](https://discord.saintsgaming.net)
 
@@ -125,5 +126,6 @@ For deep technical specifications, mathematical formulas, and developer guides:
 - **Live Website:** [SaintsGaming.net](https://SaintsGaming.net)
 - **Discord:** [discord.saintsgaming.net](https://discord.saintsgaming.net)
 - **Repository:** [giogimic/SaintsGamingWeb](https://github.com/giogimic/SaintsGamingWeb)
-- **Author:** **GioGimic**
+- **Author & Copyright Holder:** **GioGimic**
+- **License:** Licensed under the [Business Source License 1.1 (BSL-1.1)](LICENSE). Free for personal, non-commercial, educational, and community self-hosting use. Commercial distribution or hosted commercial services require prior authorization from the author.
 - **Copyright:** © 2007–2026 Saints Gaming Network. All rights reserved.

@@ -40,6 +40,6 @@ This glossary defines standard terminology, engine acronyms, and gameplay classi
 | Acronym | Full Form | Meaning in Saints Gaming Engine |
 | :--- | :--- | :--- |
 | **AOI** | Area of Interest | The $16 \times 16$ spatial grid system that shards socket traffic to nearby players within a $3 \times 3$ chunk window. |
-| **LPC** | Liberated Pixel Cup | The open sprite compositing standard used for character bodies, hairstyles, apparel, and weapon layers. |
+| **MCS** | Modular Character System | The 4-directional sprite compositing standard used for character bodies, hairstyles, apparel, and weapon layers. |
 | **FCT** | Floating Combat Text | Animated 3D billboard text rendering damage numbers, healing, and critical hits above targets in Babylon.js. |
 | **Lerp** | Linear Interpolation | The smoothing formula used by the client loop to reconcile remote entity positions against server authoritative ticks. |
