@@ -1,3 +1,7 @@
+# 2.1.514
+- **SVG Favicon Integration**: Generated site-wide vector SVG favicon assets (`app/icon.svg`, `public/favicon.svg`) with the 120° pixel hexagon and crisp white monogram glyphs.
+- **Root Metadata Icons Support**: Configured standard `icons` metadata in `app/layout.tsx` (`favicon.svg`, `favicon.ico`, apple-touch-icon, and shortcuts) for high-DPI display tabs and mobile bookmarks.
+
 # 2.1.513
 - **Navbar Interactive Micro 3D Voxel Logo**: Integrated `SGMicro3DLogo` into the navigation bar and mobile drawer. Renders the exact 3D metallic voxel hexagon frame and 'SG' glyphs with real-time ambient lighting, point-light glow, continuous auto-rotation, and accelerated spin on hover.
 - **Landing Page Protection**: Preserved the original landing page (`app/page.tsx`) untouched, isolating the micro-3D instance in a dedicated high-performance client component.
