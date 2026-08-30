@@ -101,11 +101,16 @@ export default function AdminRealtimePage() {
     <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
       <div className="flex items-start justify-between gap-4 border-b border-border/40 pb-4">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Overview &amp; Telemetry</span>
+            <span className="text-xs text-muted-foreground/40">•</span>
+            <span className="text-xs text-[#cbb26a] font-mono">WebSockets</span>
+          </div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Radio className="h-6 w-6 text-primary" /> Realtime Platform &amp; Bus
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Live Socket.io bus metrics, circuit breaker, and recent CRITICAL events.
+            Monitor active player connections, live Socket.io events, and emergency traffic controls.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading || busy}>
@@ -129,83 +134,88 @@ export default function AdminRealtimePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             <MetricCard
               icon={<Activity className="h-4 w-4" />}
-              label="Service"
-              value={data?.ready ? "Ready" : "Offline"}
-              hint={data?.message}
+              label="Socket Gateway"
+              value={data?.ready ? "Healthy" : "Offline"}
+              hint={data?.message || "Socket.io cluster listening on port 3000"}
             />
             <MetricCard
               icon={<Radio className="h-4 w-4" />}
-              label="Connected Users"
+              label="Connected Players"
               value={String(data?.metrics?.connectedUsers ?? "—")}
+              hint="Active WebSocket sessions currently online"
             />
             <MetricCard
               icon={<Activity className="h-4 w-4" />}
-              label="Total Emits"
+              label="Broadcast Messages"
               value={String(data?.metrics?.totalEmits ?? "—")}
+              hint="Total realtime packets transmitted"
             />
             <MetricCard
               icon={<ShieldAlert className="h-4 w-4" />}
               label="Failed Validations"
               value={String(data?.metrics?.failedValidations ?? "—")}
+              hint="Payloads rejected by Zod schemas"
             />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <section className="border border-border/40 rounded-lg overflow-hidden">
+            <section className="border border-border/40 rounded-lg overflow-hidden bg-card/40 sg-glass">
               <div className="bg-muted px-4 py-3 border-b border-border/40 flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4" />
-                <h2 className="font-bold">Circuit Breaker</h2>
+                <ShieldAlert className="h-4 w-4 text-amber-400" />
+                <h2 className="font-bold">Emergency Circuit Breaker</h2>
               </div>
               <div className="p-4 space-y-4 text-sm">
-                <p className="text-muted-foreground">
-                  When open, broadcasts are paused. CRITICAL events still persist for reconnect sync.
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                  Think of this as an emergency pause button. If a bug or spam burst is flooding the server, opening the breaker temporarily halts live broadcasts while keeping players connected and queuing up CRITICAL events so nothing gets lost.
                 </p>
-                <div className="flex items-center justify-between">
-                  <span>
-                    Status:{" "}
-                    <strong className={data?.circuitBreakerOpen ? "text-amber-500" : "text-emerald-500"}>
-                      {data?.circuitBreakerOpen ? "OPEN (paused)" : "CLOSED (live)"}
+                <div className="flex items-center justify-between p-3 rounded-lg bg-background/50 border border-border/40">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono text-muted-foreground">Current State:</span>
+                    <strong className={`font-mono text-xs ${data?.circuitBreakerOpen ? "text-amber-400" : "text-emerald-400"}`}>
+                      {data?.circuitBreakerOpen ? "PAUSED (Open)" : "LIVE (Closed)"}
                     </strong>
-                  </span>
+                  </div>
                   <div className="flex gap-2">
                     <Button
                       size="sm"
                       variant="outline"
                       disabled={!data?.ready || busy || data?.circuitBreakerOpen}
                       onClick={() => setCircuitBreaker(true)}
+                      className="text-xs"
                     >
-                      Open
+                      Pause Traffic
                     </Button>
                     <Button
                       size="sm"
                       disabled={!data?.ready || busy || !data?.circuitBreakerOpen}
                       onClick={() => setCircuitBreaker(false)}
+                      className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white"
                     >
-                      Close
+                      Resume Normal
                     </Button>
                   </div>
                 </div>
               </div>
             </section>
 
-            <section className="border border-border/40 rounded-lg overflow-hidden">
+            <section className="border border-border/40 rounded-lg overflow-hidden bg-card/40 sg-glass">
               <div className="bg-muted px-4 py-3 border-b border-border/40 flex items-center gap-2">
-                <Unplug className="h-4 w-4" />
-                <h2 className="font-bold">Force Disconnect</h2>
+                <Unplug className="h-4 w-4 text-primary" />
+                <h2 className="font-bold">Force Socket Disconnect</h2>
               </div>
               <div className="p-4 space-y-3 text-sm">
-                <p className="text-muted-foreground">
-                  Disconnect all sockets for a user id (admin emergency control).
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                  Immediately drops all active WebSocket sessions for a specific user ID. Useful if a client is stuck in an infinite packet loop or needs an immediate forced reconnect.
                 </p>
-                <div className="flex gap-2">
+                <div className="flex gap-2 pt-1">
                   <input
-                    className="flex-1 h-9 rounded-md border border-border bg-background px-3 text-sm"
-                    placeholder="User ID"
+                    className="flex-1 h-9 rounded-md border border-border bg-background px-3 text-xs font-mono"
+                    placeholder="Enter User ID (e.g. clxxx...)"
                     value={disconnectUserId}
                     onChange={(e) => setDisconnectUserId(e.target.value)}
                   />
-                  <Button size="sm" disabled={!data?.ready || busy || !disconnectUserId.trim()} onClick={disconnectUser}>
-                    Disconnect
+                  <Button size="sm" variant="destructive" disabled={!data?.ready || busy || !disconnectUserId.trim()} onClick={disconnectUser} className="text-xs">
+                    Drop Sockets
                   </Button>
                 </div>
               </div>

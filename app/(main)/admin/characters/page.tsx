@@ -15,10 +15,24 @@ export default async function AdminCharactersPage() {
   });
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6">Character Management</h1>
+    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Game Servers &amp; Infrastructure</span>
+            <span className="text-xs text-muted-foreground/40">•</span>
+            <span className="text-xs text-[#cbb26a] font-mono">FiveM GTA RP</span>
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3 text-foreground">
+            FiveM GTA RP Characters
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Inspect player roleplay records, cash/bank wealth balances, phone numbers, and alive/deceased health statuses.
+          </p>
+        </div>
+      </div>
 
-      <div className="bg-card shadow-sm rounded-lg border overflow-hidden">
+      <div className="bg-card/40 border border-border/50 rounded-xl overflow-hidden sg-glass">
         <Table>
           <TableHeader>
             <TableRow>

@@ -23,7 +23,7 @@ export default async function AdminSettingsPage() {
     return acc;
   }, {} as Record<string, string>);
 
-  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.509";
+  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.510";
 
 
 
@@ -42,14 +42,90 @@ export default async function AdminSettingsPage() {
   const showUcpInNav = configMap["show_ucp_in_nav"] || "false";
   const showUcpStatsOnProfile = configMap["show_ucp_stats_on_profile"] || "true";
 
-  return (
-    <div className="max-w-2xl">
-      <h1 className="text-3xl font-bold mb-6">Advanced Configuration Options</h1>
+  const announcementBanner = configMap["ANNOUNCEMENT_BANNER"] || "";
+  const announcementActive = configMap["ANNOUNCEMENT_BANNER_ACTIVE"] || "false";
+  const maintenanceActive = configMap["MAINTENANCE_BANNER_ACTIVE"] || "false";
+  const siteName = configMap["SITE_NAME"] || "Saints Gaming";
+  const metaDescription = configMap["META_DESCRIPTION"] || "A chill gaming community since 2007. No elitism, no toxicity. Just gamers being gamers.";
 
-      <div className="bg-card shadow-sm rounded-lg border p-6">
+  return (
+    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Game Servers &amp; Infrastructure</span>
+            <span className="text-xs text-muted-foreground/40">•</span>
+            <span className="text-xs text-[#cbb26a] font-mono">Environment Configuration</span>
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3 text-foreground">
+            Platform Settings &amp; Defaults
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Configure global website settings, announcement banners, Discord guild integrations, FiveM server endpoints, and starting player balances.
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-card/40 border border-border/50 rounded-xl p-6 sg-glass max-w-3xl">
         <form action={updateSiteSettings} className="space-y-6">
+
+          {/* Section 1: Announcements & Maintenance */}
           <div className="space-y-4 border-b pb-6">
-            <h2 className="text-xl font-semibold">Game & Realm Identity</h2>
+            <h2 className="text-xl font-semibold">Site-Wide Banners &amp; Alerts</h2>
+
+            <div className="space-y-2">
+              <Label htmlFor="ANNOUNCEMENT_BANNER">Global Announcement Banner</Label>
+              <Input
+                id="ANNOUNCEMENT_BANNER"
+                name="ANNOUNCEMENT_BANNER"
+                placeholder="e.g. 🌟 Welcome to the new Saints Gaming update! Check out the lobby."
+                defaultValue={announcementBanner}
+              />
+              <p className="text-xs text-muted-foreground">Text displayed in a notification strip across the top of all pages.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="ANNOUNCEMENT_BANNER_ACTIVE">Show Announcement Banner</Label>
+                <Select name="ANNOUNCEMENT_BANNER_ACTIVE" defaultValue={announcementActive}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select visibility" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Active (Visible to all)</SelectItem>
+                    <SelectItem value="false">Hidden (Draft / Off)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="MAINTENANCE_BANNER_ACTIVE">Maintenance Mode Warning</Label>
+                <Select name="MAINTENANCE_BANNER_ACTIVE" defaultValue={maintenanceActive}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Enabled (Show maintenance warning)</SelectItem>
+                    <SelectItem value="false">Disabled (Normal operations)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Game & Realm Identity */}
+          <div className="space-y-4 border-b pb-6">
+            <h2 className="text-xl font-semibold">Game &amp; Realm Identity</h2>
+
+            <div className="space-y-2">
+              <Label htmlFor="SITE_NAME">Community Site Name</Label>
+              <Input
+                id="SITE_NAME"
+                name="SITE_NAME"
+                defaultValue={siteName}
+              />
+              <p className="text-xs text-muted-foreground">The platform brand title in the browser tab and meta tags.</p>
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="REALM_NAME">Realm / Game Name</Label>
@@ -69,6 +145,16 @@ export default async function AdminSettingsPage() {
                 defaultValue={realmDescription}
               />
               <p className="text-xs text-muted-foreground">The game description displayed on the home page showcase card.</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="META_DESCRIPTION">SEO Meta Description</Label>
+              <Input
+                id="META_DESCRIPTION"
+                name="META_DESCRIPTION"
+                defaultValue={metaDescription}
+              />
+              <p className="text-xs text-muted-foreground">Default search engine description snippet.</p>
             </div>
           </div>
 

@@ -44,9 +44,9 @@ describe("Admin Module Registry (Phase 2)", () => {
     const userModules = getVisibleAdminModules(PERMISSION_LEVELS.USER, false);
     expect(userModules.length).toBe(0);
 
-    // Writer (level 20, isWriter = true): overview dashboard and news CMS visible
+    // Writer (level 20, isWriter = true): overview dashboard, news CMS, and wiki visible
     const writerModules = getVisibleAdminModules(PERMISSION_LEVELS.USER, true);
-    expect(writerModules.map((m) => m.id)).toEqual(["overview-dashboard", "content-news"]);
+    expect(writerModules.map((m) => m.id)).toEqual(["overview-dashboard", "content-news", "community-wiki"]);
 
     // Moderator (level 200)
     const modModules = getVisibleAdminModules(PERMISSION_LEVELS.MODERATOR, false);

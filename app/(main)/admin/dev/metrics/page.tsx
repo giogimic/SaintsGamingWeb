@@ -29,105 +29,136 @@ function formatUptime(seconds: number) {
 }
 
 export default function DevMetricsPage() {
- const memoryUsage = process.memoryUsage();
- 
- // OS level
- const totalMem = os.totalmem();
- const freeMem = os.freemem();
- const usedMem = totalMem - freeMem;
- const memPercentage = ((usedMem / totalMem) * 100).toFixed(1);
+  const memoryUsage = process.memoryUsage();
+  
+  // OS level
+  const totalMem = os.totalmem();
+  const freeMem = os.freemem();
+  const usedMem = totalMem - freeMem;
+  const memPercentage = ((usedMem / totalMem) * 100).toFixed(1);
 
- return (
- <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
- <div className="border-b border-border/40 pb-4">
- <h1 className="text-2xl font-bold flex items-center gap-2">
- <Activity className="h-6 w-6 text-primary" /> System Metrics &amp; Telemetry
- </h1>
- <p className="text-muted-foreground mt-1 text-sm">Live telemetry for the Node.js process and host server.</p>
- </div>
+  return (
+    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+      <div className="border-b border-border/40 pb-4">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Overview &amp; Telemetry</span>
+          <span className="text-xs text-muted-foreground/40">•</span>
+          <span className="text-xs text-[#cbb26a] font-mono">Process Health</span>
+        </div>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Activity className="h-6 w-6 text-primary" /> System Metrics &amp; Performance
+        </h1>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Live memory consumption, server uptime, and host operating system telemetry for Saints Gaming.
+        </p>
+      </div>
 
- <DevSubNav />
+      <DevSubNav />
 
- <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
- 
- {/* Node.js Process Memory */}
- <div className="border border-border/40 rounded-lg overflow-hidden">
- <div className="bg-muted px-4 py-3 border-b border-border/40 flex items-center gap-2">
- <Cpu className="h-4 w-4" />
- <h2 className="font-bold">Node.js Process Memory</h2>
- </div>
- <div className="p-4 space-y-4 text-sm">
- <div className="flex justify-between border-b border-border/40 pb-2">
- <span className="text-muted-foreground">RSS (Resident Set Size)</span>
- <span>{formatBytes(memoryUsage.rss)}</span>
- </div>
- <div className="flex justify-between border-b border-border/40 pb-2">
- <span className="text-muted-foreground">Heap Total</span>
- <span>{formatBytes(memoryUsage.heapTotal)}</span>
- </div>
- <div className="flex justify-between border-b border-border/40 pb-2">
- <span className="text-muted-foreground">Heap Used</span>
- <span>{formatBytes(memoryUsage.heapUsed)}</span>
- </div>
- <div className="flex justify-between border-b border-border/40 pb-2">
- <span className="text-muted-foreground">External</span>
- <span>{formatBytes(memoryUsage.external)}</span>
- </div>
- <div className="flex justify-between">
- <span className="text-muted-foreground">Array Buffers</span>
- <span>{formatBytes(memoryUsage.arrayBuffers || 0)}</span>
- </div>
- </div>
- </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Node.js Process Memory */}
+        <div className="border border-border/40 rounded-lg overflow-hidden bg-card/40 sg-glass">
+          <div className="bg-muted px-4 py-3 border-b border-border/40 flex items-center gap-2">
+            <Cpu className="h-4 w-4 text-[#cbb26a]" />
+            <h2 className="font-bold">Node.js Process Memory</h2>
+          </div>
+          <div className="p-4 space-y-3 text-sm">
+            <div className="flex justify-between border-b border-border/30 pb-2">
+              <div>
+                <span className="font-medium text-foreground">Resident Set Size (RSS)</span>
+                <p className="text-[11px] text-muted-foreground">Total memory currently allocated to this process in RAM</p>
+              </div>
+              <span className="font-mono text-xs font-bold text-slate-200">{formatBytes(memoryUsage.rss)}</span>
+            </div>
+            <div className="flex justify-between border-b border-border/30 pb-2">
+              <div>
+                <span className="font-medium text-foreground">Heap Allocated (Total)</span>
+                <p className="text-[11px] text-muted-foreground">Memory pool reserved by V8 for JavaScript objects</p>
+              </div>
+              <span className="font-mono text-xs font-bold text-slate-200">{formatBytes(memoryUsage.heapTotal)}</span>
+            </div>
+            <div className="flex justify-between border-b border-border/30 pb-2">
+              <div>
+                <span className="font-medium text-foreground">Heap Actively Used</span>
+                <p className="text-[11px] text-muted-foreground">Actual live memory consumed by active data models</p>
+              </div>
+              <span className="font-mono text-xs font-bold text-emerald-400">{formatBytes(memoryUsage.heapUsed)}</span>
+            </div>
+            <div className="flex justify-between border-b border-border/30 pb-2">
+              <div>
+                <span className="font-medium text-foreground">C++ External Bindings</span>
+                <p className="text-[11px] text-muted-foreground">Memory used by native C++ modules (SQLite, Sharp)</p>
+              </div>
+              <span className="font-mono text-xs font-bold text-slate-200">{formatBytes(memoryUsage.external)}</span>
+            </div>
+            <div className="flex justify-between">
+              <div>
+                <span className="font-medium text-foreground">Array Buffers</span>
+                <p className="text-[11px] text-muted-foreground">Binary buffers for raw pixel assets and socket frames</p>
+              </div>
+              <span className="font-mono text-xs font-bold text-slate-200">{formatBytes(memoryUsage.arrayBuffers || 0)}</span>
+            </div>
+          </div>
+        </div>
 
- {/* Host OS Memory */}
- <div className="border border-border/40 rounded-lg overflow-hidden">
- <div className="bg-muted px-4 py-3 border-b border-border/40 flex items-center gap-2">
- <HardDrive className="h-4 w-4" />
- <h2 className="font-bold">Host OS RAM</h2>
- </div>
- <div className="p-4 space-y-4 text-sm">
- <div className="w-full bg-green-950/50 rounded-full h-4 mb-4 overflow-hidden border border-border/40">
- <div className="bg-green-500 h-4" style={{ width: `${memPercentage}%` }}></div>
- </div>
- <div className="flex justify-between border-b border-border/40 pb-2">
- <span className="text-muted-foreground">Usage</span>
- <span>{memPercentage}%</span>
- </div>
- <div className="flex justify-between border-b border-border/40 pb-2">
- <span className="text-muted-foreground">Total Memory</span>
- <span>{formatBytes(totalMem)}</span>
- </div>
- <div className="flex justify-between border-b border-border/40 pb-2">
- <span className="text-muted-foreground">Used Memory</span>
- <span>{formatBytes(usedMem)}</span>
- </div>
- <div className="flex justify-between">
- <span className="text-muted-foreground">Free Memory</span>
- <span>{formatBytes(freeMem)}</span>
- </div>
- </div>
- </div>
+        {/* Host OS Memory */}
+        <div className="border border-border/40 rounded-lg overflow-hidden bg-card/40 sg-glass">
+          <div className="bg-muted px-4 py-3 border-b border-border/40 flex items-center gap-2">
+            <HardDrive className="h-4 w-4 text-[#cbb26a]" />
+            <h2 className="font-bold">Host OS RAM</h2>
+          </div>
+          <div className="p-4 space-y-4 text-sm">
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs font-mono text-muted-foreground">
+                <span>System RAM Pressure</span>
+                <span>{memPercentage}% Used</span>
+              </div>
+              <div className="w-full bg-zinc-950/80 rounded-full h-3 overflow-hidden border border-border/40">
+                <div 
+                  className={`h-full transition-all ${
+                    parseFloat(memPercentage) > 85 ? "bg-red-500" : parseFloat(memPercentage) > 65 ? "bg-amber-500" : "bg-emerald-500"
+                  }`} 
+                  style={{ width: `${memPercentage}%` }}
+                />
+              </div>
+            </div>
+            <div className="flex justify-between border-b border-border/30 pb-2">
+              <span className="text-muted-foreground">Total Physical RAM</span>
+              <span className="font-mono text-xs font-bold text-slate-200">{formatBytes(totalMem)}</span>
+            </div>
+            <div className="flex justify-between border-b border-border/30 pb-2">
+              <span className="text-muted-foreground">Used RAM</span>
+              <span className="font-mono text-xs font-bold text-slate-200">{formatBytes(usedMem)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Free Available RAM</span>
+              <span className="font-mono text-xs font-bold text-emerald-400">{formatBytes(freeMem)}</span>
+            </div>
+          </div>
+        </div>
 
- {/* Uptime */}
- <div className="border border-border/40 rounded-lg overflow-hidden lg:col-span-2">
- <div className="bg-muted px-4 py-3 border-b border-border/40 flex items-center gap-2">
- <Clock className="h-4 w-4" />
- <h2 className="font-bold">System Uptime</h2>
- </div>
- <div className="p-4 space-y-4 text-sm grid grid-cols-1 md:grid-cols-2 gap-4">
- <div>
- <div className="text-muted-foreground mb-1">Node.js Process Uptime</div>
- <div className="text-xl text-primary">{formatUptime(process.uptime())}</div>
- </div>
- <div>
- <div className="text-muted-foreground mb-1">Host OS Uptime</div>
- <div className="text-xl text-primary">{formatUptime(os.uptime())}</div>
- </div>
- </div>
- </div>
+        {/* Uptime */}
+        <div className="border border-border/40 rounded-lg overflow-hidden lg:col-span-2 bg-card/40 sg-glass">
+          <div className="bg-muted px-4 py-3 border-b border-border/40 flex items-center gap-2">
+            <Clock className="h-4 w-4 text-[#cbb26a]" />
+            <h2 className="font-bold">System &amp; Server Uptime</h2>
+          </div>
+          <div className="p-4 space-y-4 text-sm grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-3 rounded-lg bg-background/50 border border-border/40">
+              <div className="text-xs text-muted-foreground mb-1">Node.js Server Process Uptime</div>
+              <div className="text-xl font-bold font-mono text-primary">{formatUptime(process.uptime())}</div>
+              <p className="text-[11px] text-muted-foreground mt-1">Time elapsed since the last Next.js server restart or build deploy.</p>
+            </div>
+            <div className="p-3 rounded-lg bg-background/50 border border-border/40">
+              <div className="text-xs text-muted-foreground mb-1">Host Operating System Uptime</div>
+              <div className="text-xl font-bold font-mono text-primary">{formatUptime(os.uptime())}</div>
+              <p className="text-[11px] text-muted-foreground mt-1">Total operational uptime of the underlying VM / host machine.</p>
+            </div>
+          </div>
+        </div>
 
- </div>
- </div>
- );
+      </div>
+    </div>
+  );
 }

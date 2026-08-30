@@ -138,23 +138,28 @@ export default async function AdminDashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Operating Console</span>
+            <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Admin OS Command Center</span>
             <span className="text-xs text-muted-foreground/40">•</span>
             <Badge variant="outline" className={`${getRoleColor(level)} bg-background text-[11px] font-mono`}>
-              {isWriter && level < 200 ? "Writer" : getRoleName(level)}
+              {isWriter && level < 200 ? "Official Writer" : getRoleName(level)}
             </Badge>
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3 text-foreground">
             <LayoutDashboard className="h-8 w-8 text-primary" />
-            Command Center Overview
+            Platform Command Center
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Real-time status, operational alerts, and platform shortcuts for Saints Gaming.
+            Welcome back! Here&apos;s what&apos;s happening across Saints Gaming right now — live server health, community alerts, and quick shortcuts.
           </p>
         </div>
 
         {/* Global Quick Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
+          <Button size="sm" variant="outline" asChild className="gap-2 border-primary/30 text-primary hover:bg-primary/10">
+            <Link href="/admin/activity">
+              <Clock className="h-4 w-4" /> Activity Log
+            </Link>
+          </Button>
           {(hasPermission(level, PERMISSION_LEVELS.ADMIN) || isWriter) && (
             <Button size="sm" asChild className="gap-2">
               <Link href="/admin/news/new">
@@ -163,16 +168,9 @@ export default async function AdminDashboardPage() {
             </Button>
           )}
           {hasPermission(level, PERMISSION_LEVELS.ADMIN) && (
-            <Button size="sm" variant="outline" asChild className="gap-2 border-primary/30 text-primary hover:bg-primary/10">
+            <Button size="sm" variant="secondary" asChild className="gap-2 border border-border/50">
               <Link href="/studio">
-                <Sparkles className="h-4 w-4" /> Launch Studio
-              </Link>
-            </Button>
-          )}
-          {hasPermission(level, PERMISSION_LEVELS.DEVELOPER) && (
-            <Button size="sm" variant="secondary" asChild className="gap-2 font-mono text-xs">
-              <Link href="/admin/realtime">
-                <Radio className="h-4 w-4" /> Realtime Bus
+                <Sparkles className="h-4 w-4 text-amber-400" /> Launch Studio
               </Link>
             </Button>
           )}

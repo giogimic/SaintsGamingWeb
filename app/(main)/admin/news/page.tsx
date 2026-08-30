@@ -30,22 +30,30 @@ export default async function AdminNewsPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">News Manager</h1>
-          <p className="text-muted-foreground mt-1">
-            Create, edit, and publish community announcements.
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Community &amp; Content</span>
+            <span className="text-xs text-muted-foreground/40">•</span>
+            <span className="text-xs text-[#cbb26a] font-mono">Publishing CMS</span>
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3 text-foreground">
+            <Edit className="h-8 w-8 text-primary" />
+            News Articles &amp; Announcements
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Draft, schedule, and publish front-page community announcements, patch notes, and official releases.
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="gap-2 shadow-md">
           <Link href="/admin/news/new">
-            <Plus className="mr-2 h-4 w-4" /> Create Article
+            <Plus className="h-4 w-4" /> Create Article
           </Link>
         </Button>
       </div>
 
-      <Card className="bg-card/40 border-border/50">
+      <Card className="bg-card/40 border-border/50 sg-glass">
         <CardContent className="p-0">
           <div className="rounded-md border border-border/50 overflow-hidden">
             <table className="w-full text-sm">

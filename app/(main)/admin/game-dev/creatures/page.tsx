@@ -21,23 +21,28 @@ export default async function CreaturesAdminPage() {
   const totalMoves = await prisma.abilityDictionary.count();
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/50 pb-5">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">World &amp; MMO</span>
+            <span className="text-xs text-muted-foreground/40">•</span>
+            <span className="text-xs text-[#cbb26a] font-mono">Creature Catalog</span>
+          </div>
           <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3 text-foreground">
-            <Gamepad2 className="h-8 w-8 text-cyan-400" />
-            Saints Beast Species Database
+            <Gamepad2 className="h-8 w-8 text-primary" />
+            Saints Beast &amp; Species Catalog
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Browse and manage all registered Saints Beast species, stats, and abilities.
+            Browse and inspect all registered Saints Beast species, elemental types, base combat stats, and technique movesets.
           </p>
         </div>
         <Link
           href="/lobby"
-          className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-black font-extrabold rounded-lg text-xs tracking-wider uppercase transition-all shadow-md"
+          className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg text-xs tracking-wider uppercase transition-all shadow-md"
         >
-          OPEN LOBBY GAME
+          Play In Lobby &rarr;
         </Link>
       </div>
 

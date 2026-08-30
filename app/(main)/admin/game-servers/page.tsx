@@ -45,15 +45,20 @@ export default function GameServersAdminPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Game Servers &amp; Infrastructure</span>
+            <span className="text-xs text-muted-foreground/40">•</span>
+            <span className="text-xs text-[#cbb26a] font-mono">Dedicated Fleet</span>
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3 text-foreground">
             <Server className="h-8 w-8 text-primary" />
-            Game Servers
+            Dedicated Game Servers
           </h1>
-          <p className="text-muted-foreground mt-1">
-            Manage your official community servers. Toggle maintenance mode or add new ones.
+          <p className="text-muted-foreground text-sm mt-1">
+            Manage your community server fleet (Palworld, Ark, FiveM). Toggle maintenance mode banners or register new nodes.
           </p>
         </div>
       </div>

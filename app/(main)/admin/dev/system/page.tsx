@@ -48,13 +48,18 @@ export default async function SystemStatePage() {
   const isDocker = fs.existsSync("/.dockerenv");
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2 border-b border-border/40 pb-4">
-          <Cpu className="h-8 w-8 text-primary" /> System State
+    <div className="space-y-8 max-w-7xl mx-auto animate-in fade-in duration-300">
+      <div className="border-b border-border/40 pb-4">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Overview &amp; Telemetry</span>
+          <span className="text-xs text-muted-foreground/40">•</span>
+          <span className="text-xs text-[#cbb26a] font-mono">Environment &amp; Cache</span>
+        </div>
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <Cpu className="h-8 w-8 text-primary" /> System State &amp; Environment
         </h1>
-        <p className="text-muted-foreground mt-2">
-          Inspect currently loaded environment configuration and manually purge internal router caches.
+        <p className="text-muted-foreground mt-2 text-sm">
+          Inspect currently active environment configurations, purge server router caches, and review live process environment variables.
         </p>
       </div>
 
@@ -62,23 +67,26 @@ export default async function SystemStatePage() {
 
       <SystemClient />
 
-      <div className="border border-border/40 p-6 rounded-lg bg-card mt-8">
-        <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
+      <div className="border border-border/40 p-6 rounded-lg bg-card/40 sg-glass mt-8">
+        <h2 className="text-xl font-bold flex items-center gap-2 mb-2">
           <Terminal className="h-5 w-5 text-primary" /> Live Application Settings
         </h2>
+        <p className="text-xs text-muted-foreground mb-4">
+          Quickly tweak the public site version or trigger the in-app Git updater if running inside a container.
+        </p>
         
         <form action={updateSiteSettings} className="space-y-4 mb-8 pb-8 border-b border-border/40">
           <div className="space-y-2">
-            <Label htmlFor="SITE_VERSION">Site Version</Label>
+            <Label htmlFor="SITE_VERSION" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Site Version</Label>
             <Input 
               id="SITE_VERSION" 
               name="SITE_VERSION" 
-              defaultValue={siteVersionSetting?.value || "1.2.1"} 
+              defaultValue={siteVersionSetting?.value || "2.1.510"} 
               className="font-mono"
             />
-            <p className="text-xs text-muted-foreground">The current running version of the web app displayed in the footer.</p>
+            <p className="text-xs text-muted-foreground">The current running version of the web app displayed in the footer and admin bar.</p>
           </div>
-          <Button type="submit" variant="secondary">Save Version</Button>
+          <Button type="submit" variant="secondary" className="text-xs font-mono">Save Version</Button>
         </form>
 
         <div className="space-y-8">
