@@ -17,7 +17,6 @@ import {
   LogOut,
   User as UserIcon,
   Flame,
-  BookOpen,
   LifeBuoy,
   Shield,
   Search,
@@ -44,7 +43,6 @@ const MOBILE_NAV_ITEMS = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/lobby", label: "Play Now", icon: Gamepad2 },
   { href: "/hub", label: "The Nexus", icon: Layers },
-  { href: "/wiki", label: "Wiki & Guides", icon: BookOpen },
   { href: "/support", label: "Support", icon: LifeBuoy },
   { href: "/forum", label: "Community Forum", icon: MessageSquare },
   { href: "/forum/leaderboard", label: "Leaderboard", icon: Trophy },
@@ -77,7 +75,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.539",
+  siteVersion = "v2.1.544",
 }: {
   session: any | null;
   dbPermissionLevel?: number;
@@ -197,18 +195,6 @@ export function Navbar({
             >
               <MessageSquare className="h-3.5 w-3.5" />
               <span>Forum</span>
-            </Link>
-
-            <Link
-              href="/wiki"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium transition-all ${
-                pathname?.startsWith("/wiki")
-                  ? "bg-primary/10 text-primary font-bold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-            >
-              <BookOpen className="h-3.5 w-3.5" />
-              <span>Wiki</span>
             </Link>
 
             <Link

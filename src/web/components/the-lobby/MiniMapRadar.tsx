@@ -165,8 +165,12 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
 
   useEffect(() => {
     let frameId: number;
-    const loop = () => {
-      draw();
+    let lastDraw = 0;
+    const loop = (now: number) => {
+      if (now - lastDraw >= 33) {
+        lastDraw = now;
+        draw();
+      }
       frameId = requestAnimationFrame(loop);
     };
     frameId = requestAnimationFrame(loop);

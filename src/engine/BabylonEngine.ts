@@ -200,6 +200,7 @@ export class BabylonEngine {
   private indoorWallTexture?: DynamicTexture;
   private waterTexture?: DynamicTexture;
   private waterAnimTime: number = 0;
+  private lastWaterUpdateTime: number = 0;
   public currentMapId: string = '';
   private currentMapWidth: number = 24;
   private currentMapHeight: number = 24;
@@ -452,10 +453,16 @@ export class BabylonEngine {
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.engine = new Engine(this.canvas, true, {
-      preserveDrawingBuffer: true,
+      preserveDrawingBuffer: false,
       stencil: true,
       antialias: false // Keep pixel art crisp
     });
+
+    // Cap DPR to 1.5 to prevent massive 4K fill-rate explosion on Retina/4K displays for pixel art
+    if (typeof window !== 'undefined') {
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      this.engine.setHardwareScalingLevel(1 / dpr);
+    }
 
     this.scene = new Scene(this.engine);
     this.scene.clearColor = new Color4(0, 0, 0, 0);
@@ -502,10 +509,10 @@ export class BabylonEngine {
       e.preventDefault();
       const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
       const currentOrtho = this.camera.orthoTop || 10;
-      // Editor mode: max 120 (supports 128x128 full fit), Game mode: range 5.5 - 13.5 (limits zoom to ~60% range)
+      // Editor mode: max 120 (supports 128x128 full fit), Game mode: range 5.5 - 11.0 (limits zoom-out to maintain crisp immersion)
       const isStudioToolsOpen = Boolean((window as any)._isDevEditorOpen) || this.editorCameraMode;
       const minOrtho = isStudioToolsOpen ? 2.5 : 5.5;
-      const maxZoom = isStudioToolsOpen ? 120 : 13.5;
+      const maxZoom = isStudioToolsOpen ? 120 : 11.0;
       const newOrtho = Math.max(minOrtho, Math.min(maxZoom, currentOrtho * zoomFactor));
       if (newOrtho === currentOrtho) return;
 
@@ -549,7 +556,7 @@ export class BabylonEngine {
       const custom = e as CustomEvent<{ percent?: number; ortho?: number }>;
       const isStudioToolsOpen = Boolean((window as any)._isDevEditorOpen) || this.editorCameraMode;
       const minOrtho = isStudioToolsOpen ? 2.5 : 5.5;
-      const maxZoom = isStudioToolsOpen ? 120 : 13.5;
+      const maxZoom = isStudioToolsOpen ? 120 : 11.0;
       let newOrtho = 10;
       if (custom.detail?.percent !== undefined) {
         newOrtho = Math.max(minOrtho, Math.min(maxZoom, 10 / (custom.detail.percent / 100)));
@@ -775,16 +782,44 @@ export class BabylonEngine {
       if (typeof performance !== 'undefined') performance.mark('scene_render_start');
       const deltaTime = this.engine.getDeltaTime() / 1000;
       this.waterAnimTime += deltaTime;
-
-      // Animate water tiles every ~3 frames for performance
-      if (Math.round(this.waterAnimTime * 30) % 3 === 0) {
+      // Animate water tiles smoothly at ~10 Hz (every 100ms) to avoid CPU-to-GPU texture upload thrashing
+      if (this.waterAnimTime - this.lastWaterUpdateTime >= 0.1) {
+        this.lastWaterUpdateTime = this.waterAnimTime;
         this.updateWaterTexture(this.waterAnimTime);
       }
 
+      // Viewport bounds for screen-space culling (with a 4-tile margin for seamless transitions)
+      const orthoH = (this.camera.orthoTop || 10) + 4.0;
+      const orthoW = (this.camera.orthoRight || 16) + 4.0;
+      const camX = this.cameraTargetX;
+      const camZ = this.cameraTargetZ;
+
       // Smooth Grid Interpolation & Walking Animations
-      this.entityMeshes.forEach((mesh) => {
+      this.entityMeshes.forEach((mesh, entityId) => {
         const state = mesh.metadata;
         if (!state) return;
+
+        // Viewport culling check (players and on-screen entities receive full animation & interpolation)
+        const posX = mesh.position.x;
+        const posZ = mesh.position.z;
+        const isNearScreen =
+          state.isPlayer ||
+          (Math.abs(posX - camX) <= orthoW && Math.abs(posZ - camZ) <= orthoH);
+
+        if (!isNearScreen) {
+          // Off-screen: hide mesh & shadow, snap position directly, skip vertex UV calculations
+          if (mesh.isVisible) mesh.isVisible = false;
+          const shadow = this.shadowMeshes.get(entityId);
+          if (shadow && shadow.isVisible) shadow.isVisible = false;
+
+          mesh.position = state.targetPos;
+          return;
+        }
+
+        // On-screen: ensure visible
+        if (!mesh.isVisible) mesh.isVisible = true;
+        const shadow = this.shadowMeshes.get(entityId);
+        if (shadow && !shadow.isVisible) shadow.isVisible = true;
 
         // 1. Movement Interpolation
         const dist = Vector3.Distance(mesh.position, state.targetPos);
@@ -3560,7 +3595,7 @@ private resolveTilePick(
   /** Zoom the camera by a fractional multiplier factor (e.g. 0.85 = zoom in, 1.15 = zoom out). */
   public zoomCamera(factor: number) {
     const currentOrtho = this.camera.orthoTop || 10;
-    const maxZoom = this.editorCameraMode ? 120 : 16;
+    const maxZoom = this.editorCameraMode ? 120 : 11.0;
     const newOrtho = Math.max(2.5, Math.min(maxZoom, currentOrtho * factor));
     this.updateCameraAspect(newOrtho);
     const zoomPercent = Math.round((10 / newOrtho) * 100);
@@ -3571,7 +3606,7 @@ private resolveTilePick(
 
   /** Set camera zoom directly by display percentage (e.g. 100% = ortho 10). */
   public setZoomPercent(percent: number) {
-    const maxZoom = this.editorCameraMode ? 120 : 16;
+    const maxZoom = this.editorCameraMode ? 120 : 11.0;
     const newOrtho = Math.max(2.5, Math.min(maxZoom, 10 / (Math.max(5, percent) / 100)));
     this.updateCameraAspect(newOrtho);
     const zoomPercent = Math.round((10 / newOrtho) * 100);

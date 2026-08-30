@@ -36,6 +36,8 @@ export function resolveSpriteUrl(key: string): string {
   return `/game-assets/npc/${key}.png`;
 }
 
+const SPRITE_SIZE_CACHE = new Map<string, { width: number; height: number }>();
+
 /**
  * Universal character sprite preview component.
  * Supports:
@@ -58,12 +60,20 @@ export function CharacterSpritePreview({
     : ['adventurer'];
 
   const baseSrc = resolveSpriteUrl(activeLayers[0]);
-  const [naturalSize, setNaturalSize] = useState<{ width: number; height: number } | null>(null);
+  const [naturalSize, setNaturalSize] = useState<{ width: number; height: number } | null>(
+    () => SPRITE_SIZE_CACHE.get(baseSrc) || null
+  );
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    setNaturalSize(null);
-    setFailed(false);
+    const cached = SPRITE_SIZE_CACHE.get(baseSrc);
+    if (cached) {
+      setNaturalSize(cached);
+      setFailed(false);
+    } else {
+      setNaturalSize(null);
+      setFailed(false);
+    }
   }, [baseSrc]);
 
   if (failed) {
@@ -92,7 +102,9 @@ export function CharacterSpritePreview({
         }}
         onLoad={(e) => {
           const img = e.currentTarget;
-          setNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
+          const dims = { width: img.naturalWidth, height: img.naturalHeight };
+          SPRITE_SIZE_CACHE.set(baseSrc, dims);
+          setNaturalSize(dims);
         }}
         onError={() => setFailed(true)}
       />
