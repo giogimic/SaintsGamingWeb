@@ -479,7 +479,7 @@ export default function AssetEditor({
   const isTilesetsWorkspace = workspaceId === 'tilesets' || typeFilter === 'TILE';
   const isItemsWorkspace = workspaceId === 'items' || typeFilter === 'ITEM';
   const isAudioWorkspace = workspaceId === 'audio' || typeFilter === 'AUDIO';
-  const isCatalogWorkspace = workspaceId === 'catalog' || workspaceId === 'packs';
+  const isCatalogWorkspace = workspaceId === 'catalog';
 
   return (
     <div className="flex flex-col h-full w-full bg-transparent text-slate-100 font-mono overflow-hidden">

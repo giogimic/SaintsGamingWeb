@@ -1,3 +1,9 @@
+# 2.1.532
+- **Asset Prepackage Installer Removal**:
+  - **Complete Removal of Legacy Asset Pack Installer**: Fully removed `AssetPackInstaller` component, `assetPackInstaller.ts` server modules, installation API endpoints (`/api/assets/install-pack`, `/api/setup/assets`), and `assets:install` script.
+  - **Asset Studio UI Streamlining**: Cleaned up `FullScreenAssetBrowser.tsx` and `AssetStudioSuite.tsx` to remove the obsolete "Packs & Bundles" tabs and focus purely on direct asset cataloging, sprite picking, custom sprite uploading, and grid slicing.
+- **Version Bump**: Bumped release version to `v2.1.532` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.531
 - **Asset Attribution Cleanup & Protective Open-Source Licensing**:
   - **Attribution & Legacy Reference Purge**: Completely purged all legacy external asset references, attributions, and schema artifacts (Tuxemon and LPC / Liberated Pixel Cup) across API routes, game actions, asset definitions, and wiki documentation. Standardized on the native **Saints Modular 2.5D Sprite System**.

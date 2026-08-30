@@ -7,7 +7,6 @@ import {
   Map,
   Sword,
   Music,
-  Package,
   Shield,
   Upload,
   Scissors,
@@ -17,17 +16,17 @@ import {
   RefreshCw,
   LayoutGrid,
   type LucideIcon,
+  Film,
 } from 'lucide-react';
 import AssetEditor from './AssetEditor';
 import SpriteBrowser from './SpriteBrowser';
 import { AssetUploadView } from './AssetUploadView';
 import { SpritesheetSlicer } from './SpritesheetSlicer';
 import { EntityAssetWorkspace } from './EntityAssetWorkspace';
-import AssetPackInstaller from './AssetPackInstaller';
 import { AnimationStudioPanel } from './panels/AnimationStudioPanel';
 import { useGameStore } from '../store';
 import type { GameAssetItem } from '@/engine/assets/AssetManager';
-import { Film } from 'lucide-react';
+import type { AssetImportProfileId } from '@/shared/game/assetImportProfiles';
 
 // ─── Sub-Studio identifiers ───────────────────────────────────────────────────
 export type AssetWorkspaceId =
@@ -37,7 +36,6 @@ export type AssetWorkspaceId =
   | 'tilesets'
   | 'items'
   | 'audio'
-  | 'packs'
   | 'catalog';
 
 // ─── Sub-Studio metadata ──────────────────────────────────────────────────────
@@ -81,12 +79,6 @@ const WORKSPACE_META: Record<
     blurb: 'Background music, ambient soundscapes, combat SFX, and voice emotes.',
     color: 'text-purple-400 border-purple-500/40 bg-purple-500/10',
   },
-  packs: {
-    label: 'Packs & Bundles',
-    icon: Package,
-    blurb: 'Pre-packaged asset packs, community expansions, and modular add-ons.',
-    color: 'text-orange-400 border-orange-500/40 bg-orange-500/10',
-  },
   catalog: {
     label: 'Master Catalog',
     icon: Shield,
@@ -102,12 +94,11 @@ const WORKSPACE_ORDER: AssetWorkspaceId[] = [
   'tilesets',
   'items',
   'audio',
-  'packs',
   'catalog',
 ];
 
 // ─── Sub-tab type per workspace ───────────────────────────────────────────────
-type SubTab = 'browse' | 'builder' | 'upload' | 'slicer' | 'packs' | 'sprites';
+type SubTab = 'browse' | 'builder' | 'upload' | 'slicer' | 'sprites';
 
 /**
  * AssetStudioSuite — the full-workspace Asset Management Mode view.
@@ -118,20 +109,10 @@ export function AssetStudioSuite() {
   const [activeWorkspace, setActiveWorkspace] = useState<AssetWorkspaceId>('catalog');
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('browse');
   const [slicerSource, setSlicerSource] = useState<
-    { id: string; filename: string; storagePath: string } | undefined
+    { id: string; filename: string; storagePath: string; width?: number; height?: number } | undefined
   >(undefined);
 
-  // Listen for cross-component asset refresh events
-  useEffect(() => {
-    const onRefresh = () => showToast('Asset catalog refreshed.');
-    window.addEventListener('assets:refreshed', onRefresh);
-    return () => window.removeEventListener('assets:refreshed', onRefresh);
-  }, [showToast]);
-
-  const meta = WORKSPACE_META[activeWorkspace];
-  const Icon = meta.icon;
-
-  // ── Type filter mapping per workspace ──
+  // Derive initial filter for AssetEditor based on active workspace
   const getTypeFilter = (): string | undefined => {
     switch (activeWorkspace) {
       case 'characters':
@@ -139,30 +120,34 @@ export function AssetStudioSuite() {
       case 'creatures':
         return 'CREATURE';
       case 'tilesets':
-        return 'TILE';
+        return 'TILESET';
       case 'items':
-        return 'OBJECT';
+        return 'ITEM';
       case 'audio':
         return 'AUDIO';
+      default:
+        return undefined; // All for catalog
+    }
+  };
+
+  const getTagFilters = (): string[] | undefined => {
+    switch (activeWorkspace) {
+      case 'characters':
+        return ['character', 'npc', 'player'];
+      case 'creatures':
+        return ['creature', 'monster', 'pet'];
+      case 'tilesets':
+        return ['tileset', 'map', 'terrain'];
+      case 'items':
+        return ['item', 'icon', 'weapon', 'armor'];
+      case 'audio':
+        return ['audio', 'music', 'sfx'];
       default:
         return undefined;
     }
   };
 
-  // ── Tag filter mapping per workspace ──
-  const getTagFilters = (): string[] => {
-    switch (activeWorkspace) {
-      case 'characters':
-        return [];
-      case 'creatures':
-        return [];
-      default:
-        return [];
-    }
-  };
-
-  // ── Import Profile mapping per workspace ──
-  const getImportProfile = (): any => {
+  const getImportProfile = (): AssetImportProfileId | undefined => {
     switch (activeWorkspace) {
       case 'characters':
         return 'character';
@@ -177,10 +162,10 @@ export function AssetStudioSuite() {
     }
   };
 
-  // ── Default Grid Size mapping per workspace ──
   const getDefaultGridSize = (): number => {
     switch (activeWorkspace) {
       case 'tilesets':
+        return 16;
       case 'items':
         return 32;
       default:
@@ -188,15 +173,14 @@ export function AssetStudioSuite() {
     }
   };
 
-  // ── Upload Asset Type mapping per workspace ──
-  const getUploadAssetType = (): string => {
+  const getUploadAssetType = () => {
     switch (activeWorkspace) {
       case 'characters':
         return 'CHARACTER';
       case 'creatures':
         return 'CREATURE';
       case 'tilesets':
-        return 'TILE';
+        return 'TILESET';
       case 'items':
         return 'ITEM';
       case 'audio':
@@ -245,15 +229,12 @@ export function AssetStudioSuite() {
           { id: 'browse', label: 'Browse Audio', icon: Layers },
           { id: 'upload', label: 'Upload Audio', icon: Upload },
         ];
-      case 'packs':
-        return [{ id: 'packs', label: 'Asset Packs', icon: Package }];
       case 'catalog':
         return [
           { id: 'browse', label: 'Full Catalog', icon: Layers },
           { id: 'sprites', label: 'Sprite Picker', icon: ImageIcon },
           { id: 'upload', label: 'Upload', icon: Upload },
           { id: 'slicer', label: 'Slicer', icon: Scissors },
-          { id: 'packs', label: 'Packs', icon: Package },
         ];
       default:
         return [{ id: 'browse', label: 'Browse', icon: Layers }];
@@ -321,8 +302,6 @@ export function AssetStudioSuite() {
             defaultGridSize={getDefaultGridSize()}
           />
         );
-      case 'packs':
-        return <AssetPackInstaller />;
       default:
         return (
           <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">
@@ -362,58 +341,46 @@ export function AssetStudioSuite() {
               <button
                 key={id}
                 onClick={() => setActiveWorkspace(id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer group ${
+                className={`w-full text-left p-2.5 rounded-xl border transition-all flex items-start gap-2.5 cursor-pointer ${
                   isActive
-                    ? `${ws.color} border shadow-lg`
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent'
+                    ? 'bg-amber-500/15 border-amber-500/40 text-white shadow-lg shadow-amber-500/5'
+                    : 'bg-black/20 border-slate-800/50 text-slate-400 hover:text-slate-200 hover:bg-white/5 hover:border-slate-700'
                 }`}
               >
-                <WsIcon
-                  className={`w-4 h-4 flex-shrink-0 ${
-                    isActive ? '' : 'text-slate-500 group-hover:text-slate-300'
-                  }`}
-                />
-                <div className="min-w-0">
-                  <div
-                    className={`text-[11px] font-bold truncate ${
-                      isActive ? '' : 'group-hover:text-slate-200'
-                    }`}
-                  >
-                    {ws.label}
+                <div
+                  className={`p-1.5 rounded-lg border flex-shrink-0 mt-0.5 ${ws.color}`}
+                >
+                  <WsIcon className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold truncate">{ws.label}</span>
                   </div>
-                  {isActive && (
-                    <div className="text-[9px] text-inherit opacity-70 mt-0.5 line-clamp-2">
-                      {ws.blurb}
-                    </div>
-                  )}
+                  <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
+                    {ws.blurb}
+                  </p>
                 </div>
               </button>
             );
           })}
         </div>
 
-        {/* Sidebar Footer */}
-        <div className="px-3 py-2 border-t border-slate-800/60">
-          <div className="text-[9px] text-slate-600 text-center">
-            Ctrl+Shift+A · Asset Studio
+        {/* Sidebar Footer / Quick Info */}
+        <div className="p-3 border-t border-slate-800/60 bg-black/40">
+          <div className="text-[10px] text-slate-500 flex items-center justify-between">
+            <span>Active Suite:</span>
+            <span className="font-mono text-amber-400 font-bold capitalize">
+              {activeWorkspace}
+            </span>
           </div>
         </div>
       </div>
 
       {/* ─── Main Content Area ─── */}
-      <div className="flex-1 flex flex-col min-w-0 bg-[#050b14]/90">
-        {/* Workspace Header + Sub-Tabs */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-slate-800/60 bg-[#050b14]/80">
-          {/* Active Workspace Title */}
-          <div className="flex items-center gap-2">
-            <Icon className={`w-5 h-5 ${meta.color.split(' ')[0]}`} />
-            <h1 className={`text-sm font-black tracking-wider uppercase ${meta.color.split(' ')[0]}`}>
-              {meta.label}
-            </h1>
-          </div>
-
-          {/* Sub-Tab Navigation */}
-          <div className="flex items-center bg-black/60 border border-slate-700/50 p-0.5 rounded-lg gap-0.5">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#02050b]/90">
+        {/* Sub-tab Navigation Bar */}
+        <div className="px-6 py-2.5 border-b border-slate-800/60 bg-[#050b14]/90 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-1.5 bg-black/60 border border-slate-800/80 p-1 rounded-xl">
             {subTabs.map((tab) => {
               const TabIcon = tab.icon;
               const isActive = activeSubTab === tab.id;
@@ -421,22 +388,30 @@ export function AssetStudioSuite() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveSubTab(tab.id)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-amber-500/30 text-amber-300 border border-amber-500/40 shadow'
+                      ? 'bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
                   }`}
                 >
-                  <TabIcon className="w-3 h-3" />
+                  <TabIcon className="w-3.5 h-3.5" />
                   {tab.label}
                 </button>
               );
             })}
           </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-slate-500">
+              Workspace: <strong className="text-slate-300">{WORKSPACE_META[activeWorkspace]?.label}</strong>
+            </span>
+          </div>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-auto">{renderContent()}</div>
+        {/* Content Container */}
+        <div className="flex-1 overflow-hidden flex flex-col p-4">
+          {renderContent()}
+        </div>
       </div>
     </div>
   );
