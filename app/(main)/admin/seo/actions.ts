@@ -5,7 +5,7 @@ import { prisma } from "@/web/lib/prisma";
 import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 import { revalidatePath } from "next/cache";
 
-export const ALLOWED_SEO_KEYS = [
+const ALLOWED_SEO_KEYS = [
   "SITE_NAME",
   "META_DESCRIPTION",
   "SEO_TITLE_TEMPLATE",
