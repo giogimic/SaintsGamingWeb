@@ -68,24 +68,32 @@ export function S3Water() {
         }}
       />
 
-      {/* ── Clean, Small Horizontal Specular Glints ─────────────────── */}
-      {glitters.map((g) => (
-        <div
-          key={g.id}
-          className="absolute rounded-full pointer-events-none"
-          style={{
-            top: `${g.y}%`,
-            left: `${g.x}%`,
-            width: `${g.width}px`,
-            height: `${g.height}px`,
-            background:
-              "radial-gradient(ellipse at 50% 50%, #ffffff 0%, #ffe066 50%, rgba(248,150,30,0) 100%)",
-            boxShadow: "0 0 5px rgba(255,224,102,0.85)",
-            animation: `sgWaterGlint ${g.duration}s ease-in-out ${g.delay}s infinite`,
-            willChange: 'transform, opacity',
-          }}
-        />
-      ))}
+      {/* ── Grouped Specular Glints in SVG layers ── */}
+      <svg
+        className="absolute inset-0 w-full h-full pointer-events-none"
+        style={{
+          animation: 'sgWaterBreathGlow 3.6s ease-in-out infinite',
+          willChange: 'opacity',
+        }}
+      >
+        <defs>
+          <radialGradient id="glintGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="50%" stopColor="#ffe066" />
+            <stop offset="100%" stopColor="#f8961e" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        {glitters.map((g) => (
+          <ellipse
+            key={g.id}
+            cx={`${g.x}%`}
+            cy={`${g.y}%`}
+            rx={g.width / 2}
+            ry={g.height / 2}
+            fill="url(#glintGrad)"
+          />
+        ))}
+      </svg>
       
       {/* ── Soft Vignette / Corner Depth ────────────────────────────── */}
       <div 

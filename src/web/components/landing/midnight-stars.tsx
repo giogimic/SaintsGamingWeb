@@ -3,30 +3,39 @@
 import React, { useMemo } from "react";
 
 export function MidnightStars() {
-  // Deterministic star field
-  const stars = useMemo(() => {
-    return Array.from({ length: 75 }).map((_, i) => {
-      // Keep stars mostly in the upper 55% of the viewport (the sky above mountains)
-      const top = Math.random() * 55;
-      const left = Math.random() * 100;
-      const size = Math.random() < 0.65 ? 1.5 : Math.random() < 0.9 ? 2.5 : 3.5;
-      const duration = 2.5 + (i % 6) * 0.7;
-      const delay = (i * 0.35) % 4;
-      const isCross = size > 3.0 && i % 3 === 0;
+  // Deterministic star field split into 2 twinkling groups
+  const { groupA, groupB } = useMemo(() => {
+    const a: Array<{ id: number; top: number; left: number; size: number; color: string }> = [];
+    const b: Array<{ id: number; top: number; left: number; size: number; color: string }> = [];
 
-      const colors = ["#ffffff", "#e0f7fa", "#e1bee7", "#b2ebf2"];
+    const colors = ["#ffffff", "#e0f7fa", "#e1bee7", "#b2ebf2"];
+
+    for (let i = 0; i < 60; i++) {
+      const top = (i * 37) % 55;
+      const left = (i * 67 + 13) % 100;
+      const size = i % 4 === 0 ? 2.5 : i % 2 === 0 ? 1.5 : 1.0;
       const color = colors[i % colors.length];
 
-      return { id: i, top, left, size, duration, delay, isCross, color };
-    });
+      if (i % 2 === 0) {
+        a.push({ id: i, top, left, size, color });
+      } else {
+        b.push({ id: i, top, left, size, color });
+      }
+    }
+
+    return { groupA: a, groupB: b };
   }, []);
 
   return (
     <div className="absolute inset-0 pointer-events-none z-[15] overflow-hidden select-none">
       <style>{`
-        @keyframes sgStarTwinkle {
-          0%, 100% { opacity: 0.2; transform: scale(0.8) translateZ(0); }
-          50% { opacity: 0.95; transform: scale(1.25) translateZ(0); }
+        @keyframes sgStarTwinkleA {
+          0%, 100% { opacity: 0.35; }
+          50% { opacity: 0.95; }
+        }
+        @keyframes sgStarTwinkleB {
+          0%, 100% { opacity: 0.85; }
+          50% { opacity: 0.3; }
         }
         @keyframes sgShootingStar {
           0% { transform: translate3d(-200px, -100px, 0) rotate(-25deg); opacity: 0; }
@@ -36,35 +45,43 @@ export function MidnightStars() {
         }
       `}</style>
 
-      {stars.map((s) => (
-        <div
-          key={s.id}
-          className="absolute rounded-full"
-          style={{
-            top: `${s.top}%`,
-            left: `${s.left}%`,
-            width: `${s.size}px`,
-            height: `${s.size}px`,
-            backgroundColor: s.color,
-            boxShadow: `0 0 ${s.size * 2}px ${s.color}, 0 0 ${s.size * 4}px rgba(0, 245, 212, 0.4)`,
-            animation: `sgStarTwinkle ${s.duration}s ease-in-out ${s.delay}s infinite`,
-            willChange: 'opacity, transform',
-          }}
-        >
-          {/* Subtle 4-point sparkle cross on larger stars */}
-          {s.isCross && (
-            <div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[12px] h-[12px] pointer-events-none opacity-60"
-              style={{
-                background:
-                  "radial-gradient(circle, #ffffff 10%, rgba(0,245,212,0.8) 30%, transparent 70%)",
-                clipPath:
-                  "polygon(50% 0%, 55% 45%, 100% 50%, 55% 55%, 50% 100%, 45% 55%, 0% 50%, 45% 45%)",
-              }}
-            />
-          )}
-        </div>
-      ))}
+      {/* Group A Stars */}
+      <svg
+        className="w-full h-full absolute inset-0"
+        style={{
+          animation: 'sgStarTwinkleA 3.5s ease-in-out infinite',
+          willChange: 'opacity',
+        }}
+      >
+        {groupA.map((s) => (
+          <circle
+            key={s.id}
+            cx={`${s.left}%`}
+            cy={`${s.top}%`}
+            r={s.size}
+            fill={s.color}
+          />
+        ))}
+      </svg>
+
+      {/* Group B Stars */}
+      <svg
+        className="w-full h-full absolute inset-0"
+        style={{
+          animation: 'sgStarTwinkleB 4.2s ease-in-out infinite',
+          willChange: 'opacity',
+        }}
+      >
+        {groupB.map((s) => (
+          <circle
+            key={s.id}
+            cx={`${s.left}%`}
+            cy={`${s.top}%`}
+            r={s.size}
+            fill={s.color}
+          />
+        ))}
+      </svg>
 
       {/* ── Occasional Shooting Star ─────────────────────────────────── */}
       <div

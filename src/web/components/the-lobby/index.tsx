@@ -1839,15 +1839,17 @@ export default function TheLobby({
           }}
         />
       ) : (
-        <GameCanvasBabylon 
-          activeBrushTileId={activeBrushTileId}
-          activeLayerIdx={activeLayerIdx}
-          isDevEditorOpen={studioToolsOpen}
-          suppressGameplay={suppressGameplay}
-          onMapClick={(r, c) => {
-            if (studioToolsOpen) setClickedTile({r, c});
-          }}
-        />
+        gameMode !== 'TITLE_SCREEN' && gameMode !== 'LOGIN' && gameMode !== 'SERVER_SELECT' && (
+          <GameCanvasBabylon 
+            activeBrushTileId={activeBrushTileId}
+            activeLayerIdx={activeLayerIdx}
+            isDevEditorOpen={studioToolsOpen}
+            suppressGameplay={suppressGameplay}
+            onMapClick={(r, c) => {
+              if (studioToolsOpen) setClickedTile({r, c});
+            }}
+          />
+        )
       )}
 
       {/* Touch controls — only in-world. Do NOT wrap in a full-screen
