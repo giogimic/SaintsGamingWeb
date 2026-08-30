@@ -34,18 +34,25 @@ export default async function AdminRolesPage() {
   });
 
   return (
-    <div className="space-y-6 max-w-6xl">
-      <div className="flex items-center gap-3">
-        <ShieldAlert className="h-8 w-8 text-primary" />
+    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Role Management</h1>
-          <p className="text-muted-foreground mt-1">
-            View the dynamic roles used by the RBAC system across the application.
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Identity, Progression &amp; Economy</span>
+            <span className="text-xs text-muted-foreground/40">•</span>
+            <span className="text-xs text-[#cbb26a] font-mono">RBAC Security</span>
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3 text-foreground">
+            <ShieldAlert className="h-8 w-8 text-primary" />
+            Role &amp; Permission Hierarchy
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            View the dynamic roles used by the RBAC system across Saints Gaming. Higher permission levels inherit privileges from lower tiers.
           </p>
         </div>
       </div>
 
-      <div className="bg-card/50 border border-border/40 rounded-xl p-6 sg-glass">
+      <div className="bg-card/40 border border-border/50 rounded-xl p-6 sg-glass">
         <div className="rounded-md border border-border/50 overflow-hidden">
           <Table>
             <TableHeader className="bg-muted/30">

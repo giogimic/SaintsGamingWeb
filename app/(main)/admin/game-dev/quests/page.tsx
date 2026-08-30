@@ -99,14 +99,21 @@ export default function QuestCreatorPage() {
   };
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary/10">
-          <ScrollText className="h-6 w-6 text-primary" />
-        </div>
+    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
         <div>
-          <h1 className="text-3xl font-bold">Quest Creator & Manager</h1>
-          <p className="text-muted-foreground">Build narrative dialogues, requirements, and rewards for Saints MMO NPCs.</p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">World &amp; MMO</span>
+            <span className="text-xs text-muted-foreground/40">•</span>
+            <span className="text-xs text-[#cbb26a] font-mono">Narrative Engine</span>
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3 text-foreground">
+            <ScrollText className="h-8 w-8 text-primary" />
+            Quest Creator &amp; Dialogue Manager
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Write NPC story dialogues, turn-in requirements (items, skill level), and player payouts (XP, credits, gear).
+          </p>
         </div>
       </div>
 

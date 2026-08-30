@@ -114,12 +114,17 @@ export default function GameOperationsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">World &amp; MMO</span>
+            <span className="text-xs text-muted-foreground/40">•</span>
+            <span className="text-xs text-[#cbb26a] font-mono">Live Character Roster</span>
+          </div>
           <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3 text-foreground">
             <Gamepad2 className="h-8 w-8 text-primary" />
-            MMO &amp; World Operations
+            MMO &amp; Hero Operations
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Manage live Saint heroes, inspect world maps, debug inventories, and unstuck players.
+            View active Saint heroes, inject test items or currency, rescue players stuck out of bounds, and review world atlas maps.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -128,7 +133,7 @@ export default function GameOperationsPage() {
           </Button>
           <Button size="sm" asChild className="gap-2 bg-primary text-primary-foreground shadow-md">
             <Link href="/studio">
-              <Sparkles className="h-4 w-4" /> Open Studio
+              <Sparkles className="h-4 w-4" /> Open World Studio
             </Link>
           </Button>
         </div>

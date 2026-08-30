@@ -66,20 +66,25 @@ export default function ServerManagerPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <Server className="h-8 w-8 text-orange-400" />
-            FiveM Server Manager
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Game Servers &amp; Infrastructure</span>
+            <span className="text-xs text-muted-foreground/40">•</span>
+            <span className="text-xs text-[#cbb26a] font-mono">FXServer txAdmin</span>
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3 text-foreground">
+            <Server className="h-8 w-8 text-primary" />
+            FiveM txAdmin Server Console
           </h1>
-          <p className="text-muted-foreground mt-1">
-            Start txAdmin and manage your FiveM server without leaving the dashboard.
+          <p className="text-muted-foreground text-sm mt-1">
+            Start, stop, and control your local FXServer instance and interact with the embedded txAdmin panel.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           {/* Status Badge */}
           <div className="flex items-center gap-2 px-4 py-2 bg-card rounded-lg border border-border text-sm font-medium">
             {state.running ? (

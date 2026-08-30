@@ -32,18 +32,25 @@ export default async function AdminTicketsPage() {
   });
 
   return (
-    <div className="space-y-6 max-w-6xl">
-      <div className="flex items-center gap-3">
-        <LifeBuoy className="h-8 w-8 text-primary" />
+    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Support Tickets</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage and respond to user inquiries and appeals.
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Community &amp; Content</span>
+            <span className="text-xs text-muted-foreground/40">•</span>
+            <span className="text-xs text-[#cbb26a] font-mono">Helpdesk Queue</span>
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3 text-foreground">
+            <LifeBuoy className="h-8 w-8 text-primary" />
+            Support Tickets &amp; Appeals
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Review and respond to player appeals, bug reports, payment/store inquiries, and general help requests.
           </p>
         </div>
       </div>
 
-      <Card className="bg-card/40 border-border/50">
+      <Card className="bg-card/40 border-border/50 sg-glass">
         <CardContent className="p-0">
           <div className="rounded-md border border-border/50 overflow-hidden">
             <table className="w-full text-sm">

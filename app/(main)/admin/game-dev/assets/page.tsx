@@ -127,19 +127,24 @@ export default function AssetStudioPage() {
   }, [selectedCategoryFilter, searchQuery]);
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20">
-            <ImageIcon className="h-6 w-6 text-primary" />
+    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">World &amp; MMO</span>
+            <span className="text-xs text-muted-foreground/40">•</span>
+            <span className="text-xs text-[#cbb26a] font-mono">Pixel Art Repository</span>
           </div>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Pixel Art Asset Studio</h1>
-            <p className="text-muted-foreground text-sm">Mass import, inspect, and classify 16x16 / 32x32 tiles, sprites, and environmental graphics.</p>
-          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3 text-foreground">
+            <ImageIcon className="h-8 w-8 text-primary" />
+            Pixel Art &amp; Asset Studio
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Batch import, classify, and preview 16x16 / 32x32 pixel art tiles, creature sprites, and terrain decor.
+          </p>
         </div>
-        <Badge variant="outline" className="font-mono text-xs px-3 py-1 bg-primary/5 border-primary/30 text-primary">
-          {assets.length} Total Assets
+        <Badge variant="outline" className="font-mono text-xs px-3 py-1 bg-primary/10 border-primary/30 text-primary">
+          {assets.length} Assets Registered
         </Badge>
       </div>
 

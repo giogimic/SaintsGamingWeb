@@ -28,15 +28,26 @@ export default async function AdminTiersPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Level Tiers</h1>
-        <p className="text-muted-foreground mt-1">Manage the cosmetic ranks and required XP for forum & news participation.</p>
+    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Identity, Progression &amp; Economy</span>
+            <span className="text-xs text-muted-foreground/40">•</span>
+            <span className="text-xs text-[#cbb26a] font-mono">Forum Progression</span>
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3 text-foreground">
+            Level Tiers &amp; XP Progression
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Configure member rank titles, level thresholds, and required XP earned by participating in forum threads, news, and social feeds.
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-4">
-          <Card className="bg-card/40 border-border/50">
+          <Card className="bg-card/40 border-border/50 sg-glass">
             <CardContent className="p-0">
               <div className="rounded-md border border-border/50 overflow-hidden">
                 <table className="w-full text-sm">

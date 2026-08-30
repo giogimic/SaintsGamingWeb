@@ -31,38 +31,39 @@ export default async function AdminForumSettingsPage() {
   const canEdit = user.permissionLevel >= PERMISSION_LEVELS.DEVELOPER;
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Forum Settings</h1>
-          <p className="text-muted-foreground mt-2">
-            Editor helpers and local/cloud text enhancement for forum &amp; news posts.
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Community &amp; Content</span>
+            <span className="text-xs text-muted-foreground/40">•</span>
+            <span className="text-xs text-[#cbb26a] font-mono">AI Models</span>
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3 text-foreground">
+            Forum &amp; AI Writing Assistants
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Configure local LLMs (Ollama) or cloud Gemini APIs for intelligent post summaries, grammar cleanups, and drafting assistants.
           </p>
         </div>
-        <Link
-          href="/admin/forum"
-          className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2"
-        >
-          ← Categories
-        </Link>
       </div>
 
       <div className="flex gap-2 text-sm border-b border-border/40 pb-2">
         <Link
           href="/admin/forum"
-          className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground"
+          className="px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground text-xs font-mono"
         >
-          Categories
+          Categories &amp; Boards
         </Link>
         <Link
           href="/admin/forum/settings"
-          className="px-3 py-1.5 rounded-md bg-primary/15 text-primary font-medium"
+          className="px-3 py-1.5 rounded-lg bg-primary/20 text-primary font-bold text-xs font-mono"
         >
-          Settings
+          AI &amp; Moderation Settings
         </Link>
       </div>
 
-      <div className="bg-card/50 border border-border/40 rounded-xl p-6">
+      <div className="bg-card/40 border border-border/50 rounded-xl p-6 sg-glass">
         <ForumAiSettingsPanel
           initialEnabled={map[FORUM_AI_KEYS.enabled] ?? "true"}
           initialProvider={map[FORUM_AI_KEYS.provider] ?? "gemini"}
