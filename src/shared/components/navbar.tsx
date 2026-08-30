@@ -195,9 +195,9 @@ export function Navbar({
   const pageTitle = getPageTitle(pathname);
 
   return (
-    <div className="sticky top-0 z-50 w-full pointer-events-none">
+    <div className="fixed top-0 z-50 w-full pointer-events-none">
       <header className="pointer-events-auto w-full bg-card/85 backdrop-blur-2xl border-b border-border/50 shadow-md transition-all duration-300">
-        <div className="flex h-11 sm:h-12 items-center justify-between px-3 sm:px-6">
+        <div className="flex h-9 sm:h-10 items-center justify-between px-3 sm:px-6">
           {/* Left Brand */}
           <Link href="/home" className="flex items-center gap-2 group mr-2">
             <div className="transition-transform group-hover:scale-110">
@@ -508,84 +508,4 @@ export function Navbar({
   );
 }
 
-export function Footer({
-  className = "",
-  discordLink = "https://discord.saintsgaming.net",
-  siteVersion = "v2.1.536",
-  showUcpLink = false,
-}: {
-  className?: string;
-  discordLink?: string;
-  siteVersion?: string;
-  showUcpLink?: boolean;
-}) {
-  const pathname = usePathname();
-  if (pathname?.startsWith("/lobby") || pathname?.startsWith("/studio")) {
-    return null;
-  }
 
-  return (
-    <footer className={`bg-card/40 backdrop-blur-md border-t border-border/50 py-12 px-4 xl:px-8 transition-colors ${className}`}>
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
-        <div className="space-y-4 md:col-span-2">
-          <div className="flex items-center gap-3">
-            <SGMicro3DLogo size={32} />
-            <span className="font-bold text-xl sg-text-gradient">Saints Gaming</span>
-          </div>
-          <p className="text-muted-foreground text-sm max-w-sm">
-            Next-generation gaming community platform featuring immersive 2.5D multiplayer MMO worlds, FiveM roleplay ecosystems, and creator tools.
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          <h4 className="font-semibold text-sm tracking-wider uppercase text-foreground">Explore</h4>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li>
-              <Link href="/hub" className="hover:text-primary transition-colors">
-                The Nexus (News & Servers)
-              </Link>
-            </li>
-            <li>
-              <Link href="/forum" className="hover:text-primary transition-colors">
-                Community Forum
-              </Link>
-            </li>
-            <li>
-              <Link href="/streams" className="hover:text-primary transition-colors">
-                Live Streams
-              </Link>
-            </li>
-            <li>
-              <Link href="/wiki" className="hover:text-primary transition-colors">
-                Community Wiki
-              </Link>
-            </li>
-          </ul>
-        </div>
-
-        <div className="space-y-3">
-          <h4 className="font-semibold text-sm tracking-wider uppercase text-foreground">Connect</h4>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li>
-              <a href={discordLink} target="_blank" rel="noreferrer" className="hover:text-primary transition-colors">
-                Discord Server
-              </a>
-            </li>
-            <li>
-              <Link href="/support" className="hover:text-primary transition-colors">
-                Support & Contact
-              </Link>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto mt-8 pt-8 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between text-xs text-muted-foreground gap-4">
-        <p>© {new Date().getFullYear()} Saints Gaming Network. All rights reserved.</p>
-        <div className="flex items-center gap-4">
-          <span className="font-mono text-primary/80">{siteVersion}</span>
-        </div>
-      </div>
-    </footer>
-  );
-}
