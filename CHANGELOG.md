@@ -1,3 +1,11 @@
+# 2.1.554
+- **Unified Navigation & Persistent Shell Architecture**:
+  - **Static Top/Bottom Bar Keeping Container**: Maintained persistent `Navbar` and `GlobalBottomBar` mounts across the entire application shell (Website, MMO Game Lobby, and World Studio) inside `MainLayoutShell` to prevent unmounting and UI flicker.
+  - **Studio Mode Conversion**: `Navbar` and `GlobalBottomBar` dynamically adapt into the full-featured Studio top menu bar and bottom toolbars when navigating to `/studio`, providing access to all Studio tools, menus, shortcuts, and diagnostics while maintaining exclusive website links for `Home` and `Play Now` (Lobby).
+  - **Game Mode Character Stats Integration**: Enhanced `GlobalBottomBar` in `/lobby` game mode to display live character and account stats (`Account Name ACCT LVL [X] | Character Name LVL [Y]`) cleanly without clutter.
+  - **StudioEditorShell Deduplication**: Removed redundant internal mounts of `StudioMenuBar` and `StudioBottomToolbar`, ensuring the layout root acts as the single source of truth for global navigation and toolbars.
+- **Version Bump**: Bumped release version to `v2.1.554` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.553
 - **Social Feed & Shorts Viewer Build Fixes**:
   - **Syntax Error Fix in `app/actions/social/feed.ts`**: Restored the missing object closure and function return mapping in `searchFeed` that was accidentally corrupted when appending `getSuggestedCreators`.

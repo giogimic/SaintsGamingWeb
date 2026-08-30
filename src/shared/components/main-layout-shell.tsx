@@ -25,14 +25,16 @@ export function MainLayoutShell({
   const isStudio = pathname?.startsWith('/studio');
   const isLobby = pathname?.startsWith('/lobby');
 
-  // Studio route: absolute full-bleed without outer padding, margin, or transform containing blocks
+  // Studio route: absolute full-bleed with persistent navbar and bottomBar
   if (isStudio) {
     return (
       <div className="fixed inset-0 w-screen h-screen overflow-hidden selection:bg-primary/30 z-[100] bg-[#0a0a0f]">
+        {navbar}
         <main className="w-full h-full overflow-hidden">
           {children}
         </main>
         {commandPalette}
+        {bottomBar}
         {toaster}
       </div>
     );
