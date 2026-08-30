@@ -1,3 +1,14 @@
+# 2.1.526
+- **Fluid & Responsive Walking Movement Pipeline**:
+  - **Tile-Chaining & Elimination of Dead Stops**: Upgraded the movement game loop in `GameCanvasBabylon.tsx` to seamlessly chain consecutive grid steps as long as movement keys are held, eliminating the 16–33ms dead stop hitches at tile boundaries.
+  - **V-Sync Synchronized Auto-Walk (Click-to-Move)**: Replaced jittery `setInterval(..., 250)` path execution with frame-synchronized waypoint popping in the render loop.
+  - **Camera Follow Smoothing**: Upgraded camera tracking (`lerpFactor: 0.35`) in `BabylonEngine.ts` to follow the player mesh tightly without elastic rubber-banding or parallax jitter.
+  - **Walking Animation Continuity**: Fixed walk cycle `animTime` resetting so sprite walk cycles remain fluid and continuous between tiles.
+  - **React Store Selector Isolation**: Isolated HUDs (`PlayerVitalsHud`, `inventory-overlay`, `equipment-overlay`, `GameChat`) with granular selectors to eliminate CPU/GC re-render spikes during walking.
+- **In-Game Zoom Limiting**:
+  - Limited in-game zoom range to ~60% of previous span (`ortho` range 5.5 to 13.5) to keep pixel art crisp and prevent excessive zoom-in / distant unrendered tile zoom-outs, while preserving full canvas fit/zoom range in Studio Editor mode.
+- **Version Bump**: Bumped release version to `v2.1.526` across all platform layouts, navigation components, settings, and documentation.
+
 # 2.1.525
 - **Unified 3D Voxel Brand Logo in Footer**: Synchronized the Footer brand logo to use `<SGMicro3DLogo size={36} />` with hover transitions, ensuring complete aesthetic and visual identity consistency between the top Navbar, mobile navigation drawer, and Footer across the platform.
 - **Version Bump**: Updated release version to `v2.1.525`.

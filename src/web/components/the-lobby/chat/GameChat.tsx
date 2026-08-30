@@ -42,8 +42,8 @@ export function GameChat() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
-  const player = useGameStore((state) => state.player);
   const otherPlayers = useGameStore((state) => state.otherPlayers);
+  const playerName = useGameStore((state) => state.player.name || 'You');
   const showToast = useGameStore((state) => state.showToast);
   const { isModerator, isAdmin, isDeveloper } = useAuth();
 
@@ -216,7 +216,7 @@ export function GameChat() {
           ...prev,
           {
             id: Date.now().toString(),
-            sender: player.name || 'You',
+            sender: playerName,
             text,
             timestamp: Date.now(),
             type: 'LOCAL' as const,
@@ -230,7 +230,7 @@ export function GameChat() {
           ...prev,
           {
             id: Date.now().toString(),
-            sender: player.name || 'You',
+            sender: playerName,
             text,
             timestamp: Date.now(),
             type: 'GLOBAL' as const,
@@ -244,7 +244,7 @@ export function GameChat() {
           ...prev,
           {
             id: Date.now().toString(),
-            sender: player.name || 'You',
+            sender: playerName,
             text,
             timestamp: Date.now(),
             type: 'PARTY' as const,
@@ -259,7 +259,7 @@ export function GameChat() {
 
   const handleNameClick = (name: string) => {
     const clean = name.replace(/^\[.*?\]\s*/, '').replace(/->.*$/, '').trim();
-    if (clean && clean !== 'You' && clean !== player.name && clean !== 'System') {
+    if (clean && clean !== 'You' && clean !== playerName && clean !== 'System') {
       setChatInput(`/w ${clean} `);
       setIsExpanded(true);
       setTimeout(() => inputRef.current?.focus(), 50);

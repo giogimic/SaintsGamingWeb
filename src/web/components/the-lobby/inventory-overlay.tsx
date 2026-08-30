@@ -66,7 +66,8 @@ export default function InventoryOverlay() {
   const credits = useGameStore((state) => state.player.credits);
   const currency = useGameStore((state) => state.player.currency);
   const equipItem = useGameStore((state) => state.equipItem);
-  const playerState = useGameStore((state) => state.player);
+  const playerMaxWeight = useGameStore((state) => state.player.maxWeight);
+  const playerPerk = useGameStore((state) => state.player.perk);
 
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<CategoryFilter>('ALL');
@@ -108,7 +109,7 @@ export default function InventoryOverlay() {
     if (inventory[itemId] <= 1) setActiveItem(null);
   };
 
-  const maxWeight = playerState.maxWeight || (playerState.perk === 'PACK_MULE' ? 150 : 100);
+  const maxWeight = playerMaxWeight || (playerPerk === 'PACK_MULE' ? 150 : 100);
   const currentWeight = Object.values(inventory).reduce((sum, qty) => sum + qty, 0);
 
   // Filter & sort entries
