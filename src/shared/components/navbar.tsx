@@ -77,7 +77,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.537",
+  siteVersion = "v2.1.538",
 }: {
   session: any | null;
   dbPermissionLevel?: number;
@@ -113,82 +113,16 @@ export function Navbar({
   const isOperator = permissionLevel >= 200 || isWriter;
   const canAccessStudio = permissionLevel >= 300;
 
-  const isGameRoute = pathname?.startsWith("/lobby") || pathname?.startsWith("/studio");
+  const isStudioRoute = pathname?.startsWith("/studio");
+  if (isStudioRoute) {
+    return null;
+  }
+
+  const isGameRoute = pathname?.startsWith("/lobby");
 
   // In fullscreen game mode, auto-hide the top bar
   if (isFullscreen && isGameRoute) {
     return null;
-  }
-
-  // ── GAME-MODE TOP BAR ───────────────────────────────────────────────
-  if (isGameRoute) {
-    return (
-      <div className="sticky top-0 z-50 w-full pointer-events-none">
-        <header className="pointer-events-auto w-full bg-card/85 backdrop-blur-2xl border-b border-border/50 shadow-md transition-all duration-300">
-          <div className="flex h-11 sm:h-12 items-center justify-between px-3 sm:px-6">
-            {/* Left Brand */}
-            <div className="flex items-center gap-3">
-              <Link href="/home" className="flex items-center gap-2 group">
-                <div className="transition-transform group-hover:scale-105">
-                  <SGMicro3DLogo size={24} />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-xs sm:text-sm sg-text-gradient tracking-tight">
-                    Saints MMO
-                  </span>
-                  <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[9px] font-mono font-bold uppercase">
-                    Live Shard
-                  </span>
-                </div>
-              </Link>
-            </div>
-
-            {/* Right Controls */}
-            <div className="flex items-center gap-2">
-              <ThemeSwitcher />
-
-              {user ? (
-                <div className="flex items-center gap-2">
-                  <div className="hidden sm:flex items-center gap-2 px-2 py-0.5 rounded-lg border border-border/50 bg-background/50 text-xs font-mono">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                    </span>
-                    <span className="text-foreground font-bold truncate max-w-[120px]">
-                      {user.username || user.name || "Operative"}
-                    </span>
-                  </div>
-
-                  <Link href="/home">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 sm:h-8 gap-1.5 text-xs border-border/50 text-muted-foreground hover:text-foreground"
-                      title="Return to Website"
-                    >
-                      <LogOut className="w-3 h-3" />
-                      <span className="hidden sm:inline">Exit to Web</span>
-                    </Button>
-                  </Link>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Link href="/login" className={buttonVariants({ variant: "ghost", size: "sm", className: "h-7 sm:h-8 text-xs" })}>
-                    Log in
-                  </Link>
-                  <Link href="/home">
-                    <Button variant="outline" size="sm" className="h-7 sm:h-8 gap-1.5 text-xs">
-                      <LogOut className="w-3 h-3" />
-                      <span className="hidden sm:inline">Exit</span>
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
-      </div>
-    );
   }
 
   // ── STANDARD WEBSITE TOP BAR ─────────────────────────────────────────

@@ -559,215 +559,201 @@ export default function GameTitleScreen({
 
   return (
     <div
-      className="pointer-events-auto absolute inset-0 z-[200] flex flex-col justify-between overflow-x-hidden overflow-y-auto select-none font-sans"
+      className="pointer-events-auto absolute inset-0 z-[200] flex flex-col justify-center items-center overflow-x-hidden overflow-y-auto select-none font-sans"
       style={{ backgroundColor: THEME.bg, color: THEME.textColor }}
     >
       {/* Dynamic Horizon Background */}
       <MidnightTropicalBackground />
 
-      {/* ── TOP UTILITY ROW ────────────────────────────────────── */}
-      <header className="relative z-30 w-full px-4 sm:px-8 py-3 flex items-center justify-between pointer-events-auto">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              soundSynth?.playSelectSound?.();
-              setShowOptions(true);
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-pink-500/30 text-pink-200 hover:text-white hover:border-pink-400 bg-black/50 text-xs font-mono font-bold tracking-wider uppercase transition-all cursor-pointer shadow-md"
-          >
-            <Settings size={14} />
-            <span>Options</span>
-          </button>
-          <button
-            onClick={() => {
-              soundSynth?.playSelectSound?.();
-              setShowCredits(true);
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-pink-500/30 text-pink-200 hover:text-white hover:border-pink-400 bg-black/50 text-xs font-mono font-bold tracking-wider uppercase transition-all cursor-pointer shadow-md"
-          >
-            <ScrollText size={14} />
-            <span>Credits</span>
-          </button>
-        </div>
-
-        {/* Shard Status Badge */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-cyan-500/30 bg-black/60 shadow-md">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
-          </span>
-          <span className="text-xs font-mono font-bold text-cyan-200 uppercase tracking-wider">
-            {serverStatus.status === "online" ? "MAIN REALM" : "OFFLINE"}
-          </span>
-        </div>
-      </header>
-
-      {/* ── MAIN 3-COLUMN MMO COMMAND DECK ─────────────────────────────── */}
-      <main className="relative z-20 flex-1 flex flex-col justify-center items-center w-full mt-16 px-4">
+      {/* ── MAIN CHARACTER SELECTION DECK ─────────────────────────────── */}
+      <main className="relative z-20 flex-1 flex flex-col justify-center items-center w-full px-4 my-auto py-6">
         {/* ── CENTERED CHARACTER SELECTION CARD ──────────── */}
         <div
-          className="w-full max-w-lg flex flex-col justify-between rounded-2xl border border-pink-500/30 p-6 bg-[#0a0318]/90 backdrop-blur-xl shadow-2xl relative font-mono overflow-hidden"
-            style={{
-              borderColor: palette.border,
-              boxShadow: `0 0 35px ${palette.glow}, inset 0 0 20px rgba(0,0,0,0.8)`,
-              clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
-            }}
-          >
-            {/* Top decorative accent */}
-            <div className="flex items-center justify-between border-b border-pink-500/20 pb-3 mb-4">
+          className="w-full max-w-lg flex flex-col justify-between rounded-2xl border border-border/60 p-6 bg-[#0a0318]/90 backdrop-blur-xl shadow-2xl relative overflow-hidden"
+          style={{
+            borderColor: palette.border || 'rgba(255, 255, 255, 0.15)',
+            boxShadow: `0 0 35px ${palette.glow}, inset 0 0 20px rgba(0,0,0,0.8)`,
+          }}
+        >
+          {/* Top header: Saint Stage + Options/Credits Tab */}
+          <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
+            <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <Gamepad2 className="w-4 h-4 text-cyan-400" />
-                <span className="text-xs font-mono font-black text-cyan-200 uppercase tracking-widest">
+                <Gamepad2 className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold text-foreground uppercase tracking-widest">
                   SAINT STAGE
                 </span>
               </div>
-              <div className="flex items-center gap-1 text-[10px] font-mono text-pink-400/70">
-                <span>SAINT {characters.length > 0 ? activeIdx + 1 : 0} / {characters.length}</span>
+
+              {/* Options & Credits Tab */}
+              <div className="flex items-center gap-1 bg-black/60 p-0.5 rounded-lg border border-white/10 shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundSynth?.playSelectSound?.();
+                    setShowOptions(true);
+                  }}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors cursor-pointer"
+                  title="Game Options"
+                >
+                  <Settings size={12} />
+                  <span>Options</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundSynth?.playSelectSound?.();
+                    setShowCredits(true);
+                  }}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors cursor-pointer"
+                  title="Credits & Attribution"
+                >
+                  <ScrollText size={12} />
+                  <span>Credits</span>
+                </button>
               </div>
             </div>
 
-            {/* Pedestal & Character Visual */}
-            <div className="flex flex-col items-center justify-center my-2 relative py-4">
-              {/* Rune / Energy aura on ground */}
-              <div
-                className="absolute w-44 h-16 rounded-full bottom-2 blur-md opacity-70 pointer-events-none"
-                style={{
-                  background: `radial-gradient(ellipse at center, ${palette.accent} 0%, transparent 70%)`,
-                }}
-              />
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <span>Saint {characters.length > 0 ? activeIdx + 1 : 0} / {characters.length}</span>
+            </div>
+          </div>
 
-              {/* Pedestal Platform */}
-              <div
-                className="w-36 h-8 rounded-[50%] border border-cyan-400/40 bg-black/80 flex items-center justify-center relative shadow-inner mb-[-12px]"
-                style={{
-                  boxShadow: `0 0 20px ${palette.glow}`,
-                }}
-              >
-                <div className="w-24 h-4 rounded-[50%] border border-pink-500/40 bg-pink-950/40 animate-pulse" />
-              </div>
+          {/* Pedestal & Character Visual */}
+          <div className="flex flex-col items-center justify-center my-2 relative py-4">
+            {/* Rune / Energy aura on ground */}
+            <div
+              className="absolute w-44 h-16 rounded-full bottom-2 blur-md opacity-70 pointer-events-none"
+              style={{
+                background: `radial-gradient(ellipse at center, ${palette.accent} 0%, transparent 70%)`,
+              }}
+            />
 
-              {/* Character Avatar */}
-              <div className="relative z-10 w-24 h-24 flex items-center justify-center">
-                {activeChar ? (
-                  <CharacterSpritePreview
-                    assetProfileId={activeChar.spriteId}
-                    size={32}
-                    scale={2.4}
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-2xl border border-dashed border-cyan-500/40 flex flex-col items-center justify-center text-cyan-400/50">
-                    <User className="w-8 h-8" />
-                  </div>
-                )}
-              </div>
+            {/* Pedestal Platform */}
+            <div
+              className="w-36 h-8 rounded-[50%] border border-primary/40 bg-black/80 flex items-center justify-center relative shadow-inner mb-[-12px]"
+              style={{
+                boxShadow: `0 0 20px ${palette.glow}`,
+              }}
+            >
+              <div className="w-24 h-4 rounded-[50%] border border-primary/30 bg-primary/20 animate-pulse" />
+            </div>
 
-              {/* Character Selector Carousel Arrows */}
-              {characters.length > 1 && (
-                <div className="flex items-center justify-between w-full px-4 absolute top-1/2 -translate-y-1/2 pointer-events-none">
-                  <button
-                    onClick={handlePrevChar}
-                    className="pointer-events-auto p-2 rounded-xl bg-black/70 border border-pink-500/40 text-pink-300 hover:text-white hover:border-cyan-400 hover:scale-110 transition-all cursor-pointer shadow-lg"
-                    title="Previous Saint"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-                  <button
-                    onClick={handleNextChar}
-                    className="pointer-events-auto p-2 rounded-xl bg-black/70 border border-pink-500/40 text-pink-300 hover:text-white hover:border-cyan-400 hover:scale-110 transition-all cursor-pointer shadow-lg"
-                    title="Next Saint"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
+            {/* Character Avatar */}
+            <div className="relative z-10 w-24 h-24 flex items-center justify-center">
+              {activeChar ? (
+                <CharacterSpritePreview
+                  assetProfileId={activeChar.spriteId}
+                  size={32}
+                  scale={2.4}
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-2xl border border-dashed border-primary/40 flex flex-col items-center justify-center text-muted-foreground">
+                  <User className="w-8 h-8" />
                 </div>
               )}
             </div>
 
-            {/* Character Info Card */}
-            {activeChar ? (
-              <div className="bg-black/60 rounded-xl p-3 border border-pink-500/20 mb-4 font-mono">
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <ClassIcon className="w-3.5 h-3.5" style={{ color: palette.accent }} />
-                    <span className="text-[11px] font-black uppercase tracking-wider text-white">
-                      {activeChar.name}
-                    </span>
-                  </div>
-                  <span className="px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-400/40 text-[#00f5d4] text-[10px] font-extrabold shadow-[0_0_8px_rgba(0,245,212,0.3)]">
-                    LVL {activeCharState.level || 1}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-300 mt-2 pt-2 border-t border-white/5">
-                  <div className="flex items-center gap-1.5">
-                    <Heart className="w-3 h-3 text-rose-400" />
-                    <span>HP: <strong className="text-white">{activeCharState.hp || 100}/{activeCharState.maxHp || 100}</strong></span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Coins className="w-3 h-3 text-amber-400" />
-                    <span>Pouch: <strong className="text-amber-300">{(activeCharState.credits || 1000).toLocaleString()} C</strong></span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center p-4 bg-black/40 rounded-xl border border-dashed border-cyan-500/30 mb-4">
-                <p className="text-xs font-mono text-cyan-300/80 font-bold">NO CHAMPION YET</p>
-                <p className="text-[10px] font-mono text-slate-400 mt-1">Forge your Saint to enter the live world.</p>
+            {/* Character Selector Carousel Arrows */}
+            {characters.length > 1 && (
+              <div className="flex items-center justify-between w-full px-4 absolute top-1/2 -translate-y-1/2 pointer-events-none">
+                <button
+                  onClick={handlePrevChar}
+                  className="pointer-events-auto p-2 rounded-xl bg-black/70 border border-white/15 text-muted-foreground hover:text-foreground hover:border-primary/50 hover:scale-105 transition-all cursor-pointer shadow-lg"
+                  title="Previous Saint"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  onClick={handleNextChar}
+                  className="pointer-events-auto p-2 rounded-xl bg-black/70 border border-white/15 text-muted-foreground hover:text-foreground hover:border-primary/50 hover:scale-105 transition-all cursor-pointer shadow-lg"
+                  title="Next Saint"
+                >
+                  <ChevronRight size={16} />
+                </button>
               </div>
             )}
+          </div>
 
-            {/* Action Buttons */}
-            <div className="space-y-2.5">
-              {/* Primary CTA: ENTER REALM */}
-              <button
-                onClick={handleStartGame}
-                className="group relative w-full py-4 overflow-hidden rounded-xl font-mono font-black text-base sm:text-lg tracking-widest uppercase transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] cursor-pointer shadow-[0_0_30px_rgba(242,0,137,0.6)] text-white"
-                style={{
-                  background: 'linear-gradient(135deg, #f20089 0%, #7c3aed 50%, #00f5d4 100%)',
-                  clipPath: 'polygon(10px 0%, 100% 0%, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0% 100%, 0% 10px)',
-                }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                <span className="relative flex items-center justify-center gap-2">
-                  <Play size={18} fill="currentColor" className="group-hover:animate-pulse text-white" />
-                  <span className="relative z-10 font-mono tracking-widest">
-                    {status !== 'authenticated' ? 'LOGIN TO PLAY' : activeChar ? 'ENTER REALM' : 'CREATE SAINT'}
+          {/* Character Info Card */}
+          {activeChar ? (
+            <div className="bg-black/60 rounded-xl p-3 border border-white/10 mb-4 font-mono">
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <ClassIcon className="w-3.5 h-3.5" style={{ color: palette.accent }} />
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-white">
+                    {activeChar.name}
                   </span>
+                </div>
+                <span className="px-2 py-0.5 rounded bg-primary/20 border border-primary/40 text-primary text-[10px] font-bold">
+                  LVL {activeCharState.level || 1}
                 </span>
-              </button>
+              </div>
 
-              {/* Secondary actions: Hero Vault & Forge */}
-              <div className="grid grid-cols-2 gap-2 font-mono text-xs">
-                <button
-                  onClick={() => {
-                    soundSynth?.playSelectSound?.();
-                    if (onOpenCharacterSelect) {
-                      onOpenCharacterSelect();
-                    } else {
-                      setGameMode('CHARACTER_SELECT');
-                    }
-                  }}
-                  className="py-2 px-3 rounded-lg bg-black/60 border border-pink-500/30 hover:border-cyan-400 text-pink-200 hover:text-white flex items-center justify-center gap-1.5 font-bold uppercase transition-all cursor-pointer"
-                >
-                  <Layers size={13} />
-                  Saint Vault
-                </button>
-                <button
-                  onClick={() => {
-                    soundSynth?.playActionSound?.();
-                    if (onCreateCharacter) {
-                      onCreateCharacter();
-                    } else {
-                      setGameMode('CHARACTER_CREATOR');
-                    }
-                  }}
-                  className="py-2 px-3 rounded-lg bg-pink-950/40 border border-pink-500/40 hover:border-pink-400 text-[#00f5d4] hover:text-white flex items-center justify-center gap-1.5 font-bold uppercase transition-all cursor-pointer shadow-[0_0_10px_rgba(242,0,137,0.2)]"
-                >
-                  <Plus size={13} />
-                  Forge Saint
-                </button>
+              <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-300 mt-2 pt-2 border-t border-white/5">
+                <div className="flex items-center gap-1.5">
+                  <Heart className="w-3 h-3 text-rose-400" />
+                  <span>HP: <strong className="text-white">{activeCharState.hp || 100}/{activeCharState.maxHp || 100}</strong></span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Coins className="w-3 h-3 text-amber-400" />
+                  <span>Pouch: <strong className="text-amber-300">{(activeCharState.credits || 1000).toLocaleString()} C</strong></span>
+                </div>
               </div>
             </div>
+          ) : (
+            <div className="text-center p-4 bg-black/40 rounded-xl border border-dashed border-white/15 mb-4">
+              <p className="text-xs text-foreground font-bold">NO SAINT YET</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Forge your Saint to enter the live world.</p>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="space-y-2.5">
+            {/* Primary CTA: ENTER WORLD */}
+            <button
+              onClick={handleStartGame}
+              className="group relative w-full py-3.5 overflow-hidden rounded-xl font-bold text-sm sm:text-base tracking-wider uppercase transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] cursor-pointer shadow-lg bg-primary text-primary-foreground flex items-center justify-center gap-2"
+            >
+              <Play size={16} fill="currentColor" className="text-primary-foreground" />
+              <span>
+                {status !== 'authenticated' ? 'LOGIN TO PLAY' : activeChar ? 'ENTER WORLD' : 'CREATE SAINT'}
+              </span>
+            </button>
+
+            {/* Secondary actions: Saint Vault & Forge */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <button
+                onClick={() => {
+                  soundSynth?.playSelectSound?.();
+                  if (onOpenCharacterSelect) {
+                    onOpenCharacterSelect();
+                  } else {
+                    setGameMode('CHARACTER_SELECT');
+                  }
+                }}
+                className="py-2 px-3 rounded-lg bg-black/60 border border-white/10 hover:border-primary/40 text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 font-semibold uppercase transition-all cursor-pointer"
+              >
+                <Layers size={13} />
+                Saint Vault
+              </button>
+              <button
+                onClick={() => {
+                  soundSynth?.playActionSound?.();
+                  if (onCreateCharacter) {
+                    onCreateCharacter();
+                  } else {
+                    setGameMode('CHARACTER_CREATOR');
+                  }
+                }}
+                className="py-2 px-3 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 text-primary hover:text-primary-foreground flex items-center justify-center gap-1.5 font-semibold uppercase transition-all cursor-pointer"
+              >
+                <Plus size={13} />
+                Forge Saint
+              </button>
+            </div>
           </div>
+        </div>
       </main>
 
       {/* Modals */}

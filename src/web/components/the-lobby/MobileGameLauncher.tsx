@@ -31,7 +31,7 @@ export function MobileGameLauncher({
   };
 
   return (
-    <div className="pointer-events-auto fixed inset-0 z-[200] flex flex-col items-center justify-center p-4 overflow-y-auto select-none bg-[#050b14] font-mono">
+    <div className="pointer-events-auto absolute inset-0 z-[200] flex flex-col items-center justify-center p-4 overflow-y-auto select-none bg-[#050b14] font-mono">
       {/* Full-bleed atmosphere */}
       <div
         className="absolute inset-0 pointer-events-none"
