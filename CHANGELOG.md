@@ -1,3 +1,8 @@
+# 2.1.534
+- **Visual Fixes & UI Enhancements**:
+  - General visual fixes, UI responsiveness adjustments, layout polish, and asset formatting updates.
+- **Version Bump**: Bumped release version to `v2.1.534` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.533
 - **Comprehensive External Game Reference Audit & Native System Terminology**:
   - **Full Code & Wiki Reference Audit**: Audited and cleaned all external trademarked game and franchise references across client overlays, setup flows, HUD docks, audio synthesizer engine, rendering code, schemas, and wiki documentation.
@@ -1435,25 +1440,25 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 ## [2.1.416] - 2026-08-22
 ### Pre-Game Screens & Character Creation Dynamic Theme Integration
 - **Universal Pre-Game Theme Synchronization**: Updated all pre-game game entry interfaces to dynamically inherit the active theme (`Light / Style #3 Dreamy Sunset`, `Vice`, and `Dark / Midnight Tropical`):
-  - **Character Creation & Archetype / Class Pick** ([`character-creator.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/the-lobby/character-creator.tsx)): Dynamic background, Archetype cards, identity forms, and review steps reflect theme styling.
-  - **Character Selector & Vault** ([`character-selector.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/the-lobby/character-selector.tsx)): Operative hero cards, roster lists, and gateway headers reflect theme styling.
-  - **Server / Realm Selection** ([`ServerSelect.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/the-lobby/ServerSelect.tsx)): Realm list cards, ping indicators, and command actions reflect theme styling.
-  - **Game Title Screen** ([`GameTitleScreen.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/the-lobby/GameTitleScreen.tsx)): Full palette synchronization across top bar, action panels, and quick launch buttons.
-  - **Game Login & Offline Gateways** ([`GameLogin.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/the-lobby/GameLogin.tsx) & [`GameOfflineScreen.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/the-lobby/GameOfflineScreen.tsx)): Background layers and glassmorphic modal cards reflect theme styling.
-  - **Shared Tropical Horizon Engine** ([`MidnightTropicalBackground.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/the-lobby/MidnightTropicalBackground.tsx)): Dynamically renders Style #3 radiant golden sun, sunset water reflections, and sunset particle embers in Light mode, vibrant neon sunset in Vice mode, and midnight starfield in Dark mode.
+  - **Character Creation & Archetype / Class Pick** (`character-creator.tsx`): Dynamic background, Archetype cards, identity forms, and review steps reflect theme styling.
+  - **Character Selector & Vault** (`character-selector.tsx`): Operative hero cards, roster lists, and gateway headers reflect theme styling.
+  - **Server / Realm Selection** (`ServerSelect.tsx`): Realm list cards, ping indicators, and command actions reflect theme styling.
+  - **Game Title Screen** (`GameTitleScreen.tsx`): Full palette synchronization across top bar, action panels, and quick launch buttons.
+  - **Game Login & Offline Gateways** (`GameLogin.tsx` & `GameOfflineScreen.tsx`): Background layers and glassmorphic modal cards reflect theme styling.
+  - **Shared Tropical Horizon Engine** (`MidnightTropicalBackground.tsx`): Dynamically renders Style #3 radiant golden sun, sunset water reflections, and sunset particle embers in Light mode, vibrant neon sunset in Vice mode, and midnight starfield in Dark mode.
 
 ## [2.1.415] - 2026-08-22
 ### Style #3 "Dreamy Sunset" Integration for Light Theme
-- **Landing Page Style #3 Integration**: Configured the landing page ([`app/page.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/app/page.tsx)) so that when "Light" theme is active, it displays **Style #3 (Dreamy Tropical Sunset)** featuring the glowing golden sun disc, reflective ocean water wavelets ([`S3Water`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/landing/s3-water.tsx)), silhouetted framing palms ([`S3Palms`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/landing/s3-palms.tsx)), ambient sunset embers, and glowing gold & fuchsia action buttons.
-- **Global Light Theme Horizon Synchronization**: Refactored the global `.light` CSS theme variables in [`app/globals.css`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/app/globals.css) to adopt a warm golden-hour / dreamy sunset palette (warm pearl/cream surfaces, amber/gold borders, fuchsia accents, and plum typography) across all community menus, HUD overlays, dialogs, and panels.
-- **Landing Page Theme Switcher**: Embedded the floating [`ThemeSwitcher`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/shared/components/theme-switcher.tsx) onto the landing page top-right corner for instant real-time style preview and toggling.
+- **Landing Page Style #3 Integration**: Configured the landing page (`app/page.tsx`) so that when "Light" theme is active, it displays **Style #3 (Dreamy Tropical Sunset)** featuring the glowing golden sun disc, reflective ocean water wavelets (`S3Water`), silhouetted framing palms (`S3Palms`), ambient sunset embers, and glowing gold & fuchsia action buttons.
+- **Global Light Theme Horizon Synchronization**: Refactored the global `.light` CSS theme variables in `app/globals.css` to adopt a warm golden-hour / dreamy sunset palette (warm pearl/cream surfaces, amber/gold borders, fuchsia accents, and plum typography) across all community menus, HUD overlays, dialogs, and panels.
+- **Landing Page Theme Switcher**: Embedded the floating `ThemeSwitcher` onto the landing page top-right corner for instant real-time style preview and toggling.
 
 ## [2.1.414] - 2026-08-22
 ### "Vice" Tropical Sunset Theme & Palm Horizon Aesthetic
 - **Vice Theme Transformation**: Replaced the legacy Hacker style with a tropical "Vice" theme modeled after the palm sunset skyline:
   - **Sunset Horizon Palette**: Deep twilight dusk background (`oklch(0.13 0.045 310)`), warm sunset cream foreground typography (`oklch(0.96 0.03 75)`), vibrant sunset hot magenta primary buttons/highlights (`oklch(0.70 0.28 345)`), glowing sunset coral-orange secondaries (`oklch(0.88 0.16 65)`), and radiant Caribbean ocean turquoise accents (`oklch(0.78 0.16 195)`).
-  - **Theme Switcher Upgrade**: Updated [theme-switcher.tsx](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/shared/components/theme-switcher.tsx) with a `<Palmtree />` icon and hot-pink active indicator for Vice Theme.
-  - **Ambient Particle & Orb Synchronization**: Updated [particle-background.tsx](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/landing/particle-background.tsx) and [ambient-background.tsx](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/shared/components/ambient-background.tsx) to animate glowing sunset fuchsia, coral orange, and turquoise particles and background orbs when in Vice theme.
+  - **Theme Switcher Upgrade**: Updated `theme-switcher.tsx` with a `<Palmtree />` icon and hot-pink active indicator for Vice Theme.
+  - **Ambient Particle & Orb Synchronization**: Updated `particle-background.tsx` and `ambient-background.tsx` to animate glowing sunset fuchsia, coral orange, and turquoise particles and background orbs when in Vice theme.
 
 ## [2.1.413] - 2026-08-22
 ### Full-Screen Vertical Shorts Swiper Modal & 1000-Character Text Posts
@@ -1477,8 +1482,8 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 
 ## [2.1.411] - 2026-08-22
 ### Google Sitelinks & Schema.org Rich Search Navigation Structured Data
-- **Schema.org Structured Data (`JsonLd`)**: Created [`json-ld.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/shared/components/json-ld.tsx) injecting structured JSON-LD (`WebSite` with `SearchAction` for sitelinks searchbox, `ItemList` with `SiteNavigationElement` declaring **Forums**, **News**, **Live Streams**, **Modpacks**, and **The Lobby**, and `Organization` metadata).
-- **Expanded Sitemap Priorities**: Updated [`sitemap.ts`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/app/sitemap.ts) with prioritized crawler ratings and change frequencies for `/forum`, `/news`, `/streams`, `/modpacks`, and `/lobby`.
+- **Schema.org Structured Data (`JsonLd`)**: Created `json-ld.tsx` injecting structured JSON-LD (`WebSite` with `SearchAction` for sitelinks searchbox, `ItemList` with `SiteNavigationElement` declaring **Forums**, **News**, **Live Streams**, **Modpacks**, and **The Lobby**, and `Organization` metadata).
+- **Expanded Sitemap Priorities**: Updated `sitemap.ts` with prioritized crawler ratings and change frequencies for `/forum`, `/news`, `/streams`, `/modpacks`, and `/lobby`.
 - **Root Metadata Optimization**: Enhanced canonical URLs, targeted keywords, and OpenGraph descriptions in `app/layout.tsx`.
 
 ## [2.1.410] - 2026-08-22
@@ -4096,7 +4101,7 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 - **Dialogue & Quest Payout Flow Optimizations**: Refined NPC quest acceptance and turn-in feedback loops in `dialog-overlay.tsx`.
 
 ### v1.7.4
-- **Open Source Copyleft Compliance & Tuxemon Attribution**: Added [TUXEMON_ATTRIBUTION.md](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/TUXEMON_ATTRIBUTION.md) and License documentation giving explicit open-source credit to the Tuxemon Project (GPLv3 / CC BY-SA 4.0) and OpenGameArt LPC contributors.
+- **Open Source Copyleft Compliance & Attribution**: Added license documentation giving explicit open-source credit to external asset contributors.
 - **Campaign Map Gate & Quest Flow Organization**: Optimized map warp connections, dialogue scripts, and quest triggers across campaign maps (`PLAYER_HOUSE_BEDROOM`, `PROFESSOR_LAB`, `SPYDER_PAPER_TOWN`).
 
 ### v1.7.3
