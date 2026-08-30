@@ -9,6 +9,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import Hls from "hls.js";
 import { captureVideoFrame, getCachedVideoPoster } from "@/web/lib/video-thumbnail";
+import { useImmersiveStore } from "@/web/hooks/useImmersiveStore";
 
 interface FeedVideoPlayerProps {
   id: string;
@@ -474,7 +475,8 @@ export function FeedVideoPlayer({
       lastTapRef.current = now;
       setTimeout(() => {
         if (lastTapRef.current === now && !isHoldingFastForward) {
-          // Single Tap -> Play / Pause
+          // Single Tap -> Play / Pause & Toggle Immersive Bars
+          useImmersiveStore.getState().toggleBars();
           if (isCurrentlyActive) {
             setActivePlayingId(null);
             showCenterFeedback("pause");

@@ -15,6 +15,7 @@ const StudioBottomToolbar = dynamic(
   () => import("@/web/components/the-lobby/editor/StudioBottomToolbar").then((m) => m.StudioBottomToolbar),
   { ssr: false }
 );
+import { useImmersiveStore } from "@/web/hooks/useImmersiveStore";
 import {
   Activity,
   Terminal,
@@ -45,7 +46,8 @@ import {
   BookOpen,
   LifeBuoy,
   Flame,
-  MessageSquare
+  MessageSquare,
+  Plus
 } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { SGMicro3DLogo } from "@/web/components/landing/sg-logo-3d-micro";
@@ -75,7 +77,7 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "v2.1.557",
+  siteVersion = "v2.1.558",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;
@@ -239,6 +241,18 @@ export function GlobalBottomBar({
     return "Saints · Online";
   };
 
+  const isBarsHidden = useImmersiveStore((s) => s.isBarsHidden);
+
+  const handleGlobalPost = () => {
+    if (typeof window === "undefined") return;
+    if (pathname?.startsWith("/profile/inbox") || pathname?.startsWith("/feed")) {
+      window.dispatchEvent(new CustomEvent("saints-open-post-composer"));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      window.location.href = "/profile/inbox?post=1";
+    }
+  };
+
   // If fullscreen in game mode, suppress bottom bar to allow pure immersive gameplay
   if (isFullscreen && isGameRoute) {
     return null;
@@ -252,7 +266,9 @@ export function GlobalBottomBar({
   return (
     <>
       {/* ── PERSISTENT GLOBAL BOTTOM BAR ──────────────────────────────── */}
-      <footer className="fixed bottom-0 left-0 right-0 z-40 h-12 sm:h-8 bg-[#050b14]/75 backdrop-blur-xl border-t border-white/[0.08] shadow-2xl px-3 sm:px-6 flex items-center justify-between text-xs font-mono select-none pointer-events-auto transition-all duration-300">
+      <footer className={`fixed bottom-0 left-0 right-0 z-40 h-12 sm:h-8 bg-[#050b14]/75 backdrop-blur-xl border-t border-white/[0.08] shadow-2xl px-3 sm:px-6 flex items-center justify-between text-xs font-mono select-none pointer-events-auto transition-all duration-300 ${
+        isBarsHidden ? "opacity-0 translate-y-full pointer-events-none" : "opacity-100 translate-y-0"
+      }`}>
           
           {/* LEFT SECTION: Connected User & Account Stats / Online Orb */}
           <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
@@ -315,7 +331,7 @@ export function GlobalBottomBar({
             )}
           </div>
 
-          {/* CENTER SECTION: Links + Logo */}
+          {/* CENTER SECTION: Links + Logo + Post Button */}
           <div className="flex items-center justify-center gap-1 sm:gap-2 flex-shrink-0">
             {/* Left Group (Play, Feed, Streams, Forums) */}
             <div className="flex items-center gap-0.5 sm:gap-1">
@@ -340,12 +356,24 @@ export function GlobalBottomBar({
               })}
             </div>
 
+            {/* Global Post Button */}
+            <ActionTooltip label="Create Post / Upload Clip">
+              <button
+                type="button"
+                onClick={handleGlobalPost}
+                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-0.5 rounded-full bg-primary text-primary-foreground font-bold text-[11px] hover:opacity-90 active:scale-95 shadow-[0_0_12px_rgba(203,178,106,0.3)] transition-all cursor-pointer shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Post</span>
+              </button>
+            </ActionTooltip>
+
             {/* Logo and Saints Brand Name */}
             <div className="mx-1 flex items-center justify-center gap-1.5">
               <div className="hover:scale-110 transition-transform cursor-pointer" title="Saints">
                 <Link href="/home" className="flex items-center gap-1.5">
-                  <SGMicro3DLogo size={22} />
-                  <span className="hidden xl:inline-block font-bold text-foreground text-[11px] tracking-wide">
+                  <SGMicro3DLogo size={28} />
+                  <span className="hidden xl:inline-block font-black text-foreground text-xs sm:text-[13px] tracking-wide">
                     Saints
                   </span>
                 </Link>
