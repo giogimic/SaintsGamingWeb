@@ -30,7 +30,7 @@ export function ActionTooltip({
   return (
     <TooltipProvider delay={delayDuration}>
       <Tooltip>
-        <TooltipTrigger asChild={asChild}>{children}</TooltipTrigger>
+        <TooltipTrigger>{children}</TooltipTrigger>
         <TooltipContent side={side} align={align} className={className}>
           <p className="font-semibold text-sm capitalize">{label}</p>
         </TooltipContent>
