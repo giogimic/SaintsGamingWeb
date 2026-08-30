@@ -820,7 +820,19 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 620,
     zIndex: 10,
   },
+  interface: {
+    id: 'interface',
+    title: 'Interface Designer',
+    isOpen: false,
+    isCollapsed: false,
+    x: 280,
+    y: 80,
+    width: 680,
+    height: 580,
+    zIndex: 10,
+  },
 };
+
 
 function closeAllPanels(state: { panels: Record<PanelId, FloatingPanelState>; activePanel: PanelId | null }) {
   (Object.keys(state.panels) as PanelId[]).forEach((k) => {
