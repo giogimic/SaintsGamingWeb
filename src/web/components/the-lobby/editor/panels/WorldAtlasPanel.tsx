@@ -355,7 +355,7 @@ export const WorldAtlasPanel: React.FC = () => {
                       {node.mapId}
                     </span>
                     {node.mapId === lobbyMapId && (
-                      <div className="absolute -top-1 -right-1 px-1 py-0.2 text-[8px] bg-emerald-500 text-black font-extrabold rounded-full border border-black" title="Spawn Hub">
+                      <div className="absolute -top-1 -right-1 px-1 py-0.2 text-[8px] bg-emerald-600 text-white font-extrabold rounded-full border border-black shadow-[0_0_8px_rgba(0,0,0,0.8)] [text-shadow:_0_1px_2px_rgb(0_0_0)]" title="Spawn Hub">
                         HUB
                       </div>
                     )}

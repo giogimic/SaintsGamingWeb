@@ -94,11 +94,11 @@ export function SGLogo({ size = 260, className = "", animate = false }: SGLogoPr
           ))}
         </g>
 
-        {/* INNER MONOGRAM */}
+        {/* INNER MONOGRAM (WHITE WITH BLACK OUTLINES) */}
         <g filter={`url(#${filterId})`}>
           <path
             d={S_PATH}
-            fill={BRAND_PINK}
+            fill={BRAND_WHITE}
             stroke={BRAND_BLACK}
             strokeWidth="3.5"
             strokeLinejoin="miter"
