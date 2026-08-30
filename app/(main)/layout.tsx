@@ -1,4 +1,4 @@
-import { Navbar, Footer } from "@/shared/components/navbar";
+import { Navbar } from "@/shared/components/navbar";
 import { GlobalBottomBar } from "@/shared/components/global-bottom-bar";
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
@@ -39,7 +39,7 @@ export default async function MainLayout({
   let showUcpInNav = false;
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.534";
+    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.535";
 
     const ucpNavSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_in_nav" } });
     if (ucpNavSetting?.value === "true") showUcpInNav = true;
@@ -54,8 +54,7 @@ export default async function MainLayout({
         <RealtimeProvider>
           <MessengerProvider>
             <Navbar session={session} dbPermissionLevel={dbPermissionLevel} discordLink={discordLink} showUcpLink={showUcpInNav} siteVersion={siteVersion} />
-            <main className="flex-1 sg-page-enter z-10 pt-28">{children}</main>
-            <Footer className="z-10" discordLink={discordLink} siteVersion={siteVersion} showUcpLink={showUcpInNav} />
+            <main className="flex-1 sg-page-enter z-10 pt-14 sm:pt-16 pb-12">{children}</main>
             <GlobalCommandPalette permissionLevel={dbPermissionLevel ?? ((session?.user?.permissionLevel as number) || 0)} isWriter={dbIsWriter} />
             <MessengerPopup />
             <GlobalBottomBar dbPermissionLevel={dbPermissionLevel} siteVersion={siteVersion} />

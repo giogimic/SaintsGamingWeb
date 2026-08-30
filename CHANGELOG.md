@@ -1,3 +1,11 @@
+# 2.1.535
+- **Streamlined Sticky Header & Thinned Cyber Bottom Bar**:
+  - **Sticky Following Navbar**: Made the top navigation bar follow the user on scroll with a sleek, thinner profile (`h-11 sm:h-12`) and cyber glassmorphism.
+  - **Streamlined Nav Layout**: Positioned **Play Now** and **The Nexus** on the left; the 3D spinning micro logo and active page indicator in the center; and **Wiki**, **Support**, Search, and User profile controls on the right.
+  - **Thinned Global Bottom Bar**: Redesigned the bottom bar into a high-density, compact HUD (`h-8 sm:h-9`) showing the connected user's operative name, account level, coins/gold, and achievement score alongside 4 core navigation destinations (**Play Now**, **The Nexus**, **Wiki**, and **Support**).
+  - **Footer Cleanup**: Removed the bulky static footer in favor of persistent, streamlined top & bottom bars.
+- **Version Bump**: Bumped release version to `v2.1.535` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.534
 - **Visual Fixes & UI Enhancements**:
   - General visual fixes, UI responsiveness adjustments, layout polish, and asset formatting updates.
