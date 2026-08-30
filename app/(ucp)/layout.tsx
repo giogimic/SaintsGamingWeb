@@ -1,4 +1,5 @@
 import { Navbar, Footer } from "@/shared/components/navbar";
+import { GlobalBottomBar } from "@/shared/components/global-bottom-bar";
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { MessengerProvider } from "@/web/components/messenger/messenger-provider";
@@ -35,7 +36,7 @@ export default async function UcpLayout({
   let showUcpInNav = false;
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.527";
+    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.530";
 
     const ucpNavSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_in_nav" } });
     if (ucpNavSetting?.value === "true") showUcpInNav = true;
@@ -44,18 +45,19 @@ export default async function UcpLayout({
   }
 
   return (
-    <div className="flex flex-col min-h-screen relative overflow-x-hidden selection:bg-primary/30">
+    <div className="flex flex-col min-h-screen relative overflow-x-hidden selection:bg-primary/30 pb-10">
       <AmbientBackground />
       <RealtimeProvider>
         <MessengerProvider>
           <UcpLiveRefresh />
-          <Navbar session={session} dbPermissionLevel={dbPermissionLevel} discordLink={discordLink} showUcpLink={showUcpInNav} />
+          <Navbar session={session} dbPermissionLevel={dbPermissionLevel} discordLink={discordLink} showUcpLink={showUcpInNav} siteVersion={siteVersion} />
 
           <UcpNavigation />
 
           <main className="flex-1 sg-page-enter bg-background/50">{children}</main>
           <Footer discordLink={discordLink} siteVersion={siteVersion} showUcpLink={showUcpInNav} />
           <MessengerPopup />
+          <GlobalBottomBar dbPermissionLevel={dbPermissionLevel} siteVersion={siteVersion} />
         </MessengerProvider>
       </RealtimeProvider>
     </div>

@@ -565,102 +565,40 @@ export default function GameTitleScreen({
       {/* Dynamic Horizon Background */}
       <MidnightTropicalBackground />
 
-      {/* ── TOP HEADER / UTILITY BAR ────────────────────────────────────── */}
-      <header className="relative z-30 w-full px-4 sm:px-8 py-3 flex items-center justify-between border-b border-[#00f5d4]/20 bg-[#050014]/75 backdrop-blur-md">
-        {/* Left utility tools */}
+      {/* ── TOP UTILITY ROW ────────────────────────────────────── */}
+      <header className="relative z-30 w-full px-4 sm:px-8 py-3 flex items-center justify-between pointer-events-auto">
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsMuted((m) => !m)}
-            className="p-2 rounded-lg border border-pink-500/30 text-pink-300 hover:text-white hover:border-pink-400 bg-black/50 transition-all cursor-pointer"
-            title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
-          >
-            {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
-          </button>
           <button
             onClick={() => {
               soundSynth?.playSelectSound?.();
               setShowOptions(true);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-pink-500/30 text-pink-200 hover:text-white hover:border-pink-400 bg-black/50 text-xs font-mono font-bold tracking-wider uppercase transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-pink-500/30 text-pink-200 hover:text-white hover:border-pink-400 bg-black/50 text-xs font-mono font-bold tracking-wider uppercase transition-all cursor-pointer shadow-md"
           >
             <Settings size={14} />
-            <span className="hidden sm:inline">Options</span>
+            <span>Options</span>
           </button>
           <button
             onClick={() => {
               soundSynth?.playSelectSound?.();
               setShowCredits(true);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-pink-500/30 text-pink-200 hover:text-white hover:border-pink-400 bg-black/50 text-xs font-mono font-bold tracking-wider uppercase transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-pink-500/30 text-pink-200 hover:text-white hover:border-pink-400 bg-black/50 text-xs font-mono font-bold tracking-wider uppercase transition-all cursor-pointer shadow-md"
           >
             <ScrollText size={14} />
-            <span className="hidden sm:inline">Credits</span>
+            <span>Credits</span>
           </button>
         </div>
 
-        {/* Center Title Brand Mark */}
-        <div className="flex flex-col items-center">
-          <div className="flex items-center gap-2">
-            <h1
-              className="text-2xl sm:text-3xl font-black tracking-widest font-mono select-none"
-              style={{
-                background: 'linear-gradient(180deg, #ffffff 0%, #ffbe0b 50%, #f20089 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                filter: 'drop-shadow(0 0 16px rgba(242,0,137,0.7))',
-              }}
-            >
-              SAINTS ONLINE
-            </h1>
-            <span className="px-2 py-0.5 rounded bg-pink-950/80 border border-pink-500/40 text-[#00f5d4] text-[10px] font-mono font-black tracking-wider uppercase shadow-[0_0_10px_rgba(0,245,212,0.3)]">
-              MMO GATEWAY
-            </span>
-          </div>
-          <span className="text-[10px] text-amber-400/70 font-mono tracking-[0.25em] uppercase hidden sm:block">
-            A WORLD WORTH FIGHTING FOR — EST. 2007
+        {/* Shard Status Badge */}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-cyan-500/30 bg-black/60 shadow-md">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
           </span>
-        </div>
-
-        {/* Right Account & Leave */}
-        <div className="flex items-center gap-3">
-          {status === 'authenticated' ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-cyan-500/40 bg-black/60 shadow-[0_0_12px_rgba(0,245,212,0.2)]">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
-              </span>
-              <div className="flex flex-col">
-                <span className="text-xs font-mono font-bold text-white leading-tight truncate max-w-[110px]">
-                  {session?.user?.name || session?.user?.username || 'Operative'}
-                </span>
-                <span className="text-[9px] font-mono text-cyan-300/70 tracking-widest uppercase">
-                  {session?.user?.permissionLevel && session.user.permissionLevel >= 3 ? 'ADMIN' : 'TAMER'}
-                </span>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => {
-                soundSynth?.playActionSound?.();
-                setGameMode('LOGIN');
-              }}
-              className="px-4 py-1.5 rounded-xl border border-cyan-400 bg-cyan-500/20 text-cyan-200 font-mono text-xs font-bold uppercase tracking-wider hover:bg-cyan-500/40 transition-all cursor-pointer shadow-[0_0_15px_rgba(0,245,212,0.3)]"
-            >
-              Sign In
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => {
-              window.location.href = '/';
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-500/50 text-rose-300 hover:bg-rose-950/60 hover:text-white transition-all font-mono text-xs font-bold uppercase tracking-wider cursor-pointer bg-black/60 shadow-[0_0_10px_rgba(244,63,94,0.2)]"
-            title="Return to website"
-          >
-            <LogOut size={13} />
-            <span className="hidden sm:inline">Leave</span>
-          </button>
+          <span className="text-xs font-mono font-bold text-cyan-200 uppercase tracking-wider">
+            {serverStatus.status === "online" ? "MAIN REALM" : "OFFLINE"}
+          </span>
         </div>
       </header>
 
@@ -831,21 +769,6 @@ export default function GameTitleScreen({
             </div>
           </div>
       </main>
-
-      {/* ── FOOTER STATUS / SHORTCUTS BAR ──────────────────────────────── */}
-      <footer className="relative z-30 w-full px-4 sm:px-8 py-2.5 flex flex-col sm:flex-row items-center justify-between border-t border-[#00f5d4]/20 bg-[#050014]/80 backdrop-blur-md text-[11px] font-mono text-slate-400">
-        <div className="flex items-center gap-3">
-          <span className="text-pink-400 font-bold">v{process.env.NEXT_PUBLIC_APP_VERSION || '2.1.238'} · Core MMO</span>
-          <span className="hidden md:inline text-slate-600">|</span>
-          <span className="hidden md:inline text-cyan-400/80">BabylonJS 3D · Go MMO Realtime Engine</span>
-        </div>
-
-        <div className="flex items-center gap-4 mt-1 sm:mt-0 text-[10px] text-pink-300/70">
-          <span>[Enter] Chat</span>
-          <span>[C] Saint Vault</span>
-          <span>[E] Settings</span>
-        </div>
-      </footer>
 
       {/* Modals */}
       {showCredits && <CreditsModal onClose={() => setShowCredits(false)} />}

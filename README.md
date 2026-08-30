@@ -1,81 +1,129 @@
-# ⚜️ SAINTS GAMING ⚜️
-### *Gaming Community Since 2007*
+# Saints Gaming Web (`saints-gaming-web`)
+### Full-Stack Community Management System & Embedded 2.5D MMORPG Engine
 
-🌐 **Website:** [**SaintsGaming.net**](https://SaintsGaming.net) &nbsp;•&nbsp; 🕹️ **Creator:** **GioGimic** &nbsp;•&nbsp; 💬 **Discord:** [discord.saintsgaming.net](https://discord.saintsgaming.net)
+Saints Gaming Web (`saints-gaming-web`) is a full-stack community management system combined with an embedded 2.5D massively multiplayer online (MMO) game engine.
 
+This project solves the fragmentation of online gaming communities by unifying discussion forums, player support tools, content distribution, and real-time multiplayer browser gaming into a single integrated platform.
+
+The core technology stack is built on Next.js 15, React 19, TypeScript, Prisma ORM, Socket.io, and Babylon.js WebGL, with an optional Go socket server for high-throughput spatial multiplayer networking.
+
+---
+
+- **Repository:** [giogimic/SaintsGamingWeb](https://github.com/giogimic/SaintsGamingWeb)
+- **Live Platform:** [https://saintsgaming.net](https://saintsgaming.net)
+- **AI & LLM Context:** [`llms.txt`](llms.txt)
+- **Release Version:** `v2.1.530`
+- **Lead Developer:** **GioGimic**
+- **Community Discord:** [discord.saintsgaming.net](https://discord.saintsgaming.net)
+
+---
+
+## 1. What This Project Does
+
+Saints Gaming brings together web community management and live multiplayer gaming in a single codebase and server process:
+
+1. **2.5D Browser MMORPG (`/lobby`)**: A top-down WebGL multiplayer game built with Babylon.js. Players explore open maps, level up across a 27-skill progression system, engage in real-time PvE monster battles and turn-based collection battles, complete quests, and trade items.
+2. **In-Engine World Studio (`/studio`)**: A live in-browser level design suite for painting dual-grid visual and collision map layers, placing NPC spawners, writing dialogue trees, configuring loot tables, and playtesting maps in real time without restarting servers.
+3. **The Nexus Operations Hub (`/hub`)**: A unified interface combining community news articles, downloadable modpacks and graphical enhancements, and live 24/7 dedicated server monitors with ping meters and one-click connection details.
+4. **Social & Communication Layer**: An end-to-end encrypted floating messenger drawer, a short-form video feed with sound stem playback, and high-performance discussion forums.
+5. **Unified Economy & FiveM Integration**: A global gold standard linked to physical in-game banks, alongside a FiveM User Control Panel (UCP) for GTA V roleplay character management and banking.
+
+---
+
+## 2. Technical Architecture & Component Roles
+
+### Frontend Web Layer
+- **Framework**: Next.js 15 App Router with React 19 and TypeScript.
+- **Rendering Strategy**: React Server Components for fast initial data loading and SEO indexing; client-side React components for interactive interfaces.
+- **Styling**: Tailwind CSS with custom glassmorphism design tokens (`sg-glass`) and consistent dark mode aesthetics.
+
+### 2.5D Game Engine
+- **Renderer**: Babylon.js rendering an orthographic 2.5D camera perspective on an HTML5 WebGL canvas.
+- **Separation of Concerns**: Canvas rendering loops are decoupled from React UI components. Game state is stored in lightweight Zustand stores (`useGameStore`) to ensure consistent 60 FPS gameplay without unnecessary React re-renders.
+- **Audio Engine**: Procedural WebAudio synthesizer (`SoundSynthEngine`) generating sound effects for gathering, combat, and UI interactions without external audio assets.
+
+### Multiplayer Realtime Networking
+- **Development Realtime**: Built-in Socket.io running alongside Next.js in a single process (`server.ts`) on port 3000.
+- **Production Realtime**: Standalone Go MMO server (`the-lobby/`) on port 3001 featuring spatial Area of Interest (AOI) grid partitioning, binary movement delta compression, and client prediction with server reconciliation.
+
+### Persistence & Data Access
+- **ORM**: Prisma ORM with automated migrations and seed routines.
+- **Database Engine**: SQLite for local development (`prisma/db/dev.db`); MariaDB or MySQL for production environments.
+- **Authentication & RBAC**: Auth.js (NextAuth v5) supporting credentials and session authentication with numeric role tiers from Lurker (0) to Developer (1000).
+
+---
+
+## 3. Directory Layout
+
+```text
+saints-gaming-web/
+├── app/                        # Next.js 15 App Router pages, layouts, and server actions
+│   ├── (main)/                 # Main platform routes (Home, The Nexus, Forums, Streams, Lobby, Studio)
+│   ├── (ucp)/                  # FiveM User Control Panel routes
+│   ├── actions/                # Server Actions for authentication, game state, and forums
+│   ├── api/                    # REST API endpoints and internal Go MMO sync webhooks
+│   └── llms.txt/               # Plaintext route serving machine-readable context
+├── src/
+│   ├── engine/                 # Babylon.js WebGL game loop and WebAudio synthesizers
+│   ├── server/                 # Socket.io realtime bridge and Node.js game loop
+│   ├── shared/                 # Shared components (Navbar, GlobalBottomBar, AmbientBackground)
+│   └── web/                    # Client components, Zustand stores, and in-game HUD overlays
+├── the-lobby/                  # Standalone Go realtime MMO socket server
+├── docs/                       # Comprehensive technical manuals and game systems documentation
+├── prisma/                     # Database schema definitions and seed scripts
+├── llms.txt                    # Plaintext project summary for AI crawlers and agents
+└── scripts/                    # Automation scripts for setup, testing, and asset syncing
 ```
-   _____       _       _          _____                 _             
-  / ____|     (_)     | |        / ____|               (_)            
- | (___   __ _ _ _ __ | |_ ___  | |  __  __ _ _ __ ___  _ _ __   __ _ 
-  \___ \ / _` | | '_ \| __/ __| | | |_ |/ _` | '_ ` _ \| | '_ \ / _` |
-  ____) | (_| | | | | | |_\__ \ | |__| | (_| | | | | | | | | | | (_| |
- |_____/ \__,_|_|_| |_|\__|___/  \_____|\__,_|_| |_| |_|_|_| |_|\__, |
-                                                                  __/ |
-                                                                 |___/ 
-```
-
-![Release](https://img.shields.io/badge/Version-v2.1.527-purple?style=for-the-badge)
-![Next.js](https://img.shields.io/badge/Next.js_15-React_19-black?style=for-the-badge&logo=next.js)
-![Tailwind](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![Babylon.js](https://img.shields.io/badge/Babylon.js-2.5D_WebGL-F58025?style=for-the-badge&logo=babylonjs&logoColor=white)
-![Prisma](https://img.shields.io/badge/Prisma-SQLite%2FMariaDB-5A67D8?style=for-the-badge&logo=prisma&logoColor=white)
 
 ---
 
-## 🌟 Welcome to Saints Gaming
+## 4. Local Installation & Development
 
-**Saints Gaming** originally started out as an online gaming community back in **2007**. This repository is our brand new website, rebuilt from scratch as a modern full-stack community hub with embedded game tools and social features.
+### Prerequisites
+- **Node.js**: Version 22.13.0 or higher
+- **npm** or **pnpm**
+- **Go** (optional, required only for running the standalone Go MMO server)
 
-The idea here is simple: bring together a full gaming platform—forums, news, user profiles, a media feed, an in-game gold economy, and a 2.5D multiplayer world with built-in creative studio tools—all running right inside the web browser.
-
----
-
-## 🎮 What's On the Site
-
-- 💬 **Community Forums & News:** Discussion boards, member threads, gaming news articles, and community announcements.
-- 📱 **Integrated Feed & Shorts:** A social feed with video shorts playback, audio stems, comments, and creator tips.
-- 🪙 **Unified Gold Economy:** Earn gold through site activity and content views, tip creators directly on posts, and access your gold in-game at physical bank locations to transfer funds between your character inventory and account bank.
-- 🕹️ **The Lobby (2.5D Game):** An embedded browser game featuring top-down multiplayer movement, chat, exploration, and combat powered by Babylon.js WebGL.
-- 🛠️ **Saints Studio (`/studio`):** An in-browser map and world builder for admins and creators to paint map layers, set collision logic, place NPCs and spawners, write quest dialogues, and playtest maps instantly.
-- 👤 **User Control Panel (UCP):** Custom member profiles, avatars, showcase widgets, achievements, and settings.
-
----
-
-## 💻 Tech Stack
-
-- **Frontend & App:** Next.js 15+ (App Router), React 19, TypeScript
-- **Styling:** Tailwind CSS with custom glassmorphism design tokens
-- **Database:** Prisma ORM (SQLite for simple local setups, MariaDB/MySQL in production)
-- **Game Engine:** Babylon.js 2.5D orthographic renderer
-- **Multiplayer & Realtime:** Optional Go MMO socket server (`the-lobby/`) on `:3001` with Node.js socket fallback
-- **Authentication:** Auth.js (NextAuth v5) with credentials, sessions, and role permissions
-
----
-
-## 🚀 Running Locally
-
-Getting the project up and running locally is straightforward:
+### Setup Steps
 
 ```bash
-# 1. Automated setup & dependency install (copies .env if needed and sets up database)
-./scripts/setup.sh
+# 1. Clone the repository
+git clone https://github.com/giogimic/SaintsGamingWeb.git
+cd SaintsGamingWeb
 
-# 2. Run the dev server
+# 2. Run automated setup (copies .env.example, generates Prisma client, initializes database)
+npm run setup
+
+# 3. Start the unified development server (Next.js + Socket.io + Game Engine on :3000)
 npm run dev
 
-# 3. (Optional) Run The Lobby Go server for realtime multiplayer on :3001
+# 4. (Optional) Start the Go MMO realtime server on :3001
 ./the-lobby/scripts/setup-the-lobby.sh --full
 
-# 4. Run automated tests
+# 5. Run the automated test suite
 npm test
 ```
 
-Once running, open [http://localhost:3000](http://localhost:3000) in your browser.
+Once started, open [http://localhost:3000](http://localhost:3000) in your web browser.
 
 ---
 
-## 💬 Community & Feedback
+## 5. Technical Documentation & Guides
 
-If you want to hang out, chat about games, share feedback, or follow development updates:
-- **Website:** [SaintsGaming.net](https://SaintsGaming.net)
+For deep technical specifications, mathematical formulas, and developer guides:
+
+- **[Game Systems Architecture](docs/game-systems/architecture-and-loop.md)**: WebGL loop, movement interpolation, and decoupled HUD architecture.
+- **[Skills & Progression](docs/game-systems/skills-and-progression.md)**: 27-skill proficiency formulas, gathering mechanics, and max capes.
+- **[Networking & Multiplayer](docs/game-systems/networking-and-multiplayer.md)**: Go socket server, AOI interest management, and binary movement codecs.
+- **[Studio Level Editor Guide](docs/studio/studio-architecture.md)**: Dual-grid painting, entity placers, and live catalog tooling.
+- **[In-App Wiki Portal](https://saintsgaming.net/wiki)**: Searchable documentation browser built into the platform.
+
+---
+
+## 6. Community & Licensing
+
+- **Live Website:** [SaintsGaming.net](https://SaintsGaming.net)
 - **Discord:** [discord.saintsgaming.net](https://discord.saintsgaming.net)
+- **Repository:** [giogimic/SaintsGamingWeb](https://github.com/giogimic/SaintsGamingWeb)
+- **Author:** **GioGimic**
+- **Copyright:** © 2007–2026 Saints Gaming Network. All rights reserved.
