@@ -79,11 +79,11 @@ export function SGLogo3D({ className, size = 200, ...props }: SVGProps<SVGSVGEle
         ))}
       </g>
 
-      {/* Letters */}
+      {/* Letters (White with Black Outlines) */}
       <g filter={`url(#${filterId})`}>
         <path
           d={S_PATH}
-          fill={BRAND_PINK}
+          fill={BRAND_WHITE}
           stroke={BRAND_BLACK}
           strokeWidth="3.5"
           strokeLinejoin="miter"

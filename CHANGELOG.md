@@ -1,3 +1,7 @@
+# 2.1.513
+- **Contrast & Text Outline Enhancement**: Audited text rendering across logos, SVG badges, and HUD indicators. Replaced dark-on-dark fills with crisp pure white text (`#FFFFFF`) with solid black pixel outlines (`#000000`) and soft drop-shadows across `SGLogo`, `SGVoxelSvgLogo`, `SGLogo3D`, `public/images/sg-logo.svg`, World Atlas badges, and Studio indicator pills.
+- **Studio System Integrity Audit**: Conducted an exhaustive audit of Studio tile authoring, selection layers, grid/freeform slicing, footprint stamping, and Babylon live map data binding to guarantee zero regressions or broken selection states.
+
 # 2.1.512
 - **Studio Freeform Crop Stamping Fix**: Re-architected Slicer Mode in `TilesetPicker.tsx` to ensure unconstrained, pixel-accurate freeform dragging across custom tilesheets without premature grid-snapping.
 - **Dynamic Footprint & Multi-Tile Pattern Generation**: Crops dynamically calculate the multi-tile bounding matrix (`spanW`, `spanH`), set the active GID pattern, activate `'footprint'` stamp mode, and enable 1-click painting onto active visual layers.

@@ -2717,7 +2717,7 @@ export default function TilesetPicker({
               {hoveredTile && !imgError && (
                 <span className="text-[10px] text-cyan-400 font-bold">Hover: ID {hoveredTile.gid}</span>
               )}
-              <span className="font-bold text-black bg-amber-400 px-2 py-0.5 rounded shadow">{activeBrushTileId}</span>
+              <span className="font-bold text-white bg-amber-600 px-2 py-0.5 rounded shadow border border-amber-400/50 [text-shadow:_0_1px_2px_rgb(0_0_0)]">{activeBrushTileId}</span>
             </div>
           </div>
         </>
