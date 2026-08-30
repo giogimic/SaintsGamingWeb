@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { Button, buttonVariants } from "@/shared/ui/button";
 import { SGMicro3DLogo } from "@/web/components/landing/sg-logo-3d-micro";
-import { SGVoxelSvgLogo } from "@/web/components/landing/sg-logo-voxel-svg";
 import { GlobalSearch } from "@/shared/components/global-search";
 import { NotificationsMenu } from "@/shared/components/notifications-menu";
 import { ThemeSwitcher } from "@/shared/components/theme-switcher";
@@ -336,8 +335,10 @@ export function Footer({ className, discordLink = "https://discord.saintsgaming.
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           {/* Brand Column */}
           <div className="col-span-1 md:col-span-2 flex flex-col gap-4">
-            <Link href="/home" className="flex items-center gap-3">
-              <SGVoxelSvgLogo size={32} animate={false} />
+            <Link href="/home" className="flex items-center gap-3 group">
+              <div className="transition-transform group-hover:scale-105">
+                <SGMicro3DLogo size={36} />
+              </div>
               <span className="font-bold text-xl sg-text-gradient tracking-tight">Saints Gaming</span>
             </Link>
             <p className="text-muted-foreground text-sm max-w-sm mt-2 leading-relaxed">
@@ -391,7 +392,7 @@ export function Footer({ className, discordLink = "https://discord.saintsgaming.
             © {new Date().getFullYear()} Saints Gaming. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60 border border-border/30 rounded-full px-3 py-1 bg-muted/20">
-            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.524"}</span>
+            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.525"}</span>
           </div>
 
 

@@ -1,3 +1,7 @@
+# 2.1.525
+- **Unified 3D Voxel Brand Logo in Footer**: Synchronized the Footer brand logo to use `<SGMicro3DLogo size={36} />` with hover transitions, ensuring complete aesthetic and visual identity consistency between the top Navbar, mobile navigation drawer, and Footer across the platform.
+- **Version Bump**: Updated release version to `v2.1.525`.
+
 # 2.1.524
 - **Next.js Server Action Build Fix (`invalid-use-server-value`)**: Fixed Next.js build compilation error on Docker / production builds for `/admin/seo` by ensuring only async functions are exported from `"use server"` action modules (`actions.ts`), keeping internal constants encapsulated.
 - **Admin Floating Window Underlay**: Enhanced `AdminOverlayShell` to render the user's active underlying page (`/`, `/forum`, `/news`, `/lobby`, etc.) directly behind the floating OS window in real time, supporting drag/resize transparency and minimize-to-dock capsule mode.
