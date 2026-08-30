@@ -2,13 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  X, Layers, ImageIcon, Upload, Scissors, Search, Tag, Sparkles, Package
+  X, Layers, ImageIcon, Upload, Scissors
 } from 'lucide-react';
 import AssetEditor from './AssetEditor';
 import SpriteBrowser from './SpriteBrowser';
 import { AssetUploadView } from './AssetUploadView';
 import { SpritesheetSlicer } from './SpritesheetSlicer';
-import AssetPackInstaller from './AssetPackInstaller';
 import { useGameStore } from '../store';
 import type { GameAssetItem } from '@/engine/assets/AssetManager';
 
@@ -22,7 +21,7 @@ export const FullScreenAssetBrowser: React.FC<FullScreenAssetBrowserProps> = ({
   onClose,
 }) => {
   const showToast = useGameStore((s) => s.showToast);
-  const [activeTab, setActiveTab] = useState<'catalog' | 'sprites' | 'packs' | 'upload' | 'slicer'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'sprites' | 'upload' | 'slicer'>('catalog');
   const [slicerSource, setSlicerSource] = useState<{ id: string; filename: string; storagePath: string } | undefined>(undefined);
 
   useEffect(() => {
@@ -76,16 +75,6 @@ export const FullScreenAssetBrowser: React.FC<FullScreenAssetBrowserProps> = ({
               <ImageIcon className="w-3.5 h-3.5" /> Sprites
             </button>
             <button
-              onClick={() => setActiveTab('packs')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                activeTab === 'packs'
-                  ? 'bg-amber-500/30 text-amber-300 border border-amber-500/40 shadow'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-              }`}
-            >
-              <Package className="w-3.5 h-3.5" /> Asset Packs
-            </button>
-            <button
               onClick={() => setActiveTab('upload')}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'upload'
@@ -137,13 +126,6 @@ export const FullScreenAssetBrowser: React.FC<FullScreenAssetBrowserProps> = ({
               if (asset) {
                 showToast(`Selected sprite: ${asset.source}`);
               }
-            }}
-          />
-        )}
-        {activeTab === 'packs' && (
-          <AssetPackInstaller
-            onInstalled={() => {
-              showToast('Asset packs updated.');
             }}
           />
         )}

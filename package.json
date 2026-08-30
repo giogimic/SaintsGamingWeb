@@ -1,6 +1,6 @@
 {
   "name": "saints-gaming-web",
-  "version": "2.1.531",
+  "version": "2.1.532",
   "license": "BSL-1.1",
   "private": true,
   "engines": {
@@ -20,7 +20,6 @@
     "smoke": "bash ./scripts/smoke-staging.sh",
     "smoke:lobby": "tsx scripts/smoke-lobby-mp.ts",
     "smoke:studio": "tsx scripts/smoke-studio-map-save.ts",
-    "assets:install": "tsx scripts/install-asset-pack.ts",
     "sync:assets": "tsx scripts/sync-local-assets.ts",
     "ensure:starter-heroes": "tsx scripts/ensure-starter-heroes.ts",
     "ensure:world-profiles": "tsx scripts/ensure-world-profiles.ts",
