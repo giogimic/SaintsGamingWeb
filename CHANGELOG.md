@@ -1,3 +1,7 @@
+# 2.1.504
+- **Automated Docker & Server Disk Cleanup Script**: Created `scripts/cleanup-disk.sh` (and `npm run clean:disk`) to prune Docker BuildKit build cache (`docker builder prune -a -f`), dangling images (`docker image prune -f`), stopped containers, unused networks, vacuum systemd journal logs to 100MB, truncate build logs, and prune database backups older than 7 days.
+- **Proactive Update Disk Space Guard**: Enhanced `scripts/update.sh` to automatically check free space before `git fetch` (< 5GB free triggers automated pruning) and automatically prune dangling layers and excessive build cache before and after Docker container rebuilds, preventing "No space left on device" crashes.
+
 # 2.1.503
 - **Seamless Video Playback & Zero-Black-Screen Overhaul**: Eliminated black video preview screens across the social feed and video player by implementing automatic `#t=0.001` media fragment decoding, smooth skeleton shimmer state, and opacity crossfade upon video data availability.
 - **Dedicated High-Performance FeedVideoPlayer**: Created `FeedVideoPlayer.tsx` featuring dynamic aspect ratio adaptation (9:16 portrait, 16:9 widescreen, 4:5 social), ambient blurred glow backdrop matching video content, strict viewport-centered auto-play/auto-pause (`IntersectionObserver`), interactive scrub bar, timestamp badges, tap-to-pause with central pop icon animation, and double-tap heart animations with floating particle bursts.
