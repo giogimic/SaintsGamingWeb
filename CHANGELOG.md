@@ -1,3 +1,12 @@
+# 2.1.548
+- **The Nexus Mobile-Friendly Upgrade**:
+  - **Sticky Mobile Segmented Controller**: Implemented an ultra-responsive, touch-optimized glassmorphic segmented tab bar for mobile screens (< lg) with active gold pill highlights and live count badges.
+  - **Live Search & Game Filters**: Added real-time client-side search across Community News, Modpacks, and Dedicated Game Servers, complete with game category filter pills.
+  - **Mobile-Optimized News List**: Redesigned the news list view with compact side-by-side thumbnails (`w-20 h-20 sm:w-36 sm:h-24`), preventing endless vertical scrolling on smartphones.
+  - **Touch-Friendly Server Controls**: Added one-tap server IP copy with instant checkmark visual feedback, active player percentage bars, and live refresh polling.
+  - **Direct Nexus Redirect**: Added `/nexus` route alias redirecting cleanly to `/hub`.
+- **Version Bump**: Bumped release version to `v2.1.548` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.547
 - **Full-Bleed Studio Viewport & Gap Elimination**:
   - **Eliminated Viewport Window Frame**: Replaced the floating `StudioCanvasViewport` wrapper with direct full-bleed `GameCanvasBabylon` mounting across `/studio`, removing the artificial window header, 36px/72px window offsets, and eliminating the bottom browser gap completely.
