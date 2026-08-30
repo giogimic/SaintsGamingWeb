@@ -49,7 +49,9 @@ import { Grid } from "@giphy/react-components";
 import { FeedVideoPlayer } from "@/web/components/feed/FeedVideoPlayer";
 import { UploadProgressBar } from "@/web/components/feed/UploadProgressBar";
 import { uploadSocialFileWithProgress, UploadProgressState } from "@/web/lib/upload-client";
-import { captureVideoFrame } from "@/web/lib/video-thumbnail";
+import { captureVideoFrame, uploadVideoPosterFile } from "@/web/lib/video-thumbnail";
+import { prewarmAdjacentFeedMedia } from "@/web/lib/hls-prewarm";
+import Hls from "hls.js";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
@@ -74,9 +76,9 @@ const isVideo = (url: string) => {
   if (!url) return false;
   try {
     const cleanPath = url.split("?")[0].split("#")[0];
-    return /\.(mp4|webm|mov|ogg|ogv|mkv|m4v)$/i.test(cleanPath);
+    return /\.(mp4|webm|mov|ogg|ogv|mkv|m4v|m3u8)$/i.test(cleanPath);
   } catch {
-    return /\.(mp4|webm|mov|ogg|ogv|mkv|m4v)($|\?|#)/i.test(url);
+    return /\.(mp4|webm|mov|ogg|ogv|mkv|m4v|m3u8)($|\?|#)/i.test(url);
   }
 };
 
@@ -89,6 +91,106 @@ function formatVideoSrc(url: string): string {
     return `${url.substring(0, hashIndex)}#t=0.001`;
   }
   return `${url}#t=0.001`;
+}
+
+function ShortsVideoStage({
+  src,
+  poster,
+  playing,
+  muted,
+  className = "",
+}: {
+  src: string;
+  poster?: string | null;
+  playing: boolean;
+  muted: boolean;
+  className?: string;
+}) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !src) return;
+
+    const isHls = src.includes(".m3u8");
+
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    if (isHls && Hls.isSupported()) {
+      const hls = new Hls({
+        startLevel: 0,
+        capLevelToPlayerSize: true,
+        autoStartLoad: true,
+        maxBufferLength: 12,
+        maxMaxBufferLength: 24,
+        enableWorker: true,
+        lowLatencyMode: true,
+      });
+      hls.loadSource(src);
+      hls.attachMedia(video);
+      hlsRef.current = hls;
+
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              hls.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              hls.recoverMediaError();
+              break;
+            default:
+              hls.destroy();
+              video.src = formatVideoSrc(src);
+              break;
+          }
+        }
+      });
+    } else if (isHls && video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = src;
+    } else {
+      video.src = formatVideoSrc(src);
+    }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [src]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (playing) {
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
+  }, [playing]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = muted;
+  }, [muted]);
+
+  return (
+    <video
+      ref={videoRef}
+      poster={poster || undefined}
+      playsInline
+      loop
+      muted={muted}
+      autoPlay={playing}
+      className={className}
+    />
+  );
 }
 
 export function TheFeed() {
@@ -557,16 +659,21 @@ export function TheFeed() {
         const data = await promise;
         setMediaUrl(data.url);
         
-        // If file is a video, automatically extract a frame screenshot as default thumbnail
-        if (file.type.startsWith("video/") || isVideo(file.name) || isVideo(data.url)) {
+        // If server pipeline returned a clean posterUrl, use it immediately!
+        if (data.posterUrl) {
+          setThumbnailUrl(data.posterUrl);
+        } else if (file.type.startsWith("video/") || isVideo(file.name) || isVideo(data.url)) {
           setIsExtractingThumbnail(true);
           captureVideoFrame(file, 0.5)
-            .then((frameDataUrl) => {
-              setThumbnailUrl(frameDataUrl);
+            .then(async (frameDataUrl) => {
+              try {
+                const cleanUrl = await uploadVideoPosterFile(frameDataUrl);
+                setThumbnailUrl(cleanUrl);
+              } catch {
+                setThumbnailUrl(frameDataUrl);
+              }
             })
-            .catch(() => {
-              // Fallback
-            })
+            .catch(() => {})
             .finally(() => {
               setIsExtractingThumbnail(false);
             });
@@ -616,7 +723,12 @@ export function TheFeed() {
       setIsExtractingThumbnail(true);
       const currentTime = previewVideoRef.current.currentTime || 0.5;
       const dataUrl = await captureVideoFrame(mediaUrl, currentTime);
-      setThumbnailUrl(dataUrl);
+      try {
+        const cleanUrl = await uploadVideoPosterFile(dataUrl);
+        setThumbnailUrl(cleanUrl);
+      } catch {
+        setThumbnailUrl(dataUrl);
+      }
       toast.success(`Captured video frame at ${currentTime.toFixed(1)}s!`);
     } catch {
       toast.error("Failed to capture frame from video");
@@ -1121,7 +1233,7 @@ export function TheFeed() {
                 />
               ) : (
                 <div 
-                  className="rounded-2xl overflow-hidden border border-border/40 bg-black/40 flex items-center justify-center max-h-[520px] relative group/img cursor-pointer shadow-xs"
+                  className="rounded-2xl overflow-hidden bg-black/60 flex items-center justify-center max-h-[520px] relative group/img cursor-pointer shadow-md"
                   onClick={() => setViewingShortsPost(post)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1131,7 +1243,7 @@ export function TheFeed() {
                     className="max-h-[520px] w-auto max-w-full object-contain hover:scale-[1.01] transition-transform duration-200" 
                   />
                   <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                    <div className="p-2 rounded-full bg-black/60 text-white backdrop-blur-sm shadow-md">
+                    <div className="p-2.5 rounded-full bg-black/60 text-white backdrop-blur-md shadow-md">
                       <Maximize2 className="w-4 h-4" />
                     </div>
                   </div>
@@ -1475,13 +1587,36 @@ export function TheFeed() {
     ? displayPosts.findIndex((p: any) => p.id === viewingShortsPost.id) 
     : -1;
 
+  // Deterministic adjacent video pre-warming in full-screen Shorts mode
+  useEffect(() => {
+    if (!viewingShortsPost || currentShortsIndex === -1) return;
+    const adjacent = [
+      displayPosts[currentShortsIndex + 1]?.mediaUrl,
+      displayPosts[currentShortsIndex + 2]?.mediaUrl,
+      displayPosts[currentShortsIndex - 1]?.mediaUrl,
+    ];
+    prewarmAdjacentFeedMedia(adjacent);
+  }, [viewingShortsPost, currentShortsIndex, displayPosts]);
+
+  // Deterministic adjacent video pre-warming in standard Feed Stream
+  useEffect(() => {
+    if (!activePlayingVideoId) return;
+    const idx = displayPosts.findIndex((p: any) => p.id === activePlayingVideoId);
+    if (idx !== -1) {
+      prewarmAdjacentFeedMedia([
+        displayPosts[idx + 1]?.mediaUrl,
+        displayPosts[idx + 2]?.mediaUrl,
+      ]);
+    }
+  }, [activePlayingVideoId, displayPosts]);
+
   return (
     <div className="w-full flex flex-col xl:flex-row items-start justify-center gap-6 relative min-h-screen">
       
-      {/* Full-Screen Immersive Shorts / Reel Swiper Modal with Adjacent Preloading */}
+      {/* Full-Screen Immersive Shorts / Reel Swiper Modal with Deterministic Pre-warming & HLS */}
       {mounted && viewingShortsPost && createPortal(
         <div 
-          className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[999999] bg-black/95 backdrop-blur-2xl flex items-center justify-center select-none overflow-hidden m-0 p-0 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-3xl flex items-center justify-center select-none overflow-hidden m-0 p-0 animate-in fade-in duration-200"
           onTouchStart={(e) => {
             touchStartY.current = e.touches[0].clientY;
           }}
@@ -1496,16 +1631,24 @@ export function TheFeed() {
             touchStartY.current = null;
           }}
         >
+          {/* Ambient Color-Reactive Backdrop */}
+          {viewingShortsPost.mediaUrl && !isArchive(viewingShortsPost.mediaUrl) && (
+            <div 
+              className="absolute inset-0 bg-cover bg-center blur-3xl opacity-35 scale-125 pointer-events-none transition-opacity duration-700"
+              style={{ backgroundImage: `url(${viewingShortsPost.thumbnailUrl || viewingShortsPost.mediaUrl})` }}
+            />
+          )}
+
           {/* Top Bar Controls */}
           <div className="absolute top-4 left-4 z-50 flex items-center gap-3">
             <button 
               onClick={() => { setViewingShortsPost(null); setIsShortsCommentsOpen(false); }}
-              className="p-2.5 bg-black/70 hover:bg-black/95 border border-white/20 rounded-full text-white backdrop-blur-md transition-all shadow-lg hover:scale-105"
+              className="p-2.5 bg-black/60 hover:bg-black/90 text-white rounded-full backdrop-blur-md transition-all shadow-lg hover:scale-105"
               title="Close (Esc)"
             >
               <X className="w-5 h-5" />
             </button>
-            <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/70 border border-white/20 text-white backdrop-blur-md text-xs font-bold shadow-md">
+            <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/60 text-white backdrop-blur-md text-xs font-bold shadow-md">
               <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
               <span>Saints Reel</span>
             </div>
@@ -1514,7 +1657,7 @@ export function TheFeed() {
           <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
             <button 
               onClick={() => setIsShortsMuted(!isShortsMuted)}
-              className="p-2.5 bg-black/70 hover:bg-black/95 border border-white/20 rounded-full text-white backdrop-blur-md transition-all shadow-lg hover:scale-105"
+              className="p-2.5 bg-black/60 hover:bg-black/90 text-white rounded-full backdrop-blur-md transition-all shadow-lg hover:scale-105"
               title={isShortsMuted ? "Unmute (M)" : "Mute (M)"}
             >
               {isShortsMuted ? <VolumeX className="w-5 h-5 text-red-400" /> : <Volume2 className="w-5 h-5 text-green-400" />}
@@ -1522,72 +1665,44 @@ export function TheFeed() {
           </div>
 
           {/* Up & Down Floating Navigation Chevrons on PC */}
-          <div className="absolute right-4 lg:right-8 top-1/2 -translate-y-1/2 hidden md:flex flex-col items-center gap-3 z-40">
+          <div className="absolute right-4 lg:right-6 top-1/2 -translate-y-1/2 hidden md:flex flex-col items-center gap-3 z-40">
             <button 
               onClick={() => navigateShorts(-1)}
               disabled={currentShortsIndex === 0}
-              className="p-3.5 rounded-full bg-black/70 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all disabled:opacity-20 disabled:cursor-not-allowed hover:scale-110 shadow-xl"
+              className="p-3.5 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md transition-all disabled:opacity-20 disabled:cursor-not-allowed hover:scale-110 shadow-xl"
               title="Previous (Scroll Up / ↑)"
             >
               <ChevronUp className="w-6 h-6" />
             </button>
-            <span className="text-[10px] font-mono uppercase tracking-widest text-white/50 bg-black/50 px-2 py-0.5 rounded-full backdrop-blur-xs">
+            <span className="text-[10px] font-mono uppercase tracking-widest text-white/50 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-xs">
               Scroll
             </span>
             <button 
               onClick={() => navigateShorts(1)}
               disabled={currentShortsIndex === displayPosts.length - 1}
-              className="p-3.5 rounded-full bg-black/70 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all disabled:opacity-20 disabled:cursor-not-allowed hover:scale-110 shadow-xl"
+              className="p-3.5 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md transition-all disabled:opacity-20 disabled:cursor-not-allowed hover:scale-110 shadow-xl"
               title="Next (Scroll Down / ↓)"
             >
               <ChevronDown className="w-6 h-6" />
             </button>
           </div>
 
-          {/* Adjacent Video Prefetching to eliminate buffer delay and black flashes */}
-          {currentShortsIndex < displayPosts.length - 1 && displayPosts[currentShortsIndex + 1]?.mediaUrl && isVideo(displayPosts[currentShortsIndex + 1].mediaUrl) && (
-            <video
-              src={formatVideoSrc(displayPosts[currentShortsIndex + 1].mediaUrl)}
-              preload="auto"
-              muted
-              className="hidden"
-            />
-          )}
-          {currentShortsIndex > 0 && displayPosts[currentShortsIndex - 1]?.mediaUrl && isVideo(displayPosts[currentShortsIndex - 1].mediaUrl) && (
-            <video
-              src={formatVideoSrc(displayPosts[currentShortsIndex - 1].mediaUrl)}
-              preload="auto"
-              muted
-              className="hidden"
-            />
-          )}
-
-          {/* Main Shorts Container Frame */}
-          <div className="w-full max-w-[480px] md:max-w-3xl lg:max-w-4xl xl:max-w-5xl h-[94vh] md:h-[88vh] md:max-h-[920px] relative rounded-3xl overflow-hidden bg-black/90 border border-white/20 shadow-2xl flex items-center justify-center mx-3 sm:mx-6">
+          {/* Main Reel Viewport Stage: Full-bleed on Mobile, Centered 9:16 Stage on Desktop */}
+          <div className="w-full h-full md:w-auto md:min-w-[400px] md:max-w-[460px] md:h-[92vh] md:max-h-[880px] relative md:rounded-3xl overflow-hidden bg-black shadow-2xl flex items-center justify-center transition-all duration-300">
             
-            {/* Ambient Blurred Background */}
-            {viewingShortsPost.mediaUrl && !isArchive(viewingShortsPost.mediaUrl) && (
-              <div 
-                className="absolute inset-0 bg-cover bg-center blur-3xl opacity-35 scale-125 pointer-events-none transition-opacity duration-500"
-                style={{ backgroundImage: `url(${viewingShortsPost.mediaUrl})` }}
-              />
-            )}
-
             {/* Central Media Content */}
             <div 
               className="w-full h-full relative flex items-center justify-center cursor-pointer"
               onClick={handleShortsTap}
             >
               {viewingShortsPost.mediaUrl && isVideo(viewingShortsPost.mediaUrl) ? (
-                <video
+                <ShortsVideoStage
                   key={viewingShortsPost.id}
-                  src={formatVideoSrc(viewingShortsPost.mediaUrl)}
-                  poster={viewingShortsPost.thumbnailUrl || undefined}
-                  autoPlay={shortsPlaying}
-                  loop
-                  playsInline
+                  src={viewingShortsPost.mediaUrl}
+                  poster={viewingShortsPost.thumbnailUrl}
+                  playing={shortsPlaying}
                   muted={isShortsMuted}
-                  className="max-h-[88vh] md:max-h-[84vh] w-auto max-w-full object-contain mx-auto bg-black rounded-2xl transition-opacity duration-300"
+                  className="w-full h-full object-contain md:object-cover mx-auto bg-black transition-opacity duration-300"
                 />
               ) : viewingShortsPost.mediaUrl && isArchive(viewingShortsPost.mediaUrl) ? (
                 <div className="flex flex-col items-center justify-center p-8 text-center bg-card/60 backdrop-blur-md rounded-2xl border border-white/10 m-4">
@@ -1609,12 +1724,12 @@ export function TheFeed() {
                   key={viewingShortsPost.id}
                   src={viewingShortsPost.mediaUrl} 
                   alt="Shorts media" 
-                  className="max-h-[88vh] md:max-h-[84vh] w-auto max-w-full object-contain mx-auto rounded-2xl shadow-xl" 
+                  className="w-full h-full object-contain md:object-cover mx-auto shadow-xl" 
                 />
               ) : (
                 <div className="w-full h-full flex flex-col justify-between p-8 bg-gradient-to-b from-primary/20 via-background/80 to-black text-white">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full overflow-hidden relative bg-muted border border-white/20">
+                    <div className="w-12 h-12 rounded-full overflow-hidden relative bg-muted ring-1 ring-white/20">
                       {viewingShortsPost.author?.image ? (
                         <Image src={viewingShortsPost.author.image} alt={viewingShortsPost.author.username} fill className="object-cover" />
                       ) : (
@@ -1648,24 +1763,27 @@ export function TheFeed() {
               {/* Play/Pause Center Indicator */}
               {!shortsPlaying && viewingShortsPost.mediaUrl && isVideo(viewingShortsPost.mediaUrl) && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none animate-in fade-in zoom-in duration-150">
-                  <div className="p-5 rounded-full bg-black/70 text-white backdrop-blur-md border border-white/20 shadow-2xl">
+                  <div className="p-5 rounded-full bg-black/70 text-white backdrop-blur-md shadow-2xl">
                     <Play className="w-10 h-10 fill-white" />
                   </div>
                 </div>
               )}
 
-              {/* Blooming Double-Tap Heart Animation */}
-              {showHeartAnimation && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
-                  <motion.div
-                    initial={{ scale: 0.3, opacity: 0 }}
-                    animate={{ scale: [0.3, 1.4, 1], opacity: [0, 1, 0] }}
-                    transition={{ duration: 0.8 }}
-                  >
-                    <Heart className="w-28 h-28 text-red-500 fill-red-500 drop-shadow-2xl" />
-                  </motion.div>
-                </div>
-              )}
+              {/* Blooming Double-Tap Particle Heart Burst */}
+              <AnimatePresence>
+                {showHeartAnimation && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-40">
+                    <motion.div
+                      initial={{ scale: 0.2, opacity: 0, rotate: -15 }}
+                      animate={{ scale: [0.2, 1.4, 1.1], opacity: [0, 1, 0], y: -40, rotate: 12 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.85, ease: "easeOut" }}
+                    >
+                      <Heart className="w-28 h-28 text-red-500 fill-red-500 drop-shadow-[0_0_25px_rgba(239,68,68,0.85)]" />
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
 
               {/* Gradient Bottom Shadow */}
               <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
@@ -1697,9 +1815,13 @@ export function TheFeed() {
                   </div>
                 )}
 
-                {/* Audio Ticker */}
-                <div className="flex items-center gap-2 text-[11px] text-white/80 mt-1 bg-black/40 px-2.5 py-1 rounded-full w-fit border border-white/10 backdrop-blur-xs">
-                  <Music className="w-3 h-3 text-primary animate-spin" style={{ animationDuration: '4s' }} />
+                {/* Audio Ticker with Live Equalizer Visualizer */}
+                <div className="flex items-center gap-2 text-[11px] text-white/90 mt-1 bg-black/40 px-3 py-1 rounded-full w-fit border border-white/10 backdrop-blur-sm">
+                  <div className="flex items-end gap-0.5 h-3 px-0.5 shrink-0">
+                    <span className="w-0.5 h-full bg-primary rounded-full animate-[pulse_0.6s_ease-in-out_infinite]" />
+                    <span className="w-0.5 h-2 bg-primary rounded-full animate-[pulse_0.8s_ease-in-out_infinite_0.2s]" />
+                    <span className="w-0.5 h-3 bg-primary rounded-full animate-[pulse_0.5s_ease-in-out_infinite_0.4s]" />
+                  </div>
                   <span className="truncate max-w-[180px]">
                     {viewingShortsPost.backgroundTrackUrl ? "Background Audio Stem" : `Original Audio - @${viewingShortsPost.author?.username}`}
                   </span>
@@ -1725,7 +1847,7 @@ export function TheFeed() {
                   <button 
                     onClick={() => handleSubscribe(viewingShortsPost.author.id)}
                     className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground rounded-full p-0.5 hover:scale-110 transition-transform shadow-md"
-                    title="Subscribe"
+                    title="Follow Creator"
                   >
                     <Plus className="w-3 h-3" />
                   </button>
@@ -1736,7 +1858,7 @@ export function TheFeed() {
                   onClick={() => handleLike(viewingShortsPost.id)}
                   className="flex flex-col items-center gap-1 text-white hover:scale-110 transition-transform"
                 >
-                  <div className={`p-2.5 rounded-full backdrop-blur-md border border-white/10 shadow-lg ${viewingShortsPost.hasLiked ? 'bg-red-500/20 text-red-500' : 'bg-black/50 text-white'}`}>
+                  <div className={`p-2.5 rounded-full backdrop-blur-md shadow-lg transition-colors ${viewingShortsPost.hasLiked ? 'bg-red-500/20 text-red-500' : 'bg-black/50 text-white'}`}>
                     <Heart className={`w-6 h-6 ${viewingShortsPost.hasLiked ? 'fill-red-500 text-red-500' : ''}`} />
                   </div>
                   <span className="text-[11px] font-bold drop-shadow-md">{viewingShortsPost.likesCount || 0}</span>
@@ -1752,7 +1874,7 @@ export function TheFeed() {
                   }}
                   className="flex flex-col items-center gap-1 text-white hover:scale-110 transition-transform"
                 >
-                  <div className={`p-2.5 rounded-full backdrop-blur-md border border-white/10 shadow-lg ${isShortsCommentsOpen ? 'bg-primary text-primary-foreground' : 'bg-black/50 text-white'}`}>
+                  <div className={`p-2.5 rounded-full backdrop-blur-md shadow-lg transition-colors ${isShortsCommentsOpen ? 'bg-primary text-primary-foreground' : 'bg-black/50 text-white'}`}>
                     <MessageSquare className="w-6 h-6" />
                   </div>
                   <span className="text-[11px] font-bold drop-shadow-md">{viewingShortsPost.repliesCount || 0}</span>
@@ -1763,7 +1885,7 @@ export function TheFeed() {
                   onClick={() => handleBookmark(viewingShortsPost.id)}
                   className="flex flex-col items-center gap-1 text-white hover:scale-110 transition-transform"
                 >
-                  <div className={`p-2.5 rounded-full backdrop-blur-md border border-white/10 shadow-lg ${viewingShortsPost.hasBookmarked ? 'bg-yellow-500/20 text-yellow-500' : 'bg-black/50 text-white'}`}>
+                  <div className={`p-2.5 rounded-full backdrop-blur-md shadow-lg transition-colors ${viewingShortsPost.hasBookmarked ? 'bg-yellow-500/20 text-yellow-500' : 'bg-black/50 text-white'}`}>
                     <Bookmark className={`w-6 h-6 ${viewingShortsPost.hasBookmarked ? 'fill-yellow-500 text-yellow-500' : ''}`} />
                   </div>
                   <span className="text-[11px] font-bold drop-shadow-md">Save</span>
@@ -1774,7 +1896,7 @@ export function TheFeed() {
                   onClick={() => handleShare(viewingShortsPost)}
                   className="flex flex-col items-center gap-1 text-white hover:scale-110 transition-transform"
                 >
-                  <div className="p-2.5 rounded-full bg-black/50 text-white backdrop-blur-md border border-white/10 shadow-lg">
+                  <div className="p-2.5 rounded-full bg-black/50 text-white backdrop-blur-md shadow-lg">
                     <Share className="w-6 h-6" />
                   </div>
                   <span className="text-[11px] font-bold drop-shadow-md">{viewingShortsPost.shareCount || 0}</span>
@@ -1783,7 +1905,7 @@ export function TheFeed() {
             </div>
           </div>
 
-          {/* Slide-Over Comments Drawer */}
+          {/* Slide-Over Comments Drawer (Docked alongside video on desktop) */}
           {isShortsCommentsOpen && (
             <div 
               className="fixed inset-x-0 bottom-0 md:inset-y-0 md:right-0 md:left-auto w-full md:w-96 bg-background/95 backdrop-blur-2xl border-t md:border-t-0 md:border-l border-border/60 z-50 flex flex-col h-[70vh] md:h-full shadow-2xl animate-in slide-in-from-bottom md:slide-in-from-right duration-300"

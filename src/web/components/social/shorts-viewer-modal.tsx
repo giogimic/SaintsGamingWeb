@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
+import Hls from "hls.js";
+import { prewarmAdjacentFeedMedia } from "@/web/lib/hls-prewarm";
 import { Input } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
 import { toast } from "sonner";
@@ -28,7 +30,7 @@ interface ShortsViewerModalProps {
 }
 
 const isArchive = (url: string) => /\.(zip|rar|7z|tar|bz2|gz)$/i.test(url);
-const isVideo = (url: string) => /\.(mp4|webm|mov|ogg|ogv|mkv|m4v)$/i.test(url);
+const isVideo = (url: string) => /\.(mp4|webm|mov|ogg|ogv|mkv|m4v|m3u8)$/i.test(url);
 
 function formatVideoSrc(url: string): string {
   if (!url) return "";
@@ -67,6 +69,7 @@ export function ShortsViewerModal({
   const touchStartY = useRef<number | null>(null);
   const lastTap = useRef<number>(0);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -78,6 +81,63 @@ export function ShortsViewerModal({
       setCurrentPost(post);
     }
   }, [post]);
+
+  // Initialize HLS adaptive stream or fallback
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !currentPost?.mediaUrl || !isVideo(currentPost.mediaUrl)) return;
+
+    const src = currentPost.mediaUrl;
+    const isHls = src.includes(".m3u8");
+
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    if (isHls && Hls.isSupported()) {
+      const hls = new Hls({
+        startLevel: 0,
+        capLevelToPlayerSize: true,
+        autoStartLoad: true,
+        maxBufferLength: 12,
+        maxMaxBufferLength: 24,
+        enableWorker: true,
+        lowLatencyMode: true,
+      });
+      hls.loadSource(src);
+      hls.attachMedia(video);
+      hlsRef.current = hls;
+
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              hls.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              hls.recoverMediaError();
+              break;
+            default:
+              hls.destroy();
+              video.src = formatVideoSrc(src);
+              break;
+          }
+        }
+      });
+    } else if (isHls && video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = src;
+    } else {
+      video.src = formatVideoSrc(src);
+    }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [currentPost?.mediaUrl]);
 
   // Sync 2x speed on hold
   useEffect(() => {
@@ -287,9 +347,20 @@ export function ShortsViewerModal({
     }
   };
 
-  if (!mounted || !currentPost) return null;
+  const currentIndex = currentPost ? posts.findIndex((p: any) => p.id === currentPost.id) : -1;
 
-  const currentIndex = posts.findIndex((p: any) => p.id === currentPost.id);
+  // Adjacent video pre-warming
+  useEffect(() => {
+    if (!currentPost || currentIndex === -1) return;
+    const adjacent = [
+      posts[currentIndex + 1]?.mediaUrl,
+      posts[currentIndex + 2]?.mediaUrl,
+      posts[currentIndex - 1]?.mediaUrl,
+    ];
+    prewarmAdjacentFeedMedia(adjacent);
+  }, [currentPost, currentIndex, posts]);
+
+  if (!mounted || !currentPost) return null;
 
   return createPortal(
     <div 
@@ -356,24 +427,6 @@ export function ShortsViewerModal({
         </button>
       </div>
 
-      {/* Adjacent Video Prefetching to eliminate buffer delay and black flashes */}
-      {currentIndex < posts.length - 1 && posts[currentIndex + 1]?.mediaUrl && isVideo(posts[currentIndex + 1].mediaUrl) && (
-        <video
-          src={formatVideoSrc(posts[currentIndex + 1].mediaUrl)}
-          preload="auto"
-          muted
-          className="hidden"
-        />
-      )}
-      {currentIndex > 0 && posts[currentIndex - 1]?.mediaUrl && isVideo(posts[currentIndex - 1].mediaUrl) && (
-        <video
-          src={formatVideoSrc(posts[currentIndex - 1].mediaUrl)}
-          preload="auto"
-          muted
-          className="hidden"
-        />
-      )}
-
       {/* Main Shorts Container Frame */}
       <div className="w-full max-w-[480px] md:max-w-3xl lg:max-w-4xl xl:max-w-5xl h-[94vh] md:h-[88vh] md:max-h-[920px] relative rounded-3xl overflow-hidden bg-black/90 border border-white/20 shadow-2xl flex items-center justify-center mx-3 sm:mx-6">
         
@@ -408,7 +461,6 @@ export function ShortsViewerModal({
             <video
               ref={videoRef}
               key={currentPost.id}
-              src={formatVideoSrc(currentPost.mediaUrl)}
               poster={currentPost.thumbnailUrl || undefined}
               autoPlay={isPlaying}
               loop

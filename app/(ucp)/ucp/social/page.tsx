@@ -12,7 +12,7 @@ import { createSocialPost, toggleReaction, deleteSocialPost } from "./actions";
 import { UiPresetEmbed } from "@/web/components/social/UiPresetEmbed";
 
 const isArchive = (url: string) => /\.(zip|rar|7z|tar|bz2|gz)$/i.test(url);
-const isVideo = (url: string) => /\.(mp4|webm|mov|ogg|ogv|mkv|m4v)$/i.test(url);
+const isVideo = (url: string) => /\.(mp4|webm|mov|ogg|ogv|mkv|m4v|m3u8)$/i.test(url);
 
 function formatVideoSrc(url: string): string {
   if (!url) return "";

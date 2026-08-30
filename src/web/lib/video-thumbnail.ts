@@ -96,7 +96,12 @@ export async function captureVideoFrame(
         }
 
         ctx.drawImage(video, 0, 0, drawWidth, drawHeight);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        let dataUrl = "";
+        try {
+          dataUrl = canvas.toDataURL("image/webp", 0.85);
+        } catch {
+          dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        }
 
         if (typeof videoSource === "string") {
           thumbnailPosterCache.set(videoSource, dataUrl);
@@ -120,9 +125,9 @@ export async function captureVideoFrame(
 /**
  * Convert Base64 Data URL to a File for upload
  */
-export function dataUrlToFile(dataUrl: string, filename = "thumbnail.jpg"): File {
+export function dataUrlToFile(dataUrl: string, filename = "thumbnail.webp"): File {
   const arr = dataUrl.split(",");
-  const mime = arr[0].match(/:(.*?);/)?.[1] || "image/jpeg";
+  const mime = arr[0].match(/:(.*?);/)?.[1] || "image/webp";
   const bstr = atob(arr[1]);
   let n = bstr.length;
   const u8arr = new Uint8Array(n);
@@ -133,8 +138,37 @@ export function dataUrlToFile(dataUrl: string, filename = "thumbnail.jpg"): File
 }
 
 /**
+ * Upload a captured poster data URL or File directly to /api/upload/social to get a clean URL
+ */
+export async function uploadVideoPosterFile(posterSource: string | File): Promise<string> {
+  const file = typeof posterSource === "string" 
+    ? (posterSource.startsWith("data:") ? dataUrlToFile(posterSource, `thumb-${Date.now()}.webp`) : null)
+    : posterSource;
+
+  if (!file) {
+    return typeof posterSource === "string" ? posterSource : "";
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch("/api/upload/social", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to upload poster image");
+  }
+
+  const data = await res.json();
+  return data.url;
+}
+
+/**
  * Get cached poster data URL if already extracted
  */
 export function getCachedVideoPoster(videoUrl: string): string | undefined {
   return thumbnailPosterCache.get(videoUrl);
 }
+

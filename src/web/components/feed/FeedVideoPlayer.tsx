@@ -7,6 +7,7 @@ import {
   PictureInPicture, Gauge
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Hls from "hls.js";
 import { captureVideoFrame, getCachedVideoPoster } from "@/web/lib/video-thumbnail";
 
 interface FeedVideoPlayerProps {
@@ -105,6 +106,72 @@ export function FeedVideoPlayer({
   const lastTapRef = useRef<number>(0);
   const centerIconTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const hlsRef = useRef<Hls | null>(null);
+
+  // Initialize HLS adaptive stream or fallback to native MP4 / Safari HLS
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !src) return;
+
+    const isHls = src.includes(".m3u8");
+
+    // Clean up previous HLS instance if any
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    if (isHls && Hls.isSupported()) {
+      const hls = new Hls({
+        startLevel: 0, // Start on lowest rendition (360p) for instant <100ms time-to-first-frame
+        capLevelToPlayerSize: true, // Don't download 1080p if rendered small in feed
+        autoStartLoad: true,
+        maxBufferLength: 10,
+        maxMaxBufferLength: 20,
+        enableWorker: true,
+        lowLatencyMode: true,
+      });
+
+      hls.loadSource(src);
+      hls.attachMedia(video);
+      hlsRef.current = hls;
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        setIsLoaded(true);
+        setIsBuffering(false);
+      });
+
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              hls.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              hls.recoverMediaError();
+              break;
+            default:
+              hls.destroy();
+              video.src = formattedSrc;
+              break;
+          }
+        }
+      });
+    } else if (isHls && video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Native Safari HLS
+      video.src = src;
+    } else {
+      video.src = formattedSrc;
+    }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [src, formattedSrc]);
 
   // Client-side automatic frame extraction if no poster provided
   useEffect(() => {
@@ -491,14 +558,14 @@ export function FeedVideoPlayer({
       onTouchStart={handlePointerDown}
       onTouchEnd={handlePointerUp}
       onClick={handleContainerClick}
-      className={`relative rounded-2xl overflow-hidden bg-black/80 group cursor-pointer border border-border/40 select-none shadow-md outline-none focus-visible:ring-2 focus-visible:ring-primary/60 transition-all ${className}`}
+      className={`relative rounded-2xl overflow-hidden bg-black/90 group cursor-pointer select-none shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-primary/60 transition-all ${className}`}
       style={{
-        maxHeight: isPortrait ? "540px" : "480px",
+        maxHeight: isPortrait ? "560px" : "480px",
       }}
     >
-      {/* Ambient Blurred Glowing Backdrop matching video */}
+      {/* Ambient Color-Reactive Glowing Backdrop matching video poster */}
       <div 
-        className="absolute inset-0 bg-cover bg-center blur-2xl opacity-25 scale-110 pointer-events-none transition-opacity duration-700"
+        className="absolute inset-0 bg-cover bg-center blur-3xl opacity-30 scale-125 pointer-events-none transition-opacity duration-700"
         style={{
           backgroundImage: `url(${displayPoster || src})`,
           backgroundSize: "cover",
@@ -523,7 +590,6 @@ export function FeedVideoPlayer({
       <div className="w-full h-full flex items-center justify-center relative z-10">
         <video
           ref={videoRef}
-          src={formattedSrc}
           poster={displayPoster || undefined}
           playsInline
           loop

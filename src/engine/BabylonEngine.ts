@@ -397,7 +397,13 @@ export class BabylonEngine {
   private lastHoveredC: number = -1;
   /** Brush preview overlay meshes. */
   private brushPreviewMeshes: Mesh[] = [];
+  private hoverReticleMesh?: Mesh;
+  private footprintSqMesh?: Mesh;
+  private patternPreviewMesh?: Mesh;
+  private footprintCircMeshes: Mesh[] = [];
+  private selectionBoxMesh?: Mesh;
   private selectionPreviewMeshes: Mesh[] = [];
+  private actionPreviewBoundsMesh?: Mesh;
   private actionPreviewMeshes: Mesh[] = [];
   private editorMapBorderMeshes: (Mesh | LinesMesh)[] = [];
   /** Editor keyboard pan active keys. */
@@ -2456,6 +2462,28 @@ private resolveTilePick(
     return { r: tile.r, c: tile.c, layerIdx: -1 };
   }
 
+  /** Ground plane analytical ray projection for 100% reliable picking across all viewport angles and seams. */
+  public pickTileFromGroundPlane(
+    screenX: number,
+    screenY: number
+  ): { r: number; c: number; layerIdx: number } | null {
+    if (!this.scene || !this.camera) return null;
+    const ray = this.scene.createPickingRay(
+      screenX,
+      screenY,
+      Matrix.Identity(),
+      this.camera
+    );
+    if (!ray || Math.abs(ray.direction.y) < 1e-6) return null;
+    const t = -ray.origin.y / ray.direction.y;
+    if (t < 0) return null;
+    const worldX = ray.origin.x + t * ray.direction.x;
+    const worldZ = ray.origin.z + t * ray.direction.z;
+    const tile = this.worldToTile(worldX, worldZ);
+    if (!tile) return null;
+    return { r: tile.r, c: tile.c, layerIdx: -1 };
+  }
+
   /** Screen pixel to tile coordinate projection for drag-and-drop or viewport picking. */
   public pickTileAtScreenCoord(screenX: number, screenY: number): { r: number; c: number; layerIdx: number } | null {
     if (!this.scene) return null;
@@ -2464,20 +2492,16 @@ private resolveTilePick(
       screenY,
       (mesh) => mesh.isPickable && isTilePickTarget(mesh.name)
     );
-    return this.resolveTilePick(pickResult);
+    const resolved = this.resolveTilePick(pickResult);
+    if (resolved) return resolved;
+    return this.pickTileFromGroundPlane(screenX, screenY);
   }
 
-  /**
-   * Enable click (+ optional drag) paint / move picking.
-   * Drag re-picks under the cursor so authors can stroke tiles continuously.
-   * Keep drag off for Walk Mode click-to-move so pointer moves do not repath.
-   * With brushRadius > 1, emits all cells in a circular area around the pick center.
-   */
   /**
    * Enable tile picking for paint/explore interactions.
    * Drag re-picks under the cursor so authors can stroke tiles continuously.
    * Mouse drag panning supports MMB (button 1), RMB (button 2), and Space+drag / Pan tool.
-   * With brushRadius >= 1, renders in-world 3D hover reticle (1x1 or circular multi-tile).
+   * With brushRadius >= 1, renders in-world 3D hover reticle (1x1 or circular/square multi-tile).
    */
   public enableTilePicking(
     onTileClick: (r: number, c: number, layerIdx?: number, eventType?: 'down' | 'move' | 'up') => void,
@@ -2505,14 +2529,21 @@ private resolveTilePick(
     };
     this.canvas.addEventListener('contextmenu', onContextMenu);
 
-    const emitFromScenePick = (eventType?: 'down' | 'move' | 'up') => {
-      if (!this.scene) return;
+    const getResolvedTile = (screenX: number, screenY: number): { r: number; c: number; layerIdx: number } | null => {
+      if (!this.scene) return null;
       const pickResult = this.scene.pick(
-        this.scene.pointerX,
-        this.scene.pointerY,
+        screenX,
+        screenY,
         (mesh) => mesh.isPickable && isTilePickTarget(mesh.name)
       );
       const resolved = this.resolveTilePick(pickResult);
+      if (resolved) return resolved;
+      return this.pickTileFromGroundPlane(screenX, screenY);
+    };
+
+    const emitFromScenePick = (eventType?: 'down' | 'move' | 'up') => {
+      if (!this.scene) return;
+      const resolved = getResolvedTile(this.scene.pointerX, this.scene.pointerY);
       if (!resolved) return;
       const key = `${resolved.r},${resolved.c}`;
       if (key === lastKey && eventType === 'move') return;
@@ -2551,12 +2582,7 @@ private resolveTilePick(
         if (this.canvas) this.canvas.style.cursor = 'default';
         return;
       }
-      const pickResult = this.scene.pick(
-        this.scene.pointerX,
-        this.scene.pointerY,
-        (mesh) => mesh.isPickable && isTilePickTarget(mesh.name)
-      );
-      const resolved = this.resolveTilePick(pickResult);
+      const resolved = getResolvedTile(this.scene.pointerX, this.scene.pointerY);
       if (!resolved) {
         if (this.lastHoveredR !== -1 || this.lastHoveredC !== -1) {
           this.lastHoveredR = -1;
@@ -2847,15 +2873,18 @@ private resolveTilePick(
   /**
    * Render hover reticle and dynamic brush footprints on the Babylon pick plane.
    * With brushRadius >= 1, renders in-world 3D hover reticle (1x1 or circular/square multi-tile).
+   * Reuses persistent meshes to completely eliminate in-and-out flickering during mouse movements.
    */
   public renderBrushPreview(r: number, c: number) {
-    this.clearBrushPreview();
     if (!this.scene) return;
 
     const s = this.currentTileSize || 1;
     const w = this.currentMapWidth;
     const h = this.currentMapHeight;
-    if (r < 0 || r >= h || c < 0 || c >= w) return;
+    if (r < 0 || r >= h || c < 0 || c >= w) {
+      this.clearBrushPreview();
+      return;
+    }
 
     const isLogicLayer = this.activeLayerIdx === -1 || this.hasLogicGridOverlay();
     const altitudeHover = isLogicLayer ? 0.53 : SPATIAL_LAYER_ALTITUDES.HOVER_INDICATOR;
@@ -2866,6 +2895,10 @@ private resolveTilePick(
 
     // 1. Multi-tile pattern footprint (Render ONLY the pattern bounding box when holding a pattern and in footprint mode)
     if (this.activeBrushPattern && this.prefabStampMode !== '1tile' && (this.activeBrushPattern.w > 1 || this.activeBrushPattern.h > 1)) {
+      if (this.hoverReticleMesh) this.hoverReticleMesh.isVisible = false;
+      if (this.footprintSqMesh) this.footprintSqMesh.isVisible = false;
+      this.clearFootprintCircMeshes();
+
       const pat = this.activeBrushPattern;
       const scale = this.stampScale || 1;
       const effW = Math.max(1, Math.round(pat.w * scale));
@@ -2875,18 +2908,25 @@ private resolveTilePick(
 
       const patMat = this.createMultiTileReticleMaterial(effW, effH);
 
-      const patPlane = MeshBuilder.CreatePlane('brush_hover_pattern', { width: s * effW * 1.01, height: s * effH * 1.01 }, this.scene);
-      patPlane.rotation.x = Math.PI / 2;
-      patPlane.position = new Vector3(patPosX, altitudeHover, patPosZ);
-      patPlane.material = patMat;
-      patPlane.isPickable = false;
-      patPlane.parent = this.rootNode;
-      this.brushPreviewMeshes.push(patPlane);
+      if (!this.patternPreviewMesh || this.patternPreviewMesh.isDisposed()) {
+        this.patternPreviewMesh = MeshBuilder.CreatePlane('brush_hover_pattern', { size: 1 }, this.scene);
+        this.patternPreviewMesh.rotation.x = Math.PI / 2;
+        this.patternPreviewMesh.parent = this.rootNode;
+        this.patternPreviewMesh.isPickable = false;
+      }
+      this.patternPreviewMesh.scaling.x = s * effW * 1.01;
+      this.patternPreviewMesh.scaling.y = s * effH * 1.01;
+      this.patternPreviewMesh.position.set(patPosX, altitudeHover, patPosZ);
+      this.patternPreviewMesh.material = patMat;
+      this.patternPreviewMesh.isVisible = true;
       return;
     }
 
+    if (this.patternPreviewMesh) this.patternPreviewMesh.isVisible = false;
+
     // 2. Multi-cell footprint grid if brushRadius > 1 (Render ONE unified footprint)
     if (this.brushRadius > 1) {
+      if (this.hoverReticleMesh) this.hoverReticleMesh.isVisible = false;
       const rad = this.brushRadius - 1;
       const isErase = this.brushMode === 'erase';
       const isFill = this.brushMode === 'fill';
@@ -2894,21 +2934,29 @@ private resolveTilePick(
       const glass = isErase ? 'rgba(244, 63, 94, 0.25)' : isFill ? 'rgba(245, 158, 11, 0.25)' : 'rgba(16, 185, 129, 0.25)';
 
       if (this.brushShape === 'square') {
+        this.clearFootprintCircMeshes();
         // Unified Square Footprint Plane
         const span = rad * 2 + 1;
         const footMat = this.createModernHudReticleMaterial(`hud_foot_sq_${this.brushMode}`, stroke, glass, stroke);
-        const sqPlane = MeshBuilder.CreatePlane('brush_footprint_sq', { width: s * span * 1.01, height: s * span * 1.01 }, this.scene);
-        sqPlane.rotation.x = Math.PI / 2;
-        sqPlane.position = new Vector3(centerPosX, altitudeFootprint, centerPosZ);
-        sqPlane.material = footMat;
-        sqPlane.isPickable = false;
-        sqPlane.parent = this.rootNode;
-        this.brushPreviewMeshes.push(sqPlane);
+        if (!this.footprintSqMesh || this.footprintSqMesh.isDisposed()) {
+          this.footprintSqMesh = MeshBuilder.CreatePlane('brush_footprint_sq', { size: 1 }, this.scene);
+          this.footprintSqMesh.rotation.x = Math.PI / 2;
+          this.footprintSqMesh.parent = this.rootNode;
+          this.footprintSqMesh.isPickable = false;
+        }
+        this.footprintSqMesh.scaling.x = s * span * 1.01;
+        this.footprintSqMesh.scaling.y = s * span * 1.01;
+        this.footprintSqMesh.position.set(centerPosX, altitudeFootprint, centerPosZ);
+        this.footprintSqMesh.material = footMat;
+        this.footprintSqMesh.isVisible = true;
         return;
       }
 
+      if (this.footprintSqMesh) this.footprintSqMesh.isVisible = false;
+
       // Circular Footprint (Clean cell tiles with center pip)
       const footMat = this.createModernHudReticleMaterial(`hud_foot_circ_${this.brushMode}`, stroke, glass, stroke);
+      let meshIdx = 0;
       for (let dr = -rad; dr <= rad; dr++) {
         for (let dc = -rad; dc <= rad; dc++) {
           if (dr * dr + dc * dc > rad * rad + rad) continue;
@@ -2919,17 +2967,28 @@ private resolveTilePick(
           const posX = (nc - w / 2) * s;
           const posZ = (h / 2 - nr) * s;
 
-          const plane = MeshBuilder.CreatePlane(`brush_footprint_${nr}_${nc}`, { size: s * 0.98 }, this.scene);
-          plane.rotation.x = Math.PI / 2;
-          plane.position = new Vector3(posX, altitudeFootprint, posZ);
+          let plane = this.footprintCircMeshes[meshIdx];
+          if (!plane || plane.isDisposed()) {
+            plane = MeshBuilder.CreatePlane(`brush_footprint_${meshIdx}`, { size: s * 0.98 }, this.scene);
+            plane.rotation.x = Math.PI / 2;
+            plane.parent = this.rootNode;
+            plane.isPickable = false;
+            this.footprintCircMeshes[meshIdx] = plane;
+          }
+          plane.position.set(posX, altitudeFootprint, posZ);
           plane.material = footMat;
-          plane.isPickable = false;
-          plane.parent = this.rootNode;
-          this.brushPreviewMeshes.push(plane);
+          plane.isVisible = true;
+          meshIdx++;
         }
+      }
+      for (let i = meshIdx; i < this.footprintCircMeshes.length; i++) {
+        if (this.footprintCircMeshes[i]) this.footprintCircMeshes[i].isVisible = false;
       }
       return;
     }
+
+    if (this.footprintSqMesh) this.footprintSqMesh.isVisible = false;
+    this.clearFootprintCircMeshes();
 
     // 3. Single-cell hover reticle (1x1 Cyber Glass HUD bracket)
     const hoverMat = this.createModernHudReticleMaterial(
@@ -2939,17 +2998,29 @@ private resolveTilePick(
       '#ffffff'
     );
 
-    const hoverPlane = MeshBuilder.CreatePlane('brush_hover_center', { size: s * 1.02 }, this.scene);
-    hoverPlane.rotation.x = Math.PI / 2;
-    hoverPlane.position = new Vector3(centerPosX, altitudeHover, centerPosZ);
-    hoverPlane.material = hoverMat;
-    hoverPlane.isPickable = false;
-    hoverPlane.parent = this.rootNode;
-    this.brushPreviewMeshes.push(hoverPlane);
+    if (!this.hoverReticleMesh || this.hoverReticleMesh.isDisposed()) {
+      this.hoverReticleMesh = MeshBuilder.CreatePlane('brush_hover_center', { size: s * 1.02 }, this.scene);
+      this.hoverReticleMesh.rotation.x = Math.PI / 2;
+      this.hoverReticleMesh.parent = this.rootNode;
+      this.hoverReticleMesh.isPickable = false;
+    }
+    this.hoverReticleMesh.position.set(centerPosX, altitudeHover, centerPosZ);
+    this.hoverReticleMesh.material = hoverMat;
+    this.hoverReticleMesh.isVisible = true;
+  }
+
+  private clearFootprintCircMeshes() {
+    for (const m of this.footprintCircMeshes) {
+      if (m && !m.isDisposed()) m.isVisible = false;
+    }
   }
 
   /** Clear brush preview overlay. */
   public clearBrushPreview() {
+    if (this.hoverReticleMesh) this.hoverReticleMesh.isVisible = false;
+    if (this.footprintSqMesh) this.footprintSqMesh.isVisible = false;
+    if (this.patternPreviewMesh) this.patternPreviewMesh.isVisible = false;
+    this.clearFootprintCircMeshes();
     for (const m of this.brushPreviewMeshes) m.dispose();
     this.brushPreviewMeshes = [];
   }
@@ -2962,6 +3033,7 @@ private resolveTilePick(
   }
 
   public clearSelectionPreview() {
+    if (this.selectionBoxMesh) this.selectionBoxMesh.isVisible = false;
     for (const m of this.selectionPreviewMeshes) m.dispose();
     this.selectionPreviewMeshes = [];
   }
@@ -2973,7 +3045,6 @@ private resolveTilePick(
     c2: number,
     mode: 'normal' | 'add' | 'subtract' = 'normal'
   ) {
-    this.clearSelectionPreview();
     const minR = Math.min(r1, r2);
     const maxR = Math.max(r1, r2);
     const minC = Math.min(c1, c2);
@@ -3010,14 +3081,18 @@ private resolveTilePick(
     const centerPosX = ((minC + maxC) / 2 - w / 2) * s;
     const centerPosZ = (h / 2 - (minR + maxR) / 2) * s;
 
-    // Single bounding plane at SELECTION_OVERLAY layer altitude
-    const plane = MeshBuilder.CreatePlane('selection_preview_bounds', { width: rectWidth, height: rectHeight }, this.scene);
-    plane.rotation.x = Math.PI / 2;
-    plane.position = new Vector3(centerPosX, SPATIAL_LAYER_ALTITUDES.SELECTION_OVERLAY, centerPosZ);
-    plane.material = previewMat;
-    plane.isPickable = false;
-    plane.parent = this.rootNode;
-    this.selectionPreviewMeshes.push(plane);
+    // Single bounding plane at SELECTION_OVERLAY layer altitude - reused to prevent flicker
+    if (!this.selectionBoxMesh || this.selectionBoxMesh.isDisposed()) {
+      this.selectionBoxMesh = MeshBuilder.CreatePlane('selection_preview_bounds', { size: 1 }, this.scene);
+      this.selectionBoxMesh.rotation.x = Math.PI / 2;
+      this.selectionBoxMesh.parent = this.rootNode;
+      this.selectionBoxMesh.isPickable = false;
+    }
+    this.selectionBoxMesh.scaling.x = rectWidth;
+    this.selectionBoxMesh.scaling.y = rectHeight;
+    this.selectionBoxMesh.position.set(centerPosX, SPATIAL_LAYER_ALTITUDES.SELECTION_OVERLAY, centerPosZ);
+    this.selectionBoxMesh.material = previewMat;
+    this.selectionBoxMesh.isVisible = true;
   }
 
   public setMultiSelectionPreview(cells: Array<{ r: number; c: number }> | Record<string, boolean>) {
@@ -3063,6 +3138,7 @@ private resolveTilePick(
   }
 
   public clearActionPreview() {
+    if (this.actionPreviewBoundsMesh) this.actionPreviewBoundsMesh.isVisible = false;
     for (const m of this.actionPreviewMeshes) m.dispose();
     this.actionPreviewMeshes = [];
   }
@@ -3072,8 +3148,10 @@ private resolveTilePick(
     targetR: number,
     targetC: number
   ) {
-    this.clearActionPreview();
-    if (!data) return;
+    if (!data) {
+      this.clearActionPreview();
+      return;
+    }
 
     const s = this.currentTileSize || 1;
     const w = this.currentMapWidth;
@@ -3109,13 +3187,17 @@ private resolveTilePick(
     const centerPosX = (targetC + (totalW - 1) / 2 - w / 2) * s;
     const centerPosZ = (h / 2 - (targetR + (totalH - 1) / 2)) * s;
 
-    const boundsPlane = MeshBuilder.CreatePlane('action_preview_bounds', { width: rectWidth, height: rectHeight }, this.scene);
-    boundsPlane.rotation.x = Math.PI / 2;
-    boundsPlane.position = new Vector3(centerPosX, SPATIAL_LAYER_ALTITUDES.TEMP_TOOL_PREVIEW, centerPosZ);
-    boundsPlane.material = matToUse;
-    boundsPlane.isPickable = false;
-    boundsPlane.parent = this.rootNode;
-    this.actionPreviewMeshes.push(boundsPlane);
+    if (!this.actionPreviewBoundsMesh || this.actionPreviewBoundsMesh.isDisposed()) {
+      this.actionPreviewBoundsMesh = MeshBuilder.CreatePlane('action_preview_bounds', { size: 1 }, this.scene);
+      this.actionPreviewBoundsMesh.rotation.x = Math.PI / 2;
+      this.actionPreviewBoundsMesh.parent = this.rootNode;
+      this.actionPreviewBoundsMesh.isPickable = false;
+    }
+    this.actionPreviewBoundsMesh.scaling.x = rectWidth;
+    this.actionPreviewBoundsMesh.scaling.y = rectHeight;
+    this.actionPreviewBoundsMesh.position.set(centerPosX, SPATIAL_LAYER_ALTITUDES.TEMP_TOOL_PREVIEW, centerPosZ);
+    this.actionPreviewBoundsMesh.material = matToUse;
+    this.actionPreviewBoundsMesh.isVisible = true;
   }
 
   /**
@@ -4293,6 +4375,12 @@ private resolveTilePick(
     this.setEditorCameraMode(false);
     window.removeEventListener('resize', this.onResize);
     this.stopRenderLoop();
+    this.hoverReticleMesh?.dispose();
+    this.footprintSqMesh?.dispose();
+    this.patternPreviewMesh?.dispose();
+    this.footprintCircMeshes.forEach((m) => m?.dispose());
+    this.selectionBoxMesh?.dispose();
+    this.actionPreviewBoundsMesh?.dispose();
     this.itemBillboards?.dispose();
     this.guiTexture.dispose();
     this.scene.dispose();

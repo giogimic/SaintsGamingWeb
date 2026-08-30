@@ -24,7 +24,7 @@ type MiniPost = {
   shareCount?: number;
 };
 
-const isVideo = (url: string) => /\.(mp4|webm|mov|ogg|ogv|mkv|m4v)$/i.test(url);
+const isVideo = (url: string) => /\.(mp4|webm|mov|ogg|ogv|mkv|m4v|m3u8)$/i.test(url);
 
 function formatVideoSrc(url: string): string {
   if (!url) return "";

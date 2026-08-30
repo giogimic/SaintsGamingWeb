@@ -42,7 +42,7 @@ export function getFileCategory(file: File): 'image' | 'video' | 'archive' | 'fi
   const name = file.name.toLowerCase();
   const type = file.type.toLowerCase();
 
-  if (type.startsWith('video/') || /\.(mp4|webm|mov|ogg|ogv|mkv|m4v)$/i.test(name)) {
+  if (type.startsWith('video/') || /\.(mp4|webm|mov|ogg|ogv|mkv|m4v|m3u8)$/i.test(name)) {
     return 'video';
   }
   if (type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(name)) {
@@ -54,11 +54,21 @@ export function getFileCategory(file: File): 'image' | 'video' | 'archive' | 'fi
   return 'file';
 }
 
+export interface SocialUploadResponse {
+  url: string;
+  previewUrl?: string;
+  posterUrl?: string;
+  durationSec?: number;
+  aspectRatio?: string;
+  width?: number;
+  height?: number;
+}
+
 export function uploadSocialFileWithProgress(
   file: File,
   endpoint: string = '/api/upload/social',
   onProgress?: (state: UploadProgressState) => void
-): { promise: Promise<{ url: string }>; cancel: () => void } {
+): { promise: Promise<SocialUploadResponse>; cancel: () => void } {
   const xhr = new XMLHttpRequest();
   let startTime = Date.now();
   let lastLoaded = 0;
