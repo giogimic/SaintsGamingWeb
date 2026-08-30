@@ -2572,6 +2572,28 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
 
             {/* Quick Search & Controls */}
             <div className="flex items-center gap-1.5 sm:gap-2 flex-1 max-w-md justify-end">
+              {/* Primary Create Post Button (PC & Mobile) */}
+              {session?.user && (
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileComposerExpanded(true);
+                    setTimeout(() => {
+                      const ta = document.querySelector('textarea[placeholder*="What\'s happening"]') as HTMLTextAreaElement;
+                      if (ta) {
+                        ta.focus();
+                        ta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }
+                    }, 50);
+                  }}
+                  size="sm"
+                  className="h-8 px-3 rounded-full bg-primary text-primary-foreground font-bold text-xs flex items-center gap-1.5 shadow-sm hover:opacity-90 transition-all shrink-0 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Post</span>
+                </Button>
+              )}
+
               {/* Desktop Search Bar */}
               <form onSubmit={handleSearch} className="hidden sm:flex flex-1 max-w-xs items-center gap-1.5">
                 <div className="relative flex-1">
@@ -2769,31 +2791,47 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
             <button
               type="button"
               onClick={() => setIsMobileComposerExpanded(true)}
-              className="flex-1 text-left px-3.5 py-2 rounded-full bg-muted/30 border border-border/40 text-xs text-muted-foreground hover:text-foreground transition-colors truncate"
+              className="flex-1 text-left px-3.5 py-2 rounded-full bg-muted/30 border border-border/40 text-xs text-muted-foreground hover:text-foreground transition-colors truncate cursor-pointer"
             >
               What&apos;s happening in Saints Gaming?
             </button>
             <button
               type="button"
               onClick={() => setIsMobileComposerExpanded(true)}
-              className="p-2 rounded-full text-primary hover:bg-primary/10 transition-colors shrink-0"
-              title="Attach Media"
+              className="p-2 rounded-full text-primary hover:bg-primary/10 transition-colors shrink-0 cursor-pointer"
+              title="Create Post / Upload Media"
             >
-              <ImageIcon className="w-4 h-4" />
+              <Plus className="w-4 h-4" />
             </button>
           </div>
         )}
 
         {/* Integrated Full Post Composer (Always visible on desktop, expandable on mobile) */}
-        {searchResults === null && (isMobileComposerExpanded || body || mediaUrl || typeof window === "undefined") && (
+        {searchResults === null && (
           <Card 
             className={`bg-card/60 backdrop-blur-md shadow-sm border-border/50 rounded-2xl overflow-hidden focus-within:ring-1 focus-within:ring-primary/50 transition-all relative ${
               isDragging ? "ring-2 ring-primary border-primary bg-primary/5" : ""
-            } ${!isMobileComposerExpanded && !body && !mediaUrl ? "hidden sm:block" : ""}`}
+            } ${!isMobileComposerExpanded && !body && !mediaUrl ? "hidden sm:block" : "block"}`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
+            {/* Mobile Close / Collapse Header */}
+            {isMobileComposerExpanded && !body && !mediaUrl && (
+              <div className="sm:hidden flex items-center justify-between px-4 py-2 border-b border-border/40 bg-muted/20 text-xs text-muted-foreground">
+                <span className="font-bold text-foreground flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-primary" /> Create New Post
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileComposerExpanded(false)}
+                  className="p-1 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  title="Collapse"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
             {/* Drag & Drop Visual Overlay */}
             {isDragging && (
               <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary rounded-2xl flex flex-col items-center justify-center z-30 pointer-events-none backdrop-blur-xs animate-in fade-in duration-150">
@@ -3290,6 +3328,25 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
         </div>
 
       </div>
+
+      {/* Mobile Floating Action Button (FAB) for Instant Post / Clip Creation */}
+      {session?.user && (
+        <button
+          type="button"
+          onClick={() => {
+            setIsMobileComposerExpanded(true);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            setTimeout(() => {
+              const composerTextarea = document.querySelector('textarea[placeholder*="What\'s happening"]') as HTMLTextAreaElement;
+              composerTextarea?.focus();
+            }, 300);
+          }}
+          className="sm:hidden fixed bottom-14 right-4 z-40 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-2xl flex items-center justify-center border border-primary-foreground/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+          title="Create New Post / Upload Media"
+        >
+          <Plus className="w-6 h-6 stroke-[2.5]" />
+        </button>
+      )}
 
     </div>
   );

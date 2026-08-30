@@ -1,3 +1,11 @@
+# 2.1.556
+- **Social Feed Post Creation & Media Upload Restoration (PC & Mobile)**:
+  - **PC Composer Visibility Fix**: Resolved client-side hydration condition where the post composer card was inadvertently hidden on desktop when `isMobileComposerExpanded` was uninitialized.
+  - **Primary Post Action in Header**: Added a dedicated `+ Post` action button directly in the Feed sticky header for instant posting and media attachment across all screen sizes.
+  - **Mobile Floating Action Button (FAB)**: Added a convenient floating `+` action button on mobile views that scrolls smoothly to top and opens the composer ready for uploading clips, media, or discussions.
+  - **Mobile Collapsible Post Composer**: Enhanced mobile composer with a clean header toggle and collapse button `(X)` for smooth UX and maximum viewport efficiency.
+- **Version Bump**: Bumped release version to `v2.1.556` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.555
 - **Studio Menu Completeness & View Overlay System**:
   - **Comprehensive Windows & Panels Audit**: Audited all 32 Studio panels, docks, and tools. Added direct access entries in the `Windows` dropdown for **Hero Studio** (`hero`), **Dev Tools & Server Controls** (`dev`), and **Rule Debugger & Script Tracing**.
