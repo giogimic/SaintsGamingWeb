@@ -60,7 +60,7 @@ export function GameOfflineScreen({
 
   return (
     <div
-      className="pointer-events-auto fixed inset-0 w-full h-full overflow-y-auto z-[100] flex flex-col items-center justify-center p-4 md:p-8 select-none font-sans"
+      className="pointer-events-auto absolute inset-0 w-full h-full overflow-y-auto z-[100] flex flex-col items-center justify-center p-4 md:p-8 select-none font-sans"
       style={{ backgroundColor: isLight ? '#240046' : isVice ? '#1b121c' : '#050014' }}
     >
       {/* Dynamic Horizon Background */}

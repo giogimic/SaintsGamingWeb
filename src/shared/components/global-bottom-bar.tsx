@@ -60,14 +60,18 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "v2.1.537",
+  siteVersion = "v2.1.538",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;
 }) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const isGameRoute = pathname?.startsWith("/lobby") || pathname?.startsWith("/studio");
+  const isStudioRoute = pathname?.startsWith("/studio");
+  if (isStudioRoute) {
+    return null;
+  }
+  const isGameRoute = pathname?.startsWith("/lobby");
 
   // Realtime & Messenger Store
   const mmoPlayerCount = useRealtimeStore((s) => s.mmoPlayerCount);
@@ -200,14 +204,14 @@ export function GlobalBottomBar({
   // Resolve dynamic route context pill
   const getRouteLabel = () => {
     if (!pathname) return "Saints Gaming";
-    if (pathname.startsWith("/lobby")) return `Saints Realm · ${gameMode}`;
+    if (pathname.startsWith("/lobby")) return `Saints MMO · ${gameMode}`;
     if (pathname.startsWith("/studio")) return `World Studio · ${activeMapId || "Editor"}`;
     if (pathname.startsWith("/hub") || pathname.startsWith("/news") || pathname.startsWith("/modpacks") || pathname.startsWith("/servers")) {
       return "The Nexus · Operations Hub";
     }
     if (pathname.startsWith("/forum")) return "Community Forums · Discussions";
     if (pathname.startsWith("/streams")) return "Live Streams & Media";
-    if (pathname.startsWith("/profile") || pathname.startsWith("/user")) return "Operative Profile";
+    if (pathname.startsWith("/profile") || pathname.startsWith("/user")) return "Player Profile";
     if (pathname.startsWith("/admin")) return "Command & Control Center";
     return "Saints Network · Online";
   };
@@ -217,7 +221,7 @@ export function GlobalBottomBar({
     return null;
   }
 
-  const username = userStats?.username || user?.username || user?.name || "Operative";
+  const username = userStats?.username || user?.username || user?.name || "Player";
   const userCoins = userStats?.coins ?? 500;
   const userLevel = userStats?.level ?? 1;
   const userAchievements = userStats?.achievementCount ?? 0;
@@ -225,198 +229,177 @@ export function GlobalBottomBar({
   return (
     <>
       {/* ── PERSISTENT GLOBAL BOTTOM BAR ──────────────────────────────── */}
-      <footer className="fixed bottom-0 left-0 right-0 z-40 h-8 sm:h-9 bg-card/85 backdrop-blur-2xl border-t border-border/50 shadow-2xl px-3 sm:px-6 flex items-center justify-between text-xs font-mono select-none pointer-events-auto transition-all duration-300">
-        
-        {/* LEFT SECTION: Connected User & Account Stats / Online Orb */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Green Status Orb */}
-          <span className="relative flex h-2 w-2 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-          </span>
+      <footer className="fixed bottom-0 left-0 right-0 z-40 h-7 sm:h-8 bg-card/85 backdrop-blur-2xl border-t border-border/50 shadow-2xl px-3 sm:px-6 flex items-center justify-between text-xs font-mono select-none pointer-events-auto transition-all duration-300">
+          
+          {/* LEFT SECTION: Connected User & Account Stats / Online Orb */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-1">
+            {/* Green Status Orb */}
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
 
-          {user ? (
-            /* Connected User Profile Stats */
-            <div className="flex items-center gap-2 sm:gap-2.5">
-              <span className="font-bold text-foreground truncate max-w-[100px] sm:max-w-[140px] text-[11px]">
-                {username}
-              </span>
-
-              {/* Account Level */}
-              <ActionTooltip label="Account Level">
-                <span className="px-1.5 py-0.2 rounded bg-primary/10 border border-primary/25 text-primary font-bold text-[10px] cursor-help">
-                  LVL {userLevel}
+            {user ? (
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                <span className="font-bold text-foreground truncate max-w-[100px] sm:max-w-[140px] text-[11px]">
+                  {username}
                 </span>
-              </ActionTooltip>
-
-              {/* Gold / Coins */}
-              <ActionTooltip label="Saints Coins">
-                <div className="hidden sm:flex items-center gap-1 text-amber-400 font-bold text-[11px] cursor-help">
-                  <Coins className="w-3 h-3" />
-                  <span>{userCoins.toLocaleString()}</span>
-                </div>
-              </ActionTooltip>
-
-              {/* Achievement Score */}
-              <ActionTooltip label="Achievement Points">
-                <div className="hidden md:flex items-center gap-1 text-yellow-400 font-bold text-[11px] cursor-help">
-                  <Trophy className="w-3 h-3" />
-                  <span>{userAchievements} AP</span>
-                </div>
-              </ActionTooltip>
-            </div>
-          ) : (
-            /* Guest Mode */
-            <div className="flex items-center gap-1.5 text-[11px]">
-              <span className="text-foreground font-semibold">Guest</span>
-              <span className="text-muted-foreground opacity-40">·</span>
-              <span className="text-emerald-400 font-bold">
-                {mmoPlayerCount > 0 ? `${mmoPlayerCount} Online` : "Connected"}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* CENTER SECTION: 4 Core Navigation Pages + Voxel Logo */}
-        <div className="flex items-center justify-center gap-1 sm:gap-2">
-          {BOTTOM_NAV_PAGES.slice(0, 2).map(({ href, label, icon: Icon }) => {
-            const isActive = pathname === href || (href !== "/home" && pathname?.startsWith(href));
-            return (
-              <Link
-                key={href}
-                href={href}
-                prefetch={true}
-                className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 rounded-md text-[11px] font-sans font-medium transition-all duration-200 ${
-                  isActive
-                    ? "bg-primary/20 text-primary border border-primary/40 shadow-[0_0_8px_rgba(0,245,212,0.25)] font-semibold"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
-                }`}
-              >
-                <Icon className={`w-3 h-3 ${isActive ? "text-primary" : "opacity-70"}`} />
-                <span className="hidden xs:inline">{label}</span>
-              </Link>
-            );
-          })}
-
-          <div className="mx-1 sm:mx-2 flex items-center justify-center hover:scale-110 transition-transform cursor-pointer" title="Saints Gaming">
-            <Link href="/home">
-              <SGMicro3DLogo size={28} />
-            </Link>
+                <ActionTooltip label="Account Level">
+                  <span className="px-1.5 py-0.2 rounded bg-primary/10 border border-primary/25 text-primary font-bold text-[10px] cursor-help">
+                    LVL {userLevel}
+                  </span>
+                </ActionTooltip>
+                <ActionTooltip label="Saints Coins">
+                  <div className="hidden sm:flex items-center gap-1 text-amber-400 font-bold text-[11px] cursor-help">
+                    <Coins className="w-3 h-3" />
+                    <span>{userCoins.toLocaleString()}</span>
+                  </div>
+                </ActionTooltip>
+                <ActionTooltip label="Achievement Points">
+                  <div className="hidden md:flex items-center gap-1 text-yellow-400 font-bold text-[11px] cursor-help">
+                    <Trophy className="w-3 h-3" />
+                    <span>{userAchievements} AP</span>
+                  </div>
+                </ActionTooltip>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 text-[11px]">
+                <span className="text-emerald-400 font-bold">
+                  {mmoPlayerCount > 0 ? `${mmoPlayerCount} Online` : "Connected"}
+                </span>
+              </div>
+            )}
           </div>
 
-          {BOTTOM_NAV_PAGES.slice(2, 4).map(({ href, label, icon: Icon }) => {
-            const isActive = pathname === href || (href !== "/home" && pathname?.startsWith(href));
-            return (
-              <Link
-                key={href}
-                href={href}
-                prefetch={true}
-                className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 rounded-md text-[11px] font-sans font-medium transition-all duration-200 ${
-                  isActive
-                    ? "bg-primary/20 text-primary border border-primary/40 shadow-[0_0_8px_rgba(0,245,212,0.25)] font-semibold"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
-                }`}
-              >
-                <Icon className={`w-3 h-3 ${isActive ? "text-primary" : "opacity-70"}`} />
-                <span className="hidden xs:inline">{label}</span>
-              </Link>
-            );
-          })}
-        </div>
+          {/* CENTER SECTION: Links + Logo */}
+          <div className="flex items-center justify-center gap-1 sm:gap-3 flex-shrink-0">
+            {/* Left Links */}
+            <div className="flex items-center gap-1">
+              {[BOTTOM_NAV_PAGES[1], BOTTOM_NAV_PAGES[0]].map(({ href, label, icon: Icon }) => {
+                const isActive = pathname === href || (href !== "/home" && pathname?.startsWith(href));
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    prefetch={true}
+                    className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 rounded-md text-[11px] font-sans font-medium transition-all duration-200 ${
+                      isActive
+                        ? "bg-primary/20 text-primary border border-primary/40 shadow-[0_0_8px_rgba(0,245,212,0.25)] font-semibold"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
+                    }`}
+                  >
+                    <Icon className={`w-3 h-3 ${isActive ? "text-primary" : "opacity-70"}`} />
+                    <span className="hidden xs:inline">{label}</span>
+                  </Link>
+                );
+              })}
+            </div>
 
-        {/* RIGHT SECTION: Controls, Roles & Social Drawer */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Game-specific audio & fullscreen */}
-          {isGameRoute && (
-            <>
-              <ActionTooltip label={isMuted ? "Unmute Audio" : "Mute Audio"}>
+            {/* Logo and Page Name */}
+            <div className="mx-1 sm:mx-2 flex items-center justify-center gap-2">
+              <div className="hover:scale-110 transition-transform cursor-pointer" title="Saints Gaming">
+                <Link href="/home">
+                  <SGMicro3DLogo size={24} />
+                </Link>
+              </div>
+              <span className="hidden lg:inline-block text-[11px] font-bold text-foreground/80 tracking-wide">
+                {getRouteLabel().split(" · ")[0]}
+              </span>
+            </div>
+
+            {/* Right Links */}
+            <div className="flex items-center gap-1">
+              {[BOTTOM_NAV_PAGES[2], BOTTOM_NAV_PAGES[3]].map(({ href, label, icon: Icon }) => {
+                const isActive = pathname === href || (href !== "/home" && pathname?.startsWith(href));
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    prefetch={true}
+                    className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 rounded-md text-[11px] font-sans font-medium transition-all duration-200 ${
+                      isActive
+                        ? "bg-primary/20 text-primary border border-primary/40 shadow-[0_0_8px_rgba(0,245,212,0.25)] font-semibold"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
+                    }`}
+                  >
+                    <Icon className={`w-3 h-3 ${isActive ? "text-primary" : "opacity-70"}`} />
+                    <span className="hidden xs:inline">{label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* RIGHT SECTION: Controls, Roles & Social Drawer */}
+          <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1">
+            {/* Moderator Drawer Trigger */}
+            {isMod && !isDevOrAdmin && (
+              <ActionTooltip label="Moderator Tools">
                 <button
-                  onClick={toggleAudio}
-                  className="p-1.5 rounded-lg border border-border/50 hover:border-primary/40 bg-background/50 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                  onClick={() => {
+                    setModDrawerOpen((prev) => !prev);
+                    setDevConsoleOpen(false);
+                  }}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
+                    modDrawerOpen
+                      ? "bg-amber-500/20 border-amber-500 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.3)]"
+                      : "border-amber-500/30 text-amber-400/80 hover:text-amber-300 hover:border-amber-400 bg-black/40"
+                  }`}
                 >
-                  {isMuted ? <VolumeX className="w-3.5 h-3.5 text-rose-400" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-400" />}
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Mod</span>
                 </button>
               </ActionTooltip>
+            )}
 
-              <ActionTooltip label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}>
+            {/* Dev Console Trigger (Devs & Admins) */}
+            {isDevOrAdmin && (
+              <ActionTooltip label="Dev Console">
                 <button
-                  onClick={toggleFullscreen}
-                  className="p-1.5 rounded-lg border border-border/50 hover:border-primary/40 bg-background/50 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                  onClick={() => {
+                    setDevConsoleOpen((prev) => !prev);
+                    setModDrawerOpen(false);
+                  }}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
+                    devConsoleOpen
+                      ? "bg-primary/20 border-primary text-primary shadow-[0_0_10px_rgba(0,245,212,0.3)]"
+                      : "border-primary/30 text-primary/80 hover:text-primary hover:border-primary/60 bg-black/40"
+                  }`}
                 >
-                  {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 text-amber-400" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                  <Terminal className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Console</span>
+                  {errorLogs.length > 0 && (
+                    <span className="px-1 py-0.2 rounded-full bg-rose-500/80 text-white text-[9px] font-bold">
+                      {errorLogs.length}
+                    </span>
+                  )}
                 </button>
               </ActionTooltip>
-            </>
-          )}
+            )}
 
-          {/* Moderator Drawer Trigger */}
-          {isMod && !isDevOrAdmin && (
-            <ActionTooltip label="Moderator Tools">
-              <button
-                onClick={() => {
-                  setModDrawerOpen((prev) => !prev);
-                  setDevConsoleOpen(false);
-                }}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
-                  modDrawerOpen
-                    ? "bg-amber-500/20 border-amber-500 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.3)]"
-                    : "border-amber-500/30 text-amber-400/80 hover:text-amber-300 hover:border-amber-400 bg-black/40"
-                }`}
-              >
-                <ShieldAlert className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Mod</span>
-              </button>
-            </ActionTooltip>
-          )}
+            {/* Social Messenger Drawer Trigger */}
+            {session?.user && (
+              <ActionTooltip label="Social Messenger">
+                <button
+                  onClick={() => setIsMessengerOpen(!isMessengerOpen)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
+                    isMessengerOpen
+                      ? "bg-primary text-primary-foreground border-primary shadow-[0_0_12px_rgba(0,245,212,0.4)]"
+                      : "border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
+                  }`}
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Social</span>
+                </button>
+              </ActionTooltip>
+            )}
 
-          {/* Dev Console Trigger (Devs & Admins) */}
-          {isDevOrAdmin && (
-            <ActionTooltip label="Dev Console">
-              <button
-                onClick={() => {
-                  setDevConsoleOpen((prev) => !prev);
-                  setModDrawerOpen(false);
-                }}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
-                  devConsoleOpen
-                    ? "bg-primary/20 border-primary text-primary shadow-[0_0_10px_rgba(0,245,212,0.3)]"
-                    : "border-primary/30 text-primary/80 hover:text-primary hover:border-primary/60 bg-black/40"
-                }`}
-              >
-                <Terminal className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Console</span>
-                {errorLogs.length > 0 && (
-                  <span className="px-1 py-0.2 rounded-full bg-rose-500/80 text-white text-[9px] font-bold">
-                    {errorLogs.length}
-                  </span>
-                )}
-              </button>
-            </ActionTooltip>
-          )}
-
-          {/* Social Messenger Drawer Trigger */}
-          {session?.user && (
-            <ActionTooltip label="Social Messenger">
-              <button
-                onClick={() => setIsMessengerOpen(!isMessengerOpen)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
-                  isMessengerOpen
-                    ? "bg-primary text-primary-foreground border-primary shadow-[0_0_12px_rgba(0,245,212,0.4)]"
-                    : "border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
-                }`}
-              >
-                <MessageCircle className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Social</span>
-              </button>
-            </ActionTooltip>
-          )}
-
-          {/* Version badge */}
-          <span className="text-[10px] text-muted-foreground/60 hidden xl:inline ml-1 font-mono">
-            {siteVersion}
-          </span>
-        </div>
-      </footer>
+            {/* Version badge */}
+            <span className="text-[10px] text-muted-foreground/60 hidden xl:inline ml-1 font-mono">
+              {siteVersion}
+            </span>
+          </div>
+        </footer>
 
       {/* ── DEVELOPER POP-OUT CONSOLE DRAWER ───────────────────────────── */}
       {devConsoleOpen && isDevOrAdmin && (

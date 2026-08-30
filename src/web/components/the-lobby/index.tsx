@@ -1735,81 +1735,97 @@ export default function TheLobby({
   }, [enableStudio, canStudio]);
 
 
+  const frameClass = enableStudio
+    ? 'fixed inset-0 z-30 touch-none select-none overflow-hidden bg-transparent'
+    : `fixed ${isFullscreen ? 'top-0 bottom-0' : 'top-9 sm:top-10 bottom-7 sm:bottom-8'} inset-x-0 z-30 touch-none select-none overflow-hidden bg-[#0a0a0f]`;
+
   if (isInitializing) {
-    return <div className="w-full h-full flex items-center justify-center text-emerald-500 font-mono">INITIALIZING TERMINAL...</div>;
+    return (
+      <div className={`${frameClass} flex items-center justify-center text-primary font-mono`}>
+        INITIALIZING MMO WORLD...
+      </div>
+    );
   }
 
   // Narrow screens: replace the game window with a single Open Game button.
   // Do not mount Babylon / desktop HUD underneath — that was the crowded mess.
   if (viewportReady && isMobile && !hasEnteredMobile) {
     return (
-      <MobileGameLauncher
-        character={userCharacters.find((c) => c.id === activeCharacterId) || userCharacters[0]}
-        onEnterGame={handleEnterMobileGame}
-        onSelectCharacter={() => {
-          setShowSelector(true);
-          setHasEnteredMobile(true);
-        }}
-      />
+      <div className={frameClass}>
+        <MobileGameLauncher
+          character={userCharacters.find((c) => c.id === activeCharacterId) || userCharacters[0]}
+          onEnterGame={handleEnterMobileGame}
+          onSelectCharacter={() => {
+            setShowSelector(true);
+            setHasEnteredMobile(true);
+          }}
+        />
+      </div>
     );
   }
 
   if (isRealmOffline) {
     return (
-      <GameOfflineScreen
-        isAdmin={enableStudio && canStudio}
-        onAdminLogin={() => {
-          useGameStore.getState().setGameMode('LOGIN');
-          setIsRealmOffline(false);
-        }}
-        onRefresh={async () => {
-          const res = await fetch('/api/setup/status', { cache: 'no-store' });
-          if (res.ok) {
-            const data = await res.json();
-            if (data.status?.isSetupCompleted) {
-              setIsRealmOffline(false);
-              window.location.reload();
+      <div className={frameClass}>
+        <GameOfflineScreen
+          isAdmin={enableStudio && canStudio}
+          onAdminLogin={() => {
+            useGameStore.getState().setGameMode('LOGIN');
+            setIsRealmOffline(false);
+          }}
+          onRefresh={async () => {
+            const res = await fetch('/api/setup/status', { cache: 'no-store' });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.status?.isSetupCompleted) {
+                setIsRealmOffline(false);
+                window.location.reload();
+              }
             }
-          }
-        }}
-      />
+          }}
+        />
+      </div>
     );
   }
 
   if (gameMode === 'CHARACTER_CREATOR' || showCreator) {
     return (
-      <CharacterCreator 
-        onComplete={(newId) => selectAndLoadCharacter(newId)} 
-        onCancel={userCharacters.length > 0 ? () => { useGameStore.getState().setGameMode('CHARACTER_SELECT'); setShowCreator(false); } : undefined}
-      />
+      <div className={frameClass}>
+        <CharacterCreator 
+          onComplete={(newId) => selectAndLoadCharacter(newId)} 
+          onCancel={userCharacters.length > 0 ? () => { useGameStore.getState().setGameMode('CHARACTER_SELECT'); setShowCreator(false); } : undefined}
+        />
+      </div>
     );
   }
 
   if (gameMode === 'CHARACTER_SELECT' || showSelector) {
     return (
-      <CharacterSelector 
-        characters={userCharacters}
-        onSelect={(id) => selectAndLoadCharacter(id)} 
-        onCreateNew={() => { useGameStore.getState().setGameMode('CHARACTER_CREATOR'); setShowSelector(false); setShowCreator(true); }}
-        onRefresh={() => loadCharactersList()}
-        onCancel={
-          enableStudio
-            ? () => {
-                setShowSelector(false);
-                void enterStudioAuthorSession(
-                  toBaseMapId(useGameStore.getState().currentMapId || 'LOBBY')
-                );
-              }
-            : undefined
-        }
-      />
+      <div className={frameClass}>
+        <CharacterSelector 
+          characters={userCharacters}
+          onSelect={(id) => selectAndLoadCharacter(id)} 
+          onCreateNew={() => { useGameStore.getState().setGameMode('CHARACTER_CREATOR'); setShowSelector(false); setShowCreator(true); }}
+          onRefresh={() => loadCharactersList()}
+          onCancel={
+            enableStudio
+              ? () => {
+                  setShowSelector(false);
+                  void enterStudioAuthorSession(
+                    toBaseMapId(useGameStore.getState().currentMapId || 'LOBBY')
+                  );
+                }
+              : undefined
+          }
+        />
+      </div>
     );
   }
 
   return (
     <div 
       ref={containerRef}
-      className={`relative w-full h-full touch-none select-none overflow-hidden ${enableStudio ? 'bg-transparent' : 'bg-[#0a0a0f]'}`}
+      className={frameClass}
     >
       {enableStudio && <MidnightTropicalBackground />}
       {enableStudio ? (
