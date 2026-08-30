@@ -74,18 +74,21 @@ function StatBar({
 }
 
 export const PlayerVitalsHud: React.FC = () => {
-  const player = useGameStore((state) => state.player);
+  const hp = useGameStore((state) => state.player.hp ?? 100);
+  const maxHp = useGameStore((state) => state.player.maxHp ?? 100);
+  const mp = useGameStore((state) => state.player.mp ?? 100);
+  const maxMp = useGameStore((state) => state.player.maxMp ?? 100);
+  const level = useGameStore((state) => state.player.level || 1);
+  const xp = useGameStore((state) => state.player.xp || 0);
+  const credits = useGameStore((state) => state.player.credits || 1000);
+  const perkRaw = useGameStore((state) => state.player.perk);
+  const name = useGameStore((state) => state.player.name || 'Saint');
+  const assetProfileId = useGameStore((state) => state.player.assetProfileId);
+  const combatStyle = useGameStore((state) => state.player.combatStyle || 'WARRIOR');
 
-  const hp = player.hp ?? 100;
-  const maxHp = player.maxHp ?? 100;
   const hpPercent = Math.min(100, Math.max(0, Math.floor((hp / Math.max(1, maxHp)) * 100)));
-
-  const mp = player.mp ?? 100;
-  const maxMp = player.maxMp ?? 100;
   const mpPercent = Math.min(100, Math.max(0, Math.floor((mp / Math.max(1, maxMp)) * 100)));
 
-  const level = player.level || 1;
-  const xp = player.xp || 0;
   const nextLevelXp = Math.pow(level, 2) * 50;
   const currentLevelBaseXp = Math.pow(level - 1, 2) * 50;
   const xpIntoLevel = Math.max(0, xp - currentLevelBaseXp);
@@ -93,8 +96,13 @@ export const PlayerVitalsHud: React.FC = () => {
   const xpProgress = Math.min(100, Math.max(0, Math.floor((xpIntoLevel / xpSpan) * 100)));
 
   const isCriticalHp = hpPercent <= 25;
-  const credits = player.credits || 1000;
-  const perk = player.perk ? player.perk.replace(/_/g, ' ') : null;
+  const perk = perkRaw ? perkRaw.replace(/_/g, ' ') : null;
+
+  const player = {
+    name,
+    assetProfileId,
+    combatStyle,
+  };
 
   return (
     <div

@@ -134,7 +134,6 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   // Entity interpolation buffer: socketId -> { fromX, fromY, toX, toY, startTime, duration }
   const interpBufferRef = useRef<Record<string, { fromX: number; fromY: number; toX: number; toY: number; startTime: number; duration: number }>>({});
   const autoWalkPathRef = useRef<{x: number, y: number}[]>([]);
-  const autoWalkIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [isEngineReady, setIsEngineReady] = useState(false);
   const playerAnimationProfileRef = useRef<string | null>(null);
   const lastassetProfileIdRef = useRef<string | null>(null);
@@ -169,15 +168,12 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const [mapMeshEpoch, setMapMeshEpoch] = useState(0);
 
   const clearAutoWalk = useCallback(() => {
-    if (autoWalkIntervalRef.current) {
-      clearInterval(autoWalkIntervalRef.current);
-      autoWalkIntervalRef.current = null;
-      const state = useGameStore.getState();
-      if (state.player.isMoving) {
-        state.setPlayerPosition(state.player.position, state.player.direction, false);
-      }
-    }
     autoWalkPathRef.current = [];
+    const state = useGameStore.getState();
+    if (state.player.isMoving) {
+      state.setPlayerPosition(state.player.position, state.player.direction, false);
+    }
+    engineRef.current?.clearDestinationIndicator();
   }, []);
 
   // Ensure current map is loaded into store when map ID changes
@@ -853,9 +849,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
           const playerMesh = babylonEngine.getEntityMesh('player_main');
           if (playerMesh) {
-            babylonEngine.setCameraPosition(playerMesh.position.x, playerMesh.position.z, 0.15);
+            babylonEngine.setCameraPosition(playerMesh.position.x, playerMesh.position.z, 0.35);
           } else {
-            babylonEngine.setCameraPosition(worldX, worldZ, 0.15);
+            babylonEngine.setCameraPosition(worldX, worldZ, 0.35);
           }
         }
       } else {
@@ -1685,15 +1681,6 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               autoWalkPathRef.current = path;
               const nextStep = autoWalkPathRef.current.shift()!;
               tryMovePlayerTo(nextStep.x, nextStep.y);
-              autoWalkIntervalRef.current = setInterval(() => {
-                if (autoWalkPathRef.current.length === 0) {
-                  clearAutoWalk();
-                  engine.clearDestinationIndicator();
-                  return;
-                }
-                const step = autoWalkPathRef.current.shift()!;
-                tryMovePlayerTo(step.x, step.y);
-              }, 250);
             }
           }
         },
@@ -2031,12 +2018,12 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     mapHeight,
   ]);
 
-  // Keyboard WASD / interact — playtest only (editor runtime keeps sim dormant)
+  // Keyboard WASD / interact / auto-walk loop — playtest only (editor runtime keeps sim dormant)
   useEffect(() => {
     if (isDevEditorOpen) return;
 
     const keys = { w: false, a: false, s: false, d: false, arrowup: false, arrowdown: false, arrowleft: false, arrowright: false };
-    let lastMoveTime = 0;
+    let lastBlockedTime = 0;
     let animationFrameId: number;
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -2072,17 +2059,48 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       else if (keys.a || keys.arrowleft) dx = -1;
       else if (keys.d || keys.arrowright) dx = 1;
 
-      const now = performance.now();
       const isTryingToMove = dx !== 0 || dy !== 0;
+      const hasAutoWalk = autoWalkPathRef.current.length > 0;
+      const now = performance.now();
 
-      if (isTryingToMove && state.gameMode === 'EXPLORING' && (now - lastMoveTime) >= 250) {
-        lastMoveTime = now;
-        const pos = state.player.position;
-        if (pos) {
-          tryMovePlayerTo(pos.x + dx, pos.y + dy);
+      if (state.gameMode === 'EXPLORING') {
+        const engine = engineRef.current;
+        const playerMesh = engine?.getEntityMesh('player_main');
+        const stateMeta = playerMesh?.metadata;
+        const dist =
+          playerMesh && stateMeta
+            ? Math.hypot(
+                playerMesh.position.x - (stateMeta.targetPos?.x ?? 0),
+                playerMesh.position.z - (stateMeta.targetPos?.z ?? 0)
+              )
+            : 0;
+
+        // Player is at or very close to current target waypoint (or mesh not initialized yet)
+        const isReadyForNextStep = !state.player.isMoving || dist <= 0.08;
+
+        if (isTryingToMove) {
+          if (isReadyForNextStep) {
+            const pos = state.player.position;
+            if (pos) {
+              if (now - lastBlockedTime >= 120) {
+                lastBlockedTime = now;
+                tryMovePlayerTo(pos.x + dx, pos.y + dy);
+              }
+            }
+          }
+        } else if (hasAutoWalk) {
+          if (isReadyForNextStep) {
+            const nextStep = autoWalkPathRef.current.shift();
+            if (nextStep) {
+              tryMovePlayerTo(nextStep.x, nextStep.y);
+            }
+            if (autoWalkPathRef.current.length === 0) {
+              engine?.clearDestinationIndicator();
+            }
+          }
+        } else if (state.player.isMoving && dist <= 0.01) {
+          useGameStore.getState().setPlayerPosition(state.player.position, state.player.direction, false);
         }
-      } else if (!isTryingToMove && state.player.isMoving && (now - lastMoveTime) >= 250 && !autoWalkIntervalRef.current) {
-        useGameStore.getState().setPlayerPosition(state.player.position, state.player.direction, false);
       }
       
       animationFrameId = requestAnimationFrame(gameLoop);
@@ -2097,7 +2115,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       window.removeEventListener('keyup', handleKeyUp);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [isDevEditorOpen, mapWidth, mapHeight, mapData]);
+  }, [isDevEditorOpen, mapWidth, mapHeight, mapData, clearAutoWalk]);
 
   let canvasCursor = 'cursor-default';
   if (isDevEditorOpen) {

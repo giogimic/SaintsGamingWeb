@@ -502,10 +502,11 @@ export class BabylonEngine {
       e.preventDefault();
       const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
       const currentOrtho = this.camera.orthoTop || 10;
-      // Editor mode: max 120 (supports 128x128 full fit), Game mode: max 16, Min: 2.5 (up to 400%)
+      // Editor mode: max 120 (supports 128x128 full fit), Game mode: range 5.5 - 13.5 (limits zoom to ~60% range)
       const isStudioToolsOpen = Boolean((window as any)._isDevEditorOpen) || this.editorCameraMode;
-      const maxZoom = isStudioToolsOpen ? 120 : 16;
-      const newOrtho = Math.max(2.5, Math.min(maxZoom, currentOrtho * zoomFactor));
+      const minOrtho = isStudioToolsOpen ? 2.5 : 5.5;
+      const maxZoom = isStudioToolsOpen ? 120 : 13.5;
+      const newOrtho = Math.max(minOrtho, Math.min(maxZoom, currentOrtho * zoomFactor));
       if (newOrtho === currentOrtho) return;
 
       const renderW = Math.max(1, this.engine.getRenderWidth());
@@ -546,12 +547,14 @@ export class BabylonEngine {
     // Programmatic Zoom & Fit Map Events
     window.addEventListener('studio_set_zoom', (e: Event) => {
       const custom = e as CustomEvent<{ percent?: number; ortho?: number }>;
-      const maxZoom = 120; // Allow full zoom out in studio events
+      const isStudioToolsOpen = Boolean((window as any)._isDevEditorOpen) || this.editorCameraMode;
+      const minOrtho = isStudioToolsOpen ? 2.5 : 5.5;
+      const maxZoom = isStudioToolsOpen ? 120 : 13.5;
       let newOrtho = 10;
       if (custom.detail?.percent !== undefined) {
-        newOrtho = Math.max(2.5, Math.min(maxZoom, 10 / (custom.detail.percent / 100)));
+        newOrtho = Math.max(minOrtho, Math.min(maxZoom, 10 / (custom.detail.percent / 100)));
       } else if (custom.detail?.ortho !== undefined) {
-        newOrtho = Math.max(2.5, Math.min(maxZoom, custom.detail.ortho));
+        newOrtho = Math.max(minOrtho, Math.min(maxZoom, custom.detail.ortho));
       }
       this.updateCameraAspect(newOrtho);
       const zoomPercent = Math.round((10 / newOrtho) * 100);
@@ -891,7 +894,7 @@ export class BabylonEngine {
    * Smoothly follow a world position each tick.
    * No-op while editor camera mode is active (engine-editor foundation).
    */
-  public setCameraPosition(targetX: number, targetZ: number, lerpFactor: number = 0.15) {
+  public setCameraPosition(targetX: number, targetZ: number, lerpFactor: number = 0.35) {
     if (this.editorCameraMode) return;
 
     const clamped = clampCameraFocus(
@@ -915,9 +918,10 @@ export class BabylonEngine {
 
     const targetCamPos = new Vector3(targetX, this.cameraProfile.distance, targetZ - this.cameraProfile.distance);
     
-    // Spring damper / Decoupled Physics
+    // Spring damper / Decoupled Physics with snappy responsive follow
     const dt = this.engine.getDeltaTime() / 1000.0;
-    const smoothFactor = 1.0 - Math.exp(-this.cameraProfile.lerpFactor * 60 * dt);
+    const factor = lerpFactor ?? this.cameraProfile.lerpFactor ?? 0.35;
+    const smoothFactor = 1.0 - Math.exp(-factor * 60 * dt);
     
     this.camera.position = Vector3.Lerp(this.camera.position, targetCamPos, smoothFactor);
     this.camera.setTarget(Vector3.Lerp(

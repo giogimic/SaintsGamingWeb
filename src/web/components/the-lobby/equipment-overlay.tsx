@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useGameStore } from './store';
 import { ITEM_DB } from './data/items';
 import { calculatePlayerCombatStats } from './combat';
@@ -22,12 +22,16 @@ import {
 } from 'lucide-react';
 
 export default function EquipmentOverlay() {
-  const player = useGameStore((state) => state.player);
-  const equipment = player.equipment || {};
+  const equipment = useGameStore((state) => state.player.equipment) || {};
+  const level = useGameStore((state) => state.player.level || 1);
+  const activeDaemonId = useGameStore((state) => state.player.activeDaemonId);
   const equipItem = useGameStore((state) => state.equipItem);
   const showToast = useGameStore((state) => state.showToast);
 
-  const stats = calculatePlayerCombatStats(player);
+  const stats = useMemo(
+    () => calculatePlayerCombatStats({ level, activeDaemonId, equipment } as any),
+    [level, activeDaemonId, equipment]
+  );
 
   // Determine speed tier rating and styling
   const speedTier = (stats as any).speedTier || 'NORMAL';
