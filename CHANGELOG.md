@@ -1,3 +1,9 @@
+# 2.1.553
+- **Social Feed & Shorts Viewer Build Fixes**:
+  - **Syntax Error Fix in `app/actions/social/feed.ts`**: Restored the missing object closure and function return mapping in `searchFeed` that was accidentally corrupted when appending `getSuggestedCreators`.
+  - **Variable Hoisting Fix in `the-feed.tsx`**: Moved `handleToggleFullscreen` callback definition prior to the keyboard event listener `useEffect` hook, resolving TypeScript TS2448 block-scoped variable declaration errors.
+- **Version Bump**: Bumped release version to `v2.1.553` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.552
 - **Studio Unified Multi-Tile Brush Highlight Structure**:
   - **Single Cohesive Footprint Perimeter**: Replaced the fragmented per-tile cluster preview (which previously rendered individual corner brackets and center dots on every single tile in large brush radii) with a single, unified highlight structure.

@@ -330,6 +330,9 @@ export async function searchFeed(query: string) {
     likesCount: post.reactions.length,
     repliesCount: post._count.replies,
     hasLiked: currentUserId ? post.reactions.some(r => r.userId === currentUserId) : false,
+    hasBookmarked: post.bookmarks ? post.bookmarks.length > 0 : false,
+    hashtags: [],
+  }));
 }
 
 // ─── Feed Upgrade: Suggested Creators ──────────────────────────────

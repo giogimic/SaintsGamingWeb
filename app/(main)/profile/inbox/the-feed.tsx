@@ -1617,6 +1617,17 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
     return () => window.removeEventListener("wheel", handleWheel);
   }, [viewingShortsPost, navigateShorts]);
 
+  // True OS / Monitor Fullscreen Handler
+  const handleToggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      modalContainerRef.current?.requestFullscreen().catch(() => {});
+      setIsModalFullscreen(true);
+    } else {
+      document.exitFullscreen().catch(() => {});
+      setIsModalFullscreen(false);
+    }
+  }, []);
+
   // Keyboard navigation for Shorts Viewer
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -1654,17 +1665,6 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [viewingShortsPost, navigateShorts, handleToggleFullscreen]);
-
-  // True OS / Monitor Fullscreen Handler
-  const handleToggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      modalContainerRef.current?.requestFullscreen().catch(() => {});
-      setIsModalFullscreen(true);
-    } else {
-      document.exitFullscreen().catch(() => {});
-      setIsModalFullscreen(false);
-    }
-  }, []);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
