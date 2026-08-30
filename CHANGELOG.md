@@ -1,3 +1,8 @@
+# 2.1.515
+- **Brand Glyph Palette Synchronization**: Updated all SVG logo components and vector favicons (`app/icon.svg`, `public/favicon.svg`, `public/images/sg-logo.svg`, `sg-logo.tsx`, `sg-logo-voxel-svg.tsx`, `sg-logo-3d.tsx`) to render the 'S' letter in Hot Pink (`#E6007E`) and 'G' in Pure White (`#FFFFFF`) with crisp 3.5px black outlines.
+- **Scratch & Test Asset Purge**: Removed temporary scripts and preview files generated during the SVG calibration process.
+- **Landing Page Integrity**: Verified landing page (`app/page.tsx`) remains 100% untouched.
+
 # 2.1.514
 - **SVG Favicon Integration**: Generated site-wide vector SVG favicon assets (`app/icon.svg`, `public/favicon.svg`) with the 120° pixel hexagon and crisp white monogram glyphs.
 - **Root Metadata Icons Support**: Configured standard `icons` metadata in `app/layout.tsx` (`favicon.svg`, `favicon.ico`, apple-touch-icon, and shortcuts) for high-DPI display tabs and mobile bookmarks.
