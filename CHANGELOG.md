@@ -1,3 +1,9 @@
+# 2.1.547
+- **Full-Bleed Studio Viewport & Gap Elimination**:
+  - **Eliminated Viewport Window Frame**: Replaced the floating `StudioCanvasViewport` wrapper with direct full-bleed `GameCanvasBabylon` mounting across `/studio`, removing the artificial window header, 36px/72px window offsets, and eliminating the bottom browser gap completely.
+  - **Seamless Canvas Experience**: Game world in Studio now extends from absolute pixel `0` to the bottom of the screen (`100% / 100vh / fixed inset-0`) with the top menu bar, bottom toolbar, and tool docks floating cleanly on top.
+- **Version Bump**: Bumped release version to `v2.1.547` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.546
 - **Title Screen & Character Select Performance Optimization**:
   - **Deferred Babylon Engine Mounting**: Gated `GameCanvasBabylon` to mount only when the player enters the live world (`EXPLORING`, `BATTLE`, or Studio mode), preventing background WebGL chunk meshing (24,000+ tiles) and full-frame render loops while on the Title and Character Select screens.
