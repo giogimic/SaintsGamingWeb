@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { 
   getTrendingTags, 
+  getSuggestedCreators,
   createSocialPost,
   getTheFeed, 
   togglePostReaction, 
@@ -317,6 +318,14 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
     return true;
   });
 
+  const [isDesktopCommentsOpen, setIsDesktopCommentsOpen] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("sg_desktop_comments_open");
+      return saved !== null ? saved === "true" : true;
+    }
+    return true;
+  });
+
   const [textDurationSec, setTextDurationSec] = useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("sg_shorts_text_duration");
@@ -336,6 +345,8 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
   const hasAutoOpenedMobileRef = useRef(false);
   const [videoPlayback, setVideoPlayback] = useState<{ current: number; duration: number }>({ current: 0, duration: 0 });
   const activeShortsVideoElRef = useRef<HTMLVideoElement | null>(null);
+  const [isMobileComposerExpanded, setIsMobileComposerExpanded] = useState(false);
+  const [isMobileSearchExpanded, setIsMobileSearchExpanded] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -347,6 +358,7 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any[] | null>(null);
   const [mutedKeywords, setMutedKeywords] = useState<MutedKeyword[]>([]);
+  const [suggestedCreators, setSuggestedCreators] = useState<any[]>([]);
   const [showMutedPopover, setShowMutedPopover] = useState(false);
   const [newMuteKeyword, setNewMuteKeyword] = useState("");
   const [newMuteType, setNewMuteType] = useState<"KEYWORD" | "HASHTAG">("KEYWORD");
@@ -362,16 +374,18 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  // Load preferences on mount
+  // Load preferences and suggested creators on mount
   useEffect(() => {
     async function loadPrefs() {
       try {
-        const [prefs, muted] = await Promise.all([
+        const [prefs, muted, creators] = await Promise.all([
           getUserFeedPreferences(),
-          getMutedKeywords()
+          getMutedKeywords(),
+          getSuggestedCreators()
         ]);
         setBroadenFeed(prefs.broadenFeed);
         setMutedKeywords(muted);
+        setSuggestedCreators(creators || []);
       } catch (e) {
         console.error(e);
       }
@@ -590,6 +604,7 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
     try {
       await subscribeToCreator(creatorId);
       toast.success("Subscribed successfully!");
+      setSuggestedCreators(prev => prev.map(c => c.id === creatorId ? { ...c, isSubscribed: true, subscribersCount: (c.subscribersCount || 0) + 1 } : c));
       loadFeed();
     } catch (e: any) {
       toast.error(e.message || "Failed to subscribe");
@@ -1608,19 +1623,27 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
       if (!viewingShortsPost) return;
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
-      if (e.key === "ArrowDown" || e.key === "ArrowRight" || e.key === "PageDown") {
+      if (e.key === "ArrowDown" || e.key === "ArrowRight" || e.key === "PageDown" || e.key === "j" || e.key === "J") {
         e.preventDefault();
         navigateShorts(1);
-      } else if (e.key === "ArrowUp" || e.key === "ArrowLeft" || e.key === "PageUp") {
+      } else if (e.key === "ArrowUp" || e.key === "ArrowLeft" || e.key === "PageUp" || e.key === "k" || e.key === "K") {
         e.preventDefault();
         navigateShorts(-1);
       } else if (e.key === "f" || e.key === "F") {
         e.preventDefault();
         handleToggleFullscreen();
+      } else if (e.key === "c" || e.key === "C") {
+        e.preventDefault();
+        setIsDesktopCommentsOpen(prev => !prev);
       } else if (e.key === "Escape") {
         e.preventDefault();
-        setViewingShortsPost(null);
-        setIsShortsCommentsOpen(false);
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+          setIsModalFullscreen(false);
+        } else {
+          setViewingShortsPost(null);
+          setIsShortsCommentsOpen(false);
+        }
       } else if (e.key === "m" || e.key === "M") {
         setIsShortsMuted(prev => !prev);
       } else if (e.key === " ") {
@@ -1630,7 +1653,7 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [viewingShortsPost, navigateShorts]);
+  }, [viewingShortsPost, navigateShorts, handleToggleFullscreen]);
 
   // True OS / Monitor Fullscreen Handler
   const handleToggleFullscreen = useCallback(() => {
@@ -1657,6 +1680,12 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
       localStorage.setItem("sg_shorts_auto_advance", String(autoAdvance));
     }
   }, [autoAdvance]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("sg_desktop_comments_open", String(isDesktopCommentsOpen));
+    }
+  }, [isDesktopCommentsOpen]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -1912,6 +1941,21 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
               {isShortsMuted ? <VolumeX className="w-5 h-5 text-red-400" /> : <Volume2 className="w-5 h-5 text-green-400" />}
             </button>
 
+            {/* Desktop Comments Toggle */}
+            <button
+              onClick={() => setIsDesktopCommentsOpen(prev => !prev)}
+              className={`hidden md:flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold backdrop-blur-md transition-all shadow-md ${
+                isDesktopCommentsOpen
+                  ? "bg-primary/25 text-primary border border-primary/40 hover:bg-primary/35"
+                  : "bg-black/60 text-white/70 border border-white/10 hover:bg-black/80"
+              }`}
+              title="Toggle Comments Panel (C)"
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span className="hidden lg:inline">Comments:</span>
+              <span className="font-bold">{isDesktopCommentsOpen ? "ON" : "OFF"}</span>
+            </button>
+
             {/* True Monitor Fullscreen Toggle Button */}
             <button 
               onClick={handleToggleFullscreen}
@@ -1949,8 +1993,12 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
           <div 
             className={`w-full h-full relative transition-all duration-300 flex items-center justify-center ${
               detectedAspectRatio === "landscape" || !viewingShortsPost.mediaUrl || isArchive(viewingShortsPost.mediaUrl)
-                ? "md:w-full md:max-w-5xl lg:max-w-6xl md:h-[88vh] md:max-h-[860px] md:flex-row md:items-stretch md:rounded-3xl overflow-hidden bg-black/95 md:border md:border-white/15 md:shadow-2xl"
-                : "md:w-auto md:min-w-[400px] md:max-w-[460px] md:h-[92vh] md:max-h-[880px] md:rounded-3xl overflow-hidden bg-black md:shadow-2xl"
+                ? isDesktopCommentsOpen
+                  ? "md:w-full md:max-w-5xl lg:max-w-6xl 2xl:max-w-7xl md:h-[88vh] md:max-h-[880px] md:flex-row md:items-stretch md:rounded-3xl overflow-hidden bg-black/95 md:border md:border-white/15 md:shadow-2xl"
+                  : "md:w-full md:max-w-6xl lg:max-w-7xl 2xl:max-w-[1550px] md:h-[92vh] md:max-h-[920px] md:flex-row md:items-stretch md:rounded-3xl overflow-hidden bg-black/95 md:border md:border-white/15 md:shadow-2xl"
+                : isDesktopCommentsOpen
+                  ? "md:w-auto md:min-w-[400px] md:max-w-[460px] md:h-[92vh] md:max-h-[880px] md:rounded-3xl overflow-hidden bg-black md:shadow-2xl"
+                  : "md:w-full md:max-w-4xl lg:max-w-5xl md:h-[94vh] md:max-h-[940px] md:rounded-3xl overflow-hidden bg-black md:shadow-2xl"
             }`}
           >
             {/* Story-style Progress Bar for Text Posts & Static Images */}
@@ -2054,6 +2102,23 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
                     <Play className="w-10 h-10 fill-white" />
                   </div>
                 </div>
+              )}
+
+              {/* Floating Re-open Comments Button on Desktop when comments are collapsed */}
+              {!isDesktopCommentsOpen && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsDesktopCommentsOpen(true);
+                  }}
+                  className="hidden md:flex items-center gap-2 absolute right-4 top-1/2 -translate-y-1/2 px-3.5 py-2.5 bg-black/80 hover:bg-black/95 text-white rounded-2xl backdrop-blur-xl border border-white/20 shadow-2xl hover:scale-105 transition-all z-40 group pointer-events-auto"
+                  title="Show Comments Panel (C)"
+                >
+                  <MessageSquare className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-bold">Comments ({viewingShortsPost.repliesCount || 0})</span>
+                  <ChevronLeft className="w-3.5 h-3.5 text-white/60 group-hover:-translate-x-0.5 transition-transform" />
+                </button>
               )}
 
               {/* Blooming Double-Tap Particle Heart Burst */}
@@ -2279,10 +2344,10 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
               </div>
             </div>
 
-            {/* Desktop Dedicated Social & Comments Dock (Rendered on md: and above when wide mode) */}
-            {(detectedAspectRatio === "landscape" || !viewingShortsPost.mediaUrl || isArchive(viewingShortsPost.mediaUrl)) && (
+            {/* Desktop Dedicated Social & Comments Dock (Rendered on md: and above when wide mode and comments open) */}
+            {(detectedAspectRatio === "landscape" || !viewingShortsPost.mediaUrl || isArchive(viewingShortsPost.mediaUrl)) && isDesktopCommentsOpen && (
               <div 
-                className="hidden md:flex md:w-[380px] lg:w-[420px] flex-col border-l border-white/10 bg-card/85 backdrop-blur-2xl text-white select-text"
+                className="hidden md:flex md:w-[380px] lg:w-[420px] 2xl:w-[460px] flex-col border-l border-white/10 bg-card/85 backdrop-blur-2xl text-white select-text animate-in fade-in slide-in-from-right-4 duration-200"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Author Info Header */}
@@ -2307,14 +2372,23 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
                     </div>
                   </div>
 
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleSubscribe(viewingShortsPost.author?.id)}
-                    className="h-8 text-xs font-bold rounded-full border-primary/40 hover:bg-primary/20"
-                  >
-                    Follow
-                  </Button>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleSubscribe(viewingShortsPost.author?.id)}
+                      className="h-8 text-xs font-bold rounded-full border-primary/40 hover:bg-primary/20"
+                    >
+                      Follow
+                    </Button>
+                    <button
+                      onClick={() => setIsDesktopCommentsOpen(false)}
+                      className="p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+                      title="Hide comments (C)"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Post Body Caption */}
@@ -2462,11 +2536,11 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
       <div className="flex-1 w-full max-w-4xl 2xl:max-w-5xl min-w-0 space-y-4">
         
         {/* Stream Header & Navigation Tabs */}
-        <div className="p-4 border border-border/50 rounded-2xl sticky top-20 bg-background/85 backdrop-blur-xl z-10 shadow-sm">
+        <div className="p-3 sm:p-4 border border-border/50 rounded-2xl sticky top-20 bg-background/85 backdrop-blur-xl z-10 shadow-sm">
           
           {/* Mobile Top Navigation Tabs: Feed vs Messages */}
           {onOpenMessages && (
-            <div className="lg:hidden flex items-center p-1 bg-muted/40 rounded-xl border border-border/40 mb-3.5 gap-1">
+            <div className="lg:hidden flex items-center p-1 bg-muted/40 rounded-xl border border-border/40 mb-2.5 gap-1">
               <button
                 className="flex-1 py-1.5 rounded-lg text-xs font-bold bg-primary text-primary-foreground shadow-sm flex items-center justify-center gap-1.5 transition-all"
               >
@@ -2483,22 +2557,23 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
             </div>
           )}
 
-          {/* Top Bar: Title & Search */}
-          <div className="flex justify-between items-center mb-3.5 gap-3 flex-wrap">
+          {/* Top Bar: Title & Search Controls */}
+          <div className="flex justify-between items-center mb-2.5 gap-2 flex-wrap">
             <div className="flex items-center gap-2">
-              <h2 className="font-extrabold text-xl sm:text-2xl tracking-tight sg-text-gradient">
+              <h2 className="font-extrabold text-lg sm:text-2xl tracking-tight sg-text-gradient">
                 {filter ? `#${filter}` : "The Feed"}
               </h2>
               {filter && (
-                <Button variant="ghost" size="sm" className="h-7 text-xs rounded-full" onClick={() => setFilter(null)}>
+                <Button variant="ghost" size="sm" className="h-6 text-[11px] rounded-full px-2" onClick={() => setFilter(null)}>
                   Clear
                 </Button>
               )}
             </div>
 
             {/* Quick Search & Controls */}
-            <div className="flex items-center gap-2 flex-1 max-w-md justify-end">
-              <form onSubmit={handleSearch} className="flex-1 max-w-xs flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-1 max-w-md justify-end">
+              {/* Desktop Search Bar */}
+              <form onSubmit={handleSearch} className="hidden sm:flex flex-1 max-w-xs items-center gap-1.5">
                 <div className="relative flex-1">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <Input
@@ -2519,10 +2594,23 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
                 </div>
               </form>
 
+              {/* Mobile Search Toggle Icon */}
+              <button
+                onClick={() => setIsMobileSearchExpanded(prev => !prev)}
+                className={`sm:hidden p-2 rounded-full border transition-colors ${
+                  isMobileSearchExpanded || searchQuery 
+                    ? "bg-primary/20 text-primary border-primary/40" 
+                    : "bg-muted/30 text-muted-foreground border-border/50"
+                }`}
+                title="Search"
+              >
+                <Search className="w-3.5 h-3.5" />
+              </button>
+
               {/* Broaden Discovery Toggle */}
               <button
                 onClick={handleBroadenToggle}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border shrink-0 ${
+                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-semibold transition-all border shrink-0 ${
                   broadenFeed 
                     ? 'bg-primary/10 text-primary border-primary/30 shadow-xs' 
                     : 'bg-muted/30 text-muted-foreground border-border/50 hover:border-primary/30 hover:text-foreground'
@@ -2595,11 +2683,36 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
             </div>
           </div>
 
+          {/* Mobile Expanded Search Bar */}
+          {isMobileSearchExpanded && (
+            <form onSubmit={handleSearch} className="sm:hidden mb-2.5 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Search feed..."
+                  className="h-8 pl-8 pr-8 text-xs bg-muted/30 border-border/50 rounded-full"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoFocus
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={clearSearch}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </form>
+          )}
+
           {/* Stream Selector Navigation Tabs */}
-          <div className="flex items-center gap-2 pt-1 border-t border-border/40 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1.5 sm:gap-2 pt-1 border-t border-border/40 overflow-x-auto no-scrollbar">
             <button
               onClick={() => { setFeedTab("for-you"); setFilter(null); }}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all relative shrink-0 ${
+              className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all relative shrink-0 ${
                 feedTab === "for-you" && !filter
                   ? "text-primary bg-primary/10 border border-primary/30 shadow-xs"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/30 border border-transparent"
@@ -2609,25 +2722,25 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
             </button>
             <button
               onClick={() => { setFeedTab("clips"); setFilter(null); }}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all relative shrink-0 flex items-center gap-1.5 ${
+              className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all relative shrink-0 flex items-center gap-1.5 ${
                 feedTab === "clips"
                   ? "text-primary bg-primary/10 border border-primary/30 shadow-xs"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/30 border border-transparent"
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
-              Clips & Reels
+              <span>Clips & Reels</span>
             </button>
             <button
               onClick={() => { setFeedTab("trending"); }}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all relative shrink-0 flex items-center gap-1.5 ${
+              className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all relative shrink-0 flex items-center gap-1.5 ${
                 feedTab === "trending"
                   ? "text-primary bg-primary/10 border border-primary/30 shadow-xs"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/30 border border-transparent"
               }`}
             >
               <Flame className="w-3.5 h-3.5 text-orange-400" />
-              Hot & Trending
+              <span>Hot & Trending</span>
             </button>
           </div>
 
@@ -2641,12 +2754,42 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
           )}
         </div>
 
-        {/* Integrated Post Composer */}
-        {searchResults === null && (
+        {/* Collapsed Mobile Post Composer Trigger (Saves vertical space on mobile) */}
+        {searchResults === null && !isMobileComposerExpanded && !body && !mediaUrl && (
+          <div className="sm:hidden p-3 bg-card/60 backdrop-blur-md border border-border/50 rounded-2xl flex items-center gap-2.5 shadow-xs">
+            <div className="w-8 h-8 rounded-full bg-muted overflow-hidden relative shrink-0 ring-1 ring-border/60">
+              {session?.user?.image ? (
+                <Image src={session.user.image} alt={session.user.name || "You"} fill className="object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center font-bold text-muted-foreground bg-muted text-xs">
+                  {session?.user?.name?.charAt(0).toUpperCase() || "U"}
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsMobileComposerExpanded(true)}
+              className="flex-1 text-left px-3.5 py-2 rounded-full bg-muted/30 border border-border/40 text-xs text-muted-foreground hover:text-foreground transition-colors truncate"
+            >
+              What&apos;s happening in Saints Gaming?
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsMobileComposerExpanded(true)}
+              className="p-2 rounded-full text-primary hover:bg-primary/10 transition-colors shrink-0"
+              title="Attach Media"
+            >
+              <ImageIcon className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Integrated Full Post Composer (Always visible on desktop, expandable on mobile) */}
+        {searchResults === null && (isMobileComposerExpanded || body || mediaUrl || typeof window === "undefined") && (
           <Card 
             className={`bg-card/60 backdrop-blur-md shadow-sm border-border/50 rounded-2xl overflow-hidden focus-within:ring-1 focus-within:ring-primary/50 transition-all relative ${
               isDragging ? "ring-2 ring-primary border-primary bg-primary/5" : ""
-            }`}
+            } ${!isMobileComposerExpanded && !body && !mediaUrl ? "hidden sm:block" : ""}`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -2955,11 +3098,19 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
                     </Popover>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <span className={`text-xs font-mono ${body.length > 900 ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <span className={`text-[11px] sm:text-xs font-mono ${body.length > 900 ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
                       {body.length} / 1000
                     </span>
-                    <Button type="submit" disabled={(!body.trim() && !mediaUrl) || isPosting || isUploading || body.length > 1000} className="rounded-full px-6 font-bold shadow-md h-9 text-xs">
+                    {/* Mobile Collapse Button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsMobileComposerExpanded(false)}
+                      className="sm:hidden text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded"
+                    >
+                      Cancel
+                    </button>
+                    <Button type="submit" disabled={(!body.trim() && !mediaUrl) || isPosting || isUploading || body.length > 1000} className="rounded-full px-5 sm:px-6 font-bold shadow-md h-8 sm:h-9 text-xs">
                       {isPosting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Post"}
                     </Button>
                   </div>
@@ -3016,36 +3167,128 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
         )}
       </div>
 
-      {/* Right Trending Sidebar */}
-      <div className="w-80 hidden xl:block sticky top-20 h-fit max-h-[calc(100vh-6rem)] overflow-y-auto bg-card/40 border border-border/50 rounded-2xl p-5 shadow-sm space-y-4 shrink-0 backdrop-blur-md">
-        <h3 className="font-extrabold text-base mb-1 flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-primary" /> Trending Now
-        </h3>
-        <p className="text-xs text-muted-foreground mb-3">Popular hashtags across Saints Gaming</p>
-        <div className="space-y-2">
-          {trending.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-4 text-center">No trends yet.</p>
-          ) : (
-            trending.map((t, idx) => (
-              <button 
-                key={t.name}
-                onClick={() => {
-                  setFilter(t.name);
-                  setFeedTab("for-you");
-                }}
-                className="w-full flex items-center justify-between p-3 rounded-xl bg-background/50 border border-border/40 hover:border-primary/40 hover:bg-muted/30 transition-all text-left group shadow-2xs"
-              >
-                <div>
-                  <div className="text-[10px] text-muted-foreground mb-0.5 font-medium">{idx + 1} · Trending</div>
-                  <div className="font-bold text-xs group-hover:text-primary transition-colors">#{t.name}</div>
-                </div>
-                <div className="text-[11px] text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md font-mono font-medium">
-                  {t.usageCount}
-                </div>
-              </button>
-            ))
-          )}
+      {/* Right Desktop Community Hub Sidebar */}
+      <div className="w-80 xl:w-88 hidden xl:flex flex-col gap-4 sticky top-20 h-fit max-h-[calc(100vh-6rem)] overflow-y-auto shrink-0 no-scrollbar">
+        
+        {/* Card 1: Trending Topics */}
+        <div className="bg-card/50 border border-border/50 rounded-2xl p-4 shadow-sm space-y-3 backdrop-blur-md">
+          <div className="flex items-center justify-between">
+            <h3 className="font-extrabold text-sm flex items-center gap-2">
+              <Flame className="w-4 h-4 text-orange-400" />
+              <span>Trending Topics</span>
+            </h3>
+            <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Saints</span>
+          </div>
+          <div className="space-y-1.5">
+            {trending.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-3 text-center">No trends yet.</p>
+            ) : (
+              trending.slice(0, 5).map((t, idx) => (
+                <button 
+                  key={t.name}
+                  onClick={() => {
+                    setFilter(t.name);
+                    setFeedTab("for-you");
+                  }}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-background/40 border border-border/30 hover:border-primary/40 hover:bg-muted/30 transition-all text-left group shadow-2xs"
+                >
+                  <div className="min-w-0 pr-2">
+                    <div className="text-[10px] text-muted-foreground font-medium">#{idx + 1} Trending</div>
+                    <div className="font-bold text-xs group-hover:text-primary transition-colors truncate">#{t.name}</div>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md font-mono font-medium shrink-0">
+                    {t.usageCount}
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
         </div>
+
+        {/* Card 2: Active Saints Creators */}
+        {suggestedCreators && suggestedCreators.length > 0 && (
+          <div className="bg-card/50 border border-border/50 rounded-2xl p-4 shadow-sm space-y-3 backdrop-blur-md">
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-sm flex items-center gap-2">
+                <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                <span>Active Saints</span>
+              </h3>
+              <span className="text-[10px] uppercase font-bold text-primary tracking-wider">Creators</span>
+            </div>
+            <div className="space-y-2">
+              {suggestedCreators.map(creator => (
+                <div key={creator.id} className="flex items-center justify-between gap-2.5 p-2 rounded-xl bg-background/30 border border-border/30 hover:border-border/60 transition-all">
+                  <Link href={`/user/${creator.username}`} className="flex items-center gap-2.5 min-w-0 group/creator">
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-muted relative shrink-0 border border-border/50">
+                      {creator.image ? (
+                        <Image src={creator.image} alt={creator.username} fill className="object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xs font-bold text-white bg-primary/30">
+                          {creator.username?.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-bold text-xs text-foreground group-hover/creator:text-primary transition-colors truncate flex items-center gap-1">
+                        @{creator.username}
+                        {creator.isFounder && <Crown className="w-3 h-3 text-yellow-500 fill-yellow-500 shrink-0" />}
+                        {creator.isVIP && <BadgeCheck className="w-3 h-3 text-blue-500 fill-blue-500 shrink-0" />}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground font-mono">
+                        {creator.postsCount} clip{creator.postsCount !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                  </Link>
+
+                  <Button
+                    size="sm"
+                    variant={creator.isSubscribed ? "secondary" : "outline"}
+                    onClick={() => handleSubscribe(creator.id)}
+                    className={`h-7 px-3 text-[11px] font-bold rounded-full transition-all shrink-0 ${
+                      creator.isSubscribed 
+                        ? "bg-primary/15 text-primary border-primary/30" 
+                        : "border-primary/40 hover:bg-primary hover:text-primary-foreground"
+                    }`}
+                  >
+                    {creator.isSubscribed ? "Following" : "Follow"}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Card 3: Saints Gaming Community Hub Widget */}
+        <div className="bg-gradient-to-br from-card/70 via-card/50 to-primary/5 border border-primary/20 rounded-2xl p-4 shadow-sm space-y-3 backdrop-blur-md">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="font-bold text-xs text-foreground">Saints Gaming</h4>
+              <p className="text-[10px] text-muted-foreground italic">&ldquo;Time To Play&rdquo;</p>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Hang out, share epic gameplay clips, chat with friends, and jump into community game realms together.
+          </p>
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <Link
+              href="/forum"
+              className="px-3 py-1.5 rounded-xl bg-background/60 hover:bg-muted text-xs font-semibold text-center border border-border/40 hover:border-primary/40 transition-all"
+            >
+              Forum
+            </Link>
+            <Link
+              href="/lobby"
+              className="px-3 py-1.5 rounded-xl bg-primary/15 hover:bg-primary/25 text-xs font-bold text-primary text-center border border-primary/30 transition-all flex items-center justify-center gap-1"
+            >
+              <span>MMO Lobby</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+        </div>
+
       </div>
 
     </div>

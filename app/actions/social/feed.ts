@@ -330,8 +330,49 @@ export async function searchFeed(query: string) {
     likesCount: post.reactions.length,
     repliesCount: post._count.replies,
     hasLiked: currentUserId ? post.reactions.some(r => r.userId === currentUserId) : false,
-    hasBookmarked: post.bookmarks ? post.bookmarks.length > 0 : false,
-    hashtags: [],
+}
+
+// ─── Feed Upgrade: Suggested Creators ──────────────────────────────
+
+export async function getSuggestedCreators() {
+  const session = await auth();
+  const currentUserId = session?.user?.id;
+
+  const users = await prisma.user.findMany({
+    where: {
+      ...(currentUserId ? { id: { not: currentUserId } } : {}),
+      isBanned: false,
+      socialPosts: { some: {} },
+    },
+    take: 5,
+    orderBy: [
+      { permissionLevel: "desc" },
+      { xp: "desc" }
+    ],
+    select: {
+      id: true,
+      username: true,
+      image: true,
+      isVIP: true,
+      isFounder: true,
+      isTrusted: true,
+      achievements: { where: { isPinned: true }, select: { badgeId: true } },
+      _count: { select: { socialPosts: true, subscribers: true } },
+      subscribers: currentUserId ? { where: { subscriberId: currentUserId, active: true } } : false
+    }
+  });
+
+  return users.map(u => ({
+    id: u.id,
+    username: u.username,
+    image: u.image,
+    isVIP: u.isVIP,
+    isFounder: u.isFounder,
+    isTrusted: u.isTrusted,
+    achievements: u.achievements,
+    postsCount: u._count.socialPosts,
+    subscribersCount: u._count.subscribers,
+    isSubscribed: Boolean(u.subscribers && (u.subscribers as any[]).length > 0)
   }));
 }
 
