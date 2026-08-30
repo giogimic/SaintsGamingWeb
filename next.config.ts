@@ -61,6 +61,8 @@ const nextConfig: NextConfig = {
   // Classic flat-canvas /game stub is gone — always send people to the real lobby.
   async redirects() {
     return [
+      { source: "/nexus", destination: "/hub", permanent: true },
+      { source: "/nexus/:path*", destination: "/hub", permanent: true },
       { source: "/game", destination: "/lobby", permanent: true },
       { source: "/game/:path*", destination: "/lobby", permanent: true },
     ];
