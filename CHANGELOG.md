@@ -1,3 +1,8 @@
+# 2.1.537
+- **Base UI ActionTooltip Build Compatibility**:
+  - Removed unsupported `asChild` prop from `TooltipTrigger` in `ActionTooltip` (`src/shared/ui/action-tooltip.tsx`), resolving TypeScript build failures in Next.js production builds.
+- **Version Bump**: Bumped release version to `v2.1.537` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.536
 - **Navigation Enhancements**:
   - **Centered Main Links**: Moved the primary links (Home, The Nexus, Play Now, Forum, Wiki, Support) into a clean, centered cluster in the top navigation bar.
