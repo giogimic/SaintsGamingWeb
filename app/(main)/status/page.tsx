@@ -42,7 +42,7 @@ export default function StatusPage() {
           <Server className="h-8 w-8 text-primary" />
           Server Status
         </h1>
-        <p className="text-muted-foreground">Real-time telemetry from the Saints Gaming Roleplay server.</p>
+        <p className="text-muted-foreground">Live status and active players from our Saints FiveM Roleplay server.</p>
       </div>
 
       {isLoading && !status ? (

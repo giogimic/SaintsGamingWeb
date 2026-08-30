@@ -6,8 +6,8 @@ import { getTopLobbyOperatives } from '@/app/actions/game';
 import { Trophy, Crown, BadgeCheck, ShieldCheck, User, Sparkles } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Global Operatives Leaderboards | Saints Gaming',
-  description: 'View the top ranked Saints operatives, rich list economy rankings, and master Saints across the community.',
+  title: 'Player Leaderboards | Saints Gaming',
+  description: 'View top ranked Saints players, highscores, and economy rankings across the community.',
 };
 
 export default async function LeaderboardsPage() {
@@ -28,10 +28,10 @@ export default async function LeaderboardsPage() {
           <Trophy className="w-5 h-5" /> SAINTS GLOBAL RANKINGS
         </div>
         <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-purple-400 via-emerald-400 to-amber-400 bg-clip-text text-transparent">
-          OPERATIVE LEADERBOARDS
+          PLAYER LEADERBOARDS
         </h1>
         <p className="text-muted-foreground text-sm max-w-2xl mx-auto">
-          Explore top operatives competing across the campaign region. Ranks are synchronized in real-time from character levels, 27-skill progression, economy credits, and bound beast species.
+          Explore the top players and characters across the community. Rankings update in real time from character levels, skill XP, economy coins, and captured buddies.
         </p>
       </div>
 
@@ -40,14 +40,14 @@ export default async function LeaderboardsPage() {
         <div className="flex items-center justify-between border-b border-border/40 pb-4">
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-emerald-400" />
-            Top Operatives Directory
+            Top Players & Characters
           </h2>
           <span className="text-xs text-muted-foreground font-mono">Total Tracked: {operatives.length}</span>
         </div>
 
         {operatives.length === 0 ? (
           <div className="p-12 border border-dashed rounded-xl text-center text-muted-foreground italic font-mono">
-            No active operatives recorded yet. Enter The Lobby to create your character!
+            No player rankings recorded yet. Jump into The Lobby to create your character!
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -55,12 +55,12 @@ export default async function LeaderboardsPage() {
               <thead>
                 <tr className="border-b border-border/40 text-xs text-muted-foreground uppercase font-mono tracking-wider">
                   <th className="py-3 px-4">Rank</th>
-                  <th className="py-3 px-4">Operative</th>
+                  <th className="py-3 px-4">Player / Character</th>
                   <th className="py-3 px-4">Class & Perk</th>
                   <th className="py-3 px-4">Level</th>
                   <th className="py-3 px-4">Total Skill XP</th>
-                  <th className="py-3 px-4">Credits</th>
-                  <th className="py-3 px-4">Beasts Bound</th>
+                  <th className="py-3 px-4">Coins</th>
+                  <th className="py-3 px-4">Buddies Captured</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30 text-sm">
@@ -125,7 +125,7 @@ export default async function LeaderboardsPage() {
 
                     {/* Beasts Bound */}
                     <td className="py-4 px-4 font-mono text-purple-400 font-bold">
-                      {op.caughtCount} Species
+                      {op.caughtCount} Buddies
                     </td>
                   </tr>
                 ))}

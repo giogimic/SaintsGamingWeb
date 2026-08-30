@@ -1,3 +1,9 @@
+# 2.1.549
+- **Website Copywriting & Flavor Text Polish**:
+  - **Comprehensive Web Audit**: Audited all non-game, non-studio website pages (Landing, Home, The Nexus, Forums, Streams, Support, Leaderboards, Wiki, User Profiles, Auth, and Status) for relaxed, authentic gamer tone (*"Saints Gaming: Time To Play"*).
+  - **Terminology Harmonization**: Updated leaderboards, profiles, and status pages to use canonical community labels (*Saints Characters, Buddies Captured, FiveM Roleplay telemetry, Player Rankings*), removing pseudo-military/sci-fi terminology.
+- **Version Bump**: Bumped release version to `v2.1.549` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.548
 - **The Nexus Mobile-Friendly Upgrade**:
   - **Sticky Mobile Segmented Controller**: Implemented an ultra-responsive, touch-optimized glassmorphic segmented tab bar for mobile screens (< lg) with active gold pill highlights and live count badges.
