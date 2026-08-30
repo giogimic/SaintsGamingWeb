@@ -3,6 +3,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
+  TooltipProvider,
 } from "@/shared/ui/tooltip";
 
 interface ActionTooltipProps {
@@ -27,11 +28,13 @@ export function ActionTooltip({
   if (!label) return <>{children}</>;
 
   return (
-    <Tooltip delay={delayDuration}>
-      <TooltipTrigger asChild={asChild}>{children}</TooltipTrigger>
-      <TooltipContent side={side} align={align} className={className}>
-        <p className="font-semibold text-sm capitalize">{label}</p>
-      </TooltipContent>
-    </Tooltip>
+    <TooltipProvider delay={delayDuration}>
+      <Tooltip>
+        <TooltipTrigger asChild={asChild}>{children}</TooltipTrigger>
+        <TooltipContent side={side} align={align} className={className}>
+          <p className="font-semibold text-sm capitalize">{label}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
