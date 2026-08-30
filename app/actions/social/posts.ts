@@ -13,6 +13,7 @@ export async function createSocialPost(
   body: string, 
   mediaUrl?: string,
   options?: {
+    thumbnailUrl?: string;
     isSubscriberOnly?: boolean;
     voiceoverUrl?: string;
     backgroundTrackUrl?: string;
@@ -39,6 +40,7 @@ export async function createSocialPost(
       authorId: session.user.id,
       body: body.trim(),
       mediaUrl: mediaUrl || null,
+      thumbnailUrl: options?.thumbnailUrl || null,
       isSubscriberOnly: options?.isSubscriberOnly || false,
       voiceoverUrl: options?.voiceoverUrl || null,
       backgroundTrackUrl: options?.backgroundTrackUrl || null,

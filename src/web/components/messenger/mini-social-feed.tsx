@@ -14,6 +14,7 @@ type MiniPost = {
   id: string;
   body: string;
   mediaUrl: string | null;
+  thumbnailUrl?: string | null;
   createdAt: Date;
   author: { id: string; username: string; image: string | null; isVIP?: boolean; isFounder?: boolean };
   hasLiked: boolean;
@@ -199,6 +200,7 @@ export function MiniSocialFeed() {
                   <>
                     <video 
                       src={formatVideoSrc(post.mediaUrl)} 
+                      poster={post.thumbnailUrl || undefined}
                       preload="metadata" 
                       playsInline 
                       muted 

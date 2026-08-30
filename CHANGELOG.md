@@ -1,3 +1,15 @@
+# 2.1.506
+- **Admin Dashboard Zero-Blur Floating Window Overhaul**: Configured the Admin OS shell to load directly as a crystal-clear floating window over the user's active page with zero background blur (`backdrop-blur-none` / subtle transparent backdrop), ensuring the underlying website remains fully visible and interactive.
+- **Top-Level Category Tabs Navigation**: Removed the fixed left sidebar and mobile drawer to give 100% of the window width to the workspace. Added top-level horizontal category tabs (**Overview**, **World & MMO**, **Community**, **Identity & Roles**, **Infrastructure**, **Developer**, plus **Favorites**) with active route syncing and category indicators.
+- **Interactive Module Sub-Navigation Bar**: Added a horizontal module sub-bar directly beneath the category tabs featuring instant module chips, live route active styling, badges, and quick-pin favorite toggles.
+- **Repositioned Header Search with Live Dropdown Palette**: Relocated the search bar to the center of the top window header featuring a `/` and `Ctrl+K` global keyboard shortcut, clear button, and an instant floating dropdown search palette with categorized search results and arrow/click navigation.
+
+# 2.1.505
+- **Automatic Video Frame Poster Generation & Custom Cover System**: Implemented instant client-side video frame capture (`captureVideoFrame`) and memory poster cache (`video-thumbnail.ts`) that extracts a crisp screenshot at 0.5s into videos, eliminating blank/black loading states across all feeds, reels, and video embeds (YouTube / TikTok style).
+- **Post Composer Video Cover Studio**: Added an interactive video thumbnail manager in the social feed post composer. Uploaded clips automatically generate and display a default frame snapshot preview with options to capture frames at the current playback position or upload a custom cover image (`thumbnailUrl`).
+- **Feed Video Player Screenshot Overlay & Floating Badge**: Enhanced `FeedVideoPlayer.tsx` with instant poster rendering, smooth crossfade to active playback, and a sleek floating center play button pill and duration timestamp badges when paused.
+- **Database & Model Alignment**: Added `thumbnailUrl` to the `SocialPost` Prisma schema, database migrations, server action pipelines (`createSocialPost`), and feed querying APIs (`getTheFeed`, `getMiniFeed`, `searchFeed`).
+
 # 2.1.504
 - **Automated Docker & Server Disk Cleanup Script**: Created `scripts/cleanup-disk.sh` (and `npm run clean:disk`) to prune Docker BuildKit build cache (`docker builder prune -a -f`), dangling images (`docker image prune -f`), stopped containers, unused networks, vacuum systemd journal logs to 100MB, truncate build logs, and prune database backups older than 7 days.
 - **Proactive Update Disk Space Guard**: Enhanced `scripts/update.sh` to automatically check free space before `git fetch` (< 5GB free triggers automated pruning) and automatically prune dangling layers and excessive build cache before and after Docker container rebuilds, preventing "No space left on device" crashes.

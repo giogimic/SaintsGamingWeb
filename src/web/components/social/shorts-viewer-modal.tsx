@@ -338,6 +338,7 @@ export function ShortsViewerModal({
             <video
               key={currentPost.id}
               src={formatVideoSrc(currentPost.mediaUrl)}
+              poster={currentPost.thumbnailUrl || undefined}
               autoPlay={isPlaying}
               loop
               playsInline

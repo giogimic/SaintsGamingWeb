@@ -40,7 +40,9 @@ export type AdminCategoryId =
 export interface AdminCategory {
   id: AdminCategoryId;
   label: string;
+  shortLabel: string;
   description: string;
+  icon: LucideIcon;
   order: number;
 }
 
@@ -48,37 +50,49 @@ export const ADMIN_CATEGORIES: Record<AdminCategoryId, AdminCategory> = {
   overview: {
     id: "overview",
     label: "Overview & Telemetry",
+    shortLabel: "Overview",
     description: "System health, live operations, and command center status.",
+    icon: LayoutDashboard,
     order: 1,
   },
   operations: {
     id: "operations",
     label: "World & Game Operations",
+    shortLabel: "World & MMO",
     description: "MMO runtime management, Studio, quests, creatures, and assets.",
+    icon: Gamepad2,
     order: 2,
   },
   community: {
     id: "community",
     label: "Community & Content",
+    shortLabel: "Community",
     description: "Publishing, forums, moderation, support, and live streaming.",
+    icon: MessageSquare,
     order: 3,
   },
   identity: {
     id: "identity",
     label: "Identity, Progression & Economy",
+    shortLabel: "Identity & Roles",
     description: "User security, RBAC roles, XP progression, and achievement badges.",
+    icon: ShieldCheck,
     order: 4,
   },
   infrastructure: {
     id: "infrastructure",
     label: "Game Servers & Infrastructure",
+    shortLabel: "Infrastructure",
     description: "Dedicated servers, client modpacks, FiveM, and site configuration.",
+    icon: Server,
     order: 5,
   },
   developer: {
     id: "developer",
     label: "Developer Console",
+    shortLabel: "Developer",
     description: "Technical diagnostics, database utilities, API sandbox, and background tasks.",
+    icon: Terminal,
     order: 6,
   },
 };

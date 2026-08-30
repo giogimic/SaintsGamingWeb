@@ -1064,8 +1064,9 @@ model SocialPost {
   authorId   String
   body       String // Max ~280 chars
   visibility String   @default("PUBLIC") // PUBLIC or FRIENDS
-  mediaUrl   String?
-  parentId   String?
+  mediaUrl     String?
+  thumbnailUrl String?
+  parentId     String?
   viewCount  Int      @default(0)
   shareCount Int      @default(0)
   createdAt  DateTime @default(now())

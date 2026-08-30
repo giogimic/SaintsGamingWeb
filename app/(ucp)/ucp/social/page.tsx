@@ -289,6 +289,7 @@ export default async function SocialDashboard(props: { searchParams: Promise<{ f
                               {isVideo(post.mediaUrl) ? (
                                 <video 
                                   src={formatVideoSrc(post.mediaUrl)} 
+                                  poster={post.thumbnailUrl || undefined}
                                   controls 
                                   preload="metadata" 
                                   playsInline 
