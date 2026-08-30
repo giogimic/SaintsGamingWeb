@@ -708,7 +708,7 @@ export const StudioEditorShell: React.FC = () => {
           </div>
         </div>
       )}
-      <div className={`fixed inset-0 pointer-events-none z-[100] flex flex-col pt-9 pb-10 ${!isStudioReady ? 'opacity-0' : 'opacity-100 transition-opacity duration-500'}`}>
+      <div className={`fixed inset-0 pointer-events-none z-[100] flex flex-col ${!isStudioReady ? 'opacity-0' : 'opacity-100 transition-opacity duration-500'}`}>
         <StudioMenuBar
           onOpenMapBrowser={() => useEditorStore.getState().openPanel('maps')}
           onOpenAssetBrowser={() => setStudioMode('assets')}

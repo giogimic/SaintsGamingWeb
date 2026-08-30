@@ -33,7 +33,7 @@ export function StudioCanvasViewport({
     if (!isMaximized) {
       restoreViewportRef.current = { ...viewport };
       const topBarHeight = 36;
-      const bottomBarHeight = 40;
+      const bottomBarHeight = 36;
       setViewport({
         x: 0,
         y: topBarHeight,

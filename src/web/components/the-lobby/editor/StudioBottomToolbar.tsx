@@ -169,7 +169,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
     : null;
 
   return (
-    <div className="pointer-events-auto absolute bottom-0 left-0 right-0 h-9 z-[110] bg-card/85 border-t border-border/60 flex items-center justify-between px-3 select-none backdrop-blur-xl shadow-lg font-mono text-xs text-foreground">
+    <div className="pointer-events-auto fixed bottom-0 left-0 right-0 h-9 z-[110] bg-card/85 border-t border-border/60 flex items-center justify-between px-3 select-none backdrop-blur-xl shadow-lg font-mono text-xs text-foreground">
       {/* ─── ZONE 1: Active Tool, Brush Size & Transforms ─── */}
       <div className="flex items-center gap-2 border-r border-border/40 pr-3">
         {/* Brush Mode Buttons */}
