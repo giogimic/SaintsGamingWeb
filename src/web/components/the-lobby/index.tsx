@@ -1874,7 +1874,7 @@ export default function TheLobby({
       <div
         className="pointer-events-none absolute inset-0 origin-top-left z-40"
         style={
-          isMobile
+          isMobile && !enableStudio
             ? {
                 transform: `scale(${uiScale})`,
                 transformOrigin: "top left",

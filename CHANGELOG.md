@@ -1,3 +1,18 @@
+# 2.1.552
+- **Studio Unified Multi-Tile Brush Highlight Structure**:
+  - **Single Cohesive Footprint Perimeter**: Replaced the fragmented per-tile cluster preview (which previously rendered individual corner brackets and center dots on every single tile in large brush radii) with a single, unified highlight structure.
+  - **Continuous Contour & Ambient Glass**: Circular and square brush footprints of any radius (1x1, 3x3, 5x5, 7x7+) now render a continuous outer neon boundary perimeter with a smooth ambient radial glass gradient fill.
+  - **Subtle Interior Cell Grid & Center Focal Target**: Clean, semi-transparent internal grid dividers and a single precision focal target crosshair on the center tile provide clear spatial awareness without visual clutter.
+  - **Zero Frame Drops**: Unified procedural dynamic texture caching by shape, radius, and brush mode eliminates per-tile mesh allocation overhead and GC stutter.
+- **Version Bump**: Bumped release version to `v2.1.552` across all application layouts, headers, footers, settings, and documentation.
+
+# 2.1.551
+- **Studio Full-Bleed Viewport & Bottom Toolbar Fix**:
+  - **Eliminated Containing Block & Bottom Offset in Studio**: Resolved the issue where the Studio bottom toolbar was floating ~1 inch above the bottom of the screen. Created `MainLayoutShell` client wrapper to prevent `app/(main)/layout.tsx` from applying `pb-10`, `pt-14/pb-12` padding, and `.sg-page-enter` CSS animation transforms (which created an artificial containing block trapping fixed viewport elements) when on `/studio` and `/lobby`.
+  - **Full-Bleed Viewport Alignment**: Studio toolbar and canvas viewport now sit completely flush at absolute pixel `0` of the bottom viewport edge.
+  - **Viewport Sizing Accuracy**: Updated `StudioCanvasViewport` maximized constraints to 40px top bar and 36px bottom toolbar for seamless docking.
+- **Version Bump**: Bumped release version to `v2.1.551` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.550
 - **In-Game UI Redesign & Studio Interface Designer**:
   - **HUD Theme Engine (`hud-themes.ts`)**: Built a modular, theme-driven in-game HUD engine with 6 premade styles adhering strictly to Saints Gaming styling rules (dark glass, warm gold/amber accents, clean gradients, zero cyberpunk/synthwave neon clutter, zero polygon clip-paths):

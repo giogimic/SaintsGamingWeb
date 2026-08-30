@@ -400,6 +400,7 @@ export class BabylonEngine {
   private brushPreviewMeshes: Mesh[] = [];
   private hoverReticleMesh?: Mesh;
   private footprintSqMesh?: Mesh;
+  private footprintUnifiedMesh?: Mesh;
   private patternPreviewMesh?: Mesh;
   private footprintCircMeshes: Mesh[] = [];
   private selectionBoxMesh?: Mesh;
@@ -2772,59 +2773,213 @@ private resolveTilePick(
     }
   }
 
-  private createModernHudReticleMaterial(name: string, strokeColor: string, glassColor: string, cornerColor: string = '#ffffff'): StandardMaterial {
-    let mat = this.scene.getMaterialByName(name) as StandardMaterial | null;
+  private createUnifiedBrushReticleMaterial(
+    shape: 'circle' | 'square',
+    rad: number,
+    strokeColor: string,
+    glassColor: string,
+    cornerColor: string = '#ffffff'
+  ): StandardMaterial {
+    const matName = `hud_unified_brush_${shape}_r${rad}_${strokeColor.replace('#', '')}`;
+    let mat = this.scene.getMaterialByName(matName) as StandardMaterial | null;
     if (mat) return mat;
 
-    mat = new StandardMaterial(name, this.scene);
-    const dt = new DynamicTexture(`${name}_tex`, { width: 256, height: 256 }, this.scene, false);
+    mat = new StandardMaterial(matName, this.scene);
+    const span = rad * 2 + 1;
+    const texSize = Math.min(1024, Math.max(256, span * 128));
+    const cellSize = texSize / span;
+    const dt = new DynamicTexture(`${matName}_tex`, { width: texSize, height: texSize }, this.scene, false);
     const ctx = dt.getContext();
 
-    ctx.clearRect(0, 0, 256, 256);
+    ctx.clearRect(0, 0, texSize, texSize);
 
-    // Subtle ambient glass fill with smooth radial glow
-    const grad = ctx.createRadialGradient(128, 128, 10, 128, 128, 120);
+    const isInFootprint = (r: number, c: number): boolean => {
+      if (r < 0 || r >= span || c < 0 || c >= span) return false;
+      if (shape === 'square') return true;
+      const dr = r - rad;
+      const dc = c - rad;
+      return dr * dr + dc * dc <= rad * rad + rad;
+    };
+
+    // 1. Fill entire active footprint with ambient glass gradient
+    ctx.save();
+    ctx.beginPath();
+    for (let r = 0; r < span; r++) {
+      for (let c = 0; c < span; c++) {
+        if (isInFootprint(r, c)) {
+          ctx.rect(c * cellSize, r * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+    ctx.clip();
+
+    const centerX = texSize / 2;
+    const centerY = texSize / 2;
+    const maxRadius = (texSize / 2) * 1.15;
+    const grad = ctx.createRadialGradient(centerX, centerY, cellSize * 0.15, centerX, centerY, maxRadius);
     grad.addColorStop(0, glassColor);
-    grad.addColorStop(0.75, glassColor.replace('0.25', '0.08').replace('0.3', '0.08'));
+    grad.addColorStop(0.65, glassColor.replace('0.25', '0.12').replace('0.22', '0.10').replace('0.3', '0.10'));
     grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = grad;
-    ctx.fillRect(16, 16, 224, 224);
+    ctx.fillRect(0, 0, texSize, texSize);
+    ctx.restore();
 
-    // Outer subtle contrast drop shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-    ctx.shadowBlur = 8;
+    // 2. Subtle internal grid dividers between adjacent cells
+    if (span > 1) {
+      ctx.save();
+      ctx.strokeStyle = strokeColor.includes('#') ? `${strokeColor}44` : 'rgba(255, 255, 255, 0.18)';
+      ctx.lineWidth = Math.max(1.5, cellSize * 0.02);
 
-    // Thin precision neon border
-    ctx.strokeStyle = strokeColor;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(20, 20, 216, 216);
+      for (let r = 0; r < span; r++) {
+        for (let c = 0; c < span; c++) {
+          if (!isInFootprint(r, c)) continue;
 
-    // Glowing corner L-brackets
-    ctx.shadowBlur = 5;
+          // Vertical divider
+          if (c + 1 < span && isInFootprint(r, c + 1)) {
+            const x = (c + 1) * cellSize;
+            ctx.beginPath();
+            ctx.moveTo(x, r * cellSize + 2);
+            ctx.lineTo(x, (r + 1) * cellSize - 2);
+            ctx.stroke();
+          }
+
+          // Horizontal divider
+          if (r + 1 < span && isInFootprint(r + 1, c)) {
+            const y = (r + 1) * cellSize;
+            ctx.beginPath();
+            ctx.moveTo(c * cellSize + 2, y);
+            ctx.lineTo((c + 1) * cellSize - 2, y);
+            ctx.stroke();
+          }
+        }
+      }
+      ctx.restore();
+    }
+
+    // 3. Continuous Outer Boundary Contour (Single unified perimeter stroke)
+    ctx.save();
+    ctx.shadowBlur = 6;
     ctx.shadowColor = strokeColor;
-    ctx.strokeStyle = cornerColor;
-    ctx.lineWidth = 5;
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = Math.max(3, Math.min(6, cellSize * 0.05));
     const ctx2d = ctx as unknown as CanvasRenderingContext2D;
     ctx2d.lineCap = 'round';
     ctx2d.lineJoin = 'round';
-    const cLen = 40;
-    // Top-Left
-    ctx.beginPath();
-    ctx.moveTo(18, 18 + cLen); ctx.lineTo(18, 18); ctx.lineTo(18 + cLen, 18);
-    // Top-Right
-    ctx.moveTo(238 - cLen, 18); ctx.lineTo(238, 18); ctx.lineTo(238, 18 + cLen);
-    // Bottom-Right
-    ctx.moveTo(238, 238 - cLen); ctx.lineTo(238, 238); ctx.lineTo(238 - cLen, 238);
-    // Bottom-Left
-    ctx.moveTo(18 + cLen, 238); ctx.lineTo(18, 238); ctx.lineTo(18, 238 - cLen);
-    ctx.stroke();
 
-    // Center precision pip
-    ctx.shadowBlur = 4;
+    const edgePad = 2;
+    for (let r = 0; r < span; r++) {
+      for (let c = 0; c < span; c++) {
+        if (!isInFootprint(r, c)) continue;
+
+        const x0 = c * cellSize + edgePad;
+        const x1 = (c + 1) * cellSize - edgePad;
+        const y0 = r * cellSize + edgePad;
+        const y1 = (r + 1) * cellSize - edgePad;
+
+        // North edge
+        if (!isInFootprint(r - 1, c)) {
+          ctx.beginPath();
+          ctx.moveTo(x0, y0);
+          ctx.lineTo(x1, y0);
+          ctx.stroke();
+        }
+        // South edge
+        if (!isInFootprint(r + 1, c)) {
+          ctx.beginPath();
+          ctx.moveTo(x0, y1);
+          ctx.lineTo(x1, y1);
+          ctx.stroke();
+        }
+        // West edge
+        if (!isInFootprint(r, c - 1)) {
+          ctx.beginPath();
+          ctx.moveTo(x0, y0);
+          ctx.lineTo(x0, y1);
+          ctx.stroke();
+        }
+        // East edge
+        if (!isInFootprint(r, c + 1)) {
+          ctx.beginPath();
+          ctx.moveTo(x1, y0);
+          ctx.lineTo(x1, y1);
+          ctx.stroke();
+        }
+      }
+    }
+    ctx.restore();
+
+    // 4. Outer Boundary Corner L-Brackets
+    ctx.save();
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = strokeColor;
+    ctx.strokeStyle = cornerColor;
+    ctx.lineWidth = Math.max(3.5, Math.min(6, cellSize * 0.06));
+    const bracketLen = Math.min(cellSize * 0.4, 32);
+
+    if (span === 1 || shape === 'square') {
+      const inset = edgePad + 1;
+      const minX = inset;
+      const maxX = texSize - inset;
+      const minY = inset;
+      const maxY = texSize - inset;
+
+      // Top-Left
+      ctx.beginPath();
+      ctx.moveTo(minX, minY + bracketLen); ctx.lineTo(minX, minY); ctx.lineTo(minX + bracketLen, minY);
+      // Top-Right
+      ctx.moveTo(maxX - bracketLen, minY); ctx.lineTo(maxX, minY); ctx.lineTo(maxX, minY + bracketLen);
+      // Bottom-Right
+      ctx.moveTo(maxX, maxY - bracketLen); ctx.lineTo(maxX, maxY); ctx.lineTo(maxX - bracketLen, maxY);
+      // Bottom-Left
+      ctx.moveTo(minX + bracketLen, maxY); ctx.lineTo(minX, maxY); ctx.lineTo(minX, maxY - bracketLen);
+      ctx.stroke();
+    } else {
+      // Circular silhouette: add subtle corner bracket ticks on the 4 cardinal outer tips
+      let northR = 0; while (northR < span && !isInFootprint(northR, rad)) northR++;
+      let southR = span - 1; while (southR >= 0 && !isInFootprint(southR, rad)) southR--;
+      let westC = 0; while (westC < span && !isInFootprint(rad, westC)) westC++;
+      let eastC = span - 1; while (eastC >= 0 && !isInFootprint(rad, eastC)) eastC--;
+
+      const drawTipAccent = (cx: number, cy: number) => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+        ctx.fillStyle = cornerColor;
+        ctx.fill();
+      };
+      drawTipAccent((rad + 0.5) * cellSize, northR * cellSize + edgePad + 3);
+      drawTipAccent((rad + 0.5) * cellSize, (southR + 1) * cellSize - edgePad - 3);
+      drawTipAccent(westC * cellSize + edgePad + 3, (rad + 0.5) * cellSize);
+      drawTipAccent((eastC + 1) * cellSize - edgePad - 3, (rad + 0.5) * cellSize);
+    }
+    ctx.restore();
+
+    // 5. Single Focal Center Target Pip (on the exact center cell under mouse)
+    const focalCenterX = (rad + 0.5) * cellSize;
+    const focalCenterY = (rad + 0.5) * cellSize;
+
+    ctx.save();
+    ctx.shadowBlur = 5;
+    ctx.shadowColor = strokeColor;
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(128, 128, 3.5, 0, Math.PI * 2);
+    ctx.arc(focalCenterX, focalCenterY, Math.max(3, cellSize * 0.04), 0, Math.PI * 2);
     ctx.fill();
+
+    // Subtle focal crosshair tick marks
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    const crosshairLen = Math.max(5, cellSize * 0.12);
+    const gap = Math.max(3.5, cellSize * 0.07);
+
+    // North tick
+    ctx.beginPath(); ctx.moveTo(focalCenterX, focalCenterY - gap - crosshairLen); ctx.lineTo(focalCenterX, focalCenterY - gap); ctx.stroke();
+    // South tick
+    ctx.beginPath(); ctx.moveTo(focalCenterX, focalCenterY + gap); ctx.lineTo(focalCenterX, focalCenterY + gap + crosshairLen); ctx.stroke();
+    // West tick
+    ctx.beginPath(); ctx.moveTo(focalCenterX - gap - crosshairLen, focalCenterY); ctx.lineTo(focalCenterX - gap, focalCenterY); ctx.stroke();
+    // East tick
+    ctx.beginPath(); ctx.moveTo(focalCenterX + gap, focalCenterY); ctx.lineTo(focalCenterX + gap + crosshairLen, focalCenterY); ctx.stroke();
+    ctx.restore();
 
     dt.hasAlpha = true;
     dt.update();
@@ -2911,7 +3066,7 @@ private resolveTilePick(
 
   /**
    * Render hover reticle and dynamic brush footprints on the Babylon pick plane.
-   * With brushRadius >= 1, renders in-world 3D hover reticle (1x1 or circular/square multi-tile).
+   * Renders 1 unified, cohesive highlight structure for any radius (1x1 or multi-tile circle/square).
    * Reuses persistent meshes to completely eliminate in-and-out flickering during mouse movements.
    */
   public renderBrushPreview(r: number, c: number) {
@@ -2934,6 +3089,7 @@ private resolveTilePick(
 
     // 1. Multi-tile pattern footprint (Render ONLY the pattern bounding box when holding a pattern and in footprint mode)
     if (this.activeBrushPattern && this.prefabStampMode !== '1tile' && (this.activeBrushPattern.w > 1 || this.activeBrushPattern.h > 1)) {
+      if (this.footprintUnifiedMesh) this.footprintUnifiedMesh.isVisible = false;
       if (this.hoverReticleMesh) this.hoverReticleMesh.isVisible = false;
       if (this.footprintSqMesh) this.footprintSqMesh.isVisible = false;
       this.clearFootprintCircMeshes();
@@ -2963,89 +3119,51 @@ private resolveTilePick(
 
     if (this.patternPreviewMesh) this.patternPreviewMesh.isVisible = false;
 
-    // 2. Multi-cell footprint grid if brushRadius > 1 (Render ONE unified footprint)
-    if (this.brushRadius > 1) {
-      if (this.hoverReticleMesh) this.hoverReticleMesh.isVisible = false;
-      const rad = this.brushRadius - 1;
-      const isErase = this.brushMode === 'erase';
-      const isFill = this.brushMode === 'fill';
-      const stroke = isErase ? '#f43f5e' : isFill ? '#f59e0b' : '#10b981';
-      const glass = isErase ? 'rgba(244, 63, 94, 0.25)' : isFill ? 'rgba(245, 158, 11, 0.25)' : 'rgba(16, 185, 129, 0.25)';
+    // 2. Unified Brush Footprint Structure (1x1 or multi-tile Circle / Square)
+    const rad = Math.max(0, this.brushRadius - 1);
+    const span = rad * 2 + 1;
+    const isErase = this.brushMode === 'erase';
+    const isFill = this.brushMode === 'fill';
+    const stroke = isErase
+      ? '#f43f5e'
+      : isFill
+      ? '#f59e0b'
+      : isLogicLayer
+      ? '#06b6d4'
+      : '#10b981';
+    const glass = isErase
+      ? 'rgba(244, 63, 94, 0.22)'
+      : isFill
+      ? 'rgba(245, 158, 11, 0.22)'
+      : isLogicLayer
+      ? 'rgba(6, 182, 212, 0.22)'
+      : 'rgba(16, 185, 129, 0.22)';
 
-      if (this.brushShape === 'square') {
-        this.clearFootprintCircMeshes();
-        // Unified Square Footprint Plane
-        const span = rad * 2 + 1;
-        const footMat = this.createModernHudReticleMaterial(`hud_foot_sq_${this.brushMode}`, stroke, glass, stroke);
-        if (!this.footprintSqMesh || this.footprintSqMesh.isDisposed()) {
-          this.footprintSqMesh = MeshBuilder.CreatePlane('brush_footprint_sq', { size: 1 }, this.scene);
-          this.footprintSqMesh.rotation.x = Math.PI / 2;
-          this.footprintSqMesh.parent = this.rootNode;
-          this.footprintSqMesh.isPickable = false;
-        }
-        this.footprintSqMesh.scaling.x = s * span * 1.01;
-        this.footprintSqMesh.scaling.y = s * span * 1.01;
-        this.footprintSqMesh.position.set(centerPosX, altitudeFootprint, centerPosZ);
-        this.footprintSqMesh.material = footMat;
-        this.footprintSqMesh.isVisible = true;
-        return;
-      }
-
-      if (this.footprintSqMesh) this.footprintSqMesh.isVisible = false;
-
-      // Circular Footprint (Clean cell tiles with center pip)
-      const footMat = this.createModernHudReticleMaterial(`hud_foot_circ_${this.brushMode}`, stroke, glass, stroke);
-      let meshIdx = 0;
-      for (let dr = -rad; dr <= rad; dr++) {
-        for (let dc = -rad; dc <= rad; dc++) {
-          if (dr * dr + dc * dc > rad * rad + rad) continue;
-          const nr = r + dr;
-          const nc = c + dc;
-          if (nr < 0 || nr >= h || nc < 0 || nc >= w) continue;
-
-          const posX = (nc - w / 2) * s;
-          const posZ = (h / 2 - nr) * s;
-
-          let plane = this.footprintCircMeshes[meshIdx];
-          if (!plane || plane.isDisposed()) {
-            plane = MeshBuilder.CreatePlane(`brush_footprint_${meshIdx}`, { size: s * 0.98 }, this.scene);
-            plane.rotation.x = Math.PI / 2;
-            plane.parent = this.rootNode;
-            plane.isPickable = false;
-            this.footprintCircMeshes[meshIdx] = plane;
-          }
-          plane.position.set(posX, altitudeFootprint, posZ);
-          plane.material = footMat;
-          plane.isVisible = true;
-          meshIdx++;
-        }
-      }
-      for (let i = meshIdx; i < this.footprintCircMeshes.length; i++) {
-        if (this.footprintCircMeshes[i]) this.footprintCircMeshes[i].isVisible = false;
-      }
-      return;
-    }
-
-    if (this.footprintSqMesh) this.footprintSqMesh.isVisible = false;
-    this.clearFootprintCircMeshes();
-
-    // 3. Single-cell hover reticle (1x1 Cyber Glass HUD bracket)
-    const hoverMat = this.createModernHudReticleMaterial(
-      isLogicLayer ? 'hud_reticle_logic' : 'hud_reticle_visual',
-      isLogicLayer ? '#06b6d4' : '#38bdf8',
-      isLogicLayer ? 'rgba(6, 182, 212, 0.25)' : 'rgba(56, 189, 248, 0.25)',
+    const footMat = this.createUnifiedBrushReticleMaterial(
+      this.brushShape,
+      rad,
+      stroke,
+      glass,
       '#ffffff'
     );
 
-    if (!this.hoverReticleMesh || this.hoverReticleMesh.isDisposed()) {
-      this.hoverReticleMesh = MeshBuilder.CreatePlane('brush_hover_center', { size: s * 1.02 }, this.scene);
-      this.hoverReticleMesh.rotation.x = Math.PI / 2;
-      this.hoverReticleMesh.parent = this.rootNode;
-      this.hoverReticleMesh.isPickable = false;
+    if (!this.footprintUnifiedMesh || this.footprintUnifiedMesh.isDisposed()) {
+      this.footprintUnifiedMesh = MeshBuilder.CreatePlane('brush_footprint_unified', { size: 1 }, this.scene);
+      this.footprintUnifiedMesh.rotation.x = Math.PI / 2;
+      this.footprintUnifiedMesh.parent = this.rootNode;
+      this.footprintUnifiedMesh.isPickable = false;
     }
-    this.hoverReticleMesh.position.set(centerPosX, altitudeHover, centerPosZ);
-    this.hoverReticleMesh.material = hoverMat;
-    this.hoverReticleMesh.isVisible = true;
+
+    this.footprintUnifiedMesh.scaling.x = s * span * 1.005;
+    this.footprintUnifiedMesh.scaling.y = s * span * 1.005;
+    this.footprintUnifiedMesh.position.set(centerPosX, altitudeFootprint, centerPosZ);
+    this.footprintUnifiedMesh.material = footMat;
+    this.footprintUnifiedMesh.isVisible = true;
+
+    // Clean up any legacy separate meshes
+    if (this.hoverReticleMesh) this.hoverReticleMesh.isVisible = false;
+    if (this.footprintSqMesh) this.footprintSqMesh.isVisible = false;
+    this.clearFootprintCircMeshes();
   }
 
   private clearFootprintCircMeshes() {
@@ -3056,6 +3174,7 @@ private resolveTilePick(
 
   /** Clear brush preview overlay. */
   public clearBrushPreview() {
+    if (this.footprintUnifiedMesh) this.footprintUnifiedMesh.isVisible = false;
     if (this.hoverReticleMesh) this.hoverReticleMesh.isVisible = false;
     if (this.footprintSqMesh) this.footprintSqMesh.isVisible = false;
     if (this.patternPreviewMesh) this.patternPreviewMesh.isVisible = false;
@@ -4416,6 +4535,7 @@ private resolveTilePick(
     this.stopRenderLoop();
     this.hoverReticleMesh?.dispose();
     this.footprintSqMesh?.dispose();
+    this.footprintUnifiedMesh?.dispose();
     this.patternPreviewMesh?.dispose();
     this.footprintCircMeshes.forEach((m) => m?.dispose());
     this.selectionBoxMesh?.dispose();
