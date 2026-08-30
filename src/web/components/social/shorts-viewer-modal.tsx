@@ -17,6 +17,7 @@ import { Input } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
 import { toast } from "sonner";
 import { getPostReplies } from "@/app/actions/social";
+import { useImmersiveStore } from "@/web/hooks/useImmersiveStore";
 
 interface ShortsViewerModalProps {
   post: any | null;
@@ -102,6 +103,10 @@ export function ShortsViewerModal({
 
   useEffect(() => {
     setMounted(true);
+    useImmersiveStore.getState().hideBars();
+    return () => {
+      useImmersiveStore.getState().showBars();
+    };
   }, []);
 
   useEffect(() => {

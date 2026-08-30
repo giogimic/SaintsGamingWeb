@@ -45,6 +45,8 @@ import {
 } from "@/shared/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
 
+import { useImmersiveStore } from "@/web/hooks/useImmersiveStore";
+
 const MOBILE_NAV_ITEMS = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/lobby", label: "Play Now", icon: Gamepad2 },
@@ -81,7 +83,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.557",
+  siteVersion = "v2.1.558",
 }: {
   session: any | null;
   dbPermissionLevel?: number;
@@ -92,6 +94,7 @@ export function Navbar({
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const isBarsHidden = useImmersiveStore((s) => s.isBarsHidden);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -138,19 +141,21 @@ export function Navbar({
 
   return (
     <div className="fixed top-0 z-50 w-full pointer-events-none">
-      <header className="pointer-events-auto w-full bg-[#050b14]/75 backdrop-blur-xl border-b border-white/[0.08] shadow-md transition-all duration-300">
-        <div className="flex h-13 sm:h-10 items-center justify-between px-4 sm:px-6">
+      <header className={`pointer-events-auto w-full bg-[#050b14]/75 backdrop-blur-xl border-b border-white/[0.08] shadow-md transition-all duration-300 ${
+        isBarsHidden ? "opacity-0 -translate-y-full pointer-events-none" : "opacity-100 translate-y-0"
+      }`}>
+        <div className="flex h-13 sm:h-11 items-center justify-between px-4 sm:px-6">
           {/* Left Brand */}
-          <Link href="/home" className="flex items-center gap-2 group mr-2">
-            <div className="transition-transform group-hover:scale-110">
-              <SGMicro3DLogo size={26} />
+          <Link href="/home" className="flex items-center gap-2.5 group mr-2">
+            <div className="transition-transform group-hover:scale-110 shrink-0">
+              <SGMicro3DLogo size={36} />
             </div>
-            <div className="hidden sm:flex items-center gap-1.5">
-              <span className="font-bold text-sm sm:text-base sg-text-gradient tracking-tight">
+            <div className="flex items-center gap-2">
+              <span className="font-black text-base sm:text-xl sg-text-gradient tracking-tight">
                 Saints Gaming
               </span>
-              <span className="text-muted-foreground/30 text-sm font-light">|</span>
-              <span className="text-[10px] text-muted-foreground/80 tracking-widest uppercase font-bold mt-0.5">
+              <span className="text-muted-foreground/30 text-sm font-light hidden sm:inline">|</span>
+              <span className="text-[10px] text-muted-foreground/80 tracking-widest uppercase font-bold mt-0.5 hidden sm:inline">
                 Time To Play
               </span>
             </div>
@@ -360,8 +365,8 @@ export function Navbar({
                       </>
                     ) : (
                       <div className="flex items-center gap-2.5">
-                        <SGMicro3DLogo size={28} />
-                        <span className="font-bold text-base sg-text-gradient tracking-tight">
+                        <SGMicro3DLogo size={36} />
+                        <span className="font-black text-lg sg-text-gradient tracking-tight">
                           Saints Gaming
                         </span>
                       </div>

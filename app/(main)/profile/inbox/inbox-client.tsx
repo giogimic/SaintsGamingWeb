@@ -12,16 +12,29 @@ import { Input } from "@/shared/ui/input";
 import { Textarea } from "@/shared/ui/textarea";
 import { 
   ArrowLeft, Send, Lock, Loader2, Trash2, Search, Compass, Users, 
-  Plus, Check, MessageSquare, ShieldCheck, Sparkles, X, UserCheck
+  Plus, Check, MessageSquare, ShieldCheck, Sparkles, X, UserCheck,
+  Flame, Gamepad2, Layers
 } from "lucide-react";
 import Image from "next/image";
-import { TheFeed } from "./the-feed";
+import { TheFeed, type FeedTabType } from "./the-feed";
 
 type ChatType = "FEED" | "MESSAGES" | "DM" | "GROUP";
+
+const GAME_HUBS = [
+  { id: "all", label: "All Activity", icon: Compass, filter: null, tab: "for-you" as const },
+  { id: "clips", label: "Clips & Reels", icon: Sparkles, color: "text-pink-400", filter: null, tab: "clips" as const },
+  { id: "trending", label: "Hot & Trending", icon: Flame, color: "text-orange-400", filter: null, tab: "trending" as const },
+  { id: "mmo", label: "Saints MMO", icon: Gamepad2, color: "text-amber-400", filter: "mmo", tab: "for-you" as const },
+  { id: "fivem", label: "FiveM Moments", icon: Flame, color: "text-orange-400", filter: "fivem", tab: "for-you" as const },
+  { id: "minecraft", label: "Minecraft Modpacks", icon: Layers, color: "text-emerald-400", filter: "minecraft", tab: "for-you" as const },
+  { id: "hangout", label: "Community Hangout", icon: MessageSquare, color: "text-violet-400", filter: "hangout", tab: "for-you" as const },
+];
 
 export function InboxClient() {
   const [activeChatType, setActiveChatType] = useState<ChatType>("FEED");
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [activeFeedTab, setActiveFeedTab] = useState<FeedTabType>("for-you");
 
   const [friends, setFriends] = useState<any[]>([]);
   const [groupChats, setGroupChats] = useState<any[]>([]);
@@ -211,16 +224,54 @@ export function InboxClient() {
 
   const renderSidebarContent = () => (
     <>
+      {/* Feeds & Game Hubs Section */}
+      <div className="p-3 border-b border-border/50 space-y-1">
+        <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70 flex items-center justify-between">
+          <span>Feeds & Game Hubs</span>
+          <Sparkles className="w-3 h-3 text-primary" />
+        </div>
+        <div className="space-y-0.5">
+          {GAME_HUBS.map((hub) => {
+            const isHubActive = 
+              activeChatType === "FEED" && 
+              ((hub.filter === null && hub.tab === activeFeedTab && activeFilter === null) ||
+               (hub.filter !== null && activeFilter === hub.filter));
+            const Icon = hub.icon;
+            return (
+              <button
+                key={hub.id}
+                type="button"
+                onClick={() => {
+                  setActiveChatType("FEED");
+                  setActiveId(null);
+                  setActiveFilter(hub.filter);
+                  setActiveFeedTab(hub.tab);
+                }}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer ${
+                  isHubActive
+                    ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${isHubActive ? "text-primary-foreground" : hub.color || "text-primary"}`} />
+                <span className="truncate">{hub.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Messenger Header & Search */}
       <div className="p-3 border-b border-border/50">
         <div className="flex items-center justify-between mb-2.5">
-          <h2 className="font-bold text-lg flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-primary" />
-            <span>Messenger</span>
+          <h2 className="font-bold text-sm flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-primary" />
+            <span>Direct Chats & Groups</span>
           </h2>
           <Button 
             variant="outline" 
             size="sm" 
-            className="h-7 text-xs rounded-full border-primary/30 hover:bg-primary/10 gap-1"
+            className="h-6 text-[11px] rounded-full border-primary/30 hover:bg-primary/10 gap-1 px-2.5"
             onClick={() => setIsCreatingGroup(!isCreatingGroup)}
           >
             <Plus className="h-3 w-3" />
@@ -231,7 +282,7 @@ export function InboxClient() {
           <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
           <Input 
             className="pl-8 bg-background/80 h-8 text-xs rounded-full border-border/50" 
-            placeholder="Search direct chats & groups..." 
+            placeholder="Search chats & friends..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -245,23 +296,12 @@ export function InboxClient() {
           )}
         </div>
       </div>
-      
-      {/* The Feed Button */}
-      <div className="py-2 px-2 border-b border-border/50">
-        <button
-          onClick={() => { setActiveChatType("FEED"); setActiveId(null); }}
-          className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all text-left font-bold text-xs ${activeChatType === "FEED" ? 'bg-primary text-primary-foreground shadow-sm' : 'hover:bg-muted/50 text-muted-foreground hover:text-foreground'}`}
-        >
-          <Compass className="w-4 h-4 shrink-0" />
-          <span>Back to Feed</span>
-        </button>
-      </div>
 
       <div className="flex-1 overflow-y-auto p-2 space-y-4">
         {/* Groups Section */}
         <div>
           <div className="flex items-center justify-between px-2 mb-1.5 mt-1">
-            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Group Chats ({filteredGroups.length})</span>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Group Chats ({filteredGroups.length})</span>
           </div>
 
           {isCreatingGroup && (
@@ -294,7 +334,7 @@ export function InboxClient() {
 
           <div className="space-y-1">
             {filteredGroups.length === 0 && !isCreatingGroup && (
-              <p className="text-xs text-muted-foreground px-2 py-1">No group chats found.</p>
+              <p className="text-[11px] text-muted-foreground px-2 py-1">No group chats found.</p>
             )}
             {filteredGroups.map(g => (
               <button
@@ -317,11 +357,11 @@ export function InboxClient() {
         {/* DMs Section */}
         <div>
           <div className="px-2 mb-1.5">
-            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Direct Messages ({filteredFriends.length})</span>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Direct Messages ({filteredFriends.length})</span>
           </div>
           <div className="space-y-1">
             {filteredFriends.length === 0 ? (
-              <p className="text-xs text-muted-foreground px-2 py-1">No friends found.</p>
+              <p className="text-[11px] text-muted-foreground px-2 py-1">No friends found.</p>
             ) : (
               filteredFriends.map(f => (
                 <button
@@ -352,18 +392,24 @@ export function InboxClient() {
   );
 
   const renderSidebar = (isFeedMode: boolean) => (
-    <div className={`flex flex-col ${isFeedMode ? 'w-72 hidden lg:flex shrink-0 sticky top-20 bg-card/60 border border-border/50 rounded-2xl backdrop-blur-md shadow-sm max-h-[calc(100vh-6rem)] overflow-y-auto' : 'w-80 border-r border-border/50 bg-muted/10 flex flex-col hidden md:flex shrink-0'}`}>
+    <div className={`flex flex-col ${isFeedMode ? 'w-72 xl:w-80 hidden lg:flex shrink-0 sticky top-20 bg-card/60 border border-border/50 rounded-2xl backdrop-blur-md shadow-sm max-h-[calc(100vh-6rem)] overflow-y-auto no-scrollbar' : 'w-80 border-r border-border/50 bg-muted/10 flex flex-col hidden md:flex shrink-0'}`}>
       {renderSidebarContent()}
     </div>
   );
 
-  // If in Feed mode, render the standard stream with sidebar & mobile tab trigger
+  // If in Feed mode, render the standard stream with unified sidebar & expanded feed viewing zone
   if (activeChatType === "FEED") {
     return (
       <div className="w-full flex items-start justify-center gap-6 relative">
         {renderSidebar(true)}
-        <div className="flex-1 min-w-0">
-          <TheFeed onOpenMessages={() => { setActiveChatType("MESSAGES"); setActiveId(null); }} />
+        <div className="flex-1 min-w-0 max-w-4xl 2xl:max-w-5xl">
+          <TheFeed 
+            onOpenMessages={() => { setActiveChatType("MESSAGES"); setActiveId(null); }}
+            activeFilter={activeFilter}
+            onFilterChange={setActiveFilter}
+            activeFeedTab={activeFeedTab}
+            onFeedTabChange={setActiveFeedTab}
+          />
         </div>
       </div>
     );

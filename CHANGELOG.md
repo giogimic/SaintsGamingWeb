@@ -1,3 +1,12 @@
+# 2.1.558
+- **Feed Layout Modernization, Global Post Action & Tap-to-Fade Immersive Video**:
+  - **Unified Desktop Sidebar & Expanded View Zone**: Merged Game Hubs, stream filters (`All Activity`, `Clips & Reels`, `Hot & Trending`, `Saints MMO`, `FiveM Moments`, `Minecraft Modpacks`, `Community Hangout`), and Messenger (Direct Messages with E2EE & Group Chats) into a single cohesive, high-density left sidebar (`w-72 xl:w-80`). Slashed redundant sidebar clutter and widened the central feed view zone to `max-w-4xl 2xl:max-w-5xl` for an expansive, immersive browsing experience.
+  - **Top Stream Header Box Removal**: Completely eliminated the intrusive top header box on The Feed (`The Feed`, `+ Post`, search feed, Discovery, mute button, and tab pills) so posts, videos, and active composers appear instantly from the very top of the feed stream.
+  - **Global `+ Post` Button Integration in Bottom Bar**: Integrated a persistent, prominent `+ Post` action button directly into the center group of `GlobalBottomBar` accessible across all pages, dispatching universal composer triggers and query parameter focus (`?post=1`).
+  - **Enlarged Saints 3D Brand Logo & Title Typography**: Visibly enlarged `SGMicro3DLogo` (size 36-38 on desktop, 36 on mobile) and bolded "Saints Gaming" brand typography (`font-black text-xl sm:text-2xl sg-text-gradient` in Navbar and `text-sm font-black` in bottom bar) without distorting surrounding navigation links or utility controls.
+  - **Tap-to-Fade Immersive Video Experience**: Built `useImmersiveStore` with smooth cubic-bezier opacity and translate transitions across `Navbar` and `GlobalBottomBar`. Tapping/clicking any video in the feed seamlessly fades away the navigation and bottom bar to display only the video, with single-tap toggle to bring them back.
+- **Version Bump**: Bumped release version to `v2.1.558` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.557
 - **Hyper-Modern Translucent Glass Feed & Responsive Bar Dimensions**:
   - **Translucent Dark Glassmorphism**: Refactored the Social Feed, Top Navbar, and Global Bottom Bar to use layered dark translucent glass (`bg-[#050b14]/75` & `bg-[#050b14]/40` with `backdrop-blur-xl` and `border-white/[0.08]`), allowing custom wallpapers and canvas backgrounds to shine through.

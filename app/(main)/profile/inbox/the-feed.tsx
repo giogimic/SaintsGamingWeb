@@ -62,7 +62,7 @@ import ReactMarkdown from "react-markdown";
 const gf = new GiphyFetch(process.env.NEXT_PUBLIC_GIPHY_API_KEY || "sXpGFDGZs0Dv1mmz014D8zDvwYkE7a7A");
 
 type MutedKeyword = { id: string; keyword: string; type: string; createdAt: Date };
-type FeedTabType = "for-you" | "following" | "clips" | "trending";
+export type FeedTabType = "for-you" | "following" | "clips" | "trending";
 
 const isArchive = (url: string) => {
   if (!url) return false;
@@ -232,7 +232,19 @@ function ShortsVideoStage({
   );
 }
 
-export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}) {
+export function TheFeed({ 
+  onOpenMessages,
+  activeFilter,
+  onFilterChange,
+  activeFeedTab,
+  onFeedTabChange,
+}: { 
+  onOpenMessages?: () => void;
+  activeFilter?: string | null;
+  onFilterChange?: (filter: string | null) => void;
+  activeFeedTab?: FeedTabType;
+  onFeedTabChange?: (tab: FeedTabType) => void;
+} = {}) {
   const { data: session } = useSession();
   const currentUserPermission = (session?.user as any)?.permissionLevel || 0;
 
@@ -240,9 +252,21 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
   const [trending, setTrending] = useState<{name: string, usageCount: number}[]>([]);
   const [body, setBody] = useState("");
   const [isPosting, setIsPosting] = useState(false);
-  const [filter, setFilter] = useState<string | null>(null);
-  const [feedTab, setFeedTab] = useState<FeedTabType>("for-you");
+  const [internalFilter, setInternalFilter] = useState<string | null>(null);
+  const [internalFeedTab, setInternalFeedTab] = useState<FeedTabType>("for-you");
   const [loading, setLoading] = useState(true);
+
+  const filter = activeFilter !== undefined ? activeFilter : internalFilter;
+  const setFilter = (f: string | null) => {
+    setInternalFilter(f);
+    onFilterChange?.(f);
+  };
+
+  const feedTab = activeFeedTab !== undefined ? activeFeedTab : internalFeedTab;
+  const setFeedTab = (t: FeedTabType) => {
+    setInternalFeedTab(t);
+    onFeedTabChange?.(t);
+  };
 
   // Advanced Options
   const [isSubscriberOnly, setIsSubscriberOnly] = useState(false);
@@ -253,6 +277,34 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
   const [chapters, setChapters] = useState("");
   const [captionsText, setCaptionsText] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Global composer trigger listener (from bottom bar or query params)
+  useEffect(() => {
+    const handleOpenComposer = () => {
+      setIsMobileComposerExpanded(true);
+      setTimeout(() => {
+        const ta = document.querySelector('textarea[placeholder*="What\'s happening"]') as HTMLTextAreaElement;
+        if (ta) {
+          ta.focus();
+          ta.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 100);
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("saints-open-post-composer", handleOpenComposer);
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("post") === "1" || params.get("compose") === "true") {
+        handleOpenComposer();
+      }
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("saints-open-post-composer", handleOpenComposer);
+      }
+    };
+  }, []);
   
   // Media / GIF & Upload Progress Tracking
   const [mediaUrl, setMediaUrl] = useState<string>("");
@@ -2535,331 +2587,16 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
         document.body
       )}
 
-      {/* Left Column: Pinned Game Hubs & Channels (Desktop) */}
-      <div className="w-56 xl:w-60 hidden lg:flex flex-col gap-3 sticky top-20 h-fit max-h-[calc(100vh-6rem)] overflow-y-auto shrink-0 no-scrollbar">
-        <div className="bg-[#050b14]/40 border border-white/[0.08] rounded-lg p-3 shadow-xs space-y-1 backdrop-blur-xl">
-          <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70 flex items-center justify-between">
-            <span>Game Hubs</span>
-            <Sparkles className="w-3 h-3 text-primary" />
+      {/* Main Feed Column - Expanded Viewing Zone */}
+      <div className="flex-1 w-full max-w-4xl 2xl:max-w-5xl min-w-0 space-y-3">
+        {/* Search results banner */}
+        {searchResults !== null && (
+          <div className="p-3 bg-[#050b14]/70 backdrop-blur-xl border border-white/[0.08] rounded-xl flex items-center gap-2 text-xs text-muted-foreground shadow-xs">
+            <Search className="w-3.5 h-3.5 text-primary" />
+            <span>{searchResults.length} post{searchResults.length !== 1 ? "s" : ""} found for &quot;{searchQuery}&quot;</span>
+            <button onClick={clearSearch} className="text-primary hover:underline ml-auto font-medium">Clear search</button>
           </div>
-          <button
-            type="button"
-            onClick={() => { setFilter(null); setFeedTab("for-you"); }}
-            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-              !filter && feedTab === "for-you"
-                ? "bg-primary/20 text-primary border border-primary/30 font-bold"
-                : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04] border border-transparent"
-            }`}
-          >
-            <Compass className="w-3.5 h-3.5" />
-            <span>All Activity</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setFilter("mmo"); setFeedTab("for-you"); }}
-            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-              filter === "mmo"
-                ? "bg-primary/20 text-primary border border-primary/30 font-bold"
-                : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04] border border-transparent"
-            }`}
-          >
-            <Gamepad2 className="w-3.5 h-3.5 text-amber-400" />
-            <span>Saints MMO</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setFilter("fivem"); setFeedTab("for-you"); }}
-            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-              filter === "fivem"
-                ? "bg-primary/20 text-primary border border-primary/30 font-bold"
-                : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04] border border-transparent"
-            }`}
-          >
-            <Flame className="w-3.5 h-3.5 text-orange-400" />
-            <span>FiveM Moments</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setFilter("minecraft"); setFeedTab("for-you"); }}
-            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-              filter === "minecraft"
-                ? "bg-primary/20 text-primary border border-primary/30 font-bold"
-                : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04] border border-transparent"
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Minecraft Modpacks</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setFeedTab("clips"); setFilter(null); }}
-            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-              feedTab === "clips"
-                ? "bg-primary/20 text-primary border border-primary/30 font-bold"
-                : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04] border border-transparent"
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-pink-400" />
-            <span>Clips & Reels</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setFilter("hangout"); setFeedTab("for-you"); }}
-            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-              filter === "hangout"
-                ? "bg-primary/20 text-primary border border-primary/30 font-bold"
-                : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04] border border-transparent"
-            }`}
-          >
-            <MessageSquare className="w-3.5 h-3.5 text-violet-400" />
-            <span>Community Hangout</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Main Feed Column */}
-      <div className="flex-1 w-full max-w-2xl 2xl:max-w-3xl min-w-0 space-y-3">
-        
-        {/* Stream Header & Navigation Tabs */}
-        <div className="p-3 sm:p-3.5 border border-white/[0.08] rounded-lg sticky top-20 bg-[#050b14]/70 backdrop-blur-xl z-10 shadow-xs">
-          
-          {/* Mobile Top Navigation Tabs: Feed vs Messages */}
-          {onOpenMessages && (
-            <div className="lg:hidden flex items-center p-1 bg-muted/40 rounded-xl border border-border/40 mb-2.5 gap-1">
-              <button
-                className="flex-1 py-1.5 rounded-lg text-xs font-bold bg-primary text-primary-foreground shadow-sm flex items-center justify-center gap-1.5 transition-all"
-              >
-                <Compass className="w-3.5 h-3.5" />
-                <span>The Feed</span>
-              </button>
-              <button
-                onClick={onOpenMessages}
-                className="flex-1 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 flex items-center justify-center gap-1.5 transition-all"
-              >
-                <MessageSquare className="w-3.5 h-3.5 text-primary" />
-                <span>Messages</span>
-              </button>
-            </div>
-          )}
-
-          {/* Top Bar: Title & Search Controls */}
-          <div className="flex justify-between items-center mb-2.5 gap-2 flex-wrap">
-            <div className="flex items-center gap-2">
-              <h2 className="font-extrabold text-lg sm:text-2xl tracking-tight sg-text-gradient">
-                {filter ? `#${filter}` : "The Feed"}
-              </h2>
-              {filter && (
-                <Button variant="ghost" size="sm" className="h-6 text-[11px] rounded-full px-2" onClick={() => setFilter(null)}>
-                  Clear
-                </Button>
-              )}
-            </div>
-
-            {/* Quick Search & Controls */}
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-1 max-w-md justify-end">
-              {/* Primary Create Post Button (PC & Mobile) */}
-              {session?.user && (
-                <Button
-                  type="button"
-                  onClick={() => {
-                    setIsMobileComposerExpanded(true);
-                    setTimeout(() => {
-                      const ta = document.querySelector('textarea[placeholder*="What\'s happening"]') as HTMLTextAreaElement;
-                      if (ta) {
-                        ta.focus();
-                        ta.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      }
-                    }, 50);
-                  }}
-                  size="sm"
-                  className="h-8 px-3 rounded-full bg-primary text-primary-foreground font-bold text-xs flex items-center gap-1.5 shadow-sm hover:opacity-90 transition-all shrink-0 cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Post</span>
-                </Button>
-              )}
-
-              {/* Desktop Search Bar */}
-              <form onSubmit={handleSearch} className="hidden sm:flex flex-1 max-w-xs items-center gap-1.5">
-                <div className="relative flex-1">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                  <Input
-                    placeholder="Search feed..."
-                    className="h-8 pl-8 pr-8 text-xs bg-muted/30 border-border/50 rounded-full"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={clearSearch}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </form>
-
-              {/* Mobile Search Toggle Icon */}
-              <button
-                onClick={() => setIsMobileSearchExpanded(prev => !prev)}
-                className={`sm:hidden p-2 rounded-full border transition-colors ${
-                  isMobileSearchExpanded || searchQuery 
-                    ? "bg-primary/20 text-primary border-primary/40" 
-                    : "bg-muted/30 text-muted-foreground border-border/50"
-                }`}
-                title="Search"
-              >
-                <Search className="w-3.5 h-3.5" />
-              </button>
-
-              {/* Broaden Discovery Toggle */}
-              <button
-                onClick={handleBroadenToggle}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-semibold transition-all border shrink-0 ${
-                  broadenFeed 
-                    ? 'bg-primary/10 text-primary border-primary/30 shadow-xs' 
-                    : 'bg-muted/30 text-muted-foreground border-border/50 hover:border-primary/30 hover:text-foreground'
-                }`}
-                title="Broaden Discovery (Interleave community recommendations)"
-              >
-                <Compass className={`w-3.5 h-3.5 ${broadenFeed ? 'animate-spin' : ''}`} style={broadenFeed ? { animationDuration: '3s' } : {}} />
-                <span className="hidden sm:inline">Discovery</span>
-              </button>
-
-              {/* Muted Keywords Popover */}
-              <Popover open={showMutedPopover} onOpenChange={setShowMutedPopover}>
-                <PopoverTrigger className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all border shrink-0 ${
-                    mutedKeywords.length > 0
-                      ? 'bg-orange-500/10 text-orange-500 border-orange-500/30'
-                      : 'bg-muted/30 text-muted-foreground border-border/50 hover:border-primary/30'
-                  }`}>
-                    <VolumeX className="w-3.5 h-3.5" />
-                    {mutedKeywords.length > 0 && <span className="text-[10px]">{mutedKeywords.length}</span>}
-                </PopoverTrigger>
-                <PopoverContent className="w-80 p-4" side="bottom" align="end">
-                  <h4 className="font-bold text-sm mb-3">Muted Keywords & Hashtags</h4>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Posts containing these words or hashtags will be hidden from your feed.
-                  </p>
-                  
-                  <div className="flex gap-2 mb-3">
-                    <Input
-                      placeholder="Enter keyword..."
-                      className="text-xs h-8 flex-1"
-                      value={newMuteKeyword}
-                      onChange={(e) => setNewMuteKeyword(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") handleAddMute(); }}
-                    />
-                    <select
-                      className="text-xs bg-muted rounded px-2 py-1 outline-none border border-border/50"
-                      value={newMuteType}
-                      onChange={(e) => setNewMuteType(e.target.value as "KEYWORD" | "HASHTAG")}
-                    >
-                      <option value="KEYWORD">Word</option>
-                      <option value="HASHTAG">Tag</option>
-                    </select>
-                    <Button size="sm" className="h-8 px-2" onClick={handleAddMute}>
-                      <Plus className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                    {mutedKeywords.length === 0 ? (
-                      <p className="text-xs text-muted-foreground text-center py-4">No muted keywords yet.</p>
-                    ) : (
-                      mutedKeywords.map(mk => (
-                        <div key={mk.id} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
-                          <span className="text-xs font-medium">
-                            {mk.type === "HASHTAG" ? "#" : ""}{mk.keyword}
-                            <span className="text-muted-foreground ml-1.5 text-[10px] uppercase">{mk.type}</span>
-                          </span>
-                          <button
-                            onClick={() => handleRemoveMute(mk.id)}
-                            className="text-muted-foreground hover:text-destructive transition-colors p-1"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-
-          {/* Mobile Expanded Search Bar */}
-          {isMobileSearchExpanded && (
-            <form onSubmit={handleSearch} className="sm:hidden mb-2.5 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
-              <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Search feed..."
-                  className="h-8 pl-8 pr-8 text-xs bg-muted/30 border-border/50 rounded-full"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  autoFocus
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={clearSearch}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </form>
-          )}
-
-          {/* Stream Selector Navigation Tabs */}
-          <div className="flex items-center gap-1.5 sm:gap-2 pt-1 border-t border-border/40 overflow-x-auto no-scrollbar">
-            <button
-              onClick={() => { setFeedTab("for-you"); setFilter(null); }}
-              className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all relative shrink-0 ${
-                feedTab === "for-you" && !filter
-                  ? "text-primary bg-primary/10 border border-primary/30 shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30 border border-transparent"
-              }`}
-            >
-              For You
-            </button>
-            <button
-              onClick={() => { setFeedTab("clips"); setFilter(null); }}
-              className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all relative shrink-0 flex items-center gap-1.5 ${
-                feedTab === "clips"
-                  ? "text-primary bg-primary/10 border border-primary/30 shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30 border border-transparent"
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
-              <span>Clips & Reels</span>
-            </button>
-            <button
-              onClick={() => { setFeedTab("trending"); }}
-              className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all relative shrink-0 flex items-center gap-1.5 ${
-                feedTab === "trending"
-                  ? "text-primary bg-primary/10 border border-primary/30 shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30 border border-transparent"
-              }`}
-            >
-              <Flame className="w-3.5 h-3.5 text-orange-400" />
-              <span>Hot & Trending</span>
-            </button>
-          </div>
-
-          {/* Search results banner */}
-          {searchResults !== null && (
-            <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center gap-2 text-xs text-muted-foreground">
-              <Search className="w-3.5 h-3.5 text-primary" />
-              <span>{searchResults.length} post{searchResults.length !== 1 ? "s" : ""} found for &quot;{searchQuery}&quot;</span>
-              <button onClick={clearSearch} className="text-primary hover:underline ml-auto font-medium">Clear search</button>
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Collapsed Mobile Post Composer Trigger (Saves vertical space on mobile) */}
         {searchResults === null && !isMobileComposerExpanded && !body && !mediaUrl && (
@@ -3445,25 +3182,6 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
         </div>
 
       </div>
-
-      {/* Mobile Floating Action Button (FAB) for Instant Post / Clip Creation */}
-      {session?.user && (
-        <button
-          type="button"
-          onClick={() => {
-            setIsMobileComposerExpanded(true);
-            window.scrollTo({ top: 0, behavior: "smooth" });
-            setTimeout(() => {
-              const composerTextarea = document.querySelector('textarea[placeholder*="What\'s happening"]') as HTMLTextAreaElement;
-              composerTextarea?.focus();
-            }, 300);
-          }}
-          className="sm:hidden fixed bottom-14 right-4 z-40 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-2xl flex items-center justify-center border border-primary-foreground/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-          title="Create New Post / Upload Media"
-        >
-          <Plus className="w-6 h-6 stroke-[2.5]" />
-        </button>
-      )}
 
     </div>
   );
