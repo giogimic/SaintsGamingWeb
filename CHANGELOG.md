@@ -1,3 +1,13 @@
+# 2.1.507
+- **Ultra-Responsive Video Playback Engine**: Upgraded `FeedVideoPlayer.tsx` and `shorts-viewer-modal.tsx` with high-performance responsive playback controls matching top-tier video platforms (YouTube / TikTok).
+- **Interactive Hover Scrubber & Timestamp Tooltip**: Hovering across the bottom scrub bar dynamically calculates mouse fractional position and renders a real-time timestamp preview pill (`0:24`) directly above the cursor.
+- **Buffered Stream Indicator**: Added live video buffer monitoring (`video.buffered`) that displays a semi-transparent stream cache bar behind the played progress bar for immediate streaming feedback.
+- **Picture-in-Picture (PiP) Integration**: Added one-click Picture-in-Picture mode (`P` shortcut or toolbar button) to both feed video players and Saints Reel modal, enabling uninterrupted video viewing while navigating forums, games, and UCP.
+- **Playback Speed Selector & 2x Hold Acceleration**: Added selectable speed rates (`1x`, `1.25x`, `1.5x`, `2x`) plus YouTube/TikTok style press-and-hold anywhere on the video for instant `2x Speed` fast-forward with animated feedback.
+- **Keyboard Shortcuts & 5s Skip Ripples**: Added complete keyboard support (`Space`/`K` play/pause, `M` mute, `J`/`←` rewind 5s, `L`/`→` forward 5s, `F` fullscreen reel) with animated `<< 5s` and `5s >>` ripple feedback chips on double-tapping the left/right edges.
+- **Smooth Volume Slider**: Added expanding horizontal volume slider on desktop hover with persistent `localStorage` volume levels.
+- **Scroll Hysteresis & Debounce**: Implemented a 120ms scroll debounce on the `IntersectionObserver` viewport coordinator, ensuring silky 60fps feed scrolling without audio/decoder contention during fast scrolling.
+
 # 2.1.506
 - **Admin Dashboard Zero-Blur Floating Window Overhaul**: Configured the Admin OS shell to load directly as a crystal-clear floating window over the user's active page with zero background blur (`backdrop-blur-none` / subtle transparent backdrop), ensuring the underlying website remains fully visible and interactive.
 - **Top-Level Category Tabs Navigation**: Removed the fixed left sidebar and mobile drawer to give 100% of the window width to the workspace. Added top-level horizontal category tabs (**Overview**, **World & MMO**, **Community**, **Identity & Roles**, **Infrastructure**, **Developer**, plus **Favorites**) with active route syncing and category indicators.

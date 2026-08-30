@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { 
-  Play, Pause, Volume2, VolumeX, Maximize2, 
-  Sparkles, Heart, Loader2, Film
+  Play, Pause, Volume2, VolumeX, Volume1, Maximize2, 
+  Sparkles, Heart, Loader2, FastForward, RotateCcw, RotateCw,
+  PictureInPicture, Gauge
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { captureVideoFrame, getCachedVideoPoster } from "@/web/lib/video-thumbnail";
@@ -24,7 +25,6 @@ interface FeedVideoPlayerProps {
 }
 
 // Utility to format video source with the #t=0.001 media fragment
-// This forces modern browser decoders to fetch and paint frame 0 immediately instead of displaying a black box
 function formatVideoSrc(url: string): string {
   if (!url) return "";
   if (url.includes("#t=")) return url;
@@ -41,6 +41,8 @@ function formatVideoTime(sec: number): string {
   const s = Math.floor(sec % 60);
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
+
+const PLAYBACK_RATES = [1.0, 1.25, 1.5, 2.0];
 
 export function FeedVideoPlayer({
   id,
@@ -60,20 +62,38 @@ export function FeedVideoPlayer({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const scrubBarRef = useRef<HTMLDivElement | null>(null);
 
-  // States
+  // Core Playback States
   const [isLoaded, setIsLoaded] = useState(false);
   const [isBuffering, setIsBuffering] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [durationSec, setDurationSec] = useState(0);
   const [currentTimeSec, setCurrentTimeSec] = useState(0);
   const [progressPercent, setProgressPercent] = useState(0);
-  const [aspectRatio, setAspectRatio] = useState<string>("16/9"); // Default fluid ratio
+  const [bufferedPercent, setBufferedPercent] = useState(0);
+  const [aspectRatio, setAspectRatio] = useState<string>("16/9");
   const [isPortrait, setIsPortrait] = useState(false);
+
+  // Volume & Speed States
   const [localMuted, setLocalMuted] = useState(true);
+  const [volume, setVolume] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("saints_feed_volume");
+      return saved !== null ? parseFloat(saved) : 0.8;
+    }
+    return 0.8;
+  });
+  const [playbackRate, setPlaybackRate] = useState(1.0);
+  const [isHoldingFastForward, setIsHoldingFastForward] = useState(false);
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+
+  // Interactive Animations & Scrub Tooltip
   const [showCenterIcon, setShowCenterIcon] = useState<"play" | "pause" | null>(null);
+  const [skipFeedback, setSkipFeedback] = useState<"-5s" | "+5s" | null>(null);
   const [showHeartBurst, setShowHeartBurst] = useState(false);
   const [hasRecordedView, setHasRecordedView] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [scrubHoverTime, setScrubHoverTime] = useState<number | null>(null);
+  const [scrubHoverLeft, setScrubHoverLeft] = useState<number>(0);
   const [extractedPoster, setExtractedPoster] = useState<string | null>(() => {
     return poster || getCachedVideoPoster(src) || null;
   });
@@ -84,8 +104,9 @@ export function FeedVideoPlayer({
   const displayPoster = poster || extractedPoster;
   const lastTapRef = useRef<number>(0);
   const centerIconTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Client-side automatic frame capture if no poster provided
+  // Client-side automatic frame extraction if no poster provided
   useEffect(() => {
     if (poster) {
       setExtractedPoster(poster);
@@ -105,7 +126,7 @@ export function FeedVideoPlayer({
         }
       })
       .catch(() => {
-        // Fallback: standard video decoder
+        // Fallback to video decoder
       });
 
     return () => {
@@ -113,12 +134,33 @@ export function FeedVideoPlayer({
     };
   }, [src, poster]);
 
-  // Sync muted state with video element
+  // Sync muted and volume state with video element
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.muted = muted;
+      videoRef.current.volume = volume;
     }
-  }, [muted]);
+  }, [muted, volume]);
+
+  // Sync playback rate
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = isHoldingFastForward ? 2.0 : playbackRate;
+    }
+  }, [playbackRate, isHoldingFastForward]);
+
+  // Update buffer progress
+  const updateBufferProgress = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || !isFinite(video.duration) || video.duration <= 0) return;
+    try {
+      const buffered = video.buffered;
+      if (buffered.length > 0) {
+        const bufferedEnd = buffered.end(buffered.length - 1);
+        setBufferedPercent((bufferedEnd / video.duration) * 100);
+      }
+    } catch {}
+  }, []);
 
   // Handle Metadata Loaded
   const handleLoadedMetadata = () => {
@@ -132,15 +174,12 @@ export function FeedVideoPlayer({
     if (video.videoWidth && video.videoHeight) {
       const ratio = video.videoWidth / video.videoHeight;
       if (ratio < 0.8) {
-        // Portrait / 9:16 vertical
         setAspectRatio("9/16");
         setIsPortrait(true);
       } else if (ratio >= 0.8 && ratio <= 1.25) {
-        // Square-ish / 4:5
         setAspectRatio("4/5");
         setIsPortrait(false);
       } else {
-        // Landscape / 16:9
         setAspectRatio("16/9");
         setIsPortrait(false);
       }
@@ -148,6 +187,7 @@ export function FeedVideoPlayer({
 
     setIsLoaded(true);
     setIsBuffering(false);
+    updateBufferProgress();
   };
 
   const handleLoadedData = () => {
@@ -168,6 +208,7 @@ export function FeedVideoPlayer({
     if (!video || !isFinite(video.duration) || video.duration <= 0) return;
     setCurrentTimeSec(video.currentTime);
     setProgressPercent((video.currentTime / video.duration) * 100);
+    updateBufferProgress();
 
     // Record view after 2.5s of playback
     if (video.currentTime >= 2.5 && !hasRecordedView && onRecordView) {
@@ -193,16 +234,22 @@ export function FeedVideoPlayer({
     }
   }, [isCurrentlyActive, hasError]);
 
-  // Viewport Intersection Observer: Auto-play when 50% in center viewport
+  // Viewport Intersection Observer: Auto-play when 50% in center viewport with debounce
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
+    let debounceTimer: NodeJS.Timeout | null = null;
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          if (debounceTimer) clearTimeout(debounceTimer);
+
           if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
-            setActivePlayingId(id);
+            debounceTimer = setTimeout(() => {
+              setActivePlayingId(id);
+            }, 120);
           } else if (!entry.isIntersecting || entry.intersectionRatio < 0.25) {
             setActivePlayingId((current) => (current === id ? null : current));
             if (videoRef.current) {
@@ -215,8 +262,47 @@ export function FeedVideoPlayer({
     );
 
     observer.observe(container);
-    return () => observer.disconnect();
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      observer.disconnect();
+    };
   }, [id, setActivePlayingId]);
+
+  // Skip relative seconds
+  const skipRelative = useCallback((deltaSec: number) => {
+    const video = videoRef.current;
+    if (!video || !isFinite(video.duration) || video.duration <= 0) return;
+    const target = Math.max(0, Math.min(video.duration, video.currentTime + deltaSec));
+    video.currentTime = target;
+    setCurrentTimeSec(target);
+    setProgressPercent((target / video.duration) * 100);
+
+    setSkipFeedback(deltaSec < 0 ? "-5s" : "+5s");
+    setTimeout(() => setSkipFeedback(null), 600);
+  }, []);
+
+  // Toggle Picture-in-Picture
+  const handleTogglePiP = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else if (document.pictureInPictureEnabled) {
+        await video.requestPictureInPicture();
+      }
+    } catch {}
+  };
+
+  // Cycle playback speed
+  const handleCycleSpeed = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const currentIndex = PLAYBACK_RATES.indexOf(playbackRate);
+    const nextRate = PLAYBACK_RATES[(currentIndex + 1) % PLAYBACK_RATES.length];
+    setPlaybackRate(nextRate);
+  };
 
   // Toggle Mute
   const handleToggleMute = (e: React.MouseEvent) => {
@@ -232,7 +318,33 @@ export function FeedVideoPlayer({
     }
   };
 
-  // Scrub bar seeking
+  // Volume slider change
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVol = parseFloat(e.target.value);
+    setVolume(newVol);
+    try {
+      localStorage.setItem("saints_feed_volume", String(newVol));
+    } catch {}
+    if (newVol > 0 && muted) {
+      if (setIsSharedMuted) setIsSharedMuted(false);
+      else setLocalMuted(false);
+    }
+  };
+
+  // Scrub bar mouse move (hover tooltip)
+  const handleScrubMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const bar = scrubBarRef.current;
+    const video = videoRef.current;
+    if (!bar || !video || !isFinite(video.duration) || video.duration <= 0) return;
+
+    const rect = bar.getBoundingClientRect();
+    const mouseX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+    const fraction = mouseX / rect.width;
+    setScrubHoverTime(fraction * video.duration);
+    setScrubHoverLeft(mouseX);
+  };
+
+  // Scrub bar click/seek
   const handleScrub = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
     const bar = scrubBarRef.current;
@@ -249,23 +361,52 @@ export function FeedVideoPlayer({
     setProgressPercent(fraction * 100);
   };
 
-  // Click / Tap Handling (Single click = play/pause, Double click = like)
-  const handleContainerClick = (e: React.MouseEvent) => {
+  // Press and hold for 2x speed
+  const handlePointerDown = () => {
+    longPressTimerRef.current = setTimeout(() => {
+      setIsHoldingFastForward(true);
+    }, 350);
+  };
+
+  const handlePointerUp = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    if (isHoldingFastForward) {
+      setIsHoldingFastForward(false);
+    }
+  };
+
+  // Click / Tap Handling (Single click = play/pause, Double click = like or skip)
+  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickXRatio = (e.clientX - rect.left) / rect.width;
     const now = Date.now();
     const DOUBLE_TAP_THRESHOLD = 280;
 
     if (now - lastTapRef.current < DOUBLE_TAP_THRESHOLD) {
-      // Double Tap -> Like Animation
-      if (onLike && !hasLiked) {
-        onLike();
+      // Double tap on left 25% -> skip back 5s
+      if (clickXRatio < 0.25) {
+        skipRelative(-5);
+      } 
+      // Double tap on right 25% -> skip forward 5s
+      else if (clickXRatio > 0.75) {
+        skipRelative(5);
+      } 
+      // Double tap center -> Heart Like Animation
+      else {
+        if (onLike && !hasLiked) {
+          onLike();
+        }
+        setShowHeartBurst(true);
+        setTimeout(() => setShowHeartBurst(false), 900);
       }
-      setShowHeartBurst(true);
-      setTimeout(() => setShowHeartBurst(false), 900);
       lastTapRef.current = 0;
     } else {
       lastTapRef.current = now;
       setTimeout(() => {
-        if (lastTapRef.current === now) {
+        if (lastTapRef.current === now && !isHoldingFastForward) {
           // Single Tap -> Play / Pause
           if (isCurrentlyActive) {
             setActivePlayingId(null);
@@ -287,6 +428,37 @@ export function FeedVideoPlayer({
     }, 600);
   };
 
+  // Keyboard shortcut handler when player is focused / hovered
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === " " || e.key === "k" || e.key === "K") {
+      e.preventDefault();
+      if (isCurrentlyActive) {
+        setActivePlayingId(null);
+        showCenterFeedback("pause");
+      } else {
+        setActivePlayingId(id);
+        showCenterFeedback("play");
+      }
+    } else if (e.key === "m" || e.key === "M") {
+      e.preventDefault();
+      const newMuted = !muted;
+      if (setIsSharedMuted) setIsSharedMuted(newMuted);
+      else setLocalMuted(newMuted);
+    } else if (e.key === "ArrowLeft" || e.key === "j" || e.key === "J") {
+      e.preventDefault();
+      skipRelative(-5);
+    } else if (e.key === "ArrowRight" || e.key === "l" || e.key === "L") {
+      e.preventDefault();
+      skipRelative(5);
+    } else if (e.key === "f" || e.key === "F") {
+      e.preventDefault();
+      onOpenReel();
+    } else if (e.key === "p" || e.key === "P") {
+      e.preventDefault();
+      handleTogglePiP(e as any);
+    }
+  };
+
   if (hasError) {
     return (
       <div 
@@ -305,24 +477,35 @@ export function FeedVideoPlayer({
   return (
     <div
       ref={containerRef}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        setScrubHoverTime(null);
+        setShowVolumeSlider(false);
+        handlePointerUp();
+      }}
+      onMouseDown={handlePointerDown}
+      onMouseUp={handlePointerUp}
+      onTouchStart={handlePointerDown}
+      onTouchEnd={handlePointerUp}
       onClick={handleContainerClick}
-      className={`relative rounded-2xl overflow-hidden bg-black/80 group cursor-pointer border border-border/40 select-none shadow-md ${className}`}
+      className={`relative rounded-2xl overflow-hidden bg-black/80 group cursor-pointer border border-border/40 select-none shadow-md outline-none focus-visible:ring-2 focus-visible:ring-primary/60 transition-all ${className}`}
       style={{
         maxHeight: isPortrait ? "540px" : "480px",
       }}
     >
-      {/* Ambient Blurred Glowing Backdrop */}
+      {/* Ambient Blurred Glowing Backdrop matching video */}
       <div 
         className="absolute inset-0 bg-cover bg-center blur-2xl opacity-25 scale-110 pointer-events-none transition-opacity duration-700"
         style={{
-          backgroundImage: `url(${src})`,
+          backgroundImage: `url(${displayPoster || src})`,
           backgroundSize: "cover",
         }}
       />
 
-      {/* Shimmer Skeleton Placeholder while first frame is buffering */}
+      {/* Shimmer Skeleton Placeholder while buffering */}
       <div 
         className={`absolute inset-0 bg-gradient-to-r from-muted/20 via-muted/40 to-muted/20 bg-[length:200%_100%] animate-[shimmer_2s_infinite] flex items-center justify-center transition-opacity duration-500 pointer-events-none z-0 ${
           isLoaded ? "opacity-0" : "opacity-100"
@@ -350,6 +533,7 @@ export function FeedVideoPlayer({
           onLoadedData={handleLoadedData}
           onWaiting={handleWaiting}
           onPlaying={handlePlaying}
+          onProgress={updateBufferProgress}
           onTimeUpdate={handleTimeUpdate}
           onError={() => setHasError(true)}
           className={`w-auto max-w-full object-contain transition-opacity duration-300 ${
@@ -385,10 +569,20 @@ export function FeedVideoPlayer({
         )}
       </div>
 
+      {/* 2x Fast-Forward Hold Badge Indicator */}
+      {isHoldingFastForward && (
+        <div className="absolute top-3 inset-x-0 flex justify-center z-30 pointer-events-none animate-in fade-in zoom-in duration-150">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/80 text-primary border border-primary/40 backdrop-blur-md shadow-xl text-xs font-bold font-mono">
+            <FastForward className="w-3.5 h-3.5 animate-pulse" />
+            <span>2x Speed</span>
+          </div>
+        </div>
+      )}
+
       {/* Subtle Top Gradient Shadow */}
       <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/60 to-transparent pointer-events-none z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
 
-      {/* Center Animated Feedback (Play / Pause / Double-Tap Heart) */}
+      {/* Center Animated Feedback (Play / Pause / Double-Tap Heart / Skips) */}
       <AnimatePresence>
         {showCenterIcon && (
           <motion.div
@@ -404,6 +598,23 @@ export function FeedVideoPlayer({
               ) : (
                 <Pause className="w-8 h-8 fill-white" />
               )}
+            </div>
+          </motion.div>
+        )}
+
+        {skipFeedback && (
+          <motion.div
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1.1, opacity: 1 }}
+            exit={{ scale: 1.4, opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            className={`absolute inset-y-0 flex items-center pointer-events-none z-30 ${
+              skipFeedback === "-5s" ? "left-8" : "right-8"
+            }`}
+          >
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-black/80 text-white backdrop-blur-md border border-white/20 shadow-2xl text-xs font-bold font-mono">
+              {skipFeedback === "-5s" ? <RotateCcw className="w-4 h-4 text-primary" /> : <RotateCw className="w-4 h-4 text-primary" />}
+              <span>{skipFeedback}</span>
             </div>
           </motion.div>
         )}
@@ -429,26 +640,45 @@ export function FeedVideoPlayer({
       {/* Bottom Gradient Shadow for Controls */}
       <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none z-20" />
 
-      {/* Interactive Bottom Scrub Progress Bar */}
+      {/* Interactive Bottom Scrub Progress Bar with Hover Tooltip & Buffer Indicator */}
       <div 
         ref={scrubBarRef}
         onClick={handleScrub}
-        className="absolute bottom-0 inset-x-0 h-1.5 hover:h-2.5 bg-white/20 cursor-pointer z-30 transition-all duration-150 group/bar"
+        onMouseMove={handleScrubMouseMove}
+        onMouseLeave={() => setScrubHoverTime(null)}
+        className="absolute bottom-0 inset-x-0 h-1.5 hover:h-3 bg-white/20 cursor-pointer z-30 transition-all duration-150 group/bar"
       >
+        {/* Buffer Bar (Cached stream) */}
         <div 
-          className="h-full bg-primary relative transition-all duration-100 ease-linear shadow-[0_0_8px_rgba(var(--primary),0.8)]"
+          className="h-full bg-white/25 absolute inset-y-0 left-0 transition-all duration-300 pointer-events-none"
+          style={{ width: `${bufferedPercent}%` }}
+        />
+
+        {/* Played Progress Bar */}
+        <div 
+          className="h-full bg-primary relative transition-all duration-100 ease-linear shadow-[0_0_8px_rgba(var(--primary),0.8)] z-10"
           style={{ width: `${progressPercent}%` }}
         >
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-white opacity-0 group-hover/bar:opacity-100 transition-opacity shadow-sm" />
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white opacity-0 group-hover/bar:opacity-100 transition-opacity shadow-md" />
         </div>
+
+        {/* Floating Timestamp Tooltip */}
+        {scrubHoverTime !== null && (
+          <div 
+            className="absolute -top-7 transform -translate-x-1/2 px-2 py-0.5 rounded-md bg-black/90 text-white text-[10px] font-mono font-bold backdrop-blur-md border border-white/20 pointer-events-none z-40 shadow-md"
+            style={{ left: `${scrubHoverLeft}px` }}
+          >
+            {formatVideoTime(scrubHoverTime)}
+          </div>
+        )}
       </div>
 
       {/* Controls Overlay Bar */}
       <div className={`absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-auto z-20 transition-opacity duration-200 ${
         isHovered || !isCurrentlyActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
       }`}>
-        {/* Play/Pause Button & Duration */}
-        <div className="flex items-center gap-2">
+        {/* Play/Pause, Skip Back/Forward & Duration */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <button
             type="button"
             onClick={(e) => {
@@ -462,13 +692,37 @@ export function FeedVideoPlayer({
               }
             }}
             className="p-2 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md border border-white/10 hover:scale-105 transition-all shadow-md"
-            title={isCurrentlyActive ? "Pause" : "Play"}
+            title={isCurrentlyActive ? "Pause (Space/K)" : "Play (Space/K)"}
           >
             {isCurrentlyActive ? (
               <Pause className="w-3.5 h-3.5 fill-white" />
             ) : (
               <Play className="w-3.5 h-3.5 fill-white" />
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              skipRelative(-5);
+            }}
+            className="p-1.5 rounded-full bg-black/50 hover:bg-black/80 text-white/90 backdrop-blur-md border border-white/10 hover:scale-105 transition-all hidden sm:flex"
+            title="Rewind 5s (J / ←)"
+          >
+            <RotateCcw className="w-3 h-3" />
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              skipRelative(5);
+            }}
+            className="p-1.5 rounded-full bg-black/50 hover:bg-black/80 text-white/90 backdrop-blur-md border border-white/10 hover:scale-105 transition-all hidden sm:flex"
+            title="Forward 5s (L / →)"
+          >
+            <RotateCw className="w-3 h-3" />
           </button>
 
           {durationSec > 0 && (
@@ -478,21 +732,69 @@ export function FeedVideoPlayer({
           )}
         </div>
 
-        {/* Mute Toggle & Fullscreen Reel Launcher */}
-        <div className="flex items-center gap-2">
+        {/* Right Tools: Speed, Volume Slider, PiP, Fullscreen Reel */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Speed Toggle Pill */}
           <button
             type="button"
-            onClick={handleToggleMute}
-            className="p-2 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md border border-white/10 hover:scale-105 transition-all shadow-md"
-            title={muted ? "Unmute (M)" : "Mute (M)"}
+            onClick={handleCycleSpeed}
+            className="px-2 py-1 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md border border-white/10 text-[11px] font-mono font-bold hover:scale-105 transition-all shadow-md"
+            title="Playback Speed"
           >
-            {muted ? (
-              <VolumeX className="w-3.5 h-3.5 text-red-400" />
-            ) : (
-              <Volume2 className="w-3.5 h-3.5 text-green-400" />
-            )}
+            {playbackRate}x
           </button>
 
+          {/* Volume Control with Expanding Hover Slider */}
+          <div 
+            className="relative flex items-center"
+            onMouseEnter={() => setShowVolumeSlider(true)}
+            onMouseLeave={() => setShowVolumeSlider(false)}
+          >
+            <button
+              type="button"
+              onClick={handleToggleMute}
+              className="p-2 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md border border-white/10 hover:scale-105 transition-all shadow-md"
+              title={muted ? "Unmute (M)" : "Mute (M)"}
+            >
+              {muted || volume === 0 ? (
+                <VolumeX className="w-3.5 h-3.5 text-red-400" />
+              ) : volume < 0.5 ? (
+                <Volume1 className="w-3.5 h-3.5 text-white" />
+              ) : (
+                <Volume2 className="w-3.5 h-3.5 text-green-400" />
+              )}
+            </button>
+
+            {/* Expanding Volume Slider */}
+            {showVolumeSlider && (
+              <div 
+                className="absolute left-full ml-1.5 bg-black/80 backdrop-blur-md border border-white/15 px-2.5 py-1.5 rounded-full flex items-center z-30 shadow-xl animate-in fade-in slide-in-from-left-2 duration-150"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={muted ? 0 : volume}
+                  onChange={handleVolumeChange}
+                  className="w-16 h-1.5 accent-primary bg-white/20 rounded-lg cursor-pointer"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Picture-in-Picture Button */}
+          <button
+            type="button"
+            onClick={handleTogglePiP}
+            className="p-2 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md border border-white/10 hover:scale-105 transition-all shadow-md hidden sm:flex"
+            title="Picture-in-Picture (P)"
+          >
+            <PictureInPicture className="w-3.5 h-3.5 text-white/90" />
+          </button>
+
+          {/* Fullscreen Reel Launcher */}
           <button
             type="button"
             onClick={(e) => {
@@ -500,7 +802,7 @@ export function FeedVideoPlayer({
               onOpenReel();
             }}
             className="p-2 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md border border-white/10 hover:scale-105 transition-all shadow-md group/reel"
-            title="Open in Fullscreen Reel Mode"
+            title="Open in Fullscreen Reel Mode (F)"
           >
             <Maximize2 className="w-3.5 h-3.5 text-white group-hover/reel:text-primary transition-colors" />
           </button>
