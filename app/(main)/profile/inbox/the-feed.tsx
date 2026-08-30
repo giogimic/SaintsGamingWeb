@@ -36,8 +36,8 @@ import {
   Heart, Loader2, MessageSquare, TrendingUp, Hash, Smile, Paperclip, 
   X, Image as ImageIcon, Share, Bookmark, Compass, Search, VolumeX, Volume2,
   MoreHorizontal, Eye, EyeOff, Plus, Trash2, Coins, Flag,
-  ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ArrowRight, BarChart2, Pin, Play, Pause, Maximize2, UploadCloud,
-  BadgeCheck, Crown, ShieldCheck, FileArchive, Download, Music, Disc, Send, Copy, Sparkles, Check, Flame, Users
+  ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ArrowRight, BarChart2, Pin, Play, Pause, Maximize2, Minimize, UploadCloud,
+  BadgeCheck, Crown, ShieldCheck, FileArchive, Download, Music, Disc, Send, Copy, Sparkles, Check, Flame, Users, Clock, PlaySquare
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -98,16 +98,33 @@ function ShortsVideoStage({
   poster,
   playing,
   muted,
+  autoAdvance = true,
+  onEnded,
+  onAspectRatioChange,
+  onTimeUpdate,
+  videoRefCallback,
   className = "",
 }: {
   src: string;
   poster?: string | null;
   playing: boolean;
   muted: boolean;
+  autoAdvance?: boolean;
+  onEnded?: () => void;
+  onAspectRatioChange?: (ratio: number) => void;
+  onTimeUpdate?: (current: number, duration: number) => void;
+  videoRefCallback?: (el: HTMLVideoElement | null) => void;
   className?: string;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
+
+  const setRefs = (el: HTMLVideoElement | null) => {
+    videoRef.current = el;
+    if (videoRefCallback) {
+      videoRefCallback(el);
+    }
+  };
 
   useEffect(() => {
     const video = videoRef.current;
@@ -182,18 +199,38 @@ function ShortsVideoStage({
 
   return (
     <video
-      ref={videoRef}
+      ref={setRefs}
       poster={poster || undefined}
       playsInline
-      loop
+      loop={!autoAdvance}
       muted={muted}
       autoPlay={playing}
+      onEnded={() => {
+        if (autoAdvance && onEnded) {
+          onEnded();
+        }
+      }}
+      onTimeUpdate={(e) => {
+        const v = e.currentTarget;
+        if (v.duration && onTimeUpdate) {
+          onTimeUpdate(v.currentTime, v.duration);
+        }
+      }}
+      onLoadedMetadata={(e) => {
+        const v = e.currentTarget;
+        if (v.duration && onTimeUpdate) {
+          onTimeUpdate(v.currentTime, v.duration);
+        }
+        if (v.videoWidth && v.videoHeight && onAspectRatioChange) {
+          onAspectRatioChange(v.videoWidth / v.videoHeight);
+        }
+      }}
       className={className}
     />
   );
 }
 
-export function TheFeed() {
+export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}) {
   const { data: session } = useSession();
   const currentUserPermission = (session?.user as any)?.permissionLevel || 0;
 
@@ -270,6 +307,35 @@ export function TheFeed() {
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
   const [mounted, setMounted] = useState(false);
+
+  // Fullscreen Reel Auto-Advance & Adaptive Desktop Layout State
+  const [autoAdvance, setAutoAdvance] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("sg_shorts_auto_advance");
+      return saved !== null ? saved === "true" : true;
+    }
+    return true;
+  });
+
+  const [textDurationSec, setTextDurationSec] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("sg_shorts_text_duration");
+      return saved ? parseInt(saved, 10) : 20;
+    }
+    return 20;
+  });
+
+  const [textTimeRemaining, setTextTimeRemaining] = useState<number>(20);
+  const [isTextPaused, setIsTextPaused] = useState(false);
+  const [showDurationPicker, setShowDurationPicker] = useState(false);
+  const [isModalFullscreen, setIsModalFullscreen] = useState(false);
+  const [detectedAspectRatio, setDetectedAspectRatio] = useState<"portrait" | "landscape" | "square">("portrait");
+  const modalContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Mobile Auto-Open & Real-time Scrubber States
+  const hasAutoOpenedMobileRef = useRef(false);
+  const [videoPlayback, setVideoPlayback] = useState<{ current: number; duration: number }>({ current: 0, duration: 0 });
+  const activeShortsVideoElRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -1548,6 +1614,9 @@ export function TheFeed() {
       } else if (e.key === "ArrowUp" || e.key === "ArrowLeft" || e.key === "PageUp") {
         e.preventDefault();
         navigateShorts(-1);
+      } else if (e.key === "f" || e.key === "F") {
+        e.preventDefault();
+        handleToggleFullscreen();
       } else if (e.key === "Escape") {
         e.preventDefault();
         setViewingShortsPost(null);
@@ -1562,6 +1631,87 @@ export function TheFeed() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [viewingShortsPost, navigateShorts]);
+
+  // True OS / Monitor Fullscreen Handler
+  const handleToggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      modalContainerRef.current?.requestFullscreen().catch(() => {});
+      setIsModalFullscreen(true);
+    } else {
+      document.exitFullscreen().catch(() => {});
+      setIsModalFullscreen(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsModalFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  // Save Preferences
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("sg_shorts_auto_advance", String(autoAdvance));
+    }
+  }, [autoAdvance]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("sg_shorts_text_duration", String(textDurationSec));
+    }
+  }, [textDurationSec]);
+
+  // Aspect Ratio & Auto-reply Loading for Desktop Theater View
+  useEffect(() => {
+    if (!viewingShortsPost) return;
+
+    // Pre-load replies for desktop side dock
+    if (viewingShortsPost.id && !loadedReplies[viewingShortsPost.id]) {
+      handleLoadReplies(viewingShortsPost.id);
+    }
+
+    if (!viewingShortsPost.mediaUrl || isArchive(viewingShortsPost.mediaUrl)) {
+      setDetectedAspectRatio("landscape");
+      return;
+    }
+
+    if (!isVideo(viewingShortsPost.mediaUrl)) {
+      const img = new window.Image();
+      img.src = viewingShortsPost.mediaUrl;
+      img.onload = () => {
+        if (img.naturalWidth && img.naturalHeight) {
+          setDetectedAspectRatio(img.naturalWidth >= img.naturalHeight * 1.15 ? "landscape" : "portrait");
+        }
+      };
+    }
+  }, [viewingShortsPost, loadedReplies, handleLoadReplies]);
+
+  // Auto-advance countdown for Text Posts & Static Images
+  useEffect(() => {
+    if (!viewingShortsPost) return;
+    const isVid = viewingShortsPost.mediaUrl && isVideo(viewingShortsPost.mediaUrl);
+    if (isVid) return;
+
+    setTextTimeRemaining(textDurationSec);
+
+    if (!autoAdvance || isTextPaused || isShortsCommentsOpen) return;
+
+    const interval = setInterval(() => {
+      setTextTimeRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          navigateShorts(1);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [viewingShortsPost, autoAdvance, textDurationSec, isTextPaused, isShortsCommentsOpen, navigateShorts]);
 
   const lastTapRef = useRef<number>(0);
   const handleShortsTap = () => {
@@ -1610,12 +1760,46 @@ export function TheFeed() {
     }
   }, [activePlayingVideoId, displayPosts]);
 
+  // Scrubber Seeking Handler
+  const handleScrubberSeek = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    if (activeShortsVideoElRef.current && videoPlayback.duration > 0) {
+      activeShortsVideoElRef.current.currentTime = ratio * videoPlayback.duration;
+      setVideoPlayback(prev => ({ ...prev, current: ratio * prev.duration }));
+    }
+  };
+
+  // Auto-open full view on mobile devices on initial feed load
+  useEffect(() => {
+    if (typeof window === "undefined" || hasAutoOpenedMobileRef.current) return;
+    const isMobile = window.innerWidth < 768;
+    if (isMobile && !viewingShortsPost && displayPosts.length > 0) {
+      hasAutoOpenedMobileRef.current = true;
+      const initial = displayPosts.find((p: any) => p.mediaUrl && isVideo(p.mediaUrl)) || displayPosts[0];
+      if (initial) {
+        setViewingShortsPost(initial);
+        if (initial.id) {
+          handleRecordView(initial.id);
+        }
+      }
+    }
+  }, [displayPosts, viewingShortsPost, handleRecordView]);
+
+  const handleCloseShorts = () => {
+    hasAutoOpenedMobileRef.current = true;
+    setViewingShortsPost(null);
+    setIsShortsCommentsOpen(false);
+  };
+
   return (
     <div className="w-full flex flex-col xl:flex-row items-start justify-center gap-6 relative min-h-screen">
-      
-      {/* Full-Screen Immersive Shorts / Reel Swiper Modal with Deterministic Pre-warming & HLS */}
+           {/* Full-Screen Immersive Shorts / Reel Swiper Modal with Deterministic Pre-warming & Adaptive Desktop Theater */}
       {mounted && viewingShortsPost && createPortal(
         <div 
+          ref={modalContainerRef}
           className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-3xl flex items-center justify-center select-none overflow-hidden m-0 p-0 animate-in fade-in duration-200"
           onTouchStart={(e) => {
             touchStartY.current = e.touches[0].clientY;
@@ -1639,28 +1823,102 @@ export function TheFeed() {
             />
           )}
 
-          {/* Top Bar Controls */}
-          <div className="absolute top-4 left-4 z-50 flex items-center gap-3">
+          {/* Top Bar Floating Controls */}
+          <div className="absolute top-4 left-4 z-50 flex items-center gap-2.5">
             <button 
-              onClick={() => { setViewingShortsPost(null); setIsShortsCommentsOpen(false); }}
+              onClick={handleCloseShorts}
               className="p-2.5 bg-black/60 hover:bg-black/90 text-white rounded-full backdrop-blur-md transition-all shadow-lg hover:scale-105"
               title="Close (Esc)"
             >
               <X className="w-5 h-5" />
             </button>
-            <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/60 text-white backdrop-blur-md text-xs font-bold shadow-md">
+
+            {onOpenMessages && (
+              <button 
+                onClick={() => {
+                  handleCloseShorts();
+                  onOpenMessages();
+                }}
+                className="p-2.5 bg-black/60 hover:bg-black/90 text-white rounded-full backdrop-blur-md transition-all shadow-lg hover:scale-105"
+                title="Direct Messages"
+              >
+                <MessageSquare className="w-5 h-5 text-primary" />
+              </button>
+            )}
+
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 text-white backdrop-blur-md text-xs font-bold shadow-md">
               <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
               <span>Saints Reel</span>
             </div>
+
+            {/* Auto-Advance Toggle Button */}
+            <button
+              onClick={() => setAutoAdvance(prev => !prev)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md transition-all shadow-md ${
+                autoAdvance 
+                  ? "bg-primary/25 text-primary border border-primary/40 hover:bg-primary/35" 
+                  : "bg-black/60 text-white/70 border border-white/10 hover:bg-black/80"
+              }`}
+              title="Toggle Auto-Play Next Post"
+            >
+              <PlaySquare className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Auto-Next:</span>
+              <span className="font-bold">{autoAdvance ? "ON" : "OFF"}</span>
+            </button>
+
+            {/* Text Post / Image Reading Duration Selector */}
+            {(!viewingShortsPost.mediaUrl || !isVideo(viewingShortsPost.mediaUrl)) && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowDurationPicker(prev => !prev)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-black/60 hover:bg-black/80 text-white border border-white/15 text-xs font-mono backdrop-blur-md transition-all shadow-md"
+                  title="Change duration before next post auto-plays"
+                >
+                  <Clock className="w-3.5 h-3.5 text-primary" />
+                  <span>{autoAdvance ? `${textTimeRemaining}s / ${textDurationSec}s` : `${textDurationSec}s`}</span>
+                  <ChevronDown className="w-3 h-3 text-white/60" />
+                </button>
+                {showDurationPicker && (
+                  <div className="absolute top-full mt-1.5 left-0 bg-black/95 border border-white/20 rounded-xl p-1.5 shadow-2xl backdrop-blur-xl z-50 flex flex-col gap-1 min-w-[130px]">
+                    <span className="text-[10px] text-white/50 px-2 py-0.5 font-bold uppercase tracking-wider">Auto Duration</span>
+                    {[5, 10, 15, 20, 30, 45, 60].map((sec) => (
+                      <button
+                        key={sec}
+                        onClick={() => {
+                          setTextDurationSec(sec);
+                          setTextTimeRemaining(sec);
+                          setShowDurationPicker(false);
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-xs flex items-center justify-between text-left transition-colors ${
+                          textDurationSec === sec ? "bg-primary text-primary-foreground font-bold" : "text-white/80 hover:bg-white/10"
+                        }`}
+                      >
+                        <span>{sec} seconds</span>
+                        {textDurationSec === sec && <Check className="w-3 h-3" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
+          <div className="absolute top-4 right-4 z-50 flex items-center gap-2.5">
             <button 
               onClick={() => setIsShortsMuted(!isShortsMuted)}
               className="p-2.5 bg-black/60 hover:bg-black/90 text-white rounded-full backdrop-blur-md transition-all shadow-lg hover:scale-105"
               title={isShortsMuted ? "Unmute (M)" : "Mute (M)"}
             >
               {isShortsMuted ? <VolumeX className="w-5 h-5 text-red-400" /> : <Volume2 className="w-5 h-5 text-green-400" />}
+            </button>
+
+            {/* True Monitor Fullscreen Toggle Button */}
+            <button 
+              onClick={handleToggleFullscreen}
+              className="p-2.5 bg-black/60 hover:bg-black/90 text-white rounded-full backdrop-blur-md transition-all shadow-lg hover:scale-105"
+              title={isModalFullscreen ? "Exit Fullscreen (F)" : "Full Monitor View (F)"}
+            >
+              {isModalFullscreen ? <Minimize className="w-5 h-5 text-primary" /> : <Maximize2 className="w-5 h-5" />}
             </button>
           </div>
 
@@ -1687,13 +1945,37 @@ export function TheFeed() {
             </button>
           </div>
 
-          {/* Main Reel Viewport Stage: Full-bleed on Mobile, Centered 9:16 Stage on Desktop */}
-          <div className="w-full h-full md:w-auto md:min-w-[400px] md:max-w-[460px] md:h-[92vh] md:max-h-[880px] relative md:rounded-3xl overflow-hidden bg-black shadow-2xl flex items-center justify-center transition-all duration-300">
+          {/* Main Reel Viewport Stage: Full-bleed on Mobile, Dynamic Aspect-Ratio Theater Stage on Desktop */}
+          <div 
+            className={`w-full h-full relative transition-all duration-300 flex items-center justify-center ${
+              detectedAspectRatio === "landscape" || !viewingShortsPost.mediaUrl || isArchive(viewingShortsPost.mediaUrl)
+                ? "md:w-full md:max-w-5xl lg:max-w-6xl md:h-[88vh] md:max-h-[860px] md:flex-row md:items-stretch md:rounded-3xl overflow-hidden bg-black/95 md:border md:border-white/15 md:shadow-2xl"
+                : "md:w-auto md:min-w-[400px] md:max-w-[460px] md:h-[92vh] md:max-h-[880px] md:rounded-3xl overflow-hidden bg-black md:shadow-2xl"
+            }`}
+          >
+            {/* Story-style Progress Bar for Text Posts & Static Images */}
+            {autoAdvance && (!viewingShortsPost.mediaUrl || !isVideo(viewingShortsPost.mediaUrl)) && (
+              <div className="absolute top-0 inset-x-0 h-1 bg-white/20 z-40 overflow-hidden">
+                <div 
+                  className="h-full bg-primary transition-all ease-linear"
+                  style={{
+                    width: `${Math.max(0, Math.min(100, ((textDurationSec - textTimeRemaining) / textDurationSec) * 100))}%`,
+                    transitionDuration: "1000ms"
+                  }}
+                />
+              </div>
+            )}
             
-            {/* Central Media Content */}
+            {/* Central Media Content Stage */}
             <div 
-              className="w-full h-full relative flex items-center justify-center cursor-pointer"
+              className={`w-full h-full relative flex items-center justify-center cursor-pointer ${
+                detectedAspectRatio === "landscape" || !viewingShortsPost.mediaUrl || isArchive(viewingShortsPost.mediaUrl)
+                  ? "md:flex-1 bg-black overflow-hidden"
+                  : ""
+              }`}
               onClick={handleShortsTap}
+              onMouseEnter={() => setIsTextPaused(true)}
+              onMouseLeave={() => setIsTextPaused(false)}
             >
               {viewingShortsPost.mediaUrl && isVideo(viewingShortsPost.mediaUrl) ? (
                 <ShortsVideoStage
@@ -1702,7 +1984,12 @@ export function TheFeed() {
                   poster={viewingShortsPost.thumbnailUrl}
                   playing={shortsPlaying}
                   muted={isShortsMuted}
-                  className="w-full h-full object-contain md:object-cover mx-auto bg-black transition-opacity duration-300"
+                  autoAdvance={autoAdvance}
+                  onEnded={() => navigateShorts(1)}
+                  onAspectRatioChange={(ratio) => setDetectedAspectRatio(ratio >= 1.15 ? "landscape" : "portrait")}
+                  onTimeUpdate={(current, duration) => setVideoPlayback({ current, duration })}
+                  videoRefCallback={(el) => { activeShortsVideoElRef.current = el; }}
+                  className="w-full h-full object-contain mx-auto bg-black transition-opacity duration-300"
                 />
               ) : viewingShortsPost.mediaUrl && isArchive(viewingShortsPost.mediaUrl) ? (
                 <div className="flex flex-col items-center justify-center p-8 text-center bg-card/60 backdrop-blur-md rounded-2xl border border-white/10 m-4">
@@ -1724,7 +2011,7 @@ export function TheFeed() {
                   key={viewingShortsPost.id}
                   src={viewingShortsPost.mediaUrl} 
                   alt="Shorts media" 
-                  className="w-full h-full object-contain md:object-cover mx-auto shadow-xl" 
+                  className="w-full h-full object-contain mx-auto shadow-xl" 
                 />
               ) : (
                 <div className="w-full h-full flex flex-col justify-between p-8 bg-gradient-to-b from-primary/20 via-background/80 to-black text-white">
@@ -1749,7 +2036,7 @@ export function TheFeed() {
                   </div>
 
                   <div className="my-auto py-6">
-                    <p className="text-lg md:text-xl font-medium leading-relaxed drop-shadow-md whitespace-pre-wrap">
+                    <p className="text-lg md:text-2xl font-medium leading-relaxed drop-shadow-md whitespace-pre-wrap">
                       {viewingShortsPost.body}
                     </p>
                   </div>
@@ -1785,12 +2072,11 @@ export function TheFeed() {
                 )}
               </AnimatePresence>
 
-              {/* Gradient Bottom Shadow */}
-              <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
+              {/* Mobile / Portrait Bottom Caption & Details (hidden on desktop wide mode) */}
+              <div className={`${detectedAspectRatio === "landscape" || !viewingShortsPost.mediaUrl ? "md:hidden" : ""} absolute inset-x-0 bottom-0 h-52 bg-gradient-to-t from-black via-black/60 to-transparent pointer-events-none`} />
 
-              {/* Bottom Caption & Author Details */}
-              <div className="absolute bottom-4 left-4 right-16 z-20 text-white pointer-events-auto">
-                <div className="flex items-center gap-2 mb-2">
+              <div className={`${detectedAspectRatio === "landscape" || !viewingShortsPost.mediaUrl ? "md:hidden" : ""} absolute bottom-20 left-3 right-16 z-20 text-white pointer-events-auto`}>
+                <div className="flex items-center gap-2 mb-1.5">
                   <span className="font-bold text-sm drop-shadow-md flex items-center gap-1">
                     @{viewingShortsPost.author?.username}
                     {viewingShortsPost.author?.isFounder && <Crown className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />}
@@ -1804,7 +2090,7 @@ export function TheFeed() {
                     <p className={captionExpanded ? "" : "line-clamp-2"}>
                       {renderBody(viewingShortsPost.body)}
                     </p>
-                    {viewingShortsPost.body.length > 90 && (
+                    {viewingShortsPost.body.length > 80 && (
                       <button 
                         onClick={(e) => { e.stopPropagation(); setCaptionExpanded(!captionExpanded); }}
                         className="text-[11px] font-bold text-primary hover:underline mt-0.5"
@@ -1822,20 +2108,20 @@ export function TheFeed() {
                     <span className="w-0.5 h-2 bg-primary rounded-full animate-[pulse_0.8s_ease-in-out_infinite_0.2s]" />
                     <span className="w-0.5 h-3 bg-primary rounded-full animate-[pulse_0.5s_ease-in-out_infinite_0.4s]" />
                   </div>
-                  <span className="truncate max-w-[180px]">
+                  <span className="truncate max-w-[170px]">
                     {viewingShortsPost.backgroundTrackUrl ? "Background Audio Stem" : `Original Audio - @${viewingShortsPost.author?.username}`}
                   </span>
                 </div>
               </div>
 
-              {/* Right Side Floating TikTok Action Rail */}
+              {/* Right Side Floating TikTok Action Rail (Mobile / Portrait mode) */}
               <div 
-                className="absolute right-3 bottom-8 flex flex-col items-center gap-4 z-30 pointer-events-auto"
+                className={`${detectedAspectRatio === "landscape" || !viewingShortsPost.mediaUrl ? "md:hidden" : ""} absolute right-2.5 bottom-20 flex flex-col items-center gap-3.5 z-30 pointer-events-auto`}
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Creator Avatar with Follow Button */}
-                <div className="relative mb-2">
-                  <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-primary bg-muted relative shadow-lg">
+                <div className="relative mb-1">
+                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary bg-muted relative shadow-lg">
                     {viewingShortsPost.author?.image ? (
                       <Image src={viewingShortsPost.author.image} alt={viewingShortsPost.author.username} fill className="object-cover" />
                     ) : (
@@ -1856,12 +2142,12 @@ export function TheFeed() {
                 {/* Like Button */}
                 <button 
                   onClick={() => handleLike(viewingShortsPost.id)}
-                  className="flex flex-col items-center gap-1 text-white hover:scale-110 transition-transform"
+                  className="flex flex-col items-center gap-0.5 text-white hover:scale-110 transition-transform"
                 >
-                  <div className={`p-2.5 rounded-full backdrop-blur-md shadow-lg transition-colors ${viewingShortsPost.hasLiked ? 'bg-red-500/20 text-red-500' : 'bg-black/50 text-white'}`}>
-                    <Heart className={`w-6 h-6 ${viewingShortsPost.hasLiked ? 'fill-red-500 text-red-500' : ''}`} />
+                  <div className={`p-2 rounded-full backdrop-blur-md shadow-lg transition-colors ${viewingShortsPost.hasLiked ? 'bg-red-500/20 text-red-500' : 'bg-black/50 text-white'}`}>
+                    <Heart className={`w-5 h-5 ${viewingShortsPost.hasLiked ? 'fill-red-500 text-red-500' : ''}`} />
                   </div>
-                  <span className="text-[11px] font-bold drop-shadow-md">{viewingShortsPost.likesCount || 0}</span>
+                  <span className="text-[10px] font-bold drop-shadow-md">{viewingShortsPost.likesCount || 0}</span>
                 </button>
 
                 {/* Comments Button */}
@@ -1872,43 +2158,249 @@ export function TheFeed() {
                       handleLoadReplies(viewingShortsPost.id);
                     }
                   }}
-                  className="flex flex-col items-center gap-1 text-white hover:scale-110 transition-transform"
+                  className="flex flex-col items-center gap-0.5 text-white hover:scale-110 transition-transform"
                 >
-                  <div className={`p-2.5 rounded-full backdrop-blur-md shadow-lg transition-colors ${isShortsCommentsOpen ? 'bg-primary text-primary-foreground' : 'bg-black/50 text-white'}`}>
-                    <MessageSquare className="w-6 h-6" />
+                  <div className={`p-2 rounded-full backdrop-blur-md shadow-lg transition-colors ${isShortsCommentsOpen ? 'bg-primary text-primary-foreground' : 'bg-black/50 text-white'}`}>
+                    <MessageSquare className="w-5 h-5" />
                   </div>
-                  <span className="text-[11px] font-bold drop-shadow-md">{viewingShortsPost.repliesCount || 0}</span>
+                  <span className="text-[10px] font-bold drop-shadow-md">{viewingShortsPost.repliesCount || 0}</span>
                 </button>
 
                 {/* Bookmark Button */}
                 <button 
                   onClick={() => handleBookmark(viewingShortsPost.id)}
-                  className="flex flex-col items-center gap-1 text-white hover:scale-110 transition-transform"
+                  className="flex flex-col items-center gap-0.5 text-white hover:scale-110 transition-transform"
                 >
-                  <div className={`p-2.5 rounded-full backdrop-blur-md shadow-lg transition-colors ${viewingShortsPost.hasBookmarked ? 'bg-yellow-500/20 text-yellow-500' : 'bg-black/50 text-white'}`}>
-                    <Bookmark className={`w-6 h-6 ${viewingShortsPost.hasBookmarked ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                  <div className={`p-2 rounded-full backdrop-blur-md shadow-lg transition-colors ${viewingShortsPost.hasBookmarked ? 'bg-yellow-500/20 text-yellow-500' : 'bg-black/50 text-white'}`}>
+                    <Bookmark className={`w-5 h-5 ${viewingShortsPost.hasBookmarked ? 'fill-yellow-500 text-yellow-500' : ''}`} />
                   </div>
-                  <span className="text-[11px] font-bold drop-shadow-md">Save</span>
+                  <span className="text-[10px] font-bold drop-shadow-md">Save</span>
                 </button>
 
                 {/* Share Button */}
                 <button 
                   onClick={() => handleShare(viewingShortsPost)}
-                  className="flex flex-col items-center gap-1 text-white hover:scale-110 transition-transform"
+                  className="flex flex-col items-center gap-0.5 text-white hover:scale-110 transition-transform"
                 >
-                  <div className="p-2.5 rounded-full bg-black/50 text-white backdrop-blur-md shadow-lg">
-                    <Share className="w-6 h-6" />
+                  <div className="p-2 rounded-full bg-black/50 text-white backdrop-blur-md shadow-lg">
+                    <Share className="w-5 h-5" />
                   </div>
-                  <span className="text-[11px] font-bold drop-shadow-md">{viewingShortsPost.shareCount || 0}</span>
+                  <span className="text-[10px] font-bold drop-shadow-md">{viewingShortsPost.shareCount || 0}</span>
                 </button>
               </div>
+
+              {/* Dedicated Mobile Bottom HUD Bar (TikTok / YouTube Shorts / Reels inspired) */}
+              <div 
+                className={`${detectedAspectRatio === "landscape" || !viewingShortsPost.mediaUrl ? "md:hidden" : ""} absolute inset-x-0 bottom-0 z-30 flex flex-col bg-gradient-to-t from-black via-black/90 to-transparent pt-3 pb-[max(0.65rem,env(safe-area-inset-bottom))] px-3 pointer-events-auto`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Real-time Video Playback Scrubber Bar */}
+                {viewingShortsPost.mediaUrl && isVideo(viewingShortsPost.mediaUrl) && videoPlayback.duration > 0 && (
+                  <div 
+                    className="w-full py-2 cursor-pointer group flex items-center"
+                    onClick={handleScrubberSeek}
+                    onTouchMove={handleScrubberSeek}
+                  >
+                    <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden relative group-hover:h-1.5 transition-all">
+                      <div 
+                        className="h-full bg-primary relative rounded-full"
+                        style={{ width: `${Math.max(0, Math.min(100, (videoPlayback.current / videoPlayback.duration) * 100))}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* HUD Bottom Bar Controls Dock */}
+                <div className="flex items-center justify-between gap-2 mt-0.5">
+                  {/* Stream Tabs Switcher */}
+                  <div className="flex items-center bg-black/60 border border-white/15 rounded-full p-0.5 backdrop-blur-xl">
+                    {(["for-you", "following", "clips"] as FeedTabType[]).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => {
+                          setFeedTab(tab);
+                          const filtered = tab === "clips" 
+                            ? posts.filter((p: any) => p.mediaUrl && isVideo(p.mediaUrl))
+                            : tab === "following"
+                            ? posts.filter((p: any) => p.isFollowing)
+                            : posts;
+                          if (filtered.length > 0) {
+                            setViewingShortsPost(filtered[0]);
+                          }
+                        }}
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold capitalize transition-all ${
+                          feedTab === tab 
+                            ? "bg-primary text-primary-foreground shadow-sm" 
+                            : "text-white/60 hover:text-white"
+                        }`}
+                      >
+                        {tab === "for-you" ? "For You" : tab === "following" ? "Following" : "Clips"}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Quick Add Comment Trigger */}
+                  <button
+                    onClick={() => {
+                      setIsShortsCommentsOpen(true);
+                      if (!loadedReplies[viewingShortsPost.id]) {
+                        handleLoadReplies(viewingShortsPost.id);
+                      }
+                    }}
+                    className="flex-1 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 text-white/70 text-xs backdrop-blur-xl transition-colors"
+                  >
+                    <Smile className="w-3.5 h-3.5 text-white/50 shrink-0" />
+                    <span className="truncate text-[11px]">Add comment...</span>
+                  </button>
+
+                  {/* Messages Button */}
+                  {onOpenMessages && (
+                    <button
+                      onClick={() => {
+                        handleCloseShorts();
+                        onOpenMessages();
+                      }}
+                      className="p-1.5 rounded-full bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary backdrop-blur-xl transition-all shadow-md shrink-0"
+                      title="Direct Messages"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </button>
+                  )}
+
+                  {/* Exit to Stream View Button */}
+                  <button
+                    onClick={handleCloseShorts}
+                    className="p-1.5 rounded-full bg-black/60 hover:bg-black/90 border border-white/15 text-white/80 hover:text-white backdrop-blur-xl transition-all shadow-md shrink-0"
+                    title="Exit Fullscreen"
+                  >
+                    <Compass className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
+
+            {/* Desktop Dedicated Social & Comments Dock (Rendered on md: and above when wide mode) */}
+            {(detectedAspectRatio === "landscape" || !viewingShortsPost.mediaUrl || isArchive(viewingShortsPost.mediaUrl)) && (
+              <div 
+                className="hidden md:flex md:w-[380px] lg:w-[420px] flex-col border-l border-white/10 bg-card/85 backdrop-blur-2xl text-white select-text"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Author Info Header */}
+                <div className="p-4 border-b border-border/40 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-primary/50 bg-muted relative shrink-0">
+                      {viewingShortsPost.author?.image ? (
+                        <Image src={viewingShortsPost.author.image} alt={viewingShortsPost.author.username} fill className="object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center font-bold text-sm bg-primary/30">
+                          {viewingShortsPost.author?.username?.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm flex items-center gap-1">
+                        @{viewingShortsPost.author?.username}
+                        {viewingShortsPost.author?.isFounder && <Crown className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />}
+                        {viewingShortsPost.author?.isVIP && <BadgeCheck className="w-3.5 h-3.5 text-blue-500 fill-blue-500" />}
+                      </h4>
+                      <p className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(viewingShortsPost.createdAt))} ago</p>
+                    </div>
+                  </div>
+
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleSubscribe(viewingShortsPost.author?.id)}
+                    className="h-8 text-xs font-bold rounded-full border-primary/40 hover:bg-primary/20"
+                  >
+                    Follow
+                  </Button>
+                </div>
+
+                {/* Post Body Caption */}
+                {viewingShortsPost.body && (
+                  <div className="p-4 border-b border-border/30 max-h-36 overflow-y-auto text-xs text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                    {renderBody(viewingShortsPost.body)}
+                  </div>
+                )}
+
+                {/* Interaction Action Buttons Bar */}
+                <div className="px-4 py-2.5 border-b border-border/40 flex items-center justify-around bg-muted/10 text-xs">
+                  <button 
+                    onClick={() => handleLike(viewingShortsPost.id)}
+                    className="flex items-center gap-1.5 text-white/80 hover:text-red-400 transition-colors"
+                  >
+                    <Heart className={`w-4 h-4 ${viewingShortsPost.hasLiked ? 'fill-red-500 text-red-500' : ''}`} />
+                    <span className="font-semibold">{viewingShortsPost.likesCount || 0}</span>
+                  </button>
+                  <button 
+                    onClick={() => handleBookmark(viewingShortsPost.id)}
+                    className="flex items-center gap-1.5 text-white/80 hover:text-yellow-400 transition-colors"
+                  >
+                    <Bookmark className={`w-4 h-4 ${viewingShortsPost.hasBookmarked ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                    <span>Save</span>
+                  </button>
+                  <button 
+                    onClick={() => handleShare(viewingShortsPost)}
+                    className="flex items-center gap-1.5 text-white/80 hover:text-primary transition-colors"
+                  >
+                    <Share className="w-4 h-4" />
+                    <span>{viewingShortsPost.shareCount || 0}</span>
+                  </button>
+                </div>
+
+                {/* Desktop Comments Section Header */}
+                <div className="px-4 py-2 bg-muted/20 border-b border-border/30 flex items-center justify-between text-xs text-muted-foreground font-semibold">
+                  <span className="flex items-center gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-primary" /> Comments ({viewingShortsPost.repliesCount || 0})
+                  </span>
+                </div>
+
+                {/* Comments List */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 shorts-comments-scroll">
+                  {loadingReplies[viewingShortsPost.id] ? (
+                    <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+                  ) : !loadedReplies[viewingShortsPost.id] || loadedReplies[viewingShortsPost.id].length === 0 ? (
+                    <p className="text-center text-xs text-muted-foreground py-10">No comments yet. Start the discussion!</p>
+                  ) : (
+                    loadedReplies[viewingShortsPost.id].map((reply: any) => (
+                      <div key={reply.id} className="p-2.5 bg-muted/30 rounded-xl border border-border/40 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs text-foreground/90">@{reply.author?.username}</span>
+                          <span className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(reply.createdAt))} ago</span>
+                        </div>
+                        <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap">{renderBody(reply.body)}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Comment Input Box */}
+                <form onSubmit={(e) => handleReply(e, viewingShortsPost.id)} className="p-3 border-t border-border/50 bg-background/50 flex items-center gap-2">
+                  <Input 
+                    placeholder="Write a comment..." 
+                    value={replyBody}
+                    onChange={(e) => setReplyBody(e.target.value)}
+                    maxLength={1000}
+                    className="h-9 text-xs rounded-full bg-muted/40"
+                  />
+                  <Button 
+                    type="submit" 
+                    size="sm" 
+                    disabled={!replyBody.trim() || isPosting}
+                    className="h-9 rounded-full px-4 text-xs font-bold shrink-0 shadow-sm"
+                  >
+                    {isPosting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                  </Button>
+                </form>
+              </div>
+            )}
           </div>
 
-          {/* Slide-Over Comments Drawer (Docked alongside video on desktop) */}
+          {/* Slide-Over Comments Drawer for Mobile / Portrait Mode */}
           {isShortsCommentsOpen && (
             <div 
-              className="fixed inset-x-0 bottom-0 md:inset-y-0 md:right-0 md:left-auto w-full md:w-96 bg-background/95 backdrop-blur-2xl border-t md:border-t-0 md:border-l border-border/60 z-50 flex flex-col h-[70vh] md:h-full shadow-2xl animate-in slide-in-from-bottom md:slide-in-from-right duration-300"
+              className="fixed inset-x-0 bottom-0 md:inset-y-0 md:right-0 md:left-auto w-full md:w-96 bg-background/95 backdrop-blur-2xl border-t md:border-t-0 md:border-l border-border/60 z-50 flex flex-col h-[70vh] md:h-full shadow-2xl animate-in slide-in-from-bottom md:slide-in-from-right duration-300 select-text"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-4 border-b border-border/50 flex items-center justify-between">
@@ -1972,6 +2464,25 @@ export function TheFeed() {
         {/* Stream Header & Navigation Tabs */}
         <div className="p-4 border border-border/50 rounded-2xl sticky top-20 bg-background/85 backdrop-blur-xl z-10 shadow-sm">
           
+          {/* Mobile Top Navigation Tabs: Feed vs Messages */}
+          {onOpenMessages && (
+            <div className="lg:hidden flex items-center p-1 bg-muted/40 rounded-xl border border-border/40 mb-3.5 gap-1">
+              <button
+                className="flex-1 py-1.5 rounded-lg text-xs font-bold bg-primary text-primary-foreground shadow-sm flex items-center justify-center gap-1.5 transition-all"
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>The Feed</span>
+              </button>
+              <button
+                onClick={onOpenMessages}
+                className="flex-1 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 flex items-center justify-center gap-1.5 transition-all"
+              >
+                <MessageSquare className="w-3.5 h-3.5 text-primary" />
+                <span>Messages</span>
+              </button>
+            </div>
+          )}
+
           {/* Top Bar: Title & Search */}
           <div className="flex justify-between items-center mb-3.5 gap-3 flex-wrap">
             <div className="flex items-center gap-2">

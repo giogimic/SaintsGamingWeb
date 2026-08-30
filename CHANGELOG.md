@@ -1,3 +1,27 @@
+# 2.1.521
+- **Immersive Mobile Messages Tab & Directory View**: Delivered a full-screen, mobile-optimized Messages Hub (`/profile/inbox`) for direct encrypted messaging and group chats on mobile devices:
+  - **Mobile Stream / Messages Tab Switcher**: Added responsive pill tabs (`The Feed` vs `Messages` with live count) in the mobile stream header, fullscreen reel HUD, and reel top-bar.
+  - **Full-Screen Mobile Conversations Hub**: Full-width contact directory with avatar preview, E2EE status, and group chat lists with real-time name & handle filtering.
+  - **Edge-to-Edge Chat Screen on Mobile**: Dedicated conversation stage with mobile safe back navigation (`ArrowLeft` returning to conversation directory), E2EE session lock indicator, message timestamps, read receipts, and mobile-friendly message composition bar.
+  - **Direct Reels-to-Messages Transition**: Embedded one-tap direct messaging triggers directly inside the mobile Reels swiper so users can jump straight to their conversations without losing context.
+
+# 2.1.520
+- **Mobile Auto-Open Full Reel Experience**: Automatically opens the immersive full-bleed vertical swiper on mobile devices (`window.innerWidth < 768px`) upon feed load, delivering an instant TikTok/Reels-style entry while remembering manual dismissals.
+- **Dedicated Mobile HUD Bottom Bar & Real-time Scrubber**: Implemented a sleek glassmorphic HUD bottom dock (`bg-gradient-to-t from-black via-black/90 pb-safe`) inspired by TikTok, YouTube Shorts, and Reels:
+  - **Interactive Playback Scrubber**: Real-time progress bar across the top of the HUD supporting tap and drag seeking with live time synchronization.
+  - **In-Reel Feed Stream Switcher**: Direct tab pills (`For You`, `Following`, `Clips`) right in the HUD to switch streams without exiting full-screen mode.
+  - **Quick Comment Pill Trigger**: One-tap `"Add comment..."` pill with emoji icon opening the comments drawer instantly.
+  - **Stream/Grid View Switcher**: Instant exit button returning to standard card stream browsing.
+- **Mobile Viewport Optimization**: Adjusted caption, audio stem tickers, and floating right action rail coordinates (`bottom-20`) to eliminate overlap with the bottom navigation bar and mobile home indicators.
+
+# 2.1.519
+- **Desktop Theater / Split-Screen Layout**: Eliminated the vertical constraint on desktop screens for widescreen (16:9) media, landscape attachments, and text posts. On screens $\ge$ `md`, the viewport expands into a responsive `max-w-6xl` theater layout where media/content plays on the left and a dedicated social & comments panel is docked seamlessly on the right.
+- **True Monitor Fullscreen Mode**: Added a full-display toggle button and `F` / `f` keyboard shortcut utilizing the native browser Fullscreen API (`requestFullscreen` / `exitFullscreen`), allowing players to expand beyond the browser tab into an unobstructed, edge-to-edge monitor experience.
+- **Seamless Video Auto-Advance**: Integrated automatic transition to the next clip or post upon video completion (`onEnded`), configurable via a persistent top-bar toggle button (saved in `localStorage`, default ON).
+- **Configurable Story-Style Text Post Timer**: Introduced an automatic countdown timer for text posts and static image attachments defaulting to 20 seconds (user customizable: 5s, 10s, 15s, 20s, 30s, 45s, 60s), complete with an animated linear story progress bar and intelligent pause on hover or during comment writing.
+- **Dedicated Desktop Live Comments Dock**: Docked author information, post text, live metrics (Like, Bookmark, Share), and a real-time scrollable replies feed directly beside the widescreen player with direct reply input.
+- **Mobile Swiper & Portrait Mode Preservation**: Retained the full-bleed 100dvh vertical TikTok-style swipe experience on mobile devices and for 9:16 vertical clips on desktop.
+
 # 2.1.518
 - **HLS Adaptive Bitrate (ABR) Video Streaming Pipeline**: Re-engineered `videoPipeline.ts` (`LocalFfmpegProvider`) to transcode uploaded videos into true multi-rendition HLS packages (`master.m3u8`, `360p`, `720p`, `1080p`) alongside fast-start preview MP4 fallbacks and WebP poster snapshots.
 - **Sub-100ms Time-to-First-Frame (`hls.js`)**: Integrated `hls.js` adaptive player engine across `FeedVideoPlayer.tsx` and full-screen `ShortsViewerModal.tsx` configured with `startLevel: 0` (instant lowest-bitrate chunk-0 startup), `capLevelToPlayerSize` (prevents oversized fetches on mobile), and Safari iOS native HLS streaming fallback (`application/vnd.apple.mpegurl`).
