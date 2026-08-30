@@ -63,8 +63,11 @@ export function ShortsViewerModal({
   const [replies, setReplies] = useState<any[]>([]);
   const [loadingReplies, setLoadingReplies] = useState(false);
 
+  const [isHoldingFastForward, setIsHoldingFastForward] = useState(false);
   const touchStartY = useRef<number | null>(null);
   const lastTap = useRef<number>(0);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -76,6 +79,13 @@ export function ShortsViewerModal({
     }
   }, [post]);
 
+  // Sync 2x speed on hold
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = isHoldingFastForward ? 2.0 : 1.0;
+    }
+  }, [isHoldingFastForward]);
+
   // Load replies when comments drawer opens or post changes
   const loadReplies = useCallback(async (postId: string) => {
     setLoadingReplies(true);
@@ -83,7 +93,7 @@ export function ShortsViewerModal({
       const data = await getPostReplies(postId);
       setReplies(data);
     } catch {
-      setReplies([]);
+      toast.error("Failed to load comments");
     } finally {
       setLoadingReplies(false);
     }
@@ -123,7 +133,7 @@ export function ShortsViewerModal({
     };
   }, [currentPost]);
 
-  // Keyboard navigation
+  // Keyboard navigation & seeking
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!currentPost) return;
@@ -135,6 +145,16 @@ export function ShortsViewerModal({
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         navigateShorts(-1);
+      } else if (e.key === "ArrowLeft" || e.key === "j" || e.key === "J") {
+        e.preventDefault();
+        if (videoRef.current) {
+          videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 5);
+        }
+      } else if (e.key === "ArrowRight" || e.key === "l" || e.key === "L") {
+        e.preventDefault();
+        if (videoRef.current) {
+          videoRef.current.currentTime = Math.min(videoRef.current.duration || 9999, videoRef.current.currentTime + 5);
+        }
       } else if (e.key === "Escape") {
         e.preventDefault();
         onClose();
@@ -142,9 +162,18 @@ export function ShortsViewerModal({
       } else if (e.key === "m" || e.key === "M") {
         e.preventDefault();
         setIsMuted(prev => !prev);
-      } else if (e.key === " ") {
+      } else if (e.key === " " || e.key === "k" || e.key === "K") {
         e.preventDefault();
         setIsPlaying(prev => !prev);
+      } else if (e.key === "p" || e.key === "P") {
+        e.preventDefault();
+        if (videoRef.current && document.pictureInPictureEnabled) {
+          if (document.pictureInPictureElement) {
+            document.exitPictureInPicture().catch(() => {});
+          } else {
+            videoRef.current.requestPictureInPicture().catch(() => {});
+          }
+        }
       }
     };
 
@@ -152,26 +181,53 @@ export function ShortsViewerModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentPost, navigateShorts, onClose]);
 
+  // Handle pointer hold for 2x speed
+  const handlePointerDown = () => {
+    longPressTimerRef.current = setTimeout(() => {
+      setIsHoldingFastForward(true);
+    }, 350);
+  };
+
+  const handlePointerUp = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    if (isHoldingFastForward) {
+      setIsHoldingFastForward(false);
+    }
+  };
+
   // Handle single and double tap
-  const handleTap = () => {
+  const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickXRatio = (e.clientX - rect.left) / rect.width;
     const now = Date.now();
     const DOUBLE_TAP_DELAY = 300;
 
     if (now - lastTap.current < DOUBLE_TAP_DELAY) {
-      // Double tap -> Like
-      setShowHeartAnimation(true);
-      setTimeout(() => setShowHeartAnimation(false), 900);
-      if (currentPost && !currentPost.hasLiked && onLike) {
-        onLike(currentPost.id);
-        setCurrentPost((prev: any) => ({
-          ...prev,
-          hasLiked: true,
-          likesCount: (prev?.likesCount || 0) + 1,
-        }));
+      if (clickXRatio < 0.25 && videoRef.current) {
+        // Skip back 5s
+        videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 5);
+      } else if (clickXRatio > 0.75 && videoRef.current) {
+        // Skip forward 5s
+        videoRef.current.currentTime = Math.min(videoRef.current.duration || 9999, videoRef.current.currentTime + 5);
+      } else {
+        // Double tap center -> Like
+        setShowHeartAnimation(true);
+        setTimeout(() => setShowHeartAnimation(false), 900);
+        if (currentPost && !currentPost.hasLiked && onLike) {
+          onLike(currentPost.id);
+          setCurrentPost((prev: any) => ({
+            ...prev,
+            hasLiked: true,
+            likesCount: (prev?.likesCount || 0) + 1,
+          }));
+        }
       }
     } else {
       // Single tap -> Play / Pause
-      if (currentPost?.mediaUrl && isVideo(currentPost.mediaUrl)) {
+      if (currentPost?.mediaUrl && isVideo(currentPost.mediaUrl) && !isHoldingFastForward) {
         setIsPlaying(prev => !prev);
       }
     }
@@ -331,11 +387,26 @@ export function ShortsViewerModal({
 
         {/* Central Media / Content */}
         <div 
-          className="w-full h-full relative flex items-center justify-center cursor-pointer"
+          className="w-full h-full relative flex items-center justify-center cursor-pointer select-none"
           onClick={handleTap}
+          onMouseDown={handlePointerDown}
+          onMouseUp={handlePointerUp}
+          onTouchStart={handlePointerDown}
+          onTouchEnd={handlePointerUp}
         >
+          {/* 2x Speed Hold Indicator */}
+          {isHoldingFastForward && (
+            <div className="absolute top-6 inset-x-0 flex justify-center z-40 pointer-events-none animate-in fade-in zoom-in duration-150">
+              <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-black/80 text-primary border border-primary/40 backdrop-blur-md shadow-2xl text-xs font-bold font-mono">
+                <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                <span>2x Speed</span>
+              </div>
+            </div>
+          )}
+
           {currentPost.mediaUrl && isVideo(currentPost.mediaUrl) ? (
             <video
+              ref={videoRef}
               key={currentPost.id}
               src={formatVideoSrc(currentPost.mediaUrl)}
               poster={currentPost.thumbnailUrl || undefined}

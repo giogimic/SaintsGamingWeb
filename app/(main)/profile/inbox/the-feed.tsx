@@ -1582,6 +1582,7 @@ export function TheFeed() {
                 <video
                   key={viewingShortsPost.id}
                   src={formatVideoSrc(viewingShortsPost.mediaUrl)}
+                  poster={viewingShortsPost.thumbnailUrl || undefined}
                   autoPlay={shortsPlaying}
                   loop
                   playsInline
