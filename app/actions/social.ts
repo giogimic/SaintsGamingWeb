@@ -20,6 +20,7 @@ export {
 export {
   getTheFeed,
   getTrendingTags,
+  getSuggestedCreators,
   getMiniFeed,
   getUserFeedPreferences,
   updateFeedPreferences,
