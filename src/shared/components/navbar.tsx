@@ -17,6 +17,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/shared/ui/button";
+import { SGMicro3DLogo } from "@/web/components/landing/sg-logo-3d-micro";
 import { SGVoxelSvgLogo } from "@/web/components/landing/sg-logo-voxel-svg";
 import { GlobalSearch } from "@/shared/components/global-search";
 import { NotificationsMenu } from "@/shared/components/notifications-menu";
@@ -85,9 +86,9 @@ export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = 
             href="/home"
             className="flex items-center gap-3 group"
           >
-            {/* New Voxel SVG Logo */}
-            <div className="transition-transform group-hover:scale-110">
-              <SGVoxelSvgLogo size={32} animate={false} />
+            {/* Interactive 3D Voxel Logo */}
+            <div className="transition-transform group-hover:scale-105">
+              <SGMicro3DLogo size={36} />
             </div>
             <span className="font-bold text-lg sg-text-gradient hidden sm:inline tracking-tight">
               Saints Gaming
@@ -222,7 +223,7 @@ export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = 
                       </>
                     ) : (
                       <div className="flex items-center gap-3">
-                        <SGVoxelSvgLogo size={32} animate={false} />
+                        <SGMicro3DLogo size={36} />
                         <span className="font-bold text-lg sg-text-gradient tracking-tight">Saints Gaming</span>
                       </div>
                     )}
