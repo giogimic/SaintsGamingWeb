@@ -1,3 +1,12 @@
+# 2.1.533
+- **Comprehensive External Game Reference Audit & Native System Terminology**:
+  - **Full Code & Wiki Reference Audit**: Audited and cleaned all external trademarked game and franchise references across client overlays, setup flows, HUD docks, audio synthesizer engine, rendering code, schemas, and wiki documentation.
+  - **Standardized Native Saints Terminology**:
+    - Replaced all third-party game references with native descriptive system terminology across setup presets, combat formulas, dock layouts, and skill tables.
+    - Updated schema defaults and XP curve algorithms to `saints-standard` and `standard_table`.
+    - Standardized HUD dock presets to `preset-command`, `preset-sidebar`, `preset-action`, and `preset-minimal`.
+- **Version Bump**: Bumped release version to `v2.1.533` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.532
 - **Asset Prepackage Installer Removal**:
   - **Complete Removal of Legacy Asset Pack Installer**: Fully removed `AssetPackInstaller` component, `assetPackInstaller.ts` server modules, installation API endpoints (`/api/assets/install-pack`, `/api/setup/assets`), and `assets:install` script.

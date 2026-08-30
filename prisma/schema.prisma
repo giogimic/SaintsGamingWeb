@@ -840,7 +840,7 @@ model GameConfig {
   maxLevel                 Int     @default(100)
   baseStats                String  @default("{}") // JSON: {hp: 100, atk: 50, ...}
   combatFormula            String  @default("saints-standard")
-  skillFormula             String  @default("runescape-style")
+  skillFormula             String  @default("saints-standard")
   xpCurve                  String  @default("exponential")
   xpCurveData              String? // JSON: custom XP table
   /// Global shiny spawn chance percent (0–100). Creatures can sync or override.

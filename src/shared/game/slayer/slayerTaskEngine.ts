@@ -179,7 +179,7 @@ export function calculateSlayerPoints(masterId: SlayerMasterId, streak: number):
   const master = SLAYER_MASTERS[masterId];
   if (!master || master.basePoints === 0) return 0;
 
-  // Streak milestones (OSRS standard):
+  // Streak milestones (Standard tiered progression):
   // 10th task = 5x
   // 50th task = 15x
   // 100th task = 25x

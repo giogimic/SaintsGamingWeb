@@ -8,7 +8,7 @@ export type CanonicalSkillCategory = 'combat' | 'gathering' | 'artisan' | 'suppo
 export interface XpCurveDef {
   id: string;
   name: string;
-  algorithm: 'sqrt_xp_div_50' | 'osrs_table' | 'exponential' | 'linear';
+  algorithm: 'sqrt_xp_div_50' | 'standard_table' | 'exponential' | 'linear';
   maxLevel: number;
 }
 
@@ -35,7 +35,7 @@ export const CANONICAL_XP_CURVES: Record<string, XpCurveDef> = {
   standard_curve_99: {
     id: 'standard_curve_99',
     name: 'Standard High-Ceiling Curve (Max Lv 99)',
-    algorithm: 'osrs_table',
+    algorithm: 'standard_table',
     maxLevel: 99,
   },
 };
@@ -52,7 +52,7 @@ export function calculateLevelFromXp(xp: number, curveId: string = 'standard_cur
     return Math.min(curve.maxLevel, Math.max(1, lvl));
   }
 
-  // OSRS-style exponential curve
+  // Standard 99-cap exponential curve
   let currentLvl = 1;
   let accumulatedXp = 0;
 

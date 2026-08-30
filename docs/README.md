@@ -3,7 +3,7 @@
 # 📖 Saints Gaming Documentation & Engine Wiki
 ### *Technical Specification, 2.5D Game Architecture & Studio Manual*
 
-🌐 **Official Portal:** [**SaintsGaming.net**](https://SaintsGaming.net) &nbsp;•&nbsp; 🕹️ **Repository:** [**giogimic/SaintsGamingWeb**](https://github.com/giogimic/SaintsGamingWeb) &nbsp;•&nbsp; 📄 **AI Index:** [`llms.txt`](../llms.txt) &nbsp;•&nbsp; 👤 **Author:** **GioGimic** &nbsp;•&nbsp; 📦 **Release:** `v2.1.532`
+🌐 **Official Portal:** [**SaintsGaming.net**](https://SaintsGaming.net) &nbsp;•&nbsp; 🕹️ **Repository:** [**giogimic/SaintsGamingWeb**](https://github.com/giogimic/SaintsGamingWeb) &nbsp;•&nbsp; 📄 **AI Index:** [`llms.txt`](../llms.txt) &nbsp;•&nbsp; 👤 **Author:** **GioGimic** &nbsp;•&nbsp; 📦 **Release:** `v2.1.533`
 
 ---
 

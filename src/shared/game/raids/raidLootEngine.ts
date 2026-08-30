@@ -2,7 +2,7 @@
  * Raid Unique Drop Point Scaling & Chest Loot Matrix (Bible 24 & Bible 27).
  *
  * Implements:
- * - Total party point scaling and unique drop probability calculations (OSRS Chambers of Xeric formulas).
+ * - Total party point scaling and unique drop probability calculations.
  * - Personal death penalty (-40% personal points and -1% total party points).
  * - Unique drop roll matrix: Twisted Bow, Ancestral Set, Kodai Insignia, Elder Maul, Dragon Claws, Prayer Scrolls.
  * - Challenge Mode Metamorphic Dust & Olmlet Pet rolls.

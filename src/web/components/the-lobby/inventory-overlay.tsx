@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
 
-const INVENTORY_CAPACITY = 28; // Standard 4x7 RuneScape grid
+const INVENTORY_CAPACITY = 28; // Standard 4x7 grid (28 slots)
 
 type CategoryFilter = 'ALL' | 'EQUIPMENT' | 'CONSUMABLE' | 'MATERIAL' | 'QUEST';
 type SortOption = 'DEFAULT' | 'NAME' | 'RARITY' | 'QUANTITY';
@@ -234,7 +234,7 @@ export default function InventoryOverlay() {
         </button>
       </div>
 
-      {/* 28-SLOT RUNESCAPE-STYLE GRID */}
+      {/* 28-SLOT INVENTORY GRID */}
       <div className="flex-1 overflow-y-auto pr-1 pb-2 scrollbar-thin scrollbar-thumb-cyan-500/20">
         <div className="grid grid-cols-4 gap-2.5 max-w-[360px] mx-auto">
           {slots.map((slot, idx) => {
@@ -296,7 +296,7 @@ export default function InventoryOverlay() {
                   <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
                 )}
 
-                {/* RuneScape-style Quantity Badge */}
+                {/* Stack Quantity Badge */}
                 {quantity! > 1 && (
                   <div className={`absolute bottom-0.5 right-1 text-[10px] leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,1)] ${getQuantityColor(quantity!)}`}>
                     {formatQuantity(quantity!)}

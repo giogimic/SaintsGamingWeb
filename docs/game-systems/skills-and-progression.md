@@ -1,6 +1,6 @@
 # 📊 27-Skill Progression & Master Capstone Systems
 
-Saints Gaming features a comprehensive **27-skill proficiency matrix** inspired by classic sandbox RPGs (like Old School RuneScape), divided across four distinct skill categories.
+Saints Gaming features a comprehensive **27-skill proficiency matrix** inspired by classic sandbox RPGs, divided across four distinct skill categories.
 
 ---
 

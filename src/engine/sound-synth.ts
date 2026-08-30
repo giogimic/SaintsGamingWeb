@@ -1,4 +1,4 @@
-// WebAudio Synthesizer for Jagex-Grade RuneScape-Style Sound Effects
+// WebAudio Synthesizer for Procedural Retro Game Sound Effects
 
 class SoundSynthEngine {
   private ctx: AudioContext | null = null;
@@ -78,7 +78,7 @@ class SoundSynthEngine {
     }
   }
 
-  // Play Jagex-Style Level Up Fanfare
+  // Play Hero Level Up Fanfare
   public playLevelUpSound() {
     try {
       const ctx = this.getContext();
