@@ -62,6 +62,7 @@ describe("Admin Module Registry (Phase 2)", () => {
     expect(adminIds).toContain("identity-users");
     expect(adminIds).toContain("servers-registry");
     expect(adminIds).toContain("game-studio");
+    expect(adminIds).toContain("infra-seo");
     expect(adminIds).not.toContain("identity-roles"); // Developer only
 
     // Developer (level 1000): all modules visible
@@ -85,6 +86,7 @@ describe("Admin Module Registry (Phase 2)", () => {
     expect(getActiveAdminModule("/admin/news/new")?.id).toBe("content-news");
     expect(getActiveAdminModule("/admin/dev/database")?.id).toBe("dev-database");
     expect(getActiveAdminModule("/studio")?.id).toBe("game-studio");
+    expect(getActiveAdminModule("/admin/seo")?.id).toBe("infra-seo");
   });
 
   it("searches modules by query, label, description, and keywords", () => {
@@ -93,6 +95,9 @@ describe("Admin Module Registry (Phase 2)", () => {
 
     const ticketResults = searchAdminModules("support", PERMISSION_LEVELS.MODERATOR);
     expect(ticketResults.some((m) => m.id === "community-tickets")).toBe(true);
+
+    const seoResults = searchAdminModules("serp", PERMISSION_LEVELS.ADMIN);
+    expect(seoResults.some((m) => m.id === "infra-seo")).toBe(true);
 
     const emptyResults = searchAdminModules("nonexistentxyz", PERMISSION_LEVELS.DEVELOPER);
     expect(emptyResults.length).toBe(0);

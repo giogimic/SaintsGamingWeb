@@ -1,6 +1,6 @@
 {
   "name": "saints-gaming-web",
-  "version": "2.1.521",
+  "version": "2.1.523",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
@@ -17,16 +17,14 @@
     "test": "vitest run",
     "validate:maps": "tsx scripts/validate-maps.ts",
     "smoke": "bash ./scripts/smoke-staging.sh",
+    "smoke:lobby": "tsx scripts/smoke-lobby-mp.ts",
+    "smoke:studio": "tsx scripts/smoke-studio-map-save.ts",
     "assets:install": "tsx scripts/install-asset-pack.ts",
     "sync:assets": "tsx scripts/sync-local-assets.ts",
     "ensure:starter-heroes": "tsx scripts/ensure-starter-heroes.ts",
     "ensure:world-profiles": "tsx scripts/ensure-world-profiles.ts",
     "seed:starter-content": "tsx scripts/seed-starter-content.ts",
-    "seed:saints-trail": "tsx scripts/seed-saints-trail.ts",
-    "smoke:saints-trail": "tsx scripts/smoke-saints-trail.ts",
-    "smoke:saints-trail:play": "tsx scripts/smoke-saints-trail-playthrough.ts",
-    "visual:saints-trail": "node scripts/visual-saints-trail.mjs",
-    "clone:saints-trail": "tsx scripts/clone-saints-trail.ts",
+    "seed:dialogue": "tsx scripts/seed-ambient-dialogue.ts",
     "visual:browser-to-game": "node scripts/visual-browser-to-game.mjs"
   },
   "dependencies": {

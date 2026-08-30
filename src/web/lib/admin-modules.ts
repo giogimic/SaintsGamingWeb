@@ -39,6 +39,7 @@ import {
   Trophy,
   HardDrive,
   Gift,
+  Globe,
   type LucideIcon,
 } from "lucide-react";
 import { PERMISSION_LEVELS } from "./permissions";
@@ -533,6 +534,16 @@ export const ADMIN_MODULES: AdminModule[] = [
     href: "/admin/settings",
     permission: PERMISSION_LEVELS.DEVELOPER,
     keywords: ["settings", "configuration", "economy", "discord", "realm", "keys", "site version"],
+  },
+  {
+    id: "infra-seo",
+    category: "infrastructure",
+    label: "SEO & Search Engine Hub",
+    description: "Visual Google SERP simulator, meta tag editor, robots.txt, sitemaps, and webmaster tools.",
+    icon: Globe,
+    href: "/admin/seo",
+    permission: PERMISSION_LEVELS.ADMIN,
+    keywords: ["seo", "google", "serp", "search", "preview", "sitemap", "robots", "schema", "bing", "verification", "opengraph", "metadata", "social"],
   },
 
   // ─── DEVELOPER CONSOLE ─────────────────────────────────────────────────────
