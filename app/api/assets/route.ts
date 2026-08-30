@@ -326,16 +326,16 @@ export async function GET(req: NextRequest) {
 
     if (pack && pack !== "ALL") {
       const p = pack.toLowerCase();
-      if (p === "creatures" || p === "tuxemon") {
+      if (p === "creatures" || p === "daemons" || p === "monsters") {
         whereClause.AND = [
           ...(whereClause.AND || []),
           {
             OR: [
-              { metadata: { contains: '"pack":"tuxemon"' } },
               { metadata: { contains: '"pack":"creatures"' } },
-              { tags: { contains: "tuxemon" } },
+              { metadata: { contains: '"pack":"daemons"' } },
               { tags: { contains: "creatures" } },
-              { source: { contains: "tuxemon" } },
+              { tags: { contains: "daemons" } },
+              { tags: { contains: "monsters" } },
               { source: { contains: "/monster/" } },
               { source: { contains: "/creatures/" } },
               { source: { contains: "/world-monsters/" } },

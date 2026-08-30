@@ -35,7 +35,7 @@ Every system in Saints Gaming adheres to three foundational tenets:
 2. **Does this make the world more social?**
    - Shared multiplayer zones, player trading, group dungeon raids, highscore leaderboards, and community forum integration.
 3. **Does this make the world more creative?**
-   - Complete in-browser world authoring toolset (`/studio`), custom character archetypes, custom quest authoring, and modular LPC sprite compositing.
+   - Complete in-browser world authoring toolset (`/studio`), custom character archetypes, custom quest authoring, and modular 2.5D sprite compositing.
 
 ---
 

@@ -13,13 +13,13 @@ Placing an NPC establishes an entity instance on specific map coordinates $(X, Y
 │                   NPC Inspector Panel                    │
 ├──────────────────────────────────────────────────────────┤
 │ ID: npc_blacksmith_01        Name: Master Forgemaster    │
-│ Sprite: lpc_dwarf_smith      Facing: South (0, 1)        │
+│ Sprite: npc_dwarf_smith      Facing: South (0, 1)        │
 │ Wander Radius: 3 tiles       Speed: 1.2 tiles/sec        │
 │ Interaction: Merchant Shop   Catalog: shop_iron_weapons  │
 └──────────────────────────────────────────────────────────┘
 ```
 
-- **Sprite & Facing:** Assigns 4-directional LPC sprite sheets and initial facing direction (North, South, East, West).
+- **Sprite & Facing:** Assigns 4-directional modular sprite sheets and initial facing direction (North, South, East, West).
 - **Wander Radius:** Defines the patrol boundary ($0 = \text{stationary}$, $>0 = \text{autonomous wander within } N \text{ tiles}$).
 
 ---

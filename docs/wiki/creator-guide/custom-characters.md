@@ -1,6 +1,6 @@
 # Creator Guide: Designing Custom Character Archetypes
 
-This tutorial guides creators through building custom starter character presets, configuring LPC sprite composites, balancing 27-skill proficiency deltas, and packaging beginner equipment.
+This tutorial guides creators through building custom starter character presets, configuring modular sprite composites, balancing 27-skill proficiency deltas, and packaging beginner equipment.
 
 ---
 
@@ -10,7 +10,7 @@ In Saints Gaming, all characters can ultimately train all 27 skills to the max l
 
 ---
 
-## 2. LPC Sprite Customization & Layering
+## 2. Modular Sprite Customization & Layering
 
 When creating an archetype in the Starter Hero Editor (`StarterHeroEditorPanel.tsx`), define the visual composition:
 

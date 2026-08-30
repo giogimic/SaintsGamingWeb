@@ -56,7 +56,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.530",
+  siteVersion = "v2.1.531",
 }: {
   session: any | null;
   dbPermissionLevel?: number;
@@ -426,7 +426,7 @@ export function Navbar({
 export function Footer({
   className = "",
   discordLink = "https://discord.saintsgaming.net",
-  siteVersion = "v2.1.530",
+  siteVersion = "v2.1.531",
   showUcpLink = false,
 }: {
   className?: string;

@@ -1,3 +1,9 @@
+# 2.1.531
+- **Asset Attribution Cleanup & Protective Open-Source Licensing**:
+  - **Attribution & Legacy Reference Purge**: Completely purged all legacy external asset references, attributions, and schema artifacts (Tuxemon and LPC / Liberated Pixel Cup) across API routes, game actions, asset definitions, and wiki documentation. Standardized on the native **Saints Modular 2.5D Sprite System**.
+  - **Business Source License 1.1 (BSL-1.1)**: Established the official repository `LICENSE` under BSL-1.1 with GioGimic / Saints Gaming Network as Licensor. Grants free usage for personal, non-commercial, educational, and community self-hosting while retaining exclusive protection over commercial distribution, hosted SaaS gaming networks, and proprietary assets.
+- **Version Bump**: Bumped release version to `v2.1.531` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.530
 - **AI-Crawler & LLM Discovery Architecture**:
   - **Plain-Text Descriptive README Optimization**: Re-authored `README.md` with plain-sentence opening statements explicitly defining project category (full-stack community management system combined with a 2.5D MMO engine), the problem solved (unifying fragmented gaming community tools into one platform), and the exact tech stack in plain text (Next.js 15, React 19, TypeScript, Prisma, Socket.io, Babylon.js).
