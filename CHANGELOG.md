@@ -1,3 +1,9 @@
+# 2.1.555
+- **Studio Menu Completeness & View Overlay System**:
+  - **Comprehensive Windows & Panels Audit**: Audited all 32 Studio panels, docks, and tools. Added direct access entries in the `Windows` dropdown for **Hero Studio** (`hero`), **Dev Tools & Server Controls** (`dev`), and **Rule Debugger & Script Tracing**.
+  - **Dedicated `View` Top-Level Menu**: Introduced a new top-level `View` menu in `StudioMenuBar` providing instant toggles for Tile Coordinates (XY), Warp Gate Overlays, Spawn Overlays, Free-Cam mode, Zoom In/Out/Reset, and Fit Map to View.
+- **Version Bump**: Bumped release version to `v2.1.555` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.554
 - **Unified Navigation & Persistent Shell Architecture**:
   - **Static Top/Bottom Bar Keeping Container**: Maintained persistent `Navbar` and `GlobalBottomBar` mounts across the entire application shell (Website, MMO Game Lobby, and World Studio) inside `MainLayoutShell` to prevent unmounting and UI flicker.

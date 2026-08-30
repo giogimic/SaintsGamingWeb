@@ -52,6 +52,15 @@ import {
   Palette,
   Home,
   Gamepad2,
+  Terminal,
+  Bug,
+  Eye,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  UserCheck,
+  Crosshair,
+  Grid3X3,
 } from 'lucide-react';
 
 
@@ -92,6 +101,12 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
   const openPanel = useEditorStore((s) => s.openPanel);
   const isStudioFreeCam = useEditorStore((s) => s.isStudioFreeCam);
   const setStudioFreeCam = useEditorStore((s) => s.setStudioFreeCam);
+  const showEditorCoords = useEditorStore((s) => s.showEditorCoords);
+  const setShowEditorCoords = useEditorStore((s) => s.setShowEditorCoords);
+  const showWarpOverlays = useEditorStore((s) => s.showWarpOverlays);
+  const setShowWarpOverlays = useEditorStore((s) => s.setShowWarpOverlays);
+  const showSpawnOverlays = useEditorStore((s) => s.showSpawnOverlays);
+  const setShowSpawnOverlays = useEditorStore((s) => s.setShowSpawnOverlays);
 
   const currentMapId = useGameStore((s) => s.currentMapId);
   const showToast = useGameStore((s) => s.showToast);
@@ -489,6 +504,90 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             />
           </TopLevelMenu>
 
+          <TopLevelMenu id="view" label="View">
+            {/* Viewport Overlays */}
+            <MenuItem
+              label={`Tile Coordinates (XY): ${showEditorCoords ? 'ON' : 'OFF'}`}
+              icon={showEditorCoords ? CheckCircle2 : Eye}
+              onClick={() => {
+                setShowEditorCoords(!showEditorCoords);
+                showToast(`Coordinates Overlay: ${!showEditorCoords ? 'ON' : 'OFF'}`);
+              }}
+            />
+            <MenuItem
+              label={`Warp Gate Overlays: ${showWarpOverlays ? 'ON' : 'OFF'}`}
+              icon={showWarpOverlays ? CheckCircle2 : Eye}
+              onClick={() => {
+                setShowWarpOverlays(!showWarpOverlays);
+                showToast(`Warp Overlays: ${!showWarpOverlays ? 'ON' : 'OFF'}`);
+              }}
+            />
+            <MenuItem
+              label={`Spawn Overlays: ${showSpawnOverlays ? 'ON' : 'OFF'}`}
+              icon={showSpawnOverlays ? CheckCircle2 : Eye}
+              onClick={() => {
+                setShowSpawnOverlays(!showSpawnOverlays);
+                showToast(`Spawn Overlays: ${!showSpawnOverlays ? 'ON' : 'OFF'}`);
+              }}
+            />
+            <MenuItem
+              label={`Studio Free-Cam: ${isStudioFreeCam ? 'ON' : 'OFF'}`}
+              icon={isStudioFreeCam ? CheckCircle2 : Camera}
+              onClick={() => {
+                setStudioFreeCam(!isStudioFreeCam);
+                showToast(isStudioFreeCam ? 'Camera locked to Player' : 'Free-Cam unlocked (WASD / Pan)');
+              }}
+            />
+            <MenuItem divider />
+
+            {/* Zoom Controls */}
+            <MenuItem
+              label="Zoom In"
+              shortcut="Ctrl++"
+              icon={ZoomIn}
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent: 125 } }));
+              }}
+            />
+            <MenuItem
+              label="Zoom Out"
+              shortcut="Ctrl+-"
+              icon={ZoomOut}
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent: 80 } }));
+              }}
+            />
+            <MenuItem
+              label="Reset Zoom (100%)"
+              shortcut="Ctrl+0"
+              icon={Crosshair}
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent: 100 } }));
+              }}
+            />
+            <MenuItem
+              label="Fit Map to View"
+              shortcut="Home"
+              icon={Maximize2}
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('studio_fit_map'));
+              }}
+            />
+            <MenuItem divider />
+
+            {/* Diagnostics & Tracing */}
+            <MenuItem
+              label="Map Diagnostics & Problems"
+              icon={AlertCircle}
+              onClick={() => openPanel('problems')}
+            />
+            <MenuItem
+              label="Rule Debugger & Script Tracing"
+              icon={Bug}
+              onClick={() => window.dispatchEvent(new CustomEvent('studio_open_rule_debugger'))}
+            />
+          </TopLevelMenu>
+
           <TopLevelMenu id="windows" label="Windows">
             {/* World & Art */}
             <MenuItem label="Tile Selector" icon={LayoutGrid} onClick={() => openPanel('tileset')} />
@@ -508,6 +607,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem label="Creature Studio" icon={PawPrint} onClick={() => openPanel('creature')} />
             <MenuItem label="Monster Spawners" icon={Sword} onClick={() => openPanel('spawner')} />
             <MenuItem label="Mount Studio" icon={Sparkles} onClick={() => openPanel('mounts')} />
+            <MenuItem label="Hero Studio (Loadouts & Classes)" icon={UserCheck} onClick={() => setStudioMode('hero')} />
             <MenuItem divider />
 
             {/* Quests & Scripts */}
@@ -531,6 +631,8 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem label="Problems & Diagnostics" icon={AlertCircle} onClick={() => openPanel('problems')} />
             <MenuItem label="Interface Designer" icon={Palette} onClick={() => openPanel('interface')} />
             <MenuItem label="Publish & Releases" icon={CloudUpload} onClick={() => openPanel('publishing')} />
+            <MenuItem label="Dev Tools & Server Controls" icon={Terminal} onClick={() => openPanel('dev')} />
+            <MenuItem label="Rule Debugger & Tracing" icon={Bug} onClick={() => window.dispatchEvent(new CustomEvent('studio_open_rule_debugger'))} />
             <MenuItem label="Realm Settings" icon={Settings} onClick={() => openPanel('settings')} />
             <MenuItem divider />
 
