@@ -25,9 +25,29 @@ export function StudioCanvasViewport({
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [isMaximized, setIsMaximized] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(true);
   const restoreViewportRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
   const resizeOrigin = useRef({ x: 0, y: 0, w: 0, h: 0 });
+
+  // Keep maximized canvas perfectly aligned between top menu bar (36px) and bottom toolbar (36px)
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (isMaximized) {
+        const topBarHeight = 36;
+        const bottomBarHeight = 36;
+        setViewport({
+          x: 0,
+          y: topBarHeight,
+          w: typeof window !== 'undefined' ? window.innerWidth : 1200,
+          h: typeof window !== 'undefined' ? Math.max(400, window.innerHeight - topBarHeight - bottomBarHeight) : 800,
+        });
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isMaximized, setViewport]);
 
   const toggleMaximize = () => {
     if (!isMaximized) {

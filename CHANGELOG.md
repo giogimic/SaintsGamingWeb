@@ -1,3 +1,10 @@
+# 2.1.545
+- **Studio Layout & Viewport Gap Fix**:
+  - **Gapless Studio Viewport**: Initialized `StudioCanvasViewport` to maximized by default on load, seamlessly filling the entire viewport between the top menu bar (`36px`) and bottom toolbar (`36px`) with zero gaps.
+  - **Responsive Window Sync**: Added automatic window resize synchronization to `StudioCanvasViewport` so the canvas dynamically resizes and prevents bottom/side gaps across window resize events.
+  - **Asset & Hero Studio Layouts**: Added bottom clearance padding (`pb-9`) to `AssetStudioSuite` and `HeroStudioSuite` to prevent content overlap with `StudioBottomToolbar`.
+- **Version Bump**: Bumped release version to `v2.1.545` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.544
 - **Guidelines & Project Rules (Tone of Voice & Community Language)**:
   - **Rule 11 Enacted**: Formally codified the project's casual gaming and FiveM/SA-MP community voice across `AGENTS.md` and `.agents/AGENTS.md`. Mandated authentic, laid-back gaming language ("Time To Play", hanging out, chatting, gaming together) and strictly banned pseudo-tactical sci-fi jargon ("Tactical Uplink", "Operative Matrix", "Cyber Grid") and corporate speak.
