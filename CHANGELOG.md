@@ -1,3 +1,15 @@
+# 2.1.536
+- **Navigation Enhancements**:
+  - **Centered Main Links**: Moved the primary links (Home, The Nexus, Play Now, Forum, Wiki, Support) into a clean, centered cluster in the top navigation bar.
+  - **Embedded Auth Buttons**: Restyled the "Log In" and "Sign Up" buttons into a segmented, inset pill container for an integrated look.
+  - **Bottom Bar Voxel Logo**: Added the micro 3D Voxel Logo to the center of the Global Bottom Bar, sitting between the 4 primary icons.
+  - **Tagline**: Added "Time To Play" branding tagline to the top left logo area.
+- **Dynamic Tooltip System**:
+  - Implemented a global, robust, animated tooltip system leveraging `@base-ui/react/tooltip`.
+  - Created a reusable `ActionTooltip` component for fast wrap-around implementation.
+  - Integrated rich tooltips across all utility actions (Mod Drawer, Dev Console, Social Messenger, Audio, Fullscreen) and user stats (Level, Coins, AP) in the Global Bottom Bar.
+- **Version Bump**: Bumped release version to `v2.1.536` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.535
 - **Streamlined Sticky Header & Thinned Cyber Bottom Bar**:
   - **Sticky Following Navbar**: Made the top navigation bar follow the user on scroll with a sleek, thinner profile (`h-11 sm:h-12`) and cyber glassmorphism.

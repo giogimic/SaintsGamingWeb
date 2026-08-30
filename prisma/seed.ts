@@ -154,34 +154,25 @@ Severe offenses (threats, doxxing, hacking) skip directly to permanent ban.
 
     // ── General & Community ────────────────────────────────────────────────
     "general-discussion": {
-      title: "Welcome to General Discussion — Start Here",
+      title: "Welcome to General Discussion — Time To Play",
       slug: "welcome-general-discussion",
       body: `# Welcome to General Discussion
 
-This is the community's living room — a place to talk about Saints Gaming, gaming in general, or anything on your mind.
+Saints Gaming: Time To Play. Welcome to the community's living room — a place to talk about Saints Gaming, gaming in general, or anything on your mind. We've been around since 2007, starting with a public TeamSpeak and SAMP City of Angels Roleplay. We've grown into a modern community, but our roots are still the same.
 
 ## What belongs here
 
 - Thoughts on the platform, the MMO, or the community
 - Gaming recommendations and discussions
 - Off-topic conversations (within reason)
-- Anything that doesn't fit neatly into another board
-
-## What belongs elsewhere
-
-- Bug reports → **Bug Reports** board
-- Feature requests → **Suggestions & Feedback** board
-- Technical issues → **Help & Technical Support** board
-- Map building discussion → **World Studio & Map Crafting** board
 
 ## Ground Rules
 
-1. Be respectful. Disagree without being disagreeable.
-2. Use descriptive thread titles so people know what they're clicking on.
-3. If a thread drifts off topic, consider starting a new one instead of hijacking.
-4. Have fun. That's what we're here for.
+1. Be welcoming. We're a general gamer community, treat everyone with respect.
+2. Disagree without being disagreeable.
+3. Have fun. That's what we're here for.
 
-See you around.`,
+Welcome to the Nexus.`,
       isPinned: true,
     },
 
@@ -190,21 +181,18 @@ See you around.`,
       slug: "introduce-yourself",
       body: `# Introduce Yourself!
 
-New to the community? Welcome — we're glad you're here. Drop a reply below and tell us a bit about yourself.
+New to the community? Welcome to Saints Gaming — we're glad you're here. Drop a reply below and tell us a bit about yourself. 
 
 ## Some ideas for your intro
 
 - **What should we call you?** Your username, a nickname, whatever you prefer.
-- **How did you find Saints Gaming?** Word of mouth, Discord, a search engine, stumbled in by accident?
-- **What kind of games do you enjoy?** MMOs, RPGs, survival, building, PvP — or a bit of everything?
-- **What are you most excited about here?** The MMO lobby, World Studio, the forums, the community?
-- **Anything else?** Hobbies, favorite music, time zone, pets — whatever you feel like sharing.
+- **How did you find Saints Gaming?** Word of mouth, Discord, or maybe you remember us from the 2007 SAMP days?
+- **What kind of games do you enjoy?** MMOs, survival (Ark, Minecraft), building, PvP?
+- **What are you most excited about here?** The MMO lobby, World Studio, or just hanging out in the Nexus?
 
 There's no template and no pressure. A one-liner is just as welcome as a full autobiography.
 
-The community is here to help you get settled in. If you have questions about anything on the platform, don't hesitate to ask here or in the **Help & Technical Support** board.
-
-Welcome aboard, Saint. 🎮`,
+Welcome aboard, Saint. Time To Play. 🎮`,
       isPinned: true,
     },
 
@@ -520,53 +508,53 @@ async function main() {
   const newsArticles = [
     {
       title: "Welcome to Saints Gaming 2.0!",
-      excerpt: "The Saints Gaming platform has been rebuilt from the ground up. New forums, a live MMO lobby, World Studio, and so much more — here's everything you need to know.",
-      body: "# Welcome to Saints Gaming 2.0!\n\nAfter months of development, we're thrilled to announce that **Saints Gaming 2.0** is officially live. This isn't just a facelift — the entire platform has been rebuilt from scratch to support our growing community and the ambitious features we've been planning.\n\n## What's New\n\n- **Integrated MMO Lobby** — Jump into the 2.5D world directly from your browser. Explore maps, encounter creatures, and meet other Saints in real time.\n- **World Studio** — Our built-in map editor lets you paint tilesets, place NPCs, script events, and publish your creations for everyone to explore.\n- **Revamped Forums** — Threaded discussions with markdown support, reactions, polls, and full search. A proper home for community conversation.\n- **User Profiles & Dashboards** — Track your progress, manage your characters, and customize your profile.\n- **Leaderboards** — Compete across the realm with ranked stats for battles, quests, and community engagement.\n\n## Getting Started\n\n1. **Register an account** or log in with Discord.\n2. Head to the **Lobby** to create your first character.\n3. Explore the **Forums** and introduce yourself.\n4. Check out the **World Studio** if you want to build maps.\n\nWe're just getting started. Thank you for being part of this community — your feedback shapes everything we build.\n\n— The Saints Gaming Team"
+      excerpt: "Saints Gaming Time To Play. The platform has been rebuilt from the ground up to bring our 2007 legacy into the modern era.",
+      body: "# Welcome to Saints Gaming 2.0!\n\nSaints Gaming Time To Play. It's been a long journey since our public TeamSpeak and SAMP City of Angels Roleplay days back in 2007. We've brought the community forward into a new era.\n\n## What's New\n\n- **Integrated MMO Lobby** — Jump right into a 2.5D world from your browser. No downloads.\n- **World Studio** — Build maps, script events, and share them with the community.\n- **Revamped Forums** — The Nexus is alive. Discussions, mod packs, and a modern community hub.\n- **Mod Packs** — We're returning to our roots with official community mod packs.\n\nWelcome to the next generation of Saints Gaming.\n\n— The Saints Gaming Team"
     },
     {
       title: "Saints MMO: Early Access Roadmap",
-      excerpt: "A look at what's coming for the Saints MMO over the next few months — Hero Battles, creature capturing, guild systems, and the first major content drop.",
-      body: "# Saints MMO: Early Access Roadmap\n\nThe MMO is live in early access, and we want to be transparent about where things are headed. Here's our development roadmap for the coming months.\n\n## Phase 1 — Foundation (Complete)\n- Core movement and multiplayer sync\n- Tileset-based map rendering\n- Basic NPC dialogue and quest system\n- Demo Sandbox map with creature spawns\n\n## Phase 2 — Combat & Encounters (In Progress)\n- **Hero Battles**: Real-time open-world combat against monsters. No loading screens, no separate battle scenes — fights happen right on the map.\n- **Saints Buddy Battles**: Creature encounters focused on weakening and capturing. Build your collection and train your team.\n- Loot tables, item drops, and an inventory system.\n\n## Phase 3 — Social & Economy\n- Player trading and marketplace\n- Guild creation and guild halls\n- Chat channels (global, local, guild, whisper)\n- Player Battles (PvP) with ranked matchmaking\n\n## Phase 4 — World Expansion\n- Multiple connected maps with zone transitions\n- Community-created maps eligible for the official world\n- Seasonal events and limited-time encounters\n\nTimelines are intentionally left flexible. We'd rather ship something polished than rush a deadline. Follow this space for updates as each phase rolls out."
+      excerpt: "Here's what is coming for the Saints MMO over the next few months — Hero Battles, creature capturing, guild systems, and more.",
+      body: "# Saints MMO: Early Access Roadmap\n\nThe MMO is live in early access. We want to be transparent about where things are headed. Here's our development roadmap.\n\n## Phase 1 — Foundation (Complete)\n- Core movement and multiplayer sync\n- Tileset-based map rendering\n- Demo Sandbox map with creature spawns\n\n## Phase 2 — Combat & Encounters (In Progress)\n- **Hero Battles**: Real-time open-world combat against monsters. No loading screens.\n- **Saints Buddy Battles**: Creature encounters focused on weakening and capturing.\n- Loot tables, item drops, and an inventory system.\n\n## Phase 3 — Social & Economy\n- Player trading and marketplace\n- Guild creation and guild halls\n- Player Battles (PvP) with ranked matchmaking\n\n## Phase 4 — World Expansion\n- Multiple connected maps\n- Community-created maps\n- Seasonal events"
     },
     {
       title: "World Studio: Build Your Own Maps",
-      excerpt: "The World Studio is now available to all players. Paint terrain, place objects, script encounters, and share your creations with the community.",
-      body: "# World Studio: Build Your Own Maps\n\nOne of our core beliefs is that the best game worlds are built by the communities that play in them. That's why we're shipping the **World Studio** as a first-class feature, not a modding afterthought.\n\n## What Can You Build?\n\n- **Terrain** — Paint multi-layer tilemaps using our growing tileset library. Ground, walls, decorations, and overlays.\n- **NPCs & Encounters** — Place creatures, set spawn zones, and configure encounter logic.\n- **Scripts & Events** — Trigger dialogues, cutscenes, and quests using our visual scripting tools.\n- **Publish & Share** — Submit your maps for community play. Top-rated maps may be added to the official world.\n\n## How to Access\n\nNavigate to `/studio` from the main menu. The editor opens with Paint mode active by default. Use the toolbar to switch between Paint, Populate (NPCs), Script, and Catalog modes.\n\n**Keyboard shortcut**: Press `Ctrl+E` to toggle between Edit and Playtest modes so you can test your map without leaving the editor.\n\n## Tips for New Builders\n\n- Start with a small map (32×32 tiles) to learn the tools.\n- Use the **Catalog** tab to browse available tilesets before you start painting.\n- Save frequently — the editor auto-saves, but manual saves ensure nothing is lost.\n- Check out the Guides & Tutorials forum board for community-written building guides.\n\nWe can't wait to see what you create."
+      excerpt: "The World Studio is now available to all players. Paint terrain, place objects, script encounters, and share your creations.",
+      body: "# World Studio: Build Your Own Maps\n\nOne of our core beliefs since the survival server days (Minecraft, Ark, Hurtworld) is that the best experiences are built by the community. That's why we built the **World Studio**.\n\n## What Can You Build?\n\n- **Terrain** — Paint multi-layer tilemaps using our growing tileset library.\n- **NPCs & Encounters** — Place creatures and configure encounter logic.\n- **Scripts & Events** — Trigger dialogues, cutscenes, and quests.\n- **Publish & Share** — Submit your maps for community play.\n\n## How to Access\n\nNavigate to `/studio` from the main menu.\n\nWe can't wait to see what you create."
     },
     {
       title: "Community Event: First Saints Tournament",
-      excerpt: "Our first official community tournament is coming — sign up, compete in Hero Battles, and earn exclusive rewards only available during the event.",
-      body: "# Community Event: First Saints Tournament\n\nIt's time to put your skills to the test. We're hosting our **first official community tournament**, and every Saint is welcome to compete.\n\n## Event Details\n\n- **Format**: 1v1 Hero Battles, single elimination bracket\n- **Registration**: Open now through the end of the week. Sign up in the Discord `#tournament` channel.\n- **Matches**: Scheduled over the following weekend. Times will be coordinated with participants.\n- **Stream**: All matches will be streamed live on our Twitch channel.\n\n## Rewards\n\n- 🥇 **1st Place** — Exclusive \"Champion Saint\" profile badge + 5,000 in-game currency\n- 🥈 **2nd Place** — \"Challenger\" profile badge + 2,500 in-game currency\n- 🥉 **3rd Place** — \"Contender\" profile badge + 1,000 in-game currency\n- 🎮 **All Participants** — \"Tournament Veteran\" badge\n\nThese badges and rewards are exclusive to this event and will not be available again.\n\n## Rules\n\n- Standard Hero Battle rules apply. No restricted abilities.\n- Players must check in 15 minutes before their scheduled match.\n- Disconnections: one reconnect attempt allowed. If the issue persists, the match is forfeited.\n\nGood luck, Saints. See you on the field."
+      excerpt: "Our first official community tournament is coming — sign up, compete in Hero Battles, and earn exclusive rewards.",
+      body: "# Community Event: First Saints Tournament\n\nIt's time to put your skills to the test. We're hosting our **first official community tournament**.\n\n## Event Details\n\n- **Format**: 1v1 Hero Battles, single elimination bracket\n- **Registration**: Open now through the end of the week. Sign up in the Discord.\n- **Matches**: Scheduled over the weekend.\n\n## Rewards\n\n- 🥇 **1st Place** — Exclusive profile badge + 5,000 coins\n- 🥈 **2nd Place** — Profile badge + 2,500 coins\n- 🥉 **3rd Place** — Profile badge + 1,000 coins\n\nGood luck, Saints. See you on the field."
     },
     {
       title: "Infrastructure Update: Better Performance Ahead",
-      excerpt: "We've completed a major backend migration — new hardware, optimized networking, and improved server architecture for lower latency and higher capacity.",
-      body: "# Infrastructure Update: Better Performance Ahead\n\nOver the past two weeks, we've completed a significant infrastructure overhaul behind the scenes. Here's what changed and why it matters.\n\n## What We Upgraded\n\n- **Server Hardware** — Migrated to NVMe-backed instances with higher single-thread performance. This directly improves game tick rates and database query times.\n- **Network Optimization** — Implemented connection pooling and optimized our WebSocket layer. You should notice reduced latency in the MMO lobby, especially during peak hours.\n- **Database Layer** — Moved to a more efficient schema layout and added strategic indexes. Forum and news page loads are noticeably faster.\n- **CDN & Static Assets** — Static files (tilesets, sprites, UI assets) are now served from edge locations closer to you.\n\n## What This Means for You\n\n- **Faster page loads** across the entire site\n- **Smoother multiplayer** with fewer position correction \"rubber-bands\"\n- **Higher player capacity** per realm shard\n- **More reliable** uptime during traffic spikes\n\n## Known Issues\n\nSome users may need to hard-refresh (`Ctrl+Shift+R`) once to clear cached assets from the old CDN. If you experience any rendering glitches after the migration, this should resolve it.\n\nThank you for your patience during the maintenance windows. The platform is in a much stronger place now."
+      excerpt: "We've completed a major backend migration for lower latency and higher capacity across the Saints Gaming network.",
+      body: "# Infrastructure Update: Better Performance Ahead\n\nOver the past two weeks, we've completed a significant infrastructure overhaul. We remember the lag on the old Reign of Kings servers — we're making sure our new platform stays smooth.\n\n## What We Upgraded\n\n- **Server Hardware** — Migrated to NVMe-backed instances with higher single-thread performance.\n- **Network Optimization** — Implemented connection pooling and optimized our WebSocket layer.\n- **Database Layer** — Moved to a more efficient schema layout.\n\n## What This Means for You\n\n- **Faster page loads** across the entire site\n- **Smoother multiplayer** in the MMO\n- **More reliable** uptime\n\nThank you for your patience."
     },
     {
       title: "Discord Integration: Link Your Account",
-      excerpt: "You can now link your Discord account for one-click login, role sync, and live notifications. Here's how to set it up.",
-      body: "# Discord Integration: Link Your Account\n\nDiscord integration is now live across the platform. Link your account to unlock seamless login, automatic role sync, and real-time notifications.\n\n## Features\n\n- **One-Click Login** — Sign in with Discord instead of email/password. Your Saints Gaming account is automatically linked.\n- **Role Sync** — Your community roles (VIP, Founder, Trusted, Staff) sync between the website and Discord server.\n- **Notifications** — Get pinged in Discord when someone replies to your forum thread, when events go live, or when your map gets featured.\n\n## How to Link\n\n1. Go to **Settings** → **Account** → **Linked Accounts**.\n2. Click **Link Discord**.\n3. Authorize the connection in the Discord popup.\n4. Done. Your accounts are now linked.\n\nIf you registered with Discord originally, your accounts are already linked — no action needed.\n\n## Privacy\n\nWe only request basic profile information (username, avatar, email). We do not read your messages, join voice channels, or access your server list. You can unlink at any time from Settings."
+      excerpt: "You can now link your Discord account for one-click login, role sync, and live notifications.",
+      body: "# Discord Integration: Link Your Account\n\nDiscord integration is now live across the platform.\n\n## Features\n\n- **One-Click Login** — Sign in with Discord.\n- **Role Sync** — Your community roles (VIP, Founder, Trusted, Staff) sync between the website and Discord server.\n- **Notifications** — Get pinged in Discord when someone replies to your forum thread.\n\n## How to Link\n\n1. Go to **Settings** -> **Account** -> **Linked Accounts**.\n2. Click **Link Discord**.\n3. Authorize the connection.\n\nWelcome to the connected community."
     },
     {
       title: "Staff Applications Now Open",
-      excerpt: "We're expanding the moderation and support team. If you're an active community member who wants to help shape Saints Gaming, here's how to apply.",
-      body: "# Staff Applications Now Open\n\nSaints Gaming is growing, and we need more hands on deck. We're looking for dedicated community members to join the **Moderation** and **Support** teams.\n\n## Open Positions\n\n### Community Moderator\n- Monitor forums and in-game chat for rule violations\n- Help resolve player disputes\n- Assist with community events\n- **Requirement**: Active member for at least 2 weeks, no prior infractions\n\n### Support Agent\n- Respond to help tickets and technical issues\n- Assist new players with onboarding\n- Document common issues for the knowledge base\n- **Requirement**: Patient communicator with some technical aptitude\n\n## How to Apply\n\n1. Join the Discord server if you haven't already.\n2. Open a ticket in the `#staff-applications` channel.\n3. Fill out the application template with your timezone, availability, and a brief paragraph on why you'd be a good fit.\n\nApplications are reviewed weekly. Selected candidates will be invited to a brief voice interview. All new staff start with a 2-week trial period.\n\nWe appreciate everyone who keeps this community positive. Thank you for considering."
+      excerpt: "We're expanding the moderation and support team. Help shape Saints Gaming.",
+      body: "# Staff Applications Now Open\n\nSaints Gaming is growing, and we need more hands on deck. We're looking for dedicated community members to join the team.\n\n## Open Positions\n\n### Community Moderator\n- Monitor forums and in-game chat\n- Help resolve player disputes\n- Assist with community events\n\n### Support Agent\n- Respond to help tickets and technical issues\n- Assist new players with onboarding\n\n## How to Apply\n\n1. Join the Discord server.\n2. Open a ticket in `#staff-applications`.\n3. Fill out the application template.\n\nWe appreciate everyone who keeps this community positive."
     },
     {
       title: "Patch Notes: v0.8.0 — Combat Overhaul",
-      excerpt: "The biggest gameplay update yet. Reworked combat timing, new creature abilities, loot table balancing, and dozens of bug fixes.",
-      body: "# Patch Notes: v0.8.0 — Combat Overhaul\n\nThis is our largest gameplay patch to date, focused on making combat feel responsive and rewarding.\n\n## Combat Changes\n\n- **Attack Timing** — Reduced input delay from action press to damage application. Attacks now feel immediate.\n- **Creature AI** — Monsters now use varied attack patterns instead of simple charge-and-hit. Expect flanking, retreating, and ability combos.\n- **Damage Numbers** — Floating damage numbers now appear on hit, with critical hits displayed in a larger, highlighted style.\n- **Knockback** — Added knockback on heavy attacks. Positioning matters more in fights now.\n\n## Saints Buddy Battles\n\n- **Capture Rate Rebalanced** — Weakened creatures are now easier to capture at low HP. The curve is more forgiving.\n- **New Abilities** — Added 8 new creature abilities across Fire, Water, and Earth types.\n- **Status Effects** — Burn, Freeze, and Poison now have visible indicators and consistent tick rates.\n\n## Loot & Economy\n\n- Adjusted drop rates for uncommon and rare items (slight increase).\n- Added new crafting materials to mid-level creature loot tables.\n- Fixed an issue where quest reward items could duplicate under certain conditions.\n\n## Bug Fixes\n\n- Fixed players becoming invisible to others after a zone transition.\n- Fixed chat messages persisting across map changes.\n- Fixed a crash when opening the inventory during a creature encounter.\n- Fixed tileset rendering artifacts on map edges.\n\nAs always, report any new issues in the Bug Reports board. Thank you for playing."
+      excerpt: "The biggest gameplay update yet. Reworked combat timing, new creature abilities, and dozens of bug fixes.",
+      body: "# Patch Notes: v0.8.0 — Combat Overhaul\n\nThis is our largest gameplay patch to date, focused on making combat feel responsive.\n\n## Combat Changes\n\n- **Attack Timing** — Reduced input delay.\n- **Creature AI** — Monsters now use varied attack patterns.\n- **Damage Numbers** — Floating damage numbers now appear on hit.\n- **Knockback** — Added knockback on heavy attacks.\n\n## Saints Buddy Battles\n\n- **Capture Rate Rebalanced** — Weakened creatures are now easier to capture at low HP.\n- **New Abilities** — Added 8 new creature abilities.\n\n## Bug Fixes\n\n- Fixed players becoming invisible after a zone transition.\n- Fixed chat messages persisting across map changes.\n\nThank you for playing."
     },
     {
-      title: "Forum Guide: Getting the Most Out of Discussions",
-      excerpt: "A quick guide to using the forums — markdown formatting, thread etiquette, reactions, polls, and how to search effectively.",
-      body: "# Forum Guide: Getting the Most Out of Discussions\n\nWhether you're a forum veteran or this is your first time posting, here are some tips to help you get the most out of the Saints Gaming forums.\n\n## Formatting Your Posts\n\nAll posts support **Markdown**. Here are the basics:\n\n- `**bold**` for **bold text**\n- `*italic*` for *italic text*\n- `# Heading` for section headers\n- `` `code` `` for inline code\n- `> quote` for quoting someone\n- `- item` for bullet lists\n\n## Thread Etiquette\n\n- **Use descriptive titles.** \"Help!\" tells nobody anything. \"Can't connect to lobby after latest patch\" helps everyone.\n- **Search before posting.** Your question may already have an answer.\n- **Stay on topic.** Tangential discussions are fine in General, but keep technical boards focused.\n- **Be constructive.** \"This sucks\" isn't feedback. \"The capture rate feels too low at 50% HP because...\" is.\n\n## Reactions & Polls\n\nEvery post supports reactions — use them to show agreement, appreciation, or mark helpful answers. Thread authors can also create **polls** for community votes on topics.\n\n## Search Tips\n\nThe search bar supports keywords across thread titles, body content, and author names. Use the forum search page for advanced filtering by board and date range.\n\nHappy posting!"
+      title: "Forum Guide: Getting the Most Out of The Nexus",
+      excerpt: "A quick guide to using the forums — markdown formatting, thread etiquette, reactions, and polls.",
+      body: "# Forum Guide: Getting the Most Out of The Nexus\n\nWhether you've been here since 2007 or this is your first time posting, here are some tips to get the most out of The Nexus.\n\n## Formatting Your Posts\n\nAll posts support **Markdown**.\n\n- `**bold**` for **bold text**\n- `*italic*` for *italic text*\n- `# Heading` for section headers\n\n## Thread Etiquette\n\n- **Use descriptive titles.** \"Help!\" tells nobody anything.\n- **Search before posting.**\n- **Stay on topic.**\n- **Be constructive.**\n\nHappy posting!"
     },
     {
       title: "Player Spotlight: Community Creators",
-      excerpt: "Highlighting some of the incredible maps, builds, and contributions from Saints Gaming community members this month.",
-      body: "# Player Spotlight: Community Creators\n\nEvery month we want to highlight members of the community who go above and beyond. This month's spotlight focuses on our **World Studio creators** and active forum contributors.\n\n## Featured Creators\n\n### 🗺️ Map of the Month\nCongratulations to the creator of **\"Ashenvale Crossing\"** — a beautifully detailed forest map with hidden caves, ambient NPC patrols, and a scripted mini-boss encounter. The attention to tileset layering and the use of lighting overlays sets a new standard for community maps.\n\n### 💬 Forum MVP\nA special shoutout to the community members who have been consistently answering questions in the Help & Support board. Your patience with new players and detailed troubleshooting steps keep this community running smoothly.\n\n### 🎨 Creative Showcase\nWe've seen some incredible tileset work this month — custom sprite sheets for interior decorations, animated water tiles, and seasonal variants for existing terrain. If you're a pixel artist interested in contributing to the official tileset library, reach out to staff.\n\n## How to Get Featured\n\nThere's no application process. Just keep creating, helping, and being an active part of the community. We notice, and we appreciate it.\n\nSee you next month."
+      excerpt: "Highlighting some of the incredible maps, builds, and contributions from Saints Gaming community members.",
+      body: "# Player Spotlight: Community Creators\n\nEvery month we want to highlight members of the community who go above and beyond.\n\n## Featured Creators\n\n### 🗺️ Map of the Month\nCongratulations to the creator of **\"Ashenvale Crossing\"** — a beautifully detailed forest map.\n\n### 💬 Forum MVP\nA special shoutout to the community members who have been consistently answering questions in the Support board.\n\n### 🎨 Creative Showcase\nWe've seen some incredible tileset work this month.\n\n## How to Get Featured\n\nThere's no application process. Just keep creating, helping, and being an active part of the community.\n\nSee you next month."
     },
   ];
 
@@ -595,32 +583,60 @@ async function main() {
     console.log("Skipped seeding news articles (no author found).");
   }
 
-  // 3. Seed Modpack
-  await prisma.modpack.upsert({
-    where: { slug: "saints-gaming-qol" },
-    update: {},
-    create: {
+  // 3. Seed Modpacks
+  const modpacksToSeed = [
+    {
       name: "Saints Gaming - QoL Enhancer",
       slug: "saints-gaming-qol",
       game: "Palworld",
       description: "The official mod pack required to play on our servers. Includes essential client-side mods for UI improvements and performance.",
       version: "1.5.1",
       installNotes: "Extract the ModPack.zip into your \\Palworld\\Pal\\Content\\Paks directory!",
+      order: 1
     },
-  });
-
-  await prisma.modpack.upsert({
-    where: { slug: "dimensional-saints" },
-    update: {},
-    create: {
+    {
       name: "Dimensional Saints Adventure",
       slug: "dimensional-saints",
       game: "Minecraft",
-      description: "The official Dimensional Saints community modpack.",
+      description: "The official Dimensional Saints community Minecraft modpack. Relive the glory days of our early survival servers with modern enhancements.",
       version: "1.0",
       downloadUrl: "http://www.technicpack.net/modpack/dimensional-saints",
+      order: 2
     },
-  });
+    {
+      name: "Saints Ark Survival Evolved",
+      slug: "saints-ark-survival",
+      game: "Ark: Survival Evolved",
+      description: "The ultimate Ark mod pack for the Saints Gaming community. Rebuilt for balanced PvE and PvP.",
+      version: "2.3.4",
+      installNotes: "Subscribe to the Steam Workshop collection.",
+      order: 3
+    },
+    {
+      name: "Hurtworld Saints Reborn",
+      slug: "hurtworld-saints-reborn",
+      game: "Hurtworld",
+      description: "Custom plugins and configurations for our Hurtworld community server.",
+      version: "1.1.0",
+      order: 4
+    },
+    {
+      name: "Reign of Kings: Saints Era",
+      slug: "rok-saints-era",
+      game: "Reign of Kings",
+      description: "Nostalgic Reign of Kings server mods focusing on castle building and roleplay elements.",
+      version: "1.0.5",
+      order: 5
+    }
+  ];
+
+  for (const mp of modpacksToSeed) {
+    await prisma.modpack.upsert({
+      where: { slug: mp.slug },
+      update: { description: mp.description },
+      create: mp,
+    });
+  }
   console.log("Seeded Modpacks.");
 
   // 4. Seed Forum Categories & Threads
@@ -726,7 +742,7 @@ async function main() {
   // 6. Seed Phase 6 Narrative Systems
   const elderDialogue = {
     node_start: {
-      text: "Ah, another Tamer arrives in Saints Village. The wilds are dangerous today.",
+      text: "Ah, another Operative arrives in Saints Village. The wilds are dangerous today.",
       options: [
         { label: "I can handle it.", nextNode: "node_confident" },
         { label: "Do you have any work for me?", nextNode: "node_quest" },

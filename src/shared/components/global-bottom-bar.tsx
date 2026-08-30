@@ -37,9 +37,11 @@ import {
   Trophy,
   Layers,
   BookOpen,
-  LifeBuoy,
+  LifeBuoy
 } from "lucide-react";
 import { Button } from "@/shared/ui/button";
+import { SGMicro3DLogo } from "@/web/components/landing/sg-logo-3d-micro";
+import { ActionTooltip } from "@/shared/ui/action-tooltip";
 
 const BOTTOM_NAV_PAGES = [
   { href: "/lobby", label: "Play Now", icon: Gamepad2 },
@@ -58,7 +60,7 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "v2.1.535",
+  siteVersion = "v2.1.536",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;
@@ -241,21 +243,27 @@ export function GlobalBottomBar({
               </span>
 
               {/* Account Level */}
-              <span className="px-1.5 py-0.2 rounded bg-primary/10 border border-primary/25 text-primary font-bold text-[10px]">
-                LVL {userLevel}
-              </span>
+              <ActionTooltip label="Account Level">
+                <span className="px-1.5 py-0.2 rounded bg-primary/10 border border-primary/25 text-primary font-bold text-[10px] cursor-help">
+                  LVL {userLevel}
+                </span>
+              </ActionTooltip>
 
               {/* Gold / Coins */}
-              <div className="hidden sm:flex items-center gap-1 text-amber-400 font-bold text-[11px]" title="Saints Coins">
-                <Coins className="w-3 h-3" />
-                <span>{userCoins.toLocaleString()}</span>
-              </div>
+              <ActionTooltip label="Saints Coins">
+                <div className="hidden sm:flex items-center gap-1 text-amber-400 font-bold text-[11px] cursor-help">
+                  <Coins className="w-3 h-3" />
+                  <span>{userCoins.toLocaleString()}</span>
+                </div>
+              </ActionTooltip>
 
               {/* Achievement Score */}
-              <div className="hidden md:flex items-center gap-1 text-yellow-400 font-bold text-[11px]" title="Achievement Badges">
-                <Trophy className="w-3 h-3" />
-                <span>{userAchievements} AP</span>
-              </div>
+              <ActionTooltip label="Achievement Points">
+                <div className="hidden md:flex items-center gap-1 text-yellow-400 font-bold text-[11px] cursor-help">
+                  <Trophy className="w-3 h-3" />
+                  <span>{userAchievements} AP</span>
+                </div>
+              </ActionTooltip>
             </div>
           ) : (
             /* Guest Mode */
@@ -269,9 +277,34 @@ export function GlobalBottomBar({
           )}
         </div>
 
-        {/* CENTER SECTION: 4 Core Navigation Pages */}
+        {/* CENTER SECTION: 4 Core Navigation Pages + Voxel Logo */}
         <div className="flex items-center justify-center gap-1 sm:gap-2">
-          {BOTTOM_NAV_PAGES.map(({ href, label, icon: Icon }) => {
+          {BOTTOM_NAV_PAGES.slice(0, 2).map(({ href, label, icon: Icon }) => {
+            const isActive = pathname === href || (href !== "/home" && pathname?.startsWith(href));
+            return (
+              <Link
+                key={href}
+                href={href}
+                prefetch={true}
+                className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 rounded-md text-[11px] font-sans font-medium transition-all duration-200 ${
+                  isActive
+                    ? "bg-primary/20 text-primary border border-primary/40 shadow-[0_0_8px_rgba(0,245,212,0.25)] font-semibold"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
+                }`}
+              >
+                <Icon className={`w-3 h-3 ${isActive ? "text-primary" : "opacity-70"}`} />
+                <span className="hidden xs:inline">{label}</span>
+              </Link>
+            );
+          })}
+
+          <div className="mx-1 sm:mx-2 flex items-center justify-center hover:scale-110 transition-transform cursor-pointer" title="Saints Gaming">
+            <Link href="/home">
+              <SGMicro3DLogo size={28} />
+            </Link>
+          </div>
+
+          {BOTTOM_NAV_PAGES.slice(2, 4).map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href || (href !== "/home" && pathname?.startsWith(href));
             return (
               <Link
@@ -296,81 +329,86 @@ export function GlobalBottomBar({
           {/* Game-specific audio & fullscreen */}
           {isGameRoute && (
             <>
-              <button
-                onClick={toggleAudio}
-                className="p-1.5 rounded-lg border border-border/50 hover:border-primary/40 bg-background/50 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
-                title={isMuted ? "Unmute Audio" : "Mute Audio"}
-              >
-                {isMuted ? <VolumeX className="w-3.5 h-3.5 text-rose-400" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-400" />}
-              </button>
+              <ActionTooltip label={isMuted ? "Unmute Audio" : "Mute Audio"}>
+                <button
+                  onClick={toggleAudio}
+                  className="p-1.5 rounded-lg border border-border/50 hover:border-primary/40 bg-background/50 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                >
+                  {isMuted ? <VolumeX className="w-3.5 h-3.5 text-rose-400" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-400" />}
+                </button>
+              </ActionTooltip>
 
-              <button
-                onClick={toggleFullscreen}
-                className="p-1.5 rounded-lg border border-border/50 hover:border-primary/40 bg-background/50 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
-                title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-              >
-                {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 text-amber-400" /> : <Maximize2 className="w-3.5 h-3.5" />}
-              </button>
+              <ActionTooltip label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}>
+                <button
+                  onClick={toggleFullscreen}
+                  className="p-1.5 rounded-lg border border-border/50 hover:border-primary/40 bg-background/50 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                >
+                  {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 text-amber-400" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                </button>
+              </ActionTooltip>
             </>
           )}
 
           {/* Moderator Drawer Trigger */}
           {isMod && !isDevOrAdmin && (
-            <button
-              onClick={() => {
-                setModDrawerOpen((prev) => !prev);
-                setDevConsoleOpen(false);
-              }}
-              className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
-                modDrawerOpen
-                  ? "bg-amber-500/20 border-amber-500 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.3)]"
-                  : "border-amber-500/30 text-amber-400/80 hover:text-amber-300 hover:border-amber-400 bg-black/40"
-              }`}
-              title="Open Moderator Drawer"
-            >
-              <ShieldAlert className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Mod</span>
-            </button>
+            <ActionTooltip label="Moderator Tools">
+              <button
+                onClick={() => {
+                  setModDrawerOpen((prev) => !prev);
+                  setDevConsoleOpen(false);
+                }}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
+                  modDrawerOpen
+                    ? "bg-amber-500/20 border-amber-500 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.3)]"
+                    : "border-amber-500/30 text-amber-400/80 hover:text-amber-300 hover:border-amber-400 bg-black/40"
+                }`}
+              >
+                <ShieldAlert className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Mod</span>
+              </button>
+            </ActionTooltip>
           )}
 
           {/* Dev Console Trigger (Devs & Admins) */}
           {isDevOrAdmin && (
-            <button
-              onClick={() => {
-                setDevConsoleOpen((prev) => !prev);
-                setModDrawerOpen(false);
-              }}
-              className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
-                devConsoleOpen
-                  ? "bg-primary/20 border-primary text-primary shadow-[0_0_10px_rgba(0,245,212,0.3)]"
-                  : "border-primary/30 text-primary/80 hover:text-primary hover:border-primary/60 bg-black/40"
-              }`}
-              title="Toggle Dev Console"
-            >
-              <Terminal className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Console</span>
-              {errorLogs.length > 0 && (
-                <span className="px-1 py-0.2 rounded-full bg-rose-500/80 text-white text-[9px] font-bold">
-                  {errorLogs.length}
-                </span>
-              )}
-            </button>
+            <ActionTooltip label="Dev Console">
+              <button
+                onClick={() => {
+                  setDevConsoleOpen((prev) => !prev);
+                  setModDrawerOpen(false);
+                }}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
+                  devConsoleOpen
+                    ? "bg-primary/20 border-primary text-primary shadow-[0_0_10px_rgba(0,245,212,0.3)]"
+                    : "border-primary/30 text-primary/80 hover:text-primary hover:border-primary/60 bg-black/40"
+                }`}
+              >
+                <Terminal className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Console</span>
+                {errorLogs.length > 0 && (
+                  <span className="px-1 py-0.2 rounded-full bg-rose-500/80 text-white text-[9px] font-bold">
+                    {errorLogs.length}
+                  </span>
+                )}
+              </button>
+            </ActionTooltip>
           )}
 
           {/* Social Messenger Drawer Trigger */}
           {session?.user && (
-            <button
-              onClick={() => setIsMessengerOpen(!isMessengerOpen)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
-                isMessengerOpen
-                  ? "bg-primary text-primary-foreground border-primary shadow-[0_0_12px_rgba(0,245,212,0.4)]"
-                  : "border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
-              }`}
-              title="Toggle Messenger Drawer"
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Social</span>
-            </button>
+            <ActionTooltip label="Social Messenger">
+              <button
+                onClick={() => setIsMessengerOpen(!isMessengerOpen)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
+                  isMessengerOpen
+                    ? "bg-primary text-primary-foreground border-primary shadow-[0_0_12px_rgba(0,245,212,0.4)]"
+                    : "border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
+                }`}
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Social</span>
+              </button>
+            </ActionTooltip>
           )}
 
           {/* Version badge */}

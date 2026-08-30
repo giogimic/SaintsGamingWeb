@@ -148,10 +148,11 @@ export default function LandingPage() {
           transition={{ delay: 0.2 }}
         >
           <p
-            className="mt-2 text-xs sm:text-sm font-medium tracking-[0.25em] uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] pointer-events-none"
+            className="mt-2 text-xs sm:text-sm font-medium tracking-[0.25em] uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] pointer-events-none text-center"
             style={{ color: p.accentColor }}
           >
-            A community for gamers — EST. 2007
+            Saints Gaming: Time To Play — EST. 2007<br/>
+            <span className="text-[10px] tracking-widest opacity-80 mt-1 block">From TeamSpeak & SAMP to the modern era</span>
           </p>
         </motion.div>
       </div>

@@ -77,7 +77,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.535",
+  siteVersion = "v2.1.536",
 }: {
   session: any | null;
   dbPermissionLevel?: number;
@@ -198,89 +198,100 @@ export function Navbar({
     <div className="sticky top-0 z-50 w-full pointer-events-none">
       <header className="pointer-events-auto w-full bg-card/85 backdrop-blur-2xl border-b border-border/50 shadow-md transition-all duration-300">
         <div className="flex h-11 sm:h-12 items-center justify-between px-3 sm:px-6">
-          {/* Left Navigation: Play Now & The Nexus */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            <Link href="/lobby" prefetch={true}>
-              <Button
-                variant={pathname?.startsWith("/lobby") ? "secondary" : "ghost"}
-                size="sm"
-                className={`h-8 px-2 sm:px-3 text-xs gap-1.5 font-bold transition-all duration-200 ${
-                  pathname?.startsWith("/lobby")
-                    ? "bg-gradient-to-r from-amber-500/20 to-emerald-500/20 text-amber-300 border border-amber-500/40 shadow-sm"
-                    : "text-amber-400/90 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/30"
-                }`}
-              >
-                <Gamepad2 className="h-3.5 w-3.5 text-amber-400" />
-                <span className="hidden xs:inline">Play Now</span>
-              </Button>
-            </Link>
-
-            <Link href="/hub" prefetch={true}>
-              <Button
-                variant={pathname?.startsWith("/hub") ? "secondary" : "ghost"}
-                size="sm"
-                className={`h-8 px-2 sm:px-3 text-xs gap-1.5 font-medium transition-all duration-200 ${
-                  pathname?.startsWith("/hub")
-                    ? "bg-primary/15 text-primary border border-primary/30"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                }`}
-              >
-                <Layers className="h-3.5 w-3.5 text-primary" />
-                <span className="hidden sm:inline">The Nexus</span>
-                <span className="sm:hidden">Nexus</span>
-              </Button>
-            </Link>
-          </div>
-
-          {/* Center Brand: Spinning 3D Logo + Current Page Title */}
-          <Link
-            href="/home"
-            className="flex items-center gap-2 px-2.5 py-1 rounded-full hover:bg-muted/30 transition-all group"
-            title="Return to Home"
-          >
+          {/* Left Brand */}
+          <Link href="/home" className="flex items-center gap-2 group mr-2">
             <div className="transition-transform group-hover:scale-110">
-              <SGMicro3DLogo size={24} />
+              <SGMicro3DLogo size={26} />
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-bold text-xs sm:text-sm sg-text-gradient tracking-tight">
-                {pageTitle}
+            <div className="hidden sm:flex items-center gap-1.5">
+              <span className="font-bold text-sm sm:text-base sg-text-gradient tracking-tight">
+                Saints Gaming
+              </span>
+              <span className="text-muted-foreground/30 text-sm font-light">|</span>
+              <span className="text-[10px] text-muted-foreground/80 tracking-widest uppercase font-bold mt-0.5">
+                Time To Play
               </span>
             </div>
           </Link>
 
-          {/* Right Navigation: Wiki, Support, Search, User Profile */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            {/* Wiki Link */}
-            <Link href="/wiki" prefetch={true}>
-              <Button
-                variant={pathname?.startsWith("/wiki") ? "secondary" : "ghost"}
-                size="sm"
-                className={`h-8 px-2 sm:px-2.5 text-xs gap-1.5 font-medium transition-all duration-200 ${
-                  pathname?.startsWith("/wiki")
-                    ? "bg-primary/15 text-primary border border-primary/30"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                }`}
-              >
-                <BookOpen className="h-3.5 w-3.5 text-cyan-400" />
-                <span className="hidden sm:inline">Wiki</span>
-              </Button>
+          {/* Center Navigation */}
+          <div className="hidden lg:flex items-center gap-1 flex-1 justify-center">
+            <Link
+              href="/home"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium transition-all ${
+                pathname === "/home" || pathname === "/"
+                  ? "bg-primary/10 text-primary font-bold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
+            >
+              <Home className="h-3.5 w-3.5" />
+              <span>Home</span>
             </Link>
 
-            {/* Support Link */}
-            <Link href="/support" prefetch={true}>
-              <Button
-                variant={pathname?.startsWith("/support") ? "secondary" : "ghost"}
-                size="sm"
-                className={`h-8 px-2 sm:px-2.5 text-xs gap-1.5 font-medium transition-all duration-200 ${
-                  pathname?.startsWith("/support")
-                    ? "bg-primary/15 text-primary border border-primary/30"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                }`}
-              >
-                <LifeBuoy className="h-3.5 w-3.5 text-amber-400" />
-                <span className="hidden sm:inline">Support</span>
-              </Button>
+            <Link
+              href="/hub"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium transition-all ${
+                pathname?.startsWith("/hub")
+                  ? "bg-primary/10 text-primary font-bold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
+            >
+              <Layers className="h-3.5 w-3.5" />
+              <span>The Nexus</span>
             </Link>
+
+            <Link
+              href="/lobby"
+              prefetch={true}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-bold transition-all ${
+                pathname?.startsWith("/lobby")
+                  ? "bg-amber-500/15 text-amber-400 border border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]"
+                  : "text-amber-400/90 hover:text-amber-300 hover:bg-amber-500/10 border border-transparent"
+              }`}
+            >
+              <Gamepad2 className="h-3.5 w-3.5" />
+              <span>Play Now</span>
+            </Link>
+
+            <Link
+              href="/forum"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium transition-all ${
+                pathname?.startsWith("/forum")
+                  ? "bg-primary/10 text-primary font-bold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span>Forum</span>
+            </Link>
+
+            <Link
+              href="/wiki"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium transition-all ${
+                pathname?.startsWith("/wiki")
+                  ? "bg-primary/10 text-primary font-bold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+              <span>Wiki</span>
+            </Link>
+
+            <Link
+              href="/support"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium transition-all ${
+                pathname?.startsWith("/support")
+                  ? "bg-primary/10 text-primary font-bold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
+            >
+              <LifeBuoy className="h-3.5 w-3.5" />
+              <span>Support</span>
+            </Link>
+          </div>
+
+          {/* Right Navigation: Search, User Profile */}
+          <div className="flex items-center gap-1 sm:gap-2">
 
             {/* Global Search */}
             <div className="hidden xl:block w-36 lg:w-44">
@@ -291,15 +302,18 @@ export function Navbar({
 
             {/* Auth / Avatar Dropdown */}
             {!user ? (
-              <div className="flex items-center gap-1">
-                <Link href="/login" className={buttonVariants({ variant: "ghost", size: "sm", className: "h-8 px-2 sm:px-2.5 text-xs" })}>
+              <div className="flex items-center p-1 bg-black/40 rounded-xl shadow-inner border border-white/5">
+                <Link
+                  href="/login"
+                  className={buttonVariants({ variant: "ghost", size: "sm", className: "h-7 px-3 text-[11px] rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors" })}
+                >
                   Log in
                 </Link>
                 <Link
                   href="/register"
                   className={buttonVariants({
                     size: "sm",
-                    className: "h-8 px-2 sm:px-2.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90 hidden sm:inline-flex",
+                    className: "h-7 px-3 text-[11px] rounded-lg bg-primary/20 text-primary hover:bg-primary/30 shadow-none hidden sm:inline-flex border border-primary/20",
                   })}
                 >
                   Sign up
@@ -497,7 +511,7 @@ export function Navbar({
 export function Footer({
   className = "",
   discordLink = "https://discord.saintsgaming.net",
-  siteVersion = "v2.1.535",
+  siteVersion = "v2.1.536",
   showUcpLink = false,
 }: {
   className?: string;

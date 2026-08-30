@@ -103,9 +103,8 @@ export default async function HomePage() {
         </h1>
 
         <p className="mt-6 text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          We&apos;re a laid-back gaming community that&apos;s been around since
-          2007. Not always running, but always here. Right now, we&apos;re a
-          chill space for people to hang out, chat, game together, and have a
+          Saints Gaming: Time To Play. We've been a laid-back gaming community since
+          2007, starting on TeamSpeak and SAMP. Right now, we're a chill space for everyone to hang out, chat, game together, and have a
           good time — no pressure, no drama.
         </p>
 
@@ -202,9 +201,8 @@ export default async function HomePage() {
                 <p className="text-muted-foreground leading-relaxed">
                   Whether you&apos;re grinding ranked, exploring modded worlds,
                   or just looking for people to play with — Saints Gaming is
-                  your spot. No elitism, no toxicity. Just gamers being gamers.
-                  We&apos;re small right now, but that&apos;s what makes it
-                  real. Come build with us.
+                  your spot. We welcome gamers of all types. No elitism, no toxicity. Just gamers being gamers.
+                  Jump into the action.
                 </p>
               </div>
             </div>
