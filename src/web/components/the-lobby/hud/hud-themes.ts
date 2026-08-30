@@ -171,6 +171,41 @@ export const BUILTIN_HUD_THEMES: Record<string, HudTheme> = {
 
 export const DEFAULT_HUD_THEME_ID = 'saints-gold';
 
+export type HudThemeId =
+  | 'saints-gold'
+  | 'obsidian-slate'
+  | 'midnight-minimal'
+  | 'emerald-grove'
+  | 'royal-arcane'
+  | 'crimson-vanguard'
+  | string;
+
+export interface HudEngineConfig {
+  themeId?: HudThemeId;
+  scale?: number;
+  opacity?: number;
+  borderRadius?: 'rounded' | 'compact' | 'capsule';
+  borderGlow?: boolean;
+  minimapShape?: 'rounded' | 'circle' | 'square';
+  vitalsFormat?: 'dual-bar' | 'compact-stacked';
+  hotbarLayout?: '1x5' | '1x10' | '2x5';
+  showCoords?: boolean;
+  showHotbarKeybinds?: boolean;
+  quickMenuButtons?: {
+    inventory?: boolean;
+    skills?: boolean;
+    equipment?: boolean;
+    quests?: boolean;
+    gtc?: boolean;
+    party?: boolean;
+    dex?: boolean;
+    achievements?: boolean;
+    studio?: boolean;
+    [key: string]: boolean | undefined;
+  };
+  [key: string]: any;
+}
+
 export function getHudTheme(themeId?: string | null): HudTheme {
   if (themeId && BUILTIN_HUD_THEMES[themeId]) {
     return BUILTIN_HUD_THEMES[themeId];
@@ -179,3 +214,4 @@ export function getHudTheme(themeId?: string | null): HudTheme {
 }
 
 export const HUD_THEME_LIST = Object.values(BUILTIN_HUD_THEMES);
+
