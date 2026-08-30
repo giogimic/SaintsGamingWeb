@@ -5,6 +5,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { isForbiddenRtCaptureAbility } from '@/shared/game/combatAbilities';
 import { soundSynth } from '@/engine/sound-synth';
 import { Flame, Wind, Shield, Zap, Sparkles, Heart, Crosshair } from 'lucide-react';
+import { getHudTheme } from './hud/hud-themes';
 
 type HotbarAbility = {
   id: string;
@@ -182,13 +183,29 @@ export default function Hotbar() {
   const gcdActive = now < globalCooldown;
   const gcdPercent = gcdActive ? Math.max(0, ((globalCooldown - now) / 1200) * 100) : 0;
 
+  const hudThemeId = useGameStore((s) => s.hudThemeId);
+  const hudConfig = useGameStore((s) => s.hudConfig);
+  const theme = getHudTheme(hudThemeId || hudConfig?.themeId);
+
+  const radiusClass =
+    hudConfig?.borderRadius === 'compact'
+      ? 'rounded-xl'
+      : hudConfig?.borderRadius === 'capsule'
+      ? 'rounded-3xl'
+      : theme.borderRadiusClass || 'rounded-2xl';
+
   return (
-    <div className="pointer-events-auto select-none font-mono">
+    <div
+      className="pointer-events-auto select-none font-mono"
+      style={{
+        filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.7))',
+        opacity: hudConfig?.opacity ?? 0.95,
+      }}
+    >
       <div
-        className="p-2 bg-[#0a0318]/95 border border-pink-500/30 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.8)] backdrop-blur-xl relative overflow-hidden flex items-center gap-2"
+        className={`p-2 ${theme.palette.glassBg} border ${theme.palette.border} ${radiusClass} backdrop-blur-xl relative overflow-hidden flex items-center gap-2`}
         style={{
-          clipPath: 'polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px)',
-          boxShadow: '0 0 25px rgba(242,0,137,0.2), inset 0 0 15px rgba(0,0,0,0.9)',
+          boxShadow: hudConfig?.borderGlow ? theme.palette.accentGlow : undefined,
         }}
       >
         {slots.map((slot, i) => {
@@ -210,27 +227,26 @@ export default function Hotbar() {
               ? 'border-emerald-500/60 hover:border-emerald-400 bg-emerald-950/30 text-emerald-200'
               : ability?.type === 'buff'
               ? 'border-amber-500/60 hover:border-amber-400 bg-amber-950/30 text-amber-200'
-              : 'border-cyan-500/60 hover:border-cyan-400 bg-cyan-950/30 text-[#00f5d4]';
+              : `${theme.palette.border} hover:${theme.palette.borderActive} ${theme.palette.glassHeaderBg} text-amber-300`;
 
           return (
             <button
               key={slot.key || i}
               type="button"
               onClick={() => handleCast(slot)}
-              className={`group relative flex h-12 w-12 sm:h-13 sm:w-13 cursor-pointer flex-col items-center justify-center overflow-hidden border-2 shadow-inner transition-all active:scale-95 text-left rounded-xl ${typeBorder}`}
-              style={{
-                clipPath: 'polygon(8px 0%, 100% 0%, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0% 100%, 0% 8px)',
-              }}
+              className={`group relative flex h-12 w-12 sm:h-13 sm:w-13 cursor-pointer flex-col items-center justify-center overflow-hidden border shadow-inner transition-all active:scale-95 text-left rounded-xl ${typeBorder}`}
               title={ability ? `${ability.name} [Key: ${slot.key}]` : undefined}
             >
               {/* Hotkey Keybind Tag */}
-              <span className="absolute top-1 left-1.5 z-10 font-mono text-[9px] font-black text-cyan-300 drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">
-                {slot.key}
-              </span>
+              {hudConfig?.showHotbarKeybinds !== false && (
+                <span className="absolute top-1 left-1.5 z-10 font-mono text-[9px] font-black text-amber-300 drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">
+                  {slot.key}
+                </span>
+              )}
 
               {/* Stack Count for Items */}
               {slot.action === 'item' && typeof slot.count === 'number' && (
-                <span className="absolute top-1 right-1.5 z-10 font-mono text-[9px] font-black text-amber-300 bg-black/70 px-1 rounded">
+                <span className="absolute top-1 right-1.5 z-10 font-mono text-[9px] font-black text-emerald-300 bg-black/80 px-1 rounded border border-emerald-500/30">
                   x{slot.count}
                 </span>
               )}
@@ -244,14 +260,14 @@ export default function Hotbar() {
                   {/* Cooldown Radial Sweep Overlay */}
                   {isLocked && (
                     <div
-                      className="absolute bottom-0 left-0 z-20 w-full bg-black/85 backdrop-blur-[1px] transition-all duration-75 ease-linear border-t-2 border-[#00f5d4]"
+                      className="absolute bottom-0 left-0 z-20 w-full bg-black/85 backdrop-blur-[1px] transition-all duration-75 ease-linear border-t-2 border-amber-400"
                       style={{ height: `${showPercent}%` }}
                     />
                   )}
 
                   {/* Cooldown Numeric Countdown */}
                   {abilityCdActive && (
-                    <div className="absolute inset-0 z-30 flex items-center justify-center font-mono font-black text-xs text-[#00f5d4] drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
+                    <div className="absolute inset-0 z-30 flex items-center justify-center font-mono font-black text-xs text-amber-300 drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
                       {abilityCdRemaining >= 1000
                         ? `${(abilityCdRemaining / 1000).toFixed(0)}s`
                         : `${(abilityCdRemaining / 1000).toFixed(1)}s`}
@@ -259,7 +275,7 @@ export default function Hotbar() {
                   )}
                 </>
               ) : (
-                <span className="text-base font-bold text-cyan-500/30">+</span>
+                <span className="text-base font-bold text-amber-500/30">+</span>
               )}
             </button>
           );
@@ -268,3 +284,4 @@ export default function Hotbar() {
     </div>
   );
 }
+

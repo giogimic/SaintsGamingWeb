@@ -39,6 +39,7 @@ import {
   CloudUpload,
   Film,
   Compass,
+  Palette,
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
@@ -92,6 +93,7 @@ const LogicPainterPanel = lazy(() => import('./panels/LogicPainterPanel').then((
 const AnimationStudioPanel = lazy(() => import('./panels/AnimationStudioPanel').then((m) => ({ default: m.AnimationStudioPanel })));
 const MapTabPanel = lazy(() => import('./panels/MapTabPanel').then((m) => ({ default: m.MapTabPanel })));
 const MapListPanel = lazy(() => import('./panels/MapListPanel').then((m) => ({ default: m.MapListPanel })));
+const InterfaceEditorPanel = lazy(() => import('./panels/InterfaceEditorPanel').then((m) => ({ default: m.InterfaceEditorPanel })));
 
 import { RuleDebuggerOverlay } from './RuleDebuggerOverlay';
 import { DraggablePanel } from './DraggablePanel';
@@ -904,7 +906,14 @@ export const StudioEditorShell: React.FC = () => {
               <Suspense fallback={<div>Loading...</div>}><AnimationStudioPanel /></Suspense>
             </DraggablePanel>
           )}
+
+          {canUseStudioDock(permissionLevel, 'interface') && (
+            <DraggablePanel id="interface" icon={<Palette className="w-4 h-4 text-amber-400" />} title="Interface Designer">
+              <Suspense fallback={<div>Loading...</div>}><InterfaceEditorPanel /></Suspense>
+            </DraggablePanel>
+          )}
         </div>
+
         </div>
 
         {/* Asset Management Mode — full workspace replacement */}

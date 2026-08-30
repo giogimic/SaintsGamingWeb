@@ -111,6 +111,7 @@ import GameToastStack from './GameToastStack';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 import { ViewfinderOverlay } from './hud/ViewfinderOverlay';
 import { MidnightTropicalBackground } from './MidnightTropicalBackground';
+import { StudioCanvasViewport } from './StudioCanvasViewport';
 import { MobileGameLauncher } from './MobileGameLauncher';
 
 const StudioEditorShell = dynamic(
@@ -1828,12 +1829,12 @@ export default function TheLobby({
     >
       {enableStudio && <MidnightTropicalBackground />}
       {enableStudio ? (
-        <GameCanvasBabylon 
+        <StudioCanvasViewport 
           activeBrushTileId={activeBrushTileId}
           activeLayerIdx={activeLayerIdx}
           isDevEditorOpen={studioToolsOpen}
           suppressGameplay={suppressGameplay}
-          onMapClick={(r, c) => {
+          onMapClick={(r: number, c: number) => {
             if (studioToolsOpen) setClickedTile({r, c});
           }}
         />

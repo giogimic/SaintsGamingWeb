@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Minus, Square, Move } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 import { soundSynth } from '@/engine/sound-synth';
+import { useGameStore } from '../store';
+import { getHudTheme } from './hud-themes';
 
 export interface FloatingWindowProps {
   id: string;
@@ -120,6 +122,17 @@ export function FloatingWindow({
     }
   };
 
+  const hudThemeId = useGameStore((s) => s.hudThemeId);
+  const hudConfig = useGameStore((s) => s.hudConfig);
+  const theme = getHudTheme(hudThemeId || hudConfig?.themeId);
+
+  const radiusClass =
+    hudConfig?.borderRadius === 'compact'
+      ? 'rounded-xl'
+      : hudConfig?.borderRadius === 'capsule'
+      ? 'rounded-3xl'
+      : theme.borderRadiusClass || 'rounded-2xl';
+
   if (!isOpen) return null;
 
   return (
@@ -133,30 +146,26 @@ export function FloatingWindow({
         width: typeof defaultWidth === 'number' ? `${defaultWidth}px` : defaultWidth,
         maxWidth: 'calc(100vw - 20px)',
         zIndex: currentZIndex,
+        opacity: hudConfig?.opacity ?? 0.95,
       }}
       className={cn(
-        'pointer-events-auto select-none rounded-xl border border-cyan-500/40 bg-[#04090e]/95 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] p-[1px] transition-shadow duration-200 animate-in fade-in zoom-in-95 font-mono',
-        isDragging && 'shadow-[0_0_30px_rgba(6,182,212,0.5)] border-cyan-400',
+        `pointer-events-auto select-none ${radiusClass} border ${theme.palette.border} ${theme.palette.glassBg} backdrop-blur-xl shadow-[0_12px_45px_rgba(0,0,0,0.8)] transition-shadow duration-200 animate-in fade-in zoom-in-95 font-mono`,
+        isDragging && `shadow-[0_0_30px_rgba(245,158,11,0.4)] ${theme.palette.borderActive}`,
         className
       )}
     >
-      <div
-        className="w-full h-full flex flex-col rounded-xl overflow-hidden text-slate-200"
-        style={{
-          background: 'radial-gradient(circle at top left, rgba(14,28,50,0.95) 0%, rgba(4,9,14,0.98) 100%)',
-        }}
-      >
+      <div className={`w-full h-full flex flex-col ${radiusClass} overflow-hidden text-slate-200`}>
         {/* Header / Drag Bar */}
         <div
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onDoubleClick={() => setIsCollapsed((prev) => !prev)}
-          className="flex items-center justify-between px-3 py-2 border-b border-cyan-500/30 bg-cyan-950/30 cursor-grab active:cursor-grabbing select-none"
+          className={`flex items-center justify-between px-3 py-2 border-b ${theme.palette.border} ${theme.palette.glassHeaderBg} cursor-grab active:cursor-grabbing select-none`}
         >
           <div className="flex items-center gap-2 min-w-0">
-            {icon && <span className="text-cyan-400 shrink-0">{icon}</span>}
-            <h2 className="text-xs font-black uppercase tracking-wider text-cyan-200 truncate">
+            {icon && <span className="text-amber-400 shrink-0">{icon}</span>}
+            <h2 className="text-xs font-black uppercase tracking-wider text-slate-100 truncate">
               {title}
             </h2>
           </div>
@@ -166,7 +175,7 @@ export function FloatingWindow({
             <button
               type="button"
               onClick={() => setIsCollapsed((prev) => !prev)}
-              className="p-1 rounded text-slate-400 hover:text-cyan-300 hover:bg-cyan-950/40 transition-all cursor-pointer"
+              className="p-1 rounded text-slate-400 hover:text-amber-300 hover:bg-white/10 transition-all cursor-pointer"
               title={isCollapsed ? 'Expand' : 'Minimize'}
             >
               <Minus className="w-3.5 h-3.5" />
@@ -195,3 +204,4 @@ export function FloatingWindow({
     </div>
   );
 }
+

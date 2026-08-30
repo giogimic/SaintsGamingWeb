@@ -996,10 +996,10 @@ export const useEditorStore = create<EditorState>()(
       activeMapTab: 'DEMO_SANDBOX',
       isStudioFreeCam: false,
       canvasViewport: { 
-        x: typeof window !== 'undefined' ? (window.innerWidth - 800) / 2 : 240, 
-        y: typeof window !== 'undefined' ? (window.innerHeight - 600) / 2 : 36, 
-        w: 800, 
-        h: 600 
+        x: typeof window !== 'undefined' ? Math.max(360, Math.floor((window.innerWidth - 880) / 2)) : 360, 
+        y: 48, 
+        w: 880, 
+        h: 620 
       },
       setCanvasViewport: (vp: { x: number; y: number; w: number; h: number }) =>
         set((state) => {

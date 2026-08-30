@@ -4,6 +4,7 @@ import React from 'react';
 import { useGameStore } from '../store';
 import { Heart, Sparkles, User, Zap, Shield, Swords, Coins } from 'lucide-react';
 import { CharacterSpritePreview } from '../CharacterSpritePreview';
+import { getHudTheme } from './hud-themes';
 
 function StatBar({
   label,
@@ -38,7 +39,7 @@ function StatBar({
                 {icon}
               </span>
             )}
-            <span className="font-extrabold uppercase tracking-wider text-cyan-200">
+            <span className="font-extrabold uppercase tracking-wider text-slate-200">
               {label}
             </span>
           </div>
@@ -48,7 +49,7 @@ function StatBar({
           </span>
         </div>
       )}
-      <div className={`relative w-full overflow-hidden rounded-md bg-black/90 border border-white/10 ${hideHeader ? 'h-2' : 'h-3'}`}>
+      <div className={`relative w-full overflow-hidden rounded-md bg-black/90 border border-white/10 ${hideHeader ? 'h-1.5' : 'h-3'}`}>
         <div
           className={`absolute inset-y-0 left-0 transition-all duration-300 ${fillClass}`}
           style={{ width: `${percent}%` }}
@@ -85,6 +86,10 @@ export const PlayerVitalsHud: React.FC = () => {
   const name = useGameStore((state) => state.player.name || 'Saint');
   const assetProfileId = useGameStore((state) => state.player.assetProfileId);
   const combatStyle = useGameStore((state) => state.player.combatStyle || 'WARRIOR');
+  
+  const hudThemeId = useGameStore((state) => state.hudThemeId);
+  const hudConfig = useGameStore((state) => state.hudConfig);
+  const theme = getHudTheme(hudThemeId || hudConfig?.themeId);
 
   const hpPercent = Math.min(100, Math.max(0, Math.floor((hp / Math.max(1, maxHp)) * 100)));
   const mpPercent = Math.min(100, Math.max(0, Math.floor((mp / Math.max(1, maxMp)) * 100)));
@@ -98,11 +103,12 @@ export const PlayerVitalsHud: React.FC = () => {
   const isCriticalHp = hpPercent <= 25;
   const perk = perkRaw ? perkRaw.replace(/_/g, ' ') : null;
 
-  const player = {
-    name,
-    assetProfileId,
-    combatStyle,
-  };
+  const radiusClass =
+    hudConfig?.borderRadius === 'compact'
+      ? 'rounded-xl'
+      : hudConfig?.borderRadius === 'capsule'
+      ? 'rounded-3xl'
+      : theme.borderRadiusClass || 'rounded-2xl';
 
   return (
     <div
@@ -110,42 +116,42 @@ export const PlayerVitalsHud: React.FC = () => {
         isCriticalHp ? 'animate-pulse' : ''
       }`}
       style={{
-        filter: isCriticalHp ? 'drop-shadow(0 0 12px rgba(244,63,94,0.7))' : 'drop-shadow(0 4px 15px rgba(0,0,0,0.6))',
+        filter: isCriticalHp ? 'drop-shadow(0 0 12px rgba(244,63,94,0.7))' : 'drop-shadow(0 4px 20px rgba(0,0,0,0.7))',
+        opacity: hudConfig?.opacity ?? 0.95,
       }}
     >
       <div
-        className="w-full bg-[#0a0318]/95 border border-pink-500/30 rounded-2xl p-3.5 backdrop-blur-xl relative overflow-hidden"
+        className={`w-full ${theme.palette.glassBg} border ${theme.palette.border} ${radiusClass} p-3.5 backdrop-blur-xl relative overflow-hidden`}
         style={{
-          clipPath: 'polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px)',
           boxShadow: isCriticalHp
             ? '0 0 25px rgba(244,63,94,0.4), inset 0 0 15px rgba(244,63,94,0.2)'
-            : '0 0 20px rgba(0,245,212,0.15), inset 0 0 15px rgba(0,0,0,0.8)',
+            : hudConfig?.borderGlow ? theme.palette.accentGlow : undefined,
         }}
       >
         {/* 1. Identity Header with Sprite Avatar */}
-        <div className="flex items-center gap-2.5 pb-2.5 mb-2.5 border-b border-pink-500/20">
-          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#00f5d4]/50 bg-black/80 shadow-inner overflow-hidden">
-            {player.assetProfileId ? (
-              <CharacterSpritePreview assetProfileId={player.assetProfileId} size={28} scale={1.5} />
+        <div className={`flex items-center gap-2.5 pb-2.5 mb-2.5 border-b ${theme.palette.border}`}>
+          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/40 bg-black/80 shadow-inner overflow-hidden">
+            {assetProfileId ? (
+              <CharacterSpritePreview assetProfileId={assetProfileId} size={28} scale={1.5} />
             ) : (
-              <User className="h-5 w-5 text-[#00f5d4]" />
+              <User className="h-5 w-5 text-amber-400" />
             )}
             <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-black" />
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between">
-              <h2 className="truncate text-xs font-black tracking-wide text-white">
-                {player.name || 'Saint'}
+              <h2 className="truncate text-xs font-black tracking-wide text-slate-100">
+                {name || 'Saint'}
               </h2>
-              <span className="px-1.5 py-0.2 rounded bg-cyan-950/80 border border-cyan-400/50 text-[#00f5d4] text-[9px] font-extrabold shadow-[0_0_6px_rgba(0,245,212,0.3)]">
+              <span className={`px-2 py-0.5 rounded ${theme.palette.badgeBg} border ${theme.palette.border} ${theme.palette.badgeText} text-[9px] font-extrabold`}>
                 LVL {level}
               </span>
             </div>
 
             <div className="flex items-center justify-between mt-1 text-[9px] text-slate-400">
-              <span className="text-pink-300 font-bold uppercase truncate">
-                {player.combatStyle || 'WARRIOR'}
+              <span className="text-amber-400 font-bold uppercase truncate">
+                {combatStyle || 'WARRIOR'}
               </span>
               <span className="flex items-center gap-1 text-amber-300 font-bold">
                 <Coins size={10} />
@@ -164,13 +170,11 @@ export const PlayerVitalsHud: React.FC = () => {
             max={maxHp}
             percent={hpPercent}
             fillClass={
-              hpPercent > 50
-                ? 'bg-gradient-to-r from-emerald-500 via-teal-400 to-[#00f5d4] shadow-[0_0_10px_rgba(0,245,212,0.6)]'
-                : hpPercent > 25
-                ? 'bg-gradient-to-r from-amber-500 to-yellow-400 shadow-[0_0_10px_rgba(245,158,11,0.6)]'
-                : 'bg-gradient-to-r from-rose-600 via-rose-500 to-red-400 shadow-[0_0_12px_rgba(244,63,94,0.8)]'
+              hpPercent <= 25
+                ? 'bg-gradient-to-r from-rose-600 via-rose-500 to-red-400 shadow-[0_0_12px_rgba(244,63,94,0.8)]'
+                : theme.palette.hpFill
             }
-            accentClass={isCriticalHp ? 'text-rose-400' : 'text-[#00f5d4]'}
+            accentClass={isCriticalHp ? 'text-rose-400' : 'text-rose-400'}
             icon={<Heart className="h-3 w-3" fill="currentColor" />}
             ticksCount={4}
           />
@@ -181,8 +185,8 @@ export const PlayerVitalsHud: React.FC = () => {
             value={mp}
             max={maxMp}
             percent={mpPercent}
-            fillClass="bg-gradient-to-r from-purple-600 via-violet-400 to-cyan-400 shadow-[0_0_10px_rgba(168,85,247,0.5)]"
-            accentClass="text-purple-400"
+            fillClass={theme.palette.mpFill}
+            accentClass="text-sky-400"
             icon={<Sparkles className="h-3 w-3" fill="currentColor" />}
             ticksCount={4}
           />
@@ -193,16 +197,16 @@ export const PlayerVitalsHud: React.FC = () => {
             value={xpIntoLevel}
             max={xpSpan}
             percent={xpProgress}
-            fillClass="bg-gradient-to-r from-pink-600 to-[#ffbe0b] shadow-[0_0_8px_rgba(255,190,11,0.5)]"
+            fillClass={theme.palette.xpFill}
             ticksCount={4}
             hideHeader={true}
-            subtext="NEXT LEVEL PROGRESS"
+            subtext="LEVEL PROGRESS"
           />
         </div>
 
         {/* 3. Active Perk / Buff Footer */}
         {perk && (
-          <div className="mt-2 pt-2 border-t border-pink-500/20 flex items-center justify-between text-[9px] text-purple-300">
+          <div className={`mt-2 pt-2 border-t ${theme.palette.border} flex items-center justify-between text-[9px] text-amber-300`}>
             <span className="flex items-center gap-1">
               <Zap size={10} className="text-amber-400" />
               {perk}
