@@ -6,6 +6,7 @@ import { GAME_MAPS } from './data/maps';
 import { Compass, Map, Settings, Hammer, LogOut, Radio } from 'lucide-react';
 import { useEditorStore } from './editor/editor-store';
 import { soundSynth } from '@/engine/sound-synth';
+import { getHudTheme } from './hud/hud-themes';
 
 const TILE_COLORS: Record<number, string> = {
   0: '#132a1c',  // Safe walkable — dark neon green
@@ -198,27 +199,47 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
     }
   };
 
+  const hudThemeId = useGameStore((state) => state.hudThemeId);
+  const hudConfig = useGameStore((state) => state.hudConfig);
+  const theme = getHudTheme(hudThemeId || hudConfig?.themeId);
+
+  const radiusClass =
+    hudConfig?.borderRadius === 'compact'
+      ? 'rounded-xl'
+      : hudConfig?.borderRadius === 'capsule'
+      ? 'rounded-3xl'
+      : theme.borderRadiusClass || 'rounded-2xl';
+
+  const radarShapeClass =
+    hudConfig?.minimapShape === 'circle'
+      ? 'rounded-full'
+      : hudConfig?.minimapShape === 'square'
+      ? 'rounded-md'
+      : 'rounded-xl';
+
   return (
     <div
       className="pointer-events-auto w-[min(92vw,180px)] select-none font-mono"
-      style={{ filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.6))' }}
+      style={{
+        filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.7))',
+        opacity: hudConfig?.opacity ?? 0.95,
+      }}
     >
       <div
-        className="w-full bg-[#0a0318]/95 border border-pink-500/30 rounded-2xl p-2.5 backdrop-blur-xl relative overflow-hidden flex flex-col gap-2"
+        className={`w-full ${theme.palette.glassBg} border ${theme.palette.border} ${radiusClass} p-2.5 backdrop-blur-xl relative overflow-hidden flex flex-col gap-2`}
         style={{
-          clipPath: 'polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px)',
-          boxShadow: '0 0 20px rgba(242,0,137,0.15), inset 0 0 15px rgba(0,0,0,0.8)',
+          boxShadow: hudConfig?.borderGlow ? theme.palette.accentGlow : undefined,
         }}
       >
         {/* 1. Header Action Row: Quick Navigation Buttons */}
-        <div className="flex items-center justify-between gap-1 pb-1.5 border-b border-pink-500/20">
+        <div className={`flex items-center justify-between gap-1 pb-1.5 border-b ${theme.palette.border}`}>
           <button
             type="button"
             onClick={handleOpenOptionsClick}
-            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-cyan-300 hover:text-white text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
             title="Game Settings (ESC)"
           >
-            <Settings className="w-3 h-3 text-[#00f5d4]" />
+            <Settings className="w-3 h-3 text-amber-400" />
             <span>Options</span>
           </button>
 
@@ -265,43 +286,46 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
         </div>
 
         {/* 2. Middle Section: Radar Thumbnail with Compass Ticks */}
-        <div className="relative h-28 w-full overflow-hidden rounded-xl border border-[#00f5d4]/40 bg-[#02060a] shadow-inner">
+        <div className={`relative h-28 w-full overflow-hidden ${radarShapeClass} border ${theme.palette.border} bg-[#02060a] shadow-inner`}>
           <canvas ref={canvasRef} width={160} height={120} className="absolute inset-0 h-full w-full opacity-90" />
 
           {/* Compass Cardinal Overlays */}
-          <span className="absolute top-0.5 left-1/2 -translate-x-1/2 text-[8px] font-mono font-black text-[#00f5d4] drop-shadow-[0_1px_2px_rgba(0,0,0,1)] pointer-events-none">N</span>
-          <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] font-mono font-black text-cyan-400/60 pointer-events-none">S</span>
-          <span className="absolute top-1/2 left-1 -translate-y-1/2 text-[8px] font-mono font-black text-cyan-400/60 pointer-events-none">W</span>
-          <span className="absolute top-1/2 right-1 -translate-y-1/2 text-[8px] font-mono font-black text-cyan-400/60 pointer-events-none">E</span>
+          <span className="absolute top-0.5 left-1/2 -translate-x-1/2 text-[8px] font-mono font-black text-amber-400 drop-shadow-[0_1px_2px_rgba(0,0,0,1)] pointer-events-none">N</span>
+          <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] font-mono font-black text-slate-400 pointer-events-none">S</span>
+          <span className="absolute top-1/2 left-1 -translate-y-1/2 text-[8px] font-mono font-black text-slate-400 pointer-events-none">W</span>
+          <span className="absolute top-1/2 right-1 -translate-y-1/2 text-[8px] font-mono font-black text-slate-400 pointer-events-none">E</span>
 
-          <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-black/80 text-[8px] font-black uppercase tracking-widest text-[#00f5d4] border border-[#00f5d4]/30 flex items-center gap-1">
-            <Radio size={8} className="animate-pulse" />
+          <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-black/80 text-[8px] font-black uppercase tracking-widest text-amber-300 border border-amber-500/30 flex items-center gap-1">
+            <Radio size={8} className="animate-pulse text-amber-400" />
             RADAR
           </div>
         </div>
 
         {/* 3. Footer Line: Location Label & Coordinates Readout */}
-        <div className="flex flex-col gap-1 pt-1.5 border-t border-pink-500/20">
-          <div className="flex items-center gap-1.5 text-[10px] text-white font-black truncate">
-            <Map className="h-3 w-3 shrink-0 text-[#00f5d4]" />
+        <div className={`flex flex-col gap-1 pt-1.5 border-t ${theme.palette.border}`}>
+          <div className="flex items-center gap-1.5 text-[10px] text-slate-100 font-black truncate">
+            <Map className="h-3 w-3 shrink-0 text-amber-400" />
             <span className="truncate">
               {mapName}
               {channelText}
             </span>
           </div>
 
-          <div className="flex items-center justify-between text-[9px] text-slate-400 font-medium">
-            <div className="flex items-center gap-1">
-              <Compass className="h-2.5 w-2.5 text-amber-400" />
-              <span>COORDS</span>
+          {hudConfig?.showCoords !== false && (
+            <div className="flex items-center justify-between text-[9px] text-slate-400 font-medium">
+              <div className="flex items-center gap-1">
+                <Compass className="h-2.5 w-2.5 text-amber-400" />
+                <span>COORDS</span>
+              </div>
+              <div className="text-slate-200 font-mono font-bold text-[10px] tracking-wide">
+                <span className="text-amber-400">X:</span> {playerPos.x}{' '}
+                <span className="text-amber-400 ml-1">Y:</span> {playerPos.y}
+              </div>
             </div>
-            <div className="text-white font-mono font-bold text-[10px] tracking-wide">
-              <span className="text-cyan-400">X:</span> {playerPos.x}{' '}
-              <span className="text-cyan-400 ml-1">Y:</span> {playerPos.y}
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
+

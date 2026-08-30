@@ -47,7 +47,9 @@ import {
   Package,
   Sword,
   Store,
+  Palette,
 } from 'lucide-react';
+
 
 import { StudioShortcutsModal } from './components/StudioShortcutsModal';
 import { NotificationHistoryModal } from './components/NotificationHistoryModal';
@@ -499,9 +501,11 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem label="World Events" icon={Sparkles} onClick={() => openPanel('worldevent')} />
             <MenuItem label="Simulation Presets" icon={Activity} onClick={() => openPanel('simulation')} />
             <MenuItem label="Problems & Diagnostics" icon={AlertCircle} onClick={() => openPanel('problems')} />
+            <MenuItem label="Interface Designer" icon={Palette} onClick={() => openPanel('interface')} />
             <MenuItem label="Publish & Releases" icon={CloudUpload} onClick={() => openPanel('publishing')} />
             <MenuItem label="Realm Settings" icon={Settings} onClick={() => openPanel('settings')} />
             <MenuItem divider />
+
 
             <MenuItem
               label="Reset Workspace Layout"

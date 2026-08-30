@@ -53,7 +53,8 @@ export type StudioDockId =
   | 'logic'
   | 'publishing'
   | 'maps'
-  | 'animations';
+  | 'animations'
+  | 'interface';
 
 /** Map stable internal ids → canonical engine-editor labels. */
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
@@ -265,4 +266,9 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
     label: 'Animation Studio',
     blurb: 'Sprite animation timeline editor, onion skinning, frame scrubbing, and preview controls.',
   },
+  interface: {
+    label: 'Interface Designer',
+    blurb: 'Game engine UI theme styles, HUD scaling, and in-game widget customizer.',
+  },
 };
+

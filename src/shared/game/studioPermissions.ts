@@ -42,7 +42,8 @@ export type StudioDockId =
   | "recipes"
   | "dungeon"
   | "maps"
-  | "animations";
+  | "animations"
+  | "interface";
 
 /** Minimum level to enter `/studio` and use create docks (= ADMIN). */
 export const STUDIO_ENTRY_LEVEL = 400;
@@ -90,7 +91,9 @@ export const STUDIO_DOCK_MIN_LEVEL: Record<StudioDockId, number> = {
   recipes: STUDIO_ENTRY_LEVEL,
   maps: STUDIO_ENTRY_LEVEL,
   animations: STUDIO_ENTRY_LEVEL,
+  interface: STUDIO_ENTRY_LEVEL,
 };
+
 
 export function canEnterStudio(permissionLevel: number | null | undefined): boolean {
   return (permissionLevel ?? 0) >= STUDIO_ENTRY_LEVEL;

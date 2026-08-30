@@ -15,6 +15,11 @@ import {
   BUILTIN_HUD_PRESETS,
   ensureCompletePreset,
 } from './hud/default-presets';
+import {
+  DEFAULT_HUD_THEME_ID,
+  getHudTheme,
+  type HudTheme,
+} from './hud/hud-themes';
 import type { WorldTarget } from '../../../shared/game/worldTarget';
 
 
@@ -54,6 +59,60 @@ export type MobileControlMode = 'floating' | 'dpad';
 const MOBILE_CONTROL_STORAGE_KEY = 'saints-mobile-control-mode';
 export const HUD_PRESET_STORAGE_KEY = 'saints-hud-layout-v2';
 export const CUSTOM_PRESETS_STORAGE_KEY = 'saints-hud-custom-presets';
+export const HUD_THEME_STORAGE_KEY = 'saints-hud-theme-id';
+export const HUD_CONFIG_STORAGE_KEY = 'saints-hud-config-v1';
+
+export interface HudEngineConfig {
+  themeId: string;
+  scale: number;
+  opacity: number;
+  borderRadius: 'rounded' | 'compact' | 'capsule';
+  borderGlow: boolean;
+  vitalsFormat: 'dual-bar' | 'compact' | 'orbs';
+  minimapShape: 'rounded' | 'circle' | 'square';
+  showMinimapRadar: boolean;
+  showCoords: boolean;
+  hotbarLayout: '1x5' | '2x5' | '1x10';
+  showHotbarKeybinds: boolean;
+  damageNumbersStyle: 'floating' | 'bounce' | 'pop';
+  quickMenuButtons: {
+    inventory: boolean;
+    skills: boolean;
+    equipment: boolean;
+    quests: boolean;
+    gtc: boolean;
+    party: boolean;
+    dex: boolean;
+    achievements: boolean;
+    studio: boolean;
+  };
+}
+
+export const DEFAULT_HUD_CONFIG: HudEngineConfig = {
+  themeId: DEFAULT_HUD_THEME_ID,
+  scale: 1,
+  opacity: 0.95,
+  borderRadius: 'rounded',
+  borderGlow: true,
+  vitalsFormat: 'dual-bar',
+  minimapShape: 'rounded',
+  showMinimapRadar: true,
+  showCoords: true,
+  hotbarLayout: '1x5',
+  showHotbarKeybinds: true,
+  damageNumbersStyle: 'floating',
+  quickMenuButtons: {
+    inventory: true,
+    skills: true,
+    equipment: true,
+    quests: true,
+    gtc: true,
+    party: true,
+    dex: true,
+    achievements: true,
+    studio: true,
+  },
+};
 
 
 export interface MapEntity {
@@ -303,6 +362,16 @@ export interface GameState {
   importHudPresetString: (encoded: string) => boolean;
   hydrateHudPresets: () => void;
 
+  // Game Engine HUD & UI Style Customization
+  hudThemeId: string;
+  hudConfig: HudEngineConfig;
+  setHudTheme: (themeId: string) => void;
+  setHudScale: (scale: number) => void;
+  setHudOpacity: (opacity: number) => void;
+  updateHudConfig: (partial: Partial<HudEngineConfig>) => void;
+  resetHudConfig: () => void;
+  hydrateHudConfig: () => void;
+
   /** Mobile touch movement style — persisted separately from panel uiSettings */
   mobileControlMode: MobileControlMode;
   setMobileControlMode: (mode: MobileControlMode) => void;
@@ -463,6 +532,8 @@ export const useGameStore = create<GameState>()(
       uiLayoutEpoch: 0,
       activeHudPreset: DEFAULT_PRESET_MODERN,
       customHudPresets: [],
+      hudThemeId: DEFAULT_HUD_THEME_ID,
+      hudConfig: DEFAULT_HUD_CONFIG,
       mobileControlMode: 'floating' as MobileControlMode,
       openWindows: [] as string[],
 
@@ -698,6 +769,99 @@ export const useGameStore = create<GameState>()(
           });
         } catch (err) {
           console.error('[HUD Store] Failed to hydrate presets from localStorage:', err);
+        }
+
+        // Also hydrate HUD Theme & Customizer Config
+        get().hydrateHudConfig();
+      },
+
+      setHudTheme: (themeId) => set((state) => {
+        state.hudThemeId = themeId;
+        state.hudConfig.themeId = themeId;
+        state.uiLayoutEpoch += 1;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(HUD_THEME_STORAGE_KEY, themeId);
+          localStorage.setItem(HUD_CONFIG_STORAGE_KEY, JSON.stringify(state.hudConfig));
+        }
+      }),
+
+      setHudScale: (scale) => set((state) => {
+        state.hudConfig.scale = Math.max(0.75, Math.min(1.25, scale));
+        state.uiLayoutEpoch += 1;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(HUD_CONFIG_STORAGE_KEY, JSON.stringify(state.hudConfig));
+        }
+      }),
+
+      setHudOpacity: (opacity) => set((state) => {
+        state.hudConfig.opacity = Math.max(0.4, Math.min(1.0, opacity));
+        state.uiLayoutEpoch += 1;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(HUD_CONFIG_STORAGE_KEY, JSON.stringify(state.hudConfig));
+        }
+      }),
+
+      updateHudConfig: (partial) => set((state) => {
+        state.hudConfig = {
+          ...state.hudConfig,
+          ...partial,
+          quickMenuButtons: {
+            ...state.hudConfig.quickMenuButtons,
+            ...(partial.quickMenuButtons || {}),
+          },
+        };
+        if (partial.themeId) {
+          state.hudThemeId = partial.themeId;
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(HUD_THEME_STORAGE_KEY, partial.themeId);
+          }
+        }
+        state.uiLayoutEpoch += 1;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(HUD_CONFIG_STORAGE_KEY, JSON.stringify(state.hudConfig));
+        }
+      }),
+
+      resetHudConfig: () => set((state) => {
+        state.hudThemeId = DEFAULT_HUD_THEME_ID;
+        state.hudConfig = JSON.parse(JSON.stringify(DEFAULT_HUD_CONFIG));
+        state.uiLayoutEpoch += 1;
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(HUD_THEME_STORAGE_KEY);
+          localStorage.removeItem(HUD_CONFIG_STORAGE_KEY);
+        }
+      }),
+
+      hydrateHudConfig: () => {
+        if (typeof window === 'undefined') return;
+        try {
+          const storedTheme = localStorage.getItem(HUD_THEME_STORAGE_KEY);
+          const storedConfig = localStorage.getItem(HUD_CONFIG_STORAGE_KEY);
+          let theme = DEFAULT_HUD_THEME_ID;
+          let config = JSON.parse(JSON.stringify(DEFAULT_HUD_CONFIG));
+          if (storedConfig) {
+            const parsed = JSON.parse(storedConfig);
+            config = {
+              ...DEFAULT_HUD_CONFIG,
+              ...parsed,
+              quickMenuButtons: {
+                ...DEFAULT_HUD_CONFIG.quickMenuButtons,
+                ...(parsed.quickMenuButtons || {}),
+              },
+            };
+          }
+          if (storedTheme) {
+            theme = storedTheme;
+            config.themeId = storedTheme;
+          } else if (config.themeId) {
+            theme = config.themeId;
+          }
+          set((state) => {
+            state.hudThemeId = theme;
+            state.hudConfig = config;
+          });
+        } catch (err) {
+          console.error('[HUD Store] Failed to hydrate hudConfig from localStorage:', err);
         }
       },
 

@@ -61,10 +61,10 @@ const InlineAtlasStatus = () => {
     <div
       onClick={() => useEditorStore.getState().openPanel('atlas')}
       className="hidden md:flex items-center gap-2 text-[9px] bg-background/50 border border-border/40 hover:border-amber-500/40 px-2 py-0.5 rounded cursor-pointer transition-colors"
-      title="World Atlas Spatial Node — Click to edit World Atlas"
+      title={`World Atlas Spatial Node: ${node.mapId} — Click to edit World Atlas`}
     >
       <Compass className="w-3 h-3 text-amber-400" />
-      <span className="text-amber-400 font-bold truncate max-w-[60px]">{node.mapId}</span>
+      <span className="text-amber-400 font-bold truncate max-w-[140px]">{node.mapId}</span>
       <div className="flex gap-1.5 text-muted-foreground border-l border-border/40 pl-1.5">
         <span title={`North: ${neighbors?.north?.mapId || 'none'}`}>N:{neighbors?.north ? '✓' : '×'}</span>
         <span title={`East: ${neighbors?.east?.mapId || 'none'}`}>E:{neighbors?.east ? '✓' : '×'}</span>
@@ -169,9 +169,9 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
     : null;
 
   return (
-    <div className="pointer-events-auto fixed bottom-0 left-0 right-0 h-9 z-[110] bg-card/85 border-t border-border/60 flex items-center justify-between px-3 select-none backdrop-blur-xl shadow-lg font-mono text-xs text-foreground">
+    <div className="pointer-events-auto fixed bottom-0 left-0 right-0 h-9 z-[110] bg-card/90 border-t border-border/60 flex items-center justify-between px-3 select-none backdrop-blur-xl shadow-lg font-mono text-xs text-foreground overflow-x-auto no-scrollbar gap-2">
       {/* ─── ZONE 1: Active Tool, Brush Size & Transforms ─── */}
-      <div className="flex items-center gap-2 border-r border-border/40 pr-3">
+      <div className="flex items-center gap-2 border-r border-border/40 pr-3 shrink-0">
         {/* Brush Mode Buttons */}
         <div className="flex items-center gap-0.5 bg-background/50 border border-border/60 rounded-lg p-0.5">
           <button
@@ -500,7 +500,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
       </div>
 
       {/* ─── ZONE 2: Contextual Selection, Coordinates & Layer Info ─── */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 shrink-0">
         {/* Layer Chip */}
         <div
           onClick={() => {
@@ -549,7 +549,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
       </div>
 
       {/* ─── ZONE 3: Viewport Controls, Zoom, FreeCam & Diagnostics ─── */}
-      <div className="flex items-center gap-2 border-l border-border/40 pl-3">
+      <div className="flex items-center gap-2 border-l border-border/40 pl-3 shrink-0">
         {/* Overlay Toggles */}
         <div className="flex items-center gap-0.5">
           <button

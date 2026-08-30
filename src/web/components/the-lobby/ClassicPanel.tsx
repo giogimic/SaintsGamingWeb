@@ -8,16 +8,19 @@ import {
   Shield,
   ScrollText,
   Store,
+  Users,
+  PawPrint,
+  Trophy,
+  Hammer,
 } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
+import { getHudTheme } from './hud/hud-themes';
 
 /**
  * QuickMenuDock (ClassicPanel)
  *
- * Compact icon-only dock for quick access to game interface windows.
- * Clicking an icon toggles the corresponding FloatingWindow via the
- * openWindows store — gameMode stays EXPLORING so the game world
- * remains interactive.
+ * Compact icon dock for quick access to MMO game interface windows.
+ * Clean modern dark glass styling with active amber/gold glow and configurable buttons.
  */
 export default function ClassicPanel() {
   const toggleWindow = useGameStore((s) => s.toggleWindow);
@@ -25,10 +28,16 @@ export default function ClassicPanel() {
   const inventory = useGameStore((s) => s.player.inventory);
   const activeQuests = useGameStore((s) => s.player.activeQuests);
   const skills = useGameStore((s) => s.player.skills);
+  const setGameMode = useGameStore((s) => s.setGameMode);
+  const gameMode = useGameStore((s) => s.gameMode);
+
+  const hudThemeId = useGameStore((s) => s.hudThemeId);
+  const hudConfig = useGameStore((s) => s.hudConfig);
+  const theme = getHudTheme(hudThemeId || hudConfig?.themeId);
 
   // Quick-glance badge data
   const itemCount = useMemo(() => {
-    return Object.values(inventory).reduce((sum, qty) => sum + qty, 0);
+    return Object.values(inventory || {}).reduce((sum, qty) => sum + qty, 0);
   }, [inventory]);
 
   const questCount = useMemo(() => {
@@ -36,7 +45,7 @@ export default function ClassicPanel() {
   }, [activeQuests]);
 
   const totalLevel = useMemo(() => {
-    return Object.values(skills).reduce((sum, s) => sum + (s.level || 1), 0);
+    return Object.values(skills || {}).reduce((sum, s) => sum + (s.level || 1), 0);
   }, [skills]);
 
   // Keyboard hotkeys — toggle windows
@@ -69,27 +78,54 @@ export default function ClassicPanel() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [toggleWindow]);
 
-  const buttons = [
-    { id: 'inventory', icon: Backpack, hotkey: 'I', label: 'Inventory', badge: itemCount > 0 ? `${itemCount}` : undefined },
-    { id: 'skills', icon: Sword, hotkey: 'K', label: 'Skills', badge: `${totalLevel}` },
-    { id: 'equipment', icon: Shield, hotkey: 'C', label: 'Equipment' },
-    { id: 'quests', icon: ScrollText, hotkey: 'L', label: 'Quest Log', badge: questCount > 0 ? `${questCount}` : undefined },
-    { id: 'gtc', icon: Store, hotkey: undefined, label: 'Global Trade Center' },
+  const quickConfig = hudConfig?.quickMenuButtons || {
+    inventory: true,
+    skills: true,
+    equipment: true,
+    quests: true,
+    gtc: true,
+    party: true,
+    dex: true,
+    achievements: true,
+    studio: true,
+  };
+
+  const allButtons = [
+    { id: 'inventory', icon: Backpack, hotkey: 'I', label: 'Inventory', badge: itemCount > 0 ? `${itemCount}` : undefined, enabled: quickConfig.inventory !== false, isWindow: true },
+    { id: 'skills', icon: Sword, hotkey: 'K', label: 'Skills', badge: `${totalLevel}`, enabled: quickConfig.skills !== false, isWindow: true },
+    { id: 'equipment', icon: Shield, hotkey: 'C', label: 'Equipment', enabled: quickConfig.equipment !== false, isWindow: true },
+    { id: 'quests', icon: ScrollText, hotkey: 'L', label: 'Quest Log', badge: questCount > 0 ? `${questCount}` : undefined, enabled: quickConfig.quests !== false, isWindow: true },
+    { id: 'gtc', icon: Store, hotkey: undefined, label: 'Grand Exchange / GTC', enabled: quickConfig.gtc !== false, isWindow: true },
+    { id: 'party', icon: Users, hotkey: 'P', label: 'Party Roster', enabled: quickConfig.party === true, isWindow: false, mode: 'PARTY' as const },
+    { id: 'dex', icon: PawPrint, hotkey: 'X', label: 'Saints Dex', enabled: quickConfig.dex === true, isWindow: false, mode: 'DEX' as const },
+    { id: 'achievements', icon: Trophy, hotkey: 'B', label: 'Achievements', enabled: quickConfig.achievements === true, isWindow: false, mode: 'ACHIEVEMENTS' as const },
   ];
+
+  const activeButtons = allButtons.filter((b) => b.enabled);
+
+  const radiusClass =
+    hudConfig?.borderRadius === 'compact'
+      ? 'rounded-xl'
+      : hudConfig?.borderRadius === 'capsule'
+      ? 'rounded-full'
+      : theme.borderRadiusClass || 'rounded-2xl';
 
   return (
     <div
       className="pointer-events-auto shrink-0 select-none font-mono"
-      style={{ filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.6))' }}
+      style={{
+        filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.7))',
+        opacity: hudConfig?.opacity ?? 0.95,
+      }}
     >
       <div
-        className="flex items-center gap-1.5 p-1.5 bg-[#0a0318]/95 border border-pink-500/30 rounded-2xl shadow-[0_0_20px_rgba(242,0,137,0.15)] backdrop-blur-xl"
+        className={`flex items-center gap-1.5 p-1.5 ${theme.palette.glassBg} border ${theme.palette.border} ${radiusClass} backdrop-blur-xl`}
         style={{
-          clipPath: 'polygon(10px 0%, 100% 0%, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0% 100%, 0% 10px)',
+          boxShadow: hudConfig?.borderGlow ? theme.palette.accentGlow : undefined,
         }}
       >
-        {buttons.map((btn) => {
-          const isActive = openWindows.includes(btn.id);
+        {activeButtons.map((btn) => {
+          const isActive = btn.isWindow ? openWindows.includes(btn.id) : gameMode === btn.mode;
           const Icon = btn.icon;
           return (
             <button
@@ -99,31 +135,35 @@ export default function ClassicPanel() {
                 flex items-center justify-center p-2 rounded-xl cursor-pointer transition-all duration-150 relative group
                 ${
                   isActive
-                    ? 'bg-cyan-500/25 text-[#00f5d4] shadow-[0_0_12px_rgba(0,245,212,0.35)] border border-cyan-400/60'
-                    : 'text-slate-400 hover:text-cyan-200 hover:bg-white/5 border border-transparent'
+                    ? `${theme.palette.badgeBg} ${theme.palette.badgeText} shadow-[0_0_12px_rgba(245,158,11,0.35)] border ${theme.palette.borderActive}`
+                    : 'text-slate-400 hover:text-amber-200 hover:bg-white/10 border border-transparent'
                 }
               `}
               onClick={() => {
                 soundSynth?.playSelectSound?.();
-                toggleWindow(btn.id);
+                if (btn.isWindow) {
+                  toggleWindow(btn.id);
+                } else if (btn.mode) {
+                  setGameMode(gameMode === btn.mode ? 'EXPLORING' : btn.mode);
+                }
               }}
               title={`${btn.label}${btn.hotkey ? ` [${btn.hotkey}]` : ''}`}
             >
               <Icon className="h-4 w-4" />
               {/* Hotkey Label */}
-              {btn.hotkey && (
-                <span className="absolute -top-1 -right-1 text-[7px] font-bold text-cyan-300 bg-black/80 px-1 rounded border border-cyan-500/30">
+              {btn.hotkey && hudConfig?.showHotbarKeybinds !== false && (
+                <span className="absolute -top-1 -right-1 text-[7px] font-bold text-amber-300 bg-black/90 px-1 rounded border border-amber-500/30">
                   {btn.hotkey}
                 </span>
               )}
               {/* Quick-Glance Badge */}
               {btn.badge && (
-                <span className="absolute -bottom-1 right-0 text-[7px] font-bold text-amber-300 bg-black/80 px-1 rounded border border-amber-500/30 leading-tight">
+                <span className="absolute -bottom-1 right-0 text-[7px] font-bold text-emerald-300 bg-black/90 px-1 rounded border border-emerald-500/30 leading-tight">
                   {btn.badge}
                 </span>
               )}
               {/* Tooltip */}
-              <span className="hidden group-hover:block absolute -top-8 left-1/2 -translate-x-1/2 bg-black/95 border border-cyan-500/40 text-[10px] text-cyan-200 px-2 py-0.5 rounded whitespace-nowrap pointer-events-none z-50 font-bold">
+              <span className="hidden group-hover:block absolute -top-8 left-1/2 -translate-x-1/2 bg-[#050b14]/95 border border-amber-500/40 text-[10px] text-amber-200 px-2 py-0.5 rounded-md whitespace-nowrap pointer-events-none z-50 font-bold shadow-lg">
                 {btn.label}{btn.hotkey ? ` [${btn.hotkey}]` : ''}
               </span>
             </button>

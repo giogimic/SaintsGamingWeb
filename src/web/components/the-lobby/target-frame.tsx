@@ -17,6 +17,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
+import { getHudTheme } from './hud/hud-themes';
 
 export default function TargetFrame() {
   const combatTarget = useGameStore((state) => state.combatTarget);
@@ -64,56 +65,60 @@ export default function TargetFrame() {
     );
   };
 
-  const borderColor = isPlayer
-    ? 'rgba(0, 245, 212, 0.5)'
-    : isCreature
-    ? 'rgba(244, 63, 94, 0.5)'
-    : 'rgba(251, 191, 36, 0.5)';
+  const hudThemeId = useGameStore((state) => state.hudThemeId);
+  const hudConfig = useGameStore((state) => state.hudConfig);
+  const theme = getHudTheme(hudThemeId || hudConfig?.themeId);
 
-  const glowShadow = isPlayer
-    ? '0 0 20px rgba(0, 245, 212, 0.2)'
+  const radiusClass =
+    hudConfig?.borderRadius === 'compact'
+      ? 'rounded-xl'
+      : hudConfig?.borderRadius === 'capsule'
+      ? 'rounded-3xl'
+      : theme.borderRadiusClass || 'rounded-2xl';
+
+  const borderColor = isPlayer
+    ? 'border-amber-500/40'
     : isCreature
-    ? '0 0 20px rgba(244, 63, 94, 0.25)'
-    : '0 0 20px rgba(251, 191, 36, 0.2)';
+    ? 'border-rose-500/40'
+    : 'border-slate-500/40';
 
   return (
     <div className="pointer-events-none flex flex-col items-center select-none font-mono" data-testid="target-frame">
       <div
-        className="pointer-events-auto min-w-[280px] md:min-w-[320px] bg-[#0a0318]/95 border rounded-2xl p-3.5 backdrop-blur-xl relative overflow-hidden"
+        className={`pointer-events-auto min-w-[280px] md:min-w-[320px] ${theme.palette.glassBg} border ${borderColor} ${radiusClass} p-3.5 backdrop-blur-xl relative overflow-hidden`}
         style={{
-          borderColor,
-          boxShadow: `${glowShadow}, inset 0 0 15px rgba(0,0,0,0.8)`,
-          clipPath: 'polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px)',
+          boxShadow: hudConfig?.borderGlow ? theme.palette.accentGlow : '0 8px 30px rgba(0,0,0,0.7)',
+          opacity: hudConfig?.opacity ?? 0.95,
         }}
       >
         {/* Header: Icon, Target Name & Badges */}
-        <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
+        <div className={`flex items-center justify-between pb-2 mb-2 border-b ${theme.palette.border}`}>
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-6 h-6 rounded-lg bg-black/80 border border-white/10 flex items-center justify-center shrink-0">
               <Crosshair
                 className={`w-3.5 h-3.5 ${
-                  isPlayer ? 'text-[#00f5d4]' : isCreature ? 'text-rose-400' : 'text-amber-400'
+                  isPlayer ? 'text-amber-400' : isCreature ? 'text-rose-400' : 'text-slate-300'
                 }`}
               />
             </div>
-            <h3 className="text-xs font-black text-white truncate max-w-[140px] tracking-wide">
+            <h3 className="text-xs font-black text-slate-100 truncate max-w-[140px] tracking-wide">
               {target.name}
             </h3>
           </div>
 
           <div className="flex items-center gap-1.5">
             {isPlayer && (
-              <span className="text-[8px] font-black px-2 py-0.5 rounded bg-cyan-950/80 text-[#00f5d4] border border-cyan-400/50 uppercase shadow-[0_0_6px_rgba(0,245,212,0.3)]">
+              <span className="text-[8px] font-black px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase">
                 PLAYER
               </span>
             )}
             {isCreature && (
-              <span className="text-[8px] font-black px-2 py-0.5 rounded bg-rose-950/80 text-rose-300 border border-rose-500/50 uppercase shadow-[0_0_6px_rgba(244,63,94,0.3)]">
+              <span className="text-[8px] font-black px-2 py-0.5 rounded bg-rose-950/80 text-rose-300 border border-rose-500/50 uppercase">
                 WILD
               </span>
             )}
             {isNpc && (
-              <span className="text-[8px] font-black px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-500/50 uppercase shadow-[0_0_6px_rgba(251,191,36,0.3)]">
+              <span className="text-[8px] font-black px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-600 uppercase">
                 NPC
               </span>
             )}
@@ -176,27 +181,30 @@ export default function TargetFrame() {
 
         {/* Player Quick Actions */}
         {isPlayer && (
-          <div className="flex items-center gap-1.5 pt-2 mt-2 border-t border-cyan-500/20 justify-end">
+          <div className={`flex items-center gap-1.5 pt-2 mt-2 border-t ${theme.palette.border} justify-end`}>
+            <button
+              onClick={handleWhisper}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[9px] font-bold transition-colors cursor-pointer"
+              title={`Whisper ${target.name}`}
+            >
+              <MessageSquare className="w-3 h-3 text-amber-400" />
+              <span>Whisper</span>
+            </button>
             <button
               onClick={handlePartyInvite}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-400/50 text-[#00f5d4] text-[10px] font-bold transition-all active:scale-95 cursor-pointer shadow-sm"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 hover:text-white text-[9px] font-bold transition-colors border border-emerald-500/30 cursor-pointer"
               title={`Invite ${target.name} to Party`}
             >
-              <UserPlus className="w-3 h-3" /> Party
+              <UserPlus className="w-3 h-3" />
+              <span>Party</span>
             </button>
             <button
               onClick={handleDuelChallenge}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-950/80 hover:bg-amber-900 border border-amber-400/50 text-amber-200 text-[10px] font-bold transition-all active:scale-95 cursor-pointer shadow-sm"
-              title={`Challenge ${target.name} to Duel`}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 hover:text-white text-[9px] font-bold transition-colors border border-amber-500/40 cursor-pointer"
+              title={`Challenge ${target.name} to Buddy Battle`}
             >
-              <Swords className="w-3 h-3" /> Duel
-            </button>
-            <button
-              onClick={handleWhisper}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-950/80 hover:bg-purple-900 border border-purple-400/50 text-purple-200 text-[10px] font-bold transition-all active:scale-95 cursor-pointer shadow-sm"
-              title={`Whisper ${target.name}`}
-            >
-              <MessageSquare className="w-3 h-3" /> Comms
+              <Swords className="w-3 h-3" />
+              <span>Battle</span>
             </button>
           </div>
         )}
