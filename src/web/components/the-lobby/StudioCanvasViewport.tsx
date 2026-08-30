@@ -29,11 +29,11 @@ export function StudioCanvasViewport({
   const restoreViewportRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
   const resizeOrigin = useRef({ x: 0, y: 0, w: 0, h: 0 });
 
-  // When maximized, keep viewport fitted between top menu bar (36px) and bottom toolbar (36px)
+  // When maximized, keep viewport fitted between top menu bar (40px) and bottom toolbar (36px)
   useEffect(() => {
     const handleResize = () => {
       if (isMaximized) {
-        const topBarHeight = 36;
+        const topBarHeight = 40;
         const bottomBarHeight = 36;
         setViewport({
           x: 0,
@@ -54,7 +54,7 @@ export function StudioCanvasViewport({
   const toggleMaximize = () => {
     if (!isMaximized) {
       restoreViewportRef.current = { ...viewport };
-      const topBarHeight = 36;
+      const topBarHeight = 40;
       const bottomBarHeight = 36;
       setViewport({
         x: 0,
