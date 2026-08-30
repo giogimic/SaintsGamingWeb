@@ -3,13 +3,15 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { 
   Play, Pause, Volume2, VolumeX, Maximize2, 
-  Sparkles, Heart, Loader2 
+  Sparkles, Heart, Loader2, Film
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { captureVideoFrame, getCachedVideoPoster } from "@/web/lib/video-thumbnail";
 
 interface FeedVideoPlayerProps {
   id: string;
   src: string;
+  poster?: string | null;
   activePlayingId: string | null;
   setActivePlayingId: React.Dispatch<React.SetStateAction<string | null>>;
   onOpenReel: () => void;
@@ -43,6 +45,7 @@ function formatVideoTime(sec: number): string {
 export function FeedVideoPlayer({
   id,
   src,
+  poster,
   activePlayingId,
   setActivePlayingId,
   onOpenReel,
@@ -71,12 +74,44 @@ export function FeedVideoPlayer({
   const [showHeartBurst, setShowHeartBurst] = useState(false);
   const [hasRecordedView, setHasRecordedView] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [extractedPoster, setExtractedPoster] = useState<string | null>(() => {
+    return poster || getCachedVideoPoster(src) || null;
+  });
 
   const isCurrentlyActive = activePlayingId === id;
   const muted = isSharedMuted !== undefined ? isSharedMuted : localMuted;
   const formattedSrc = formatVideoSrc(src);
+  const displayPoster = poster || extractedPoster;
   const lastTapRef = useRef<number>(0);
   const centerIconTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Client-side automatic frame capture if no poster provided
+  useEffect(() => {
+    if (poster) {
+      setExtractedPoster(poster);
+      return;
+    }
+    const cached = getCachedVideoPoster(src);
+    if (cached) {
+      setExtractedPoster(cached);
+      return;
+    }
+
+    let isMounted = true;
+    captureVideoFrame(src, 0.5)
+      .then((dataUrl) => {
+        if (isMounted) {
+          setExtractedPoster(dataUrl);
+        }
+      })
+      .catch(() => {
+        // Fallback: standard video decoder
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [src, poster]);
 
   // Sync muted state with video element
   useEffect(() => {
@@ -306,6 +341,7 @@ export function FeedVideoPlayer({
         <video
           ref={videoRef}
           src={formattedSrc}
+          poster={displayPoster || undefined}
           playsInline
           loop
           muted={muted}
@@ -320,6 +356,33 @@ export function FeedVideoPlayer({
             isPortrait ? "max-h-[540px]" : "max-h-[480px]"
           } ${isLoaded ? "opacity-100" : "opacity-0"}`}
         />
+
+        {/* Poster Image Layer (Zero Black Box / Instant Screenshot Preview) */}
+        {displayPoster && (
+          <div 
+            className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${
+              isCurrentlyActive && isLoaded ? "opacity-0" : "opacity-100"
+            }`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              src={displayPoster} 
+              alt="Video thumbnail" 
+              className={`w-auto max-w-full object-contain mx-auto ${
+                isPortrait ? "max-h-[540px]" : "max-h-[480px]"
+              }`}
+            />
+          </div>
+        )}
+
+        {/* Floating Center Play Badge (YouTube / TikTok Style) */}
+        {!isCurrentlyActive && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 transition-transform duration-200 group-hover:scale-110">
+            <div className="p-4 rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 shadow-2xl flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+              <Play className="w-6 h-6 fill-current translate-x-0.5" />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Subtle Top Gradient Shadow */}

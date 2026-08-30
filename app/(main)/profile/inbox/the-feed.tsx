@@ -49,6 +49,7 @@ import { Grid } from "@giphy/react-components";
 import { FeedVideoPlayer } from "@/web/components/feed/FeedVideoPlayer";
 import { UploadProgressBar } from "@/web/components/feed/UploadProgressBar";
 import { uploadSocialFileWithProgress, UploadProgressState } from "@/web/lib/upload-client";
+import { captureVideoFrame } from "@/web/lib/video-thumbnail";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
@@ -114,9 +115,12 @@ export function TheFeed() {
   
   // Media / GIF & Upload Progress Tracking
   const [mediaUrl, setMediaUrl] = useState<string>("");
+  const [thumbnailUrl, setThumbnailUrl] = useState<string>("");
+  const [isExtractingThumbnail, setIsExtractingThumbnail] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [mainUploadState, setMainUploadState] = useState<UploadProgressState | null>(null);
   const mainUploadCancelRef = useRef<(() => void) | null>(null);
+  const previewVideoRef = useRef<HTMLVideoElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showGiphy, setShowGiphy] = useState(false);
   const [giphySearch, setGiphySearch] = useState("");
@@ -439,6 +443,7 @@ export function TheFeed() {
         : undefined;
 
       await createSocialPost(body, mediaUrl || undefined, {
+        thumbnailUrl: thumbnailUrl || undefined,
         isSubscriberOnly,
         voiceoverUrl: voiceoverUrl || undefined,
         backgroundTrackUrl: backgroundTrackUrl || undefined,
@@ -451,6 +456,7 @@ export function TheFeed() {
       toast.success("Post created successfully!");
       setBody("");
       setMediaUrl("");
+      setThumbnailUrl("");
       setIsSubscriberOnly(false);
       setVoiceoverUrl("");
       setBackgroundTrackUrl("");
@@ -550,6 +556,22 @@ export function TheFeed() {
       try {
         const data = await promise;
         setMediaUrl(data.url);
+        
+        // If file is a video, automatically extract a frame screenshot as default thumbnail
+        if (file.type.startsWith("video/") || isVideo(file.name) || isVideo(data.url)) {
+          setIsExtractingThumbnail(true);
+          captureVideoFrame(file, 0.5)
+            .then((frameDataUrl) => {
+              setThumbnailUrl(frameDataUrl);
+            })
+            .catch(() => {
+              // Fallback
+            })
+            .finally(() => {
+              setIsExtractingThumbnail(false);
+            });
+        }
+
         toast.success("Media attached successfully!");
         setTimeout(() => {
           setMainUploadState(null);
@@ -562,6 +584,44 @@ export function TheFeed() {
         setIsUploading(false);
         mainUploadCancelRef.current = null;
       }
+    }
+  }
+
+  async function handleCustomThumbnailUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsExtractingThumbnail(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload/social", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Thumbnail upload failed");
+      const data = await res.json();
+      setThumbnailUrl(data.url);
+      toast.success("Custom video cover uploaded!");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to upload thumbnail");
+    } finally {
+      setIsExtractingThumbnail(false);
+      e.target.value = "";
+    }
+  }
+
+  async function handleCaptureFrameAtCurrentTime() {
+    if (!mediaUrl || !previewVideoRef.current) return;
+    try {
+      setIsExtractingThumbnail(true);
+      const currentTime = previewVideoRef.current.currentTime || 0.5;
+      const dataUrl = await captureVideoFrame(mediaUrl, currentTime);
+      setThumbnailUrl(dataUrl);
+      toast.success(`Captured video frame at ${currentTime.toFixed(1)}s!`);
+    } catch {
+      toast.error("Failed to capture frame from video");
+    } finally {
+      setIsExtractingThumbnail(false);
     }
   }
 
@@ -1046,6 +1106,7 @@ export function TheFeed() {
                 <FeedVideoPlayer
                   id={post.id}
                   src={post.mediaUrl}
+                  poster={post.thumbnailUrl}
                   activePlayingId={activePlayingVideoId}
                   setActivePlayingId={setActivePlayingVideoId}
                   onOpenReel={() => {
@@ -1998,29 +2059,113 @@ export function TheFeed() {
                   </div>
                 )}
 
-                {/* Attached Media Preview with Zero Black Box */}
+                {/* Attached Media Preview with Zero Black Box & Thumbnail Generator */}
                 {mediaUrl && !mainUploadState && (
-                  <div className="relative mx-4 mb-3 rounded-2xl overflow-hidden border border-border/50 bg-black/10 flex items-center justify-center max-h-[320px]">
-                    <Button 
-                      type="button" 
-                      variant="destructive" 
-                      size="icon" 
-                      className="absolute top-2 right-2 w-7 h-7 rounded-full z-10 shadow-md"
-                      onClick={() => setMediaUrl("")}
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </Button>
-                    {isArchive(mediaUrl) ? (
-                      <div className="flex flex-col items-center justify-center p-6 text-center w-full">
-                        <FileArchive className="w-10 h-10 text-primary mb-2" />
-                        <span className="text-sm font-semibold text-primary/90">Archive Attached</span>
-                        <span className="text-xs text-muted-foreground mt-1 break-all max-w-[80%]">{mediaUrl.split('/').pop()}</span>
+                  <div className="mx-4 mb-3 space-y-2">
+                    <div className="relative rounded-2xl overflow-hidden border border-border/50 bg-black/40 flex items-center justify-center max-h-[320px]">
+                      <Button 
+                        type="button" 
+                        variant="destructive" 
+                        size="icon" 
+                        className="absolute top-2 right-2 w-7 h-7 rounded-full z-10 shadow-md"
+                        onClick={() => {
+                          setMediaUrl("");
+                          setThumbnailUrl("");
+                        }}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+
+                      {isArchive(mediaUrl) ? (
+                        <div className="flex flex-col items-center justify-center p-6 text-center w-full">
+                          <FileArchive className="w-10 h-10 text-primary mb-2" />
+                          <span className="text-sm font-semibold text-primary/90">Archive Attached</span>
+                          <span className="text-xs text-muted-foreground mt-1 break-all max-w-[80%]">{mediaUrl.split('/').pop()}</span>
+                        </div>
+                      ) : isVideo(mediaUrl) ? (
+                        <video 
+                          ref={previewVideoRef}
+                          src={formatVideoSrc(mediaUrl)} 
+                          poster={thumbnailUrl || undefined}
+                          controls 
+                          playsInline
+                          preload="metadata"
+                          className="max-h-[320px] w-auto max-w-full rounded-xl" 
+                        />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={mediaUrl} alt="Upload preview" className="max-h-[320px] w-auto max-w-full object-contain rounded-xl" />
+                      )}
+                    </div>
+
+                    {/* Video Cover / Thumbnail Selector */}
+                    {isVideo(mediaUrl) && (
+                      <div className="p-3 bg-muted/20 border border-border/50 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2.5">
+                          {thumbnailUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img 
+                              src={thumbnailUrl} 
+                              alt="Thumbnail cover" 
+                              className="w-16 h-10 rounded-lg object-cover border border-primary/40 shadow-xs shrink-0" 
+                            />
+                          ) : (
+                            <div className="w-16 h-10 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center text-[10px] text-muted-foreground shrink-0">
+                              No Cover
+                            </div>
+                          )}
+                          <div>
+                            <span className="font-bold flex items-center gap-1 text-foreground">
+                              <Sparkles className="w-3 h-3 text-primary" /> Video Poster / Cover
+                            </span>
+                            <p className="text-[11px] text-muted-foreground">
+                              {thumbnailUrl ? "Default frame captured (instant preview)" : "No cover set"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={handleCaptureFrameAtCurrentTime}
+                            disabled={isExtractingThumbnail}
+                            className="px-2.5 py-1 bg-muted/50 hover:bg-muted text-foreground border border-border/60 rounded-lg font-medium transition-colors flex items-center gap-1 text-[11px]"
+                            title="Scrub video to desired time and click to capture"
+                          >
+                            {isExtractingThumbnail ? <Loader2 className="w-3 h-3 animate-spin text-primary" /> : <Sparkles className="w-3 h-3 text-primary" />}
+                            Capture Frame
+                          </button>
+
+                          <div>
+                            <input
+                              type="file"
+                              id="custom-thumbnail-upload"
+                              accept="image/jpeg,image/png,image/webp"
+                              className="hidden"
+                              onChange={handleCustomThumbnailUpload}
+                              disabled={isExtractingThumbnail}
+                            />
+                            <label
+                              htmlFor="custom-thumbnail-upload"
+                              className="px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg font-medium cursor-pointer transition-colors inline-flex items-center gap-1 text-[11px]"
+                            >
+                              <ImageIcon className="w-3 h-3" />
+                              Custom Cover
+                            </label>
+                          </div>
+
+                          {thumbnailUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setThumbnailUrl("")}
+                              className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                              title="Clear Cover"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    ) : isVideo(mediaUrl) ? (
-                      <video src={formatVideoSrc(mediaUrl)} controls className="max-h-[320px] w-auto max-w-full rounded-xl" />
-                    ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={mediaUrl} alt="Upload preview" className="max-h-[320px] w-auto max-w-full object-contain rounded-xl" />
                     )}
                   </div>
                 )}
