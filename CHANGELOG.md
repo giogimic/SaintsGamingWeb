@@ -1,3 +1,8 @@
+# 2.1.508
+- **Live Terminal Spinner & Real-Time Build Monitor**: Added interactive animated spinners (`run_with_spinner`), live elapsed timers, and real-time build step telemetry to `scripts/update.sh` and `scripts/cleanup-disk.sh`.
+- **Zero Freeze Feedback**: Docker pruning operations (`docker builder prune`, `docker image prune`, `docker container prune`, `journalctl vacuum`) now run asynchronously with active spinner animations and explicit success confirmations upon completion.
+- **Docker Compose Live Progress Ticker**: `docker compose build web` now displays a live status spinner and current build log snippet in the terminal instead of staying on a blank screen, plus outputs the last 25 lines of logs if any error occurs.
+
 # 2.1.507
 - **Ultra-Responsive Video Playback Engine**: Upgraded `FeedVideoPlayer.tsx` and `shorts-viewer-modal.tsx` with high-performance responsive playback controls matching top-tier video platforms (YouTube / TikTok).
 - **Interactive Hover Scrubber & Timestamp Tooltip**: Hovering across the bottom scrub bar dynamically calculates mouse fractional position and renders a real-time timestamp preview pill (`0:24`) directly above the cursor.

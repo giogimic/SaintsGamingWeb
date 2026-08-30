@@ -14,6 +14,41 @@ PURPLE='\033[0;35m'
 NC='\033[0m'
 BOLD='\033[1m'
 
+# Animated spinner for background tasks with live tail preview
+run_with_spinner() {
+    local msg="$1"
+    local log_file="$2"
+    local pid="$3"
+    local spin='-\|/'
+    local i=0
+    local start_time=$(date +%s)
+
+    while kill -0 "$pid" 2>/dev/null; do
+        local current_time=$(date +%s)
+        local elapsed=$((current_time - start_time))
+        local mins=$((elapsed / 60))
+        local secs=$((elapsed % 60))
+        local time_str=$(printf "%dm %02ds" $mins $secs)
+        
+        local status_tail=""
+        if [ -n "$log_file" ] && [ -f "$log_file" ]; then
+            status_tail=$(tail -n 1 "$log_file" 2>/dev/null | tr -cd '[:print:]' | cut -c 1-45)
+        fi
+        
+        i=$(( (i+1) % 4 ))
+        if [ -n "$status_tail" ]; then
+            printf "\r${CYAN}[${spin:$i:1}] ${msg} (${time_str}) - \033[90m%s\033[0m\033[K" "$status_tail"
+        else
+            printf "\r${CYAN}[${spin:$i:1}] ${msg} (${time_str})\033[K"
+        fi
+        sleep 0.2
+    done
+    wait "$pid"
+    local exit_code=$?
+    printf "\r\033[K"
+    return $exit_code
+}
+
 clear
 echo -e "${CYAN}${BOLD}========================================${NC}"
 echo -e "${CYAN}${BOLD}  Saints Gaming — Update Script${NC}"
@@ -82,15 +117,22 @@ FREE_SPACE_KB=$(df -k / | tail -1 | awk '{print $4}')
 if [ -n "$FREE_SPACE_KB" ] && [ "$FREE_SPACE_KB" -lt 5242880 ]; then
     echo -e "${YELLOW}[!] Low disk space detected (< 5GB free). Running automated cleanup...${NC}"
     if command -v docker &>/dev/null; then
-        docker builder prune -a -f 2>/dev/null || true
-        docker image prune -f 2>/dev/null || true
-        docker network prune -f 2>/dev/null || true
+        (
+            docker builder prune -a -f >/dev/null 2>&1
+            docker image prune -f >/dev/null 2>&1
+            docker network prune -f >/dev/null 2>&1
+        ) &
+        CLEAN_PID=$!
+        run_with_spinner "Reclaiming Docker build cache & layers" "" "$CLEAN_PID"
+        echo -e "${GREEN}[✓] Docker build caches pruned.${NC}"
     fi
     if command -v journalctl &>/dev/null; then
-        sudo journalctl --vacuum-size=100M 2>/dev/null || true
+        ( sudo journalctl --vacuum-size=100M >/dev/null 2>&1 || true ) &
+        VAC_PID=$!
+        run_with_spinner "Vacuuming journal logs" "" "$VAC_PID"
     fi
     if [ -f "docker_build.log" ]; then > docker_build.log; fi
-    echo -e "${GREEN}[✓] Low-disk cleanup completed.${NC}"
+    echo -e "${GREEN}[✓] Low-disk cleanup completed successfully.${NC}\n"
 fi
 
 # --- Git Pull ---
@@ -259,26 +301,46 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
     fi
 
     # Prune orphaned networks, dangling images & excessive build cache before building
-    docker network prune -f 2>/dev/null || true
-    docker image prune -f 2>/dev/null || true
-    docker builder prune -f --keep-storage 5GB 2>/dev/null || docker builder prune -a -f 2>/dev/null || true
+    echo -e "${CYAN}[*] Optimizing Docker build layers...${NC}"
+    docker network prune -f >/dev/null 2>&1 || true
+    docker image prune -f >/dev/null 2>&1 || true
+    
+    ( docker builder prune -f --keep-storage 5GB >/dev/null 2>&1 || docker builder prune -a -f >/dev/null 2>&1 || true ) &
+    PRUNE_PID=$!
+    run_with_spinner "Reclaiming build cache layers" "" "$PRUNE_PID"
+    echo -e "${GREEN}[✓] Build cache prepared.${NC}\n"
 
-    docker compose build web > docker_build.log 2>&1
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}[!] Build failed! Check docker_build.log for details.${NC}"
+    echo -e "${CYAN}[*] Building web container (Next.js + MMO GameEngine)...${NC}"
+    > docker_build.log
+    ( docker compose build web > docker_build.log 2>&1 ) &
+    BUILD_PID=$!
+    run_with_spinner "Building web container" "docker_build.log" "$BUILD_PID"
+    BUILD_STATUS=$?
+
+    if [ $BUILD_STATUS -ne 0 ]; then
+        echo -e "${RED}[!] Build failed! Showing last 25 lines of docker_build.log:${NC}\n"
+        tail -n 25 docker_build.log
+        echo -e "\n${YELLOW}Check docker_build.log for the full build output.${NC}"
         exit 1
     fi
+    echo -e "${GREEN}[✓] Web container built successfully.${NC}\n"
 
-    docker compose up -d --no-deps web >> docker_build.log 2>&1
-    if [ $? -ne 0 ]; then
+    echo -e "${CYAN}[*] Starting web container in background...${NC}"
+    ( docker compose up -d --no-deps web >> docker_build.log 2>&1 ) &
+    UP_PID=$!
+    run_with_spinner "Starting web container" "docker_build.log" "$UP_PID"
+    UP_STATUS=$?
+
+    if [ $UP_STATUS -ne 0 ]; then
         echo -e "${RED}[!] Failed to start web container. Check docker_build.log.${NC}"
+        tail -n 20 docker_build.log
         exit 1
     fi
 
     # Post-build cleanup of dangling intermediate build layers
-    docker image prune -f 2>/dev/null || true
+    docker image prune -f >/dev/null 2>&1 || true
 
-    echo -e "${GREEN}[✓] Web container rebuilt and restarted.${NC}\n"
+    echo -e "${GREEN}[✓] Web container rebuilt and restarted successfully.${NC}\n"
 
     echo -e "${CYAN}[*] Syncing local game assets to database...${NC}"
     docker exec saints-gaming-web npm run sync:assets 2>/dev/null || true
