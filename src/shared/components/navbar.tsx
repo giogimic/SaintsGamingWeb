@@ -14,7 +14,6 @@ import {
   Video,
   Server,
   Trophy,
-  BookOpen,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/shared/ui/button";
 import { SGMicro3DLogo } from "@/web/components/landing/sg-logo-3d-micro";
@@ -44,11 +43,10 @@ const NAV_ITEMS = [
   { href: "/forum", label: "Forum", icon: MessageSquare },
   { href: "/forum/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/streams", label: "Streams", icon: Monitor },
-  { href: "/wiki", label: "Wiki", icon: BookOpen },
   { href: "/lobby", label: "Play Now", icon: Gamepad2 },
 ];
 
-export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = false, siteVersion = "v2.1.523" }: { session: any | null, dbPermissionLevel?: number, discordLink?: string, showUcpLink?: boolean, siteVersion?: string }) {
+export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = false, siteVersion = "v2.1.527" }: { session: any | null, dbPermissionLevel?: number, discordLink?: string, showUcpLink?: boolean, siteVersion?: string }) {
   const pathname = usePathname();
 
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -392,7 +390,7 @@ export function Footer({ className, discordLink = "https://discord.saintsgaming.
             © {new Date().getFullYear()} Saints Gaming. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60 border border-border/30 rounded-full px-3 py-1 bg-muted/20">
-            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.526"}</span>
+            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.527"}</span>
           </div>
 
 
