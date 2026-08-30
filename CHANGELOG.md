@@ -1,3 +1,16 @@
+# 2.1.512
+- **Studio Freeform Crop Stamping Fix**: Re-architected Slicer Mode in `TilesetPicker.tsx` to ensure unconstrained, pixel-accurate freeform dragging across custom tilesheets without premature grid-snapping.
+- **Dynamic Footprint & Multi-Tile Pattern Generation**: Crops dynamically calculate the multi-tile bounding matrix (`spanW`, `spanH`), set the active GID pattern, activate `'footprint'` stamp mode, and enable 1-click painting onto active visual layers.
+- **Extracted Library Tile Painting Pipeline Fix**: Solved tile activation when clicking extracted or preset tiles from the Tile Library. Automatically registers missing tilesets in map metadata, computes correct footprint matrices, switches to active visual paint layer (`activeLayerIdx`), and passes live map state to `BabylonEngine.ts` and `GameCanvasBabylon.tsx`.
+- **Tilesheet Grid Calibration & Extraction Wizard**: Implemented the complete, interactive Grid Calibration modal featuring intelligent grid size suggestions (`suggestGridForImage` based on image dimensions and standard RPG power-of-two multiples), one-click preset buttons (`16×16`, `24×24`, `32×32`, `48×48`, `64×64`, `128×128`), fine-tuning inputs for width/height/spacing/offset, interactive canvas origin picking, real-time visual grid overlay with zoom controls, and instant "Extract All Tiles to Library" button.
+- **Dynamic Batched Quad Mesh Creation**: Removed premature quad count guard in `BabylonEngine.ts` `patchBatchedTile`, ensuring batched meshes and textures are lazily created and updated smoothly even on newly created or sparsely populated maps.
+
+# 2.1.511
+- **Pixel Art SVG Logo Redesign**: Rebuilt the Saints Gaming SVG logo to faithfully match the brand's pixel-art hexagon and SG monogram design.
+- **Hexagon Pixel Frame & Symmetry**: Implemented precise pixel-stepped hexagon borders featuring a pure white left half (`#FFFFFF`), hot pink right half (`#E6007E`), solid black divider apex squares (`#000000`), and crisp miter-joined black outlines.
+- **Inverted Contrast SG Monogram**: Added centered blocky pixel-font 'S' (Hot Pink) and 'G' (Pure White) glyphs with sharp 90-degree orthogonal edges, 3.2px black strokes, and soft elevation drop shadow filters.
+- **Universal Component & Asset Sync**: Updated `SGVoxelSvgLogo`, `SGLogo`, `SGLogo3D`, and generated `public/images/sg-logo.svg` for crisp rendering across all screen sizes (navbar 32px to 512px displays).
+
 # 2.1.509
 - **Studio Drag Selection & Stamp Restoration**: Completely restored click-and-drag multi-tile selection in both Grid Mode and Slicer Mode within `TilesetPicker.tsx`.
 - **Zustand State Thrashing Elimination**: Moved live drag bounds tracking to lightweight local state and refs (`dragBoundsRef`), committing `selectTileRegion` atomically on pointer release to eliminate 60fps React re-renders and audio synth spam.

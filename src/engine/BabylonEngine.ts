@@ -2038,9 +2038,6 @@ export class BabylonEngine {
     layerIdx: number,
     tilesets?: TilesetUvInput[]
   ): boolean {
-    if (this.tilesetMeshBySource.size === 0 && this.batchedQuadIndex.size === 0) {
-      return false;
-    }
     const key = cellBatchKey(layerIdx, r, c);
     this.disposePaintOverlay(key);
     const existing = this.batchedQuadIndex.get(key);

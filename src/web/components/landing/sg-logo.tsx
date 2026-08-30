@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { motion } from "framer-motion";
 
 interface SGLogoProps {
@@ -8,88 +9,111 @@ interface SGLogoProps {
   animate?: boolean;
 }
 
-export function SGLogo({ size = 280, className = "", animate = true }: SGLogoProps) {
-  const pathVariants = {
-    hidden: { pathLength: animate ? 0 : 1, opacity: animate ? 0 : 1 },
-    visible: (delay: number) => ({
-      pathLength: 1,
-      opacity: 1,
-      transition: {
-        pathLength: { duration: 2.5, delay: animate ? delay : 0, ease: "easeInOut" as const },
-        opacity: { duration: 0.5, delay: animate ? delay : 0 },
-      },
-    }),
-  };
+const WHITE_BLOCKS = [
+  { x: 132, y: 25, w: 12, h: 12 },
+  { x: 116, y: 37, w: 16, h: 12 },
+  { x: 100, y: 49, w: 16, h: 12 },
+  { x: 84, y: 61, w: 16, h: 12 },
+  { x: 68, y: 73, w: 16, h: 12 },
+  { x: 56, y: 85, w: 12, h: 90 },
+  { x: 68, y: 175, w: 16, h: 12 },
+  { x: 84, y: 187, w: 16, h: 12 },
+  { x: 100, y: 199, w: 16, h: 12 },
+  { x: 116, y: 211, w: 16, h: 12 },
+  { x: 132, y: 223, w: 12, h: 12 },
+];
+
+const PINK_BLOCKS = [
+  { x: 156, y: 25, w: 12, h: 12 },
+  { x: 168, y: 37, w: 16, h: 12 },
+  { x: 184, y: 49, w: 16, h: 12 },
+  { x: 200, y: 61, w: 16, h: 12 },
+  { x: 216, y: 73, w: 16, h: 12 },
+  { x: 232, y: 85, w: 12, h: 90 },
+  { x: 216, y: 175, w: 16, h: 12 },
+  { x: 200, y: 187, w: 16, h: 12 },
+  { x: 184, y: 199, w: 16, h: 12 },
+  { x: 168, y: 211, w: 16, h: 12 },
+  { x: 156, y: 223, w: 12, h: 12 },
+];
+
+const BLACK_DIVIDER_BLOCKS = [
+  { x: 144, y: 25, w: 12, h: 12 },
+  { x: 144, y: 223, w: 12, h: 12 },
+];
+
+const BRAND_PINK = "#E6007E";
+const BRAND_WHITE = "#FFFFFF";
+const BRAND_BLACK = "#000000";
+
+export function SGLogo({ size = 260, className = "", animate = false }: SGLogoProps) {
+  const filterId = useId().replace(/:/g, "_") + "_sg_logo_shadow";
+
+  const S_PATH = "M 86 100 H 134 V 114 H 102 V 124 H 134 V 162 H 86 V 148 H 118 V 138 H 86 Z";
+  const G_PATH = "M 166 100 H 214 V 114 H 182 V 148 H 200 V 141 H 189 V 127 H 214 V 162 H 166 Z";
 
   return (
     <motion.div
-      className={`sg-glow ${className}`}
-      animate={animate ? { rotate: 360 } : undefined}
-      transition={animate ? {
-        duration: 50,
-        repeat: Infinity,
-        ease: "linear",
-      } : undefined}
+      className={`relative inline-flex items-center justify-center ${className}`}
+      style={{ width: size, height: size ? Math.round(size * (260 / 300)) : undefined }}
+      animate={animate ? { y: [0, -6, 0] } : undefined}
+      transition={animate ? { duration: 4, repeat: Infinity, ease: "easeInOut" } : undefined}
     >
       <svg
         width={size}
-        height={size}
-        viewBox="0 0 200 200"
+        height={size ? Math.round(size * (260 / 300)) : undefined}
+        viewBox="0 0 300 260"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
+        role="img"
         aria-label="Saints Gaming Logo"
+        className="w-full h-full overflow-visible select-none drop-shadow-lg"
       >
         <defs>
-          <linearGradient id="sg-primary" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="oklch(0.8 0.15 220)" />
-            <stop offset="50%" stopColor="oklch(0.7 0.18 240)" />
-            <stop offset="100%" stopColor="oklch(0.6 0.2 260)" />
-          </linearGradient>
-
-          <filter id="sg-glow-filter" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="4" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          <filter id={filterId} x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="4" stdDeviation="3.5" floodColor="#000000" floodOpacity="0.65" />
           </filter>
         </defs>
 
-        {/* Halo Borders (Constant) */}
-        <motion.g filter="url(#sg-glow-filter)">
-          <motion.circle 
-            cx="100" cy="100" r="75" 
-            stroke="url(#sg-primary)" strokeWidth="2" fill="none" 
-            variants={pathVariants} initial="hidden" animate="visible" 
+        {/* 120-DEGREE SYMMETRIC HEXAGON FRAME */}
+        <g fill={BRAND_WHITE} stroke={BRAND_BLACK} strokeWidth="2.5" strokeLinejoin="miter">
+          {WHITE_BLOCKS.map((b, i) => (
+            <rect key={`w-${i}`} x={b.x} y={b.y} width={b.w} height={b.h} />
+          ))}
+        </g>
+
+        <g fill={BRAND_PINK} stroke={BRAND_BLACK} strokeWidth="2.5" strokeLinejoin="miter">
+          {PINK_BLOCKS.map((b, i) => (
+            <rect key={`p-${i}`} x={b.x} y={b.y} width={b.w} height={b.h} />
+          ))}
+        </g>
+
+        <g fill={BRAND_BLACK} stroke={BRAND_BLACK} strokeWidth="2.5" strokeLinejoin="miter">
+          {BLACK_DIVIDER_BLOCKS.map((b, i) => (
+            <rect key={`b-${i}`} x={b.x} y={b.y} width={b.w} height={b.h} />
+          ))}
+        </g>
+
+        {/* INNER MONOGRAM */}
+        <g filter={`url(#${filterId})`}>
+          <path
+            d={S_PATH}
+            fill={BRAND_PINK}
+            stroke={BRAND_BLACK}
+            strokeWidth="3.5"
+            strokeLinejoin="miter"
+            strokeLinecap="square"
           />
-          <motion.circle 
-            cx="100" cy="100" r="65" 
-            stroke="url(#sg-primary)" strokeWidth="1" fill="none" strokeDasharray="4 8" 
-            variants={pathVariants} initial="hidden" animate="visible" custom={0.2} 
+
+          <path
+            d={G_PATH}
+            fill={BRAND_WHITE}
+            stroke={BRAND_BLACK}
+            strokeWidth="3.5"
+            strokeLinejoin="miter"
+            strokeLinecap="square"
           />
-          
-          {/* Finalized Font: Ultra Monoline (Scaled down slightly) */}
-          <motion.g 
-            stroke="url(#sg-primary)" 
-            strokeWidth="3" 
-            fill="none" 
-            strokeLinejoin="round" 
-            strokeLinecap="round"
-            style={{ transform: "scale(0.85)", transformOrigin: "100px 100px" }}
-          >
-            <motion.path 
-              d="M 95 50 H 50 V 100 H 95 V 150 H 50" 
-              variants={pathVariants} initial="hidden" animate="visible" custom={0.3} 
-            />
-            <motion.path 
-              d="M 150 80 V 50 H 105 V 150 H 150 V 100 H 125" 
-              variants={pathVariants} initial="hidden" animate="visible" custom={0.5} 
-            />
-            {/* Extended Monoline Underline & Overline */}
-            <motion.path 
-              d="M 45 45 H 155 M 45 155 H 155" 
-              strokeWidth="1" strokeDasharray="4 8" 
-              variants={pathVariants} initial="hidden" animate="visible" custom={0.7} 
-            />
-          </motion.g>
-        </motion.g>
+        </g>
       </svg>
     </motion.div>
   );
