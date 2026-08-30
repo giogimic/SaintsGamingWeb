@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { motion } from "framer-motion";
 
 export function S3Water() {
   // Clean, small horizontal specular light dashes on the water
@@ -22,6 +21,21 @@ export function S3Water() {
 
   return (
     <div className="absolute bottom-0 left-0 w-full h-[35vh] overflow-hidden pointer-events-none z-10 select-none">
+      <style>{`
+        @keyframes sgWaterBreathGlow {
+          0%, 100% { transform: translate(-50%, 0) scaleX(1); opacity: 0.85; }
+          50% { transform: translate(-50%, 0) scaleX(1.04); opacity: 0.96; }
+        }
+        @keyframes sgWaterSunCore {
+          0%, 100% { transform: translate(-50%, 0) scaleY(1); opacity: 0.75; }
+          50% { transform: translate(-50%, 0) scaleY(1.03); opacity: 0.95; }
+        }
+        @keyframes sgWaterGlint {
+          0%, 100% { transform: translate(calc(-50% - 3px), -50%) scaleX(0.85); opacity: 0.15; }
+          50% { transform: translate(calc(-50% + 3px), -50%) scaleX(1.2); opacity: 0.85; }
+        }
+      `}</style>
+
       {/* ── Base Water Gradient ─────────────────────────────────────── */}
       <div
         className="absolute inset-0"
@@ -32,45 +46,31 @@ export function S3Water() {
       />
 
       {/* ── Horizon Sun Reflection Column (Gentle Breathing Glow) ──── */}
-      <motion.div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[55vw] max-w-[550px] h-full opacity-90 mix-blend-overlay"
-        animate={{
-          scaleX: [1, 1.04, 0.97, 1],
-          opacity: [0.85, 0.96, 0.85],
-        }}
-        transition={{
-          duration: 6,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
+      <div
+        className="absolute top-0 left-1/2 w-[55vw] max-w-[550px] h-full mix-blend-overlay pointer-events-none"
         style={{
           background:
             "radial-gradient(ellipse 50% 100% at 50% 0%, #f9c74f 0%, #f8961e 30%, transparent 80%)",
+          animation: "sgWaterBreathGlow 6s ease-in-out infinite",
+          willChange: 'transform, opacity',
         }}
       />
       
       {/* Bright core sun reflection right below sun disc */}
-      <motion.div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[22vw] max-w-[220px] h-[65%]"
-        animate={{
-          opacity: [0.75, 0.95, 0.75],
-          scaleY: [1, 1.03, 1],
-        }}
-        transition={{
-          duration: 4.5,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
+      <div
+        className="absolute top-0 left-1/2 w-[22vw] max-w-[220px] h-[65%] pointer-events-none"
         style={{
           background:
             "radial-gradient(ellipse 50% 100% at 50% 0%, rgba(255, 255, 255, 0.85) 0%, rgba(249, 199, 79, 0.6) 40%, transparent 100%)",
           filter: "blur(4px)",
+          animation: "sgWaterSunCore 4.5s ease-in-out infinite",
+          willChange: 'transform, opacity',
         }}
       />
 
       {/* ── Clean, Small Horizontal Specular Glints ─────────────────── */}
       {glitters.map((g) => (
-        <motion.div
+        <div
           key={g.id}
           className="absolute rounded-full pointer-events-none"
           style={{
@@ -78,21 +78,11 @@ export function S3Water() {
             left: `${g.x}%`,
             width: `${g.width}px`,
             height: `${g.height}px`,
-            transform: "translate(-50%, -50%)",
             background:
               "radial-gradient(ellipse at 50% 50%, #ffffff 0%, #ffe066 50%, rgba(248,150,30,0) 100%)",
             boxShadow: "0 0 5px rgba(255,224,102,0.85)",
-          }}
-          animate={{
-            opacity: [0.15, 0.85, 0.2],
-            scaleX: [0.85, 1.2, 0.85],
-            x: ["-3px", "3px", "-3px"],
-          }}
-          transition={{
-            duration: g.duration,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: g.delay,
+            animation: `sgWaterGlint ${g.duration}s ease-in-out ${g.delay}s infinite`,
+            willChange: 'transform, opacity',
           }}
         />
       ))}

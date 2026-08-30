@@ -130,12 +130,12 @@ export default function LandingPage() {
       )}
 
       {/* ── Animated 3D Voxel Logo (Interactive: spin by drag) ─────── */}
-      <div
-        className="absolute top-[60%] left-1/2 -translate-x-1/2 -translate-y-1/2 mt-[-190px] z-40 w-[450px] h-[450px] pointer-events-auto"
-        style={{
-          filter: `drop-shadow(0 0 2px #000) drop-shadow(0 0 5px #000) drop-shadow(0 0 30px ${p.logoGlow})`,
-        }}
-      >
+      <div className="absolute top-[60%] left-1/2 -translate-x-1/2 -translate-y-1/2 mt-[-190px] z-40 w-[450px] h-[450px] pointer-events-auto">
+        {/* Ambient background glow behind the WebGL canvas (fast GPU rendering without canvas readback) */}
+        <div
+          className="absolute inset-4 rounded-full pointer-events-none opacity-40 blur-2xl -z-10"
+          style={{ background: `radial-gradient(circle, ${p.logoGlow} 0%, transparent 70%)` }}
+        />
         <SGVoxelLogo />
       </div>
 

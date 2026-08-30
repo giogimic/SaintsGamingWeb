@@ -12,7 +12,7 @@ export function PixelEnvironmentalEffects({ palette = "sunset" }: PixelEffectPro
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
     let animationId: number;
@@ -37,32 +37,32 @@ export function PixelEnvironmentalEffects({ palette = "sunset" }: PixelEffectPro
       switch (palette) {
         case "midnight":
           return [
-            { fill: "#00f5d4", glow: "rgba(0, 245, 212, 0.6)" },
-            { fill: "#4cc9f0", glow: "rgba(76, 201, 240, 0.5)" },
-            { fill: "#ffffff", glow: "rgba(255, 255, 255, 0.8)" },
-            { fill: "#7209b7", glow: "rgba(114, 9, 183, 0.4)" },
+            { fill: "#00f5d4", glow: "rgba(0, 245, 212, 0.5)" },
+            { fill: "#4cc9f0", glow: "rgba(76, 201, 240, 0.4)" },
+            { fill: "#ffffff", glow: "rgba(255, 255, 255, 0.6)" },
+            { fill: "#7209b7", glow: "rgba(114, 9, 183, 0.3)" },
           ];
         case "crimson":
           return [
-            { fill: "#ff003c", glow: "rgba(255, 0, 60, 0.7)" },
-            { fill: "#ffb703", glow: "rgba(255, 183, 3, 0.6)" },
-            { fill: "#ff4d4d", glow: "rgba(255, 77, 77, 0.5)" },
-            { fill: "#ffffff", glow: "rgba(255, 255, 255, 0.8)" },
+            { fill: "#ff003c", glow: "rgba(255, 0, 60, 0.5)" },
+            { fill: "#ffb703", glow: "rgba(255, 183, 3, 0.4)" },
+            { fill: "#ff4d4d", glow: "rgba(255, 77, 77, 0.4)" },
+            { fill: "#ffffff", glow: "rgba(255, 255, 255, 0.6)" },
           ];
         case "vaporwave":
           return [
-            { fill: "#00ffff", glow: "rgba(0, 255, 255, 0.6)" },
-            { fill: "#ff69b4", glow: "rgba(255, 105, 180, 0.6)" },
-            { fill: "#ffb6c1", glow: "rgba(255, 182, 193, 0.5)" },
-            { fill: "#ffffff", glow: "rgba(255, 255, 255, 0.8)" },
+            { fill: "#00ffff", glow: "rgba(0, 255, 255, 0.5)" },
+            { fill: "#ff69b4", glow: "rgba(255, 105, 180, 0.5)" },
+            { fill: "#ffb6c1", glow: "rgba(255, 182, 193, 0.4)" },
+            { fill: "#ffffff", glow: "rgba(255, 255, 255, 0.6)" },
           ];
         case "sunset":
         default:
           return [
-            { fill: "#ffd166", glow: "rgba(255, 209, 102, 0.7)" }, // Golden pixel
-            { fill: "#ff9f1c", glow: "rgba(255, 159, 28, 0.6)" },  // Warm ember
-            { fill: "#ffffff", glow: "rgba(255, 255, 255, 0.9)" },  // Star glint
-            { fill: "#f72585", glow: "rgba(247, 37, 133, 0.5)" },  // Sunset pink
+            { fill: "#ffd166", glow: "rgba(255, 209, 102, 0.5)" }, // Golden pixel
+            { fill: "#ff9f1c", glow: "rgba(255, 159, 28, 0.4)" },  // Warm ember
+            { fill: "#ffffff", glow: "rgba(255, 255, 255, 0.7)" },  // Star glint
+            { fill: "#f72585", glow: "rgba(247, 37, 133, 0.4)" },  // Sunset pink
           ];
       }
     };
@@ -75,7 +75,7 @@ export function PixelEnvironmentalEffects({ palette = "sunset" }: PixelEffectPro
 
     function createParticles() {
       if (!canvas) return;
-      const count = Math.min(Math.floor((canvas.width * canvas.height) / 18000), 75);
+      const count = Math.min(Math.floor((canvas.width * canvas.height) / 20000), 55);
       const colorSet = getColors();
 
       particles = Array.from({ length: count }, () => {
@@ -106,34 +106,38 @@ export function PixelEnvironmentalEffects({ palette = "sunset" }: PixelEffectPro
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       time += 0.016;
 
-      for (const p of particles) {
+      const w = canvas.width;
+      const h = canvas.height;
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
         p.x += p.vx + Math.sin(time + p.pulseOffset) * 0.15;
         p.y += p.vy;
 
         // Wrap around smoothly
         if (p.y < -10) {
-          p.y = canvas.height + 5;
-          p.x = Math.random() * canvas.width;
+          p.y = h + 5;
+          p.x = Math.random() * w;
         }
-        if (p.x < -10) p.x = canvas.width + 5;
-        if (p.x > canvas.width + 10) p.x = -5;
+        if (p.x < -10) p.x = w + 5;
+        if (p.x > w + 10) p.x = -5;
 
         // Breathing opacity
-        p.opacity =
-          p.baseOpacity + Math.sin(time * p.pulseSpeed + p.pulseOffset) * 0.25;
+        p.opacity = p.baseOpacity + Math.sin(time * p.pulseSpeed + p.pulseOffset) * 0.25;
         const finalOpacity = Math.max(0.08, Math.min(0.9, p.opacity));
 
-        ctx.save();
-        ctx.globalAlpha = finalOpacity;
-        ctx.fillStyle = p.color;
-        ctx.shadowColor = p.glowColor;
-        ctx.shadowBlur = p.size * 3;
-
-        // Draw crisp pixel square (integer aligned for pixel art feel)
         const ix = Math.floor(p.x);
         const iy = Math.floor(p.y);
+
+        // Fast pixel glow halo (zero software blur penalty)
+        ctx.fillStyle = p.glowColor;
+        ctx.globalAlpha = finalOpacity * 0.35;
+        ctx.fillRect(ix - 1, iy - 1, p.size + 2, p.size + 2);
+
+        // Crisp pixel core
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = finalOpacity;
         ctx.fillRect(ix, iy, p.size, p.size);
-        ctx.restore();
       }
 
       animationId = requestAnimationFrame(animate);

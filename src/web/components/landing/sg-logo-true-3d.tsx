@@ -1,8 +1,9 @@
 "use client";
 
+import * as THREE from "three";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Center, Environment, Float, Box } from "@react-three/drei";
-import { Suspense, useMemo } from "react";
+import { OrbitControls, Center, Environment, Float } from "@react-three/drei";
+import { Suspense, useMemo, useRef, useLayoutEffect } from "react";
 
 // 7x5 Voxel Grid for 'S'
 const S_GRID = [
@@ -26,133 +27,147 @@ const G_GRID = [
   [1, 1, 1, 1, 1]
 ];
 
-function VoxelLetter({ grid, position, color }: { grid: number[][], position: [number, number, number], color: string }) {
-  const cubes = [];
-  const size = 1;
-  const padding = 0.0; // Set to 0 to make the blocks sit completely flush against each other
+interface VoxelInstance {
+  pos: [number, number, number];
+  scale: number;
+}
 
-  for (let z = 0; z < grid.length; z++) {
-    for (let x = 0; x < grid[z].length; x++) {
-      if (grid[z][x] === 1) {
-        cubes.push(
-          <Box
-            key={`${x}-${z}`}
-            args={[size, size, size]}
-            position={[x * (size + padding), -z * (size + padding), 0]}
-          >
-            <meshStandardMaterial 
-              color={color} 
-              emissive={color}
-              emissiveIntensity={color === "#ffffff" ? 1.5 : 0.6}
-              roughness={0.1}
-              metalness={0.8}
-            />
-          </Box>
-        );
-      }
+function InstancedVoxelGroup({
+  instances,
+  color,
+  emissiveIntensity,
+}: {
+  instances: VoxelInstance[];
+  color: string;
+  emissiveIntensity: number;
+}) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+
+  useLayoutEffect(() => {
+    if (!meshRef.current || instances.length === 0) return;
+    const temp = new THREE.Object3D();
+    for (let i = 0; i < instances.length; i++) {
+      const inst = instances[i];
+      temp.position.set(inst.pos[0], inst.pos[1], inst.pos[2]);
+      temp.scale.set(inst.scale, inst.scale, inst.scale);
+      temp.updateMatrix();
+      meshRef.current.setMatrixAt(i, temp.matrix);
     }
-  }
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  }, [instances]);
+
+  if (instances.length === 0) return null;
 
   return (
-    <group position={position}>
-      {cubes}
-    </group>
+    <instancedMesh ref={meshRef} args={[undefined, undefined, instances.length]}>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial
+        color={color}
+        emissive={color}
+        emissiveIntensity={emissiveIntensity}
+        roughness={0.1}
+        metalness={0.8}
+      />
+    </instancedMesh>
   );
 }
 
-function VoxelFrame() {
-  // Create a hollow Hexagon frame made of voxels with split colors
-  const cubes = useMemo(() => {
-    const c = [];
-    const size = 1.2; // Slightly thicker border
-    const sides = 6;
-    const radius = 10; // Large enough to comfortably fit the letters without clipping
-    const vertices = [];
+function BatchedVoxelLogo() {
+  const { pinkInstances, whiteInstances, blackInstances } = useMemo(() => {
+    const pink: VoxelInstance[] = [];
+    const white: VoxelInstance[] = [];
+    const black: VoxelInstance[] = [];
 
-    // Calculate the 6 vertices of the hexagon, pointing top/bottom
+    // 1. Letter S (Pink)
+    const sOffsetX = -3;
+    for (let z = 0; z < S_GRID.length; z++) {
+      for (let x = 0; x < S_GRID[z].length; x++) {
+        if (S_GRID[z][x] === 1) {
+          pink.push({ pos: [sOffsetX + x, -z, 0], scale: 1 });
+        }
+      }
+    }
+
+    // 2. Letter G (White)
+    const gOffsetX = 4;
+    for (let z = 0; z < G_GRID.length; z++) {
+      for (let x = 0; x < G_GRID[z].length; x++) {
+        if (G_GRID[z][x] === 1) {
+          white.push({ pos: [gOffsetX + x, -z, 0], scale: 1 });
+        }
+      }
+    }
+
+    // 3. Hexagon Frame
+    const frameOffsetX = 2.5;
+    const frameOffsetY = -3;
+    const size = 1.2;
+    const sides = 6;
+    const radius = 10;
+    const vertices: { x: number; y: number }[] = [];
+
     for (let i = 0; i < sides; i++) {
       const angle = (i * Math.PI * 2) / sides + Math.PI / 2;
       vertices.push({ x: Math.cos(angle) * radius, y: Math.sin(angle) * radius });
     }
 
-    // We will track grid positions in a Set to prevent overlapping blocks (Z-fighting)
     const seen = new Set<string>();
-
-    // Draw straight lines of voxels between each vertex
     for (let i = 0; i < sides; i++) {
       const v1 = vertices[i];
       const v2 = vertices[(i + 1) % sides];
-      
       const dx = v2.x - v1.x;
       const dy = v2.y - v1.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      
-      // Use high resolution sampling to ensure we don't miss grid points
       const steps = Math.ceil(dist / (size * 0.5));
-      
+
       for (let j = 0; j <= steps; j++) {
         const t = j / steps;
         const x = v1.x + dx * t;
         const y = v1.y + dy * t;
-        
-        // Snap to voxel grid
         const gridX = Math.round(x / size) * size;
         const gridY = Math.round(y / size) * size;
         const key = `${gridX.toFixed(2)},${gridY.toFixed(2)}`;
-        
+
         if (seen.has(key)) continue;
         seen.add(key);
-        
-        let cubeColor = "#ffffff";
-        let emissiveInt = 0.8;
-        
-        // Split marks at center (gridX near 0) for both top and bottom
-        if (Math.abs(gridX) < size) {
-          cubeColor = "#000000"; // Black mark at the split
-          emissiveInt = 0.0;
-        } else if (gridX > 0) {
-          cubeColor = "#f20089"; // Pink on the right side (White G side)
-        } else {
-          cubeColor = "#ffffff"; // White on the left side (Pink S side)
-          emissiveInt = 1.2;
-        }
 
-        c.push(
-          <Box
-            key={`hex-${key}`}
-            args={[size, size, size]}
-            position={[gridX, gridY, 0]}
-          >
-            <meshStandardMaterial 
-              color={cubeColor} 
-              emissive={cubeColor}
-              emissiveIntensity={emissiveInt}
-              roughness={0.1}
-              metalness={0.8}
-            />
-          </Box>
-        );
+        const pos: [number, number, number] = [frameOffsetX + gridX, frameOffsetY + gridY, 0];
+
+        if (Math.abs(gridX) < size) {
+          black.push({ pos, scale: size });
+        } else if (gridX > 0) {
+          pink.push({ pos, scale: size });
+        } else {
+          white.push({ pos, scale: size });
+        }
       }
     }
-    return c;
+
+    return { pinkInstances: pink, whiteInstances: white, blackInstances: black };
   }, []);
 
-  // Center of the letters is roughly x=2.5, y=-3.
-  return <group position={[2.5, -3, 0]}>{cubes}</group>;
+  return (
+    <group>
+      <InstancedVoxelGroup instances={pinkInstances} color="#f20089" emissiveIntensity={0.6} />
+      <InstancedVoxelGroup instances={whiteInstances} color="#ffffff" emissiveIntensity={1.4} />
+      <InstancedVoxelGroup instances={blackInstances} color="#000000" emissiveIntensity={0.0} />
+    </group>
+  );
 }
 
 export function SGVoxelLogo() {
   return (
     <div className="w-full h-full min-h-[300px] cursor-grab active:cursor-grabbing relative z-50 pointer-events-auto">
-      <Canvas camera={{ position: [0, 0, 45], fov: 40 }}>
+      <Canvas
+        camera={{ position: [0, 0, 45], fov: 40 }}
+        gl={{ powerPreference: "high-performance", antialias: true }}
+      >
         <Suspense fallback={null}>
           <OrbitControls 
             enableZoom={false} 
             enablePan={false}
             autoRotate 
             autoRotateSpeed={1.5} 
-            // Allow right click rotation but orbit controls uses left click by default
-            // By default orbit controls uses left mouse to rotate. We can leave it as is so user can drag.
           />
           <ambientLight intensity={0.5} />
           <pointLight position={[10, 10, 10]} intensity={2} color="#f20089" />
@@ -160,20 +175,11 @@ export function SGVoxelLogo() {
           
           <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
             <Center>
-              {/* Voxel Frame around the letters - Split color logic applied internally */}
-              <VoxelFrame />
-
-              {/* Offset them so they sit side by side perfectly */}
-              <group position={[-3, 0, 0]}>
-                <VoxelLetter grid={S_GRID} position={[0, 0, 0]} color="#f20089" />
-              </group>
-              <group position={[4, 0, 0]}>
-                <VoxelLetter grid={G_GRID} position={[0, 0, 0]} color="#ffffff" />
-              </group>
+              <BatchedVoxelLogo />
             </Center>
           </Float>
           
-          {/* Preset city gives nice realistic reflections on the metalness material */}
+          {/* Preset city gives realistic reflections on the metalness material */}
           <Environment preset="city" />
         </Suspense>
       </Canvas>

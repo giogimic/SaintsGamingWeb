@@ -1,9 +1,16 @@
-// WebAudio Synthesizer for Procedural Retro Game Sound Effects
-
 class SoundSynthEngine {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private volume: number = 1;
+  private lastSoundTimes = new Map<string, number>();
+
+  private canPlaySound(soundKey: string, cooldownMs: number = 60): boolean {
+    const now = Date.now();
+    const last = this.lastSoundTimes.get(soundKey) || 0;
+    if (now - last < cooldownMs) return false;
+    this.lastSoundTimes.set(soundKey, now);
+    return true;
+  }
 
   private getContext(): AudioContext {
     if (!this.ctx) {
@@ -32,6 +39,7 @@ class SoundSynthEngine {
 
   // Play Woodcutting Chop Sound
   public playWoodcuttingSound() {
+    if (!this.canPlaySound('woodcutting', 80)) return;
     try {
       const ctx = this.getContext();
       const osc = ctx.createOscillator();

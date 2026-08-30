@@ -1,16 +1,18 @@
 import { prisma } from "@/web/lib/prisma";
 import Link from "next/link";
+import Image from "next/image";
 import { 
   MessageSquare, Lock, Folder, 
   Search, Trophy, Sparkles, Flame, ShieldAlert,
   Gamepad2, Newspaper, HelpCircle, Layers, ArrowUpRight,
-  TrendingUp, Users, Activity
+  TrendingUp, Users, Activity, Video, Heart, Eye, ArrowRight, Globe, Play
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { auth } from "@/auth";
 import { canAccessRestrictedBoard } from "@/web/lib/forum-access";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
 
 export const metadata = {
   title: "Forums | Saints Gaming",
@@ -97,6 +99,33 @@ export default async function ForumIndexPage() {
     }
   });
 
+  // Fetch latest Nexus News dispatches to enrich community hub
+  const nexusNews = await prisma.newsArticle.findMany({
+    take: 3,
+    where: { publishedAt: { not: null } },
+    orderBy: { publishedAt: "desc" },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      excerpt: true,
+      coverImage: true,
+      publishedAt: true,
+      author: { select: { username: true } },
+    },
+  });
+
+  // Fetch latest Community Video Feed highlights
+  const feedPosts = await prisma.socialPost.findMany({
+    take: 3,
+    where: { parentId: null },
+    orderBy: { createdAt: "desc" },
+    include: {
+      author: { select: { id: true, username: true, image: true } },
+      _count: { select: { reactions: true } },
+    },
+  });
+
   // Icon helper for category flair
   const getCategoryIcon = (name: string) => {
     const lower = name.toLowerCase();
@@ -107,80 +136,140 @@ export default async function ForumIndexPage() {
   };
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+    <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
       
-      {/* Modern Hero & Quick Search */}
-      <div className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-card/90 via-card/50 to-primary/10 p-8 sm:p-12 shadow-2xl backdrop-blur-xl">
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
-          <div className="space-y-4 max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/25 text-primary text-xs font-semibold uppercase tracking-wider">
-              <Sparkles className="h-3.5 w-3.5" /> Saints Community &amp; Realm Center
-            </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight">
-              Saints <span className="sg-text-gradient">Gaming Forums</span>
-            </h1>
-            <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
-              Explore game news, official patch notes, world studio discussions, player guides, and MMO updates. Connect with developers and fellow Saints.
-            </p>
-
-            {/* Search Input Bar */}
-            <form action="/forum/search" method="GET" className="pt-2 flex items-center gap-2 max-w-xl">
-              <div className="relative flex-1">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  name="q"
-                  placeholder="Search threads, guides, patch notes, authors..." 
-                  className="pl-10 bg-background/80 border-border/60 rounded-xl h-11 focus-visible:ring-primary/40"
-                />
-              </div>
-              <Button type="submit" className="h-11 px-5 rounded-xl font-medium shadow-md shadow-primary/20">
-                Search
-              </Button>
-            </form>
+      {/* ─── SLEEK HEADER & SEARCH BAR ────────────────────────────────────── */}
+      <div className="bg-card/40 backdrop-blur-xl border border-border/50 rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+        <div className="space-y-1.5 max-w-2xl">
+          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/25 text-primary text-xs font-mono font-bold uppercase tracking-wider">
+            <Sparkles className="h-3 w-3" /> Community Forums
           </div>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+            Saints <span className="sg-text-gradient">Gaming Forums</span>
+          </h1>
+          <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
+            Dispatches, patch notes, world building, guides, and MMO updates. Connect with developers and fellow Saints.
+          </p>
+        </div>
 
-          {/* Quick Metrics & Actions */}
-          <div className="flex flex-col sm:flex-row lg:flex-col gap-3 min-w-[240px]">
-            <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-background/60 border border-border/40 backdrop-blur-md">
-              <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground uppercase font-semibold">Boards</span>
-                <span className="text-2xl font-black text-foreground flex items-center gap-1.5 mt-0.5">
-                  <Activity className="h-4 w-4 text-primary" /> {totalBoards}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground uppercase font-semibold">Threads</span>
-                <span className="text-2xl font-black text-foreground flex items-center gap-1.5 mt-0.5">
-                  <MessageSquare className="h-4 w-4 text-blue-400" /> {totalThreads}
-                </span>
-              </div>
+        {/* Search & Fast Actions */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
+          <form action="/forum/search" method="GET" className="flex items-center gap-2 flex-1 sm:w-72">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input 
+                name="q"
+                placeholder="Search threads, guides, authors..." 
+                className="pl-9 bg-background/80 border-border/60 rounded-xl h-9 text-xs focus-visible:ring-primary/40"
+              />
             </div>
+            <Button type="submit" size="sm" className="h-9 px-3.5 rounded-xl font-medium shadow-sm">
+              Search
+            </Button>
+          </form>
 
-            <div className="flex gap-2">
-              <Button asChild variant="outline" className="flex-1 rounded-xl border-border/60 bg-background/50 hover:bg-background/80 h-10">
-                <Link href="/forum/search" className="flex items-center justify-center gap-1.5 text-xs font-semibold">
-                  <TrendingUp className="h-3.5 w-3.5 text-primary" /> All Threads
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="flex-1 rounded-xl border-border/60 bg-background/50 hover:bg-background/80 h-10">
-                <Link href="/forum/leaderboard" className="flex items-center justify-center gap-1.5 text-xs font-semibold">
-                  <Trophy className="h-3.5 w-3.5 text-amber-400" /> Leaderboard
-                </Link>
-              </Button>
-            </div>
+          <div className="flex items-center gap-1.5">
+            <Button asChild variant="outline" size="sm" className="rounded-xl border-border/60 bg-background/50 hover:bg-background/80 h-9 text-xs">
+              <Link href="/forum/search" className="flex items-center gap-1">
+                <TrendingUp className="h-3.5 w-3.5 text-primary" /> All
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="rounded-xl border-border/60 bg-background/50 hover:bg-background/80 h-9 text-xs">
+              <Link href="/forum/leaderboard" className="flex items-center gap-1">
+                <Trophy className="h-3.5 w-3.5 text-amber-400" /> Leaderboard
+              </Link>
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Featured / Fresh Discussions Bar */}
+      {/* ─── COMMUNITY SPOTLIGHT (NEXUS DISPATCHES & FEED CLIPS) ──────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column: Latest Nexus Dispatches */}
+        <div className="lg:col-span-7 space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+              <Newspaper className="h-4 w-4 text-primary" /> Nexus Dispatches
+            </h2>
+            <Link href="/hub" className="text-xs text-primary hover:underline flex items-center gap-1">
+              The Nexus <ArrowUpRight className="h-3 w-3" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {nexusNews.map((news) => (
+              <Link key={news.id} href={`/news/${news.slug}`} className="group h-full block">
+                <div className="h-full bg-card/40 hover:bg-card/70 transition-all duration-200 border border-border/50 hover:border-primary/40 rounded-xl overflow-hidden flex flex-col sg-glass p-3">
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono mb-1.5">
+                    <span className="text-primary font-bold">News</span>
+                    <span>·</span>
+                    <span>{news.publishedAt ? format(new Date(news.publishedAt), "MMM d") : "Recent"}</span>
+                  </div>
+                  <h3 className="font-bold text-xs text-foreground group-hover:text-primary transition-colors line-clamp-2 leading-snug flex-1">
+                    {news.title}
+                  </h3>
+                  <div className="flex items-center justify-between pt-2 mt-2 border-t border-border/30 text-[10px] text-muted-foreground">
+                    <span className="truncate max-w-[90px]">by {news.author.username}</span>
+                    <span className="text-primary font-semibold flex items-center group-hover:translate-x-0.5 transition-transform">
+                      Read <ArrowRight className="h-2.5 w-2.5 ml-0.5" />
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Right Column: Community Video Feed Highlights */}
+        <div className="lg:col-span-5 space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+              <Flame className="h-4 w-4 text-amber-500" /> Feed Highlights
+            </h2>
+            <Link href="/feed" className="text-xs text-primary hover:underline flex items-center gap-1">
+              Explore Feed <ArrowUpRight className="h-3 w-3" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {feedPosts.map((post) => (
+              <Link key={post.id} href="/feed" className="group h-full block">
+                <div className="h-full bg-card/40 hover:bg-card/70 transition-all duration-200 border border-border/50 hover:border-primary/40 rounded-xl overflow-hidden flex flex-col sg-glass p-3">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Avatar className="h-4 w-4 border border-border/40">
+                      <AvatarImage src={post.author?.image || ""} />
+                      <AvatarFallback className="text-[8px]">
+                        {post.author?.username?.substring(0, 2).toUpperCase() || "SG"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-[10px] font-bold text-foreground truncate max-w-[80px]">
+                      {post.author?.username || "Player"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground line-clamp-2 leading-tight flex-1">
+                    {post.body || "Community gaming highlight & clip."}
+                  </p>
+                  <div className="flex items-center justify-between pt-2 mt-2 border-t border-border/30 text-[10px] text-muted-foreground font-mono">
+                    <span className="flex items-center gap-1 text-amber-400">
+                      <Heart className="h-2.5 w-2.5 fill-amber-400/30" /> {post._count?.reactions || 0}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Eye className="h-2.5 w-2.5" /> {post.viewCount || 0}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ─── RECENT DISCUSSIONS STRIP ──────────────────────────────────────── */}
       {recentThreads.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
             <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-              <Flame className="h-4 w-4 text-amber-500 animate-pulse" /> Recent Discussions
+              <MessageSquare className="h-4 w-4 text-primary" /> Recent Discussions
             </h3>
             <Link href="/forum/search" className="text-xs text-primary hover:underline flex items-center gap-1">
               View all <ArrowUpRight className="h-3 w-3" />
@@ -194,7 +283,7 @@ export default async function ForumIndexPage() {
                 className="group p-4 rounded-2xl border border-border/40 bg-card/40 hover:bg-card/70 hover:border-primary/40 transition-all shadow-sm flex flex-col justify-between"
               >
                 <div>
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-primary/80 px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20 inline-block mb-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-primary/80 px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20 inline-block mb-2 font-mono">
                     {t.subcategory.name}
                   </span>
                   <h4 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors text-foreground">
@@ -203,8 +292,8 @@ export default async function ForumIndexPage() {
                 </div>
                 <div className="mt-3 pt-3 border-t border-border/30 flex items-center justify-between text-xs text-muted-foreground">
                   <span className="truncate max-w-[120px]">by {t.author.username}</span>
-                  <span className="flex items-center gap-1">
-                    <MessageSquare className="h-3 w-3" /> {t._count.replies}
+                  <span className="flex items-center gap-1 font-mono">
+                    <MessageSquare className="h-3 w-3 text-primary" /> {t._count.replies}
                   </span>
                 </div>
               </Link>

@@ -37,17 +37,26 @@ import {
   Trophy,
   Layers,
   BookOpen,
-  LifeBuoy
+  LifeBuoy,
+  Flame,
+  MessageSquare
 } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { SGMicro3DLogo } from "@/web/components/landing/sg-logo-3d-micro";
 import { ActionTooltip } from "@/shared/ui/action-tooltip";
 
-const BOTTOM_NAV_PAGES = [
-  { href: "/lobby", label: "Play Now", icon: Gamepad2 },
-  { href: "/hub", label: "The Nexus", icon: Layers },
-  { href: "/wiki", label: "Wiki", icon: BookOpen },
-  { href: "/support", label: "Support", icon: LifeBuoy },
+// Grouped by usage: Play & Social Media on the Left, Nexus & Support on the Right
+const BOTTOM_NAV_LEFT_PAGES = [
+  { href: "/lobby", label: "Play", icon: Gamepad2, tooltip: "Saints MMO Game" },
+  { href: "/feed", label: "Feed", icon: Flame, tooltip: "Video & Clip Feed" },
+  { href: "/streams", label: "Streams", icon: Radio, tooltip: "Live Streams & Media" },
+  { href: "/forum", label: "Forums", icon: MessageSquare, tooltip: "Community Discussions" },
+];
+
+const BOTTOM_NAV_RIGHT_PAGES = [
+  { href: "/hub", label: "Nexus", icon: Layers, tooltip: "Operations & Downloads Hub" },
+  { href: "/wiki", label: "Wiki", icon: BookOpen, tooltip: "Knowledge Base & Guides" },
+  { href: "/support", label: "Support", icon: LifeBuoy, tooltip: "Help & Support Desk" },
 ];
 
 interface ClientErrorLog {
@@ -60,7 +69,7 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "v2.1.539",
+  siteVersion = "v2.1.544",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;
@@ -164,7 +173,8 @@ export function GlobalBottomBar({
       const now = performance.now();
       const delta = now - lastTimeRef.current;
       if (delta >= 1000) {
-        setFps(Math.round((frameCountRef.current * 1000) / delta));
+        const nextFps = Math.round((frameCountRef.current * 1000) / delta);
+        setFps((prev) => (prev !== nextFps ? nextFps : prev));
         frameCountRef.current = 0;
         lastTimeRef.current = now;
       }
@@ -203,17 +213,20 @@ export function GlobalBottomBar({
 
   // Resolve dynamic route context pill
   const getRouteLabel = () => {
-    if (!pathname) return "Saints Gaming";
+    if (!pathname) return "Saints";
     if (pathname.startsWith("/lobby")) return `Saints MMO · ${gameMode}`;
     if (pathname.startsWith("/studio")) return `World Studio · ${activeMapId || "Editor"}`;
     if (pathname.startsWith("/hub") || pathname.startsWith("/news") || pathname.startsWith("/modpacks") || pathname.startsWith("/servers")) {
       return "The Nexus · Operations Hub";
     }
     if (pathname.startsWith("/forum")) return "Community Forums · Discussions";
-    if (pathname.startsWith("/streams")) return "Live Streams & Media";
+    if (pathname.startsWith("/streams")) return "Live Streams · Media";
+    if (pathname.startsWith("/feed")) return "Saints Feed · Highlights";
+    if (pathname.startsWith("/wiki")) return "Saints Wiki · Guides";
+    if (pathname.startsWith("/support")) return "Support Desk · Help";
     if (pathname.startsWith("/profile") || pathname.startsWith("/user")) return "Player Profile";
     if (pathname.startsWith("/admin")) return "Command & Control Center";
-    return "Saints Network · Online";
+    return "Saints · Online";
   };
 
   // If fullscreen in game mode, suppress bottom bar to allow pure immersive gameplay
@@ -232,7 +245,7 @@ export function GlobalBottomBar({
       <footer className="fixed bottom-0 left-0 right-0 z-40 h-7 sm:h-8 bg-card/85 backdrop-blur-2xl border-t border-border/50 shadow-2xl px-3 sm:px-6 flex items-center justify-between text-xs font-mono select-none pointer-events-auto transition-all duration-300">
           
           {/* LEFT SECTION: Connected User & Account Stats / Online Orb */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-1">
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
             {/* Green Status Orb */}
             <span className="relative flex h-2 w-2 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -240,8 +253,8 @@ export function GlobalBottomBar({
             </span>
 
             {user ? (
-              <div className="flex items-center gap-2 sm:gap-2.5">
-                <span className="font-bold text-foreground truncate max-w-[100px] sm:max-w-[140px] text-[11px]">
+              <div className="flex items-center gap-2 sm:gap-2.5 truncate">
+                <span className="font-bold text-foreground truncate max-w-[80px] sm:max-w-[120px] text-[11px]">
                   {username}
                 </span>
                 <ActionTooltip label="Account Level">
@@ -250,13 +263,13 @@ export function GlobalBottomBar({
                   </span>
                 </ActionTooltip>
                 <ActionTooltip label="Saints Coins">
-                  <div className="hidden sm:flex items-center gap-1 text-amber-400 font-bold text-[11px] cursor-help">
+                  <div className="hidden md:flex items-center gap-1 text-amber-400 font-bold text-[11px] cursor-help">
                     <Coins className="w-3 h-3" />
                     <span>{userCoins.toLocaleString()}</span>
                   </div>
                 </ActionTooltip>
                 <ActionTooltip label="Achievement Points">
-                  <div className="hidden md:flex items-center gap-1 text-yellow-400 font-bold text-[11px] cursor-help">
+                  <div className="hidden lg:flex items-center gap-1 text-yellow-400 font-bold text-[11px] cursor-help">
                     <Trophy className="w-3 h-3" />
                     <span>{userAchievements} AP</span>
                   </div>
@@ -272,66 +285,68 @@ export function GlobalBottomBar({
           </div>
 
           {/* CENTER SECTION: Links + Logo */}
-          <div className="flex items-center justify-center gap-1 sm:gap-3 flex-shrink-0">
-            {/* Left Links */}
-            <div className="flex items-center gap-1">
-              {[BOTTOM_NAV_PAGES[1], BOTTOM_NAV_PAGES[0]].map(({ href, label, icon: Icon }) => {
+          <div className="flex items-center justify-center gap-1 sm:gap-2 flex-shrink-0">
+            {/* Left Group (Play, Feed, Streams, Forums) */}
+            <div className="flex items-center gap-0.5 sm:gap-1">
+              {BOTTOM_NAV_LEFT_PAGES.map(({ href, label, icon: Icon, tooltip }) => {
                 const isActive = pathname === href || (href !== "/home" && pathname?.startsWith(href));
                 return (
-                  <Link
-                    key={href}
-                    href={href}
-                    prefetch={true}
-                    className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 rounded-md text-[11px] font-sans font-medium transition-all duration-200 ${
-                      isActive
-                        ? "bg-primary/20 text-primary border border-primary/40 shadow-[0_0_8px_rgba(0,245,212,0.25)] font-semibold"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
-                    }`}
-                  >
-                    <Icon className={`w-3 h-3 ${isActive ? "text-primary" : "opacity-70"}`} />
-                    <span className="hidden xs:inline">{label}</span>
-                  </Link>
+                  <ActionTooltip key={href} label={tooltip}>
+                    <Link
+                      href={href}
+                      prefetch={true}
+                      className={`flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 rounded-md text-[11px] font-sans font-medium transition-all duration-200 ${
+                        isActive
+                          ? "bg-primary/20 text-primary border border-primary/40 shadow-[0_0_8px_rgba(203,178,106,0.25)] font-semibold"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
+                      }`}
+                    >
+                      <Icon className={`w-3 h-3 ${isActive ? "text-primary" : "opacity-70"}`} />
+                      <span className="hidden sm:inline">{label}</span>
+                    </Link>
+                  </ActionTooltip>
                 );
               })}
             </div>
 
-            {/* Logo and Page Name */}
-            <div className="mx-1 sm:mx-2 flex items-center justify-center gap-2">
-              <div className="hover:scale-110 transition-transform cursor-pointer" title="Saints Gaming">
-                <Link href="/home">
-                  <SGMicro3DLogo size={24} />
+            {/* Logo and Saints Brand Name */}
+            <div className="mx-1 flex items-center justify-center gap-1.5">
+              <div className="hover:scale-110 transition-transform cursor-pointer" title="Saints">
+                <Link href="/home" className="flex items-center gap-1.5">
+                  <SGMicro3DLogo size={22} />
+                  <span className="hidden xl:inline-block font-bold text-foreground text-[11px] tracking-wide">
+                    Saints
+                  </span>
                 </Link>
               </div>
-              <span className="hidden lg:inline-block text-[11px] font-bold text-foreground/80 tracking-wide">
-                {getRouteLabel().split(" · ")[0]}
-              </span>
             </div>
 
-            {/* Right Links */}
-            <div className="flex items-center gap-1">
-              {[BOTTOM_NAV_PAGES[2], BOTTOM_NAV_PAGES[3]].map(({ href, label, icon: Icon }) => {
+            {/* Right Group (Nexus, Wiki, Support) */}
+            <div className="flex items-center gap-0.5 sm:gap-1">
+              {BOTTOM_NAV_RIGHT_PAGES.map(({ href, label, icon: Icon, tooltip }) => {
                 const isActive = pathname === href || (href !== "/home" && pathname?.startsWith(href));
                 return (
-                  <Link
-                    key={href}
-                    href={href}
-                    prefetch={true}
-                    className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 rounded-md text-[11px] font-sans font-medium transition-all duration-200 ${
-                      isActive
-                        ? "bg-primary/20 text-primary border border-primary/40 shadow-[0_0_8px_rgba(0,245,212,0.25)] font-semibold"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
-                    }`}
-                  >
-                    <Icon className={`w-3 h-3 ${isActive ? "text-primary" : "opacity-70"}`} />
-                    <span className="hidden xs:inline">{label}</span>
-                  </Link>
+                  <ActionTooltip key={href} label={tooltip}>
+                    <Link
+                      href={href}
+                      prefetch={true}
+                      className={`flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 rounded-md text-[11px] font-sans font-medium transition-all duration-200 ${
+                        isActive
+                          ? "bg-primary/20 text-primary border border-primary/40 shadow-[0_0_8px_rgba(203,178,106,0.25)] font-semibold"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
+                      }`}
+                    >
+                      <Icon className={`w-3 h-3 ${isActive ? "text-primary" : "opacity-70"}`} />
+                      <span className="hidden sm:inline">{label}</span>
+                    </Link>
+                  </ActionTooltip>
                 );
               })}
             </div>
           </div>
 
           {/* RIGHT SECTION: Controls, Roles & Social Drawer */}
-          <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1">
+          <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1 min-w-0">
             {/* Moderator Drawer Trigger */}
             {isMod && !isDevOrAdmin && (
               <ActionTooltip label="Moderator Tools">

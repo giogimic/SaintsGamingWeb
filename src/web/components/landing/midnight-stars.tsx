@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { motion } from "framer-motion";
 
 export function MidnightStars() {
   // Deterministic star field
@@ -24,8 +23,21 @@ export function MidnightStars() {
 
   return (
     <div className="absolute inset-0 pointer-events-none z-[15] overflow-hidden select-none">
+      <style>{`
+        @keyframes sgStarTwinkle {
+          0%, 100% { opacity: 0.2; transform: scale(0.8) translateZ(0); }
+          50% { opacity: 0.95; transform: scale(1.25) translateZ(0); }
+        }
+        @keyframes sgShootingStar {
+          0% { transform: translate3d(-200px, -100px, 0) rotate(-25deg); opacity: 0; }
+          15% { opacity: 1; }
+          30% { transform: translate3d(500px, 250px, 0) rotate(-25deg); opacity: 0; }
+          100% { transform: translate3d(500px, 250px, 0) rotate(-25deg); opacity: 0; }
+        }
+      `}</style>
+
       {stars.map((s) => (
-        <motion.div
+        <div
           key={s.id}
           className="absolute rounded-full"
           style={{
@@ -35,16 +47,8 @@ export function MidnightStars() {
             height: `${s.size}px`,
             backgroundColor: s.color,
             boxShadow: `0 0 ${s.size * 2}px ${s.color}, 0 0 ${s.size * 4}px rgba(0, 245, 212, 0.4)`,
-          }}
-          animate={{
-            opacity: [0.2, 0.95, 0.25],
-            scale: [0.8, 1.25, 0.8],
-          }}
-          transition={{
-            duration: s.duration,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: s.delay,
+            animation: `sgStarTwinkle ${s.duration}s ease-in-out ${s.delay}s infinite`,
+            willChange: 'opacity, transform',
           }}
         >
           {/* Subtle 4-point sparkle cross on larger stars */}
@@ -59,11 +63,11 @@ export function MidnightStars() {
               }}
             />
           )}
-        </motion.div>
+        </div>
       ))}
 
       {/* ── Occasional Shooting Star ─────────────────────────────────── */}
-      <motion.div
+      <div
         className="absolute w-[120px] h-[1.5px] rounded-full pointer-events-none"
         style={{
           top: "15%",
@@ -71,19 +75,8 @@ export function MidnightStars() {
           background:
             "linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(0,245,212,0.8) 50%, #ffffff 100%)",
           boxShadow: "0 0 8px #00f5d4",
-          transform: "rotate(-25deg)",
-        }}
-        initial={{ x: -200, y: -100, opacity: 0 }}
-        animate={{
-          x: [ -200, 500 ],
-          y: [ -100, 250 ],
-          opacity: [ 0, 1, 0 ],
-        }}
-        transition={{
-          duration: 1.8,
-          repeat: Infinity,
-          repeatDelay: 9,
-          ease: "easeOut",
+          animation: "sgShootingStar 10.8s ease-out infinite",
+          willChange: 'transform, opacity',
         }}
       />
     </div>

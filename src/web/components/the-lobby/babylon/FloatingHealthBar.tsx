@@ -32,20 +32,30 @@ export const FloatingHealthBars: React.FC<FloatingHealthBarProps> = ({ engine })
   }, []);
 
   useEffect(() => {
-    const updatePositions = () => {
-      const entities = useGameStore.getState().mapEntities;
-      const newPos: Record<string, { x: number, y: number, isVisible: boolean }> = {};
-      
-      for (const entity of entities) {
-        if (hpMap[entity.id] !== undefined) {
-          const pos = engine.getEntityScreenPosition(entity.id);
-          if (pos) {
-            newPos[entity.id] = pos;
+    // If no active damaged creatures exist, no need to run continuous RAF
+    if (Object.keys(hpMap).length === 0) {
+      setPositions({});
+      return;
+    }
+
+    let lastUpdate = 0;
+    const updatePositions = (now: number) => {
+      if (now - lastUpdate >= 25) {
+        lastUpdate = now;
+        const entities = useGameStore.getState().mapEntities;
+        const newPos: Record<string, { x: number; y: number; isVisible: boolean }> = {};
+
+        for (const entity of entities) {
+          if (hpMap[entity.id] !== undefined) {
+            const pos = engine.getEntityScreenPosition(entity.id);
+            if (pos && pos.isVisible) {
+              newPos[entity.id] = pos;
+            }
           }
         }
+
+        setPositions(newPos);
       }
-      
-      setPositions(newPos);
       requestRef.current = requestAnimationFrame(updatePositions);
     };
 

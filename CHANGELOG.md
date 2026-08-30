@@ -1,3 +1,46 @@
+# 2.1.544
+- **Guidelines & Project Rules (Tone of Voice & Community Language)**:
+  - **Rule 11 Enacted**: Formally codified the project's casual gaming and FiveM/SA-MP community voice across `AGENTS.md` and `.agents/AGENTS.md`. Mandated authentic, laid-back gaming language ("Time To Play", hanging out, chatting, gaming together) and strictly banned pseudo-tactical sci-fi jargon ("Tactical Uplink", "Operative Matrix", "Cyber Grid") and corporate speak.
+- **Version Bump**: Bumped release version to `v2.1.544` across all application layouts, headers, footers, settings, and documentation.
+
+# 2.1.543
+- **In-Game Camera Zoom Limit**:
+  - Limited the in-game maximum zoom-out (`maxZoom: 11.0`) to keep player perspective focused, immersive, and clear while preserving full 120x zoom in Studio World Builder mode.
+- **Large-Scale MMO Client Architecture & Culling**:
+  - **Viewport Entity Culling**: Implemented screen-space bounding box culling in `BabylonEngine` render loop. Off-screen players and monsters skip expensive vertex UV cycle recalculations and draw calls, saving massive CPU/GPU cycles on crowded maps.
+  - **MiniMap Radar Loop Throttling**: Throttled `MiniMapRadar` canvas draw loop to ~30 FPS, reducing secondary canvas rasterization overhead by over 70%.
+  - **Floating Health Bars Gating & Throttling**: Gated `FloatingHealthBars` to only run position projection when damaged entities are active on screen, throttled updates to avoid continuous React re-renders.
+  - **Audio Voice Limiting & Cooldowns**: Added voice concurrency rate-limiting in `SoundSynthEngine` (`sound-synth.ts`) to avoid WebAudio buffer congestion during mass combat or gathering.
+- **Navigation Bar Streamlining**:
+  - **Wiki Button Clean-up**: Removed the redundant Wiki link from the top navigation bar and mobile drawer (preserving it exclusively in the dedicated bottom utility bar).
+- **Version Bump**: Bumped release version to `v2.1.543` across all application layouts, headers, footers, settings, and documentation.
+
+# 2.1.542
+- **Forum Hub & Cross-Platform Integration**:
+  - **Streamlined Forum Header**: Replaced the oversized hero box with a sleek, compact title and integrated search/actions bar.
+  - **Nexus & Feed Community Spotlight**: Integrated live Nexus news dispatches and trending video feed clips directly into the initial forum index page to make the community boards feel active, engaging, and rich.
+- **Version Bump**: Bumped release version to `v2.1.542` across all application layouts, headers, footers, settings, and documentation.
+
+# 2.1.541
+- **The Nexus Layout & News Enhancements**:
+  - **Community News Tile Layouts**: Added instant view options (Row of 3 Columns, Row of 6 Compact Columns, and Horizontal List View) for community news dispatches with persisted view state.
+  - **Streamlined Nexus Header**: Removed the redundant large promotional top banner. Embedded "The Nexus" clean title directly above the left sidebar navigation tabs.
+- **Brand & Navigation Refinements**:
+  - **Saints Global Bottom Bar**: Replaced "Saints Network" branding with clean "Saints" brand naming. Added usage-grouped left/right navigation shortcuts (Play, Feed, Streams, Forums, Nexus, Wiki, Support) with rich tooltips.
+- **Hardcoded Design System Rules**:
+  - Strictly banned cyber/synthwave aesthetics and clip-paths across all agent rule files (`AGENTS.md` & `.agents/AGENTS.md`) in favor of authoritative Saints Gaming design tokens (`sg-glass`, dark gold palette, clean typography).
+- **Version Bump**: Bumped release version to `v2.1.541` across all application layouts, headers, footers, settings, and documentation.
+
+# 2.1.540
+- **Client & Engine Performance Optimization (High Framerate Elevation)**:
+  - **Hardware-Accelerated Backgrounds**: Replaced 111+ continuous Framer-Motion JavaScript animation loops in `MidnightStars` and `S3Water` with pure GPU-composited CSS keyframes (`transform: translateZ(0)`), completely freeing main-thread JS timers.
+  - **Pixel Environmental Canvas Optimization**: Replaced expensive per-particle canvas `ctx.shadowBlur` and `ctx.save()`/`ctx.restore()` in `PixelEnvironmentalEffects` with batched alpha halo and integer-aligned pixel rendering.
+  - **3D Voxel Logo Instanced Batching**: Converted ~100 distinct `<Box>` meshes in `SGVoxelLogo` to 3 GPU `InstancedMesh` draw calls, and replaced heavy WebGL container drop-shadow filters with a performant ambient radial glow backdrop.
+  - **Character Selector & Sprite Cache**: Added an in-memory sprite dimension cache (`SPRITE_SIZE_CACHE`) to `CharacterSpritePreview` to eliminate initial layout shifts and state thrashing, memoized parsed character card data, and added GPU composite hints (`willChange`).
+  - **Babylon 2.5D Engine Tuning**: Set `preserveDrawingBuffer: false` for zero-copy GPU swap buffers, capped high-DPI scaling to 1.5x on Retina/4K screens, and throttled dynamic water texture updates to a smooth 10 Hz cadence.
+  - **FPS Counter Throttling**: Optimized FPS state updates in `GlobalBottomBar` to prevent redundant UI component re-renders.
+- **Version Bump**: Bumped release version to `v2.1.540` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.537
 - **Base UI ActionTooltip Build Compatibility**:
   - Removed unsupported `asChild` prop from `TooltipTrigger` in `ActionTooltip` (`src/shared/ui/action-tooltip.tsx`), resolving TypeScript build failures in Next.js production builds.

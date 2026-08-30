@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Gamepad2,
   Plus,
@@ -92,6 +92,30 @@ export function CharacterSelector({
   const [deleteModalChar, setDeleteModalChar] = useState<{ id: string; name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const setGameMode = useGameStore((state) => state.setGameMode);
+
+  // Memoize parsed character state data to prevent continuous re-parsing
+  const parsedCharacters = useMemo(() => {
+    return characters.map((char) => {
+      let state: any = { level: 1, hp: 100, maxHp: 100, credits: 1000, perk: 'SWIFT_TRAVELER' };
+      try {
+        if (char.stateData) state = JSON.parse(char.stateData);
+      } catch {}
+
+      const classKey = (char.classId || 'WARRIOR').toUpperCase();
+      const Icon = CLASS_ICONS[classKey] || User;
+      const palette = CLASS_COLORS[classKey] || DEFAULT_COLOR;
+      const charLayers = state?.customization?.layers || state?.appearance?.layers || (char.spriteId ? [char.spriteId] : ['adventurer']);
+
+      return {
+        char,
+        state,
+        classKey,
+        Icon,
+        palette,
+        charLayers,
+      };
+    });
+  }, [characters]);
 
   // Social & Comms Deck State
   const [activeSideTab, setActiveSideTab] = useState<'LEADERBOARD' | 'CHAT'>('LEADERBOARD');
@@ -275,18 +299,8 @@ export function CharacterSelector({
 
           {/* Grid of Characters */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 auto-rows-fr">
-            {characters.map((char) => {
-              let state: any = { level: 1, hp: 100, maxHp: 100, credits: 1000, perk: 'SWIFT_TRAVELER' };
-              try {
-                if (char.stateData) state = JSON.parse(char.stateData);
-              } catch {}
-
-              const classKey = (char.classId || 'WARRIOR').toUpperCase();
-              const Icon = CLASS_ICONS[classKey] || User;
-              const palette = CLASS_COLORS[classKey] || DEFAULT_COLOR;
+            {parsedCharacters.map(({ char, state, classKey, Icon, palette, charLayers }: any) => {
               const isHovered = hoveredId === char.id;
-
-              const charLayers = state?.customization?.layers || state?.appearance?.layers || (char.spriteId ? [char.spriteId] : ['adventurer']);
 
               return (
                 <div
@@ -310,6 +324,7 @@ export function CharacterSelector({
                       ? `0 0 30px ${palette.glow}, 0 10px 30px rgba(0,0,0,0.7)`
                       : '0 4px 20px rgba(0,0,0,0.5)',
                     transform: isHovered ? 'translateY(-3px)' : 'translateY(0)',
+                    willChange: 'transform, box-shadow',
                   }}
                 >
                   <div
