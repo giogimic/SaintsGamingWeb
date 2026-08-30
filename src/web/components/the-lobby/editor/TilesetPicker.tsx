@@ -330,6 +330,7 @@ export default function TilesetPicker({
   const [selectionMode, setSelectionMode] = useState<'grid' | 'slicer'>('grid');
   const [isCalibratingOrigin, setIsCalibratingOrigin] = useState<boolean>(false);
   const [slicerSelection, setSlicerSelection] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
+  const slicerSelectionRef = useRef<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
   const slicerDragStartRef = useRef<{ x: number; y: number } | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [dragStart, setDragStart] = useState<{ r: number; c: number } | null>(null);
@@ -748,13 +749,14 @@ export default function TilesetPicker({
 
   const commitSlicerSelectionToStamp = useCallback(() => {
     const currentTs = tsRef.current;
-    if (!currentTs || !slicerSelection) return;
+    const activeSlicer = slicerSelectionRef.current || slicerSelection;
+    if (!currentTs || !activeSlicer) return;
     const nw = naturalRef.current.w || imgRef.current?.naturalWidth || currentTs.imagewidth || 512;
     const nh = naturalRef.current.h || imgRef.current?.naturalHeight || currentTs.imageheight || 512;
-    const minX = Math.min(slicerSelection.x0, slicerSelection.x1);
-    const maxX = Math.max(slicerSelection.x0, slicerSelection.x1);
-    const minY = Math.min(slicerSelection.y0, slicerSelection.y1);
-    const maxY = Math.max(slicerSelection.y0, slicerSelection.y1);
+    const minX = Math.min(activeSlicer.x0, activeSlicer.x1);
+    const maxX = Math.max(activeSlicer.x0, activeSlicer.x1);
+    const minY = Math.min(activeSlicer.y0, activeSlicer.y1);
+    const maxY = Math.max(activeSlicer.y0, activeSlicer.y1);
     const offX = currentTs.offsetX ?? currentTs.margin ?? 0;
     const offY = currentTs.offsetY ?? currentTs.margin ?? 0;
     const spacing = currentTs.spacing ?? 0;
@@ -843,12 +845,14 @@ export default function TilesetPicker({
       const tileX1 = tileX0 + currentTs.tilewidth;
       const tileY1 = tileY0 + currentTs.tileheight;
 
-      setSlicerSelection({
+      const sel = {
         x0: tileX0,
         y0: tileY0,
         x1: tileX1,
         y1: tileY1,
-      });
+      };
+      slicerSelectionRef.current = sel;
+      setSlicerSelection(sel);
 
       const gid = currentTs.firstgid + row * currentTs.columns + col;
       isInternalSelectionRef.current = true;
@@ -911,7 +915,9 @@ export default function TilesetPicker({
         const x1 = Math.min(nw, Math.max(start.x, nativeX));
         const y0 = Math.max(0, Math.min(start.y, nativeY));
         const y1 = Math.min(nh, Math.max(start.y, nativeY));
-        setSlicerSelection({ x0, y0, x1: Math.max(x0 + 4, x1), y1: Math.max(y0 + 4, y1) });
+        const sel = { x0, y0, x1: Math.max(x0 + 4, x1), y1: Math.max(y0 + 4, y1) };
+        slicerSelectionRef.current = sel;
+        setSlicerSelection(sel);
       }
       return;
     }
@@ -950,7 +956,6 @@ export default function TilesetPicker({
 
     if (start && isPointerDownRef.current) {
       dragBoundsRef.current = { row: minRow, col: minCol, w: spanW, h: spanH };
-      selectTileRegion(minRow, minCol, spanW, spanH);
     }
 
     setHoveredTile({
@@ -978,11 +983,9 @@ export default function TilesetPicker({
     if (selectionModeRef.current === 'slicer') {
       commitSlicerSelectionToStamp();
     } else {
-      const bounds = dragBoundsRef.current;
+      const bounds = dragBoundsRef.current || (dragStartRef.current ? { row: dragStartRef.current.r, col: dragStartRef.current.c, w: 1, h: 1 } : null);
       if (bounds) {
         selectTileRegion(bounds.row, bounds.col, bounds.w, bounds.h);
-      } else if (dragStartRef.current) {
-        selectTileRegion(dragStartRef.current.r, dragStartRef.current.c, 1, 1);
       }
     }
 
@@ -1017,7 +1020,9 @@ export default function TilesetPicker({
           const x1 = Math.min(nw, Math.max(start.x, nativeX));
           const y0 = Math.max(0, Math.min(start.y, nativeY));
           const y1 = Math.min(nh, Math.max(start.y, nativeY));
-          setSlicerSelection({ x0, y0, x1: Math.max(x0 + 4, x1), y1: Math.max(y0 + 4, y1) });
+          const sel = { x0, y0, x1: Math.max(x0 + 4, x1), y1: Math.max(y0 + 4, y1) };
+          slicerSelectionRef.current = sel;
+          setSlicerSelection(sel);
         }
         return;
       }
@@ -1055,7 +1060,6 @@ export default function TilesetPicker({
       const heightPx = spanH * currentTs.tileheight + (spanH - 1) * spacing;
 
       dragBoundsRef.current = { row: minRow, col: minCol, w: spanW, h: spanH };
-      selectTileRegion(minRow, minCol, spanW, spanH);
 
       setHoveredTile({
         leftPct: (leftPx / nw) * 100,
@@ -1076,11 +1080,9 @@ export default function TilesetPicker({
         if (selectionModeRef.current === 'slicer') {
           commitSlicerSelectionToStamp();
         } else {
-          const bounds = dragBoundsRef.current;
+          const bounds = dragBoundsRef.current || (dragStartRef.current ? { row: dragStartRef.current.r, col: dragStartRef.current.c, w: 1, h: 1 } : null);
           if (bounds) {
             selectTileRegion(bounds.row, bounds.col, bounds.w, bounds.h);
-          } else if (dragStartRef.current) {
-            selectTileRegion(dragStartRef.current.r, dragStartRef.current.c, 1, 1);
           }
         }
         slicerDragStartRef.current = null;

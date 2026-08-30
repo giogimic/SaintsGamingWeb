@@ -1,3 +1,9 @@
+# 2.1.509
+- **Studio Drag Selection & Stamp Restoration**: Completely restored click-and-drag multi-tile selection in both Grid Mode and Slicer Mode within `TilesetPicker.tsx`.
+- **Zustand State Thrashing Elimination**: Moved live drag bounds tracking to lightweight local state and refs (`dragBoundsRef`), committing `selectTileRegion` atomically on pointer release to eliminate 60fps React re-renders and audio synth spam.
+- **Slicer Mode React Batching Race Condition Fix**: Integrated `slicerSelectionRef` to capture exact pixel bounding rects synchronously on pointer move and pointer up, eliminating blank or zero-dimension slices caused by asynchronous React 19 state batching.
+- **Babylon Multi-Tile Stamp Placement Fix**: Fixed `isFullFootprintPattern` check in `GameCanvasBabylon.tsx` to ensure multi-tile patterns paint their full W×H footprint seamlessly in standard Studio stamp mode.
+
 # 2.1.508
 - **Live Terminal Spinner & Real-Time Build Monitor**: Added interactive animated spinners (`run_with_spinner`), live elapsed timers, and real-time build step telemetry to `scripts/update.sh` and `scripts/cleanup-disk.sh`.
 - **Zero Freeze Feedback**: Docker pruning operations (`docker builder prune`, `docker image prune`, `docker container prune`, `journalctl vacuum`) now run asynchronously with active spinner animations and explicit success confirmations upon completion.
