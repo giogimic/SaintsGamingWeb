@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { canManageUser, canBan, canMute, PERMISSION_LEVELS } from "@/web/lib/permissions";
+import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 const updateUserSchema = z.object({
@@ -115,10 +116,6 @@ export async function PATCH(req: Request) {
         return NextResponse.json({ message: "Password must be at least 8 characters" }, { status: 400 });
       }
 
-      // Need to import bcrypt to hash password dynamically, wait, route doesn't have bcrypt yet.
-      // I'll add bcrypt import at top.
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const bcrypt = require("bcryptjs");
       const passwordHash = await bcrypt.hash(data.newPassword, 10);
 
       const updated = await prisma.user.update({
