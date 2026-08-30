@@ -5,14 +5,10 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
   Home,
-  Newspaper,
-  Package,
   MessageSquare,
   Monitor,
   Menu,
   X,
-  Video,
-  Server,
   Trophy,
   Layers,
   Sparkles,
@@ -21,8 +17,10 @@ import {
   LogOut,
   User as UserIcon,
   Flame,
-  Globe,
-  Radio,
+  BookOpen,
+  LifeBuoy,
+  Shield,
+  Search,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/shared/ui/button";
 import { SGMicro3DLogo } from "@/web/components/landing/sg-logo-3d-micro";
@@ -42,21 +40,44 @@ import {
 } from "@/shared/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
 
-const NAV_ITEMS = [
+const MOBILE_NAV_ITEMS = [
   { href: "/home", label: "Home", icon: Home },
+  { href: "/lobby", label: "Play Now", icon: Gamepad2 },
   { href: "/hub", label: "The Nexus", icon: Layers },
-  { href: "/forum", label: "Forum", icon: MessageSquare },
+  { href: "/wiki", label: "Wiki & Guides", icon: BookOpen },
+  { href: "/support", label: "Support", icon: LifeBuoy },
+  { href: "/forum", label: "Community Forum", icon: MessageSquare },
   { href: "/forum/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/streams", label: "Streams", icon: Monitor },
-  { href: "/lobby", label: "Play Now", icon: Gamepad2 },
 ];
+
+function getPageTitle(pathname: string | null): string {
+  if (!pathname || pathname === "/" || pathname === "/home") return "Home";
+  if (pathname.startsWith("/hub")) return "The Nexus";
+  if (pathname.startsWith("/lobby")) return "Play Now";
+  if (pathname.startsWith("/wiki")) return "Wiki";
+  if (pathname.startsWith("/support")) return "Support";
+  if (pathname.startsWith("/forum/leaderboard")) return "Leaderboard";
+  if (pathname.startsWith("/forum")) return "Forum";
+  if (pathname.startsWith("/streams")) return "Streams";
+  if (pathname.startsWith("/modpacks")) return "Modpacks";
+  if (pathname.startsWith("/profile")) return "Profile";
+  if (pathname.startsWith("/admin")) return "Command Center";
+  if (pathname.startsWith("/studio")) return "World Studio";
+  if (pathname.startsWith("/ucp")) return "FiveM UCP";
+  if (pathname.startsWith("/login")) return "Sign In";
+  if (pathname.startsWith("/register")) return "Sign Up";
+
+  const segment = pathname.split("/").filter(Boolean).pop() || "Saints";
+  return segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ");
+}
 
 export function Navbar({
   session,
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.534",
+  siteVersion = "v2.1.535",
 }: {
   session: any | null;
   dbPermissionLevel?: number;
@@ -103,19 +124,19 @@ export function Navbar({
   if (isGameRoute) {
     return (
       <div className="sticky top-0 z-50 w-full pointer-events-none">
-        <header className="pointer-events-auto w-full bg-card/75 backdrop-blur-2xl border-b border-border/50 shadow-md transition-all duration-300">
-          <div className="flex h-12 sm:h-14 items-center justify-between px-3 sm:px-6">
+        <header className="pointer-events-auto w-full bg-card/85 backdrop-blur-2xl border-b border-border/50 shadow-md transition-all duration-300">
+          <div className="flex h-11 sm:h-12 items-center justify-between px-3 sm:px-6">
             {/* Left Brand */}
             <div className="flex items-center gap-3">
-              <Link href="/home" className="flex items-center gap-2.5 group">
+              <Link href="/home" className="flex items-center gap-2 group">
                 <div className="transition-transform group-hover:scale-105">
-                  <SGMicro3DLogo size={28} />
+                  <SGMicro3DLogo size={24} />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-sm sm:text-base sg-text-gradient tracking-tight">
+                  <span className="font-bold text-xs sm:text-sm sg-text-gradient tracking-tight">
                     Saints MMO
                   </span>
-                  <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold uppercase">
+                  <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[9px] font-mono font-bold uppercase">
                     Live Shard
                   </span>
                 </div>
@@ -128,7 +149,7 @@ export function Navbar({
 
               {user ? (
                 <div className="flex items-center gap-2">
-                  <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-lg border border-border/50 bg-background/50 text-xs font-mono">
+                  <div className="hidden sm:flex items-center gap-2 px-2 py-0.5 rounded-lg border border-border/50 bg-background/50 text-xs font-mono">
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
@@ -142,22 +163,22 @@ export function Navbar({
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-8 gap-1.5 text-xs border-border/50 text-muted-foreground hover:text-foreground"
+                      className="h-7 sm:h-8 gap-1.5 text-xs border-border/50 text-muted-foreground hover:text-foreground"
                       title="Return to Website"
                     >
-                      <LogOut className="w-3.5 h-3.5" />
+                      <LogOut className="w-3 h-3" />
                       <span className="hidden sm:inline">Exit to Web</span>
                     </Button>
                   </Link>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <Link href="/login" className={buttonVariants({ variant: "ghost", size: "sm", className: "h-8 text-xs" })}>
+                  <Link href="/login" className={buttonVariants({ variant: "ghost", size: "sm", className: "h-7 sm:h-8 text-xs" })}>
                     Log in
                   </Link>
                   <Link href="/home">
-                    <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
-                      <LogOut className="w-3.5 h-3.5" />
+                    <Button variant="outline" size="sm" className="h-7 sm:h-8 gap-1.5 text-xs">
+                      <LogOut className="w-3 h-3" />
                       <span className="hidden sm:inline">Exit</span>
                     </Button>
                   </Link>
@@ -171,153 +192,202 @@ export function Navbar({
   }
 
   // ── STANDARD WEBSITE TOP BAR ─────────────────────────────────────────
+  const pageTitle = getPageTitle(pathname);
+
   return (
     <div className="sticky top-0 z-50 w-full pointer-events-none">
-      <header className="pointer-events-auto w-full bg-card/60 backdrop-blur-2xl border-b border-border/50 shadow-sm transition-all duration-300">
-        <div className="flex h-14 sm:h-16 items-center justify-between px-4 xl:px-8">
-          {/* Logo / Brand */}
-          <Link href="/home" className="flex items-center gap-3 group">
-            <div className="transition-transform group-hover:scale-105">
-              <SGMicro3DLogo size={36} />
+      <header className="pointer-events-auto w-full bg-card/85 backdrop-blur-2xl border-b border-border/50 shadow-md transition-all duration-300">
+        <div className="flex h-11 sm:h-12 items-center justify-between px-3 sm:px-6">
+          {/* Left Navigation: Play Now & The Nexus */}
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Link href="/lobby" prefetch={true}>
+              <Button
+                variant={pathname?.startsWith("/lobby") ? "secondary" : "ghost"}
+                size="sm"
+                className={`h-8 px-2 sm:px-3 text-xs gap-1.5 font-bold transition-all duration-200 ${
+                  pathname?.startsWith("/lobby")
+                    ? "bg-gradient-to-r from-amber-500/20 to-emerald-500/20 text-amber-300 border border-amber-500/40 shadow-sm"
+                    : "text-amber-400/90 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/30"
+                }`}
+              >
+                <Gamepad2 className="h-3.5 w-3.5 text-amber-400" />
+                <span className="hidden xs:inline">Play Now</span>
+              </Button>
+            </Link>
+
+            <Link href="/hub" prefetch={true}>
+              <Button
+                variant={pathname?.startsWith("/hub") ? "secondary" : "ghost"}
+                size="sm"
+                className={`h-8 px-2 sm:px-3 text-xs gap-1.5 font-medium transition-all duration-200 ${
+                  pathname?.startsWith("/hub")
+                    ? "bg-primary/15 text-primary border border-primary/30"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
+              >
+                <Layers className="h-3.5 w-3.5 text-primary" />
+                <span className="hidden sm:inline">The Nexus</span>
+                <span className="sm:hidden">Nexus</span>
+              </Button>
+            </Link>
+          </div>
+
+          {/* Center Brand: Spinning 3D Logo + Current Page Title */}
+          <Link
+            href="/home"
+            className="flex items-center gap-2 px-2.5 py-1 rounded-full hover:bg-muted/30 transition-all group"
+            title="Return to Home"
+          >
+            <div className="transition-transform group-hover:scale-110">
+              <SGMicro3DLogo size={24} />
             </div>
-            <span className="font-bold text-lg sg-text-gradient hidden sm:inline tracking-tight">
-              Saints Gaming
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-xs sm:text-sm sg-text-gradient tracking-tight">
+                {pageTitle}
+              </span>
+            </div>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-              const isActive = pathname === href || (href !== "/home" && pathname?.startsWith(href));
-              const isLobby = href === "/lobby";
-              const displayLabel = isLobby && !user ? "Enter Game" : label;
-              return (
-                <Link key={href} href={href} prefetch={true}>
-                  <Button
-                    variant={isActive ? "secondary" : "ghost"}
-                    size="sm"
-                    className={`gap-2 transition-all duration-200 ${
-                      isLobby
-                        ? "bg-gradient-to-r from-amber-500/20 to-emerald-500/20 text-amber-300 border border-amber-500/40 hover:from-amber-500 hover:to-emerald-500 hover:text-slate-950 font-bold shadow-sm hover:scale-105"
-                        : isActive
-                        ? "bg-primary/10 text-primary border border-primary/20"
-                        : "text-muted-foreground hover:text-foreground hover:scale-105"
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {displayLabel}
-                  </Button>
-                </Link>
-              );
-            })}
-          </nav>
+          {/* Right Navigation: Wiki, Support, Search, User Profile */}
+          <div className="flex items-center gap-1 sm:gap-2">
+            {/* Wiki Link */}
+            <Link href="/wiki" prefetch={true}>
+              <Button
+                variant={pathname?.startsWith("/wiki") ? "secondary" : "ghost"}
+                size="sm"
+                className={`h-8 px-2 sm:px-2.5 text-xs gap-1.5 font-medium transition-all duration-200 ${
+                  pathname?.startsWith("/wiki")
+                    ? "bg-primary/15 text-primary border border-primary/30"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
+              >
+                <BookOpen className="h-3.5 w-3.5 text-cyan-400" />
+                <span className="hidden sm:inline">Wiki</span>
+              </Button>
+            </Link>
 
-          {/* Right side — Auth + Search + Notifications */}
-          <div className="flex items-center gap-2">
-            <div className="hidden lg:flex items-center gap-4">
-              <div className="w-48 lg:w-64">
-                <GlobalSearch />
+            {/* Support Link */}
+            <Link href="/support" prefetch={true}>
+              <Button
+                variant={pathname?.startsWith("/support") ? "secondary" : "ghost"}
+                size="sm"
+                className={`h-8 px-2 sm:px-2.5 text-xs gap-1.5 font-medium transition-all duration-200 ${
+                  pathname?.startsWith("/support")
+                    ? "bg-primary/15 text-primary border border-primary/30"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
+              >
+                <LifeBuoy className="h-3.5 w-3.5 text-amber-400" />
+                <span className="hidden sm:inline">Support</span>
+              </Button>
+            </Link>
+
+            {/* Global Search */}
+            <div className="hidden xl:block w-36 lg:w-44">
+              <GlobalSearch />
+            </div>
+
+            <ThemeSwitcher />
+
+            {/* Auth / Avatar Dropdown */}
+            {!user ? (
+              <div className="flex items-center gap-1">
+                <Link href="/login" className={buttonVariants({ variant: "ghost", size: "sm", className: "h-8 px-2 sm:px-2.5 text-xs" })}>
+                  Log in
+                </Link>
+                <Link
+                  href="/register"
+                  className={buttonVariants({
+                    size: "sm",
+                    className: "h-8 px-2 sm:px-2.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90 hidden sm:inline-flex",
+                  })}
+                >
+                  Sign up
+                </Link>
               </div>
-              <ThemeSwitcher />
-              {!user ? (
-                <>
-                  <Link href="/login" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-                    Log in
-                  </Link>
-                  <Link
-                    href="/register"
-                    className={buttonVariants({
-                      size: "sm",
-                      className: "bg-primary text-primary-foreground hover:bg-primary/90",
-                    })}
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <NotificationsMenu />
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={<Button variant="ghost" className="relative h-7 w-7 sm:h-8 sm:w-8 rounded-full p-0" />}
                   >
-                    Sign up
-                  </Link>
-                </>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <NotificationsMenu />
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={<Button variant="ghost" className="relative h-8 w-8 rounded-full" />}
+                    <Avatar className="h-7 w-7 sm:h-8 sm:w-8 border border-primary/30">
+                      <AvatarImage src={user.image || ""} alt={user.name || "Avatar"} />
+                      <AvatarFallback className="bg-primary/20 text-primary text-xs">
+                        {user.username?.charAt(0).toUpperCase() ||
+                          user.email?.charAt(0).toUpperCase() ||
+                          "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end">
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel className="font-normal">
+                        <div className="flex flex-col space-y-1">
+                          <p className="text-sm font-medium leading-none">
+                            {user.username || user.name}
+                          </p>
+                          <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                        </div>
+                      </DropdownMenuLabel>
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem render={<Link href="/profile" className="cursor-pointer" />}>
+                      <UserIcon className="mr-2 h-4 w-4" />
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      render={
+                        <Link href="/profile/inbox" className="cursor-pointer text-primary font-medium" />
+                      }
                     >
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.image || ""} alt={user.name || "Avatar"} />
-                        <AvatarFallback className="bg-primary/20 text-primary">
-                          {user.username?.charAt(0).toUpperCase() ||
-                            user.email?.charAt(0).toUpperCase() ||
-                            "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56" align="end">
-                      <DropdownMenuGroup>
-                        <DropdownMenuLabel className="font-normal">
-                          <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-medium leading-none">
-                              {user.username || user.name}
-                            </p>
-                            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                          </div>
-                        </DropdownMenuLabel>
-                      </DropdownMenuGroup>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem render={<Link href="/profile" className="cursor-pointer" />}>
-                        <UserIcon className="mr-2 h-4 w-4" />
-                        Profile
+                      <Flame className="mr-2 h-4 w-4 text-primary" />
+                      The Feed
+                    </DropdownMenuItem>
+                    {showUcpLink && (
+                      <DropdownMenuItem render={<Link href="/ucp" className="cursor-pointer" />}>
+                        <Gamepad2 className="mr-2 h-4 w-4" />
+                        FiveM UCP
                       </DropdownMenuItem>
+                    )}
+                    {canAccessStudio && (
                       <DropdownMenuItem
                         render={
-                          <Link href="/profile/inbox" className="cursor-pointer text-primary font-medium" />
+                          <Link href="/studio" className="cursor-pointer text-purple-400 font-medium" />
                         }
                       >
-                        <Flame className="mr-2 h-4 w-4 text-primary" />
-                        The Feed
+                        <Sparkles className="mr-2 h-4 w-4 text-purple-400" />
+                        2.5D World Studio
                       </DropdownMenuItem>
-                      {showUcpLink && (
-                        <DropdownMenuItem render={<Link href="/ucp" className="cursor-pointer" />}>
-                          <Gamepad2 className="mr-2 h-4 w-4" />
-                          FiveM UCP
-                        </DropdownMenuItem>
-                      )}
-                      {canAccessStudio && (
-                        <DropdownMenuItem
-                          render={
-                            <Link href="/studio" className="cursor-pointer text-purple-400 font-medium" />
-                          }
-                        >
-                          <Sparkles className="mr-2 h-4 w-4 text-purple-400" />
-                          2.5D World Studio
-                        </DropdownMenuItem>
-                      )}
-                      {isOperator && (
-                        <DropdownMenuItem
-                          render={
-                            <Link href="/admin" className="cursor-pointer text-primary font-medium" />
-                          }
-                        >
-                          <Settings className="mr-2 h-4 w-4 text-primary" />
-                          Admin Command Center
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuSeparator />
+                    )}
+                    {isOperator && (
                       <DropdownMenuItem
-                        className="cursor-pointer text-red-400 focus:text-red-400 focus:bg-red-400/10"
-                        onClick={() => signOut({ callbackUrl: "/" })}
+                        render={
+                          <Link href="/admin" className="cursor-pointer text-primary font-medium" />
+                        }
                       >
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Log out
+                        <Settings className="mr-2 h-4 w-4 text-primary" />
+                        Admin Command Center
                       </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              )}
-            </div>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="cursor-pointer text-red-400 focus:text-red-400 focus:bg-red-400/10"
+                      onClick={() => signOut({ callbackUrl: "/" })}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Log out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
 
             {/* Mobile menu sheet */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-              <SheetTrigger className="lg:hidden" render={<Button variant="ghost" size="icon" />}>
-                {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              <SheetTrigger className="lg:hidden" render={<Button variant="ghost" size="icon" className="h-8 w-8 p-0" />}>
+                {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
               </SheetTrigger>
               <SheetContent
                 side="right"
@@ -326,10 +396,10 @@ export function Navbar({
                 <div className="flex flex-col h-full">
                   <SheetTitle className="sr-only">Menu</SheetTitle>
 
-                  <div className="flex items-center gap-3 pb-6 border-b border-border/50 mt-4">
+                  <div className="flex items-center gap-3 pb-4 border-b border-border/50 mt-2">
                     {user ? (
                       <>
-                        <Avatar className="h-10 w-10 border border-primary/20">
+                        <Avatar className="h-9 w-9 border border-primary/20">
                           <AvatarImage src={user.image || ""} />
                           <AvatarFallback className="bg-primary/10 text-primary">
                             {user.username?.charAt(0).toUpperCase() ||
@@ -345,20 +415,20 @@ export function Navbar({
                         </div>
                       </>
                     ) : (
-                      <div className="flex items-center gap-3">
-                        <SGMicro3DLogo size={36} />
-                        <span className="font-bold text-lg sg-text-gradient tracking-tight">
+                      <div className="flex items-center gap-2.5">
+                        <SGMicro3DLogo size={28} />
+                        <span className="font-bold text-base sg-text-gradient tracking-tight">
                           Saints Gaming
                         </span>
                       </div>
                     )}
                   </div>
 
-                  <div className="flex-1 py-6 flex flex-col gap-1 overflow-y-auto scrollbar-hide">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">
+                  <div className="flex-1 py-4 flex flex-col gap-1 overflow-y-auto scrollbar-hide">
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 px-2">
                       Navigation
                     </span>
-                    {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+                    {MOBILE_NAV_ITEMS.map(({ href, label, icon: Icon }) => {
                       const isActive =
                         pathname === href || (href !== "/home" && pathname?.startsWith(href));
                       const isLobby = href === "/lobby";
@@ -368,7 +438,7 @@ export function Navbar({
                           key={href}
                           href={href}
                           onClick={() => setMobileOpen(false)}
-                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200 ${
                             isLobby
                               ? "bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 shadow-sm"
                               : isActive
@@ -383,21 +453,21 @@ export function Navbar({
                     })}
                   </div>
 
-                  <div className="pt-6 border-t border-border/50 flex flex-col gap-2">
+                  <div className="pt-4 border-t border-border/50 flex flex-col gap-2">
                     <ThemeSwitcher />
                     {!user ? (
                       <div className="grid grid-cols-2 gap-2 mt-2">
                         <Link
                           href="/login"
                           onClick={() => setMobileOpen(false)}
-                          className={buttonVariants({ variant: "outline", className: "w-full" })}
+                          className={buttonVariants({ variant: "outline", size: "sm", className: "w-full text-xs" })}
                         >
                           Log in
                         </Link>
                         <Link
                           href="/register"
                           onClick={() => setMobileOpen(false)}
-                          className={buttonVariants({ className: "w-full" })}
+                          className={buttonVariants({ size: "sm", className: "w-full text-xs" })}
                         >
                           Sign up
                         </Link>
@@ -405,10 +475,11 @@ export function Navbar({
                     ) : (
                       <Button
                         variant="destructive"
-                        className="w-full mt-2"
+                        size="sm"
+                        className="w-full mt-1 text-xs"
                         onClick={() => signOut({ callbackUrl: "/" })}
                       >
-                        <LogOut className="mr-2 h-4 w-4" />
+                        <LogOut className="mr-2 h-3.5 w-3.5" />
                         Log out
                       </Button>
                     )}
@@ -426,7 +497,7 @@ export function Navbar({
 export function Footer({
   className = "",
   discordLink = "https://discord.saintsgaming.net",
-  siteVersion = "v2.1.534",
+  siteVersion = "v2.1.535",
   showUcpLink = false,
 }: {
   className?: string;

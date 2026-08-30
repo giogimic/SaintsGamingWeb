@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useRealtimeStore } from "@/web/hooks/useRealtimeStore";
 import { useMessenger } from "@/web/components/messenger/messenger-provider";
 import { useGameStore } from "@/web/components/the-lobby/store";
 import { soundSynth } from "@/engine/sound-synth";
+import { getUserStatusStats, UserStatusStats } from "@/app/actions/user";
 import {
   Activity,
   Terminal,
@@ -32,9 +34,19 @@ import {
   Zap,
   Globe,
   CheckCircle2,
+  Trophy,
+  Layers,
+  BookOpen,
+  LifeBuoy,
 } from "lucide-react";
 import { Button } from "@/shared/ui/button";
-import { ThemeSwitcher } from "@/shared/components/theme-switcher";
+
+const BOTTOM_NAV_PAGES = [
+  { href: "/lobby", label: "Play Now", icon: Gamepad2 },
+  { href: "/hub", label: "The Nexus", icon: Layers },
+  { href: "/wiki", label: "Wiki", icon: BookOpen },
+  { href: "/support", label: "Support", icon: LifeBuoy },
+];
 
 interface ClientErrorLog {
   id: string;
@@ -46,7 +58,7 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "v2.1.534",
+  siteVersion = "v2.1.535",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;
@@ -58,6 +70,17 @@ export function GlobalBottomBar({
   // Realtime & Messenger Store
   const mmoPlayerCount = useRealtimeStore((s) => s.mmoPlayerCount);
   const { isOpen: isMessengerOpen, setIsOpen: setIsMessengerOpen } = useMessenger();
+
+  // User Status Stats (Coins, Level, AP Score)
+  const [userStats, setUserStats] = useState<UserStatusStats | null>(null);
+
+  useEffect(() => {
+    if (session?.user) {
+      getUserStatusStats().then(setUserStats).catch(console.error);
+    } else {
+      setUserStats(null);
+    }
+  }, [session?.user]);
 
   // Permissions
   const user = session?.user;
@@ -145,16 +168,7 @@ export function GlobalBottomBar({
     return () => cancelAnimationFrame(animId);
   }, []);
 
-  // Toggle Fullscreen
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen?.().catch(() => {});
-    } else {
-      document.exitFullscreen?.().catch(() => {});
-    }
-  };
-
-  // Toggle Audio
+  // Audio Toggle
   const toggleAudio = () => {
     setIsMuted((prev) => {
       const next = !prev;
@@ -166,6 +180,19 @@ export function GlobalBottomBar({
       }
       return next;
     });
+  };
+
+  // Fullscreen Toggle
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch {
+      // ignore
+    }
   };
 
   // Resolve dynamic route context pill
@@ -188,74 +215,80 @@ export function GlobalBottomBar({
     return null;
   }
 
+  const username = userStats?.username || user?.username || user?.name || "Operative";
+  const userCoins = userStats?.coins ?? 500;
+  const userLevel = userStats?.level ?? 1;
+  const userAchievements = userStats?.achievementCount ?? 0;
+
   return (
     <>
       {/* ── PERSISTENT GLOBAL BOTTOM BAR ──────────────────────────────── */}
-      <footer className="fixed bottom-0 left-0 right-0 z-40 h-10 sm:h-11 bg-card/75 backdrop-blur-2xl border-t border-border/50 shadow-2xl px-3 sm:px-6 flex items-center justify-between text-xs font-mono select-none pointer-events-auto transition-all duration-300">
+      <footer className="fixed bottom-0 left-0 right-0 z-40 h-8 sm:h-9 bg-card/85 backdrop-blur-2xl border-t border-border/50 shadow-2xl px-3 sm:px-6 flex items-center justify-between text-xs font-mono select-none pointer-events-auto transition-all duration-300">
         
-        {/* LEFT SECTION */}
-        <div className="flex items-center gap-3">
-          {isGameRoute ? (
-            /* Game Mode Left: Shard / Map / FPS / Ping */
-            <div className="flex items-center gap-2.5">
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/10 border border-primary/30 text-primary font-bold text-[11px]">
-                <Gamepad2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">SAINTS MMO</span>
+        {/* LEFT SECTION: Connected User & Account Stats / Online Orb */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Green Status Orb */}
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+          </span>
+
+          {user ? (
+            /* Connected User Profile Stats */
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <span className="font-bold text-foreground truncate max-w-[100px] sm:max-w-[140px] text-[11px]">
+                {username}
+              </span>
+
+              {/* Account Level */}
+              <span className="px-1.5 py-0.2 rounded bg-primary/10 border border-primary/25 text-primary font-bold text-[10px]">
+                LVL {userLevel}
+              </span>
+
+              {/* Gold / Coins */}
+              <div className="hidden sm:flex items-center gap-1 text-amber-400 font-bold text-[11px]" title="Saints Coins">
+                <Coins className="w-3 h-3" />
+                <span>{userCoins.toLocaleString()}</span>
               </div>
-              <div className="flex items-center gap-1.5 text-muted-foreground text-[11px]">
-                <span className="text-emerald-400 font-bold">{fps} FPS</span>
-                <span className="opacity-40">·</span>
-                <span className="text-cyan-400 font-bold flex items-center gap-1">
-                  <Activity className="w-3 h-3" /> 24ms
-                </span>
+
+              {/* Achievement Score */}
+              <div className="hidden md:flex items-center gap-1 text-yellow-400 font-bold text-[11px]" title="Achievement Badges">
+                <Trophy className="w-3 h-3" />
+                <span>{userAchievements} AP</span>
               </div>
             </div>
           ) : (
-            /* Web Mode Left: Network Status & Active Players */
-            <div className="flex items-center gap-2.5">
-              <div className="flex items-center gap-1.5">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-                <span className="text-foreground font-bold hidden sm:inline">Saints Network</span>
-              </div>
-              <div className="flex items-center gap-1 text-muted-foreground text-[11px]">
-                <span className="opacity-40">·</span>
-                <span className="text-emerald-400 font-bold">
-                  {mmoPlayerCount > 0 ? `${mmoPlayerCount} Online` : "Connected"}
-                </span>
-              </div>
+            /* Guest Mode */
+            <div className="flex items-center gap-1.5 text-[11px]">
+              <span className="text-foreground font-semibold">Guest</span>
+              <span className="text-muted-foreground opacity-40">·</span>
+              <span className="text-emerald-400 font-bold">
+                {mmoPlayerCount > 0 ? `${mmoPlayerCount} Online` : "Connected"}
+              </span>
             </div>
           )}
         </div>
 
-        {/* CENTER SECTION: Contextual Page Pill / Active Character */}
-        <div className="hidden md:flex items-center justify-center">
-          {isGameRoute && player ? (
-            <div className="flex items-center gap-3 px-3 py-0.5 rounded-full bg-background/60 border border-border/60 text-[11px] shadow-inner">
-              <div className="flex items-center gap-1.5 font-bold text-foreground">
-                <Sparkles className="w-3 h-3 text-primary" />
-                <span>{player.name || "Saint Operative"}</span>
-                <span className="text-primary text-[10px] font-mono">LVL {player.level || 1}</span>
-              </div>
-              <span className="opacity-30">|</span>
-              <div className="flex items-center gap-1 text-rose-400">
-                <Heart className="w-3 h-3" />
-                <span>{player.hp || 100}/{player.maxHp || 100}</span>
-              </div>
-              <span className="opacity-30">|</span>
-              <div className="flex items-center gap-1 text-amber-400 font-bold">
-                <Coins className="w-3 h-3" />
-                <span>{(player.credits || 1000).toLocaleString()} C</span>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 px-3 py-0.5 rounded-full bg-background/50 border border-border/40 text-[11px] text-muted-foreground shadow-inner">
-              <Radio className="w-3 h-3 text-primary animate-pulse" />
-              <span className="font-semibold text-foreground/90">{getRouteLabel()}</span>
-            </div>
-          )}
+        {/* CENTER SECTION: 4 Core Navigation Pages */}
+        <div className="flex items-center justify-center gap-1 sm:gap-2">
+          {BOTTOM_NAV_PAGES.map(({ href, label, icon: Icon }) => {
+            const isActive = pathname === href || (href !== "/home" && pathname?.startsWith(href));
+            return (
+              <Link
+                key={href}
+                href={href}
+                prefetch={true}
+                className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 rounded-md text-[11px] font-sans font-medium transition-all duration-200 ${
+                  isActive
+                    ? "bg-primary/20 text-primary border border-primary/40 shadow-[0_0_8px_rgba(0,245,212,0.25)] font-semibold"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
+                }`}
+              >
+                <Icon className={`w-3 h-3 ${isActive ? "text-primary" : "opacity-70"}`} />
+                <span className="hidden xs:inline">{label}</span>
+              </Link>
+            );
+          })}
         </div>
 
         {/* RIGHT SECTION: Controls, Roles & Social Drawer */}
