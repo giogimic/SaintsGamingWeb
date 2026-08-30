@@ -286,6 +286,27 @@ export function getStarterTilePresets(activeTs?: TilesetMeta | null): TileDefini
   ];
 }
 
+export function suggestGridForImage(w: number, h: number): { size: number; reason: string } {
+  if (w > 0 && h > 0) {
+    if (w % 32 === 0 && h % 32 === 0 && w >= 256) {
+      return { size: 32, reason: 'Detected standard 32×32px pixel grid' };
+    }
+    if (w % 48 === 0 && h % 48 === 0) {
+      return { size: 48, reason: 'Detected 48×48px RPG tilesheet' };
+    }
+    if (w % 24 === 0 && h % 24 === 0) {
+      return { size: 24, reason: 'Detected 24×24px retro grid' };
+    }
+    if (w % 64 === 0 && h % 64 === 0 && w >= 512) {
+      return { size: 64, reason: 'Detected 64×64px HD tile blocks' };
+    }
+    if (w % 16 === 0 && h % 16 === 0) {
+      return { size: 16, reason: 'Detected 16×16px classic pixel grid' };
+    }
+  }
+  return { size: 32, reason: 'Standard 32×32px grid suggested' };
+}
+
 export interface TilesetPickerProps {
   tilesets: TilesetMeta[];
   activeBrushTileId: number;
@@ -333,6 +354,14 @@ export default function TilesetPicker({
   const slicerSelectionRef = useRef<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
   const slicerDragStartRef = useRef<{ x: number; y: number } | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isExtractModalOpen, setIsExtractModalOpen] = useState(false);
+  const [extractTileWidth, setExtractTileWidth] = useState<number>(32);
+  const [extractTileHeight, setExtractTileHeight] = useState<number>(32);
+  const [extractOffsetX, setExtractOffsetX] = useState<number>(0);
+  const [extractOffsetY, setExtractOffsetY] = useState<number>(0);
+  const [extractSpacing, setExtractSpacing] = useState<number>(0);
+  const [extractZoom, setExtractZoom] = useState<number>(1);
+  const [extractOriginPicking, setExtractOriginPicking] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<{ r: number; c: number } | null>(null);
   const [hoveredTile, setHoveredTile] = useState<{ leftPct: number; topPct: number; widthPct: number; heightPct: number; gid: number; col: number; row: number; w: number; h: number } | null>(null);
   const [tilesetSearch, setTilesetSearch] = useState('');
@@ -358,7 +387,25 @@ export default function TilesetPicker({
   const selectedTileDefId = useEditorStore((s) => s.selectedTileDefId);
   const setTileDefinitions = useEditorStore((s) => s.setTileDefinitions);
   const addTileDefinitions = useEditorStore((s) => s.addTileDefinitions);
+  const removeTileDefinition = useEditorStore((s) => s.removeTileDefinition);
   const setSelectedTileDefId = useEditorStore((s) => s.setSelectedTileDefId);
+
+  const handleDeleteTileDefinition = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    soundSynth?.playUiClick?.();
+    removeTileDefinition(id);
+    showToast('Removed tile from library.');
+  };
+
+  const handleLoadStarterPresets = () => {
+    soundSynth?.playActionSound?.();
+    const presets = getStarterTilePresets(ts);
+    addTileDefinitions(presets);
+    if (presets[0]) {
+      handleSelectTileDefinition(presets[0]);
+    }
+    showToast(`Loaded ${presets.length} Starter Tile Presets!`);
+  };
 
   const [libraryFilter, setLibraryFilter] = useState('');
   const [libraryTagFilter, setLibraryTagFilter] = useState('ALL');
@@ -557,9 +604,14 @@ export default function TilesetPicker({
 
     const img = new Image();
     img.onload = () => {
-      const tilewidth = 16;
-      const tileheight = 16;
+      const suggestion = suggestGridForImage(img.width, img.height);
+      const tilewidth = suggestion.size;
+      const tileheight = suggestion.size;
       const columns = Math.max(1, Math.floor(img.width / tilewidth));
+
+      TILESET_SIZES[normalized] = { w: img.width, h: img.height };
+      const base = normalized.split('/').pop() || '';
+      TILESET_SIZES[base] = { w: img.width, h: img.height };
 
       const newTileset: TilesetMeta = {
         firstgid: nextFirstGid,
@@ -577,9 +629,10 @@ export default function TilesetPicker({
       const updated = [...tilesets, newTileset];
       onUpdateTilesets?.(updated);
       setActiveTsIdx(updated.length - 1);
-      setNatural({ w: 0, h: 0 });
+      setNatural({ w: img.width, h: img.height });
       setImgError(false);
       setIsAddModalOpen(false);
+      openExtractModal(newTileset);
     };
     img.onerror = () => {
       const newTileset: TilesetMeta = {
@@ -611,7 +664,14 @@ export default function TilesetPicker({
     const newOffsetY = meta.offsetY !== undefined ? meta.offsetY : (current.offsetY ?? current.margin ?? 0);
     const newSpacing = meta.spacing !== undefined ? meta.spacing : (current.spacing ?? 0);
     const imgW = natural.w || current.imagewidth || 512;
+    const imgH = natural.h || current.imageheight || 512;
     const newCols = meta.columns ?? Math.max(1, Math.floor((imgW - newOffsetX) / (newWidth + newSpacing)));
+
+    if (current.imageSource) {
+      TILESET_SIZES[current.imageSource] = { w: imgW, h: imgH };
+      const base = current.imageSource.split('/').pop() || '';
+      TILESET_SIZES[base] = { w: imgW, h: imgH };
+    }
 
     updated[activeTsIdx] = {
       ...current,
@@ -622,9 +682,11 @@ export default function TilesetPicker({
       offsetY: newOffsetY,
       spacing: newSpacing,
       columns: newCols,
+      imagewidth: imgW,
+      imageheight: imgH,
     };
     onUpdateTilesets?.(updated);
-  }, [tilesets, activeTsIdx, natural.w, onUpdateTilesets]);
+  }, [tilesets, activeTsIdx, natural.w, natural.h, onUpdateTilesets]);
 
   const handleRemoveTileset = (idx: number) => {
     if (!tilesets[idx]) return;
@@ -753,27 +815,32 @@ export default function TilesetPicker({
     if (!currentTs || !activeSlicer) return;
     const nw = naturalRef.current.w || imgRef.current?.naturalWidth || currentTs.imagewidth || 512;
     const nh = naturalRef.current.h || imgRef.current?.naturalHeight || currentTs.imageheight || 512;
-    const minX = Math.min(activeSlicer.x0, activeSlicer.x1);
-    const maxX = Math.max(activeSlicer.x0, activeSlicer.x1);
-    const minY = Math.min(activeSlicer.y0, activeSlicer.y1);
-    const maxY = Math.max(activeSlicer.y0, activeSlicer.y1);
+    const minX = Math.max(0, Math.min(activeSlicer.x0, activeSlicer.x1));
+    const maxX = Math.min(nw, Math.max(activeSlicer.x0, activeSlicer.x1));
+    const minY = Math.max(0, Math.min(activeSlicer.y0, activeSlicer.y1));
+    const maxY = Math.min(nh, Math.max(activeSlicer.y0, activeSlicer.y1));
+    const cropW = Math.max(4, maxX - minX);
+    const cropH = Math.max(4, maxY - minY);
     const offX = currentTs.offsetX ?? currentTs.margin ?? 0;
     const offY = currentTs.offsetY ?? currentTs.margin ?? 0;
     const spacing = currentTs.spacing ?? 0;
 
-    const maxRows = Math.max(1, Math.floor((nh - offY) / (currentTs.tileheight + spacing)));
-    const startCol = Math.min(currentTs.columns - 1, Math.max(0, Math.floor((minX - offX) / (currentTs.tilewidth + spacing))));
-    const startRow = Math.min(maxRows - 1, Math.max(0, Math.floor((minY - offY) / (currentTs.tileheight + spacing))));
-    const endCol = Math.min(currentTs.columns - 1, Math.max(startCol, Math.floor(((maxX - 1) - offX) / (currentTs.tilewidth + spacing))));
-    const endRow = Math.min(maxRows - 1, Math.max(startRow, Math.floor(((maxY - 1) - offY) / (currentTs.tileheight + spacing))));
-    const spanW = endCol - startCol + 1;
-    const spanH = endRow - startRow + 1;
+    const tileW = Math.max(1, currentTs.tilewidth || 16);
+    const tileH = Math.max(1, currentTs.tileheight || 16);
+    const maxRows = Math.max(1, Math.floor((nh - offY) / (tileH + spacing)));
+    const spanW = Math.max(1, Math.round(cropW / (tileW + spacing)));
+    const spanH = Math.max(1, Math.round(cropH / (tileH + spacing)));
+
+    const startCol = Math.max(0, Math.min(currentTs.columns - 1, Math.floor((minX - offX) / (tileW + spacing))));
+    const startRow = Math.max(0, Math.min(maxRows - 1, Math.floor((minY - offY) / (tileH + spacing))));
 
     const gids: number[][] = [];
-    for (let r = startRow; r <= endRow; r++) {
+    for (let r = 0; r < spanH; r++) {
       const rowGids: number[] = [];
-      for (let c = startCol; c <= endCol; c++) {
-        rowGids.push(currentTs.firstgid + r * currentTs.columns + c);
+      for (let c = 0; c < spanW; c++) {
+        const cr = Math.min(maxRows - 1, startRow + r);
+        const cc = Math.min(currentTs.columns - 1, startCol + c);
+        rowGids.push(currentTs.firstgid + cr * currentTs.columns + cc);
       }
       gids.push(rowGids);
     }
@@ -786,6 +853,10 @@ export default function TilesetPicker({
     } else {
       onBrushSelectPatternRef.current?.(null);
       useEditorStore.getState().setPrefabStampMode('1tile');
+    }
+    useEditorStore.getState().setBrushMode('paint');
+    if (useEditorStore.getState().activeLayerIdx === -1) {
+      useEditorStore.getState().setActiveLayerIdx(0);
     }
   }, [slicerSelection]);
 
@@ -831,34 +902,17 @@ export default function TilesetPicker({
 
     isPointerDownRef.current = true;
 
-    // Freeform Slicer mode — snap click or begin drag
+    // Freeform Slicer mode — start unconstrained crop drag
     if (selectionMode === 'slicer') {
       slicerDragStartRef.current = { x: nativeX, y: nativeY };
-      const offX = currentTs.offsetX ?? currentTs.margin ?? 0;
-      const offY = currentTs.offsetY ?? currentTs.margin ?? 0;
-      const spacing = currentTs.spacing ?? 0;
-      const col = Math.min(currentTs.columns - 1, Math.max(0, Math.floor((nativeX - offX) / (currentTs.tilewidth + spacing))));
-      const maxRows = Math.max(1, Math.floor((nh - offY) / (currentTs.tileheight + spacing)));
-      const row = Math.min(maxRows - 1, Math.max(0, Math.floor((nativeY - offY) / (currentTs.tileheight + spacing))));
-      const tileX0 = offX + col * (currentTs.tilewidth + spacing);
-      const tileY0 = offY + row * (currentTs.tileheight + spacing);
-      const tileX1 = tileX0 + currentTs.tilewidth;
-      const tileY1 = tileY0 + currentTs.tileheight;
-
       const sel = {
-        x0: tileX0,
-        y0: tileY0,
-        x1: tileX1,
-        y1: tileY1,
+        x0: nativeX,
+        y0: nativeY,
+        x1: Math.min(nw, nativeX + (currentTs.tilewidth || 16)),
+        y1: Math.min(nh, nativeY + (currentTs.tileheight || 16)),
       };
       slicerSelectionRef.current = sel;
       setSlicerSelection(sel);
-
-      const gid = currentTs.firstgid + row * currentTs.columns + col;
-      isInternalSelectionRef.current = true;
-      onBrushSelectRef.current(gid);
-      onBrushSelectPatternRef.current?.(null);
-      useEditorStore.getState().setPrefabStampMode('1tile');
       return;
     }
 
@@ -1100,7 +1154,7 @@ export default function TilesetPicker({
     };
   }, [selectTileRegion, commitSlicerSelectionToStamp]);
 
-  // Tile Library Selection Handler with accurate GID mapping
+  // Tile Library Selection Handler with accurate GID mapping & instant brush activation
   const handleSelectTileDefinition = useCallback(
     (def: TileDefinition) => {
       soundSynth?.playSelectSound?.();
@@ -1108,13 +1162,34 @@ export default function TilesetPicker({
 
       // Match against active map tilesets
       const cleanSource = def.sourceSheet.replace(/^\/game-assets\/tilesets\//i, '').replace(/^tilesets\//i, '');
-      const matchingTsIdx = tilesets.findIndex(
+      let matchingTsIdx = tilesets.findIndex(
         (t) =>
           t.imageSource.toLowerCase().includes(cleanSource.toLowerCase()) ||
           cleanSource.toLowerCase().includes(t.imageSource.toLowerCase())
       );
 
-      const targetTs = matchingTsIdx !== -1 ? tilesets[matchingTsIdx] : ts;
+      let targetTs = matchingTsIdx !== -1 ? tilesets[matchingTsIdx] : ts;
+
+      // If tileset not in active map tilesets, automatically add it
+      if (matchingTsIdx === -1 && def.sourceSheet) {
+        const nextFirstGid = tilesets.length > 0 ? Math.max(...tilesets.map((t) => t.firstgid)) + 100000 : 1;
+        const newTs: TilesetMeta = {
+          firstgid: nextFirstGid,
+          imageSource: def.sourceSheet,
+          columns: Math.max(1, Math.floor(512 / (def.sourceWidth || 16))),
+          tilewidth: def.sourceWidth || 16,
+          tileheight: def.sourceHeight || 16,
+          imagewidth: 512,
+          imageheight: 512,
+          offsetX: 0,
+          offsetY: 0,
+          spacing: 0,
+        };
+        const updated = [...tilesets, newTs];
+        onUpdateTilesets?.(updated);
+        matchingTsIdx = updated.length - 1;
+        targetTs = newTs;
+      }
 
       if (targetTs) {
         if (matchingTsIdx !== -1 && matchingTsIdx !== activeTsIdx) {
@@ -1127,130 +1202,184 @@ export default function TilesetPicker({
         const offX = targetTs.offsetX ?? targetTs.margin ?? 0;
         const offY = targetTs.offsetY ?? targetTs.margin ?? 0;
         const spacing = targetTs.spacing ?? 0;
-        const col = Math.max(
-          0,
-          Math.min(targetTs.columns - 1, Math.floor((def.sourceX - offX) / (targetTs.tilewidth + spacing)))
-        );
+        const tileW = Math.max(1, targetTs.tilewidth || 16);
+        const tileH = Math.max(1, targetTs.tileheight || 16);
         const maxRows = Math.max(
           1,
-          Math.floor((natural.h || targetTs.imageheight || 512) / (targetTs.tileheight + spacing))
+          Math.floor((natural.h || targetTs.imageheight || 512) / (tileH + spacing))
+        );
+        const col = Math.max(
+          0,
+          Math.min(targetTs.columns - 1, Math.floor((def.sourceX - offX) / (tileW + spacing)))
         );
         const row = Math.max(
           0,
-          Math.min(maxRows - 1, Math.floor((def.sourceY - offY) / (targetTs.tileheight + spacing)))
+          Math.min(maxRows - 1, Math.floor((def.sourceY - offY) / (tileH + spacing)))
         );
 
-        const spanW = Math.max(1, Math.round(def.sourceWidth / targetTs.tilewidth));
-        const spanH = Math.max(1, Math.round(def.sourceHeight / targetTs.tileheight));
+        const spanW = Math.max(1, Math.round(def.sourceWidth / (tileW + spacing)));
+        const spanH = Math.max(1, Math.round(def.sourceHeight / (tileH + spacing)));
 
+        isInternalSelectionRef.current = true;
         if (spanW > 1 || spanH > 1) {
           const gids: number[][] = [];
-          for (let r = row; r < row + spanH; r++) {
+          for (let r = 0; r < spanH; r++) {
             const rowGids: number[] = [];
-            for (let c = col; c < col + spanW; c++) {
-              rowGids.push(targetTs.firstgid + r * targetTs.columns + c);
+            for (let c = 0; c < spanW; c++) {
+              const cr = Math.min(maxRows - 1, row + r);
+              const cc = Math.min(targetTs.columns - 1, col + c);
+              rowGids.push(targetTs.firstgid + cr * targetTs.columns + cc);
             }
             gids.push(rowGids);
           }
-          onBrushSelectRef.current(gids[0]?.[0] || targetTs.firstgid + row * targetTs.columns + col);
+          const topGid = gids[0]?.[0] || targetTs.firstgid + row * targetTs.columns + col;
+          onBrushSelectRef.current(topGid);
           onBrushSelectPatternRef.current?.({ w: spanW, h: spanH, gids });
+          useEditorStore.getState().setPrefabStampMode('footprint');
         } else {
-          const gid = targetTs.firstgid + row * targetTs.columns + col;
+          const gid = def.gid || (targetTs.firstgid + row * targetTs.columns + col);
           onBrushSelectRef.current(gid);
           onBrushSelectPatternRef.current?.(null);
+          useEditorStore.getState().setPrefabStampMode('1tile');
+        }
+
+        useEditorStore.getState().setBrushMode('paint');
+        if (useEditorStore.getState().activeLayerIdx === -1) {
+          useEditorStore.getState().setActiveLayerIdx(0);
         }
       } else {
+        isInternalSelectionRef.current = true;
         onBrushSelectRef.current(def.gid);
         onBrushSelectPatternRef.current?.(null);
+        useEditorStore.getState().setBrushMode('paint');
+        useEditorStore.getState().setPrefabStampMode('1tile');
+        if (useEditorStore.getState().activeLayerIdx === -1) {
+          useEditorStore.getState().setActiveLayerIdx(0);
+        }
       }
 
       showToast(`Selected Tile: ${def.name}`);
     },
-    [tilesets, ts, activeTsIdx, natural.h, showToast]
+    [tilesets, ts, activeTsIdx, natural.h, showToast, onUpdateTilesets]
   );
 
-  // Delete tile definition from Library
-  const handleDeleteTileDefinition = useCallback(
-    async (defId: string, e?: React.MouseEvent) => {
-      e?.stopPropagation();
-      soundSynth?.playActionSound?.();
-      try {
-        setTileDefinitions((prev) => prev.filter((d) => d.id !== defId));
-        if (selectedTileDefId === defId) {
-          setSelectedTileDefId(null);
+  // Open the Tilesheet Grid Calibration & Extraction Wizard
+  const openExtractModal = useCallback((targetTs?: TilesetMeta | null) => {
+    const current = targetTs || tsRef.current;
+    if (!current) return;
+    const nw = naturalRef.current.w || imgRef.current?.naturalWidth || current.imagewidth || 512;
+    const nh = naturalRef.current.h || imgRef.current?.naturalHeight || current.imageheight || 512;
+    const suggestion = suggestGridForImage(nw, nh);
+    const initialSize = current.tilewidth && current.tilewidth !== 16 ? current.tilewidth : suggestion.size;
+
+    setExtractTileWidth(initialSize);
+    setExtractTileHeight(current.tileheight && current.tileheight !== 16 ? current.tileheight : initialSize);
+    setExtractOffsetX(current.offsetX ?? current.margin ?? 0);
+    setExtractOffsetY(current.offsetY ?? current.margin ?? 0);
+    setExtractSpacing(current.spacing ?? 0);
+    setExtractZoom(1);
+    setExtractOriginPicking(false);
+    setIsExtractModalOpen(true);
+    soundSynth?.playActionSound?.();
+  }, []);
+
+  // Apply calibrated grid settings to map and optionally extract all tiles into Library
+  const handleApplyExtractedGrid = useCallback(
+    (andExtractToLibrary: boolean) => {
+      const current = tsRef.current;
+      if (!current) return;
+      const nw = naturalRef.current.w || imgRef.current?.naturalWidth || current.imagewidth || 512;
+      const nh = naturalRef.current.h || imgRef.current?.naturalHeight || current.imageheight || 512;
+      const tw = Math.max(1, extractTileWidth || 32);
+      const th = Math.max(1, extractTileHeight || 32);
+      const offX = Math.max(0, extractOffsetX || 0);
+      const offY = Math.max(0, extractOffsetY || 0);
+      const sp = Math.max(0, extractSpacing || 0);
+      const cols = Math.max(1, Math.floor((nw - offX) / (tw + sp)));
+      const rows = Math.max(1, Math.floor((nh - offY) / (th + sp)));
+
+      handleUpdateTilesetSettings({
+        tilewidth: tw,
+        tileheight: th,
+        offsetX: offX,
+        offsetY: offY,
+        spacing: sp,
+        columns: cols,
+        imagewidth: nw,
+        imageheight: nh,
+      });
+
+      if (current.imageSource) {
+        TILESET_SIZES[current.imageSource] = { w: nw, h: nh };
+        const base = current.imageSource.split('/').pop() || '';
+        TILESET_SIZES[base] = { w: nw, h: nh };
+      }
+
+      if (andExtractToLibrary) {
+        const sheetName = current.imageSource.split('/').pop()?.replace(/\.[^/.]+$/, '') || 'sheet';
+        const extracted: TileDefinition[] = [];
+        const totalCap = 256;
+
+        for (let r = 0; r < rows && extracted.length < totalCap; r++) {
+          for (let c = 0; c < cols && extracted.length < totalCap; c++) {
+            const gid = current.firstgid + r * cols + c;
+            const srcX = offX + c * (tw + sp);
+            const srcY = offY + r * (th + sp);
+            extracted.push({
+              id: `extracted-${sheetName}-${r}-${c}-${Date.now()}`,
+              name: `${sheetName.replace(/_/g, ' ')} [R${r}:C${c}]`,
+              sourceSheet: current.imageSource,
+              sourceX: srcX,
+              sourceY: srcY,
+              sourceWidth: tw,
+              sourceHeight: th,
+              gid,
+              tags: ['terrain', 'extracted', sheetName.toLowerCase()],
+              collision: 'NONE',
+              gameplayFlags: ['walkable'],
+              material: 'GRASS',
+            });
+          }
         }
-        const manager = AssetManager.getInstance();
-        await manager.deleteAsset(defId);
-        showToast('Tile removed from Library.');
-      } catch {
-        showToast('Removed tile from Library view.');
+
+        addTileDefinitions(extracted);
+        if (extracted.length > 0) {
+          setSelectedTileDefId(extracted[0].id);
+          isInternalSelectionRef.current = true;
+          onBrushSelectRef.current(extracted[0].gid);
+          onBrushSelectPatternRef.current?.(null);
+          useEditorStore.getState().setBrushMode('paint');
+          useEditorStore.getState().setPrefabStampMode('1tile');
+          if (useEditorStore.getState().activeLayerIdx === -1) {
+            useEditorStore.getState().setActiveLayerIdx(0);
+          }
+          setActiveTab('library');
+        }
+        showToast(`Calibrated grid & extracted ${extracted.length} tiles to Library!`);
+      } else {
+        showToast(`Applied ${tw}×${th}px grid alignment (${cols} cols × ${rows} rows)`);
       }
+
+      soundSynth?.playActionSound?.();
+      setIsExtractModalOpen(false);
     },
-    [selectedTileDefId, showToast]
+    [
+      extractTileWidth,
+      extractTileHeight,
+      extractOffsetX,
+      extractOffsetY,
+      extractSpacing,
+      handleUpdateTilesetSettings,
+      addTileDefinitions,
+      setSelectedTileDefId,
+      showToast,
+    ]
   );
 
-  // Load / Seed Starter Presets
-  const handleLoadStarterPresets = useCallback(() => {
-    soundSynth?.playActionSound?.();
-    const presets = getStarterTilePresets(ts);
-    addTileDefinitions(presets);
-    if (presets.length > 0) {
-      setSelectedTileDefId(presets[0].id);
-    }
-    setLibraryFilter('');
-    setLibraryTagFilter('ALL');
-    showToast('Loaded Starter Tile Presets');
-  }, [ts, addTileDefinitions, setSelectedTileDefId, showToast]);
-
-  // Extract all tiles from active tileset sheet into the Library
+  // Extract all tiles from active tileset sheet into the Library (redirects to Calibration Wizard)
   const handleExtractTilesFromActiveSheet = useCallback(() => {
-    if (!ts || !natural.w || !natural.h) return;
-    soundSynth?.playActionSound?.();
-    const tw = ts.tilewidth || 16;
-    const th = ts.tileheight || 16;
-    const offX = ts.offsetX ?? ts.margin ?? 0;
-    const offY = ts.offsetY ?? ts.margin ?? 0;
-    const spacing = ts.spacing ?? 0;
-    const maxCols = Math.min(ts.columns, Math.max(1, Math.floor((natural.w - offX + spacing) / (tw + spacing))));
-    const maxRows = Math.max(1, Math.floor((natural.h - offY + spacing) / (th + spacing)));
-    // Cap at 128 tiles to avoid performance issues on massive sheets
-    const totalCap = 128;
-    const extracted: TileDefinition[] = [];
-
-    const sheetName = ts.imageSource.split('/').pop()?.replace(/\.[^/.]+$/, '') || 'sheet';
-
-    for (let r = 0; r < maxRows && extracted.length < totalCap; r++) {
-      for (let c = 0; c < maxCols && extracted.length < totalCap; c++) {
-        const gid = ts.firstgid + r * ts.columns + c;
-        const srcX = offX + c * (tw + spacing);
-        const srcY = offY + r * (th + spacing);
-        extracted.push({
-          id: `extracted-${sheetName}-${r}-${c}-${Date.now()}`,
-          name: `${sheetName.replace(/_/g, ' ')} [R${r}:C${c}]`,
-          sourceSheet: ts.imageSource,
-          sourceX: srcX,
-          sourceY: srcY,
-          sourceWidth: tw,
-          sourceHeight: th,
-          gid,
-          tags: ['terrain', 'extracted', sheetName.toLowerCase()],
-          collision: 'NONE',
-          gameplayFlags: ['walkable'],
-          material: 'GRASS',
-        });
-      }
-    }
-
-    addTileDefinitions(extracted);
-    if (extracted.length > 0) {
-      setSelectedTileDefId(extracted[0].id);
-      onBrushSelectRef.current(extracted[0].gid);
-      setLibraryFilter('');
-      setLibraryTagFilter('ALL');
-      setActiveTab('library');
-    }
-    showToast(`Extracted ${extracted.length} tile${extracted.length !== 1 ? 's' : ''} into Library`);
-  }, [ts, natural, showToast, addTileDefinitions, setSelectedTileDefId]);
+    openExtractModal();
+  }, [openExtractModal]);
 
   // Slicer Action Handlers
   const handleSlicerStamp1Tile = () => {
@@ -1279,35 +1408,46 @@ export default function TilesetPicker({
     const offX = ts.offsetX ?? ts.margin ?? 0;
     const offY = ts.offsetY ?? ts.margin ?? 0;
     const spacing = ts.spacing ?? 0;
-    const minX = Math.min(slicerSelection.x0, slicerSelection.x1);
-    const minY = Math.min(slicerSelection.y0, slicerSelection.y1);
-    const maxX = Math.max(slicerSelection.x0, slicerSelection.x1);
-    const maxY = Math.max(slicerSelection.y0, slicerSelection.y1);
-    const cropW = Math.max(1, maxX - minX);
-    const cropH = Math.max(1, maxY - minY);
+    const minX = Math.max(0, Math.min(slicerSelection.x0, slicerSelection.x1));
+    const minY = Math.max(0, Math.min(slicerSelection.y0, slicerSelection.y1));
+    const maxX = Math.min(natural.w || 512, Math.max(slicerSelection.x0, slicerSelection.x1));
+    const maxY = Math.min(natural.h || 512, Math.max(slicerSelection.y0, slicerSelection.y1));
+    const cropW = Math.max(4, maxX - minX);
+    const cropH = Math.max(4, maxY - minY);
 
-    const maxRows = Math.max(1, Math.floor((natural.h - offY) / (ts.tileheight + spacing)));
-    const startCol = Math.min(ts.columns - 1, Math.max(0, Math.floor((minX - offX) / (ts.tilewidth + spacing))));
-    const startRow = Math.min(maxRows - 1, Math.max(0, Math.floor((minY - offY) / (ts.tileheight + spacing))));
-    const endCol = Math.min(ts.columns - 1, Math.max(startCol, Math.floor(((maxX - 1) - offX) / (ts.tilewidth + spacing))));
-    const endRow = Math.min(maxRows - 1, Math.max(startRow, Math.floor(((maxY - 1) - offY) / (ts.tileheight + spacing))));
-    const spanW = endCol - startCol + 1;
-    const spanH = endRow - startRow + 1;
+    const tileW = Math.max(1, ts.tilewidth || 16);
+    const tileH = Math.max(1, ts.tileheight || 16);
+    const maxRows = Math.max(1, Math.floor((natural.h - offY) / (tileH + spacing)));
+    const spanW = Math.max(1, Math.round(cropW / (tileW + spacing)));
+    const spanH = Math.max(1, Math.round(cropH / (tileH + spacing)));
+
+    const startCol = Math.max(0, Math.min(ts.columns - 1, Math.floor((minX - offX) / (tileW + spacing))));
+    const startRow = Math.max(0, Math.min(maxRows - 1, Math.floor((minY - offY) / (tileH + spacing))));
 
     const gids: number[][] = [];
-    for (let r = startRow; r <= endRow; r++) {
+    for (let r = 0; r < spanH; r++) {
       const rowGids: number[] = [];
-      for (let c = startCol; c <= endCol; c++) {
-        rowGids.push(ts.firstgid + r * ts.columns + c);
+      for (let c = 0; c < spanW; c++) {
+        const cr = Math.min(maxRows - 1, startRow + r);
+        const cc = Math.min(ts.columns - 1, startCol + c);
+        rowGids.push(ts.firstgid + cr * ts.columns + cc);
       }
       gids.push(rowGids);
     }
     const topGid = gids[0]?.[0] ?? (ts.firstgid + startRow * ts.columns + startCol);
     isInternalSelectionRef.current = true;
     onBrushSelectRef.current(topGid);
-    onBrushSelectPatternRef.current?.({ w: spanW, h: spanH, gids });
-    useEditorStore.getState().setPrefabStampMode('footprint');
+    if (spanW > 1 || spanH > 1) {
+      onBrushSelectPatternRef.current?.({ w: spanW, h: spanH, gids });
+      useEditorStore.getState().setPrefabStampMode('footprint');
+    } else {
+      onBrushSelectPatternRef.current?.(null);
+      useEditorStore.getState().setPrefabStampMode('1tile');
+    }
     useEditorStore.getState().setBrushMode('paint');
+    if (useEditorStore.getState().activeLayerIdx === -1) {
+      useEditorStore.getState().setActiveLayerIdx(0);
+    }
     showToast(`Selected ${spanW}×${spanH} Tile Stamp (${cropW}×${cropH}px)`);
   };
 
@@ -1317,30 +1457,29 @@ export default function TilesetPicker({
     const offX = ts.offsetX ?? ts.margin ?? 0;
     const offY = ts.offsetY ?? ts.margin ?? 0;
     const spacing = ts.spacing ?? 0;
-    const minX = Math.min(slicerSelection.x0, slicerSelection.x1);
-    const minY = Math.min(slicerSelection.y0, slicerSelection.y1);
-    const maxX = Math.max(slicerSelection.x0, slicerSelection.x1);
-    const maxY = Math.max(slicerSelection.y0, slicerSelection.y1);
-    const cropW = Math.max(1, maxX - minX);
-    const cropH = Math.max(1, maxY - minY);
+    const minX = Math.max(0, Math.min(slicerSelection.x0, slicerSelection.x1));
+    const minY = Math.max(0, Math.min(slicerSelection.y0, slicerSelection.y1));
+    const maxX = Math.min(natural.w || 512, Math.max(slicerSelection.x0, slicerSelection.x1));
+    const maxY = Math.min(natural.h || 512, Math.max(slicerSelection.y0, slicerSelection.y1));
+    const cropW = Math.max(4, maxX - minX);
+    const cropH = Math.max(4, maxY - minY);
 
-    const maxRows = Math.max(1, Math.floor((natural.h - offY) / (ts.tileheight + spacing)));
-    const startCol = Math.min(ts.columns - 1, Math.max(0, Math.floor((minX - offX) / (ts.tilewidth + spacing))));
-    const startRow = Math.min(maxRows - 1, Math.max(0, Math.floor((minY - offY) / (ts.tileheight + spacing))));
-    const endCol = Math.min(ts.columns - 1, Math.max(startCol, Math.floor(((maxX - 1) - offX) / (ts.tilewidth + spacing))));
-    const endRow = Math.min(maxRows - 1, Math.max(startRow, Math.floor(((maxY - 1) - offY) / (ts.tileheight + spacing))));
-    const spanW = endCol - startCol + 1;
-    const spanH = endRow - startRow + 1;
+    const tileW = Math.max(1, ts.tilewidth || 16);
+    const tileH = Math.max(1, ts.tileheight || 16);
+    const maxRows = Math.max(1, Math.floor((natural.h - offY) / (tileH + spacing)));
+    const spanW = Math.max(1, Math.round(cropW / (tileW + spacing)));
+    const spanH = Math.max(1, Math.round(cropH / (tileH + spacing)));
+
+    const startCol = Math.max(0, Math.min(ts.columns - 1, Math.floor((minX - offX) / (tileW + spacing))));
+    const startRow = Math.max(0, Math.min(maxRows - 1, Math.floor((minY - offY) / (tileH + spacing))));
 
     const visualData: PrefabTileData[] = [];
     for (let r = 0; r < spanH; r++) {
       for (let c = 0; c < spanW; c++) {
-        const tr = startRow + r;
-        const tc = startCol + c;
-        if (tr < maxRows && tc < ts.columns) {
-          const tileId = ts.firstgid + tr * ts.columns + tc;
-          visualData.push({ layerOffset: 0, r, c, tileId });
-        }
+        const tr = Math.min(maxRows - 1, startRow + r);
+        const tc = Math.min(ts.columns - 1, startCol + c);
+        const tileId = ts.firstgid + tr * ts.columns + tc;
+        visualData.push({ layerOffset: 0, r, c, tileId });
       }
     }
 
@@ -1382,17 +1521,19 @@ export default function TilesetPicker({
     const offX = ts.offsetX ?? ts.margin ?? 0;
     const offY = ts.offsetY ?? ts.margin ?? 0;
     const spacing = ts.spacing ?? 0;
-    const minX = Math.min(slicerSelection.x0, slicerSelection.x1);
-    const minY = Math.min(slicerSelection.y0, slicerSelection.y1);
-    const maxX = Math.max(slicerSelection.x0, slicerSelection.x1);
-    const maxY = Math.max(slicerSelection.y0, slicerSelection.y1);
-    const cropW = Math.max(1, maxX - minX);
-    const cropH = Math.max(1, maxY - minY);
+    const minX = Math.max(0, Math.min(slicerSelection.x0, slicerSelection.x1));
+    const minY = Math.max(0, Math.min(slicerSelection.y0, slicerSelection.y1));
+    const maxX = Math.min(natural.w || 512, Math.max(slicerSelection.x0, slicerSelection.x1));
+    const maxY = Math.min(natural.h || 512, Math.max(slicerSelection.y0, slicerSelection.y1));
+    const cropW = Math.max(4, maxX - minX);
+    const cropH = Math.max(4, maxY - minY);
     const sheetName = ts.imageSource.split('/').pop()?.replace(/\.[^/.]+$/, '') || 'sheet';
 
-    const maxRows = Math.max(1, Math.floor((natural.h - offY) / (ts.tileheight + spacing)));
-    const startCol = Math.min(ts.columns - 1, Math.max(0, Math.floor((minX - offX) / (ts.tilewidth + spacing))));
-    const startRow = Math.min(maxRows - 1, Math.max(0, Math.floor((minY - offY) / (ts.tileheight + spacing))));
+    const tileW = Math.max(1, ts.tilewidth || 16);
+    const tileH = Math.max(1, ts.tileheight || 16);
+    const maxRows = Math.max(1, Math.floor((natural.h - offY) / (tileH + spacing)));
+    const startCol = Math.max(0, Math.min(ts.columns - 1, Math.floor((minX - offX) / (tileW + spacing))));
+    const startRow = Math.max(0, Math.min(maxRows - 1, Math.floor((minY - offY) / (tileH + spacing))));
     const topGid = ts.firstgid + startRow * ts.columns + startCol;
 
     const newDef: TileDefinition = {
@@ -1414,27 +1555,30 @@ export default function TilesetPicker({
     };
 
     addTileDefinitions([newDef]);
-    setSelectedTileDefId(newDef.id);
-    onBrushSelectRef.current(topGid);
+    handleSelectTileDefinition(newDef);
     setLibraryFilter('');
     setLibraryTagFilter('ALL');
     setActiveTab('library');
-    showToast(`Extracted ${cropW}×${cropH}px Tile to Library!`);
+    showToast(`Extracted ${cropW}×${cropH}px Tile to Library & Activated Brush!`);
   };
 
   const handleSlicerSaveDefinition = () => {
     if (!ts || !slicerSelection) return;
     soundSynth?.playActionSound?.();
-    const cropW = slicerSelection.x1 - slicerSelection.x0;
-    const cropH = slicerSelection.y1 - slicerSelection.y0;
+    const minX = Math.max(0, Math.min(slicerSelection.x0, slicerSelection.x1));
+    const minY = Math.max(0, Math.min(slicerSelection.y0, slicerSelection.y1));
+    const maxX = Math.min(natural.w || 512, Math.max(slicerSelection.x0, slicerSelection.x1));
+    const maxY = Math.min(natural.h || 512, Math.max(slicerSelection.y0, slicerSelection.y1));
+    const cropW = Math.max(4, maxX - minX);
+    const cropH = Math.max(4, maxY - minY);
     const offX = ts.offsetX ?? ts.margin ?? 0;
     const offY = ts.offsetY ?? ts.margin ?? 0;
     const spacing = ts.spacing ?? 0;
-    const minX = Math.min(slicerSelection.x0, slicerSelection.x1);
-    const minY = Math.min(slicerSelection.y0, slicerSelection.y1);
-    const maxRows = Math.max(1, Math.floor((natural.h - offY) / (ts.tileheight + spacing)));
-    const startCol = Math.min(ts.columns - 1, Math.max(0, Math.floor((minX - offX) / (ts.tilewidth + spacing))));
-    const startRow = Math.min(maxRows - 1, Math.max(0, Math.floor((minY - offY) / (ts.tileheight + spacing))));
+    const tileW = Math.max(1, ts.tilewidth || 16);
+    const tileH = Math.max(1, ts.tileheight || 16);
+    const maxRows = Math.max(1, Math.floor((natural.h - offY) / (tileH + spacing)));
+    const startCol = Math.max(0, Math.min(ts.columns - 1, Math.floor((minX - offX) / (tileW + spacing))));
+    const startRow = Math.max(0, Math.min(maxRows - 1, Math.floor((minY - offY) / (tileH + spacing))));
     const topGid = ts.firstgid + startRow * ts.columns + startCol;
 
     setPendingDef({
@@ -1907,6 +2051,17 @@ export default function TilesetPicker({
               </div>
 
               <div className="flex items-center gap-1.5">
+                {/* Calibrate & Extract Wizard Button */}
+                <button
+                  type="button"
+                  onClick={() => openExtractModal()}
+                  className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition cursor-pointer"
+                  title="Open interactive grid calibration and sheet extraction wizard"
+                >
+                  <Scissors className="w-3 h-3" />
+                  <span>Calibrate & Extract</span>
+                </button>
+
                 {/* Align Grid Origin Button */}
                 {selectionMode === 'grid' && (
                   <button
@@ -2319,12 +2474,12 @@ export default function TilesetPicker({
 
                 <button
                   type="button"
-                  onClick={handleSlicerSaveDefinition}
-                  className="px-2 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold flex items-center gap-1 cursor-pointer shadow transition"
-                  title="Save tile to library"
+                  onClick={() => openExtractModal()}
+                  className="px-2 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] font-bold flex items-center gap-1 cursor-pointer shadow transition"
+                  title="Open interactive grid calibration for this sheet"
                 >
-                  <Save className="w-3 h-3" />
-                  <span>Save Tile</span>
+                  <Sliders className="w-3 h-3" />
+                  <span>Calibrate Grid</span>
                 </button>
 
                 <button
@@ -3367,6 +3522,343 @@ export default function TilesetPicker({
               >
                 Save to Tile Library
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── TILESHEET GRID CALIBRATION & EXTRACTION WIZARD MODAL ─── */}
+      {isExtractModalOpen && ts && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-5xl max-h-[90vh] flex flex-col rounded-2xl border border-amber-500/40 bg-[#050b14] shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden font-mono text-xs text-slate-200">
+            {/* MODAL HEADER */}
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-amber-500/30 bg-[#08101e]">
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-400">
+                  <Scissors className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-amber-200 flex items-center gap-2">
+                    <span>Tilesheet Calibration & Extraction Wizard</span>
+                    <span className="text-[10px] font-normal px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      Interactive Grid Studio
+                    </span>
+                  </h3>
+                  <p className="text-[10px] text-slate-400">
+                    Align grid boundaries, calibrate tile dimensions, and extract sprites directly into your Tile Library.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] text-slate-400 bg-black/50 px-2.5 py-1 rounded-md border border-slate-800 font-mono truncate max-w-[200px]" title={ts.imageSource}>
+                  {ts.imageSource.split('/').pop()}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsExtractModalOpen(false)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* MODAL BODY (SPLIT CONTROLS & LIVE VISUAL CANVAS) */}
+            <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden">
+              {/* LEFT SIDEBAR: CONTROLS & SMART SUGGESTION */}
+              <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-slate-800/80 p-4 overflow-y-auto custom-scrollbar flex flex-col gap-4 bg-[#070e1a]/95 shrink-0">
+                {/* SMART SUGGESTION CARD */}
+                {(() => {
+                  const nw = natural.w || ts.imagewidth || 512;
+                  const nh = natural.h || ts.imageheight || 512;
+                  const suggestion = suggestGridForImage(nw, nh);
+                  return (
+                    <div className="p-3 rounded-xl bg-gradient-to-br from-amber-950/40 to-black border border-amber-500/40 flex flex-col gap-2 shadow">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-amber-400" />
+                          Smart Suggestion
+                        </span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/30 text-amber-200">
+                          {suggestion.size}×{suggestion.size}px
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-300 leading-relaxed">
+                        {suggestion.reason}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          soundSynth?.playActionSound?.();
+                          setExtractTileWidth(suggestion.size);
+                          setExtractTileHeight(suggestion.size);
+                          showToast(`Applied suggested ${suggestion.size}×${suggestion.size}px grid`);
+                        }}
+                        className="mt-1 w-full py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Apply Suggestion ({suggestion.size}×{suggestion.size})</span>
+                      </button>
+                    </div>
+                  );
+                })()}
+
+                {/* QUICK PRESET PILLS */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">
+                    Grid Size Presets
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[16, 24, 32, 48, 64, 128].map((sz) => (
+                      <button
+                        key={sz}
+                        type="button"
+                        onClick={() => {
+                          soundSynth?.playUiClick?.();
+                          setExtractTileWidth(sz);
+                          setExtractTileHeight(sz);
+                        }}
+                        className={`py-1.5 px-2 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer border ${
+                          extractTileWidth === sz && extractTileHeight === sz
+                            ? 'bg-amber-500 text-black border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.5)]'
+                            : 'bg-black/40 text-slate-300 hover:bg-white/5 border-slate-700/60'
+                        }`}
+                      >
+                        {sz}×{sz}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* FINE-TUNING DIMENSIONS */}
+                <div className="flex flex-col gap-2.5 bg-black/40 p-3 rounded-xl border border-slate-800">
+                  <label className="text-[10px] font-bold text-amber-400/90 uppercase tracking-wider flex items-center justify-between">
+                    <span>Fine Tuning</span>
+                    <Sliders className="w-3 h-3 text-amber-400" />
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[9px] text-slate-400 block mb-0.5">Tile Width (px)</label>
+                      <input
+                        type="number"
+                        min="4"
+                        max="512"
+                        value={extractTileWidth}
+                        onChange={(e) => setExtractTileWidth(Math.max(4, parseInt(e.target.value) || 16))}
+                        className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1 text-white font-mono text-xs focus:border-amber-400 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] text-slate-400 block mb-0.5">Tile Height (px)</label>
+                      <input
+                        type="number"
+                        min="4"
+                        max="512"
+                        value={extractTileHeight}
+                        onChange={(e) => setExtractTileHeight(Math.max(4, parseInt(e.target.value) || 16))}
+                        className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1 text-white font-mono text-xs focus:border-amber-400 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[9px] text-slate-400 block mb-0.5">Offset X (px)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="512"
+                        value={extractOffsetX}
+                        onChange={(e) => setExtractOffsetX(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1 text-white font-mono text-xs focus:border-amber-400 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] text-slate-400 block mb-0.5">Offset Y (px)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="512"
+                        value={extractOffsetY}
+                        onChange={(e) => setExtractOffsetY(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1 text-white font-mono text-xs focus:border-amber-400 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[9px] text-slate-400 block mb-0.5">Spacing / Margin (px)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="64"
+                      value={extractSpacing}
+                      onChange={(e) => setExtractSpacing(Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1 text-white font-mono text-xs focus:border-amber-400 focus:outline-none"
+                    />
+                  </div>
+
+                  {/* Interactive Origin Picker Toggle */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundSynth?.playUiClick?.();
+                      setExtractOriginPicking((prev) => !prev);
+                      if (!extractOriginPicking) {
+                        showToast('Click top-left corner of any tile on the preview sheet to align origin.');
+                      }
+                    }}
+                    className={`w-full py-1.5 px-2 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
+                      extractOriginPicking
+                        ? 'bg-rose-600 text-white border-rose-400 animate-pulse shadow-[0_0_15px_rgba(225,29,72,0.6)]'
+                        : 'bg-white/5 hover:bg-white/10 text-amber-300 border-amber-500/30'
+                    }`}
+                  >
+                    <Crosshair className="w-3.5 h-3.5" />
+                    <span>{extractOriginPicking ? 'Click Canvas to Set Origin' : 'Pick Origin on Image'}</span>
+                  </button>
+                </div>
+
+                {/* CALCULATED STATS */}
+                {(() => {
+                  const nw = natural.w || ts.imagewidth || 512;
+                  const nh = natural.h || ts.imageheight || 512;
+                  const cols = Math.max(1, Math.floor((nw - extractOffsetX) / (extractTileWidth + extractSpacing)));
+                  const rows = Math.max(1, Math.floor((nh - extractOffsetY) / (extractTileHeight + extractSpacing)));
+                  const total = cols * rows;
+                  return (
+                    <div className="flex flex-col gap-1 px-3 py-2 bg-black/60 rounded-xl border border-slate-800 text-[10px]">
+                      <div className="flex items-center justify-between text-slate-400">
+                        <span>Image Size:</span>
+                        <span className="text-white font-bold">{nw} × {nh} px</span>
+                      </div>
+                      <div className="flex items-center justify-between text-slate-400">
+                        <span>Calculated Grid:</span>
+                        <span className="text-amber-300 font-bold">{cols} cols × {rows} rows</span>
+                      </div>
+                      <div className="flex items-center justify-between text-slate-400 pt-1 border-t border-slate-800">
+                        <span>Total Sliced Tiles:</span>
+                        <span className="text-emerald-400 font-bold">{total} tiles</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* RIGHT CANVAS: LIVE INTERACTIVE PREVIEW WITH OVERLAY GRID */}
+              <div className="flex-1 min-w-0 bg-black flex flex-col overflow-hidden relative">
+                {/* ZOOM & VIEW CONTROLS */}
+                <div className="flex items-center justify-between px-3 py-1.5 bg-[#08101e] border-b border-slate-800 text-[10px] shrink-0">
+                  <span className="text-slate-400 flex items-center gap-1.5">
+                    <Grid className="w-3.5 h-3.5 text-amber-400" />
+                    Live Calibrated Preview
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {[0.5, 1, 2, 3].map((z) => (
+                      <button
+                        key={z}
+                        type="button"
+                        onClick={() => setExtractZoom(z)}
+                        className={`px-2 py-0.5 rounded text-[9px] font-bold cursor-pointer transition ${
+                          extractZoom === z
+                            ? 'bg-amber-500 text-black font-bold'
+                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                        }`}
+                      >
+                        {z}x
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* SCROLLABLE IMAGE CANVAS WITH GRID */}
+                <div className="flex-1 overflow-auto p-4 custom-scrollbar relative flex items-center justify-center bg-[#02060d]">
+                  <div
+                    className="relative inline-block border border-amber-500/40 rounded shadow-2xl overflow-hidden"
+                    style={{
+                      width: natural.w > 0 ? `${natural.w * extractZoom}px` : 'auto',
+                      height: natural.h > 0 ? `${natural.h * extractZoom}px` : 'auto',
+                      imageRendering: 'pixelated',
+                      cursor: extractOriginPicking ? 'crosshair' : 'default',
+                    }}
+                    onClick={(e) => {
+                      if (!extractOriginPicking) return;
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const x = (e.clientX - rect.left) / extractZoom;
+                      const y = (e.clientY - rect.top) / extractZoom;
+                      setExtractOffsetX(Math.max(0, Math.floor(x)));
+                      setExtractOffsetY(Math.max(0, Math.floor(y)));
+                      setExtractOriginPicking(false);
+                      showToast(`Origin set to X:${Math.floor(x)}px, Y:${Math.floor(y)}px`);
+                      soundSynth?.playSelectSound?.();
+                    }}
+                  >
+                    <img
+                      src={
+                        ts.imageSource.startsWith('/') || ts.imageSource.startsWith('http')
+                          ? ts.imageSource
+                          : `/game-assets/tilesets/${ts.imageSource}`
+                      }
+                      alt={ts.imageSource}
+                      className="block select-none pointer-events-none"
+                      style={{
+                        width: `${(natural.w || 512) * extractZoom}px`,
+                        height: `${(natural.h || 512) * extractZoom}px`,
+                        imageRendering: 'pixelated',
+                      }}
+                      draggable={false}
+                    />
+
+                    {/* DYNAMIC CALIBRATED GRID OVERLAY */}
+                    <div
+                      className="pointer-events-none absolute inset-0 z-10"
+                      style={{
+                        backgroundImage: `
+                          linear-gradient(to right, rgba(245, 158, 11, 0.45) 1px, transparent 1px),
+                          linear-gradient(to bottom, rgba(245, 158, 11, 0.45) 1px, transparent 1px)
+                        `,
+                        backgroundPosition: `${extractOffsetX * extractZoom}px ${extractOffsetY * extractZoom}px`,
+                        backgroundSize: `${(extractTileWidth + extractSpacing) * extractZoom}px ${(extractTileHeight + extractSpacing) * extractZoom}px`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* MODAL FOOTER ACTIONS */}
+            <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-t border-amber-500/30 bg-[#08101e]">
+              <span className="text-[10px] text-slate-400 italic">
+                Tip: Extracting saves all tiles into your persistent Tile Library for 1-click painting.
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsExtractModalOpen(false)}
+                  className="px-3.5 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-white/5 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleApplyExtractedGrid(false)}
+                  className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-200 font-bold text-xs border border-amber-500/30 transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <Grid className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Calibrate Sheet Grid Only</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleApplyExtractedGrid(true)}
+                  className="px-5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-bold text-xs shadow-[0_0_20px_rgba(245,158,11,0.5)] transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <Scissors className="w-3.5 h-3.5 text-black" />
+                  <span>Extract All Tiles to Library</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

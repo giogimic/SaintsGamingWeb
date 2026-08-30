@@ -1417,7 +1417,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             return;
           }
 
-          const target = resolvePaintTarget(map, activeLayerIdx);
+          const liveMap = useGameStore.getState().activeMapData || map;
+          const target = resolvePaintTarget(liveMap, activeLayerIdx);
           if (target.kind === 'unavailable') {
             showToast(target.reason);
             return;
@@ -1468,12 +1469,12 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             const paintedOps: any[] = [];
             for (const pt of coordsToPaint) {
               if (hasSelection && !isCellInsideSelection(pt.r, pt.c)) continue;
-              const painted = paintWorldCell(map, LOGIC_LAYER_IDX, pt.r, pt.c, logicId, worldSync);
+              const painted = paintWorldCell(liveMap, LOGIC_LAYER_IDX, pt.r, pt.c, logicId, worldSync);
               if (!('error' in painted)) {
                 paintedOps.push(painted.cell);
                 // A missing overlay means the engine was rebuilt under us; rebuild and retry.
                 if (!engine.updateLogicTile(pt.r, pt.c, logicId)) {
-                  engine.enableLogicGridOverlay(map.grid || []);
+                  engine.enableLogicGridOverlay(liveMap.grid || []);
                   engine.updateLogicTile(pt.r, pt.c, logicId);
                 }
               }
@@ -1485,7 +1486,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           }
 
           if (target.kind === 'visual' && paintValue > 0) {
-            const isValidGid = map.tilesets?.some((ts: any) => ts.firstgid <= paintValue);
+            const isValidGid = liveMap.tilesets?.some((ts: any) => ts.firstgid <= paintValue);
             if (!isValidGid) {
               showToast(`Warning: Brush GID ${paintValue} is not in any tileset.`);
             }
@@ -1516,7 +1517,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                   if (patVal === 0 && brushMode !== 'erase') continue;
                   
                   const painted = paintWorldCell(
-                    map,
+                    liveMap,
                     target.layerIdx,
                     tr,
                     tc,
@@ -1525,7 +1526,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                   );
                   if (!('error' in painted)) {
                     paintedOps.push(painted.cell);
-                    engine.updateSingleTile(tr, tc, patVal, target.layerIdx, map.tilesets);
+                    engine.updateSingleTile(tr, tc, patVal, target.layerIdx, liveMap.tilesets);
                   }
                 }
               }
@@ -1535,7 +1536,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 ? (store.activeBrushPattern.gids[0]?.[0] || paintValue)
                 : paintValue;
               const painted = paintWorldCell(
-                map,
+                liveMap,
                 target.layerIdx,
                 pt.r,
                 pt.c,
@@ -1544,7 +1545,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               );
               if (!('error' in painted)) {
                 paintedOps.push(painted.cell);
-                engine.updateSingleTile(pt.r, pt.c, valToPaint, target.layerIdx, map.tilesets);
+                engine.updateSingleTile(pt.r, pt.c, valToPaint, target.layerIdx, liveMap.tilesets);
               }
             }
           }

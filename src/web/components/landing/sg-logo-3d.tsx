@@ -1,88 +1,102 @@
-import { SVGProps } from "react";
+import { SVGProps, useId } from "react";
+
+const WHITE_BLOCKS = [
+  { x: 132, y: 25, w: 12, h: 12 },
+  { x: 116, y: 37, w: 16, h: 12 },
+  { x: 100, y: 49, w: 16, h: 12 },
+  { x: 84, y: 61, w: 16, h: 12 },
+  { x: 68, y: 73, w: 16, h: 12 },
+  { x: 56, y: 85, w: 12, h: 90 },
+  { x: 68, y: 175, w: 16, h: 12 },
+  { x: 84, y: 187, w: 16, h: 12 },
+  { x: 100, y: 199, w: 16, h: 12 },
+  { x: 116, y: 211, w: 16, h: 12 },
+  { x: 132, y: 223, w: 12, h: 12 },
+];
+
+const PINK_BLOCKS = [
+  { x: 156, y: 25, w: 12, h: 12 },
+  { x: 168, y: 37, w: 16, h: 12 },
+  { x: 184, y: 49, w: 16, h: 12 },
+  { x: 200, y: 61, w: 16, h: 12 },
+  { x: 216, y: 73, w: 16, h: 12 },
+  { x: 232, y: 85, w: 12, h: 90 },
+  { x: 216, y: 175, w: 16, h: 12 },
+  { x: 200, y: 187, w: 16, h: 12 },
+  { x: 184, y: 199, w: 16, h: 12 },
+  { x: 168, y: 211, w: 16, h: 12 },
+  { x: 156, y: 223, w: 12, h: 12 },
+];
+
+const BLACK_DIVIDER_BLOCKS = [
+  { x: 144, y: 25, w: 12, h: 12 },
+  { x: 144, y: 223, w: 12, h: 12 },
+];
+
+const BRAND_PINK = "#E6007E";
+const BRAND_WHITE = "#FFFFFF";
+const BRAND_BLACK = "#000000";
 
 export function SGLogo3D({ className, size = 200, ...props }: SVGProps<SVGSVGElement> & { size?: number }) {
-  // S — 12-point filled polygon with complete closed border
-  // Shape: top bar → left connector → mid bar → right connector → bottom bar
-  const sPoints = [
-    "100,95",  "185,95",   // top bar top edge
-    "185,125", "128,125",  // top bar bottom → step to left connector
-    "128,185", "185,185",  // left connector bottom → mid bar top
-    "185,305", "100,305",  // right side all the way down → bottom-left
-    "100,275", "157,275",  // bottom bar top → step to right connector
-    "157,215", "100,215"   // right connector top → mid bar bottom-left
-  ].join(" ");
-
-  // G — 14-point filled polygon with complete closed border
-  // Shape: top bar → hook → inner → left side → bottom → right connector → tongue → outer right → bottom
-  const gPoints = [
-    "215,95",  "300,95",   // top bar
-    "300,165", "272,165",  // right hook down → step inward
-    "272,125", "243,125",  // inner hook up → inner top bar
-    "243,275", "272,275",  // inner left all the way down → inner bottom
-    "272,215", "252,215",  // up to tongue → tongue bottom-left
-    "252,185", "300,185",  // tongue top-left → outer right edge
-    "300,305", "215,305"   // right side down → bottom-left
-  ].join(" ");
+  const filterId = useId().replace(/:/g, "_") + "_sg_3d_shadow";
+  const S_PATH = "M 86 100 H 134 V 114 H 102 V 124 H 134 V 162 H 86 V 148 H 118 V 138 H 86 Z";
+  const G_PATH = "M 166 100 H 214 V 114 H 182 V 148 H 200 V 141 H 189 V 127 H 214 V 162 H 166 Z";
 
   return (
     <svg
       width={size}
-      height={size}
-      viewBox="0 0 400 400"
+      height={size ? Math.round(size * (260 / 300)) : undefined}
+      viewBox="0 0 300 260"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-label="Saints Gaming Logo"
       className={className}
       {...props}
     >
       <defs>
-        <filter id="synth-glow" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="3" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        <filter id={filterId} x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="4" stdDeviation="3.5" floodColor="#000000" floodOpacity="0.65" />
         </filter>
-        <linearGradient id="sGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#00f5d4" />
-          <stop offset="100%" stopColor="#023e8a" />
-        </linearGradient>
-        <linearGradient id="gGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ff006e" />
-          <stop offset="100%" stopColor="#c9184a" />
-        </linearGradient>
       </defs>
 
-      {/* Outer Hexagon Borders */}
-      <polygon
-        points="200,10 40,100 40,300 200,390 200,350 80,282 80,118 200,50"
-        fill="#f20089"
-        filter="url(#synth-glow)"
-      />
-      <polygon
-        points="200,10 360,100 360,300 200,390 200,350 320,282 320,118 200,50"
-        fill="#00f5d4"
-        filter="url(#synth-glow)"
-      />
-      <line x1="200" y1="10" x2="200" y2="50" stroke="#0d0221" strokeWidth="8" />
-      <line x1="200" y1="350" x2="200" y2="390" stroke="#0d0221" strokeWidth="8" />
+      {/* Frame */}
+      <g fill={BRAND_WHITE} stroke={BRAND_BLACK} strokeWidth="2.5" strokeLinejoin="miter">
+        {WHITE_BLOCKS.map((b, i) => (
+          <rect key={`w-${i}`} x={b.x} y={b.y} width={b.w} height={b.h} />
+        ))}
+      </g>
 
-      {/* SG Letters — scaled 76.5% (0.90 × 0.85) around center */}
-      <g transform="translate(200,200) scale(0.90) translate(-200,-200)">
-        {/* S — Gradient filled, dark border */}
-        <polygon
-          points={sPoints}
-          fill="url(#sGrad)"
-          stroke="#0d0221"
-          strokeWidth="8"
+      <g fill={BRAND_PINK} stroke={BRAND_BLACK} strokeWidth="2.5" strokeLinejoin="miter">
+        {PINK_BLOCKS.map((b, i) => (
+          <rect key={`p-${i}`} x={b.x} y={b.y} width={b.w} height={b.h} />
+        ))}
+      </g>
+
+      <g fill={BRAND_BLACK} stroke={BRAND_BLACK} strokeWidth="2.5" strokeLinejoin="miter">
+        {BLACK_DIVIDER_BLOCKS.map((b, i) => (
+          <rect key={`b-${i}`} x={b.x} y={b.y} width={b.w} height={b.h} />
+        ))}
+      </g>
+
+      {/* Letters */}
+      <g filter={`url(#${filterId})`}>
+        <path
+          d={S_PATH}
+          fill={BRAND_PINK}
+          stroke={BRAND_BLACK}
+          strokeWidth="3.5"
           strokeLinejoin="miter"
-          filter="url(#synth-glow)"
+          strokeLinecap="square"
         />
 
-        {/* G — Gradient filled, dark border */}
-        <polygon
-          points={gPoints}
-          fill="url(#gGrad)"
-          stroke="#0d0221"
-          strokeWidth="8"
+        <path
+          d={G_PATH}
+          fill={BRAND_WHITE}
+          stroke={BRAND_BLACK}
+          strokeWidth="3.5"
           strokeLinejoin="miter"
-          filter="url(#synth-glow)"
+          strokeLinecap="square"
         />
       </g>
     </svg>

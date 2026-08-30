@@ -255,6 +255,7 @@ interface EditorState {
   selectedTileDefId: string | null;
   setTileDefinitions: (defs: TileDefinition[] | ((prev: TileDefinition[]) => TileDefinition[])) => void;
   addTileDefinitions: (defs: TileDefinition[]) => void;
+  removeTileDefinition: (id: string) => void;
   setSelectedTileDefId: (id: string | null) => void;
   paintMode: 'stamp' | 'paste';
   setPaintMode: (mode: 'stamp' | 'paste') => void;
@@ -947,6 +948,13 @@ export const useEditorStore = create<EditorState>()(
           const existingIds = new Set(state.tileDefinitions.map((d) => d.id));
           const filtered = newDefs.filter((d) => !existingIds.has(d.id));
           state.tileDefinitions = [...state.tileDefinitions, ...filtered];
+        }),
+      removeTileDefinition: (id) =>
+        set((state) => {
+          state.tileDefinitions = state.tileDefinitions.filter((d) => d.id !== id);
+          if (state.selectedTileDefId === id) {
+            state.selectedTileDefId = state.tileDefinitions[0]?.id || null;
+          }
         }),
       setSelectedTileDefId: (id) =>
         set((state) => {
