@@ -51,17 +51,70 @@ app.prepare().then(async () => {
         if (fs.existsSync(filePath)) {
           const ext = path.extname(filePath).toLowerCase();
           const mimeTypes: Record<string, string> = {
+            '.m3u8': 'application/vnd.apple.mpegurl',
+            '.ts': 'video/MP2T',
+            '.m4s': 'video/iso.segment',
+            '.mpd': 'application/dash+xml',
+            '.mp4': 'video/mp4',
+            '.webm': 'video/webm',
+            '.mov': 'video/quicktime',
+            '.m4v': 'video/mp4',
+            '.mkv': 'video/x-matroska',
+            '.ogv': 'video/ogg',
             '.png': 'image/png',
             '.jpg': 'image/jpeg',
             '.jpeg': 'image/jpeg',
             '.gif': 'image/gif',
             '.webp': 'image/webp',
+            '.svg': 'image/svg+xml',
             '.mp3': 'audio/mpeg',
             '.wav': 'audio/wav',
-            '.ogg': 'audio/ogg'
+            '.ogg': 'audio/ogg',
+            '.m4a': 'audio/mp4',
+            '.aac': 'audio/aac',
+            '.zip': 'application/zip',
+            '.rar': 'application/vnd.rar',
+            '.7z': 'application/x-7z-compressed',
           };
-          res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
-          res.setHeader('Cache-Control', 'public, max-age=31536000');
+          const contentType = mimeTypes[ext] || 'application/octet-stream';
+          const stat = fs.statSync(filePath);
+          const fileSize = stat.size;
+          const range = req.headers.range;
+
+          res.setHeader('Accept-Ranges', 'bytes');
+          res.setHeader('Content-Type', contentType);
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Access-Control-Allow-Headers', 'Range, Accept, Origin, Content-Type');
+
+          if (ext === '.m3u8') {
+            res.setHeader('Cache-Control', 'public, max-age=10');
+          } else {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          }
+
+          // Support HTTP 206 Partial Content for video/audio seeking and chunked streaming
+          if (range && (contentType.startsWith('video/') || contentType.startsWith('audio/'))) {
+            const parts = range.replace(/bytes=/, '').split('-');
+            const start = parseInt(parts[0], 10);
+            const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+            if (isNaN(start) || start >= fileSize || (parts[1] && end >= fileSize) || start > end) {
+              res.statusCode = 416;
+              res.setHeader('Content-Range', `bytes */${fileSize}`);
+              res.end();
+              return;
+            }
+
+            const chunkSize = end - start + 1;
+            res.statusCode = 206;
+            res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSize}`);
+            res.setHeader('Content-Length', chunkSize.toString());
+            fs.createReadStream(filePath, { start, end }).pipe(res);
+            return;
+          }
+
+          res.statusCode = 200;
+          res.setHeader('Content-Length', fileSize.toString());
           fs.createReadStream(filePath).pipe(res);
           return;
         }

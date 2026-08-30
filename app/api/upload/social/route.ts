@@ -27,7 +27,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: result.error }, { status: 400 });
     }
 
-    return NextResponse.json({ url: result.url }, { status: 201 });
+    return NextResponse.json({ 
+      url: result.url,
+      previewUrl: result.previewUrl || result.url,
+      posterUrl: result.posterUrl,
+      durationSec: result.durationSec,
+      aspectRatio: result.aspectRatio,
+      width: result.width,
+      height: result.height,
+    }, { status: 201 });
   } catch (error) {
     console.error("Social upload error:", error);
     return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });

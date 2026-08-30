@@ -61,6 +61,13 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || "public/uploads";
 export interface UploadResult {
   success: boolean;
   url?: string;
+  previewUrl?: string;
+  posterUrl?: string;
+  durationSec?: number;
+  width?: number;
+  height?: number;
+  aspectRatio?: string;
+  isPortrait?: boolean;
   filename?: string;
   mimeType?: string;
   sizeBytes?: number;
@@ -221,6 +228,7 @@ export async function uploadSocialMedia(file: File): Promise<UploadResult> {
   }
 
   const isImage = ALLOWED_IMAGE_MIME_TYPES.includes(mimeType);
+  const isVideoFile = ALLOWED_VIDEO_MIME_TYPES.includes(mimeType);
   const maxSize = isImage ? 15 * 1024 * 1024 : MAX_SOCIAL_FILE_SIZE;
 
   if (file.size > maxSize) {
@@ -241,13 +249,52 @@ export async function uploadSocialMedia(file: File): Promise<UploadResult> {
     };
   }
 
-  return persistUpload({
+  const baseResult = await persistUpload({
     uniqueName,
     buffer,
     contentType: mimeType,
     sanitizedName: sanitized,
     sizeBytes: file.size,
   });
+
+  if (!baseResult.success) {
+    return baseResult;
+  }
+
+  // If uploaded file is a video, run through the video pipeline for FastStart & WebP poster
+  if (isVideoFile) {
+    try {
+      const uploadPath = path.join(/*turbopackIgnore: true*/ process.cwd(), UPLOAD_DIR);
+      const localFilePath = path.join(uploadPath, uniqueName);
+      
+      const { videoPipeline } = await import("@/server/media/videoPipeline");
+      const pipelineResult = await videoPipeline.process({
+        filePath: localFilePath,
+        uniqueName,
+        originalName: sanitized,
+        mimeType,
+        fileSize: file.size,
+      });
+
+      return {
+        ...baseResult,
+        url: pipelineResult.optimizedUrl || baseResult.url,
+        previewUrl: pipelineResult.previewUrl || baseResult.url,
+        posterUrl: pipelineResult.posterUrl,
+        durationSec: pipelineResult.durationSec,
+        width: pipelineResult.width,
+        height: pipelineResult.height,
+        aspectRatio: pipelineResult.aspectRatio,
+        isPortrait: pipelineResult.isPortrait,
+        sizeBytes: pipelineResult.sizeBytes || baseResult.sizeBytes,
+      };
+    } catch (err) {
+      console.warn("[uploadSocialMedia] Video pipeline processing warning, fallback to original:", err);
+      return baseResult;
+    }
+  }
+
+  return baseResult;
 }
 
 /** Validate file magic bytes match the MIME type */

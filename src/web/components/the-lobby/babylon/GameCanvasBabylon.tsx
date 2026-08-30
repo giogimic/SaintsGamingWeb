@@ -81,6 +81,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const gainSkillXp = useGameStore((state) => state.gainSkillXp);
   const combatTarget = useGameStore((state) => state.combatTarget);
   const brushMode = useEditorStore((state) => state.brushMode);
+  const brushRadius = useEditorStore((state) => state.brushRadius);
+  const brushShape = useEditorStore((state) => state.brushShape);
+  const activeBrushPattern = useEditorStore((state) => state.activeBrushPattern);
+  const prefabStampMode = useEditorStore((state) => state.prefabStampMode);
+  const isStudioFreeCam = useEditorStore((state) => state.isStudioFreeCam);
   const [isPanDragging, setIsPanDragging] = useState(false);
   const [isSpaceHeld, setIsSpaceHeld] = useState(false);
   const isSpaceHeldRef = useRef(false);
@@ -1148,21 +1153,26 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     }
   }, [activeLayerIdx, mapData, activeMap]);
 
+  // Sync live dev editor brush and view settings without tearing down picking listeners
+  useEffect(() => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    engine.setBrushRadius(brushRadius);
+    engine.setBrushShape(brushShape);
+    engine.setActiveBrushTileId(activeBrushTileId);
+    engine.setActiveBrushPattern(activeBrushPattern);
+    engine.setPrefabStampMode(prefabStampMode);
+    engine.setActiveLayerIdx(activeLayerIdx);
+    engine.setBrushMode(brushMode);
+    engine.setFreeCam(isStudioFreeCam);
+    engine.refreshBrushPreview();
+  }, [brushRadius, brushShape, activeBrushTileId, activeBrushPattern, prefabStampMode, activeLayerIdx, brushMode, isStudioFreeCam]);
+
   // Handle Live Dev Editor Tile Picking & Click-to-Move
   useEffect(() => {
     const engine = engineRef.current;
     if (!engine || !activeMap) return;
     const map = activeMap;
-
-    // Sync brush properties
-    engine.setBrushRadius(useEditorStore.getState().brushRadius);
-    engine.setBrushShape(useEditorStore.getState().brushShape);
-    engine.setActiveBrushTileId(useEditorStore.getState().activeBrushTileId);
-    engine.setActiveBrushPattern(useEditorStore.getState().activeBrushPattern);
-    engine.setPrefabStampMode(useEditorStore.getState().prefabStampMode);
-    engine.setActiveLayerIdx(useEditorStore.getState().activeLayerIdx);
-    engine.setBrushMode(useEditorStore.getState().brushMode);
-    engine.setFreeCam(useEditorStore.getState().isStudioFreeCam);
 
     const worldSync = {
       ensureActiveMap: (next: any) => {
@@ -1180,8 +1190,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       if (isDevEditorOpen) {
         cleanupPan = engine.startEditorKeyboardPan() || (() => {});
         engine.enableTilePicking((r, c, _, eventType) => {
+          const map = useGameStore.getState().activeMapData || activeMap;
           const store = useEditorStore.getState();
-          const { brushMode, setSelectionStart, setSelectionEnd, activePrefabId } = store;
+          const { brushMode, setSelectionStart, setSelectionEnd, activePrefabId, activeLayerIdx: curLayerIdx } = store;
 
           if (brushMode === 'pan') {
             return;
@@ -1189,13 +1200,13 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
           if (brushMode === 'eyedropper') {
             if (eventType !== 'down') return;
-            if (activeLayerIdx === LOGIC_LAYER_IDX) {
+            if (curLayerIdx === LOGIC_LAYER_IDX) {
               const tagId = map.grid?.[r]?.[c] ?? 0;
               store.setActiveLogicTileId(tagId);
               const meta = useGameStore.getState().logicTiles?.[tagId];
               showToast(`Sampled Logic Tag: ${meta?.name || `#${tagId}`}`);
             } else {
-              const gid = map.tileLayers?.[activeLayerIdx]?.grid?.[r]?.[c] ?? 0;
+              const gid = map.tileLayers?.[curLayerIdx]?.grid?.[r]?.[c] ?? 0;
               store.setActiveBrushTileId(gid);
               showToast(`Sampled Visual Tile: GID ${gid}`);
             }
@@ -1418,7 +1429,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           }
 
           const liveMap = useGameStore.getState().activeMapData || map;
-          const target = resolvePaintTarget(liveMap, activeLayerIdx);
+          const target = resolvePaintTarget(liveMap, store.activeLayerIdx);
           if (target.kind === 'unavailable') {
             showToast(target.reason);
             return;
@@ -1435,7 +1446,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           useEditorStore.getState().setLastPaintedTile({ r, c });
 
           // In erase mode, write 0 (clear tile)
-          const paintValue = brushMode === 'erase' ? 0 : (target.kind === 'logic' ? store.activeLogicTileId : activeBrushTileId);
+          const paintValue = brushMode === 'erase' ? 0 : (target.kind === 'logic' ? store.activeLogicTileId : store.activeBrushTileId);
 
           // Select → Paint / Select → Erase composability (Three-layer model: WHERE constraint)
           const selectedCells = store.selectedCells;
@@ -1767,7 +1778,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       engine.disableTilePicking();
       cleanupPan();
     };
-  }, [isDevEditorOpen, activeBrushTileId, mapData, activeLayerIdx]);
+  }, [isDevEditorOpen, currentMapId]);
 
   // Contextual interaction key listener ('E' or 'Space')
   useEffect(() => {
