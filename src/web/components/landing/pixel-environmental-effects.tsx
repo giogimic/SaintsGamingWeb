@@ -100,11 +100,19 @@ export function PixelEnvironmentalEffects({ palette = "sunset" }: PixelEffectPro
     }
 
     let time = 0;
+    let lastDrawTime = 0;
+    const TARGET_INTERVAL_MS = 1000 / 30; // 30 FPS cap for atmospheric particles
 
-    function animate() {
+    function animate(now: number) {
+      animationId = requestAnimationFrame(animate);
       if (!ctx || !canvas) return;
+
+      if (now - lastDrawTime < TARGET_INTERVAL_MS) return;
+      const delta = Math.min(0.05, (now - lastDrawTime) / 1000 || 0.033);
+      lastDrawTime = now;
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      time += 0.016;
+      time += delta;
 
       const w = canvas.width;
       const h = canvas.height;
@@ -139,13 +147,11 @@ export function PixelEnvironmentalEffects({ palette = "sunset" }: PixelEffectPro
         ctx.globalAlpha = finalOpacity;
         ctx.fillRect(ix, iy, p.size, p.size);
       }
-
-      animationId = requestAnimationFrame(animate);
     }
 
     resize();
     createParticles();
-    animate();
+    animationId = requestAnimationFrame(animate);
 
     const onResize = () => {
       resize();

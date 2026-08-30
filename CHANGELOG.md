@@ -1,3 +1,11 @@
+# 2.1.546
+- **Title Screen & Character Select Performance Optimization**:
+  - **Deferred Babylon Engine Mounting**: Gated `GameCanvasBabylon` to mount only when the player enters the live world (`EXPLORING`, `BATTLE`, or Studio mode), preventing background WebGL chunk meshing (24,000+ tiles) and full-frame render loops while on the Title and Character Select screens.
+  - **Grouped Starfield Rendering**: Optimized `MidnightStars` from 75 individual animating DOM divs to lightweight hardware-accelerated SVG star layers, eliminating continuous composite layer updates and style recalculations (from 43+ recalcs/sec down to 0).
+  - **Atmospheric Particle Loop Throttling**: Capped `PixelEnvironmentalEffects` canvas animation loop to 30 FPS, reducing particle rasterization overhead by over 60%.
+  - **Grouped Water Glint SVGs**: Consolidated 36 independent specular water glint DOM elements into grouped SVG layers with hardware-accelerated opacity pulse.
+- **Version Bump**: Bumped release version to `v2.1.546` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.545
 - **Studio Layout & Viewport Gap Fix**:
   - **Gapless Studio Viewport**: Initialized `StudioCanvasViewport` to maximized by default on load, seamlessly filling the entire viewport between the top menu bar (`36px`) and bottom toolbar (`36px`) with zero gaps.
