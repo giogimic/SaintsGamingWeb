@@ -38,7 +38,8 @@ import {
   X, Image as ImageIcon, Share, Bookmark, Compass, Search, VolumeX, Volume2,
   MoreHorizontal, Eye, EyeOff, Plus, Trash2, Coins, Flag,
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ArrowRight, BarChart2, Pin, Play, Pause, Maximize2, Minimize, UploadCloud,
-  BadgeCheck, Crown, ShieldCheck, FileArchive, Download, Music, Disc, Send, Copy, Sparkles, Check, Flame, Users, Clock, PlaySquare
+  BadgeCheck, Crown, ShieldCheck, FileArchive, Download, Music, Disc, Send, Copy, Sparkles, Check, Flame, Users, Clock, PlaySquare,
+  Gamepad2, Layers
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -1276,45 +1277,47 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
 
           {/* Media Attachment (Video / Archive / Image) */}
           {post.mediaUrl && (
-            <div className="mb-3 mt-1.5">
+            <div className="mb-2.5 mt-2">
               {isArchive(post.mediaUrl) ? (
                 <div 
-                  className="rounded-2xl overflow-hidden border border-border/50 bg-muted/20 p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/30 transition-colors"
+                  className="rounded-lg overflow-hidden border border-white/[0.08] bg-[#050b14]/50 p-5 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-white/[0.04] transition-colors"
                   onClick={() => setViewingShortsPost(post)}
                 >
-                  <FileArchive className="w-10 h-10 text-primary mb-2" />
+                  <FileArchive className="w-9 h-9 text-primary mb-2" />
                   <span className="text-xs font-semibold text-primary break-all px-4 mb-2">{post.mediaUrl.split('/').pop()}</span>
                   <a 
                     href={post.mediaUrl} 
                     download 
                     target="_blank" 
                     rel="noreferrer" 
-                    className="flex items-center gap-2 px-4 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary rounded-full transition-colors font-bold text-xs shadow-xs" 
+                    className="flex items-center gap-2 px-3.5 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary rounded-md transition-colors font-bold text-xs shadow-xs" 
                     onClick={(e) => e.stopPropagation()}
                   >
                     <Download className="w-3.5 h-3.5" /> Download Archive
                   </a>
                 </div>
               ) : isVideo(post.mediaUrl) ? (
-                <FeedVideoPlayer
-                  id={post.id}
-                  src={post.mediaUrl}
-                  poster={post.thumbnailUrl}
-                  activePlayingId={activePlayingVideoId}
-                  setActivePlayingId={setActivePlayingVideoId}
-                  onOpenReel={() => {
-                    setViewingShortsPost(post);
-                    handleRecordView(post.id);
-                  }}
-                  onRecordView={() => handleRecordView(post.id)}
-                  onLike={() => handleLike(post.id, isReply, parentId)}
-                  hasLiked={post.hasLiked}
-                  isSharedMuted={isFeedMuted}
-                  setIsSharedMuted={handleSetFeedMuted}
-                />
+                <div className="rounded-lg overflow-hidden border border-white/[0.08] bg-black/40">
+                  <FeedVideoPlayer
+                    id={post.id}
+                    src={post.mediaUrl}
+                    poster={post.thumbnailUrl}
+                    activePlayingId={activePlayingVideoId}
+                    setActivePlayingId={setActivePlayingVideoId}
+                    onOpenReel={() => {
+                      setViewingShortsPost(post);
+                      handleRecordView(post.id);
+                    }}
+                    onRecordView={() => handleRecordView(post.id)}
+                    onLike={() => handleLike(post.id, isReply, parentId)}
+                    hasLiked={post.hasLiked}
+                    isSharedMuted={isFeedMuted}
+                    setIsSharedMuted={handleSetFeedMuted}
+                  />
+                </div>
               ) : (
                 <div 
-                  className="rounded-2xl overflow-hidden bg-black/60 flex items-center justify-center max-h-[520px] relative group/img cursor-pointer shadow-md"
+                  className="rounded-lg overflow-hidden border border-white/[0.08] bg-black/50 flex items-center justify-center max-h-[520px] relative group/img cursor-pointer shadow-sm"
                   onClick={() => setViewingShortsPost(post)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1324,7 +1327,7 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
                     className="max-h-[520px] w-auto max-w-full object-contain hover:scale-[1.01] transition-transform duration-200" 
                   />
                   <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                    <div className="p-2.5 rounded-full bg-black/60 text-white backdrop-blur-md shadow-md">
+                    <div className="p-2 rounded-md bg-black/60 text-white backdrop-blur-md shadow-md">
                       <Maximize2 className="w-4 h-4" />
                     </div>
                   </div>
@@ -1824,7 +1827,7 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
   };
 
   return (
-    <div className="w-full flex flex-col xl:flex-row items-start justify-center gap-6 relative min-h-screen">
+    <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row items-start justify-center gap-4 relative min-h-screen px-2 sm:px-4">
            {/* Full-Screen Immersive Shorts / Reel Swiper Modal with Deterministic Pre-warming & Adaptive Desktop Theater */}
       {mounted && viewingShortsPost && createPortal(
         <div 
@@ -2532,11 +2535,93 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
         document.body
       )}
 
+      {/* Left Column: Pinned Game Hubs & Channels (Desktop) */}
+      <div className="w-56 xl:w-60 hidden lg:flex flex-col gap-3 sticky top-20 h-fit max-h-[calc(100vh-6rem)] overflow-y-auto shrink-0 no-scrollbar">
+        <div className="bg-[#050b14]/40 border border-white/[0.08] rounded-lg p-3 shadow-xs space-y-1 backdrop-blur-xl">
+          <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70 flex items-center justify-between">
+            <span>Game Hubs</span>
+            <Sparkles className="w-3 h-3 text-primary" />
+          </div>
+          <button
+            type="button"
+            onClick={() => { setFilter(null); setFeedTab("for-you"); }}
+            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              !filter && feedTab === "for-you"
+                ? "bg-primary/20 text-primary border border-primary/30 font-bold"
+                : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04] border border-transparent"
+            }`}
+          >
+            <Compass className="w-3.5 h-3.5" />
+            <span>All Activity</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setFilter("mmo"); setFeedTab("for-you"); }}
+            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              filter === "mmo"
+                ? "bg-primary/20 text-primary border border-primary/30 font-bold"
+                : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04] border border-transparent"
+            }`}
+          >
+            <Gamepad2 className="w-3.5 h-3.5 text-amber-400" />
+            <span>Saints MMO</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setFilter("fivem"); setFeedTab("for-you"); }}
+            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              filter === "fivem"
+                ? "bg-primary/20 text-primary border border-primary/30 font-bold"
+                : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04] border border-transparent"
+            }`}
+          >
+            <Flame className="w-3.5 h-3.5 text-orange-400" />
+            <span>FiveM Moments</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setFilter("minecraft"); setFeedTab("for-you"); }}
+            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              filter === "minecraft"
+                ? "bg-primary/20 text-primary border border-primary/30 font-bold"
+                : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04] border border-transparent"
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Minecraft Modpacks</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setFeedTab("clips"); setFilter(null); }}
+            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              feedTab === "clips"
+                ? "bg-primary/20 text-primary border border-primary/30 font-bold"
+                : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04] border border-transparent"
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+            <span>Clips & Reels</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setFilter("hangout"); setFeedTab("for-you"); }}
+            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              filter === "hangout"
+                ? "bg-primary/20 text-primary border border-primary/30 font-bold"
+                : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04] border border-transparent"
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-violet-400" />
+            <span>Community Hangout</span>
+          </button>
+        </div>
+      </div>
+
       {/* Main Feed Column */}
-      <div className="flex-1 w-full max-w-4xl 2xl:max-w-5xl min-w-0 space-y-4">
+      <div className="flex-1 w-full max-w-2xl 2xl:max-w-3xl min-w-0 space-y-3">
         
         {/* Stream Header & Navigation Tabs */}
-        <div className="p-3 sm:p-4 border border-border/50 rounded-2xl sticky top-20 bg-background/85 backdrop-blur-xl z-10 shadow-sm">
+        <div className="p-3 sm:p-3.5 border border-white/[0.08] rounded-lg sticky top-20 bg-[#050b14]/70 backdrop-blur-xl z-10 shadow-xs">
           
           {/* Mobile Top Navigation Tabs: Feed vs Messages */}
           {onOpenMessages && (
@@ -2778,8 +2863,8 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
 
         {/* Collapsed Mobile Post Composer Trigger (Saves vertical space on mobile) */}
         {searchResults === null && !isMobileComposerExpanded && !body && !mediaUrl && (
-          <div className="sm:hidden p-3 bg-card/60 backdrop-blur-md border border-border/50 rounded-2xl flex items-center gap-2.5 shadow-xs">
-            <div className="w-8 h-8 rounded-full bg-muted overflow-hidden relative shrink-0 ring-1 ring-border/60">
+          <div className="sm:hidden p-2.5 bg-[#050b14]/50 backdrop-blur-xl border border-white/[0.08] rounded-lg flex items-center gap-2.5 shadow-xs">
+            <div className="w-8 h-8 rounded-md bg-muted overflow-hidden relative shrink-0 ring-1 ring-border/60">
               {session?.user?.image ? (
                 <Image src={session.user.image} alt={session.user.name || "You"} fill className="object-cover" />
               ) : (
@@ -2791,14 +2876,14 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
             <button
               type="button"
               onClick={() => setIsMobileComposerExpanded(true)}
-              className="flex-1 text-left px-3.5 py-2 rounded-full bg-muted/30 border border-border/40 text-xs text-muted-foreground hover:text-foreground transition-colors truncate cursor-pointer"
+              className="flex-1 text-left px-3 py-1.5 rounded-md bg-white/[0.04] border border-white/[0.06] text-xs text-muted-foreground hover:text-foreground transition-colors truncate cursor-pointer"
             >
               What&apos;s happening in Saints Gaming?
             </button>
             <button
               type="button"
               onClick={() => setIsMobileComposerExpanded(true)}
-              className="p-2 rounded-full text-primary hover:bg-primary/10 transition-colors shrink-0 cursor-pointer"
+              className="p-1.5 rounded-md text-primary hover:bg-primary/10 transition-colors shrink-0 cursor-pointer"
               title="Create Post / Upload Media"
             >
               <Plus className="w-4 h-4" />
@@ -2809,7 +2894,7 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
         {/* Integrated Full Post Composer (Always visible on desktop, expandable on mobile) */}
         {searchResults === null && (
           <Card 
-            className={`bg-card/60 backdrop-blur-md shadow-sm border-border/50 rounded-2xl overflow-hidden focus-within:ring-1 focus-within:ring-primary/50 transition-all relative ${
+            className={`bg-[#050b14]/40 backdrop-blur-xl shadow-xs border-white/[0.08] rounded-lg overflow-hidden focus-within:ring-1 focus-within:ring-primary/40 transition-all relative ${
               isDragging ? "ring-2 ring-primary border-primary bg-primary/5" : ""
             } ${!isMobileComposerExpanded && !body && !mediaUrl ? "hidden sm:block" : "block"}`}
             onDragOver={handleDragOver}
@@ -2818,7 +2903,7 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
           >
             {/* Mobile Close / Collapse Header */}
             {isMobileComposerExpanded && !body && !mediaUrl && (
-              <div className="sm:hidden flex items-center justify-between px-4 py-2 border-b border-border/40 bg-muted/20 text-xs text-muted-foreground">
+              <div className="sm:hidden flex items-center justify-between px-3.5 py-1.5 border-b border-white/[0.06] bg-white/[0.02] text-xs text-muted-foreground">
                 <span className="font-bold text-foreground flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-primary" /> Create New Post
                 </span>
@@ -3176,25 +3261,25 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
             </p>
           </div>
         ) : (
-          <div className="space-y-4 pb-20">
+          <div className="space-y-3 pb-20">
             {/* Unified Stream Container with Hairline Dividers */}
-            <div className="bg-card/40 backdrop-blur-xl border border-border/50 rounded-2xl shadow-sm overflow-hidden divide-y divide-border/30">
+            <div className="bg-[#050b14]/40 backdrop-blur-xl border border-white/[0.08] rounded-lg shadow-xs overflow-hidden divide-y divide-white/[0.06]">
               {displayPosts.map(post => renderPost(post))}
             </div>
             
             {/* Infinite Scroll Sentinel */}
             {searchResults === null && (
-              <div ref={sentinelRef} className="py-8 flex flex-col items-center justify-center min-h-[60px] text-muted-foreground">
+              <div ref={sentinelRef} className="py-6 flex flex-col items-center justify-center min-h-[60px] text-muted-foreground">
                 {isFetchingMore && (
-                  <div className="flex items-center gap-2 text-xs font-semibold text-primary bg-primary/10 px-4 py-2 rounded-full border border-primary/20 animate-pulse">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-primary bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20 animate-pulse">
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
                     <span>Streaming more posts...</span>
                   </div>
                 )}
                 {!hasMore && displayPosts.length > 0 && (
-                  <div className="text-center py-4">
-                    <div className="w-8 h-1 bg-border/60 rounded-full mx-auto mb-2.5" />
-                    <p className="text-[11px] text-muted-foreground/80 font-bold uppercase tracking-widest">
+                  <div className="text-center py-3">
+                    <div className="w-8 h-0.5 bg-white/20 rounded-full mx-auto mb-2" />
+                    <p className="text-[10px] text-muted-foreground/80 font-bold uppercase tracking-widest">
                       You&apos;re all caught up
                     </p>
                   </div>
@@ -3206,35 +3291,36 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
       </div>
 
       {/* Right Desktop Community Hub Sidebar */}
-      <div className="w-80 xl:w-88 hidden xl:flex flex-col gap-4 sticky top-20 h-fit max-h-[calc(100vh-6rem)] overflow-y-auto shrink-0 no-scrollbar">
+      <div className="w-72 xl:w-80 hidden xl:flex flex-col gap-3 sticky top-20 h-fit max-h-[calc(100vh-6rem)] overflow-y-auto shrink-0 no-scrollbar">
         
         {/* Card 1: Trending Topics */}
-        <div className="bg-card/50 border border-border/50 rounded-2xl p-4 shadow-sm space-y-3 backdrop-blur-md">
+        <div className="bg-[#050b14]/40 border border-white/[0.08] rounded-lg p-3 shadow-xs space-y-2.5 backdrop-blur-xl">
           <div className="flex items-center justify-between">
-            <h3 className="font-extrabold text-sm flex items-center gap-2">
-              <Flame className="w-4 h-4 text-orange-400" />
+            <h3 className="font-extrabold text-xs flex items-center gap-1.5">
+              <Flame className="w-3.5 h-3.5 text-orange-400" />
               <span>Trending Topics</span>
             </h3>
-            <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Saints</span>
+            <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-widest">Saints</span>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {trending.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-3 text-center">No trends yet.</p>
+              <p className="text-xs text-muted-foreground py-2 text-center">No trends yet.</p>
             ) : (
               trending.slice(0, 5).map((t, idx) => (
                 <button 
                   key={t.name}
+                  type="button"
                   onClick={() => {
                     setFilter(t.name);
                     setFeedTab("for-you");
                   }}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-background/40 border border-border/30 hover:border-primary/40 hover:bg-muted/30 transition-all text-left group shadow-2xs"
+                  className="w-full flex items-center justify-between p-2 rounded-md bg-white/[0.03] border border-white/[0.04] hover:border-primary/40 hover:bg-white/[0.06] transition-all text-left group cursor-pointer"
                 >
                   <div className="min-w-0 pr-2">
-                    <div className="text-[10px] text-muted-foreground font-medium">#{idx + 1} Trending</div>
+                    <div className="text-[9px] text-muted-foreground font-medium">#{idx + 1} Trending</div>
                     <div className="font-bold text-xs group-hover:text-primary transition-colors truncate">#{t.name}</div>
                   </div>
-                  <div className="text-[10px] text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md font-mono font-medium shrink-0">
+                  <div className="text-[10px] text-muted-foreground bg-white/[0.06] px-1.5 py-0.5 rounded font-mono font-medium shrink-0">
                     {t.usageCount}
                   </div>
                 </button>
@@ -3243,12 +3329,43 @@ export function TheFeed({ onOpenMessages }: { onOpenMessages?: () => void } = {}
           </div>
         </div>
 
-        {/* Card 2: Active Saints Creators */}
+        {/* Card 2: Saints Community Hub */}
+        <div className="bg-gradient-to-br from-[#050b14]/60 via-[#050b14]/40 to-primary/10 border border-white/[0.08] rounded-lg p-3 shadow-xs space-y-2 backdrop-blur-xl">
+          <div className="flex items-center gap-2">
+            <div className="p-1 rounded-md bg-primary/10 text-primary">
+              <Sparkles className="w-3.5 h-3.5" />
+            </div>
+            <div>
+              <h4 className="font-bold text-xs text-foreground">Saints Gaming</h4>
+              <p className="text-[9px] text-muted-foreground italic">&ldquo;Time To Play&rdquo;</p>
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Hang out, share epic clips, and jump into community game realms together.
+          </p>
+          <div className="grid grid-cols-2 gap-1.5 pt-1">
+            <Link
+              href="/forum"
+              className="px-2.5 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-center border border-white/[0.06] hover:border-primary/40 transition-all"
+            >
+              Forum
+            </Link>
+            <Link
+              href="/lobby"
+              className="px-2.5 py-1 rounded-md bg-primary/15 hover:bg-primary/25 text-xs font-bold text-primary text-center border border-primary/30 transition-all flex items-center justify-center gap-1"
+            >
+              <span>MMO</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Card 3: Active Saints Creators */}
         {suggestedCreators && suggestedCreators.length > 0 && (
-          <div className="bg-card/50 border border-border/50 rounded-2xl p-4 shadow-sm space-y-3 backdrop-blur-md">
+          <div className="bg-[#050b14]/40 border border-white/[0.08] rounded-lg p-3 shadow-xs space-y-2.5 backdrop-blur-xl">
             <div className="flex items-center justify-between">
-              <h3 className="font-extrabold text-sm flex items-center gap-2">
-                <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+              <h3 className="font-extrabold text-xs flex items-center gap-1.5">
+                <Crown className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
                 <span>Active Saints</span>
               </h3>
               <span className="text-[10px] uppercase font-bold text-primary tracking-wider">Creators</span>

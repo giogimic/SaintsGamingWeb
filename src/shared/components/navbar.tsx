@@ -81,7 +81,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.556",
+  siteVersion = "v2.1.557",
 }: {
   session: any | null;
   dbPermissionLevel?: number;
@@ -138,8 +138,8 @@ export function Navbar({
 
   return (
     <div className="fixed top-0 z-50 w-full pointer-events-none">
-      <header className="pointer-events-auto w-full bg-card/85 backdrop-blur-2xl border-b border-border/50 shadow-md transition-all duration-300">
-        <div className="flex h-9 sm:h-10 items-center justify-between px-3 sm:px-6">
+      <header className="pointer-events-auto w-full bg-[#050b14]/75 backdrop-blur-xl border-b border-white/[0.08] shadow-md transition-all duration-300">
+        <div className="flex h-13 sm:h-10 items-center justify-between px-4 sm:px-6">
           {/* Left Brand */}
           <Link href="/home" className="flex items-center gap-2 group mr-2">
             <div className="transition-transform group-hover:scale-110">

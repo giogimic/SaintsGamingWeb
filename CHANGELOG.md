@@ -1,3 +1,12 @@
+# 2.1.557
+- **Hyper-Modern Translucent Glass Feed & Responsive Bar Dimensions**:
+  - **Translucent Dark Glassmorphism**: Refactored the Social Feed, Top Navbar, and Global Bottom Bar to use layered dark translucent glass (`bg-[#050b14]/75` & `bg-[#050b14]/40` with `backdrop-blur-xl` and `border-white/[0.08]`), allowing custom wallpapers and canvas backgrounds to shine through.
+  - **Sharp Modern Gaming Geometry**: Replaced heavy `rounded-2xl` containers with crisp `rounded-lg` (6px) cards matching modern gaming platforms like Steam and Discord.
+  - **Edge-to-Edge Media & Minimal Inlines**: Removed internal side margins on screenshots and video players so media fills the card edge-to-edge, with low-profile inline engagement bars.
+  - **Desktop 3-Column Gaming Hub**: Added a dedicated Left Channel & Game Hub sidebar (`All Activity`, `Saints MMO`, `FiveM Highlights`, `Minecraft Modpacks`, `Clips & Reels`, `Hangout`) alongside the high-density center stream and community right sidebar.
+  - **Enlarged Mobile Navigation Bars**: Increased the height and touch target dimensions of the Mobile Top Navbar (`h-13` / 52px) and Mobile Bottom Bar (`h-12` / 48px) for effortless tap accessibility and visibility on phones.
+- **Version Bump**: Bumped release version to `v2.1.557` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.556
 - **Social Feed Post Creation & Media Upload Restoration (PC & Mobile)**:
   - **PC Composer Visibility Fix**: Resolved client-side hydration condition where the post composer card was inadvertently hidden on desktop when `isMobileComposerExpanded` was uninitialized.
