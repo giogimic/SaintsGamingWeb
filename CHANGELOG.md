@@ -1,3 +1,8 @@
+# 2.1.524
+- **Next.js Server Action Build Fix (`invalid-use-server-value`)**: Fixed Next.js build compilation error on Docker / production builds for `/admin/seo` by ensuring only async functions are exported from `"use server"` action modules (`actions.ts`), keeping internal constants encapsulated.
+- **Admin Floating Window Underlay**: Enhanced `AdminOverlayShell` to render the user's active underlying page (`/`, `/forum`, `/news`, `/lobby`, etc.) directly behind the floating OS window in real time, supporting drag/resize transparency and minimize-to-dock capsule mode.
+- **Version Bump**: Bumped project release version to `v2.1.524` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.523
 - **Admin SEO Studio & Visual SERP Simulator**: Implemented a comprehensive, interactive Visual SEO Management Suite in the Admin Control Center (`/admin/seo`):
   - **Live Google SERP Simulator**: Pixel-accurate desktop and mobile Google search snippet preview with dynamic blue link titles, sitelinks bar, review star ratings, date stamps, and breadcrumb trails.
