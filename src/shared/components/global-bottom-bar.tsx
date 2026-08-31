@@ -80,7 +80,7 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "v2.1.584",
+  siteVersion = "v2.1.585",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;
@@ -331,10 +331,10 @@ export function GlobalBottomBar({
             )}
           </div>
 
-          {/* CENTER SECTION: Links + Raised Octagon Post / Action Button */}
-          <div className="flex items-center justify-center gap-1 sm:gap-2 flex-shrink-0">
+          {/* CENTER NAVIGATION ROW (Balanced 4-1-4 on mobile, Centered on desktop) */}
+          <div className="flex items-center justify-between sm:justify-center w-full md:w-auto gap-0.5 sm:gap-2 flex-1 md:flex-initial">
             {/* Left Group (Play, Feed, Streams, Forums) */}
-            <div className="flex items-center gap-0.5 sm:gap-1">
+            <div className="flex items-center justify-around sm:justify-start flex-1 sm:flex-initial gap-0.5 sm:gap-1">
               {BOTTOM_NAV_LEFT_PAGES.map(({ href, label, icon: Icon, tooltip }) => {
                 const isActive = pathname === href || (href !== "/home" && pathname?.startsWith(href));
                 return (
@@ -356,8 +356,8 @@ export function GlobalBottomBar({
               })}
             </div>
 
-            {/* Center Logo Post Action Button */}
-            <div className="mx-1 sm:mx-1.5 flex items-center justify-center relative">
+            {/* Center Logo Post Action Button (The "Orb") */}
+            <div className="mx-1 sm:mx-1.5 flex items-center justify-center shrink-0 relative">
               <ActionTooltip label="Create Post / Share Clip">
                 <button
                   type="button"
@@ -381,10 +381,8 @@ export function GlobalBottomBar({
               </ActionTooltip>
             </div>
 
-
-            {/* Right Group (Nexus, Wiki, Support) */}
-            <div className="flex items-center gap-0.5 sm:gap-1">
-
+            {/* Right Group (Nexus, Wiki, Support + Mobile Social Messenger) */}
+            <div className="flex items-center justify-around sm:justify-start flex-1 sm:flex-initial gap-0.5 sm:gap-1">
               {BOTTOM_NAV_RIGHT_PAGES.map(({ href, label, icon: Icon, tooltip }) => {
                 const isActive = pathname === href || (href !== "/home" && pathname?.startsWith(href));
                 return (
@@ -404,11 +402,29 @@ export function GlobalBottomBar({
                   </ActionTooltip>
                 );
               })}
+
+              {/* Mobile Social Messenger Button (4th icon in right group) */}
+              {session?.user && (
+                <ActionTooltip label="Social Messenger">
+                  <button
+                    type="button"
+                    onClick={() => setIsMessengerOpen(!isMessengerOpen)}
+                    className={`sm:hidden flex items-center gap-1 px-2 py-1.5 rounded-md text-[11px] font-sans font-medium transition-all duration-200 cursor-pointer ${
+                      isMessengerOpen
+                        ? "bg-primary/20 text-primary border border-primary/40 shadow-[0_0_8px_rgba(203,178,106,0.25)] font-semibold"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
+                    }`}
+                    title="Social Messenger"
+                  >
+                    <MessageCircle className={`w-3.5 h-3.5 ${isMessengerOpen ? "text-primary" : "opacity-70"}`} />
+                  </button>
+                </ActionTooltip>
+              )}
             </div>
           </div>
 
-          {/* RIGHT SECTION: Controls, Roles & Social Drawer */}
-          <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1 min-w-0">
+          {/* RIGHT SECTION: Controls, Roles & Desktop Social Drawer */}
+          <div className="hidden md:flex items-center justify-end gap-1.5 sm:gap-2 flex-1 min-w-0">
             {/* Moderator Drawer Trigger */}
             {isMod && !isDevOrAdmin && (
               <ActionTooltip label="Moderator Tools">
@@ -454,7 +470,7 @@ export function GlobalBottomBar({
               </ActionTooltip>
             )}
 
-            {/* Social Messenger Drawer Trigger */}
+            {/* Social Messenger Drawer Trigger (Desktop) */}
             {session?.user && (
               <ActionTooltip label="Social Messenger">
                 <button
