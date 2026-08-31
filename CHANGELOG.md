@@ -1,3 +1,20 @@
+# 2.1.570
+- **Upgraded Global Search Experience (Multi-Category Search & Responsive Navbar Trigger)**:
+  - **Comprehensive Multi-Category Backend Search (`/api/search`)**: Expanded the global search endpoint to query 6 core platform areas concurrently via Prisma with dynamic query matching and highlighted snippet extraction:
+    1. *Discussion Threads & Posts*: Matches topic titles and body copy with forum subcategory details, author metadata, and reply counts.
+    2. *News & Patch Announcements*: Queries editorial articles, patch logs, excerpts, and publication timestamps.
+    3. *Social Feed Posts & Video Reels*: Searches community posts and clip captions with author profile details and engagement statistics.
+    4. *World Maps & MMO Regions*: Searches live world maps, biomes, map IDs, descriptions, and recommended level ranges.
+    5. *Game Servers & Downloadable Modpacks*: Queries game servers and modpack packages with game tags, descriptions, and version details.
+    6. *Community Players & Users*: Searches usernames and display names with player avatars and permission badges.
+  - **Responsive Navbar Search Trigger**: Replaced the static input box with a sleek search icon button on mobile/tablet screens and an interactive capsule pill button on desktop (`w-36 lg:w-48 xl:w-56`) with a keyboard shortcut badge (`⌘K`).
+  - **Interactive Global Search Modal**:
+    - *Filter Tabs*: Real-time category chips (*All, Threads, News, Feed / Clips, World Maps, Modpacks, Players*) with dynamic result counters.
+    - *Persistent Recent Search History*: Automatically saves recent search queries to `localStorage` with one-click re-search and individual deletion tools.
+    - *Quick Navigation Directory*: Displays instant-access direct links to key platform destinations (*The Lobby, World Studio, The Feed, Forums, News, Highscores, Support, Streams*) when the search input is empty.
+    - *Global Hotkeys*: Enables instant search modal access anywhere on the site using `Ctrl+K`, `⌘K`, or `/`, plus custom `sg:open-search` event dispatching.
+- **Version Bump**: Bumped release version to `v2.1.570` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.569
 - **Lightened Button & Tooltip Fonts (Preserved Crisp Dark Text Outlines)**:
   - **Tooltips Dark Glass & Pure White Font**: Updated `@/shared/ui/tooltip.tsx` to render dark glass styling (`bg-[#0c1220]/95 border border-white/20 text-white`) with pure white luminous text, preventing dark-on-dark collisions with the site's dark text outlines.
