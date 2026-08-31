@@ -86,7 +86,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.569",
+  siteVersion = "v2.1.570",
 }: {
   session: any | null;
   dbPermissionLevel?: number;
@@ -220,9 +220,7 @@ export function Navbar({
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2">
-            <div className="hidden xl:block w-36 lg:w-44">
-              <GlobalSearch />
-            </div>
+            <GlobalSearch />
 
             <Button
               variant="ghost"
@@ -389,6 +387,19 @@ export function Navbar({
                   </div>
 
                   <div className="flex-1 py-4 flex flex-col gap-1 overflow-y-auto scrollbar-hide">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileOpen(false);
+                        window.dispatchEvent(new CustomEvent("sg:open-search"));
+                      }}
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all duration-200 cursor-pointer mb-1 border border-white/5 bg-black/20"
+                    >
+                      <Search className="h-4 w-4 text-primary" />
+                      <span>Search Saints Gaming...</span>
+                      <kbd className="ml-auto font-mono text-[10px] px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-muted-foreground">⌘K</kbd>
+                    </button>
+
                     <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 px-2">
                       Navigation
                     </span>
