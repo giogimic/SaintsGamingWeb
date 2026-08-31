@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { canUserModerateAssets } from "@/shared/game/assetPermissions";
+import { AuditService } from "@/server/audit/AuditService";
+
 
 export const dynamic = "force-dynamic";
 
@@ -44,8 +46,17 @@ export async function POST(req: NextRequest) {
     }
 
     const updateData: any = {};
+
     if (status) updateData.moderationStatus = status;
     if (visibility) updateData.visibility = visibility;
+
+    // Security compliance audit record prior to DB write
+    await AuditService.write({
+      userId: session.user.id,
+      action: "asset.moderate",
+      resource: { type: "asset", id: assetId },
+      after: updateData,
+    });
 
     const updatedAsset = await prisma.usableAsset.update({
       where: { id: assetId },
@@ -56,6 +67,7 @@ export async function POST(req: NextRequest) {
         },
       },
     });
+
 
     return NextResponse.json({
       success: true,

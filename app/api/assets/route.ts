@@ -3,6 +3,8 @@ import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
 import { canWriteStudioContent } from "@/shared/game/studioPermissions";
 import { formatCanonicalGameAsset } from "@/shared/game/canonicalAsset";
+import { AuditService } from "@/server/audit/AuditService";
+
 
 export const dynamic = "force-dynamic";
 
@@ -481,7 +483,16 @@ export async function POST(req: NextRequest) {
       metaObj.originalName = name;
     }
 
+    // Security compliance audit record prior to DB write
+    await AuditService.write({
+      userId: session.user.id,
+      action: "asset.create",
+      resource: { type: "asset", id: name || String(source) },
+      after: { type, source, tags, categories },
+    });
+
     const created = await prisma.gameAsset.create({
+
       data: {
         type: String(type).toUpperCase(),
         source: String(source),

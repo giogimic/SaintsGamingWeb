@@ -34,6 +34,8 @@ export async function generateStaticParams() {
   }));
 }
 
+import { getWikiArticleMetadata } from "@/web/lib/seo";
+
 /** Generate dynamic metadata based on the article */
 export async function generateMetadata({
   params,
@@ -44,16 +46,17 @@ export async function generateMetadata({
 
   if (!article) {
     return {
-      title: "Not Found | Saints Gaming Wiki",
+      title: "Article Not Found | Codex | Saints Gaming",
     };
   }
 
-  const category = getWikiCategory(article.categoryId);
-  return {
-    title: `${article.title} | ${category?.title ?? "Wiki"} | Saints Gaming`,
-    description: article.summary,
-  };
+  return getWikiArticleMetadata({
+    title: article.title,
+    summary: article.summary,
+    slug: slugPath,
+  });
 }
+
 
 export default async function WikiArticlePage({ params }: WikiArticlePageProps) {
   const { slug } = await params;

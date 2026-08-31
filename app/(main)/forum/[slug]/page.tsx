@@ -5,6 +5,8 @@ import { prisma } from "@/web/lib/prisma";
 import { formatDistanceToNow } from "date-fns";
 import { ArrowLeft, MessageSquare, Pin, Lock, User } from "lucide-react";
 
+import { getForumCategoryMetadata } from "@/web/lib/seo";
+
 type Props = {
   params: Promise<{ slug: string }>;
 };
@@ -15,26 +17,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     where: { slug: resolvedParams.slug },
   });
 
-  if (!subcategory) return { title: "Subcategory Not Found" };
+  if (!subcategory) return { title: "Subcategory Not Found | Forums" };
 
-  const description = subcategory.description || `Browse threads in ${subcategory.name}`;
-  return {
-    title: `${subcategory.name} | Forums`,
-    description,
-    openGraph: {
-      title: `${subcategory.name} | Forums`,
-      description,
-      type: "website",
-      url: `https://saintsgaming.net/forum/${subcategory.slug}`,
-      siteName: "Saints Gaming",
-    },
-    twitter: {
-      card: "summary",
-      title: `${subcategory.name} | Forums`,
-      description,
-    },
-  };
+  return getForumCategoryMetadata(subcategory);
 }
+
 
 export default async function SubCategoryPage({ params }: Props) {
   const resolvedParams = await params;

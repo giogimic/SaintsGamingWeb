@@ -7,6 +7,8 @@ import { format } from "date-fns";
 import { Calendar, ArrowLeft, Clock } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
+import { getNewsArticleMetadata } from "@/web/lib/seo";
+
 type Props = {
   params: Promise<{ slug: string }>;
 };
@@ -15,44 +17,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const resolvedParams = await params;
   const article = await prisma.newsArticle.findUnique({
     where: { slug: resolvedParams.slug },
+    include: { author: { select: { username: true } } },
   });
 
-  if (!article) return { title: "Article Not Found" };
 
-  const description = article.excerpt || article.body.substring(0, 150) + "...";
-  
-  return {
-    title: `${article.title} | Saints Gaming`,
-    description,
-    openGraph: {
-      title: article.title,
-      description,
-      type: "article",
-      url: `https://saintsgaming.net/news/${article.slug}`,
-      siteName: "Saints Gaming",
-      images: article.coverImage ? [
-        {
-          url: article.coverImage.startsWith("/") 
-            ? `https://saintsgaming.net${article.coverImage}` 
-            : article.coverImage,
-          width: 1200,
-          height: 630,
-          alt: article.title,
-        }
-      ] : [],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: article.title,
-      description,
-      images: article.coverImage ? [
-        article.coverImage.startsWith("/") 
-          ? `https://saintsgaming.net${article.coverImage}` 
-          : article.coverImage
-      ] : [],
-    },
-  };
+  if (!article) return { title: "Article Not Found | Saints Gaming" };
+
+  return getNewsArticleMetadata(article);
 }
+
 
 export default async function NewsArticlePage({ params }: Props) {
   const resolvedParams = await params;

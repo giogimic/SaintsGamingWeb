@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
 import { canWriteStudioContent } from "@/shared/game/studioPermissions";
+import { AuditService } from "@/server/audit/AuditService";
+
 
 type DialogueOption = {
   label: string;
@@ -130,6 +132,14 @@ export async function POST(request: NextRequest) {
         };
       }
 
+      // Security compliance audit record prior to DB write
+      await AuditService.write({
+        userId: session.user.id,
+        action: "dialogue.assign_quest",
+        resource: { type: "dialogue", id: npcId },
+        after: { name, questSlug },
+      });
+
       const row = await prisma.npcDialogueTree.upsert({
         where: { npcId },
         create: {
@@ -159,7 +169,16 @@ export async function POST(request: NextRequest) {
       },
     };
 
+    // Security compliance audit record prior to DB write
+    await AuditService.write({
+      userId: session.user.id,
+      action: "dialogue.upsert",
+      resource: { type: "dialogue", id: npcId },
+      after: { name, text },
+    });
+
     const row = await prisma.npcDialogueTree.upsert({
+
       where: { npcId },
       create: {
         npcId,

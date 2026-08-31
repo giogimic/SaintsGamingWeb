@@ -72,6 +72,11 @@ export class ServerContentCache {
     this.storage.clear();
   }
 
+  clear(): void {
+    this.flushAll();
+  }
+
+
   size(): number {
     return this.storage.size;
   }

@@ -17,6 +17,8 @@ import { LiveThreadReplies } from "@/web/components/forum/live-thread-replies";
 import { UserBadges } from "@/web/components/achievements/user-badges";
 import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 
+import { getForumThreadMetadata } from "@/web/lib/seo";
+
 type Props = {
   params: Promise<{ slug: string }>;
 };
@@ -25,28 +27,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const resolvedParams = await params;
   const thread = await prisma.thread.findUnique({
     where: { slug: resolvedParams.slug },
+    include: { author: { select: { username: true } } },
   });
 
-  if (!thread) return { title: "Thread Not Found" };
 
-  const description = thread.body.substring(0, 150) + "...";
-  return {
-    title: `${thread.title} | Forums`,
-    description,
-    openGraph: {
-      title: `${thread.title} | Forums`,
-      description,
-      type: "article",
-      url: `https://saintsgaming.net/forum/t/${thread.slug}`,
-      siteName: "Saints Gaming",
-    },
-    twitter: {
-      card: "summary",
-      title: `${thread.title} | Forums`,
-      description,
-    },
-  };
+  if (!thread) return { title: "Thread Not Found | Forums" };
+
+  return getForumThreadMetadata(thread);
 }
+
 
 export default async function ThreadPage({ params }: Props) {
   const session = await auth();

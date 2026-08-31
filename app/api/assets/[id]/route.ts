@@ -4,6 +4,8 @@ import { auth } from "@/auth";
 import { canWriteStudioContent } from "@/shared/game/studioPermissions";
 
 import { formatCanonicalGameAsset } from "@/shared/game/canonicalAsset";
+import { AuditService } from "@/server/audit/AuditService";
+
 
 function formatAsset(asset: any) {
   return formatCanonicalGameAsset(asset);
@@ -80,6 +82,14 @@ export async function PATCH(
       return NextResponse.json({ error: "No updatable fields" }, { status: 400 });
     }
 
+    // Security compliance audit record prior to DB write
+    await AuditService.write({
+      userId: session.user.id,
+      action: "asset.update",
+      resource: { type: "asset", id },
+      after: data,
+    });
+
     const asset = await prisma.gameAsset.update({
       where: { id },
       data,
@@ -121,12 +131,21 @@ export async function DELETE(
     }
 
     const { id } = await params;
+
+    // Security compliance audit record prior to DB write
+    await AuditService.write({
+      userId: session.user.id,
+      action: "asset.delete",
+      resource: { type: "asset", id },
+    });
+
     await prisma.gameAsset.update({
       where: { id },
       data: { isActive: false },
     });
 
     return NextResponse.json({ success: true, message: "Asset deactivated" });
+
   } catch (error) {
     console.error("Failed to delete asset:", error);
     return NextResponse.json({ error: "Failed to delete asset" }, { status: 500 });

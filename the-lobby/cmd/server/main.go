@@ -42,8 +42,9 @@ func main() {
 	defer sqlDB.Close()
 
 	wm := world.NewManager(cfg.LobbyCapacity)
-	pm := player.NewManager(16, sqlDB)
+	pm := player.NewManager(cfg.AOIZoneSize, sqlDB)
 	cm := creature.NewManager()
+
 	deps := mmsocket.Deps{
 		Parties:    party.NewManager(),
 		Inventory:  inventory.NewManager(sqlDB),

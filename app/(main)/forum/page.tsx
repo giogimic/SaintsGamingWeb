@@ -14,22 +14,14 @@ import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
 
-export const metadata = {
-  title: "Forums | Saints Gaming",
+import { constructPageMetadata } from "@/web/lib/seo";
+
+export const metadata = constructPageMetadata({
+  title: "Forums",
   description: "Official discussion boards, game news, world building, and community updates.",
-  openGraph: {
-    title: "Forums | Saints Gaming",
-    description: "Official discussion boards, game news, world building, and community updates.",
-    type: "website",
-    url: "https://saintsgaming.net/forum",
-    siteName: "Saints Gaming",
-  },
-  twitter: {
-    card: "summary",
-    title: "Forums | Saints Gaming",
-    description: "Official discussion boards, game news, world building, and community updates.",
-  },
-};
+  path: "/forum",
+});
+
 
 export default async function ForumIndexPage() {
   const categories = await prisma.forumCategory.findMany({

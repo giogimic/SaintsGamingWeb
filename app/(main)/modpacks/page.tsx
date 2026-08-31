@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 import { prisma } from "@/web/lib/prisma";
 import { UnifiedHubView } from "@/web/components/hub/UnifiedHubView";
 
-export const metadata: Metadata = {
-  title: "Modpacks | Saints Gaming",
+import { constructPageMetadata } from "@/web/lib/seo";
+
+export const metadata: Metadata = constructPageMetadata({
+  title: "Modpacks",
   description: "Download and install official Saints Gaming modpacks and graphical enhancements.",
-};
+  path: "/modpacks",
+});
+
 
 export default async function ModpacksPage({
   searchParams,

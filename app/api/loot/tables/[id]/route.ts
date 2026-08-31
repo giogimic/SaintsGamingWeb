@@ -3,6 +3,8 @@ import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { canWriteStudioContent } from "@/shared/game/studioPermissions";
 import { normalizeDropEntry, type LootDropEntry } from "@/shared/game/lootRefs";
+import { AuditService } from "@/server/audit/AuditService";
+
 
 function parseJsonArray<T>(raw: string | null | undefined, fallback: T[]): T[] {
   if (!raw) return fallback;
@@ -106,6 +108,16 @@ export async function PATCH(
       data.requiredTags = JSON.stringify(body.requiredTags);
     }
 
+    // Security compliance audit record prior to DB write
+
+    await AuditService.write({
+      userId: ("session" in gate && gate.session?.user?.id) ? gate.session.user.id : "system",
+      action: "loot.update",
+      resource: { type: "loot", id },
+      before: existing,
+      after: data,
+    });
+
     const row = await prisma.lootTable.update({ where: { id }, data });
     return NextResponse.json({ success: true, item: serializeTable(row) });
   } catch (error) {
@@ -131,6 +143,14 @@ export async function DELETE(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    // Security compliance audit record prior to DB write
+    await AuditService.write({
+      userId: ("session" in gate && gate.session?.user?.id) ? gate.session.user.id : "system",
+      action: "loot.delete",
+      resource: { type: "loot", id },
+      before: existing,
+    });
+
     await prisma.lootTable.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -138,3 +158,4 @@ export async function DELETE(
     return NextResponse.json({ error: "Failed to delete loot table" }, { status: 500 });
   }
 }
+

@@ -6,10 +6,15 @@ import { MessageSquare, Search } from "lucide-react";
 import { Input } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
 
-export const metadata: Metadata = {
-  title: "Search Forums | Saints Gaming",
+import { constructPageMetadata } from "@/web/lib/seo";
+
+export const metadata: Metadata = constructPageMetadata({
+  title: "Search Forums",
   description: "Search across all forum discussions and tags.",
-};
+  path: "/forum/search",
+  noIndex: true,
+});
+
 
 type Props = {
   searchParams: Promise<{ q?: string; tag?: string }>;
