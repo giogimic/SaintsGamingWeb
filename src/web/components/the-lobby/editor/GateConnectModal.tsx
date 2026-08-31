@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { listMaps, loadMap, type MapIndexEntry } from '../data/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
+import { STUDIO_MAP_HOT_RELOAD_EVENT } from '@/shared/game/studioEvents';
 
 const CATEGORIES = [
   { id: 'MAP', label: 'World Map', icon: MapIcon, color: 'text-sky-400 bg-sky-950/40 border-sky-500/30' },
@@ -131,9 +132,10 @@ export const GateConnectModal: React.FC = () => {
       // Load destination map
       const rawMap = await loadMap(selectedMapId);
       const loaded = ensureMapHasStudioTilesets(rawMap);
-      useGameStore.getState().setActiveMapData(loaded);
+      useGameStore.setState({ currentMapId: selectedMapId, activeMapData: loaded });
       useEditorStore.getState().openMapInTab(selectedMapId);
       useEditorStore.getState().setShowWarpOverlays(true);
+      window.dispatchEvent(new CustomEvent(STUDIO_MAP_HOT_RELOAD_EVENT, { detail: { mapDoc: loaded } }));
 
       showToast(`🎯 Click anywhere on ${selectedMapId} to place the entrance point.`);
     } catch (e: any) {

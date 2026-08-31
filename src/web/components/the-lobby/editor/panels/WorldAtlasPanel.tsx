@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { MapIndexEntry, loadMap, invalidateMapCache, invalidateClientAtlas } from '../../data/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
+import { STUDIO_MAP_HOT_RELOAD_EVENT } from '@/shared/game/studioEvents';
 import { soundSynth } from '@/engine/sound-synth';
 import {
   type AtlasNode,
@@ -158,7 +159,22 @@ export const WorldAtlasPanel: React.FC = () => {
         useEditorStore.getState().clearMapDirty();
         invalidateMapCache();
         invalidateClientAtlas();
-        showToast('Atlas saved successfully.');
+
+        // Hot-reload active map so new connections and neighbor chunks take effect immediately
+        const curMapId = useGameStore.getState().currentMapId;
+        const curAtlasNodeId = useGameStore.getState().activeAtlasNodeId;
+        if (curMapId) {
+          try {
+            const reloaded = ensureMapHasStudioTilesets(await loadMap(curMapId, 0, curAtlasNodeId || undefined));
+            useGameStore.getState().setActiveMapData(reloaded);
+            window.dispatchEvent(new CustomEvent(STUDIO_MAP_HOT_RELOAD_EVENT, { detail: { mapDoc: reloaded } }));
+          } catch (reloadErr) {
+            console.warn('[WorldAtlasPanel] Error refreshing active map data after save:', reloadErr);
+          }
+        }
+
+        const syncCount = typeof result.syncedMapCount === 'number' ? ` (${result.syncedMapCount} map seams synced)` : '';
+        showToast(`Atlas & connection seams saved successfully${syncCount}.`);
       } else {
         showToast(result.error || 'Failed to save atlas.');
       }
@@ -323,6 +339,45 @@ export const WorldAtlasPanel: React.FC = () => {
                 ))
               )}
 
+              {/* Active Connection Conduits / Bridges Between Adjacent Nodes */}
+              {atlasData.nodes.map((node) => {
+                const eastNeighbor = atlasData.nodes.find(n => n.x === node.x + 1 && n.y === node.y);
+                const southNeighbor = atlasData.nodes.find(n => n.x === node.x && n.y === node.y + 1);
+
+                return (
+                  <React.Fragment key={`conduit_${node.id || `${node.x}_${node.y}`}`}>
+                    {eastNeighbor && (
+                      <div
+                        className="absolute z-0 pointer-events-none flex items-center justify-center"
+                        style={{
+                          left: node.x * 72 + 65,
+                          top: node.y * 72 + 28,
+                          width: 14,
+                          height: 14,
+                        }}
+                        title={`Seamless East-West Connection: ${node.mapId} ↔ ${eastNeighbor.mapId}`}
+                      >
+                        <div className="w-full h-2 bg-cyan-400 rounded-full shadow-[0_0_10px_rgba(34,211,238,0.95)] border border-cyan-200" />
+                      </div>
+                    )}
+                    {southNeighbor && (
+                      <div
+                        className="absolute z-0 pointer-events-none flex items-center justify-center"
+                        style={{
+                          left: node.x * 72 + 28,
+                          top: node.y * 72 + 65,
+                          width: 14,
+                          height: 14,
+                        }}
+                        title={`Seamless North-South Connection: ${node.mapId} ↔ ${southNeighbor.mapId}`}
+                      >
+                        <div className="h-full w-2 bg-cyan-400 rounded-full shadow-[0_0_10px_rgba(34,211,238,0.95)] border border-cyan-200" />
+                      </div>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+
               {/* Placed Nodes */}
               {atlasData.nodes.map((node) => {
                 const isSelected = selectedNode?.x === node.x && selectedNode?.y === node.y;
@@ -345,10 +400,10 @@ export const WorldAtlasPanel: React.FC = () => {
                     title="Click to select actions · Double-click to warp"
                   >
                     {/* Neighbor edge indicator pips */}
-                    {hasNorth && <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-1 bg-cyan-400 rounded-full shadow-[0_0_4px_rgba(34,211,238,0.8)]" title="North Connected" />}
-                    {hasSouth && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-1 bg-cyan-400 rounded-full shadow-[0_0_4px_rgba(34,211,238,0.8)]" title="South Connected" />}
-                    {hasWest && <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-2 bg-cyan-400 rounded-full shadow-[0_0_4px_rgba(34,211,238,0.8)]" title="West Connected" />}
-                    {hasEast && <div className="absolute -right-1 top-1/2 -translate-y-1/2 w-1 h-2 bg-cyan-400 rounded-full shadow-[0_0_4px_rgba(34,211,238,0.8)]" title="East Connected" />}
+                    {hasNorth && <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-1.5 bg-cyan-300 rounded-full shadow-[0_0_6px_rgba(34,211,238,0.9)] border border-cyan-100" title="North Connected" />}
+                    {hasSouth && <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-1.5 bg-cyan-300 rounded-full shadow-[0_0_6px_rgba(34,211,238,0.9)] border border-cyan-100" title="South Connected" />}
+                    {hasWest && <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-1.5 h-4 bg-cyan-300 rounded-full shadow-[0_0_6px_rgba(34,211,238,0.9)] border border-cyan-100" title="West Connected" />}
+                    {hasEast && <div className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-1.5 h-4 bg-cyan-300 rounded-full shadow-[0_0_6px_rgba(34,211,238,0.9)] border border-cyan-100" title="East Connected" />}
 
                     {getBiomeIcon(node.mapId, isSelected)}
                     <span className="text-[9px] text-slate-200 break-all leading-tight font-bold">
