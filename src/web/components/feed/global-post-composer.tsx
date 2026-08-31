@@ -259,7 +259,8 @@ export function GlobalPostComposer() {
   // ─── 1. MINIMIZED FLOATING DOCK CAPSULE (DESKTOP) ───────────────────────────
   if (isMinimized && !isMobile) {
     return createPortal(
-      <div className="fixed bottom-6 right-6 z-[300] animate-in fade-in slide-in-from-bottom-5 duration-200 pointer-events-auto">
+      <div className="fixed bottom-16 right-6 z-[300] animate-in fade-in slide-in-from-bottom-5 duration-200 pointer-events-auto">
+
         <div className="flex items-center gap-2 p-1.5 pr-2 rounded-full bg-[#050b14]/95 border border-primary/40 shadow-[0_0_20px_rgba(203,178,106,0.3)] backdrop-blur-md text-slate-200">
           <button
             onClick={() => {

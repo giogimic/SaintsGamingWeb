@@ -386,47 +386,45 @@ export function UserSettingsOverlayShell() {
 
   if (!mounted || !isOpen) return null;
 
-  // ─── 1. MINIMIZED FLOATING DOCK CAPSULE ─────────────────────────────────────
+  // ─── 1. MINIMIZED FLOATING DOCK HEXAGON ─────────────────────────────────────
   if (isMinimized) {
     return createPortal(
-      <div className="fixed bottom-6 right-6 z-[300] animate-in fade-in slide-in-from-bottom-5 duration-200 pointer-events-auto">
-        <div className="flex items-center gap-2 p-1.5 pr-2 rounded-full bg-[#050b14]/95 border border-primary/60 shadow-[0_0_25px_rgba(203,178,106,0.35)] backdrop-blur-xl text-slate-200">
+      <div className="fixed bottom-16 right-6 z-[300] animate-in fade-in slide-in-from-bottom-5 duration-200 pointer-events-auto">
+        <div className="relative group">
+          {/* Hexagon Frame with Centered Rotating Gear */}
           <button
+            type="button"
             onClick={() => {
               try { soundSynth?.playUiClick?.(); } catch {}
               setMinimized(false);
             }}
-            className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-white/10 rounded-full transition-all group cursor-pointer"
+            className="relative flex items-center justify-center w-13 h-13 bg-[#050b14]/95 border-2 border-primary/80 shadow-[0_0_20px_rgba(203,178,106,0.6)] backdrop-blur-xl hover:scale-110 active:scale-95 transition-all duration-200 cursor-pointer"
+            style={{
+              clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+            }}
             title="Restore User Settings"
           >
-            <div className="p-1 rounded-full bg-primary/20 text-primary border border-primary/40 group-hover:scale-110 transition-transform">
-              <Settings className="h-3.5 w-3.5" />
-            </div>
-            <div className="flex flex-col text-left">
-              <span className="text-[11px] font-bold tracking-tight text-white font-mono uppercase">
-                User Settings
-              </span>
-              <span className="text-[9px] text-primary font-mono truncate max-w-[140px]">
-                {USER_SETTINGS_CATEGORIES.find((c) => c.id === activeTab)?.label}
-              </span>
-            </div>
-            <Maximize2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-white transition-colors ml-1" />
+            <Settings className="w-6 h-6 text-amber-400 animate-spin group-hover:text-amber-300" style={{ animationDuration: '14s' }} />
           </button>
 
-          <div className="h-4 w-[1px] bg-border/40 mx-0.5" />
-
+          {/* Quick Close (X) Trigger on Hover */}
           <button
-            onClick={() => closeSettings()}
-            className="p-1.5 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-full transition-colors cursor-pointer"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              closeSettings();
+            }}
+            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600/90 hover:bg-red-500 text-white flex items-center justify-center shadow-md transition-opacity opacity-0 group-hover:opacity-100 z-10 cursor-pointer"
             title="Close Settings"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="w-3 h-3" />
           </button>
         </div>
       </div>,
       document.body
     );
   }
+
 
   // ─── 2. FLOATING / MAXIMIZED USER SETTINGS OS WINDOW ───────────────────────
   return createPortal(
