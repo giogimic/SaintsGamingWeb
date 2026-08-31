@@ -1,3 +1,10 @@
+# 2.1.585
+- **Gunmetal Navbar Tagline**: Added `.sg-gunmetal-gradient` metallic titanium text gradient with dark drop-shadow and animated shimmer for the "Time To Play" tagline in `navbar.tsx`, replacing yellow styling with an authentic gunmetal finish consistent across mobile and desktop.
+- **Centered Mobile Bottom Bar & Balanced Navigation**:
+  - Balanced mobile bottom navigation into a 4-1-4 symmetrical layout: 4 left items (Play, Feed, Streams, Forums), centered elevated 3D Logo Orb (`-translate-y-3.5`), and 4 right items (Nexus, Wiki, Support, Chat/Social Messenger).
+  - Placed the mobile Social Messenger chat button as the 4th item in the right group with identical spacing, preventing it from being pushed against the far right screen edge and ensuring the 3D logo orb is dead center.
+- **Version Bump**: Bumped release version to `v2.1.585` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.584
 - **Wider Desktop Feed Posts**: Expanded the main feed column constraint from `max-w-4xl 2xl:max-w-5xl` to `max-w-5xl 2xl:max-w-6xl` in `inbox-client.tsx`, giving post cards more breathing room on desktop and ultrawide monitors.
 - **Background Video Pause on Reels Open**: Added a `useEffect` in `the-feed.tsx` that fires when the fullscreen reel/shorts modal opens — it clears `activePlayingVideoId` (so `FeedVideoPlayer` stops) and explicitly pauses all `<video>` elements outside the modal container, preventing background audio from bleeding into reel playback.

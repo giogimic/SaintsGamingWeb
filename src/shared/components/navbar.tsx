@@ -40,7 +40,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.584",
+  siteVersion = "v2.1.585",
   gameTitle = "The Lobby",
 }: {
   session: any | null;
@@ -101,8 +101,8 @@ export function Navbar({
                 <span className="font-black text-sm sm:text-base md:text-lg sg-text-gradient tracking-tight whitespace-nowrap">
                   Saints Gaming
                 </span>
-                <span className="text-muted-foreground/40 font-light text-xs sm:text-sm">|</span>
-                <span className="text-[11px] sm:text-xs font-semibold text-amber-400/90 tracking-wide whitespace-nowrap">
+                <span className="text-zinc-500/60 font-light text-xs sm:text-sm select-none">|</span>
+                <span className="font-bold text-[11px] sm:text-xs md:text-sm sg-gunmetal-gradient tracking-wide uppercase font-mono whitespace-nowrap">
                   Time To Play
                 </span>
               </div>
