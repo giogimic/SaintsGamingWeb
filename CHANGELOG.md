@@ -1,3 +1,10 @@
+# 2.1.567
+- **Unified Single-Box Post Composer (Removed Redundant Outer Window Container)**:
+  - **Single Sleek Composer Box**: Refactored `GlobalPostComposer` (`src/web/components/feed/global-post-composer.tsx`) so that the pop-out window is directly the post composer itself with only a thin outer border (`border-white/15`), eliminating the nested "box-inside-a-box" padding.
+  - **Streamlined Desktop Header & Integrated Bottom Tools**: Kept a thin 36px top header bar with user identity and window controls, allowing the textarea to fill the single container naturally with media previews, quick hashtag chips, privacy selectors, and the Publish button cleanly anchored along the bottom inside edge.
+  - **Single-Layer Mobile Drawer**: Streamlined the mobile slide-up drawer to a single clean composition container with a thin top border and overlaid bottom tools.
+- **Version Bump**: Bumped release version to `v2.1.567` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.566
 - **World Atlas Saving & 4-Way Connection Synchronization (Visual & Functional Fixes)**:
   - **Database Connection Propagation (`POST /api/world/atlas`)**: Updated the atlas save endpoint to automatically compute 4-way adjacent neighbors (`getAdjacentAtlasNeighbors`) for every node in the macro grid and synchronize `connections: { north, south, east, west }` into `WorldMap.gatesData` across all placed maps.
