@@ -1,3 +1,14 @@
+# 2.1.577
+- **User Settings OS-Window Menu Bar & Toolbar Architecture**:
+  - **Windows Directory-Style Menu Bar**: Added a sleek, retro OS directory-style top menu bar below the window header and above the content tabs with 4 dropdown menus:
+    - **Appearance**: Live theme selection (`Midnight Dark`, `Sunset Light`, `Miami Vice`) with active state badges, WebAudio sound synthesizer toggle, and quick volume presets.
+    - **Profile**: Direct links to public profile, inbox & messenger, UCP control panel, copy profile link, and one-click data reload.
+    - **View**: Direct section jumps to `Account & Profile`, `Post Management`, `Gaming & MMO`, and `Security & Sessions`.
+    - **Tools**: Quick actions to launch the post/reel composer, access badges & achievements, community forum, and enter The Lobby MMO.
+  - **Quick Action Toolbar Buttons**: Added right-aligned one-click theme cycle toggle, audio mute/unmute button, and window center/reset shortcut.
+  - **Streamlined Tab Hierarchy**: Converted appearance into the persistent top toolbar, leaving the main tabs focused on Account, Posts, Gaming, and Security.
+- **Version Bump**: Bumped release version to `v2.1.577` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.576
 - **Theme & Design System Rule Enforcement**:
   - **Removed Hacker / Matrix Theme**: Completely purged residual hacker/matrix theme options from `UserSettingsOverlayShell`, theme provider, CSS stylesheets, and UI theme toggles to uphold authentic Saints Gaming clean aesthetic.
