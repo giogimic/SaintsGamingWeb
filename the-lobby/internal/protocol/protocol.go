@@ -121,9 +121,10 @@ type JoinMapRequest struct {
 	PIE         bool     `json:"pie"`
 	X           *float64 `json:"x"`
 	Y           *float64 `json:"y"`
-	Name        string   `json:"name"`
-	SpriteID    string   `json:"spriteId"`
-	JoinSeq     uint64   `json:"joinSeq"`
+	Name           string   `json:"name"`
+	SpriteID       string   `json:"spriteId"`
+	AssetProfileID string   `json:"assetProfileId"`
+	JoinSeq        uint64   `json:"joinSeq"`
 }
 
 // PlayerInput matches PlayerInput on the TS wire.

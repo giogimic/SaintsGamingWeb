@@ -316,7 +316,7 @@ export async function loadMap(
                 grid: neighborData.grid,
                 tileLayers: neighborData.tileLayers,
                 tilesets: neighborData.tilesets,
-                // NPCs omitted for Phase 1 (Entity Isolation)
+                npcs: neighborData.npcs || [],
               });
             }).catch(e => {
               console.warn(`[MapLoader] Failed to load neighbor ${targetMapId}:`, e);

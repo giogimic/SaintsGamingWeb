@@ -995,14 +995,25 @@ export const useGameStore = create<GameState>()(
           state.player.completedQuests.push(questId);
         }
       }),
-      setOtherPlayers: (players) => set((state) => { state.otherPlayers = players; }),
-      updateOtherPlayer: (socketId, data) => set((state) => {
+      setOtherPlayers: (players) => set((state) => {
+        const normalized: typeof state.otherPlayers = {};
+        for (const [id, p] of Object.entries(players || {})) {
+          if (!p) continue;
+          normalized[id] = {
+            ...p,
+            assetProfileId: (p as any).assetProfileId || (p as any).spriteId || 'adventurer',
+          };
+        }
+        state.otherPlayers = normalized;
+      }),
+      updateOtherPlayer: (socketId, data: any) => set((state) => {
+        const resolvedSprite = data.assetProfileId || data.spriteId;
         if (!state.otherPlayers[socketId]) {
           state.otherPlayers[socketId] = {
             x: data.x ?? 0,
             y: data.y ?? 0,
             name: data.name || 'Unknown',
-            assetProfileId: data.assetProfileId || 'adventurer',
+            assetProfileId: resolvedSprite || 'adventurer',
             direction: data.direction,
             isMoving: data.isMoving,
             chatMessage: data.chatMessage,
@@ -1012,7 +1023,7 @@ export const useGameStore = create<GameState>()(
           if (data.x !== undefined) state.otherPlayers[socketId].x = data.x;
           if (data.y !== undefined) state.otherPlayers[socketId].y = data.y;
           if (data.name !== undefined) state.otherPlayers[socketId].name = data.name;
-          if (data.assetProfileId !== undefined) state.otherPlayers[socketId].assetProfileId = data.assetProfileId;
+          if (resolvedSprite !== undefined) state.otherPlayers[socketId].assetProfileId = resolvedSprite;
           if (data.direction !== undefined) state.otherPlayers[socketId].direction = data.direction;
           if (data.isMoving !== undefined) state.otherPlayers[socketId].isMoving = data.isMoving;
           if (data.customization !== undefined) state.otherPlayers[socketId].customization = data.customization;

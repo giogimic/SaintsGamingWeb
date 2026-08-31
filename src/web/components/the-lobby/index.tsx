@@ -338,6 +338,7 @@ export default function TheLobby({
       // Notify socket server of loaded character specs via centralized joinWorld
       if (socketRef.current) {
         const store = useGameStore.getState();
+        const neighborMapIds = Object.values(useGameStore.getState().activeMapData?.connections || {}).filter(Boolean) as string[];
         joinWorld({
           socket: socketRef.current,
           accountId: session?.user?.id || charId,
@@ -351,6 +352,7 @@ export default function TheLobby({
           position: validPosition,
           name: res.data.name,
           assetProfileId: res.data.assetProfileId || 'adventurer',
+          neighborMapIds,
           worldSessionState: store.worldSessionState,
           currentInstanceId: store.instanceId,
           worldJoinSeq: store.worldJoinSeq,
@@ -658,6 +660,7 @@ export default function TheLobby({
           if (!state.player.accountId || state.player.accountId !== session.user.id) {
             useGameStore.getState().hydratePlayer({ accountId: session.user.id });
           }
+          const neighborMapIds = Object.values(state.activeMapData?.connections || {}).filter(Boolean) as string[];
           joinWorld({
             socket,
             accountId: effectiveAccountId,
@@ -674,6 +677,7 @@ export default function TheLobby({
             },
             name: state.player.name || 'Player',
             assetProfileId: state.player.assetProfileId || 'adventurer',
+            neighborMapIds,
             worldSessionState: state.worldSessionState,
             currentInstanceId: state.instanceId,
             worldJoinSeq: state.worldJoinSeq,
@@ -1531,6 +1535,7 @@ export default function TheLobby({
         /* map load fallback */
       });
     }
+    const neighborMapIds = Object.values(state.activeMapData?.connections || {}).filter(Boolean) as string[];
     joinWorld({
       socket,
       accountId: session.user.id,
@@ -1547,6 +1552,7 @@ export default function TheLobby({
       },
       name: state.player.name || 'Player',
       assetProfileId: state.player.assetProfileId || 'adventurer',
+      neighborMapIds,
       worldSessionState: state.worldSessionState,
       currentInstanceId: state.instanceId,
       worldJoinSeq: state.worldJoinSeq,

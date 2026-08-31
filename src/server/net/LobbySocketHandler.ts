@@ -112,7 +112,7 @@ export class LobbySocketHandler {
             socketId: socket.id,
             accountId: playerAccountId,
             name: String(data?.name || existingPlayer?.name || "Player"),
-            spriteId: String(data?.spriteId || existingPlayer?.spriteId || "adventurer"),
+            spriteId: String(data?.assetProfileId || data?.spriteId || existingPlayer?.spriteId || "adventurer"),
             instanceId: targetInstanceId,
             mapId: baseMapId,
             x: typeof data?.x === "number" ? data.x : existingPlayer?.x ?? 14,
@@ -134,6 +134,26 @@ export class LobbySocketHandler {
 
           socket.join(targetInstanceId);
 
+          // Join connected adjacent neighbor shards for cross-border multiplayer visibility
+          const peers = this.shards.getPeersInShard(targetInstanceId, socket.id);
+          if (Array.isArray(data?.neighborMapIds)) {
+            for (const nMapId of data.neighborMapIds) {
+              const nBase = toBaseMapId(nMapId);
+              if (nBase && nBase !== baseMapId) {
+                const nInst = this.shards.resolveInstanceId(nBase, playerAccountId, {
+                  isLobby,
+                  isPrivate,
+                  pie: isPie,
+                });
+                socket.join(nInst);
+                const nPeers = this.shards.getPeersInShard(nInst, socket.id);
+                for (const [pId, peer] of Object.entries(nPeers)) {
+                  peers[pId] = peer;
+                }
+              }
+            }
+          }
+
           // 1. Send authoritative confirmation
           socket.emit(RealtimeEvents.MAP_JOINED, {
             instanceId: targetInstanceId,
@@ -145,7 +165,6 @@ export class LobbySocketHandler {
           });
 
           // 2. Send snapshot of existing peers
-          const peers = this.shards.getPeersInShard(targetInstanceId, socket.id);
           socket.emit(RealtimeEvents.MAP_PLAYERS, peers);
 
           // 3. Replicate new player to shard peers
@@ -155,6 +174,8 @@ export class LobbySocketHandler {
               accountId: player.accountId,
               name: player.name,
               spriteId: player.spriteId,
+              assetProfileId: player.spriteId,
+              mapId: player.mapId,
               x: player.x,
               y: player.y,
               direction: player.direction,
@@ -191,6 +212,7 @@ export class LobbySocketHandler {
 
           socket.to(player.instanceId).emit(RealtimeEvents.PLAYER_MOVED, {
             socketId: socket.id,
+            mapId: player.mapId,
             x: player.x,
             y: player.y,
             direction: player.direction,
