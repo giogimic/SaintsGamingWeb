@@ -15,6 +15,7 @@ type Config struct {
 	DevAuthBypass  bool
 	SimTPS         int
 	NetTPS         int
+	AOIZoneSize    int
 	MaxPlayers     int
 	LobbyCapacity  int
 	CORSOrigin     string
@@ -60,6 +61,11 @@ func getenvBool(key string, fallback bool) bool {
 func Load() Config {
 	port := getenvInt("GO_MMO_PORT", getenvInt("PORT", 3001))
 	host := getenv("GO_MMO_HOST", getenv("HOSTNAME", "0.0.0.0"))
+	aoiSize := getenvInt("GO_MMO_AOI_ZONE_SIZE", getenvInt("MMO_AOI_ZONE_SIZE", 16))
+	if aoiSize <= 0 {
+		aoiSize = 16
+	}
+
 	return Config{
 		Host:          host,
 		Port:          port,
@@ -69,9 +75,11 @@ func Load() Config {
 		DevAuthBypass: getenvBool("GO_MMO_DEV_AUTH", getenv("NODE_ENV", "development") != "production"),
 		SimTPS:        getenvInt("GO_MMO_SIM_TPS", 20),
 		NetTPS:        getenvInt("GO_MMO_NET_TPS", 10),
+		AOIZoneSize:   aoiSize,
 		MaxPlayers:    getenvInt("GO_MMO_MAX_PLAYERS", 500),
 		LobbyCapacity: getenvInt("GO_MMO_LOBBY_CAPACITY", 50),
 		CORSOrigin:    getenv("GO_MMO_CORS_ORIGIN", "*"),
 		PublicBaseURL: getenv("GO_MMO_PUBLIC_URL", "http://127.0.0.1:3001"),
 	}
 }
+

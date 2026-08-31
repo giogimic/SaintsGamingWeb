@@ -4,10 +4,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { Trophy, Medal } from "lucide-react";
 
-export const metadata: Metadata = {
+import { constructPageMetadata } from "@/web/lib/seo";
+
+export const metadata: Metadata = constructPageMetadata({
   title: "Leaderboard | Forums",
   description: "Top contributing members of the Saints Gaming community.",
-};
+  path: "/forum/leaderboard",
+});
+
 
 export default async function LeaderboardPage() {
   const topUsers = await prisma.user.findMany({

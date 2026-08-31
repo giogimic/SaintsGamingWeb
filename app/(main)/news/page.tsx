@@ -1,18 +1,15 @@
 import type { Metadata } from "next";
 import { prisma } from "@/web/lib/prisma";
 import { UnifiedHubView } from "@/web/components/hub/UnifiedHubView";
+import { constructPageMetadata } from "@/web/lib/seo";
 
-export const metadata: Metadata = {
-  title: "News & Announcements | Saints Gaming",
+export const metadata: Metadata = constructPageMetadata({
+  title: "News & Announcements",
   description: "Stay up to date with the latest Saints Gaming community news, updates, and events.",
-  openGraph: {
-    title: "News & Announcements | Saints Gaming",
-    description: "Stay up to date with the latest Saints Gaming community news, updates, and events.",
-    type: "website",
-    url: "https://saintsgaming.net/news",
-    siteName: "Saints Gaming",
-  },
-};
+  path: "/news",
+});
+
+
 
 export default async function NewsPage({
   searchParams,

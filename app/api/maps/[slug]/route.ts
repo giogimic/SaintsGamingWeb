@@ -9,6 +9,8 @@ import { notifyGoMapSynced } from "@/server/goMmoNotify";
 import { DEMO_MAP_ID } from "@/server/demoMapSeed";
 import { resolveMapDimensions } from "@/shared/game/mapDocVisual";
 import { npcToEntity } from "@/shared/game/entities";
+import { AuditService } from "@/server/audit/AuditService";
+
 
 export const dynamic = 'force-dynamic';
 
@@ -230,7 +232,22 @@ export async function POST(
       }
     }
 
+    // Security compliance audit record prior to DB write
+    await AuditService.write({
+      userId: session.user.id,
+      action: "map.upsert",
+      resource: { type: "map", id: slug },
+      after: {
+        name: body.name || slug,
+        width,
+        height,
+        gameId: body.gameId || "saints",
+        entityCount: entitiesPayload?.length || 0,
+      },
+    });
+
     const worldMap = await prisma.worldMap.upsert({
+
       where: { id: slug },
       update: {
         name: body.name || slug,
@@ -347,8 +364,16 @@ export async function DELETE(
       );
     }
 
+    // Security compliance audit record prior to DB write
+    await AuditService.write({
+      userId: session.user.id,
+      action: "map.delete",
+      resource: { type: "map", id: normalizedSlug },
+    });
+
     await prisma.worldMap.deleteMany({ where: { id: normalizedSlug } });
     await prisma.gameMap.deleteMany({ where: { id: normalizedSlug } });
+
 
     return NextResponse.json({ success: true, deleted: normalizedSlug });
   } catch (error) {

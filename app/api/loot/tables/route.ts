@@ -4,6 +4,8 @@ import { prisma } from "@/web/lib/prisma";
 import { canWriteStudioContent } from "@/shared/game/studioPermissions";
 import { normalizeDropEntry, type LootDropEntry } from "@/shared/game/lootRefs";
 import { DEFAULT_WORLD_PROFILE_ID } from "@/shared/game/worldProfiles";
+import { AuditService } from "@/server/audit/AuditService";
+
 
 function parseJsonArray<T>(raw: string | null | undefined, fallback: T[]): T[] {
   if (!raw) return fallback;
@@ -112,10 +114,20 @@ export async function POST(request: NextRequest) {
     }
 
     const entries = Array.isArray(body.entries) ? body.entries : [];
+
     const guaranteedDrops = Array.isArray(body.guaranteedDrops) ? body.guaranteedDrops : [];
     const requiredTags = Array.isArray(body.requiredTags) ? body.requiredTags : [];
 
+    // Security compliance audit record prior to DB write
+    await AuditService.write({
+      userId: session.user.id,
+      action: "loot.create",
+      resource: { type: "loot", id: name },
+      after: { gameId, name, rollsPerDrop: body.rollsPerDrop },
+    });
+
     const row = await prisma.lootTable.create({
+
       data: {
         gameId,
         name,

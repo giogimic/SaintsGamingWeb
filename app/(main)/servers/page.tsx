@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 import { prisma } from "@/web/lib/prisma";
 import { UnifiedHubView } from "@/web/components/hub/UnifiedHubView";
 
-export const metadata: Metadata = {
-  title: "Official Game Servers | Saints Gaming",
+import { constructPageMetadata } from "@/web/lib/seo";
+
+export const metadata: Metadata = constructPageMetadata({
+  title: "Official Game Servers",
   description: "Join our massive 24/7 dedicated servers. Real-time stats and server status.",
-};
+  path: "/servers",
+});
+
 
 export default async function ServersPage({
   searchParams,

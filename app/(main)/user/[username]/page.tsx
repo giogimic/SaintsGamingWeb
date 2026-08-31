@@ -11,25 +11,24 @@ import { auth } from "@/auth";
 import { Metadata } from "next";
 import Link from "next/link";
 
+import { getUserProfileMetadata } from "@/web/lib/seo";
+
 export async function generateMetadata(props: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const params = await props.params;
   const username = decodeURIComponent(params.username);
   const profile = await getPublicProfile(username);
 
   if (!profile) {
-    return { title: "User Not Found" };
+    return { title: "User Not Found | Saints Gaming" };
   }
 
-  return {
-    title: `${profile.username}'s Profile`,
-    description: `Check out ${profile.username}'s profile on Saints Gaming. Joined ${new Date(profile.createdAt).toLocaleDateString()}.`,
-    openGraph: {
-      title: `${profile.username}'s Profile | Saints Gaming`,
-      description: `View ${profile.username}'s profile, forum activity, and Steam wishlist on Saints Gaming.`,
-      images: profile.image ? [{ url: profile.image }] : undefined,
-    }
-  };
+  return getUserProfileMetadata({
+    username: profile.username,
+    avatar: profile.image ?? undefined,
+  });
 }
+
+
 
 export default async function PublicProfilePage(props: { params: Promise<{ username: string }> }) {
   const params = await props.params;

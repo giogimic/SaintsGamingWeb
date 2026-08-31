@@ -171,10 +171,10 @@ func (e *Engine) netTick() {
 			"name":      p.Name,
 			"spriteId":  p.SpriteID,
 		}
-		// Broadcast to AOI 3x3 neighbor rooms and map instance room.
+		// Broadcast strictly to spatial AOI 3x3 neighbor rooms to eliminate redundant global packet overhead
 		e.emit.EmitToRoom(aoiBroadcastKey(p.MapID, p.ZoneX, p.ZoneY), protocol.EvPlayerMoved, payload)
-		e.emit.EmitToRoom(p.MapID, protocol.EvPlayerMoved, payload)
 	}
+
 	if e.creatures != nil {
 		for _, c := range e.creatures.DrainDirty() {
 			e.emit.EmitToRoom(c.MapID, protocol.EvCreatureMoved, c)

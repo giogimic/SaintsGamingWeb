@@ -4,6 +4,8 @@ import { prisma } from '@/web/lib/prisma';
 import { auth } from '@/auth';
 import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
 import type { MapPrefab } from '@prisma/client';
+import { AuditService } from '@/server/audit/AuditService';
+
 
 export type PrefabTileData = {
   layerOffset: number;
@@ -75,6 +77,14 @@ export async function savePrefab(data: {
       }
     }
 
+    // Security compliance audit record prior to DB write
+    await AuditService.write({
+      userId: authorId,
+      action: "prefab.save",
+      resource: { type: "prefab" as any, id: data.name },
+      after: { name: data.name, category: data.category, width: data.width, height: data.height },
+    });
+
     const prefab = await prisma.mapPrefab.create({
       data: {
         authorId,
@@ -101,9 +111,17 @@ export async function deletePrefab(id: string) {
       throw new Error('Forbidden');
     }
 
+    // Security compliance audit record prior to DB write
+    await AuditService.write({
+      userId: session.user.id,
+      action: "prefab.delete",
+      resource: { type: "prefab" as any, id },
+    });
+
     await prisma.mapPrefab.delete({
       where: { id },
     });
+
 
     return { success: true };
   } catch (err: any) {

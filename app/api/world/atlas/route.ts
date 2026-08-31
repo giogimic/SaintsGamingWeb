@@ -3,6 +3,8 @@ import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
 import { normalizeAtlasGridData, getAdjacentAtlasNeighbors } from "@/shared/game/atlas/spatialAtlas";
 import { DEFAULT_WORLD_PROFILE_ID } from "@/shared/game/worldProfiles";
+import { AuditService } from "@/server/audit/AuditService";
+
 
 export const dynamic = 'force-dynamic';
 
@@ -145,8 +147,21 @@ export async function POST(request: Request) {
 
     console.log(`[Atlas] Saving atlas for gameId=${gameId}, nodes=${normalizedData.nodes?.length || 0}, lobbyMapId=${lobbyMapId}`);
 
+    // Security compliance audit record prior to DB write
+    await AuditService.write({
+      userId: session?.user?.id || "system",
+      action: "atlas.save",
+      resource: { type: "atlas", id: gameId },
+      after: {
+        gameId,
+        lobbyMapId,
+        nodeCount: normalizedData.nodes?.length || 0,
+      },
+    });
+
     let atlasResult: any = null;
     let savedVia = 'none';
+
 
     // 1. Try WorldAtlas table first
     try {

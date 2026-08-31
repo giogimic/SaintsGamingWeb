@@ -9,29 +9,18 @@ import { createContentRevision, publishRevision, ContentStatus } from '../../sha
 import { createStudioAuditLog, StudioAuditLog } from '../../shared/game/production/localizationAuditEngine';
 import { ResourceRef } from '../../shared/game/production/taskEngine';
 
-export interface AuditRecordParams {
-  userId: string;
-  projectId?: string;
-  action: string;
-  resource: ResourceRef;
-  before?: unknown;
-  after?: unknown;
-  meta?: Record<string, unknown>;
-}
+import { AuditService, AuditRecordParams } from '../audit/AuditService';
+export { AuditService, type AuditRecordParams };
 
 export class StudioAuditService {
   /**
    * Records a mutating studio action in memory/logs and invalidates content caches.
    */
   public static async recordMutation(params: AuditRecordParams): Promise<StudioAuditLog> {
-    const log = createStudioAuditLog(params);
-
-    // Invalidate local server content cache
-    contentCache.invalidate(params.resource.type as ContentReloadType, params.resource.id);
-
-    return log;
+    return AuditService.write(params);
   }
 }
+
 
 export interface PublishParams<T = unknown> {
   resourceType: 'map' | 'loot' | 'quest' | 'item' | 'dialogue' | 'creature' | 'ability' | 'class';

@@ -5,10 +5,14 @@ import { MonitorPlay } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Community Streams | Saints Gaming",
+import { constructPageMetadata } from "@/web/lib/seo";
+
+export const metadata: Metadata = constructPageMetadata({
+  title: "Community Streams",
   description: "Watch Saints Gaming community members streaming live.",
-};
+  path: "/streams",
+});
+
 
 export default async function StreamsPage() {
   const streamers = await prisma.streamProfile.findMany({

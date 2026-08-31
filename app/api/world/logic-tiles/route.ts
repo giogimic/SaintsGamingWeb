@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
 import { canWriteStudioContent } from "@/shared/game/studioPermissions";
+import { AuditService } from "@/server/audit/AuditService";
+
 
 export async function GET() {
   try {
@@ -44,7 +46,16 @@ export async function POST(req: Request) {
       onStepPayload,
     } = data;
 
+    // Security compliance audit record prior to DB write
+    await AuditService.write({
+      userId: session.user.id,
+      action: "logicTile.upsert",
+      resource: { type: "logicTile", id: String(id) },
+      after: { id, name, isSolid, interactable },
+    });
+
     const tile = await prisma.mapLogicTile.upsert({
+
       where: { id: Number(id) },
       update: {
         name,

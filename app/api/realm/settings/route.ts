@@ -6,6 +6,8 @@ import {
   DEFAULT_REALM_SETTINGS,
   RealmSettingsConfig,
 } from '@/shared/game/realmSettings';
+import { AuditService } from '@/server/audit/AuditService';
+
 
 export const dynamic = 'force-dynamic';
 
@@ -70,7 +72,16 @@ export async function POST(req: Request) {
     if (typeof body.motd === 'string') updates.push({ key: REALM_SETTING_KEYS.REALM_MOTD, value: body.motd.trim() });
     if (typeof body.allowGuestAccess === 'boolean') updates.push({ key: REALM_SETTING_KEYS.ALLOW_GUEST_ACCESS, value: String(body.allowGuestAccess) });
 
+    // Security compliance audit record prior to DB write
+    await AuditService.write({
+      userId: user.id || session?.user?.id || "system",
+      action: "realm.settings.update",
+      resource: { type: "realm" as any, id: "settings" },
+      after: { updatesCount: updates.length, keys: updates.map((u) => u.key) },
+    });
+
     await Promise.all(
+
       updates.map((u) =>
         prisma.siteSetting.upsert({
           where: { key: u.key },
