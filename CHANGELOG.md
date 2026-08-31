@@ -1,3 +1,8 @@
+# 2.1.584
+- **Wider Desktop Feed Posts**: Expanded the main feed column constraint from `max-w-4xl 2xl:max-w-5xl` to `max-w-5xl 2xl:max-w-6xl` in `inbox-client.tsx`, giving post cards more breathing room on desktop and ultrawide monitors.
+- **Background Video Pause on Reels Open**: Added a `useEffect` in `the-feed.tsx` that fires when the fullscreen reel/shorts modal opens — it clears `activePlayingVideoId` (so `FeedVideoPlayer` stops) and explicitly pauses all `<video>` elements outside the modal container, preventing background audio from bleeding into reel playback.
+- **Version Bump**: Bumped release version to `v2.1.584` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.583
 - **Eyeball HUD Toggle Button Scope**:
   - Configured the eyeball immersion HUD toggle button (`Eye`/`EyeOff`) in `FeedVideoPlayer.tsx` and `shorts-viewer-modal.tsx` to render exclusively on mobile viewports (`flex sm:hidden`), keeping desktop controls uncluttered while preserving the global `Tab` keyboard immersion shortcut.

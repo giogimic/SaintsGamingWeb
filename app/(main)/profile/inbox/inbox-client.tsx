@@ -420,7 +420,7 @@ export function InboxClient() {
     return (
       <div className="w-full flex items-start justify-center gap-6 relative">
         {renderSidebar(true)}
-        <div className="flex-1 min-w-0 max-w-4xl 2xl:max-w-5xl">
+        <div className="flex-1 min-w-0 max-w-5xl 2xl:max-w-6xl">
           <TheFeed 
             onOpenMessages={() => { setActiveChatType("MESSAGES"); setActiveId(null); }}
             activeFilter={activeFilter}

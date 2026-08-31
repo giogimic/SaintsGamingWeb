@@ -805,6 +805,23 @@ export function TheFeed({
   const [editBody, setEditBody] = useState("");
   const [mounted, setMounted] = useState(false);
 
+  // Pause all in-feed videos when the fullscreen reel modal opens
+  // so background audio never bleeds into reel playback
+  useEffect(() => {
+    if (viewingShortsPost) {
+      // Clear the active playing feed video so FeedVideoPlayer pauses
+      setActivePlayingVideoId(null);
+      // Belt-and-suspenders: pause every <video> in the page that isn't inside the reel modal
+      try {
+        const modalContainer = modalContainerRef.current;
+        document.querySelectorAll("video").forEach((v) => {
+          if (modalContainer && modalContainer.contains(v)) return;
+          v.pause();
+        });
+      } catch {}
+    }
+  }, [viewingShortsPost]);
+
   // Fullscreen Reel Auto-Advance & Adaptive Desktop Layout State
   const [autoAdvance, setAutoAdvance] = useState(() => {
     if (typeof window !== "undefined") {
