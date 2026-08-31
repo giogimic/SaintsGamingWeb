@@ -1,3 +1,13 @@
+# 2.1.593
+- **Multiplayer Character Sprite Synchronization**: Fixed an issue where other players appeared as the default dev test character (`adventurer` / tall purple-shirt model) rather than their selected custom or chibi character sprite.
+  - Normalized `assetProfileId` and `spriteId` parameters across `lobbyWorldJoin.ts`, `protocol.ts`, `LobbySocketHandler.ts`, `the-lobby` Go MMO handler (`protocol.go` & `handler.go`), and `store.ts`.
+  - Added fallback alias handling in `GameCanvasBabylon.tsx` to ensure `getAssetAnimationProfile` and `resolveEntitySpriteUrl` correctly receive the selected character profile from peers.
+- **Cross-Border Atlas World Visibility**:
+  - Connected neighbor map chunks loaded via the Atlas now include their respective static NPCs and world entities (`npcs` in `mapData.chunks` within `maps.ts`).
+  - In `GameCanvasBabylon.tsx`, static and dynamic entities on neighbor chunks are accurately transformed and rendered in world coordinates relative to the active camera.
+  - In `LobbySocketHandler.ts`, when a player joins a map that has connected neighbors (`neighborMapIds`), the socket subscribes to those adjacent shard rooms, sharing movement and presence updates tagged with their source `mapId` so players standing near borders can see each other seamlessly across the border seam.
+- **Version Bump**: Bumped release version to `v2.1.593` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.592
 - **Dynamic Spawn Hub Map System**: Replaced all hardcoded `DEMO_SANDBOX` / `LOBBY` map protection with a dynamic **Spawn Hub** setting stored in Realm Settings (`SPAWN_MAP_ID`). The active spawn hub map now shows a green "Spawn Hub" shield badge in the Atlas and cannot be deleted. Changing the spawn hub in Studio → Server Settings → Realm Info unlocks the previous map for deletion.
   - Added `spawnMapId` to `RealmSettingsConfig`, `REALM_SETTING_KEYS`, and the `/api/realm/settings` route (GET + POST).

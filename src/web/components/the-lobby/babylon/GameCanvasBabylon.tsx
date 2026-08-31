@@ -860,6 +860,22 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         babylonEngine.setEntityVisible('player_main', false);
       }
 
+      // Map Chunks lookup for cross-border neighbor coordinate transformation
+      const rawChunks = (liveMapDoc as any)?.chunks as Array<{ mapId: string; offsetX?: number; offsetZ?: number; width?: number; height?: number; npcs?: any[] }> | undefined;
+      const chunkMap = new Map<string, { offsetX: number; offsetZ: number; width: number; height: number }>();
+      if (rawChunks && rawChunks.length > 0) {
+        for (const c of rawChunks) {
+          if (c.mapId) {
+            chunkMap.set(c.mapId.toUpperCase(), {
+              offsetX: c.offsetX || 0,
+              offsetZ: c.offsetZ || 0,
+              width: c.width || liveW,
+              height: c.height || liveH,
+            });
+          }
+        }
+      }
+
       // Render connected multiplayer players (Live MMO only)
       const freshOtherPlayers = !editorToolsRef.current ? useGameStore.getState().otherPlayers : {};
       if (freshOtherPlayers) {
@@ -878,14 +894,25 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           // Prefer ?? so tile (0,0) is not remapped to demo defaults.
           const targetX = other.x ?? 6;
           const targetY = other.y ?? 2;
+          const otherMapId = (other as any).mapId ? String((other as any).mapId).toUpperCase() : undefined;
+          let ox: number;
+          let oz: number;
 
-          const ox = targetX - liveW / 2 + offset.x;
-          const oz = liveH / 2 - targetY - offset.y;
+          if (otherMapId && otherMapId !== String(currentMapId).toUpperCase() && chunkMap.has(otherMapId)) {
+            const c = chunkMap.get(otherMapId)!;
+            ox = (targetX - c.width / 2) + c.offsetX + offset.x;
+            oz = (c.height / 2 - targetY) + c.offsetZ - offset.y;
+          } else {
+            ox = targetX - liveW / 2 + offset.x;
+            oz = liveH / 2 - targetY - offset.y;
+          }
+
+          const peerSprite = other.assetProfileId || (other as any).spriteId || 'adventurer';
 
           // Fetch animationProfile if not cached (non-blocking)
-          if (!multiplayerAnimationProfilesRef.current.has(socketId) && other.assetProfileId) {
+          if (!multiplayerAnimationProfilesRef.current.has(socketId) && peerSprite) {
             multiplayerAnimationProfilesRef.current.set(socketId, null);
-            getAssetAnimationProfile(other.assetProfileId).then((profile) => {
+            getAssetAnimationProfile(peerSprite).then((profile) => {
               if (profile) multiplayerAnimationProfilesRef.current.set(socketId, profile);
             });
           }
@@ -895,7 +922,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             name: other.name || 'Saint',
             x: ox,
             y: oz,
-            spriteUrl: resolveEntitySpriteUrl(other.assetProfileId, {
+            spriteUrl: resolveEntitySpriteUrl(peerSprite, {
               kind: 'player',
               fallback: '/game-assets/npc/adventurer.png',
             }),
@@ -909,23 +936,51 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
       }
 
-      // Render map entities: socket mapEntities + static map NPCs as fallback
-      // (socket snapshot can miss if join races; map JSON still has placements).
-      // Read live store doc — mount closure activeMap.npcs goes stale when we
-      // keep the Babylon engine across setActiveMapData refreshes.
+      // Render map entities: socket mapEntities + static map NPCs (including connected neighbor chunks)
       const mapEntities = !editorToolsRef.current ? (liveStore.mapEntities || []) : [];
       const liveMapDoc =
         (liveStore.activeMapData as {
           npcs?: Array<{ id: string; name?: string; x: number; y: number; sprite?: string }>;
+          chunks?: Array<{ mapId: string; offsetX?: number; offsetZ?: number; width?: number; height?: number; npcs?: any[] }>;
         } | null) || activeMap;
-      const staticNpcs = (liveMapDoc?.npcs || []).map((npc: any) => ({
-        id: `mapnpc_${npc.id}`,
-        type: 'NPC' as const,
-        spriteKey: npc.sprite || 'adventurer',
-        position: { x: npc.x, y: npc.y },
-        mapId: currentMapId,
-        name: npc.name || npc.id,
-      }));
+
+      const staticNpcs: any[] = [];
+      if (rawChunks && rawChunks.length > 0) {
+        for (const chunk of rawChunks) {
+          const isMain = !chunk.offsetX && !chunk.offsetZ;
+          const cWidth = chunk.width || liveW;
+          const cHeight = chunk.height || liveH;
+          const cOffsetX = chunk.offsetX || 0;
+          const cOffsetZ = chunk.offsetZ || 0;
+
+          for (const npc of (chunk.npcs || [])) {
+            staticNpcs.push({
+              id: isMain ? `mapnpc_${npc.id}` : `mapnpc_${chunk.mapId}_${npc.id}`,
+              type: 'NPC' as const,
+              spriteKey: npc.sprite || 'adventurer',
+              position: { x: npc.x, y: npc.y },
+              worldX: (npc.x - cWidth / 2) + cOffsetX + offset.x,
+              worldZ: (cHeight / 2 - npc.y) + cOffsetZ - offset.y,
+              mapId: chunk.mapId || currentMapId,
+              name: npc.name || npc.id,
+            });
+          }
+        }
+      } else {
+        for (const npc of (liveMapDoc?.npcs || [])) {
+          staticNpcs.push({
+            id: `mapnpc_${npc.id}`,
+            type: 'NPC' as const,
+            spriteKey: npc.sprite || 'adventurer',
+            position: { x: npc.x, y: npc.y },
+            worldX: npc.x - liveW / 2 + offset.x,
+            worldZ: liveH / 2 - npc.y - offset.y,
+            mapId: currentMapId,
+            name: npc.name || npc.id,
+          });
+        }
+      }
+
       // Prefer socket entities. Skip static NPCs already covered by socket at same
       // tile OR same display name (socket ids are npc_<template>_<ts>).
       const socketTiles = new Set(
@@ -949,10 +1004,22 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
       const activeEntities = new Set<string>();
       for (const ent of merged) {
-        if (!ent.mapId || ent.mapId === currentMapId || isSameBaseMap(ent.mapId, currentMapId)) {
+        const isCurrentMap = !ent.mapId || ent.mapId === currentMapId || isSameBaseMap(ent.mapId, currentMapId);
+        const isNeighborMap = ent.mapId && chunkMap.has(String(ent.mapId).toUpperCase());
+
+        if (isCurrentMap || isNeighborMap) {
           activeEntities.add(ent.id);
-          const ex = ent.position.x - liveW / 2 + offset.x;
-          const ez = liveH / 2 - ent.position.y - offset.y;
+          const ex = (ent as any).worldX !== undefined
+            ? (ent as any).worldX
+            : (isNeighborMap && chunkMap.has(String(ent.mapId).toUpperCase())
+                ? (ent.position.x - chunkMap.get(String(ent.mapId).toUpperCase())!.width / 2) + chunkMap.get(String(ent.mapId).toUpperCase())!.offsetX + offset.x
+                : ent.position.x - liveW / 2 + offset.x);
+          const ez = (ent as any).worldZ !== undefined
+            ? (ent as any).worldZ
+            : (isNeighborMap && chunkMap.has(String(ent.mapId).toUpperCase())
+                ? (chunkMap.get(String(ent.mapId).toUpperCase())!.height / 2 - ent.position.y) + chunkMap.get(String(ent.mapId).toUpperCase())!.offsetZ - offset.y
+                : liveH / 2 - ent.position.y - offset.y);
+
           const kind =
             ent.type === 'NPC'
               ? 'npc'

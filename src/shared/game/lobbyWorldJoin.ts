@@ -23,6 +23,7 @@ export interface JoinWorldOptions {
   position?: { x?: number; y?: number };
   name?: string;
   assetProfileId?: string;
+  neighborMapIds?: string[];
   worldSessionState: WorldSessionState;
   currentInstanceId?: string | null;
   worldJoinSeq: number;
@@ -97,6 +98,8 @@ export function joinWorld(opts: JoinWorldOptions): JoinWorldResult {
     y: typeof opts.position?.y === 'number' ? opts.position.y : 15,
     name: opts.name || 'Player',
     assetProfileId: opts.assetProfileId || 'adventurer',
+    spriteId: opts.assetProfileId || 'adventurer',
+    neighborMapIds: opts.neighborMapIds,
     joinSeq: nextSeq,
   };
 

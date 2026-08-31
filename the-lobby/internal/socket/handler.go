@@ -313,6 +313,8 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 			}
 			if req.SpriteID != "" {
 				prev.SpriteID = req.SpriteID
+			} else if req.AssetProfileID != "" {
+				prev.SpriteID = req.AssetProfileID
 			}
 			if req.CharacterID != "" {
 				prev.CharacterID = req.CharacterID
@@ -366,6 +368,9 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 		name = "Traveler"
 	}
 	sprite := req.SpriteID
+	if sprite == "" {
+		sprite = req.AssetProfileID
+	}
 	if sprite == "" {
 		sprite = "player_default"
 	}
