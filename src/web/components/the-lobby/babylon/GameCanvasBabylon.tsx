@@ -861,6 +861,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       }
 
       // Map Chunks lookup for cross-border neighbor coordinate transformation
+      const liveMapDoc =
+        (liveStore.activeMapData as {
+          npcs?: Array<{ id: string; name?: string; x: number; y: number; sprite?: string }>;
+          chunks?: Array<{ mapId: string; offsetX?: number; offsetZ?: number; width?: number; height?: number; npcs?: any[] }>;
+        } | null) || activeMap;
       const rawChunks = (liveMapDoc as any)?.chunks as Array<{ mapId: string; offsetX?: number; offsetZ?: number; width?: number; height?: number; npcs?: any[] }> | undefined;
       const chunkMap = new Map<string, { offsetX: number; offsetZ: number; width: number; height: number }>();
       if (rawChunks && rawChunks.length > 0) {
@@ -938,11 +943,6 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
       // Render map entities: socket mapEntities + static map NPCs (including connected neighbor chunks)
       const mapEntities = !editorToolsRef.current ? (liveStore.mapEntities || []) : [];
-      const liveMapDoc =
-        (liveStore.activeMapData as {
-          npcs?: Array<{ id: string; name?: string; x: number; y: number; sprite?: string }>;
-          chunks?: Array<{ mapId: string; offsetX?: number; offsetZ?: number; width?: number; height?: number; npcs?: any[] }>;
-        } | null) || activeMap;
 
       const staticNpcs: any[] = [];
       if (rawChunks && rawChunks.length > 0) {
