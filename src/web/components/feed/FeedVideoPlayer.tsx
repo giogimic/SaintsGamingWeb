@@ -576,9 +576,13 @@ export function FeedVideoPlayer({
         if (touchStartX.current !== null && e.changedTouches && e.changedTouches[0]) {
           const deltaX = touchStartX.current - e.changedTouches[0].clientX;
           const deltaY = touchStartY.current !== null ? touchStartY.current - e.changedTouches[0].clientY : 0;
-          // Swipe left or right gesture: toggle HUD navigation bars on mobile
-          if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
-            useImmersiveStore.getState().toggleBars();
+          // Horizontal swipe: swipe left to hide interface, swipe right to bring it back
+          if (Math.abs(deltaX) > 35 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+            if (deltaX > 35) {
+              useImmersiveStore.getState().hideBars(); // Swipe left: hide interface
+            } else if (deltaX < -35) {
+              useImmersiveStore.getState().showBars(); // Swipe right: bring it back
+            }
           }
         }
         touchStartX.current = null;

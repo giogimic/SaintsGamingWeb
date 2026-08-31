@@ -276,6 +276,9 @@ function MobileReelSlide({
   const [captionExpanded, setCaptionExpanded] = useState(false);
   const [playback, setPlayback] = useState({ current: 0, duration: 0 });
   const lastTapRef = useRef<number>(0);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const isSwipingRef = useRef<boolean>(false);
 
   // Record view once when this slide becomes active
   useEffect(() => {
@@ -359,8 +362,40 @@ function MobileReelSlide({
     }
   }, [isMuted]);
 
-  // Tap handler: Single tap -> toggleBars() + play/pause; Double tap -> like + heart burst
+  // Horizontal swipe handlers: swipe left to hide interface, swipe right to bring it back
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches && e.touches[0]) {
+      touchStartX.current = e.touches[0].clientX;
+      touchStartY.current = e.touches[0].clientY;
+      isSwipingRef.current = false;
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current !== null && e.changedTouches && e.changedTouches[0]) {
+      const deltaX = touchStartX.current - e.changedTouches[0].clientX;
+      const deltaY = touchStartY.current !== null ? touchStartY.current - e.changedTouches[0].clientY : 0;
+
+      // Horizontal swipe: deltaX > 35 (swipe left) -> hide interface, deltaX < -35 (swipe right) -> bring it back
+      if (Math.abs(deltaX) > 35 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+        isSwipingRef.current = true;
+        if (deltaX > 35) {
+          useImmersiveStore.getState().hideBars(); // Swipe left: hide interface
+        } else if (deltaX < -35) {
+          useImmersiveStore.getState().showBars(); // Swipe right: bring it back
+        }
+      }
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
+
+  // Tap handler: Single tap -> play/pause video; Double tap -> like + heart burst
   const handleTap = (e: React.MouseEvent | React.TouchEvent) => {
+    if (isSwipingRef.current) {
+      isSwipingRef.current = false;
+      return;
+    }
     const now = Date.now();
     const DOUBLE_TAP_DELAY = 300;
 
@@ -372,8 +407,7 @@ function MobileReelSlide({
         onLike();
       }
     } else {
-      // Single tap -> toggle top & bottom bars transparency + video play/pause
-      useImmersiveStore.getState().toggleBars();
+      // Single tap -> toggle video play/pause
       if (post.mediaUrl && isVideo(post.mediaUrl)) {
         setIsPlaying(prev => !prev);
       }
@@ -402,6 +436,8 @@ function MobileReelSlide({
       <div
         className="w-full h-full relative flex items-center justify-center cursor-pointer"
         onClick={handleTap}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         {isVid ? (
           <video
@@ -798,6 +834,7 @@ export function TheFeed({
   const [shortsPlaying, setShortsPlaying] = useState(true);
   const [showHeartAnimation, setShowHeartAnimation] = useState(false);
   const [captionExpanded, setCaptionExpanded] = useState(false);
+  const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
   const lastWheelTime = useRef<number>(0);
 
@@ -2705,16 +2742,35 @@ export function TheFeed({
           ref={modalContainerRef}
           className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-3xl flex items-center justify-center select-none overflow-hidden m-0 p-0 animate-in fade-in duration-200"
           onTouchStart={(e) => {
-            touchStartY.current = e.touches[0].clientY;
+            if (e.touches && e.touches[0]) {
+              touchStartX.current = e.touches[0].clientX;
+              touchStartY.current = e.touches[0].clientY;
+            }
           }}
           onTouchEnd={(e) => {
-            if (touchStartY.current === null) return;
-            const deltaY = touchStartY.current - e.changedTouches[0].clientY;
-            if (deltaY > 35) {
-              navigateShorts(1);
-            } else if (deltaY < -35) {
-              navigateShorts(-1);
+            if (touchStartY.current === null && touchStartX.current === null) return;
+            const deltaX = touchStartX.current !== null && e.changedTouches && e.changedTouches[0]
+              ? touchStartX.current - e.changedTouches[0].clientX
+              : 0;
+            const deltaY = touchStartY.current !== null && e.changedTouches && e.changedTouches[0]
+              ? touchStartY.current - e.changedTouches[0].clientY
+              : 0;
+
+            // Horizontal swipe: deltaX > 35 (swipe left) -> hide interface, deltaX < -35 (swipe right) -> show interface
+            if (Math.abs(deltaX) > 35 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+              if (deltaX > 35) {
+                useImmersiveStore.getState().hideBars(); // Swipe left to hide interface
+              } else if (deltaX < -35) {
+                useImmersiveStore.getState().showBars(); // Swipe right to bring it back
+              }
+            } else if (Math.abs(deltaY) > 35) {
+              if (deltaY > 35) {
+                navigateShorts(1);
+              } else if (deltaY < -35) {
+                navigateShorts(-1);
+              }
             }
+            touchStartX.current = null;
             touchStartY.current = null;
           }}
         >

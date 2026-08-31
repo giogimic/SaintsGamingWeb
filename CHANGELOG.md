@@ -1,3 +1,11 @@
+# 2.1.586
+- **Mobile Feed Directional Swipe Gestures**:
+  - Configured directional touch swipe navigation across mobile feed components (`the-feed.tsx` native reel stream, `FeedVideoPlayer.tsx`, and `shorts-viewer-modal.tsx`):
+    - **Swipe Left**: Hides the interface / navigation bars (`hideBars()`) for unobstructed full-screen viewing.
+    - **Swipe Right**: Restores the interface / navigation bars (`showBars()`).
+  - Separated single tap on mobile reels to strictly handle video play/pause without interfering with directional swipes.
+- **Version Bump**: Bumped release version to `v2.1.586` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.585
 - **Gunmetal Navbar Tagline**: Added `.sg-gunmetal-gradient` metallic titanium text gradient with dark drop-shadow and animated shimmer for the "Time To Play" tagline in `navbar.tsx`, replacing yellow styling with an authentic gunmetal finish consistent across mobile and desktop.
 - **Centered Mobile Bottom Bar & Balanced Navigation**:
