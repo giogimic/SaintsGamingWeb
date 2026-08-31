@@ -5,12 +5,25 @@
 
 import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
+import { rateLimit } from "@/web/lib/rate-limit";
 
 // ─── Feed Upgrade: Watch History ────────────────────────────────────
 
 export async function recordWatchHistory(postId: string) {
   const session = await auth();
   if (!session?.user?.id) return;
+
+  // Deduplicate rapid repeat views on the same post by the same user (1 per 10 minutes)
+  const perPostCheck = rateLimit(`user:${session.user.id}:post-view:${postId}`, 1, 600_000);
+  if (!perPostCheck.allowed) {
+    return; // Already counted this post view recently
+  }
+
+  // Global view limit (max 45 view events per minute per user)
+  const globalCheck = rateLimit(`user:${session.user.id}:views-global`, 45, 60_000);
+  if (!globalCheck.allowed) {
+    return;
+  }
 
   // Track the view count and watch history
   const post = await prisma.socialPost.findUnique({ where: { id: postId }, select: { viewCount: true, authorId: true } });

@@ -3,13 +3,13 @@
 # 📖 Saints Gaming Documentation & Engine Wiki
 ### *Technical Specification, 2.5D Game Architecture & Studio Manual*
 
-🌐 **Official Portal:** [**SaintsGaming.net**](https://SaintsGaming.net) &nbsp;•&nbsp; 🕹️ **Repository:** [**giogimic/SaintsGamingWeb**](https://github.com/giogimic/SaintsGamingWeb) &nbsp;•&nbsp; 📄 **AI Index:** [`llms.txt`](../llms.txt) &nbsp;•&nbsp; 👤 **Author:** **GioGimic** &nbsp;•&nbsp; 📦 **Release:** `v2.1.535`
+🌐 **Official Portal:** [**SaintsGaming.net**](https://SaintsGaming.net) &nbsp;•&nbsp; 🕹️ **Repository:** [**giogimic/SaintsGamingWeb**](https://github.com/giogimic/SaintsGamingWeb) &nbsp;•&nbsp; 📄 **AI Index:** [`llms.txt`](../llms.txt) &nbsp;•&nbsp; 👤 **Author:** **GioGimic** &nbsp;•&nbsp; 📦 **Release:** `v2.1.575`
 
 ---
 
 </div>
 
-Welcome to the **Saints Gaming Platform & Game Engine Technical Documentation** (`saints-gaming-web`). This comprehensive handbook details the internal mechanics, WebGL rendering pipeline, networking protocols, combat algorithms, database schemas, and live World Studio editor architecture powering the Saints Gaming web and MMO ecosystem.
+Welcome to the **Saints Gaming Platform & Game Engine Technical Documentation** (`saints-gaming-web`). This comprehensive handbook details the internal mechanics, WebGL rendering pipeline, networking protocols, combat algorithms, database schemas, responsive-first social data architecture, and live World Studio editor architecture powering the Saints Gaming web and MMO ecosystem.
 
 > [!TIP]
 > **Browse the Interactive Web Wiki at [`/wiki`](https://saintsgaming.net/wiki)** — The full documentation is integrated into the web application as a searchable, categorized knowledge portal with table of contents navigation, code snippets, and `Ctrl+K` instant search.
@@ -20,6 +20,16 @@ Welcome to the **Saints Gaming Platform & Game Engine Technical Documentation** 
 
 ### 📚 [Wiki Portal (`/wiki`)](https://saintsgaming.net/wiki)
 The unified interactive wiki portal provides real-time search, category browsing, and syntax-highlighted guides for developers and players alike.
+
+---
+
+### ⚡ [Performance & Traffic Control Architecture](wiki/api-and-reference/)
+High-throughput data access and responsive interaction design:
+- **In-Flight Request Coalescing (`coalesceAsync`)**: Concurrent identical requests share single executing promises with configurable micro-caching.
+- **Server-Side Sliding-Window Rate Limiting**: Centralized per-user and per-IP throttles with standard HTTP 429 response headers.
+- **Zero-Refetch Mutation Flow**: Social actions update local state in 0ms without full-feed database queries.
+- **Client SWR In-Memory Store (`useSocialFeedStore`)**: Global Zustand memory cache for instant feed navigation and silent background revalidation.
+- **Socket.io Real-Time Synchronization**: Live event-driven like and reply broadcasts without full-page reloads.
 
 ---
 

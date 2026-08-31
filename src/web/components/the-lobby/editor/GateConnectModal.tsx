@@ -21,6 +21,7 @@ import {
 import { listMaps, loadMap, type MapIndexEntry } from '../data/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { STUDIO_MAP_HOT_RELOAD_EVENT } from '@/shared/game/studioEvents';
+import { useDebounce } from '@/web/hooks/useDebounce';
 
 const CATEGORIES = [
   { id: 'MAP', label: 'World Map', icon: MapIcon, color: 'text-sky-400 bg-sky-950/40 border-sky-500/30' },
@@ -52,6 +53,7 @@ export const GateConnectModal: React.FC = () => {
   const [maps, setMaps] = useState<MapIndexEntry[]>([]);
   const [isLoadingMaps, setIsLoadingMaps] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 150);
   const [selectedMapId, setSelectedMapId] = useState<string>('');
   const [category, setCategory] = useState<string>('MAP');
   const [sizeW, setSizeW] = useState<number>(1);
@@ -89,7 +91,7 @@ export const GateConnectModal: React.FC = () => {
   }, [modalState?.isOpen, modalState?.initialCategory, activeMapData?.id]);
 
   const filteredMaps = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
+    const q = debouncedSearchQuery.toLowerCase().trim();
     return maps.filter((m) => {
       if (!q) return true;
       return (
@@ -97,7 +99,7 @@ export const GateConnectModal: React.FC = () => {
         (m.name && m.name.toLowerCase().includes(q))
       );
     });
-  }, [maps, searchQuery]);
+  }, [maps, debouncedSearchQuery]);
 
   if (!modalState?.isOpen) return null;
 

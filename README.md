@@ -13,7 +13,7 @@ The core technology stack is built on Next.js 15, React 19, TypeScript, Prisma O
 - **Live Platform:** [https://saintsgaming.net](https://saintsgaming.net)
 - **AI & LLM Context:** [`llms.txt`](llms.txt)
 - **License:** [Business Source License 1.1 (BSL-1.1)](LICENSE)
-- **Release Version:** `v2.1.573`
+- **Release Version:** `v2.1.575`
 - **Lead Developer:** **GioGimic**
 - **Community Discord:** [discord.saintsgaming.net](https://discord.saintsgaming.net)
 
@@ -51,6 +51,14 @@ Saints Gaming brings together web community management and live multiplayer gami
 - **ORM**: Prisma ORM with automated migrations and seed routines.
 - **Database Engine**: SQLite for local development (`prisma/db/dev.db`); MariaDB or MySQL for production environments.
 - **Authentication & RBAC**: Auth.js (NextAuth v5) supporting credentials and session authentication with numeric role tiers from Lurker (0) to Developer (1000).
+
+### Responsive-First Social Data Architecture & Traffic Control
+- **In-Flight Request Coalescing (`coalesceAsync`)**: Concurrent identical requests (e.g. server status sweeps, GameDig UDP probes) share a single executing promise, converting 10 parallel queries into 1 operation.
+- **Sliding-Window Rate Limiting**: Centralized per-user and per-IP rate limiters with HTTP 429 standard headers (`Retry-After`, `X-RateLimit-*`) protecting mutations and queries.
+- **Zero-Refetch Mutation Lifecycle**: Social actions (post creation, poll voting, pinning, creator subscriptions, replies) update client state directly in 0ms, eliminating post-mutation full-feed database queries.
+- **Client-Side SWR In-Memory Feed Cache (`useSocialFeedStore`)**: Global Zustand memory store caching social feeds, tabs, and filters for instant 0ms transitions and seamless background revalidation.
+- **Real-Time State Synchronization**: Socket.io event-driven broadcasts (`social.post.reacted`, `social.reply.created`) deliver live like increments and incoming replies without full-page reloads.
+- **Visibility-Aware Polling & In-Flight Abort**: Background polling automatically suspends when browser tabs are hidden, and stale search requests are cancelled immediately via `AbortController`.
 
 ---
 

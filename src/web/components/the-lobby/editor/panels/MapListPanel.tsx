@@ -14,6 +14,7 @@ import { buildNewStudioMap } from '@/shared/game/studioMapCreate';
 import { soundSynth } from '@/engine/sound-synth';
 import { useSession } from 'next-auth/react';
 import { canWriteStudioContent } from '@/shared/game/studioPermissions';
+import { useDebounce } from '@/web/hooks/useDebounce';
 
 export const MapListPanel: React.FC = () => {
   const { data: session } = useSession();
@@ -25,6 +26,7 @@ export const MapListPanel: React.FC = () => {
   const activeGameId = useEditorStore((s) => s.activeGameId);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 150);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [remoteMaps, setRemoteMaps] = useState<MapIndexEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -82,8 +84,8 @@ export const MapListPanel: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKey);
   }, [showCreateModal, deleteTargetMapId]);
 
-  const localList = searchMapIndex(searchQuery);
-  const q = searchQuery.trim().toLowerCase();
+  const localList = searchMapIndex(debouncedSearchQuery);
+  const q = debouncedSearchQuery.trim().toLowerCase();
   const remoteFiltered = remoteMaps.filter(
     (m) => !q || m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q)
   );

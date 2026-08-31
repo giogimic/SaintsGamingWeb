@@ -275,7 +275,7 @@ export function GlobalSearch() {
     }
   }, [open]);
 
-  // Debounced API Search
+  // Debounced API Search with In-Flight Abort Controller Cancellation
   React.useEffect(() => {
     if (!query || query.trim().length < 2) {
       setResults(null);
@@ -284,23 +284,34 @@ export function GlobalSearch() {
     }
 
     setIsLoading(true);
+    const controller = new AbortController();
+
     const timer = setTimeout(async () => {
       try {
         const params = new URLSearchParams({ q: query.trim() });
         if (category !== "all") params.append("type", category);
-        const res = await fetch(`/api/search?${params.toString()}`);
+        const res = await fetch(`/api/search?${params.toString()}`, {
+          signal: controller.signal,
+        });
         if (res.ok) {
           const data = await res.json();
           setResults(data);
         }
-      } catch (err) {
-        console.error("Search failed", err);
+      } catch (err: any) {
+        if (err?.name !== "AbortError") {
+          console.error("Search failed", err);
+        }
       } finally {
-        setIsLoading(false);
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
       }
     }, 200);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [query, category]);
 
   const handleNavigate = React.useCallback(

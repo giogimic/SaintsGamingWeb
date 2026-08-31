@@ -44,6 +44,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     setMmoPlayerOffline,
     setLastFivemCharacterUpdate,
     setLastFivemBankUpdate,
+    setLastSocialReaction,
+    setLastSocialReply,
     watchedThreadId,
     processedEventIds,
     addProcessedEventId,
@@ -234,6 +236,30 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
           setPresence(p.userId, "online", envelope.timestamp);
           break;
         }
+        case "social.post.reacted": {
+          const p = envelope.payload as {
+            postId: string;
+            likesCount: number;
+          };
+          setLastSocialReaction({
+            postId: p.postId,
+            likesCount: p.likesCount,
+            timestamp: envelope.timestamp,
+          });
+          break;
+        }
+        case "social.reply.created": {
+          const p = envelope.payload as {
+            postId: string;
+            reply: any;
+          };
+          setLastSocialReply({
+            postId: p.postId,
+            reply: p.reply,
+            timestamp: envelope.timestamp,
+          });
+          break;
+        }
         default:
           break;
       }
@@ -250,6 +276,12 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     });
     nextSocket.on("forum.reply.created", (envelope: EventEnvelope) => {
       handleEvent("forum.reply.created", envelope);
+    });
+    nextSocket.on("social.post.reacted", (envelope: EventEnvelope) => {
+      handleEvent("social.post.reacted", envelope);
+    });
+    nextSocket.on("social.reply.created", (envelope: EventEnvelope) => {
+      handleEvent("social.reply.created", envelope);
     });
     nextSocket.on("game.player.online", (envelope: EventEnvelope) => {
       handleEvent("game.player.online", envelope);

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { getFriendsList, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend } from "@/app/actions/messenger";
 import { useMessenger } from "./messenger-provider";
 import { useRealtimeStore } from "@/web/hooks/useRealtimeStore";
+import { useVisibilityPolling } from "@/web/hooks/useVisibilityPolling";
 import { useGameStore } from "@/web/components/the-lobby/store";
 import { Input } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
@@ -24,19 +25,15 @@ export function FriendsList() {
   async function fetchFriends() {
     try {
       const data = await getFriendsList();
-      setFriends(data.friends);
-      setRequests(data.requests);
+      setFriends(data.friends || []);
+      setRequests(data.requests || []);
     } catch (e) {
       console.error(e);
     }
   }
 
-  // Poll every 5 seconds
-  useEffect(() => {
-    fetchFriends();
-    const interval = setInterval(fetchFriends, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  // Initial load and relaxed background sync (paused when tab is hidden)
+  useVisibilityPolling(fetchFriends, 60_000);
 
   useEffect(() => {
     if (searchQuery.length >= 3) {

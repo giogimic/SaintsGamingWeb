@@ -6,8 +6,9 @@
 import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
 import { processMentions } from "@/web/lib/mentions";
-import { emitNotificationCreated } from "@/web/lib/realtime-emit";
+import { emitNotificationCreated, emitSocialReplyCreated } from "@/web/lib/realtime-emit";
 import { checkAndAwardAchievements } from "@/web/lib/achievements";
+import { rateLimit } from "@/web/lib/rate-limit";
 
 export async function createSocialPost(
   body: string, 
@@ -29,6 +30,12 @@ export async function createSocialPost(
 ) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const limitCheck = rateLimit(`user:${session.user.id}:create-post`, 15, 60_000);
+  if (!limitCheck.allowed) {
+    throw new Error(`You're posting too fast. Please wait ${limitCheck.retryAfterSec}s.`);
+  }
+
   if ((!body.trim() && !mediaUrl) || body.length > 1000) throw new Error("Invalid post length (max 1000 characters)");
 
   // Extract hashtags (e.g. #gaming, #saints)
@@ -89,7 +96,41 @@ export async function createSocialPost(
   // Auto-award social_starter / related badges
   void checkAndAwardAchievements(session.user.id);
 
-  return post;
+  const fullPost = await prisma.socialPost.findUnique({
+    where: { id: post.id },
+    include: {
+      author: {
+        select: { 
+          id: true, 
+          username: true, 
+          image: true, 
+          permissionLevel: true, 
+          isVIP: true, 
+          isFounder: true, 
+          isTrusted: true,
+          achievements: { where: { isPinned: true }, select: { badgeId: true } }
+        }
+      },
+      reactions: true,
+      bookmarks: { where: { userId: session.user.id } },
+      hashtags: { include: { hashtag: true } },
+      polls: {
+        include: {
+          options: {
+            include: {
+              _count: { select: { votes: true } },
+              votes: { where: { userId: session.user.id } }
+            }
+          }
+        }
+      },
+      _count: {
+        select: { replies: true }
+      }
+    }
+  });
+
+  return fullPost || post;
 }
 
 export async function deleteSocialPost(postId: string) {
@@ -156,7 +197,20 @@ export async function votePoll(pollId: string, optionId: string) {
   });
 
   if (existingVote) {
-    if (existingVote.optionId === optionId) return true; // Already voted for this
+    if (existingVote.optionId === optionId) {
+      const poll = await prisma.poll.findUnique({
+        where: { id: pollId },
+        include: {
+          options: {
+            include: {
+              _count: { select: { votes: true } },
+              votes: { where: { userId: session.user.id } }
+            }
+          }
+        }
+      });
+      return { success: true, poll };
+    }
     
     // Change vote
     await prisma.pollVote.delete({ where: { id: existingVote.id } });
@@ -169,7 +223,19 @@ export async function votePoll(pollId: string, optionId: string) {
     }
   });
 
-  return true;
+  const poll = await prisma.poll.findUnique({
+    where: { id: pollId },
+    include: {
+      options: {
+        include: {
+          _count: { select: { votes: true } },
+          votes: { where: { userId: session.user.id } }
+        }
+      }
+    }
+  });
+
+  return { success: true, poll };
 }
 
 export async function pinSocialPost(postId: string, isPinned: boolean) {
@@ -196,6 +262,12 @@ export async function pinSocialPost(postId: string, isPinned: boolean) {
 export async function replyToSocialPost(parentId: string, body: string, mediaUrl?: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const limitCheck = rateLimit(`user:${session.user.id}:reply-post`, 30, 60_000);
+  if (!limitCheck.allowed) {
+    throw new Error(`You're replying too fast. Please wait ${limitCheck.retryAfterSec}s.`);
+  }
+
   if (!body.trim() && !mediaUrl) throw new Error("Post cannot be empty");
 
   const reply = await prisma.socialPost.create({
@@ -204,6 +276,21 @@ export async function replyToSocialPost(parentId: string, body: string, mediaUrl
       parentId,
       body: body.trim(),
       mediaUrl: mediaUrl || null,
+    },
+    include: {
+      author: { 
+        select: { 
+          id: true, 
+          username: true, 
+          image: true, 
+          permissionLevel: true,
+          isVIP: true,
+          isFounder: true,
+          isTrusted: true,
+          achievements: { where: { isPinned: true }, select: { badgeId: true } }
+        } 
+      },
+      reactions: true,
     }
   });
 
@@ -224,7 +311,20 @@ export async function replyToSocialPost(parentId: string, body: string, mediaUrl
   // Parse mentions in reply
   await processMentions(body, session.user.id, `/profile/inbox?post=${reply.id}`);
 
-  return reply;
+  const formattedReply = {
+    id: reply.id,
+    body: reply.body,
+    mediaUrl: reply.mediaUrl,
+    createdAt: reply.createdAt,
+    author: reply.author,
+    likesCount: 0,
+    hasLiked: false,
+  };
+
+  // Broadcast realtime reply to viewers
+  await emitSocialReplyCreated(parentId, formattedReply);
+
+  return formattedReply;
 }
 
 export async function getPostReplies(postId: string) {

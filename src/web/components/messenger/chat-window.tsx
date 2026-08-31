@@ -5,6 +5,7 @@ import { useMessenger } from "./messenger-provider";
 import { getMessages, sendMessage, getPublicKey, deleteMessage, clearChatHistory } from "@/app/actions/messenger";
 import { importPrivateKey, importPublicKey, deriveSharedKey, encryptMessage, decryptMessage, getLocalPrivateKey } from "@/web/lib/crypto";
 import { useRealtimeStore } from "@/web/hooks/useRealtimeStore";
+import { useVisibilityPolling } from "@/web/hooks/useVisibilityPolling";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { ArrowLeft, Send, Lock, Loader2, Trash2 } from "lucide-react";
@@ -76,13 +77,17 @@ export function ChatWindow() {
     }
   }
 
-  // Polling (fallback) + instant refetch on realtime chat signal
+  // Initial load on chat switch
   useEffect(() => {
-    fetchMessages();
-    const interval = setInterval(fetchMessages, 3000);
-    return () => clearInterval(interval);
+    void fetchMessages();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sharedKey, activeChat]);
+
+  // Relaxed visibility-aware background sync (pauses when tab is hidden)
+  useVisibilityPolling(fetchMessages, 45_000, {
+    enabled: Boolean(sharedKey && activeChat),
+    runImmediately: false,
+  });
 
   useEffect(() => {
     if (!activeChat || !lastChatMessage) return;

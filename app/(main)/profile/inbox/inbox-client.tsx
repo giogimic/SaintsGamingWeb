@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { TheFeed, type FeedTabType } from "./the-feed";
+import { useRealtimeStore } from "@/web/hooks/useRealtimeStore";
+import { useVisibilityPolling } from "@/web/hooks/useVisibilityPolling";
 
 type ChatType = "FEED" | "MESSAGES" | "DM" | "GROUP";
 
@@ -31,6 +33,7 @@ const GAME_HUBS = [
 ];
 
 export function InboxClient() {
+  const lastChatMessage = useRealtimeStore((s) => s.lastChatMessage);
   const [activeChatType, setActiveChatType] = useState<ChatType>("FEED");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
@@ -131,13 +134,28 @@ export function InboxClient() {
     }
   }
 
-  // Polling
+  // Initial fetch on chat switch
   useEffect(() => {
-    fetchMessages();
-    const interval = setInterval(fetchMessages, 3000);
-    return () => clearInterval(interval);
+    void fetchMessages();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeChatType, activeId, sharedKey]);
+
+  // Instant refetch on realtime Socket.io chat signal
+  useEffect(() => {
+    if (!activeId || !lastChatMessage) return;
+    const isDirectMatch = lastChatMessage.fromUserId === activeId || lastChatMessage.toUserId === activeId;
+    const isGroupMatch = lastChatMessage.groupId === activeId;
+    if (isDirectMatch || isGroupMatch) {
+      void fetchMessages();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastChatMessage, activeId]);
+
+  // Relaxed background sync that automatically pauses when tab is hidden
+  useVisibilityPolling(fetchMessages, 45_000, {
+    enabled: Boolean(activeId && (activeChatType === "DM" || activeChatType === "GROUP")),
+    runImmediately: false,
+  });
 
   // Scroll
   useEffect(() => {
