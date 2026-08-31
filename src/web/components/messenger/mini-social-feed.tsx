@@ -9,6 +9,7 @@ import { Button } from "@/shared/ui/button";
 import { Textarea } from "@/shared/ui/textarea";
 import { UiPresetEmbed } from "@/web/components/social/UiPresetEmbed";
 import { ShortsViewerModal } from "@/web/components/social/shorts-viewer-modal";
+import { toast } from "sonner";
 
 type MiniPost = {
   id: string;
@@ -64,6 +65,7 @@ export function MiniSocialFeed() {
   }, []);
 
   async function handleLike(postId: string) {
+    const prevPosts = posts;
     setPosts(prev => prev.map(p => {
       if (p.id === postId) {
         return {
@@ -78,10 +80,14 @@ export function MiniSocialFeed() {
       await togglePostReaction(postId);
     } catch (e) {
       console.error(e);
+      // Roll back
+      setPosts(prevPosts);
+      toast.error("Failed to update reaction");
     }
   }
 
   async function handleBookmark(postId: string) {
+    const prevPosts = posts;
     setPosts(prev => prev.map(p => {
       if (p.id === postId) {
         return {
@@ -95,24 +101,31 @@ export function MiniSocialFeed() {
       await toggleBookmark(postId);
     } catch (e) {
       console.error(e);
+      setPosts(prevPosts);
     }
   }
 
   async function handleReply(postId: string, textOverride?: string) {
     const text = textOverride || replyBody;
     if (!text.trim()) return;
+    const prevPosts = posts;
     setIsReplying(true);
+    setReplyBody("");
+    setReplyingTo(null);
+    // Update reply count optimistically
+    setPosts(prev => prev.map(p => {
+      if (p.id === postId) return { ...p, repliesCount: p.repliesCount + 1 };
+      return p;
+    }));
+
     try {
       await replyToSocialPost(postId, text.trim());
-      setReplyBody("");
-      setReplyingTo(null);
-      // Update reply count optimistically
-      setPosts(prev => prev.map(p => {
-        if (p.id === postId) return { ...p, repliesCount: p.repliesCount + 1 };
-        return p;
-      }));
     } catch (e) {
       console.error(e);
+      // Rollback on failure
+      setPosts(prevPosts);
+      setReplyBody(text);
+      toast.error("Failed to post comment");
     } finally {
       setIsReplying(false);
     }

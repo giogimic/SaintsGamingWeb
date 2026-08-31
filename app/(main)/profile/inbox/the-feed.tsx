@@ -687,6 +687,7 @@ export function TheFeed({
 } = {}) {
   const { data: session } = useSession();
   const currentUserPermission = (session?.user as any)?.permissionLevel || 0;
+  const isBarsHidden = useImmersiveStore((s) => s.isBarsHidden);
 
   const [posts, setPosts] = useState<any[]>([]);
   const [trending, setTrending] = useState<{name: string, usageCount: number}[]>([]);
@@ -1159,20 +1160,66 @@ export function TheFeed({
       toast.error("Reply exceeds 1000 characters limit");
       return;
     }
+
+    const currentReplyText = replyBody.trim();
+    const currentReplyMedia = replyMediaUrl || undefined;
+    const tempReplyId = `temp_reply_${Date.now()}`;
+    const optimisticReply = {
+      id: tempReplyId,
+      body: currentReplyText,
+      mediaUrl: currentReplyMedia || null,
+      createdAt: new Date().toISOString(),
+      author: {
+        id: session?.user?.id || "me",
+        username: session?.user?.name || "You",
+        image: session?.user?.image || "",
+        permissionLevel: (session?.user as any)?.permissionLevel || 10,
+        isVIP: (session?.user as any)?.isVIP || false,
+        isFounder: (session?.user as any)?.isFounder || false,
+        isTrusted: (session?.user as any)?.isTrusted || false,
+        achievements: [],
+      },
+      likesCount: 0,
+      hasLiked: false,
+    };
+
+    // Save previous state for rollback
+    const prevLoadedReplies = loadedReplies;
+    const prevPosts = posts;
+    const prevSearchResults = searchResults;
+    const prevViewingShortsPost = viewingShortsPost;
+
+    // Optimistic UI updates
+    setLoadedReplies(prev => ({
+      ...prev,
+      [parentPostId]: [...(prev[parentPostId] || []), optimisticReply]
+    }));
+    setPosts(prev => prev.map(p => p.id === parentPostId ? { ...p, repliesCount: (p.repliesCount || 0) + 1 } : p));
+    if (searchResults) {
+      setSearchResults(prev => prev ? prev.map(p => p.id === parentPostId ? { ...p, repliesCount: (p.repliesCount || 0) + 1 } : p) : null);
+    }
+    if (viewingShortsPost && viewingShortsPost.id === parentPostId) {
+      setViewingShortsPost((prev: any) => prev ? { ...prev, repliesCount: (prev.repliesCount || 0) + 1 } : null);
+    }
+
+    setReplyingTo(null);
+    setReplyBody("");
+    setReplyMediaUrl("");
     setIsPosting(true);
+
     try {
-      await replyToSocialPost(parentPostId, replyBody, replyMediaUrl || undefined);
-      setReplyingTo(null);
-      setReplyBody("");
-      setReplyMediaUrl("");
+      await replyToSocialPost(parentPostId, currentReplyText, currentReplyMedia);
       toast.success("Reply posted!");
       await handleLoadReplies(parentPostId);
-      setPosts(prev => prev.map(p => p.id === parentPostId ? { ...p, repliesCount: (p.repliesCount || 0) + 1 } : p));
-      if (viewingShortsPost && viewingShortsPost.id === parentPostId) {
-        setViewingShortsPost((prev: any) => prev ? { ...prev, repliesCount: (prev.repliesCount || 0) + 1 } : null);
-      }
     } catch (e: any) {
       console.error(e);
+      // Roll back on failure
+      setLoadedReplies(prevLoadedReplies);
+      setPosts(prevPosts);
+      if (prevSearchResults) setSearchResults(prevSearchResults);
+      if (prevViewingShortsPost) setViewingShortsPost(prevViewingShortsPost);
+      setReplyBody(currentReplyText);
+      if (currentReplyMedia) setReplyMediaUrl(currentReplyMedia);
       toast.error(e.message || "Failed to post reply");
     } finally {
       setIsPosting(false);
@@ -1377,12 +1424,17 @@ export function TheFeed({
   }
 
   async function handleLike(postId: string, isReply = false, parentId?: string) {
+    const prevPosts = posts;
+    const prevSearchResults = searchResults;
+    const prevLoadedReplies = loadedReplies;
+    const prevViewingShortsPost = viewingShortsPost;
+
     const updateList = (list: any[]) => list.map(p => {
       if (p.id === postId) {
         return {
           ...p,
           hasLiked: !p.hasLiked,
-          likesCount: p.hasLiked ? p.likesCount - 1 : p.likesCount + 1
+          likesCount: p.hasLiked ? Math.max(0, (p.likesCount || 1) - 1) : (p.likesCount || 0) + 1
         };
       }
       return p;
@@ -1396,12 +1448,30 @@ export function TheFeed({
     } else {
       setPosts(prev => updateList(prev));
       if (searchResults) setSearchResults(prev => prev ? updateList(prev) : null);
+      if (viewingShortsPost && viewingShortsPost.id === postId) {
+        setViewingShortsPost((prev: any) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            hasLiked: !prev.hasLiked,
+            likesCount: prev.hasLiked ? Math.max(0, (prev.likesCount || 1) - 1) : (prev.likesCount || 0) + 1
+          };
+        });
+      }
     }
     
     try {
       await togglePostReaction(postId);
-    } catch {
-      if (!isReply) loadFeed();
+    } catch (err: any) {
+      // Roll back on failure
+      if (isReply && parentId) {
+        setLoadedReplies(prevLoadedReplies);
+      } else {
+        setPosts(prevPosts);
+        if (prevSearchResults) setSearchResults(prevSearchResults);
+        if (prevViewingShortsPost) setViewingShortsPost(prevViewingShortsPost);
+      }
+      toast.error("Failed to update reaction");
     }
   }
 
@@ -3591,7 +3661,7 @@ export function TheFeed({
       </div>
 
       {/* Right Desktop Community Hub Sidebar */}
-      <div className="w-72 xl:w-80 hidden xl:flex flex-col gap-3 sticky top-20 h-fit max-h-[calc(100vh-6rem)] overflow-y-auto shrink-0 no-scrollbar">
+      <div className={`w-72 xl:w-80 hidden xl:flex flex-col gap-3 sticky top-20 h-fit max-h-[calc(100vh-6rem)] overflow-y-auto shrink-0 no-scrollbar transition-opacity duration-300 ${isBarsHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
         
         {/* Card 1: Trending Topics */}
         <div className="bg-[#050b14]/40 border border-white/[0.08] rounded-lg p-3 shadow-xs space-y-2.5 backdrop-blur-xl">

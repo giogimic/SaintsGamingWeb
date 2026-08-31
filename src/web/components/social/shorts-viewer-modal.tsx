@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { 
   X, Sparkles, Volume2, VolumeX, ChevronUp, ChevronDown, 
@@ -55,6 +56,8 @@ export function ShortsViewerModal({
   onSubscribe,
   onPostChange,
 }: ShortsViewerModalProps) {
+  const { data: session } = useSession();
+  const isBarsHidden = useImmersiveStore((s) => s.isBarsHidden);
   const [mounted, setMounted] = useState(false);
   const [currentPost, setCurrentPost] = useState<any>(post);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
@@ -362,6 +365,9 @@ export function ShortsViewerModal({
             videoRef.current.requestPictureInPicture().catch(() => {});
           }
         }
+      } else if (e.key === "Tab") {
+        e.preventDefault();
+        useImmersiveStore.getState().toggleBars();
       }
     };
 
@@ -422,14 +428,25 @@ export function ShortsViewerModal({
     lastTap.current = now;
   };
 
-  const handleLikeClick = () => {
+  const handleLikeClick = async () => {
     if (!currentPost || !onLike) return;
-    onLike(currentPost.id);
+    const prevPost = currentPost;
+    const newLiked = !prevPost.hasLiked;
+    const newCount = newLiked ? (prevPost.likesCount || 0) + 1 : Math.max(0, (prevPost.likesCount || 1) - 1);
+
     setCurrentPost((prev: any) => ({
       ...prev,
-      hasLiked: !prev.hasLiked,
-      likesCount: prev.hasLiked ? Math.max(0, (prev.likesCount || 1) - 1) : (prev.likesCount || 0) + 1,
+      hasLiked: newLiked,
+      likesCount: newCount,
     }));
+
+    try {
+      await onLike(currentPost.id);
+    } catch {
+      // Roll back visual if server fails
+      setCurrentPost(prevPost);
+      toast.error("Failed to update reaction");
+    }
   };
 
   const handleBookmarkClick = () => {
@@ -456,20 +473,50 @@ export function ShortsViewerModal({
     e.preventDefault();
     if (!replyBody.trim() || isPostingReply || !currentPost) return;
 
+    const commentText = replyBody.trim();
+    const tempCommentId = `temp_reply_${Date.now()}`;
+    const optimisticReply = {
+      id: tempCommentId,
+      body: commentText,
+      mediaUrl: null,
+      createdAt: new Date().toISOString(),
+      author: {
+        id: session?.user?.id || "me",
+        username: session?.user?.name || "You",
+        image: session?.user?.image || "",
+        permissionLevel: 10,
+        isVIP: false,
+        isFounder: false,
+        isTrusted: false,
+        achievements: [],
+      },
+      likesCount: 0,
+      hasLiked: false,
+    };
+
+    // Optimistic visual update
+    const previousReplies = replies;
+    const previousPost = currentPost;
+    setReplies((prev) => [...prev, optimisticReply]);
+    setCurrentPost((prev: any) => ({
+      ...prev,
+      repliesCount: (prev?.repliesCount || 0) + 1,
+    }));
+    setReplyBody("");
     setIsPostingReply(true);
+
     try {
       if (onReply) {
-        await onReply(currentPost.id, replyBody.trim());
+        await onReply(currentPost.id, commentText);
       }
-      setReplyBody("");
-      setCurrentPost((prev: any) => ({
-        ...prev,
-        repliesCount: (prev?.repliesCount || 0) + 1,
-      }));
-      await loadReplies(currentPost.id);
       toast.success("Comment posted!");
-    } catch {
-      toast.error("Failed to post comment");
+      await loadReplies(currentPost.id);
+    } catch (err: any) {
+      // Roll back visual if server fails
+      setReplies(previousReplies);
+      setCurrentPost(previousPost);
+      setReplyBody(commentText);
+      toast.error(err?.message || "Failed to post comment");
     } finally {
       setIsPostingReply(false);
     }
@@ -509,7 +556,7 @@ export function ShortsViewerModal({
       }}
     >
       {/* Top Bar Floating Controls */}
-      <div className="absolute top-4 left-4 z-50 flex items-center gap-2.5">
+      <div className={`absolute top-4 left-4 z-50 flex items-center gap-2.5 transition-opacity duration-200 ${isBarsHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
         <button 
           onClick={() => { onClose(); setIsCommentsOpen(false); }}
           className="p-2.5 bg-black/70 hover:bg-black/95 border border-white/20 rounded-full text-white backdrop-blur-md transition-all shadow-lg hover:scale-105"
@@ -575,7 +622,7 @@ export function ShortsViewerModal({
         )}
       </div>
 
-      <div className="absolute top-4 right-4 z-50 flex items-center gap-2.5">
+      <div className={`absolute top-4 right-4 z-50 flex items-center gap-2.5 transition-opacity duration-200 ${isBarsHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
         <button 
           onClick={() => setIsMuted(!isMuted)}
           className="p-2.5 bg-black/70 hover:bg-black/95 border border-white/20 rounded-full text-white backdrop-blur-md transition-all shadow-lg hover:scale-105"
@@ -595,7 +642,7 @@ export function ShortsViewerModal({
       </div>
 
       {/* Up & Down Floating Navigation Chevrons on PC */}
-      <div className="absolute right-4 lg:right-8 top-1/2 -translate-y-1/2 hidden md:flex flex-col items-center gap-3 z-40">
+      <div className={`absolute right-4 lg:right-8 top-1/2 -translate-y-1/2 hidden md:flex flex-col items-center gap-3 z-40 transition-opacity duration-200 ${isBarsHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
         <button 
           onClick={() => navigateShorts(-1)}
           disabled={currentIndex <= 0}

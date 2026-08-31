@@ -1,3 +1,13 @@
+# 2.1.568
+- **Optimistic Video Comments & Reactions with Error Rollback**:
+  - **Instant Comment UI Updates**: Enhanced `TheFeed` (`the-feed.tsx`), `ShortsViewerModal` (`shorts-viewer-modal.tsx`), and `MiniSocialFeed` (`mini-social-feed.tsx`) so that submitting a comment immediately renders the user's reply, updates comment counts, and clears the input without waiting for server network round-trips.
+  - **Automatic Visual Rollback on Server Failure**: If the comment submission or like/reaction API call fails or encounters network issues, the UI automatically rolls back the comment from the list, restores the post's original counts, restores the draft text in the composer, and displays an informative error toast.
+  - **Optimistic Likes & Reactions**: Toggling likes or reactions across video players, reels, and feed cards updates instantly, with automatic rollback and error notification if the server action fails.
+- **Global Tab Key Immersive Mode & Comprehensive Interface Hiding**:
+  - **Global Tab Key Toggle**: Implemented a global `Tab` shortcut in `MainLayoutShell` (`main-layout-shell.tsx`), `FeedVideoPlayer` (`FeedVideoPlayer.tsx`), and `ShortsViewerModal` (`shorts-viewer-modal.tsx`) that seamlessly toggles immersive mode on and off when not typing in text inputs.
+  - **Comprehensive Interface Element Hiding**: In addition to the Navbar and Global Bottom Bar, all secondary floating interface elements (Command Palette, Messenger Popups, Video Player scrubbers & control overlays, top clip badges, and feed sidebars) now smoothly hide (`opacity-0 pointer-events-none transition-opacity duration-300`) when immersive mode is active.
+- **Version Bump**: Bumped release version to `v2.1.568` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.567
 - **Unified Single-Box Post Composer (Removed Redundant Outer Window Container)**:
   - **Single Sleek Composer Box**: Refactored `GlobalPostComposer` (`src/web/components/feed/global-post-composer.tsx`) so that the pop-out window is directly the post composer itself with only a thin outer border (`border-white/15`), eliminating the nested "box-inside-a-box" padding.

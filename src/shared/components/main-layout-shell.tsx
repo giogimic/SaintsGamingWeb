@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { AmbientBackground } from '@/shared/components/ambient-background';
 import { UserSettingsOverlayShell } from '@/web/components/user-settings/user-settings-overlay-shell';
 import { GlobalPostComposer } from '@/web/components/feed/global-post-composer';
+import { useImmersiveStore } from '@/web/hooks/useImmersiveStore';
 
 interface MainLayoutShellProps {
   children: React.ReactNode;
@@ -26,6 +27,29 @@ export function MainLayoutShell({
   const pathname = usePathname();
   const isStudio = pathname?.startsWith('/studio');
   const isLobby = pathname?.startsWith('/lobby');
+  const isBarsHidden = useImmersiveStore((s) => s.isBarsHidden);
+
+  // Global Tab key toggle to hide/show navigation bars and interface elements
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Tab") {
+        const target = e.target as HTMLElement | null;
+        if (
+          target?.tagName === "INPUT" ||
+          target?.tagName === "TEXTAREA" ||
+          target?.tagName === "SELECT" ||
+          target?.isContentEditable
+        ) {
+          return;
+        }
+        e.preventDefault();
+        useImmersiveStore.getState().toggleBars();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Studio route: absolute full-bleed with persistent navbar and bottomBar
   if (isStudio) {
@@ -35,7 +59,9 @@ export function MainLayoutShell({
         <main className="w-full h-full overflow-hidden">
           {children}
         </main>
-        {commandPalette}
+        <div className={`transition-opacity duration-300 ${isBarsHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+          {commandPalette}
+        </div>
         {bottomBar}
         {toaster}
         <UserSettingsOverlayShell />
@@ -53,8 +79,10 @@ export function MainLayoutShell({
         <main className="w-full h-full overflow-hidden">
           {children}
         </main>
-        {commandPalette}
-        {messengerPopup}
+        <div className={`transition-opacity duration-300 ${isBarsHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+          {commandPalette}
+          {messengerPopup}
+        </div>
         {bottomBar}
         {toaster}
         <UserSettingsOverlayShell />
@@ -73,8 +101,10 @@ export function MainLayoutShell({
       <main className={`flex-1 sg-page-enter z-10 ${isFeed ? "pt-0 sm:pt-16 pb-0 sm:pb-12" : "pt-14 sm:pt-16 pb-12"}`}>
         {children}
       </main>
-      {commandPalette}
-      {messengerPopup}
+      <div className={`transition-opacity duration-300 ${isBarsHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+        {commandPalette}
+        {messengerPopup}
+      </div>
       {bottomBar}
       {toaster}
       <UserSettingsOverlayShell />

@@ -100,6 +100,7 @@ export function FeedVideoPlayer({
     return poster || getCachedVideoPoster(src) || null;
   });
 
+  const isBarsHidden = useImmersiveStore((s) => s.isBarsHidden);
   const isCurrentlyActive = activePlayingId === id;
   const muted = isSharedMuted !== undefined ? isSharedMuted : localMuted;
   const formattedSrc = formatVideoSrc(src);
@@ -525,6 +526,9 @@ export function FeedVideoPlayer({
     } else if (e.key === "p" || e.key === "P") {
       e.preventDefault();
       handleTogglePiP(e as any);
+    } else if (e.key === "Tab") {
+      e.preventDefault();
+      useImmersiveStore.getState().toggleBars();
     }
   };
 
@@ -700,13 +704,17 @@ export function FeedVideoPlayer({
       </AnimatePresence>
 
       {/* Top Left Badge: Reel Mode indicator */}
-      <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white/90 text-[11px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+      <div className={`absolute top-3 left-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white/90 text-[11px] font-semibold transition-opacity duration-200 pointer-events-none ${
+        isBarsHidden ? "opacity-0" : "opacity-0 group-hover:opacity-100"
+      }`}>
         <Sparkles className="w-3 h-3 text-primary animate-pulse" />
         <span>Saints Clip</span>
       </div>
 
       {/* Bottom Gradient Shadow for Controls */}
-      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none z-20" />
+      <div className={`absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none z-20 transition-opacity duration-200 ${
+        isBarsHidden ? "opacity-0" : "opacity-100"
+      }`} />
 
       {/* Interactive Bottom Scrub Progress Bar with Hover Tooltip & Buffer Indicator */}
       <div 
@@ -714,7 +722,9 @@ export function FeedVideoPlayer({
         onClick={handleScrub}
         onMouseMove={handleScrubMouseMove}
         onMouseLeave={() => setScrubHoverTime(null)}
-        className="absolute bottom-0 inset-x-0 h-1.5 hover:h-3 bg-white/20 cursor-pointer z-30 transition-all duration-150 group/bar"
+        className={`absolute bottom-0 inset-x-0 h-1.5 hover:h-3 bg-white/20 cursor-pointer z-30 transition-all duration-150 group/bar ${
+          isBarsHidden ? "opacity-0 pointer-events-none" : "opacity-100"
+        }`}
       >
         {/* Buffer Bar (Cached stream) */}
         <div 
@@ -743,7 +753,7 @@ export function FeedVideoPlayer({
 
       {/* Controls Overlay Bar */}
       <div className={`absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-auto z-20 transition-opacity duration-200 ${
-        isHovered || !isCurrentlyActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+        isBarsHidden ? "opacity-0 pointer-events-none" : isHovered || !isCurrentlyActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
       }`}>
         {/* Play/Pause, Skip Back/Forward & Duration */}
         <div className="flex items-center gap-1.5 sm:gap-2">
