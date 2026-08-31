@@ -3,6 +3,7 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import { AmbientBackground } from '@/shared/components/ambient-background';
+import { UserSettingsOverlayShell } from '@/web/components/user-settings/user-settings-overlay-shell';
 
 interface MainLayoutShellProps {
   children: React.ReactNode;
@@ -36,6 +37,7 @@ export function MainLayoutShell({
         {commandPalette}
         {bottomBar}
         {toaster}
+        <UserSettingsOverlayShell />
       </div>
     );
   }
@@ -53,6 +55,7 @@ export function MainLayoutShell({
         {messengerPopup}
         {bottomBar}
         {toaster}
+        <UserSettingsOverlayShell />
       </div>
     );
   }
@@ -71,6 +74,7 @@ export function MainLayoutShell({
       {messengerPopup}
       {bottomBar}
       {toaster}
+      <UserSettingsOverlayShell />
     </div>
   );
 }

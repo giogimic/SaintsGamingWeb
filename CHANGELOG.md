@@ -1,3 +1,17 @@
+# 2.1.563
+- **Mobile Navbar Refinement & Window-Style User Settings & Profile Shell**:
+  - **Mobile Navbar Optimization**: Refined `Navbar` (`src/shared/components/navbar.tsx`) on mobile viewports to conceal the brand 3D logo (`hidden sm:block`), giving prominent focus to "Saints Gaming" branding and clean navigation without screen clutter.
+  - **Relocated Theme Switcher to Unified Settings**: Removed inline theme toggles from direct navbar headers and integrated them into a comprehensive new User Settings system.
+  - **OS Window-Style User Settings & Profile Overlay**: Built `UserSettingsOverlayShell` (`src/web/components/user-settings/user-settings-overlay-shell.tsx`) matching the Admin Dashboard OS window architecture with draggable header bar, double-click collapse, floating dock capsule minimization, and full-screen maximization on mobile viewports.
+  - **Modular Settings Categories**:
+    - **Appearance & Themes**: Interactive theme cards for Midnight Dark, Sunset Light, Miami Vice, and Hacker themes with instant activation.
+    - **Account & Profile Management**: Public display name, avatar URL, YouTube showcase video, and profile music background controls.
+    - **Post & Reel Management**: Real-time management of user's published video reels and posts with likes/views analytics and deletion actions.
+    - **Gaming & MMO Preferences**: Sound FX toggles, WebAudio synthesizer triggers, and MMO preferences.
+    - **Security & Sessions**: Password changes and account security settings.
+  - **Universal Global Store**: Created `useUserSettingsStore` with direct triggers across navbar, user avatar dropdown, mobile drawer, and `/profile` launcher.
+- **Version Bump**: Bumped release version to `v2.1.563` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.562
 - **Lobby Character Selection Redesign, Interactive Chat & In-Screen World Access**:
   - **Click-to-Select Saint Roster**: Upgraded `CharacterSelector` (`src/web/components/the-lobby/character-selector.tsx`) to allow users to click any character card to select it with active highlight styling (`ring-2 ring-primary/50 shadow-primary/35`), active status indicator badge, and preview information without prematurely entering the game world.
