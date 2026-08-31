@@ -1,4 +1,4 @@
-import { Navbar } from "@/shared/components/navbar";
+﻿import { Navbar } from "@/shared/components/navbar";
 import { GlobalBottomBar } from "@/shared/components/global-bottom-bar";
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
@@ -34,12 +34,16 @@ export default async function UcpLayout({
 
   let siteVersion = "";
   let showUcpInNav = false;
+  let gameTitle = "The Lobby";
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.577";
+    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.578";
 
     const ucpNavSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_in_nav" } });
     if (ucpNavSetting?.value === "true") showUcpInNav = true;
+
+    const realmSetting = await prisma.siteSetting.findUnique({ where: { key: "REALM_NAME" } });
+    if (realmSetting?.value) gameTitle = realmSetting.value;
   } catch {
     // defaults
   }
@@ -50,7 +54,14 @@ export default async function UcpLayout({
       <RealtimeProvider>
         <MessengerProvider>
           <UcpLiveRefresh />
-          <Navbar session={session} dbPermissionLevel={dbPermissionLevel} discordLink={discordLink} showUcpLink={showUcpInNav} siteVersion={siteVersion} />
+          <Navbar
+            session={session}
+            dbPermissionLevel={dbPermissionLevel}
+            discordLink={discordLink}
+            showUcpLink={showUcpInNav}
+            siteVersion={siteVersion}
+            gameTitle={gameTitle}
+          />
 
           <UcpNavigation />
 
