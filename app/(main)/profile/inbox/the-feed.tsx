@@ -2065,11 +2065,11 @@ export function TheFeed({
           )}
 
           {/* Integrated Action Bar */}
-          <div className="flex items-center justify-between text-muted-foreground mt-2.5 max-w-md pt-1">
+          <div className="flex items-center justify-between text-muted-foreground mt-2.5 max-w-md pt-1" onClick={(e) => e.stopPropagation()}>
             {/* Like */}
             {!post.isForumThread && (
               <button 
-                onClick={() => handleLike(post.id, isReply, parentId)}
+                onClick={(e) => { e.stopPropagation(); handleLike(post.id, isReply, parentId); }}
                 className={`flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-red-500 group/btn ${post.hasLiked ? 'text-red-500' : ''}`}
                 title="Like"
               >
@@ -2083,7 +2083,8 @@ export function TheFeed({
             {/* Reply */}
             {!isReply && !post.isForumThread && (
               <button 
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   if (replyingTo === post.id) {
                     setReplyingTo(null);
                     setReplyBody("");
@@ -2107,7 +2108,7 @@ export function TheFeed({
             {/* Share */}
             {!post.isForumThread && (
               <button 
-                onClick={() => handleShare(post)}
+                onClick={(e) => { e.stopPropagation(); handleShare(post); }}
                 className="flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-green-500 group/btn"
                 title="Share link"
               >
@@ -2121,7 +2122,8 @@ export function TheFeed({
             {/* Shorts / Reel Launcher */}
             {isShortsEligible && !post.isForumThread && (
               <button 
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   setViewingShortsPost(post);
                   handleRecordView(post.id);
                 }}
@@ -2138,7 +2140,7 @@ export function TheFeed({
             {/* Gold Tip */}
             {!post.isForumThread && (
               <button 
-                onClick={() => handleTip(post.id)}
+                onClick={(e) => { e.stopPropagation(); handleTip(post.id); }}
                 className="flex items-center gap-1 text-xs font-medium transition-colors text-yellow-500/80 hover:text-yellow-500 group/btn"
                 title="Tip 5 Gold"
               >
@@ -2152,7 +2154,7 @@ export function TheFeed({
             {/* Bookmark */}
             {!isReply && !post.isForumThread && (
               <button 
-                onClick={() => handleBookmark(post.id)}
+                onClick={(e) => { e.stopPropagation(); handleBookmark(post.id); }}
                 className={`flex items-center gap-1 text-xs font-medium transition-colors hover:text-yellow-500 group/btn ${post.hasBookmarked ? 'text-yellow-500' : ''}`}
                 title="Bookmark"
               >
@@ -2162,6 +2164,7 @@ export function TheFeed({
               </button>
             )}
           </div>
+
 
           {/* Inline Reply Box */}
           {replyingTo === post.id && !isReply && (

@@ -159,7 +159,7 @@ export function MiniSocialFeed() {
         {visiblePosts.map((post) => (
           <div 
             key={post.id} 
-            className="p-3 bg-card/60 hover:bg-card border border-border/50 hover:border-primary/40 rounded-xl text-sm group relative transition-all shadow-xs"
+            className="p-3 bg-[#050b14]/40 hover:bg-[#050b14]/70 backdrop-blur-xl border border-white/[0.08] hover:border-primary/40 rounded-xl text-sm group relative transition-all shadow-md"
           >
             {/* Hide button */}
             <button
@@ -179,7 +179,7 @@ export function MiniSocialFeed() {
                 )}
               </div>
               <div className="flex items-center justify-between flex-1 min-w-0 pr-6">
-                <Link href={`/user/${post.author.username}`} className="font-semibold hover:underline truncate text-xs">
+                <Link href={`/user/${post.author.username}`} className="font-semibold hover:underline truncate text-xs" onClick={(e) => e.stopPropagation()}>
                   {post.author.username}
                 </Link>
                 <span className="text-[10px] text-muted-foreground shrink-0">
@@ -205,7 +205,7 @@ export function MiniSocialFeed() {
             {/* Media thumbnail with Shorts launch click */}
             {post.mediaUrl && (
               <div 
-                className="mt-2 rounded-lg overflow-hidden border border-border/50 max-h-32 relative group/media cursor-pointer bg-black/60 flex items-center justify-center"
+                className="mt-2 rounded-lg overflow-hidden border border-white/10 max-h-32 relative group/media cursor-pointer bg-black/60 flex items-center justify-center"
                 onClick={() => setViewingShortsPost(post)}
                 title="Watch post"
               >
@@ -243,10 +243,10 @@ export function MiniSocialFeed() {
             )}
 
             {/* Interactive actions */}
-            <div className="flex items-center justify-between mt-2 pt-1">
+            <div className="flex items-center justify-between mt-2 pt-1" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => handleLike(post.id)}
+                  onClick={(e) => { e.stopPropagation(); handleLike(post.id); }}
                   className={`flex items-center gap-1 text-xs transition-colors ${
                     post.hasLiked ? 'text-red-500 font-semibold' : 'text-muted-foreground hover:text-red-500'
                   }`}
@@ -256,7 +256,7 @@ export function MiniSocialFeed() {
                 </button>
 
                 <button
-                  onClick={() => setReplyingTo(replyingTo === post.id ? null : post.id)}
+                  onClick={(e) => { e.stopPropagation(); setReplyingTo(replyingTo === post.id ? null : post.id); }}
                   className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
                 >
                   <MessageSquare className="w-3.5 h-3.5" />
@@ -266,7 +266,7 @@ export function MiniSocialFeed() {
 
               {/* Fullscreen Reel Launch Button */}
               <button
-                onClick={() => setViewingShortsPost(post)}
+                onClick={(e) => { e.stopPropagation(); setViewingShortsPost(post); }}
                 className="flex items-center gap-1 text-[11px] text-primary/80 hover:text-primary font-medium transition-colors"
                 title="Watch post in fullscreen feed"
               >
@@ -274,6 +274,7 @@ export function MiniSocialFeed() {
                 <span>Watch</span>
               </button>
             </div>
+
 
             {/* Inline reply */}
             {replyingTo === post.id && (

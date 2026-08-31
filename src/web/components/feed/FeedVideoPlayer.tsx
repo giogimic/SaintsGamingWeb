@@ -4,8 +4,9 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { 
   Play, Pause, Volume2, VolumeX, Volume1, Maximize2, 
   Sparkles, Heart, Loader2, FastForward, RotateCcw, RotateCw,
-  PictureInPicture, Gauge
+  PictureInPicture, Gauge, Eye, EyeOff
 } from "lucide-react";
+
 import { motion, AnimatePresence } from "framer-motion";
 import Hls from "hls.js";
 import { captureVideoFrame, getCachedVideoPoster } from "@/web/lib/video-thumbnail";
@@ -106,8 +107,11 @@ export function FeedVideoPlayer({
   const formattedSrc = formatVideoSrc(src);
   const displayPoster = poster || extractedPoster;
   const lastTapRef = useRef<number>(0);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
   const centerIconTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+
 
   const hlsRef = useRef<Hls | null>(null);
 
@@ -476,8 +480,7 @@ export function FeedVideoPlayer({
       lastTapRef.current = now;
       setTimeout(() => {
         if (lastTapRef.current === now && !isHoldingFastForward) {
-          // Single Tap -> Play / Pause & Toggle Immersive Bars
-          useImmersiveStore.getState().toggleBars();
+          // Single Tap -> Strictly Play / Pause without toggling navigation
           if (isCurrentlyActive) {
             setActivePlayingId(null);
             showCenterFeedback("pause");
@@ -561,13 +564,32 @@ export function FeedVideoPlayer({
       }}
       onMouseDown={handlePointerDown}
       onMouseUp={handlePointerUp}
-      onTouchStart={handlePointerDown}
-      onTouchEnd={handlePointerUp}
+      onTouchStart={(e) => {
+        if (e.touches && e.touches[0]) {
+          touchStartX.current = e.touches[0].clientX;
+          touchStartY.current = e.touches[0].clientY;
+        }
+        handlePointerDown();
+      }}
+      onTouchEnd={(e) => {
+        handlePointerUp();
+        if (touchStartX.current !== null && e.changedTouches && e.changedTouches[0]) {
+          const deltaX = touchStartX.current - e.changedTouches[0].clientX;
+          const deltaY = touchStartY.current !== null ? touchStartY.current - e.changedTouches[0].clientY : 0;
+          // Swipe left or right gesture: toggle HUD navigation bars on mobile
+          if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+            useImmersiveStore.getState().toggleBars();
+          }
+        }
+        touchStartX.current = null;
+        touchStartY.current = null;
+      }}
       onClick={handleContainerClick}
       className={`relative rounded-2xl overflow-hidden bg-black/90 group cursor-pointer select-none shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-primary/60 transition-all ${className}`}
       style={{
-        maxHeight: isPortrait ? "560px" : "480px",
+        maxHeight: isPortrait ? "680px" : "540px",
       }}
+
     >
       {/* Ambient Color-Reactive Glowing Backdrop matching video poster */}
       <div 
@@ -872,6 +894,19 @@ export function FeedVideoPlayer({
             <PictureInPicture className="w-3.5 h-3.5 text-white/90" />
           </button>
 
+          {/* Eyeball Interface Toggle Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              useImmersiveStore.getState().toggleBars();
+            }}
+            className="p-2 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md border border-white/10 hover:scale-105 transition-all shadow-md hidden sm:flex"
+            title={isBarsHidden ? "Show Interface (Tab)" : "Hide Interface (Tab)"}
+          >
+            {isBarsHidden ? <EyeOff className="w-3.5 h-3.5 text-amber-400" /> : <Eye className="w-3.5 h-3.5 text-white/90" />}
+          </button>
+
           {/* Fullscreen Reel Launcher */}
           <button
             type="button"
@@ -886,6 +921,7 @@ export function FeedVideoPlayer({
           </button>
         </div>
       </div>
+
     </div>
   );
 }

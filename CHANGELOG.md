@@ -1,4 +1,29 @@
+# 2.1.580
+- **Feed & Video Player Gesture / Interaction Separation & Desktop View Expansion**:
+  - **Single Tap vs HUD Separation**: Removed navigation toggle from single-tap in `FeedVideoPlayer.tsx`. Single tap now strictly toggles play/pause feedback, while swipe-left gesture on mobile toggles HUD overlays without interrupting video playback.
+  - **Eyeball HUD Toggle Button**: Added desktop `Eye` / `EyeOff` button in `FeedVideoPlayer.tsx` and `ShortsViewerModal` overlay controls to toggle immersion state on desktop.
+  - **Desktop View Enlargement**: Expanded desktop feed video container constraints (`maxHeight: 680px/540px`) and shorts theater modal (`md:max-w-6xl lg:max-w-7xl` landscape, `md:min-w-[480px] md:max-w-[560px] lg:max-w-[620px]` portrait).
+  - **Click Propagation Isolation**: Added `e.stopPropagation()` on all action rail buttons (like, comment, bookmark, share, tip, profile avatar, username links) across `the-feed.tsx`, `FeedVideoPlayer.tsx`, `mini-social-feed.tsx`, and `shorts-viewer-modal.tsx`.
+- **Bottom Bar & Mobile Layout Modernization**:
+  - **Mobile Octagon Action Handle**: Replaced mobile bottom bar halo with an elevated octagon container (`clip-path: polygon(...)`) housing a centered gold/amber rotating `Settings` gear icon. Raised elevation to `-translate-y-4` to prevent overlap with footer navigation.
+  - **Mobile Bottom Bar User Info Cleanup**: Added `hidden md:flex` to user name, level, coins, and achievements so the bottom bar remains clean on mobile screens.
+  - **Mobile Navbar Refinement**: Removed 3-line hamburger menu sheet. Desktop navbar now displays enlarged 3D logo (`size={38}`) with `"Saints Gaming"` and `"Time To Play"` subtitle, while mobile cleanly renders text-only brand title and tagline.
+  - **Search Dropdown Positioning**: Fixed left-edge cutoff in `GlobalSearch` dropdown by anchoring to `left-3 sm:left-0 origin-top-left`.
+- **Transparent Dark Glass Social Cards**:
+  - Updated post cards, composer, polls, and media previews across `the-feed.tsx` and `mini-social-feed.tsx` to transparent dark glass (`bg-[#050b14]/40`, `backdrop-blur-xl`, `border-white/[0.08]`, `shadow-md`).
+- **Version Bump**: Bumped release version to `v2.1.580` across all application layouts, headers, footers, settings, and documentation.
+
+# 2.1.579
+- **SEO & Canonical Metadata Helpers**:
+  - Created `src/web/lib/seo.ts` with global metadata generators (`generateGlobalMetadata`, `generateArticleMetadata`) ensuring proper canonical URLs across forum, news, wiki, user profiles, streams, servers, and modpacks.
+- **Audit Compliance Engine**:
+  - Created `src/server/audit/AuditService.ts` and mandated `AuditService.write()` compliance across all Studio REST mutation endpoints.
+- **Go MMO Engine AOI Calibration**:
+  - Calibrated Area of Interest (AOI) zone sizing in `the-lobby/internal/config/config.go` and `player.NewManager()`, eliminating redundant shard-wide broadcasts during `netTick()`.
+- **Version Bump**: Bumped release version to `v2.1.579`.
+
 # 2.1.577
+
 - **User Settings OS-Window Menu Bar & Toolbar Architecture**:
   - **Windows Directory-Style Menu Bar**: Added a sleek, retro OS directory-style top menu bar below the window header and above the content tabs with 4 dropdown menus:
     - **Appearance**: Live theme selection (`Midnight Dark`, `Sunset Light`, `Miami Vice`) with active state badges, WebAudio sound synthesizer toggle, and quick volume presets.
