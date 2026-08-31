@@ -1,3 +1,10 @@
+# 2.1.571
+- **Search API Prisma Schema Field Alignments (Production Build Fix)**:
+  - **News Article Model Alignments (`app/api/search/route.ts`)**: Replaced non-existent `content` field in `where.OR` with `body`, and removed unsupported `category` property from the select clause to align with the authoritative `NewsArticle` Prisma schema.
+  - **Modpack Model Alignments (`app/api/search/route.ts`)**: Updated select clause to query `logoImage` instead of `bannerImage` on the `Modpack` Prisma model.
+  - **Type Checking Verification**: Verified `npx tsc --noEmit` and full Vitest test suite (`npm test`) compile and pass with zero TypeScript errors.
+- **Version Bump**: Bumped release version to `v2.1.571` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.570
 - **Upgraded Global Search Experience (Multi-Category Search & Responsive Navbar Trigger)**:
   - **Comprehensive Multi-Category Backend Search (`/api/search`)**: Expanded the global search endpoint to query 6 core platform areas concurrently via Prisma with dynamic query matching and highlighted snippet extraction:
