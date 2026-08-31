@@ -111,7 +111,7 @@ export function RealmSettingsPanel() {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1 px-3 py-1 rounded bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-bold text-[10px] uppercase tracking-wider shadow transition disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-1 px-3 py-1 rounded bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-bold text-[10px] uppercase tracking-wider shadow transition disabled:opacity-50 cursor-pointer"
           >
             {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
             <span>{saving ? 'Saving...' : 'Save'}</span>

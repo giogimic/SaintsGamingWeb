@@ -99,7 +99,7 @@ export const PasteOptionsToolbar: React.FC = () => {
               title={m.desc}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                 isActive
-                  ? 'bg-amber-500 text-black font-bold shadow-md'
+                  ? 'bg-amber-600 text-white font-bold shadow-md'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
               }`}
             >

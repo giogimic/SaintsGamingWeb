@@ -120,7 +120,7 @@ export default async function HomePage() {
             className={buttonVariants({
               size: "lg",
               className:
-                "bg-gradient-to-r from-amber-400 via-emerald-400 to-cyan-400 text-slate-950 font-black hover:opacity-95 px-8 rounded-xl shadow-xl shadow-amber-500/20 hover:shadow-amber-500/40 transition-all hover:scale-105 cursor-pointer text-shadow-none border border-white/20",
+                "bg-gradient-to-r from-amber-500 via-emerald-600 to-cyan-600 text-white font-black hover:opacity-95 px-8 rounded-xl shadow-xl shadow-amber-500/20 hover:shadow-amber-500/40 transition-all hover:scale-105 cursor-pointer border border-white/20",
             })}
           >
             <Gamepad2 className="mr-2 h-5 w-5 fill-current" />

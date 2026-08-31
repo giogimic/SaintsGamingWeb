@@ -317,7 +317,7 @@ export const MapListPanel: React.FC = () => {
                       onClick={() => handleWarp(map.id)}
                       className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         isCurrent
-                          ? 'bg-amber-400 text-black font-black'
+                          ? 'bg-amber-600 text-white font-black'
                           : 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/30'
                       }`}
                     >

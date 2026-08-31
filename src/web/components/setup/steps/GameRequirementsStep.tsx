@@ -134,7 +134,7 @@ export function GameRequirementsStep({ gameDefinition, onNext, onBack }: GameReq
 
         <button
           onClick={onNext}
-          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-slate-950 bg-gradient-to-r from-amber-300 to-amber-500 hover:from-amber-200 hover:to-amber-400 shadow-xl shadow-amber-500/20 transition cursor-pointer"
+          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-white bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 shadow-xl shadow-amber-500/20 transition cursor-pointer"
         >
           Start Creating Content
           <ArrowRight className="w-4 h-4" />

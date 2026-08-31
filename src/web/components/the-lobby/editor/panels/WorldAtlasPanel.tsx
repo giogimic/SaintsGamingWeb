@@ -261,7 +261,7 @@ export const WorldAtlasPanel: React.FC = () => {
           <button
             onClick={() => void handleSaveAtlas()}
             disabled={isSaving}
-            className="px-3.5 py-1.5 bg-amber-400 text-black font-bold rounded-lg flex items-center gap-1.5 hover:bg-amber-300 active:scale-95 transition-all shadow-md disabled:opacity-50 cursor-pointer"
+            className="px-3.5 py-1.5 bg-amber-600 text-white font-bold rounded-lg flex items-center gap-1.5 hover:bg-amber-500 active:scale-95 transition-all shadow-md disabled:opacity-50 cursor-pointer"
           >
             <Save className="w-3.5 h-3.5" />
             {isSaving ? 'Saving...' : 'Save Atlas & Sync Edge Seams'}
@@ -420,7 +420,7 @@ export const WorldAtlasPanel: React.FC = () => {
                         e.stopPropagation();
                         handleWarpToMap(node.mapId, node.id);
                       }}
-                      className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 p-0.5 rounded bg-amber-500 text-black hover:bg-amber-400 transition-opacity shadow"
+                      className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 p-0.5 rounded bg-amber-600 text-white hover:bg-amber-500 transition-opacity shadow"
                       title="Teleport to map"
                     >
                       <Navigation className="w-2.5 h-2.5" />

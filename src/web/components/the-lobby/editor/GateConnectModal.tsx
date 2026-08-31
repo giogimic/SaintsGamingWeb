@@ -343,7 +343,7 @@ export const GateConnectModal: React.FC = () => {
             disabled={!selectedMapId}
             className={`px-4 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg transition ${
               selectedMapId
-                ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 cursor-pointer'
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white cursor-pointer'
                 : 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50'
             }`}
           >

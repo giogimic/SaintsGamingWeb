@@ -433,7 +433,7 @@ export function AnimationStudioPanel() {
           <button
             type="button"
             onClick={handleSaveAnimations}
-            className="w-full flex items-center justify-center gap-2 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl transition shadow cursor-pointer text-xs"
+            className="w-full flex items-center justify-center gap-2 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl transition shadow cursor-pointer text-xs"
           >
             <Save className="w-3.5 h-3.5" />
             <span>Save All Sequences</span>
@@ -711,8 +711,8 @@ export function AnimationStudioPanel() {
               onClick={() => setIsPlaying(!isPlaying)}
               className={`p-3 rounded-xl font-bold transition flex items-center justify-center shadow-lg cursor-pointer ${
                 isPlaying
-                  ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/20'
-                  : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/20'
+                  ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-500/20'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20'
               }`}
               title={isPlaying ? 'Pause' : 'Play'}
             >

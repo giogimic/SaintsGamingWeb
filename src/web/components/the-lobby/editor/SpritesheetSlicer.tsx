@@ -642,7 +642,7 @@ export function SpritesheetSlicer({
                       type="button"
                       onClick={() => setGridSize(size)}
                       className={`px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer ${
-                        gridSize === size ? 'bg-amber-500 text-black' : 'bg-slate-800 text-slate-400 hover:text-white'
+                        gridSize === size ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
                       }`}
                     >
                       {size}px

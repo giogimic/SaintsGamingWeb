@@ -33,7 +33,7 @@ export const ContextInteractionBadge: React.FC = () => {
   return (
     <div className="pointer-events-none fixed bottom-24 left-1/2 -translate-x-1/2 z-40 animate-fade-in">
       <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-amber-500/40 shadow-lg shadow-amber-500/10">
-        <span className="flex items-center justify-center w-5 h-5 rounded-md bg-amber-500 text-slate-950 font-black text-xs font-mono shadow-sm">
+        <span className="flex items-center justify-center w-5 h-5 rounded-md bg-amber-600 text-white font-black text-xs font-mono shadow-sm">
           {action.key || 'E'}
         </span>
         <div className="flex items-center gap-1.5 text-xs font-medium text-slate-100">

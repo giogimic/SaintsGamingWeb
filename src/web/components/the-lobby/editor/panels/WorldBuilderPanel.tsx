@@ -382,7 +382,7 @@ export const WorldBuilderPanel: React.FC = () => {
               disabled={isSaving || !activeMapData}
               className={`w-full py-2 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all ${
                 isMapDirty
-                  ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-black shadow-lg shadow-amber-950/50 cursor-pointer'
+                  ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-lg shadow-amber-950/50 cursor-pointer'
                   : 'bg-[#cbb26a]/20 text-amber-300 border border-amber-500/30 hover:bg-[#cbb26a]/30'
               }`}
             >

@@ -558,7 +558,7 @@ export function CharacterCreator({
                   <span
                     className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black ${
                       isCur
-                        ? 'bg-[#00f5d4] text-slate-950'
+                        ? 'bg-[#00bfa5] text-white'
                         : isDone
                         ? 'bg-pink-500/40 text-pink-200'
                         : 'bg-white/10 text-slate-400'
@@ -1242,16 +1242,16 @@ export function CharacterCreator({
                 <button
                   disabled={loading}
                   onClick={handleCreate}
-                  className="w-full py-4 rounded-xl font-mono font-black text-sm uppercase tracking-widest bg-gradient-to-r from-amber-400 via-pink-500 to-cyan-400 hover:from-amber-300 hover:via-pink-400 hover:to-cyan-300 text-slate-950 shadow-[0_0_30px_rgba(242,0,137,0.5)] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-4 rounded-xl font-mono font-black text-sm uppercase tracking-widest bg-gradient-to-r from-amber-500 via-pink-600 to-cyan-600 hover:from-amber-400 hover:via-pink-500 hover:to-cyan-500 text-white shadow-[0_0_30px_rgba(242,0,137,0.5)] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin text-slate-950" />
+                      <Loader2 className="w-5 h-5 animate-spin text-white" />
                       Forging Saint...
                     </>
                   ) : (
                     <>
-                      <Flame className="w-5 h-5 text-slate-950" />
+                      <Flame className="w-5 h-5 text-white" />
                       FORGE SAINT // ENTER REALM
                     </>
                   )}

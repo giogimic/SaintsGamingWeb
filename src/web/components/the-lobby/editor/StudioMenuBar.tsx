@@ -703,7 +703,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             onClick={() => handleSwitchMode('logic')}
             className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
               studioMode === 'logic'
-                ? 'bg-cyan-500 text-black font-extrabold shadow'
+                ? 'bg-cyan-600 text-white font-extrabold shadow'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
             title="Logic Mode (Collision Tags, Triggers & Rules)"
