@@ -1,3 +1,9 @@
+# 2.1.576
+- **Theme & Design System Rule Enforcement**:
+  - **Removed Hacker / Matrix Theme**: Completely purged residual hacker/matrix theme options from `UserSettingsOverlayShell`, theme provider, CSS stylesheets, and UI theme toggles to uphold authentic Saints Gaming clean aesthetic.
+  - **Rule Policy Solidified**: Re-affirmed strict design guidelines banning cyber/synthwave/hacker styling across all project configuration and agent guides.
+- **Version Bump**: Bumped release version to `v2.1.576` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.575
 - **Responsive-First Social Data Architecture**:
   - **Zero-Refetch Mutation Lifecycle**: Converted social feed mutations (`createSocialPost`, `votePoll`, `pinSocialPost`, `subscribeToCreator`, `replyToSocialPost`) to direct state reconciliation. Creating posts, casting poll votes, or pinning threads updates client state immediately without triggering redundant `loadFeed()` database reloads.

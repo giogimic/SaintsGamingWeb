@@ -24,7 +24,6 @@ import {
   Sun,
   Moon,
   Palmtree,
-  Terminal,
   Volume2,
   VolumeX,
   Trash2,
@@ -564,15 +563,6 @@ export function UserSettingsOverlayShell() {
                       color: "from-[#1b121c] to-[#2c003e]",
                       border: "border-pink-500/50",
                       accent: "text-pink-400",
-                    },
-                    {
-                      id: "hacker",
-                      label: "Hacker / Matrix",
-                      sub: "Cyber Emerald & Black",
-                      icon: Terminal,
-                      color: "from-[#021008] to-[#052411]",
-                      border: "border-emerald-500/50",
-                      accent: "text-emerald-400",
                     },
                   ].map((t) => {
                     const Icon = t.icon;

@@ -64,7 +64,7 @@ export default function LandingPage() {
   }, []);
 
   const isLight = mounted && theme === "light";
-  const isVice = mounted && (theme === "vice" || theme === "hacker");
+  const isVice = mounted && theme === "vice";
 
   const p = isLight
     ? PALETTE_S3_SUNSET

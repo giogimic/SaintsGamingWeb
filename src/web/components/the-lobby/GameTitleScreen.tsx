@@ -476,7 +476,7 @@ export default function GameTitleScreen({
 
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const isVice = theme === 'vice' || theme === 'hacker';
+  const isVice = theme === 'vice';
 
   const THEME = isLight ? THEME_LIGHT : isVice ? THEME_VICE : THEME_DARK;
 

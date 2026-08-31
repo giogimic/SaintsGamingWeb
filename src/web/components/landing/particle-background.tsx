@@ -81,7 +81,7 @@ export function ParticleBackground() {
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         
         let colorStr = "oklch(0.82 0.12 85"; // default dark/light gold
-        if (themeRef.current === "vice" || themeRef.current === "hacker") {
+        if (themeRef.current === "vice") {
           // Vice sunset palette: cycle through sunset fuchsia, coral orange, and turquoise
           const viceColors = [
             "oklch(0.75 0.28 345", // Sunset Hot Pink

@@ -93,7 +93,7 @@ export default async function RootLayout({
         <ThemeProvider
           attribute="class"
           defaultTheme="vice"
-          themes={["light", "dark", "vice", "hacker"]}
+          themes={["light", "dark", "vice"]}
           disableTransitionOnChange
         >
           <AuthProvider session={session}>

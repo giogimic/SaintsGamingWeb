@@ -27,7 +27,7 @@ export function MidnightTropicalBackground({
   }, []);
 
   const isLight = mounted && theme === 'light';
-  const isVice = mounted && (theme === 'vice' || theme === 'hacker');
+  const isVice = mounted && theme === 'vice';
 
   return (
     <div

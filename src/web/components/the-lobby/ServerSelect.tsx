@@ -130,7 +130,7 @@ export default function ServerSelect() {
 
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const isVice = theme === 'vice' || theme === 'hacker';
+  const isVice = theme === 'vice';
 
   return (
     <div

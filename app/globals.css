@@ -146,8 +146,7 @@
 }
 
 /* Vice Theme (Miami Sunset / Palm Horizon Aesthetic) */
-.vice,
-.hacker {
+.vice {
   --background: oklch(0.13 0.045 310);
   --foreground: oklch(0.96 0.03 75);
   --card: oklch(0.16 0.055 315);
