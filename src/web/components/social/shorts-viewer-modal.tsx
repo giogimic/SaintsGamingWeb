@@ -8,7 +8,8 @@ import {
   X, Sparkles, Volume2, VolumeX, ChevronUp, ChevronDown, 
   FileArchive, Download, Play, Heart, Crown, BadgeCheck, 
   Music, Plus, MessageSquare, Bookmark, Share, Send, Loader2,
-  Maximize2, Minimize, Clock, PlaySquare, Check, Smile, Compass
+  Maximize2, Minimize, Clock, PlaySquare, Check, Smile, Compass,
+  Eye, EyeOff
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
@@ -98,6 +99,7 @@ export function ShortsViewerModal({
   const [videoPlayback, setVideoPlayback] = useState<{ current: number; duration: number }>({ current: 0, duration: 0 });
 
   const [isHoldingFastForward, setIsHoldingFastForward] = useState(false);
+  const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
   const lastTap = useRef<number>(0);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -542,16 +544,31 @@ export function ShortsViewerModal({
       ref={modalContainerRef}
       className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[999999] bg-black/95 backdrop-blur-2xl flex items-center justify-center select-none overflow-hidden m-0 p-0 animate-in fade-in duration-200"
       onTouchStart={(e) => {
-        touchStartY.current = e.touches[0].clientY;
+        if (e.touches && e.touches[0]) {
+          touchStartX.current = e.touches[0].clientX;
+          touchStartY.current = e.touches[0].clientY;
+        }
       }}
       onTouchEnd={(e) => {
-        if (touchStartY.current === null) return;
-        const deltaY = touchStartY.current - e.changedTouches[0].clientY;
-        if (deltaY > 35) {
-          navigateShorts(1); // Swiped UP -> Next
-        } else if (deltaY < -35) {
-          navigateShorts(-1); // Swiped DOWN -> Previous
+        if (touchStartY.current === null && touchStartX.current === null) return;
+        const deltaX = touchStartX.current !== null && e.changedTouches && e.changedTouches[0]
+          ? touchStartX.current - e.changedTouches[0].clientX
+          : 0;
+        const deltaY = touchStartY.current !== null && e.changedTouches && e.changedTouches[0]
+          ? touchStartY.current - e.changedTouches[0].clientY
+          : 0;
+
+        // Horizontal swipe: toggle HUD / overlay interface
+        if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+          useImmersiveStore.getState().toggleBars();
+        } else if (Math.abs(deltaY) > 35) {
+          if (deltaY > 35) {
+            navigateShorts(1); // Swiped UP -> Next
+          } else if (deltaY < -35) {
+            navigateShorts(-1); // Swiped DOWN -> Previous
+          }
         }
+        touchStartX.current = null;
         touchStartY.current = null;
       }}
     >
@@ -623,6 +640,15 @@ export function ShortsViewerModal({
       </div>
 
       <div className={`absolute top-4 right-4 z-50 flex items-center gap-2.5 transition-opacity duration-200 ${isBarsHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+        {/* Desktop Eyeball Interface Toggle Button */}
+        <button 
+          onClick={() => useImmersiveStore.getState().toggleBars()}
+          className="p-2.5 bg-black/70 hover:bg-black/95 border border-white/20 rounded-full text-white backdrop-blur-md transition-all shadow-lg hover:scale-105 hidden sm:flex"
+          title={isBarsHidden ? "Show Interface (Tab)" : "Hide Interface (Tab)"}
+        >
+          {isBarsHidden ? <EyeOff className="w-5 h-5 text-amber-400" /> : <Eye className="w-5 h-5 text-white/90" />}
+        </button>
+
         <button 
           onClick={() => setIsMuted(!isMuted)}
           className="p-2.5 bg-black/70 hover:bg-black/95 border border-white/20 rounded-full text-white backdrop-blur-md transition-all shadow-lg hover:scale-105"
@@ -668,10 +694,11 @@ export function ShortsViewerModal({
       <div 
         className={`w-full h-full relative transition-all duration-300 flex items-center justify-center ${
           detectedAspectRatio === "landscape" || !currentPost.mediaUrl || isArchive(currentPost.mediaUrl)
-            ? "md:w-full md:max-w-5xl lg:max-w-6xl md:h-[88vh] md:max-h-[860px] md:flex-row md:items-stretch md:rounded-3xl overflow-hidden bg-black/95 md:border md:border-white/15 md:shadow-2xl"
-            : "md:w-auto md:min-w-[400px] md:max-w-[460px] md:h-[92vh] md:max-h-[880px] md:rounded-3xl overflow-hidden bg-black md:shadow-2xl"
+            ? "md:w-full md:max-w-6xl lg:max-w-7xl md:h-[92vh] md:max-h-[920px] md:flex-row md:items-stretch md:rounded-3xl overflow-hidden bg-black/95 md:border md:border-white/15 md:shadow-2xl"
+            : "md:w-auto md:min-w-[480px] md:max-w-[560px] lg:max-w-[620px] md:h-[94vh] md:max-h-[940px] md:rounded-3xl overflow-hidden bg-black md:shadow-2xl"
         }`}
       >
+
         {/* Story-style Progress Bar for Text Posts & Static Images */}
         {autoAdvance && (!currentPost.mediaUrl || !isVideo(currentPost.mediaUrl)) && (
           <div className="absolute top-0 inset-x-0 h-1 bg-white/20 z-40 overflow-hidden">

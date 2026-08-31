@@ -420,8 +420,9 @@ export function GlobalSearch() {
 
       {/* ─── ANCHORED SEARCH DROPDOWN WINDOW ─── */}
       {open && (
-        <div className="absolute top-full right-0 mt-2 w-[calc(100vw-24px)] sm:w-[500px] md:w-[600px] lg:w-[680px] z-[270] bg-[#060c18]/98 border border-primary/40 rounded-2xl shadow-[0_25px_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl overflow-hidden flex flex-col max-h-[75vh] origin-top-right animate-in fade-in slide-in-from-top-2 zoom-in-95 duration-150">
+        <div className="fixed sm:absolute top-[56px] sm:top-full left-3 sm:left-0 right-3 sm:right-auto mt-2 sm:w-[540px] md:w-[620px] lg:w-[680px] z-[270] bg-[#060c18]/98 border border-primary/40 rounded-2xl shadow-[0_25px_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl overflow-hidden flex flex-col max-h-[75vh] origin-top-left animate-in fade-in slide-in-from-top-2 zoom-in-95 duration-150">
           {/* Mobile-Only Search Input Header */}
+
           <div className="flex md:hidden items-center px-3.5 py-3 border-b border-white/10 gap-2.5 bg-slate-950/60">
             <Search className="w-4 h-4 text-primary shrink-0 animate-pulse" />
             <input

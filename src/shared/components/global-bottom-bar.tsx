@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -48,8 +48,10 @@ import {
   LifeBuoy,
   Flame,
   MessageSquare,
-  Plus
+  Plus,
+  Settings
 } from "lucide-react";
+
 import { Button } from "@/shared/ui/button";
 import { SGMicro3DLogo } from "@/web/components/landing/sg-logo-3d-micro";
 import { ActionTooltip } from "@/shared/ui/action-tooltip";
@@ -78,7 +80,7 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "v2.1.579",
+  siteVersion = "v2.1.580",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;
@@ -268,8 +270,8 @@ export function GlobalBottomBar({
         isBarsHidden ? "opacity-0 translate-y-full pointer-events-none" : "opacity-100 translate-y-0"
       }`}>
           
-          {/* LEFT SECTION: Connected User & Account Stats / Online Orb */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+          {/* LEFT SECTION: Connected User & Account Stats / Online Orb (hidden on mobile to keep bar clean) */}
+          <div className="hidden md:flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
             {/* Green Status Orb */}
             <span className="relative flex h-2 w-2 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -329,7 +331,7 @@ export function GlobalBottomBar({
             )}
           </div>
 
-          {/* CENTER SECTION: Links + Enlarged Elevated Logo Post Button */}
+          {/* CENTER SECTION: Links + Raised Octagon Post / Action Button */}
           <div className="flex items-center justify-center gap-1 sm:gap-2 flex-shrink-0">
             {/* Left Group (Play, Feed, Streams, Forums) */}
             <div className="flex items-center gap-0.5 sm:gap-1">
@@ -354,18 +356,23 @@ export function GlobalBottomBar({
               })}
             </div>
 
-            {/* Logo as Primary Post Action Button (Elevated Sticking-Out on Mobile) */}
+            {/* Raised Octagon Action Handle */}
             <div className="mx-1 sm:mx-1.5 flex items-center justify-center relative">
               <ActionTooltip label="Create Post / Share Clip">
                 <button
                   type="button"
                   onClick={handleGlobalPost}
-                  className="group relative flex items-center justify-center cursor-pointer transition-all duration-200 -translate-y-3 sm:translate-y-0"
+                  className="group relative flex items-center justify-center cursor-pointer transition-all duration-200 -translate-y-4 sm:translate-y-0"
                   title="Create Post / Share Clip"
                 >
-                  {/* Mobile Elevated Halo Frame */}
-                  <div className="sm:hidden flex items-center justify-center w-12 h-12 rounded-full bg-[#050b14] border-2 border-primary shadow-[0_0_20px_rgba(203,178,106,0.55)] ring-2 ring-primary/30 p-1 group-active:scale-90 group-hover:scale-105 transition-all">
-                    <SGMicro3DLogo size={36} />
+                  {/* Mobile Raised Octagon Frame with Centered Gear */}
+                  <div 
+                    className="sm:hidden flex items-center justify-center w-12 h-12 bg-[#050b14] border-2 border-primary/80 shadow-[0_0_20px_rgba(203,178,106,0.6)] p-1 group-active:scale-90 group-hover:scale-105 transition-all"
+                    style={{
+                      clipPath: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)',
+                    }}
+                  >
+                    <Settings className="w-5 h-5 text-amber-400 animate-spin" style={{ animationDuration: '16s' }} />
                   </div>
 
                   {/* Desktop Inline Logo Frame */}
@@ -381,6 +388,7 @@ export function GlobalBottomBar({
 
             {/* Right Group (Nexus, Wiki, Support) */}
             <div className="flex items-center gap-0.5 sm:gap-1">
+
               {BOTTOM_NAV_RIGHT_PAGES.map(({ href, label, icon: Icon, tooltip }) => {
                 const isActive = pathname === href || (href !== "/home" && pathname?.startsWith(href));
                 return (

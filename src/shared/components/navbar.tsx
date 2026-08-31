@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -8,21 +8,18 @@ const StudioMenuBar = dynamic(
   { ssr: false }
 );
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import {
-  Menu,
-  X,
-  Sparkles,
   Gamepad2,
   Settings,
   LogOut,
   Shield,
+  Sparkles,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/shared/ui/button";
 import { SGMicro3DLogo } from "@/web/components/landing/sg-logo-3d-micro";
 import { GlobalSearch } from "@/shared/components/global-search";
 import { NotificationsMenu } from "@/shared/components/notifications-menu";
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/shared/ui/sheet";
 import { signOut } from "next-auth/react";
 import {
   DropdownMenu,
@@ -43,7 +40,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.579",
+  siteVersion = "v2.1.580",
   gameTitle = "The Lobby",
 }: {
   session: any | null;
@@ -54,9 +51,9 @@ export function Navbar({
   gameTitle?: string;
 }) {
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
   const isBarsHidden = useImmersiveStore((s) => s.isBarsHidden);
   const openSettings = useUserSettingsStore((s) => s.openSettings);
+
 
   useEffect(() => {
     if (pathname && !pathname.startsWith("/admin")) {
@@ -94,20 +91,26 @@ export function Navbar({
             <GlobalSearch />
           </div>
 
-          {/* Center: Saints Gaming Logo */}
+          {/* Center: Saints Gaming Logo & Tagline */}
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
-            <Link href="/home" className="flex items-center gap-2 group">
+            <Link href="/home" className="flex items-center gap-2.5 group select-none">
               <div className="transition-transform group-hover:scale-110 shrink-0 hidden sm:block">
-                <SGMicro3DLogo size={32} />
+                <SGMicro3DLogo size={38} />
               </div>
-              <span className="font-black text-base sm:text-lg sg-text-gradient tracking-tight whitespace-nowrap">
-                Saints Gaming
-              </span>
+              <div className="flex flex-col items-center sm:items-start leading-tight">
+                <span className="font-black text-base sm:text-lg sg-text-gradient tracking-tight whitespace-nowrap">
+                  Saints Gaming
+                </span>
+                <span className="text-[9px] sm:text-[10px] font-bold text-amber-400/80 tracking-widest uppercase font-mono -mt-0.5">
+                  Time To Play
+                </span>
+              </div>
             </Link>
           </div>
 
-          {/* Right: Notifications + User dropdown + Mobile */}
+          {/* Right: Notifications + User dropdown */}
           <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end">
+
             {!user ? (
               <div className="flex items-center p-1 bg-black/40 rounded-xl shadow-inner border border-white/5">
                 <Link
@@ -209,100 +212,12 @@ export function Navbar({
                 </DropdownMenu>
               </div>
             )}
-
-            {/* Mobile menu */}
-            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-              <SheetTrigger className="sm:hidden" render={<Button variant="ghost" size="icon" className="h-8 w-8 p-0" />}>
-                {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[280px] bg-card/95 backdrop-blur-xl border-l-border/50">
-                <div className="flex flex-col h-full">
-                  <SheetTitle className="sr-only">Menu</SheetTitle>
-
-                  <div className="flex items-center gap-3 pb-4 border-b border-border/50 mt-2">
-                    {user ? (
-                      <>
-                        <Avatar className="h-9 w-9 border border-primary/20">
-                          <AvatarImage src={user.image || ""} />
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            {user.username?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col overflow-hidden flex-1 min-w-0">
-                          <span className="font-semibold text-sm truncate">{user.username || user.name}</span>
-                          <span className="text-xs text-muted-foreground truncate">{user.email}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => { setMobileOpen(false); openSettings("account"); }}
-                          className="p-1.5 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-primary transition-colors cursor-pointer shrink-0"
-                          title="Settings"
-                        >
-                          <Settings className="h-4 w-4" />
-                        </button>
-                      </>
-                    ) : (
-                      <div className="flex items-center gap-2.5">
-                        <SGMicro3DLogo size={32} />
-                        <span className="font-black text-lg sg-text-gradient tracking-tight">Saints Gaming</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex-1 py-4 flex flex-col gap-1">
-                    {user && (
-                      <Link
-                        href="/lobby"
-                        onClick={() => setMobileOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold transition-all bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                      >
-                        <Gamepad2 className="h-4 w-4" />
-                        {gameTitle}
-                      </Link>
-                    )}
-                    {user && canAccessStudio && (
-                      <Link
-                        href="/studio"
-                        onClick={() => setMobileOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-purple-400 hover:bg-purple-500/10"
-                      >
-                        <Sparkles className="h-4 w-4" />
-                        Saints Studio
-                      </Link>
-                    )}
-                    {user && showUcpLink && (
-                      <Link
-                        href="/ucp"
-                        onClick={() => setMobileOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                      >
-                        <Shield className="h-4 w-4" />
-                        FiveM UCP
-                      </Link>
-                    )}
-                  </div>
-
-                  <div className="pt-4 border-t border-border/50 flex flex-col gap-2">
-                    {!user ? (
-                      <div className="grid grid-cols-2 gap-2">
-                        <Link href="/login" onClick={() => setMobileOpen(false)} className={buttonVariants({ variant: "outline", size: "sm", className: "w-full text-xs" })}>Log in</Link>
-                        <Link href="/register" onClick={() => setMobileOpen(false)} className={buttonVariants({ size: "sm", className: "w-full text-xs" })}>Sign up</Link>
-                      </div>
-                    ) : (
-                      <Button variant="destructive" size="sm" className="w-full text-xs cursor-pointer" onClick={() => signOut({ callbackUrl: "/" })}>
-                        <LogOut className="mr-2 h-3.5 w-3.5" />
-                        Log out
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
           </div>
         </div>
       </header>
     </div>
   );
 }
+
 
 

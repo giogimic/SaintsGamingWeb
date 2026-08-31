@@ -1,4 +1,4 @@
-﻿import { Cpu, Server, Key, Terminal } from "lucide-react";
+import { Cpu, Server, Key, Terminal } from "lucide-react";
 import { SystemClient } from "./system-client";
 
 import { SystemUpdater } from "@/web/components/admin/system-updater";
@@ -81,7 +81,7 @@ export default async function SystemStatePage() {
             <Input 
               id="SITE_VERSION" 
               name="SITE_VERSION" 
-              defaultValue={siteVersionSetting?.value || "2.1.579"} 
+              defaultValue={siteVersionSetting?.value || "2.1.580"} 
               className="font-mono"
             />
             <p className="text-xs text-muted-foreground">The current running version of the web app displayed in the footer and admin bar.</p>
