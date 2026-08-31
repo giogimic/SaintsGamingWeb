@@ -1,3 +1,11 @@
+# 2.1.565
+- **Immersive Post Composer Refinements (Centered Desktop Window & Elevated Mobile Bottom Inset)**:
+  - **Centered Desktop Middle Window (No Blur)**: Configured the desktop Post Composer OS window to open centered in the middle of the viewport without background blur distortion, keeping background MMO / page elements crisp and legible.
+  - **Elevated Mobile Safe Insets (`z-[310]` & `pb-20`)**: Raised the mobile slide-up drawer above the global bottom bar (`z-[310]`) with safe padding insets, eliminating input clipping or occlusion behind the bottom navigation bar.
+  - **Thin Minimalist Header & Subtle Borders**: Replaced bulky header chrome with a thin `h-8` titlebar, crisp `border-white/[0.06]`, and minimalist window controls.
+  - **Overlaid Bottom Tools & Actions**: Restructured the composer container into an immersive, all-in-one chat box with tools (Media attach, Hashtag quick chips, Audience visibility, Character counter, and Send/Publish CTA) overlaid directly along the bottom inside edge of the textarea.
+- **Version Bump**: Bumped release version to `v2.1.565` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.564
 - **Mobile Elevated Bottom Bar Logo Button & Global Post Composer (Desktop Window + Mobile Slide-Up Drawer)**:
   - **Elevated Mobile Logo Action Button**: Enlarged the 3D Saints logo on the mobile bottom bar into a prominent elevated halo circular action button (`-translate-y-3.5`) that sticks out of the bar with a gold glowing halo border (`border-2 border-primary shadow-[0_0_20px_rgba(203,178,106,0.55)]`), serving as the primary Post creation trigger.
