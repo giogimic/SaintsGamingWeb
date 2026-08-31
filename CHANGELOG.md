@@ -1,3 +1,12 @@
+# 2.1.559
+- **Mobile Native Full-Screen Reel Stream, Tap-to-Transparent Navigation & Slide-Up Comment Drawer**:
+  - **Native Mobile Full-Screen Reel Stream**: Removed the auto full-screen popup portal on mobile initial load. The mobile view (`md:hidden`) now renders directly as a native, edge-to-edge vertical snap-scrolling reel stream (`100dvh` per post) positioned directly behind the translucent `Navbar` and `GlobalBottomBar`.
+  - **Single-Tap Transparent Navigation Bars**: Tapping the screen/video smoothly toggles `useImmersiveStore`, transitioning the top Navbar and bottom GlobalBottomBar to transparent (`opacity-0 pointer-events-none`) for uninhibited full-screen video viewing. Tapping again smoothly restores the navigation bars.
+  - **Slide-Up Interactive Comment Box Drawer**: Tapping the comment button on the action rail OR tapping any post caption/body opens an interactive slide-up bottom drawer where users can read real-time replies, view user badges/founder crowns, and post new comments/replies directly without leaving the reel stream.
+  - **TikTok/Shorts Actions & Micro-Animations**: Built double-tap liking with blooming heart burst animation, quick stream tabs (`For You`, `Following`, `Clips`), audio stem equalizer visualizer, and single-tap mute toggles on mobile slides.
+  - **Desktop 3-Column Hub Preservation**: Kept the full 3-column gaming hub (Channel Sidebar, High-Density Stream, Community Sidebar) and adaptive desktop theater modal on desktop screens (`hidden md:flex`).
+- **Version Bump**: Bumped release version to `v2.1.559` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.558
 - **Feed Layout Modernization, Global Post Action & Tap-to-Fade Immersive Video**:
   - **Unified Desktop Sidebar & Expanded View Zone**: Merged Game Hubs, stream filters (`All Activity`, `Clips & Reels`, `Hot & Trending`, `Saints MMO`, `FiveM Moments`, `Minecraft Modpacks`, `Community Hangout`), and Messenger (Direct Messages with E2EE & Group Chats) into a single cohesive, high-density left sidebar (`w-72 xl:w-80`). Slashed redundant sidebar clutter and widened the central feed view zone to `max-w-4xl 2xl:max-w-5xl` for an expansive, immersive browsing experience.

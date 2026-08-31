@@ -57,6 +57,7 @@ import Hls from "hls.js";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
+import { useImmersiveStore } from "@/web/hooks/useImmersiveStore";
 
 // Initialize Giphy Fetch
 const gf = new GiphyFetch(process.env.NEXT_PUBLIC_GIPHY_API_KEY || "sXpGFDGZs0Dv1mmz014D8zDvwYkE7a7A");
@@ -229,6 +230,445 @@ function ShortsVideoStage({
       }}
       className={className}
     />
+  );
+}
+
+interface MobileReelSlideProps {
+  post: any;
+  isActive: boolean;
+  isMuted: boolean;
+  onToggleMute: () => void;
+  onLike: () => void;
+  onBookmark: () => void;
+  onShare: () => void;
+  onSubscribe: (authorId: string) => void;
+  onOpenComments: () => void;
+  onRecordView: () => void;
+  feedTab: FeedTabType;
+  onFeedTabChange: (tab: FeedTabType) => void;
+  session: any;
+  renderBody: (text: string) => React.ReactNode;
+}
+
+function MobileReelSlide({
+  post,
+  isActive,
+  isMuted,
+  onToggleMute,
+  onLike,
+  onBookmark,
+  onShare,
+  onSubscribe,
+  onOpenComments,
+  onRecordView,
+  feedTab,
+  onFeedTabChange,
+  session,
+  renderBody,
+}: MobileReelSlideProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [showHeartBurst, setShowHeartBurst] = useState(false);
+  const [captionExpanded, setCaptionExpanded] = useState(false);
+  const [playback, setPlayback] = useState({ current: 0, duration: 0 });
+  const lastTapRef = useRef<number>(0);
+
+  // Record view once when this slide becomes active
+  useEffect(() => {
+    if (isActive) {
+      onRecordView();
+    }
+  }, [isActive, onRecordView]);
+
+  // HLS stream attachment
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !post.mediaUrl || !isVideo(post.mediaUrl)) return;
+
+    const src = post.mediaUrl;
+    const isHls = src.includes(".m3u8");
+
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    if (isHls && Hls.isSupported()) {
+      const hls = new Hls({
+        startLevel: 0,
+        capLevelToPlayerSize: true,
+        autoStartLoad: true,
+        maxBufferLength: 8,
+        maxMaxBufferLength: 16,
+        enableWorker: true,
+        lowLatencyMode: true,
+      });
+      hls.loadSource(src);
+      hls.attachMedia(video);
+      hlsRef.current = hls;
+
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              hls.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              hls.recoverMediaError();
+              break;
+            default:
+              hls.destroy();
+              video.src = formatVideoSrc(src);
+              break;
+          }
+        }
+      });
+    } else if (isHls && video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = src;
+    } else {
+      video.src = formatVideoSrc(src);
+    }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [post.mediaUrl]);
+
+  // Play / pause based on viewport active state
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (isActive && isPlaying) {
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
+  }, [isActive, isPlaying]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.muted = isMuted;
+    }
+  }, [isMuted]);
+
+  // Tap handler: Single tap -> toggleBars() + play/pause; Double tap -> like + heart burst
+  const handleTap = (e: React.MouseEvent | React.TouchEvent) => {
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300;
+
+    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      // Double tap -> Like
+      setShowHeartBurst(true);
+      setTimeout(() => setShowHeartBurst(false), 850);
+      if (!post.hasLiked) {
+        onLike();
+      }
+    } else {
+      // Single tap -> toggle top & bottom bars transparency + video play/pause
+      useImmersiveStore.getState().toggleBars();
+      if (post.mediaUrl && isVideo(post.mediaUrl)) {
+        setIsPlaying(prev => !prev);
+      }
+    }
+    lastTapRef.current = now;
+  };
+
+  const isVid = post.mediaUrl && isVideo(post.mediaUrl);
+  const isArch = post.mediaUrl && isArchive(post.mediaUrl);
+
+  return (
+    <div
+      ref={containerRef}
+      data-post-id={post.id}
+      className="w-full h-[100dvh] relative snap-start snap-always flex items-center justify-center bg-black overflow-hidden select-none"
+    >
+      {/* Ambient Color Glow Backdrop */}
+      {post.mediaUrl && !isArch && (
+        <div
+          className="absolute inset-0 bg-cover bg-center blur-3xl opacity-30 scale-125 pointer-events-none transition-opacity duration-700"
+          style={{ backgroundImage: `url(${post.thumbnailUrl || post.mediaUrl})` }}
+        />
+      )}
+
+      {/* Media Center Stage */}
+      <div
+        className="w-full h-full relative flex items-center justify-center cursor-pointer"
+        onClick={handleTap}
+      >
+        {isVid ? (
+          <video
+            ref={videoRef}
+            poster={post.thumbnailUrl || undefined}
+            playsInline
+            loop
+            muted={isMuted}
+            onTimeUpdate={(e) => {
+              const v = e.currentTarget;
+              if (v.duration) {
+                setPlayback({ current: v.currentTime, duration: v.duration });
+              }
+            }}
+            className="w-full h-full object-contain mx-auto bg-black"
+          />
+        ) : isArch ? (
+          <div className="flex flex-col items-center justify-center p-8 text-center bg-[#050b14]/70 backdrop-blur-xl rounded-2xl border border-white/10 m-4">
+            <FileArchive className="w-16 h-16 text-primary mb-3" />
+            <h3 className="font-bold text-lg text-white mb-1">Archive Attachment</h3>
+            <p className="text-xs text-muted-foreground break-all mb-4">{post.mediaUrl.split('/').pop()}</p>
+            <a
+              href={post.mediaUrl}
+              download
+              className="px-6 py-2.5 bg-primary text-primary-foreground rounded-full font-bold text-sm flex items-center gap-2 shadow-lg"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Download className="w-4 h-4" /> Download File
+            </a>
+          </div>
+        ) : post.mediaUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={post.mediaUrl}
+            alt="Feed item"
+            className="w-full h-full object-contain mx-auto shadow-2xl"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col justify-between p-6 sm:p-8 bg-gradient-to-b from-primary/20 via-background/90 to-black text-white">
+            <div className="flex items-center gap-3 pt-16">
+              <div className="w-12 h-12 rounded-full overflow-hidden relative bg-muted ring-1 ring-white/20">
+                {post.author?.image ? (
+                  <Image src={post.author.image} alt={post.author.username} fill className="object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center font-bold text-lg">
+                    {post.author?.username?.charAt(0).toUpperCase() || "U"}
+                  </div>
+                )}
+              </div>
+              <div>
+                <h4 className="font-bold text-base flex items-center gap-1.5">
+                  @{post.author?.username}
+                  {post.author?.isFounder && <Crown className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />}
+                  {post.author?.isVIP && <BadgeCheck className="w-3.5 h-3.5 text-blue-500 fill-blue-500" />}
+                </h4>
+                <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(post.createdAt))} ago</p>
+              </div>
+            </div>
+
+            <div className="my-auto py-6">
+              <p className="text-xl sm:text-2xl font-medium leading-relaxed drop-shadow-md whitespace-pre-wrap">
+                {post.body}
+              </p>
+            </div>
+
+            <div className="text-xs text-primary/80 font-bold tracking-widest uppercase flex items-center gap-1.5 pb-16">
+              <Sparkles className="w-4 h-4" /> Saints Post Reel
+            </div>
+          </div>
+        )}
+
+        {/* Play/Pause Center Visual Indicator */}
+        {!isPlaying && isVid && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none animate-in fade-in zoom-in duration-150">
+            <div className="p-5 rounded-full bg-black/70 text-white backdrop-blur-md shadow-2xl">
+              <Play className="w-10 h-10 fill-white" />
+            </div>
+          </div>
+        )}
+
+        {/* Blooming Double-Tap Heart Burst */}
+        <AnimatePresence>
+          {showHeartBurst && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-40">
+              <motion.div
+                initial={{ scale: 0.2, opacity: 0, rotate: -15 }}
+                animate={{ scale: [0.2, 1.4, 1.1], opacity: [0, 1, 0], y: -40, rotate: 12 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.85, ease: "easeOut" }}
+              >
+                <Heart className="w-28 h-28 text-red-500 fill-red-500 drop-shadow-[0_0_25px_rgba(239,68,68,0.85)]" />
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Top Stream Tab Switcher & Mute Overlay (Floating under navbar) */}
+        <div
+          className="absolute top-14 left-3 right-3 z-30 flex items-center justify-between pointer-events-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center bg-black/60 border border-white/15 rounded-full p-0.5 backdrop-blur-xl shadow-lg">
+            {(["for-you", "following", "clips"] as FeedTabType[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => onFeedTabChange(tab)}
+                className={`px-3 py-1 rounded-full text-xs font-bold capitalize transition-all ${
+                  feedTab === tab
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-white/70 hover:text-white"
+                }`}
+              >
+                {tab === "for-you" ? "For You" : tab === "following" ? "Following" : "Clips"}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={onToggleMute}
+            className="p-2 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/15 backdrop-blur-xl shadow-lg transition-transform active:scale-95"
+            title={isMuted ? "Unmute" : "Mute"}
+          >
+            {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-green-400" />}
+          </button>
+        </div>
+
+        {/* Bottom Shadow Gradient */}
+        <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-black via-black/60 to-transparent pointer-events-none" />
+
+        {/* Bottom Post Details (Author, Caption, Audio Ticker) */}
+        <div className="absolute bottom-16 left-3 right-16 z-20 text-white pointer-events-auto">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Link
+              href={`/user/${post.author?.username}`}
+              onClick={(e) => e.stopPropagation()}
+              className="font-bold text-sm drop-shadow-md flex items-center gap-1 hover:underline"
+            >
+              @{post.author?.username}
+              {post.author?.isFounder && <Crown className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />}
+              {post.author?.isVIP && <BadgeCheck className="w-3.5 h-3.5 text-blue-500 fill-blue-500" />}
+            </Link>
+            <span className="text-[11px] text-white/70">• {formatDistanceToNow(new Date(post.createdAt))} ago</span>
+          </div>
+
+          {post.body && (
+            <div
+              className="text-xs text-white/90 leading-snug drop-shadow-md mb-2 cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenComments();
+              }}
+            >
+              <p className={captionExpanded ? "" : "line-clamp-2"}>
+                {renderBody(post.body)}
+              </p>
+              {post.body.length > 80 && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCaptionExpanded(!captionExpanded);
+                  }}
+                  className="text-[11px] font-bold text-primary hover:underline mt-0.5"
+                >
+                  {captionExpanded ? "less" : "more"}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Audio Ticker */}
+          <div className="flex items-center gap-2 text-[11px] text-white/90 mt-1 bg-black/40 px-3 py-1 rounded-full w-fit border border-white/10 backdrop-blur-sm">
+            <div className="flex items-end gap-0.5 h-3 px-0.5 shrink-0">
+              <span className="w-0.5 h-full bg-primary rounded-full animate-[pulse_0.6s_ease-in-out_infinite]" />
+              <span className="w-0.5 h-2 bg-primary rounded-full animate-[pulse_0.8s_ease-in-out_infinite_0.2s]" />
+              <span className="w-0.5 h-3 bg-primary rounded-full animate-[pulse_0.5s_ease-in-out_infinite_0.4s]" />
+            </div>
+            <span className="truncate max-w-[170px]">
+              {post.backgroundTrackUrl ? "Background Audio Stem" : `Original Audio - @${post.author?.username}`}
+            </span>
+          </div>
+        </div>
+
+        {/* Right Side Action Rail */}
+        <div
+          className="absolute right-2.5 bottom-16 flex flex-col items-center gap-3.5 z-30 pointer-events-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Creator Avatar with Follow Button */}
+          <div className="relative mb-1">
+            <Link
+              href={`/user/${post.author?.username}`}
+              className="block w-10 h-10 rounded-full overflow-hidden border-2 border-primary bg-muted relative shadow-lg"
+            >
+              {post.author?.image ? (
+                <Image src={post.author.image} alt={post.author.username} fill className="object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center font-bold text-white bg-primary/40 text-xs">
+                  {post.author?.username?.charAt(0).toUpperCase() || "U"}
+                </div>
+              )}
+            </Link>
+            {session?.user?.id !== post.author?.id && (
+              <button
+                onClick={() => onSubscribe(post.author?.id)}
+                className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground rounded-full p-0.5 hover:scale-110 transition-transform shadow-md"
+                title="Follow Creator"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          {/* Like Button */}
+          <button
+            onClick={onLike}
+            className="flex flex-col items-center gap-0.5 text-white active:scale-90 transition-transform"
+          >
+            <div className={`p-2.5 rounded-full backdrop-blur-md shadow-lg transition-colors ${post.hasLiked ? 'bg-red-500/25 text-red-500 border border-red-500/40' : 'bg-black/50 text-white border border-white/10'}`}>
+              <Heart className={`w-5 h-5 ${post.hasLiked ? 'fill-red-500 text-red-500' : ''}`} />
+            </div>
+            <span className="text-[10px] font-bold drop-shadow-md">{post.likesCount || 0}</span>
+          </button>
+
+          {/* Comment / Reply Button (Pulls up Comment Drawer) */}
+          <button
+            onClick={onOpenComments}
+            className="flex flex-col items-center gap-0.5 text-white active:scale-90 transition-transform"
+          >
+            <div className="p-2.5 rounded-full bg-black/50 text-white border border-white/10 backdrop-blur-md shadow-lg">
+              <MessageSquare className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-bold drop-shadow-md">{post.repliesCount || 0}</span>
+          </button>
+
+          {/* Bookmark Button */}
+          <button
+            onClick={onBookmark}
+            className="flex flex-col items-center gap-0.5 text-white active:scale-90 transition-transform"
+          >
+            <div className={`p-2.5 rounded-full backdrop-blur-md shadow-lg transition-colors ${post.hasBookmarked ? 'bg-yellow-500/25 text-yellow-500 border border-yellow-500/40' : 'bg-black/50 text-white border border-white/10'}`}>
+              <Bookmark className={`w-5 h-5 ${post.hasBookmarked ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+            </div>
+            <span className="text-[10px] font-bold drop-shadow-md">Save</span>
+          </button>
+
+          {/* Share Button */}
+          <button
+            onClick={onShare}
+            className="flex flex-col items-center gap-0.5 text-white active:scale-90 transition-transform"
+          >
+            <div className="p-2.5 rounded-full bg-black/50 text-white border border-white/10 backdrop-blur-md shadow-lg">
+              <Share className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-bold drop-shadow-md">{post.shareCount || 0}</span>
+          </button>
+        </div>
+
+        {/* Video Scrubber Line */}
+        {isVid && playback.duration > 0 && (
+          <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20 z-30">
+            <div
+              className="h-full bg-primary transition-all ease-linear"
+              style={{ width: `${Math.max(0, Math.min(100, (playback.current / playback.duration) * 100))}%` }}
+            />
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -1856,30 +2296,153 @@ export function TheFeed({
     }
   };
 
-  // Auto-open full view on mobile devices on initial feed load
+  const mobileFeedRef = useRef<HTMLDivElement | null>(null);
+
+  // Mobile full-screen feed active video intersection observer
   useEffect(() => {
-    if (typeof window === "undefined" || hasAutoOpenedMobileRef.current) return;
-    const isMobile = window.innerWidth < 768;
-    if (isMobile && !viewingShortsPost && displayPosts.length > 0) {
-      hasAutoOpenedMobileRef.current = true;
-      const initial = displayPosts.find((p: any) => p.mediaUrl && isVideo(p.mediaUrl)) || displayPosts[0];
-      if (initial) {
-        setViewingShortsPost(initial);
-        if (initial.id) {
-          handleRecordView(initial.id);
-        }
-      }
-    }
-  }, [displayPosts, viewingShortsPost, handleRecordView]);
+    const container = mobileFeedRef.current;
+    if (!container) return;
+
+    const slides = container.querySelectorAll("[data-post-id]");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const postId = entry.target.getAttribute("data-post-id");
+            if (postId) {
+              setActivePlayingVideoId(postId);
+            }
+          }
+        });
+      },
+      { root: container, threshold: 0.6 }
+    );
+
+    slides.forEach((slide) => observer.observe(slide));
+    return () => observer.disconnect();
+  }, [displayPosts]);
 
   const handleCloseShorts = () => {
-    hasAutoOpenedMobileRef.current = true;
     setViewingShortsPost(null);
     setIsShortsCommentsOpen(false);
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row items-start justify-center gap-4 relative min-h-screen px-2 sm:px-4">
+    <>
+      {/* ── MOBILE NATIVE FULL-SCREEN REEL STREAM (md:hidden) ── */}
+      <div 
+        ref={mobileFeedRef}
+        className="md:hidden w-full h-[100dvh] overflow-y-scroll snap-y snap-mandatory select-none no-scrollbar bg-black relative"
+      >
+        {displayPosts.length === 0 ? (
+          <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center text-white bg-black">
+            <MessageSquare className="w-12 h-12 mb-3 text-primary opacity-40" />
+            <h3 className="font-bold text-base mb-1">No Posts Yet</h3>
+            <p className="text-xs text-muted-foreground max-w-xs">Be the first to share gameplay moments and connect with the Saints community!</p>
+          </div>
+        ) : (
+          displayPosts.map((post) => (
+            <MobileReelSlide
+              key={post.id}
+              post={post}
+              isActive={activePlayingVideoId === post.id}
+              isMuted={isFeedMuted}
+              onToggleMute={() => handleSetFeedMuted(!isFeedMuted)}
+              onLike={() => handleLike(post.id)}
+              onBookmark={() => handleBookmark(post.id)}
+              onShare={() => handleShare(post)}
+              onSubscribe={(authorId) => handleSubscribe(authorId)}
+              onOpenComments={() => {
+                setViewingShortsPost(post);
+                setIsShortsCommentsOpen(true);
+                if (!loadedReplies[post.id]) {
+                  handleLoadReplies(post.id);
+                }
+              }}
+              onRecordView={() => handleRecordView(post.id)}
+              feedTab={feedTab}
+              onFeedTabChange={setFeedTab}
+              session={session}
+              renderBody={renderBody}
+            />
+          ))
+        )}
+      </div>
+
+      {/* ── INTERACTIVE MOBILE SLIDE-UP COMMENT BOX DRAWER ── */}
+      {isShortsCommentsOpen && viewingShortsPost && (
+        <div 
+          className="md:hidden fixed inset-x-0 bottom-0 z-[60] bg-[#050b14]/95 backdrop-blur-2xl border-t border-white/10 rounded-t-3xl h-[72vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-300 select-text"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Drag notch */}
+          <div className="w-12 h-1 bg-white/25 rounded-full mx-auto mt-2.5 mb-1" />
+
+          {/* Drawer Header */}
+          <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between">
+            <h3 className="font-bold text-sm flex items-center gap-2 text-foreground">
+              <MessageSquare className="w-4 h-4 text-primary" />
+              <span>Comments ({viewingShortsPost.repliesCount || 0})</span>
+            </h3>
+            <button 
+              onClick={() => setIsShortsCommentsOpen(false)}
+              className="p-1.5 rounded-full hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Scrollable Comments List */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 shorts-comments-scroll">
+            {loadingReplies[viewingShortsPost.id] ? (
+              <div className="flex justify-center p-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : !loadedReplies[viewingShortsPost.id] || loadedReplies[viewingShortsPost.id].length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground space-y-2">
+                <MessageSquare className="w-10 h-10 mx-auto opacity-20 text-primary" />
+                <p className="text-xs">No comments yet. Be the first to share your thoughts!</p>
+              </div>
+            ) : (
+              loadedReplies[viewingShortsPost.id].map((reply: any) => (
+                <div key={reply.id} className="p-3 bg-white/[0.03] rounded-xl border border-white/[0.06] space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-foreground flex items-center gap-1">
+                      @{reply.author?.username}
+                      {reply.author?.isFounder && <Crown className="w-3 h-3 text-yellow-500 fill-yellow-500" />}
+                      {reply.author?.isVIP && <BadgeCheck className="w-3 h-3 text-blue-500 fill-blue-500" />}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(reply.createdAt))} ago</span>
+                  </div>
+                  <p className="text-xs text-foreground/90 leading-relaxed whitespace-pre-wrap">{renderBody(reply.body)}</p>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Comment Input Box */}
+          <form onSubmit={(e) => handleReply(e, viewingShortsPost.id)} className="p-3 border-t border-white/[0.08] bg-[#050b14]/80 flex items-center gap-2">
+            <Input 
+              placeholder="Add a comment... (max 1000)" 
+              value={replyBody}
+              onChange={(e) => setReplyBody(e.target.value)}
+              maxLength={1000}
+              className="h-10 text-xs rounded-full bg-white/[0.05] border-white/10 text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
+            />
+            <Button 
+              type="submit" 
+              size="sm" 
+              disabled={!replyBody.trim() || isPosting}
+              className="h-10 rounded-full px-4 text-xs font-bold shrink-0 shadow-md bg-primary text-primary-foreground"
+            >
+              {isPosting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </Button>
+          </form>
+        </div>
+      )}
+
+      {/* ── DESKTOP VIEW: 3-Column Hub & Theater Mode Modal (hidden md:flex) ── */}
+      <div className="hidden md:flex w-full max-w-7xl mx-auto flex-col lg:flex-row items-start justify-center gap-4 relative min-h-screen px-2 sm:px-4">
            {/* Full-Screen Immersive Shorts / Reel Swiper Modal with Deterministic Pre-warming & Adaptive Desktop Theater */}
       {mounted && viewingShortsPost && createPortal(
         <div 
@@ -3184,5 +3747,6 @@ export function TheFeed({
       </div>
 
     </div>
+    </>
   );
 }
