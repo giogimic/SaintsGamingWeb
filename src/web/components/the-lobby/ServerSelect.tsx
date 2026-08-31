@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useGameStore } from './store';
 import { useRealtimeStore } from '@/web/hooks/useRealtimeStore';
+import { useVisibilityPolling } from '@/web/hooks/useVisibilityPolling';
 import { Globe, Users, Server, Play, ArrowLeft, Wifi, AlertTriangle, Power } from 'lucide-react';
 import { canUseStudioServerControls } from '@/shared/game/studioPermissions';
 import { soundSynth } from '@/engine/sound-synth';
@@ -74,11 +75,8 @@ export default function ServerSelect() {
     }
   };
 
-  useEffect(() => {
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 4000);
-    return () => clearInterval(interval);
-  }, []);
+  // Visibility-aware polling every 15s (automatically paused when tab is hidden)
+  useVisibilityPolling(fetchStatus, 15_000);
 
   // Prefer live coarse bus count when available
   useEffect(() => {

@@ -5,12 +5,18 @@
 
 import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
-import { emitNotificationCreated } from "@/web/lib/realtime-emit";
+import { emitNotificationCreated, emitSocialPostReacted } from "@/web/lib/realtime-emit";
 import { checkAndAwardAchievements } from "@/web/lib/achievements";
+import { rateLimit } from "@/web/lib/rate-limit";
 
-export async function togglePostReaction(postId: string) {
+export async function togglePostReaction(postId: string): Promise<{ liked: boolean; likesCount: number }> {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const limitCheck = rateLimit(`user:${session.user.id}:react`, 60, 60_000);
+  if (!limitCheck.allowed) {
+    throw new Error("Slow down on reactions!");
+  }
 
   const existing = await prisma.socialReaction.findUnique({
     where: {
@@ -21,9 +27,10 @@ export async function togglePostReaction(postId: string) {
     }
   });
 
+  let liked = false;
   if (existing) {
     await prisma.socialReaction.delete({ where: { id: existing.id } });
-    return false; // unliked
+    liked = false;
   } else {
     await prisma.socialReaction.create({
       data: {
@@ -31,6 +38,7 @@ export async function togglePostReaction(postId: string) {
         userId: session.user.id
       }
     });
+    liked = true;
 
     // Notify author if it's not a self-like
     const post = await prisma.socialPost.findUnique({ where: { id: postId }, select: { authorId: true } });
@@ -45,14 +53,22 @@ export async function togglePostReaction(postId: string) {
       });
       await emitNotificationCreated(notification);
     }
-
-    return true; // liked
   }
+
+  const likesCount = await prisma.socialReaction.count({ where: { postId } });
+  await emitSocialPostReacted(postId, likesCount);
+
+  return { liked, likesCount };
 }
 
-export async function toggleBookmark(postId: string) {
+export async function toggleBookmark(postId: string): Promise<{ bookmarked: boolean }> {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const limitCheck = rateLimit(`user:${session.user.id}:bookmark`, 60, 60_000);
+  if (!limitCheck.allowed) {
+    throw new Error("Slow down on bookmarks!");
+  }
 
   const existing = await prisma.socialBookmark.findUnique({
     where: { postId_userId: { postId, userId: session.user.id } }
@@ -60,12 +76,12 @@ export async function toggleBookmark(postId: string) {
 
   if (existing) {
     await prisma.socialBookmark.delete({ where: { id: existing.id } });
-    return false; // removed
+    return { bookmarked: false };
   } else {
     await prisma.socialBookmark.create({
       data: { postId, userId: session.user.id }
     });
-    return true; // added
+    return { bookmarked: true };
   }
 }
 
@@ -90,6 +106,11 @@ export async function incrementViewCount(postId: string) {
 export async function tipSocialPost(postId: string, amount: number, message?: string) {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+
+  const limitCheck = rateLimit(`user:${session.user.id}:tip`, 10, 60_000);
+  if (!limitCheck.allowed) {
+    return { success: false, error: `Tipping rate limit exceeded. Please wait ${limitCheck.retryAfterSec}s.` };
+  }
 
   const post = await prisma.socialPost.findUnique({
     where: { id: postId },

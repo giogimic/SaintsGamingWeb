@@ -83,6 +83,12 @@ interface RealtimeState {
   setLastFivemCharacterUpdate: (signal: { characterId: string; userId: string; receivedAt: number } | null) => void;
   setLastFivemBankUpdate: (signal: { characterId: string; userId: string; bank: number; receivedAt: number } | null) => void;
 
+  // ─── Social Realtime Signals ─────────────────────────────────────
+  lastSocialReaction: { postId: string; likesCount: number; timestamp: number } | null;
+  setLastSocialReaction: (signal: { postId: string; likesCount: number; timestamp: number } | null) => void;
+  lastSocialReply: { postId: string; reply: any; timestamp: number } | null;
+  setLastSocialReply: (signal: { postId: string; reply: any; timestamp: number } | null) => void;
+
   // ─── Event Deduplication ────────────────────────────────────────
   processedEventIds: Set<string>;
   addProcessedEventId: (id: string) => void;
@@ -193,6 +199,12 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
   lastFivemBankUpdate: null,
   setLastFivemCharacterUpdate: (signal) => set({ lastFivemCharacterUpdate: signal }),
   setLastFivemBankUpdate: (signal) => set({ lastFivemBankUpdate: signal }),
+
+  // ─── Social Realtime Signals ─────────────────────────────────────
+  lastSocialReaction: null,
+  setLastSocialReaction: (signal) => set({ lastSocialReaction: signal }),
+  lastSocialReply: null,
+  setLastSocialReply: (signal) => set({ lastSocialReply: signal }),
 
   // ─── Event Deduplication ──────────────────────────────────────────
   processedEventIds: new Set<string>(),

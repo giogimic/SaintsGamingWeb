@@ -58,6 +58,8 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { useImmersiveStore } from "@/web/hooks/useImmersiveStore";
+import { useSocialFeedStore } from "@/web/hooks/useSocialFeedStore";
+import { useRealtimeStore } from "@/web/hooks/useRealtimeStore";
 
 // Initialize Giphy Fetch
 const gf = new GiphyFetch(process.env.NEXT_PUBLIC_GIPHY_API_KEY || "sXpGFDGZs0Dv1mmz014D8zDvwYkE7a7A");
@@ -887,28 +889,53 @@ export function TheFeed({
     loadPrefs();
   }, []);
 
+  const cacheKey = `${feedTab}:${filter || "all"}:${broadenFeed ? "broad" : "default"}`;
+
   const loadFeed = useCallback(async (isLoadMore = false) => {
     if (isLoadMore) {
       setIsFetchingMore(true);
     } else {
-      setLoading(true);
-      setHasMore(true);
+      // SWR: Check in-memory store for instant 0ms render
+      const cached = useSocialFeedStore.getState().getFeedCache(cacheKey);
+      if (cached && cached.posts.length > 0) {
+        setPosts(cached.posts);
+        setHasMore(cached.hasMore);
+        setLoading(false);
+        // If cache was refreshed within the last 45s, skip network reload
+        if (Date.now() - cached.lastFetchedAt < 45_000) {
+          return;
+        }
+      } else {
+        setLoading(true);
+        setHasMore(true);
+      }
     }
 
     try {
       setPosts(currentPosts => {
         const cursor = isLoadMore && currentPosts.length > 0 ? currentPosts[currentPosts.length - 1].id : undefined;
         getTheFeed(filter || undefined, broadenFeed, cursor).then(feed => {
-          if (feed.length < 35) {
-            setHasMore(false);
-          } else {
-            setHasMore(true);
-          }
+          const moreAvailable = feed.length >= 35;
+          setHasMore(moreAvailable);
           setPosts(prev => {
-            if (!isLoadMore) return feed;
+            if (!isLoadMore) {
+              useSocialFeedStore.getState().setFeedCache(cacheKey, {
+                posts: feed,
+                cursor: feed.length > 0 ? feed[feed.length - 1].id : undefined,
+                hasMore: moreAvailable,
+              });
+              return feed;
+            }
             const existingIds = new Set(prev.map(p => p.id));
             const newPosts = feed.filter((p: any) => !existingIds.has(p.id));
-            return [...prev, ...newPosts];
+            const combined = [...prev, ...newPosts];
+            useSocialFeedStore.getState().appendFeedPosts(
+              cacheKey,
+              newPosts,
+              combined.length > 0 ? combined[combined.length - 1].id : undefined,
+              moreAvailable
+            );
+            return combined;
           });
         }).catch(err => {
           console.error(err);
@@ -919,13 +946,16 @@ export function TheFeed({
         return currentPosts;
       });
 
-      getTrendingTags().then(tags => setTrending(tags)).catch(() => {});
+      getTrendingTags().then(tags => {
+        setTrending(tags);
+        useSocialFeedStore.getState().setTrendingTags(tags);
+      }).catch(() => {});
     } catch (e) {
       console.error(e);
       setLoading(false);
       setIsFetchingMore(false);
     }
-  }, [broadenFeed, filter]);
+  }, [broadenFeed, filter, cacheKey]);
 
   useEffect(() => {
     setSearchResults(null);
@@ -950,6 +980,42 @@ export function TheFeed({
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [hasMore, loading, isFetchingMore, searchResults, loadFeed]);
+
+  // === Realtime Socket.io Sync for Likes and Replies ===
+  const lastSocialReaction = useRealtimeStore((s) => s.lastSocialReaction);
+  const lastSocialReply = useRealtimeStore((s) => s.lastSocialReply);
+
+  useEffect(() => {
+    if (!lastSocialReaction) return;
+    const { postId, likesCount } = lastSocialReaction;
+    setPosts(prev => prev.map(p => p.id === postId ? { ...p, likesCount } : p));
+    if (searchResults) setSearchResults(prev => prev ? prev.map(p => p.id === postId ? { ...p, likesCount } : p) : null);
+    if (viewingShortsPost && viewingShortsPost.id === postId) {
+      setViewingShortsPost((prev: any) => prev ? { ...prev, likesCount } : null);
+    }
+    useSocialFeedStore.getState().patchPostLikes(postId, likesCount);
+  }, [lastSocialReaction]);
+
+  useEffect(() => {
+    if (!lastSocialReply) return;
+    const { postId, reply } = lastSocialReply;
+    if (reply.author?.id !== session?.user?.id) {
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, repliesCount: (p.repliesCount || 0) + 1 } : p));
+      if (searchResults) setSearchResults(prev => prev ? prev.map(p => p.id === postId ? { ...p, repliesCount: (p.repliesCount || 0) + 1 } : p) : null);
+      if (viewingShortsPost && viewingShortsPost.id === postId) {
+        setViewingShortsPost((prev: any) => prev ? { ...prev, repliesCount: (prev.repliesCount || 0) + 1 } : null);
+      }
+      setLoadedReplies(prev => {
+        if (!prev[postId]) return prev;
+        if (prev[postId].some((r: any) => r.id === reply.id)) return prev;
+        return {
+          ...prev,
+          [postId]: [...prev[postId], reply]
+        };
+      });
+      useSocialFeedStore.getState().appendReply(postId, reply);
+    }
+  }, [lastSocialReply, session?.user?.id]);
 
   // === Broaden Toggle ===
   async function handleBroadenToggle() {
@@ -1042,6 +1108,7 @@ export function TheFeed({
       await deleteSocialPost(postId);
       toast.success("Post deleted");
       setPosts(prev => prev.filter(p => p.id !== postId));
+      useSocialFeedStore.getState().removePost(postId);
       setActivePostMenu(null);
     } catch (e: any) {
       toast.error(e.message || "Failed to delete post");
@@ -1049,12 +1116,27 @@ export function TheFeed({
   }
 
   async function handlePinToggle(postId: string, currentPinStatus: boolean) {
+    const nextStatus = !currentPinStatus;
+    const patchPin = (list: any[]) => {
+      const updated = list.map(p => p.id === postId ? { ...p, isPinned: nextStatus } : p);
+      return updated.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
+    };
+    setPosts(prev => patchPin(prev));
+    if (searchResults) setSearchResults(prev => prev ? patchPin(prev) : null);
+    useSocialFeedStore.getState().patchPost(postId, { isPinned: nextStatus });
+    setActivePostMenu(null);
+
     try {
-      await pinSocialPost(postId, !currentPinStatus);
+      await pinSocialPost(postId, nextStatus);
       toast.success(currentPinStatus ? "Post unpinned" : "Post pinned to top");
-      setActivePostMenu(null);
-      loadFeed();
     } catch (e: any) {
+      const revertPin = (list: any[]) => {
+        const updated = list.map(p => p.id === postId ? { ...p, isPinned: currentPinStatus } : p);
+        return updated.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
+      };
+      setPosts(prev => revertPin(prev));
+      if (searchResults) setSearchResults(prev => prev ? revertPin(prev) : null);
+      useSocialFeedStore.getState().patchPost(postId, { isPinned: currentPinStatus });
       toast.error(e.message || "Failed to pin/unpin post");
     }
   }
@@ -1064,6 +1146,7 @@ export function TheFeed({
     try {
       await updateSocialPost(postId, editBody);
       setPosts(prev => prev.map(p => p.id === postId ? { ...p, body: editBody } : p));
+      useSocialFeedStore.getState().patchPost(postId, { body: editBody });
       setEditingPostId(null);
       toast.success("Post updated");
     } catch (e) {
@@ -1086,21 +1169,61 @@ export function TheFeed({
   }
 
   async function handleVote(pollId: string, optionId: string) {
+    // Optimistic vote update
+    const updatePollOptions = (postList: any[]) => postList.map(p => {
+      if (!p.polls || !p.polls.length) return p;
+      return {
+        ...p,
+        polls: p.polls.map((pl: any) => {
+          if (pl.id !== pollId) return pl;
+          return {
+            ...pl,
+            options: pl.options.map((opt: any) => {
+              const wasSelected = opt.votes && opt.votes.length > 0;
+              const isSelected = opt.id === optionId;
+              let currentCount = opt._count?.votes ?? opt.votesCount ?? 0;
+              if (wasSelected && !isSelected) currentCount = Math.max(0, currentCount - 1);
+              if (!wasSelected && isSelected) currentCount = currentCount + 1;
+              return {
+                ...opt,
+                _count: { votes: currentCount },
+                votes: isSelected ? [{ id: "temp", userId: session?.user?.id }] : []
+              };
+            })
+          };
+        })
+      };
+    });
+
+    setPosts(prev => updatePollOptions(prev));
+    if (searchResults) setSearchResults(prev => prev ? updatePollOptions(prev) : null);
+
     try {
-      await votePoll(pollId, optionId);
-      loadFeed();
+      const res = await votePoll(pollId, optionId);
+      if (res && res.poll) {
+        const reconcile = (postList: any[]) => postList.map(p => {
+          if (!p.polls || !p.polls.length) return p;
+          return {
+            ...p,
+            polls: p.polls.map((pl: any) => pl.id === pollId ? res.poll : pl)
+          };
+        });
+        setPosts(prev => reconcile(prev));
+        if (searchResults) setSearchResults(prev => prev ? reconcile(prev) : null);
+        useSocialFeedStore.getState().patchPoll(pollId, res.poll);
+      }
     } catch (e: any) {
       toast.error(e.message || "Failed to vote");
     }
   }
 
   async function handleSubscribe(creatorId: string) {
+    setSuggestedCreators(prev => prev.map(c => c.id === creatorId ? { ...c, isSubscribed: true, subscribersCount: (c.subscribersCount || 0) + 1 } : c));
     try {
       await subscribeToCreator(creatorId);
       toast.success("Subscribed successfully!");
-      setSuggestedCreators(prev => prev.map(c => c.id === creatorId ? { ...c, isSubscribed: true, subscribersCount: (c.subscribersCount || 0) + 1 } : c));
-      loadFeed();
     } catch (e: any) {
+      setSuggestedCreators(prev => prev.map(c => c.id === creatorId ? { ...c, isSubscribed: false, subscribersCount: Math.max(0, (c.subscribersCount || 1) - 1) } : c));
       toast.error(e.message || "Failed to subscribe");
     }
   }
@@ -1119,7 +1242,7 @@ export function TheFeed({
         ? { question: pollQuestion, options: validPollOptions } 
         : undefined;
 
-      await createSocialPost(body, mediaUrl || undefined, {
+      const newPost = await createSocialPost(body, mediaUrl || undefined, {
         thumbnailUrl: thumbnailUrl || undefined,
         isSubscriberOnly,
         voiceoverUrl: voiceoverUrl || undefined,
@@ -1144,7 +1267,12 @@ export function TheFeed({
       setShowPollForm(false);
       setPollQuestion("");
       setPollOptions(["", ""]);
-      loadFeed(false);
+
+      // Prepend to local feed and global cache immediately without calling loadFeed()
+      if (newPost) {
+        setPosts(prev => [newPost, ...prev]);
+        useSocialFeedStore.getState().prependPost(newPost);
+      }
     } catch (e: any) {
       console.error(e);
       toast.error(e.message || "Failed to create post");
@@ -1208,9 +1336,16 @@ export function TheFeed({
     setIsPosting(true);
 
     try {
-      await replyToSocialPost(parentPostId, currentReplyText, currentReplyMedia);
+      const realReply = await replyToSocialPost(parentPostId, currentReplyText, currentReplyMedia);
       toast.success("Reply posted!");
-      await handleLoadReplies(parentPostId);
+      // Reconcile optimistic reply with authoritative record without refetching
+      if (realReply) {
+        setLoadedReplies(prev => ({
+          ...prev,
+          [parentPostId]: (prev[parentPostId] || []).map(r => r.id === tempReplyId ? realReply : r)
+        }));
+        useSocialFeedStore.getState().appendReply(parentPostId, realReply);
+      }
     } catch (e: any) {
       console.error(e);
       // Roll back on failure
@@ -1461,7 +1596,23 @@ export function TheFeed({
     }
     
     try {
-      await togglePostReaction(postId);
+      const result = await togglePostReaction(postId);
+      // Reconcile with authoritative server state
+      const reconcile = (list: any[]) => list.map(p =>
+        p.id === postId ? { ...p, hasLiked: result.liked, likesCount: result.likesCount } : p
+      );
+      if (isReply && parentId) {
+        setLoadedReplies(prev => ({
+          ...prev,
+          [parentId]: reconcile(prev[parentId] || [])
+        }));
+      } else {
+        setPosts(prev => reconcile(prev));
+        if (searchResults) setSearchResults(prev => prev ? reconcile(prev) : null);
+        if (viewingShortsPost && viewingShortsPost.id === postId) {
+          setViewingShortsPost((prev: any) => prev ? { ...prev, hasLiked: result.liked, likesCount: result.likesCount } : null);
+        }
+      }
     } catch (err: any) {
       // Roll back on failure
       if (isReply && parentId) {
@@ -1476,6 +1627,8 @@ export function TheFeed({
   }
 
   async function handleBookmark(postId: string) {
+    const prevPosts = posts;
+    const prevSearchResults = searchResults;
     setPosts(prev => prev.map(p => {
       if (p.id === postId) return { ...p, hasBookmarked: !p.hasBookmarked };
       return p;
@@ -1487,10 +1640,19 @@ export function TheFeed({
       }) : null);
     }
     try {
-      await toggleBookmark(postId);
-      toast.success("Bookmark updated");
+      const result = await toggleBookmark(postId);
+      // Reconcile with authoritative state
+      const reconcile = (list: any[]) => list.map(p =>
+        p.id === postId ? { ...p, hasBookmarked: result.bookmarked } : p
+      );
+      setPosts(prev => reconcile(prev));
+      if (searchResults) setSearchResults(prev => prev ? reconcile(prev) : null);
+      toast.success(result.bookmarked ? "Bookmarked" : "Bookmark removed");
     } catch (e) {
-      console.error(e);
+      // Roll back on failure
+      setPosts(prevPosts);
+      if (prevSearchResults) setSearchResults(prevSearchResults);
+      toast.error("Failed to update bookmark");
     }
   }
 
@@ -1521,7 +1683,11 @@ export function TheFeed({
     }
   }
 
+  const recordedViewsRef = useRef<Set<string>>(new Set());
+
   const handleRecordView = useCallback(async (postId: string) => {
+    if (!postId || recordedViewsRef.current.has(postId)) return;
+    recordedViewsRef.current.add(postId);
     try {
       await recordWatchHistory(postId);
     } catch (e) {

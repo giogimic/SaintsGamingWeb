@@ -126,3 +126,34 @@ export async function emitPresenceUpdated(
     // Non-fatal
   }
 }
+
+/** Broadcast social post like/reaction count updates to all connected viewers */
+export async function emitSocialPostReacted(postId: string, likesCount: number): Promise<void> {
+  try {
+    const realtime = await getRealtime();
+    if (!realtime) return;
+    await realtime.emitGlobal("social.post.reacted", {
+      postId,
+      likesCount,
+      timestamp: Date.now(),
+    });
+  } catch {
+    // Non-fatal
+  }
+}
+
+/** Broadcast social post reply additions to all connected viewers */
+export async function emitSocialReplyCreated(postId: string, reply: any): Promise<void> {
+  try {
+    const realtime = await getRealtime();
+    if (!realtime) return;
+    await realtime.emitGlobal("social.reply.created", {
+      postId,
+      reply,
+      timestamp: Date.now(),
+    });
+  } catch {
+    // Non-fatal
+  }
+}
+

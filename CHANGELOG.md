@@ -1,3 +1,22 @@
+# 2.1.575
+- **Responsive-First Social Data Architecture**:
+  - **Zero-Refetch Mutation Lifecycle**: Converted social feed mutations (`createSocialPost`, `votePoll`, `pinSocialPost`, `subscribeToCreator`, `replyToSocialPost`) to direct state reconciliation. Creating posts, casting poll votes, or pinning threads updates client state immediately without triggering redundant `loadFeed()` database reloads.
+  - **Authoritative Server Action Returns**: `togglePostReaction` now returns `{ liked, likesCount }`, `toggleBookmark` returns `{ bookmarked }`, and `votePoll` returns the refreshed poll options payload for accurate reconciliation.
+  - **Client-Side SWR In-Memory Feed Store (`src/web/hooks/useSocialFeedStore.ts`)**: Built a global Zustand memory cache for the social feed, tabs, and filters. Navigating between pages and tabs renders feeds in **0ms** from memory with background stale-while-revalidate revalidation.
+  - **Real-Time Social Synchronization**: Wired Socket.io broadcasts (`social.post.reacted`, `social.reply.created`) through `RealtimeService` and `useRealtimeStore` so active viewers see live like count changes and incoming replies without reloading the page.
+- **Version Bump**: Bumped release version to `v2.1.575` across all application layouts, headers, footers, settings, and documentation.
+
+# 2.1.574
+- **Traffic, Request Control & Call Deduplication Architecture**:
+  - **In-Flight Request Coalescing (`src/shared/lib/coalesce.ts`)**: Built generic in-flight request sharing with micro-caching. Concurrent server status requests (`/api/servers/status`, `/api/fivem/status`) now execute only 1 underlying UDP/HTTP probe and share the resolved promise across all simultaneous callers.
+  - **Server-Side Rate Limiting (`src/web/lib/rate-limit.ts`)**: Upgraded rate limiting engine with sliding-window accounting, User-ID and IP bucket support, automated pruning, standard HTTP 429 response headers (`Retry-After`, `X-RateLimit-*`), and Redis-ready multi-instance fallback.
+  - **Socket.io Realtime-Driven Messenger**: Migrated `inbox-client.tsx`, `chat-window.tsx`, and `friends-list.tsx` from aggressive 3s/5s polling loops to real-time `useRealtimeStore` message signals (`chat.message.created`), backed by relaxed visibility-aware background polling.
+  - **Visibility-Aware Polling Hook (`src/web/hooks/useVisibilityPolling.ts`)**: Polling intervals across messenger, friends, and lobby server selectors automatically pause when the browser tab is hidden (`document.hidden`) and resume with an instant refresh on tab restore.
+  - **AbortController In-Flight Cancellation (`global-search.tsx`)**: Wired `AbortController` into global search to abort obsolete in-flight `/api/search` requests immediately when typing new characters or closing the modal.
+  - **Social Feed View Throttling & Deduplication**: Added client and server-side view tracking deduplication (`handleRecordView` & `recordWatchHistory`) to prevent database transaction storms during rapid feed scrolling.
+  - **Studio Search Debouncing**: Debounced search and filter inputs in `MapListPanel.tsx` and `GateConnectModal.tsx` (`useDebounce`) to eliminate UI churn when indexing large world maps.
+- **Version Bump**: Bumped release version to `v2.1.574` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.573
 - **Search Bar UI Cleanup**:
   - **Removed K Badge**: Removed the `⌘K` keyboard shortcut pill from the navbar search bar for a cleaner, sleeker search input.
