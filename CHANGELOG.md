@@ -1,3 +1,12 @@
+# 2.1.564
+- **Mobile Elevated Bottom Bar Logo Button & Global Post Composer (Desktop Window + Mobile Slide-Up Drawer)**:
+  - **Elevated Mobile Logo Action Button**: Enlarged the 3D Saints logo on the mobile bottom bar into a prominent elevated halo circular action button (`-translate-y-3.5`) that sticks out of the bar with a gold glowing halo border (`border-2 border-primary shadow-[0_0_20px_rgba(203,178,106,0.55)]`), serving as the primary Post creation trigger.
+  - **Removed Redundant Post Button**: Removed the standalone text "Post" button from the bottom navigation bar to streamline mobile and desktop space while unifying the logo action.
+  - **Desktop OS Window-Style Post Composer**: Built `GlobalPostComposer` (`src/web/components/feed/global-post-composer.tsx`) in the exact UCP / Admin OS window architecture featuring a draggable metallic header bar, double-click collapse, floating dock capsule minimization, full-screen maximize/restore, media upload dropzone, hashtag quick chips, and audience permissions.
+  - **Mobile Slide-Up Post Composer Drawer**: Automatically presents a native bottom slide-up drawer with touch drag pill handle, responsive media selector, caption textarea, hashtag suggestions, and one-tap publishing on mobile devices.
+  - **Universal Mounting**: Mounted `GlobalPostComposer` across all application routes in `MainLayoutShell` (`src/shared/components/main-layout-shell.tsx`).
+- **Version Bump**: Bumped release version to `v2.1.564` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.563
 - **Mobile Navbar Refinement & Window-Style User Settings & Profile Shell**:
   - **Mobile Navbar Optimization**: Refined `Navbar` (`src/shared/components/navbar.tsx`) on mobile viewports to conceal the brand 3D logo (`hidden sm:block`), giving prominent focus to "Saints Gaming" branding and clean navigation without screen clutter.

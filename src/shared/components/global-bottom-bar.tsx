@@ -16,6 +16,7 @@ const StudioBottomToolbar = dynamic(
   { ssr: false }
 );
 import { useImmersiveStore } from "@/web/hooks/useImmersiveStore";
+import { usePostComposerStore } from "@/web/hooks/usePostComposerStore";
 import {
   Activity,
   Terminal,
@@ -77,7 +78,7 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "v2.1.563",
+  siteVersion = "v2.1.564",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;
@@ -243,14 +244,11 @@ export function GlobalBottomBar({
 
   const isBarsHidden = useImmersiveStore((s) => s.isBarsHidden);
 
+  const openComposer = usePostComposerStore((s) => s.openComposer);
+
   const handleGlobalPost = () => {
-    if (typeof window === "undefined") return;
-    if (pathname?.startsWith("/profile/inbox") || pathname?.startsWith("/feed")) {
-      window.dispatchEvent(new CustomEvent("saints-open-post-composer"));
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } else {
-      window.location.href = "/profile/inbox?post=1";
-    }
+    soundSynth?.playSelectSound?.();
+    openComposer();
   };
 
   // If fullscreen in game mode, suppress bottom bar to allow pure immersive gameplay
@@ -331,7 +329,7 @@ export function GlobalBottomBar({
             )}
           </div>
 
-          {/* CENTER SECTION: Links + Logo + Post Button */}
+          {/* CENTER SECTION: Links + Enlarged Elevated Logo Post Button */}
           <div className="flex items-center justify-center gap-1 sm:gap-2 flex-shrink-0">
             {/* Left Group (Play, Feed, Streams, Forums) */}
             <div className="flex items-center gap-0.5 sm:gap-1">
@@ -356,28 +354,29 @@ export function GlobalBottomBar({
               })}
             </div>
 
-            {/* Global Post Button */}
-            <ActionTooltip label="Create Post / Upload Clip">
-              <button
-                type="button"
-                onClick={handleGlobalPost}
-                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-0.5 rounded-full bg-primary text-primary-foreground font-bold text-[11px] hover:opacity-90 active:scale-95 shadow-[0_0_12px_rgba(203,178,106,0.3)] transition-all cursor-pointer shrink-0"
-              >
-                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span>Post</span>
-              </button>
-            </ActionTooltip>
+            {/* Logo as Primary Post Action Button (Elevated Sticking-Out on Mobile) */}
+            <div className="mx-1 sm:mx-1.5 flex items-center justify-center relative">
+              <ActionTooltip label="Create Post / Share Clip">
+                <button
+                  type="button"
+                  onClick={handleGlobalPost}
+                  className="group relative flex items-center justify-center cursor-pointer transition-all duration-200 -translate-y-3 sm:translate-y-0"
+                  title="Create Post / Share Clip"
+                >
+                  {/* Mobile Elevated Halo Frame */}
+                  <div className="sm:hidden flex items-center justify-center w-12 h-12 rounded-full bg-[#050b14] border-2 border-primary shadow-[0_0_20px_rgba(203,178,106,0.55)] ring-2 ring-primary/30 p-1 group-active:scale-90 group-hover:scale-105 transition-all">
+                    <SGMicro3DLogo size={36} />
+                  </div>
 
-            {/* Logo and Saints Brand Name */}
-            <div className="mx-1 flex items-center justify-center gap-1.5">
-              <div className="hover:scale-110 transition-transform cursor-pointer" title="Saints">
-                <Link href="/home" className="flex items-center gap-1.5">
-                  <SGMicro3DLogo size={28} />
-                  <span className="hidden xl:inline-block font-black text-foreground text-xs sm:text-[13px] tracking-wide">
-                    Saints
-                  </span>
-                </Link>
-              </div>
+                  {/* Desktop Inline Logo Frame */}
+                  <div className="hidden sm:flex items-center gap-1.5 hover:scale-110 transition-transform">
+                    <SGMicro3DLogo size={28} />
+                    <span className="hidden xl:inline-block font-black text-foreground text-xs sm:text-[13px] tracking-wide">
+                      Saints
+                    </span>
+                  </div>
+                </button>
+              </ActionTooltip>
             </div>
 
             {/* Right Group (Nexus, Wiki, Support) */}
