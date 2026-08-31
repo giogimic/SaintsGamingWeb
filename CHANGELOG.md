@@ -1,3 +1,34 @@
+# 2.1.562
+- **Lobby Character Selection Redesign, Interactive Chat & In-Screen World Access**:
+  - **Click-to-Select Saint Roster**: Upgraded `CharacterSelector` (`src/web/components/the-lobby/character-selector.tsx`) to allow users to click any character card to select it with active highlight styling (`ring-2 ring-primary/50 shadow-primary/35`), active status indicator badge, and preview information without prematurely entering the game world.
+  - **In-Screen "ENTER WORLD" Access**: Placed a prominent, glowing `ENTER WORLD` action button directly beneath the active selected character to initiate world entry when ready.
+  - **Integrated Real-Time Lobby Chat Box**: Enhanced the right-hand panel with a default, live Lobby Chat Box featuring real-time socket messaging, timestamps, sender tags, auto-scrolling message history, and an interactive input composer.
+  - **Direct Options & Credits Controls**: Added dedicated `Options` (opening `GameOptionsMenu`) and `Credits` (opening `CreditsModal`) buttons directly into the Character Selection header bar alongside live server presence indicators.
+  - **Instant Character Select Entry on `/lobby`**: Configured authenticated visits to `/lobby` to transition directly to the unified `CharacterSelector` gateway view.
+- **Version Bump**: Bumped release version to `v2.1.562` across all application layouts, headers, footers, settings, and documentation.
+
+# 2.1.561
+- **Universal Encompassed Navigation & Full-Bleed Lobby MMO Integration**:
+  - **Encompassed Full-Bleed Shell for `/lobby`**: Updated `MainLayoutShell` to render `/lobby` within a seamless full-screen viewport (`fixed inset-0 w-screen h-screen overflow-hidden`) with the persistent top Navbar and bottom GlobalBottomBar elevated to `z-[250]`, ensuring they consistently encompass the 2.5D game canvas and overlays.
+  - **Auto-Restored Navigation Visibility**: Added an automatic visibility restore hook on route changes so navigation bars are always displayed and active across `/lobby` and all site destinations.
+  - **Cohesive HUD Dock Anchor Offsets**: Adjusted in-game HUD dock anchors (`DOCK_ZONE_DEFINITIONS` in `src/web/components/the-lobby/hud/dock-types.ts`) to `top-14 sm:top-12` and `bottom-14 sm:bottom-10`, cleanly framing the Minimap radar, Player Vitals orb, Target unit frames, Hotbar, and Chat within the encompassed viewport.
+  - **Framed Game Gateways & Overlays**: Added top/bottom padding and normalized z-indexes across `GameTitleScreen`, `ServerSelect`, `MobileGameLauncher`, `CharacterSelector`, `CharacterCreator`, `GameOfflineScreen`, and `GameLogin` to avoid clipping against top and bottom bars.
+- **Version Bump**: Bumped release version to `v2.1.561` across all application layouts, headers, footers, settings, and documentation.
+
+# 2.1.560
+- **Modular Update Profiles & Smart Change Detection Engine**:
+  - **Smart Git Change Analysis (`auto` mode)**: The updater (`scripts/update.sh` & `scripts/update.bat`) now automatically inspects `git diff HEAD origin/main` to detect if dependencies (`package.json`), database schemas (`prisma/`), web application code (`src/`, `app/`, `server.ts`), or game assets (`data/`, `the-lobby/`) actually changed. Skips redundant `npm install`, `prisma db push`, and full container rebuilds when not required.
+  - **Modular CLI Update Profiles**: Added `--type=<profile>` and convenient shorthand flags:
+    - `--type=quick` (`-q`): Pulls latest Git code and performs a rapid hot-restart (~5 seconds, skips full image/bundle rebuild).
+    - `--type=app` (`-a`): Pulls code, updates dependencies, and rebuilds the Next.js application bundle.
+    - `--type=db` (`-d`): Pulls code, executes Prisma schema migrations, and syncs game assets.
+    - `--type=full` (`-f`): Complete clean rebuild with disk cache pruning, database backup, Prisma migration, and full Docker rebuild.
+    - `--type=restart` (`-r`): Restarts platform services without pulling from Git.
+  - **Interactive Terminal Menu**: When run interactively without arguments, displays a clean selector to choose the desired update profile.
+  - **Root Shortcuts**: Added executable `./update.sh` and `update.bat` in the repository root for immediate access.
+  - **Admin Panel UI & API Integration**: Added an Update Profile selector card grid to the Admin System Maintenance view (`src/web/components/admin/system-updater.tsx`) with real-time profile selection passed to the backend update API (`app/api/admin/system/update/route.ts`).
+- **Version Bump**: Bumped release version to `v2.1.560` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.559
 - **Mobile Native Full-Screen Reel Stream, Tap-to-Transparent Navigation & Slide-Up Comment Drawer**:
   - **Native Mobile Full-Screen Reel Stream**: Removed the auto full-screen popup portal on mobile initial load. The mobile view (`md:hidden`) now renders directly as a native, edge-to-edge vertical snap-scrolling reel stream (`100dvh` per post) positioned directly behind the translucent `Navbar` and `GlobalBottomBar`.

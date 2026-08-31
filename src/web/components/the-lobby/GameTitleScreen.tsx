@@ -482,7 +482,7 @@ export default function GameTitleScreen({
 
   return (
     <div
-      className="pointer-events-auto absolute inset-0 z-[200] flex flex-col justify-center items-center overflow-x-hidden overflow-y-auto select-none font-sans"
+      className="pointer-events-auto absolute inset-0 z-20 flex flex-col justify-center items-center overflow-x-hidden overflow-y-auto select-none font-sans pt-14 pb-12 sm:pt-12 sm:pb-10"
       style={{ backgroundColor: THEME.bg, color: THEME.textColor }}
     >
       {/* Dynamic Horizon Background */}

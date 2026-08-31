@@ -563,6 +563,8 @@ export default function TheLobby({
           // Pass ?characterId= to load a real character for Playtest instead.
           void enterStudioAuthorSession('STARTING_MAP');
         } else {
+          useGameStore.getState().setGameMode('CHARACTER_SELECT');
+          setShowSelector(true);
           setIsInitializing(false);
         }
       });
@@ -1737,7 +1739,7 @@ export default function TheLobby({
 
   const frameClass = enableStudio
     ? 'fixed inset-0 z-30 touch-none select-none overflow-hidden bg-transparent'
-    : `fixed ${isFullscreen ? 'top-0 bottom-0' : 'top-9 sm:top-10 bottom-7 sm:bottom-8'} inset-x-0 z-30 touch-none select-none overflow-hidden bg-[#0a0a0f]`;
+    : 'fixed inset-0 z-30 touch-none select-none overflow-hidden bg-[#0a0a0f]';
 
   if (isInitializing) {
     return (
