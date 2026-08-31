@@ -4,6 +4,7 @@ import React from 'react';
 import { usePathname } from 'next/navigation';
 import { AmbientBackground } from '@/shared/components/ambient-background';
 import { UserSettingsOverlayShell } from '@/web/components/user-settings/user-settings-overlay-shell';
+import { GlobalPostComposer } from '@/web/components/feed/global-post-composer';
 
 interface MainLayoutShellProps {
   children: React.ReactNode;
@@ -38,6 +39,7 @@ export function MainLayoutShell({
         {bottomBar}
         {toaster}
         <UserSettingsOverlayShell />
+        <GlobalPostComposer />
       </div>
     );
   }
@@ -56,6 +58,7 @@ export function MainLayoutShell({
         {bottomBar}
         {toaster}
         <UserSettingsOverlayShell />
+        <GlobalPostComposer />
       </div>
     );
   }
@@ -75,6 +78,7 @@ export function MainLayoutShell({
       {bottomBar}
       {toaster}
       <UserSettingsOverlayShell />
+      <GlobalPostComposer />
     </div>
   );
 }
