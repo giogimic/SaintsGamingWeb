@@ -1,3 +1,7 @@
+# 2.1.587
+- **Navbar Tagline Desktop Sizing**: Reduced the font size of the "Time To Play" gunmetal tagline in `navbar.tsx` by ~20% on desktop (`text-[10px] sm:text-[10.5px] md:text-[11px] tracking-widest uppercase font-mono`), refining its proportion alongside the primary "Saints Gaming" brand.
+- **Version Bump**: Bumped release version to `v2.1.587` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.586
 - **Mobile Feed Directional Swipe Gestures**:
   - Configured directional touch swipe navigation across mobile feed components (`the-feed.tsx` native reel stream, `FeedVideoPlayer.tsx`, and `shorts-viewer-modal.tsx`):
