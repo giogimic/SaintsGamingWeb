@@ -57,12 +57,14 @@ export function MainLayoutShell({
     );
   }
 
+  const isFeed = pathname?.startsWith('/feed') || pathname?.startsWith('/profile/inbox');
+
   // Standard website pages: full page layout with animated page enter and global navigation
   return (
-    <div className="flex flex-col min-h-screen relative overflow-x-hidden selection:bg-primary/30 pb-10">
+    <div className={`flex flex-col min-h-screen relative overflow-x-hidden selection:bg-primary/30 ${isFeed ? "pb-0 sm:pb-10" : "pb-10"}`}>
       <AmbientBackground />
       {navbar}
-      <main className="flex-1 sg-page-enter z-10 pt-14 sm:pt-16 pb-12">
+      <main className={`flex-1 sg-page-enter z-10 ${isFeed ? "pt-0 sm:pt-16 pb-0 sm:pb-12" : "pt-14 sm:pt-16 pb-12"}`}>
         {children}
       </main>
       {commandPalette}
