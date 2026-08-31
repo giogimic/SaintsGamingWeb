@@ -558,9 +558,13 @@ export function ShortsViewerModal({
           ? touchStartY.current - e.changedTouches[0].clientY
           : 0;
 
-        // Horizontal swipe: toggle HUD / overlay interface
-        if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
-          useImmersiveStore.getState().toggleBars();
+        // Horizontal swipe: swipe left to hide interface, swipe right to bring it back
+        if (Math.abs(deltaX) > 35 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+          if (deltaX > 35) {
+            useImmersiveStore.getState().hideBars(); // Swiped LEFT -> Hide interface
+          } else if (deltaX < -35) {
+            useImmersiveStore.getState().showBars(); // Swiped RIGHT -> Bring it back
+          }
         } else if (Math.abs(deltaY) > 35) {
           if (deltaY > 35) {
             navigateShorts(1); // Swiped UP -> Next
