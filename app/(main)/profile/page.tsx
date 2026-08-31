@@ -216,8 +216,9 @@ export default async function ProfilePage() {
                 <CardTitle>The Lobby</CardTitle>
                 <CardDescription>Your active operatives in the Saints Gaming social world</CardDescription>
               </div>
-              <Link href="/lobby" className={buttonVariants({ variant: "default", size: "sm" })}>
-                Enter The Lobby
+              <Link href="/lobby" className={buttonVariants({ variant: "default", size: "sm", className: "gap-1.5" })}>
+                <Gamepad2 className="w-4 h-4" />
+                The Lobby
               </Link>
             </CardHeader>
             <CardContent>
@@ -262,8 +263,9 @@ export default async function ProfilePage() {
                 <div className="text-center py-6 bg-muted/30 rounded-lg">
                   <Gamepad2 className="h-8 w-8 text-muted-foreground mx-auto mb-3 opacity-50" />
                   <h3 className="text-sm font-medium">No characters found</h3>
-                  <p className="text-xs text-muted-foreground mt-1 mb-4">You haven&apos;t created any MMO characters yet.</p>
-                  <Link href="/lobby" className={buttonVariants({ variant: "outline", size: "sm" })}>
+                  <p className="text-xs text-muted-foreground mt-1 mb-4">You haven&apos;t created any characters yet.</p>
+                  <Link href="/lobby" className={buttonVariants({ variant: "outline", size: "sm", className: "gap-1.5" })}>
+                    <Gamepad2 className="w-3.5 h-3.5" />
                     Create Character
                   </Link>
                 </div>

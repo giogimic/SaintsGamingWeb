@@ -111,7 +111,7 @@ export default async function HomePage() {
         <p className="mt-4 text-base text-muted-foreground max-w-xl mx-auto">
           We&apos;ve had Minecraft modpack servers, SA-MP servers, survival
           games — you name it. Whether you&apos;re into competitive play,
-          modded Minecraft, or exploring our embedded 2.5D MMO, there&apos;s a spot for you here.
+          modded Minecraft, or exploring The Lobby, there&apos;s a spot for you here.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">

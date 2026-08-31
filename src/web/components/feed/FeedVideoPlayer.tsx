@@ -100,12 +100,14 @@ export function FeedVideoPlayer({
   const [extractedPoster, setExtractedPoster] = useState<string | null>(() => {
     return poster || getCachedVideoPoster(src) || null;
   });
+  const [posterError, setPosterError] = useState(false);
 
   const isBarsHidden = useImmersiveStore((s) => s.isBarsHidden);
   const isCurrentlyActive = activePlayingId === id;
   const muted = isSharedMuted !== undefined ? isSharedMuted : localMuted;
   const formattedSrc = formatVideoSrc(src);
-  const displayPoster = poster || extractedPoster;
+  const rawPoster = poster || extractedPoster;
+  const displayPoster = (!posterError && rawPoster) ? rawPoster : null;
   const lastTapRef = useRef<number>(0);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -181,6 +183,7 @@ export function FeedVideoPlayer({
 
   // Client-side automatic frame extraction if no poster provided
   useEffect(() => {
+    setPosterError(false);
     if (poster) {
       setExtractedPoster(poster);
       return;
@@ -639,17 +642,17 @@ export function FeedVideoPlayer({
           } ${isLoaded ? "opacity-100" : "opacity-0"}`}
         />
 
-        {/* Poster Image Layer (Zero Black Box / Instant Screenshot Preview) */}
-        {displayPoster && (
+        {/* Poster Image Layer (Zero Black Box / Instant Screenshot Preview before video metadata is ready) */}
+        {displayPoster && !isLoaded && (
           <div 
-            className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${
-              isCurrentlyActive && isLoaded ? "opacity-0" : "opacity-100"
-            }`}
+            className="absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300 opacity-100"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src={displayPoster} 
-              alt="Video thumbnail" 
+              alt="" 
+              role="presentation"
+              onError={() => setPosterError(true)}
               className={`w-auto max-w-full object-contain mx-auto ${
                 isPortrait ? "max-h-[540px]" : "max-h-[480px]"
               }`}

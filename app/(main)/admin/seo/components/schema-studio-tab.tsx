@@ -57,14 +57,14 @@ export function SchemaStudioTab({
     return [
       {
         question: "What is Saints Gaming?",
-        answer: "Saints Gaming is a friendly gaming community established in 2007 offering dedicated multiplayer game servers, custom modpacks, community forums, live streams, and an embedded 2.5D browser MMO experience.",
+        answer: "Saints Gaming is a friendly gaming community established in 2007 offering dedicated multiplayer game servers, custom modpacks, community forums, live streams, and an embedded 2.5D browser game experience.",
       },
       {
         question: "How do I join the Saints Gaming game servers?",
         answer: "You can view active servers, IP connection addresses, and client modpack downloads on our dedicated Servers page at https://www.saintsgaming.net/servers.",
       },
       {
-        question: "Is The Lobby MMO free to play?",
+        question: "Is The Lobby free to play?",
         answer: "Yes! The Lobby is completely free to play directly in your web browser with real-time multiplayer, beast encounters, social hubs, and quest progression.",
       },
     ];
@@ -140,9 +140,9 @@ export function SchemaStudioTab({
         "@context": "https://schema.org",
         "@type": "VideoGame",
         "@id": `${cleanBaseUrl}/#game`,
-        "name": "The Lobby MMO",
+        "name": "The Lobby",
         "url": `${cleanBaseUrl}/lobby`,
-        "description": "An embedded 2.5D multiplayer social MMO world where players capture creatures, craft, explore realms, and build together.",
+        "description": "An embedded 2.5D multiplayer social world where players capture creatures, craft, explore realms, and build together.",
         "genre": ["MMORPG", "Creature Collector", "Social Simulation", "Pixel Adventure"],
         "gamePlatform": ["Web Browser", "HTML5 Canvas", "WebGL"],
         "playMode": "MultiPlayer",

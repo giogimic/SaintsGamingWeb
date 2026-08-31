@@ -73,7 +73,7 @@ export const ADMIN_CATEGORIES: Record<AdminCategoryId, AdminCategory> = {
   operations: {
     id: "operations",
     label: "World & Game Operations",
-    shortLabel: "World & MMO",
+    shortLabel: "World & Game",
     description: "Heroes, creature species, quests, crafting items, world events, and pixel assets.",
     icon: Gamepad2,
     order: 2,
@@ -188,7 +188,7 @@ export const ADMIN_MODULES: AdminModule[] = [
   {
     id: "game-mmo-sandbox",
     category: "operations",
-    label: "MMO Operations",
+    label: "Game Operations",
     description: "Active Saint hero roster, inventory item injection, and emergency unstuck tools.",
     icon: Gamepad2,
     href: "/admin/game",

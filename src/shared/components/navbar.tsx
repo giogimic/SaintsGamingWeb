@@ -15,6 +15,7 @@ import {
   LogOut,
   Shield,
   Sparkles,
+  Plus,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/shared/ui/button";
 import { SGMicro3DLogo } from "@/web/components/landing/sg-logo-3d-micro";
@@ -34,13 +35,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
 
 import { useImmersiveStore } from "@/web/hooks/useImmersiveStore";
 import { useUserSettingsStore } from "@/web/hooks/useUserSettingsStore";
+import { usePostComposerStore } from "@/web/hooks/usePostComposerStore";
+import { soundSynth } from "@/engine/sound-synth";
 
 export function Navbar({
   session,
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.587",
+  siteVersion = "v2.1.591",
   gameTitle = "The Lobby",
 }: {
   session: any | null;
@@ -53,6 +56,7 @@ export function Navbar({
   const pathname = usePathname();
   const isBarsHidden = useImmersiveStore((s) => s.isBarsHidden);
   const openSettings = useUserSettingsStore((s) => s.openSettings);
+  const openComposer = usePostComposerStore((s) => s.openComposer);
 
 
   useEffect(() => {
@@ -160,14 +164,27 @@ export function Navbar({
                               {user.email}
                             </p>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => openSettings("account")}
-                            className="p-1.5 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-primary transition-colors cursor-pointer shrink-0"
-                            title="Open Settings"
-                          >
-                            <Settings className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                soundSynth?.playSelectSound?.();
+                                openComposer();
+                              }}
+                              className="p-1.5 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-primary transition-colors cursor-pointer shrink-0"
+                              title="Create Post / Share Clip"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openSettings("account")}
+                              className="p-1.5 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-primary transition-colors cursor-pointer shrink-0"
+                              title="Open Settings"
+                            >
+                              <Settings className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
                       </DropdownMenuLabel>
                     </DropdownMenuGroup>

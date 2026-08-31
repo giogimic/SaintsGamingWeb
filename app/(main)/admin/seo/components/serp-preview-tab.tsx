@@ -72,9 +72,9 @@ export function SerpPreviewTab({
     },
     {
       id: "lobby",
-      label: "The Lobby 2.5D MMO",
+      label: "The Lobby",
       url: "https://www.saintsgaming.net/lobby",
-      title: "The Lobby MMO - Multiplayer Social World & Beast Battles | Saints Gaming",
+      title: "The Lobby - Multiplayer Social World & Beast Battles | Saints Gaming",
       desc: "Play directly in your browser. Socialize in real-time, battle wild creatures, trade in the Grand Trade Center, and build realms.",
     },
     {

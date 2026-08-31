@@ -32,7 +32,7 @@ export default async function DevDashboard() {
     { path: "/servers", desc: "Live Server List" },
     { path: "/streams", desc: "Live Streams Index" },
     { path: "/forum", desc: "Community Forums & Boards" },
-    { path: "/lobby", desc: "2.5D MMO Client Shell" },
+    { path: "/lobby", desc: "The Lobby Game Client" },
   ];
 
   const USER_ROUTES = [

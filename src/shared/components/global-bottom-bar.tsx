@@ -58,7 +58,7 @@ import { ActionTooltip } from "@/shared/ui/action-tooltip";
 
 // Grouped by usage: Play & Social Media on the Left, Nexus & Support on the Right
 const BOTTOM_NAV_LEFT_PAGES = [
-  { href: "/lobby", label: "Play", icon: Gamepad2, tooltip: "Saints MMO Game" },
+  { href: "/lobby", label: "Play", icon: Gamepad2, tooltip: "The Lobby" },
   { href: "/feed", label: "Feed", icon: Flame, tooltip: "Video & Clip Feed" },
   { href: "/streams", label: "Streams", icon: Radio, tooltip: "Live Streams & Media" },
   { href: "/forum", label: "Forums", icon: MessageSquare, tooltip: "Community Discussions" },
@@ -80,7 +80,7 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "v2.1.587",
+  siteVersion = "v2.1.588",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;
@@ -229,7 +229,7 @@ export function GlobalBottomBar({
   // Resolve dynamic route context pill
   const getRouteLabel = () => {
     if (!pathname) return "Saints";
-    if (pathname.startsWith("/lobby")) return `Saints MMO Â· ${gameMode}`;
+    if (pathname.startsWith("/lobby")) return `The Lobby · ${gameMode}`;
     if (pathname.startsWith("/studio")) return `World Studio Â· ${activeMapId || "Editor"}`;
     if (pathname.startsWith("/hub") || pathname.startsWith("/news") || pathname.startsWith("/modpacks") || pathname.startsWith("/servers")) {
       return "The Nexus Â· Operations Hub";

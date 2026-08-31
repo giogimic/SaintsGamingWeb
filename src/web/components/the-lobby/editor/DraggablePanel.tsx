@@ -11,7 +11,7 @@ interface DraggablePanelProps {
   title?: string;
 }
 
-export const DraggablePanel: React.FC<DraggablePanelProps> = ({ id, children, icon, title: propsTitle }) => {
+const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon, title: propsTitle }) => {
   const panelState = useEditorStore((state) => state.panels[id]);
   const closePanel = useEditorStore((state) => state.closePanel);
   const toggleCollapse = useEditorStore((state) => state.toggleCollapse);
@@ -186,3 +186,5 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({ id, children, ic
     </div>
   );
 };
+
+export const DraggablePanel = React.memo(DraggablePanelBase);

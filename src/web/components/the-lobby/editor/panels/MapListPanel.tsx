@@ -15,6 +15,7 @@ import { soundSynth } from '@/engine/sound-synth';
 import { useSession } from 'next-auth/react';
 import { canWriteStudioContent } from '@/shared/game/studioPermissions';
 import { useDebounce } from '@/web/hooks/useDebounce';
+import { useMapIndex } from '@/web/hooks/studio-data';
 
 export const MapListPanel: React.FC = () => {
   const { data: session } = useSession();
@@ -28,8 +29,8 @@ export const MapListPanel: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 150);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
-  const [remoteMaps, setRemoteMaps] = useState<MapIndexEntry[]>([]);
-  const [loading, setLoading] = useState(false);
+
+  const { maps: remoteMaps, isLoading: loading, mutateMaps } = useMapIndex();
 
   // New map state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -42,36 +43,6 @@ export const MapListPanel: React.FC = () => {
   // Delete confirm state
   const [deleteTargetMapId, setDeleteTargetMapId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  const fetchMaps = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/maps');
-      if (res.ok) {
-        const data = await res.json();
-        const entries: MapIndexEntry[] = (data.maps || []).map((m: any) => ({
-          id: m.id,
-          name: m.name || m.id,
-          category: 'Special',
-          recommendedLevel: 1,
-          width: m.width || 24,
-          height: m.height || 24,
-          npcCount: m.npcCount || 0,
-          gateCount: m.gateCount || 0,
-          hasEncounters: false,
-        }));
-        setRemoteMaps(entries);
-      }
-    } catch {
-      /* ignore */
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void fetchMaps();
-  }, []);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -116,26 +87,35 @@ export const MapListPanel: React.FC = () => {
     }
   };
 
-  const handleDelete = async (mapId: string) => {
+  const executeDelete = async (deleteTargetMapId: string) => {
     if (!canEdit) {
       showToast('Admin permission required to delete maps.');
       return;
     }
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/maps/${encodeURIComponent(mapId)}`, {
+      // Optimistic update
+      mutateMaps(remoteMaps.filter(m => m.id !== deleteTargetMapId), false);
+      
+      const res = await fetch(`/api/maps/${encodeURIComponent(deleteTargetMapId)}`, {
         method: 'DELETE',
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        showToast(err.error || 'Failed to delete map');
-        return;
+        throw new Error(err.error || 'Failed to delete map');
       }
-      unregisterMap(mapId);
+      showToast(`Map deleted: ${deleteTargetMapId}`);
+      unregisterMap(deleteTargetMapId);
+      
+      // Revalidate
+      mutateMaps();
+      
       setDeleteTargetMapId(null);
-      showToast(`Deleted map: ${mapId}`);
-      void fetchMaps();
+      if (currentMapId === deleteTargetMapId) {
+        useGameStore.setState({ currentMapId: null, activeMapData: null });
+      }
     } catch (e: any) {
+      mutateMaps(); // Rollback
       showToast(e?.message || 'Network error deleting map');
     } finally {
       setIsDeleting(false);
@@ -157,6 +137,20 @@ export const MapListPanel: React.FC = () => {
     const newMapData = built.map;
     setIsCreating(true);
     try {
+      // Optimistic Update
+      const optimisticEntry = {
+        id: newMapData.id,
+        name: newMapData.name || newMapData.id,
+        category: 'Special',
+        recommendedLevel: 1,
+        width: newMapData.width || 24,
+        height: newMapData.height || 24,
+        npcCount: Object.keys(newMapData.npcs).length,
+        gateCount: Object.keys(newMapData.gates).length,
+        hasEncounters: false,
+      };
+      mutateMaps([...remoteMaps, optimisticEntry], false);
+
       const res = await fetch(`/api/maps/${encodeURIComponent(newMapData.id)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -173,16 +167,17 @@ export const MapListPanel: React.FC = () => {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        showToast(err.error || 'Failed to create map');
-        return;
+        throw new Error(err.error || 'Failed to create map');
       }
       showToast(`Created map: ${newMapData.id}`);
       setShowCreateModal(false);
       setNewMapSlug('');
       setNewMapName('');
-      void fetchMaps();
+      
+      mutateMaps(); // Revalidate
       handleWarp(newMapData.id);
     } catch (e: any) {
+      mutateMaps(); // Rollback
       showToast(e?.message || 'Error creating map');
     } finally {
       setIsCreating(false);
@@ -366,7 +361,7 @@ export const MapListPanel: React.FC = () => {
               <button
                 type="button"
                 disabled={isDeleting}
-                onClick={() => handleDelete(deleteTargetMapId)}
+                onClick={() => executeDelete(deleteTargetMapId)}
                 className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 text-white hover:bg-rose-500 disabled:opacity-50 shadow-lg shadow-rose-950/50"
               >
                 {isDeleting ? 'Deleting…' : 'Yes, Delete Map'}

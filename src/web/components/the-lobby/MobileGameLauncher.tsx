@@ -54,7 +54,7 @@ export function MobileGameLauncher({
       <div className="relative z-10 w-full max-w-md flex flex-col items-center text-center px-2">
         <div className="flex items-center gap-2 text-amber-400 text-[11px] font-mono uppercase tracking-[0.25em] mb-4 font-bold">
           <Smartphone className="w-3.5 h-3.5" />
-          <span>Mobile Tactical Edition</span>
+          <span>Mobile Edition</span>
         </div>
 
         <h1
@@ -65,10 +65,10 @@ export function MobileGameLauncher({
             filter: 'drop-shadow(0 0 28px rgba(203,178,106,0.35))',
           }}
         >
-          Saints Online
+          The Lobby
         </h1>
         <p className="text-amber-300/60 text-xs font-mono tracking-[0.2em] uppercase mb-6 font-bold">
-          The Living MMO Realm
+          Saints Gaming &bull; Time To Play
         </p>
 
         {character ? (
