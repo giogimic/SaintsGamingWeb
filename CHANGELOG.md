@@ -1,4 +1,10 @@
+# 2.1.583
+- **Eyeball HUD Toggle Button Scope**:
+  - Configured the eyeball immersion HUD toggle button (`Eye`/`EyeOff`) in `FeedVideoPlayer.tsx` and `shorts-viewer-modal.tsx` to render exclusively on mobile viewports (`flex sm:hidden`), keeping desktop controls uncluttered while preserving the global `Tab` keyboard immersion shortcut.
+- **Version Bump**: Bumped release version to `v2.1.583` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.582
+
 - **Bottom Bar 3D Logo Restoration & Minimized User Settings Hexagon Dock**:
   - **Restored Bottom Bar 3D Logo**: Restored the 3D Saints Logo (`<SGMicro3DLogo>`) as the primary post action button in `global-bottom-bar.tsx` across both mobile and desktop views.
   - **Elevated User Settings Hexagon Dock**: Replaced the minimized wide pill box in `user-settings-overlay-shell.tsx` with a floating **hexagon** container (`clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)`) housing a centered rotating gold/amber `Settings` gear icon, elevated to `bottom-16` to sit cleanly above the bottom bar without overlap.
