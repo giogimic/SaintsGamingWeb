@@ -304,7 +304,7 @@ export function GlobalPostComposer() {
       <Sheet open={isOpen} onOpenChange={(open) => { if (!open) closeComposer(); }}>
         <SheetContent
           side="bottom"
-          className="z-[310] rounded-t-3xl bg-[#060c18]/98 border-t border-primary/40 p-4 pb-20 max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl"
+          className="z-[310] rounded-t-3xl bg-[#060c18]/98 border-t border-white/15 p-4 pb-20 max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl"
         >
           <SheetTitle className="sr-only">Create New Post</SheetTitle>
 
@@ -312,7 +312,7 @@ export function GlobalPostComposer() {
           <div className="w-10 h-1 rounded-full bg-white/25 mx-auto mb-3" />
 
           {/* Thin Mobile Header */}
-          <div className="flex items-center justify-between pb-2 mb-3 border-b border-white/[0.06]">
+          <div className="flex items-center justify-between pb-2.5 mb-2 border-b border-white/[0.06]">
             <div className="flex items-center gap-2">
               <Avatar className="h-6 w-6 border border-primary/30">
                 <AvatarImage src={session?.user?.image || ""} />
@@ -338,90 +338,36 @@ export function GlobalPostComposer() {
             </button>
           </div>
 
-          {/* Immersive Chat-Style Composer Box with Overlaid Bottom Tools */}
+          {/* Single Clean Composition Form (No nested redundant boxes) */}
           <form onSubmit={handleSubmit} className="space-y-3">
-            <div className="relative rounded-2xl bg-black/70 border border-white/[0.08] focus-within:border-primary/50 transition-colors p-3 pb-12 shadow-inner">
-              {/* Media Preview if attached */}
-              {mediaPreviewUrl && (
-                <div className="relative mb-2.5 rounded-xl overflow-hidden border border-white/10 bg-black/90 max-h-48 flex items-center justify-center">
-                  {mediaFile?.type.startsWith("video/") ? (
-                    <video src={mediaPreviewUrl} controls className="max-h-48 w-auto" />
-                  ) : (
-                    <img src={mediaPreviewUrl} alt="Preview" className="max-h-48 w-auto object-cover" />
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleRemoveMedia}
-                    className="absolute top-2 right-2 p-1.5 rounded-full bg-black/80 text-white hover:text-red-400 border border-white/20"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              )}
-
-              {/* Textarea */}
-              <textarea
-                ref={textareaRef}
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                placeholder="What's on your mind? Share a clip, screenshot, or status..."
-                rows={3}
-                maxLength={1000}
-                className="w-full bg-transparent text-xs font-mono text-foreground placeholder:text-muted-foreground/60 focus:outline-none resize-none"
-              />
-
-              {/* OVERLAID TOOLS & BUTTONS AT THE BOTTOM OF THE BOX */}
-              <div className="absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between pointer-events-auto pt-1 border-t border-white/[0.05]">
-                {/* Left Tool Buttons */}
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/5 hover:bg-primary/20 text-muted-foreground hover:text-primary text-[10px] font-mono transition-colors cursor-pointer"
-                    title="Attach Media"
-                  >
-                    <Video size={13} className="text-primary" />
-                    <span>Media</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowHashtags(!showHashtags)}
-                    className="flex items-center gap-0.5 px-2 py-1 rounded-lg bg-white/5 hover:bg-primary/20 text-muted-foreground hover:text-primary text-[10px] font-mono transition-colors cursor-pointer"
-                  >
-                    <Hash size={12} />
-                    <span>Tag</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsSubscriberOnly(!isSubscriberOnly)}
-                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-mono transition-colors cursor-pointer ${
-                      isSubscriberOnly ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-white/5 text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {isSubscriberOnly ? <Lock size={11} /> : <Globe size={11} />}
-                    <span>{isSubscriberOnly ? "Subs" : "Public"}</span>
-                  </button>
-                </div>
-
-                {/* Right Send Action Button */}
+            {/* Media Preview if attached */}
+            {mediaPreviewUrl && (
+              <div className="relative rounded-xl overflow-hidden border border-white/10 bg-black/90 max-h-48 flex items-center justify-center">
+                {mediaFile?.type.startsWith("video/") ? (
+                  <video src={mediaPreviewUrl} controls className="max-h-48 w-auto" />
+                ) : (
+                  <img src={mediaPreviewUrl} alt="Preview" className="max-h-48 w-auto object-cover" />
+                )}
                 <button
-                  type="submit"
-                  disabled={isPosting || isUploading || (!body.trim() && !mediaFile)}
-                  className="flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-primary text-primary-foreground font-bold font-mono text-xs hover:brightness-110 active:scale-95 disabled:opacity-40 transition-all shadow-md cursor-pointer"
+                  type="button"
+                  onClick={handleRemoveMedia}
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-black/80 text-white hover:text-red-400 border border-white/20"
                 >
-                  {isPosting || isUploading ? (
-                    <Loader2 size={13} className="animate-spin" />
-                  ) : (
-                    <>
-                      <span>Post</span>
-                      <Send size={12} />
-                    </>
-                  )}
+                  <Trash2 size={13} />
                 </button>
               </div>
-            </div>
+            )}
+
+            {/* Textarea */}
+            <textarea
+              ref={textareaRef}
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="What's on your mind? Share a clip, screenshot, or status..."
+              rows={4}
+              maxLength={1000}
+              className="w-full bg-transparent text-xs font-mono text-foreground placeholder:text-muted-foreground/60 focus:outline-none resize-none"
+            />
 
             {/* Quick Hashtag Pills Row (Expandable) */}
             {showHashtags && (
@@ -439,6 +385,63 @@ export function GlobalPostComposer() {
               </div>
             )}
 
+            {/* Tools & Actions Row */}
+            <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
+              {/* Left Tool Buttons */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-primary/20 text-muted-foreground hover:text-primary text-[10px] font-mono transition-colors cursor-pointer"
+                  title="Attach Media"
+                >
+                  <Video size={13} className="text-primary" />
+                  <span>Media</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowHashtags(!showHashtags)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-primary/20 text-muted-foreground hover:text-primary text-[10px] font-mono transition-colors cursor-pointer"
+                >
+                  <Hash size={12} />
+                  <span>Tag</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsSubscriberOnly(!isSubscriberOnly)}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-mono transition-colors cursor-pointer ${
+                    isSubscriberOnly ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-white/5 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {isSubscriberOnly ? <Lock size={11} /> : <Globe size={11} />}
+                  <span>{isSubscriberOnly ? "Subs" : "Public"}</span>
+                </button>
+              </div>
+
+              {/* Right Send Action Button */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono text-muted-foreground/60">
+                  {body.length}/1000
+                </span>
+                <button
+                  type="submit"
+                  disabled={isPosting || isUploading || (!body.trim() && !mediaFile)}
+                  className="flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-primary text-primary-foreground font-bold font-mono text-xs hover:brightness-110 active:scale-95 disabled:opacity-40 transition-all shadow-md cursor-pointer"
+                >
+                  {isPosting || isUploading ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <>
+                      <span>Post</span>
+                      <Send size={12} />
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
             <input
               ref={fileInputRef}
               type="file"
@@ -452,7 +455,7 @@ export function GlobalPostComposer() {
     );
   }
 
-  // ─── 3. DESKTOP OS WINDOW POP-OUT (CENTER MIDDLE, NO BLUR, THIN HEADER) ─────
+  // ─── 3. DESKTOP SINGLE SLEEK COMPOSER BOX (THIN BORDER, NO OUTER BOX) ─────────
   return createPortal(
     <div className="fixed inset-0 z-[280] pointer-events-none flex items-center justify-center">
       <div
@@ -475,30 +478,29 @@ export function GlobalPostComposer() {
         }}
         className={`
           pointer-events-auto flex flex-col font-sans select-none overflow-hidden transition-shadow duration-200
-          ${isMaximized ? "rounded-none border-border/40" : "rounded-2xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.85)]"}
-          bg-[#060c17]/96 text-slate-200
+          ${isMaximized ? "rounded-none border-border/40" : "rounded-2xl border border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.85)]"}
+          bg-[#060c17]/98 text-slate-200
           ${isDragging ? "border-primary/60 shadow-[0_0_30px_rgba(203,178,106,0.3)] cursor-grabbing" : ""}
         `}
       >
-        {/* Top Gold Accent Line */}
-        <div className="h-[2px] w-full bg-gradient-to-r from-primary/10 via-primary/70 to-primary/10 shrink-0" />
-
-        {/* ─── 1. THIN HEADER (SLEEK & MINIMALIST) ─────────────────────────────── */}
-        <header
+        {/* Integrated Top Bar / Header directly inside the single box */}
+        <div
           onPointerDown={handlePointerDown}
           onDoubleClick={() => setIsCollapsed((p) => !p)}
           className={`
-            h-8 sm:h-8.5 border-b border-white/[0.06] flex items-center justify-between px-3 shrink-0 gap-2 select-none
-            ${isDragging ? "cursor-grabbing bg-[#121c2e]" : isMaximized ? "cursor-default bg-[#09101c]" : "cursor-move bg-[#09101c]"}
+            h-9 px-3.5 border-b border-white/[0.06] flex items-center justify-between shrink-0 gap-2 select-none
+            ${isDragging ? "cursor-grabbing bg-white/[0.04]" : isMaximized ? "cursor-default bg-transparent" : "cursor-move bg-transparent"}
           `}
-          title="Drag window • Double click to collapse"
+          title="Drag • Double click to collapse"
         >
           <div className="flex items-center gap-2 shrink-0 pointer-events-none">
-            {!isMaximized && (
-              <GripHorizontal className="h-3 w-3 text-muted-foreground/60" />
-            )}
+            <Avatar className="h-5 w-5 border border-primary/30">
+              <AvatarImage src={session?.user?.image || ""} />
+              <AvatarFallback className="bg-primary/20 text-primary text-[9px] font-bold">
+                {session?.user?.name?.charAt(0) || "U"}
+              </AvatarFallback>
+            </Avatar>
             <div className="flex items-center gap-1.5 font-bold text-xs text-foreground">
-              <Film className="h-3 w-3 text-primary" />
               <span className="font-mono tracking-tight text-[11px] font-bold text-primary">
                 CREATE POST
               </span>
@@ -542,16 +544,16 @@ export function GlobalPostComposer() {
               <X className="h-3 w-3" />
             </button>
           </div>
-        </header>
+        </div>
 
-        {/* ─── 2. MAIN COMPOSER CONTAINER (OVERLAID TOOLS AT BOTTOM OF BOX) ────── */}
+        {/* Content Area directly inside the single box (no nested box!) */}
         {!isCollapsed && (
-          <form onSubmit={handleSubmit} className="flex-1 flex flex-col p-3.5 sm:p-4 overflow-y-auto custom-scrollbar justify-between">
-            {/* Unified Immersive Chat Composer Box with Overlaid Bottom Tools */}
-            <div className="relative flex-1 flex flex-col rounded-xl bg-black/60 border border-white/[0.07] focus-within:border-primary/40 transition-colors p-3 pb-14">
+          <form onSubmit={handleSubmit} className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
+            {/* Scrollable text + media area */}
+            <div className="flex-1 flex flex-col p-3.5 pb-16 overflow-y-auto custom-scrollbar">
               {/* Media Preview if attached */}
               {mediaPreviewUrl && (
-                <div className="relative mb-3 rounded-lg overflow-hidden border border-white/10 bg-black/80 max-h-48 flex items-center justify-center shrink-0">
+                <div className="relative mb-3 rounded-xl overflow-hidden border border-white/10 bg-black/80 max-h-48 flex items-center justify-center shrink-0">
                   {mediaFile?.type.startsWith("video/") ? (
                     <video src={mediaPreviewUrl} controls className="max-h-48 w-auto" />
                   ) : (
@@ -560,7 +562,7 @@ export function GlobalPostComposer() {
                   <button
                     type="button"
                     onClick={handleRemoveMedia}
-                    className="absolute top-2 right-2 p-1.5 rounded-md bg-black/80 text-white hover:text-red-400 border border-white/20 cursor-pointer"
+                    className="absolute top-2 right-2 p-1.5 rounded-full bg-black/80 text-white hover:text-red-400 border border-white/20 cursor-pointer"
                     title="Remove Media"
                   >
                     <Trash2 size={13} />
@@ -568,90 +570,90 @@ export function GlobalPostComposer() {
                 </div>
               )}
 
-              {/* Textarea */}
+              {/* Textarea filling the space cleanly */}
               <textarea
                 ref={textareaRef}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="What's happening in Saints Gaming? Drop a clip, idea, or highlight..."
                 maxLength={1000}
-                className="w-full flex-1 bg-transparent text-xs font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none resize-none"
+                className="w-full flex-1 min-h-[140px] bg-transparent text-xs font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none resize-none"
               />
 
-              {/* OVERLAID TOOLS & BUTTONS AT BOTTOM OF CHAT BOX */}
-              <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between pt-1.5 border-t border-white/[0.06] pointer-events-auto">
-                {/* Left Tool Buttons */}
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/5 hover:bg-primary/20 text-muted-foreground hover:text-primary text-[11px] font-mono transition-colors cursor-pointer"
-                    title="Attach Video or Photo"
-                  >
-                    <Video size={13} className="text-primary" />
-                    <span>Media</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowHashtags(!showHashtags)}
-                    className="flex items-center gap-0.5 px-2 py-1 rounded-md bg-white/5 hover:bg-primary/20 text-muted-foreground hover:text-primary text-[11px] font-mono transition-colors cursor-pointer"
-                  >
-                    <Hash size={12} />
-                    <span>Tag</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsSubscriberOnly(!isSubscriberOnly)}
-                    className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-mono transition-colors cursor-pointer ${
-                      isSubscriberOnly ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-white/5 text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {isSubscriberOnly ? <Lock size={12} /> : <Globe size={12} />}
-                    <span>{isSubscriberOnly ? "Subscribers" : "Public"}</span>
-                  </button>
+              {/* Expandable Hashtags row inside the flow */}
+              {showHashtags && (
+                <div className="flex items-center gap-1.5 pt-2 pb-1 overflow-x-auto custom-scrollbar shrink-0">
+                  {DEFAULT_HASHTAGS.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => handleAddHashtag(tag)}
+                      className="px-2 py-0.5 rounded-md bg-primary/10 hover:bg-primary/25 border border-primary/25 text-[10px] font-mono text-primary transition-all shrink-0 cursor-pointer"
+                    >
+                      #{tag}
+                    </button>
+                  ))}
                 </div>
-
-                {/* Right Action: Send/Publish Button */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono text-muted-foreground/60">
-                    {body.length}/1000
-                  </span>
-
-                  <button
-                    type="submit"
-                    disabled={isPosting || isUploading || (!body.trim() && !mediaFile)}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground font-bold font-mono text-xs hover:brightness-110 active:scale-95 disabled:opacity-40 transition-all shadow-md cursor-pointer"
-                  >
-                    {isPosting || isUploading ? (
-                      <Loader2 size={13} className="animate-spin" />
-                    ) : (
-                      <>
-                        <span>Publish</span>
-                        <Send size={12} />
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
+              )}
             </div>
 
-            {/* Expandable Hashtag Chips */}
-            {showHashtags && (
-              <div className="flex items-center gap-1.5 pt-2 overflow-x-auto custom-scrollbar">
-                {DEFAULT_HASHTAGS.map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => handleAddHashtag(tag)}
-                    className="px-2 py-0.5 rounded-md bg-primary/10 hover:bg-primary/25 border border-primary/25 text-[10px] font-mono text-primary transition-all shrink-0 cursor-pointer"
-                  >
-                    #{tag}
-                  </button>
-                ))}
+            {/* Overlaid Bottom Tool Bar (positioned along the bottom edge of this single box) */}
+            <div className="absolute bottom-0 left-0 right-0 h-13 px-3.5 border-t border-white/[0.06] bg-[#060c17]/95 flex items-center justify-between pointer-events-auto backdrop-blur-sm">
+              {/* Left Tool Buttons */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-primary/20 text-muted-foreground hover:text-primary text-[11px] font-mono transition-colors cursor-pointer"
+                  title="Attach Video or Photo"
+                >
+                  <Video size={13} className="text-primary" />
+                  <span>Media</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowHashtags(!showHashtags)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-primary/20 text-muted-foreground hover:text-primary text-[11px] font-mono transition-colors cursor-pointer"
+                >
+                  <Hash size={12} />
+                  <span>Tag</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsSubscriberOnly(!isSubscriberOnly)}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-mono transition-colors cursor-pointer ${
+                    isSubscriberOnly ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-white/5 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {isSubscriberOnly ? <Lock size={12} /> : <Globe size={12} />}
+                  <span>{isSubscriberOnly ? "Subscribers" : "Public"}</span>
+                </button>
               </div>
-            )}
+
+              {/* Right Action: Char Count + Publish */}
+              <div className="flex items-center gap-2.5">
+                <span className="text-[10px] font-mono text-muted-foreground/60">
+                  {body.length}/1000
+                </span>
+
+                <button
+                  type="submit"
+                  disabled={isPosting || isUploading || (!body.trim() && !mediaFile)}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-primary text-primary-foreground font-bold font-mono text-xs hover:brightness-110 active:scale-95 disabled:opacity-40 transition-all shadow-md cursor-pointer"
+                >
+                  {isPosting || isUploading ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <>
+                      <span>Publish</span>
+                      <Send size={12} />
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
 
             <input
               ref={fileInputRef}
