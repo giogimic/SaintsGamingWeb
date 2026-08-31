@@ -78,7 +78,7 @@ export async function GET(req: Request) {
               OR: [
                 { title: { contains: searchTerm } },
                 { excerpt: { contains: searchTerm } },
-                { content: { contains: searchTerm } },
+                { body: { contains: searchTerm } },
               ],
             },
             select: {
@@ -88,7 +88,6 @@ export async function GET(req: Request) {
               excerpt: true,
               coverImage: true,
               publishedAt: true,
-              category: true,
             },
             orderBy: { publishedAt: "desc" },
             take: 5,
@@ -166,7 +165,7 @@ export async function GET(req: Request) {
               name: true,
               slug: true,
               game: true,
-              bannerImage: true,
+              logoImage: true,
               version: true,
             },
             take: 5,

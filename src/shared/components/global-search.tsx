@@ -73,7 +73,7 @@ type SearchResults = {
     name: string;
     slug: string;
     game: string;
-    bannerImage: string | null;
+    logoImage?: string | null;
     version: string | null;
   }>;
   users: Array<{
