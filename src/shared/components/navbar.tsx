@@ -40,7 +40,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.580",
+  siteVersion = "v2.1.581",
   gameTitle = "The Lobby",
 }: {
   session: any | null;
@@ -93,20 +93,22 @@ export function Navbar({
 
           {/* Center: Saints Gaming Logo & Tagline */}
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
-            <Link href="/home" className="flex items-center gap-2.5 group select-none">
+            <Link href="/home" className="flex items-center gap-2 group select-none">
               <div className="transition-transform group-hover:scale-110 shrink-0 hidden sm:block">
-                <SGMicro3DLogo size={38} />
+                <SGMicro3DLogo size={34} />
               </div>
-              <div className="flex flex-col items-center sm:items-start leading-tight">
-                <span className="font-black text-base sm:text-lg sg-text-gradient tracking-tight whitespace-nowrap">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="font-black text-sm sm:text-base md:text-lg sg-text-gradient tracking-tight whitespace-nowrap">
                   Saints Gaming
                 </span>
-                <span className="text-[9px] sm:text-[10px] font-bold text-amber-400/80 tracking-widest uppercase font-mono -mt-0.5">
+                <span className="text-muted-foreground/40 font-light text-xs sm:text-sm">|</span>
+                <span className="text-[11px] sm:text-xs font-semibold text-amber-400/90 tracking-wide whitespace-nowrap">
                   Time To Play
                 </span>
               </div>
             </Link>
           </div>
+
 
           {/* Right: Notifications + User dropdown */}
           <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end">
