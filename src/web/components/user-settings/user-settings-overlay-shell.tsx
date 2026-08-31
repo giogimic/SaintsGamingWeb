@@ -37,6 +37,10 @@ import {
   CheckCircle2,
   GripHorizontal,
   ArrowUpRight,
+  Palette,
+  ChevronDown,
+  RefreshCw,
+  Trophy,
   Play,
   RotateCcw,
 } from "lucide-react";
@@ -54,12 +58,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
 import { Button } from "@/shared/ui/button";
 
 const USER_SETTINGS_CATEGORIES: { id: UserSettingsTab; label: string; icon: any; description: string }[] = [
-  {
-    id: "appearance",
-    label: "Appearance & Themes",
-    icon: Paintbrush,
-    description: "Switch color themes, dark modes, animations and display density",
-  },
   {
     id: "account",
     label: "Account & Profile",
@@ -86,6 +84,8 @@ const USER_SETTINGS_CATEGORIES: { id: UserSettingsTab; label: string; icon: any;
   },
 ];
 
+type TopMenuId = "appearance" | "profile" | "view" | "tools" | null;
+
 export function UserSettingsOverlayShell() {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
@@ -104,6 +104,8 @@ export function UserSettingsOverlayShell() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
+  const [activeTopMenu, setActiveTopMenu] = useState<TopMenuId>(null);
+  const topMenuRef = useRef<HTMLDivElement>(null);
 
   // Position & size state for floating window
   const [position, setPosition] = useState({ x: 50, y: 40 });
@@ -157,21 +159,62 @@ export function UserSettingsOverlayShell() {
     }
   }, [setMaximized]);
 
+  // Top menu click outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (topMenuRef.current && !topMenuRef.current.contains(e.target as Node)) {
+        setActiveTopMenu(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // When requested to open appearance, open the toolbar menu and default to account
+  useEffect(() => {
+    if (activeTab === "appearance") {
+      setActiveTopMenu("appearance");
+      setActiveTab("account");
+    }
+  }, [activeTab, setActiveTab]);
+
+  const loadUserData = useCallback(async () => {
+    if (!session?.user?.id) return;
+    try {
+      const data = await getUserSettingsData();
+      if (data) {
+        setUserData(data);
+        setNameInput(data.displayName || data.username || "");
+        setImageInput(data.image || "");
+        setYoutubeVideoInput(data.youtubeVideoUrl || "");
+        setYoutubeMusicInput(data.youtubeMusicUrl || "");
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [session?.user?.id]);
+
+  const resetWindowCenter = useCallback(() => {
+    if (typeof window !== "undefined") {
+      const initW = Math.min(1080, Math.max(760, window.innerWidth - 80));
+      const initH = Math.min(680, Math.max(520, window.innerHeight - 80));
+      const initX = Math.max(20, Math.floor((window.innerWidth - initW) / 2));
+      const initY = Math.max(20, Math.floor((window.innerHeight - initH) / 2));
+      setPosition({ x: initX, y: initY });
+      setSize({ width: initW, height: initH });
+      setIsCollapsed(false);
+      setMaximized(false);
+      toast.success("Window reset to center");
+    }
+  }, [setMaximized]);
+
   // Load user data & posts when opened
   useEffect(() => {
     if (isOpen && session?.user?.id) {
-      getUserSettingsData().then((data) => {
-        if (data) {
-          setUserData(data);
-          setNameInput(data.displayName || data.username || "");
-          setImageInput(data.image || "");
-          setYoutubeVideoInput(data.youtubeVideoUrl || "");
-          setYoutubeMusicInput(data.youtubeMusicUrl || "");
-        }
-      });
+      loadUserData();
       loadPosts();
     }
-  }, [isOpen, session?.user?.id]);
+  }, [isOpen, session?.user?.id, loadUserData]);
 
   const loadPosts = async () => {
     setLoadingPosts(true);
@@ -488,7 +531,375 @@ export function UserSettingsOverlayShell() {
           </div>
         </header>
 
-        {/* ─── 2. CATEGORY TABS (LEVEL 1) ────────────────────────────────────── */}
+        {/* ─── 2. WINDOW DIRECTORY MENU BAR / TOOLBAR ──────────────────────── */}
+        {!isCollapsed && (
+          <div 
+            ref={topMenuRef}
+            className="h-8 border-b border-white/10 bg-[#09111e]/95 flex items-center justify-between px-2 sm:px-3 shrink-0 text-xs font-mono select-none relative z-30"
+          >
+            {/* Left: OS Menu Dropdowns */}
+            <div className="flex items-center gap-0.5 sm:gap-1">
+              {/* 1. Appearance Menu */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    try { soundSynth?.playUiClick?.(); } catch {}
+                    setActiveTopMenu(activeTopMenu === "appearance" ? null : "appearance");
+                  }}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
+                    activeTopMenu === "appearance" 
+                      ? "bg-primary/20 text-primary border border-primary/40 font-bold" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  }`}
+                >
+                  <Paintbrush className="w-3.5 h-3.5 text-primary" />
+                  <span>Appearance</span>
+                  <ChevronDown className={`w-3 h-3 transition-transform ${activeTopMenu === "appearance" ? "rotate-180 text-primary" : "text-muted-foreground"}`} />
+                </button>
+
+                {activeTopMenu === "appearance" && (
+                  <div className="absolute left-0 top-full mt-1.5 w-64 bg-[#0a1322]/98 backdrop-blur-xl border border-primary/30 rounded-xl shadow-2xl p-2 z-50 text-xs space-y-2 animate-in fade-in-0 zoom-in-95 duration-100">
+                    <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-primary border-b border-white/10 flex items-center justify-between">
+                      <span>Theme & Visual Style</span>
+                      <Sparkles className="w-3 h-3 text-primary" />
+                    </div>
+
+                    <div className="space-y-1">
+                      {[
+                        { id: "dark", label: "Midnight Dark", sub: "Deep Glass", icon: Moon, accent: "text-blue-400" },
+                        { id: "light", label: "Sunset Light", sub: "Warm Amber Glow", icon: Sun, accent: "text-amber-500" },
+                        { id: "vice", label: "Miami Vice", sub: "Neon Pink & Cyan", icon: Palmtree, accent: "text-pink-400" },
+                      ].map((t) => {
+                        const Icon = t.icon;
+                        const isCurrent = theme === t.id;
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => {
+                              try { soundSynth?.playUiClick?.(); } catch {}
+                              setTheme(t.id);
+                              setActiveTopMenu(null);
+                              toast.success(`Activated ${t.label} theme`);
+                            }}
+                            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-left transition-colors cursor-pointer ${
+                              isCurrent ? "bg-primary/20 text-primary font-bold border border-primary/40" : "hover:bg-white/5 text-slate-300"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Icon className={`w-3.5 h-3.5 ${t.accent}`} />
+                              <div>
+                                <div className="text-[11px] font-bold leading-none">{t.label}</div>
+                                <div className="text-[9px] text-muted-foreground mt-0.5">{t.sub}</div>
+                              </div>
+                            </div>
+                            {isCurrent && <Check className="w-3.5 h-3.5 text-primary" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="pt-1.5 border-t border-white/10">
+                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Sound Synthesizer
+                      </div>
+                      <div className="flex items-center justify-between px-2 py-1.5">
+                        <span className="text-[11px] text-slate-300">Sound Effects</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = !soundEnabled;
+                            setSoundEnabled(next);
+                            if (next) soundSynth?.playActionSound?.();
+                            toast.success(next ? "Sound effects enabled" : "Sound effects muted");
+                          }}
+                          className={`px-2 py-1 rounded text-[10px] font-bold cursor-pointer transition-colors ${
+                            soundEnabled ? "bg-primary/20 text-primary border border-primary/40" : "bg-muted/40 text-muted-foreground"
+                          }`}
+                        >
+                          {soundEnabled ? "Enabled" : "Muted"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Profile Menu */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    try { soundSynth?.playUiClick?.(); } catch {}
+                    setActiveTopMenu(activeTopMenu === "profile" ? null : "profile");
+                  }}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
+                    activeTopMenu === "profile" 
+                      ? "bg-primary/20 text-primary border border-primary/40 font-bold" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  }`}
+                >
+                  <User className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Profile</span>
+                  <ChevronDown className={`w-3 h-3 transition-transform ${activeTopMenu === "profile" ? "rotate-180 text-primary" : "text-muted-foreground"}`} />
+                </button>
+
+                {activeTopMenu === "profile" && (
+                  <div className="absolute left-0 top-full mt-1.5 w-56 bg-[#0a1322]/98 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl p-2 z-50 text-xs space-y-1 animate-in fade-in-0 zoom-in-95 duration-100">
+                    <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-white/10">
+                      User Destinations
+                    </div>
+                    
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTopMenu(null);
+                        const uname = userData?.username || session?.user?.name;
+                        if (uname) window.open(`/user/${uname}`, "_blank");
+                        else toast.error("Profile not found");
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left hover:bg-white/5 text-slate-300 transition-colors cursor-pointer"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
+                      <span className="text-[11px]">View Public Profile</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTopMenu(null);
+                        window.location.href = "/profile/inbox";
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left hover:bg-white/5 text-slate-300 transition-colors cursor-pointer"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5 text-pink-400" />
+                      <span className="text-[11px]">Inbox & Dashboard</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTopMenu(null);
+                        window.location.href = "/ucp";
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left hover:bg-white/5 text-slate-300 transition-colors cursor-pointer"
+                    >
+                      <Shield className="w-3.5 h-3.5 text-amber-400" />
+                      <span className="text-[11px]">User Control Panel (UCP)</span>
+                    </button>
+
+                    <div className="pt-1 border-t border-white/10">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTopMenu(null);
+                          const uname = userData?.username || session?.user?.name;
+                          if (uname) {
+                            const url = `${window.location.origin}/user/${uname}`;
+                            navigator.clipboard.writeText(url);
+                            toast.success("Profile link copied to clipboard!");
+                          }
+                        }}
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left hover:bg-white/5 text-slate-300 transition-colors cursor-pointer"
+                      >
+                        <Copy className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-[11px]">Copy Profile URL</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTopMenu(null);
+                          loadUserData();
+                          toast.success("Profile data refreshed");
+                        }}
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left hover:bg-white/5 text-slate-300 transition-colors cursor-pointer"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-[11px]">Refresh User Data</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 3. View / Navigate Menu */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    try { soundSynth?.playUiClick?.(); } catch {}
+                    setActiveTopMenu(activeTopMenu === "view" ? null : "view");
+                  }}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
+                    activeTopMenu === "view" 
+                      ? "bg-primary/20 text-primary border border-primary/40 font-bold" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5 text-purple-400" />
+                  <span>View</span>
+                  <ChevronDown className={`w-3 h-3 transition-transform ${activeTopMenu === "view" ? "rotate-180 text-primary" : "text-muted-foreground"}`} />
+                </button>
+
+                {activeTopMenu === "view" && (
+                  <div className="absolute left-0 top-full mt-1.5 w-56 bg-[#0a1322]/98 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl p-2 z-50 text-xs space-y-1 animate-in fade-in-0 zoom-in-95 duration-100">
+                    <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-white/10">
+                      Jump To Section
+                    </div>
+
+                    {USER_SETTINGS_CATEGORIES.map((cat) => {
+                      const Icon = cat.icon;
+                      const isSelected = activeTab === cat.id;
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => {
+                            try { soundSynth?.playUiClick?.(); } catch {}
+                            setActiveTab(cat.id);
+                            setActiveTopMenu(null);
+                          }}
+                          className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors cursor-pointer ${
+                            isSelected ? "bg-primary/20 text-primary font-bold" : "hover:bg-white/5 text-slate-300"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Icon className="w-3.5 h-3.5 text-primary" />
+                            <span className="text-[11px]">{cat.label}</span>
+                          </div>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-primary" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* 4. Tools & Actions Menu */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    try { soundSynth?.playUiClick?.(); } catch {}
+                    setActiveTopMenu(activeTopMenu === "tools" ? null : "tools");
+                  }}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
+                    activeTopMenu === "tools" 
+                      ? "bg-primary/20 text-primary border border-primary/40 font-bold" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Tools</span>
+                  <ChevronDown className={`w-3 h-3 transition-transform ${activeTopMenu === "tools" ? "rotate-180 text-primary" : "text-muted-foreground"}`} />
+                </button>
+
+                {activeTopMenu === "tools" && (
+                  <div className="absolute left-0 top-full mt-1.5 w-60 bg-[#0a1322]/98 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl p-2 z-50 text-xs space-y-1 animate-in fade-in-0 zoom-in-95 duration-100">
+                    <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-white/10">
+                      Quick Shortcuts & Window
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTopMenu(null);
+                        closeSettings();
+                        window.dispatchEvent(new CustomEvent("saints-open-post-composer"));
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left hover:bg-white/5 text-slate-300 transition-colors cursor-pointer"
+                    >
+                      <Film className="w-3.5 h-3.5 text-pink-400" />
+                      <span className="text-[11px]">Compose Post / Reel</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTopMenu(null);
+                        window.location.href = "/achievements";
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left hover:bg-white/5 text-slate-300 transition-colors cursor-pointer"
+                    >
+                      <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                      <span className="text-[11px]">Badges & Achievements</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTopMenu(null);
+                        window.location.href = "/lobby";
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left hover:bg-white/5 text-slate-300 transition-colors cursor-pointer"
+                    >
+                      <Gamepad2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-[11px]">Enter The Lobby MMO</span>
+                    </button>
+
+                    <div className="pt-1 border-t border-white/10">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTopMenu(null);
+                          resetWindowCenter();
+                        }}
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left hover:bg-white/5 text-slate-300 transition-colors cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 text-cyan-400" />
+                        <span className="text-[11px]">Reset Window Position</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right: Quick Toolbar Action Buttons */}
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              {/* Quick Theme Cycle Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  try { soundSynth?.playUiClick?.(); } catch {}
+                  const next = theme === "dark" ? "light" : theme === "light" ? "vice" : "dark";
+                  setTheme(next);
+                  toast.success(`Switched to ${next === "dark" ? "Midnight Dark" : next === "light" ? "Sunset Light" : "Miami Vice"}`);
+                }}
+                className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/10 hover:text-white transition-colors cursor-pointer text-[11px]"
+                title={`Theme: ${theme || "dark"} (Click to cycle)`}
+              >
+                {theme === "light" ? (
+                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+                ) : theme === "vice" ? (
+                  <Palmtree className="w-3.5 h-3.5 text-pink-400" />
+                ) : (
+                  <Moon className="w-3.5 h-3.5 text-blue-400" />
+                )}
+                <span className="hidden sm:inline font-mono uppercase text-[10px] tracking-tight">{theme || "dark"}</span>
+              </button>
+
+              {/* Quick Audio Mute Toggle */}
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !soundEnabled;
+                  setSoundEnabled(next);
+                  if (next) soundSynth?.playActionSound?.();
+                  toast.success(next ? "Sound effects enabled" : "Sound effects muted");
+                }}
+                className="p-1.5 rounded hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                title={soundEnabled ? "Mute Sound Effects" : "Enable Sound Effects"}
+              >
+                {soundEnabled ? <Volume2 className="w-3.5 h-3.5 text-primary" /> : <VolumeX className="w-3.5 h-3.5 text-muted-foreground" />}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── 3. CATEGORY TABS (LEVEL 1) ────────────────────────────────────── */}
         {!isCollapsed && (
           <div className="bg-[#070e1a]/95 border-b border-white/10 px-2 sm:px-4 py-1.5 flex items-center justify-between gap-1 overflow-x-auto custom-scrollbar shrink-0 select-none">
             <div className="flex items-center gap-1 sm:gap-1.5 min-w-max">
@@ -518,96 +929,11 @@ export function UserSettingsOverlayShell() {
           </div>
         )}
 
-        {/* ─── 3. MAIN CONTENT BODY ────────────────────────────────────────── */}
+        {/* ─── 4. MAIN CONTENT BODY ────────────────────────────────────────── */}
         {!isCollapsed && (
           <main className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar space-y-6">
-            {/* ── TAB 1: APPEARANCE & THEMES ─────────────────────────────────── */}
-            {activeTab === "appearance" && (
-              <div className="space-y-6 max-w-4xl">
-                <div>
-                  <h3 className="text-base sm:text-lg font-bold font-mono text-foreground flex items-center gap-2">
-                    <Paintbrush className="w-4 h-4 text-primary" />
-                    <span>Color Theme & Display Aesthetics</span>
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Select your preferred visual palette across Saints Gaming.
-                  </p>
-                </div>
-
-                {/* Theme Selector Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
-                  {[
-                    {
-                      id: "dark",
-                      label: "Midnight Dark",
-                      sub: "Default Deep Glass",
-                      icon: Moon,
-                      color: "from-[#050b14] to-[#0f172a]",
-                      border: "border-blue-500/40",
-                      accent: "text-blue-400",
-                    },
-                    {
-                      id: "light",
-                      label: "Sunset Light",
-                      sub: "Warm Amber Glow",
-                      icon: Sun,
-                      color: "from-[#f8fafc] to-[#e2e8f0] text-slate-900",
-                      border: "border-amber-500/40",
-                      accent: "text-amber-500",
-                    },
-                    {
-                      id: "vice",
-                      label: "Miami Vice",
-                      sub: "Neon Pink & Cyan",
-                      icon: Palmtree,
-                      color: "from-[#1b121c] to-[#2c003e]",
-                      border: "border-pink-500/50",
-                      accent: "text-pink-400",
-                    },
-                  ].map((t) => {
-                    const Icon = t.icon;
-                    const isCurrent = theme === t.id;
-
-                    return (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => {
-                          try { soundSynth?.playUiClick?.(); } catch {}
-                          setTheme(t.id);
-                          toast.success(`Activated ${t.label} theme`);
-                        }}
-                        className={`p-4 rounded-xl border text-left transition-all relative overflow-hidden flex flex-col justify-between gap-3 group cursor-pointer ${
-                          isCurrent
-                            ? "border-primary bg-primary/15 ring-2 ring-primary/40 shadow-lg scale-[1.01]"
-                            : "border-border/60 bg-card/40 hover:bg-card/70 hover:border-border"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className={`p-2 rounded-lg bg-black/40 border border-white/10 ${t.accent}`}>
-                              <Icon className="w-4 h-4" />
-                            </div>
-                            <div>
-                              <div className="font-bold text-xs text-foreground font-mono">{t.label}</div>
-                              <div className="text-[10px] text-muted-foreground font-mono">{t.sub}</div>
-                            </div>
-                          </div>
-                          {isCurrent && (
-                            <span className="flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-primary text-primary-foreground">
-                              <Check size={10} strokeWidth={3} /> ACTIVE
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* ── TAB 2: ACCOUNT & PROFILE ───────────────────────────────────── */}
-            {activeTab === "account" && (
+            {/* ── TAB 1: ACCOUNT & PROFILE ───────────────────────────────────── */}
+            {(activeTab === "account" || activeTab === "appearance") && (
               <form onSubmit={handleSaveProfile} className="space-y-6 max-w-3xl">
                 <div>
                   <h3 className="text-base sm:text-lg font-bold font-mono text-foreground flex items-center gap-2">

@@ -19,7 +19,7 @@ interface UserSettingsState {
 
 export const useUserSettingsStore = create<UserSettingsState>((set) => ({
   isOpen: false,
-  activeTab: "appearance",
+  activeTab: "account",
   isMinimized: false,
   isMaximized: false,
   openSettings: (tab) => set((state) => ({ 

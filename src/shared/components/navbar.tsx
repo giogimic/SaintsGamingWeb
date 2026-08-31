@@ -86,7 +86,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.576",
+  siteVersion = "v2.1.577",
 }: {
   session: any | null;
   dbPermissionLevel?: number;
