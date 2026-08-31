@@ -24,6 +24,11 @@ import {
   AlertTriangle,
   Flame,
   Layers,
+  Settings,
+  ScrollText,
+  Award,
+  Check,
+  Radio,
 } from 'lucide-react';
 import { deleteGameCharacter, getTopLobbyOperatives } from '@/app/actions/game';
 import { toast } from 'sonner';
@@ -34,6 +39,7 @@ import { useSession } from 'next-auth/react';
 import { useTheme } from 'next-themes';
 import { MidnightTropicalBackground } from './MidnightTropicalBackground';
 import { CharacterSpritePreview } from './CharacterSpritePreview';
+import GameOptionsMenu from './hud/GameOptionsMenu';
 
 interface CharacterSelectorProps {
   characters: any[];
@@ -70,7 +76,7 @@ const CLASS_COLORS: Record<string, { glow: string; accent: string; label: string
   CYBER:    { glow: 'rgba(0,245,212,0.45)',   accent: '#00f5d4', label: '#a5f3fc', border: 'rgba(0,245,212,0.6)' },
 };
 
-const DEFAULT_COLOR = { glow: 'rgba(242,0,137,0.35)', accent: '#f20089', label: '#f472b6', border: 'rgba(242,0,137,0.5)' };
+const DEFAULT_COLOR = { glow: 'rgba(203,178,106,0.35)', accent: '#cbb26a', label: '#e5d59f', border: 'rgba(203,178,106,0.5)' };
 
 interface ChatMessage {
   id: string;
@@ -78,6 +84,53 @@ interface ChatMessage {
   text: string;
   timestamp: number;
   type?: 'GLOBAL' | 'SYSTEM' | 'ANNOUNCE';
+}
+
+// ── Credits Modal ─────────────────────────────────────────────────────
+function CreditsModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="pointer-events-auto fixed inset-0 z-[300] flex items-center justify-center p-4 bg-[#050014]/85 backdrop-blur-xl"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-lg rounded-2xl border border-primary/40 p-6 sm:p-8 text-center bg-[#0a0318]/95 shadow-[0_0_60px_rgba(203,178,106,0.25)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <Award className="w-5 h-5 text-primary" />
+          <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-widest uppercase font-mono">
+            Saints Gaming Credits
+          </h2>
+        </div>
+        <p className="text-muted-foreground text-xs tracking-widest uppercase font-mono mb-6">
+          A Community For Gamers — EST. 2007
+        </p>
+
+        <div className="space-y-3 text-xs sm:text-sm font-mono text-left">
+          {[
+            { role: 'Game Director & Concept', name: 'GioGimic & Saints Gaming' },
+            { role: 'Core Engine & Architecture', name: 'BabylonJS · Next.js 15 · Go MMO' },
+            { role: 'Original Creature Art', name: 'Open Source Community Artists' },
+            { role: 'World Tilesets', name: 'Saints Studio Contributors' },
+            { role: 'Sound Synthesis & FX', name: 'Saints WebAudio Engine' },
+          ].map((c) => (
+            <div key={c.role} className="flex items-center justify-between border-b border-white/10 pb-2">
+              <span className="text-muted-foreground text-xs uppercase tracking-wider">{c.role}</span>
+              <span className="text-foreground font-bold">{c.name}</span>
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={onClose}
+          className="mt-6 w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-mono font-bold text-xs uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+        >
+          Close Credits
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export function CharacterSelector({
@@ -88,12 +141,26 @@ export function CharacterSelector({
   onCancel,
 }: CharacterSelectorProps) {
   const { data: session } = useSession();
+  const [selectedCharId, setSelectedCharId] = useState<string | null>(() => characters[0]?.id || null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [deleteModalChar, setDeleteModalChar] = useState<{ id: string; name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+  const [showCredits, setShowCredits] = useState(false);
   const setGameMode = useGameStore((state) => state.setGameMode);
 
-  // Memoize parsed character state data to prevent continuous re-parsing
+  // Sync selected character if list changes and current selection is missing
+  useEffect(() => {
+    if (characters.length > 0) {
+      if (!selectedCharId || !characters.some((c) => c.id === selectedCharId)) {
+        setSelectedCharId(characters[0].id);
+      }
+    } else {
+      setSelectedCharId(null);
+    }
+  }, [characters, selectedCharId]);
+
+  // Memoize parsed character state data
   const parsedCharacters = useMemo(() => {
     return characters.map((char) => {
       let state: any = { level: 1, hp: 100, maxHp: 100, credits: 1000, perk: 'SWIFT_TRAVELER' };
@@ -117,15 +184,15 @@ export function CharacterSelector({
     });
   }, [characters]);
 
-  // Social & Comms Deck State
-  const [activeSideTab, setActiveSideTab] = useState<'LEADERBOARD' | 'CHAT'>('LEADERBOARD');
+  // Social & Comms Deck State (Default to CHAT for active Lobby experience)
+  const [activeSideTab, setActiveSideTab] = useState<'CHAT' | 'LEADERBOARD'>('CHAT');
   const [topOperatives, setTopOperatives] = useState<any[]>([]);
   const [loadingLeaderboards, setLoadingLeaderboards] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       id: 'sys-1',
       sender: 'Saints Gateway',
-      text: 'Welcome to the Saints Gaming MMO Vault. Select a Saint to enter the live world.',
+      text: 'Welcome to the Saints Gaming MMO Vault. Select your Saint and enter the live realm.',
       timestamp: Date.now() - 60000,
       type: 'SYSTEM',
     },
@@ -164,7 +231,7 @@ export function CharacterSelector({
       setChatMessages((prev) => {
         const item: ChatMessage = {
           id: msg.id || `${Date.now()}-${Math.random()}`,
-          sender: msg.sender || 'Operative',
+          sender: msg.sender || 'Saint',
           text: msg.text,
           timestamp: msg.timestamp || Date.now(),
           type: msg.type || 'GLOBAL',
@@ -190,7 +257,7 @@ export function CharacterSelector({
     if (!text) return;
 
     soundSynth?.playSelectSound?.();
-    const senderName = session?.user?.name || 'Operative';
+    const senderName = session?.user?.name || (session?.user as any)?.username || 'Player';
     const newMsg: ChatMessage = {
       id: `${Date.now()}-${Math.random()}`,
       sender: senderName,
@@ -211,6 +278,9 @@ export function CharacterSelector({
     const res = await deleteGameCharacter(deleteModalChar.id);
     if (res.success) {
       toast.success(`${deleteModalChar.name} has been archived.`);
+      if (selectedCharId === deleteModalChar.id) {
+        setSelectedCharId(null);
+      }
       onRefresh();
     } else {
       toast.error(res.error || 'Failed to delete character.');
@@ -228,69 +298,96 @@ export function CharacterSelector({
     }
   };
 
-  const { theme } = useTheme();
-  const isLight = theme === 'light';
-  const isVice = theme === 'vice' || theme === 'hacker';
+  const handleSelectCharacter = (charId: string) => {
+    soundSynth?.playSelectSound?.();
+    setSelectedCharId(charId);
+  };
+
+  const handleEnterWorld = (charId: string) => {
+    soundSynth?.playActionSound?.();
+    onSelect(charId);
+  };
 
   return (
     <div
-      className="pointer-events-auto absolute inset-0 w-full h-full overflow-y-auto z-[100] flex flex-col justify-between p-3 sm:p-6 select-none font-sans"
-      style={{ backgroundColor: isLight ? '#240046' : isVice ? '#1b121c' : '#050014' }}
+      className="pointer-events-auto absolute inset-0 w-full h-full overflow-y-auto z-20 flex flex-col justify-between p-3 sm:p-6 pt-16 pb-14 sm:pt-14 sm:pb-10 select-none font-sans bg-[#050b14]"
     >
       {/* Dynamic Horizon Background */}
       <MidnightTropicalBackground />
 
       {/* ── TOP HEADER BAR ── */}
-      <header className="relative z-30 w-full max-w-7xl mx-auto flex items-center justify-between gap-4 py-2 border-b border-pink-500/20 mb-4">
-        {/* Back Button */}
-        <button
-          onClick={handleBack}
-          className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl font-mono font-bold text-xs tracking-wider uppercase transition-all bg-black/80 border border-pink-500/40 text-pink-300 hover:text-white hover:border-[#00f5d4] hover:bg-pink-950/50 cursor-pointer shadow-lg active:scale-95"
-        >
-          <ArrowLeft size={14} strokeWidth={2.5} />
-          <span className="hidden sm:inline">Back to Gateway</span>
-          <span className="sm:hidden">Back</span>
-        </button>
-
-        {/* Center Title */}
-        <div className="flex items-center gap-3">
-          <Gamepad2 className="w-5 h-5 text-[#00f5d4] drop-shadow-[0_0_8px_rgba(0,245,212,0.8)]" />
-          <h1
-            className="text-xl sm:text-2xl font-black tracking-widest uppercase font-mono"
-            style={{
-              background: 'linear-gradient(180deg, #ffffff 0%, #ffbe0b 50%, #f20089 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              filter: 'drop-shadow(0 0 15px rgba(242,0,137,0.5))',
-            }}
+      <header className="relative z-30 w-full max-w-7xl mx-auto flex items-center justify-between gap-3 sm:gap-4 py-2 border-b border-white/10 mb-4">
+        {/* Left: Back button & Title */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            onClick={handleBack}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono font-bold text-xs tracking-wider uppercase transition-all bg-card/60 border border-border hover:border-primary/50 text-muted-foreground hover:text-foreground cursor-pointer shadow-md active:scale-95"
           >
-            SAINTS VAULT
-          </h1>
+            <ArrowLeft size={13} strokeWidth={2.5} />
+            <span className="hidden sm:inline">Gateway</span>
+            <span className="sm:hidden">Back</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            <Gamepad2 className="w-5 h-5 text-primary drop-shadow-[0_0_8px_rgba(203,178,106,0.6)]" />
+            <h1 className="text-base sm:text-xl font-black tracking-widest uppercase font-mono sg-text-gradient">
+              Saints Vault
+            </h1>
+          </div>
         </div>
 
-        {/* Server Presence Badge */}
-        <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-cyan-950/80 border border-cyan-400/40 text-[#00f5d4] text-xs font-mono font-extrabold shadow-[0_0_10px_rgba(0,245,212,0.2)]">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>{mmoPlayerCount > 0 ? `${mmoPlayerCount} Online` : 'Connected'}</span>
+        {/* Right: Options, Credits & Live Presence */}
+        <div className="flex items-center gap-2">
+          {/* Options Button */}
+          <button
+            onClick={() => {
+              soundSynth?.playSelectSound?.();
+              setShowOptions(true);
+            }}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl font-mono font-bold text-xs uppercase transition-all bg-card/60 border border-border hover:border-primary/50 text-muted-foreground hover:text-foreground cursor-pointer shadow-md active:scale-95"
+            title="Game Options"
+          >
+            <Settings size={13} className="text-primary" />
+            <span className="hidden sm:inline">Options</span>
+          </button>
+
+          {/* Credits Button */}
+          <button
+            onClick={() => {
+              soundSynth?.playSelectSound?.();
+              setShowCredits(true);
+            }}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl font-mono font-bold text-xs uppercase transition-all bg-card/60 border border-border hover:border-primary/50 text-muted-foreground hover:text-foreground cursor-pointer shadow-md active:scale-95"
+            title="Credits & Attribution"
+          >
+            <ScrollText size={13} className="text-amber-400" />
+            <span className="hidden sm:inline">Credits</span>
+          </button>
+
+          {/* Server Online Badge */}
+          <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-card/60 border border-border text-foreground text-xs font-mono font-bold shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="hidden sm:inline">{mmoPlayerCount > 0 ? `${mmoPlayerCount} Online` : 'Connected'}</span>
+          </div>
         </div>
       </header>
 
       {/* ── MAIN 2-COLUMN COMMAND DECK ── */}
-      <main className="relative z-20 flex-1 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+      <main className="relative z-20 flex-1 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch">
         
         {/* ── LEFT SECTION: HEROES ROSTER (Cols 1-8) ── */}
         <section className="lg:col-span-8 flex flex-col justify-between">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-cyan-200/80 text-xs tracking-[0.2em] uppercase font-mono flex items-center gap-2">
-              <Layers size={14} className="text-[#00f5d4]" />
-              Select Active Saint ({characters.length})
+            <p className="text-muted-foreground text-xs tracking-wider uppercase font-mono flex items-center gap-2">
+              <Layers size={14} className="text-primary" />
+              <span>Select Your Saint ({characters.length})</span>
             </p>
             <button
               onClick={() => {
                 soundSynth?.playSelectSound?.();
                 onRefresh();
               }}
-              className="text-[11px] font-mono text-pink-300 hover:text-white flex items-center gap-1.5 bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-lg border border-pink-500/30 transition-all cursor-pointer"
+              className="text-[11px] font-mono text-muted-foreground hover:text-foreground flex items-center gap-1.5 bg-card/40 hover:bg-card/70 px-2.5 py-1 rounded-lg border border-border transition-all cursor-pointer"
             >
               <RefreshCw size={11} />
               Refresh
@@ -298,120 +395,125 @@ export function CharacterSelector({
           </div>
 
           {/* Grid of Characters */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 auto-rows-fr">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 auto-rows-fr">
             {parsedCharacters.map(({ char, state, classKey, Icon, palette, charLayers }: any) => {
+              const isSelected = selectedCharId === char.id;
               const isHovered = hoveredId === char.id;
 
               return (
                 <div
                   key={char.id}
-                  onClick={() => {
-                    soundSynth?.playActionSound?.();
-                    onSelect(char.id);
-                  }}
-                  onMouseEnter={() => {
-                    soundSynth?.playSelectSound?.();
-                    setHoveredId(char.id);
-                  }}
+                  onClick={() => handleSelectCharacter(char.id)}
+                  onMouseEnter={() => setHoveredId(char.id)}
                   onMouseLeave={() => setHoveredId(null)}
-                  className="relative cursor-pointer transition-all duration-200 overflow-hidden group rounded-2xl p-[1px]"
-                  style={{
-                    clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
-                    background: isHovered
-                      ? `linear-gradient(135deg, ${palette.accent} 0%, rgba(242,0,137,0.6) 100%)`
-                      : 'linear-gradient(135deg, rgba(242,0,137,0.4) 0%, rgba(13,2,33,0.9) 100%)',
-                    boxShadow: isHovered
-                      ? `0 0 30px ${palette.glow}, 0 10px 30px rgba(0,0,0,0.7)`
-                      : '0 4px 20px rgba(0,0,0,0.5)',
-                    transform: isHovered ? 'translateY(-3px)' : 'translateY(0)',
-                    willChange: 'transform, box-shadow',
-                  }}
+                  className={`relative cursor-pointer transition-all duration-200 rounded-2xl p-4 sm:p-5 flex flex-col justify-between border ${
+                    isSelected
+                      ? 'bg-card/90 border-primary ring-2 ring-primary/50 shadow-[0_0_30px_rgba(203,178,106,0.35)] scale-[1.01]'
+                      : 'bg-card/40 border-border/60 hover:bg-card/70 hover:border-border shadow-md'
+                  }`}
                 >
-                  <div
-                    className="w-full h-full bg-[#0a0318]/95 p-4 sm:p-5 flex flex-col justify-between"
-                    style={{
-                      clipPath: 'polygon(13px 0%, 100% 0%, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0% 100%, 0% 13px)',
-                    }}
-                  >
-                    {/* Top Bar: Class Badge + Level */}
-                    <div className="flex items-center justify-between mb-3 border-b border-pink-500/20 pb-2.5">
+                  <div>
+                    {/* Top Bar: Class Badge + Selection Indicator */}
+                    <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-2.5">
                       <div className="flex items-center gap-1.5">
                         <Icon className="w-4 h-4" style={{ color: palette.accent }} />
-                        <span className="text-[10px] font-black uppercase tracking-widest font-mono text-cyan-200">
+                        <span className="text-[11px] font-black uppercase tracking-widest font-mono text-foreground">
                           {char.classId || 'WARRIOR'}
                         </span>
                       </div>
-                      <div className="px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-400/40 text-[#00f5d4] text-[11px] font-mono font-extrabold shadow-[0_0_8px_rgba(0,245,212,0.3)]">
-                        LVL {state.level || 1}
+                      <div className="flex items-center gap-2">
+                        {isSelected && (
+                          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/20 border border-primary/40 text-primary text-[10px] font-bold font-mono">
+                            <Check size={10} strokeWidth={3} /> ACTIVE
+                          </span>
+                        )}
+                        <span className="px-2 py-0.5 rounded bg-muted/60 border border-border text-foreground text-[11px] font-mono font-extrabold">
+                          LVL {state.level || 1}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Character Avatar & Pedestal */}
-                    <div className="flex items-center gap-4 mb-3">
+                    {/* Character Avatar & Stats */}
+                    <div className="flex items-center gap-3.5 mb-3">
                       <div
-                        className="w-18 h-18 rounded-xl flex items-center justify-center overflow-hidden shrink-0 bg-black/70 border border-pink-500/30 relative shadow-inner"
-                        style={{
-                          boxShadow: isHovered ? `0 0 20px ${palette.glow}` : 'inset 0 0 12px rgba(0,0,0,0.8)',
-                        }}
+                        className={`w-18 h-18 rounded-xl flex items-center justify-center overflow-hidden shrink-0 bg-black/60 border transition-all ${
+                          isSelected ? 'border-primary/60 shadow-[0_0_15px_rgba(203,178,106,0.4)]' : 'border-white/10'
+                        }`}
                       >
                         <CharacterSpritePreview
                           layers={charLayers}
                           assetProfileId={char.spriteId || 'adventurer'}
                           size={32}
-                          scale={1.8}
-                          className="transition-transform group-hover:scale-110 duration-200 drop-shadow-[0_0_10px_rgba(242,0,137,0.6)]"
+                          scale={1.9}
+                          className="transition-transform group-hover:scale-110 duration-200"
                         />
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-base sm:text-lg font-black font-mono text-white truncate group-hover:text-[#00f5d4] transition-colors">
+                        <h3 className={`text-base sm:text-lg font-black font-mono truncate transition-colors ${
+                          isSelected ? 'text-primary' : 'text-foreground'
+                        }`}>
                           {char.name}
                         </h3>
-                        <div className="flex flex-col gap-1 mt-1 text-[11px] font-mono text-slate-300">
+                        <div className="flex flex-col gap-1 mt-1 text-[11px] font-mono text-muted-foreground">
                           <div className="flex items-center gap-1.5">
                             <Heart className="w-3 h-3 text-rose-400" />
-                            <span>HP: <strong className="text-white">{state.hp || 100}/{state.maxHp || 100}</strong></span>
+                            <span>HP: <strong className="text-foreground">{state.hp || 100}/{state.maxHp || 100}</strong></span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <Coins className="w-3 h-3 text-amber-400" />
                             <span>Pouch: <strong className="text-amber-300">{(state.credits || 1000).toLocaleString()} C</strong></span>
                           </div>
                           {state.perk && (
-                            <div className="flex items-center gap-1.5 text-[10px] text-purple-300">
-                              <Zap className="w-3 h-3 text-purple-400" />
+                            <div className="flex items-center gap-1.5 text-[10px] text-cyan-300">
+                              <Zap className="w-3 h-3 text-cyan-400" />
                               <span>{state.perk.replace(/_/g, ' ')}</span>
                             </div>
                           )}
                         </div>
                       </div>
                     </div>
+                  </div>
 
-                    {/* Action Row */}
-                    <div className="flex items-center justify-between pt-3 border-t border-pink-500/20 gap-2">
+                  {/* Action Row Under Character */}
+                  <div className="pt-3 border-t border-white/10 flex items-center gap-2">
+                    {isSelected ? (
+                      /* ENTER WORLD (Active on Selected Character) */
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          soundSynth?.playActionSound?.();
-                          onSelect(char.id);
+                          handleEnterWorld(char.id);
                         }}
-                        className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-mono font-bold text-xs uppercase tracking-wider transition-all bg-gradient-to-r from-pink-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white shadow-[0_0_15px_rgba(242,0,137,0.4)] active:scale-95 cursor-pointer"
+                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-mono font-bold text-xs sm:text-sm uppercase tracking-wider transition-all bg-primary hover:brightness-110 text-primary-foreground shadow-[0_0_20px_rgba(203,178,106,0.4)] active:scale-95 cursor-pointer"
                       >
-                        <Play size={12} fill="currentColor" />
-                        ENTER REALM
+                        <Play size={14} fill="currentColor" />
+                        ENTER WORLD
                       </button>
-
+                    ) : (
+                      /* Select Button */
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          soundSynth?.playSelectSound?.();
-                          setDeleteModalChar({ id: char.id, name: char.name });
+                          handleSelectCharacter(char.id);
                         }}
-                        className="p-2 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-500/40 transition-all hover:scale-105 active:scale-95 cursor-pointer"
-                        title="Delete Saint"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl font-mono font-bold text-xs uppercase tracking-wider transition-all bg-card/60 hover:bg-card border border-border text-muted-foreground hover:text-foreground cursor-pointer"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        Select Saint
                       </button>
-                    </div>
+                    )}
+
+                    {/* Delete character button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        soundSynth?.playSelectSound?.();
+                        setDeleteModalChar({ id: char.id, name: char.name });
+                      }}
+                      className="p-2.5 rounded-xl bg-destructive/10 hover:bg-destructive/25 text-destructive border border-destructive/20 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                      title="Archive Saint"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               );
@@ -423,56 +525,27 @@ export function CharacterSelector({
                 soundSynth?.playActionSound?.();
                 onCreateNew();
               }}
-              className="cursor-pointer transition-all duration-200 flex flex-col items-center justify-center min-h-[190px] rounded-2xl p-[1px] group"
-              style={{
-                clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
-                background: 'linear-gradient(135deg, rgba(0,245,212,0.4) 0%, rgba(242,0,137,0.3) 100%)',
-              }}
+              className="cursor-pointer transition-all duration-200 flex flex-col items-center justify-center min-h-[200px] rounded-2xl border border-dashed border-primary/40 hover:border-primary bg-card/30 hover:bg-card/60 group p-6 text-center"
             >
-              <div
-                className="w-full h-full bg-[#0a0318]/85 p-6 flex flex-col items-center justify-center text-center group-hover:bg-[#12052a]/90 transition-colors"
-                style={{
-                  clipPath: 'polygon(13px 0%, 100% 0%, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0% 100%, 0% 13px)',
-                }}
-              >
-                <div className="w-13 h-13 rounded-2xl flex items-center justify-center bg-pink-950/60 border border-pink-500/50 group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(242,0,137,0.3)] mb-2">
-                  <Plus className="w-6 h-6 text-[#00f5d4] group-hover:text-white transition-colors" strokeWidth={2.5} />
-                </div>
-                <p className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ffbe0b] to-[#00f5d4] uppercase tracking-widest font-mono">
-                  FORGE NEW SAINT
-                </p>
-                <p className="text-[10px] text-slate-300 font-mono mt-1">Create Saint & customize skills</p>
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-primary/10 border border-primary/30 group-hover:scale-110 transition-transform shadow-inner mb-2.5">
+                <Plus className="w-6 h-6 text-primary group-hover:text-primary-foreground transition-colors" strokeWidth={2.5} />
               </div>
+              <p className="text-sm font-black text-primary uppercase tracking-widest font-mono">
+                FORGE NEW SAINT
+              </p>
+              <p className="text-[11px] text-muted-foreground font-mono mt-1">
+                Create new character & customize skills
+              </p>
             </div>
           </div>
         </section>
 
-        {/* ── RIGHT SECTION: LIVE COMMS & HALL OF CHAMPIONS (Cols 9-12) ── */}
+        {/* ── RIGHT SECTION: LOBBY CHAT & HALL OF CHAMPIONS (Cols 9-12) ── */}
         <section
-          className="lg:col-span-4 flex flex-col justify-between rounded-2xl border p-4 bg-[#0a031a]/90 backdrop-blur-xl shadow-2xl relative overflow-hidden"
-          style={{
-            borderColor: 'rgba(242,0,137,0.35)',
-            boxShadow: '0 0 30px rgba(242,0,137,0.15), inset 0 0 20px rgba(0,0,0,0.8)',
-            clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
-          }}
+          className="lg:col-span-4 flex flex-col justify-between rounded-2xl border border-border/60 p-4 bg-card/60 backdrop-blur-xl shadow-xl relative overflow-hidden"
         >
           {/* Side Tabs Header */}
-          <div className="flex items-center gap-2 border-b border-pink-500/20 pb-3 mb-3">
-            <button
-              onClick={() => {
-                soundSynth?.playSelectSound?.();
-                setActiveSideTab('LEADERBOARD');
-              }}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeSideTab === 'LEADERBOARD'
-                  ? 'bg-amber-500/25 text-amber-300 border border-amber-400/50 shadow-[0_0_12px_rgba(251,191,36,0.25)]'
-                  : 'text-slate-400 hover:text-white bg-white/5 border border-transparent'
-              }`}
-            >
-              <Trophy size={13} className="text-amber-400" />
-              Champions
-            </button>
-
+          <div className="flex items-center gap-2 border-b border-white/10 pb-3 mb-3">
             <button
               onClick={() => {
                 soundSynth?.playSelectSound?.();
@@ -480,26 +553,95 @@ export function CharacterSelector({
               }}
               className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                 activeSideTab === 'CHAT'
-                  ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400/50 shadow-[0_0_12px_rgba(0,245,212,0.25)]'
-                  : 'text-slate-400 hover:text-white bg-white/5 border border-transparent'
+                  ? 'bg-primary/20 text-primary border border-primary/40 shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground bg-card/30 border border-transparent'
               }`}
             >
-              <MessageSquare size={13} className="text-cyan-400" />
-              Global Chat
+              <MessageSquare size={13} className="text-primary" />
+              Lobby Chat
+            </button>
+
+            <button
+              onClick={() => {
+                soundSynth?.playSelectSound?.();
+                setActiveSideTab('LEADERBOARD');
+              }}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                activeSideTab === 'LEADERBOARD'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40 shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground bg-card/30 border border-transparent'
+              }`}
+            >
+              <Trophy size={13} className="text-amber-400" />
+              Champions
             </button>
           </div>
 
-          {/* TAB 1: LEADERBOARD CONTENT */}
+          {/* TAB 1: LOBBY CHAT CONTENT (DEFAULT) */}
+          {activeSideTab === 'CHAT' && (
+            <div className="flex-1 flex flex-col justify-between min-h-[300px]">
+              {/* Message History List */}
+              <div
+                ref={chatScrollRef}
+                className="space-y-2.5 overflow-y-auto max-h-[320px] pr-1 mb-3 scrollbar-thin font-mono text-xs"
+              >
+                {chatMessages.map((msg) => {
+                  const isSys = msg.type === 'SYSTEM';
+                  const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`p-2.5 rounded-xl border leading-relaxed ${
+                        isSys
+                          ? 'bg-primary/10 border-primary/20 text-primary text-[11px]'
+                          : 'bg-black/50 border-white/5 text-foreground'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1 mb-1 text-[10px] text-muted-foreground">
+                        <span className="font-bold text-primary">
+                          {msg.sender}
+                        </span>
+                        <span>{time}</span>
+                      </div>
+                      <p className="text-xs break-words">{msg.text}</p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Chat Input Box */}
+              <form onSubmit={handleSendChat} className="flex gap-2">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Chat with lobby players..."
+                  maxLength={160}
+                  className="flex-1 px-3 py-2 rounded-xl bg-black/60 border border-border text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/60 transition-colors"
+                />
+                <button
+                  type="submit"
+                  disabled={!chatInput.trim()}
+                  className="px-3.5 py-2 rounded-xl bg-primary hover:brightness-110 text-primary-foreground font-mono font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center shadow-sm"
+                >
+                  <Send size={13} />
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* TAB 2: LEADERBOARD CONTENT */}
           {activeSideTab === 'LEADERBOARD' && (
-            <div className="flex-1 flex flex-col justify-between">
-              <div className="space-y-2 overflow-y-auto max-h-[320px] pr-1">
+            <div className="flex-1 flex flex-col justify-between min-h-[300px]">
+              <div className="space-y-2 overflow-y-auto max-h-[340px] pr-1">
                 {loadingLeaderboards ? (
-                  <div className="text-center py-10 text-xs font-mono text-slate-400 animate-pulse">
-                    Scanning realm saints...
+                  <div className="text-center py-10 text-xs font-mono text-muted-foreground animate-pulse">
+                    Scanning realm rankings...
                   </div>
                 ) : topOperatives.length === 0 ? (
-                  <div className="text-center py-10 text-xs font-mono text-slate-400">
-                    No champion saints registered yet.
+                  <div className="text-center py-10 text-xs font-mono text-muted-foreground">
+                    No champion rankings recorded yet.
                   </div>
                 ) : (
                   topOperatives.map((op, idx) => {
@@ -514,8 +656,8 @@ export function CharacterSelector({
                         key={op.id || idx}
                         className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
                           isTop
-                            ? 'bg-amber-950/40 border-amber-400/40 shadow-[0_0_10px_rgba(251,191,36,0.15)]'
-                            : 'bg-black/50 border-pink-500/20'
+                            ? 'bg-amber-500/10 border-amber-400/40 shadow-sm'
+                            : 'bg-black/40 border-white/5'
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
@@ -527,16 +669,16 @@ export function CharacterSelector({
                                 ? 'bg-slate-300 text-slate-950'
                                 : idx === 2
                                 ? 'bg-amber-700 text-white'
-                                : 'bg-white/10 text-slate-400'
+                                : 'bg-white/10 text-muted-foreground'
                             }`}
                           >
                             {isTop ? <Crown size={12} /> : idx + 1}
                           </div>
                           <div className="truncate">
-                            <div className="text-xs font-bold font-mono text-white truncate">
+                            <div className="text-xs font-bold font-mono text-foreground truncate">
                               {op.name}
                             </div>
-                            <div className="text-[10px] font-mono text-cyan-300">
+                            <div className="text-[10px] font-mono text-primary">
                               {op.classId || 'WARRIOR'}
                             </div>
                           </div>
@@ -546,7 +688,7 @@ export function CharacterSelector({
                           <div className="text-xs font-black text-amber-300">
                             LVL {st.level || op.level || 1}
                           </div>
-                          <div className="text-[9px] text-slate-400">
+                          <div className="text-[9px] text-muted-foreground">
                             {(st.credits || 1000).toLocaleString()} C
                           </div>
                         </div>
@@ -556,117 +698,66 @@ export function CharacterSelector({
                 )}
               </div>
 
-              {/* Leaderboard Footer */}
-              <div className="pt-3 border-t border-pink-500/20 flex items-center justify-between text-[11px] font-mono text-slate-400">
-                <span className="flex items-center gap-1 text-amber-300">
-                  <Flame size={12} /> Live Standings
-                </span>
-                <span>Top Saints</span>
+              <div className="p-3 bg-black/40 rounded-xl border border-white/5 mt-3 text-center">
+                <p className="text-[10px] font-mono text-muted-foreground">
+                  Earn EXP & Credits in battle to rank up on the Champions Leaderboard.
+                </p>
               </div>
-            </div>
-          )}
-
-          {/* TAB 2: CHAT CONTENT */}
-          {activeSideTab === 'CHAT' && (
-            <div className="flex-1 flex flex-col justify-between">
-              {/* Message List */}
-              <div
-                ref={chatScrollRef}
-                className="flex-1 space-y-2 overflow-y-auto max-h-[280px] pr-1 mb-2"
-              >
-                {chatMessages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`p-2 rounded-xl text-xs font-mono ${
-                      msg.type === 'SYSTEM'
-                        ? 'bg-purple-950/60 border border-purple-500/40 text-purple-200'
-                        : 'bg-black/60 border border-pink-500/20 text-slate-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between text-[10px] mb-1">
-                      <span className={`font-bold ${msg.type === 'SYSTEM' ? 'text-purple-300' : 'text-[#00f5d4]'}`}>
-                        {msg.sender}
-                      </span>
-                      <span className="text-slate-500">
-                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                    <p className="break-words text-[11px] leading-relaxed">{msg.text}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Chat Input */}
-              <form onSubmit={handleSendChat} className="flex gap-2 pt-2 border-t border-pink-500/20">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Transmit to lobby..."
-                  maxLength={140}
-                  className="flex-1 px-3 py-1.5 rounded-lg bg-black/70 border border-pink-500/30 text-white placeholder:text-slate-500 text-xs font-mono focus:outline-none focus:border-[#00f5d4]"
-                />
-                <button
-                  type="submit"
-                  disabled={!chatInput.trim()}
-                  className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-pink-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white text-xs font-mono font-bold disabled:opacity-40 cursor-pointer"
-                >
-                  <Send size={12} />
-                </button>
-              </form>
             </div>
           )}
         </section>
       </main>
 
-      {/* ── FOOTER BAR ── */}
-      <footer className="relative z-30 w-full max-w-7xl mx-auto flex items-center justify-between text-[10px] font-mono text-pink-500/60 pt-3 border-t border-pink-500/20 mt-4">
-        <span>⚔ Saints Gaming MMO Core Engine // Hero Gate ⚔</span>
-        <span className="text-cyan-400/80">Press ENTER or click any card to deploy</span>
-      </footer>
-
-      {/* ── HIGH-TECH DELETE CONFIRMATION MODAL ── */}
+      {/* ── MODALS ── */}
+      {/* Delete Confirmation Modal */}
       {deleteModalChar && (
-        <div className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div
-            className="w-full max-w-md bg-[#0d0221] border-2 border-rose-500/80 rounded-2xl p-6 shadow-[0_0_50px_rgba(244,63,94,0.4)] relative text-center"
-            style={{
-              clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
-            }}
-          >
-            <div className="w-14 h-14 rounded-2xl bg-rose-950/80 border border-rose-500 flex items-center justify-center mx-auto mb-4 text-rose-400">
-              <AlertTriangle size={28} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="w-full max-w-sm rounded-2xl border border-destructive/40 bg-card p-6 shadow-2xl font-mono text-center">
+            <div className="w-12 h-12 rounded-full bg-destructive/15 border border-destructive/30 flex items-center justify-center mx-auto mb-3 text-destructive">
+              <AlertTriangle size={24} />
             </div>
-
-            <h3 className="text-xl font-black font-mono uppercase text-white mb-2 tracking-wider">
+            <h3 className="text-lg font-black text-foreground uppercase tracking-wider mb-2">
               Archive Saint?
             </h3>
-            <p className="text-xs font-mono text-rose-200/80 leading-relaxed mb-6">
-              Permanently delete Saint <strong className="text-white">"{deleteModalChar.name}"</strong>? All quest
-              progression, inventory items, and world rank will be lost.
+            <p className="text-xs text-muted-foreground mb-6 leading-relaxed">
+              Are you sure you want to delete <strong className="text-destructive">{deleteModalChar.name}</strong>? This action cannot be undone.
             </p>
-
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex gap-2">
               <button
-                onClick={() => {
-                  soundSynth?.playSelectSound?.();
-                  setDeleteModalChar(null);
-                }}
+                onClick={() => setDeleteModalChar(null)}
                 disabled={isDeleting}
-                className="py-2.5 rounded-xl font-mono font-bold text-xs uppercase bg-white/10 hover:bg-white/15 text-white border border-white/20 transition-all cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl border border-border bg-muted/60 text-muted-foreground hover:text-foreground text-xs font-bold uppercase transition-all cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
                 disabled={isDeleting}
-                className="py-2.5 rounded-xl font-mono font-black text-xs uppercase bg-rose-600 hover:bg-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.5)] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground text-xs font-bold uppercase tracking-wider shadow-lg active:scale-95 transition-all cursor-pointer"
               >
-                {isDeleting ? 'Archiving...' : 'Confirm Delete'}
+                {isDeleting ? 'Archiving...' : 'Delete'}
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Options Modal */}
+      {showOptions && (
+        <GameOptionsMenu
+          isOpen={showOptions}
+          onClose={() => setShowOptions(false)}
+          isFullscreen={false}
+          onToggleFullscreen={() => {}}
+          isAdminUser={false}
+          isCreationMode={false}
+          onToggleDevEditor={() => {}}
+        />
+      )}
+
+      {/* Credits Modal */}
+      {showCredits && (
+        <CreditsModal onClose={() => setShowCredits(false)} />
       )}
     </div>
   );

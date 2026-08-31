@@ -48,7 +48,7 @@ export default function GameLogin() {
 
   return (
     <div
-      className="pointer-events-auto absolute inset-0 z-[210] flex items-center justify-center animate-in fade-in duration-300 select-none font-sans"
+      className="pointer-events-auto absolute inset-0 z-20 flex items-center justify-center animate-in fade-in duration-300 select-none font-sans pt-14 pb-12"
       style={{ backgroundColor: isLight ? '#240046' : isVice ? '#1b121c' : '#050014' }}
     >
       {/* Dynamic Horizon Background */}

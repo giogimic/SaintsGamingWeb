@@ -136,7 +136,7 @@ export default function ServerSelect() {
 
   return (
     <div
-      className="pointer-events-auto absolute inset-0 z-[200] flex flex-col items-center justify-center animate-in fade-in duration-500 select-none font-sans"
+      className="pointer-events-auto absolute inset-0 z-20 flex flex-col items-center justify-center animate-in fade-in duration-500 select-none font-sans pt-16 pb-14 sm:pt-14 sm:pb-10"
       style={{ backgroundColor: isLight ? '#240046' : isVice ? '#1b121c' : '#050014' }}
     >
       {/* Dynamic Horizon Background */}
@@ -148,7 +148,7 @@ export default function ServerSelect() {
           soundSynth?.playSelectSound?.();
           setGameMode('TITLE_SCREEN');
         }}
-        className="absolute top-6 left-6 z-30 flex items-center gap-2 px-4 py-2 rounded-xl font-mono font-bold text-xs tracking-wider uppercase transition-all bg-black/80 border border-pink-500/40 text-pink-300 hover:text-white hover:border-[#00f5d4] hover:bg-pink-950/40 cursor-pointer shadow-lg active:scale-95"
+        className="absolute top-16 left-6 z-30 flex items-center gap-2 px-4 py-2 rounded-xl font-mono font-bold text-xs tracking-wider uppercase transition-all bg-black/80 border border-pink-500/40 text-pink-300 hover:text-white hover:border-[#00f5d4] hover:bg-pink-950/40 cursor-pointer shadow-lg active:scale-95"
       >
         <ArrowLeft size={14} strokeWidth={2.5} />
         Back to Gateway

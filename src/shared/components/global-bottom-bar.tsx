@@ -77,7 +77,7 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "v2.1.559",
+  siteVersion = "v2.1.562",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;
@@ -87,7 +87,7 @@ export function GlobalBottomBar({
   const isStudioRoute = pathname?.startsWith("/studio");
   if (isStudioRoute) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-[120] pointer-events-none">
+      <div className="fixed bottom-0 left-0 right-0 z-[250] pointer-events-none">
         <StudioBottomToolbar />
       </div>
     );
@@ -266,7 +266,7 @@ export function GlobalBottomBar({
   return (
     <>
       {/* ── PERSISTENT GLOBAL BOTTOM BAR ──────────────────────────────── */}
-      <footer className={`fixed bottom-0 left-0 right-0 z-40 h-12 sm:h-8 bg-[#050b14]/75 backdrop-blur-xl border-t border-white/[0.08] shadow-2xl px-3 sm:px-6 flex items-center justify-between text-xs font-mono select-none pointer-events-auto transition-all duration-300 ${
+      <footer className={`fixed bottom-0 left-0 right-0 z-[250] h-12 sm:h-8 bg-[#050b14]/75 backdrop-blur-xl border-t border-white/[0.08] shadow-2xl px-3 sm:px-6 flex items-center justify-between text-xs font-mono select-none pointer-events-auto transition-all duration-300 ${
         isBarsHidden ? "opacity-0 translate-y-full pointer-events-none" : "opacity-100 translate-y-0"
       }`}>
           

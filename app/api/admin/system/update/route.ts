@@ -5,7 +5,7 @@ import { exec } from "child_process";
 import path from "path";
 import os from "os";
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -22,25 +22,41 @@ export async function POST() {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
+    let updateType = "auto";
+    try {
+      const body = await req.json();
+      if (body && typeof body.updateType === "string") {
+        const cleanType = body.updateType.toLowerCase().trim();
+        if (["auto", "quick", "app", "db", "full", "restart"].includes(cleanType)) {
+          updateType = cleanType;
+        }
+      }
+    } catch {
+      // Fall back to default 'auto' if no JSON body
+    }
+
     const isWindows = os.platform() === "win32";
     const scriptName = isWindows ? "update.bat" : "update.sh";
-    
-    // Execute the script in the background
-    // We don't await the full result because the server might restart mid-request
     const scriptPath = path.join(process.cwd(), "scripts", scriptName);
     
-    exec(`"${scriptPath}"`, (error, stdout, stderr) => {
+    // Execute the script in the background with the chosen update profile
+    const cmd = isWindows 
+      ? `"${scriptPath}" ${updateType}` 
+      : `bash "${scriptPath}" --type=${updateType} --non-interactive`;
+    
+    exec(cmd, (error, stdout, stderr) => {
       if (error) {
-        console.error(`Update script error: ${error}`);
+        console.error(`Update script (${updateType}) error: ${error}`);
         return;
       }
-      console.log(`Update script output: ${stdout}`);
-      if (stderr) console.error(`Update script stderr: ${stderr}`);
+      console.log(`Update script (${updateType}) output: ${stdout}`);
+      if (stderr) console.error(`Update script (${updateType}) stderr: ${stderr}`);
     });
 
     return NextResponse.json({ 
       success: true, 
-      message: "Update process started. The server may restart shortly." 
+      updateType,
+      message: `System update (${updateType.toUpperCase()}) initiated. The server may restart shortly.` 
     });
 
   } catch (error) {

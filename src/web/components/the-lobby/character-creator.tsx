@@ -498,7 +498,7 @@ export function CharacterCreator({
 
   return (
     <div
-      className="pointer-events-auto absolute inset-0 w-full h-full overflow-y-auto z-[100] flex flex-col justify-between p-3 sm:p-6 select-none font-sans"
+      className="pointer-events-auto absolute inset-0 w-full h-full overflow-y-auto z-20 flex flex-col justify-between p-3 sm:p-6 pt-16 pb-14 sm:pt-14 sm:pb-10 select-none font-sans"
       style={{ backgroundColor: isLight ? '#240046' : isVice ? '#1b121c' : '#050014' }}
     >
       {/* Dynamic Horizon Background */}

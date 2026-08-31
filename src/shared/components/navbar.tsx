@@ -83,7 +83,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.559",
+  siteVersion = "v2.1.562",
 }: {
   session: any | null;
   dbPermissionLevel?: number;
@@ -112,6 +112,8 @@ export function Navbar({
         // ignore
       }
     }
+    // Always ensure navigation bars are visible when navigating to any page
+    useImmersiveStore.getState().showBars();
   }, [pathname]);
 
   const user = session?.user;
@@ -123,7 +125,7 @@ export function Navbar({
   const isStudioRoute = pathname?.startsWith("/studio");
   if (isStudioRoute) {
     return (
-      <div className="fixed top-0 z-[120] w-full pointer-events-none">
+      <div className="fixed top-0 z-[250] w-full pointer-events-none">
         <StudioMenuBar />
       </div>
     );
@@ -140,7 +142,7 @@ export function Navbar({
   const pageTitle = getPageTitle(pathname);
 
   return (
-    <div className="fixed top-0 z-50 w-full pointer-events-none">
+    <div className="fixed top-0 z-[250] w-full pointer-events-none">
       <header className={`pointer-events-auto w-full bg-[#050b14]/75 backdrop-blur-xl border-b border-white/[0.08] shadow-md transition-all duration-300 ${
         isBarsHidden ? "opacity-0 -translate-y-full pointer-events-none" : "opacity-100 translate-y-0"
       }`}>

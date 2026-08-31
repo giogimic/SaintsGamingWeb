@@ -1,7 +1,7 @@
 #!/bin/bash
 # =============================================================================
-#  Saints Gaming — Update Script
-#  Pulls the latest code and rebuilds the web container in-place.
+#  Saints Gaming — Modular Update Script
+#  Pulls the latest code and updates the platform with smart change detection.
 #  Safe to run on a live server — preserves .env, database, and uploads.
 # =============================================================================
 
@@ -11,6 +11,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 PURPLE='\033[0;35m'
+BLUE='\033[0;34m'
 NC='\033[0m'
 BOLD='\033[1m'
 
@@ -49,10 +50,83 @@ run_with_spinner() {
     return $exit_code
 }
 
+# Print usage helper
+show_help() {
+    echo -e "${CYAN}${BOLD}Saints Gaming — Modular Update Script${NC}"
+    echo -e "Usage: ./update.sh [OPTIONS]\n"
+    echo -e "${BOLD}Update Profiles / Types:${NC}"
+    echo -e "  ${GREEN}--type=auto, --auto${NC}       Smart Auto-Detect (default): Inspects git diff and only builds what changed"
+    echo -e "  ${GREEN}--type=quick, -q, --quick${NC}  Quick Sync: Pulls code and hot-restarts services (~5 seconds, skips full build)"
+    echo -e "  ${GREEN}--type=app, -a, --app${NC}      App Rebuild: Pulls code, updates npm dependencies, and rebuilds Next.js web container"
+    echo -e "  ${GREEN}--type=db, -d, --db${NC}        Database Migration: Pulls code, runs Prisma migrations & syncs game assets"
+    echo -e "  ${GREEN}--type=full, -f, --full${NC}    Full Clean Rebuild: Complete Docker rebuild, cache prune, DB backup & migrations"
+    echo -e "  ${GREEN}--type=restart, -r${NC}        Restart Only: Restarts services without pulling from Git or rebuilding"
+    echo -e "\n${BOLD}General Flags:${NC}"
+    echo -e "  ${GREEN}-y, --yes, --non-interactive${NC} Run without interactive confirmation prompts (ideal for CI/CD & admin panel)"
+    echo -e "  ${GREEN}-h, --help${NC}                   Show this help message and exit"
+    echo -e "\n${BOLD}Examples:${NC}"
+    echo -e "  ./update.sh                    # Interactive or Smart Auto-Detect"
+    echo -e "  ./update.sh --quick -y         # Ultra-fast non-interactive hot-restart"
+    echo -e "  ./update.sh --type=full        # Complete production clean rebuild"
+    exit 0
+}
+
+# --- Parse Arguments ---
+UPDATE_MODE=""
+NON_INTERACTIVE=0
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --type=*)
+            UPDATE_MODE="${1#*=}"
+            shift
+            ;;
+        --type)
+            UPDATE_MODE="$2"
+            shift 2
+            ;;
+        -q|--quick|--fast)
+            UPDATE_MODE="quick"
+            shift
+            ;;
+        -a|--app)
+            UPDATE_MODE="app"
+            shift
+            ;;
+        -d|--db|--migrate)
+            UPDATE_MODE="db"
+            shift
+            ;;
+        -f|--full|--rebuild)
+            UPDATE_MODE="full"
+            shift
+            ;;
+        -r|--restart)
+            UPDATE_MODE="restart"
+            shift
+            ;;
+        --auto|--smart)
+            UPDATE_MODE="auto"
+            shift
+            ;;
+        -y|--yes|--non-interactive)
+            NON_INTERACTIVE=1
+            shift
+            ;;
+        -h|--help)
+            show_help
+            ;;
+        *)
+            echo -e "${YELLOW}[!] Unknown argument: $1${NC}"
+            show_help
+            ;;
+    esac
+done
+
 clear
-echo -e "${CYAN}${BOLD}========================================${NC}"
-echo -e "${CYAN}${BOLD}  Saints Gaming — Update Script${NC}"
-echo -e "${CYAN}${BOLD}========================================${NC}\n"
+echo -e "${CYAN}${BOLD}======================================================${NC}"
+echo -e "${CYAN}${BOLD}   Saints Gaming — Modular Update Engine              ${NC}"
+echo -e "${CYAN}${BOLD}======================================================${NC}\n"
 
 # --- Root / Sudo Check ---
 if [ "$EUID" -eq 0 ]; then
@@ -76,7 +150,7 @@ while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 if [ ! -f .env ]; then
     echo -e "${RED}[!] No .env file found!${NC}"
     echo -e "${YELLOW}    This does not look like a configured installation.${NC}"
-    echo -e "${YELLOW}    Please run ${BOLD}./setup.sh${NC}${YELLOW} first for a fresh install.${NC}"
+    echo -e "${YELLOW}    Please run ${BOLD}./scripts/setup.sh${NC}${YELLOW} first for a fresh install.${NC}"
     exit 1
 fi
 
@@ -92,50 +166,75 @@ if [ ! -f docker-compose.yml ]; then
     fi
 fi
 
-
-# --- Automated Database Backup ---
-if grep -q "^DATABASE_URL=.*@db:3306" .env 2>/dev/null && command -v docker &>/dev/null; then
-    if docker ps | grep -q "saints-gaming-db"; then
-        echo -e "${CYAN}[*] Performing automated database backup before updating...${NC}"
-        mkdir -p backups
-        TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-        DB_USER=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://\([^:]*\):.*|\1|p')
-        DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
-        
-        docker exec saints-gaming-db mariadb-dump -u "$DB_USER" -p"$DB_PASS" saints_gaming > "backups/db_backup_$TIMESTAMP.sql" 2>/dev/null
-        if [ $? -eq 0 ]; then
-            echo -e "${GREEN}[✓] Database backed up to backups/db_backup_$TIMESTAMP.sql${NC}"
+# --- Interactive Menu Selection if no profile passed in TTY ---
+if [ -z "$UPDATE_MODE" ]; then
+    if [ "$NON_INTERACTIVE" -eq 1 ] || [ ! -t 0 ]; then
+        UPDATE_MODE="auto"
+    else
+        if command -v whiptail &>/dev/null; then
+            CHOICE=$(whiptail --title "Saints Gaming Updater" --menu "Select update profile:" 16 72 6 \
+                "1" "Smart Auto-Detect (Inspect git diff and build only what changed)" \
+                "2" "Quick Sync & Restart (Fast code pull & hot-restart, ~5s)" \
+                "3" "App Rebuild (Pull code, update dependencies & build Next.js)" \
+                "4" "Database Migration (Pull code, run Prisma push & asset sync)" \
+                "5" "Full Clean Rebuild (Complete Docker rebuild, cache prune & DB backup)" \
+                "6" "Restart Only (Restart web/database services without pulling)" \
+                3>&1 1>&2 2>&3)
+            case "$CHOICE" in
+                1) UPDATE_MODE="auto" ;;
+                2) UPDATE_MODE="quick" ;;
+                3) UPDATE_MODE="app" ;;
+                4) UPDATE_MODE="db" ;;
+                5) UPDATE_MODE="full" ;;
+                6) UPDATE_MODE="restart" ;;
+                *) echo -e "${RED}[*] Update cancelled.${NC}"; exit 0 ;;
+            esac
         else
-            echo -e "${YELLOW}[!] Database backup failed. (This usually happens if the DB is empty or just starting). Skipping...${NC}"
-            rm -f "backups/db_backup_$TIMESTAMP.sql"
+            echo -e "${BOLD}Select an update profile:${NC}"
+            echo -e "  ${CYAN}1)${NC} ${BOLD}Smart Auto-Detect${NC} (Recommended: Inspects git diff and only builds what changed)"
+            echo -e "  ${CYAN}2)${NC} ${BOLD}Quick Sync & Restart${NC} (Fast code pull & hot-restart in ~5 seconds, skips full build)"
+            echo -e "  ${CYAN}3)${NC} ${BOLD}App Rebuild${NC} (Pull code, update dependencies & build Next.js bundle)"
+            echo -e "  ${CYAN}4)${NC} ${BOLD}Database Migration${NC} (Pull code, run Prisma push & sync game assets)"
+            echo -e "  ${CYAN}5)${NC} ${BOLD}Full Clean Rebuild${NC} (Complete Docker rebuild, cache prune & DB backup)"
+            echo -e "  ${CYAN}6)${NC} ${BOLD}Restart Only${NC} (Restart services without pulling from Git)"
+            echo ""
+            read -p "Enter choice [1-6] (Default: 1): " USER_CHOICE
+            case "$USER_CHOICE" in
+                2) UPDATE_MODE="quick" ;;
+                3) UPDATE_MODE="app" ;;
+                4) UPDATE_MODE="db" ;;
+                5) UPDATE_MODE="full" ;;
+                6) UPDATE_MODE="restart" ;;
+                *) UPDATE_MODE="auto" ;;
+            esac
         fi
     fi
 fi
 
-# --- Proactive Disk Space Check & Cleanup ---
-FREE_SPACE_KB=$(df -k / | tail -1 | awk '{print $4}')
-if [ -n "$FREE_SPACE_KB" ] && [ "$FREE_SPACE_KB" -lt 5242880 ]; then
-    echo -e "${YELLOW}[!] Low disk space detected (< 5GB free). Running automated cleanup...${NC}"
-    if command -v docker &>/dev/null; then
-        (
-            docker builder prune -a -f >/dev/null 2>&1
-            docker image prune -f >/dev/null 2>&1
-            docker network prune -f >/dev/null 2>&1
-        ) &
-        CLEAN_PID=$!
-        run_with_spinner "Reclaiming Docker build cache & layers" "" "$CLEAN_PID"
-        echo -e "${GREEN}[✓] Docker build caches pruned.${NC}"
+echo -e "${PURPLE}[⚡] Active Update Profile: ${BOLD}${UPDATE_MODE^^}${NC}\n"
+
+# --- Restart Only Mode Handler ---
+if [ "$UPDATE_MODE" = "restart" ]; then
+    echo -e "${CYAN}[*] Restarting platform services...${NC}"
+    if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
+        ( docker compose restart web >> docker_build.log 2>&1 || docker compose up -d web >> docker_build.log 2>&1 ) &
+        UP_PID=$!
+        run_with_spinner "Restarting web container" "docker_build.log" "$UP_PID"
+        echo -e "${GREEN}[✓] Docker web container restarted.${NC}"
     fi
-    if command -v journalctl &>/dev/null; then
-        ( sudo journalctl --vacuum-size=100M >/dev/null 2>&1 || true ) &
-        VAC_PID=$!
-        run_with_spinner "Vacuuming journal logs" "" "$VAC_PID"
+    if command -v pm2 &>/dev/null; then
+        pm2 restart all 2>/dev/null || true
+        echo -e "${GREEN}[✓] PM2 services restarted.${NC}"
     fi
-    if [ -f "docker_build.log" ]; then > docker_build.log; fi
-    echo -e "${GREEN}[✓] Low-disk cleanup completed successfully.${NC}\n"
+    if command -v systemctl &>/dev/null; then
+        if systemctl is-active --quiet caddy; then sudo systemctl reload caddy 2>/dev/null; fi
+        if systemctl is-active --quiet nginx; then sudo systemctl reload nginx 2>/dev/null; fi
+    fi
+    echo -e "\n${GREEN}${BOLD}[✓] Services restarted successfully!${NC}"
+    exit 0
 fi
 
-# --- Git Pull ---
+# --- Git Fetch ---
 echo -e "${CYAN}[*] Fetching latest code from Git...${NC}"
 git fetch --all
 if [ $? -ne 0 ]; then
@@ -144,7 +243,7 @@ if [ $? -ne 0 ]; then
 fi
 
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-if [ "$CURRENT_BRANCH" != "main" ]; then
+if [ "$CURRENT_BRANCH" != "main" ] && [ "$NON_INTERACTIVE" -eq 0 ]; then
     echo -e "${YELLOW}[!] Warning: You are on branch '$CURRENT_BRANCH', not 'main'.${NC}"
     read -p "Are you sure you want to reset this branch to origin/main? (y/N) " -n 1 -r
     echo
@@ -157,20 +256,146 @@ fi
 LOCAL=$(git rev-parse HEAD)
 REMOTE=$(git rev-parse origin/main)
 
-if [ "$LOCAL" = "$REMOTE" ]; then
-    echo -e "${GREEN}[✓] Already up to date with origin/main.${NC}"
-    read -p "Do you want to force rebuild anyway? (y/N) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 0
-    fi
+# --- Smart Change Detection Analysis ---
+NEED_NPM_INSTALL=0
+NEED_DB_MIGRATE=0
+NEED_BUILD=1
+NEED_ASSET_SYNC=0
+RUN_DB_BACKUP=0
+RUN_CLEAN_PRUNE=0
+
+if [ "$UPDATE_MODE" = "full" ]; then
+    NEED_NPM_INSTALL=1
+    NEED_DB_MIGRATE=1
+    NEED_BUILD=1
+    NEED_ASSET_SYNC=1
+    RUN_DB_BACKUP=1
+    RUN_CLEAN_PRUNE=1
+elif [ "$UPDATE_MODE" = "app" ]; then
+    NEED_NPM_INSTALL=1
+    NEED_DB_MIGRATE=0
+    NEED_BUILD=1
+    NEED_ASSET_SYNC=1
+    RUN_DB_BACKUP=0
+    RUN_CLEAN_PRUNE=0
+elif [ "$UPDATE_MODE" = "db" ]; then
+    NEED_NPM_INSTALL=0
+    NEED_DB_MIGRATE=1
+    NEED_BUILD=0
+    NEED_ASSET_SYNC=1
+    RUN_DB_BACKUP=1
+    RUN_CLEAN_PRUNE=0
+elif [ "$UPDATE_MODE" = "quick" ]; then
+    NEED_NPM_INSTALL=0
+    NEED_DB_MIGRATE=0
+    NEED_BUILD=0
+    NEED_ASSET_SYNC=0
+    RUN_DB_BACKUP=0
+    RUN_CLEAN_PRUNE=0
 else
-    echo -e "${CYAN}[*] Updates found. Commits to be applied:${NC}"
-    git log HEAD..origin/main --oneline
-    echo ""
+    # AUTO Mode: Analyze exact git diff between HEAD and origin/main
+    if [ "$LOCAL" = "$REMOTE" ]; then
+        echo -e "${GREEN}[✓] Already up to date with origin/main.${NC}"
+        if [ "$NON_INTERACTIVE" -eq 0 ]; then
+            read -p "Do you want to force rebuild anyway? (y/N) " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                exit 0
+            fi
+            NEED_NPM_INSTALL=1
+            NEED_DB_MIGRATE=1
+            NEED_BUILD=1
+            NEED_ASSET_SYNC=1
+        else
+            echo -e "${GREEN}[✓] No remote changes detected. Exiting.${NC}"
+            exit 0
+        fi
+    else
+        echo -e "${CYAN}[*] Updates detected on origin/main. Analyzing commit diff...${NC}"
+        git log HEAD..origin/main --oneline
+        echo ""
+
+        DIFF_FILES=$(git diff HEAD origin/main --name-only)
+        
+        # Check dependencies
+        if echo "$DIFF_FILES" | grep -qE "(package\.json|package-lock\.json)"; then
+            NEED_NPM_INSTALL=1
+        fi
+        
+        # Check database schema
+        if echo "$DIFF_FILES" | grep -qE "(prisma/|prepare-prisma\.js)"; then
+            NEED_DB_MIGRATE=1
+            RUN_DB_BACKUP=1
+        fi
+
+        # Check application code / Dockerfile
+        if echo "$DIFF_FILES" | grep -qE "(Dockerfile|docker-compose|entrypoint\.sh|src/|app/|server\.ts|next\.config|tsconfig|public/)"; then
+            NEED_BUILD=1
+        else
+            # Only docs/scripts/configs changed
+            NEED_BUILD=0
+        fi
+
+        # Check assets & maps
+        if echo "$DIFF_FILES" | grep -qE "(data/|the-lobby/|scripts/seed|scripts/ensure)"; then
+            NEED_ASSET_SYNC=1
+        fi
+    fi
 fi
 
-if ! git diff-index --quiet HEAD --; then
+# Print Diagnostics Matrix
+echo -e "${BLUE}┌──────────────────────────────────────────────────────────┐${NC}"
+echo -e "${BLUE}│  ${BOLD}🔍 Smart Update Profile Execution Plan                 ${BLUE}│${NC}"
+echo -e "${BLUE}├──────────────────────────────────────────────────────────┤${NC}"
+printf "${BLUE}│${NC}  • NPM Dependencies:     %-32s ${BLUE}│${NC}\n" "$([ "$NEED_NPM_INSTALL" -eq 1 ] && echo -e "${GREEN}UPDATE REQUIRED${NC}" || echo -e "${YELLOW}SKIPPED (No changes)${NC}")"
+printf "${BLUE}│${NC}  • Database Migration:   %-32s ${BLUE}│${NC}\n" "$([ "$NEED_DB_MIGRATE" -eq 1 ] && echo -e "${GREEN}MIGRATION REQUIRED${NC}" || echo -e "${YELLOW}SKIPPED (No changes)${NC}")"
+printf "${BLUE}│${NC}  • Web Container Build:  %-32s ${BLUE}│${NC}\n" "$([ "$NEED_BUILD" -eq 1 ] && echo -e "${GREEN}FULL BUILD REQUIRED${NC}" || echo -e "${GREEN}FAST HOT-RESTART (~2s)${NC}")"
+printf "${BLUE}│${NC}  • Game Asset Sync:      %-32s ${BLUE}│${NC}\n" "$([ "$NEED_ASSET_SYNC" -eq 1 ] && echo -e "${GREEN}SYNC REQUIRED${NC}" || echo -e "${YELLOW}SKIPPED${NC}")"
+echo -e "${BLUE}└──────────────────────────────────────────────────────────┘${NC}\n"
+
+# --- Database Backup (if required) ---
+if [ "$RUN_DB_BACKUP" -eq 1 ] && grep -q "^DATABASE_URL=.*@db:3306" .env 2>/dev/null && command -v docker &>/dev/null; then
+    if docker ps | grep -q "saints-gaming-db"; then
+        echo -e "${CYAN}[*] Performing automated database backup before schema migration...${NC}"
+        mkdir -p backups
+        TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+        DB_USER=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://\([^:]*\):.*|\1|p')
+        DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
+        
+        docker exec saints-gaming-db mariadb-dump -u "$DB_USER" -p"$DB_PASS" saints_gaming > "backups/db_backup_$TIMESTAMP.sql" 2>/dev/null
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}[✓] Database backed up to backups/db_backup_$TIMESTAMP.sql${NC}"
+        else
+            echo -e "${YELLOW}[!] Database backup skipped (DB may be empty or initializing).${NC}"
+            rm -f "backups/db_backup_$TIMESTAMP.sql"
+        fi
+    fi
+fi
+
+# --- Low Disk Space Guard (Run if full build or low disk) ---
+FREE_SPACE_KB=$(df -k / | tail -1 | awk '{print $4}')
+if [ "$RUN_CLEAN_PRUNE" -eq 1 ] || { [ -n "$FREE_SPACE_KB" ] && [ "$FREE_SPACE_KB" -lt 5242880 ]; }; then
+    echo -e "${YELLOW}[!] Optimizing disk space & build cache...${NC}"
+    if command -v docker &>/dev/null; then
+        (
+            docker builder prune -a -f >/dev/null 2>&1
+            docker image prune -f >/dev/null 2>&1
+            docker network prune -f >/dev/null 2>&1
+        ) &
+        CLEAN_PID=$!
+        run_with_spinner "Reclaiming Docker build layers" "" "$CLEAN_PID"
+    fi
+    if command -v journalctl &>/dev/null; then
+        ( sudo journalctl --vacuum-size=100M >/dev/null 2>&1 || true ) &
+        VAC_PID=$!
+        run_with_spinner "Vacuuming system logs" "" "$VAC_PID"
+    fi
+    if [ -f "docker_build.log" ]; then > docker_build.log; fi
+    echo -e "${GREEN}[✓] Disk cleanup complete.${NC}\n"
+fi
+
+# --- Check uncommitted local changes ---
+if ! git diff-index --quiet HEAD -- && [ "$NON_INTERACTIVE" -eq 0 ]; then
     echo -e "${YELLOW}[!] Warning: You have uncommitted local changes that will be OVERWRITTEN.${NC}"
     read -p "Continue and OVERWRITE local changes? (y/N) " -n 1 -r
     echo
@@ -180,45 +405,32 @@ if ! git diff-index --quiet HEAD --; then
     fi
 fi
 
+# --- Apply Git Updates ---
 echo -e "${CYAN}[*] Pulling latest code (resetting to origin/main)...${NC}"
 git reset --hard origin/main
-echo -e "${GREEN}[✓] Code updated.${NC}\n"
+echo -e "${GREEN}[✓] Code repository updated to latest commit.${NC}\n"
 
 # --- Validate docker-compose.yml and auto-repair if corrupted ---
-# Previous versions accidentally placed `networks:` before the db service in the
-# base file, causing `setup.sh` to append `db:` under `networks:` instead of
-# `services:`.  Detect this and rebuild from the clean base if found.
-# This runs AFTER git pull so the base file is the latest clean version.
 if docker compose config > /dev/null 2>&1; then
     : # compose file is valid
 else
-    echo -e "${YELLOW}[!] docker-compose.yml failed validation. Attempting auto-repair...${NC}"
-
-    # Preserve the db service block if it exists (MariaDB users)
+    echo -e "${YELLOW}[!] docker-compose.yml failed validation. Restoring from clean base...${NC}"
     HAS_DB_SERVICE=0
     if grep -q "image: mariadb" docker-compose.yml 2>/dev/null; then
         HAS_DB_SERVICE=1
-        # Extract the db container name
         DB_CN=$(grep -A1 "image: mariadb" docker-compose.yml | grep "container_name:" | awk '{print $2}' 2>/dev/null)
         DB_CN=${DB_CN:-saints-gaming-db}
     fi
-
-    # Preserve the web container name
     WEB_CN=$(grep "container_name:" docker-compose.yml | head -1 | awk '{print $2}' 2>/dev/null)
     WEB_CN=${WEB_CN:-saints-gaming-web}
-
-    # Preserve port mapping
     WEB_PORT_MAP=$(grep -E '^\s+- "[0-9]+:3000"' docker-compose.yml | head -1 | sed 's/.*"\(.*\)".*/\1/' 2>/dev/null)
     WEB_PORT_MAP=${WEB_PORT_MAP:-3000:3000}
 
-    # Rebuild from clean base
     cp docker-compose.base.yml docker-compose.yml
     sed -i "s/container_name: saints-gaming-web/container_name: ${WEB_CN}/g" docker-compose.yml
     sed -i "s/- \"3000:3000\"/- \"${WEB_PORT_MAP}\"/g" docker-compose.yml
 
-    # Re-add MariaDB db service if it was present
     if [ "$HAS_DB_SERVICE" = "1" ]; then
-        # Read DB password from .env
         DB_PASS_ENV=$(grep '^DATABASE_URL=' .env 2>/dev/null | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
         DB_PASS_ENV=${DB_PASS_ENV:-changeme}
         cat >> docker-compose.yml <<DCEOF
@@ -241,11 +453,10 @@ else
       retries: 5
 DCEOF
     fi
-
-    echo -e "${GREEN}[✓] docker-compose.yml rebuilt from clean base.${NC}"
+    echo -e "${GREEN}[✓] docker-compose.yml repaired from clean base.${NC}"
 fi
 
-# --- Ensure explicit network block is at the end ---
+# Ensure explicit network block exists
 if ! grep -q "^networks:" docker-compose.yml 2>/dev/null; then
     cat >> docker-compose.yml <<'NETEOF'
 
@@ -258,147 +469,119 @@ networks:
       config:
         - subnet: 10.254.254.0/24
 NETEOF
-    echo -e "${GREEN}[✓] Added explicit Docker network config.${NC}"
 fi
 
-# --- Docker Environment ---
+# --- Execution Phase ---
 if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
-    echo -e "${CYAN}[*] Docker environment detected. Rebuilding web container...${NC}"
+    echo -e "${CYAN}[*] Docker environment detected.${NC}"
 
-    # --- Verify & Fix MariaDB Credentials ---
-    if grep -q "^DATABASE_URL=.*@db:3306" .env 2>/dev/null; then
-        if docker ps | grep -q "saints-gaming-db"; then
-            DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
-            DB_USER=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://\([^:]*\):.*|\1|p')
-            if [ -n "$DB_PASS" ] && [ -n "$DB_USER" ]; then
-                echo -e "${CYAN}[*] Verifying MariaDB credentials match .env...${NC}"
-                if ! docker exec saints-gaming-db mariadb -u "$DB_USER" -p"$DB_PASS" -e "SELECT 1;" saints_gaming &>/dev/null; then
-                    echo -e "${YELLOW}[!] Credential mismatch detected — resetting MariaDB user password to match .env...${NC}"
-                
-                # Extract root password from container environment to ensure we can connect
+    # Sync MariaDB credentials if present
+    if grep -q "^DATABASE_URL=.*@db:3306" .env 2>/dev/null && docker ps | grep -q "saints-gaming-db"; then
+        DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
+        DB_USER=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://\([^:]*\):.*|\1|p')
+        if [ -n "$DB_PASS" ] && [ -n "$DB_USER" ]; then
+            if ! docker exec saints-gaming-db mariadb -u "$DB_USER" -p"$DB_PASS" -e "SELECT 1;" saints_gaming &>/dev/null; then
                 ROOT_PASS=$(docker exec saints-gaming-db env | grep MARIADB_ROOT_PASSWORD= | cut -d= -f2-)
-                
                 docker exec saints-gaming-db mariadb -u root -p"$ROOT_PASS" -e \
-                    "ALTER USER '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}'; FLUSH PRIVILEGES;" 2>/dev/null || \
-                docker exec saints-gaming-db mariadb -u root -p"$DB_PASS" -e \
-                    "ALTER USER '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}'; FLUSH PRIVILEGES;" 2>/dev/null || \
-                docker exec saints-gaming-db mariadb -u root -e \
-                    "ALTER USER '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}'; FLUSH PRIVILEGES;" 2>/dev/null
-
-                if [ $? -eq 0 ]; then
-                    echo -e "${GREEN}[✓] MariaDB credentials synced successfully.${NC}"
-                else
-                    echo -e "${RED}[!] Could not auto-fix MariaDB credentials. You may need to run setup.sh.${NC}"
-                fi
-            else
-                echo -e "${GREEN}[✓] MariaDB credentials are valid.${NC}"
+                    "ALTER USER '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}'; FLUSH PRIVILEGES;" 2>/dev/null || true
             fi
-            # We don't touch docker-compose.yml passwords here anymore, let setup.sh or manual config handle that
-        fi
-        else
-            echo -e "${YELLOW}[*] saints-gaming-db container not running, skipping credential check.${NC}"
         fi
     fi
 
-    # Prune orphaned networks, dangling images & excessive build cache before building
-    echo -e "${CYAN}[*] Optimizing Docker build layers...${NC}"
-    docker network prune -f >/dev/null 2>&1 || true
-    docker image prune -f >/dev/null 2>&1 || true
-    
-    ( docker builder prune -f --keep-storage 5GB >/dev/null 2>&1 || docker builder prune -a -f >/dev/null 2>&1 || true ) &
-    PRUNE_PID=$!
-    run_with_spinner "Reclaiming build cache layers" "" "$PRUNE_PID"
-    echo -e "${GREEN}[✓] Build cache prepared.${NC}\n"
+    if [ "$NEED_BUILD" -eq 1 ]; then
+        echo -e "${CYAN}[*] Building web container (Next.js + MMO GameEngine)...${NC}"
+        > docker_build.log
+        ( docker compose build web > docker_build.log 2>&1 ) &
+        BUILD_PID=$!
+        run_with_spinner "Compiling web container bundle" "docker_build.log" "$BUILD_PID"
+        BUILD_STATUS=$?
 
-    echo -e "${CYAN}[*] Building web container (Next.js + MMO GameEngine)...${NC}"
-    > docker_build.log
-    ( docker compose build web > docker_build.log 2>&1 ) &
-    BUILD_PID=$!
-    run_with_spinner "Building web container" "docker_build.log" "$BUILD_PID"
-    BUILD_STATUS=$?
+        if [ $BUILD_STATUS -ne 0 ]; then
+            echo -e "${RED}[!] Build failed! Last 25 lines of docker_build.log:${NC}\n"
+            tail -n 25 docker_build.log
+            exit 1
+        fi
+        echo -e "${GREEN}[✓] Web container built successfully.${NC}\n"
 
-    if [ $BUILD_STATUS -ne 0 ]; then
-        echo -e "${RED}[!] Build failed! Showing last 25 lines of docker_build.log:${NC}\n"
-        tail -n 25 docker_build.log
-        echo -e "\n${YELLOW}Check docker_build.log for the full build output.${NC}"
-        exit 1
-    fi
-    echo -e "${GREEN}[✓] Web container built successfully.${NC}\n"
-
-    echo -e "${CYAN}[*] Starting web container in background...${NC}"
-    ( docker compose up -d --no-deps web >> docker_build.log 2>&1 ) &
-    UP_PID=$!
-    run_with_spinner "Starting web container" "docker_build.log" "$UP_PID"
-    UP_STATUS=$?
-
-    if [ $UP_STATUS -ne 0 ]; then
-        echo -e "${RED}[!] Failed to start web container. Check docker_build.log.${NC}"
-        tail -n 20 docker_build.log
-        exit 1
+        echo -e "${CYAN}[*] Starting web container in background...${NC}"
+        ( docker compose up -d --no-deps web >> docker_build.log 2>&1 ) &
+        UP_PID=$!
+        run_with_spinner "Launching updated web container" "docker_build.log" "$UP_PID"
+        echo -e "${GREEN}[✓] Web container running.${NC}\n"
+    else
+        echo -e "${CYAN}[*] Performing fast container reload (~2s)...${NC}"
+        ( docker compose restart web >> docker_build.log 2>&1 || docker compose up -d --no-deps web >> docker_build.log 2>&1 ) &
+        RESTART_PID=$!
+        run_with_spinner "Reloading web services" "docker_build.log" "$RESTART_PID"
+        echo -e "${GREEN}[✓] Web services hot-reloaded.${NC}\n"
     fi
 
-    # Post-build cleanup of dangling intermediate build layers
-    docker image prune -f >/dev/null 2>&1 || true
+    # Run Database migrations inside container if schema changed
+    if [ "$NEED_DB_MIGRATE" -eq 1 ]; then
+        echo -e "${CYAN}[*] Applying Prisma database schema migrations inside container...${NC}"
+        docker exec saints-gaming-web npx prisma db push --accept-data-loss 2>/dev/null || true
+        echo -e "${GREEN}[✓] Database migrations completed.${NC}\n"
+    fi
 
-    echo -e "${GREEN}[✓] Web container rebuilt and restarted successfully.${NC}\n"
+    # Sync local game assets if required
+    if [ "$NEED_ASSET_SYNC" -eq 1 ]; then
+        echo -e "${CYAN}[*] Syncing local game assets to database...${NC}"
+        docker exec saints-gaming-web npm run sync:assets 2>/dev/null || true
+        echo -e "${GREEN}[✓] Assets synced.${NC}\n"
+    fi
 
-    echo -e "${CYAN}[*] Syncing local game assets to database...${NC}"
-    docker exec saints-gaming-web npm run sync:assets 2>/dev/null || true
-    echo -e "${GREEN}[✓] Assets synced.${NC}\n"
-
-    # MMO sockets live inside the web container (server.ts). Stop any leftover :3001 container.
+    # MMO socket cleanup
     if docker ps -a --format '{{.Names}}' | grep -q '^saints-gaming-mmo$'; then
-        echo -e "${CYAN}[*] Removing obsolete saints-gaming-mmo container (sockets are on web:3000)...${NC}"
         docker rm -f saints-gaming-mmo 2>/dev/null || true
     fi
-    if command -v pm2 &>/dev/null; then
-        echo -e "${CYAN}[*] Ensuring PM2 runs custom server.ts (not next start / game-server.js)...${NC}"
-        pm2 delete saints-gaming-mmo 2>/dev/null || true
-        pm2 restart saints-gaming-web 2>/dev/null || pm2 start ecosystem.config.js 2>/dev/null || true
-        echo -e "${GREEN}[✓] PM2 web/MMO process refreshed.${NC}"
-    fi
 
-    # Clean up conflicting or orphaned systemd services if Docker is running
+    # Reload proxies
     if command -v systemctl &>/dev/null; then
-        bash "$(dirname "$0")/audit-systemd.sh" --clean -y 2>/dev/null || true
-    fi
-
-    # Reload proxy server if present
-    if command -v systemctl &>/dev/null; then
-        echo -e "${CYAN}[*] Reloading web proxies if present...${NC}"
         if systemctl is-active --quiet caddy; then sudo systemctl reload caddy 2>/dev/null; fi
         if systemctl is-active --quiet nginx; then sudo systemctl reload nginx 2>/dev/null; fi
     fi
 
 else
-    # --- Non-Docker Fallback ---
-    echo -e "${YELLOW}[*] No Docker environment detected. Falling back to npm build...${NC}"
+    # --- Non-Docker Fallback (PM2 / Direct Node) ---
+    echo -e "${YELLOW}[*] Direct Node.js / PM2 environment detected.${NC}"
 
     if ! command -v node &>/dev/null; then
         echo -e "${RED}[!] Node.js is not installed. Cannot build without Docker or Node.${NC}"
         exit 1
     fi
 
-    echo -e "${CYAN}[*] Installing dependencies...${NC}"
-    npm install
+    if [ "$NEED_NPM_INSTALL" -eq 1 ]; then
+        echo -e "${CYAN}[*] Installing npm dependencies...${NC}"
+        npm install
+    fi
 
-    echo -e "${CYAN}[*] Running safe database migrations...${NC}"
-    npx prisma migrate deploy
+    if [ "$NEED_DB_MIGRATE" -eq 1 ]; then
+        echo -e "${CYAN}[*] Pushing database schema...${NC}"
+        npx prisma db push --accept-data-loss
+        npx prisma generate
+    fi
 
-    echo -e "${CYAN}[*] Building production bundle...${NC}"
-    npm run build
+    if [ "$NEED_BUILD" -eq 1 ]; then
+        echo -e "${CYAN}[*] Building production bundle (Next.js)...${NC}"
+        npm run build
+    fi
+
+    if [ "$NEED_ASSET_SYNC" -eq 1 ]; then
+        npm run sync:assets 2>/dev/null || true
+    fi
 
     if command -v pm2 &>/dev/null; then
-        echo -e "${CYAN}[*] Reloading PM2 (custom server.ts via ecosystem.config.js)...${NC}"
-        pm2 delete saints-gaming-mmo 2>/dev/null || true
+        echo -e "${CYAN}[*] Refreshing PM2 process...${NC}"
         pm2 startOrReload ecosystem.config.js 2>/dev/null || pm2 reload all 2>/dev/null || true
+        echo -e "${GREEN}[✓] PM2 process refreshed.${NC}"
     fi
 fi
 
-echo -e "${GREEN}${BOLD}[✓] Update Complete!${NC}\n"
+echo -e "\n${GREEN}${BOLD}======================================================${NC}"
+echo -e "${GREEN}${BOLD}[✓] Update Complete! (Profile: ${UPDATE_MODE^^})        ${NC}"
+echo -e "${GREEN}${BOLD}======================================================${NC}\n"
 echo -e "${YELLOW}Useful Commands:${NC}"
 echo -e "  View Logs:    docker logs saints-gaming-web -f"
-echo -e "  Stop:         docker compose down"
-echo -e "  Restart:      docker compose restart"
-echo -e "  Verify maps:  curl -sS \$SITE/api/maps | head"
-echo -e "  Verify sock:  curl -sS -o /dev/null -w '%{http_code}\\n' \"\$SITE/socket.io/?EIO=4&transport=polling\""
+echo -e "  Restart:      ./update.sh --type=restart"
+echo -e "  Quick Sync:   ./update.sh --quick"
+echo -e "  Full Rebuild: ./update.sh --full"

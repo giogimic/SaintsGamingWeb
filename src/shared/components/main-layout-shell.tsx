@@ -40,13 +40,13 @@ export function MainLayoutShell({
     );
   }
 
-  // Lobby MMO route: full-bleed viewport without transform containing blocks
+  // Lobby MMO route: full-bleed viewport with persistent navbar and bottomBar encompassing the entire world
   if (isLobby) {
     return (
-      <div className="flex flex-col min-h-screen relative overflow-x-hidden selection:bg-primary/30">
+      <div className="fixed inset-0 w-screen h-screen overflow-hidden selection:bg-primary/30 bg-[#0a0a0f]">
         <AmbientBackground />
         {navbar}
-        <main className="flex-1 w-full h-full overflow-hidden">
+        <main className="w-full h-full overflow-hidden">
           {children}
         </main>
         {commandPalette}
