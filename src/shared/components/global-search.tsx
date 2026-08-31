@@ -368,18 +368,6 @@ export function GlobalSearch() {
           </button>
         )}
 
-        {!open && (
-          <kbd
-            onClick={() => {
-              setOpen(true);
-              inputRef.current?.focus();
-            }}
-            className="pointer-events-none hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-white/5 border border-white/10 font-mono text-[10px] text-muted-foreground shrink-0"
-          >
-            <span className="text-[9px]">⌘</span>K
-          </kbd>
-        )}
-
         {open && (
           <button
             type="button"

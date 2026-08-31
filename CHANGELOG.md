@@ -1,3 +1,9 @@
+# 2.1.573
+- **Search Bar UI Cleanup**:
+  - **Removed K Badge**: Removed the `⌘K` keyboard shortcut pill from the navbar search bar for a cleaner, sleeker search input.
+  - **Hotkeys Preserved**: Keyboard shortcuts (`⌘K`, `Ctrl+K`, `/`, and `ESC`) remain fully active in the background.
+- **Version Bump**: Bumped release version to `v2.1.573` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.572
 - **Search Dropdown Anchoring & Seamless Inline Expansion**:
   - **Inline Navbar Search Input**: Replaced detached screen-centered modal with an interactive search input directly in the navigation bar that smoothly expands from `w-36`/`w-56` to `w-64`/`w-96` on focus/click with an amber glow ring.
