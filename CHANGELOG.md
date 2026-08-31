@@ -1,3 +1,11 @@
+# 2.1.572
+- **Search Dropdown Anchoring & Seamless Inline Expansion**:
+  - **Inline Navbar Search Input**: Replaced detached screen-centered modal with an interactive search input directly in the navigation bar that smoothly expands from `w-36`/`w-56` to `w-64`/`w-96` on focus/click with an amber glow ring.
+  - **Anchored Dropdown Menu**: Search results and filter category tabs now drop down and expand directly downward from the search bar (`origin-top-right animate-in slide-in-from-top-2`) rather than dropping from the center of the viewport under the navbar.
+  - **Mobile Responsive Drawer Integration**: Compact circular search trigger for mobile screens that opens the anchored search panel with an integrated top search field and instant category chips.
+  - **Backdrop & Outside Click Handling**: Added click-outside listener and dimmed backdrop below the navbar (`z-[260]`) with quick hotkey dismiss (`ESC`).
+- **Version Bump**: Bumped release version to `v2.1.572` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.571
 - **Search API Prisma Schema Field Alignments (Production Build Fix)**:
   - **News Article Model Alignments (`app/api/search/route.ts`)**: Replaced non-existent `content` field in `where.OR` with `body`, and removed unsupported `category` property from the select clause to align with the authoritative `NewsArticle` Prisma schema.
