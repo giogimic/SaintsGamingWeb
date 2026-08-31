@@ -37,6 +37,7 @@ export async function GET() {
       captureToolName: configMap[REALM_SETTING_KEYS.CAPTURE_TOOL_NAME] || DEFAULT_REALM_SETTINGS.captureToolName,
       captureAmmoName: configMap[REALM_SETTING_KEYS.CAPTURE_AMMO_NAME] || DEFAULT_REALM_SETTINGS.captureAmmoName,
       motd: configMap[REALM_SETTING_KEYS.REALM_MOTD] || DEFAULT_REALM_SETTINGS.motd,
+      spawnMapId: configMap[REALM_SETTING_KEYS.SPAWN_MAP_ID] || DEFAULT_REALM_SETTINGS.spawnMapId,
       allowGuestAccess: configMap[REALM_SETTING_KEYS.ALLOW_GUEST_ACCESS] !== 'false',
     };
 
@@ -70,6 +71,7 @@ export async function POST(req: Request) {
     if (typeof body.captureToolName === 'string') updates.push({ key: REALM_SETTING_KEYS.CAPTURE_TOOL_NAME, value: body.captureToolName.trim() });
     if (typeof body.captureAmmoName === 'string') updates.push({ key: REALM_SETTING_KEYS.CAPTURE_AMMO_NAME, value: body.captureAmmoName.trim() });
     if (typeof body.motd === 'string') updates.push({ key: REALM_SETTING_KEYS.REALM_MOTD, value: body.motd.trim() });
+    if (typeof body.spawnMapId === 'string') updates.push({ key: REALM_SETTING_KEYS.SPAWN_MAP_ID, value: body.spawnMapId.trim() });
     if (typeof body.allowGuestAccess === 'boolean') updates.push({ key: REALM_SETTING_KEYS.ALLOW_GUEST_ACCESS, value: String(body.allowGuestAccess) });
 
     // Security compliance audit record prior to DB write

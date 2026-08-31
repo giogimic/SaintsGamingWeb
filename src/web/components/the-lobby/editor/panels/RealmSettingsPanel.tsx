@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useMapIndex } from '@/web/hooks/studio-data';
+import type { MapIndexEntry } from '@/web/components/the-lobby/data/map-index';
 import {
   Settings,
   Shield,
@@ -14,6 +16,7 @@ import {
   AlertCircle,
   Globe2,
   Users,
+  MapPin,
 } from 'lucide-react';
 import {
   DEFAULT_REALM_SETTINGS,
@@ -26,6 +29,7 @@ export function RealmSettingsPanel() {
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'heroes' | 'comms' | 'capture' | 'realm'>('heroes');
+  const { maps: availableMaps } = useMapIndex();
 
   // Load existing realm settings from server
   useEffect(() => {
@@ -400,6 +404,31 @@ export function RealmSettingsPanel() {
                   placeholder="The Lobby ~ Socialize, Battle, Capture, Explore! ~ Coming Soon ~"
                   className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-blue-400 rounded-lg p-2 text-white text-xs outline-none resize-none"
                 />
+              </div>
+
+              {/* Spawn / Lobby Map Selector */}
+              <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30">
+                <div className="flex items-center gap-2 text-emerald-300 font-bold mb-1">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Spawn Hub Map</span>
+                </div>
+                <p className="text-[10px] text-slate-400 leading-relaxed mb-2">
+                  The map where new players spawn and where players return as a fallback. This map cannot be deleted while it is the active spawn hub.
+                </p>
+                <select
+                  value={settings.spawnMapId || 'DEMO_SANDBOX'}
+                  onChange={(e) => setSettings({ ...settings, spawnMapId: e.target.value })}
+                  className="w-full bg-black/60 border border-emerald-500/30 focus:border-emerald-400 rounded-lg p-2 text-white text-xs outline-none cursor-pointer"
+                >
+                  {(availableMaps || []).map((m: MapIndexEntry) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name || m.id} ({m.id})
+                    </option>
+                  ))}
+                </select>
+                <div className="mt-1.5 text-[9px] text-slate-500">
+                  Current spawn hub: <span className="text-emerald-300 font-bold">{settings.spawnMapId || 'DEMO_SANDBOX'}</span>
+                </div>
               </div>
 
               <div className="flex items-center justify-between p-3 rounded-xl bg-black/50/40 border border-[#806f47]/20">

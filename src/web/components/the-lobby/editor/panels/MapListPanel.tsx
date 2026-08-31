@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   X, Search, Globe, Plus, Trash2, ArrowRight, Grid3X3, Layers, Compass,
-  DoorOpen, Users, Swords, AlertTriangle, Check
+  DoorOpen, Users, Swords, AlertTriangle, Check, Shield
 } from 'lucide-react';
 import { useGameStore } from '../../store';
 import { useEditorStore } from '../editor-store';
@@ -15,7 +15,8 @@ import { soundSynth } from '@/engine/sound-synth';
 import { useSession } from 'next-auth/react';
 import { canWriteStudioContent } from '@/shared/game/studioPermissions';
 import { useDebounce } from '@/web/hooks/useDebounce';
-import { useMapIndex } from '@/web/hooks/studio-data';
+import { useMapIndex, useRealmSettings } from '@/web/hooks/studio-data';
+import { DEFAULT_SPAWN_MAP_ID } from '@/shared/game/realmSettings';
 
 export const MapListPanel: React.FC = () => {
   const { data: session } = useSession();
@@ -31,6 +32,8 @@ export const MapListPanel: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
   const { maps: remoteMaps, isLoading: loading, mutateMaps } = useMapIndex();
+  const { settings: realmSettings } = useRealmSettings();
+  const spawnMapId = (realmSettings?.spawnMapId || DEFAULT_SPAWN_MAP_ID).toUpperCase();
 
   // New map state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -112,7 +115,7 @@ export const MapListPanel: React.FC = () => {
       
       setDeleteTargetMapId(null);
       if (currentMapId === deleteTargetMapId) {
-        useGameStore.setState({ currentMapId: null, activeMapData: null });
+        useGameStore.setState({ currentMapId: undefined, activeMapData: null });
       }
     } catch (e: any) {
       mutateMaps(); // Rollback
@@ -143,8 +146,8 @@ export const MapListPanel: React.FC = () => {
         name: newMapData.name || newMapData.id,
         category: 'Special',
         recommendedLevel: 1,
-        width: newMapData.width || 24,
-        height: newMapData.height || 24,
+        width: newMapData.grid?.[0]?.length || 24,
+        height: newMapData.grid?.length || 24,
         npcCount: Object.keys(newMapData.npcs).length,
         gateCount: Object.keys(newMapData.gates).length,
         hasEncounters: false,
@@ -258,6 +261,7 @@ export const MapListPanel: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filtered.map((map) => {
               const isCurrent = (currentMapId || '').toUpperCase() === map.id.toUpperCase();
+              const isSpawnHub = map.id.toUpperCase() === spawnMapId;
               return (
                 <div
                   key={map.id}
@@ -280,6 +284,13 @@ export const MapListPanel: React.FC = () => {
                       </span>
                     </div>
 
+                    {isSpawnHub && (
+                      <div className="flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 w-fit">
+                        <Shield className="w-3 h-3 text-emerald-400" />
+                        <span className="text-[9px] font-bold text-emerald-300 uppercase tracking-wider">Spawn Hub</span>
+                      </div>
+                    )}
+
                     <div className="mt-4 grid grid-cols-3 gap-2 text-[10px] text-slate-400">
                       <div className="flex items-center gap-1.5 bg-black/40 rounded-lg p-1.5 border border-slate-800/80">
                         <Grid3X3 className="w-3 h-3 text-sky-400" />
@@ -297,7 +308,7 @@ export const MapListPanel: React.FC = () => {
                   </div>
 
                   <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
-                    {canEdit && map.id !== 'DEMO_SANDBOX' && map.id !== 'LOBBY' && (
+                    {canEdit && map.id.toUpperCase() !== spawnMapId && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();

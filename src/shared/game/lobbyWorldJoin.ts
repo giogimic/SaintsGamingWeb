@@ -10,6 +10,7 @@
 
 import { toBaseMapId } from '../net/mapIds';
 import { buildJoinKey, shouldSkipRedundantLobbyJoin, type JoinContract } from './lobbyJoin';
+import { DEFAULT_SPAWN_MAP_ID } from './realmSettings';
 import type { JoinMapPayload } from '../net/protocol';
 
 export type WorldSessionState = 'not_joined' | 'joining' | 'joined' | 'transitioning' | 'disconnected';
@@ -48,7 +49,7 @@ export function joinWorld(opts: JoinWorldOptions): JoinWorldResult {
     return { success: false, reason: 'disconnected' };
   }
 
-  const rawMapId = opts.contract.mapId || 'DEMO_SANDBOX';
+  const rawMapId = opts.contract.mapId || DEFAULT_SPAWN_MAP_ID;
   const baseMapId = toBaseMapId(rawMapId);
   if (!baseMapId) {
     return { success: false, reason: 'missing_map' };
