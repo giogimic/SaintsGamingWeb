@@ -1385,10 +1385,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               const nextOriginGates = upsertWarpGate(loadedOrigin.gates, originGate);
               const updatedOrigin = { ...loadedOrigin, gates: nextOriginGates };
 
-              useGameStore.getState().setActiveMapData(updatedOrigin);
+              useGameStore.setState({ currentMapId: pending.originMapId, activeMapData: updatedOrigin });
               useEditorStore.getState().openMapInTab(pending.originMapId);
               useEditorStore.getState().markMapDirty();
               useEditorStore.getState().setShowWarpOverlays(true);
+              window.dispatchEvent(new CustomEvent(STUDIO_MAP_HOT_RELOAD_EVENT, { detail: { mapDoc: updatedOrigin } }));
 
               // Also persist origin map save
               fetch(`/api/maps/${encodeURIComponent(toBaseMapId(pending.originMapId))}`, {

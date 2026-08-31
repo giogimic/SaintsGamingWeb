@@ -110,5 +110,11 @@ export function shouldRemeshMapDoc(
   if (!next) return false;
   if (!loaded) return true;
   if (loaded === next) return false;
+  const loadedChunks = (loaded as any).chunks?.length ?? 0;
+  const nextChunks = (next as any).chunks?.length ?? 0;
+  if (loadedChunks !== nextChunks) return true;
+  const loadedConns = JSON.stringify((loaded as any).connections || {});
+  const nextConns = JSON.stringify((next as any).connections || {});
+  if (loadedConns !== nextConns) return true;
   return mapVisualFingerprint(loaded) !== mapVisualFingerprint(next);
 }

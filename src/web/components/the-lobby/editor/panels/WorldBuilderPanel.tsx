@@ -28,7 +28,7 @@ import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap
 import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
 import { getAdjacentAtlasNeighbors, type NeighborNodes } from '@/shared/game/atlas/spatialAtlas';
 import { getEdgeStrip } from '@/shared/game/atlas/edgeStrip';
-import { loadMap } from '../../data/maps';
+import { loadMap, getClientAtlas } from '../../data/maps';
 import { soundSynth } from '@/engine/sound-synth';
 
 export const WorldBuilderPanel: React.FC = () => {
@@ -105,17 +105,17 @@ export const WorldBuilderPanel: React.FC = () => {
   const refreshNeighbors = useCallback(async () => {
     if (!baseMapId) return;
     try {
-      const res = await fetch('/api/world/atlas');
-      if (!res.ok) return;
-      const data = await res.json();
-      if (!data.atlasData?.nodes) return;
+      const atlas = await getClientAtlas(true);
+      if (!atlas?.nodes || atlas.nodes.length === 0) return;
 
-      const adj = getAdjacentAtlasNeighbors(data.atlasData, baseMapId);
+      const activeAtlasNodeId = (useGameStore.getState() as any).activeAtlasNodeId;
+      const targetQuery = activeAtlasNodeId || baseMapId;
+      const adj = getAdjacentAtlasNeighbors(atlas, targetQuery);
       setNeighbors(adj);
 
-      // Load neighbor edge strips into BabylonEngine
+      // Load neighbor edge strips into BabylonEngine if present
       const engine = (typeof window !== 'undefined' && (window as any).__babylonEngine) || null;
-      if (!engine) return;
+      if (!engine || typeof engine.setNeighborEdgeStrips !== 'function') return;
 
       const strips: any = {};
       for (const [dir, node] of Object.entries(adj) as [keyof NeighborNodes, any][]) {

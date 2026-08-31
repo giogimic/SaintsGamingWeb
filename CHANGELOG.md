@@ -1,3 +1,15 @@
+# 2.1.566
+- **World Atlas Saving & 4-Way Connection Synchronization (Visual & Functional Fixes)**:
+  - **Database Connection Propagation (`POST /api/world/atlas`)**: Updated the atlas save endpoint to automatically compute 4-way adjacent neighbors (`getAdjacentAtlasNeighbors`) for every node in the macro grid and synchronize `connections: { north, south, east, west }` into `WorldMap.gatesData` across all placed maps.
+  - **Client-Side Live Hot-Reload**: Modified `WorldAtlasPanel` to immediately reload the current map document and dispatch `STUDIO_MAP_HOT_RELOAD_EVENT`, ensuring neighbor chunk meshes, edge seams, and border warp boundaries update immediately without requiring page refresh.
+  - **World Atlas Visual Conduits & Bridge Links**: Added glowing directional connection conduits/bridges on the 20×20 Macro Atlas canvas connecting adjacent nodes, making all active North/South and East/West map seams visually prominent.
+  - **World Builder Neighbor Detection Fix**: Fixed `refreshNeighbors` in `WorldBuilderPanel` to query `getClientAtlas(true)` and resolve adjacent neighbor nodes reliably.
+  - **Two-Ended Gate Connection Placement Hot-Reload**: Fixed `GateConnectModal`, `DestinationPlacementHUD`, and `GameCanvasBabylon` to properly synchronize `currentMapId` and dispatch `STUDIO_MAP_HOT_RELOAD_EVENT` upon placing destination gates, ensuring author overlay planes and warp triggers appear and function immediately.
+- **Global Mobile Bottom Bar Polish**:
+  - **Removed Cut-Off Mobile Account Level**: Concealed the account level badge on mobile screens (`hidden sm:inline-flex`), keeping only the green status orb and username to prevent edge clipping.
+  - **Standardized Social Messenger Button Styling**: Re-styled the Social chat button on the far right of the bottom bar to use the exact same rounded pill format, icon sizing, padding, and subtle active/hover states as the other navigation buttons.
+- **Version Bump**: Bumped release version to `v2.1.566` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.565
 - **Immersive Post Composer Refinements (Centered Desktop Window & Elevated Mobile Bottom Inset)**:
   - **Centered Desktop Middle Window (No Blur)**: Configured the desktop Post Composer OS window to open centered in the middle of the viewport without background blur distortion, keeping background MMO / page elements crisp and legible.

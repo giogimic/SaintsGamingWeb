@@ -81,7 +81,7 @@ export default async function SystemStatePage() {
             <Input 
               id="SITE_VERSION" 
               name="SITE_VERSION" 
-              defaultValue={siteVersionSetting?.value || "2.1.565"} 
+              defaultValue={siteVersionSetting?.value || "2.1.566"} 
               className="font-mono"
             />
             <p className="text-xs text-muted-foreground">The current running version of the web app displayed in the footer and admin bar.</p>

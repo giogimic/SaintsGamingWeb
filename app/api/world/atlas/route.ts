@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
-import { normalizeAtlasGridData } from "@/shared/game/atlas/spatialAtlas";
+import { normalizeAtlasGridData, getAdjacentAtlasNeighbors } from "@/shared/game/atlas/spatialAtlas";
 import { DEFAULT_WORLD_PROFILE_ID } from "@/shared/game/worldProfiles";
 
 export const dynamic = 'force-dynamic';
@@ -196,9 +196,66 @@ export async function POST(request: Request) {
       }
     }
 
+    // 3. Synchronize calculated 4-directional connections into WorldMap records
+    let syncedMapCount = 0;
+    try {
+      if (Array.isArray(normalizedData.nodes)) {
+        for (const node of normalizedData.nodes) {
+          if (!node.mapId) continue;
+          const neighbors = getAdjacentAtlasNeighbors(normalizedData, node);
+          const connections: Record<string, string | undefined> = {
+            north: neighbors.north?.mapId || undefined,
+            south: neighbors.south?.mapId || undefined,
+            east: neighbors.east?.mapId || undefined,
+            west: neighbors.west?.mapId || undefined,
+          };
+
+          // Clean undefined keys
+          const cleanConnections: Record<string, string> = {};
+          if (connections.north) cleanConnections.north = connections.north;
+          if (connections.south) cleanConnections.south = connections.south;
+          if (connections.east) cleanConnections.east = connections.east;
+          if (connections.west) cleanConnections.west = connections.west;
+
+          const existingMap = await prisma.worldMap.findUnique({
+            where: { id: node.mapId },
+            select: { gatesData: true },
+          });
+
+          if (existingMap) {
+            let parsedGates: any = {};
+            try {
+              parsedGates = JSON.parse(existingMap.gatesData || '{}');
+            } catch {}
+
+            const baseGates = parsedGates.gates !== undefined 
+              ? parsedGates.gates 
+              : (Array.isArray(parsedGates) ? parsedGates : []);
+            const spawnPoint = parsedGates.spawnPoint;
+
+            const updatedGatesData = JSON.stringify({
+              ...(spawnPoint ? { spawnPoint } : {}),
+              gates: baseGates,
+              ...(Object.keys(cleanConnections).length > 0 ? { connections: cleanConnections } : {}),
+            });
+
+            await prisma.worldMap.update({
+              where: { id: node.mapId },
+              data: { gatesData: updatedGatesData },
+            });
+            syncedMapCount++;
+          }
+        }
+        console.log(`[Atlas] Synchronized 4-way connections for ${syncedMapCount} map records.`);
+      }
+    } catch (syncErr) {
+      console.warn("[Atlas] Error syncing map connections to WorldMap table:", syncErr);
+    }
+
     return NextResponse.json({
       ok: true,
       savedVia,
+      syncedMapCount,
       atlas: {
         gameId: atlasResult.gameId || gameId,
         lobbyMapId: atlasResult.lobbyMapId || lobbyMapId,

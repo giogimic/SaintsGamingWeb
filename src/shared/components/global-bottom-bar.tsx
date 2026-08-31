@@ -78,7 +78,7 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "v2.1.565",
+  siteVersion = "v2.1.566",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;
@@ -278,12 +278,12 @@ export function GlobalBottomBar({
 
             {user ? (
               <div className="flex items-center gap-2 sm:gap-2.5 truncate">
-                {/* Account Name & Level */}
+                {/* Account Name */}
                 <span className="font-bold text-foreground truncate max-w-[80px] sm:max-w-[120px] text-[11px]" title={`Account: ${username}`}>
                   {username}
                 </span>
                 <ActionTooltip label="Account Level">
-                  <span className="px-1.5 py-0.2 rounded bg-primary/10 border border-primary/25 text-primary font-bold text-[10px] cursor-help">
+                  <span className="hidden sm:inline-flex px-1.5 py-0.2 rounded bg-primary/10 border border-primary/25 text-primary font-bold text-[10px] cursor-help">
                     {isGameRoute && player?.name ? `ACCT LVL ${userLevel}` : `LVL ${userLevel}`}
                   </span>
                 </ActionTooltip>
@@ -454,14 +454,16 @@ export function GlobalBottomBar({
             {session?.user && (
               <ActionTooltip label="Social Messenger">
                 <button
+                  type="button"
                   onClick={() => setIsMessengerOpen(!isMessengerOpen)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2 py-1.5 sm:py-0.5 rounded-md text-[11px] font-sans font-medium transition-all duration-200 cursor-pointer ${
                     isMessengerOpen
-                      ? "bg-primary text-primary-foreground border-primary shadow-[0_0_12px_rgba(0,245,212,0.4)]"
-                      : "border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
+                      ? "bg-primary/20 text-primary border border-primary/40 shadow-[0_0_8px_rgba(203,178,106,0.25)] font-semibold"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
                   }`}
+                  title="Social Messenger"
                 >
-                  <MessageCircle className="w-3.5 h-3.5" />
+                  <MessageCircle className={`w-3.5 h-3.5 sm:w-3 sm:h-3 ${isMessengerOpen ? "text-primary" : "opacity-70"}`} />
                   <span className="hidden sm:inline">Social</span>
                 </button>
               </ActionTooltip>
