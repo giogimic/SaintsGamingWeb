@@ -894,18 +894,19 @@ export function FeedVideoPlayer({
             <PictureInPicture className="w-3.5 h-3.5 text-white/90" />
           </button>
 
-          {/* Eyeball Interface Toggle Button */}
+          {/* Eyeball Interface Toggle Button (Mobile Only) */}
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               useImmersiveStore.getState().toggleBars();
             }}
-            className="p-2 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md border border-white/10 hover:scale-105 transition-all shadow-md hidden sm:flex"
-            title={isBarsHidden ? "Show Interface (Tab)" : "Hide Interface (Tab)"}
+            className="p-2 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md border border-white/10 hover:scale-105 transition-all shadow-md flex sm:hidden"
+            title={isBarsHidden ? "Show Interface" : "Hide Interface"}
           >
             {isBarsHidden ? <EyeOff className="w-3.5 h-3.5 text-amber-400" /> : <Eye className="w-3.5 h-3.5 text-white/90" />}
           </button>
+
 
           {/* Fullscreen Reel Launcher */}
           <button

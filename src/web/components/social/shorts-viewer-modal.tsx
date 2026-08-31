@@ -640,14 +640,15 @@ export function ShortsViewerModal({
       </div>
 
       <div className={`absolute top-4 right-4 z-50 flex items-center gap-2.5 transition-opacity duration-200 ${isBarsHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
-        {/* Desktop Eyeball Interface Toggle Button */}
+        {/* Mobile Eyeball Interface Toggle Button */}
         <button 
           onClick={() => useImmersiveStore.getState().toggleBars()}
-          className="p-2.5 bg-black/70 hover:bg-black/95 border border-white/20 rounded-full text-white backdrop-blur-md transition-all shadow-lg hover:scale-105 hidden sm:flex"
-          title={isBarsHidden ? "Show Interface (Tab)" : "Hide Interface (Tab)"}
+          className="p-2.5 bg-black/70 hover:bg-black/95 border border-white/20 rounded-full text-white backdrop-blur-md transition-all shadow-lg hover:scale-105 flex sm:hidden"
+          title={isBarsHidden ? "Show Interface" : "Hide Interface"}
         >
           {isBarsHidden ? <EyeOff className="w-5 h-5 text-amber-400" /> : <Eye className="w-5 h-5 text-white/90" />}
         </button>
+
 
         <button 
           onClick={() => setIsMuted(!isMuted)}
