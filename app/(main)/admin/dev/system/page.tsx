@@ -1,4 +1,4 @@
-import { Cpu, Server, Key, Terminal } from "lucide-react";
+﻿import { Cpu, Server, Key, Terminal } from "lucide-react";
 import { SystemClient } from "./system-client";
 
 import { SystemUpdater } from "@/web/components/admin/system-updater";
@@ -52,7 +52,7 @@ export default async function SystemStatePage() {
       <div className="border-b border-border/40 pb-4">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Overview &amp; Telemetry</span>
-          <span className="text-xs text-muted-foreground/40">•</span>
+          <span className="text-xs text-muted-foreground/40">â€¢</span>
           <span className="text-xs text-[#cbb26a] font-mono">Environment &amp; Cache</span>
         </div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -81,7 +81,7 @@ export default async function SystemStatePage() {
             <Input 
               id="SITE_VERSION" 
               name="SITE_VERSION" 
-              defaultValue={siteVersionSetting?.value || "2.1.577"} 
+              defaultValue={siteVersionSetting?.value || "2.1.578"} 
               className="font-mono"
             />
             <p className="text-xs text-muted-foreground">The current running version of the web app displayed in the footer and admin bar.</p>

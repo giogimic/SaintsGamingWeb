@@ -139,7 +139,11 @@ export function UserSettingsOverlayShell() {
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [totalPosts, setTotalPosts] = useState(0);
   const [loadingPosts, setLoadingPosts] = useState(false);
+  const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
 
+  const permissionLevel = userData?.permissionLevel ?? (session?.user as any)?.permissionLevel ?? 0;
+  const isOperator = permissionLevel >= 200 || Boolean((session?.user as any)?.isWriter);
+  
   // Gaming state
   const [soundVolume, setSoundVolume] = useState(80);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -483,16 +487,32 @@ export function UserSettingsOverlayShell() {
           </div>
 
           {/* Center: Search Filter */}
-          <div className="flex-1 max-w-xs sm:max-w-sm relative pointer-events-auto">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Search settings ( / or Ctrl+K )..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-8 pl-8 pr-3 text-xs bg-background/80 border border-border/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-muted-foreground/60 transition-all font-mono text-white"
-            />
+          <div className="flex-1 max-w-xs sm:max-w-sm relative pointer-events-auto flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search settings ( / or Ctrl+K )..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-8 pl-8 pr-3 text-xs bg-background/80 border border-border/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-muted-foreground/60 transition-all font-mono text-white"
+              />
+            </div>
+            {isOperator && (
+              <button
+                type="button"
+                onClick={() => {
+                  closeSettings();
+                  window.location.href = "/admin";
+                }}
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-bold font-mono hover:bg-amber-500/25 transition-all cursor-pointer shadow-sm shrink-0"
+                title="Open Admin Command Center"
+              >
+                <Shield className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden md:inline">Command Center</span>
+              </button>
+            )}
           </div>
 
           {/* Right: Window Controls */}
@@ -689,6 +709,21 @@ export function UserSettingsOverlayShell() {
                       <span className="text-[11px]">User Control Panel (UCP)</span>
                     </button>
 
+                    {isOperator && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTopMenu(null);
+                          closeSettings();
+                          window.location.href = "/admin";
+                        }}
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-bold transition-colors cursor-pointer border border-amber-500/20"
+                      >
+                        <Shield className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="text-[11px]">Admin Command Center</span>
+                      </button>
+                    )}
+
                     <div className="pt-1 border-t border-white/10">
                       <button
                         type="button"
@@ -801,6 +836,21 @@ export function UserSettingsOverlayShell() {
                     <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-white/10">
                       Quick Shortcuts & Window
                     </div>
+
+                    {isOperator && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTopMenu(null);
+                          closeSettings();
+                          window.location.href = "/admin";
+                        }}
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-bold transition-colors cursor-pointer border border-amber-500/20"
+                      >
+                        <Shield className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="text-[11px]">Admin Command Center</span>
+                      </button>
+                    )}
 
                     <button
                       type="button"
