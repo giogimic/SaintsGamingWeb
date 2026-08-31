@@ -1,4 +1,10 @@
+# 2.1.581
+- **Navbar Brand Layout Alignment**:
+  - **Saints Gaming | Time To Play**: Restored horizontal inline branding layout (`Saints Gaming | Time To Play`) across both mobile and desktop viewports, ensuring the full brand and tagline are cleanly presented and visible.
+- **Version Bump**: Bumped release version to `v2.1.581` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.580
+
 - **Feed & Video Player Gesture / Interaction Separation & Desktop View Expansion**:
   - **Single Tap vs HUD Separation**: Removed navigation toggle from single-tap in `FeedVideoPlayer.tsx`. Single tap now strictly toggles play/pause feedback, while swipe-left gesture on mobile toggles HUD overlays without interrupting video playback.
   - **Eyeball HUD Toggle Button**: Added desktop `Eye` / `EyeOff` button in `FeedVideoPlayer.tsx` and `ShortsViewerModal` overlay controls to toggle immersion state on desktop.
