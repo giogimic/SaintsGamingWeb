@@ -26,6 +26,8 @@ import {
   LifeBuoy,
   Shield,
   Search,
+  Paintbrush,
+  Film,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/shared/ui/button";
 import { SGMicro3DLogo } from "@/web/components/landing/sg-logo-3d-micro";
@@ -46,6 +48,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
 
 import { useImmersiveStore } from "@/web/hooks/useImmersiveStore";
+import { useUserSettingsStore } from "@/web/hooks/useUserSettingsStore";
 
 const MOBILE_NAV_ITEMS = [
   { href: "/home", label: "Home", icon: Home },
@@ -83,7 +86,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.562",
+  siteVersion = "v2.1.563",
 }: {
   session: any | null;
   dbPermissionLevel?: number;
@@ -95,6 +98,7 @@ export function Navbar({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const isBarsHidden = useImmersiveStore((s) => s.isBarsHidden);
+  const openSettings = useUserSettingsStore((s) => s.openSettings);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -112,15 +116,13 @@ export function Navbar({
         // ignore
       }
     }
-    // Always ensure navigation bars are visible when navigating to any page
     useImmersiveStore.getState().showBars();
   }, [pathname]);
 
   const user = session?.user;
-  const permissionLevel = dbPermissionLevel ?? ((user?.permissionLevel as number) || 0);
-  const isWriter = Boolean(user?.isWriter);
-  const isOperator = permissionLevel >= 200 || isWriter;
-  const canAccessStudio = permissionLevel >= 300;
+  const permissionLevel = dbPermissionLevel ?? (user as any)?.permissionLevel ?? 0;
+  const isOperator = permissionLevel >= 200 || (user as any)?.isWriter;
+  const canAccessStudio = permissionLevel >= 200 || process.env.NODE_ENV === "development";
 
   const isStudioRoute = pathname?.startsWith("/studio");
   if (isStudioRoute) {
@@ -133,23 +135,14 @@ export function Navbar({
 
   const isGameRoute = pathname?.startsWith("/lobby");
 
-  // In fullscreen game mode, auto-hide the top bar
-  if (isFullscreen && isGameRoute) {
-    return null;
-  }
-
-  // ── STANDARD WEBSITE TOP BAR ─────────────────────────────────────────
-  const pageTitle = getPageTitle(pathname);
-
   return (
     <div className="fixed top-0 z-[250] w-full pointer-events-none">
       <header className={`pointer-events-auto w-full bg-[#050b14]/75 backdrop-blur-xl border-b border-white/[0.08] shadow-md transition-all duration-300 ${
         isBarsHidden ? "opacity-0 -translate-y-full pointer-events-none" : "opacity-100 translate-y-0"
       }`}>
         <div className="flex h-13 sm:h-11 items-center justify-between px-4 sm:px-6">
-          {/* Left Brand */}
           <Link href="/home" className="flex items-center gap-2.5 group mr-2">
-            <div className="transition-transform group-hover:scale-110 shrink-0">
+            <div className="transition-transform group-hover:scale-110 shrink-0 hidden sm:block">
               <SGMicro3DLogo size={36} />
             </div>
             <div className="flex items-center gap-2">
@@ -163,7 +156,6 @@ export function Navbar({
             </div>
           </Link>
 
-          {/* Center Navigation */}
           <div className="hidden lg:flex items-center gap-1 flex-1 justify-center">
             <Link
               href="/home"
@@ -227,17 +219,22 @@ export function Navbar({
             </Link>
           </div>
 
-          {/* Right Navigation: Search, User Profile */}
           <div className="flex items-center gap-1 sm:gap-2">
-
-            {/* Global Search */}
             <div className="hidden xl:block w-36 lg:w-44">
               <GlobalSearch />
             </div>
 
-            <ThemeSwitcher />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => openSettings("appearance")}
+              className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/5 cursor-pointer"
+              title="User Settings & Theme"
+            >
+              <Settings className="h-4 w-4 text-primary" />
+              <span className="sr-only">Settings & Theme</span>
+            </Button>
 
-            {/* Auth / Avatar Dropdown */}
             {!user ? (
               <div className="flex items-center p-1 bg-black/40 rounded-xl shadow-inner border border-white/5">
                 <Link
@@ -272,7 +269,7 @@ export function Navbar({
                       </AvatarFallback>
                     </Avatar>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="end">
+                  <DropdownMenuContent className="w-60" align="end">
                     <DropdownMenuGroup>
                       <DropdownMenuLabel className="font-normal">
                         <div className="flex flex-col space-y-1">
@@ -284,9 +281,26 @@ export function Navbar({
                       </DropdownMenuLabel>
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem render={<Link href="/profile" className="cursor-pointer" />}>
-                      <UserIcon className="mr-2 h-4 w-4" />
-                      Profile
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={() => openSettings("account")}
+                    >
+                      <UserIcon className="mr-2 h-4 w-4 text-primary" />
+                      Account & Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={() => openSettings("posts")}
+                    >
+                      <Film className="mr-2 h-4 w-4 text-primary" />
+                      Post Management
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={() => openSettings("appearance")}
+                    >
+                      <Paintbrush className="mr-2 h-4 w-4 text-amber-400" />
+                      Theme & Display
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       render={
@@ -318,7 +332,7 @@ export function Navbar({
                           <Link href="/admin" className="cursor-pointer text-primary font-medium" />
                         }
                       >
-                        <Settings className="mr-2 h-4 w-4 text-primary" />
+                        <Shield className="mr-2 h-4 w-4 text-primary" />
                         Admin Command Center
                       </DropdownMenuItem>
                     )}
@@ -335,7 +349,6 @@ export function Navbar({
               </div>
             )}
 
-            {/* Mobile menu sheet */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger className="lg:hidden" render={<Button variant="ghost" size="icon" className="h-8 w-8 p-0" />}>
                 {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
@@ -405,7 +418,34 @@ export function Navbar({
                   </div>
 
                   <div className="pt-4 border-t border-border/50 flex flex-col gap-2">
-                    <ThemeSwitcher />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setMobileOpen(false);
+                        openSettings("appearance");
+                      }}
+                      className="w-full text-xs font-mono font-bold justify-start gap-2 border-border/60 bg-card/60 cursor-pointer"
+                    >
+                      <Paintbrush className="h-3.5 w-3.5 text-primary" />
+                      Theme & Display Preferences
+                    </Button>
+
+                    {user && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setMobileOpen(false);
+                          openSettings("posts");
+                        }}
+                        className="w-full text-xs font-mono font-bold justify-start gap-2 border-border/60 bg-card/60 cursor-pointer"
+                      >
+                        <Film className="h-3.5 w-3.5 text-primary" />
+                        Post Management
+                      </Button>
+                    )}
+
                     {!user ? (
                       <div className="grid grid-cols-2 gap-2 mt-2">
                         <Link
@@ -427,7 +467,7 @@ export function Navbar({
                       <Button
                         variant="destructive"
                         size="sm"
-                        className="w-full mt-1 text-xs"
+                        className="w-full mt-1 text-xs cursor-pointer"
                         onClick={() => signOut({ callbackUrl: "/" })}
                       >
                         <LogOut className="mr-2 h-3.5 w-3.5" />
@@ -444,5 +484,3 @@ export function Navbar({
     </div>
   );
 }
-
-

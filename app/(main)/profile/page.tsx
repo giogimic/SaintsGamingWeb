@@ -11,6 +11,7 @@ import { prisma } from "@/web/lib/prisma";
 import { SteamWishlist } from "@/web/components/profile/steam-wishlist";
 import { ProfileMediaSettings } from "./profile-media-settings";
 import { AvatarSettings } from "@/app/(ucp)/ucp/settings/avatar-settings";
+import { ProfileSettingsLauncher } from "@/web/components/profile/profile-settings-launcher";
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -138,6 +139,8 @@ export default async function ProfilePage() {
                   )}
                 </div>
               )}
+
+              <ProfileSettingsLauncher />
 
               <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-muted-foreground px-1 mt-2">
                 Personal Hub
