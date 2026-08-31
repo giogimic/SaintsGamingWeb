@@ -1794,7 +1794,7 @@ export default function TilesetPicker({
           }}
           className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[10px] font-bold transition cursor-pointer ${
             activeTab === 'palette'
-              ? 'bg-amber-500 text-slate-950 shadow-sm'
+              ? 'bg-amber-600 text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
           }`}
         >
@@ -1810,7 +1810,7 @@ export default function TilesetPicker({
           }}
           className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[10px] font-bold transition cursor-pointer ${
             activeTab === 'library'
-              ? 'bg-amber-500 text-slate-950 shadow-sm'
+              ? 'bg-amber-600 text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
           }`}
         >
@@ -1838,7 +1838,7 @@ export default function TilesetPicker({
                   soundSynth?.playActionSound?.();
                   onAddLayer();
                 }}
-                className="text-[10px] bg-amber-600 hover:bg-amber-500 text-black font-bold px-2 py-0.5 rounded transition-colors cursor-pointer flex items-center gap-1"
+                className="text-[10px] bg-amber-600 hover:bg-amber-500 text-white font-bold px-2 py-0.5 rounded transition-colors cursor-pointer flex items-center gap-1"
               >
                 <Plus className="w-3 h-3" />
                 Layer
@@ -2025,7 +2025,7 @@ export default function TilesetPicker({
                   }}
                   className={`flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold transition cursor-pointer ${
                     selectionMode === 'grid'
-                      ? 'bg-amber-500 text-black shadow'
+                      ? 'bg-amber-600 text-white shadow'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -2343,7 +2343,7 @@ export default function TilesetPicker({
                       onClick={() => handleSetBrushScale(scale, scale)}
                       className={`px-2 py-0.5 rounded text-[9px] font-bold transition cursor-pointer ${
                         isCurrentScale
-                          ? 'bg-amber-500 text-black shadow-sm'
+                          ? 'bg-amber-600 text-white shadow-sm'
                           : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-white/10'
                       }`}
                       title={`Scale selection to ${scale}×${scale} tiles (${scale * ts.tilewidth}×${scale * ts.tileheight}px)`}
@@ -2441,7 +2441,7 @@ export default function TilesetPicker({
                         }}
                         className={`px-1 py-0.5 rounded font-mono font-bold transition cursor-pointer ${
                           stampScale === sc
-                            ? 'bg-amber-500 text-black shadow-sm'
+                            ? 'bg-amber-600 text-white shadow-sm'
                             : 'hover:bg-amber-500/30 text-amber-200'
                         }`}
                         title={`Scale stamp to ${sc}x (e.g. 800px area -> ${Math.round(800 * sc)}px scene)`}
@@ -2756,7 +2756,7 @@ export default function TilesetPicker({
                 }}
                 className={`px-2.5 py-0.5 rounded-full border transition-all shrink-0 cursor-pointer font-bold ${
                   libraryTagFilter.toLowerCase() === tag.toLowerCase()
-                    ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm'
+                    ? 'bg-amber-600 text-white border-amber-400 shadow-sm'
                     : 'bg-black/40 text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700'
                 }`}
               >
@@ -2843,7 +2843,7 @@ export default function TilesetPicker({
                 <button
                   type="button"
                   onClick={() => handleSelectTileDefinition(selectedDef)}
-                  className="flex items-center justify-center gap-1 py-1 px-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow transition cursor-pointer"
+                  className="flex items-center justify-center gap-1 py-1 px-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold shadow transition cursor-pointer"
                 >
                   <Brush className="w-3 h-3" />
                   <span>Use Brush</span>
@@ -2958,7 +2958,7 @@ export default function TilesetPicker({
                 <button
                   type="button"
                   onClick={handleLoadStarterPresets}
-                  className="px-3 py-1.5 rounded-lg bg-amber-500 text-black font-bold text-xs shadow hover:bg-amber-400 cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-amber-600 text-white font-bold text-xs shadow hover:bg-amber-500 cursor-pointer"
                 >
                   Load Starter Presets
                 </button>
@@ -3072,7 +3072,7 @@ export default function TilesetPicker({
                           <button
                             type="button"
                             onClick={() => handleAddTilesetFromSource(asset.source)}
-                            className="text-xs font-bold bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black px-3 py-1.5 rounded-lg shadow transition cursor-pointer"
+                            className="text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white px-3 py-1.5 rounded-lg shadow transition cursor-pointer"
                           >
                             + Add to Map
                           </button>
@@ -3131,7 +3131,7 @@ export default function TilesetPicker({
                       }}
                       className={`py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
                         ts.tilewidth === size && ts.tileheight === size
-                          ? 'bg-amber-500 text-black shadow-sm'
+                          ? 'bg-amber-600 text-white shadow-sm'
                           : 'bg-black/60 border border-slate-700 text-slate-300 hover:bg-slate-800'
                       }`}
                     >
@@ -3196,7 +3196,7 @@ export default function TilesetPicker({
               <button
                 type="button"
                 onClick={() => setIsSettingsModalOpen(false)}
-                className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-lg transition cursor-pointer"
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg transition cursor-pointer"
               >
                 Done
               </button>
@@ -3518,7 +3518,7 @@ export default function TilesetPicker({
               <button
                 type="button"
                 onClick={() => handleSaveAsTileDefinition(pendingDef)}
-                className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-lg transition cursor-pointer text-xs"
+                className="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg transition cursor-pointer text-xs"
               >
                 Save to Tile Library
               </button>
@@ -3595,7 +3595,7 @@ export default function TilesetPicker({
                           setExtractTileHeight(suggestion.size);
                           showToast(`Applied suggested ${suggestion.size}×${suggestion.size}px grid`);
                         }}
-                        className="mt-1 w-full py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow"
+                        className="mt-1 w-full py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow"
                       >
                         <Check className="w-3.5 h-3.5" />
                         <span>Apply Suggestion ({suggestion.size}×{suggestion.size})</span>
@@ -3621,7 +3621,7 @@ export default function TilesetPicker({
                         }}
                         className={`py-1.5 px-2 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer border ${
                           extractTileWidth === sz && extractTileHeight === sz
-                            ? 'bg-amber-500 text-black border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.5)]'
+                            ? 'bg-amber-600 text-white border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.5)]'
                             : 'bg-black/40 text-slate-300 hover:bg-white/5 border-slate-700/60'
                         }`}
                       >
@@ -3763,7 +3763,7 @@ export default function TilesetPicker({
                         onClick={() => setExtractZoom(z)}
                         className={`px-2 py-0.5 rounded text-[9px] font-bold cursor-pointer transition ${
                           extractZoom === z
-                            ? 'bg-amber-500 text-black font-bold'
+                            ? 'bg-amber-600 text-white font-bold'
                             : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                         }`}
                       >
@@ -3853,9 +3853,9 @@ export default function TilesetPicker({
                 <button
                   type="button"
                   onClick={() => handleApplyExtractedGrid(true)}
-                  className="px-5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-bold text-xs shadow-[0_0_20px_rgba(245,158,11,0.5)] transition cursor-pointer flex items-center gap-1.5"
+                  className="px-5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-white font-bold text-xs shadow-[0_0_20px_rgba(245,158,11,0.5)] transition cursor-pointer flex items-center gap-1.5"
                 >
-                  <Scissors className="w-3.5 h-3.5 text-black" />
+                  <Scissors className="w-3.5 h-3.5 text-white" />
                   <span>Extract All Tiles to Library</span>
                 </button>
               </div>

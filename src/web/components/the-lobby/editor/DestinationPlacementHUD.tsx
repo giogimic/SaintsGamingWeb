@@ -84,7 +84,7 @@ export const DestinationPlacementHUD: React.FC = () => {
                   onClick={() => handleSetSize(s.w, s.h)}
                   className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition cursor-pointer ${
                     active
-                      ? 'bg-cyan-500 text-slate-950 shadow'
+                      ? 'bg-cyan-600 text-white shadow'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-white/10'
                   }`}
                 >

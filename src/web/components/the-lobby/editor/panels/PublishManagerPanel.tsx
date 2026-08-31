@@ -141,7 +141,7 @@ export const PublishManagerPanel: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowPublishModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-black font-bold border border-amber-400/50 shadow-[0_0_15px_rgba(217,119,6,0.3)] transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold border border-amber-400/50 shadow-[0_0_15px_rgba(217,119,6,0.3)] transition-all cursor-pointer"
           >
             <UploadCloud className="w-4 h-4" />
             <span>Create Release Snapshot</span>
@@ -370,7 +370,7 @@ export const PublishManagerPanel: React.FC = () => {
               <button
                 type="submit"
                 disabled={publishing}
-                className="px-4 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-black font-bold disabled:opacity-50 cursor-pointer"
+                className="px-4 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold disabled:opacity-50 cursor-pointer"
               >
                 {publishing ? 'Publishing...' : 'Confirm & Publish'}
               </button>

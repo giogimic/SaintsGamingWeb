@@ -205,7 +205,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
             onClick={() => setBrushMode('eyedropper')}
             className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
               brushMode === 'eyedropper'
-                ? 'bg-cyan-500 text-black font-bold shadow-[0_0_12px_rgba(6,182,212,0.5)] scale-105'
+                ? 'bg-cyan-600 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.5)] scale-105'
                 : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
             }`}
             title="Eyedropper (I)"
@@ -218,7 +218,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
             onClick={() => setBrushMode('select')}
             className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
               brushMode === 'select'
-                ? 'bg-amber-400 text-black font-bold shadow-[0_0_12px_rgba(245,158,11,0.5)] scale-105'
+                ? 'bg-amber-600 text-white font-bold shadow-[0_0_12px_rgba(245,158,11,0.5)] scale-105'
                 : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
             }`}
             title="Marquee Selection (M)"
@@ -322,7 +322,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
               }}
               className={`px-2 py-1 rounded transition-colors cursor-pointer ${
                 paintMode === 'paste'
-                  ? 'bg-amber-500 text-black shadow'
+                  ? 'bg-amber-600 text-white shadow'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
               title="Paste / Tiling (drag to paint full region)"
@@ -345,7 +345,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
                 }}
                 className={`px-2 py-1 rounded transition-colors cursor-pointer ${
                   prefabStampMode === 'footprint'
-                    ? 'bg-cyan-500 text-black shadow'
+                    ? 'bg-cyan-600 text-white shadow'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
                 title="Stamp full pattern footprint across multiple tiles"
@@ -361,7 +361,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
                 }}
                 className={`px-2 py-1 rounded transition-colors cursor-pointer ${
                   prefabStampMode === '1tile'
-                    ? 'bg-cyan-500 text-black shadow'
+                    ? 'bg-cyan-600 text-white shadow'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
                 title="Fit into 1 single tile cell"
@@ -385,7 +385,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
                     }}
                     className={`px-1 py-0.5 rounded text-[8px] font-mono transition-colors cursor-pointer ${
                       stampScale === sc
-                        ? 'bg-amber-500 text-black font-bold shadow-sm'
+                        ? 'bg-amber-600 text-white font-bold shadow-sm'
                         : 'bg-white/5 hover:bg-white/10 text-slate-300'
                     }`}
                     title={`Scale stamp to ${sc}x (${Math.max(1, Math.round(activeBrushPattern.w * sc))}×${Math.max(1, Math.round(activeBrushPattern.h * sc))} scene tiles)`}

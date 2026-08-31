@@ -220,7 +220,7 @@ export default function SkillGuideFull({ skillSlug, onClose }: SkillGuideFullPro
             onClick={() => { soundSynth?.playSelectSound?.(); setActiveTab('OVERVIEW'); }}
             className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all text-xs cursor-pointer ${
               activeTab === 'OVERVIEW'
-                ? 'bg-amber-400 text-black shadow-md'
+                ? 'bg-amber-600 text-white shadow-md'
                 : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
             }`}
           >
@@ -230,7 +230,7 @@ export default function SkillGuideFull({ skillSlug, onClose }: SkillGuideFullPro
             onClick={() => { soundSynth?.playSelectSound?.(); setActiveTab('UNLOCKS'); }}
             className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all text-xs cursor-pointer ${
               activeTab === 'UNLOCKS'
-                ? 'bg-amber-400 text-black shadow-md'
+                ? 'bg-amber-600 text-white shadow-md'
                 : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
             }`}
           >
@@ -240,7 +240,7 @@ export default function SkillGuideFull({ skillSlug, onClose }: SkillGuideFullPro
             onClick={() => { soundSynth?.playSelectSound?.(); setActiveTab('BATTLEPASS'); }}
             className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all text-xs cursor-pointer ${
               activeTab === 'BATTLEPASS'
-                ? 'bg-amber-400 text-black shadow-md'
+                ? 'bg-amber-600 text-white shadow-md'
                 : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
             }`}
           >
@@ -298,7 +298,7 @@ export default function SkillGuideFull({ skillSlug, onClose }: SkillGuideFullPro
                     onClick={() => { soundSynth?.playUiClick?.(); setFilterType(type); }}
                     className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
                       filterType === type
-                        ? 'bg-amber-400 text-black'
+                        ? 'bg-amber-600 text-white font-bold'
                         : 'bg-black/40 text-slate-400 hover:text-white border border-slate-800'
                     }`}
                   >

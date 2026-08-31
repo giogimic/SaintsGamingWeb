@@ -131,7 +131,7 @@ export function MobileGameLauncher({
         <button
           type="button"
           onClick={handleLaunch}
-          className="w-full py-4 px-6 rounded-2xl font-black text-base tracking-wider uppercase transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3 text-black relative overflow-hidden group border border-amber-300/60 shadow-[0_0_35px_rgba(245,158,11,0.4)] cursor-pointer"
+          className="w-full py-4 px-6 rounded-2xl font-black text-base tracking-wider uppercase transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3 text-white relative overflow-hidden group border border-amber-300/60 shadow-[0_0_35px_rgba(245,158,11,0.4)] cursor-pointer"
           style={{
             background: 'linear-gradient(135deg, #fde68a 0%, #f59e0b 50%, #d97706 100%)',
             clipPath: 'polygon(10px 0%, 100% 0%, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0% 100%, 0% 10px)',

@@ -314,7 +314,7 @@ export default function GtcOverlay() {
                 <button
                   onClick={handlePostListing}
                   disabled={sellableItems.length === 0 || sellPrice <= 0}
-                  className="w-full py-3 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 disabled:opacity-50 text-black font-black text-xs rounded-xl transition-all uppercase tracking-wider cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.3)] active:scale-95"
+                  className="w-full py-3 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 disabled:opacity-50 text-white font-black text-xs rounded-xl transition-all uppercase tracking-wider cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.3)] active:scale-95"
                 >
                   PUBLISH TRADE LISTING
                 </button>

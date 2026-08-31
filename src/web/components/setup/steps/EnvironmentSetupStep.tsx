@@ -161,7 +161,7 @@ export function EnvironmentSetupStep({
                   <div className="flex items-start gap-3.5 min-w-0">
                     <div
                       className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                        isEnabled ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-slate-400'
+                        isEnabled ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-400'
                       }`}
                     >
                       <Icon className="w-5 h-5" />
@@ -179,7 +179,7 @@ export function EnvironmentSetupStep({
 
                   <div
                     className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 mt-1 transition ${
-                      isEnabled ? 'border-amber-400 bg-amber-400 text-slate-950' : 'border-slate-700'
+                      isEnabled ? 'border-amber-400 bg-amber-500 text-white' : 'border-slate-700'
                     }`}
                   >
                     {isEnabled && <CheckCircle2 className="w-3.5 h-3.5" />}
@@ -205,7 +205,7 @@ export function EnvironmentSetupStep({
             <button
               type="button"
               onClick={() => setIsPickerOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-md"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white shadow-md"
             >
               <ImageIcon className="w-4 h-4" />
               {tileset ? 'Change Tilesheet' : 'Select / Upload Tilesheet'}
@@ -307,7 +307,7 @@ export function EnvironmentSetupStep({
 
         <button
           onClick={onNext}
-          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-slate-950 bg-gradient-to-r from-amber-300 to-amber-500 hover:from-amber-200 hover:to-amber-400 shadow-xl shadow-amber-500/20 transition cursor-pointer"
+          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-white bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 shadow-xl shadow-amber-500/20 transition cursor-pointer"
         >
           Design Starting Map
           <ArrowRight className="w-4 h-4" />

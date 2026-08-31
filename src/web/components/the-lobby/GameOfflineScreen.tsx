@@ -160,7 +160,7 @@ export function GameOfflineScreen({
                 </p>
                 <Link
                   href="/setup"
-                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-mono font-extrabold text-xs uppercase tracking-widest transition-all bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-[0_0_20px_rgba(251,191,36,0.4)] active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-mono font-extrabold text-xs uppercase tracking-widest transition-all bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white shadow-[0_0_20px_rgba(251,191,36,0.4)] active:scale-95 cursor-pointer flex items-center justify-center gap-2"
                 >
                   <Sparkles size={15} />
                   Proceed to Realm Setup
@@ -173,7 +173,7 @@ export function GameOfflineScreen({
                 </p>
                 <button
                   onClick={handleAdminAuth}
-                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-mono font-extrabold text-xs uppercase tracking-widest transition-all bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-[0_0_20px_rgba(251,191,36,0.4)] active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-mono font-extrabold text-xs uppercase tracking-widest transition-all bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white shadow-[0_0_20px_rgba(251,191,36,0.4)] active:scale-95 cursor-pointer flex items-center justify-center gap-2"
                 >
                   <LogIn size={15} />
                   Staff / Admin Sign In

@@ -27,7 +27,7 @@ export function SetupModeSelection({ onSelectFresh }: SetupModeSelectionProps) {
           >
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center shadow-lg shadow-amber-400/20 group-hover:scale-105 transition-transform">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-400/20 group-hover:scale-105 transition-transform">
                   <Sparkles className="w-6 h-6" />
                 </div>
                 <span className="px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-amber-400/20 border border-amber-400/40 text-amber-300">
@@ -50,7 +50,7 @@ export function SetupModeSelection({ onSelectFresh }: SetupModeSelectionProps) {
                 Start Fresh Setup
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </span>
-              <div className="w-6 h-6 rounded-full border border-amber-400 bg-amber-400 text-slate-950 flex items-center justify-center">
+              <div className="w-6 h-6 rounded-full border border-amber-400 bg-amber-500 text-white flex items-center justify-center">
                 <CheckCircle2 className="w-4 h-4" />
               </div>
             </div>

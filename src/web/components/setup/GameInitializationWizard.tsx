@@ -209,7 +209,7 @@ export function GameInitializationWizard() {
                   disabled={num > step}
                   className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs transition-all cursor-pointer ${
                     step === num
-                      ? 'bg-amber-400 text-slate-950 ring-2 ring-amber-400/30 scale-105'
+                      ? 'bg-amber-600 text-white ring-2 ring-amber-400/30 scale-105'
                       : step > num
                       ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30'
                       : 'bg-slate-800 text-slate-500 opacity-50 cursor-not-allowed'
@@ -253,7 +253,7 @@ export function GameInitializationWizard() {
             </button>
             <button
               onClick={() => router.push('/lobby')}
-              className="flex-1 md:flex-initial px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-sm font-bold transition cursor-pointer shadow-lg shadow-amber-500/20"
+              className="flex-1 md:flex-initial px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold transition cursor-pointer shadow-lg shadow-amber-500/20"
             >
               Play Game
             </button>

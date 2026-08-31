@@ -337,7 +337,7 @@ export const AssetContextMenu: React.FC<AssetContextMenuProps> = ({
                   setQuickTagInput('');
                 }
               }}
-              className="px-2 py-0.5 bg-amber-500 text-black font-bold rounded text-[10px] cursor-pointer"
+              className="px-2 py-0.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded text-[10px] cursor-pointer"
             >
               Add
             </button>

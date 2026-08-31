@@ -153,7 +153,7 @@ export function FinalReviewStep({
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
           <button
             onClick={() => onCompleteSuccess(persistedMapId)}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-slate-950 bg-gradient-to-r from-amber-300 to-amber-500 hover:from-amber-200 hover:to-amber-400 shadow-xl shadow-amber-500/20 transition cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-white bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 shadow-xl shadow-amber-500/20 transition cursor-pointer"
           >
             <Hammer className="w-4 h-4" />
             Launch World Studio
@@ -281,7 +281,7 @@ export function FinalReviewStep({
         <button
           onClick={handleInitializeGame}
           disabled={submitting}
-          className="inline-flex items-center gap-2 px-9 py-4 rounded-2xl font-extrabold text-slate-950 bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-500 hover:from-amber-200 hover:to-amber-400 shadow-xl shadow-amber-500/30 transition disabled:opacity-50 cursor-pointer text-base"
+          className="inline-flex items-center gap-2 px-9 py-4 rounded-2xl font-extrabold text-white bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-400 hover:to-amber-500 shadow-xl shadow-amber-500/30 transition disabled:opacity-50 cursor-pointer text-base"
         >
           {submitting ? (
             <>

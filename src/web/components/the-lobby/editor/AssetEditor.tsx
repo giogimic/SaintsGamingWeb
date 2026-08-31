@@ -571,7 +571,7 @@ export default function AssetEditor({
                 }}
                 className={`p-1.5 cursor-pointer transition ${
                   viewMode === 'grid'
-                    ? 'bg-amber-400 text-black font-bold'
+                    ? 'bg-amber-600 text-white font-bold'
                     : 'text-slate-400 hover:text-white'
                 }`}
                 title="Grid View"
@@ -585,7 +585,7 @@ export default function AssetEditor({
                 }}
                 className={`p-1.5 cursor-pointer transition ${
                   viewMode === 'list'
-                    ? 'bg-amber-400 text-black font-bold'
+                    ? 'bg-amber-600 text-white font-bold'
                     : 'text-slate-400 hover:text-white'
                 }`}
                 title="List View"
@@ -723,7 +723,7 @@ export default function AssetEditor({
                   onClick={() => setSelectedTag(t === selectedTag ? null : t)}
                   className={`text-[10px] px-2 py-0.5 rounded-full border transition-all shrink-0 cursor-pointer ${
                     selectedTag === t
-                      ? 'bg-amber-400 text-slate-950 font-bold border-amber-400 shadow'
+                      ? 'bg-amber-600 text-white font-bold border-amber-400 shadow'
                       : 'bg-black/40 border-slate-800 text-slate-400 hover:border-amber-400/50 hover:text-slate-200'
                   }`}
                 >
@@ -1026,7 +1026,7 @@ export default function AssetEditor({
                     onClick={() => setPreviewZoom(z)}
                     className={`px-1.5 py-0.5 text-[9px] rounded font-bold transition ${
                       previewZoom === z
-                        ? 'bg-amber-400 text-slate-950'
+                        ? 'bg-amber-600 text-white'
                         : 'bg-slate-800 text-slate-400 hover:text-white'
                     }`}
                   >
@@ -1234,7 +1234,7 @@ export default function AssetEditor({
                 />
                 <button
                   onClick={handleAddTag}
-                  className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold transition cursor-pointer"
+                  className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition cursor-pointer"
                 >
                   Add
                 </button>
@@ -1387,7 +1387,7 @@ export default function AssetEditor({
               {onAssetSelect && (
                 <button
                   onClick={() => onAssetSelect(activeAsset)}
-                  className="w-full py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 cursor-pointer"
+                  className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 cursor-pointer"
                 >
                   <Edit2 className="w-3.5 h-3.5" /> Use Asset in Canvas
                 </button>

@@ -664,9 +664,9 @@ export function CharacterSelector({
                           <div
                             className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-mono font-black ${
                               isTop
-                                ? 'bg-amber-400 text-slate-950 font-extrabold'
+                                ? 'bg-amber-500 text-white font-extrabold'
                                 : idx === 1
-                                ? 'bg-slate-300 text-slate-950'
+                                ? 'bg-slate-500 text-white'
                                 : idx === 2
                                 ? 'bg-amber-700 text-white'
                                 : 'bg-white/10 text-muted-foreground'

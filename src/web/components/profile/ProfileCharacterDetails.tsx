@@ -301,7 +301,7 @@ export function ProfileCharacterDetails({
                                 type="button"
                                 disabled={buyingId === listing.id}
                                 onClick={() => void handleBuy(listing.id)}
-                                className="text-[10px] px-2 py-1 rounded bg-amber-600 hover:bg-amber-500 text-black font-bold disabled:opacity-50"
+                                className="text-[10px] px-2 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold disabled:opacity-50 cursor-pointer"
                               >
                                 {buyingId === listing.id ? '…' : 'Buy'}
                               </button>

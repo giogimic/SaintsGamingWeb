@@ -210,7 +210,7 @@ export function EntitySetupStep({
                 onClick={() => setActiveTab('characters')}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
                   activeTab === 'characters'
-                    ? 'bg-amber-400 text-slate-950 shadow-md'
+                    ? 'bg-amber-600 text-white shadow-md'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -221,7 +221,7 @@ export function EntitySetupStep({
                 onClick={() => setActiveTab('creatures')}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
                   activeTab === 'creatures'
-                    ? 'bg-emerald-400 text-slate-950 shadow-md'
+                    ? 'bg-emerald-600 text-white shadow-md'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -343,7 +343,7 @@ export function EntitySetupStep({
                           onClick={() => setCharClass(c.id)}
                           className={`py-2 px-2 rounded-xl text-xs font-semibold transition flex flex-col items-center gap-1 cursor-pointer border ${
                             isSelected
-                              ? 'bg-amber-400 text-slate-950 border-amber-400'
+                              ? 'bg-amber-600 text-white border-amber-400'
                               : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'
                           }`}
                         >
@@ -408,7 +408,7 @@ export function EntitySetupStep({
                   type="button"
                   onClick={handleAddCharacter}
                   disabled={!charName.trim()}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs bg-amber-400 hover:bg-amber-300 text-slate-950 transition disabled:opacity-50 cursor-pointer shadow-md"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs bg-amber-600 hover:bg-amber-500 text-white transition disabled:opacity-50 cursor-pointer shadow-md"
                 >
                   <Plus className="w-4 h-4" />
                   Add This Character
@@ -552,7 +552,7 @@ export function EntitySetupStep({
                   type="button"
                   onClick={handleAddCreature}
                   disabled={!creatureName.trim()}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs bg-emerald-400 hover:bg-emerald-300 text-slate-950 transition disabled:opacity-50 cursor-pointer shadow-md"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white transition disabled:opacity-50 cursor-pointer shadow-md"
                 >
                   <Plus className="w-4 h-4" />
                   Add This Creature
@@ -576,7 +576,7 @@ export function EntitySetupStep({
         <button
           onClick={onNext}
           disabled={!hasMinimumRequirements}
-          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-slate-950 bg-gradient-to-r from-amber-300 to-amber-500 hover:from-amber-200 hover:to-amber-400 shadow-xl shadow-amber-500/20 transition disabled:opacity-50 cursor-pointer"
+          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-white bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 shadow-xl shadow-amber-500/20 transition disabled:opacity-50 cursor-pointer"
         >
           Continue to Environment Setup
           <ArrowRight className="w-4 h-4" />

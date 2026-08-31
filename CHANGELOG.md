@@ -1,3 +1,11 @@
+# 2.1.569
+- **Lightened Button & Tooltip Fonts (Preserved Crisp Dark Text Outlines)**:
+  - **Tooltips Dark Glass & Pure White Font**: Updated `@/shared/ui/tooltip.tsx` to render dark glass styling (`bg-[#0c1220]/95 border border-white/20 text-white`) with pure white luminous text, preventing dark-on-dark collisions with the site's dark text outlines.
+  - **Theme Variable Foregrounds Lightened**: Updated `--primary-foreground`, `--sidebar-primary-foreground`, and `--accent-foreground` in `app/globals.css` to pure luminous tokens (`oklch(0.99 0 0)`), ensuring buttons and badges retain crisp contrast with black text outlines.
+  - **Studio & Lobby Editor Button Fonts Lightened**: Replaced dark and muddy font color classes (`text-black`, `text-slate-950`) with `text-white` across all Studio panels, toolbars, modal action buttons, tileset pickers, sprite browsers, and world editors while leaving dark text-shadow outlines fully intact.
+  - **Setup Wizard & Game UI Font Polish**: Updated all step buttons, genre cards, tool switches, and action buttons in `GameInitializationWizard.tsx` and all setup steps (`StartingMapStep`, `GameDefinitionStep`, `EnvironmentSetupStep`, `EntitySetupStep`, `FinalReviewStep`) to crisp `text-white`.
+- **Version Bump**: Bumped release version to `v2.1.569` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.568
 - **Optimistic Video Comments & Reactions with Error Rollback**:
   - **Instant Comment UI Updates**: Enhanced `TheFeed` (`the-feed.tsx`), `ShortsViewerModal` (`shorts-viewer-modal.tsx`), and `MiniSocialFeed` (`mini-social-feed.tsx`) so that submitting a comment immediately renders the user's reply, updates comment counts, and clears the input without waiting for server network round-trips.
