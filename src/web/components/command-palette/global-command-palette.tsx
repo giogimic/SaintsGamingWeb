@@ -219,7 +219,7 @@ export function GlobalCommandPalette({
           >
             <div className="flex items-center gap-2">
               <Gamepad2 className="h-4 w-4 text-amber-400" />
-              <span className="text-amber-300 font-medium">2.5D MMO Lobby Client</span>
+              <span className="text-amber-300 font-medium">The Lobby</span>
             </div>
             <span className="text-[11px] font-mono text-muted-foreground">/lobby</span>
           </CommandItem>

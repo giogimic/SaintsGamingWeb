@@ -38,7 +38,7 @@ Saints Gaming is a dedicated multiplayer gaming community and sandbox platform f
 - Dedicated Game Servers & Real-Time Status: ${cleanBaseUrl}/servers
 - Client Modpack Downloads: ${cleanBaseUrl}/modpacks
 - Live Creator Streams: ${cleanBaseUrl}/streams
-- The Lobby MMO Game: ${cleanBaseUrl}/lobby
+- The Lobby Game: ${cleanBaseUrl}/lobby
 - Player Wiki & Game Guides: ${cleanBaseUrl}/wiki
 - Community Support & Appeals: ${cleanBaseUrl}/support
 

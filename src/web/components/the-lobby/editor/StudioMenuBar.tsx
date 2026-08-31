@@ -247,7 +247,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <Link
               href="/lobby"
               className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-all shadow-sm"
-              title="Play MMO Game in The Lobby"
+              title="The Lobby"
             >
               <Gamepad2 className="w-3 h-3" />
               <span>Play Now</span>

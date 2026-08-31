@@ -28,7 +28,7 @@ export default function WikiLandingView() {
           Saints Gaming Wiki
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          The complete Saints Gaming knowledge base. Everything from MMO systems and World Studio guides to community history since 2007.
+          The complete Saints Gaming knowledge base. Everything from game systems and World Studio guides to community history since 2007.
         </p>
 
         {/* Search Bar */}
@@ -142,7 +142,7 @@ export default function WikiLandingView() {
       <div className="text-center bg-card/40 backdrop-blur-xl border border-border/50 rounded-2xl p-8 sm:p-12">
         <h2 className="text-2xl font-bold mb-3">New to Saints Gaming?</h2>
         <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-          Welcome to the community. Start with the platform overview, check out the mod packs, and jump into the MMO.
+          Welcome to the community. Start with the platform overview, check out the mod packs, and jump into The Lobby.
         </p>
         <div className="flex flex-wrap justify-center gap-3">
           <Link

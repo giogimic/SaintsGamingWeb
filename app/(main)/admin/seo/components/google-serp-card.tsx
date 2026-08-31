@@ -60,7 +60,7 @@ export function GoogleSerpCard({
 
   const sitelinks = [
     { title: "Community Forums", url: "/forum", desc: "Discussion boards, guides, news, and player community." },
-    { title: "The Lobby MMO", url: "/lobby", desc: "Multiplayer 2.5D social realm, capture beasts, explore." },
+    { title: "The Lobby", url: "/lobby", desc: "Multiplayer 2.5D social realm, capture beasts, explore." },
     { title: "Dedicated Game Servers", url: "/servers", desc: "Live server status, connect endpoints, and modpacks." },
     { title: "Live Creator Streams", url: "/streams", desc: "Watch live Twitch & Kick creators in our community." },
   ];

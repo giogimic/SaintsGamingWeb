@@ -1,3 +1,18 @@
+# 2.1.590
+- **Feed Video Thumbnail Fix**: Fixed broken image icon and "Video thumbnail" plain text showing on paused videos with missing or failed poster images in `FeedVideoPlayer.tsx`. Added `posterError` state tracking with `onError` handler, removed visible alt text (`alt=""`), hid the poster overlay layer entirely once video metadata loads (`!isLoaded` guard), and set the `<img>` to `role="presentation"` for accessibility.
+- **Version Bump**: Bumped release version to `v2.1.590` across all application layouts, headers, footers, settings, and documentation.
+
+# 2.1.589
+- **Desktop Feed Post Box Declutter**: Removed the redundant post composer card from the top of the desktop feed stream in `the-feed.tsx`, streamlining the viewing area for posts and reels.
+- **Navbar User Dropdown Quick Post Button**: Added a dedicated `+` (Plus) button directly adjacent to the settings gear in the navbar user dropdown header (`navbar.tsx`), providing an accessible shortcut to trigger the global post composer modal alongside the persistent Saints Gaming bottom bar logo button.
+- **Version Bump**: Bumped release version to `v2.1.589` across all application layouts, headers, footers, settings, and documentation.
+
+# 2.1.588
+- **Game Button & Label Modernization (Replaced "MMO" / "MMO Lobby")**:
+  - Replaced outdated "MMO", "MMO Lobby", "Enter MMO Realm", and "2.5D MMO Lobby Client" wording on buttons and links throughout the application with the game's actual title **"The Lobby"** paired with a controller icon (`Gamepad2`).
+  - Updated button labels and navigation in `the-feed.tsx`, `inbox-client.tsx`, `UnifiedHubView.tsx`, `global-command-palette.tsx`, `user-settings-overlay-shell.tsx`, `global-bottom-bar.tsx`, `global-search.tsx`, `StudioMenuBar.tsx`, `GameInitializationWizard.tsx`, `FinalReviewStep.tsx`, `profile/page.tsx`, `user/[username]/page.tsx`, `admin/game-dev/creatures/page.tsx`, and admin pages.
+- **Version Bump**: Bumped release version to `v2.1.588` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.587
 - **Navbar Tagline Desktop Sizing**: Reduced the font size of the "Time To Play" gunmetal tagline in `navbar.tsx` by ~20% on desktop (`text-[10px] sm:text-[10.5px] md:text-[11px] tracking-widest uppercase font-mono`), refining its proportion alongside the primary "Saints Gaming" brand.
 - **Version Bump**: Bumped release version to `v2.1.587` across all application layouts, headers, footers, settings, and documentation.

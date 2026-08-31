@@ -21,6 +21,7 @@ import {
   Wrench,
   Sparkles,
   Globe,
+  Gamepad2,
   LayoutGrid,
   Grid3X3,
   List,
@@ -363,19 +364,19 @@ export function UnifiedHubView({
             </button>
           </div>
 
-          {/* Quick Action / MMO Launch Link */}
+          {/* Quick Action / The Lobby Launch Link */}
           <div className="bg-card/30 backdrop-blur-md border border-border/40 rounded-xl p-4 text-xs space-y-2.5 text-muted-foreground">
             <div className="flex items-center gap-1.5 text-foreground font-semibold">
-              <Sparkles className="w-3.5 h-3.5 text-primary" />
-              <span>Saints MMO World</span>
+              <Gamepad2 className="w-3.5 h-3.5 text-primary" />
+              <span>The Lobby</span>
             </div>
             <p className="text-[11px] leading-relaxed">
               Explore 2.5D regions, capture creatures, and hang out with the community live in the browser.
             </p>
             <Link href="/lobby" className="block pt-1">
               <Button size="sm" className="w-full gap-1.5 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/40 font-bold text-xs">
-                <Globe className="w-3.5 h-3.5" />
-                Enter MMO Realm
+                <Gamepad2 className="w-3.5 h-3.5" />
+                The Lobby
               </Button>
             </Link>
           </div>
@@ -948,19 +949,19 @@ export function UnifiedHubView({
         </main>
       </div>
 
-      {/* ─── AMBIENT MMO REALM PROMO BANNER ON MOBILE (< lg) ─── */}
+      {/* ─── AMBIENT THE LOBBY PROMO BANNER ON MOBILE (< lg) ─── */}
       <div className="block lg:hidden mt-6 bg-card/30 backdrop-blur-md border border-border/40 rounded-xl p-4 text-xs space-y-2 text-muted-foreground">
         <div className="flex items-center gap-1.5 text-foreground font-semibold">
-          <Sparkles className="w-4 h-4 text-primary" />
-          <span className="text-sm font-bold">Saints MMO Realm</span>
+          <Gamepad2 className="w-4 h-4 text-primary" />
+          <span className="text-sm font-bold">The Lobby</span>
         </div>
         <p className="text-xs leading-relaxed">
           Step into our live 2.5D multiplayer world right from your browser.
         </p>
         <Link href="/lobby" className="block pt-1">
           <Button size="sm" className="w-full gap-1.5 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/40 font-bold text-xs h-9">
-            <Globe className="w-3.5 h-3.5" />
-            Enter MMO Realm
+            <Gamepad2 className="w-3.5 h-3.5" />
+            The Lobby
           </Button>
         </Link>
       </div>

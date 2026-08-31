@@ -72,7 +72,7 @@ const USER_SETTINGS_CATEGORIES: { id: UserSettingsTab; label: string; icon: any;
   },
   {
     id: "gaming",
-    label: "Gaming & MMO",
+    label: "Game & Controls",
     icon: Gamepad2,
     description: "Configure sound synthesis, audio volume, HUD presets and touch controls",
   },
@@ -884,7 +884,7 @@ export function UserSettingsOverlayShell() {
                       className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left hover:bg-white/5 text-slate-300 transition-colors cursor-pointer"
                     >
                       <Gamepad2 className="w-3.5 h-3.5 text-emerald-400" />
-                      <span className="text-[11px]">Enter The Lobby MMO</span>
+                      <span className="text-[11px]">The Lobby</span>
                     </button>
 
                     <div className="pt-1 border-t border-white/10">
@@ -1154,13 +1154,13 @@ export function UserSettingsOverlayShell() {
               </div>
             )}
 
-            {/* ── TAB 4: GAMING & MMO PREFERENCES ────────────────────────────── */}
+            {/* ── TAB 4: GAME & CONTROLS PREFERENCES ────────────────────────────── */}
             {activeTab === "gaming" && (
               <div className="space-y-6 max-w-3xl">
                 <div>
                   <h3 className="text-base sm:text-lg font-bold font-mono text-foreground flex items-center gap-2">
                     <Gamepad2 className="w-4 h-4 text-primary" />
-                    <span>MMO Sound & Controls</span>
+                    <span>Game Sound & Controls</span>
                   </h3>
                   <p className="text-xs text-muted-foreground mt-1">
                     Adjust in-game sound synthesis effects, audio volume, and HUD scaling.

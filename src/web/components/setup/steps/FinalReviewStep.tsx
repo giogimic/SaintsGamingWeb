@@ -165,8 +165,8 @@ export function FinalReviewStep({
             }}
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 transition cursor-pointer"
           >
-            <Gamepad2 className="w-4 h-4 text-purple-400" />
-            Enter Multiplayer Game
+            <Gamepad2 className="w-4 h-4 text-primary" />
+            The Lobby
           </button>
         </div>
       </div>

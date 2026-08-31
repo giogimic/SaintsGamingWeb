@@ -86,7 +86,7 @@ type SearchResults = {
 
 const QUICK_ACTIONS = [
   {
-    title: "The Lobby MMO",
+    title: "The Lobby",
     description: "Hop into the 2.5D live multiplayer world",
     href: "/lobby",
     icon: Gamepad2,

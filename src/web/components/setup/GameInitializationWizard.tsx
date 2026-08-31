@@ -253,9 +253,10 @@ export function GameInitializationWizard() {
             </button>
             <button
               onClick={() => router.push('/lobby')}
-              className="flex-1 md:flex-initial px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold transition cursor-pointer shadow-lg shadow-amber-500/20"
+              className="flex-1 md:flex-initial px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold transition cursor-pointer shadow-lg shadow-amber-500/20 inline-flex items-center justify-center gap-1.5"
             >
-              Play Game
+              <Gamepad2 className="w-4 h-4" />
+              The Lobby
             </button>
           </div>
         </div>

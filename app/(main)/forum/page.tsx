@@ -140,7 +140,7 @@ export default async function ForumIndexPage() {
             Saints <span className="sg-text-gradient">Gaming Forums</span>
           </h1>
           <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
-            Dispatches, patch notes, world building, guides, and MMO updates. Connect with developers and fellow Saints.
+            Dispatches, patch notes, world building, guides, and game updates. Connect with developers and fellow Saints.
           </p>
         </div>
 

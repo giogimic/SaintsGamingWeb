@@ -40,9 +40,10 @@ export default async function CreaturesAdminPage() {
         </div>
         <Link
           href="/lobby"
-          className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg text-xs tracking-wider uppercase transition-all shadow-md"
+          className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg text-xs tracking-wider uppercase transition-all shadow-md inline-flex items-center gap-1.5"
         >
-          Play In Lobby &rarr;
+          <Gamepad2 className="h-3.5 w-3.5" />
+          The Lobby &rarr;
         </Link>
       </div>
 

@@ -110,11 +110,31 @@ export const StudioEditorShell: React.FC = () => {
   const setStudioMode = useEditorStore((state) => state.setStudioMode);
   const showToast = useGameStore((state) => state.showToast);
   const gameMode = useGameStore((state) => state.gameMode);
+  const activeMapData = useGameStore((state) => state.activeMapData);
 
   const canDev = canUseStudioDock(permissionLevel, 'dev');
   
   const [omnisearchOpen, setOmnisearchOpen] = useState(false);
   const [isStudioReady, setIsStudioReady] = useState(false);
+
+  // Anticipatory Asset Caching for Studio Tilesets
+  useEffect(() => {
+    if (!activeMapData?.tilesets) return;
+    const uniqueImages = new Set<string>();
+    activeMapData.tilesets.forEach(ts => {
+      if (ts.imageSource) {
+        const url = ts.imageSource.startsWith('/') || ts.imageSource.startsWith('http')
+          ? ts.imageSource
+          : `/game-assets/tilesets/${ts.imageSource}`;
+        uniqueImages.add(url);
+      }
+    });
+    
+    uniqueImages.forEach(url => {
+      const img = new Image();
+      img.src = url;
+    });
+  }, [activeMapData?.tilesets]);
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tileR: number; tileC: number } | null>(null);
 

@@ -12,6 +12,7 @@ import {
   simulateLootPool,
 } from '@/shared/game/lootRefs';
 import { listItemTemplates, type ItemTemplateInput } from '@/app/actions/item-templates';
+import { useLootTables } from '@/web/hooks/studio-data';
 
 type ApiLootTable = {
   id: string;
@@ -44,9 +45,9 @@ export const LootManagerPanel: React.FC = () => {
   const activeGameId = useEditorStore((s) => s.activeGameId);
   const showToast = useGameStore((s) => s.showToast);
 
-  const [tables, setTables] = useState<ApiLootTable[]>([]);
+  const { lootTables: tables, isLoading: loading, mutateLootTables } = useLootTables(activeGameId);
+  
   const [itemsList, setItemsList] = useState<Array<{ slug: string; name: string }>>([]);
-  const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -61,25 +62,6 @@ export const LootManagerPanel: React.FC = () => {
   const [draftGuaranteed, setDraftGuaranteed] = useState<LootDropEntry[]>([]);
   const [draftRolls, setDraftRolls] = useState(1);
   const [saving, setSaving] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/loot/tables?gameId=${encodeURIComponent(activeGameId)}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to load loot tables');
-      setTables(data.items ?? []);
-    } catch (err) {
-      console.error(err);
-      showToast(err instanceof Error ? err.message : 'Failed to load loot tables');
-    } finally {
-      setLoading(false);
-    }
-  }, [activeGameId, showToast]);
-
-  useEffect(() => {
-    void load();
-  }, [load, dataVersion]);
 
   useEffect(() => {
     void (async () => {
@@ -145,25 +127,44 @@ export const LootManagerPanel: React.FC = () => {
     setValidationError(null);
     try {
       const defaultItemId = itemsList[0]?.slug || 'wood_log';
+      const tempId = `temp_${Date.now()}`;
+      const newPool = {
+        id: tempId,
+        gameId: activeGameId,
+        name: `New Pool ${tables.length + 1}`,
+        description: '',
+        entries: [{ itemId: defaultItemId, weight: 100, min: 1, max: 2 }],
+        rollsPerDrop: 1,
+        guaranteedDrops: [],
+        requiredTags: [],
+      };
+      
+      // Optimistic update
+      mutateLootTables([...tables, newPool as ApiLootTable], false);
+      setSelectedId(tempId);
+      
       const res = await fetch('/api/loot/tables', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           gameId: activeGameId,
-          name: `New Pool ${tables.length + 1}`,
-          description: '',
-          entries: [{ itemId: defaultItemId, weight: 100, min: 1, max: 2 }],
-          rollsPerDrop: 1,
-          guaranteedDrops: [],
+          name: newPool.name,
+          description: newPool.description,
+          entries: newPool.entries,
+          rollsPerDrop: newPool.rollsPerDrop,
+          guaranteedDrops: newPool.guaranteedDrops,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Create failed');
       showToast('Loot pool created');
       incrementDataVersion();
-      await load();
-      if (data.item?.id) setSelectedId(data.item.id);
+      if (data.item?.id) {
+        setSelectedId(data.item.id);
+      }
+      mutateLootTables(); // Revalidate with server truth
     } catch (err) {
+      mutateLootTables(); // Rollback
       setValidationError(err instanceof Error ? err.message : 'Create failed');
     } finally {
       setSaving(false);
@@ -175,6 +176,16 @@ export const LootManagerPanel: React.FC = () => {
     setSaving(true);
     setValidationError(null);
     try {
+      // Optimistic update
+      const updatedTable = {
+        ...selected,
+        name: draftName,
+        entries: draftEntries,
+        guaranteedDrops: draftGuaranteed,
+        rollsPerDrop: draftRolls,
+      };
+      mutateLootTables(tables.map(t => t.id === selected.id ? updatedTable : t), false);
+      
       const res = await fetch(`/api/loot/tables/${selected.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -189,8 +200,9 @@ export const LootManagerPanel: React.FC = () => {
       if (!res.ok) throw new Error(data.error || 'Update failed');
       showToast('Pool updated');
       incrementDataVersion();
-      await load();
+      mutateLootTables(); // Revalidate
     } catch (err) {
+      mutateLootTables(); // Rollback
       setValidationError(err instanceof Error ? err.message : 'Update failed');
     } finally {
       setSaving(false);
@@ -199,19 +211,23 @@ export const LootManagerPanel: React.FC = () => {
 
   const handleDelete = async () => {
     if (!selected) return;
-    if (!confirm('Delete this loot pool? Refs in maps may break.')) return;
+    if (!confirm('Are you sure you want to delete this pool?')) return;
     setSaving(true);
-    setValidationError(null);
     try {
+      // Optimistic update
+      mutateLootTables(tables.filter(t => t.id !== selected.id), false);
+      setSelectedId(null);
+      
       const res = await fetch(`/api/loot/tables/${selected.id}`, {
         method: 'DELETE',
       });
-      if (!res.ok) throw new Error('Delete failed');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Delete failed');
       showToast('Pool deleted');
-      setSelectedId(null);
       incrementDataVersion();
-      await load();
+      mutateLootTables(); // Revalidate
     } catch (err) {
+      mutateLootTables(); // Rollback
       setValidationError(err instanceof Error ? err.message : 'Delete failed');
     } finally {
       setSaving(false);

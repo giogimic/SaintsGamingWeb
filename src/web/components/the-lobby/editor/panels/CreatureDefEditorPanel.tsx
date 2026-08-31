@@ -27,6 +27,7 @@ import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';
 import { RegistryCombobox } from '../components/RegistryCombobox';
 import { DroppableAssetInput } from '../components/DroppableAssetInput';
+import { useCreatureDefs } from '@/web/hooks/studio-data';
 
 const inputCls =
   'w-full bg-input border border-border rounded-lg px-2.5 py-1.5 text-[11px] text-foreground font-mono outline-none focus:border-sg-gold transition-colors';
@@ -43,7 +44,8 @@ function isCreatureForm(value: unknown): value is CreatureDefData {
 
 export function CreatureDefEditorPanel() {
   const activeGameId = useEditorStore((s) => s.activeGameId);
-  const [list, setList] = useState<CreatureDefData[]>([]);
+  const { creatureDefs: list, isLoading, mutateCreatureDefs } = useCreatureDefs(activeGameId);
+  
   const [categoryFilter, setCategoryFilter] = useState<'all' | CreatureCategory>('all');
   const [form, setForm] = useState<CreatureDefData>({ ...emptyCreatureDef(), gameId: activeGameId });
   const [isNew, setIsNew] = useState(false);
@@ -71,8 +73,6 @@ export function CreatureDefEditorPanel() {
   syncFormRef(form);
 
   const load = useCallback(async () => {
-    const res = await getAllCreatureDefs(activeGameId);
-    if (res.success) setList(res.data);
     try {
       const lootRes = await fetch(`/api/loot/tables?gameId=${encodeURIComponent(activeGameId)}`);
       const lootData = await lootRes.json();
@@ -149,30 +149,48 @@ export function CreatureDefEditorPanel() {
       return;
     }
     setLoading(true);
-    const res = await upsertCreatureDef({ ...form, gameId: form.gameId ?? activeGameId });
+    
+    // Optimistic Update
+    const newForm = { ...form, gameId: form.gameId ?? activeGameId };
+    if (isNew) {
+      mutateCreatureDefs([...list, newForm as CreatureDefData], false);
+    } else {
+      mutateCreatureDefs(list.map(c => c.slug === form.slug ? newForm : c), false);
+    }
+
+    const res = await upsertCreatureDef(newForm);
     setLoading(false);
+    
     if (res.success) {
       showStatus('success', `${form.name} saved.`);
       clearDefinitionStackFor(creatureResourceKey(form, isNew));
       setIsNew(false);
-      await load();
+      mutateCreatureDefs(); // Revalidate
     } else {
+      mutateCreatureDefs(); // Rollback
       showStatus('error', res.error || 'Save failed');
     }
   };
 
   const handleDelete = async (slug: string) => {
     if (!confirm(`Delete ${slug}?`)) return;
+    
+    // Optimistic Update
+    mutateCreatureDefs(list.filter(c => c.slug !== slug), false);
+    
     const res = await deleteCreatureDef(slug);
     if (res.success) {
       showStatus('success', 'Deleted.');
-      await load();
+      mutateCreatureDefs(); // Revalidate
       if (form.slug === slug) {
         clearDefinitionStackFor(creatureResourceKey(form, false));
         setForm(emptyCreatureDef());
         setIsNew(false);
       }
-    } else showStatus('error', res.error || 'Delete failed');
+    } else {
+      mutateCreatureDefs(); // Rollback
+      showStatus('error', res.error || 'Delete failed');
+    }
   };
 
   const updatePassive = (idx: number, patch: Partial<CreaturePassive>, structural = false) => {

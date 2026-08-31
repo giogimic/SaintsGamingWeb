@@ -120,8 +120,9 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
               Saints Characters
             </h2>
             {isSelf && (
-              <Link href="/lobby" className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md font-semibold text-sm shadow-md transition-all hover:scale-105">
-                Enter The Lobby
+              <Link href="/lobby" className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md font-semibold text-sm shadow-md transition-all hover:scale-105 inline-flex items-center gap-2">
+                <Gamepad2 className="w-4 h-4" />
+                The Lobby
               </Link>
             )}
           </div>
