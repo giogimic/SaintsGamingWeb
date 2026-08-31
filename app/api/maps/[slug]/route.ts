@@ -357,9 +357,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid map identifier" }, { status: 400 });
     }
 
-    if (normalizedSlug.toUpperCase() === 'LOBBY') {
+    // Dynamic spawn hub protection — look up the active spawn map from realm settings
+    const spawnSetting = await prisma.siteSetting.findUnique({ where: { key: 'SPAWN_MAP_ID' } });
+    const activeSpawnMapId = (spawnSetting?.value || 'DEMO_SANDBOX').toUpperCase();
+    if (normalizedSlug.toUpperCase() === activeSpawnMapId) {
       return NextResponse.json(
-        { error: "Cannot delete the default root hub map." },
+        { error: "Cannot delete the active Spawn Hub map. Change the spawn hub in Realm Settings first." },
         { status: 400 }
       );
     }

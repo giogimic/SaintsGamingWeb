@@ -1,3 +1,14 @@
+# 2.1.592
+- **Dynamic Spawn Hub Map System**: Replaced all hardcoded `DEMO_SANDBOX` / `LOBBY` map protection with a dynamic **Spawn Hub** setting stored in Realm Settings (`SPAWN_MAP_ID`). The active spawn hub map now shows a green "Spawn Hub" shield badge in the Atlas and cannot be deleted. Changing the spawn hub in Studio → Server Settings → Realm Info unlocks the previous map for deletion.
+  - Added `spawnMapId` to `RealmSettingsConfig`, `REALM_SETTING_KEYS`, and the `/api/realm/settings` route (GET + POST).
+  - Added Spawn Hub Map selector dropdown in `RealmSettingsPanel.tsx` (Realm Info tab).
+  - `MapListPanel.tsx` now dynamically hides delete for the active spawn hub instead of hardcoded string checks.
+  - `/api/maps/[slug]` DELETE now queries `SiteSetting` for the active spawn map, returning a clear error if an admin tries to delete it.
+  - Replaced hardcoded `'DEMO_SANDBOX'` fallback in `lobbyWorldJoin.ts` and `lobbyJoin.ts` with the centralized `DEFAULT_SPAWN_MAP_ID` constant.
+  - Fixed `useRealmSettings` hook response path (`data?.settings` instead of `data?.data`).
+- **TypeScript Fixes**: Resolved all implicit `any` type errors in `LootManagerPanel.tsx`, `MapListPanel.tsx`, `StudioEditorShell.tsx`, and `RealmSettingsPanel.tsx` introduced during the SWR refactoring.
+- **Version Bump**: Bumped release version to `v2.1.592` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.590
 - **Feed Video Thumbnail Fix**: Fixed broken image icon and "Video thumbnail" plain text showing on paused videos with missing or failed poster images in `FeedVideoPlayer.tsx`. Added `posterError` state tracking with `onError` handler, removed visible alt text (`alt=""`), hid the poster overlay layer entirely once video metadata loads (`!isLoaded` guard), and set the `<img>` to `role="presentation"` for accessibility.
 - **Version Bump**: Bumped release version to `v2.1.590` across all application layouts, headers, footers, settings, and documentation.

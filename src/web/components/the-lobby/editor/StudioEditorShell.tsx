@@ -121,7 +121,7 @@ export const StudioEditorShell: React.FC = () => {
   useEffect(() => {
     if (!activeMapData?.tilesets) return;
     const uniqueImages = new Set<string>();
-    activeMapData.tilesets.forEach(ts => {
+    activeMapData.tilesets.forEach((ts: { imageSource?: string }) => {
       if (ts.imageSource) {
         const url = ts.imageSource.startsWith('/') || ts.imageSource.startsWith('http')
           ? ts.imageSource

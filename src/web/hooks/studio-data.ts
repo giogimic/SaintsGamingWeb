@@ -91,7 +91,7 @@ export function useRealmSettings() {
   );
 
   return {
-    settings: data?.data ?? {},
+    settings: data?.settings ?? {},
     isLoading,
     isError: error,
     mutateSettings: mutate,

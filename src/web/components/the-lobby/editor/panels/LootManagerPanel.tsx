@@ -76,14 +76,14 @@ export const LootManagerPanel: React.FC = () => {
     const q = query.trim().toLowerCase();
     if (!q) return tables;
     return tables.filter(
-      (t) =>
+      (t: ApiLootTable) =>
         t.name.toLowerCase().includes(q) ||
         t.id.toLowerCase().includes(q) ||
         (t.description || '').toLowerCase().includes(q)
     );
   }, [tables, query]);
 
-  const selected = tables.find((t) => t.id === selectedId) ?? null;
+  const selected = tables.find((t: ApiLootTable) => t.id === selectedId) ?? null;
 
   const isDirty = useMemo(() => {
     if (!selected) return true;
@@ -184,7 +184,7 @@ export const LootManagerPanel: React.FC = () => {
         guaranteedDrops: draftGuaranteed,
         rollsPerDrop: draftRolls,
       };
-      mutateLootTables(tables.map(t => t.id === selected.id ? updatedTable : t), false);
+      mutateLootTables(tables.map((t: ApiLootTable) => t.id === selected.id ? updatedTable : t), false);
       
       const res = await fetch(`/api/loot/tables/${selected.id}`, {
         method: 'PATCH',
@@ -215,7 +215,7 @@ export const LootManagerPanel: React.FC = () => {
     setSaving(true);
     try {
       // Optimistic update
-      mutateLootTables(tables.filter(t => t.id !== selected.id), false);
+      mutateLootTables(tables.filter((t: ApiLootTable) => t.id !== selected.id), false);
       setSelectedId(null);
       
       const res = await fetch(`/api/loot/tables/${selected.id}`, {
@@ -236,7 +236,7 @@ export const LootManagerPanel: React.FC = () => {
 
   const handleRevert = () => {
     if (selectedId) {
-      const s = tables.find((t) => t.id === selectedId);
+      const s = tables.find((t: ApiLootTable) => t.id === selectedId);
       if (s) {
         setDraftName(s.name);
         setDraftEntries(Array.isArray(s.entries) ? [...s.entries] : []);
