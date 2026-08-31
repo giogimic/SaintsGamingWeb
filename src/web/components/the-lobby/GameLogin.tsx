@@ -12,7 +12,7 @@ export default function GameLogin() {
   const setGameMode = useGameStore((state) => state.setGameMode);
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const isVice = theme === 'vice' || theme === 'hacker';
+  const isVice = theme === 'vice';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

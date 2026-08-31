@@ -18,7 +18,7 @@ export function ThemeSwitcher() {
     return null;
   }
 
-  const isVice = theme === "vice" || theme === "hacker";
+  const isVice = theme === "vice";
 
   return (
     <div className="flex items-center gap-1 bg-card/80 backdrop-blur-md border border-border/50 p-1 rounded-full sg-glass">

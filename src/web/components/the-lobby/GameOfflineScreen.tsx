@@ -24,7 +24,7 @@ export function GameOfflineScreen({
 }: GameOfflineScreenProps) {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const isVice = theme === 'vice' || theme === 'hacker';
+  const isVice = theme === 'vice';
   const [checking, setChecking] = useState(false);
 
   const handleRefresh = async () => {
