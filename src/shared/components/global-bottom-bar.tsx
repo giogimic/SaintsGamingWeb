@@ -80,7 +80,7 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "v2.1.581",
+  siteVersion = "v2.1.582",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;
@@ -356,23 +356,18 @@ export function GlobalBottomBar({
               })}
             </div>
 
-            {/* Raised Octagon Action Handle */}
+            {/* Center Logo Post Action Button */}
             <div className="mx-1 sm:mx-1.5 flex items-center justify-center relative">
               <ActionTooltip label="Create Post / Share Clip">
                 <button
                   type="button"
                   onClick={handleGlobalPost}
-                  className="group relative flex items-center justify-center cursor-pointer transition-all duration-200 -translate-y-4 sm:translate-y-0"
+                  className="group relative flex items-center justify-center cursor-pointer transition-all duration-200 -translate-y-3.5 sm:translate-y-0"
                   title="Create Post / Share Clip"
                 >
-                  {/* Mobile Raised Octagon Frame with Centered Gear */}
-                  <div 
-                    className="sm:hidden flex items-center justify-center w-12 h-12 bg-[#050b14] border-2 border-primary/80 shadow-[0_0_20px_rgba(203,178,106,0.6)] p-1 group-active:scale-90 group-hover:scale-105 transition-all"
-                    style={{
-                      clipPath: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)',
-                    }}
-                  >
-                    <Settings className="w-5 h-5 text-amber-400 animate-spin" style={{ animationDuration: '16s' }} />
+                  {/* Mobile Elevated Halo Frame with 3D Logo */}
+                  <div className="sm:hidden flex items-center justify-center w-12 h-12 rounded-full bg-[#050b14] border-2 border-primary shadow-[0_0_20px_rgba(203,178,106,0.55)] ring-2 ring-primary/30 p-1 group-active:scale-90 group-hover:scale-105 transition-all">
+                    <SGMicro3DLogo size={36} />
                   </div>
 
                   {/* Desktop Inline Logo Frame */}
@@ -385,6 +380,7 @@ export function GlobalBottomBar({
                 </button>
               </ActionTooltip>
             </div>
+
 
             {/* Right Group (Nexus, Wiki, Support) */}
             <div className="flex items-center gap-0.5 sm:gap-1">
