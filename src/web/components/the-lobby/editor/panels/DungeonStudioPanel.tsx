@@ -1,8 +1,14 @@
 'use client';
 
 import React from 'react';
-import { Save, Plus, Trash2, ShieldAlert } from 'lucide-react';
+import { Save, Plus, Trash2, ShieldAlert, Castle, RefreshCw } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import {
+  WindowMenuBar,
+  WindowMenuDropdown,
+  WindowMenuButton,
+  WindowMenuDivider,
+} from '../WindowMenuBar';
 
 export const DungeonStudioPanel: React.FC = () => {
   const { data: session } = useSession();
@@ -18,20 +24,43 @@ export const DungeonStudioPanel: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#050b14] text-slate-300 font-mono text-xs">
-      <div className="flex items-center justify-between p-2 border-b border-[#806f47]/20 bg-[#0a1120]">
-        <h2 className="font-bold text-slate-100 flex items-center gap-2">
-          <span>🏰 Dungeon Studio</span>
-        </h2>
-        <div className="flex gap-2">
-          <button className="flex items-center gap-1 px-2 py-1 rounded bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 transition-colors border border-blue-500/30">
-            <Plus className="w-3 h-3" /> New Dungeon
-          </button>
-          <button className="flex items-center gap-1 px-2 py-1 rounded bg-green-600/20 text-green-400 hover:bg-green-600/40 transition-colors border border-green-500/30">
-            <Save className="w-3 h-3" /> Save Changes
-          </button>
-        </div>
-      </div>
+    <div className="flex flex-col h-full bg-[#050b14] text-slate-300 font-mono text-xs -m-3 mb-0 overflow-hidden">
+      {/* ── WINDOW SUB-MENU APP BAR ── */}
+      <WindowMenuBar>
+        <WindowMenuDropdown
+          label="Dungeon"
+          icon={Castle}
+          items={[
+            {
+              label: 'New Dungeon Instance',
+              icon: Plus,
+              onClick: () => {},
+            },
+            {
+              label: 'Save Dungeon Config',
+              icon: Save,
+              onClick: () => {},
+            },
+          ]}
+        />
+        <WindowMenuDivider />
+        <WindowMenuButton
+          label="New Dungeon"
+          icon={Plus}
+          onClick={() => {}}
+          title="Create a new dungeon instance profile"
+        />
+        <WindowMenuButton
+          label="Save"
+          icon={Save}
+          onClick={() => {}}
+          title="Save all changes to the active dungeon"
+        />
+        <div className="flex-1" />
+        <span className="text-[9px] text-primary font-bold px-2 py-0.5 rounded bg-primary/10 border border-primary/30">
+          Admin Dungeon Studio
+        </span>
+      </WindowMenuBar>
       
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}

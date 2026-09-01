@@ -1,3 +1,8 @@
+# 2.1.621
+- **Dungeon Studio Sub-Bar & 2.5D Instance Controls**:
+  - **Dungeon Studio Sub-Bar (`DungeonStudioPanel.tsx`)**: Integrated `<WindowMenuBar>` application sub-menu with `Dungeon` dropdown (New Dungeon Instance, Save Dungeon Config), direct action triggers, and admin studio state badge.
+  - **Dark Glass Aesthetic Polish**: Enhanced dungeon instance editor and requirement forms with Saints Gaming deep dark glass styling (`bg-[#050b14]`, `border-border/30`, `text-primary`).
+
 # 2.1.620
 - **2.5D Diorama Tilt-Shift (Depth of Field), Weather Wind Physics & Camera Inertia Controls**:
   - **2.5D Diorama Tilt-Shift / Depth of Field (`realmSettings.ts`, `RealmSettingsPanel.tsx`)**: Added toggle and focal center distance slider (`5m` to `40m`) providing a miniature diorama depth effect in 2.5D viewports.
