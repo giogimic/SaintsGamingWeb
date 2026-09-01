@@ -1433,15 +1433,31 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 const dragPoints = engine._selectionDragPoints || [];
 
                 if (selMode === 'circle' || selMode === 'ellipse') {
-                  const centerR = (r0 + r1) / 2;
-                  const centerC = (c0 + c1) / 2;
-                  const radius = Math.max(Math.abs(r1 - r0), Math.abs(c1 - c0)) / 2;
+                  const centerR = (r0 + r1) / 2 + 0.5;
+                  const centerC = (c0 + c1) / 2 + 0.5;
+                  const radius = Math.max(Math.abs(r1 - r0), Math.abs(c1 - c0)) / 2 + 0.5;
                   
                   if (mode === 'normal') {
                     store.setSelectionCircle(centerR, centerC, radius);
+                  } else {
+                    const radSq = radius * radius;
+                    const next = { ...(store.selectedCells || {}) };
+                    const minRow = Math.floor(centerR - radius);
+                    const maxRow = Math.ceil(centerR + radius);
+                    const minCol = Math.floor(centerC - radius);
+                    const maxCol = Math.ceil(centerC + radius);
+                    for (let row = minRow; row <= maxRow; row++) {
+                      for (let col = minCol; col <= maxCol; col++) {
+                        const dr = row + 0.5 - centerR;
+                        const dc = col + 0.5 - centerC;
+                        if (dr * dr + dc * dc <= radSq) {
+                          if (mode === 'subtract') delete next[`${row},${col}`];
+                          else next[`${row},${col}`] = true;
+                        }
+                      }
+                    }
+                    store.setSelectedCells(next);
                   }
-                  // For add/subtract, we'd theoretically need a boolean op on ContinuousGeometry,
-                  // but for now we fallback to the derived cell modification just for the boolean steps.
                 } else if (selMode === 'lasso' || selMode === 'polygon') {
                   if (mode === 'normal') {
                     store.setSelectionPolygon(dragPoints);
@@ -1449,13 +1465,20 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 } else {
                   if (mode === 'normal') {
                     store.setSelectionBox(r0, r1, c0, c1);
+                  } else if (mode === 'add') {
+                    store.addSelectedBox(r0, r1, c0, c1);
+                  } else if (mode === 'subtract') {
+                    store.removeSelectedBox(r0, r1, c0, c1);
                   }
                 }
                 
-                // Clear active drag continuous preview, rely on the store's activeSelectionGeometry
+                // Clear active drag continuous preview, sync multi-cell selection preview
                 engine.clearActionPreview();
-                if (store.activeSelectionGeometry) {
-                  engine.setContinuousSelectionPreview(store.activeSelectionGeometry, 'normal');
+                const latestCells = useEditorStore.getState().selectedCells;
+                if (latestCells && Object.keys(latestCells).length > 0) {
+                  engine.setMultiSelectionPreview(latestCells);
+                } else {
+                  engine.clearSelectionPreview();
                 }
                 
                 // @ts-ignore
