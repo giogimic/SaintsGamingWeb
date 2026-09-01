@@ -20,6 +20,7 @@ import {
   Star,
   Hexagon,
   Lasso,
+  PaintBucket,
   FlipHorizontal,
   FlipVertical,
   RotateCw,
@@ -115,6 +116,9 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
   const flipStampH = useEditorStore((s) => s.flipStampH);
   const flipStampV = useEditorStore((s) => s.flipStampV);
   const rotateStampCW = useEditorStore((s) => s.rotateStampCW);
+  const rotateStampCCW = useEditorStore((s) => s.rotateStampCCW);
+  const resetStampTransform = useEditorStore((s) => s.resetStampTransform);
+  const brushRotation = useEditorStore((s) => s.brushRotation);
   const isStudioFreeCam = useEditorStore((s) => s.isStudioFreeCam);
   const setStudioFreeCam = useEditorStore((s) => s.setStudioFreeCam);
   const hoveredTile = useEditorStore((s) => s.hoveredTile);
@@ -278,6 +282,19 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
             title="Eraser (E)"
           >
             <Eraser className="h-3.5 w-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setBrushMode('fill')}
+            className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
+              brushMode === 'fill'
+                ? 'bg-amber-600 text-white font-bold shadow-[0_0_12px_rgba(245,158,11,0.5)] scale-105'
+                : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
+            }`}
+            title="Flood Fill Bucket"
+          >
+            <PaintBucket className="h-3.5 w-3.5" />
           </button>
 
           <button
@@ -513,15 +530,15 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
           type="button"
           onClick={() => {
             soundSynth?.playUiClick?.();
-            const shapes: Array<'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon'> = ['circle', 'square', 'diamond', 'splat-star', 'polygon'];
-            const idx = shapes.indexOf(brushShape);
+            const shapes: Array<'circle' | 'square' | 'diamond' | 'splat-star'> = ['circle', 'square', 'diamond', 'splat-star'];
+            const idx = shapes.indexOf(brushShape as any);
             const next = shapes[(idx + 1) % shapes.length];
             setBrushShape(next);
           }}
           className={`flex items-center gap-1 bg-background/50 border border-border/60 hover:border-primary/50 rounded-lg px-2 py-0.5 text-[10px] font-bold transition-all cursor-pointer ${
             brushShape !== 'circle' ? 'text-amber-400 bg-amber-500/10 border-amber-500/40' : 'text-primary'
           }`}
-          title={`Brush Shape: ${brushShape} — Click to cycle (Circle → Square → Diamond → Star → Polygon)`}
+          title={`Brush Shape: ${brushShape} — Click to cycle (Circle → Square → Diamond → Star)`}
         >
           {brushShape === 'circle' && <Circle className="h-3 w-3" />}
           {brushShape === 'square' && <Square className="h-3 w-3" />}
@@ -530,6 +547,49 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
           {brushShape === 'polygon' && <Hexagon className="h-3 w-3" />}
           <span className="capitalize">{brushShape === 'splat-star' ? 'Star' : brushShape}</span>
         </button>
+
+        {/* Brush & Stamp Rotation Controls */}
+        <div className="flex items-center gap-1 bg-background/50 border border-border/60 rounded-lg px-2 py-0.5 text-[10px]">
+          <span className="text-muted-foreground">Rot</span>
+          <button
+            type="button"
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              rotateStampCCW();
+            }}
+            className="hover:text-primary font-bold px-1 py-0.5 rounded cursor-pointer text-muted-foreground hover:text-foreground"
+            title="Rotate CCW (-45°)"
+          >
+            -45°
+          </button>
+          <span className="font-bold text-primary min-w-[28px] text-center font-mono">
+            {brushRotation}°
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              rotateStampCW();
+            }}
+            className="hover:text-primary font-bold px-1 py-0.5 rounded cursor-pointer text-muted-foreground hover:text-foreground"
+            title="Rotate CW (+45°)"
+          >
+            +45°
+          </button>
+          {brushRotation !== 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                soundSynth?.playUiClick?.();
+                resetStampTransform();
+              }}
+              className="text-[9px] text-muted-foreground hover:text-destructive cursor-pointer ml-0.5"
+              title="Reset Rotation to 0°"
+            >
+              0°
+            </button>
+          )}
+        </div>
 
         {/* Selection Shape Picker (only in select mode) */}
         {brushMode === 'select' && (

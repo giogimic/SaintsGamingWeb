@@ -101,12 +101,19 @@ export type CompoundOp = {
   ops: EditorOp[];
 };
 
+export type FreeformLayersOp = {
+  kind: "modify_freeform_layers";
+  before: any[];
+  after: any[];
+};
+
 export type EditorOp =
   | PaintCellsOp
   | LayerOp
   | EntityOp
   | GateOp
   | MapPropsOp
+  | FreeformLayersOp
   | CompoundOp;
 
 export type EditorOpStack = {
@@ -385,6 +392,12 @@ export function applyEditorOp(
     case "modify_map_props": {
       const data = direction === "do" ? op.after : op.before;
       Object.assign(map, data);
+      return { ok: true };
+    }
+
+    case "modify_freeform_layers": {
+      const data = direction === "do" ? op.after : op.before;
+      (map as any).freeformLayers = JSON.parse(JSON.stringify(data || []));
       return { ok: true };
     }
 

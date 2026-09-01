@@ -56,7 +56,8 @@ import {
   authorOverlayMonsterSpawnerMarkers,
   type AuthorOverlaysInput,
 } from "../shared/game/authorOverlays";
-import { BIOME_SKIRT_CONFIG } from "../shared/game/types/map";
+import { BIOME_SKIRT_CONFIG, type FreeformLayer } from "../shared/game/types/map";
+import { isInGridFootprint, type BrushShape } from "../shared/game/brushGeometry";
 import {
   resolveSpriteDefinition,
   spriteDefinitionToBabylonConfig,
@@ -88,7 +89,7 @@ export interface BabylonTileMapData {
   tileLayers?: Array<{ name: string; grid: number[][] }>;
   tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number; imageheight?: number; tilecount?: number }>;
   npcs?: Array<{ id: string; name: string; x: number; y: number; sprite?: string }>;
-  freeformLayers?: any[];
+  freeformLayers?: FreeformLayer[];
   chunks?: RenderedChunk[];
   connections?: any;
 }
@@ -393,7 +394,7 @@ export class BabylonEngine {
   private eraseVoidMaterial?: StandardMaterial;
   /** Adjustable brush radius for multi-tile paint (1 = single tile). */
   private brushRadius: number = 1;
-  private brushShape: 'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon' = 'circle';
+  private brushShape: BrushShape = 'circle';
   private brushRotation: number = 0;
   public activeBrushPattern: { w: number, h: number } | null = null;
   public prefabStampMode: '1tile' | 'footprint' = 'footprint';
@@ -412,6 +413,7 @@ export class BabylonEngine {
   private patternPreviewMesh?: Mesh;
   private footprintCircMeshes: Mesh[] = [];
   private selectionBoxMesh?: Mesh;
+  private multiSelectionBaseMesh?: Mesh;
   private selectionPreviewMeshes: Mesh[] = [];
   private actionPreviewBoundsMesh?: Mesh;
   private actionPreviewMeshes: Mesh[] = [];
@@ -2704,14 +2706,7 @@ export class BabylonEngine {
         for (let dr = -rad; dr <= rad; dr++) {
           for (let dc = -rad; dc <= rad; dc++) {
             // Apply brush shape filtering
-            if (this.brushShape === 'circle') {
-              if (dr * dr + dc * dc > rad * rad + rad) continue;
-            } else if (this.brushShape === 'diamond') {
-              if (Math.abs(dr) + Math.abs(dc) > rad) continue;
-            } else if (this.brushShape === 'splat-star') {
-              if (dr * dr + dc * dc > rad * rad + rad) continue;
-              if (dr !== 0 && dc !== 0 && Math.abs(dr) !== Math.abs(dc)) continue;
-            }
+            if (!isInGridFootprint(dr, dc, rad, this.brushShape)) continue;
             const nr = resolved.r + dr;
             const nc = resolved.c + dc;
             if (nr >= 0 && nr < h && nc >= 0 && nc < w) {
@@ -2848,8 +2843,8 @@ export class BabylonEngine {
     this.refreshBrushPreview();
   }
 
-  /** Set brush shape ('circle' | 'square' | 'diamond' | 'splat-star' | 'polygon'). */
-  public setBrushShape(shape: 'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon') {
+  /** Set brush shape. */
+  public setBrushShape(shape: BrushShape) {
     this.brushShape = shape;
     this.refreshBrushPreview();
   }
@@ -2893,7 +2888,7 @@ export class BabylonEngine {
   }
 
   private createUnifiedBrushReticleMaterial(
-    shape: 'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon',
+    shape: BrushShape,
     rad: number,
     strokeColor: string,
     glassColor: string,
@@ -2914,19 +2909,7 @@ export class BabylonEngine {
 
     const isInFootprint = (r: number, c: number): boolean => {
       if (r < 0 || r >= span || c < 0 || c >= span) return false;
-      if (shape === 'square') return true;
-      const dr = r - rad;
-      const dc = c - rad;
-      if (shape === 'diamond') {
-        return Math.abs(dr) + Math.abs(dc) <= rad;
-      }
-      if (shape === 'splat-star') {
-        if (dr * dr + dc * dc > rad * rad + rad) return false;
-        // Only cardinal axes and exact diagonals
-        return dr === 0 || dc === 0 || Math.abs(dr) === Math.abs(dc);
-      }
-      // circle and polygon (polygon falls back to circle reticle)
-      return dr * dr + dc * dc <= rad * rad + rad;
+      return isInGridFootprint(r - rad, c - rad, rad, shape);
     };
 
     // 1. Fill entire active footprint with ambient glass gradient
@@ -3320,6 +3303,10 @@ export class BabylonEngine {
 
   public clearSelectionPreview() {
     if (this.selectionBoxMesh) this.selectionBoxMesh.isVisible = false;
+    if (this.multiSelectionBaseMesh) {
+      this.multiSelectionBaseMesh.thinInstanceCount = 0;
+      this.multiSelectionBaseMesh.isVisible = false;
+    }
     for (const m of this.selectionPreviewMeshes) m.dispose();
     this.selectionPreviewMeshes = [];
   }
@@ -3409,18 +3396,29 @@ export class BabylonEngine {
       previewMat = mat;
     }
 
-    for (const { r, c } of cellList) {
-      if (r < 0 || r >= h || c < 0 || c >= w) continue;
+    const validCells = cellList.filter(({ r, c }) => r >= 0 && r < h && c >= 0 && c < w);
+    if (validCells.length === 0) return;
+
+    if (!this.multiSelectionBaseMesh || this.multiSelectionBaseMesh.isDisposed()) {
+      this.multiSelectionBaseMesh = MeshBuilder.CreatePlane('multi_selection_plane', { size: s * 0.96 }, this.scene);
+      this.multiSelectionBaseMesh.rotation.x = Math.PI / 2;
+      this.multiSelectionBaseMesh.material = previewMat;
+      this.multiSelectionBaseMesh.isPickable = false;
+      this.multiSelectionBaseMesh.parent = this.rootNode;
+    }
+
+    const matrices = new Float32Array(16 * validCells.length);
+    for (let i = 0; i < validCells.length; i++) {
+      const { r, c } = validCells[i];
       const posX = (c - w / 2) * s;
       const posZ = (h / 2 - r) * s;
-      const plane = MeshBuilder.CreatePlane(`selection_preview_${r}_${c}`, { size: s * 0.96 }, this.scene);
-      plane.rotation.x = Math.PI / 2;
-      plane.position = new Vector3(posX, SPATIAL_LAYER_ALTITUDES.SELECTION_OVERLAY, posZ);
-      plane.material = previewMat;
-      plane.isPickable = false;
-      plane.parent = this.rootNode;
-      this.selectionPreviewMeshes.push(plane);
+      const matrix = Matrix.Translation(posX, SPATIAL_LAYER_ALTITUDES.SELECTION_OVERLAY, posZ);
+      matrix.copyToArray(matrices, i * 16);
     }
+
+    this.multiSelectionBaseMesh.thinInstanceSetBuffer("matrix", matrices, 16, true);
+    this.multiSelectionBaseMesh.thinInstanceCount = validCells.length;
+    this.multiSelectionBaseMesh.isVisible = true;
   }
 
   public clearActionPreview() {

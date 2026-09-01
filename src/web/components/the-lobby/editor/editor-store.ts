@@ -53,7 +53,7 @@ import {
 } from '@/shared/game/stampTransform';
 
 import { studioRuntimeFromCreation, type StudioRuntime } from '@/shared/game/studioSession';
-import { STUDIO_PIE_CHANGED_EVENT, STUDIO_MAP_CELLS_CHANGED_EVENT } from '@/shared/game/studioEvents';
+import { STUDIO_PIE_CHANGED_EVENT, STUDIO_MAP_CELLS_CHANGED_EVENT, STUDIO_MAP_HOT_RELOAD_EVENT } from '@/shared/game/studioEvents';
 import type { StudioPieChangedDetail } from '@/shared/game/studioEvents';
 import {
   clearDefinitionOpsForKey,
@@ -143,6 +143,16 @@ function dispatchOpEvents(op: EditorOp, direction: 'undo' | 'redo') {
             })
           );
         }
+        break;
+      }
+      case 'modify_freeform_layers': {
+        window.dispatchEvent(
+          new CustomEvent(STUDIO_MAP_HOT_RELOAD_EVENT, { detail: {} })
+        );
+        break;
+      }
+      case 'modify_map_props': {
+        window.dispatchEvent(new CustomEvent('studio_map_props_changed', { detail: { op: subOp, direction } }));
         break;
       }
       case 'compound': {
@@ -254,7 +264,7 @@ interface EditorState {
   setBrushRotation: (rot: number) => void;
   selectionMode: 'box' | 'circle' | 'ellipse' | 'lasso' | 'polygon' | 'magic-wand';
   setSelectionMode: (mode: 'box' | 'circle' | 'ellipse' | 'lasso' | 'polygon' | 'magic-wand') => void;
-  brushMode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste' | 'freehand' | 'vertex_pen';
+  brushMode: 'paint' | 'erase' | 'eyedropper' | 'fill' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste';
   activePrefabId: string | null;
   prefabs: any[];
   tileClipboard: TileClipboardData | null;
@@ -365,7 +375,7 @@ interface EditorState {
   setShowSpawnOverlays: (on: boolean) => void;
   setBrushRadius: (radius: number) => void;
   setBrushShape: (shape: 'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon') => void;
-  setBrushMode: (mode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste' | 'freehand' | 'vertex_pen') => void;
+  setBrushMode: (mode: 'paint' | 'erase' | 'eyedropper' | 'fill' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste') => void;
   setActivePrefabId: (id: string | null) => void;
   setPrefabs: (prefabs: any[]) => void;
   setPasteMode: (mode: PasteMode) => void;
@@ -377,6 +387,7 @@ interface EditorState {
   setHasUnsavedChanges: (val: boolean) => void;
   setIsSavingMap: (val: boolean) => void;
   pushPaintOp: (cells: PaintedCell[]) => void;
+  pushFreeformOp: (before: any[], after: any[]) => void;
   undoLastOp: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
   redoLastOp: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
   triggerUndo: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
@@ -1598,6 +1609,17 @@ export const useEditorStore = create<EditorState>()(
               state.hasUnsavedChanges = true;
             }
           }
+        }),
+
+      pushFreeformOp: (before, after) =>
+        set((state) => {
+          state.opStack = pushEditorOp(state.opStack, {
+            kind: 'modify_freeform_layers',
+            before: JSON.parse(JSON.stringify(before || [])),
+            after: JSON.parse(JSON.stringify(after || [])),
+          });
+          state.mapDirty = true;
+          state.hasUnsavedChanges = true;
         }),
 
       undoLastOp: (map) => {
