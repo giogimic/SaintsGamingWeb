@@ -758,21 +758,52 @@ export class BabylonEngine {
   public updateRealmVisuals(settings: any) {
     if (!this.scene) return;
 
+    // Time of Day Lighting Palette
+    const tod = settings.timeOfDayPreset || 'day';
+    let ambientDiffuse = new Color3(0.95, 0.95, 1.0);
+    let ambientGround = new Color3(0.15, 0.2, 0.15);
+    let sunDiffuse = new Color3(1.0, 0.97, 0.88);
+    let defaultFog = '#0b1626';
+
+    if (tod === 'golden_hour') {
+      ambientDiffuse = new Color3(1.0, 0.85, 0.7);
+      ambientGround = new Color3(0.25, 0.15, 0.1);
+      sunDiffuse = new Color3(1.0, 0.6, 0.3);
+      defaultFog = '#1c1208';
+    } else if (tod === 'dusk') {
+      ambientDiffuse = new Color3(0.65, 0.55, 0.85);
+      ambientGround = new Color3(0.15, 0.1, 0.25);
+      sunDiffuse = new Color3(0.85, 0.45, 0.65);
+      defaultFog = '#140c20';
+    } else if (tod === 'midnight') {
+      ambientDiffuse = new Color3(0.25, 0.3, 0.55);
+      ambientGround = new Color3(0.05, 0.08, 0.15);
+      sunDiffuse = new Color3(0.4, 0.5, 0.85);
+      defaultFog = '#050a14';
+    } else if (tod === 'fantasy_night') {
+      ambientDiffuse = new Color3(0.2, 0.45, 0.5);
+      ambientGround = new Color3(0.05, 0.15, 0.12);
+      sunDiffuse = new Color3(0.3, 0.8, 0.65);
+      defaultFog = '#061214';
+    }
+
     // 3D Lighting
     if (this.ambientLight) {
       this.ambientLight.intensity = settings.enable3DLighting !== false ? 0.85 : 1.1;
+      this.ambientLight.diffuse = ambientDiffuse;
+      this.ambientLight.groundColor = ambientGround;
     }
     if (this.dirLight) {
       this.dirLight.intensity = settings.enable3DLighting !== false ? 0.55 : 0.0;
+      this.dirLight.diffuse = sunDiffuse;
     }
 
     // Atmospheric Depth Fog
     if (settings.enableAtmosphericFog !== false) {
       this.scene.fogMode = Scene.FOGMODE_EXP2;
       this.scene.fogDensity = settings.fogDensity || 0.015;
-      if (settings.fogColor) {
-        this.scene.fogColor = Color3.FromHexString(settings.fogColor);
-      }
+      const fogHex = settings.fogColor || defaultFog;
+      this.scene.fogColor = Color3.FromHexString(fogHex);
     } else {
       this.scene.fogMode = Scene.FOGMODE_NONE;
     }
