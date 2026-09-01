@@ -1,3 +1,10 @@
+# 2.1.613
+- **Unconstrained Canvas Pop-Out, 3D Splat Material Grouping & Particle Spray Engine**:
+  - **Unconstrained Pop-Out Canvas (`TilesetPicker.tsx`)**: Portaled the detached tileset canvas directly to `document.body` via React Portal, completely removing parent window transform and overflow scroll constraints so creators can move the popped-out canvas anywhere across the entire workspace.
+  - **Splat Material Grouping & Multi-Tile Render Fix (`BabylonEngine.ts`)**: Resolved material overriding bug by grouping splat points by unique texture URL and UV coordinates; normalized asset URLs ensuring all tilesets, terrain swatches, and custom stamps render their individual distinct textures accurately in 3D.
+  - **Multi-Particle Splat Spray & Rotation Randomize (`GameCanvasBabylon.tsx`)**: Enhanced the terrain splat brush to scatter randomized particle footprints across shape radiuses with density controls and rotation randomization for fluid 2.5D/3D terrain painting.
+  - **Swatch URL & State Resolution (`TerrainBrushPalette.tsx`)**: Normalized image URLs for all tileset sheets and ensured active stamp state clears properly on swatch selection.
+
 # 2.1.612
 - **Studio Modernization, Window Restyling, Sub-Menu Architecture & Splat Mode Terrain Palette**:
   - **Draggable Window Frame Overhaul (`DraggablePanel.tsx`)**: Completely redesigned floating panels to match the authoritative Saints Gaming card aesthetic with deep glass (`bg-[#050b14]/90 backdrop-blur-xl`), gold accent borders (`border-primary/40`), clean `sg-text-gradient` title bars, secondary `menuBar` toolbar slot, polished window controls, and subtle corner resize grips.

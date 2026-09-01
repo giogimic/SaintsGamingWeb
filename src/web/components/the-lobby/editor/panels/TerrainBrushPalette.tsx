@@ -93,8 +93,14 @@ export const TerrainBrushPalette: React.FC = () => {
 
   const activeSwatch = swatches.find((s) => s.gid === activeBrushTileId);
 
+  const getImageUrl = (source: string) => {
+    if (!source) return '';
+    return source.startsWith('/') || source.startsWith('http') ? source : `/game-assets/tilesets/${source}`;
+  };
+
   const handleSelectSwatch = (swatch: TerrainSwatch) => {
     soundSynth?.playSelectSound?.();
+    useEditorStore.getState().setActiveStampAsset(null);
     setActiveBrushTileId(swatch.gid, true);
     if (useEditorStore.getState().activeLayerIdx === -1) {
       useEditorStore.getState().setActiveLayerIdx(0);
@@ -130,7 +136,7 @@ export const TerrainBrushPalette: React.FC = () => {
           className="w-14 h-14 rounded-lg border-2 border-primary/40 overflow-hidden shrink-0"
           style={{
             backgroundImage: activeSwatch
-              ? `url('/game-assets/tilesets/${activeSwatch.sourceSheet}')`
+              ? `url('${getImageUrl(activeSwatch.sourceSheet)}')`
               : undefined,
             backgroundPosition: activeSwatch
               ? `-${activeSwatch.sourceX}px -${activeSwatch.sourceY}px`
@@ -174,7 +180,7 @@ export const TerrainBrushPalette: React.FC = () => {
                 `}
                 title={`${swatch.name} (GID ${swatch.gid})`}
                 style={{
-                  backgroundImage: `url('/game-assets/tilesets/${swatch.sourceSheet}')`,
+                  backgroundImage: `url('${getImageUrl(swatch.sourceSheet)}')`,
                   backgroundPosition: `-${swatch.sourceX}px -${swatch.sourceY}px`,
                   backgroundRepeat: 'no-repeat',
                   imageRendering: 'pixelated',

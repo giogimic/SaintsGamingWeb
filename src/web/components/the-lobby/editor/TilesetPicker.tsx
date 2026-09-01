@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { soundSynth } from '@/engine/sound-synth';
 import {
   Layers,
@@ -4041,15 +4042,15 @@ export default function TilesetPicker({
         </div>
       )}
       
-      {/* TILESET CANVAS POP-OUT */}
-      {isTilesetCanvasDetached && (
+      {/* TILESET CANVAS POP-OUT (PORTALED DIRECTLY TO BODY SO IT CAN MOVE ANYWHERE UNCONSTRAINED) */}
+      {isTilesetCanvasDetached && typeof document !== 'undefined' && createPortal(
         <DraggablePanel id="tileset_canvas" icon={<Layers className="w-4 h-4" />} title="Tileset Canvas">
-          <div className="bg-[#0b1320] h-[400px] w-[500px] overflow-hidden rounded-xl border border-amber-500/30 flex flex-col p-2">
+          <div className="bg-[#050b14]/95 h-[480px] w-[540px] overflow-hidden rounded-xl border border-primary/40 flex flex-col p-2 relative shadow-2xl backdrop-blur-2xl">
             <button
               type="button"
               onClick={() => { setIsTilesetCanvasDetached(false); closePanel('tileset_canvas'); }}
-              className="absolute top-4 right-4 z-50 p-1.5 bg-black/80 hover:bg-white/20 text-white rounded border border-white/20 shadow backdrop-blur cursor-pointer"
-              title="Dock Canvas"
+              className="absolute top-3 right-3 z-50 p-1.5 bg-[#0a1628]/90 hover:bg-white/20 text-white rounded-lg border border-border/60 shadow backdrop-blur cursor-pointer transition-all"
+              title="Dock Canvas back to Tile Selector"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -4057,7 +4058,8 @@ export default function TilesetPicker({
               {tilesetCanvasJSX}
             </div>
           </div>
-        </DraggablePanel>
+        </DraggablePanel>,
+        document.body
       )}
     </div>
   );

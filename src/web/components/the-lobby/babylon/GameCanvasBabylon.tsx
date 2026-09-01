@@ -1653,38 +1653,73 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             if (store.activeLayerType === 'paint-splat') {
               if (brushMode === 'erase') {
                 if (layer.data) {
-                   // erase points within brush radius using shape-aware check
-                   Object.keys(layer.data).forEach(key => {
-                     layer.data[key] = layer.data[key].filter((p: any) => 
-                       !isInBrushShape(p.x - finalX, p.y - finalY, eraseRad, bShape)
-                     );
-                   });
+                  // erase points within brush radius using shape-aware check
+                  Object.keys(layer.data).forEach((key) => {
+                    layer.data[key] = layer.data[key].filter(
+                      (p: any) => !isInBrushShape(p.x - finalX, p.y - finalY, eraseRad, bShape)
+                    );
+                  });
                 }
               } else {
                 layer.data = { ...(layer.data || {}) };
                 layer.data[assetUrl] = [...(layer.data[assetUrl] || [])];
-                
-                // Density control — uses shape-aware distance
-                const minSqDist = Math.max(0.01, (store.brushRadius * store.brushRadius) / 16);
-                const isTooClose = layer.data[assetUrl].some((p: any) => {
-                  const dx = p.x - finalX;
-                  const dy = p.y - finalY;
-                  return dx * dx + dy * dy < minSqDist;
-                });
-                
-                if (!isTooClose || eventType === 'down') {
-                  layer.data[assetUrl].push({
-                    x: finalX,
-                    y: finalY,
-                    scale: store.stampScale || 1,
-                    rotation: store.brushRotation ? (store.brushRotation * Math.PI / 180) : 0,
-                    uOffset,
-                    vOffset,
-                    uScale,
-                    vScale,
-                    width: stampWidth,
-                    height: stampHeight,
+
+                const rad = store.brushRadius || 1;
+                const scatterCount = rad <= 1 ? 1 : Math.max(1, Math.round(rad * (1 + (store.splatScatter ?? 0.5))));
+                const pointsToDrop: Array<{ x: number; y: number; rot: number }> = [];
+
+                if (rad <= 1) {
+                  const rot = store.splatRotationRandomize
+                    ? Math.random() * Math.PI * 2
+                    : store.brushRotation
+                    ? (store.brushRotation * Math.PI) / 180
+                    : 0;
+                  pointsToDrop.push({ x: finalX, y: finalY, rot });
+                } else {
+                  // Scatter particles across brush shape footprint
+                  for (let s = 0; s < scatterCount; s++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = Math.sqrt(Math.random()) * (rad * 0.9);
+                    const ox = Math.cos(angle) * dist;
+                    const oy = Math.sin(angle) * dist;
+                    if (isInBrushShape(ox, oy, rad, bShape)) {
+                      const rot = store.splatRotationRandomize
+                        ? Math.random() * Math.PI * 2
+                        : store.brushRotation
+                        ? (store.brushRotation * Math.PI) / 180
+                        : 0;
+                      pointsToDrop.push({ x: finalX + ox, y: finalY + oy, rot });
+                    }
+                  }
+                  if (pointsToDrop.length === 0) {
+                    pointsToDrop.push({ x: finalX, y: finalY, rot: 0 });
+                  }
+                }
+
+                // Density proximity threshold
+                const minSqDist = Math.max(0.01, (rad * rad * (1 - (store.splatScatter ?? 0.5) * 0.5)) / 25);
+
+                for (const pt of pointsToDrop) {
+                  const isTooClose = layer.data[assetUrl].some((existing: any) => {
+                    const dx = existing.x - pt.x;
+                    const dy = existing.y - pt.y;
+                    return dx * dx + dy * dy < minSqDist;
                   });
+
+                  if (!isTooClose || eventType === 'down') {
+                    layer.data[assetUrl].push({
+                      x: pt.x,
+                      y: pt.y,
+                      scale: store.stampScale || 1,
+                      rotation: pt.rot,
+                      uOffset,
+                      vOffset,
+                      uScale,
+                      vScale,
+                      width: stampWidth,
+                      height: stampHeight,
+                    });
+                  }
                 }
               }
             } else if (store.activeLayerType === 'free-form' && eventType === 'down') {

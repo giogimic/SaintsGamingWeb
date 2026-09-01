@@ -1809,26 +1809,61 @@ export class BabylonEngine {
     if (mapData.freeformLayers) {
       mapData.freeformLayers.forEach((layer) => {
         if (layer.type === 'paint-splat' && layer.data) {
-          // Splat Rendering
-          Object.entries(layer.data).forEach(([assetUrl, rawPoints]) => {
+          // Splat Rendering — Group points by unique material signature (Texture URL + UV crop)
+          const splatGroups = new Map<string, {
+            texUrl: string;
+            uOffset?: number;
+            vOffset?: number;
+            uScale?: number;
+            vScale?: number;
+            points: any[];
+          }>();
+
+          Object.entries(layer.data).forEach(([rawUrl, rawPoints]) => {
             const points = rawPoints as any[];
             if (!points.length) return;
-            const firstPt = points[0];
-            const hasUv = typeof firstPt.uOffset === 'number' && typeof firstPt.uScale === 'number';
-            const matKey = hasUv
-              ? `splat_mat_${assetUrl}_${firstPt.uOffset}_${firstPt.vOffset}_${firstPt.uScale}_${firstPt.vScale}`
-              : `splat_mat_${assetUrl}`;
+            const texUrl = (rawUrl.startsWith('/') || rawUrl.startsWith('http'))
+              ? rawUrl
+              : `/game-assets/tilesets/${rawUrl}`;
+
+            for (const p of points) {
+              const hasUv = typeof p.uOffset === 'number' && typeof p.uScale === 'number';
+              const groupKey = hasUv
+                ? `${texUrl}_u${p.uOffset}_v${p.vOffset}_s${p.uScale}_${p.vScale}`
+                : texUrl;
+
+              let group = splatGroups.get(groupKey);
+              if (!group) {
+                group = {
+                  texUrl,
+                  uOffset: p.uOffset,
+                  vOffset: p.vOffset,
+                  uScale: p.uScale,
+                  vScale: p.vScale,
+                  points: [],
+                };
+                splatGroups.set(groupKey, group);
+              }
+              group.points.push(p);
+            }
+          });
+
+          splatGroups.forEach((group, groupKey) => {
+            const points = group.points;
+            if (!points.length) return;
+            const hasUv = typeof group.uOffset === 'number' && typeof group.uScale === 'number';
+            const matKey = `splat_mat_${groupKey}`;
 
             let mat = this.tilesetMaterialCache.get(matKey);
             if (!mat) {
               mat = new StandardMaterial(matKey, this.scene);
-              let tex = new Texture(assetUrl, this.scene, true, false, Texture.NEAREST_SAMPLINGMODE);
+              let tex = new Texture(group.texUrl, this.scene, true, false, Texture.NEAREST_SAMPLINGMODE);
               tex.hasAlpha = true;
               if (hasUv) {
-                tex.uOffset = firstPt.uOffset || 0;
-                tex.vOffset = firstPt.vOffset || 0;
-                tex.uScale = firstPt.uScale || 1;
-                tex.vScale = firstPt.vScale || 1;
+                tex.uOffset = group.uOffset || 0;
+                tex.vOffset = group.vOffset || 0;
+                tex.uScale = group.uScale || 1;
+                tex.vScale = group.vScale || 1;
               }
               mat.diffuseTexture = tex;
               mat.useAlphaFromDiffuseTexture = true;
@@ -1839,31 +1874,31 @@ export class BabylonEngine {
               mat.disableLighting = true;
               this.tilesetMaterialCache.set(matKey, mat);
             }
-            
+
             // Thin Instances
-            const plane = MeshBuilder.CreatePlane(`splat_base_${assetUrl}`, { size: tileSize }, this.scene);
+            const plane = MeshBuilder.CreatePlane(`splat_mesh_${groupKey}`, { size: tileSize }, this.scene);
             plane.material = mat;
             plane.rotation.x = Math.PI / 2;
             plane.isPickable = false;
-            
+
             const matrices = new Float32Array(16 * points.length);
             for (let i = 0; i < points.length; i++) {
               const p = points[i];
               const posX = (p.x - width / 2) * tileSize;
               const posZ = (height / 2 - p.y) * tileSize;
-              
+
               const baseScale = p.scale || 1;
               const scaleX = baseScale * (p.width || 1);
               const scaleY = baseScale * (p.height || 1);
-              
+
               const matrix = Matrix.Compose(
                 new Vector3(scaleX, scaleY, baseScale),
                 Quaternion.RotationAxis(Vector3.Up(), p.rotation || 0),
-                new Vector3(posX, 0.01 + i * 0.001, posZ) // Slight Y offset to avoid Z-fighting
+                new Vector3(posX, 0.01 + Math.min(i, 50) * 0.0005, posZ)
               );
               matrix.copyToArray(matrices, i * 16);
             }
-            plane.thinInstanceSetBuffer("matrix", matrices, 16, true);
+            plane.thinInstanceSetBuffer('matrix', matrices, 16, true);
             plane.parent = this.rootNode;
             this.freeformMeshes.push(plane);
           });
@@ -1872,21 +1907,29 @@ export class BabylonEngine {
           layer.objects.forEach((obj: any) => {
             const posX = (obj.x - width / 2) * tileSize;
             const posZ = (height / 2 - obj.y) * tileSize;
-            
+
             const baseScale = obj.scale || 1;
             const w = baseScale * tileSize * (obj.width || 1);
             const h = baseScale * tileSize * (obj.height || 1);
-            
-            const plane = MeshBuilder.CreatePlane(`prop_${obj.id}`, {
-              width: w,
-              height: h,
-              sideOrientation: Mesh.DOUBLESIDE,
-            }, this.scene);
-            
+
+            const plane = MeshBuilder.CreatePlane(
+              `prop_${obj.id}`,
+              {
+                width: w,
+                height: h,
+                sideOrientation: Mesh.DOUBLESIDE,
+              },
+              this.scene
+            );
+
             plane.position.set(posX, ((obj.scale || 1) * tileSize) / 2, posZ);
             plane.rotation.y = obj.rotation || 0;
-            
-            const propUrl = obj.asset || 'default';
+
+            const rawPropUrl = obj.asset || 'default';
+            const propUrl = (rawPropUrl.startsWith('/') || rawPropUrl.startsWith('http'))
+              ? rawPropUrl
+              : `/game-assets/tilesets/${rawPropUrl}`;
+
             const hasUv = typeof obj.uOffset === 'number' && typeof obj.uScale === 'number';
             const matKey = hasUv
               ? `prop_mat_${propUrl}_${obj.uOffset}_${obj.vOffset}_${obj.uScale}_${obj.vScale}`
