@@ -1,3 +1,10 @@
+# 2.1.609
+- **Studio Tileset Overhaul, Pop-Out Canvas & Window Bounds Clamping**:
+  - **Tileset Library Modal (`TilesetPicker.tsx`)**: Replaced the native `<select>` dropdown with a sleek, visual grid modal for selecting and switching between available tilesets.
+  - **Detachable / Pop-Out Tileset Canvas (`DraggablePanel.tsx`, `TilesetPicker.tsx`)**: Added a canvas pop-out feature allowing users to detach the tilesheet viewer into an independent floating window while seamlessly preserving selection and brush tools.
+  - **Global Window Boundary Constraints (`DraggablePanel.tsx`)**: Clamped window dragging along the Y-axis (`40px <= y <= innerHeight - 40px`) ensuring title bars and panels never clip above the top navigation bar or below the footer.
+  - **Enhanced Saints Gaming Glass Aesthetic**: Refreshed draggable window headers and backgrounds with clean dark glass (`bg-[#050b14]/80`, `backdrop-blur-xl`), gold accents, and `sg-text-gradient`.
+
 # 2.1.608
 - **Continuous Geometry Foundation, Persistent SelectionAssets & Studio Overhaul**:
   - **Continuous Geometry Model (`continuousGeometry.ts`)**: Established mathematical continuous geometry (`circle`, `ellipse`, `rectangle`, `regularPolygon`, `star`, `polygon`, `path`, `freehand`) as the single source of truth across 2D, 2.5D, and 3D interactions.

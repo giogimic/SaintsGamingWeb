@@ -36,10 +36,13 @@ import {
   ChevronLeft,
   ChevronRight,
   RotateCcw,
+  ExternalLink,
+  CheckCircle2,
 } from 'lucide-react';
 import { AssetManager, type GameAssetItem } from '@/engine/assets/AssetManager';
 import { savePrefab, listPrefabs, type PrefabTileData } from '@/app/actions/prefabs';
 import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
+import { DraggablePanel } from './DraggablePanel';
 import { TILESET_SIZES } from '../data/tileset-sizes';
 import { useGameStore } from '../store';
 import { useEditorStore } from './editor-store';
@@ -368,7 +371,10 @@ export default function TilesetPicker({
   const setPrefabs = useEditorStore((s) => s.setPrefabs);
   const setActivePrefabId = useEditorStore((s) => s.setActivePrefabId);
   const openPanel = useEditorStore((s) => s.openPanel);
+  const closePanel = useEditorStore((s) => s.closePanel);
   const setBrushMode = useEditorStore((s) => s.setBrushMode);
+  const [isLibraryModalOpen, setIsLibraryModalOpen] = useState(false);
+  const [isTilesetCanvasDetached, setIsTilesetCanvasDetached] = useState(false);
   const [tileContextMenu, setTileContextMenu] = useState<{
     x: number;
     y: number;
@@ -1402,8 +1408,8 @@ export default function TilesetPicker({
     showToast(`Selected 1 Tile (GID #${gid})`);
   };
 
-  const handleSlicerStampMultiTile = () => {
-    if (!ts || !slicerSelection) return;
+  const handleSlicerStampMultiTile = async () => {
+    if (!ts || !slicerSelection || !imgRef.current) return;
     soundSynth?.playActionSound?.();
     const offX = ts.offsetX ?? ts.margin ?? 0;
     const offY = ts.offsetY ?? ts.margin ?? 0;
@@ -1437,6 +1443,8 @@ export default function TilesetPicker({
     const topGid = gids[0]?.[0] ?? (ts.firstgid + startRow * ts.columns + startCol);
     isInternalSelectionRef.current = true;
     onBrushSelectRef.current(topGid);
+    
+    // Grid behavior preservation
     if (spanW > 1 || spanH > 1) {
       onBrushSelectPatternRef.current?.({ w: spanW, h: spanH, gids });
       useEditorStore.getState().setPrefabStampMode('footprint');
@@ -1444,6 +1452,42 @@ export default function TilesetPicker({
       onBrushSelectPatternRef.current?.(null);
       useEditorStore.getState().setPrefabStampMode('1tile');
     }
+
+    // Continuous Geometry invariant: Eager Capture Selection Asset for Splat/Prop Freeform
+    const canvas = document.createElement('canvas');
+    canvas.width = cropW;
+    canvas.height = cropH;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(imgRef.current, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
+      const dataUrl = canvas.toDataURL('image/png');
+      
+      showToast('Uploading custom stamp...');
+      const { captureSelectionAsset } = await import('@/app/actions/assets');
+      const res = await captureSelectionAsset({
+        name: `Stamp ${cropW}x${cropH}`,
+        type: 'OBJECT',
+        dataUrl,
+        width: spanW,
+        height: spanH,
+        provenance: { sourceUrl: ts.imageSource, sourceRegion: { x: minX, y: minY, w: cropW, h: cropH } }
+      });
+      
+      if (res.success && res.data) {
+        useEditorStore.getState().setActiveStampAsset({
+          assetId: res.data.assetId,
+          url: res.data.url,
+          width: spanW,
+          height: spanH,
+          uOffset: 0,
+          vOffset: 0,
+          uScale: 1,
+          vScale: 1
+        });
+      }
+    }
+
     useEditorStore.getState().setBrushMode('paint');
     if (useEditorStore.getState().activeLayerIdx === -1) {
       useEditorStore.getState().setActiveLayerIdx(0);
@@ -1782,6 +1826,162 @@ export default function TilesetPicker({
     }
   };
 
+  const tilesetCanvasJSX = (
+    <div
+      className="relative inline-block min-w-full"
+      style={{
+        width: natural.w > 0 ? `${natural.w * zoomLevel}px` : '100%',
+        maxWidth: 'none',
+      }}
+    >
+      <img 
+        ref={imgRef}
+        src={
+          ts?.imageSource.startsWith('/') || ts?.imageSource.startsWith('http')
+            ? ts?.imageSource
+            : `/game-assets/tilesets/${ts?.imageSource}`
+        }
+        alt={ts?.imageSource}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onContextMenu={handleContextMenu}
+        onPointerLeave={() => {
+          if (!dragStart) {
+            setHoveredTile(null);
+          }
+        }}
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        onLoad={(e) => {
+          const el = e.currentTarget;
+          const nw = el.naturalWidth;
+          const nh = el.naturalHeight;
+          setNatural({ w: nw, h: nh });
+          setImgError(false);
+          if (ts?.imageSource) {
+            TILESET_SIZES[ts.imageSource] = { w: nw, h: nh };
+            const base = ts.imageSource.split('/').pop() || '';
+            TILESET_SIZES[base] = { w: nw, h: nh };
+          }
+        }}
+        className={`${
+          isCalibratingOrigin
+            ? 'cursor-crosshair'
+            : selectionMode === 'slicer'
+            ? 'cursor-crosshair'
+            : 'cursor-pointer'
+        } w-full block select-none touch-none`}
+        style={{
+          imageRendering: 'pixelated',
+          minWidth: ts ? `${ts.columns * ts.tilewidth * zoomLevel}px` : 'auto',
+        }}
+        onError={() => {
+          setImgError(true);
+        }}
+      />
+
+      {/* VISIBLE GRID LINE OVERLAY (Grid Mode) */}
+      {ts && showGridOverlay && selectionMode === 'grid' && natural.w > 0 && natural.h > 0 && (
+        <div
+          className="pointer-events-none absolute inset-0 z-10"
+          style={{
+            backgroundImage: `
+              linear-gradient(to right, rgba(255, 255, 255, 0.18) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(255, 255, 255, 0.18) 1px, transparent 1px)
+            `,
+            backgroundPosition: `${((ts.offsetX ?? ts.margin ?? 0) * zoomLevel)}px ${((ts.offsetY ?? ts.margin ?? 0) * zoomLevel)}px`,
+            backgroundSize: `${((ts.tilewidth + (ts.spacing ?? 0)) * zoomLevel)}px ${((ts.tileheight + (ts.spacing ?? 0)) * zoomLevel)}px`,
+          }}
+        />
+      )}
+
+      {/* FREEFORM CROP SELECTION BOX */}
+      {selectionMode === 'slicer' && slicerSelection && (
+        <div
+          className="pointer-events-none absolute border-2 border-fuchsia-400 bg-fuchsia-400/20 shadow-[0_0_20px_rgba(217,70,239,0.7)] z-30 transition-all duration-75"
+          style={{
+            left: `${(slicerSelection.x0 / natural.w) * 100}%`,
+            top: `${(slicerSelection.y0 / natural.h) * 100}%`,
+            width: `${((slicerSelection.x1 - slicerSelection.x0) / natural.w) * 100}%`,
+            height: `${((slicerSelection.y1 - slicerSelection.y0) / natural.h) * 100}%`,
+          }}
+        >
+          <div className="absolute -top-1.5 -left-1.5 w-3 h-3 border-t-2 border-l-2 border-white shadow-[0_0_8px_#d946ef]" />
+          <div className="absolute -top-1.5 -right-1.5 w-3 h-3 border-t-2 border-r-2 border-white shadow-[0_0_8px_#d946ef]" />
+          <div className="absolute -bottom-1.5 -left-1.5 w-3 h-3 border-b-2 border-l-2 border-white shadow-[0_0_8px_#d946ef]" />
+          <div className="absolute -bottom-1.5 -right-1.5 w-3 h-3 border-b-2 border-r-2 border-white shadow-[0_0_8px_#d946ef]" />
+
+          <div className="absolute -top-7 left-0 flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/95 border border-fuchsia-400 text-[10px] font-bold text-fuchsia-300 shadow-2xl whitespace-nowrap z-40">
+            <Scissors className="w-3 h-3 text-fuchsia-400" />
+            <span>{slicerSelection.x1 - slicerSelection.x0} × {slicerSelection.y1 - slicerSelection.y0} px</span>
+          </div>
+        </div>
+      )}
+
+      {/* ACTIVE DRAGGING SELECTION BOX (Grid Mode) */}
+      {ts && selectionMode === 'grid' && hoveredTile && dragStart && (
+        <div
+          className="pointer-events-none absolute border border-amber-400 bg-amber-400/20 shadow-[0_0_16px_rgba(245,158,11,0.6)] z-30 transition-all duration-75"
+          style={{
+            left: `${hoveredTile.leftPct}%`,
+            top: `${hoveredTile.topPct}%`,
+            width: `${hoveredTile.widthPct}%`,
+            height: `${hoveredTile.heightPct}%`,
+          }}
+        >
+          <div className="absolute -top-1 -left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-white shadow-[0_0_6px_#f59e0b]" />
+          <div className="absolute -top-1 -right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-white shadow-[0_0_6px_#f59e0b]" />
+          <div className="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-b-2 border-l-2 border-white shadow-[0_0_6px_#f59e0b]" />
+          <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-b-2 border-r-2 border-white shadow-[0_0_6px_#f59e0b]" />
+
+          <div className="absolute -top-6 left-0 flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/90 border border-amber-400/80 text-[9px] font-bold text-amber-300 shadow-xl whitespace-nowrap z-40">
+            <span>{hoveredTile.w} × {hoveredTile.h} Tiles</span>
+            <span className="text-slate-400 font-mono text-[8px]">({hoveredTile.w * ts.tilewidth}×{hoveredTile.h * ts.tileheight}px)</span>
+          </div>
+        </div>
+      )}
+
+      {/* COMMITTED SELECTION BOX (Grid Mode) */}
+      {selectionMode === 'grid' && selection && !dragStart && (
+        <div
+          className="pointer-events-none absolute border border-cyan-400 bg-cyan-400/15 shadow-[0_0_14px_rgba(6,182,212,0.5)] z-20 transition-all duration-75"
+          style={{
+            left: `${selection.leftPct}%`,
+            top: `${selection.topPct}%`,
+            width: `${selection.widthPct}%`,
+            height: `${selection.heightPct}%`,
+          }}
+          title={`Selected tile ${selection.local}`}
+        >
+          <div className="absolute -top-1 -left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-white shadow-[0_0_6px_#38bdf8]" />
+          <div className="absolute -top-1 -right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-white shadow-[0_0_6px_#38bdf8]" />
+          <div className="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-b-2 border-l-2 border-white shadow-[0_0_6px_#38bdf8]" />
+          <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-b-2 border-r-2 border-white shadow-[0_0_6px_#38bdf8]" />
+
+          <div className="absolute -top-6 left-0 flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/90 border border-cyan-400/80 text-[9px] font-bold text-cyan-300 shadow-xl whitespace-nowrap z-40">
+            <span>{selection.w} × {selection.h} Tiles</span>
+            {ts && <span className="text-slate-400 font-mono text-[8px]">({selection.w * ts.tilewidth}×{selection.h * ts.tileheight}px)</span>}
+          </div>
+        </div>
+      )}
+
+      {/* HOVERED SINGLE TILE (IDLE) */}
+      {selectionMode === 'grid' && hoveredTile && !dragStart && (
+        <div
+          className="pointer-events-none absolute border border-cyan-400/60 bg-cyan-400/10 z-10 transition-all duration-75"
+          style={{
+            left: `${hoveredTile.leftPct}%`,
+            top: `${hoveredTile.topPct}%`,
+            width: `${hoveredTile.widthPct}%`,
+            height: `${hoveredTile.heightPct}%`,
+          }}
+        />
+      )}
+    </div>
+  );
+
   return (
     <div className="flex flex-col gap-2 font-mono select-none">
       {/* ─── TAB SWITCHER ─── */}
@@ -1965,37 +2165,18 @@ export default function TilesetPicker({
               </div>
             </div>
 
-            {tilesets.length > 3 && (
-              <div className="relative mb-1">
-                <Search className="w-3 h-3 absolute left-2 top-2 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search tilesets..."
-                  value={tilesetSearch}
-                  onChange={(e) => setTilesetSearch(e.target.value)}
-                  className="w-full bg-[#050b14] border border-slate-700 rounded-lg pl-6 pr-2 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-amber-400"
-                />
-              </div>
-            )}
-
             {filteredTilesets.length > 0 ? (
-              <select 
-                value={activeTsIdx} 
-                onChange={(e) => {
+              <button
+                type="button"
+                onClick={() => {
                   soundSynth?.playUiClick?.();
-                  setActiveTsIdx(parseInt(e.target.value));
-                  setNatural({ w: 0, h: 0 });
-                  setHoveredTile(null);
-                  setImgError(false);
+                  setIsLibraryModalOpen(true);
                 }}
-                className="w-full bg-[#050b14] border border-amber-500/30 rounded-lg px-2.5 py-1.5 text-slate-200 font-mono text-[11px] focus:outline-none focus:border-amber-400 cursor-pointer"
+                className="w-full bg-[#050b14]/50 border border-primary/30 rounded-lg px-2.5 py-2 text-primary font-mono text-[11px] font-bold hover:bg-primary/10 hover:border-primary/50 transition cursor-pointer flex items-center justify-between"
               >
-                {filteredTilesets.map(({ t, originalIdx }) => (
-                  <option key={originalIdx} value={originalIdx}>
-                    {t.imageSource} (ID {t.firstgid}+)
-                  </option>
-                ))}
-              </select>
+                <span>{ts ? ts.imageSource.split('/').pop() : 'Select Tileset...'}</span>
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
             ) : (
               <div className="text-[11px] text-amber-300/70 italic px-2 py-1.5 bg-black/40 border border-amber-500/20 rounded-lg flex items-center justify-between">
                 <span>{tilesets.length === 0 ? 'No tilesets in map' : 'No matching tilesets'}</span>
@@ -2496,161 +2677,32 @@ export default function TilesetPicker({
 
           {/* PIXEL CANVAS / PREVIEW */}
           {ts && !imgError ? (
-            <div className="bg-black/90 rounded-xl border border-amber-500/30 overflow-auto max-h-[70vh] relative mt-1 custom-scrollbar">
-              <div
-                className="relative inline-block min-w-full"
-                style={{
-                  width: natural.w > 0 ? `${natural.w * zoomLevel}px` : '100%',
-                  maxWidth: 'none',
-                }}
-              >
-                <img 
-                  ref={imgRef}
-                  src={
-                    ts.imageSource.startsWith('/') || ts.imageSource.startsWith('http')
-                      ? ts.imageSource
-                      : `/game-assets/tilesets/${ts.imageSource}`
-                  }
-                  alt={ts.imageSource}
-                  onPointerDown={handlePointerDown}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={handlePointerUp}
-                  onPointerCancel={handlePointerUp}
-                  onContextMenu={handleContextMenu}
-                  onPointerLeave={() => {
-                    if (!dragStart) {
-                      setHoveredTile(null);
-                    }
-                  }}
-                  draggable={false}
-                  onDragStart={(e) => e.preventDefault()}
-                  onLoad={(e) => {
-                    const el = e.currentTarget;
-                    const nw = el.naturalWidth;
-                    const nh = el.naturalHeight;
-                    setNatural({ w: nw, h: nh });
-                    setImgError(false);
-                    if (ts?.imageSource) {
-                      TILESET_SIZES[ts.imageSource] = { w: nw, h: nh };
-                      const base = ts.imageSource.split('/').pop() || '';
-                      TILESET_SIZES[base] = { w: nw, h: nh };
-                    }
-                  }}
-                  className={`${
-                    isCalibratingOrigin
-                      ? 'cursor-crosshair'
-                      : selectionMode === 'slicer'
-                      ? 'cursor-crosshair'
-                      : 'cursor-pointer'
-                  } w-full block select-none touch-none`}
-                  style={{
-                    imageRendering: 'pixelated',
-                    minWidth: `${ts.columns * ts.tilewidth * zoomLevel}px`,
-                  }}
-                  onError={() => {
-                    setImgError(true);
-                  }}
-                />
-
-                {/* VISIBLE GRID LINE OVERLAY (Grid Mode) */}
-                {showGridOverlay && selectionMode === 'grid' && natural.w > 0 && natural.h > 0 && (
-                  <div
-                    className="pointer-events-none absolute inset-0 z-10"
-                    style={{
-                      backgroundImage: `
-                        linear-gradient(to right, rgba(255, 255, 255, 0.18) 1px, transparent 1px),
-                        linear-gradient(to bottom, rgba(255, 255, 255, 0.18) 1px, transparent 1px)
-                      `,
-                      backgroundPosition: `${((ts.offsetX ?? ts.margin ?? 0) * zoomLevel)}px ${((ts.offsetY ?? ts.margin ?? 0) * zoomLevel)}px`,
-                      backgroundSize: `${((ts.tilewidth + (ts.spacing ?? 0)) * zoomLevel)}px ${((ts.tileheight + (ts.spacing ?? 0)) * zoomLevel)}px`,
-                    }}
-                  />
-                )}
-
-                {/* FREEFORM CROP SELECTION BOX */}
-                {selectionMode === 'slicer' && slicerSelection && (
-                  <div
-                    className="pointer-events-none absolute border-2 border-fuchsia-400 bg-fuchsia-400/20 shadow-[0_0_20px_rgba(217,70,239,0.7)] z-30 transition-all duration-75"
-                    style={{
-                      left: `${(slicerSelection.x0 / natural.w) * 100}%`,
-                      top: `${(slicerSelection.y0 / natural.h) * 100}%`,
-                      width: `${((slicerSelection.x1 - slicerSelection.x0) / natural.w) * 100}%`,
-                      height: `${((slicerSelection.y1 - slicerSelection.y0) / natural.h) * 100}%`,
-                    }}
-                  >
-                    <div className="absolute -top-1.5 -left-1.5 w-3 h-3 border-t-2 border-l-2 border-white shadow-[0_0_8px_#d946ef]" />
-                    <div className="absolute -top-1.5 -right-1.5 w-3 h-3 border-t-2 border-r-2 border-white shadow-[0_0_8px_#d946ef]" />
-                    <div className="absolute -bottom-1.5 -left-1.5 w-3 h-3 border-b-2 border-l-2 border-white shadow-[0_0_8px_#d946ef]" />
-                    <div className="absolute -bottom-1.5 -right-1.5 w-3 h-3 border-b-2 border-r-2 border-white shadow-[0_0_8px_#d946ef]" />
-
-                    <div className="absolute -top-7 left-0 flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/95 border border-fuchsia-400 text-[10px] font-bold text-fuchsia-300 shadow-2xl whitespace-nowrap z-40">
-                      <Scissors className="w-3 h-3 text-fuchsia-400" />
-                      <span>{slicerSelection.x1 - slicerSelection.x0} × {slicerSelection.y1 - slicerSelection.y0} px</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* ACTIVE DRAGGING SELECTION BOX (Grid Mode) */}
-                {selectionMode === 'grid' && hoveredTile && dragStart && (
-                  <div
-                    className="pointer-events-none absolute border border-amber-400 bg-amber-400/20 shadow-[0_0_16px_rgba(245,158,11,0.6)] z-30 transition-all duration-75"
-                    style={{
-                      left: `${hoveredTile.leftPct}%`,
-                      top: `${hoveredTile.topPct}%`,
-                      width: `${hoveredTile.widthPct}%`,
-                      height: `${hoveredTile.heightPct}%`,
-                    }}
-                  >
-                    <div className="absolute -top-1 -left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-white shadow-[0_0_6px_#f59e0b]" />
-                    <div className="absolute -top-1 -right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-white shadow-[0_0_6px_#f59e0b]" />
-                    <div className="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-b-2 border-l-2 border-white shadow-[0_0_6px_#f59e0b]" />
-                    <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-b-2 border-r-2 border-white shadow-[0_0_6px_#f59e0b]" />
-
-                    <div className="absolute -top-6 left-0 flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/90 border border-amber-400/80 text-[9px] font-bold text-amber-300 shadow-xl whitespace-nowrap z-40">
-                      <span>{hoveredTile.w} × {hoveredTile.h} Tiles</span>
-                      <span className="text-slate-400 font-mono text-[8px]">({hoveredTile.w * ts.tilewidth}×{hoveredTile.h * ts.tileheight}px)</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* COMMITTED SELECTION BOX (Grid Mode) */}
-                {selectionMode === 'grid' && selection && !dragStart && (
-                  <div
-                    className="pointer-events-none absolute border border-cyan-400 bg-cyan-400/15 shadow-[0_0_14px_rgba(6,182,212,0.5)] z-20 transition-all duration-75"
-                    style={{
-                      left: `${selection.leftPct}%`,
-                      top: `${selection.topPct}%`,
-                      width: `${selection.widthPct}%`,
-                      height: `${selection.heightPct}%`,
-                    }}
-                    title={`Selected tile ${selection.local}`}
-                  >
-                    <div className="absolute -top-1 -left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-white shadow-[0_0_6px_#38bdf8]" />
-                    <div className="absolute -top-1 -right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-white shadow-[0_0_6px_#38bdf8]" />
-                    <div className="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-b-2 border-l-2 border-white shadow-[0_0_6px_#38bdf8]" />
-                    <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-b-2 border-r-2 border-white shadow-[0_0_6px_#38bdf8]" />
-
-                    <div className="absolute -top-6 left-0 flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/90 border border-cyan-400/80 text-[9px] font-bold text-cyan-300 shadow-xl whitespace-nowrap z-40">
-                      <span>{selection.w} × {selection.h} Tiles</span>
-                      <span className="text-slate-400 font-mono text-[8px]">({selection.w * ts.tilewidth}×{selection.h * ts.tileheight}px)</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* HOVERED SINGLE TILE (IDLE) */}
-                {selectionMode === 'grid' && hoveredTile && !dragStart && (
-                  <div
-                    className="pointer-events-none absolute border border-cyan-400/60 bg-cyan-400/10 z-10 transition-all duration-75"
-                    style={{
-                      left: `${hoveredTile.leftPct}%`,
-                      top: `${hoveredTile.topPct}%`,
-                      width: `${hoveredTile.widthPct}%`,
-                      height: `${hoveredTile.heightPct}%`,
-                    }}
-                  />
-                )}
+            isTilesetCanvasDetached ? (
+              <div className="flex flex-col items-center justify-center p-4 rounded-xl border border-amber-500/20 bg-black/40 text-center gap-2 mt-1 py-8">
+                <ExternalLink className="w-6 h-6 text-amber-500/50 mb-1" />
+                <p className="text-xs text-amber-200/90 font-bold">Canvas Detached</p>
+                <p className="text-[10px] text-slate-400">The tileset canvas is currently floating.</p>
+                <button
+                  type="button"
+                  onClick={() => { setIsTilesetCanvasDetached(false); }}
+                  className="mt-1 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] font-bold transition cursor-pointer"
+                >
+                  Dock to sidebar
+                </button>
               </div>
-            </div>
+            ) : (
+              <div className="bg-black/90 rounded-xl border border-amber-500/30 overflow-auto max-h-[70vh] relative mt-1 custom-scrollbar">
+                <button
+                  type="button"
+                  onClick={() => { setIsTilesetCanvasDetached(true); openPanel('tileset_canvas'); }}
+                  className="absolute top-2 right-2 z-50 p-1.5 bg-black/80 hover:bg-white/20 text-white rounded border border-white/20 shadow backdrop-blur cursor-pointer"
+                  title="Pop Out Canvas"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+                {tilesetCanvasJSX}
+              </div>
+            )
           ) : (
             <div className="flex flex-col items-center justify-center p-4 rounded-xl border border-amber-500/20 bg-black/40 text-center gap-2 mt-1">
               <p className="text-xs text-amber-200/90 font-bold">
@@ -3862,6 +3914,150 @@ export default function TilesetPicker({
             </div>
           </div>
         </div>
+      )}
+
+      {/* TILESET LIBRARY MODAL */}
+      {isLibraryModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="sg-glass bg-[#050b14]/90 backdrop-blur-xl border border-primary/30 w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[85vh]">
+            {/* MODAL HEADER */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 bg-card/50">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/30">
+                  <Layers className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold sg-text-gradient font-mono uppercase tracking-wider">Tileset Library</h3>
+                  <p className="text-xs text-muted-foreground font-mono">Select a tileset to paint with</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsLibraryModalOpen(false);
+                    setIsAddModalOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 rounded-lg text-xs font-bold transition cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add New Tileset</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsLibraryModalOpen(false)}
+                  className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* MODAL CONTENT */}
+            <div className="flex-1 overflow-auto p-6 custom-scrollbar bg-[#02060d]/80">
+              {tilesets.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-4">
+                    <Layers className="w-8 h-8 text-slate-500" />
+                  </div>
+                  <h4 className="text-slate-300 font-bold mb-2">No Tilesets Available</h4>
+                  <p className="text-slate-500 text-sm max-w-sm mb-6">Your map doesn't have any tilesets added yet. Add one to start painting your world.</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsLibraryModalOpen(false);
+                      setIsAddModalOpen(true);
+                    }}
+                    className="px-6 py-2.5 bg-primary hover:bg-amber-400 text-[#050b14] font-bold rounded-lg transition"
+                  >
+                    Add Your First Tileset
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {tilesets.map((t, idx) => {
+                    const isSelected = activeTsIdx === idx;
+                    const imgUrl = t.imageSource.startsWith('/') || t.imageSource.startsWith('http')
+                      ? t.imageSource
+                      : `/game-assets/tilesets/${t.imageSource}`;
+                    const filename = t.imageSource.split('/').pop() || t.imageSource;
+                    
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          soundSynth?.playUiClick?.();
+                          setActiveTsIdx(idx);
+                          setNatural({ w: 0, h: 0 });
+                          setHoveredTile(null);
+                          setImgError(false);
+                          setIsLibraryModalOpen(false);
+                        }}
+                        className={`group relative flex flex-col bg-card/40 rounded-xl overflow-hidden cursor-pointer transition-all duration-200 border ${
+                          isSelected 
+                            ? 'border-primary ring-2 ring-primary/20 shadow-[0_0_15px_rgba(203,178,106,0.15)]' 
+                            : 'border-border/50 hover:border-primary/50 hover:bg-card/60'
+                        }`}
+                      >
+                        <div className="h-28 w-full bg-[#0a111a] relative overflow-hidden flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
+                          <div 
+                            className="absolute inset-0 opacity-20"
+                            style={{
+                              backgroundImage: `url('${imgUrl}')`,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                              filter: 'blur(4px)'
+                            }}
+                          />
+                          <img 
+                            src={imgUrl} 
+                            alt={filename}
+                            className="max-h-24 max-w-full object-contain drop-shadow-lg z-10 p-2"
+                            style={{ imageRendering: 'pixelated' }}
+                            draggable={false}
+                          />
+                          {isSelected && (
+                            <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-lg z-20">
+                              <CheckCircle2 className="w-4 h-4 text-[#050b14]" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-3 border-t border-border/40 relative z-20 bg-card/90 backdrop-blur">
+                          <h4 className="text-xs font-bold text-slate-200 truncate mb-1 group-hover:text-primary transition-colors" title={filename}>
+                            {filename}
+                          </h4>
+                          <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
+                            <span>ID {t.firstgid}+</span>
+                            <span>{t.columns || '?'} cols</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* TILESET CANVAS POP-OUT */}
+      {isTilesetCanvasDetached && (
+        <DraggablePanel id="tileset_canvas" icon={<Layers className="w-4 h-4" />} title="Tileset Canvas">
+          <div className="bg-[#0b1320] h-[400px] w-[500px] overflow-hidden rounded-xl border border-amber-500/30 flex flex-col p-2">
+            <button
+              type="button"
+              onClick={() => { setIsTilesetCanvasDetached(false); closePanel('tileset_canvas'); }}
+              className="absolute top-4 right-4 z-50 p-1.5 bg-black/80 hover:bg-white/20 text-white rounded border border-white/20 shadow backdrop-blur cursor-pointer"
+              title="Dock Canvas"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+            <div className="overflow-auto custom-scrollbar flex-1 relative bg-black/90 rounded-lg">
+              {tilesetCanvasJSX}
+            </div>
+          </div>
+        </DraggablePanel>
       )}
     </div>
   );
