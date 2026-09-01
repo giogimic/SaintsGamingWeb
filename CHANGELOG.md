@@ -1,3 +1,12 @@
+# 2.1.603
+- **Multi-Shape Brush & Selection Tools**:
+  - **5 Brush Shapes**: Cycle through Circle, Square, Diamond, Star, and Polygon brush shapes in both the Bottom Toolbar (click-to-cycle button) and the Tile Selector Panel (direct shape buttons).
+  - **3D Reticle Preview**: Extended `BabylonEngine.ts` brush preview rendering to correctly visualize Diamond (Manhattan distance) and Star (cross + diagonals) brush footprints on the 3D ground plane.
+  - **Shape-Masked Painting**: `BabylonEngine.ts` paint loop now filters cells through Diamond and Star geometry checks, so painting only fills cells matching the active brush shape.
+  - **Selection Mode Picker**: When in Select (Marquee) mode, a new selection shape bar appears with Box, Circle, Lasso, and Polygon selection tools.
+  - **Brush Rotation**: Added `setBrushRotation` to `BabylonEngine.ts` and wired it from the editor store through `GameCanvasBabylon.tsx` so rotated stamps and splats are supported.
+  - **Snapshot Type Fix**: Widened `PlaytestRestoreSnapshot.brushShape` to include all 5 shape types, fixing a TypeScript strict mode error.
+
 # 2.1.602
 - **2.5D Freehand Painting & Toolbar Mode Integration**:
   - **Toolbar Mode Switcher**: Added prominent **Grid**, **Splat**, and **2.5D Prop** layer mode selection buttons directly to `StudioBottomToolbar.tsx`.

@@ -1231,6 +1231,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     if (!engine) return;
     engine.setBrushRadius(brushRadius);
     engine.setBrushShape(brushShape);
+    engine.setBrushRotation(useEditorStore.getState().brushRotation);
     engine.setActiveBrushTileId(activeBrushTileId);
     engine.setActiveBrushPattern(activeBrushPattern);
     engine.setPrefabStampMode(prefabStampMode);

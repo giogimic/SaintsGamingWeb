@@ -180,7 +180,7 @@ type PlaytestRestoreSnapshot = {
   activeLayerType: 'grid' | 'paint-splat' | 'free-form' | 'polygon';
   mapDirty: boolean;
   brushRadius: number;
-  brushShape: 'circle' | 'square';
+  brushShape: 'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon';
   stampScale?: number;
 };
 
@@ -188,6 +188,7 @@ export interface BrushPattern {
   w: number;
   h: number;
   gids: number[][];
+  mask?: boolean[][];
 }
 
 export interface TileDefinition {
@@ -248,7 +249,11 @@ interface EditorState {
   activeLayerIdx: number;
   activeLayerType: 'grid' | 'paint-splat' | 'free-form' | 'polygon';
   brushRadius: number;
-  brushShape: 'circle' | 'square';
+  brushShape: 'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon';
+  brushRotation: number;
+  setBrushRotation: (rot: number) => void;
+  selectionMode: 'box' | 'circle' | 'ellipse' | 'lasso' | 'polygon' | 'magic-wand';
+  setSelectionMode: (mode: 'box' | 'circle' | 'ellipse' | 'lasso' | 'polygon' | 'magic-wand') => void;
   brushMode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste' | 'freehand' | 'vertex_pen';
   activePrefabId: string | null;
   prefabs: any[];
@@ -309,6 +314,8 @@ interface EditorState {
   removeSelectedCell: (r: number, c: number) => void;
   toggleSelectedCell: (r: number, c: number) => void;
   setSelectionBox: (minR: number, maxR: number, minC: number, maxC: number) => void;
+  setSelectionCircle: (centerR: number, centerC: number, radius: number) => void;
+  setSelectionPolygon: (points: Array<{ r: number; c: number }>) => void;
   addSelectedBox: (minR: number, maxR: number, minC: number, maxC: number) => void;
   removeSelectedBox: (minR: number, maxR: number, minC: number, maxC: number) => void;
   clearSelectedCells: () => void;
@@ -357,7 +364,7 @@ interface EditorState {
   setShowWarpOverlays: (on: boolean) => void;
   setShowSpawnOverlays: (on: boolean) => void;
   setBrushRadius: (radius: number) => void;
-  setBrushShape: (shape: 'circle' | 'square') => void;
+  setBrushShape: (shape: 'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon') => void;
   setBrushMode: (mode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste' | 'freehand' | 'vertex_pen') => void;
   setActivePrefabId: (id: string | null) => void;
   setPrefabs: (prefabs: any[]) => void;
@@ -874,7 +881,7 @@ function capturePlaytestSnapshot(state: {
   activeLayerType: 'grid' | 'paint-splat' | 'free-form' | 'polygon';
   mapDirty: boolean;
   brushRadius: number;
-  brushShape: 'circle' | 'square';
+  brushShape: 'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon';
   stampScale: number;
 }): PlaytestRestoreSnapshot {
   const openPanelIds = (Object.keys(state.panels) as PanelId[]).filter(
@@ -934,6 +941,16 @@ export const useEditorStore = create<EditorState>()(
       activeLayerType: 'grid',
       brushRadius: 1,
       brushShape: 'circle',
+      brushRotation: 0,
+      setBrushRotation: (rot) =>
+        set((state) => {
+          state.brushRotation = ((rot % 360) + 360) % 360;
+        }),
+      selectionMode: 'box',
+      setSelectionMode: (mode) =>
+        set((state) => {
+          state.selectionMode = mode;
+        }),
       brushMode: 'paint',
       paintMode: 'stamp',
       setPaintMode: (mode: 'stamp' | 'paste') =>
@@ -1432,6 +1449,60 @@ export const useEditorStore = create<EditorState>()(
           state.selectedCells = next;
           state.selectionStart = { r: r0, c: c0 };
           state.selectionEnd = { r: r1, c: c1 };
+        }),
+      setSelectionCircle: (centerR, centerC, radius) =>
+        set((state) => {
+          const next: Record<string, boolean> = {};
+          const r0 = Math.floor(centerR - radius);
+          const r1 = Math.ceil(centerR + radius);
+          const c0 = Math.floor(centerC - radius);
+          const c1 = Math.ceil(centerC + radius);
+          const radSq = radius * radius;
+          for (let r = r0; r <= r1; r++) {
+            for (let c = c0; c <= c1; c++) {
+              const dr = r - centerR;
+              const dc = c - centerC;
+              if (dr * dr + dc * dc <= radSq) {
+                next[`${r},${c}`] = true;
+              }
+            }
+          }
+          state.selectedCells = next;
+          state.selectionStart = { r: r0, c: c0 };
+          state.selectionEnd = { r: r1, c: c1 };
+        }),
+      setSelectionPolygon: (points) =>
+        set((state) => {
+          if (!points.length) return;
+          let minR = points[0].r, maxR = points[0].r;
+          let minC = points[0].c, maxC = points[0].c;
+          points.forEach((p) => {
+            if (p.r < minR) minR = p.r;
+            if (p.r > maxR) maxR = p.r;
+            if (p.c < minC) minC = p.c;
+            if (p.c > maxC) maxC = p.c;
+          });
+          const next: Record<string, boolean> = {};
+          const isPointInPoly = (r: number, c: number) => {
+            let inside = false;
+            for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+              const xi = points[i].c, yi = points[i].r;
+              const xj = points[j].c, yj = points[j].r;
+              const intersect = ((yi > r) !== (yj > r)) && (c < (xj - xi) * (r - yi) / (yj - yi) + xi);
+              if (intersect) inside = !inside;
+            }
+            return inside;
+          };
+          for (let r = Math.floor(minR); r <= Math.ceil(maxR); r++) {
+            for (let c = Math.floor(minC); c <= Math.ceil(maxC); c++) {
+              if (isPointInPoly(r, c)) {
+                next[`${r},${c}`] = true;
+              }
+            }
+          }
+          state.selectedCells = next;
+          state.selectionStart = { r: Math.floor(minR), c: Math.floor(minC) };
+          state.selectionEnd = { r: Math.ceil(maxR), c: Math.ceil(maxC) };
         }),
       addSelectedBox: (minR, maxR, minC, maxC) =>
         set((state) => {
