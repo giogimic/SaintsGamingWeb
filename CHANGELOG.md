@@ -1,3 +1,8 @@
+# 2.1.627
+- **Shadow Darkness Opacity, Drifting Cloud Shadows & 3D Lighting Enhancements**:
+  - **Shadow Darkness Opacity (`realmSettings.ts`, `RealmSettingsPanel.tsx`, `BabylonEngine.ts`)**: Added real-time slider for shadow map opacity and darkness depth (`10%` Soft to `90%` Dramatic, default `45%`).
+  - **Drifting Cloud Shadows (`realmSettings.ts`, `RealmSettingsPanel.tsx`)**: Added global toggle for procedural cloud shadows gliding across the 2.5D/3D landscape.
+
 # 2.1.626
 - **Dynamic Day/Night Cycle Duration, Cinematic Vignette Post-Processing & Global Atmosphere Controls**:
   - **Dynamic Day/Night Cycle Duration (`realmSettings.ts`, `RealmSettingsPanel.tsx`)**: Added real-time slider for automated celestial day/night cycle progression (`0` Static / Manual up to `60` minute real-time planetary orbits).

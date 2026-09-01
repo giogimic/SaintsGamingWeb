@@ -842,7 +842,10 @@ export class BabylonEngine {
 
     // Vignette Post-Process
     if (this.vignettePostProcess) {
-      this.vignettePostProcess.vignetteEnabled = settings.vignetteEnabled !== false;
+      this.vignettePostProcess.vignetteEnabled = settings.enableVignette !== false && settings.vignetteEnabled !== false;
+      if (settings.vignetteWeight !== undefined) {
+        this.vignettePostProcess.vignetteWeight = settings.vignetteWeight / 10;
+      }
     }
 
     // Weather Particle Systems

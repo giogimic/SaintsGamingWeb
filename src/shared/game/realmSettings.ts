@@ -71,6 +71,8 @@ export interface RealmSettingsConfig {
   enableFootstepParticles?: boolean;
   enableVignette?: boolean;
   vignetteWeight?: number;
+  shadowDarkness?: number;
+  enableCloudShadows?: boolean;
 }
 
 export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
@@ -124,6 +126,8 @@ export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
   enableFootstepParticles: true,
   enableVignette: true,
   vignetteWeight: 15,
+  shadowDarkness: 45,
+  enableCloudShadows: false,
 };
 
 export const REALM_SETTING_KEYS = {
@@ -176,6 +180,8 @@ export const REALM_SETTING_KEYS = {
   ENABLE_FOOTSTEP_PARTICLES: 'ENABLE_FOOTSTEP_PARTICLES',
   ENABLE_VIGNETTE: 'ENABLE_VIGNETTE',
   VIGNETTE_WEIGHT: 'VIGNETTE_WEIGHT',
+  SHADOW_DARKNESS: 'SHADOW_DARKNESS',
+  ENABLE_CLOUD_SHADOWS: 'ENABLE_CLOUD_SHADOWS',
 } as const;
 
 /**
