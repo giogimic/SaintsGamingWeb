@@ -26,6 +26,7 @@ import {
   User,
   Radio,
   Eye,
+  Lock,
 } from 'lucide-react';
 import { BUILTIN_HUD_PRESETS } from './default-presets';
 import { HUD_THEME_LIST } from './hud-themes';
@@ -189,18 +190,29 @@ export default function GameOptionsMenu({
   const [inGameBorderClamping, setInGameBorderClamping] = useState(true);
   const [inGameVignette, setInGameVignette] = useState(true);
 
+  const activeMapData = useGameStore((s) => s.activeMapData);
+  const allowCustomCamera = Boolean(
+    (activeMapData as any)?.allowCustomCamera ??
+    (activeMapData as any)?.allowCustomPlayerCamera ??
+    false
+  );
+  const authorLockedCameraStyle = ((activeMapData as any)?.cameraStyle || (activeMapData as any)?.defaultCameraStyle || 'isometric') as 'isometric' | 'follow45' | 'topdown' | 'free';
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem('saints_camera_settings');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.playerCameraStyle) setInGameCameraStyle(parsed.playerCameraStyle);
+        if (parsed.playerCameraStyle && allowCustomCamera) setInGameCameraStyle(parsed.playerCameraStyle);
+        else if (!allowCustomCamera) setInGameCameraStyle(authorLockedCameraStyle);
         if (parsed.followSmoothing) setInGameFollowSmoothing(parsed.followSmoothing);
         if (parsed.borderClamping !== undefined) setInGameBorderClamping(parsed.borderClamping);
         if (parsed.vignetteEnabled !== undefined) setInGameVignette(parsed.vignetteEnabled);
+      } else if (!allowCustomCamera) {
+        setInGameCameraStyle(authorLockedCameraStyle);
       }
     } catch {}
-  }, []);
+  }, [allowCustomCamera, authorLockedCameraStyle]);
 
   const saveInGameCamera = (style: any, smooth: number, clamp: boolean, vig: boolean) => {
     try {
@@ -497,9 +509,26 @@ export default function GameOptionsMenu({
 
                 {/* Camera Style Selection */}
                 <div className="p-3.5 rounded-lg bg-[#0a1628]/60 border border-border/40 space-y-2.5">
-                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    Camera Perspective Style
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Camera Perspective Style
+                    </span>
+                    <span className={`text-[9px] font-mono px-2 py-0.5 rounded border uppercase font-bold flex items-center gap-1 ${
+                      allowCustomCamera
+                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                        : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                    }`}>
+                      {!allowCustomCamera && <Lock className="w-3 h-3 text-amber-400" />}
+                      {allowCustomCamera ? 'Custom Permitted' : 'Locked by Studio'}
+                    </span>
+                  </div>
+
+                  {!allowCustomCamera && (
+                    <div className="p-2.5 rounded bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-200/80">
+                      This realm map enforces the <span className="font-bold text-amber-300 uppercase">{authorLockedCameraStyle}</span> perspective to preserve author gameplay immersion. Perspective switching is disabled for this region.
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-2">
                     {[
                       { id: 'isometric', label: 'Isometric (Classic 45°)', desc: 'Diagonal depth' },
@@ -507,21 +536,27 @@ export default function GameOptionsMenu({
                       { id: 'topdown', label: 'Top-Down (90°)', desc: 'Direct bird-eye view' },
                       { id: 'free', label: 'Free Cam', desc: 'Orbital inspection' },
                     ].map((mode) => {
-                      const isSelected = inGameCameraStyle === mode.id;
+                      const isSelected = (allowCustomCamera ? inGameCameraStyle : authorLockedCameraStyle) === mode.id;
                       return (
                         <button
                           key={mode.id}
                           type="button"
+                          disabled={!allowCustomCamera}
                           onClick={() => {
+                            if (!allowCustomCamera) return;
                             soundSynth?.playUiClick?.();
                             setInGameCameraStyle(mode.id as any);
                             saveInGameCamera(mode.id, inGameFollowSmoothing, inGameBorderClamping, inGameVignette);
                             showToast(`Camera style set to ${mode.label}`);
                           }}
-                          className={`p-2.5 rounded-lg text-left transition-all border cursor-pointer ${
-                            isSelected
-                              ? 'bg-primary/20 border-primary/50 text-primary'
-                              : 'bg-[#060e1c] border-border/40 text-muted-foreground hover:text-foreground hover:border-border'
+                          className={`p-2.5 rounded-lg text-left transition-all border ${
+                            !allowCustomCamera
+                              ? isSelected
+                                ? 'bg-primary/10 border-primary/40 text-primary/80 cursor-not-allowed opacity-90'
+                                : 'bg-[#060e1c]/50 border-border/20 text-muted-foreground/40 cursor-not-allowed opacity-50'
+                              : isSelected
+                              ? 'bg-primary/20 border-primary/50 text-primary cursor-pointer'
+                              : 'bg-[#060e1c] border-border/40 text-muted-foreground hover:text-foreground hover:border-border cursor-pointer'
                           }`}
                         >
                           <div className="flex items-center justify-between">
@@ -977,7 +1012,7 @@ export default function GameOptionsMenu({
         {/* OS Window Footer Bar */}
         <div className="px-4 py-2 bg-[#0a1628]/90 border-t border-border/40 flex items-center justify-between text-[10px] font-mono text-muted-foreground select-none">
           <div className="flex items-center gap-3">
-            <span>Saints Gaming v2.1.631</span>
+            <span>Saints Gaming v2.1.632</span>
             <span>•</span>
             <span>Time To Play</span>
           </div>

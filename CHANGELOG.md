@@ -1,3 +1,23 @@
+# 2.1.632
+- **World Studio Tooling Overhaul — Sheet Slicer, Prop & Foliage Suite, Seamless vs Sliced Materials & Studio Camera Authority**:
+  - **Studio Camera Authority & Persistence (`realmSettings.ts`, `BabylonEngine.ts`, `CameraSettingsPanel.tsx`, `GameOptionsMenu.tsx`)**:
+    - Added creator master toggle `allowCustomPlayerCamera` ("Allow Players to Choose Perspective").
+    - When locked by author, in-game ESC menu reflects locked creator authority badge and preserves the author's intended view angle. When unlocked, players can freely switch between 2.5D Isometric, Smooth Dynamic Follow, Top-Down 90°, and Free Orbit.
+    - Fixed in-game camera mode switching in BabylonJS engine to correctly switch between `FreeCamera.ORTHOGRAPHIC_CAMERA` and `FreeCamera.PERSPECTIVE_CAMERA`, calculating orbital yaw offset angles (`offsetX = -horizDist * sin(yaw)`, `offsetZ = -horizDist * cos(yaw)`).
+    - Fixed map transition persistence so warping between maps automatically re-applies the author/player camera perspective instead of resetting to flat 2D.
+  - **Sheet Slicer & Precision Cutter Tool (`SheetSlicerPanel.tsx`)**:
+    - Created an interactive pixel cutter and spritesheet slicer dock.
+    - Supports grid snapping (`16px`, `32px`, `48px`, `64px`, or freeform pixel drag), viewport zoom (`1x` to `6x`), pixel coordinate dimensions, normalized UV mapping calculation (`uOffset`, `vOffset`, `uScale`, `vScale`), and isolated checkered preview rendering.
+    - 1-Click actions to save crops as reusable **Terrain Splat Swatches** or add to the **Prop & Foliage Library**.
+  - **Prop & Foliage Studio Suite (`PropLibraryPanel.tsx`, `editor-store.ts`)**:
+    - Created dedicated 2.5D/3D prop placement dock featuring trees, boulders, fences, wells, and custom sliced props.
+    - Category filters (`Tree`, `Foliage`, `Rock`, `Structure`, `Decor`, `Custom Slices`), interactive scale slider (`0.5x` to `3.0x`), scale jitter variance toggle (±20%), rotation angle controls (`R` hotkey, 45° increments), and customizable collision modes (`SOLID`, `PASSABLE`, `WATER`).
+  - **Seamless vs Custom Sliced Terrain Materials (`TerrainBrushPalette.tsx`)**:
+    - Separated procedural tiling ground textures (`Lush Meadow Grass`, `Rich Soil`, `Golden Sand`, `Cobblestone`, `River Water`, `Powder Snow`, `Wood Deck`) from custom sliced UV crops.
+  - **5 Unified Studio Modes & In-Menu Interactive Guides (`TileSelectorPanel.tsx`)**:
+    - Restructured into 5 distinct modes (`Grid Paint`, `Terrain Splat`, `Props & Foliage`, `Sheet Slicer`, `Smart Border`).
+    - Added collapsible step-by-step interactive tutorial guide banners in every dock explaining workflows, hotkeys, and tips.
+
 # 2.1.631
 - **Dedicated Game & Studio Escape System Menus in Sleek Saints OS Window Architecture**:
   - **Dedicated Studio Escape Menu (`StudioEscapeMenu.tsx`, `StudioEditorShell.tsx`)**: Created a standalone creator system menu tailored specifically to Studio operations. Includes Project & Map management (Live save status, Revert, Blueprint JSON export, Playtest toggle), Viewport & Camera controls (Perspective presets, sensitivity sliders, reset to origin), Editor Visual Guides (Grid overlay, edge skirts, author pins), Studio Audio synthesizer preferences, and a complete hotkey cheat-sheet.

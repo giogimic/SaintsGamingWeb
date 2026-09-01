@@ -41,6 +41,7 @@ export interface RealmSettingsConfig {
   fogColor?: string;
   terrainElevationScale?: number;
   defaultCameraStyle?: 'isometric' | 'follow45' | 'topdown' | 'free';
+  allowCustomPlayerCamera?: boolean;
   waterReflectionQuality?: 'off' | 'low' | 'high';
   enableBloom?: boolean;
   enableAntiAliasing?: boolean;
@@ -104,6 +105,7 @@ export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
   fogColor: '#0b1626',
   terrainElevationScale: 1.0,
   defaultCameraStyle: 'isometric',
+  allowCustomPlayerCamera: false,
   waterReflectionQuality: 'high',
   enableBloom: false,
   enableAntiAliasing: true,

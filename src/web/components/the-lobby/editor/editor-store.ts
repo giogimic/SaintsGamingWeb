@@ -84,6 +84,39 @@ export type SoftLock = {
 
 export type PanelId = StudioDockId;
 
+export interface CustomTerrainSwatch {
+  id: string;
+  name: string;
+  sourceSheet: string;
+  sourceX: number;
+  sourceY: number;
+  sourceWidth: number;
+  sourceHeight: number;
+  uOffset: number;
+  vOffset: number;
+  uScale: number;
+  vScale: number;
+  category?: string;
+}
+
+export interface CustomPropItem {
+  id: string;
+  name: string;
+  category: 'Tree' | 'Rock' | 'Building' | 'Foliage' | 'Decor' | 'Structure';
+  sourceSheet: string;
+  sourceX: number;
+  sourceY: number;
+  sourceWidth: number;
+  sourceHeight: number;
+  uOffset: number;
+  vOffset: number;
+  uScale: number;
+  vScale: number;
+  defaultScale?: number;
+  collision?: 'SOLID' | 'NONE' | 'WATER';
+  elevationOffset?: number;
+}
+
 export type { StudioMode };
 export { STUDIO_MODE_DEFAULTS, STUDIO_MODE_META, STUDIO_DOCK_META };
 
@@ -301,6 +334,16 @@ interface EditorState {
   setIsAutoEdgeEnabled: (enabled: boolean) => void;
   isStudioEscapeMenuOpen: boolean;
   setIsStudioEscapeMenuOpen: (open: boolean) => void;
+  
+  // Custom Sliced Textures & Prop Library
+  customTerrainSwatches: CustomTerrainSwatch[];
+  addCustomTerrainSwatch: (swatch: CustomTerrainSwatch) => void;
+  removeCustomTerrainSwatch: (id: string) => void;
+  customPropLibrary: CustomPropItem[];
+  addCustomPropItem: (prop: CustomPropItem) => void;
+  removeCustomPropItem: (id: string) => void;
+  activeCustomPropId: string | null;
+  setActiveCustomPropId: (id: string | null) => void;
   
   // Gate Pairing and Placement Wizard State
   pendingGateConnection: {
@@ -1061,6 +1104,35 @@ export const useEditorStore = create<EditorState>()(
       setIsStudioEscapeMenuOpen: (open: boolean) =>
         set((state) => {
           state.isStudioEscapeMenuOpen = open;
+        }),
+      customTerrainSwatches: [],
+      addCustomTerrainSwatch: (swatch) =>
+        set((state) => {
+          state.customTerrainSwatches = [
+            ...state.customTerrainSwatches.filter((s) => s.id !== swatch.id),
+            swatch,
+          ];
+        }),
+      removeCustomTerrainSwatch: (id) =>
+        set((state) => {
+          state.customTerrainSwatches = state.customTerrainSwatches.filter((s) => s.id !== id);
+        }),
+      customPropLibrary: [],
+      addCustomPropItem: (prop) =>
+        set((state) => {
+          state.customPropLibrary = [
+            ...state.customPropLibrary.filter((p) => p.id !== prop.id),
+            prop,
+          ];
+        }),
+      removeCustomPropItem: (id) =>
+        set((state) => {
+          state.customPropLibrary = state.customPropLibrary.filter((p) => p.id !== id);
+        }),
+      activeCustomPropId: null,
+      setActiveCustomPropId: (id) =>
+        set((state) => {
+          state.activeCustomPropId = id;
         }),
       activePrefabId: null,
       prefabs: [],
