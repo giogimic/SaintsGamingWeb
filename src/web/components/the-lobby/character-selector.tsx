@@ -38,7 +38,7 @@ import { useRealtimeStore } from '@/web/hooks/useRealtimeStore';
 import { useSession } from 'next-auth/react';
 import { useTheme } from 'next-themes';
 import { MidnightTropicalBackground } from './MidnightTropicalBackground';
-import { CharacterSpritePreview } from './CharacterSpritePreview';
+import { CharacterDetailPreview } from './CharacterDetailPreview';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 
 interface CharacterSelectorProps {
@@ -375,169 +375,111 @@ export function CharacterSelector({
       {/* ── MAIN 2-COLUMN COMMAND DECK ── */}
       <main className="relative z-20 flex-1 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch">
         
-        {/* ── LEFT SECTION: HEROES ROSTER (Cols 1-8) ── */}
-        <section className="lg:col-span-8 flex flex-col justify-between">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-muted-foreground text-xs tracking-wider uppercase font-mono flex items-center gap-2">
-              <Layers size={14} className="text-primary" />
-              <span>Select Your Saint ({characters.length})</span>
-            </p>
-            <button
-              onClick={() => {
-                soundSynth?.playSelectSound?.();
-                onRefresh();
-              }}
-              className="text-[11px] font-mono text-muted-foreground hover:text-foreground flex items-center gap-1.5 bg-card/40 hover:bg-card/70 px-2.5 py-1 rounded-lg border border-border transition-all cursor-pointer"
-            >
-              <RefreshCw size={11} />
-              Refresh
-            </button>
-          </div>
-
-          {/* Grid of Characters */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 auto-rows-fr">
-            {parsedCharacters.map(({ char, state, classKey, Icon, palette, charLayers }: any) => {
-              const isSelected = selectedCharId === char.id;
-              const isHovered = hoveredId === char.id;
-
-              return (
-                <div
-                  key={char.id}
-                  onClick={() => handleSelectCharacter(char.id)}
-                  onMouseEnter={() => setHoveredId(char.id)}
-                  onMouseLeave={() => setHoveredId(null)}
-                  className={`relative cursor-pointer transition-all duration-200 rounded-2xl p-4 sm:p-5 flex flex-col justify-between border ${
-                    isSelected
-                      ? 'bg-card/90 border-primary ring-2 ring-primary/50 shadow-[0_0_30px_rgba(203,178,106,0.35)] scale-[1.01]'
-                      : 'bg-card/40 border-border/60 hover:bg-card/70 hover:border-border shadow-md'
-                  }`}
+        {/* ── LEFT SECTION: HEROES ROSTER & 3-COLUMN PREVIEW (Cols 1-8) ── */}
+        <section className="lg:col-span-8 flex flex-col space-y-3.5">
+          
+          {/* Top Bar: Horizontal Character Carousel / Selector */}
+          <div className="bg-card/40 p-3 rounded-2xl border border-border/60 backdrop-blur-xl">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-muted-foreground text-xs tracking-wider uppercase font-mono flex items-center gap-2">
+                <Layers size={14} className="text-primary" />
+                <span>Saint Roster ({characters.length})</span>
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundSynth?.playActionSound?.();
+                    onCreateNew();
+                  }}
+                  className="text-[11px] font-mono font-bold text-primary hover:text-primary-foreground hover:bg-primary/20 bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/30 transition-all cursor-pointer flex items-center gap-1"
                 >
-                  <div>
-                    {/* Top Bar: Class Badge + Selection Indicator */}
-                    <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-2.5">
-                      <div className="flex items-center gap-1.5">
-                        <Icon className="w-4 h-4" style={{ color: palette.accent }} />
-                        <span className="text-[11px] font-black uppercase tracking-widest font-mono text-foreground">
-                          {char.classId || 'WARRIOR'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {isSelected && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/20 border border-primary/40 text-primary text-[10px] font-bold font-mono">
-                            <Check size={10} strokeWidth={3} /> ACTIVE
-                          </span>
-                        )}
-                        <span className="px-2 py-0.5 rounded bg-muted/60 border border-border text-foreground text-[11px] font-mono font-extrabold">
-                          LVL {state.level || 1}
-                        </span>
-                      </div>
-                    </div>
+                  <Plus size={12} strokeWidth={2.5} />
+                  <span>Forge Saint</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundSynth?.playSelectSound?.();
+                    onRefresh();
+                  }}
+                  className="text-[11px] font-mono text-muted-foreground hover:text-foreground flex items-center gap-1.5 bg-card/40 hover:bg-card/70 px-2.5 py-1 rounded-lg border border-border transition-all cursor-pointer"
+                >
+                  <RefreshCw size={11} />
+                  <span>Refresh</span>
+                </button>
+              </div>
+            </div>
 
-                    {/* Character Avatar & Stats */}
-                    <div className="flex items-center gap-3.5 mb-3">
-                      <div
-                        className={`w-18 h-18 rounded-xl flex items-center justify-center overflow-hidden shrink-0 bg-black/60 border transition-all ${
-                          isSelected ? 'border-primary/60 shadow-[0_0_15px_rgba(203,178,106,0.4)]' : 'border-white/10'
-                        }`}
-                      >
+            {/* Horizontal Roster Carousel */}
+            {characters.length === 0 ? (
+              <div
+                onClick={() => {
+                  soundSynth?.playActionSound?.();
+                  onCreateNew();
+                }}
+                className="p-4 rounded-xl border border-dashed border-primary/40 bg-black/40 text-center cursor-pointer hover:border-primary transition-all"
+              >
+                <p className="text-xs font-bold font-mono text-primary uppercase">No Saints Forged Yet</p>
+                <p className="text-[10px] font-mono text-muted-foreground mt-0.5">Click to forge your first Saint and enter the world.</p>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                {parsedCharacters.map(({ char, state, classKey, palette }: any) => {
+                  const isSelected = selectedCharId === char.id;
+                  return (
+                    <div
+                      key={char.id}
+                      onClick={() => handleSelectCharacter(char.id)}
+                      className={`shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all cursor-pointer select-none ${
+                        isSelected
+                          ? 'bg-card/90 border-primary ring-2 ring-primary/40 shadow-[0_0_20px_rgba(203,178,106,0.3)]'
+                          : 'bg-black/40 border-white/10 hover:border-white/25 hover:bg-black/60'
+                      }`}
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-black/60 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
                         <CharacterSpritePreview
-                          layers={charLayers}
-                          assetProfileId={char.spriteId || 'adventurer'}
+                          assetProfileId={char.spriteId || char.assetProfileId || 'adventurer'}
                           size={32}
-                          scale={1.9}
-                          className="transition-transform group-hover:scale-110 duration-200"
+                          scale={1.1}
                         />
                       </div>
-
-                      <div className="flex-1 min-w-0">
-                        <h3 className={`text-base sm:text-lg font-black font-mono truncate transition-colors ${
-                          isSelected ? 'text-primary' : 'text-foreground'
-                        }`}>
+                      <div className="text-left min-w-[60px]">
+                        <div className={`text-[11px] font-black font-mono truncate ${isSelected ? 'text-primary' : 'text-foreground'}`}>
                           {char.name}
-                        </h3>
-                        <div className="flex flex-col gap-1 mt-1 text-[11px] font-mono text-muted-foreground">
-                          <div className="flex items-center gap-1.5">
-                            <Heart className="w-3 h-3 text-rose-400" />
-                            <span>HP: <strong className="text-foreground">{state.hp || 100}/{state.maxHp || 100}</strong></span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <Coins className="w-3 h-3 text-amber-400" />
-                            <span>Pouch: <strong className="text-amber-300">{(state.credits || 1000).toLocaleString()} C</strong></span>
-                          </div>
-                          {state.perk && (
-                            <div className="flex items-center gap-1.5 text-[10px] text-cyan-300">
-                              <Zap className="w-3 h-3 text-cyan-400" />
-                              <span>{state.perk.replace(/_/g, ' ')}</span>
-                            </div>
-                          )}
+                        </div>
+                        <div className="text-[9px] font-mono text-muted-foreground flex items-center gap-1">
+                          <span>LVL {state.level || 1}</span>
+                          <span className="text-slate-500">·</span>
+                          <span style={{ color: palette.accent }}>{classKey}</span>
                         </div>
                       </div>
+                      {/* Delete Icon */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          soundSynth?.playSelectSound?.();
+                          setDeleteModalChar({ id: char.id, name: char.name });
+                        }}
+                        className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors ml-0.5"
+                        title="Archive Saint"
+                      >
+                        <Trash2 size={11} />
+                      </button>
                     </div>
-                  </div>
-
-                  {/* Action Row Under Character */}
-                  <div className="pt-3 border-t border-white/10 flex items-center gap-2">
-                    {isSelected ? (
-                      /* ENTER WORLD (Active on Selected Character) */
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEnterWorld(char.id);
-                        }}
-                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-mono font-bold text-xs sm:text-sm uppercase tracking-wider transition-all bg-primary hover:brightness-110 text-primary-foreground shadow-[0_0_20px_rgba(203,178,106,0.4)] active:scale-95 cursor-pointer"
-                      >
-                        <Play size={14} fill="currentColor" />
-                        ENTER WORLD
-                      </button>
-                    ) : (
-                      /* Select Button */
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSelectCharacter(char.id);
-                        }}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl font-mono font-bold text-xs uppercase tracking-wider transition-all bg-card/60 hover:bg-card border border-border text-muted-foreground hover:text-foreground cursor-pointer"
-                      >
-                        Select Saint
-                      </button>
-                    )}
-
-                    {/* Delete character button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        soundSynth?.playSelectSound?.();
-                        setDeleteModalChar({ id: char.id, name: char.name });
-                      }}
-                      className="p-2.5 rounded-xl bg-destructive/10 hover:bg-destructive/25 text-destructive border border-destructive/20 transition-all hover:scale-105 active:scale-95 cursor-pointer"
-                      title="Archive Saint"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Create New Saint Card */}
-            <div
-              onClick={() => {
-                soundSynth?.playActionSound?.();
-                onCreateNew();
-              }}
-              className="cursor-pointer transition-all duration-200 flex flex-col items-center justify-center min-h-[200px] rounded-2xl border border-dashed border-primary/40 hover:border-primary bg-card/30 hover:bg-card/60 group p-6 text-center"
-            >
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-primary/10 border border-primary/30 group-hover:scale-110 transition-transform shadow-inner mb-2.5">
-                <Plus className="w-6 h-6 text-primary group-hover:text-primary-foreground transition-colors" strokeWidth={2.5} />
+                  );
+                })}
               </div>
-              <p className="text-sm font-black text-primary uppercase tracking-widest font-mono">
-                FORGE NEW SAINT
-              </p>
-              <p className="text-[11px] text-muted-foreground font-mono mt-1">
-                Create new character & customize skills
-              </p>
-            </div>
+            )}
           </div>
+
+          {/* 3-Column Character Detail Preview (Left: Inventory/Equipment, Center: Sprite, Right: Skills) */}
+          <CharacterDetailPreview
+            character={characters.find((c) => c.id === selectedCharId) || characters[0] || null}
+            onEnterWorld={handleEnterWorld}
+            className="flex-1"
+          />
         </section>
 
         {/* ── RIGHT SECTION: LOBBY CHAT & HALL OF CHAMPIONS (Cols 9-12) ── */}
