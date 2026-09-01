@@ -59,6 +59,12 @@ import {
 import { BIOME_SKIRT_CONFIG, type FreeformLayer } from "../shared/game/types/map";
 import { isInGridFootprint, type BrushShape } from "../shared/game/brushGeometry";
 import {
+  type ContinuousGeometry,
+  getGeometryBoundingBox,
+  getRegularPolygonVertices,
+  getStarVertices,
+} from "../shared/game/geometry/continuousGeometry";
+import {
   resolveSpriteDefinition,
   spriteDefinitionToBabylonConfig,
   type SpriteAnimationProfile,
@@ -1807,12 +1813,23 @@ export class BabylonEngine {
           Object.entries(layer.data).forEach(([assetUrl, rawPoints]) => {
             const points = rawPoints as any[];
             if (!points.length) return;
-            const matKey = `splat_mat_${assetUrl}`;
+            const firstPt = points[0];
+            const hasUv = typeof firstPt.uOffset === 'number' && typeof firstPt.uScale === 'number';
+            const matKey = hasUv
+              ? `splat_mat_${assetUrl}_${firstPt.uOffset}_${firstPt.vOffset}_${firstPt.uScale}_${firstPt.vScale}`
+              : `splat_mat_${assetUrl}`;
+
             let mat = this.tilesetMaterialCache.get(matKey);
             if (!mat) {
               mat = new StandardMaterial(matKey, this.scene);
               let tex = new Texture(assetUrl, this.scene, true, false, Texture.NEAREST_SAMPLINGMODE);
               tex.hasAlpha = true;
+              if (hasUv) {
+                tex.uOffset = firstPt.uOffset || 0;
+                tex.vOffset = firstPt.vOffset || 0;
+                tex.uScale = firstPt.uScale || 1;
+                tex.vScale = firstPt.vScale || 1;
+              }
               mat.diffuseTexture = tex;
               mat.useAlphaFromDiffuseTexture = true;
               mat.alphaCutOff = 0.5;
@@ -1858,15 +1875,25 @@ export class BabylonEngine {
             }, this.scene);
             
             plane.position.set(posX, ((obj.scale || 1) * tileSize) / 2, posZ);
-            plane.billboardMode = Mesh.BILLBOARDMODE_Y;
-            plane.isPickable = false;
+            plane.rotation.y = obj.rotation || 0;
+            
+            const propUrl = obj.asset || 'default';
+            const hasUv = typeof obj.uOffset === 'number' && typeof obj.uScale === 'number';
+            const matKey = hasUv
+              ? `prop_mat_${propUrl}_${obj.uOffset}_${obj.vOffset}_${obj.uScale}_${obj.vScale}`
+              : `prop_mat_${propUrl}`;
 
-            const matKey = `prop_mat_${obj.asset}`;
             let mat = this.tilesetMaterialCache.get(matKey);
             if (!mat) {
               mat = new StandardMaterial(matKey, this.scene);
-              let tex = new Texture(obj.asset, this.scene, true, false, Texture.NEAREST_SAMPLINGMODE);
+              let tex = new Texture(propUrl, this.scene, true, false, Texture.NEAREST_SAMPLINGMODE);
               tex.hasAlpha = true;
+              if (hasUv) {
+                tex.uOffset = obj.uOffset || 0;
+                tex.vOffset = obj.vOffset || 0;
+                tex.uScale = obj.uScale || 1;
+                tex.vScale = obj.vScale || 1;
+              }
               mat.diffuseTexture = tex;
               mat.useAlphaFromDiffuseTexture = true;
               mat.alphaCutOff = 0.5;
@@ -1877,6 +1904,8 @@ export class BabylonEngine {
               this.tilesetMaterialCache.set(matKey, mat);
             }
             plane.material = mat;
+            plane.billboardMode = Mesh.BILLBOARDMODE_Y;
+            plane.isPickable = false;
             plane.parent = this.rootNode;
             this.freeformMeshes.push(plane);
           });
@@ -3538,6 +3567,191 @@ export class BabylonEngine {
     mat.disableLighting = true;
     mat.backFaceCulling = false;
     return mat;
+  }
+
+  private createContinuousSelectionMaterial(
+    geom: ContinuousGeometry,
+    mode: 'normal' | 'add' | 'subtract' = 'normal',
+    texSize = 512
+  ): StandardMaterial {
+    const matName = `hud_geom_sel_${geom.type}_${mode}_${texSize}`;
+    let mat = this.scene.getMaterialByName(matName) as StandardMaterial | null;
+    if (mat) return mat;
+
+    mat = new StandardMaterial(matName, this.scene);
+    const strokeColor = mode === 'add' ? '#10b981' : mode === 'subtract' ? '#f43f5e' : '#f59e0b';
+    const glassColor = mode === 'add' ? 'rgba(16, 185, 129, 0.22)' : mode === 'subtract' ? 'rgba(244, 63, 94, 0.22)' : 'rgba(245, 158, 11, 0.22)';
+    const cornerColor = '#ffffff';
+
+    const dt = new DynamicTexture(`${matName}_tex`, { width: texSize, height: texSize }, this.scene, false);
+    const ctx = dt.getContext();
+    ctx.clearRect(0, 0, texSize, texSize);
+
+    const pad = 8;
+    const w = texSize - pad * 2;
+    const h = texSize - pad * 2;
+    const cx = texSize / 2;
+    const cy = texSize / 2;
+
+    ctx.save();
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = strokeColor;
+    ctx.strokeStyle = strokeColor;
+    ctx.fillStyle = glassColor;
+    ctx.lineWidth = 3.5;
+
+    switch (geom.type) {
+      case 'circle': {
+        const radius = Math.min(w, h) / 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Subtle inner circle crosshair markers
+        ctx.strokeStyle = cornerColor;
+        ctx.lineWidth = 2.5;
+        const mark = 12;
+        // Top
+        ctx.beginPath(); ctx.moveTo(cx, cy - radius); ctx.lineTo(cx, cy - radius + mark); ctx.stroke();
+        // Bottom
+        ctx.beginPath(); ctx.moveTo(cx, cy + radius - mark); ctx.lineTo(cx, cy + radius); ctx.stroke();
+        // Left
+        ctx.beginPath(); ctx.moveTo(cx - radius, cy); ctx.lineTo(cx - radius + mark, cy); ctx.stroke();
+        // Right
+        ctx.beginPath(); ctx.moveTo(cx + radius - mark, cy); ctx.lineTo(cx + radius, cy); ctx.stroke();
+        break;
+      }
+      case 'ellipse': {
+        const radX = w / 2;
+        const radZ = h / 2;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(radX, radZ);
+        ctx.beginPath();
+        ctx.arc(0, 0, 1, 0, Math.PI * 2);
+        ctx.restore();
+        ctx.fill();
+        ctx.stroke();
+        break;
+      }
+      case 'rectangle': {
+        ctx.fillRect(pad, pad, w, h);
+        ctx.strokeRect(pad, pad, w, h);
+
+        // Outer Boundary Corner L-Brackets
+        ctx.save();
+        ctx.strokeStyle = cornerColor;
+        ctx.lineWidth = 4;
+        const bLen = Math.min(Math.min(w, h) * 0.35, 24);
+        const minX = pad, maxX = texSize - pad, minY = pad, maxY = texSize - pad;
+        ctx.beginPath(); ctx.moveTo(minX, minY + bLen); ctx.lineTo(minX, minY); ctx.lineTo(minX + bLen, minY);
+        ctx.beginPath(); ctx.moveTo(maxX - bLen, minY); ctx.lineTo(maxX, minY); ctx.lineTo(maxX, minY + bLen);
+        ctx.beginPath(); ctx.moveTo(maxX, maxY - bLen); ctx.lineTo(maxX, maxY); ctx.lineTo(maxX - bLen, maxY);
+        ctx.beginPath(); ctx.moveTo(minX + bLen, maxY); ctx.lineTo(minX, maxY); ctx.lineTo(minX, maxY - bLen);
+        ctx.stroke();
+        ctx.restore();
+        break;
+      }
+      case 'regularPolygon': {
+        const sides = Math.max(3, geom.sides);
+        const radius = Math.min(w, h) / 2;
+        const pts = getRegularPolygonVertices(cx, cy, radius, sides, geom.rotation || 0);
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].z);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].z);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        break;
+      }
+      case 'star': {
+        const outerRad = Math.min(w, h) / 2;
+        const innerRad = outerRad * (geom.innerRadius / (geom.outerRadius || 1));
+        const pts = getStarVertices(cx, cy, outerRad, innerRad, geom.points, geom.rotation || 0);
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].z);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].z);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        break;
+      }
+      case 'polygon':
+      case 'path':
+      case 'freehand': {
+        const bbox = getGeometryBoundingBox(geom);
+        const pts = geom.type === 'polygon' || geom.type === 'path' ? geom.points : geom.strokes;
+        if (pts.length > 1) {
+          const mapX = (x: number) => pad + ((x - bbox.minX) / (bbox.width || 1)) * w;
+          const mapZ = (z: number) => pad + ((z - bbox.minZ) / (bbox.height || 1)) * h;
+          ctx.beginPath();
+          ctx.moveTo(mapX(pts[0].x), mapZ(pts[0].z));
+          for (let i = 1; i < pts.length; i++) {
+            ctx.lineTo(mapX(pts[i].x), mapZ(pts[i].z));
+          }
+          if (geom.type === 'polygon' || (geom.type === 'path' && geom.closed)) {
+            ctx.closePath();
+            ctx.fill();
+          }
+          ctx.stroke();
+        }
+        break;
+      }
+    }
+
+    ctx.restore();
+
+    dt.hasAlpha = true;
+    dt.update();
+
+    mat.diffuseTexture = dt;
+    mat.emissiveColor = new Color3(1, 1, 1);
+    mat.useAlphaFromDiffuseTexture = true;
+    mat.disableLighting = true;
+    mat.backFaceCulling = false;
+    return mat;
+  }
+
+  public setContinuousSelectionPreview(
+    geom: ContinuousGeometry | null,
+    mode: 'normal' | 'add' | 'subtract' = 'normal'
+  ) {
+    if (!geom) {
+      this.clearSelectionPreview();
+      return;
+    }
+
+    const bbox = getGeometryBoundingBox(geom);
+    const s = this.currentTileSize || 1;
+    const w = this.currentMapWidth;
+    const h = this.currentMapHeight;
+
+    const rectWidth = Math.max(0.01, bbox.width * s);
+    const rectHeight = Math.max(0.01, bbox.height * s);
+    const centerPosX = (bbox.centerX - w / 2) * s;
+    const centerPosZ = (h / 2 - bbox.centerZ) * s;
+
+    const previewMat = this.createContinuousSelectionMaterial(geom, mode);
+
+    if (!this.selectionBoxMesh || this.selectionBoxMesh.isDisposed()) {
+      this.selectionBoxMesh = MeshBuilder.CreatePlane('selection_preview_bounds', { size: 1 }, this.scene);
+      this.selectionBoxMesh.rotation.x = Math.PI / 2;
+      this.selectionBoxMesh.parent = this.rootNode;
+      this.selectionBoxMesh.isPickable = false;
+    }
+    this.selectionBoxMesh.scaling.x = rectWidth;
+    this.selectionBoxMesh.scaling.y = rectHeight;
+    if (geom.type === 'ellipse' && geom.rotation) {
+      this.selectionBoxMesh.rotation.z = (geom.rotation * Math.PI) / 180;
+    } else if (geom.type === 'rectangle' && geom.rotation) {
+      this.selectionBoxMesh.rotation.z = (geom.rotation * Math.PI) / 180;
+    } else {
+      this.selectionBoxMesh.rotation.z = 0;
+    }
+    this.selectionBoxMesh.position.set(centerPosX, SPATIAL_LAYER_ALTITUDES.SELECTION_OVERLAY, centerPosZ);
+    this.selectionBoxMesh.material = previewMat;
+    this.selectionBoxMesh.isVisible = true;
   }
 
   public setSelectionPreview(

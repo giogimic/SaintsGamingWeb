@@ -55,3 +55,76 @@ export async function getUsableAsset(id: string) {
     return { success: false as const, error: "Failed to load asset" };
   }
 }
+
+export interface CaptureSelectionInput {
+  name: string;
+  type?: 'TILE' | 'OBJECT' | 'TERRAIN';
+  dataUrl: string; // "data:image/png;base64,..."
+  width: number;
+  height: number;
+  provenance?: {
+    sourceUrl?: string;
+    sourceRegion?: { x: number; y: number; w: number; h: number };
+  };
+}
+
+export async function captureSelectionAsset(input: CaptureSelectionInput) {
+  try {
+    const { auth } = await import("@/auth");
+    const session = await auth();
+    let userId = session?.user?.id;
+
+    if (!userId) {
+      const firstUser = await prisma.user.findFirst({ select: { id: true } });
+      userId = firstUser?.id || "system";
+    }
+
+    // Parse base64 dataUrl
+    const matches = input.dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      return { success: false as const, error: "Invalid data URL format" };
+    }
+
+    const buffer = Buffer.from(matches[2], "base64");
+    const { writeFile, mkdir } = await import("fs/promises");
+    const path = await import("path");
+    const crypto = await import("crypto");
+
+    const hash = crypto.randomBytes(8).toString("hex");
+    const filename = `selection_${Date.now()}_${hash}.png`;
+    const uploadDir = path.join(process.cwd(), "public", "uploads", "selections");
+    await mkdir(uploadDir, { recursive: true });
+    await writeFile(path.join(uploadDir, filename), buffer);
+
+    const assetUrl = `/uploads/selections/${filename}`;
+
+    const usableAsset = await prisma.usableAsset.create({
+      data: {
+        name: input.name || `Custom Selection ${input.width}x${input.height}`,
+        type: input.type || "OBJECT",
+        width: Math.max(1, input.width),
+        height: Math.max(1, input.height),
+        cdnUrl: assetUrl,
+        thumbnailPath: assetUrl,
+        sourceRegion: JSON.stringify(input.provenance || {}),
+        createdById: userId,
+        tags: JSON.stringify(["selection_stamp", "studio_custom"]),
+      },
+    });
+
+    return {
+      success: true as const,
+      data: {
+        assetId: usableAsset.id,
+        url: assetUrl,
+        name: usableAsset.name,
+        width: usableAsset.width,
+        height: usableAsset.height,
+      },
+    };
+  } catch (err: any) {
+    console.error("[captureSelectionAsset]", err);
+    return { success: false as const, error: err?.message || "Failed to capture selection asset" };
+  }
+}
+

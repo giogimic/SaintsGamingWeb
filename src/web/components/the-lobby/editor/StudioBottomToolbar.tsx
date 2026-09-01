@@ -28,6 +28,7 @@ import {
   Radio,
   Users,
   Compass,
+  Magnet,
 } from 'lucide-react';
 import { useEditorStore } from './editor-store';
 import { useGameStore } from '../store';
@@ -590,6 +591,24 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
             </button>
           )}
         </div>
+
+        {/* Snap to Grid Toggle Button */}
+        <button
+          type="button"
+          onClick={() => {
+            soundSynth?.playUiClick?.();
+            setSnapToGrid(!snapToGrid);
+          }}
+          className={`flex items-center gap-1 border rounded-lg px-2 py-0.5 text-[10px] font-bold transition-all cursor-pointer ${
+            snapToGrid
+              ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
+              : 'bg-background/50 border-border/60 text-muted-foreground hover:text-foreground'
+          }`}
+          title={snapToGrid ? 'Snap to Grid: ON (Snaps to tile centers) — Click to disable for smooth sub-tile placement' : 'Snap to Grid: OFF (Smooth sub-tile freeform) — Click to enable grid snap'}
+        >
+          <Magnet className="h-3 w-3" />
+          <span>{snapToGrid ? 'Snap: ON' : 'Snap: OFF'}</span>
+        </button>
 
         {/* Selection Shape Picker (only in select mode) */}
         {brushMode === 'select' && (

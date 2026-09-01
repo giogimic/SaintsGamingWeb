@@ -44,6 +44,11 @@ import {
   type PasteMode,
 } from '@/shared/game/subgridStamp';
 import {
+  type ContinuousGeometry,
+  rasterizeGeometryToCells,
+  getGeometryBoundingBox,
+} from '@/shared/game/geometry/continuousGeometry';
+import {
   type StampTransform,
   DEFAULT_STAMP_TRANSFORM,
   rotateCW,
@@ -317,6 +322,8 @@ interface EditorState {
 
   pasteMode: PasteMode;
   isPasting: boolean;
+  activeSelectionGeometry: ContinuousGeometry | null;
+  setSelectionGeometry: (geom: ContinuousGeometry | null) => void;
   selectionStart: { r: number; c: number } | null;
   selectionEnd: { r: number; c: number } | null;
   selectedCells: Record<string, boolean>;
@@ -1035,6 +1042,31 @@ export const useEditorStore = create<EditorState>()(
       stampTransform: { ...DEFAULT_STAMP_TRANSFORM },
       pasteMode: 'overlay',
       isPasting: false,
+      activeSelectionGeometry: null,
+      setSelectionGeometry: (geom) =>
+        set((state) => {
+          state.activeSelectionGeometry = geom;
+          if (!geom) {
+            state.selectedCells = {};
+            state.selectionStart = null;
+            state.selectionEnd = null;
+            return;
+          }
+          const bbox = getGeometryBoundingBox(geom);
+          state.selectionStart = { r: Math.floor(bbox.minZ), c: Math.floor(bbox.minX) };
+          state.selectionEnd = { r: Math.ceil(bbox.maxZ), c: Math.ceil(bbox.maxX) };
+          const map = (state as any).activeMapData || { width: 128, height: 128 };
+          const gridBounds = {
+            width: map.grid?.[0]?.length || map.width || 128,
+            height: map.grid?.length || map.height || 128,
+          };
+          const cells = rasterizeGeometryToCells(geom, gridBounds, 1);
+          const next: Record<string, boolean> = {};
+          for (const cell of cells) {
+            next[`${cell.r},${cell.c}`] = true;
+          }
+          state.selectedCells = next;
+        }),
       selectionStart: null,
       selectionEnd: null,
       selectedCells: {},
@@ -1451,6 +1483,13 @@ export const useEditorStore = create<EditorState>()(
           const r1 = Math.max(minR, maxR);
           const c0 = Math.min(minC, maxC);
           const c1 = Math.max(minC, maxC);
+          state.activeSelectionGeometry = {
+            type: 'rectangle',
+            minX: c0,
+            minZ: r0,
+            maxX: c1 + 1,
+            maxZ: r1 + 1,
+          };
           const next: Record<string, boolean> = {};
           for (let r = r0; r <= r1; r++) {
             for (let c = c0; c <= c1; c++) {
@@ -1463,6 +1502,12 @@ export const useEditorStore = create<EditorState>()(
         }),
       setSelectionCircle: (centerR, centerC, radius) =>
         set((state) => {
+          state.activeSelectionGeometry = {
+            type: 'circle',
+            centerX: centerC + 0.5,
+            centerZ: centerR + 0.5,
+            radius,
+          };
           const next: Record<string, boolean> = {};
           const r0 = Math.floor(centerR - radius);
           const r1 = Math.ceil(centerR + radius);
@@ -1485,6 +1530,10 @@ export const useEditorStore = create<EditorState>()(
       setSelectionPolygon: (points) =>
         set((state) => {
           if (!points.length) return;
+          state.activeSelectionGeometry = {
+            type: 'polygon',
+            points: points.map((p) => ({ x: p.c + 0.5, z: p.r + 0.5 })),
+          };
           let minR = points[0].r, maxR = points[0].r;
           let minC = points[0].c, maxC = points[0].c;
           points.forEach((p) => {
@@ -1541,6 +1590,7 @@ export const useEditorStore = create<EditorState>()(
         }),
       clearSelectedCells: () =>
         set((state) => {
+          state.activeSelectionGeometry = null;
           state.selectedCells = {};
           state.selectionStart = null;
           state.selectionEnd = null;
