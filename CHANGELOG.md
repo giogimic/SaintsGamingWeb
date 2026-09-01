@@ -1,3 +1,11 @@
+# 2.1.617
+- **3D Weather Particle Systems, Animation Studio Sub-Bar, Game Interface Designer & Release Gates**:
+  - **3D Weather Particle Simulation Engine (`BabylonEngine.ts`)**: Built dynamic GPU/CPU particle systems supporting `gentle_rain` (downward fast streaks with blue/white atmospheric tinting), `falling_leaves` (swaying autumn leaf drift with rotational velocity), `snow_flurries` (floating gentle snowflakes), and `fireflies` (pulsing glowing bioluminescent night orbs) linked to real-time realm settings.
+  - **Animation Studio Sub-Menu Bar (`AnimationStudioPanel.tsx`)**: Added application sub-menu with `Sequence` (New Sequence, Duplicate, Save All, Delete), `Playback` (Play/Pause, Step Forward/Backward, Onion Skinning), quick play button, and active frame metrics.
+  - **Game Interface Designer Sub-Bar (`InterfaceEditorPanel.tsx`)**: Standardized `<WindowMenuBar>` with quick preset dropdowns (Command Center, Minimalist, Combat Heavy, Immersive Streamer), `Actions` (Reset Defaults, Export/Import JSON), and category tab navigation.
+  - **Publishing & Release Gates Sub-Bar (`PublishManagerPanel.tsx`)**: Added sub-menu bar with release actions, pre-flight gate trigger, and live validation pass/error badges.
+  - **Gameplay Systems Dock Sub-Bar (`GameplayStudioPanels.tsx`)**: Replaced redundant tab buttons with standardized sub-menu tabs across Abilities, Status, Skills, Professions, and Combat Balance Simulator.
+
 # 2.1.616
 - **Global Environment & Time of Day Systems, Catalog Sub-Menu Architecture & Diagnostics Sub-Bar**:
   - **Global Environment & Atmosphere (`realmSettings.ts`, `RealmSettingsPanel.tsx`, `BabylonEngine.ts`)**: Added 5 Time of Day atmospheric lighting presets (Day, Golden Hour Sunset, Dusk, Midnight, Mystic Night) with dynamic ambient and directional sun/moon color tints in Babylon 3D engine; weather particle systems (Clear, Gentle Rain, Falling Leaves, Snow Flurries, Fireflies) with particle intensity sliders; 3D spatial audio rolloff multipliers; and stepped cliff vs smooth slope terrain elevation geometry switches.

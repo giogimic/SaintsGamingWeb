@@ -34,6 +34,13 @@ import {
   Users,
 } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
+import {
+  WindowMenuBar,
+  WindowMenuDropdown,
+  WindowMenuButton,
+  WindowMenuTabGroup,
+  WindowMenuDivider,
+} from '../WindowMenuBar';
 
 export const InterfaceEditorPanel: React.FC = () => {
   const hudThemeId = useGameStore((s) => s.hudThemeId);
@@ -94,100 +101,58 @@ export const InterfaceEditorPanel: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#050b14]/95 text-slate-200 font-mono select-none overflow-hidden">
-      {/* Top Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border/40 bg-card/40 shrink-0">
-        <div className="flex items-center gap-2">
-          <Palette className="w-4 h-4 text-primary" />
-          <span className="font-extrabold text-xs text-slate-100 tracking-wide">
-            Game Interface Designer
-          </span>
-          <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded border border-primary/30 font-bold">
-            {HUD_THEME_LIST.length} Styles
-          </span>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            resetHudConfig();
-            showToast('Reset UI to default style.');
-          }}
-          className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-amber-300 px-2 py-1 rounded bg-white/5 hover:bg-white/10 transition cursor-pointer"
-          title="Reset to Defaults"
-        >
-          <RotateCcw className="w-3 h-3 text-primary" />
-          <span>Reset</span>
-        </button>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="flex items-center gap-1 px-3 py-1.5 border-b border-border/30 bg-black/40 text-[11px] shrink-0 overflow-x-auto">
-        <button
-          type="button"
-          onClick={() => setActiveTab('themes')}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
-            activeTab === 'themes'
-              ? 'bg-primary/20 text-primary border border-primary/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-          }`}
-        >
-          <Palette className="w-3 h-3" />
-          <span>Theme Styles</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('customizer')}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
-            activeTab === 'customizer'
-              ? 'bg-primary/20 text-primary border border-primary/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-          }`}
-        >
-          <Sliders className="w-3 h-3" />
-          <span>Engine Controls</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('dock')}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
-            activeTab === 'dock'
-              ? 'bg-primary/20 text-primary border border-primary/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-          }`}
-        >
-          <Layout className="w-3 h-3" />
-          <span>Utility Dock</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('presets')}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
-            activeTab === 'presets'
-              ? 'bg-primary/20 text-primary border border-primary/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-          }`}
-        >
-          <Sparkles className="w-3 h-3" />
-          <span>Dock Presets</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('share')}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
-            activeTab === 'share'
-              ? 'bg-primary/20 text-primary border border-primary/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-          }`}
-        >
-          <Copy className="w-3 h-3" />
-          <span>Export / Import</span>
-        </button>
-      </div>
+    <div className="h-full flex flex-col bg-[#050b14]/95 text-slate-200 font-mono select-none -m-3 mb-0 overflow-hidden">
+      {/* ── WINDOW SUB-MENU APP BAR ── */}
+      <WindowMenuBar>
+        <WindowMenuDropdown
+          label="Presets"
+          items={BUILTIN_HUD_PRESETS.map((p) => ({
+            label: p.name,
+            onClick: () => {
+              soundSynth?.playActionSound?.();
+              setActiveHudPreset(p.id);
+              showToast(`Applied "${p.name}" interface preset.`);
+            },
+          }))}
+        />
+        <WindowMenuDropdown
+          label="Actions"
+          items={[
+            {
+              label: 'Reset All Interface Defaults',
+              onClick: () => {
+                resetHudConfig();
+                showToast('Reset UI to default style.');
+              },
+            },
+            { divider: true, label: '' },
+            {
+              label: 'Export Layout JSON',
+              onClick: () => setActiveTab('share'),
+            },
+            {
+              label: 'Import Layout JSON',
+              onClick: () => setActiveTab('share'),
+            },
+          ]}
+        />
+        <WindowMenuDivider />
+        <WindowMenuTabGroup
+          tabs={[
+            { id: 'themes', label: 'Themes' },
+            { id: 'customizer', label: 'Controls' },
+            { id: 'dock', label: 'Dock' },
+            { id: 'presets', label: 'Presets' },
+            { id: 'share', label: 'JSON' },
+          ]}
+          activeTab={activeTab}
+          onChange={(t) => setActiveTab(t as any)}
+        />
+        <div className="flex-1" />
+        <span className="text-[9px] text-primary font-bold px-1.5 py-0.5 rounded bg-primary/20 border border-primary/30 shrink-0">
+          {currentTheme.name}
+        </span>
+      </WindowMenuBar>
 
       {/* Main Tab Content */}
       <div className="flex-1 overflow-y-auto p-3 space-y-4 custom-scrollbar">

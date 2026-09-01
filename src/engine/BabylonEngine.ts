@@ -23,6 +23,7 @@ import {
   ImageProcessingPostProcess,
   ImageProcessingConfiguration,
   Animation,
+  ParticleSystem,
 } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
 import { TILESET_SIZES } from "../web/components/the-lobby/data/tileset-sizes";
@@ -301,6 +302,8 @@ export class BabylonEngine {
   private ambientLight?: HemisphericLight;
   private dirLight?: DirectionalLight;
   private shadowGen?: ShadowGenerator;
+  private weatherParticleSystem?: ParticleSystem;
+  private activeWeatherPreset?: string;
   private cameraTargetX: number = 0;
   private cameraTargetZ: number = 0;
   private cameraSnapped: boolean = false;
@@ -811,6 +814,93 @@ export class BabylonEngine {
     // Vignette Post-Process
     if (this.vignettePostProcess) {
       this.vignettePostProcess.vignetteEnabled = settings.vignetteEnabled !== false;
+    }
+
+    // Weather Particle Systems
+    const weather = settings.weatherPreset || 'none';
+    const intensity = (settings.weatherIntensity || 50) / 100;
+
+    if (weather === 'none') {
+      if (this.weatherParticleSystem) {
+        this.weatherParticleSystem.stop();
+        this.weatherParticleSystem.dispose();
+        this.weatherParticleSystem = undefined;
+      }
+      this.activeWeatherPreset = 'none';
+    } else if (this.activeWeatherPreset !== weather && this.camera) {
+      if (this.weatherParticleSystem) {
+        this.weatherParticleSystem.stop();
+        this.weatherParticleSystem.dispose();
+        this.weatherParticleSystem = undefined;
+      }
+
+      const ps = new ParticleSystem('realm_weather', Math.round(600 * intensity), this.scene);
+      this.weatherParticleSystem = ps;
+      this.activeWeatherPreset = weather;
+
+      // Particle Emitter Volume
+      ps.emitter = new Vector3(this.cameraTargetX, 12, this.cameraTargetZ);
+      ps.minEmitBox = new Vector3(-25, -2, -25);
+      ps.maxEmitBox = new Vector3(25, 6, 25);
+
+      if (weather === 'gentle_rain') {
+        ps.color1 = new Color4(0.7, 0.85, 1.0, 0.7);
+        ps.color2 = new Color4(0.6, 0.75, 0.95, 0.4);
+        ps.colorDead = new Color4(0.5, 0.7, 0.9, 0.0);
+        ps.minSize = 0.08;
+        ps.maxSize = 0.18;
+        ps.minLifeTime = 0.6;
+        ps.maxLifeTime = 1.2;
+        ps.emitRate = Math.round(400 * intensity);
+        ps.direction1 = new Vector3(-0.5, -18, -0.5);
+        ps.direction2 = new Vector3(-1.0, -22, -1.0);
+        ps.gravity = new Vector3(0, -9.81, 0);
+      } else if (weather === 'falling_leaves') {
+        ps.color1 = new Color4(0.95, 0.6, 0.15, 0.9);
+        ps.color2 = new Color4(0.85, 0.35, 0.1, 0.8);
+        ps.colorDead = new Color4(0.6, 0.2, 0.05, 0.0);
+        ps.minSize = 0.25;
+        ps.maxSize = 0.55;
+        ps.minLifeTime = 3.0;
+        ps.maxLifeTime = 6.0;
+        ps.emitRate = Math.round(80 * intensity);
+        ps.direction1 = new Vector3(-1.5, -2.5, -1.0);
+        ps.direction2 = new Vector3(1.5, -4.0, 1.0);
+        ps.minAngularSpeed = -2;
+        ps.maxAngularSpeed = 2;
+        ps.gravity = new Vector3(-0.5, -1.5, -0.5);
+      } else if (weather === 'snow_flurries') {
+        ps.color1 = new Color4(1.0, 1.0, 1.0, 0.9);
+        ps.color2 = new Color4(0.9, 0.95, 1.0, 0.8);
+        ps.colorDead = new Color4(0.8, 0.9, 1.0, 0.0);
+        ps.minSize = 0.15;
+        ps.maxSize = 0.35;
+        ps.minLifeTime = 2.5;
+        ps.maxLifeTime = 5.0;
+        ps.emitRate = Math.round(200 * intensity);
+        ps.direction1 = new Vector3(-0.8, -2.0, -0.8);
+        ps.direction2 = new Vector3(0.8, -3.5, 0.8);
+        ps.gravity = new Vector3(0, -1.0, 0);
+      } else if (weather === 'fireflies') {
+        ps.color1 = new Color4(0.9, 1.0, 0.3, 0.95);
+        ps.color2 = new Color4(0.4, 1.0, 0.6, 0.85);
+        ps.colorDead = new Color4(0.2, 0.8, 0.4, 0.0);
+        ps.minSize = 0.12;
+        ps.maxSize = 0.28;
+        ps.minLifeTime = 2.0;
+        ps.maxLifeTime = 4.5;
+        ps.emitRate = Math.round(60 * intensity);
+        ps.direction1 = new Vector3(-0.5, 0.2, -0.5);
+        ps.direction2 = new Vector3(0.5, 1.0, 0.5);
+        ps.gravity = new Vector3(0, 0.2, 0);
+      }
+
+      ps.start();
+    } else if (this.weatherParticleSystem && this.activeWeatherPreset === weather) {
+      // Update emission rate on intensity slide
+      this.weatherParticleSystem.emitRate = Math.round(
+        (weather === 'gentle_rain' ? 400 : weather === 'falling_leaves' ? 80 : weather === 'snow_flurries' ? 200 : 60) * intensity
+      );
     }
   }
 
@@ -5504,6 +5594,11 @@ export class BabylonEngine {
     this.setEditorCameraMode(false);
     window.removeEventListener('resize', this.onResize);
     this.stopRenderLoop();
+    if (this.weatherParticleSystem) {
+      this.weatherParticleSystem.stop();
+      this.weatherParticleSystem.dispose();
+      this.weatherParticleSystem = undefined;
+    }
     this.hoverReticleMesh?.dispose();
     this.footprintSqMesh?.dispose();
     this.footprintUnifiedMesh?.dispose();
