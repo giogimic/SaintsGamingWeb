@@ -1,3 +1,13 @@
+# 2.1.605
+- **Flood Fill Bucket, Freeform Undo/Redo & Selection Performance**:
+  - **Flood Fill Bucket Tool**: Added standard 4-way BFS flood fill algorithm supporting visual and logic layers with selection boundary constraints (`MAX_FILL_CELLS = 4096`), wired to the new Paint Bucket toolbar button (`brushMode === 'fill'`) and integrated with the undo stack.
+  - **Freeform Undo / Redo**: Integrated `modify_freeform_layers` operation into `editorOps.ts` and `editor-store.ts`, capturing layer state snapshots on pointer down and recording reversible ops on stroke completion.
+  - **High-Performance Selection Meshes**: Replaced per-cell plane instantiation in `setMultiSelectionPreview` with Babylon.js `ThinInstances`, enabling zero-overhead rendering for thousands of selected cells.
+  - **Circle Selection Drag Preview**: Dragging in Circle Selection mode now renders real-time circular selection previews instead of bounding rectangles.
+  - **Consolidated Brush Geometry**: Created `src/shared/game/brushGeometry.ts` (`isInGridFootprint` & `isInBrushShape`) to unify shape mathematics across the engine, reticles, and freeform layers.
+  - **Toolbar Rotation Controls**: Added dedicated rotation adjustment buttons (±45° and 0° reset) to `StudioBottomToolbar.tsx` with reactive degree readout.
+  - **Type & Prop Erase Consistency**: Strictly typed `freeformLayers` as `FreeformLayer[]` across `BabylonTileMapData` and applied shape geometry checks to 2.5D prop erasing.
+
 # 2.1.604
 - **Studio Gap Fixes & Selection / Freeform Improvements**:
   - **Freeform Hot-Reload Integrity**: Resolved fast-path hot-reload bypass in `GameCanvasBabylon.tsx` where identical map dimensions skipped re-rendering `freeformLayers`. Changes to freeform splats and props now immediately trigger a full redraw.

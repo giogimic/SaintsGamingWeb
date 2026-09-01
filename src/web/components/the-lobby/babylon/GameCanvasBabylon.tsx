@@ -24,6 +24,7 @@ import {
   evaluateTileTarget,
   type WorldTarget,
 } from '@/shared/game/worldTarget';
+import { isInBrushShape } from '@/shared/game/brushGeometry';
 import {
   LOGIC_LAYER_IDX,
   isPaintableLogicId,
@@ -124,19 +125,28 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         showToast(active ? `Layer Isolation Active (Layer ${store.activeLayerIdx})` : 'Layer Isolation Off');
       }
     };
+    const handlePointerUp = () => {
+      if (freeformStrokeBeforeRef.current) {
+        const currentFreeform = useGameStore.getState().activeMapData?.freeformLayers || [];
+        useEditorStore.getState().pushFreeformOp(freeformStrokeBeforeRef.current, currentFreeform);
+        freeformStrokeBeforeRef.current = null;
+      }
+    };
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('pointerup', handlePointerUp);
     window.addEventListener('studio_toggle_layer_dim', handleToggleLayerDim);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('pointerup', handlePointerUp);
       window.removeEventListener('studio_toggle_layer_dim', handleToggleLayerDim);
     };
   }, [isDevEditorOpen, showToast]);
 
-  // Entity interpolation buffer: socketId -> { fromX, fromY, toX, toY, startTime, duration }
   const interpBufferRef = useRef<Record<string, { fromX: number; fromY: number; toX: number; toY: number; startTime: number; duration: number }>>({});
   const autoWalkPathRef = useRef<{x: number, y: number}[]>([]);
+  const freeformStrokeBeforeRef = useRef<any[] | null>(null);
   const [isEngineReady, setIsEngineReady] = useState(false);
   const playerAnimationProfileRef = useRef<string | null>(null);
   const lastassetProfileIdRef = useRef<string | null>(null);
@@ -1316,7 +1326,30 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               if (store.selectionStart) {
                 setSelectionEnd({ r, c });
                 const mode = isAlt || isCtrl ? 'subtract' : isShift ? 'add' : 'normal';
-                engine.setSelectionPreview(store.selectionStart.r, store.selectionStart.c, r, c, mode);
+                const selMode = store.selectionMode || 'box';
+                if (selMode === 'circle') {
+                  const r0 = store.selectionStart.r;
+                  const c0 = store.selectionStart.c;
+                  const centerR = (r0 + r) / 2;
+                  const centerC = (c0 + c) / 2;
+                  const radius = Math.max(Math.abs(r - r0), Math.abs(c - c0)) / 2;
+                  const rMin = Math.floor(centerR - radius);
+                  const rMax = Math.ceil(centerR + radius);
+                  const cMin = Math.floor(centerC - radius);
+                  const cMax = Math.ceil(centerC + radius);
+                  const radSq = radius * radius;
+                  const circleCells: Array<{ r: number; c: number }> = [];
+                  for (let rr = rMin; rr <= rMax; rr++) {
+                    for (let cc = cMin; cc <= cMax; cc++) {
+                      if ((rr - centerR) ** 2 + (cc - centerC) ** 2 <= radSq) {
+                        circleCells.push({ r: rr, c: cc });
+                      }
+                    }
+                  }
+                  engine.setMultiSelectionPreview(circleCells);
+                } else {
+                  engine.setSelectionPreview(store.selectionStart.r, store.selectionStart.c, r, c, mode);
+                }
               }
             } else if (eventType === 'up') {
               if (store.selectionStart && store.selectionEnd) {
@@ -1552,6 +1585,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             if (eventType !== 'down' && eventType !== 'move') return;
             if (!point) return;
 
+            if (eventType === 'down' && !freeformStrokeBeforeRef.current) {
+              freeformStrokeBeforeRef.current = JSON.parse(JSON.stringify(liveMap.freeformLayers || []));
+            }
+
             const mapWidth = liveMap.grid?.[0]?.length || 24;
             const mapHeight = liveMap.grid?.length || 24;
             // Convert world coordinates to map tile-space coordinates
@@ -1585,27 +1622,16 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             const activeTs = liveMap.tilesets?.slice().reverse().find((ts: any) => store.activeBrushTileId >= ts.firstgid);
             const assetUrl = activeTs ? activeTs.imageSource : 'default';
 
-            if (store.activeLayerType === 'paint-splat') {
-              // Shape-aware distance check helper
-              const isWithinBrushShape = (dx: number, dy: number, radius: number): boolean => {
-                const bShape = store.brushShape || 'circle';
-                if (bShape === 'square') return Math.max(Math.abs(dx), Math.abs(dy)) <= radius;
-                if (bShape === 'diamond') return Math.abs(dx) + Math.abs(dy) <= radius;
-                if (bShape === 'splat-star') {
-                  if (dx * dx + dy * dy > radius * radius) return false;
-                  return Math.abs(dx) < 0.15 || Math.abs(dy) < 0.15 || Math.abs(Math.abs(dx) - Math.abs(dy)) < 0.15;
-                }
-                // circle / polygon fallback
-                return dx * dx + dy * dy <= radius * radius;
-              };
+            const bShape = store.brushShape || 'circle';
+            const eraseRad = store.brushRadius || 1;
 
+            if (store.activeLayerType === 'paint-splat') {
               if (brushMode === 'erase') {
                 if (layer.data) {
                    // erase points within brush radius using shape-aware check
-                   const eraseRad = store.brushRadius || 1;
                    Object.keys(layer.data).forEach(key => {
                      layer.data[key] = layer.data[key].filter((p: any) => 
-                       !isWithinBrushShape(p.x - finalX, p.y - finalY, eraseRad)
+                       !isInBrushShape(p.x - finalX, p.y - finalY, eraseRad, bShape)
                      );
                    });
                 }
@@ -1634,7 +1660,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               if (brushMode === 'erase') {
                 if (layer.objects) {
                    layer.objects = layer.objects.filter((obj: any) => 
-                     Math.sqrt((obj.x - finalX) ** 2 + (obj.y - finalY) ** 2) > (store.brushRadius || 1)
+                     !isInBrushShape(obj.x - finalX, obj.y - finalY, eraseRad, bShape)
                    );
                 }
               } else {
@@ -1699,6 +1725,70 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             }
             return true;
           };
+
+          // --- FLOOD FILL TOOL ---
+          if (brushMode === 'fill') {
+            const height = liveMap.grid?.length || 24;
+            const width = liveMap.grid?.[0]?.length || 24;
+            if (r < 0 || r >= height || c < 0 || c >= width) return;
+
+            const isLogic = target.kind === 'logic';
+            const layerIdx = target.kind === 'logic' ? LOGIC_LAYER_IDX : target.layerIdx;
+            const curGrid = isLogic
+              ? liveMap.grid
+              : (liveMap.tileLayers?.[layerIdx]?.grid || liveMap.grid);
+            const targetVal = Number(curGrid?.[r]?.[c] ?? 0);
+            const fillVal = isLogic ? store.activeLogicTileId : store.activeBrushTileId;
+
+            if (targetVal === fillVal) return;
+
+            const queue: Array<[number, number]> = [[r, c]];
+            const visited = new Set<string>();
+            visited.add(`${r},${c}`);
+            const paintedOps: any[] = [];
+            const MAX_FILL_CELLS = 4096;
+
+            while (queue.length > 0 && paintedOps.length < MAX_FILL_CELLS) {
+              const [currR, currC] = queue.shift()!;
+              if (hasSelection && !isCellInsideSelection(currR, currC)) continue;
+
+              const painted = paintWorldCell(liveMap, layerIdx, currR, currC, fillVal, worldSync);
+              if (!('error' in painted)) {
+                paintedOps.push(painted.cell);
+                if (isLogic) {
+                  engine.updateLogicTile(currR, currC, fillVal);
+                } else {
+                  engine.updateSingleTile(currR, currC, fillVal, layerIdx, liveMap.tilesets);
+                }
+              }
+
+              const neighbors: Array<[number, number]> = [
+                [currR - 1, currC],
+                [currR + 1, currC],
+                [currR, currC - 1],
+                [currR, currC + 1],
+              ];
+
+              for (const [nr, nc] of neighbors) {
+                if (nr >= 0 && nr < height && nc >= 0 && nc < width) {
+                  const key = `${nr},${nc}`;
+                  if (!visited.has(key)) {
+                    visited.add(key);
+                    const neighborVal = Number(curGrid?.[nr]?.[nc] ?? 0);
+                    if (neighborVal === targetVal) {
+                      queue.push([nr, nc]);
+                    }
+                  }
+                }
+              }
+            }
+
+            if (paintedOps.length > 0) {
+              useEditorStore.getState().pushPaintOp(paintedOps);
+              showToast(`Flood filled ${paintedOps.length} tiles`);
+            }
+            return;
+          }
 
           if (target.kind === 'logic') {
             const logicId = paintValue;
