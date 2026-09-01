@@ -1,3 +1,9 @@
+# 2.1.600
+- **TypeScript Build & Import Integrity**:
+  - Added missing `Quaternion` import from `@babylonjs/core` in `BabylonEngine.ts`.
+  - Added `activeLayerType` to `capturePlaytestSnapshot` parameter in `editor-store.ts`.
+  - Added explicit type annotations for `freeformLayers` helper callbacks in `GameCanvasBabylon.tsx`.
+
 # 2.1.599
 - **2.5D Hybrid World Architecture (Foundation & Engine):**
   - Upgraded MMO MapData structure (`map.ts`) with new non-destructive `freeformLayers` array, fully backwards compatible with the existing `grid` array, World Atlas validation, and backend pathfinding.
