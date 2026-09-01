@@ -84,6 +84,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const brushMode = useEditorStore((state) => state.brushMode);
   const brushRadius = useEditorStore((state) => state.brushRadius);
   const brushShape = useEditorStore((state) => state.brushShape);
+  const brushRotation = useEditorStore((state) => state.brushRotation);
+  const selectionMode = useEditorStore((state) => state.selectionMode);
   const activeBrushPattern = useEditorStore((state) => state.activeBrushPattern);
   const prefabStampMode = useEditorStore((state) => state.prefabStampMode);
   const isStudioFreeCam = useEditorStore((state) => state.isStudioFreeCam);
@@ -1231,7 +1233,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     if (!engine) return;
     engine.setBrushRadius(brushRadius);
     engine.setBrushShape(brushShape);
-    engine.setBrushRotation(useEditorStore.getState().brushRotation);
+    engine.setBrushRotation(brushRotation);
     engine.setActiveBrushTileId(activeBrushTileId);
     engine.setActiveBrushPattern(activeBrushPattern);
     engine.setPrefabStampMode(prefabStampMode);
@@ -1239,7 +1241,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     engine.setBrushMode(brushMode);
     engine.setFreeCam(isStudioFreeCam);
     engine.refreshBrushPreview();
-  }, [brushRadius, brushShape, activeBrushTileId, activeBrushPattern, prefabStampMode, activeLayerIdx, brushMode, isStudioFreeCam]);
+  }, [brushRadius, brushShape, brushRotation, activeBrushTileId, activeBrushPattern, prefabStampMode, activeLayerIdx, brushMode, isStudioFreeCam]);
 
   // Handle Live Dev Editor Tile Picking & Click-to-Move
   useEffect(() => {
@@ -1322,12 +1324,53 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 const r1 = store.selectionEnd.r;
                 const c0 = store.selectionStart.c;
                 const c1 = store.selectionEnd.c;
-                if (isAlt || isCtrl) {
-                  store.removeSelectedBox(r0, r1, c0, c1);
-                } else if (isShift) {
-                  store.addSelectedBox(r0, r1, c0, c1);
+                const selMode = store.selectionMode || 'box';
+
+                if (selMode === 'circle') {
+                  // Circle selection: compute center and radius from drag bounds
+                  const centerR = (r0 + r1) / 2;
+                  const centerC = (c0 + c1) / 2;
+                  const radius = Math.max(Math.abs(r1 - r0), Math.abs(c1 - c0)) / 2;
+                  if (isAlt || isCtrl) {
+                    // Subtract circle from selection
+                    const rMin = Math.floor(centerR - radius);
+                    const rMax = Math.ceil(centerR + radius);
+                    const cMin = Math.floor(centerC - radius);
+                    const cMax = Math.ceil(centerC + radius);
+                    const radSq = radius * radius;
+                    for (let rr = rMin; rr <= rMax; rr++) {
+                      for (let cc = cMin; cc <= cMax; cc++) {
+                        if ((rr - centerR) ** 2 + (cc - centerC) ** 2 <= radSq) {
+                          store.removeSelectedCell(rr, cc);
+                        }
+                      }
+                    }
+                  } else if (isShift) {
+                    // Add circle to existing selection
+                    const rMin = Math.floor(centerR - radius);
+                    const rMax = Math.ceil(centerR + radius);
+                    const cMin = Math.floor(centerC - radius);
+                    const cMax = Math.ceil(centerC + radius);
+                    const radSq = radius * radius;
+                    for (let rr = rMin; rr <= rMax; rr++) {
+                      for (let cc = cMin; cc <= cMax; cc++) {
+                        if ((rr - centerR) ** 2 + (cc - centerC) ** 2 <= radSq) {
+                          store.addSelectedCell(rr, cc);
+                        }
+                      }
+                    }
+                  } else {
+                    store.setSelectionCircle(centerR, centerC, radius);
+                  }
                 } else {
-                  store.setSelectionBox(r0, r1, c0, c1);
+                  // Box selection (default) — also used for lasso/polygon until drag collection is added
+                  if (isAlt || isCtrl) {
+                    store.removeSelectedBox(r0, r1, c0, c1);
+                  } else if (isShift) {
+                    store.addSelectedBox(r0, r1, c0, c1);
+                  } else {
+                    store.setSelectionBox(r0, r1, c0, c1);
+                  }
                 }
                 engine.setMultiSelectionPreview(useEditorStore.getState().selectedCells);
               }
@@ -1543,12 +1586,26 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             const assetUrl = activeTs ? activeTs.imageSource : 'default';
 
             if (store.activeLayerType === 'paint-splat') {
+              // Shape-aware distance check helper
+              const isWithinBrushShape = (dx: number, dy: number, radius: number): boolean => {
+                const bShape = store.brushShape || 'circle';
+                if (bShape === 'square') return Math.max(Math.abs(dx), Math.abs(dy)) <= radius;
+                if (bShape === 'diamond') return Math.abs(dx) + Math.abs(dy) <= radius;
+                if (bShape === 'splat-star') {
+                  if (dx * dx + dy * dy > radius * radius) return false;
+                  return Math.abs(dx) < 0.15 || Math.abs(dy) < 0.15 || Math.abs(Math.abs(dx) - Math.abs(dy)) < 0.15;
+                }
+                // circle / polygon fallback
+                return dx * dx + dy * dy <= radius * radius;
+              };
+
               if (brushMode === 'erase') {
                 if (layer.data) {
-                   // erase points within brush radius
+                   // erase points within brush radius using shape-aware check
+                   const eraseRad = store.brushRadius || 1;
                    Object.keys(layer.data).forEach(key => {
                      layer.data[key] = layer.data[key].filter((p: any) => 
-                       Math.sqrt((p.x - finalX) ** 2 + (p.y - finalY) ** 2) > (store.brushRadius || 1)
+                       !isWithinBrushShape(p.x - finalX, p.y - finalY, eraseRad)
                      );
                    });
                 }
@@ -1556,18 +1613,20 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 layer.data = { ...(layer.data || {}) };
                 layer.data[assetUrl] = [...(layer.data[assetUrl] || [])];
                 
-                // Density control
+                // Density control — uses shape-aware distance
                 const minSqDist = Math.max(0.01, (store.brushRadius * store.brushRadius) / 16);
-                const isTooClose = layer.data[assetUrl].some((p: any) => 
-                  (p.x - finalX) ** 2 + (p.y - finalY) ** 2 < minSqDist
-                );
+                const isTooClose = layer.data[assetUrl].some((p: any) => {
+                  const dx = p.x - finalX;
+                  const dy = p.y - finalY;
+                  return dx * dx + dy * dy < minSqDist;
+                });
                 
                 if (!isTooClose || eventType === 'down') {
                   layer.data[assetUrl].push({
                     x: finalX,
                     y: finalY,
                     scale: store.stampScale || 1,
-                    rotation: 0
+                    rotation: store.brushRotation ? (store.brushRotation * Math.PI / 180) : 0
                   });
                 }
               }
@@ -1586,7 +1645,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                   x: finalX,
                   y: finalY,
                   scale: store.stampScale || 1,
-                  rotation: 0
+                  rotation: store.brushRotation ? (store.brushRotation * Math.PI / 180) : 0
                 });
               }
             }
@@ -1994,6 +2053,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           engine.setBrushShape(state.brushShape);
           engine.refreshBrushPreview();
         }
+        if (state.brushRotation !== prevState.brushRotation) {
+          engine.setBrushRotation(state.brushRotation);
+          engine.refreshBrushPreview();
+        }
         if (state.activeBrushTileId !== prevState.activeBrushTileId) {
           engine.setActiveBrushTileId(state.activeBrushTileId);
           engine.refreshBrushPreview();
@@ -2067,25 +2130,33 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         (prev.grid[0]?.length || 0) === width;
 
       if (sameDims && Array.isArray(map.tileLayers) && map.tileLayers.length > 0) {
-        for (let li = 0; li < map.tileLayers.length; li++) {
-          const layer = map.tileLayers[li] as any;
-          const cells = layer?.grid || layer?.data || layer;
-          if (!Array.isArray(cells)) continue;
-          for (let r = 0; r < height; r++) {
-            const row = cells[r];
-            if (!Array.isArray(row)) continue;
-            for (let c = 0; c < width; c++) {
-              const gid = Number(row[c] || 0);
-              engine.updateSingleTile(r, c, gid, li, map.tilesets);
+        // Check if freeformLayers changed — if so, skip fast-path and do full loadTilemap
+        const hasFreeform = Array.isArray(map.freeformLayers) && map.freeformLayers.length > 0;
+        const prevHadFreeform = Array.isArray(prev?.freeformLayers) && (prev.freeformLayers as any[]).length > 0;
+        const freeformChanged = hasFreeform || prevHadFreeform;
+
+        if (!freeformChanged) {
+          for (let li = 0; li < map.tileLayers.length; li++) {
+            const layer = map.tileLayers[li] as any;
+            const cells = layer?.grid || layer?.data || layer;
+            if (!Array.isArray(cells)) continue;
+            for (let r = 0; r < height; r++) {
+              const row = cells[r];
+              if (!Array.isArray(row)) continue;
+              for (let c = 0; c < width; c++) {
+                const gid = Number(row[c] || 0);
+                engine.updateSingleTile(r, c, gid, li, map.tilesets);
+              }
             }
           }
+          if (Array.isArray(map.grid)) {
+            engine.enableLogicGridOverlay?.(map.grid);
+          }
+          useGameStore.getState().setActiveMapData(map);
+          mapDataRef.current = map;
+          return;
         }
-        if (Array.isArray(map.grid)) {
-          engine.enableLogicGridOverlay?.(map.grid);
-        }
-        useGameStore.getState().setActiveMapData(map);
-        mapDataRef.current = map;
-        return;
+        // freeformLayers changed — fall through to full loadTilemap below
       }
 
       engine.loadTilemap({

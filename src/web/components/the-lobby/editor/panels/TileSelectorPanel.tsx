@@ -26,6 +26,8 @@ export const TileSelectorPanel: React.FC = () => {
   const markMapDirty = useEditorStore((s) => s.markMapDirty);
 
   const activeLayerType = useEditorStore((s) => s.activeLayerType);
+  const brushShape = useEditorStore((s) => s.brushShape);
+  const setBrushShape = useEditorStore((s) => s.setBrushShape);
 
   const handleBrushSelect = React.useCallback((gid: number) => {
     setActiveBrushTileId(gid, true);
@@ -147,15 +149,12 @@ export const TileSelectorPanel: React.FC = () => {
       <div className="mb-2 flex items-center gap-1 text-[9px]">
         <span className="text-muted-foreground font-bold mr-1">Brush Shape:</span>
         {(['circle', 'square', 'diamond', 'splat-star'] as const).map((shape) => {
-          const brushShape = useEditorStore.getState().brushShape;
           const isActive = brushShape === shape;
           return (
             <button
               key={shape}
               type="button"
-              onClick={() => {
-                useEditorStore.getState().setBrushShape(shape);
-              }}
+              onClick={() => setBrushShape(shape)}
               className={`px-1.5 py-0.5 rounded border transition-colors cursor-pointer capitalize ${
                 isActive
                   ? 'bg-primary/20 border-primary/50 text-primary font-bold'

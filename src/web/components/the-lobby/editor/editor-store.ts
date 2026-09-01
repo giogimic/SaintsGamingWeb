@@ -2367,18 +2367,21 @@ export const useEditorStore = create<EditorState>()(
       rotateStampCW: () => {
         set((state) => {
           state.stampTransform.rotation = rotateCW(state.stampTransform.rotation);
+          state.brushRotation = state.stampTransform.rotation;
         });
       },
 
       rotateStampCCW: () => {
         set((state) => {
           state.stampTransform.rotation = rotateCCW(state.stampTransform.rotation);
+          state.brushRotation = state.stampTransform.rotation;
         });
       },
 
       resetStampTransform: () => {
         set((state) => {
           state.stampTransform = { ...DEFAULT_STAMP_TRANSFORM };
+          state.brushRotation = 0;
         });
       },
 
