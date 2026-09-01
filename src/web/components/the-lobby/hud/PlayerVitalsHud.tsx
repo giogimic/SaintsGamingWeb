@@ -126,15 +126,15 @@ export const PlayerVitalsHud: React.FC = () => {
 
   const isSeparated = hudConfig?.vitalsLayout === 'separate';
   const containerClass = isSeparated
-    ? 'flex flex-col gap-2'
-    : `w-full ${theme.palette.glassBg} border ${theme.palette.border} ${radiusClass} p-3.5 backdrop-blur-xl relative overflow-hidden`;
+    ? 'flex flex-col gap-1.5'
+    : `w-full bg-black/40 border border-white/10 ${radiusClass} p-2.5 backdrop-blur-xl relative overflow-hidden transition-all hover:border-amber-400/30`;
 
   const panelClass = isSeparated
-    ? `w-full ${theme.palette.glassBg} border ${theme.palette.border} ${radiusClass} p-2.5 backdrop-blur-xl relative overflow-hidden`
+    ? `w-full bg-black/40 border border-white/10 ${radiusClass} p-2 backdrop-blur-xl relative overflow-hidden transition-all hover:border-amber-400/30`
     : '';
 
   const renderIdentityHeader = () => (
-    <div className={`flex items-center gap-2.5 ${isSeparated ? '' : `pb-2.5 mb-2.5 border-b ${theme.palette.border}`}`}>
+    <div className={`flex items-center gap-2.5 ${isSeparated ? '' : 'pb-2 mb-2 border-b border-white/10'}`}>
       <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/40 bg-black/80 shadow-inner overflow-hidden">
         {assetProfileId ? (
           <CharacterSpritePreview assetProfileId={assetProfileId} size={28} scale={1.5} />

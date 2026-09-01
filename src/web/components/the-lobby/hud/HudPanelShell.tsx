@@ -49,15 +49,15 @@ export function HudPanelShell({
       : theme.borderRadiusClass || 'rounded-2xl';
 
   const borderClass = {
-    none: `${theme.palette.border} hover:border-amber-400/60`,
-    active: `${theme.palette.borderActive} shadow-[0_0_16px_rgba(245,158,11,0.35)]`,
+    none: 'border-white/10 hover:border-amber-400/40',
+    active: 'border-amber-400/60 shadow-[0_0_16px_rgba(245,158,11,0.35)]',
     alert: 'border-rose-500/70 shadow-[0_0_16px_rgba(244,63,94,0.4)]',
     cooldown: 'border-amber-400/70 shadow-[0_0_16px_rgba(251,191,36,0.35)]',
   }[accentState];
 
   return (
     <div
-      className={`relative transition-all duration-200 ease-out pointer-events-auto select-none border backdrop-blur-xl ${theme.palette.glassBg} ${radiusClass} ${borderClass} ${className}`}
+      className={`relative transition-all duration-200 ease-out pointer-events-auto select-none border backdrop-blur-xl bg-black/40 ${radiusClass} ${borderClass} ${className}`}
       style={{
         boxShadow: hudConfig?.borderGlow
           ? accentState !== 'none'
@@ -71,7 +71,7 @@ export function HudPanelShell({
         {/* Optional Header Row */}
         {(title || icon || headerRight || onClose) && (
           <div
-            className={`flex items-center justify-between border-b ${theme.palette.border} ${theme.palette.glassHeaderBg} px-3 py-1.5 shrink-0`}
+            className="flex items-center justify-between border-b border-white/10 bg-white/5 px-2.5 py-1.5 shrink-0"
           >
             <div className="flex items-center gap-1.5 min-w-0">
               {icon && (

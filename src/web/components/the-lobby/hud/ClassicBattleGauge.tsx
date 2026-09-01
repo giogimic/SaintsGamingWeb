@@ -73,7 +73,7 @@ export const ClassicBattleGauge: React.FC<ClassicBattleGaugeProps> = ({
   return (
     <div className={`flex flex-col gap-2 w-full select-none font-mono ${className}`}>
       {/* ── CLASSIC HP SECTION ── */}
-      <div className="p-2.5 rounded-xl bg-black/70 border border-white/10 shadow-inner flex flex-col gap-1.5 relative overflow-hidden">
+      <div className="p-1 flex flex-col gap-1 relative overflow-hidden">
         {/* Top Header: HP Tag & Exact Numeric Count */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
@@ -93,7 +93,7 @@ export const ClassicBattleGauge: React.FC<ClassicBattleGaugeProps> = ({
         </div>
 
         {/* Segmented Tri-Color HP Bar */}
-        <div className="relative w-full h-3.5 bg-black/90 rounded-full border border-white/15 overflow-hidden p-0.5 shadow-inner">
+        <div className="relative w-full h-3 bg-black/80 rounded-full border border-white/15 overflow-hidden p-0.5 shadow-inner">
           <div
             className={`h-full rounded-full transition-all duration-300 ${hpColorClass}`}
             style={{ width: `${hpPercent}%` }}
@@ -108,18 +108,18 @@ export const ClassicBattleGauge: React.FC<ClassicBattleGaugeProps> = ({
       </div>
 
       {/* ── PP / ENERGY (MP) SECTION ── */}
-      <div className="p-2 rounded-xl bg-black/60 border border-white/10 flex flex-col gap-1">
+      <div className="px-1 flex flex-col gap-1">
         <div className="flex items-center justify-between text-[9px]">
           <div className="flex items-center gap-1 text-amber-400 font-bold">
             <Zap className="w-2.5 h-2.5 text-amber-400" />
-            <span>PP / ENERGY</span>
+            <span>ENERGY</span>
           </div>
           <span className="tabular-nums font-bold text-amber-300 text-[9px]">
             {safeMp} <span className="text-slate-500 font-normal">/ {safeMaxMp}</span>
           </span>
         </div>
 
-        <div className="relative w-full h-2 bg-black/90 rounded-full border border-white/10 overflow-hidden">
+        <div className="relative w-full h-2 bg-black/80 rounded-full border border-white/10 overflow-hidden">
           <div
             className="h-full rounded-full bg-gradient-to-r from-amber-400 to-yellow-300 transition-all duration-300"
             style={{ width: `${mpPercent}%` }}

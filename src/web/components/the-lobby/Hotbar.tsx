@@ -219,7 +219,7 @@ export default function Hotbar() {
       }}
     >
       <div
-        className={`p-2 ${theme.palette.glassBg} border ${theme.palette.border} ${radiusClass} backdrop-blur-xl relative overflow-hidden flex items-center gap-2`}
+        className={`p-1 bg-black/40 border border-white/10 ${radiusClass} backdrop-blur-xl relative overflow-hidden flex items-center gap-1.5 transition-all hover:border-amber-400/30`}
         style={{
           boxShadow: hudConfig?.borderGlow ? theme.palette.accentGlow : undefined,
         }}
