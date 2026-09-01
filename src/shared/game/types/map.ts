@@ -30,6 +30,32 @@ export interface TileLayer {
   grid: number[][];
 }
 
+export interface FreeformObject {
+  id: string;
+  asset: string;
+  x: number;
+  y: number;
+  scale?: number;
+  rotation?: number;
+}
+
+export interface FreeformRegion {
+  type: string;
+  points: [number, number][];
+  action?: string;
+  target?: string;
+}
+
+export interface FreeformLayer {
+  id: string;
+  name: string;
+  type: 'paint-splat' | 'free-form' | 'polygon';
+  data?: Record<string, {x: number, y: number, scale?: number, rotation?: number}[]>;
+  objects?: FreeformObject[];
+  regions?: FreeformRegion[];
+}
+
+
 export interface TilesetMeta {
   firstgid: number;
   imageSource: string;
@@ -90,6 +116,7 @@ export interface MapData {
   encountersData: EncounterEntry[];
   tileLayers?: TileLayer[];
   tilesets?: TilesetMeta[];
+  freeformLayers?: FreeformLayer[];
   width: number;
   height: number;
   musicTrack?: string | null;

@@ -1,4 +1,14 @@
-# 2.1.596
+# 2.1.599
+- **2.5D Hybrid World Architecture (Foundation & Engine):**
+  - Upgraded MMO MapData structure (`map.ts`) with new non-destructive `freeformLayers` array, fully backwards compatible with the existing `grid` array, World Atlas validation, and backend pathfinding.
+  - Implemented `activeLayerType` in `editor-store.ts` enabling organic `'paint-splat'` and `'free-form'` brush tools.
+  - Updated `WorldBuilderPanel.tsx` UI to integrate seamless switching between rigid tile layers and floating freeform layers with dynamic brush scaling and snap-to-grid toggles.
+  - Re-wrote raycasting pipeline in `BabylonEngine.ts` (`resolveTilePick` and `pickTileFromGroundPlane`) to pass precise `(x, z)` floating-point hit coordinates instead of integer-clamped blocks.
+  - Engineered massive performance splat-rendering pipeline in `BabylonEngine.ts` using `ThinInstances`, layering organic MS-Paint-style paths precisely above legacy ground textures.
+  - Added standalone `billboardMode` mesh generation for 2.5D `free-form` prop objects.
+  - Overhauled pointer interactions in `GameCanvasBabylon.tsx` to directly write spatial floating point matrices into active map documents and immediately hot-reload the changes without screen flickering.
+
+# 2.1.598
 - **Global Bottom-Bar Drawers & Messenger Chat Overlay Elevation**:
   - Elevated `MessengerPopup` (`messenger-popup.tsx`), Dev Console Drawer (`global-bottom-bar.tsx`), and Moderator Drawer to top-level `z-[300]` stacking contexts so they float cleanly over the Babylon game canvas, HUD docks, and persistent bottom navigation bar.
   - Added `{messengerPopup}` overlay portal to `isStudio` in `main-layout-shell.tsx` for consistent global communication.

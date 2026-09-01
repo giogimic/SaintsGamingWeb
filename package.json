@@ -1,6 +1,6 @@
 {
   "name": "saints-gaming-web",
-  "version": "2.1.596",
+  "version": "2.1.599",
   "license": "BSL-1.1",
   "private": true,
   "engines": {
@@ -16,6 +16,7 @@
     "release": "node scripts/release.mjs",
     "clean:disk": "bash scripts/cleanup-disk.sh",
     "test": "vitest run",
+    "validate:hooks": "tsx scripts/validate-hooks.ts",
     "validate:maps": "tsx scripts/validate-maps.ts",
     "smoke": "bash ./scripts/smoke-staging.sh",
     "smoke:lobby": "tsx scripts/smoke-lobby-mp.ts",

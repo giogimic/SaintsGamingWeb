@@ -80,22 +80,13 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "v2.1.588",
+  siteVersion = "v2.1.599",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;
 }) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const isStudioRoute = pathname?.startsWith("/studio");
-  if (isStudioRoute) {
-    return (
-      <div className="fixed bottom-0 left-0 right-0 z-[250] pointer-events-none">
-        <StudioBottomToolbar />
-      </div>
-    );
-  }
-  const isGameRoute = pathname?.startsWith("/lobby");
 
   // Realtime & Messenger Store
   const mmoPlayerCount = useRealtimeStore((s) => s.mmoPlayerCount);
@@ -230,28 +221,37 @@ export function GlobalBottomBar({
   const getRouteLabel = () => {
     if (!pathname) return "Saints";
     if (pathname.startsWith("/lobby")) return `The Lobby · ${gameMode}`;
-    if (pathname.startsWith("/studio")) return `World Studio Â· ${activeMapId || "Editor"}`;
+    if (pathname.startsWith("/studio")) return `World Studio · ${activeMapId || "Editor"}`;
     if (pathname.startsWith("/hub") || pathname.startsWith("/news") || pathname.startsWith("/modpacks") || pathname.startsWith("/servers")) {
-      return "The Nexus Â· Operations Hub";
+      return "The Nexus · Operations Hub";
     }
-    if (pathname.startsWith("/forum")) return "Community Forums Â· Discussions";
-    if (pathname.startsWith("/streams")) return "Live Streams Â· Media";
-    if (pathname.startsWith("/feed")) return "Saints Feed Â· Highlights";
-    if (pathname.startsWith("/wiki")) return "Saints Wiki Â· Guides";
-    if (pathname.startsWith("/support")) return "Support Desk Â· Help";
+    if (pathname.startsWith("/forum")) return "Community Forums · Discussions";
+    if (pathname.startsWith("/streams")) return "Live Streams · Media";
+    if (pathname.startsWith("/feed")) return "Saints Feed · Highlights";
+    if (pathname.startsWith("/wiki")) return "Saints Wiki · Guides";
+    if (pathname.startsWith("/support")) return "Support Desk · Help";
     if (pathname.startsWith("/profile") || pathname.startsWith("/user")) return "Player Profile";
     if (pathname.startsWith("/admin")) return "Command & Control Center";
-    return "Saints Â· Online";
+    return "Saints · Online";
   };
 
   const isBarsHidden = useImmersiveStore((s) => s.isBarsHidden);
-
   const openComposer = usePostComposerStore((s) => s.openComposer);
 
   const handleGlobalPost = () => {
     soundSynth?.playSelectSound?.();
     openComposer();
   };
+
+  const isStudioRoute = pathname?.startsWith("/studio");
+  if (isStudioRoute) {
+    return (
+      <div className="fixed bottom-0 left-0 right-0 z-[250] pointer-events-none">
+        <StudioBottomToolbar />
+      </div>
+    );
+  }
+  const isGameRoute = pathname?.startsWith("/lobby");
 
   // If fullscreen in game mode, suppress bottom bar to allow pure immersive gameplay
   if (isFullscreen && isGameRoute) {

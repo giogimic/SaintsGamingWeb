@@ -68,7 +68,8 @@ export interface HudEngineConfig {
   opacity: number;
   borderRadius: 'rounded' | 'compact' | 'capsule';
   borderGlow: boolean;
-  vitalsFormat: 'dual-bar' | 'compact' | 'compact-stacked' | 'orbs' | 'heart-containers' | 'pokemon-gauge';
+  vitalsFormat: 'dual-bar' | 'compact' | 'compact-stacked' | 'orbs' | 'heart-containers' | 'pokemon-gauge' | 'icon-bars';
+  vitalsLayout: 'grouped' | 'separate';
   heartContainerCount?: number;
   minimapShape: 'rounded' | 'circle' | 'square';
   showMinimapRadar: boolean;
@@ -96,6 +97,7 @@ export const DEFAULT_HUD_CONFIG: HudEngineConfig = {
   borderRadius: 'rounded',
   borderGlow: true,
   vitalsFormat: 'dual-bar',
+  vitalsLayout: 'grouped',
   minimapShape: 'rounded',
   showMinimapRadar: true,
   showCoords: true,
@@ -221,6 +223,9 @@ export interface PlayerState {
   /** Soul essence (MP) — spent on magic / camera rites */
   mp: number;
   maxMp: number;
+  /** Physical endurance (SP) — spent on dodging / sprinting */
+  stamina: number;
+  maxStamina: number;
   credits: number;
   currency: {
     copper: number;
@@ -472,13 +477,15 @@ export const useGameStore = create<GameState>()(
       gameMode: 'TITLE_SCREEN',
       player: {
         assetProfileId: 'adventurer',
-        position: { x: 14, y: 15 },
+        position: { x: 30, y: 30 },
         level: 1,
         xp: 0,
         hp: 100,
         maxHp: 100,
         mp: 100,
         maxMp: 100,
+        stamina: 100,
+        maxStamina: 100,
         credits: 500,
         currency: { copper: 50000, silver: 0, gold: 0, platinum: 0 },
         activeQuests: {},
@@ -576,16 +583,38 @@ export const useGameStore = create<GameState>()(
       },
 
       setActiveHudPreset: (presetOrId) => set((state) => {
+        let presetObj: import('./hud/dock-types').HudLayoutPreset | null = null;
         if (typeof presetOrId === 'string') {
           const foundBuiltin = BUILTIN_HUD_PRESETS.find((p) => p.id === presetOrId);
           const foundCustom = state.customHudPresets.find((p) => p.id === presetOrId);
           const target = foundBuiltin || foundCustom;
           if (target) {
-            state.activeHudPreset = ensureCompletePreset(target);
+            presetObj = ensureCompletePreset(target);
           }
         } else {
-          state.activeHudPreset = ensureCompletePreset(presetOrId);
+          presetObj = ensureCompletePreset(presetOrId);
         }
+
+        if (presetObj) {
+          state.activeHudPreset = presetObj;
+          
+          // Apply any embedded engine style overrides 
+          if (presetObj.engineOverrides) {
+            const overrides = presetObj.engineOverrides;
+            
+            state.hudConfig = {
+              ...state.hudConfig,
+              ...overrides,
+              quickMenuButtons: overrides.quickMenuButtons 
+                ? { ...state.hudConfig.quickMenuButtons, ...overrides.quickMenuButtons } as any
+                : state.hudConfig.quickMenuButtons,
+            };
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(HUD_CONFIG_STORAGE_KEY, JSON.stringify(state.hudConfig));
+            }
+          }
+        }
+
         state.uiLayoutEpoch += 1;
         if (typeof window !== 'undefined') {
           localStorage.setItem(HUD_PRESET_STORAGE_KEY, JSON.stringify(state.activeHudPreset));

@@ -347,7 +347,22 @@ export const InterfaceEditorPanel: React.FC = () => {
                     <option value="dual-bar">Dual Full Bars (HP + MP + XP)</option>
                     <option value="compact-stacked">Compact Stacked</option>
                     <option value="heart-containers">Heart Containers (Pokemon / Zelda)</option>
+                    <option value="icon-bars">Icon Bars (Discrete Emblems)</option>
                     <option value="pokemon-gauge">Pokemon Battle Gauge (Tri-Color HP)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">
+                    Vitals Module Layout
+                  </label>
+                  <select
+                    value={hudConfig?.vitalsLayout || 'grouped'}
+                    onChange={(e) => updateHudConfig({ vitalsLayout: e.target.value as any })}
+                    className="w-full text-xs p-1.5 rounded-lg bg-black/80 border border-border/50 text-slate-200 cursor-pointer"
+                  >
+                    <option value="grouped">Grouped Panel (Single Box)</option>
+                    <option value="separate">Separated Modules (Floating)</option>
                   </select>
                 </div>
 
@@ -577,6 +592,12 @@ export const InterfaceEditorPanel: React.FC = () => {
                   <div
                     className="h-full rounded-full"
                     style={{ width: '60%', backgroundColor: currentTheme.palette.mpFill }}
+                  />
+                </div>
+                <div className="w-14 h-1.5 rounded-full overflow-hidden bg-black/80">
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: '75%', backgroundColor: (currentTheme.palette as any).staminaFill || '#fbbf24' }}
                   />
                 </div>
               </div>

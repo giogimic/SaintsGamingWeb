@@ -107,12 +107,6 @@ export default function Hotbar() {
     [abilities, potionCount]
   );
 
-  // Hotbar is RT-only — hidden during turn-based creature battles or full-screen screens
-  const isPlayable = ['EXPLORING', 'INVENTORY', 'SKILLS', 'EQUIPMENT', 'QUESTS', 'GTC', 'DIALOG'].includes(gameMode);
-  if (!isPlayable) {
-    return null;
-  }
-
   const handleCast = (slot: (typeof slots)[number]) => {
     const timeNow = Date.now();
     if (timeNow < globalCooldown) return; // GCD active
@@ -182,6 +176,10 @@ export default function Hotbar() {
       )
         return;
 
+      const currentMode = useGameStore.getState().gameMode;
+      const isCurrentlyPlayable = ['EXPLORING', 'INVENTORY', 'SKILLS', 'EQUIPMENT', 'QUESTS', 'GTC', 'DIALOG'].includes(currentMode);
+      if (!isCurrentlyPlayable) return;
+
       const key = e.key;
       const slotIndex = parseInt(key) - 1;
       if (slotIndex >= 0 && slotIndex < slots.length) {
@@ -191,9 +189,6 @@ export default function Hotbar() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [globalCooldown, combatTarget, emitSocketEvent, slots, cooldowns]);
-
-  const gcdActive = now < globalCooldown;
-  const gcdPercent = gcdActive ? Math.max(0, ((globalCooldown - now) / 1200) * 100) : 0;
 
   const hudThemeId = useGameStore((s) => s.hudThemeId);
   const hudConfig = useGameStore((s) => s.hudConfig);
@@ -205,6 +200,15 @@ export default function Hotbar() {
       : hudConfig?.borderRadius === 'capsule'
       ? 'rounded-3xl'
       : theme.borderRadiusClass || 'rounded-2xl';
+
+  // Hotbar is RT-only — hidden during turn-based creature battles or full-screen screens
+  const isPlayable = ['EXPLORING', 'INVENTORY', 'SKILLS', 'EQUIPMENT', 'QUESTS', 'GTC', 'DIALOG'].includes(gameMode);
+  if (!isPlayable) {
+    return null;
+  }
+
+  const gcdActive = now < globalCooldown;
+  const gcdPercent = gcdActive ? Math.max(0, ((globalCooldown - now) / 1200) * 100) : 0;
 
   return (
     <div

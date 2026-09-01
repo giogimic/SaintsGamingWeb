@@ -8,18 +8,14 @@ import { DockableWidget } from './DockableWidget';
 import { DockZoneId, DOCK_ZONE_DEFINITIONS } from './dock-types';
 import { HUD_WIDGET_IDS } from './default-presets';
 
-// Dynamically import HUD widget components
-const MiniMapRadar = dynamic(() => import('../MiniMapRadar'), { ssr: false });
-const PeerPresenceHud = dynamic(() => import('../PeerPresenceHud'), { ssr: false });
-const PlayerVitalsHud = dynamic(() => import('./PlayerVitalsHud'), { ssr: false });
-const TargetFrame = dynamic(() => import('../target-frame'), { ssr: false });
-const QuestTrackerOverlay = dynamic(() => import('../quest-tracker-overlay'), { ssr: false });
-const Hotbar = dynamic(() => import('../Hotbar'), { ssr: false });
-const ClassicPanel = dynamic(() => import('../ClassicPanel'), { ssr: false });
-const GameChat = dynamic(
-  () => import('../chat/GameChat').then((mod) => mod.GameChat),
-  { ssr: false }
-);
+import MiniMapRadar from '../MiniMapRadar';
+import PeerPresenceHud from '../PeerPresenceHud';
+import PlayerVitalsHud from './PlayerVitalsHud';
+import TargetFrame from '../target-frame';
+import QuestTrackerOverlay from '../quest-tracker-overlay';
+import Hotbar from '../Hotbar';
+import ClassicPanel from '../ClassicPanel';
+import { GameChat } from '../chat/GameChat';
 
 interface LobbyHudDockLayoutProps {
   enableStudio?: boolean;

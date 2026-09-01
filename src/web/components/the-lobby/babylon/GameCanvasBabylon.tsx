@@ -80,6 +80,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const showToast = useGameStore((state) => state.showToast);
   const gainSkillXp = useGameStore((state) => state.gainSkillXp);
   const combatTarget = useGameStore((state) => state.combatTarget);
+  const focusedTarget = useGameStore((state) => state.focusedTarget);
   const brushMode = useEditorStore((state) => state.brushMode);
   const brushRadius = useEditorStore((state) => state.brushRadius);
   const brushShape = useEditorStore((state) => state.brushShape);
@@ -747,6 +748,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           maxHp: (mapEnt as any)?.maxHp || 80,
           behavior: 'HOSTILE',
         });
+        babylonEngine.updateSelectionRing(entityId);
         return;
       } else if (entityId.startsWith('multiplayer_') || state.otherPlayers?.[entityId]) {
         const rawSocketId = entityId.startsWith('multiplayer_') ? entityId.replace(/^multiplayer_/, '') : entityId;
@@ -759,6 +761,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           maxHp: 100,
           behavior: 'CALM',
         });
+        babylonEngine.updateSelectionRing(entityId);
         return;
       }
 
@@ -769,6 +772,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         maxHp: 100,
         behavior: 'CALM'
       });
+      babylonEngine.updateSelectionRing(entityId);
     };
 
     // Load map grid only — NPCs/wilds come from socket mapEntities (avoids
@@ -1110,12 +1114,17 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     }
   }, [mapData, currentMapId]);
 
-  // Handle Combat Target Selection Ring
+  // Handle Combat & Focus Target Selection Ring
   useEffect(() => {
     const engine = engineRef.current;
     if (!engine) return;
-    engine.updateSelectionRing(combatTarget?.entityId ?? null);
-  }, [combatTarget]);
+    const targetId =
+      combatTarget?.entityId ||
+      (focusedTarget && focusedTarget.kind !== 'tile'
+        ? (focusedTarget as any).id || (focusedTarget as any).entityId
+        : null);
+    engine.updateSelectionRing(targetId ?? null);
+  }, [combatTarget?.entityId, focusedTarget]);
 
   // Studio Center Camera Event Listener
   useEffect(() => {
@@ -1252,7 +1261,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
       if (isDevEditorOpen) {
         cleanupPan = engine.startEditorKeyboardPan() || (() => {});
-        engine.enableTilePicking((r, c, _, eventType) => {
+        engine.enableTilePicking((r, c, _, eventType, point) => {
           const map = useGameStore.getState().activeMapData || activeMap;
           const store = useEditorStore.getState();
           const { brushMode, setSelectionStart, setSelectionEnd, activePrefabId, activeLayerIdx: curLayerIdx } = store;
@@ -1493,6 +1502,103 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           }
 
           const liveMap = useGameStore.getState().activeMapData || map;
+
+          // --- FREEFORM LAYER HANDLING ---
+          if (store.activeLayerType === 'paint-splat' || store.activeLayerType === 'free-form') {
+            if (eventType !== 'down' && eventType !== 'move') return;
+            if (!point) return;
+
+            const mapWidth = liveMap.grid?.[0]?.length || 24;
+            const mapHeight = liveMap.grid?.length || 24;
+            // Convert world coordinates to map tile-space coordinates
+            const tileX = point.x + mapWidth / 2;
+            const tileY = mapHeight / 2 - point.z;
+
+            // Apply Snap-to-Grid
+            const finalX = store.snapToGrid ? Math.floor(tileX) + 0.5 : tileX;
+            const finalY = store.snapToGrid ? Math.floor(tileY) + 0.5 : tileY;
+
+            const newMap = { ...liveMap };
+            newMap.freeformLayers = [...(newMap.freeformLayers || [])];
+            
+            // find or create layer
+            const layerName = store.activeLayerType === 'paint-splat' ? 'Terrain Paint (Splats)' : 'Foliage & Props (2.5D)';
+            let layerIdx = newMap.freeformLayers.findIndex(l => l.name === layerName);
+            let layer: any;
+            if (layerIdx === -1) {
+              layer = {
+                id: `layer_${store.activeLayerType}_${Date.now()}`,
+                name: layerName,
+                type: store.activeLayerType
+              };
+              newMap.freeformLayers.push(layer);
+            } else {
+              layer = { ...newMap.freeformLayers[layerIdx] };
+              newMap.freeformLayers[layerIdx] = layer;
+            }
+            
+            // Figure out asset to use (if GID selected, use its tileset image, else fallback)
+            const activeTs = liveMap.tilesets?.slice().reverse().find((ts: any) => store.activeBrushTileId >= ts.firstgid);
+            const assetUrl = activeTs ? activeTs.imageSource : 'default';
+
+            if (store.activeLayerType === 'paint-splat') {
+              if (brushMode === 'erase') {
+                if (layer.data) {
+                   // erase points within brush radius
+                   Object.keys(layer.data).forEach(key => {
+                     layer.data[key] = layer.data[key].filter((p: any) => 
+                       Math.sqrt((p.x - finalX) ** 2 + (p.y - finalY) ** 2) > (store.brushRadius || 1)
+                     );
+                   });
+                }
+              } else {
+                layer.data = { ...(layer.data || {}) };
+                layer.data[assetUrl] = [...(layer.data[assetUrl] || [])];
+                
+                // Density control
+                const minSqDist = Math.max(0.01, (store.brushRadius * store.brushRadius) / 16);
+                const isTooClose = layer.data[assetUrl].some((p: any) => 
+                  (p.x - finalX) ** 2 + (p.y - finalY) ** 2 < minSqDist
+                );
+                
+                if (!isTooClose || eventType === 'down') {
+                  layer.data[assetUrl].push({
+                    x: finalX,
+                    y: finalY,
+                    scale: store.stampScale || 1,
+                    rotation: 0
+                  });
+                }
+              }
+            } else if (store.activeLayerType === 'free-form' && eventType === 'down') {
+              if (brushMode === 'erase') {
+                if (layer.objects) {
+                   layer.objects = layer.objects.filter((obj: any) => 
+                     Math.sqrt((obj.x - finalX) ** 2 + (obj.y - finalY) ** 2) > (store.brushRadius || 1)
+                   );
+                }
+              } else {
+                layer.objects = [...(layer.objects || [])];
+                layer.objects.push({
+                  id: `prop_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+                  asset: assetUrl,
+                  x: finalX,
+                  y: finalY,
+                  scale: store.stampScale || 1,
+                  rotation: 0
+                });
+              }
+            }
+
+            useGameStore.getState().setActiveMapData(newMap);
+            store.markMapDirty();
+            
+            // Notify engine to redraw immediately
+            window.dispatchEvent(new CustomEvent('studio_map_hot_reload', { detail: { mapDoc: newMap } }));
+            return;
+          }
+          // --- END FREEFORM LAYER HANDLING ---
+
           const target = resolvePaintTarget(liveMap, store.activeLayerIdx);
           if (target.kind === 'unavailable') {
             showToast(target.reason);
@@ -1663,7 +1769,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     } else {
       // Spatial Interaction & Targeting in exploration mode
       engine.enableTilePicking(
-        (r, c, _layerIdx, eventType) => {
+        (r, c, _layerIdx, eventType, point) => {
           if (eventType && eventType !== 'down') return;
           const currentPos = useGameStore.getState().player?.position;
           if (!currentPos) return;
