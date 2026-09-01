@@ -871,6 +871,7 @@ function capturePlaytestSnapshot(state: {
   activeBrushPattern: BrushPattern | null;
   activeLogicTileId: number;
   activeLayerIdx: number;
+  activeLayerType: 'grid' | 'paint-splat' | 'free-form' | 'polygon';
   mapDirty: boolean;
   brushRadius: number;
   brushShape: 'circle' | 'square';

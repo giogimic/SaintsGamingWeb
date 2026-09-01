@@ -1523,7 +1523,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             
             // find or create layer
             const layerName = store.activeLayerType === 'paint-splat' ? 'Terrain Paint (Splats)' : 'Foliage & Props (2.5D)';
-            let layerIdx = newMap.freeformLayers.findIndex(l => l.name === layerName);
+            let layerIdx = newMap.freeformLayers.findIndex((l: any) => l.name === layerName);
             let layer: any;
             if (layerIdx === -1) {
               layer = {
