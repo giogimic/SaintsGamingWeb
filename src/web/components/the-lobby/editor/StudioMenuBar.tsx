@@ -34,6 +34,7 @@ import {
   Sparkles,
   CloudUpload,
   ChevronDown,
+  ChevronRight,
   LayoutGrid,
   Shield,
   Tag,
@@ -186,7 +187,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           {label}
         </button>
         {isActive && (
-          <div className="absolute top-full left-0 mt-1 min-w-[230px] bg-card/95 border border-border/80 shadow-2xl rounded-xl py-1.5 backdrop-blur-2xl z-[150] flex flex-col pointer-events-auto font-mono">
+          <div className="absolute top-full left-0 mt-1 min-w-[230px] max-h-[70vh] overflow-y-auto custom-scrollbar bg-card/95 border border-border/80 shadow-2xl rounded-xl py-1.5 backdrop-blur-2xl z-[150] flex flex-col pointer-events-auto font-mono">
             {children}
           </div>
         )}
@@ -194,9 +195,33 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
     );
   };
 
+  const SubMenu = ({ label, children }: { label: string; children: React.ReactNode }) => {
+    const [open, setOpen] = useState(false);
+    return (
+      <div className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+        <div className="w-full text-left px-3 py-1.5 text-[11px] font-mono flex items-center justify-between text-foreground/90 hover:bg-primary/15 hover:text-foreground cursor-pointer">
+          <div className="flex items-center gap-2.5">
+            <Layers className="w-3.5 h-3.5 text-primary/80" />
+            <span>{label}</span>
+          </div>
+          <ChevronRight className="w-3.5 h-3.5" />
+        </div>
+        {open && (
+          <div className="absolute left-full top-0 ml-1 min-w-[200px] bg-card/95 border border-border/80 shadow-2xl rounded-xl py-1.5 backdrop-blur-2xl z-[160] flex flex-col font-mono">
+            {children}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const MenuSectionLabel = ({ label }: { label: string }) => (
+    <div className="px-3 py-1 text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest select-none">{label}</div>
+  );
+
   const MenuItem = ({ label, shortcut, icon: Icon, onClick, disabled, divider }: any) => {
     if (divider) {
-      return <div className="h-px w-full bg-border/40 my-1" />;
+      return <div className="h-px w-full bg-border/30 my-1" />;
     }
     return (
       <button
@@ -205,14 +230,14 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
         className={`w-full text-left px-3 py-1.5 text-[11px] font-mono flex items-center justify-between group transition-colors cursor-pointer ${
           disabled
             ? 'opacity-40 cursor-not-allowed text-muted-foreground'
-            : 'text-foreground/90 hover:bg-primary/20 hover:text-foreground'
+            : 'text-foreground/90 hover:bg-primary/15 hover:text-foreground'
         }`}
       >
         <div className="flex items-center gap-2.5">
-          {Icon ? <Icon className="w-3.5 h-3.5 text-primary group-hover:scale-110 transition-transform" /> : <div className="w-3.5 h-3.5" />}
+          {Icon ? <Icon className="w-3.5 h-3.5 text-primary/80 group-hover:text-primary group-hover:scale-110 transition-all" /> : <div className="w-3.5 h-3.5" />}
           <span>{label}</span>
         </div>
-        {shortcut && <span className="text-muted-foreground text-[10px]">{shortcut}</span>}
+        {shortcut && <span className="text-muted-foreground/60 text-[10px] ml-4">{shortcut}</span>}
       </button>
     );
   };
@@ -222,7 +247,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
   return (
     <div
       ref={menuRef}
-      className="pointer-events-auto absolute top-0 left-0 right-0 h-10 z-[110] bg-card/85 border-b border-border/60 flex items-center justify-between px-3 select-none backdrop-blur-xl shadow-lg font-mono"
+      className="pointer-events-auto absolute top-0 left-0 right-0 h-10 z-[110] bg-[#050b14]/90 border-b border-border/50 flex items-center justify-between px-3 select-none backdrop-blur-xl shadow-lg font-mono"
     >
       {/* ─── ZONE 1: Identity, Project Context & Primary Menus ─── */}
       <div className="flex items-center gap-2.5">
@@ -362,281 +387,107 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           </button>
         </div>
 
-        {/* Primary Menus */}
+        {/* ── Primary Menus ── */}
         <div className="flex items-center gap-0.5">
+          {/* ── FILE ── */}
           <TopLevelMenu id="file" label="File">
-            <MenuItem
-              label="Map Browser..."
-              icon={Globe}
-              onClick={() => {
-                if (onOpenMapBrowser) onOpenMapBrowser();
-                else openPanel('maps');
-              }}
-            />
-            <MenuItem
-              label="World Atlas (Spatial Grid)..."
-              shortcut="Ctrl+Shift+M"
-              icon={Globe}
-              onClick={() => openPanel('atlas')}
-            />
-            <MenuItem
-              label="New Map..."
-              icon={Folder}
-              onClick={() => {
-                openPanel('build');
-                showToast('Opened World Builder (Create Map)');
-              }}
-            />
-            <MenuItem
-              label="Open Map / Quick Search..."
-              shortcut="Ctrl+K"
-              icon={Search}
-              onClick={() => {
-                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
-              }}
-            />
-            <MenuItem
-              label="Map Diagnostics & Problems"
-              icon={CheckCircle2}
-              onClick={() => openPanel('problems')}
-            />
-            <MenuItem
-              label="Realm Settings & Identity..."
-              icon={Settings}
-              onClick={() => openPanel('settings')}
-            />
+            <MenuItem label="Map Browser..." icon={Globe} onClick={() => { if (onOpenMapBrowser) onOpenMapBrowser(); else openPanel('maps'); }} />
+            <MenuItem label="World Atlas (Spatial Grid)..." shortcut="Ctrl+Shift+M" icon={Globe} onClick={() => openPanel('atlas')} />
+            <MenuItem label="New Map..." icon={Folder} onClick={() => { openPanel('build'); showToast('Opened World Builder (Create Map)'); }} />
+            <MenuItem label="Open Map / Quick Search..." shortcut="Ctrl+K" icon={Search} onClick={() => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true })); }} />
             <MenuItem divider />
-            <MenuItem
-              label="Save Map"
-              shortcut="Ctrl+S"
-              icon={Save}
-              onClick={() => window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT))}
-            />
+            <MenuItem label="Save Map" shortcut="Ctrl+S" icon={Save} onClick={() => window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT))} />
             <MenuItem divider />
-            <MenuItem
-              label="Save & Exit to Lobby"
-              shortcut="Ctrl+Shift+Q"
-              icon={LogOut}
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
-                setTimeout(() => {
-                  window.location.href = '/lobby';
-                }, 500);
-              }}
-            />
-            <MenuItem
-              label="Exit to Lobby"
-              icon={LogOut}
-              onClick={() => {
-                const hasUnsaved = useEditorStore.getState().hasUnsavedChanges || useEditorStore.getState().mapDirty;
-                if (hasUnsaved) {
-                  if (confirm('You have unsaved changes. Exit without saving?')) {
-                    window.location.href = '/lobby';
-                  }
-                } else {
-                  window.location.href = '/lobby';
-                }
-              }}
-            />
+            <MenuItem label="Save & Exit to Lobby" shortcut="Ctrl+Shift+Q" icon={LogOut} onClick={() => { window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT)); setTimeout(() => { window.location.href = '/lobby'; }, 500); }} />
+            <MenuItem label="Exit to Lobby" icon={LogOut} onClick={() => { const hasUnsaved = useEditorStore.getState().hasUnsavedChanges || useEditorStore.getState().mapDirty; if (hasUnsaved) { if (confirm('You have unsaved changes. Exit without saving?')) { window.location.href = '/lobby'; } } else { window.location.href = '/lobby'; } }} />
           </TopLevelMenu>
 
+          {/* ── EDIT ── */}
           <TopLevelMenu id="edit" label="Edit">
-            <MenuItem
-              label="Undo"
-              shortcut="Ctrl+Z"
-              icon={Undo2}
-              onClick={() => {
-                const map = useGameStore.getState().activeMapData;
-                if (!map) return;
-                useEditorStore.getState().triggerUndo(map);
-              }}
-            />
-            <MenuItem
-              label="Redo"
-              shortcut="Ctrl+Y"
-              icon={Redo2}
-              onClick={() => {
-                const map = useGameStore.getState().activeMapData;
-                if (!map) return;
-                useEditorStore.getState().triggerRedo(map);
-              }}
-            />
+            <MenuItem label="Undo" shortcut="Ctrl+Z" icon={Undo2} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().triggerUndo(map); }} />
+            <MenuItem label="Redo" shortcut="Ctrl+Y" icon={Redo2} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().triggerRedo(map); }} />
             <MenuItem divider />
-            <MenuItem
-              label="Cut Selection"
-              shortcut="Ctrl+X"
-              icon={Scissors}
-              onClick={() => {
-                const map = useGameStore.getState().activeMapData;
-                if (!map) return;
-                useEditorStore.getState().cutSelection(map);
-              }}
-            />
-            <MenuItem
-              label="Copy Selection"
-              shortcut="Ctrl+C"
-              icon={Copy}
-              onClick={() => {
-                const map = useGameStore.getState().activeMapData;
-                if (!map) return;
-                useEditorStore.getState().copySelection(map);
-              }}
-            />
-            <MenuItem
-              label="Paste"
-              shortcut="Ctrl+V"
-              icon={Clipboard}
-              onClick={() => {
-                useEditorStore.getState().setIsPasting(true);
-                useEditorStore.getState().setBrushMode('paste');
-              }}
-            />
-            <MenuItem
-              label="Paste in Place"
-              shortcut="Ctrl+Shift+V"
-              icon={Pin}
-              onClick={() => {
-                const map = useGameStore.getState().activeMapData;
-                const clip = useEditorStore.getState().tileClipboard;
-                if (!map || !clip) return;
-                useEditorStore.getState().pasteClipboard(map, null, clip.sourceOrigin.r, clip.sourceOrigin.c);
-              }}
-            />
+            <MenuItem label="Cut Selection" shortcut="Ctrl+X" icon={Scissors} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().cutSelection(map); }} />
+            <MenuItem label="Copy Selection" shortcut="Ctrl+C" icon={Copy} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().copySelection(map); }} />
+            <MenuItem label="Paste" shortcut="Ctrl+V" icon={Clipboard} onClick={() => { useEditorStore.getState().setIsPasting(true); useEditorStore.getState().setBrushMode('paste'); }} />
+            <MenuItem label="Paste in Place" shortcut="Ctrl+Shift+V" icon={Pin} onClick={() => { const map = useGameStore.getState().activeMapData; const clip = useEditorStore.getState().tileClipboard; if (!map || !clip) return; useEditorStore.getState().pasteClipboard(map, null, clip.sourceOrigin.r, clip.sourceOrigin.c); }} />
           </TopLevelMenu>
 
+          {/* ── VIEW ── */}
           <TopLevelMenu id="view" label="View">
-            {/* Viewport Overlays */}
-            <MenuItem
-              label={`Tile Coordinates (XY): ${showEditorCoords ? 'ON' : 'OFF'}`}
-              icon={showEditorCoords ? CheckCircle2 : Eye}
-              onClick={() => {
-                setShowEditorCoords(!showEditorCoords);
-                showToast(`Coordinates Overlay: ${!showEditorCoords ? 'ON' : 'OFF'}`);
-              }}
-            />
-            <MenuItem
-              label={`Warp Gate Overlays: ${showWarpOverlays ? 'ON' : 'OFF'}`}
-              icon={showWarpOverlays ? CheckCircle2 : Eye}
-              onClick={() => {
-                setShowWarpOverlays(!showWarpOverlays);
-                showToast(`Warp Overlays: ${!showWarpOverlays ? 'ON' : 'OFF'}`);
-              }}
-            />
-            <MenuItem
-              label={`Spawn Overlays: ${showSpawnOverlays ? 'ON' : 'OFF'}`}
-              icon={showSpawnOverlays ? CheckCircle2 : Eye}
-              onClick={() => {
-                setShowSpawnOverlays(!showSpawnOverlays);
-                showToast(`Spawn Overlays: ${!showSpawnOverlays ? 'ON' : 'OFF'}`);
-              }}
-            />
-            <MenuItem
-              label={`Studio Free-Cam: ${isStudioFreeCam ? 'ON' : 'OFF'}`}
-              icon={isStudioFreeCam ? CheckCircle2 : Camera}
-              onClick={() => {
-                setStudioFreeCam(!isStudioFreeCam);
-                showToast(isStudioFreeCam ? 'Camera locked to Player' : 'Free-Cam unlocked (WASD / Pan)');
-              }}
-            />
+            <MenuSectionLabel label="Overlays" />
+            <MenuItem label={`Tile Coordinates: ${showEditorCoords ? 'ON' : 'OFF'}`} icon={showEditorCoords ? CheckCircle2 : Eye} onClick={() => { setShowEditorCoords(!showEditorCoords); showToast(`Coordinates: ${!showEditorCoords ? 'ON' : 'OFF'}`); }} />
+            <MenuItem label={`Warp Gates: ${showWarpOverlays ? 'ON' : 'OFF'}`} icon={showWarpOverlays ? CheckCircle2 : Eye} onClick={() => { setShowWarpOverlays(!showWarpOverlays); showToast(`Warp Overlays: ${!showWarpOverlays ? 'ON' : 'OFF'}`); }} />
+            <MenuItem label={`Spawn Points: ${showSpawnOverlays ? 'ON' : 'OFF'}`} icon={showSpawnOverlays ? CheckCircle2 : Eye} onClick={() => { setShowSpawnOverlays(!showSpawnOverlays); showToast(`Spawn Overlays: ${!showSpawnOverlays ? 'ON' : 'OFF'}`); }} />
+            <MenuItem label={`Free-Cam: ${isStudioFreeCam ? 'ON' : 'OFF'}`} icon={isStudioFreeCam ? CheckCircle2 : Camera} onClick={() => { setStudioFreeCam(!isStudioFreeCam); showToast(isStudioFreeCam ? 'Camera locked to Player' : 'Free-Cam unlocked'); }} />
             <MenuItem divider />
-
-            {/* Zoom Controls */}
-            <MenuItem
-              label="Zoom In"
-              shortcut="Ctrl++"
-              icon={ZoomIn}
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent: 125 } }));
-              }}
-            />
-            <MenuItem
-              label="Zoom Out"
-              shortcut="Ctrl+-"
-              icon={ZoomOut}
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent: 80 } }));
-              }}
-            />
-            <MenuItem
-              label="Reset Zoom (100%)"
-              shortcut="Ctrl+0"
-              icon={Crosshair}
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent: 100 } }));
-              }}
-            />
-            <MenuItem
-              label="Fit Map to View"
-              shortcut="Home"
-              icon={Maximize2}
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('studio_fit_map'));
-              }}
-            />
+            <MenuSectionLabel label="Zoom" />
+            <MenuItem label="Zoom In" shortcut="Ctrl++" icon={ZoomIn} onClick={() => { window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent: 125 } })); }} />
+            <MenuItem label="Zoom Out" shortcut="Ctrl+-" icon={ZoomOut} onClick={() => { window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent: 80 } })); }} />
+            <MenuItem label="Reset Zoom (100%)" shortcut="Ctrl+0" icon={Crosshair} onClick={() => { window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent: 100 } })); }} />
+            <MenuItem label="Fit Map to View" shortcut="Home" icon={Maximize2} onClick={() => { window.dispatchEvent(new CustomEvent('studio_fit_map')); }} />
             <MenuItem divider />
-
-            {/* Diagnostics & Tracing */}
-            <MenuItem
-              label="Map Diagnostics & Problems"
-              icon={AlertCircle}
-              onClick={() => openPanel('problems')}
-            />
-            <MenuItem
-              label="Rule Debugger & Script Tracing"
-              icon={Bug}
-              onClick={() => window.dispatchEvent(new CustomEvent('studio_open_rule_debugger'))}
-            />
+            <MenuSectionLabel label="Tools" />
+            <MenuItem label={`Snap to Grid: ${useEditorStore.getState().snapToGrid ? 'ON' : 'OFF'}`} icon={Grid3X3} onClick={() => { const snap = useEditorStore.getState().snapToGrid; useEditorStore.getState().setSnapToGrid(!snap); showToast(`Snap to Grid: ${!snap ? 'ON' : 'OFF'}`); }} />
+            <MenuItem label="Diagnostics & Problems" icon={AlertCircle} onClick={() => openPanel('problems')} />
+            <MenuItem label="Rule Debugger" icon={Bug} onClick={() => window.dispatchEvent(new CustomEvent('studio_open_rule_debugger'))} />
           </TopLevelMenu>
 
-          <TopLevelMenu id="windows" label="Windows">
-            {/* World & Art */}
+          {/* ── WORLD ── */}
+          <TopLevelMenu id="world" label="World">
+            <MenuItem label="World Builder" icon={Folder} onClick={() => openPanel('build')} />
+            <MenuItem label="World Atlas" shortcut="Ctrl+Shift+M" icon={Globe} onClick={() => openPanel('atlas')} />
+            <MenuItem label="Map Browser" icon={Globe} onClick={() => openPanel('maps')} />
+            <MenuItem divider />
+            <MenuItem label="World Events" icon={Sparkles} onClick={() => openPanel('worldevent')} />
+            <MenuItem label="Streaming Inspector" icon={Compass} onClick={() => openPanel('streaming')} />
+          </TopLevelMenu>
+
+          {/* ── PAINT ── */}
+          <TopLevelMenu id="paint" label="Paint">
             <MenuItem label="Tile Selector" icon={LayoutGrid} onClick={() => openPanel('tileset')} />
             <MenuItem label="Logic Painter" icon={Shield} onClick={() => openPanel('logic')} />
             <MenuItem label="Properties / Inspector" icon={Settings} onClick={() => openPanel('properties')} />
-            <MenuItem label="World Builder" icon={Folder} onClick={() => openPanel('build')} />
-            <MenuItem label="World Atlas" icon={Globe} onClick={() => openPanel('atlas')} />
-            <MenuItem label="Map Browser" icon={Globe} onClick={() => openPanel('maps')} />
-            <MenuItem label="Asset Browser" icon={Box} onClick={() => openPanel('assets')} />
+            <MenuItem divider />
             <MenuItem label="Prefab Builder & Stamps" icon={Package} onClick={() => openPanel('prefab')} />
             <MenuItem label="Animation Studio" icon={Film} onClick={() => openPanel('animations')} />
-            <MenuItem label="Streaming Inspector" icon={Compass} onClick={() => openPanel('streaming')} />
-            <MenuItem divider />
+            <MenuItem label="Asset Browser" icon={Box} onClick={() => openPanel('assets')} />
+          </TopLevelMenu>
 
-            {/* Entities & Encounters */}
-            <MenuItem label="NPC Studio" icon={Users} onClick={() => openPanel('npc')} />
-            <MenuItem label="Creature Studio" icon={PawPrint} onClick={() => openPanel('creature')} />
-            <MenuItem label="Monster Spawners" icon={Sword} onClick={() => openPanel('spawner')} />
-            <MenuItem label="Mount Studio" icon={Sparkles} onClick={() => openPanel('mounts')} />
-            <MenuItem label="Hero Studio (Loadouts & Classes)" icon={UserCheck} onClick={() => setStudioMode('hero')} />
-            <MenuItem divider />
+          {/* ── CONTENT ── */}
+          <TopLevelMenu id="content" label="Content">
+            <SubMenu label="Entities">
+              <MenuItem label="NPC Studio" icon={Users} onClick={() => openPanel('npc')} />
+              <MenuItem label="Creature Studio" icon={PawPrint} onClick={() => openPanel('creature')} />
+              <MenuItem label="Monster Spawners" icon={Sword} onClick={() => openPanel('spawner')} />
+              <MenuItem label="Mount Studio" icon={Sparkles} onClick={() => openPanel('mounts')} />
+              <MenuItem label="Hero Studio" icon={UserCheck} onClick={() => setStudioMode('hero')} />
+            </SubMenu>
+            <SubMenu label="Narrative">
+              <MenuItem label="Quest Studio" icon={ScrollText} onClick={() => openPanel('quest')} />
+              <MenuItem label="Dialogue Editor" icon={MessageSquare} onClick={() => openPanel('dialogue')} />
+            </SubMenu>
+            <SubMenu label="Economy">
+              <MenuItem label="Item Studio" icon={Package} onClick={() => openPanel('items')} />
+              <MenuItem label="Recipe & Crafting" icon={Flame} onClick={() => openPanel('recipes')} />
+              <MenuItem label="Shop & Merchants" icon={Store} onClick={() => openPanel('shop')} />
+              <MenuItem label="Loot Manager" icon={Coins} onClick={() => openPanel('loot')} />
+              <MenuItem label="Profession Studio" icon={Wrench} onClick={() => openPanel('classes')} />
+              <MenuItem label="Dungeon Studio" icon={Shield} onClick={() => openPanel('dungeons')} />
+            </SubMenu>
+          </TopLevelMenu>
 
-            {/* Quests & Scripts */}
-            <MenuItem label="Quest Studio" icon={ScrollText} onClick={() => openPanel('quest')} />
-            <MenuItem label="Dialogue Editor" icon={MessageSquare} onClick={() => openPanel('dialogue')} />
-            <MenuItem divider />
-
-            {/* Economy, Crafting & Dungeons */}
-            <MenuItem label="Item Studio" icon={Package} onClick={() => openPanel('items')} />
-            <MenuItem label="Recipe & Crafting" icon={Flame} onClick={() => openPanel('recipes')} />
-            <MenuItem label="Shop & Merchants" icon={Store} onClick={() => openPanel('shop')} />
-            <MenuItem label="Loot Manager" icon={Coins} onClick={() => openPanel('loot')} />
-            <MenuItem label="Profession Studio" icon={Wrench} onClick={() => openPanel('classes')} />
-            <MenuItem label="Dungeon Studio" icon={Shield} onClick={() => openPanel('dungeons')} />
-            <MenuItem divider />
-
-            {/* Simulation, Ops & Diagnostics */}
+          {/* ── TOOLS ── */}
+          <TopLevelMenu id="tools" label="Tools">
             <MenuItem label="Gameplay & Combat Hub" icon={Activity} onClick={() => openPanel('gameplay')} />
-            <MenuItem label="World Events" icon={Sparkles} onClick={() => openPanel('worldevent')} />
             <MenuItem label="Simulation Presets" icon={Activity} onClick={() => openPanel('simulation')} />
-            <MenuItem label="Problems & Diagnostics" icon={AlertCircle} onClick={() => openPanel('problems')} />
+            <MenuItem divider />
             <MenuItem label="Interface Designer" icon={Palette} onClick={() => openPanel('interface')} />
             <MenuItem label="Publish & Releases" icon={CloudUpload} onClick={() => openPanel('publishing')} />
+            <MenuItem divider />
             <MenuItem label="Dev Tools & Server Controls" icon={Terminal} onClick={() => openPanel('dev')} />
-            <MenuItem label="Rule Debugger & Tracing" icon={Bug} onClick={() => window.dispatchEvent(new CustomEvent('studio_open_rule_debugger'))} />
             <MenuItem label="Realm Settings" icon={Settings} onClick={() => openPanel('settings')} />
             <MenuItem divider />
-
-
             <MenuItem
               label="Reset Workspace Layout"
               onClick={() => {
@@ -646,20 +497,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             />
           </TopLevelMenu>
 
-          <TopLevelMenu id="mode" label="Mode">
-            {Object.entries(STUDIO_MODE_META).map(([key, meta]) => {
-              if (key === 'test') return null;
-              return (
-                <MenuItem
-                  key={key}
-                  label={meta.label || (meta.canonical.charAt(0).toUpperCase() + meta.canonical.slice(1))}
-                  icon={studioMode === key ? CheckCircle2 : undefined}
-                  onClick={() => handleSwitchMode(key as StudioMode)}
-                />
-              );
-            })}
-          </TopLevelMenu>
-
+          {/* ── HELP ── */}
           <TopLevelMenu id="help" label="Help">
             <MenuItem label="Keyboard Shortcuts" shortcut="?" icon={Keyboard} onClick={() => setShortcutsOpen(true)} />
             <MenuItem label="Activity Log" icon={Bell} onClick={() => setNotificationHistoryOpen(true)} />
