@@ -21,6 +21,8 @@ import { DEFAULT_STUDIO_TILESETS, ensureMapHasStudioTilesets } from '@/shared/ga
 import { TerrainBrushPalette } from './TerrainBrushPalette';
 import { TerrainAtlasEditor } from './TerrainAtlasEditor';
 import { BrushSettingsBar } from './BrushSettingsBar';
+import { SheetSlicerPanel } from './SheetSlicerPanel';
+import { PropLibraryPanel } from './PropLibraryPanel';
 import { soundSynth } from '@/engine/sound-synth';
 import {
   WindowMenuBar,
@@ -28,13 +30,14 @@ import {
   WindowMenuTabGroup,
   WindowMenuDivider,
 } from '../WindowMenuBar';
+import { TreePine, Scissors } from 'lucide-react';
 
 /**
  * Reworked Unified Tile & Terrain Selector Panel.
  *
  * Provides a unified 2.5D/3D-first painting suite where creators can:
- * - Pick textures once from visual tilesets or material swatches.
- * - Switch between Grid Paint, Continuous Splat, Smart Border 9-Slice, and Props modes.
+ * - Pick textures once from visual tilesets, material swatches, or sliced spritesheets.
+ * - Switch between Grid Paint, Continuous Splat, Props & Foliage, Sheet Slicer, and Smart Border.
  * - Customize brush geometry (Circle, Square, Diamond, Star, Polygon), radius, scatter, and opacity.
  */
 export const TileSelectorPanel: React.FC = () => {
@@ -51,7 +54,7 @@ export const TileSelectorPanel: React.FC = () => {
   const activeLayerType = useEditorStore((s) => s.activeLayerType);
   const setActiveLayerType = useEditorStore((s) => s.setActiveLayerType);
 
-  const [toolView, setToolView] = React.useState<'tileset' | 'splat' | 'smart-border' | 'props'>('tileset');
+  const [toolView, setToolView] = React.useState<'tileset' | 'splat' | 'props' | 'slicer' | 'smart-border'>('tileset');
 
   const handleBrushSelect = React.useCallback((gid: number) => {
     setActiveBrushTileId(gid, true);
@@ -77,14 +80,17 @@ export const TileSelectorPanel: React.FC = () => {
       setToolView('splat');
       setActiveLayerType('paint-splat');
       showToast('Switched to Continuous Terrain Splat Mode');
-    } else if (tab === 'smart-border') {
-      setToolView('smart-border');
-      setActiveLayerType('grid');
-      showToast('Switched to Smart Border (Auto-Tiling) Mode');
     } else if (tab === 'free-form') {
       setToolView('props');
       setActiveLayerType('free-form');
       showToast('Switched to 2.5D Props & Foliage Mode');
+    } else if (tab === 'slicer') {
+      setToolView('slicer');
+      showToast('Opened Sheet Slicer & Cutter');
+    } else if (tab === 'smart-border') {
+      setToolView('smart-border');
+      setActiveLayerType('grid');
+      showToast('Switched to Smart Border (Auto-Tiling) Mode');
     }
   };
 
@@ -177,17 +183,20 @@ export const TileSelectorPanel: React.FC = () => {
   const currentTabId =
     toolView === 'splat'
       ? 'paint-splat'
-      : toolView === 'smart-border'
-      ? 'smart-border'
       : toolView === 'props'
       ? 'free-form'
+      : toolView === 'slicer'
+      ? 'slicer'
+      : toolView === 'smart-border'
+      ? 'smart-border'
       : 'grid';
 
   const tabs = [
-    { id: 'grid', label: 'Grid Tiles', icon: Grid3X3 },
+    { id: 'grid', label: 'Grid Paint', icon: Grid3X3 },
     { id: 'paint-splat', label: 'Terrain Splat', icon: Paintbrush },
+    { id: 'free-form', label: 'Props & Foliage', icon: TreePine },
+    { id: 'slicer', label: 'Sheet Slicer', icon: Scissors },
     { id: 'smart-border', label: 'Smart Border', icon: Wand2 },
-    { id: 'free-form', label: 'Props', icon: Box },
   ];
 
   return (
@@ -219,13 +228,21 @@ export const TileSelectorPanel: React.FC = () => {
 
       {/* ── Scrollable Body ── */}
       <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
-        {/* Unified Brush Settings Controls */}
-        <BrushSettingsBar />
+        {/* Unified Brush Settings Controls (shown for painting modes) */}
+        {toolView !== 'slicer' && <BrushSettingsBar />}
 
         {/* Mode-Specific Content */}
         {toolView === 'splat' ? (
           <div className="space-y-3">
-            <TerrainBrushPalette />
+            <TerrainBrushPalette onOpenSlicer={() => setToolView('slicer')} />
+          </div>
+        ) : toolView === 'props' ? (
+          <div className="space-y-3">
+            <PropLibraryPanel onOpenSlicer={() => setToolView('slicer')} />
+          </div>
+        ) : toolView === 'slicer' ? (
+          <div className="h-[600px] rounded-lg overflow-hidden border border-border/40">
+            <SheetSlicerPanel />
           </div>
         ) : toolView === 'smart-border' ? (
           <div className="space-y-3">

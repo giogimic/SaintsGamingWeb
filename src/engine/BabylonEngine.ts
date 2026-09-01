@@ -1214,9 +1214,12 @@ export class BabylonEngine {
     this.cameraTargetZ = worldZ;
     const pitch = this.cameraProfile.pitch || Math.PI / 4;
     const dist = this.cameraProfile.distance || 14;
-    const camY = Math.max(2, dist * Math.sin(pitch));
-    const camOffsetZ = -Math.max(0.01, dist * Math.cos(pitch));
-    this.camera.position = new Vector3(worldX, camY, worldZ + camOffsetZ);
+    const yaw = this.cameraYaw || 0;
+    const camY = Math.max(1.5, dist * Math.sin(pitch));
+    const horizDist = dist * Math.cos(pitch);
+    const offsetX = -horizDist * Math.sin(yaw);
+    const offsetZ = -horizDist * Math.cos(yaw);
+    this.camera.position = new Vector3(worldX + offsetX, camY, worldZ + offsetZ);
     this.camera.setTarget(new Vector3(worldX, 0, worldZ));
     this.cameraSnapped = true;
   }
@@ -1251,9 +1254,12 @@ export class BabylonEngine {
 
     const pitch = this.cameraProfile.pitch || Math.PI / 4;
     const dist = this.cameraProfile.distance || 14;
-    const camY = Math.max(2, dist * Math.sin(pitch));
-    const camOffsetZ = -Math.max(0.01, dist * Math.cos(pitch));
-    const targetCamPos = new Vector3(targetX, camY, targetZ + camOffsetZ);
+    const yaw = this.cameraYaw || 0;
+    const camY = Math.max(1.5, dist * Math.sin(pitch));
+    const horizDist = dist * Math.cos(pitch);
+    const offsetX = -horizDist * Math.sin(yaw);
+    const offsetZ = -horizDist * Math.cos(yaw);
+    const targetCamPos = new Vector3(targetX + offsetX, camY, targetZ + offsetZ);
     
     // Spring damper / Decoupled Physics with snappy responsive follow
     const dt = this.engine.getDeltaTime() / 1000.0;
@@ -1356,17 +1362,28 @@ export class BabylonEngine {
   public applyPlayerCameraStyle(style: 'isometric' | 'follow45' | 'topdown' | 'free') {
     this.cameraSettings.playerCameraStyle = style;
     if (style === 'topdown') {
-      this.cameraProfile.pitch = Math.PI / 2 - 0.02;
+      this.camera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
+      this.cameraProfile.pitch = Math.PI / 2 - 0.01;
       this.cameraProfile.distance = 14;
       this.cameraYaw = 0;
+      this.updateCameraAspect(this.camera.orthoTop || 10);
     } else if (style === 'follow45') {
+      this.camera.mode = FreeCamera.PERSPECTIVE_CAMERA;
+      this.camera.fov = this.cameraSettings.fov || 0.8;
       this.cameraProfile.pitch = Math.PI / 4;
       this.cameraProfile.distance = 16;
       this.cameraYaw = 0;
+    } else if (style === 'free') {
+      this.camera.mode = FreeCamera.PERSPECTIVE_CAMERA;
+      this.camera.fov = this.cameraSettings.fov || 0.8;
+      this.cameraProfile.pitch = this.cameraPitch || Math.PI / 4;
+      this.cameraProfile.distance = this.cameraDistance || 18;
     } else if (style === 'isometric') {
+      this.camera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
       this.cameraProfile.pitch = this.cameraSettings.isometricPitch || Math.PI / 4;
       this.cameraProfile.distance = this.cameraSettings.isometricDistance || 14;
       this.cameraYaw = 0;
+      this.updateCameraAspect(this.camera.orthoTop || 10);
     }
     if (!this.editorCameraMode) {
       this.snapCameraTo(this.cameraTargetX, this.cameraTargetZ);
@@ -2372,6 +2389,10 @@ export class BabylonEngine {
 
     // Refresh high-contrast editor map boundaries (visible only in editor mode)
     this.updateEditorMapBorders();
+
+    if (!this.editorCameraMode) {
+      this.applyPlayerCameraStyle(this.cameraSettings.playerCameraStyle);
+    }
   }
 
   private applyTileMaterial(mat: StandardMaterial, tileId: number, r: number = 0, c: number = 0, isBlock: boolean = false) {

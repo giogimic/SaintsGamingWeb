@@ -59,6 +59,10 @@ export const CameraSettingsPanel: React.FC = () => {
   const [isometricPitchAngle, setIsometricPitchAngle] = useState(45); // degrees tilt
 
   // Player / In-Game Camera State
+  const activeMapData = useGameStore((s) => s.activeMapData);
+  const [allowCustomPlayerCamera, setAllowCustomPlayerCamera] = useState<boolean>(
+    Boolean((activeMapData as any)?.allowCustomCamera ?? (activeMapData as any)?.allowCustomPlayerCamera ?? false)
+  );
   const [playerCameraStyle, setPlayerCameraStyle] = useState<'isometric' | 'follow45' | 'topdown' | 'free'>('isometric');
   const [followSmoothing, setFollowSmoothing] = useState(35); // percent
   const [borderClamping, setBorderClamping] = useState(true);
@@ -495,9 +499,46 @@ export const CameraSettingsPanel: React.FC = () => {
         {/* TAB 2: PLAYER / IN-GAME CAMERA DEFAULTS */}
         {activeTab === 'player' && (
           <div className="space-y-4">
+            {/* Player Permission: Allow Custom Perspective */}
+            <div className="p-2.5 rounded-lg bg-[#0a1628]/50 border border-border/30 space-y-2">
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={allowCustomPlayerCamera}
+                  onChange={(e) => {
+                    soundSynth?.playUiClick?.();
+                    const val = e.target.checked;
+                    setAllowCustomPlayerCamera(val);
+                    if (activeMapData) {
+                      (activeMapData as any).allowCustomCamera = val;
+                      (activeMapData as any).allowCustomPlayerCamera = val;
+                    }
+                  }}
+                  className="accent-primary rounded mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="text-[10px] font-bold text-foreground flex items-center gap-1.5">
+                    <span>Allow Players to Choose Perspective</span>
+                    <span className={`text-[8px] px-1.5 py-0.2 rounded uppercase font-mono font-bold ${
+                      allowCustomPlayerCamera
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                        : 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                    }`}>
+                      {allowCustomPlayerCamera ? 'Unlocked' : 'Locked by Author'}
+                    </span>
+                  </div>
+                  <div className="text-[8px] text-muted-foreground mt-0.5">
+                    {allowCustomPlayerCamera
+                      ? 'Players in-game can switch between 2.5D Isometric, Follow 45°, Top-Down, or Free Orbit via their ESC menu.'
+                      : 'All players will be strictly locked to the Author Default View Mode chosen below.'}
+                  </div>
+                </div>
+              </label>
+            </div>
+
             <div className="p-2.5 rounded-lg bg-[#0a1628]/50 border border-border/30 space-y-3">
               <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                Default Player View Mode
+                Author Default Player View Mode
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {[
