@@ -1594,7 +1594,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             store.markMapDirty();
             
             // Notify engine to redraw immediately
-            window.dispatchEvent(new CustomEvent('studio_map_hot_reload', { detail: { mapDoc: newMap } }));
+            window.dispatchEvent(new CustomEvent(STUDIO_MAP_HOT_RELOAD_EVENT, { detail: { mapDoc: newMap } }));
             return;
           }
           // --- END FREEFORM LAYER HANDLING ---
@@ -2094,6 +2094,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         tileSize: 1,
         tiles: map.grid,
         tileLayers: map.tileLayers,
+        freeformLayers: map.freeformLayers,
         tilesets: map.tilesets,
         npcs: [],
       });

@@ -38,6 +38,7 @@ async function loadMapPayload(slug: string) {
       npcs: JSON.parse(worldMap.npcsData || "[]"),
       encounterPool: JSON.parse(worldMap.encountersData || "[]"),
       tileLayers,
+      freeformLayers: JSON.parse(worldMap.freeformLayersData || "[]"),
       tilesets,
       version: worldMap.version,
       source: "worldMap" as const,
@@ -104,6 +105,7 @@ export async function GET(
         npcs: [],
         encounterPool: [],
         tileLayers: [],
+        freeformLayers: [],
         tilesets: [],
         version: 0,
         source: 'worldMap' as const,
@@ -263,6 +265,7 @@ export async function POST(
               tilesetsData: JSON.stringify(visualsForWrite.tilesets || []),
             }
           : {}),
+        ...(body.freeformLayers ? { freeformLayersData: JSON.stringify(body.freeformLayers) } : {}),
         version: { increment: 1 },
       },
       create: {
@@ -275,6 +278,7 @@ export async function POST(
         encountersData: JSON.stringify(body.encounterPool || []),
         entitiesData: JSON.stringify(entitiesPayload),
         tileLayersData: JSON.stringify(visualsForCreate.tileLayers || []),
+        freeformLayersData: JSON.stringify(body.freeformLayers || []),
         tilesetsData: JSON.stringify(visualsForCreate.tilesets || []),
       },
     });

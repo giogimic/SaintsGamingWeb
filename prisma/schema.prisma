@@ -767,8 +767,9 @@ model WorldMap {
   npcsData       String // JSON for NPC dialogues/teams
   encountersData String  @default("[]") // JSON for wild beast encounters
   entitiesData   String  @default("[]") // JSON for EntityInstanceV1 records (Bible 20 E2)
-  tileLayersData String  @default("[]") // JSON for TMX tile layers
-  tilesetsData   String  @default("[]") // JSON for tilesets metadata
+  tileLayersData     String  @default("[]") // JSON for TMX tile layers
+  freeformLayersData String  @default("[]") // JSON for 2.5D freeform layers (splats, props, polygons)
+  tilesetsData       String  @default("[]") // JSON for tilesets metadata
   version        Int     @default(1)
 
   // Rich Map Metadata

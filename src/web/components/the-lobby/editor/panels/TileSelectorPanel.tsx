@@ -25,16 +25,18 @@ export const TileSelectorPanel: React.FC = () => {
   const setActiveLayerIdx = useEditorStore((s) => s.setActiveLayerIdx);
   const markMapDirty = useEditorStore((s) => s.markMapDirty);
 
+  const activeLayerType = useEditorStore((s) => s.activeLayerType);
+
   const handleBrushSelect = React.useCallback((gid: number) => {
     setActiveBrushTileId(gid, true);
-    if (useEditorStore.getState().activeLayerIdx === -1) {
+    if (useEditorStore.getState().activeLayerIdx === -1 && useEditorStore.getState().activeLayerType === 'grid') {
       setActiveLayerIdx(0);
     }
   }, [setActiveBrushTileId, setActiveLayerIdx]);
 
   const handleBrushSelectPattern = React.useCallback((pattern: { w: number; h: number; gids: number[][] } | null) => {
     setActiveBrushPattern(pattern);
-    if (useEditorStore.getState().activeLayerIdx === -1) {
+    if (useEditorStore.getState().activeLayerIdx === -1 && useEditorStore.getState().activeLayerType === 'grid') {
       setActiveLayerIdx(0);
     }
   }, [setActiveBrushPattern, setActiveLayerIdx]);
@@ -137,7 +139,7 @@ export const TileSelectorPanel: React.FC = () => {
         </div>
         <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
           <Layers className="h-3 w-3" />
-          <span>Layer: {activeLayerIdx === -1 ? 'Collision Layer' : `Layer ${activeLayerIdx}`}</span>
+          <span>Layer: {activeLayerType !== 'grid' ? (activeLayerType === 'paint-splat' ? 'Terrain Paint (Splat)' : activeLayerType === 'free-form' ? 'Foliage & Props (2.5D)' : 'Polygon') : (activeLayerIdx === -1 ? 'Collision Layer' : `Layer ${activeLayerIdx}`)}</span>
         </div>
       </div>
 

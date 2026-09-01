@@ -1,3 +1,11 @@
+# 2.1.601
+- **2.5D Freeform Layer Hot-Reload & Database Persistence Fixes**:
+  - **Prisma Database Schema**: Added `freeformLayersData` field to the `WorldMap` SQLite table and ran `npx prisma db push` to synchronize local database engines.
+  - **API Route Persistence**: Updated `/api/maps/[slug]` (`route.ts`) GET & POST endpoints to load and save `freeformLayersData`.
+  - **Studio Save Payload**: Updated `StudioEditorShell.tsx` `performSave()` to include `freeformLayers` in the serialized map payload.
+  - **Hot-Reload Sync**: Fixed event name mismatch in `GameCanvasBabylon.tsx` (switching dispatch to `STUDIO_MAP_HOT_RELOAD_EVENT`) and ensured `freeformLayers` is passed into `engine.loadTilemap(...)` on hot reload.
+  - **UI Selection Integration**: Updated `TileSelectorPanel.tsx` to display active layer modes (`Terrain Paint`, `Foliage & Props`, `Polygon`, or `Grid Layer`) and fixed tile selection callbacks to preserve freeform layer modes.
+
 # 2.1.600
 - **TypeScript Build & Import Integrity**:
   - Added missing `Quaternion` import from `@babylonjs/core` in `BabylonEngine.ts`.
