@@ -87,14 +87,14 @@ export default function TargetFrame() {
   return (
     <div className="pointer-events-none flex flex-col items-center select-none font-mono" data-testid="target-frame">
       <div
-        className={`pointer-events-auto min-w-[280px] md:min-w-[320px] ${theme.palette.glassBg} border ${borderColor} ${radiusClass} p-3.5 backdrop-blur-xl relative overflow-hidden`}
+        className={`pointer-events-auto min-w-[260px] md:min-w-[300px] bg-black/40 border border-white/10 ${radiusClass} p-2.5 backdrop-blur-xl relative overflow-hidden transition-all hover:border-amber-400/30`}
         style={{
           boxShadow: hudConfig?.borderGlow ? theme.palette.accentGlow : '0 8px 30px rgba(0,0,0,0.7)',
           opacity: hudConfig?.opacity ?? 0.95,
         }}
       >
         {/* Header: Icon, Target Name & Badges */}
-        <div className={`flex items-center justify-between pb-2 mb-2 border-b ${theme.palette.border}`}>
+        <div className="flex items-center justify-between pb-1.5 mb-2 border-b border-white/10">
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-6 h-6 rounded-lg bg-black/80 border border-white/10 flex items-center justify-center shrink-0">
               <Crosshair
@@ -213,7 +213,7 @@ export default function TargetFrame() {
 
         {/* Player Quick Actions */}
         {isPlayer && (
-          <div className={`flex items-center gap-1.5 pt-2 mt-2 border-t ${theme.palette.border} justify-end`}>
+          <div className="flex items-center gap-1.5 pt-2 mt-2 border-t border-white/10 justify-end">
             <button
               onClick={handleWhisper}
               className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[9px] font-bold transition-colors cursor-pointer"

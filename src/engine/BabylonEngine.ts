@@ -2781,8 +2781,8 @@ export class BabylonEngine {
         if (this.canvas) this.canvas.style.cursor = 'default';
         return;
       }
-      // Hide standard mouse cursor in the paint & highlight area so the 3D reticle acts as cursor
-      if (this.canvas && this.canvas.style.cursor !== 'none') this.canvas.style.cursor = 'none';
+      // Keep natural cursor visible
+      if (this.canvas && this.canvas.style.cursor === 'none') this.canvas.style.cursor = 'default';
 
       // Memoize tile cell hover reticle rebuilds, but always trigger hover callback if point changes
       const sameCell = this.lastHoveredR === resolved.r && this.lastHoveredC === resolved.c;
@@ -3268,11 +3268,20 @@ export class BabylonEngine {
 
     if (this.patternPreviewMesh) this.patternPreviewMesh.isVisible = false;
 
-    // 2. Unified Brush Footprint Structure (1x1 or multi-tile Circle / Square)
+    // 2. Unified Brush Footprint Structure (multi-tile brush radius or fill/erase only)
     const rad = Math.max(0, this.brushRadius - 1);
     const span = rad * 2 + 1;
     const isErase = this.brushMode === 'erase';
     const isFill = this.brushMode === 'fill';
+
+    // Suppress 1x1 green ground reticle on hover so the standard cursor acts as the indicator
+    if (rad === 0 && !isErase && !isFill) {
+      if (this.footprintUnifiedMesh) this.footprintUnifiedMesh.isVisible = false;
+      if (this.hoverReticleMesh) this.hoverReticleMesh.isVisible = false;
+      if (this.footprintSqMesh) this.footprintSqMesh.isVisible = false;
+      this.clearFootprintCircMeshes();
+      return;
+    }
     const stroke = isErase
       ? '#f43f5e'
       : isFill

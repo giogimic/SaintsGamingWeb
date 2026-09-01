@@ -226,13 +226,13 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
       }}
     >
       <div
-        className={`w-full ${theme.palette.glassBg} border ${theme.palette.border} ${radiusClass} p-2.5 backdrop-blur-xl relative overflow-hidden flex flex-col gap-2`}
+        className={`w-full bg-black/40 border border-white/10 ${radiusClass} p-2 backdrop-blur-xl relative overflow-hidden flex flex-col gap-1.5 transition-all hover:border-amber-400/30`}
         style={{
           boxShadow: hudConfig?.borderGlow ? theme.palette.accentGlow : undefined,
         }}
       >
         {/* 1. Header Action Row: Quick Navigation Buttons */}
-        <div className={`flex items-center justify-between gap-1 pb-1.5 border-b ${theme.palette.border}`}>
+        <div className="flex items-center justify-between gap-1 pb-1 border-b border-white/10">
           <button
             type="button"
             onClick={handleOpenOptionsClick}
@@ -286,7 +286,7 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
         </div>
 
         {/* 2. Middle Section: Radar Thumbnail with Compass Ticks */}
-        <div className={`relative h-28 w-full overflow-hidden ${radarShapeClass} border ${theme.palette.border} bg-[#02060a] shadow-inner`}>
+        <div className={`relative h-28 w-full overflow-hidden ${radarShapeClass} border border-white/10 bg-[#02060a] shadow-inner`}>
           <canvas ref={canvasRef} width={160} height={120} className="absolute inset-0 h-full w-full opacity-90" />
 
           {/* Compass Cardinal Overlays */}
@@ -302,7 +302,7 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
         </div>
 
         {/* 3. Footer Line: Location Label & Coordinates Readout */}
-        <div className={`flex flex-col gap-1 pt-1.5 border-t ${theme.palette.border}`}>
+        <div className="flex flex-col gap-1 pt-1.5 border-t border-white/10">
           <div className="flex items-center gap-1.5 text-[10px] text-slate-100 font-black truncate">
             <Map className="h-3 w-3 shrink-0 text-amber-400" />
             <span className="truncate">

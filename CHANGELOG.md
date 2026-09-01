@@ -1,3 +1,9 @@
+# 2.1.611
+- **In-Game HUD Overhaul, Hover Reticle Removal & Collapsible Quick Menu**:
+  - **Removed Ugly Green Tile Hover Reticle (`BabylonEngine.ts`)**: Suppressed the green square tile bounding box on passive mouse hover in both the Game and Studio, restoring the standard cursor as the indicator while preserving interactive click ping markers.
+  - **Collapsible Quick Menu & Custom Favorited Actions (`ClassicPanel.tsx`)**: Replaced the static menu row with a sleek, collapsible floating launcher displaying user-favorited quick actions by default, an upward slide-out drawer revealing all game modules (Inventory, Skills, Equipment, Quests, Dex, GTC, Party, Achievements, Studio, Options), and a quick favorite customizer with localStorage persistence.
+  - **Modular Floating Glass HUD Overhaul**: Replaced heavy monolithic container boxes across `PlayerVitalsHud.tsx`, `target-frame.tsx`, `MiniMapRadar.tsx`, `Hotbar.tsx`, `PeerPresenceHud.tsx`, `quest-tracker-overlay.tsx`, and `HudPanelShell.tsx` with clean, modular, translucent dark glass (`bg-black/40 backdrop-blur-xl border border-white/10 hover:border-amber-400/30`).
+
 # 2.1.610
 - **Purge 3rd-Party Trademarked Game References & New AI Policy Rule**:
   - **Renamed Component (`ClassicBattleGauge.tsx`)**: Renamed `PokemonBattleGauge.tsx` to `ClassicBattleGauge.tsx` and purged all trademarked names across component internals, types, and comments.
