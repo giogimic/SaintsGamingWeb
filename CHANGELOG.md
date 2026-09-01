@@ -1,3 +1,11 @@
+# 2.1.612
+- **Studio Modernization, Window Restyling, Sub-Menu Architecture & Splat Mode Terrain Palette**:
+  - **Draggable Window Frame Overhaul (`DraggablePanel.tsx`)**: Completely redesigned floating panels to match the authoritative Saints Gaming card aesthetic with deep glass (`bg-[#050b14]/90 backdrop-blur-xl`), gold accent borders (`border-primary/40`), clean `sg-text-gradient` title bars, secondary `menuBar` toolbar slot, polished window controls, and subtle corner resize grips.
+  - **Sub-Menu Navigation Architecture (`StudioMenuBar.tsx`)**: Reorganized the monolithic 30+ item "Windows" dropdown into structured top-level menus (**World**, **Paint**, **Content** with flyout sub-menus for Entities/Narrative/Economy, and **Tools**), keeping the header clean and accessible.
+  - **Terrain Brush Palette & Splat Mode Rework (`TerrainBrushPalette.tsx`, `editor-store.ts`)**: Built a dedicated terrain painting tool with visual texture swatches extracted from loaded tilesets, brush size/shape controls, opacity slider, scatter/density controls, rotation randomization, and quick terrain presets (Grass, Rough Terrain, Path Dirt, Scatter Stones).
+  - **Tabbed Tile Selector Navigation (`TileSelectorPanel.tsx`)**: Added tabbed navigation (`Grid Tiles` | `Terrain Paint` | `Props`) for switching paint workflows seamlessly, rendering the new `TerrainBrushPalette` when in terrain splat mode.
+  - **Bottom Toolbar Cleanup (`StudioBottomToolbar.tsx`)**: Removed redundant layer mode buttons from the bottom bar, consolidating layer type selection into the Tile Selector tabs.
+
 # 2.1.611
 - **In-Game HUD Overhaul, Hover Reticle Removal & Collapsible Quick Menu**:
   - **Removed Ugly Green Tile Hover Reticle (`BabylonEngine.ts`)**: Suppressed the green square tile bounding box on passive mouse hover in both the Game and Studio, restoring the standard cursor as the indicator while preserving interactive click ping markers.

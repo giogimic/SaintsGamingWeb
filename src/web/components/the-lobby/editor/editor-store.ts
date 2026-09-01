@@ -290,6 +290,14 @@ interface EditorState {
   snapToGrid: boolean;
   setSnapToGrid: (snap: boolean) => void;
   
+  // Splat Terrain Paint mode controls
+  splatOpacity: number;
+  setSplatOpacity: (opacity: number) => void;
+  splatScatter: number;
+  setSplatScatter: (scatter: number) => void;
+  splatRotationRandomize: boolean;
+  setSplatRotationRandomize: (enabled: boolean) => void;
+  
   // Gate Pairing and Placement Wizard State
   pendingGateConnection: {
     originMapId: string;
@@ -1011,6 +1019,21 @@ export const useEditorStore = create<EditorState>()(
       setSnapToGrid: (snap: boolean) =>
         set((state) => {
           state.snapToGrid = snap;
+        }),
+      splatOpacity: 1.0,
+      setSplatOpacity: (opacity: number) =>
+        set((state) => {
+          state.splatOpacity = Math.max(0.05, Math.min(1.0, opacity));
+        }),
+      splatScatter: 0.5,
+      setSplatScatter: (scatter: number) =>
+        set((state) => {
+          state.splatScatter = Math.max(0.0, Math.min(1.0, scatter));
+        }),
+      splatRotationRandomize: false,
+      setSplatRotationRandomize: (enabled: boolean) =>
+        set((state) => {
+          state.splatRotationRandomize = enabled;
         }),
       activePrefabId: null,
       prefabs: [],
