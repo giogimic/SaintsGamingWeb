@@ -597,6 +597,12 @@ export const StudioEditorShell: React.FC = () => {
             showToast('Eraser (E)');
             return;
           }
+          if (key === 'f') {
+            e.preventDefault();
+            useEditorStore.getState().setBrushMode('fill');
+            showToast('Flood Fill Bucket (F)');
+            return;
+          }
           if (key === 'i') {
             e.preventDefault();
             useEditorStore.getState().setBrushMode('eyedropper');
