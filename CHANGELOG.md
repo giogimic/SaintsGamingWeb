@@ -1,3 +1,8 @@
+# 2.1.619
+- **Map Document Sub-Bars, Studio Navigation Ribbon Unification & 2.5D Workflow Upgrades**:
+  - **Map Document Viewer Sub-Bar (`MapTabPanel.tsx`)**: Integrated `<WindowMenuBar>` with `Map` dropdown (Activate in Viewport, Center Avatar in Map, Reload Map Document), live viewport load buttons, and real-time live/document state pill badges.
+  - **Studio Sub-Menu Ribbon Consistency Audit**: Verified that all dockable panels (Tile Selector, Logic Painter, Properties, World Atlas, Map List, Problems, Asset Browser, Streaming Telemetry, Dev Tools, Animations, UI Designer, Publishing Gates, and Gameplay Docks) adhere to the application ribbon pattern under title bars with flush spacing and consistent dark glass styling.
+
 # 2.1.618
 - **Global Water Dynamics, 3D Spatial Reverb Acoustics, Asset Browser Sub-Bar, Streaming Inspector & Dev Tools**:
   - **Water Dynamics & Flow Speed Multiplier (`realmSettings.ts`, `RealmSettingsPanel.tsx`)**: Added interactive slider control for water shader flow speed and caustic wave dynamics (`0.5x` Calm Pond to `3.0x` Fast Rapids).

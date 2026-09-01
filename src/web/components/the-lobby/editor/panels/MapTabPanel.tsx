@@ -22,6 +22,12 @@ import { GAME_MAPS, loadMap, type GameMapData } from '../../data/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { soundSynth } from '@/engine/sound-synth';
 import { toBaseMapId } from '@/shared/net/mapIds';
+import {
+  WindowMenuBar,
+  WindowMenuDropdown,
+  WindowMenuButton,
+  WindowMenuDivider,
+} from '../WindowMenuBar';
 
 interface MapTabPanelProps {
   mapId: string;
@@ -114,7 +120,59 @@ export const MapTabPanel: React.FC<MapTabPanelProps> = ({ mapId }) => {
   const encounterCount = (mapDoc.encounterPool || []).length;
 
   return (
-    <div className="flex h-full w-full flex-col bg-card/90 backdrop-blur-md p-4 font-mono text-xs text-foreground overflow-y-auto custom-scrollbar select-none">
+    <div className="flex h-full w-full flex-col bg-card/90 backdrop-blur-md font-mono text-xs text-foreground -m-3 mb-0 overflow-hidden select-none">
+      {/* ── WINDOW SUB-MENU APP BAR ── */}
+      <WindowMenuBar>
+        <WindowMenuDropdown
+          label="Map"
+          items={[
+            {
+              label: 'Activate in Viewport',
+              icon: Play,
+              onClick: () => void handleActivateInViewport(),
+            },
+            {
+              label: 'Center Avatar in Map',
+              icon: MapPin,
+              onClick: handleWarpHere,
+            },
+            { divider: true, label: '' },
+            {
+              label: 'Reload Map Document',
+              icon: RefreshCw,
+              onClick: () => void fetchMapDoc(),
+            },
+          ]}
+        />
+        <WindowMenuDivider />
+        {!isActiveInViewport ? (
+          <WindowMenuButton
+            label="Load Viewport"
+            icon={Play}
+            onClick={() => void handleActivateInViewport()}
+            title="Load map into primary 3D viewport"
+          />
+        ) : (
+          <WindowMenuButton
+            label="Center Avatar"
+            icon={MapPin}
+            onClick={handleWarpHere}
+            title="Center player at map coordinates"
+          />
+        )}
+        <div className="flex-1" />
+        {isActiveInViewport ? (
+          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-semibold text-emerald-300">
+            <CheckCircle className="h-2.5 w-2.5" /> Live
+          </span>
+        ) : (
+          <span className="rounded-full border border-border/60 bg-background/60 px-2 py-0.5 text-[9px] text-muted-foreground">
+            Doc
+          </span>
+        )}
+      </WindowMenuBar>
+
+      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
       {/* Header Banner */}
       <div className="flex items-center justify-between border-b border-border/40 pb-3">
         <div className="flex items-center gap-2.5">
@@ -124,42 +182,12 @@ export const MapTabPanel: React.FC<MapTabPanelProps> = ({ mapId }) => {
           <div>
             <h2 className="text-sm font-bold text-foreground tracking-wide flex items-center gap-2">
               {mapDoc.name || mapId}
-              {isActiveInViewport ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-semibold text-emerald-300">
-                  <CheckCircle className="h-3 w-3" /> Live Active Viewport
-                </span>
-              ) : (
-                <span className="rounded-full border border-border/60 bg-background/60 px-2 py-0.5 text-[9px] text-muted-foreground">
-                  Background Document
-                </span>
-              )}
             </h2>
             <p className="text-[10px] text-muted-foreground font-sans">
               Map Key: <span className="text-foreground font-mono">{mapId}</span>
             </p>
           </div>
         </div>
-
-        {/* Action button */}
-        {!isActiveInViewport ? (
-          <button
-            type="button"
-            onClick={() => void handleActivateInViewport()}
-            className="flex items-center gap-1.5 rounded-lg border border-primary/50 bg-primary/20 px-3 py-1.5 text-xs font-bold text-primary shadow-lg hover:bg-primary/30 cursor-pointer transition-all"
-          >
-            <Play className="h-3.5 w-3.5 fill-current" />
-            Switch Viewport to This Map
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={handleWarpHere}
-            className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-300 hover:bg-emerald-500/20 cursor-pointer"
-          >
-            <MapPin className="h-3.5 w-3.5" />
-            Center Avatar
-          </button>
-        )}
       </div>
 
       {/* Grid Quick Stats */}
@@ -256,6 +284,7 @@ export const MapTabPanel: React.FC<MapTabPanelProps> = ({ mapId }) => {
             <span className="text-foreground">{(mapDoc as any).recommendedLevel || 1}</span>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
