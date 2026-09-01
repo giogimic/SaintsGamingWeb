@@ -3233,10 +3233,10 @@ export class BabylonEngine {
 
       if (!this.patternPreviewMesh || this.patternPreviewMesh.isDisposed()) {
         this.patternPreviewMesh = MeshBuilder.CreatePlane('brush_hover_pattern', { size: 1 }, this.scene);
-        this.patternPreviewMesh.rotation.x = Math.PI / 2;
         this.patternPreviewMesh.parent = this.rootNode;
         this.patternPreviewMesh.isPickable = false;
       }
+      this.patternPreviewMesh.rotation.set(Math.PI / 2, 0, (this.brushRotation * Math.PI) / 180);
       this.patternPreviewMesh.scaling.x = s * effW * 1.01;
       this.patternPreviewMesh.scaling.y = s * effH * 1.01;
       this.patternPreviewMesh.position.set(patPosX, altitudeHover, patPosZ);
@@ -3277,11 +3277,11 @@ export class BabylonEngine {
 
     if (!this.footprintUnifiedMesh || this.footprintUnifiedMesh.isDisposed()) {
       this.footprintUnifiedMesh = MeshBuilder.CreatePlane('brush_footprint_unified', { size: 1 }, this.scene);
-      this.footprintUnifiedMesh.rotation.x = Math.PI / 2;
       this.footprintUnifiedMesh.parent = this.rootNode;
       this.footprintUnifiedMesh.isPickable = false;
     }
 
+    this.footprintUnifiedMesh.rotation.set(Math.PI / 2, 0, (this.brushRotation * Math.PI) / 180);
     this.footprintUnifiedMesh.scaling.x = s * span * 1.005;
     this.footprintUnifiedMesh.scaling.y = s * span * 1.005;
     this.footprintUnifiedMesh.position.set(centerPosX, altitudeFootprint, centerPosZ);

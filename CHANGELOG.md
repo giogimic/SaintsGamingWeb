@@ -1,3 +1,11 @@
+# 2.1.604
+- **Studio Gap Fixes & Selection / Freeform Improvements**:
+  - **Freeform Hot-Reload Integrity**: Resolved fast-path hot-reload bypass in `GameCanvasBabylon.tsx` where identical map dimensions skipped re-rendering `freeformLayers`. Changes to freeform splats and props now immediately trigger a full redraw.
+  - **Shape-Aware Splat & Prop Placement**: Freehand terrain splat painting and erasing now respect the active brush shape geometry (`circle`, `square`, `diamond`, `splat-star`).
+  - **Circle Selection Tool**: Active `selectionMode === 'circle'` now accurately selects circular cell footprints on the grid during mouse drag, with support for Shift (add) and Ctrl/Alt (subtract).
+  - **Brush & Stamp Rotation Integration**: Synchronized `brushRotation` with `stampTransform` rotations across the editor store and updated 3D plane reticles in `BabylonEngine.ts` to reflect the active orientation.
+  - **Reactive Tile Selector Shapes**: TileSelectorPanel shape cutout buttons are now fully reactive to editor store state changes.
+
 # 2.1.603
 - **Multi-Shape Brush & Selection Tools**:
   - **5 Brush Shapes**: Cycle through Circle, Square, Diamond, Star, and Polygon brush shapes in both the Bottom Toolbar (click-to-cycle button) and the Tile Selector Panel (direct shape buttons).
