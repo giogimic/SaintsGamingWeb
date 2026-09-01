@@ -1,3 +1,9 @@
+# 2.1.602
+- **2.5D Freehand Painting & Toolbar Mode Integration**:
+  - **Toolbar Mode Switcher**: Added prominent **Grid**, **Splat**, and **2.5D Prop** layer mode selection buttons directly to `StudioBottomToolbar.tsx`.
+  - **Automatic Layer Bootstrapping**: Clicking Splat or 2.5D Prop mode automatically finds or creates a dedicated freeform layer in `activeMapData`, initializing the mode seamlessly.
+  - **Sub-Tile Mouse Drag Painting**: Updated `emitFromScenePick` and `updateBrushPreview` in `BabylonEngine.ts` to unblock continuous mouse drag events when floating `(x, z)` coordinates are active, allowing smooth freehand painting strokes.
+
 # 2.1.601
 - **2.5D Freeform Layer Hot-Reload & Database Persistence Fixes**:
   - **Prisma Database Schema**: Added `freeformLayersData` field to the `WorldMap` SQLite table and ran `npx prisma db push` to synchronize local database engines.
