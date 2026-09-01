@@ -73,6 +73,9 @@ export interface RealmSettingsConfig {
   vignetteWeight?: number;
   shadowDarkness?: number;
   enableCloudShadows?: boolean;
+  enableSunShafts?: boolean;
+  sunShaftIntensity?: number;
+  colorGradingPreset?: 'neutral' | 'warm_amber' | 'cool_emerald' | 'vivid_retro' | 'classic_sepia';
 }
 
 export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
@@ -128,6 +131,9 @@ export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
   vignetteWeight: 15,
   shadowDarkness: 45,
   enableCloudShadows: false,
+  enableSunShafts: false,
+  sunShaftIntensity: 40,
+  colorGradingPreset: 'neutral',
 };
 
 export const REALM_SETTING_KEYS = {
@@ -182,6 +188,9 @@ export const REALM_SETTING_KEYS = {
   VIGNETTE_WEIGHT: 'VIGNETTE_WEIGHT',
   SHADOW_DARKNESS: 'SHADOW_DARKNESS',
   ENABLE_CLOUD_SHADOWS: 'ENABLE_CLOUD_SHADOWS',
+  ENABLE_SUN_SHAFTS: 'ENABLE_SUN_SHAFTS',
+  SUN_SHAFT_INTENSITY: 'SUN_SHAFT_INTENSITY',
+  COLOR_GRADING_PRESET: 'COLOR_GRADING_PRESET',
 } as const;
 
 /**
