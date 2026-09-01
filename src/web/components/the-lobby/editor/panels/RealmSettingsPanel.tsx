@@ -503,20 +503,52 @@ export function RealmSettingsPanel() {
               </div>
 
               {(settings.weatherPreset && settings.weatherPreset !== 'none') && (
-                <div className="space-y-1 pt-1 border-t border-border/10">
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-muted-foreground">Particle Density Intensity</span>
-                    <span className="text-primary font-bold">{settings.weatherIntensity || 50}%</span>
+                <div className="space-y-2 pt-2 border-t border-border/10">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="text-muted-foreground">Particle Density Intensity</span>
+                      <span className="text-primary font-bold">{settings.weatherIntensity || 50}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={10}
+                      max={100}
+                      step={5}
+                      value={settings.weatherIntensity || 50}
+                      onChange={(e) => setSettings({ ...settings, weatherIntensity: parseInt(e.target.value) })}
+                      className="w-full accent-primary h-1 cursor-pointer"
+                    />
                   </div>
-                  <input
-                    type="range"
-                    min={10}
-                    max={100}
-                    step={5}
-                    value={settings.weatherIntensity || 50}
-                    onChange={(e) => setSettings({ ...settings, weatherIntensity: parseInt(e.target.value) })}
-                    className="w-full accent-primary h-1 cursor-pointer"
-                  />
+
+                  {/* Wind Direction & Speed */}
+                  <div className="space-y-1.5 pt-1 border-t border-border/10">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="text-muted-foreground">Particle Wind Direction</span>
+                      <span className="text-primary font-bold uppercase text-[9px]">{settings.windDirection || 'south'}</span>
+                    </div>
+                    <div className="grid grid-cols-5 gap-1">
+                      {[
+                        { id: 'north', label: 'North' },
+                        { id: 'east', label: 'East' },
+                        { id: 'south', label: 'South' },
+                        { id: 'west', label: 'West' },
+                        { id: 'swirling', label: 'Swirl' },
+                      ].map((w) => (
+                        <button
+                          key={w.id}
+                          type="button"
+                          onClick={() => setSettings({ ...settings, windDirection: w.id as any })}
+                          className={`py-1 px-1 rounded text-[8.5px] font-bold transition-colors cursor-pointer text-center truncate ${
+                            (settings.windDirection || 'south') === w.id
+                              ? 'bg-primary/20 border border-primary text-primary'
+                              : 'bg-[#060e1c] border border-border/20 text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          {w.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -611,8 +643,30 @@ export function RealmSettingsPanel() {
               </div>
             </div>
 
-            {/* Post-Processing & Overlay Toggles */}
-            <div className="p-3 rounded-xl bg-black/40 border border-border/30 space-y-2">
+            {/* Camera Inertia & Pan Smoothing */}
+            <div className="p-3 rounded-xl bg-black/40 border border-border/30 space-y-3">
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+                <span>Camera Follow Smoothing & Inertia</span>
+                <span className="text-primary font-bold">{Math.round((settings.cameraSmoothingFactor ?? 0.6) * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={95}
+                step={5}
+                value={Math.round((settings.cameraSmoothingFactor ?? 0.6) * 100)}
+                onChange={(e) => setSettings({ ...settings, cameraSmoothingFactor: parseInt(e.target.value) / 100 })}
+                className="w-full accent-primary h-1 cursor-pointer"
+              />
+              <div className="flex justify-between text-[8px] text-muted-foreground">
+                <span>Snappy (0%)</span>
+                <span>Balanced (60%)</span>
+                <span>Cinematic Glide (95%)</span>
+              </div>
+            </div>
+
+            {/* Post-Processing & Viewport Overlays */}
+            <div className="p-3 rounded-xl bg-black/40 border border-border/30 space-y-3">
               <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                 Post-Processing & Viewport Overlays
               </div>
@@ -653,6 +707,39 @@ export function RealmSettingsPanel() {
                     className="accent-primary"
                   />
                 </label>
+              </div>
+
+              {/* Depth of Field (Tilt-Shift Diorama) */}
+              <div className="space-y-2 pt-2 border-t border-border/10">
+                <label className="flex items-center justify-between p-2 rounded bg-[#060e1c] border border-border/20 cursor-pointer text-[10px]">
+                  <div>
+                    <div className="font-bold">2.5D Diorama Tilt-Shift (Depth of Field)</div>
+                    <div className="text-[8.5px] text-muted-foreground">Blur foreground and background for miniature look</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={!!settings.enableDepthOfField}
+                    onChange={(e) => setSettings({ ...settings, enableDepthOfField: e.target.checked })}
+                    className="accent-primary"
+                  />
+                </label>
+                {settings.enableDepthOfField && (
+                  <div className="space-y-1 p-2 rounded bg-[#060e1c]/60 border border-border/10">
+                    <div className="flex items-center justify-between text-[9px]">
+                      <span className="text-muted-foreground">Focal Distance Center</span>
+                      <span className="text-primary font-bold">{settings.dofFocusDistance || 20}m</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={5}
+                      max={40}
+                      step={1}
+                      value={settings.dofFocusDistance || 20}
+                      onChange={(e) => setSettings({ ...settings, dofFocusDistance: parseInt(e.target.value) })}
+                      className="w-full accent-primary h-1 cursor-pointer"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -843,6 +843,10 @@ export class BabylonEngine {
       ps.minEmitBox = new Vector3(-25, -2, -25);
       ps.maxEmitBox = new Vector3(25, 6, 25);
 
+      const wind = settings.windDirection || 'south';
+      const windX = wind === 'east' ? 1.5 : wind === 'west' ? -1.5 : 0;
+      const windZ = wind === 'north' ? 1.5 : wind === 'south' ? -1.5 : 0;
+
       if (weather === 'gentle_rain') {
         ps.color1 = new Color4(0.7, 0.85, 1.0, 0.7);
         ps.color2 = new Color4(0.6, 0.75, 0.95, 0.4);
@@ -852,9 +856,9 @@ export class BabylonEngine {
         ps.minLifeTime = 0.6;
         ps.maxLifeTime = 1.2;
         ps.emitRate = Math.round(400 * intensity);
-        ps.direction1 = new Vector3(-0.5, -18, -0.5);
-        ps.direction2 = new Vector3(-1.0, -22, -1.0);
-        ps.gravity = new Vector3(0, -9.81, 0);
+        ps.direction1 = new Vector3(windX - 0.5, -18, windZ - 0.5);
+        ps.direction2 = new Vector3(windX - 1.0, -22, windZ - 1.0);
+        ps.gravity = new Vector3(windX * 0.5, -9.81, windZ * 0.5);
       } else if (weather === 'falling_leaves') {
         ps.color1 = new Color4(0.95, 0.6, 0.15, 0.9);
         ps.color2 = new Color4(0.85, 0.35, 0.1, 0.8);
@@ -864,11 +868,11 @@ export class BabylonEngine {
         ps.minLifeTime = 3.0;
         ps.maxLifeTime = 6.0;
         ps.emitRate = Math.round(80 * intensity);
-        ps.direction1 = new Vector3(-1.5, -2.5, -1.0);
-        ps.direction2 = new Vector3(1.5, -4.0, 1.0);
+        ps.direction1 = new Vector3(windX * 1.5 - 1.5, -2.5, windZ * 1.5 - 1.0);
+        ps.direction2 = new Vector3(windX * 1.5 + 1.5, -4.0, windZ * 1.5 + 1.0);
         ps.minAngularSpeed = -2;
         ps.maxAngularSpeed = 2;
-        ps.gravity = new Vector3(-0.5, -1.5, -0.5);
+        ps.gravity = new Vector3(windX * 0.8 - 0.5, -1.5, windZ * 0.8 - 0.5);
       } else if (weather === 'snow_flurries') {
         ps.color1 = new Color4(1.0, 1.0, 1.0, 0.9);
         ps.color2 = new Color4(0.9, 0.95, 1.0, 0.8);
@@ -878,9 +882,9 @@ export class BabylonEngine {
         ps.minLifeTime = 2.5;
         ps.maxLifeTime = 5.0;
         ps.emitRate = Math.round(200 * intensity);
-        ps.direction1 = new Vector3(-0.8, -2.0, -0.8);
-        ps.direction2 = new Vector3(0.8, -3.5, 0.8);
-        ps.gravity = new Vector3(0, -1.0, 0);
+        ps.direction1 = new Vector3(windX * 0.8 - 0.8, -2.0, windZ * 0.8 - 0.8);
+        ps.direction2 = new Vector3(windX * 0.8 + 0.8, -3.5, windZ * 0.8 + 0.8);
+        ps.gravity = new Vector3(windX * 0.3, -1.0, windZ * 0.3);
       } else if (weather === 'fireflies') {
         ps.color1 = new Color4(0.9, 1.0, 0.3, 0.95);
         ps.color2 = new Color4(0.4, 1.0, 0.6, 0.85);

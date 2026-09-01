@@ -56,6 +56,12 @@ export interface RealmSettingsConfig {
   dayNightCycleDurationMinutes?: number;
   acousticPreset?: 'none' | 'field' | 'cave' | 'hall' | 'catacomb';
   elevationContourLines?: boolean;
+  enableDepthOfField?: boolean;
+  dofFocusDistance?: number;
+  cameraSmoothingFactor?: number;
+  windDirection?: 'north' | 'east' | 'south' | 'west' | 'swirling';
+  windSpeed?: number;
+  minimapTelemetryMode?: 'full' | 'compass' | 'clean';
 }
 
 export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
@@ -94,6 +100,12 @@ export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
   dayNightCycleDurationMinutes: 0,
   acousticPreset: 'none',
   elevationContourLines: false,
+  enableDepthOfField: false,
+  dofFocusDistance: 20,
+  cameraSmoothingFactor: 0.6,
+  windDirection: 'south',
+  windSpeed: 1.0,
+  minimapTelemetryMode: 'full',
 };
 
 export const REALM_SETTING_KEYS = {
@@ -131,6 +143,12 @@ export const REALM_SETTING_KEYS = {
   DAY_NIGHT_CYCLE_DURATION_MINUTES: 'DAY_NIGHT_CYCLE_DURATION_MINUTES',
   ACOUSTIC_PRESET: 'ACOUSTIC_PRESET',
   ELEVATION_CONTOUR_LINES: 'ELEVATION_CONTOUR_LINES',
+  ENABLE_DEPTH_OF_FIELD: 'ENABLE_DEPTH_OF_FIELD',
+  DOF_FOCUS_DISTANCE: 'DOF_FOCUS_DISTANCE',
+  CAMERA_SMOOTHING_FACTOR: 'CAMERA_SMOOTHING_FACTOR',
+  WIND_DIRECTION: 'WIND_DIRECTION',
+  WIND_SPEED: 'WIND_SPEED',
+  MINIMAP_TELEMETRY_MODE: 'MINIMAP_TELEMETRY_MODE',
 } as const;
 
 /**

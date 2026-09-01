@@ -1,3 +1,9 @@
+# 2.1.620
+- **2.5D Diorama Tilt-Shift (Depth of Field), Weather Wind Physics & Camera Inertia Controls**:
+  - **2.5D Diorama Tilt-Shift / Depth of Field (`realmSettings.ts`, `RealmSettingsPanel.tsx`)**: Added toggle and focal center distance slider (`5m` to `40m`) providing a miniature diorama depth effect in 2.5D viewports.
+  - **Dynamic Weather Wind Vectors (`realmSettings.ts`, `RealmSettingsPanel.tsx`, `BabylonEngine.ts`)**: Added wind direction controls (North, East, South, West, Swirl) modifying particle trajectories, air resistance, and gravity angles for rain, falling leaves, and snow in the 3D engine.
+  - **Camera Follow Smoothing & Inertia Factor (`RealmSettingsPanel.tsx`, `realmSettings.ts`)**: Added configurable camera follow smoothing slider (`0%` Snappy to `95%` Cinematic Glide) for smooth player tracking and viewport panning.
+
 # 2.1.619
 - **Map Document Sub-Bars, Studio Navigation Ribbon Unification & 2.5D Workflow Upgrades**:
   - **Map Document Viewer Sub-Bar (`MapTabPanel.tsx`)**: Integrated `<WindowMenuBar>` with `Map` dropdown (Activate in Viewport, Center Avatar in Map, Reload Map Document), live viewport load buttons, and real-time live/document state pill badges.
