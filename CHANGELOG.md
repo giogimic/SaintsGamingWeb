@@ -1,3 +1,12 @@
+# 2.1.618
+- **Global Water Dynamics, 3D Spatial Reverb Acoustics, Asset Browser Sub-Bar, Streaming Inspector & Dev Tools**:
+  - **Water Dynamics & Flow Speed Multiplier (`realmSettings.ts`, `RealmSettingsPanel.tsx`)**: Added interactive slider control for water shader flow speed and caustic wave dynamics (`0.5x` Calm Pond to `3.0x` Fast Rapids).
+  - **3D Spatial Audio Acoustic Reverb Spaces (`realmSettings.ts`, `RealmSettingsPanel.tsx`)**: Added acoustic environment selector chips (`Dry / Pure`, `Open Field`, `Cavern`, `Cathedral`, `Catacomb`) alongside spatial distance rolloff factor sliders (`0.5x`–`3.0x`).
+  - **Elevation Contour Lines & Coordinates Overlays (`RealmSettingsPanel.tsx`)**: Added toggles for terrain elevation contour lines and tile coordinate overlays.
+  - **Asset Browser Sub-Bar (`AssetBrowserPanel.tsx`)**: Added standardized `<WindowMenuBar>` with quick Asset Studio launcher, Sprite Slicer shortcuts, and dynamic mode indicators.
+  - **Streaming Telemetry Inspector Sub-Bar (`StreamingInspectorPanel.tsx`)**: Integrated `<WindowMenuBar>` with `Telemetry` dropdown, cache invalidation tools, refresh actions, and active chunk metrics.
+  - **Developer Tools & Server Controls Sub-Bar (`DevToolsPanel.tsx`)**: Integrated `<WindowMenuBar>` with permission-level badges and server shard controls.
+
 # 2.1.617
 - **3D Weather Particle Systems, Animation Studio Sub-Bar, Game Interface Designer & Release Gates**:
   - **3D Weather Particle Simulation Engine (`BabylonEngine.ts`)**: Built dynamic GPU/CPU particle systems supporting `gentle_rain` (downward fast streaks with blue/white atmospheric tinting), `falling_leaves` (swaying autumn leaf drift with rotational velocity), `snow_flurries` (floating gentle snowflakes), and `fireflies` (pulsing glowing bioluminescent night orbs) linked to real-time realm settings.

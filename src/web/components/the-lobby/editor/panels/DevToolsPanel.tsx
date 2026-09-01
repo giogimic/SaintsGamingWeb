@@ -3,11 +3,17 @@
 import React, { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import ServerControl from '../ServerControl';
-import { Server, ShieldAlert } from 'lucide-react';
+import { Server, ShieldAlert, Terminal, Shield } from 'lucide-react';
 import {
   canUseStudioEngineConfig,
   canUseStudioServerControls,
 } from '@/shared/game/studioPermissions';
+import {
+  WindowMenuBar,
+  WindowMenuDropdown,
+  WindowMenuButton,
+  WindowMenuDivider,
+} from '../WindowMenuBar';
 
 /** Dev Tools: server controls. */
 export const DevToolsPanel: React.FC = () => {
@@ -28,23 +34,26 @@ export const DevToolsPanel: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden font-mono">
-      <div className="flex bg-[#050b14]/80 border-b border-[#806f47]/20/80 p-1 gap-1 text-xs font-medium shrink-0">
-        {canServer && (
-          <button
-            onClick={() => setActiveTab('server')}
-            className={`flex-1 py-1 px-1.5 rounded flex items-center justify-center gap-1 transition-all ${
-              activeTab === 'server'
-                ? 'bg-gradient-to-r from-amber-600 to-amber-600 text-white shadow'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-            }`}
-          >
-            <Server className="w-3 h-3 text-amber-400" /> Server Controls
-          </button>
-        )}
-      </div>
+    <div className="flex flex-col h-full overflow-hidden font-mono -m-3 mb-0">
+      {/* ── WINDOW SUB-MENU APP BAR ── */}
+      <WindowMenuBar>
+        <WindowMenuDropdown
+          label="Server"
+          items={[
+            {
+              label: 'Server Controls & Shards',
+              onClick: () => setActiveTab('server'),
+            },
+          ]}
+        />
+        <WindowMenuDivider />
+        <div className="flex-1" />
+        <span className="flex items-center gap-1 text-[9px] text-amber-400 font-bold px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30">
+          <Shield className="w-2.5 h-2.5" /> Level {level}
+        </span>
+      </WindowMenuBar>
 
-      <div className="flex-1 overflow-y-auto p-2 min-h-[300px]">
+      <div className="flex-1 overflow-y-auto p-3 min-h-[300px]">
         {activeTab === 'server' && canServer && <ServerControl />}
       </div>
     </div>

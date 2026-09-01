@@ -52,6 +52,10 @@ export interface RealmSettingsConfig {
   weatherIntensity?: number;
   spatialAudioRolloff?: number;
   elevationMode?: 'stepped' | 'smooth';
+  waterFlowSpeed?: number;
+  dayNightCycleDurationMinutes?: number;
+  acousticPreset?: 'none' | 'field' | 'cave' | 'hall' | 'catacomb';
+  elevationContourLines?: boolean;
 }
 
 export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
@@ -86,6 +90,10 @@ export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
   weatherIntensity: 50,
   spatialAudioRolloff: 1.2,
   elevationMode: 'stepped',
+  waterFlowSpeed: 1.0,
+  dayNightCycleDurationMinutes: 0,
+  acousticPreset: 'none',
+  elevationContourLines: false,
 };
 
 export const REALM_SETTING_KEYS = {
@@ -119,6 +127,10 @@ export const REALM_SETTING_KEYS = {
   WEATHER_INTENSITY: 'WEATHER_INTENSITY',
   SPATIAL_AUDIO_ROLLOFF: 'SPATIAL_AUDIO_ROLLOFF',
   ELEVATION_MODE: 'ELEVATION_MODE',
+  WATER_FLOW_SPEED: 'WATER_FLOW_SPEED',
+  DAY_NIGHT_CYCLE_DURATION_MINUTES: 'DAY_NIGHT_CYCLE_DURATION_MINUTES',
+  ACOUSTIC_PRESET: 'ACOUSTIC_PRESET',
+  ELEVATION_CONTOUR_LINES: 'ELEVATION_CONTOUR_LINES',
 } as const;
 
 /**
