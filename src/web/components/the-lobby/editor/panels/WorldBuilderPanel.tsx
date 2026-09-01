@@ -17,10 +17,12 @@ import {
   EyeOff,
   Navigation,
   Sparkles,
-  MapPin,
   Trees,
   X,
-  Plus
+  Plus,
+  Brush,
+  Magnet,
+  Maximize2
 } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
 
@@ -51,6 +53,12 @@ export const WorldBuilderPanel: React.FC = () => {
 
   const activeLayerIdx = useEditorStore((state) => state.activeLayerIdx);
   const setActiveLayerIdx = useEditorStore((state) => state.setActiveLayerIdx);
+  const activeLayerType = useEditorStore((state) => state.activeLayerType);
+  const setActiveLayerType = useEditorStore((state) => state.setActiveLayerType);
+  const brushRadius = useEditorStore((state) => state.brushRadius);
+  const setBrushRadius = useEditorStore((state) => state.setBrushRadius);
+  const snapToGrid = useEditorStore((state) => state.snapToGrid);
+  const setSnapToGrid = useEditorStore((state) => state.setSnapToGrid);
   const brushTileId = useEditorStore((state) => state.activeBrushTileId);
   const isMapDirty = useEditorStore((state) => state.mapDirty);
   const setBrushTileId = useEditorStore((state) => state.setActiveBrushTileId);
@@ -227,6 +235,54 @@ export const WorldBuilderPanel: React.FC = () => {
       }
       const engine = (typeof window !== 'undefined' && (window as any).__babylonEngine) || null;
       if (engine) engine.loadTilemap(next);
+      useEditorStore.getState().markMapDirty();
+      showToast(`Deleted ${layerName}`);
+    }
+  };
+
+  const handleAddFreeformLayer = (type: 'paint-splat' | 'free-form' | 'polygon') => {
+    if (!activeMapData) {
+      showToast('Load a map before adding layers.');
+      return;
+    }
+    const base = activeMapData;
+    const layers = Array.isArray(base.freeformLayers) ? [...base.freeformLayers] : [];
+    const nextIdx = layers.length;
+    layers.push({
+      id: `layer_${type}_${Date.now()}`,
+      name: `New ${type === 'paint-splat' ? 'Splat' : type === 'free-form' ? 'Prop' : 'Polygon'} Layer`,
+      type,
+      data: {},
+      objects: [],
+      regions: []
+    });
+    const next = { ...base, freeformLayers: layers };
+    useGameStore.getState().setActiveMapData(next);
+    setActiveLayerIdx(nextIdx);
+    setActiveLayerType(type);
+    useEditorStore.getState().markMapDirty();
+    showToast(`Added ${layers[nextIdx].name} — Save Map to persist.`);
+  };
+
+  const handleDeleteFreeformLayer = (layerIdx: number) => {
+    if (!activeMapData) return;
+    const base = activeMapData;
+    const layers = Array.isArray(base.freeformLayers) ? [...base.freeformLayers] : [];
+    const layerName = layers[layerIdx]?.name || `Layer ${layerIdx}`;
+    
+    if (confirm(`Delete ${layerName}? All data on this freeform layer will be removed.`)) {
+      soundSynth?.playActionSound?.();
+      layers.splice(layerIdx, 1);
+      const next = { ...base, freeformLayers: layers };
+      useGameStore.getState().setActiveMapData(next);
+      
+      if (layers.length === 0) {
+        setActiveLayerType('grid');
+        setActiveLayerIdx(0);
+      } else if (activeLayerIdx >= layers.length) {
+        setActiveLayerIdx(Math.max(0, layers.length - 1));
+        setActiveLayerType(layers[layers.length - 1].type);
+      }
       useEditorStore.getState().markMapDirty();
       showToast(`Deleted ${layerName}`);
     }
@@ -618,10 +674,11 @@ export const WorldBuilderPanel: React.FC = () => {
                 onClick={() => {
                   soundSynth?.playSelectSound?.();
                   setActiveLayerIdx(-1);
+                  setActiveLayerType('grid');
                   showToast('Switched to Logic Layer — Opened Logic Painter');
                 }}
                 className={`p-2 rounded-xl border flex flex-col items-center gap-1 transition-all cursor-pointer ${
-                  activeLayerIdx === -1
+                  activeLayerIdx === -1 && activeLayerType === 'grid'
                     ? 'bg-rose-950/60 border-rose-400 text-rose-200 shadow-md ring-1 ring-rose-400'
                     : 'bg-black/50/40 border-[#806f47]/20 text-slate-400 hover:text-white'
                 }`}
@@ -629,7 +686,7 @@ export const WorldBuilderPanel: React.FC = () => {
               >
                 <Shield className="w-4 h-4 text-rose-400" />
                 <span className="font-bold text-[10px]">Logic (−1)</span>
-                <span className="text-[8px] text-slate-400 font-semibold">Logic Painter Tool</span>
+                <span className="text-[8px] text-slate-400 font-semibold">Grid Collision</span>
               </button>
 
               <button
@@ -638,25 +695,64 @@ export const WorldBuilderPanel: React.FC = () => {
                   soundSynth?.playSelectSound?.();
                   const targetIdx = activeLayerIdx >= 0 ? activeLayerIdx : 0;
                   setActiveLayerIdx(targetIdx);
-                  showToast(`Switched to Layer ${targetIdx} — Opened Tile Selector`);
+                  setActiveLayerType('grid');
+                  showToast(`Switched to Visual Grid Layer ${targetIdx}`);
                 }}
                 className={`p-2 rounded-xl border flex flex-col items-center gap-1 transition-all cursor-pointer ${
-                  activeLayerIdx >= 0
+                  activeLayerIdx >= 0 && activeLayerType === 'grid'
                     ? 'bg-purple-950/60 border-purple-400 text-purple-200 shadow-md ring-1 ring-purple-400'
                     : 'bg-black/50/40 border-[#806f47]/20 text-slate-400 hover:text-white'
                 }`}
-                title="Switch to Visual Paint Mode (Tile Selector)"
+                title="Switch to Visual Grid Mode (Tile Selector)"
               >
-                <Layers className="w-4 h-4 text-purple-400" />
-                <span className="font-bold text-[10px]">Visual Layer</span>
-                <span className="text-[8px] text-slate-400 font-semibold">
-                  {activeLayerIdx >= 0 ? `Layer ${activeLayerIdx} (Tile Selector)` : 'Tile Selector Tool'}
-                </span>
+                <Grid className="w-4 h-4 text-purple-400" />
+                <span className="font-bold text-[10px]">Visual Grid</span>
+                <span className="text-[8px] text-slate-400 font-semibold">Tilemap Paint</span>
               </button>
             </div>
 
-            {/* Visual Layer Selector */}
-            {activeLayerIdx >= 0 && (
+            {/* Brush Controls for Freeform */}
+            {activeLayerType !== 'grid' && activeLayerType !== 'polygon' && (
+              <div className="pt-2 border-t border-[#806f47]/20/80 space-y-1.5 flex flex-col">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 font-bold text-[10px] flex items-center gap-1"><Brush className="w-3 h-3" /> Brush Size</span>
+                  <span className="text-slate-300 font-bold text-[10px]">{brushRadius.toFixed(1)}</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="0.5" max="10.0" step="0.5" 
+                  value={brushRadius} 
+                  onChange={(e) => setBrushRadius(parseFloat(e.target.value))} 
+                  className="w-full accent-amber-500 cursor-pointer" 
+                />
+                
+                {activeLayerType === 'free-form' && (
+                  <label className="flex items-center gap-2 mt-2 cursor-pointer text-slate-300 hover:text-amber-300 text-[10px] bg-black/40 p-1.5 rounded border border-[#806f47]/30">
+                    <input 
+                      type="checkbox" 
+                      checked={snapToGrid} 
+                      onChange={(e) => setSnapToGrid(e.target.checked)} 
+                      className="accent-amber-500 w-3 h-3 cursor-pointer" 
+                    />
+                    <Magnet className="w-3 h-3 text-amber-500" />
+                    Snap props to Grid
+                  </label>
+                )}
+              </div>
+            )}
+
+            {/* Freeform Polygon Controls */}
+            {activeLayerType === 'polygon' && (
+              <div className="pt-2 border-t border-[#806f47]/20/80 text-[10px] text-slate-400">
+                <div className="flex items-center gap-1.5 p-1.5 bg-black/40 border border-[#806f47]/30 rounded">
+                  <Maximize2 className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Click to add vertices. Double-click to close shape.</span>
+                </div>
+              </div>
+            )}
+
+            {/* Visual Grid Layer Selector */}
+            {activeLayerType === 'grid' && activeLayerIdx >= 0 && (
               <div className="pt-2 border-t border-[#806f47]/20/80 space-y-1.5">
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="text-slate-400 font-bold">Layer Stack:</span>
@@ -677,21 +773,70 @@ export const WorldBuilderPanel: React.FC = () => {
                         onClick={() => {
                           soundSynth?.playUiClick?.();
                           setActiveLayerIdx(idx);
-                          showToast(`Active: ${layer.name || `Layer ${idx}`} — Tile Selector`);
+                          setActiveLayerType('grid');
+                          showToast(`Active: ${layer.name || `Grid Layer ${idx}`}`);
                         }}
                         className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
-                          activeLayerIdx === idx
+                          activeLayerIdx === idx && activeLayerType === 'grid'
                             ? 'bg-purple-600 text-white border-purple-400 shadow-sm ring-1 ring-purple-300'
                             : 'bg-black/50/40 text-slate-400 border-[#806f47]/20 hover:text-white'
                         }`}
                       >
-                        {layer.name || `Layer ${idx}`}
+                        {layer.name || `Grid Layer ${idx}`}
                       </button>
                     )
                   )}
                 </div>
               </div>
             )}
+            
+            {/* Freeform Layer Selector */}
+            <div className="pt-2 border-t border-[#806f47]/20/80 space-y-1.5">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-slate-400 font-bold">Freeform Layers (2.5D):</span>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => handleAddFreeformLayer('paint-splat')} className="text-[10px] text-amber-400 hover:text-amber-300 font-bold cursor-pointer">+ Splat</button>
+                  <button type="button" onClick={() => handleAddFreeformLayer('free-form')} className="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold cursor-pointer">+ Prop</button>
+                  <button type="button" onClick={() => handleAddFreeformLayer('polygon')} className="text-[10px] text-rose-400 hover:text-rose-300 font-bold cursor-pointer">+ Poly</button>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                {(currentMapData.freeformLayers || []).map(
+                  (layer: any, idx: number) => (
+                    <div key={layer.id} className="flex items-center gap-1 w-full">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          soundSynth?.playUiClick?.();
+                          setActiveLayerIdx(idx);
+                          setActiveLayerType(layer.type as any);
+                          showToast(`Active Freeform Layer: ${layer.name}`);
+                        }}
+                        className={`flex-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer text-left ${
+                          activeLayerIdx === idx && activeLayerType === layer.type
+                            ? layer.type === 'paint-splat' ? 'bg-amber-600 text-white border-amber-400 shadow-sm ring-1 ring-amber-300' 
+                            : layer.type === 'free-form' ? 'bg-emerald-600 text-white border-emerald-400 shadow-sm ring-1 ring-emerald-300'
+                            : 'bg-rose-600 text-white border-rose-400 shadow-sm ring-1 ring-rose-300'
+                            : 'bg-black/50/40 text-slate-400 border-[#806f47]/20 hover:text-white'
+                        }`}
+                      >
+                        {layer.name} ({layer.type === 'paint-splat' ? 'Splats' : layer.type === 'free-form' ? 'Props' : 'Logic'})
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteFreeformLayer(idx)}
+                        className="text-red-400 hover:text-red-300 bg-black/40 hover:bg-red-950 border border-[#806f47]/20 rounded p-1"
+                        title="Delete this freeform layer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )
+                )}
+                {(!currentMapData.freeformLayers || currentMapData.freeformLayers.length === 0) && (
+                  <div className="text-[10px] text-slate-500 italic p-1">No freeform layers yet. Click + to add one.</div>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>

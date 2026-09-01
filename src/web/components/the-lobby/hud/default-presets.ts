@@ -64,6 +64,10 @@ export const DEFAULT_PRESET_COMMAND: HudLayoutPreset = {
   version: 1,
   description: 'Balanced layout with vitals top-left, target top-center, radar top-right, and bottom hotbar.',
   isDefault: true,
+  engineOverrides: {
+    vitalsLayout: 'grouped',
+    vitalsFormat: 'dual-bar',
+  },
   widgets: {
     [HUD_WIDGET_IDS.ORBS]: {
       widgetId: HUD_WIDGET_IDS.ORBS,
@@ -133,6 +137,10 @@ export const DEFAULT_PRESET_SIDEBAR: HudLayoutPreset = {
   name: 'Sidebar Focus',
   version: 1,
   description: 'Radar, quest tracker, and utility bag tabs grouped along the right screen edge.',
+  engineOverrides: {
+    vitalsLayout: 'grouped',
+    vitalsFormat: 'compact-stacked',
+  },
   widgets: {
     [HUD_WIDGET_IDS.ORBS]: {
       widgetId: HUD_WIDGET_IDS.ORBS,
@@ -202,6 +210,10 @@ export const DEFAULT_PRESET_ACTION: HudLayoutPreset = {
   name: 'Action Combat',
   version: 1,
   description: 'Centralized combat focus with target frame near center and expanded action hotbar.',
+  engineOverrides: {
+    vitalsLayout: 'separate',
+    vitalsFormat: 'dual-bar',
+  },
   widgets: {
     [HUD_WIDGET_IDS.ORBS]: {
       widgetId: HUD_WIDGET_IDS.ORBS,
@@ -271,6 +283,10 @@ export const DEFAULT_PRESET_MINIMAL: HudLayoutPreset = {
   name: 'Minimalist',
   version: 1,
   description: 'Unobstructed viewport with compact widgets tucked cleanly in screen corners.',
+  engineOverrides: {
+    vitalsLayout: 'separate',
+    vitalsFormat: 'compact-stacked',
+  },
   widgets: {
     [HUD_WIDGET_IDS.ORBS]: {
       widgetId: HUD_WIDGET_IDS.ORBS,
@@ -340,6 +356,10 @@ export const DEFAULT_PRESET_CREATURE: HudLayoutPreset = {
   name: 'Pocket Trainer (Creature Battler)',
   version: 1,
   description: 'Companion & creature battle setup with heart vitality gauges, prominent target cards, and quick creature dock.',
+  engineOverrides: {
+    vitalsLayout: 'separate',
+    vitalsFormat: 'icon-bars',
+  },
   widgets: {
     [HUD_WIDGET_IDS.ORBS]: {
       widgetId: HUD_WIDGET_IDS.ORBS,
@@ -440,6 +460,7 @@ export function ensureCompletePreset(preset: Partial<HudLayoutPreset> | null | u
     version: preset.version || 1,
     description: preset.description,
     isDefault: id === 'preset-command' || id === 'preset-modern',
+    engineOverrides: preset.engineOverrides,
     widgets: { ...base.widgets },
   };
 

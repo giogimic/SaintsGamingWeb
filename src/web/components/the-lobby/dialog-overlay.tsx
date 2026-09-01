@@ -58,8 +58,6 @@ export default function DialogOverlay() {
     return () => clearInterval(interval);
   }, [currentText]);
 
-  if (!activeDialog) return null;
-
   const handleClose = () => {
     soundSynth?.playSelectSound?.();
     setActiveDialog(null);
@@ -73,6 +71,25 @@ export default function DialogOverlay() {
     } else if (!activeDialog?.options || activeDialog.options.length === 0) {
       handleClose();
     }
+  };
+
+  const handleOptionClick = (opt: any) => {
+    if (!emitSocketEvent) {
+      console.warn('No socket connection!');
+      return;
+    }
+
+    soundSynth?.playActionSound?.();
+    setDisplayedText('');
+    setIsTyping(true);
+
+    emitSocketEvent('dialogue_select', {
+      mapId: currentMapId,
+      targetId: activeDialog?.npcId,
+      nextNode: opt.nextNode,
+      action: opt.action,
+      questSlug: opt.questSlug,
+    });
   };
 
   // Keyboard navigation for dialogue (Space, Enter, E, 1-9, Escape)
@@ -115,24 +132,7 @@ export default function DialogOverlay() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeDialog, isTyping, currentText]);
 
-  const handleOptionClick = (opt: any) => {
-    if (!emitSocketEvent) {
-      console.warn('No socket connection!');
-      return;
-    }
-
-    soundSynth?.playActionSound?.();
-    setDisplayedText('');
-    setIsTyping(true);
-
-    emitSocketEvent('dialogue_select', {
-      mapId: currentMapId,
-      targetId: activeDialog.npcId,
-      nextNode: opt.nextNode,
-      action: opt.action,
-      questSlug: opt.questSlug,
-    });
-  };
+  if (!activeDialog) return null;
 
   return (
     <div className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center px-4 pb-6 sm:px-8 sm:pb-10 select-none">

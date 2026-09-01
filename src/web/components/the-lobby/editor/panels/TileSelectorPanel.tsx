@@ -25,6 +25,20 @@ export const TileSelectorPanel: React.FC = () => {
   const setActiveLayerIdx = useEditorStore((s) => s.setActiveLayerIdx);
   const markMapDirty = useEditorStore((s) => s.markMapDirty);
 
+  const handleBrushSelect = React.useCallback((gid: number) => {
+    setActiveBrushTileId(gid, true);
+    if (useEditorStore.getState().activeLayerIdx === -1) {
+      setActiveLayerIdx(0);
+    }
+  }, [setActiveBrushTileId, setActiveLayerIdx]);
+
+  const handleBrushSelectPattern = React.useCallback((pattern: { w: number; h: number; gids: number[][] } | null) => {
+    setActiveBrushPattern(pattern);
+    if (useEditorStore.getState().activeLayerIdx === -1) {
+      setActiveLayerIdx(0);
+    }
+  }, [setActiveBrushPattern, setActiveLayerIdx]);
+
   if (!activeMapData) {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center p-6 text-center font-mono text-xs text-slate-400 bg-card/80 backdrop-blur-md">
@@ -40,20 +54,6 @@ export const TileSelectorPanel: React.FC = () => {
   const currentMap = ensureMapHasStudioTilesets(activeMapData);
   const tilesets = currentMap.tilesets?.length ? currentMap.tilesets : DEFAULT_STUDIO_TILESETS;
   const tileLayers = currentMap.tileLayers || [];
-
-  const handleBrushSelect = React.useCallback((gid: number) => {
-    setActiveBrushTileId(gid, true);
-    if (useEditorStore.getState().activeLayerIdx === -1) {
-      setActiveLayerIdx(0);
-    }
-  }, [setActiveBrushTileId, setActiveLayerIdx]);
-
-  const handleBrushSelectPattern = React.useCallback((pattern: { w: number; h: number; gids: number[][] } | null) => {
-    setActiveBrushPattern(pattern);
-    if (useEditorStore.getState().activeLayerIdx === -1) {
-      setActiveLayerIdx(0);
-    }
-  }, [setActiveBrushPattern, setActiveLayerIdx]);
 
   const handleAddLayer = () => {
     const width = currentMap.width || currentMap.grid?.[0]?.length || 24;

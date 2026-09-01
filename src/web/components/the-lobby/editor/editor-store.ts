@@ -177,6 +177,7 @@ type PlaytestRestoreSnapshot = {
   activeBrushPattern: BrushPattern | null;
   activeLogicTileId: number;
   activeLayerIdx: number;
+  activeLayerType: 'grid' | 'paint-splat' | 'free-form' | 'polygon';
   mapDirty: boolean;
   brushRadius: number;
   brushShape: 'circle' | 'square';
@@ -245,9 +246,10 @@ interface EditorState {
   activeBrushPattern: BrushPattern | null;
   activeLogicTileId: number;
   activeLayerIdx: number;
+  activeLayerType: 'grid' | 'paint-splat' | 'free-form' | 'polygon';
   brushRadius: number;
   brushShape: 'circle' | 'square';
-  brushMode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste';
+  brushMode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste' | 'freehand' | 'vertex_pen';
   activePrefabId: string | null;
   prefabs: any[];
   tileClipboard: TileClipboardData | null;
@@ -263,6 +265,8 @@ interface EditorState {
   setPrefabStampMode: (mode: '1tile' | 'footprint') => void;
   stampScale: number;
   setStampScale: (scale: number) => void;
+  snapToGrid: boolean;
+  setSnapToGrid: (snap: boolean) => void;
   
   // Gate Pairing and Placement Wizard State
   pendingGateConnection: {
@@ -345,6 +349,7 @@ interface EditorState {
   setActiveBrushPattern: (pattern: BrushPattern | null) => void;
   setActiveLogicTileId: (id: number) => void;
   setActiveLayerIdx: (idx: number) => void;
+  setActiveLayerType: (type: 'grid' | 'paint-splat' | 'free-form' | 'polygon') => void;
   setClickedTile: (tile: { r: number; c: number } | null) => void;
   setHoveredTile: (tile: { r: number; c: number } | null) => void;
   setLastPaintedTile: (tile: { r: number; c: number } | null) => void;
@@ -353,7 +358,7 @@ interface EditorState {
   setShowSpawnOverlays: (on: boolean) => void;
   setBrushRadius: (radius: number) => void;
   setBrushShape: (shape: 'circle' | 'square') => void;
-  setBrushMode: (mode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste') => void;
+  setBrushMode: (mode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste' | 'freehand' | 'vertex_pen') => void;
   setActivePrefabId: (id: string | null) => void;
   setPrefabs: (prefabs: any[]) => void;
   setPasteMode: (mode: PasteMode) => void;
@@ -881,6 +886,7 @@ function capturePlaytestSnapshot(state: {
     activeBrushPattern: state.activeBrushPattern,
     activeLogicTileId: state.activeLogicTileId,
     activeLayerIdx: state.activeLayerIdx,
+    activeLayerType: state.activeLayerType,
     mapDirty: state.mapDirty,
     brushRadius: state.brushRadius,
     brushShape: state.brushShape,
@@ -924,6 +930,7 @@ export const useEditorStore = create<EditorState>()(
       activeBrushPattern: null,
       activeLogicTileId: 1,
       activeLayerIdx: 0,
+      activeLayerType: 'grid',
       brushRadius: 1,
       brushShape: 'circle',
       brushMode: 'paint',
@@ -945,6 +952,11 @@ export const useEditorStore = create<EditorState>()(
           if (engine?.setStampScale) {
             engine.setStampScale(state.stampScale);
           }
+        }),
+      snapToGrid: true,
+      setSnapToGrid: (snap: boolean) =>
+        set((state) => {
+          state.snapToGrid = snap;
         }),
       activePrefabId: null,
       prefabs: [],
@@ -1316,6 +1328,10 @@ export const useEditorStore = create<EditorState>()(
             }
             state.brushMode = 'paint';
           }
+        }),
+      setActiveLayerType: (type) =>
+        set((state) => {
+          state.activeLayerType = type;
         }),
       setClickedTile: (tile) =>
         set((state) => {

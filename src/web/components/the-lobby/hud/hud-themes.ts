@@ -25,6 +25,7 @@ export interface HudTheme {
     hpFill: string;
     mpFill: string;
     xpFill: string;
+    staminaFill: string;
     accentGlow: string;
     badgeBg: string;
     badgeText: string;
@@ -51,6 +52,7 @@ export const BUILTIN_HUD_THEMES: Record<string, HudTheme> = {
       hpFill: 'bg-gradient-to-r from-rose-600 to-amber-500',
       mpFill: 'bg-gradient-to-r from-sky-600 to-cyan-400',
       xpFill: 'bg-gradient-to-r from-amber-600 to-yellow-400',
+      staminaFill: 'bg-gradient-to-r from-emerald-500 to-green-400',
       accentGlow: '0 0 20px rgba(245, 158, 11, 0.25)',
       badgeBg: 'bg-amber-500/20',
       badgeText: 'text-amber-300',
@@ -73,6 +75,7 @@ export const BUILTIN_HUD_THEMES: Record<string, HudTheme> = {
       hpFill: 'bg-gradient-to-r from-red-700 to-rose-600',
       mpFill: 'bg-gradient-to-r from-blue-700 to-indigo-500',
       xpFill: 'bg-gradient-to-r from-emerald-600 to-teal-400',
+      staminaFill: 'bg-gradient-to-r from-yellow-600 to-amber-500',
       accentGlow: '0 0 20px rgba(148, 163, 184, 0.2)',
       badgeBg: 'bg-slate-500/20',
       badgeText: 'text-slate-200',
@@ -95,6 +98,7 @@ export const BUILTIN_HUD_THEMES: Record<string, HudTheme> = {
       hpFill: 'bg-rose-500',
       mpFill: 'bg-sky-500',
       xpFill: 'bg-emerald-500',
+      staminaFill: 'bg-yellow-500',
       accentGlow: '0 0 15px rgba(255, 255, 255, 0.15)',
       badgeBg: 'bg-white/10',
       badgeText: 'text-white',
@@ -117,6 +121,7 @@ export const BUILTIN_HUD_THEMES: Record<string, HudTheme> = {
       hpFill: 'bg-gradient-to-r from-emerald-600 to-lime-400',
       mpFill: 'bg-gradient-to-r from-teal-600 to-cyan-400',
       xpFill: 'bg-gradient-to-r from-amber-500 to-emerald-400',
+      staminaFill: 'bg-gradient-to-r from-lime-600 to-yellow-500',
       accentGlow: '0 0 20px rgba(16, 185, 129, 0.3)',
       badgeBg: 'bg-emerald-500/20',
       badgeText: 'text-emerald-300',
@@ -139,6 +144,7 @@ export const BUILTIN_HUD_THEMES: Record<string, HudTheme> = {
       hpFill: 'bg-gradient-to-r from-fuchsia-600 to-rose-500',
       mpFill: 'bg-gradient-to-r from-violet-600 to-indigo-400',
       xpFill: 'bg-gradient-to-r from-purple-500 to-pink-400',
+      staminaFill: 'bg-gradient-to-r from-amber-500 to-yellow-400',
       accentGlow: '0 0 20px rgba(168, 85, 247, 0.3)',
       badgeBg: 'bg-purple-500/20',
       badgeText: 'text-purple-300',
@@ -161,6 +167,7 @@ export const BUILTIN_HUD_THEMES: Record<string, HudTheme> = {
       hpFill: 'bg-gradient-to-r from-rose-700 to-red-500',
       mpFill: 'bg-gradient-to-r from-amber-600 to-orange-500',
       xpFill: 'bg-gradient-to-r from-rose-600 to-amber-400',
+      staminaFill: 'bg-gradient-to-r from-yellow-700 to-yellow-500',
       accentGlow: '0 0 20px rgba(239, 68, 68, 0.3)',
       badgeBg: 'bg-rose-500/20',
       badgeText: 'text-rose-300',
@@ -183,6 +190,7 @@ export const BUILTIN_HUD_THEMES: Record<string, HudTheme> = {
       hpFill: 'bg-gradient-to-r from-red-600 via-rose-500 to-pink-500',
       mpFill: 'bg-gradient-to-r from-amber-400 to-yellow-300',
       xpFill: 'bg-gradient-to-r from-cyan-500 to-blue-500',
+      staminaFill: 'bg-gradient-to-r from-emerald-500 to-green-400',
       accentGlow: '0 0 20px rgba(239, 68, 68, 0.3)',
       badgeBg: 'bg-red-500/20',
       badgeText: 'text-red-300',
@@ -205,6 +213,7 @@ export const BUILTIN_HUD_THEMES: Record<string, HudTheme> = {
       hpFill: 'bg-gradient-to-r from-rose-600 to-red-500',
       mpFill: 'bg-gradient-to-r from-emerald-500 to-teal-400',
       xpFill: 'bg-gradient-to-r from-amber-400 to-yellow-300',
+      staminaFill: 'bg-gradient-to-r from-sky-500 to-blue-400',
       accentGlow: '0 0 20px rgba(245, 158, 11, 0.3)',
       badgeBg: 'bg-amber-400/20',
       badgeText: 'text-amber-300',
@@ -233,7 +242,8 @@ export interface HudEngineConfig {
   borderRadius?: 'rounded' | 'compact' | 'capsule';
   borderGlow?: boolean;
   minimapShape?: 'rounded' | 'circle' | 'square';
-  vitalsFormat?: 'dual-bar' | 'compact-stacked' | 'heart-containers' | 'pokemon-gauge';
+  vitalsFormat?: 'dual-bar' | 'compact-stacked' | 'heart-containers' | 'pokemon-gauge' | 'icon-bars';
+  vitalsLayout?: 'grouped' | 'separate';
   heartContainerCount?: number;
   hotbarLayout?: '1x5' | '1x10' | '2x5';
   showCoords?: boolean;

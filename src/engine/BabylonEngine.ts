@@ -21,6 +21,7 @@ import {
   LinesMesh,
   ImageProcessingPostProcess,
   ImageProcessingConfiguration,
+  Animation,
 } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
 import { TILESET_SIZES } from "../web/components/the-lobby/data/tileset-sizes";
@@ -86,6 +87,7 @@ export interface BabylonTileMapData {
   tileLayers?: Array<{ name: string; grid: number[][] }>;
   tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number; imageheight?: number; tilecount?: number }>;
   npcs?: Array<{ id: string; name: string; x: number; y: number; sprite?: string }>;
+  freeformLayers?: any[];
   chunks?: RenderedChunk[];
   connections?: any;
 }
@@ -242,6 +244,7 @@ export class BabylonEngine {
   private mapPickPlane?: Mesh;
   private mapBoundaryMesh?: LinesMesh | Mesh;
   private currentRawMapData?: BabylonTileMapData;
+  private freeformMeshes: Mesh[] = [];
   private neighborEdgeStrips: Map<string, EdgeStripData> = new Map();
   private showNeighborBleedPreview: boolean = false;
 
@@ -379,6 +382,8 @@ export class BabylonEngine {
     if (e.code === 'Space') this.editorSpaceHeld = false;
   };
   private selectionRingMesh?: Mesh;
+  private selectionRingMaterial?: StandardMaterial;
+  private activeTargetEntityId: string | null = null;
   private smartTargetRingMesh?: Mesh;
   private destinationIndicatorMesh?: Mesh;
   private abilityAoEMeshes: Mesh[] = [];
@@ -884,6 +889,9 @@ export class BabylonEngine {
         }
       });
 
+      // Real-time Combat & Focus Target Reticle Following
+      this.updateTargetSelectionIndicator(deltaTime);
+
       // 3D Camera Momentum & Smooth Zoom Lerping
       this.applyFreeCamMomentum();
 
@@ -1218,8 +1226,10 @@ export class BabylonEngine {
       // Clear old meshes
       this.tileMeshes.forEach((mesh) => mesh.dispose());
       this.objectMeshes.forEach((mesh) => mesh.dispose());
+      this.freeformMeshes.forEach((mesh) => mesh.dispose());
       this.tileMeshes = [];
       this.objectMeshes = [];
+      this.freeformMeshes = [];
       this.waterMaterials = [];
       this.clearPaintOverlays();
       this.clearAuthorOverlays();
@@ -1240,6 +1250,8 @@ export class BabylonEngine {
       // Seamless transition: preserve tileMeshes, but clear objects/pickPlane
       this.objectMeshes.forEach((mesh) => mesh.dispose());
       this.objectMeshes = [];
+      this.freeformMeshes.forEach((mesh) => mesh.dispose());
+      this.freeformMeshes = [];
       this.batchedQuadIndex.clear(); // We'll rebuild the quad index
       
       if (this.mapPickPlane) {
@@ -1782,6 +1794,90 @@ export class BabylonEngine {
     pickPlane.visibility = 0;
     this.mapPickPlane = pickPlane;
     this.tileMeshes.push(pickPlane);
+
+    // Render Freeform Layers
+    if (mapData.freeformLayers) {
+      mapData.freeformLayers.forEach((layer) => {
+        if (layer.type === 'paint-splat' && layer.data) {
+          // Splat Rendering
+          Object.entries(layer.data).forEach(([assetUrl, points]: [string, any[]]) => {
+            if (!points.length) return;
+            const matKey = `splat_mat_${assetUrl}`;
+            let mat = this.tilesetMaterialCache.get(matKey);
+            if (!mat) {
+              mat = new StandardMaterial(matKey, this.scene);
+              let tex = new Texture(assetUrl, this.scene, true, false, Texture.NEAREST_SAMPLINGMODE);
+              tex.hasAlpha = true;
+              mat.diffuseTexture = tex;
+              mat.useAlphaFromDiffuseTexture = true;
+              mat.alphaCutOff = 0.5;
+              mat.specularColor = new Color3(0, 0, 0);
+              mat.emissiveColor = new Color3(0.9, 0.9, 0.9);
+              mat.backFaceCulling = false;
+              mat.disableLighting = true;
+              this.tilesetMaterialCache.set(matKey, mat);
+            }
+            
+            // Thin Instances
+            const plane = MeshBuilder.CreatePlane(`splat_base_${assetUrl}`, { size: tileSize }, this.scene);
+            plane.material = mat;
+            plane.rotation.x = Math.PI / 2;
+            plane.isPickable = false;
+            
+            const matrices = new Float32Array(16 * points.length);
+            for (let i = 0; i < points.length; i++) {
+              const p = points[i];
+              const posX = (p.x - width / 2) * tileSize;
+              const posZ = (height / 2 - p.y) * tileSize;
+              
+              const matrix = Matrix.Compose(
+                new Vector3(p.scale || 1, p.scale || 1, p.scale || 1),
+                Quaternion.RotationAxis(Vector3.Up(), p.rotation || 0),
+                new Vector3(posX, 0.01 + i * 0.001, posZ) // Slight Y offset to avoid Z-fighting
+              );
+              matrix.copyToArray(matrices, i * 16);
+            }
+            plane.thinInstanceSetBuffer("matrix", matrices, 16, true);
+            plane.parent = this.rootNode;
+            this.freeformMeshes.push(plane);
+          });
+        } else if (layer.type === 'free-form' && layer.objects) {
+          // Prop Rendering
+          layer.objects.forEach((obj: any) => {
+            const posX = (obj.x - width / 2) * tileSize;
+            const posZ = (height / 2 - obj.y) * tileSize;
+            
+            const plane = MeshBuilder.CreatePlane(`prop_${obj.id}`, {
+              size: (obj.scale || 1) * tileSize,
+              sideOrientation: Mesh.DOUBLESIDE,
+            }, this.scene);
+            
+            plane.position.set(posX, ((obj.scale || 1) * tileSize) / 2, posZ);
+            plane.billboardMode = Mesh.BILLBOARDMODE_Y;
+            plane.isPickable = false;
+
+            const matKey = `prop_mat_${obj.asset}`;
+            let mat = this.tilesetMaterialCache.get(matKey);
+            if (!mat) {
+              mat = new StandardMaterial(matKey, this.scene);
+              let tex = new Texture(obj.asset, this.scene, true, false, Texture.NEAREST_SAMPLINGMODE);
+              tex.hasAlpha = true;
+              mat.diffuseTexture = tex;
+              mat.useAlphaFromDiffuseTexture = true;
+              mat.alphaCutOff = 0.5;
+              mat.specularColor = new Color3(0, 0, 0);
+              mat.emissiveColor = new Color3(0.9, 0.9, 0.9);
+              mat.backFaceCulling = false;
+              mat.disableLighting = true;
+              this.tilesetMaterialCache.set(matKey, mat);
+            }
+            plane.material = mat;
+            plane.parent = this.rootNode;
+            this.freeformMeshes.push(plane);
+          });
+        }
+      });
+    }
 
     // Render Map NPCs (prefer absolute /game-assets paths; never /assets/sprites/)
     if (npcs) {
@@ -2461,9 +2557,9 @@ export class BabylonEngine {
     }
   }
 
-private resolveTilePick(
-    pickResult: { hit?: boolean; pickedMesh?: { name: string } | null; pickedPoint?: { x: number; z: number } | null } | null
-  ): { r: number; c: number; layerIdx: number } | null {
+  private resolveTilePick(
+    pickResult: { hit?: boolean; pickedMesh?: { name: string } | null; pickedPoint?: { x: number; y: number; z: number } | null } | null
+  ): { r: number; c: number; layerIdx: number; point?: { x: number; z: number } } | null {
     if (!pickResult?.hit || !pickResult.pickedMesh) return null;
 
     const name = pickResult.pickedMesh.name;
@@ -2474,20 +2570,23 @@ private resolveTilePick(
       if (parts[0] === 'logic') {
         const r = parseInt(parts[1], 10);
         const c = parseInt(parts[2], 10);
-        if (!Number.isNaN(r) && !Number.isNaN(c)) return { r, c, layerIdx: -2 };
+        const point = pickResult.pickedPoint ? { x: pickResult.pickedPoint.x, z: pickResult.pickedPoint.z } : undefined;
+        if (!Number.isNaN(r) && !Number.isNaN(c)) return { r, c, layerIdx: -2, point };
         return null;
       }
       if (parts.length === 3) {
         const r = parseInt(parts[1], 10);
         const c = parseInt(parts[2], 10);
-        if (!Number.isNaN(r) && !Number.isNaN(c)) return { r, c, layerIdx: -1 };
+        const point = pickResult.pickedPoint ? { x: pickResult.pickedPoint.x, z: pickResult.pickedPoint.z } : undefined;
+        if (!Number.isNaN(r) && !Number.isNaN(c)) return { r, c, layerIdx: -1, point };
         return null;
       }
       if (parts.length === 4) {
         const layerIdx = parseInt(parts[1], 10);
         const r = parseInt(parts[2], 10);
         const c = parseInt(parts[3], 10);
-        if (!Number.isNaN(r) && !Number.isNaN(c)) return { r, c, layerIdx };
+        const point = pickResult.pickedPoint ? { x: pickResult.pickedPoint.x, z: pickResult.pickedPoint.z } : undefined;
+        if (!Number.isNaN(r) && !Number.isNaN(c)) return { r, c, layerIdx, point };
         return null;
       }
     }
@@ -2500,14 +2599,14 @@ private resolveTilePick(
     if (!point) return null;
     const tile = this.worldToTile(point.x, point.z);
     if (!tile) return null;
-    return { r: tile.r, c: tile.c, layerIdx: -1 };
+    return { r: tile.r, c: tile.c, layerIdx: -1, point: { x: point.x, z: point.z } };
   }
 
   /** Ground plane analytical ray projection for 100% reliable picking across all viewport angles and seams. */
   public pickTileFromGroundPlane(
     screenX: number,
     screenY: number
-  ): { r: number; c: number; layerIdx: number } | null {
+  ): { r: number; c: number; layerIdx: number; point?: { x: number; z: number } } | null {
     if (!this.scene || !this.camera) return null;
     const ray = this.scene.createPickingRay(
       screenX,
@@ -2522,11 +2621,11 @@ private resolveTilePick(
     const worldZ = ray.origin.z + t * ray.direction.z;
     const tile = this.worldToTile(worldX, worldZ);
     if (!tile) return null;
-    return { r: tile.r, c: tile.c, layerIdx: -1 };
+    return { r: tile.r, c: tile.c, layerIdx: -1, point: { x: worldX, z: worldZ } };
   }
 
   /** Screen pixel to tile coordinate projection for drag-and-drop or viewport picking. */
-  public pickTileAtScreenCoord(screenX: number, screenY: number): { r: number; c: number; layerIdx: number } | null {
+  public pickTileAtScreenCoord(screenX: number, screenY: number): { r: number; c: number; layerIdx: number; point?: { x: number; z: number } } | null {
     if (!this.scene) return null;
     const pickResult = this.scene.pick(
       screenX,
@@ -2545,7 +2644,7 @@ private resolveTilePick(
    * With brushRadius >= 1, renders in-world 3D hover reticle (1x1 or circular/square multi-tile).
    */
   public enableTilePicking(
-    onTileClick: (r: number, c: number, layerIdx?: number, eventType?: 'down' | 'move' | 'up') => void,
+    onTileClick: (r: number, c: number, layerIdx?: number, eventType?: 'down' | 'move' | 'up', point?: { x: number; z: number }) => void,
     options?: { 
       drag?: boolean; 
       onTileHover?: (r: number, c: number) => void;
@@ -2570,7 +2669,7 @@ private resolveTilePick(
     };
     this.canvas.addEventListener('contextmenu', onContextMenu);
 
-    const getResolvedTile = (screenX: number, screenY: number): { r: number; c: number; layerIdx: number } | null => {
+    const getResolvedTile = (screenX: number, screenY: number): { r: number; c: number; layerIdx: number; point?: { x: number; z: number } } | null => {
       if (!this.scene) return null;
       const pickResult = this.scene.pick(
         screenX,
@@ -2592,7 +2691,7 @@ private resolveTilePick(
 
       // Apply brush radius — emit all cells within radius.
       if (this.brushRadius <= 1 || this.activeBrushPattern) {
-        onTileClick(resolved.r, resolved.c, resolved.layerIdx, eventType);
+        onTileClick(resolved.r, resolved.c, resolved.layerIdx, eventType, resolved.point);
       } else {
         const rad = this.brushRadius - 1;
         const w = this.currentMapWidth;
@@ -2606,7 +2705,12 @@ private resolveTilePick(
             const nr = resolved.r + dr;
             const nc = resolved.c + dc;
             if (nr >= 0 && nr < h && nc >= 0 && nc < w) {
-              onTileClick(nr, nc, resolved.layerIdx, eventType);
+              // Offset the point for brushed tiles based on grid center, because it's a radius brush spreading out from center
+              const pt = resolved.point ? {
+                x: resolved.point.x + (nc - resolved.c) * this.currentTileSize,
+                z: resolved.point.z - (nr - resolved.r) * this.currentTileSize
+              } : undefined;
+              onTileClick(nr, nc, resolved.layerIdx, eventType, pt);
             }
           }
         }
@@ -3505,12 +3609,11 @@ private resolveTilePick(
     const posZ = (h / 2 - r) * s;
 
     if (!this.destinationIndicatorMesh || this.destinationIndicatorMesh.isDisposed()) {
-      const disc = MeshBuilder.CreateDisc(
+      const disc = MeshBuilder.CreateTorus(
         'destination_indicator_disc',
-        { radius: s * 0.28, tessellation: 24 },
+        { diameter: s * 0.8, thickness: s * 0.08, tessellation: 32 },
         this.scene
       );
-      disc.rotation.x = Math.PI / 2;
       disc.isPickable = false;
       disc.parent = this.rootNode;
       this.destinationIndicatorMesh = disc;
@@ -3521,25 +3624,64 @@ private resolveTilePick(
     if (!mat) {
       mat = new StandardMaterial(matKey, this.scene);
       if (isWalkable) {
-        mat.diffuseColor = new Color3(0.2, 0.9, 0.4);
-        mat.emissiveColor = new Color3(0.1, 0.4, 0.2);
-        mat.alpha = 0.6;
+        mat.diffuseColor = new Color3(1, 0.8, 0.2); // Warm gold/amber color matching design system
+        mat.emissiveColor = new Color3(0.6, 0.4, 0.05);
       } else {
         mat.diffuseColor = new Color3(0.95, 0.25, 0.25);
         mat.emissiveColor = new Color3(0.5, 0.1, 0.1);
-        mat.alpha = 0.6;
       }
       mat.disableLighting = true;
       mat.backFaceCulling = false;
     }
 
+    // Stop any currently playing animation
+    this.scene.stopAnimation(this.destinationIndicatorMesh);
+
     this.destinationIndicatorMesh.material = mat;
     this.destinationIndicatorMesh.position = new Vector3(posX, SPATIAL_LAYER_ALTITUDES.DESTINATION_PREVIEW, posZ);
     this.destinationIndicatorMesh.isVisible = true;
+
+    // Reset visibility and scaling for the animation
+    this.destinationIndicatorMesh.visibility = 1.0;
+    this.destinationIndicatorMesh.scaling = new Vector3(0.2, 0.2, 0.2);
+
+    // Scaling animation (expand outwards)
+    const scaleAnim = new Animation(
+      'rippleScale',
+      'scaling',
+      60,
+      Animation.ANIMATIONTYPE_VECTOR3,
+      Animation.ANIMATIONLOOPMODE_CONSTANT
+    );
+    scaleAnim.setKeys([
+      { frame: 0, value: new Vector3(0.1, 0.1, 0.1) },
+      { frame: 15, value: new Vector3(1.2, 1.2, 1.2) },
+      { frame: 30, value: new Vector3(1.5, 1.5, 1.5) },
+    ]);
+
+    // Visibility animation (fade out)
+    const fadeAnim = new Animation(
+      'rippleFade',
+      'visibility',
+      60,
+      Animation.ANIMATIONTYPE_FLOAT,
+      Animation.ANIMATIONLOOPMODE_CONSTANT
+    );
+    fadeAnim.setKeys([
+      { frame: 0, value: 0.8 },
+      { frame: 15, value: 0.4 },
+      { frame: 30, value: 0.0 },
+    ]);
+
+    this.destinationIndicatorMesh.animations = [scaleAnim, fadeAnim];
+    this.scene.beginAnimation(this.destinationIndicatorMesh, 0, 30, false, 1.5, () => {
+      this.destinationIndicatorMesh!.isVisible = false;
+    });
   }
 
   public clearDestinationIndicator() {
     if (this.destinationIndicatorMesh) {
+      if (this.scene) this.scene.stopAnimation(this.destinationIndicatorMesh);
       this.destinationIndicatorMesh.isVisible = false;
     }
   }
@@ -4319,9 +4461,95 @@ private resolveTilePick(
     }
   }
 
-  // --- COMBAT VISUAL FX ---
+  public getTargetEntityMesh(targetId: string | null): Mesh | undefined {
+    if (!targetId) return undefined;
+
+    // Direct match
+    let mesh = this.entityMeshes.get(targetId);
+    if (mesh && !mesh.isDisposed()) return mesh;
+
+    // Multiplayer socket prefix matching
+    mesh = this.entityMeshes.get(`multiplayer_${targetId}`);
+    if (mesh && !mesh.isDisposed()) return mesh;
+
+    if (targetId.startsWith('multiplayer_')) {
+      const stripped = targetId.replace(/^multiplayer_/, '');
+      mesh = this.entityMeshes.get(stripped);
+      if (mesh && !mesh.isDisposed()) return mesh;
+    }
+
+    // NPC prefix matching
+    mesh = this.entityMeshes.get(`npc_${targetId}`);
+    if (mesh && !mesh.isDisposed()) return mesh;
+
+    if (targetId.startsWith('npc_')) {
+      const stripped = targetId.replace(/^npc_/, '');
+      mesh = this.entityMeshes.get(stripped);
+      if (mesh && !mesh.isDisposed()) return mesh;
+    }
+
+    // Creature / mob prefix matching
+    mesh = this.entityMeshes.get(`creature_${targetId}`);
+    if (mesh && !mesh.isDisposed()) return mesh;
+
+    if (targetId.startsWith('creature_')) {
+      const stripped = targetId.replace(/^creature_/, '');
+      mesh = this.entityMeshes.get(stripped);
+      if (mesh && !mesh.isDisposed()) return mesh;
+    }
+
+    mesh = this.entityMeshes.get(`mob_${targetId}`);
+    if (mesh && !mesh.isDisposed()) return mesh;
+
+    if (targetId.startsWith('mob_')) {
+      const stripped = targetId.replace(/^mob_/, '');
+      mesh = this.entityMeshes.get(stripped);
+      if (mesh && !mesh.isDisposed()) return mesh;
+    }
+
+    mesh = this.entityMeshes.get(`wild_${targetId}`);
+    if (mesh && !mesh.isDisposed()) return mesh;
+
+    // Search by partial ID or name if needed
+    for (const [id, m] of this.entityMeshes.entries()) {
+      if (m && !m.isDisposed()) {
+        if (id === targetId || id.includes(targetId) || targetId.includes(id)) {
+          return m;
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  private ensureSelectionRingMesh(): Mesh {
+    if (!this.selectionRingMesh || this.selectionRingMesh.isDisposed()) {
+      const s = this.currentTileSize || 1;
+      this.selectionRingMesh = MeshBuilder.CreateTorus(
+        'selectionRing',
+        { diameter: s * 1.35, thickness: 0.08, tessellation: 48 },
+        this.scene
+      );
+      this.selectionRingMesh.rotation.x = 0; // Flat on the ground plane
+      this.selectionRingMesh.isPickable = false;
+      this.selectionRingMesh.renderingGroupId = 1;
+      this.selectionRingMesh.parent = this.rootNode;
+
+      const mat = new StandardMaterial('selectionRingMat', this.scene);
+      mat.diffuseColor = new Color3(0.2, 0.8, 1.0);
+      mat.emissiveColor = new Color3(0.2, 0.8, 1.0);
+      mat.alpha = 0.85;
+      mat.disableLighting = true;
+      mat.backFaceCulling = false;
+      mat.transparencyMode = Material.MATERIAL_ALPHABLEND;
+      this.selectionRingMaterial = mat;
+      this.selectionRingMesh.material = mat;
+    }
+    return this.selectionRingMesh;
+  }
 
   public updateSelectionRing(targetId: string | null) {
+    this.activeTargetEntityId = targetId;
     if (!targetId) {
       if (this.selectionRingMesh) {
         this.selectionRingMesh.isVisible = false;
@@ -4329,32 +4557,76 @@ private resolveTilePick(
       return;
     }
 
-    const targetMesh = this.entityMeshes.get(targetId);
-    if (!targetMesh) return;
-
-    if (!this.selectionRingMesh) {
-      // Create a glowing torus for the selection ring
-      this.selectionRingMesh = MeshBuilder.CreateTorus('selectionRing', { diameter: this.currentTileSize * 1.5, thickness: 0.1, tessellation: 32 }, this.scene);
-      this.selectionRingMesh.rotation.x = 0; // Flat on the ground
-      
-      const mat = new StandardMaterial('selectionRingMat', this.scene);
-      mat.diffuseColor = new Color3(0.2, 0.8, 1.0); // Cyan
-      mat.emissiveColor = new Color3(0.2, 0.8, 1.0);
-      mat.alpha = 0.8;
-      mat.disableLighting = true;
-      this.selectionRingMesh.material = mat;
-      
-      // Add a simple rotation animation
-      this.scene.onBeforeRenderObservable.add(() => {
-        if (this.selectionRingMesh && this.selectionRingMesh.isVisible) {
-          this.selectionRingMesh.rotation.y += 0.05;
-        }
-      });
+    const targetMesh = this.getTargetEntityMesh(targetId);
+    if (!targetMesh) {
+      if (this.selectionRingMesh) {
+        this.selectionRingMesh.isVisible = false;
+      }
+      return;
     }
 
-    this.selectionRingMesh.isVisible = true;
-    // Position slightly above the ground to avoid Z-fighting
-    this.selectionRingMesh.position = new Vector3(targetMesh.position.x, 0.1, targetMesh.position.z);
+    const ring = this.ensureSelectionRingMesh();
+    ring.isVisible = true;
+    ring.position.x = targetMesh.position.x;
+    ring.position.z = targetMesh.position.z;
+    ring.position.y = 0.08;
+  }
+
+  private updateTargetSelectionIndicator(deltaTime: number) {
+    if (!this.activeTargetEntityId) {
+      if (this.selectionRingMesh && this.selectionRingMesh.isVisible) {
+        this.selectionRingMesh.isVisible = false;
+      }
+      return;
+    }
+
+    const targetMesh = this.getTargetEntityMesh(this.activeTargetEntityId);
+    if (!targetMesh || targetMesh.isDisposed()) {
+      if (this.selectionRingMesh && this.selectionRingMesh.isVisible) {
+        this.selectionRingMesh.isVisible = false;
+      }
+      return;
+    }
+
+    const ring = this.ensureSelectionRingMesh();
+    if (!ring.isVisible) ring.isVisible = true;
+
+    // Follow target's real-time position smoothly
+    ring.position.x = targetMesh.position.x;
+    ring.position.z = targetMesh.position.z;
+    ring.position.y = 0.08;
+
+    // Continuous smooth rotation
+    ring.rotation.y += deltaTime * 2.2;
+
+    // Subtle breathing pulse
+    const pulse = 1.0 + Math.sin(performance.now() * 0.005) * 0.05;
+    const baseScale = (this.currentTileSize || 1) * pulse;
+    ring.scaling.set(baseScale, baseScale, baseScale);
+
+    // Dynamic color coding based on entity type
+    if (this.selectionRingMaterial) {
+      const isCreature =
+        targetMesh.metadata?.isCreature ||
+        this.activeTargetEntityId.startsWith('creature_') ||
+        this.activeTargetEntityId.startsWith('mob_') ||
+        this.activeTargetEntityId.startsWith('wild_');
+      const isNpc = targetMesh.metadata?.isNpc || this.activeTargetEntityId.startsWith('npc_');
+
+      if (isCreature) {
+        // Crimson / Rose for hostile creatures
+        this.selectionRingMaterial.emissiveColor.set(1.0, 0.2, 0.3);
+        this.selectionRingMaterial.diffuseColor.set(1.0, 0.2, 0.3);
+      } else if (isNpc) {
+        // Warm Amber / Gold for NPCs
+        this.selectionRingMaterial.emissiveColor.set(1.0, 0.75, 0.15);
+        this.selectionRingMaterial.diffuseColor.set(1.0, 0.75, 0.15);
+      } else {
+        // Cyan / Electric Blue for Players
+        this.selectionRingMaterial.emissiveColor.set(0.2, 0.85, 1.0);
+        this.selectionRingMaterial.diffuseColor.set(0.2, 0.85, 1.0);
+      }
+    }
   }
 
   public disposeProjectile(sourceId: string) {

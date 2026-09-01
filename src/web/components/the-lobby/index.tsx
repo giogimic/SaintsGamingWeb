@@ -4,62 +4,40 @@ import { useRef, useState, useEffect } from 'react';
 import GameCanvasBabylon from './babylon/GameCanvasBabylon';
 import dynamic from 'next/dynamic';
 import { useEditorStore } from './editor/editor-store';
-const SaintsDexOverlay = dynamic(() => import('./SaintsDexOverlay'));
-const TargetFrame = dynamic(() => import('./target-frame'));
-const QuestTrackerOverlay = dynamic(() => import('./quest-tracker-overlay'));
-const ShopOverlay = dynamic(() => import('./shop-overlay'));
-const BankOverlay = dynamic(() => import('./windows/bank-overlay'));
-const PartyOverlay = dynamic(() => import('./party-overlay'));
-const CraftingOverlay = dynamic(() => import('./crafting-overlay'));
-const BaseOverlay = dynamic(() => import('./base-overlay'));
-const DialogOverlay = dynamic(() => import('./dialog-overlay'));
-const ProfessorLabOverlay = dynamic(() => import('./ProfessorLabOverlay'));
-const LeaderboardOverlay = dynamic(() => import('./leaderboard-overlay'));
-const AchievementsOverlay = dynamic(() => import('./achievements-overlay'));
-const MiniMapRadar = dynamic(() => import('./MiniMapRadar'));
-const PeerPresenceHud = dynamic(() => import('./PeerPresenceHud'));
-const MobileControls = dynamic(() => import('./MobileControls'));
-const PlayerVitalsHud = dynamic(() => import('./hud/PlayerVitalsHud'));
-const ClassicPanel = dynamic(() => import('./ClassicPanel'));
-const Hotbar = dynamic(() => import('./Hotbar'));
-const DraggablePanel = dynamic(() => import('./DraggablePanel'));
+import SaintsDexOverlay from './SaintsDexOverlay';
+import TargetFrame from './target-frame';
+import QuestTrackerOverlay from './quest-tracker-overlay';
+import ShopOverlay from './shop-overlay';
+import BankOverlay from './windows/bank-overlay';
+import PartyOverlay from './party-overlay';
+import CraftingOverlay from './crafting-overlay';
+import BaseOverlay from './base-overlay';
+import DialogOverlay from './dialog-overlay';
+import ProfessorLabOverlay from './ProfessorLabOverlay';
+import LeaderboardOverlay from './leaderboard-overlay';
+import AchievementsOverlay from './achievements-overlay';
+import MiniMapRadar from './MiniMapRadar';
+import PeerPresenceHud from './PeerPresenceHud';
+import MobileControls from './MobileControls';
+import PlayerVitalsHud from './hud/PlayerVitalsHud';
+import ClassicPanel from './ClassicPanel';
+import Hotbar from './Hotbar';
+import DraggablePanel from './DraggablePanel';
 
 // Floating Window interfaces
-const InventoryWindow = dynamic(
-  () => import('./windows/InventoryWindow').then((m) => m.InventoryWindow),
-  { ssr: false }
-);
-const SkillsWindow = dynamic(
-  () => import('./windows/SkillsWindow').then((m) => m.SkillsWindow),
-  { ssr: false }
-);
-const EquipmentWindow = dynamic(
-  () => import('./windows/EquipmentWindow').then((m) => m.EquipmentWindow),
-  { ssr: false }
-);
-const QuestLogWindow = dynamic(
-  () => import('./windows/QuestLogWindow').then((m) => m.QuestLogWindow),
-  { ssr: false }
-);
-const GtcWindow = dynamic(
-  () => import('./windows/GtcWindow').then((m) => m.GtcWindow),
-  { ssr: false }
-);
-const LobbyHudDockLayout = dynamic(
-  () => import('./hud/LobbyHudDockLayout').then((m) => m.LobbyHudDockLayout),
-  { ssr: false }
-);
-const ContextInteractionBadge = dynamic(
-  () => import('./hud/ContextInteractionBadge').then((m) => m.ContextInteractionBadge),
-  { ssr: false }
-);
-const TargetUnitFrame = dynamic(
-  () => import('./hud/TargetUnitFrame').then((m) => m.TargetUnitFrame),
-  { ssr: false }
-);
-const GameTitleScreen = dynamic(() => import('./GameTitleScreen'));
-const GameLogin = dynamic(() => import('./GameLogin'));
-const ServerSelect = dynamic(() => import('./ServerSelect'));
+import { InventoryWindow } from './windows/InventoryWindow';
+import { SkillsWindow } from './windows/SkillsWindow';
+import { EquipmentWindow } from './windows/EquipmentWindow';
+import { QuestLogWindow } from './windows/QuestLogWindow';
+import { GtcWindow } from './windows/GtcWindow';
+import { LobbyHudDockLayout } from './hud/LobbyHudDockLayout';
+import { ContextInteractionBadge } from './hud/ContextInteractionBadge';
+import { TargetUnitFrame } from './hud/TargetUnitFrame';
+import GameTitleScreen from './GameTitleScreen';
+import GameLogin from './GameLogin';
+import ServerSelect from './ServerSelect';
+import { HudErrorBoundary } from './hud/HudErrorBoundary';
+import { Suspense } from 'react';
 import { TurnBattleOverlay } from './battle/TurnBattleOverlay';
 import { useGameStore } from './store';
 import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
@@ -1896,9 +1874,11 @@ export default function TheLobby({
 
         {/* Defense-in-depth: /studio layout already redirects non-Admin+ users,
             but gate the shell on the client too if this mounts elsewhere. */}
-        {enableStudio && canStudio && <StudioEditorShell />}
-
-
+        {enableStudio && canStudio && (
+          <Suspense fallback={null}>
+            <StudioEditorShell />
+          </Suspense>
+        )}
 
         <GameOptionsMenu 
           isOpen={isOptionsOpen}
@@ -1917,7 +1897,9 @@ export default function TheLobby({
 
         {/* Viewfinder Edit Mode — player + studio */}
         <ViewfinderOverlay />
-        <UiEditToolbar />
+        <Suspense fallback={null}>
+          <UiEditToolbar />
+        </Suspense>
 
         {gameMode === 'TITLE_SCREEN' && (
           <GameTitleScreen
@@ -1942,22 +1924,23 @@ export default function TheLobby({
         {gameMode === 'SERVER_SELECT' && <ServerSelect />}
         <GameToastStack />
 
-
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          {gameMode === 'CRAFTING' && <CraftingOverlay />}
-          {gameMode === 'BASE' && <BaseOverlay />}
-          {gameMode === 'DIALOG' && <DialogOverlay />}
-          {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
-          {gameMode === 'ACHIEVEMENTS' && <AchievementsOverlay />}
-          {gameMode === 'LEADERBOARD' && <LeaderboardOverlay />}
-          {/* TB UI: TurnBattleOverlay only (mounted when gameMode === BATTLE above) */}
-          {gameMode === 'PARTY' && <PartyOverlay />}
-          {gameMode === 'DEX' && <SaintsDexOverlay />}
-        </div>
-        
-        {gameMode === 'SHOP' && <ShopOverlay />}
-        {gameMode === 'BANK' && activeCharacterId && <BankOverlay characterId={activeCharacterId} />}
-        {activeDialog && gameMode !== 'DIALOG' && <DialogOverlay />}
+        <HudErrorBoundary fallbackTitle="Game Overlay Error">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            {gameMode === 'CRAFTING' && <CraftingOverlay />}
+            {gameMode === 'BASE' && <BaseOverlay />}
+            {gameMode === 'DIALOG' && <DialogOverlay />}
+            {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
+            {gameMode === 'ACHIEVEMENTS' && <AchievementsOverlay />}
+            {gameMode === 'LEADERBOARD' && <LeaderboardOverlay />}
+            {/* TB UI: TurnBattleOverlay only (mounted when gameMode === BATTLE above) */}
+            {gameMode === 'PARTY' && <PartyOverlay />}
+            {gameMode === 'DEX' && <SaintsDexOverlay />}
+          </div>
+          
+          {gameMode === 'SHOP' && <ShopOverlay />}
+          {gameMode === 'BANK' && activeCharacterId && <BankOverlay characterId={activeCharacterId} />}
+          {activeDialog && gameMode !== 'DIALOG' && <DialogOverlay />}
+        </HudErrorBoundary>
         
         <div 
           className={`pointer-events-none fixed inset-0 z-[9999] bg-black transition-opacity duration-300 ${isMapTransitioning ? 'opacity-100' : 'opacity-0'}`} 
@@ -1965,12 +1948,14 @@ export default function TheLobby({
 
         {/* Modular Dock-Based In-Game HUD */}
         {((['EXPLORING', 'DIALOG'].includes(gameMode) && showGameplayHud) || isEditingInterface) && (
-          <LobbyHudDockLayout enableStudio={enableStudio} />
+          <HudErrorBoundary fallbackTitle="HUD Dock Error">
+            <LobbyHudDockLayout enableStudio={enableStudio} />
+          </HudErrorBoundary>
         )}
 
         {/* Floating Interface Windows — independent of gameMode */}
         {gameMode === 'EXPLORING' && (
-          <>
+          <HudErrorBoundary fallbackTitle="Floating Window Error">
             <TargetUnitFrame />
             <ContextInteractionBadge />
             <InventoryWindow />
@@ -1978,7 +1963,7 @@ export default function TheLobby({
             <EquipmentWindow />
             <QuestLogWindow />
             <GtcWindow />
-          </>
+          </HudErrorBoundary>
         )}
 
       </div>

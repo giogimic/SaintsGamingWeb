@@ -27,6 +27,17 @@ export default function TargetFrame() {
   const otherPlayers = useGameStore((state) => state.otherPlayers);
   const showToast = useGameStore((state) => state.showToast);
 
+  const hudThemeId = useGameStore((state) => state.hudThemeId);
+  const hudConfig = useGameStore((state) => state.hudConfig);
+  const theme = getHudTheme(hudThemeId || hudConfig?.themeId);
+
+  const radiusClass =
+    hudConfig?.borderRadius === 'compact'
+      ? 'rounded-xl'
+      : hudConfig?.borderRadius === 'capsule'
+      ? 'rounded-3xl'
+      : theme.borderRadiusClass || 'rounded-2xl';
+
   if (!combatTarget) return null;
 
   const target = combatTarget;
@@ -66,17 +77,6 @@ export default function TargetFrame() {
       })
     );
   };
-
-  const hudThemeId = useGameStore((state) => state.hudThemeId);
-  const hudConfig = useGameStore((state) => state.hudConfig);
-  const theme = getHudTheme(hudThemeId || hudConfig?.themeId);
-
-  const radiusClass =
-    hudConfig?.borderRadius === 'compact'
-      ? 'rounded-xl'
-      : hudConfig?.borderRadius === 'capsule'
-      ? 'rounded-3xl'
-      : theme.borderRadiusClass || 'rounded-2xl';
 
   const borderColor = isPlayer
     ? 'border-amber-500/40'

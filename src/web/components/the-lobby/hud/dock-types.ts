@@ -109,6 +109,7 @@ export interface HudLayoutPreset {
   description?: string;
   isDefault?: boolean;
   widgets: Record<string, DockedWidgetConfig>;
+  engineOverrides?: Partial<import('./hud-themes').HudEngineConfig>;
 }
 
 export const HUD_CODEC_PREFIX = 'SG-HUD:v1:';
