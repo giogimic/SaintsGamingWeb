@@ -1800,7 +1800,8 @@ export class BabylonEngine {
       mapData.freeformLayers.forEach((layer) => {
         if (layer.type === 'paint-splat' && layer.data) {
           // Splat Rendering
-          Object.entries(layer.data).forEach(([assetUrl, points]: [string, any[]]) => {
+          Object.entries(layer.data).forEach(([assetUrl, rawPoints]) => {
+            const points = rawPoints as any[];
             if (!points.length) return;
             const matKey = `splat_mat_${assetUrl}`;
             let mat = this.tilesetMaterialCache.get(matKey);
