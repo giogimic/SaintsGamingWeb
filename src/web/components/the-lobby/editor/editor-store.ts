@@ -297,6 +297,10 @@ interface EditorState {
   setSplatScatter: (scatter: number) => void;
   splatRotationRandomize: boolean;
   setSplatRotationRandomize: (enabled: boolean) => void;
+  isAutoEdgeEnabled: boolean;
+  setIsAutoEdgeEnabled: (enabled: boolean) => void;
+  isStudioEscapeMenuOpen: boolean;
+  setIsStudioEscapeMenuOpen: (open: boolean) => void;
   
   // Gate Pairing and Placement Wizard State
   pendingGateConnection: {
@@ -346,6 +350,7 @@ interface EditorState {
   addSelectedBox: (minR: number, maxR: number, minC: number, maxC: number) => void;
   removeSelectedBox: (minR: number, maxR: number, minC: number, maxC: number) => void;
   clearSelectedCells: () => void;
+  setSelectedCells: (cells: Record<string, boolean>) => void;
   getSelectedBounds: () => { minR: number; maxR: number; minC: number; maxC: number; width: number; height: number; count: number } | null;
   getSelectedCount: () => number;
   clickedTile: { r: number; c: number } | null;
@@ -368,6 +373,7 @@ interface EditorState {
   setStudioMode: (mode: StudioMode) => void;
   openPanel: (id: PanelId) => void;
   closePanel: (id: PanelId) => void;
+  resetLayout: () => void;
   togglePanel: (id: PanelId) => void;
   toggleCollapse: (id: PanelId) => void;
   updatePanelPosition: (id: PanelId, x: number, y: number) => void;
@@ -1046,6 +1052,16 @@ export const useEditorStore = create<EditorState>()(
         set((state) => {
           state.splatRotationRandomize = enabled;
         }),
+      isAutoEdgeEnabled: false,
+      setIsAutoEdgeEnabled: (enabled: boolean) =>
+        set((state) => {
+          state.isAutoEdgeEnabled = enabled;
+        }),
+      isStudioEscapeMenuOpen: false,
+      setIsStudioEscapeMenuOpen: (open: boolean) =>
+        set((state) => {
+          state.isStudioEscapeMenuOpen = open;
+        }),
       activePrefabId: null,
       prefabs: [],
       tileClipboard: null,
@@ -1608,6 +1624,10 @@ export const useEditorStore = create<EditorState>()(
           state.selectedCells = {};
           state.selectionStart = null;
           state.selectionEnd = null;
+        }),
+      setSelectedCells: (cells) =>
+        set((state) => {
+          state.selectedCells = cells;
         }),
       getSelectedBounds: () => {
         const cells = get().selectedCells;
@@ -2529,6 +2549,10 @@ export const useEditorStore = create<EditorState>()(
             delete state.activeLocks[res];
           }
         }
+      }),
+      resetLayout: () => set((state) => {
+        state.panels = JSON.parse(JSON.stringify(DEFAULT_PANELS));
+        persistLayouts(get);
       }),
     }))
   )

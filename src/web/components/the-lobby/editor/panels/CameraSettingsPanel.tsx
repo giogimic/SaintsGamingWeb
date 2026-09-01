@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../../store';
 import { useEditorStore } from '../editor-store';
 import {
@@ -64,8 +64,9 @@ export const CameraSettingsPanel: React.FC = () => {
   const [borderClamping, setBorderClamping] = useState(true);
   const [vignetteEnabled, setVignetteEnabled] = useState(true);
   const [vignetteWeight, setVignetteWeight] = useState(15); // 1.5 default
+  const isSyncingFromEngineRef = useRef(false);
 
-  // Load from localStorage on mount
+  // Load from localStorage on mount and listen to engine camera state updates
   useEffect(() => {
     try {
       const saved = localStorage.getItem('saints_camera_settings');
@@ -86,10 +87,48 @@ export const CameraSettingsPanel: React.FC = () => {
         if (parsed.vignetteWeight) setVignetteWeight(parsed.vignetteWeight);
       }
     } catch {}
+
+    const handleEngineCameraState = (e: Event) => {
+      const custom = e as CustomEvent;
+      const settings = custom.detail?.settings;
+      if (!settings) return;
+
+      isSyncingFromEngineRef.current = true;
+      if (settings.fov !== undefined) {
+        setFov(Math.round((settings.fov * 180) / Math.PI));
+      }
+      if (settings.playerCameraStyle) {
+        setPlayerCameraStyle(settings.playerCameraStyle);
+      }
+      if (settings.borderClamping !== undefined) {
+        setBorderClamping(settings.borderClamping);
+      }
+      if (settings.playerFollowSmoothing !== undefined) {
+        setFollowSmoothing(Math.round(settings.playerFollowSmoothing * 100));
+      }
+      if (settings.isometricPitch !== undefined) {
+        setIsometricPitchAngle(Math.round((settings.isometricPitch * 180) / Math.PI));
+      }
+      if (settings.vignetteEnabled !== undefined) {
+        setVignetteEnabled(settings.vignetteEnabled);
+      }
+      if (settings.vignetteWeight !== undefined) {
+        setVignetteWeight(Math.round(settings.vignetteWeight * 10));
+      }
+      setTimeout(() => {
+        isSyncingFromEngineRef.current = false;
+      }, 50);
+    };
+
+    window.addEventListener('studio_camera_state_changed', handleEngineCameraState);
+    return () => {
+      window.removeEventListener('studio_camera_state_changed', handleEngineCameraState);
+    };
   }, []);
 
   // Sync to BabylonEngine whenever parameters change
   const syncSettingsToEngine = () => {
+    if (isSyncingFromEngineRef.current) return;
     const fovRad = (fov * Math.PI) / 180;
     const pitchRad = (isometricPitchAngle * Math.PI) / 180;
     window.dispatchEvent(
@@ -104,7 +143,9 @@ export const CameraSettingsPanel: React.FC = () => {
             invertOrbitY,
             cursorAnchoredZoom,
             isometricPitch: pitchRad,
+            playerCameraStyle,
             playerFollowSmoothing: followSmoothing / 100,
+            borderClamping,
             vignetteEnabled,
             vignetteWeight: vignetteWeight / 10,
           },
@@ -145,7 +186,9 @@ export const CameraSettingsPanel: React.FC = () => {
     invertOrbitY,
     cursorAnchoredZoom,
     isometricPitchAngle,
+    playerCameraStyle,
     followSmoothing,
+    borderClamping,
     vignetteEnabled,
     vignetteWeight,
   ]);
@@ -544,6 +587,23 @@ export const CameraSettingsPanel: React.FC = () => {
                   <span className="text-[9px] text-foreground font-bold w-10 text-right">{(vignetteWeight / 10).toFixed(1)}</span>
                 </div>
               )}
+
+              {/* Preview In-Game Camera Perspective */}
+              <div className="pt-2 border-t border-border/20 flex items-center justify-between">
+                <span className="text-[9px] text-muted-foreground">Preview Perspective</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundSynth?.playUiClick?.();
+                    syncSettingsToEngine();
+                    window.dispatchEvent(new CustomEvent('studio_preview_player_camera'));
+                  }}
+                  className="px-2.5 py-1 rounded bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm"
+                >
+                  <Eye className="w-3 h-3" />
+                  <span>Preview In-Game View</span>
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -97,6 +97,7 @@ const CameraSettingsPanel = lazy(() => import('./panels/CameraSettingsPanel').th
 
 import { RuleDebuggerOverlay } from './RuleDebuggerOverlay';
 import { DraggablePanel } from './DraggablePanel';
+import { StudioEscapeMenu } from './StudioEscapeMenu';
 
 
 export const StudioEditorShell: React.FC = () => {
@@ -110,6 +111,8 @@ export const StudioEditorShell: React.FC = () => {
   const toggleCreationMode = useEditorStore((state) => state.toggleCreationMode);
   const enterDevelopmentMode = useEditorStore((state) => state.enterDevelopmentMode);
   const setStudioMode = useEditorStore((state) => state.setStudioMode);
+  const isStudioEscapeMenuOpen = useEditorStore((state) => state.isStudioEscapeMenuOpen);
+  const setIsStudioEscapeMenuOpen = useEditorStore((state) => state.setIsStudioEscapeMenuOpen);
   const showToast = useGameStore((state) => state.showToast);
   const gameMode = useGameStore((state) => state.gameMode);
   const activeMapData = useGameStore((state) => state.activeMapData);
@@ -450,19 +453,36 @@ export const StudioEditorShell: React.FC = () => {
         }
       }
 
-      // Ctrl+D or Escape — Deselect / clear selection (Phase 5C & Spec)
+      // Ctrl+D or Escape — Deselect / clear selection or open Studio Escape Menu
       if (((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'd') || e.key === 'Escape') {
         if (!useEditorStore.getState().isCreationMode) return;
-        if (e.key !== 'Escape') e.preventDefault();
-        useEditorStore.getState().clearSelectedCells();
-        useEditorStore.getState().setSelectionStart(null);
-        useEditorStore.getState().setSelectionEnd(null);
-        const activeEng = (window as any).__babylonEngine;
-        if (activeEng?.clearSelectionPreview) {
-          activeEng.clearSelectionPreview();
+        const store = useEditorStore.getState();
+        const hasSelection = Boolean(
+          store.selectionStart ||
+          (store.selectedCells && Object.keys(store.selectedCells).length > 0) ||
+          store.activeSelectionGeometry
+        );
+        const isPasting = store.isPasting;
+
+        if (hasSelection || isPasting) {
+          if (e.key !== 'Escape') e.preventDefault();
+          store.clearSelectedCells();
+          store.setSelectionStart(null);
+          store.setSelectionEnd(null);
+          if (isPasting) store.cancelPaste();
+          const activeEng = (window as any).__babylonEngine;
+          if (activeEng?.clearSelectionPreview) {
+            activeEng.clearSelectionPreview();
+          }
+          showToast(isPasting ? 'Paste cancelled' : 'Deselected');
+          return;
         }
-        showToast('Deselected');
-        return;
+
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          store.setIsStudioEscapeMenuOpen(!store.isStudioEscapeMenuOpen);
+          return;
+        }
       }
 
       // Ctrl+C — Copy selection
@@ -957,6 +977,16 @@ export const StudioEditorShell: React.FC = () => {
       <DestinationPlacementHUD />
       <GateConnectModal />
       <RuleDebuggerOverlay />
+      <StudioEscapeMenu
+        isOpen={isStudioEscapeMenuOpen}
+        onClose={() => setIsStudioEscapeMenuOpen(false)}
+        onSaveMap={() => window.dispatchEvent(new CustomEvent('studio_save_map'))}
+        onExitStudio={() => {
+          setIsStudioEscapeMenuOpen(false);
+          useEditorStore.getState().toggleCreationMode();
+          useGameStore.getState().setGameMode('EXPLORING');
+        }}
+      />
     </>
   );
 };

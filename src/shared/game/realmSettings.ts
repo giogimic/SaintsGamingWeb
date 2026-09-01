@@ -76,6 +76,10 @@ export interface RealmSettingsConfig {
   enableSunShafts?: boolean;
   sunShaftIntensity?: number;
   colorGradingPreset?: 'neutral' | 'warm_amber' | 'cool_emerald' | 'vivid_retro' | 'classic_sepia';
+  windGustFrequency?: number;
+  enableGrassSway?: boolean;
+  tileCursorStyle?: 'bracket' | 'solid_box' | 'subtle_glow' | 'dashed_pulse';
+  tileCursorColor?: string;
 }
 
 export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
@@ -134,6 +138,10 @@ export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
   enableSunShafts: false,
   sunShaftIntensity: 40,
   colorGradingPreset: 'neutral',
+  windGustFrequency: 1.0,
+  enableGrassSway: true,
+  tileCursorStyle: 'bracket',
+  tileCursorColor: '#f59e0b',
 };
 
 export const REALM_SETTING_KEYS = {
@@ -191,6 +199,10 @@ export const REALM_SETTING_KEYS = {
   ENABLE_SUN_SHAFTS: 'ENABLE_SUN_SHAFTS',
   SUN_SHAFT_INTENSITY: 'SUN_SHAFT_INTENSITY',
   COLOR_GRADING_PRESET: 'COLOR_GRADING_PRESET',
+  WIND_GUST_FREQUENCY: 'WIND_GUST_FREQUENCY',
+  ENABLE_GRASS_SWAY: 'ENABLE_GRASS_SWAY',
+  TILE_CURSOR_STYLE: 'TILE_CURSOR_STYLE',
+  TILE_CURSOR_COLOR: 'TILE_CURSOR_COLOR',
 } as const;
 
 /**

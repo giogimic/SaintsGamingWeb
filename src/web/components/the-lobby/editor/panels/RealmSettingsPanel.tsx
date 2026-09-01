@@ -677,6 +677,39 @@ export function RealmSettingsPanel() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Wind Gust Frequency & Grass Blade Sway */}
+                  <div className="space-y-2 pt-1 border-t border-border/10">
+                    <label className="flex items-center justify-between p-2 rounded bg-[#060e1c] border border-border/20 cursor-pointer text-[10px]">
+                      <div>
+                        <div className="font-bold">Vegetation & Foliage Wind Sway</div>
+                        <div className="text-[8.5px] text-muted-foreground">Procedural grass and tree canopy movement</div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={settings.enableGrassSway !== false}
+                        onChange={(e) => setSettings({ ...settings, enableGrassSway: e.target.checked })}
+                        className="accent-primary"
+                      />
+                    </label>
+                    {settings.enableGrassSway !== false && (
+                      <div className="space-y-1 p-2 rounded bg-[#060e1c]/60 border border-border/10">
+                        <div className="flex items-center justify-between text-[9px]">
+                          <span className="text-muted-foreground">Wind Gust Frequency</span>
+                          <span className="text-primary font-bold">{((settings.windGustFrequency || 1.0)).toFixed(1)} Hz</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={2}
+                          max={30}
+                          step={1}
+                          value={Math.round((settings.windGustFrequency || 1.0) * 10)}
+                          onChange={(e) => setSettings({ ...settings, windGustFrequency: parseInt(e.target.value) / 10 })}
+                          className="w-full accent-primary h-1 cursor-pointer"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -881,6 +914,36 @@ export function RealmSettingsPanel() {
                   onChange={(e) => setSettings({ ...settings, gridLineOpacity: parseInt(e.target.value) })}
                   className="w-full accent-primary h-1 cursor-pointer"
                 />
+              </div>
+
+              {/* 2.5D Tile Hover Cursor Style */}
+              <div className="space-y-2 pt-2 border-t border-border/10">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-muted-foreground">Tile Hover Reticle Style</span>
+                  <span className="text-primary font-bold uppercase text-[9px]">{settings.tileCursorStyle || 'bracket'}</span>
+                </div>
+                <div className="grid grid-cols-4 gap-1">
+                  {[
+                    { id: 'bracket', label: 'Corners', desc: 'Reticle corner brackets' },
+                    { id: 'solid_box', label: 'Solid Box', desc: 'Crisp outline box' },
+                    { id: 'subtle_glow', label: 'Glow', desc: 'Soft tile fill luminescence' },
+                    { id: 'dashed_pulse', label: 'Dashed', desc: 'Animated dashed border' },
+                  ].map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setSettings({ ...settings, tileCursorStyle: c.id as any })}
+                      title={c.desc}
+                      className={`py-1.5 px-1 rounded text-[8.5px] font-bold transition-colors cursor-pointer text-center truncate ${
+                        (settings.tileCursorStyle || 'bracket') === c.id
+                          ? 'bg-primary/20 border border-primary text-primary'
+                          : 'bg-[#060e1c] border border-border/20 text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Depth of Field (Tilt-Shift Diorama) */}
