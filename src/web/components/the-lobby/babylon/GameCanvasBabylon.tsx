@@ -1330,25 +1330,33 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 if (selMode === 'circle') {
                   const r0 = store.selectionStart.r;
                   const c0 = store.selectionStart.c;
-                  const centerR = (r0 + r) / 2;
-                  const centerC = (c0 + c) / 2;
-                  const radius = Math.max(Math.abs(r - r0), Math.abs(c - c0)) / 2;
-                  const rMin = Math.floor(centerR - radius);
-                  const rMax = Math.ceil(centerR + radius);
-                  const cMin = Math.floor(centerC - radius);
-                  const cMax = Math.ceil(centerC + radius);
-                  const radSq = radius * radius;
-                  const circleCells: Array<{ r: number; c: number }> = [];
-                  for (let rr = rMin; rr <= rMax; rr++) {
-                    for (let cc = cMin; cc <= cMax; cc++) {
-                      if ((rr - centerR) ** 2 + (cc - centerC) ** 2 <= radSq) {
-                        circleCells.push({ r: rr, c: cc });
-                      }
-                    }
-                  }
-                  engine.setMultiSelectionPreview(circleCells);
+                  const centerR = (r0 + r) / 2 + 0.5;
+                  const centerC = (c0 + c) / 2 + 0.5;
+                  const radius = Math.max(Math.abs(r - r0), Math.abs(c - c0)) / 2 + 0.5;
+                  engine.setContinuousSelectionPreview(
+                    {
+                      type: 'circle',
+                      centerX: centerC,
+                      centerZ: centerR,
+                      radius,
+                    },
+                    mode
+                  );
                 } else {
-                  engine.setSelectionPreview(store.selectionStart.r, store.selectionStart.c, r, c, mode);
+                  const minR = Math.min(store.selectionStart.r, r);
+                  const maxR = Math.max(store.selectionStart.r, r) + 1;
+                  const minC = Math.min(store.selectionStart.c, c);
+                  const maxC = Math.max(store.selectionStart.c, c) + 1;
+                  engine.setContinuousSelectionPreview(
+                    {
+                      type: 'rectangle',
+                      minX: minC,
+                      minZ: minR,
+                      maxX: maxC,
+                      maxZ: maxR,
+                    },
+                    mode
+                  );
                 }
               }
             } else if (eventType === 'up') {
@@ -1432,11 +1440,14 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             }
 
             const ops: any[] = [];
+            // Center prefab on cursor pivot
+            const offsetR = Math.floor(((prefab.height || 1) - 1) / 2);
+            const offsetC = Math.floor(((prefab.width || 1) - 1) / 2);
             
             // Paste Visual Data
             prefab.visualData?.forEach((v: any) => {
-              const tr = r + v.r;
-              const tc = c + v.c;
+              const tr = r + v.r - offsetR;
+              const tc = c + v.c - offsetC;
               if (tr < 0 || tr >= mapHeight || tc < 0 || tc >= mapWidth) return;
               
               // Base the target layer off the currently active layer in the editor, offsetting by the prefab's built-in layer offset
@@ -1451,8 +1462,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
             // Paste Logic Data
             prefab.logicData?.forEach((l: any) => {
-              const tr = r + l.r;
-              const tc = c + l.c;
+              const tr = r + l.r - offsetR;
+              const tc = c + l.c - offsetC;
               if (tr < 0 || tr >= mapHeight || tc < 0 || tc >= mapWidth) return;
               const painted = paintWorldCell(map, LOGIC_LAYER_IDX, tr, tc, l.tileId, worldSync);
               if (!('error' in painted)) {
@@ -1618,9 +1629,29 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               newMap.freeformLayers[layerIdx] = layer;
             }
             
-            // Figure out asset to use (if GID selected, use its tileset image, else fallback)
+            // Figure out asset and UV mapping to use
             const activeTs = liveMap.tilesets?.slice().reverse().find((ts: any) => store.activeBrushTileId >= ts.firstgid);
             const assetUrl = activeTs ? activeTs.imageSource : 'default';
+
+            let uOffset: number | undefined;
+            let vOffset: number | undefined;
+            let uScale: number | undefined;
+            let vScale: number | undefined;
+
+            if (activeTs && activeTs.columns && activeTs.columns > 0) {
+              const localId = store.activeBrushTileId - activeTs.firstgid;
+              const col = localId % activeTs.columns;
+              const row = Math.floor(localId / activeTs.columns);
+              const tileW = activeTs.tilewidth || 32;
+              const tileH = activeTs.tileheight || 32;
+              const imgW = activeTs.imagewidth || activeTs.columns * tileW;
+              const imgH = activeTs.imageheight || Math.ceil((activeTs.tilecount || activeTs.columns) / activeTs.columns) * tileH;
+
+              uScale = tileW / imgW;
+              vScale = tileH / imgH;
+              uOffset = (col * tileW) / imgW;
+              vOffset = 1 - ((row + 1) * tileH) / imgH;
+            }
 
             const bShape = store.brushShape || 'circle';
             const eraseRad = store.brushRadius || 1;
@@ -1652,7 +1683,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                     x: finalX,
                     y: finalY,
                     scale: store.stampScale || 1,
-                    rotation: store.brushRotation ? (store.brushRotation * Math.PI / 180) : 0
+                    rotation: store.brushRotation ? (store.brushRotation * Math.PI / 180) : 0,
+                    uOffset,
+                    vOffset,
+                    uScale,
+                    vScale,
                   });
                 }
               }
@@ -1671,7 +1706,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                   x: finalX,
                   y: finalY,
                   scale: store.stampScale || 1,
-                  rotation: store.brushRotation ? (store.brushRotation * Math.PI / 180) : 0
+                  rotation: store.brushRotation ? (store.brushRotation * Math.PI / 180) : 0,
+                  uOffset,
+                  vOffset,
+                  uScale,
+                  vScale,
                 });
               }
             }

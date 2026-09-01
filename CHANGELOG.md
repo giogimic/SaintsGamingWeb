@@ -1,3 +1,13 @@
+# 2.1.608
+- **Continuous Geometry Foundation, Persistent SelectionAssets & Studio Overhaul**:
+  - **Continuous Geometry Model (`continuousGeometry.ts`)**: Established mathematical continuous geometry (`circle`, `ellipse`, `rectangle`, `regularPolygon`, `star`, `polygon`, `path`, `freehand`) as the single source of truth across 2D, 2.5D, and 3D interactions.
+  - **Derived Compatibility Projections**: Maintained `selectedCells` as a downstream projection generated via `rasterizeGeometryToCells`, ensuring 100% backward compatibility for existing panels, clipboard, and selection tools.
+  - **Persistent SelectionAsset Capture (`captureSelectionAsset`)**: Created a source-independent asset capture pipeline (`/app/actions/assets.ts`) saving derived raster cutouts to standalone `UsableAsset` storage, decoupling stamps from source tileset deletion.
+  - **UV-Mapped Splats & Props**: Computed accurate UV bounding offsets (`uOffset`, `vOffset`, `uScale`, `vScale`) for active tileset cutouts in `GameCanvasBabylon.tsx` and `BabylonEngine.ts`, preventing tilesheet stretching.
+  - **Unified Cursor & Center Pivot**: Centered multi-tile patterns, prefabs, and stamps precisely under the cursor pivot.
+  - **Snap to Grid Toggle Button**: Added a dedicated Magnet toggle in `StudioBottomToolbar.tsx` for seamless switching between grid snapping and continuous sub-tile placement.
+  - **True Continuous Vector Previews**: Implemented `setContinuousSelectionPreview` in `BabylonEngine.ts` to render smooth vector circles, ellipses, rectangles, and polygons without grid-cell stair-stepping.
+
 # 2.1.607
 - **Modern Glassmorphic Selection & Marquee Overlays**:
   - **Dynamic Texture Selection Boxes**: Replaced plain flat color planes in `setSelectionPreview` with high-definition dynamic textures featuring glowing outer borders (`#f59e0b` normal, `#10b981` add, `#f43f5e` subtract), subtle internal cell dividers, soft glass fills, and crisp white corner L-brackets.

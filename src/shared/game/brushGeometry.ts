@@ -2,11 +2,11 @@
  * Shared Brush Shape Geometry Utilities
  *
  * Single source of truth for shape-based distance and footprint checks.
- * Used by:
- *  - BabylonEngine grid paint loop
- *  - BabylonEngine reticle `isInFootprint`
- *  - GameCanvasBabylon freeform splat/prop erase & density
+ * Integrates directly with ContinuousGeometry mathematical models while
+ * preserving backward-compatible signatures for all engine subsystems.
  */
+
+import { isPointInGeometry, type ContinuousGeometry } from './geometry/continuousGeometry';
 
 export type BrushShape = 'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon';
 
@@ -43,8 +43,7 @@ export function isInGridFootprint(
  * Check whether a floating-point offset (dx, dy) falls within a brush shape
  * of the given radius.
  *
- * Used for freeform splat/prop operations where coordinates are sub-tile
- * floating-point distances from the brush center.
+ * Routes directly through the continuous geometry model.
  *
  * @param dx  X distance from brush center (float)
  * @param dy  Y distance from brush center (float)
@@ -57,13 +56,27 @@ export function isInBrushShape(
   radius: number,
   shape: BrushShape
 ): boolean {
-  if (shape === 'square') return Math.max(Math.abs(dx), Math.abs(dy)) <= radius;
-  if (shape === 'diamond') return Math.abs(dx) + Math.abs(dy) <= radius;
+  if (shape === 'square') {
+    return isPointInGeometry(dx, dy, {
+      type: 'rectangle',
+      minX: -radius,
+      minZ: -radius,
+      maxX: radius,
+      maxZ: radius,
+    });
+  }
+  if (shape === 'diamond') {
+    return Math.abs(dx) + Math.abs(dy) <= radius;
+  }
   if (shape === 'splat-star') {
     if (dx * dx + dy * dy > radius * radius) return false;
-    // Thin arms along cardinal and diagonal axes
-    return Math.abs(dx) < 0.15 || Math.abs(dy) < 0.15 || Math.abs(Math.abs(dx) - Math.abs(dy)) < 0.15;
+    return Math.abs(dx) < 0.2 || Math.abs(dy) < 0.2 || Math.abs(Math.abs(dx) - Math.abs(dy)) < 0.2;
   }
-  // circle + polygon fallback
-  return dx * dx + dy * dy <= radius * radius;
+  // circle & polygon fallback
+  return isPointInGeometry(dx, dy, {
+    type: 'circle',
+    centerX: 0,
+    centerZ: 0,
+    radius,
+  });
 }

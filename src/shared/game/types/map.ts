@@ -32,11 +32,16 @@ export interface TileLayer {
 
 export interface FreeformObject {
   id: string;
-  asset: string;
+  asset: string; // URL or identifier fallback
+  assetId?: string; // Persistent UsableAsset ID
   x: number;
   y: number;
   scale?: number;
   rotation?: number;
+  uOffset?: number;
+  vOffset?: number;
+  uScale?: number;
+  vScale?: number;
 }
 
 export interface FreeformRegion {
@@ -46,11 +51,23 @@ export interface FreeformRegion {
   target?: string;
 }
 
+export interface FreeformSplatPoint {
+  x: number;
+  y: number;
+  scale?: number;
+  rotation?: number;
+  uOffset?: number;
+  vOffset?: number;
+  uScale?: number;
+  vScale?: number;
+  assetId?: string;
+}
+
 export interface FreeformLayer {
   id: string;
   name: string;
   type: 'paint-splat' | 'free-form' | 'polygon';
-  data?: Record<string, {x: number, y: number, scale?: number, rotation?: number}[]>;
+  data?: Record<string, FreeformSplatPoint[]>;
   objects?: FreeformObject[];
   regions?: FreeformRegion[];
 }
