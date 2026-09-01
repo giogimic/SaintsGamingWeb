@@ -820,6 +820,55 @@ export function RealmSettingsPanel() {
                   </div>
                 )}
               </div>
+              {/* 3D Ground Items & Footsteps */}
+              <div className="space-y-2 pt-2 border-t border-border/10">
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  3D Ground Item Drops & Avatar FX
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <label className="flex items-center justify-between p-2 rounded bg-[#060e1c] border border-border/20 cursor-pointer text-[10px]">
+                    <div>
+                      <div className="font-bold">3D Floating Ground Items</div>
+                      <div className="text-[8.5px] text-muted-foreground">Upright bobbing item drops in 3D world</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={settings.enable3DGroundItems !== false}
+                      onChange={(e) => setSettings({ ...settings, enable3DGroundItems: e.target.checked })}
+                      className="accent-primary"
+                    />
+                  </label>
+                  <label className="flex items-center justify-between p-2 rounded bg-[#060e1c] border border-border/20 cursor-pointer text-[10px]">
+                    <div>
+                      <div className="font-bold">Avatar Footstep Dust Puffs</div>
+                      <div className="text-[8.5px] text-muted-foreground">Particle puffs when walking terrain</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={settings.enableFootstepParticles !== false}
+                      onChange={(e) => setSettings({ ...settings, enableFootstepParticles: e.target.checked })}
+                      className="accent-primary"
+                    />
+                  </label>
+                </div>
+                {settings.enable3DGroundItems !== false && (
+                  <div className="space-y-1 p-2 rounded bg-[#060e1c]/60 border border-border/10">
+                    <div className="flex items-center justify-between text-[9px]">
+                      <span className="text-muted-foreground">3D Ground Item Spin Speed</span>
+                      <span className="text-primary font-bold">{((settings.groundItemSpinSpeed || 1.5)).toFixed(1)} rad/s</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={30}
+                      step={1}
+                      value={Math.round((settings.groundItemSpinSpeed || 1.5) * 10)}
+                      onChange={(e) => setSettings({ ...settings, groundItemSpinSpeed: parseInt(e.target.value) / 10 })}
+                      className="w-full accent-primary h-1 cursor-pointer"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

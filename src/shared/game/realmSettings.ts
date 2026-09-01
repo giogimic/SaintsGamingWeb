@@ -66,6 +66,9 @@ export interface RealmSettingsConfig {
   gridLineStyle?: 'solid' | 'dots' | 'isometric';
   gridLineOpacity?: number;
   enableWaterShorelineFoam?: boolean;
+  enable3DGroundItems?: boolean;
+  groundItemSpinSpeed?: number;
+  enableFootstepParticles?: boolean;
 }
 
 export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
@@ -114,6 +117,9 @@ export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
   gridLineStyle: 'solid',
   gridLineOpacity: 40,
   enableWaterShorelineFoam: true,
+  enable3DGroundItems: true,
+  groundItemSpinSpeed: 1.5,
+  enableFootstepParticles: true,
 };
 
 export const REALM_SETTING_KEYS = {
@@ -161,6 +167,9 @@ export const REALM_SETTING_KEYS = {
   GRID_LINE_STYLE: 'GRID_LINE_STYLE',
   GRID_LINE_OPACITY: 'GRID_LINE_OPACITY',
   ENABLE_WATER_SHORELINE_FOAM: 'ENABLE_WATER_SHORELINE_FOAM',
+  ENABLE_3D_GROUND_ITEMS: 'ENABLE_3D_GROUND_ITEMS',
+  GROUND_ITEM_SPIN_SPEED: 'GROUND_ITEM_SPIN_SPEED',
+  ENABLE_FOOTSTEP_PARTICLES: 'ENABLE_FOOTSTEP_PARTICLES',
 } as const;
 
 /**
