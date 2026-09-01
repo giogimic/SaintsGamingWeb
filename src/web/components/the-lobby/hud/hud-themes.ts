@@ -167,6 +167,50 @@ export const BUILTIN_HUD_THEMES: Record<string, HudTheme> = {
     },
     borderRadiusClass: 'rounded-xl',
   },
+  'pocket-creature': {
+    id: 'pocket-creature',
+    name: 'Pocket Companion (Monster Hearts)',
+    tagline: 'Creature Battler & Dynamic Heart Vitals',
+    description: 'Pokéball ruby & obsidian glass styling with dynamic heart containers, tri-color Pokémon battle gauges, and electric PP energy bars.',
+    badge: 'Creature / Hearts',
+    palette: {
+      primary: '#ef4444',
+      primaryMuted: 'rgba(239, 68, 68, 0.2)',
+      border: 'border-red-500/40',
+      borderActive: 'border-red-400',
+      glassBg: 'bg-[#0a0f1d]/95',
+      glassHeaderBg: 'bg-[#151c2e]/90',
+      hpFill: 'bg-gradient-to-r from-red-600 via-rose-500 to-pink-500',
+      mpFill: 'bg-gradient-to-r from-amber-400 to-yellow-300',
+      xpFill: 'bg-gradient-to-r from-cyan-500 to-blue-500',
+      accentGlow: '0 0 20px rgba(239, 68, 68, 0.3)',
+      badgeBg: 'bg-red-500/20',
+      badgeText: 'text-red-300',
+    },
+    borderRadiusClass: 'rounded-2xl',
+  },
+  'retro-pixel-heart': {
+    id: 'retro-pixel-heart',
+    name: 'Retro Pixel Hearts (8-Bit)',
+    tagline: 'Classic 8-Bit Heart Adventure',
+    description: 'Charming retro pixel health frames with Zelda & Pokémon heart containers, emerald mana, and golden star XP.',
+    badge: 'Retro 8-Bit',
+    palette: {
+      primary: '#f59e0b',
+      primaryMuted: 'rgba(245, 158, 11, 0.2)',
+      border: 'border-amber-400/40',
+      borderActive: 'border-amber-300',
+      glassBg: 'bg-[#0c1017]/95',
+      glassHeaderBg: 'bg-[#161c26]/90',
+      hpFill: 'bg-gradient-to-r from-rose-600 to-red-500',
+      mpFill: 'bg-gradient-to-r from-emerald-500 to-teal-400',
+      xpFill: 'bg-gradient-to-r from-amber-400 to-yellow-300',
+      accentGlow: '0 0 20px rgba(245, 158, 11, 0.3)',
+      badgeBg: 'bg-amber-400/20',
+      badgeText: 'text-amber-300',
+    },
+    borderRadiusClass: 'rounded-xl',
+  },
 };
 
 export const DEFAULT_HUD_THEME_ID = 'saints-gold';
@@ -178,6 +222,8 @@ export type HudThemeId =
   | 'emerald-grove'
   | 'royal-arcane'
   | 'crimson-vanguard'
+  | 'pocket-creature'
+  | 'retro-pixel-heart'
   | string;
 
 export interface HudEngineConfig {
@@ -187,7 +233,8 @@ export interface HudEngineConfig {
   borderRadius?: 'rounded' | 'compact' | 'capsule';
   borderGlow?: boolean;
   minimapShape?: 'rounded' | 'circle' | 'square';
-  vitalsFormat?: 'dual-bar' | 'compact-stacked';
+  vitalsFormat?: 'dual-bar' | 'compact-stacked' | 'heart-containers' | 'pokemon-gauge';
+  heartContainerCount?: number;
   hotbarLayout?: '1x5' | '1x10' | '2x5';
   showCoords?: boolean;
   showHotbarKeybinds?: boolean;

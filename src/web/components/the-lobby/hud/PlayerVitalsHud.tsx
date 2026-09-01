@@ -5,6 +5,8 @@ import { useGameStore } from '../store';
 import { Heart, Sparkles, User, Zap, Shield, Swords, Coins } from 'lucide-react';
 import { CharacterSpritePreview } from '../CharacterSpritePreview';
 import { getHudTheme } from './hud-themes';
+import { HeartContainersView } from './HeartContainersView';
+import { PokemonBattleGauge } from './PokemonBattleGauge';
 
 function StatBar({
   label,
@@ -110,6 +112,14 @@ export const PlayerVitalsHud: React.FC = () => {
       ? 'rounded-3xl'
       : theme.borderRadiusClass || 'rounded-2xl';
 
+  const effectiveVitalsFormat =
+    hudConfig?.vitalsFormat ||
+    (theme.id === 'pocket-creature'
+      ? 'pokemon-gauge'
+      : theme.id === 'retro-pixel-heart'
+      ? 'heart-containers'
+      : 'dual-bar');
+
   return (
     <div
       className={`pointer-events-auto w-[min(92vw,240px)] select-none font-mono transition-all duration-300 ${
@@ -161,51 +171,135 @@ export const PlayerVitalsHud: React.FC = () => {
           </div>
         </div>
 
-        {/* 2. Stat Bars Deck */}
-        <div className="flex flex-col gap-2">
-          {/* Health Bar */}
-          <StatBar
-            label="HP"
-            value={hp}
-            max={maxHp}
-            percent={hpPercent}
-            fillClass={
-              hpPercent <= 25
-                ? 'bg-gradient-to-r from-rose-600 via-rose-500 to-red-400 shadow-[0_0_12px_rgba(244,63,94,0.8)]'
-                : theme.palette.hpFill
-            }
-            accentClass={isCriticalHp ? 'text-rose-400' : 'text-rose-400'}
-            icon={<Heart className="h-3 w-3" fill="currentColor" />}
-            ticksCount={4}
+        {/* 2. Vitality Display (Theme / Format Responsive) */}
+        {effectiveVitalsFormat === 'pokemon-gauge' ? (
+          /* ── POKÉMON BATTLE GAUGE ── */
+          <PokemonBattleGauge
+            name={name}
+            level={level}
+            hp={hp}
+            maxHp={maxHp}
+            mp={mp}
+            maxMp={maxMp}
+            xpIntoLevel={xpIntoLevel}
+            xpSpan={xpSpan}
+            xpProgress={xpProgress}
+            perk={perk}
+            combatStyle={combatStyle}
+            themeId={theme.id}
           />
+        ) : effectiveVitalsFormat === 'heart-containers' ? (
+          /* ── HEART CONTAINERS VIEW ── */
+          <div className="flex flex-col gap-2">
+            <HeartContainersView
+              hp={hp}
+              maxHp={maxHp}
+              containerCount={hudConfig?.heartContainerCount || 10}
+              size="md"
+              showLabel={true}
+              isRetroPixel={theme.id === 'retro-pixel-heart'}
+            />
 
-          {/* Mana / Energy Bar */}
-          <StatBar
-            label="MP"
-            value={mp}
-            max={maxMp}
-            percent={mpPercent}
-            fillClass={theme.palette.mpFill}
-            accentClass="text-sky-400"
-            icon={<Sparkles className="h-3 w-3" fill="currentColor" />}
-            ticksCount={4}
-          />
+            {/* Mana / Energy Bar */}
+            <StatBar
+              label="MP"
+              value={mp}
+              max={maxMp}
+              percent={mpPercent}
+              fillClass={theme.palette.mpFill}
+              accentClass="text-sky-400"
+              icon={<Sparkles className="h-3 w-3" fill="currentColor" />}
+              ticksCount={4}
+            />
 
-          {/* EXP Progress Bar */}
-          <StatBar
-            label="EXP"
-            value={xpIntoLevel}
-            max={xpSpan}
-            percent={xpProgress}
-            fillClass={theme.palette.xpFill}
-            ticksCount={4}
-            hideHeader={true}
-            subtext="LEVEL PROGRESS"
-          />
-        </div>
+            {/* EXP Progress Bar */}
+            <StatBar
+              label="EXP"
+              value={xpIntoLevel}
+              max={xpSpan}
+              percent={xpProgress}
+              fillClass={theme.palette.xpFill}
+              ticksCount={4}
+              hideHeader={true}
+              subtext="LEVEL PROGRESS"
+            />
+          </div>
+        ) : effectiveVitalsFormat === 'compact-stacked' ? (
+          /* ── COMPACT STACKED BARS ── */
+          <div className="flex flex-col gap-1.5">
+            <StatBar
+              label="HP"
+              value={hp}
+              max={maxHp}
+              percent={hpPercent}
+              fillClass={
+                hpPercent <= 25
+                  ? 'bg-gradient-to-r from-rose-600 via-rose-500 to-red-400 shadow-[0_0_12px_rgba(244,63,94,0.8)]'
+                  : theme.palette.hpFill
+              }
+              accentClass="text-rose-400"
+              icon={<Heart className="h-3 w-3" fill="currentColor" />}
+              ticksCount={2}
+            />
+            <StatBar
+              label="MP"
+              value={mp}
+              max={maxMp}
+              percent={mpPercent}
+              fillClass={theme.palette.mpFill}
+              accentClass="text-sky-400"
+              icon={<Sparkles className="h-3 w-3" fill="currentColor" />}
+              ticksCount={2}
+              hideHeader={true}
+            />
+          </div>
+        ) : (
+          /* ── DUAL BARS (DEFAULT) ── */
+          <div className="flex flex-col gap-2">
+            {/* Health Bar */}
+            <StatBar
+              label="HP"
+              value={hp}
+              max={maxHp}
+              percent={hpPercent}
+              fillClass={
+                hpPercent <= 25
+                  ? 'bg-gradient-to-r from-rose-600 via-rose-500 to-red-400 shadow-[0_0_12px_rgba(244,63,94,0.8)]'
+                  : theme.palette.hpFill
+              }
+              accentClass="text-rose-400"
+              icon={<Heart className="h-3 w-3" fill="currentColor" />}
+              ticksCount={4}
+            />
+
+            {/* Mana / Energy Bar */}
+            <StatBar
+              label="MP"
+              value={mp}
+              max={maxMp}
+              percent={mpPercent}
+              fillClass={theme.palette.mpFill}
+              accentClass="text-sky-400"
+              icon={<Sparkles className="h-3 w-3" fill="currentColor" />}
+              ticksCount={4}
+            />
+
+            {/* EXP Progress Bar */}
+            <StatBar
+              label="EXP"
+              value={xpIntoLevel}
+              max={xpSpan}
+              percent={xpProgress}
+              fillClass={theme.palette.xpFill}
+              ticksCount={4}
+              hideHeader={true}
+              subtext="LEVEL PROGRESS"
+            />
+          </div>
+        )}
 
         {/* 3. Active Perk / Buff Footer */}
-        {perk && (
+        {perk && effectiveVitalsFormat !== 'pokemon-gauge' && (
           <div className={`mt-2 pt-2 border-t ${theme.palette.border} flex items-center justify-between text-[9px] text-amber-300`}>
             <span className="flex items-center gap-1">
               <Zap size={10} className="text-amber-400" />

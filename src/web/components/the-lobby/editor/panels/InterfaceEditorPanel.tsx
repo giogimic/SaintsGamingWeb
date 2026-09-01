@@ -103,7 +103,7 @@ export const InterfaceEditorPanel: React.FC = () => {
             Game Interface Designer
           </span>
           <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded border border-primary/30 font-bold">
-            6 Styles
+            {HUD_THEME_LIST.length} Styles
           </span>
         </div>
 
@@ -346,6 +346,8 @@ export const InterfaceEditorPanel: React.FC = () => {
                   >
                     <option value="dual-bar">Dual Full Bars (HP + MP + XP)</option>
                     <option value="compact-stacked">Compact Stacked</option>
+                    <option value="heart-containers">Heart Containers (Pokemon / Zelda)</option>
+                    <option value="pokemon-gauge">Pokemon Battle Gauge (Tri-Color HP)</option>
                   </select>
                 </div>
 

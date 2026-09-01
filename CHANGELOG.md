@@ -1,3 +1,20 @@
+# 2.1.595
+- **Pokémon & Heart-Container UI Styles & Vitals Engine**:
+  - Added new HUD themes to `BUILTIN_HUD_THEMES`:
+    - **Pocket Companion (Monster Hearts)** (`pocket-creature`): Vibrant ruby Pokéball trim, electric yellow PP energy bars, cyan EXP gauges, and dynamic tri-color Pokémon battle vitality cards.
+    - **Retro Pixel Hearts (8-Bit)** (`retro-pixel-heart`): Classic 8-bit adventure aesthetic featuring animated segmented Zelda/Pokémon heart containers, emerald mana, and golden star XP.
+  - Created `HeartContainersView.tsx`:
+    - Animated heart container system supporting full hearts, half hearts, and empty heart wireframes with custom SVG gradients and glowing low-HP pulsing heartbeat alerts.
+  - Created `PokemonBattleGauge.tsx`:
+    - Authentic Pokémon-style battle status frame featuring tri-color segmented HP bars (>50% Green, 20-50% Yellow, <=20% Red Critical), bold tabular numerical readouts, and PP/Energy gauges.
+  - Enhanced `PlayerVitalsHud.tsx`:
+    - Added responsive format branching for `heart-containers`, `pokemon-gauge`, `compact-stacked`, and `dual-bar`.
+  - Enhanced `TargetFrame.tsx`:
+    - Added Pokémon tri-color HP gauge and heart container rendering for wild creatures, bosses, and players.
+  - Added `DEFAULT_PRESET_CREATURE` ("Pocket Trainer / Creature Battler") to `default-presets.ts`.
+  - Updated `InterfaceEditorPanel.tsx` (World Studio UI Designer) and `GameOptionsMenu.tsx` (In-Game Options Menu) with new themes and Vitality Gauge Format selectors.
+- **Version Bump**: Bumped release version to `v2.1.595` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.594
 - **Lobby Character Preview Deck (Inventory / Equipment, Centered Sprite Showcase & Skills next to Chat)**:
   - Created `CharacterDetailPreview.tsx` featuring the 3-column pre-game character inspector:
