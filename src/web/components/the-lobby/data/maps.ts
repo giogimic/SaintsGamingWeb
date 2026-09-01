@@ -58,6 +58,7 @@ export interface GameMapData {
   source?: string;
   version?: number;
   tileLayers?: Array<{ name: string; grid: number[][] }>;
+  freeformLayers?: any[];
   tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number }>;
   npcs?: Array<{
     id: string;

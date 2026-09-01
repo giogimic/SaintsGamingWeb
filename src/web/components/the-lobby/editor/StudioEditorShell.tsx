@@ -234,6 +234,7 @@ export const StudioEditorShell: React.FC = () => {
         npcs: saveDoc.npcs || [],
         encounterPool: saveDoc.encounterPool || [],
         tileLayers: saveDoc.tileLayers || [],
+        freeformLayers: saveDoc.freeformLayers || [],
         tilesets: saveDoc.tilesets || [],
       });
       const res = await fetch(`/api/maps/${encodeURIComponent(baseMapId)}`, {
