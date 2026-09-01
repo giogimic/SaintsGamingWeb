@@ -1,3 +1,9 @@
+# 2.1.624
+- **Celestial Moon Phase Night Glow, Ground Grid Line Styles & Water Shoreline Wave Foam**:
+  - **Celestial Moon Phase Night Glow (`realmSettings.ts`, `RealmSettingsPanel.tsx`, `BabylonEngine.ts`)**: Added 4 nocturnal moon presets (`Full Moon`, `Crescent Moon`, `New Moon`, `Eclipse`) with real-time ambient lighting shifts, specular moon highlights, and blood moon eclipse tints.
+  - **Ground Grid Visual Styles & Opacity (`realmSettings.ts`, `RealmSettingsPanel.tsx`)**: Added grid style options (`Solid Grid`, `Dotted Grid`, `Isometric Grid`) with configurable opacity slider (`10%` to `100%`).
+  - **Water Shoreline Wave Foam (`realmSettings.ts`, `RealmSettingsPanel.tsx`)**: Added toggle for procedural foam highlights on water boundary edges.
+
 # 2.1.623
 - **Studio Window Sub-Menu Dropdown Stacking Fix (React Portal & High Z-Index)**:
   - **Fixed Window Sub-Menu Dropdown Clipping (`WindowMenuBar.tsx`)**: Re-architected `WindowMenuDropdown` with `createPortal(..., document.body)`, dynamic viewport coordinate measurement, and `z-[999999]`. Dropdown menus now float completely over all dock windows, viewports, canvases, and title bars without clipping or hidden overflow.

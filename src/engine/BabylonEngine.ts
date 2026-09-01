@@ -770,6 +770,8 @@ export class BabylonEngine {
     let sunDiffuse = new Color3(1.0, 0.97, 0.88);
     let defaultFog = '#0b1626';
 
+    const moonPhase = settings.moonPhase || 'full';
+
     if (tod === 'golden_hour') {
       ambientDiffuse = new Color3(1.0, 0.85, 0.7);
       ambientGround = new Color3(0.25, 0.15, 0.1);
@@ -781,15 +783,40 @@ export class BabylonEngine {
       sunDiffuse = new Color3(0.85, 0.45, 0.65);
       defaultFog = '#140c20';
     } else if (tod === 'midnight') {
-      ambientDiffuse = new Color3(0.25, 0.3, 0.55);
-      ambientGround = new Color3(0.05, 0.08, 0.15);
-      sunDiffuse = new Color3(0.4, 0.5, 0.85);
-      defaultFog = '#050a14';
+      if (moonPhase === 'eclipse') {
+        ambientDiffuse = new Color3(0.35, 0.15, 0.25);
+        ambientGround = new Color3(0.08, 0.04, 0.08);
+        sunDiffuse = new Color3(0.75, 0.2, 0.25);
+        defaultFog = '#1a0508';
+      } else if (moonPhase === 'crescent') {
+        ambientDiffuse = new Color3(0.18, 0.22, 0.4);
+        ambientGround = new Color3(0.04, 0.06, 0.1);
+        sunDiffuse = new Color3(0.3, 0.38, 0.6);
+        defaultFog = '#040710';
+      } else if (moonPhase === 'new') {
+        ambientDiffuse = new Color3(0.1, 0.12, 0.25);
+        ambientGround = new Color3(0.02, 0.03, 0.06);
+        sunDiffuse = new Color3(0.15, 0.18, 0.35);
+        defaultFog = '#020408';
+      } else {
+        // Full Moon (Default)
+        ambientDiffuse = new Color3(0.3, 0.35, 0.65);
+        ambientGround = new Color3(0.05, 0.08, 0.15);
+        sunDiffuse = new Color3(0.5, 0.6, 0.95);
+        defaultFog = '#050a14';
+      }
     } else if (tod === 'fantasy_night') {
-      ambientDiffuse = new Color3(0.2, 0.45, 0.5);
-      ambientGround = new Color3(0.05, 0.15, 0.12);
-      sunDiffuse = new Color3(0.3, 0.8, 0.65);
-      defaultFog = '#061214';
+      if (moonPhase === 'eclipse') {
+        ambientDiffuse = new Color3(0.35, 0.2, 0.3);
+        ambientGround = new Color3(0.08, 0.05, 0.1);
+        sunDiffuse = new Color3(0.65, 0.3, 0.5);
+        defaultFog = '#160818';
+      } else {
+        ambientDiffuse = new Color3(0.2, 0.45, 0.5);
+        ambientGround = new Color3(0.05, 0.15, 0.12);
+        sunDiffuse = new Color3(0.3, 0.8, 0.65);
+        defaultFog = '#061214';
+      }
     }
 
     // 3D Lighting

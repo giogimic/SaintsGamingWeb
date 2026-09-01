@@ -62,6 +62,10 @@ export interface RealmSettingsConfig {
   windDirection?: 'north' | 'east' | 'south' | 'west' | 'swirling';
   windSpeed?: number;
   minimapTelemetryMode?: 'full' | 'compass' | 'clean';
+  moonPhase?: 'full' | 'crescent' | 'new' | 'eclipse';
+  gridLineStyle?: 'solid' | 'dots' | 'isometric';
+  gridLineOpacity?: number;
+  enableWaterShorelineFoam?: boolean;
 }
 
 export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
@@ -106,6 +110,10 @@ export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
   windDirection: 'south',
   windSpeed: 1.0,
   minimapTelemetryMode: 'full',
+  moonPhase: 'full',
+  gridLineStyle: 'solid',
+  gridLineOpacity: 40,
+  enableWaterShorelineFoam: true,
 };
 
 export const REALM_SETTING_KEYS = {
@@ -149,6 +157,10 @@ export const REALM_SETTING_KEYS = {
   WIND_DIRECTION: 'WIND_DIRECTION',
   WIND_SPEED: 'WIND_SPEED',
   MINIMAP_TELEMETRY_MODE: 'MINIMAP_TELEMETRY_MODE',
+  MOON_PHASE: 'MOON_PHASE',
+  GRID_LINE_STYLE: 'GRID_LINE_STYLE',
+  GRID_LINE_OPACITY: 'GRID_LINE_OPACITY',
+  ENABLE_WATER_SHORELINE_FOAM: 'ENABLE_WATER_SHORELINE_FOAM',
 } as const;
 
 /**

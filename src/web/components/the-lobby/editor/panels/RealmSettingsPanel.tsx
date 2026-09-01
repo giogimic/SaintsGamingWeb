@@ -471,6 +471,39 @@ export function RealmSettingsPanel() {
                   </button>
                 ))}
               </div>
+
+              {/* Celestial Moon Phase (For Night & Mystic Atmospheres) */}
+              {((settings.timeOfDayPreset || 'day') === 'midnight' || (settings.timeOfDayPreset || 'day') === 'fantasy_night') && (
+                <div className="space-y-1.5 pt-2 border-t border-border/10">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-muted-foreground">Celestial Moon Phase Night Glow</span>
+                    <span className="text-primary font-bold uppercase text-[9px]">{settings.moonPhase || 'full'}</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1">
+                    {[
+                      { id: 'full', label: 'Full Moon', desc: 'Silvery luminous glow', dot: '#93c5fd' },
+                      { id: 'crescent', label: 'Crescent', desc: 'Moody dark night', dot: '#64748b' },
+                      { id: 'new', label: 'New Moon', desc: 'Pitch starfield', dot: '#334155' },
+                      { id: 'eclipse', label: 'Eclipse', desc: 'Crimson blood moon', dot: '#ef4444' },
+                    ].map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setSettings({ ...settings, moonPhase: m.id as any })}
+                        title={m.desc}
+                        className={`py-1 px-1 rounded text-[8.5px] font-bold transition-all cursor-pointer flex flex-col items-center gap-0.5 ${
+                          (settings.moonPhase || 'full') === m.id
+                            ? 'bg-primary/20 border border-primary text-primary'
+                            : 'bg-[#060e1c] border border-border/20 text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: m.dot }} />
+                        <span className="truncate">{m.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Weather Particle Systems */}
@@ -707,6 +740,52 @@ export function RealmSettingsPanel() {
                     className="accent-primary"
                   />
                 </label>
+                <label className="flex items-center justify-between p-2 rounded bg-[#060e1c] border border-border/20 cursor-pointer text-[10px]">
+                  <span>Water Shoreline Foam</span>
+                  <input
+                    type="checkbox"
+                    checked={settings.enableWaterShorelineFoam !== false}
+                    onChange={(e) => setSettings({ ...settings, enableWaterShorelineFoam: e.target.checked })}
+                    className="accent-primary"
+                  />
+                </label>
+              </div>
+
+              {/* Ground Grid Styling */}
+              <div className="space-y-2 pt-2 border-t border-border/10">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-muted-foreground">Ground Grid Style & Opacity</span>
+                  <span className="text-primary font-bold">{settings.gridLineOpacity ?? 40}%</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[
+                    { id: 'solid', label: 'Solid Grid' },
+                    { id: 'dots', label: 'Dotted Grid' },
+                    { id: 'isometric', label: 'Isometric Grid' },
+                  ].map((g) => (
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() => setSettings({ ...settings, gridLineStyle: g.id as any })}
+                      className={`py-1 rounded text-[9.5px] font-bold transition-colors cursor-pointer text-center ${
+                        (settings.gridLineStyle || 'solid') === g.id
+                          ? 'bg-primary/20 border border-primary text-primary'
+                          : 'bg-[#060e1c] border border-border/20 text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {g.label}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="range"
+                  min={10}
+                  max={100}
+                  step={5}
+                  value={settings.gridLineOpacity ?? 40}
+                  onChange={(e) => setSettings({ ...settings, gridLineOpacity: parseInt(e.target.value) })}
+                  className="w-full accent-primary h-1 cursor-pointer"
+                />
               </div>
 
               {/* Depth of Field (Tilt-Shift Diorama) */}
