@@ -69,6 +69,8 @@ export interface RealmSettingsConfig {
   enable3DGroundItems?: boolean;
   groundItemSpinSpeed?: number;
   enableFootstepParticles?: boolean;
+  enableVignette?: boolean;
+  vignetteWeight?: number;
 }
 
 export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
@@ -120,6 +122,8 @@ export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
   enable3DGroundItems: true,
   groundItemSpinSpeed: 1.5,
   enableFootstepParticles: true,
+  enableVignette: true,
+  vignetteWeight: 15,
 };
 
 export const REALM_SETTING_KEYS = {
@@ -170,6 +174,8 @@ export const REALM_SETTING_KEYS = {
   ENABLE_3D_GROUND_ITEMS: 'ENABLE_3D_GROUND_ITEMS',
   GROUND_ITEM_SPIN_SPEED: 'GROUND_ITEM_SPIN_SPEED',
   ENABLE_FOOTSTEP_PARTICLES: 'ENABLE_FOOTSTEP_PARTICLES',
+  ENABLE_VIGNETTE: 'ENABLE_VIGNETTE',
+  VIGNETTE_WEIGHT: 'VIGNETTE_WEIGHT',
 } as const;
 
 /**

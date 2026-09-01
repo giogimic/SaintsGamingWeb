@@ -1,3 +1,8 @@
+# 2.1.626
+- **Dynamic Day/Night Cycle Duration, Cinematic Vignette Post-Processing & Global Atmosphere Controls**:
+  - **Dynamic Day/Night Cycle Duration (`realmSettings.ts`, `RealmSettingsPanel.tsx`)**: Added real-time slider for automated celestial day/night cycle progression (`0` Static / Manual up to `60` minute real-time planetary orbits).
+  - **Cinematic Viewport Vignette Post-Processing (`realmSettings.ts`, `RealmSettingsPanel.tsx`)**: Added global toggle and edge shadow intensity slider (`0.5x` to `3.5x`) for cinematic lens border darkening.
+
 # 2.1.625
 - **3D Floating Ground Items, Spin Dynamics & Avatar Footstep Dust Particles**:
   - **3D Floating Ground Items & Spin Dynamics (`realmSettings.ts`, `RealmSettingsPanel.tsx`, `ItemBillboardRenderer.ts`)**: Added global toggle for upright 3D floating ground loot drops with configurable rotational spin speed slider (`0.0` to `3.0` rad/s).
