@@ -2688,7 +2688,9 @@ export class BabylonEngine {
       const resolved = getResolvedTile(this.scene.pointerX, this.scene.pointerY);
       if (!resolved) return;
       const key = `${resolved.r},${resolved.c}`;
-      if (key === lastKey && eventType === 'move') return;
+      // In grid mode, suppress duplicate calls within the same grid cell.
+      // When resolved.point is defined (freeform painting), allow continuous sub-tile mouse drag moves.
+      if (key === lastKey && eventType === 'move' && !resolved.point) return;
       lastKey = key;
 
       // Apply brush radius — emit all cells within radius.
@@ -2743,14 +2745,13 @@ export class BabylonEngine {
       // Hide standard mouse cursor in the paint & highlight area so the 3D reticle acts as cursor
       if (this.canvas && this.canvas.style.cursor !== 'none') this.canvas.style.cursor = 'none';
 
-      // High-performance memoization: only rebuild preview and dispatch hover events when the tile cell changes
-      if (this.lastHoveredR === resolved.r && this.lastHoveredC === resolved.c) {
-        return;
-      }
-
+      // Memoize tile cell hover reticle rebuilds, but always trigger hover callback if point changes
+      const sameCell = this.lastHoveredR === resolved.r && this.lastHoveredC === resolved.c;
       this.lastHoveredR = resolved.r;
       this.lastHoveredC = resolved.c;
-      this.renderBrushPreview(resolved.r, resolved.c);
+      if (!sameCell) {
+        this.renderBrushPreview(resolved.r, resolved.c);
+      }
       if (options?.onTileHover) {
         options.onTileHover(resolved.r, resolved.c);
       }

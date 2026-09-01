@@ -95,6 +95,10 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
   const setPaintMode = useEditorStore((s) => s.setPaintMode);
   const activeLayerIdx = useEditorStore((s) => s.activeLayerIdx);
   const setActiveLayerIdx = useEditorStore((s) => s.setActiveLayerIdx);
+  const activeLayerType = useEditorStore((s) => s.activeLayerType);
+  const setActiveLayerType = useEditorStore((s) => s.setActiveLayerType);
+  const snapToGrid = useEditorStore((s) => s.snapToGrid);
+  const setSnapToGrid = useEditorStore((s) => s.setSnapToGrid);
   const activeBrushTileId = useEditorStore((s) => s.activeBrushTileId);
   const activeLogicTileId = useEditorStore((s) => s.activeLogicTileId);
   const showEditorCoords = useEditorStore((s) => s.showEditorCoords);
@@ -132,6 +136,38 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
   const selectedCount = useEditorStore.getState().getSelectedCount();
   const bounds = useEditorStore.getState().getSelectedBounds();
   const peerCount = Object.keys(otherPlayers || {}).length;
+
+  const handleSwitchLayerType = (type: 'grid' | 'paint-splat' | 'free-form') => {
+    soundSynth?.playUiClick?.();
+    const liveMap = useGameStore.getState().activeMapData;
+    if (!liveMap) return;
+    if (type === 'grid') {
+      setActiveLayerType('grid');
+      setActiveLayerIdx(0);
+      showToast('Switched to Grid Mode (Standard Tiled Grid)');
+      return;
+    }
+    const layers = Array.isArray(liveMap.freeformLayers) ? [...liveMap.freeformLayers] : [];
+    const layerName = type === 'paint-splat' ? 'Terrain Paint (Splats)' : 'Foliage & Props (2.5D)';
+    let idx = layers.findIndex((l: any) => l.name === layerName || l.type === type);
+    if (idx === -1) {
+      idx = layers.length;
+      layers.push({
+        id: `layer_${type}_${Date.now()}`,
+        name: layerName,
+        type,
+        data: {},
+        objects: [],
+        regions: []
+      });
+      const nextMap = { ...liveMap, freeformLayers: layers };
+      useGameStore.getState().setActiveMapData(nextMap);
+      useEditorStore.getState().markMapDirty();
+    }
+    setActiveLayerIdx(idx);
+    setActiveLayerType(type);
+    showToast(`Switched to ${type === 'paint-splat' ? 'Splat Paint' : '2.5D Prop'} Mode`);
+  };
 
   useEffect(() => {
     const handleZoomChanged = (e: Event) => {
@@ -172,6 +208,46 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
     <div className="pointer-events-auto fixed bottom-0 left-0 right-0 h-9 z-[110] bg-card/90 border-t border-border/60 flex items-center justify-between px-3 select-none backdrop-blur-xl shadow-lg font-mono text-xs text-foreground overflow-x-auto no-scrollbar gap-2">
       {/* ─── ZONE 1: Active Tool, Brush Size & Transforms ─── */}
       <div className="flex items-center gap-2 border-r border-border/40 pr-3 shrink-0">
+        {/* Mode Selector: Grid vs Splat vs Prop */}
+        <div className="flex items-center gap-0.5 bg-background/50 border border-border/60 rounded-lg p-0.5">
+          <button
+            type="button"
+            onClick={() => handleSwitchLayerType('grid')}
+            className={`px-2 py-1 rounded text-[10px] font-bold transition-all cursor-pointer ${
+              activeLayerType === 'grid'
+                ? 'bg-purple-600 text-white shadow-sm ring-1 ring-purple-300'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="Grid Mode: Standard Tiled Grid Painting"
+          >
+            Grid
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSwitchLayerType('paint-splat')}
+            className={`px-2 py-1 rounded text-[10px] font-bold transition-all cursor-pointer ${
+              activeLayerType === 'paint-splat'
+                ? 'bg-amber-600 text-white shadow-sm ring-1 ring-amber-300'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="Terrain Paint Mode: 2.5D MS-Paint Freehand Splats"
+          >
+            Splat
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSwitchLayerType('free-form')}
+            className={`px-2 py-1 rounded text-[10px] font-bold transition-all cursor-pointer ${
+              activeLayerType === 'free-form'
+                ? 'bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-300'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="2.5D Prop Mode: Free-form Billboard Props"
+          >
+            Prop
+          </button>
+        </div>
+
         {/* Brush Mode Buttons */}
         <div className="flex items-center gap-0.5 bg-background/50 border border-border/60 rounded-lg p-0.5">
           <button
