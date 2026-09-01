@@ -521,14 +521,65 @@ export function RealmSettingsPanel() {
               )}
             </div>
 
-            {/* 3D Audio & Elevation Mode */}
+            {/* Water Animation & Flow */}
+            <div className="p-3 rounded-xl bg-black/40 border border-border/30 space-y-3">
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+                <span>Water Shader Dynamics & Flow Speed</span>
+                <span className="text-primary font-bold">{((settings.waterFlowSpeed || 1.0)).toFixed(1)}x</span>
+              </div>
+              <input
+                type="range"
+                min={5}
+                max={30}
+                step={1}
+                value={Math.round((settings.waterFlowSpeed || 1.0) * 10)}
+                onChange={(e) => setSettings({ ...settings, waterFlowSpeed: parseInt(e.target.value) / 10 })}
+                className="w-full accent-primary h-1 cursor-pointer"
+              />
+              <div className="flex justify-between text-[8px] text-muted-foreground">
+                <span>Calm Pond (0.5x)</span>
+                <span>Gentle Stream (1.0x)</span>
+                <span>Fast Rapids (3.0x)</span>
+              </div>
+            </div>
+
+            {/* 3D Audio Acoustics & Spatial Rolloff */}
             <div className="p-3 rounded-xl bg-black/40 border border-border/30 space-y-3">
               <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                Spatial Audio & Elevation Geometry
+                3D Spatial Audio & Realm Acoustics
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-muted-foreground">3D Spatial Audio Rolloff Factor</span>
+                  <span className="text-muted-foreground">Acoustic Reverb Space</span>
+                  <span className="text-primary font-bold uppercase text-[9px]">{settings.acousticPreset || 'none'}</span>
+                </div>
+                <div className="grid grid-cols-5 gap-1">
+                  {[
+                    { id: 'none', label: 'Dry / Pure' },
+                    { id: 'field', label: 'Open Field' },
+                    { id: 'cave', label: 'Cavern' },
+                    { id: 'hall', label: 'Cathedral' },
+                    { id: 'catacomb', label: 'Catacomb' },
+                  ].map((ac) => (
+                    <button
+                      key={ac.id}
+                      type="button"
+                      onClick={() => setSettings({ ...settings, acousticPreset: ac.id as any })}
+                      className={`py-1.5 px-1 rounded text-[8.5px] font-bold transition-colors cursor-pointer text-center truncate ${
+                        (settings.acousticPreset || 'none') === ac.id
+                          ? 'bg-primary/20 border border-primary text-primary'
+                          : 'bg-[#060e1c] border border-border/20 text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {ac.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1 pt-1.5 border-t border-border/10">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-muted-foreground">Spatial Distance Rolloff</span>
                   <span className="text-primary font-bold">{((settings.spatialAudioRolloff || 1.2)).toFixed(1)}x</span>
                 </div>
                 <input
@@ -560,10 +611,10 @@ export function RealmSettingsPanel() {
               </div>
             </div>
 
-            {/* Post-Processing Toggles */}
+            {/* Post-Processing & Overlay Toggles */}
             <div className="p-3 rounded-xl bg-black/40 border border-border/30 space-y-2">
               <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                Post-Processing & Overlays
+                Post-Processing & Viewport Overlays
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <label className="flex items-center justify-between p-2 rounded bg-[#060e1c] border border-border/20 cursor-pointer text-[10px]">
@@ -581,6 +632,24 @@ export function RealmSettingsPanel() {
                     type="checkbox"
                     checked={!!settings.enableBloom}
                     onChange={(e) => setSettings({ ...settings, enableBloom: e.target.checked })}
+                    className="accent-primary"
+                  />
+                </label>
+                <label className="flex items-center justify-between p-2 rounded bg-[#060e1c] border border-border/20 cursor-pointer text-[10px]">
+                  <span>Elevation Contour Lines</span>
+                  <input
+                    type="checkbox"
+                    checked={!!settings.elevationContourLines}
+                    onChange={(e) => setSettings({ ...settings, elevationContourLines: e.target.checked })}
+                    className="accent-primary"
+                  />
+                </label>
+                <label className="flex items-center justify-between p-2 rounded bg-[#060e1c] border border-border/20 cursor-pointer text-[10px]">
+                  <span>Tile Coordinates (Grid)</span>
+                  <input
+                    type="checkbox"
+                    checked={!!settings.showTileCoordinatesOverlay}
+                    onChange={(e) => setSettings({ ...settings, showTileCoordinatesOverlay: e.target.checked })}
                     className="accent-primary"
                   />
                 </label>

@@ -2,10 +2,16 @@
 
 import React from 'react';
 import SpriteBrowser from '../SpriteBrowser';
-import { Layers, ArrowUpRight } from 'lucide-react';
+import { Layers, ArrowUpRight, FolderOpen, RefreshCw } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
 import { useGameStore } from '../../store';
 import type { GameAssetItem } from '@/engine/assets/AssetManager';
+import {
+  WindowMenuBar,
+  WindowMenuDropdown,
+  WindowMenuButton,
+  WindowMenuDivider,
+} from '../WindowMenuBar';
 
 function spriteKeyFromAsset(asset: GameAssetItem): string {
   const src = asset.source || '';
@@ -34,25 +40,37 @@ export const AssetBrowserPanel: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-[#050b14]/90 font-mono">
-      {/* Top Header / Quick Action */}
-      <div className="flex items-center justify-between bg-[#0b1320] border-b border-amber-500/20 px-3 py-1.5 text-xs shrink-0">
-        <span className="text-[10px] font-black tracking-wider uppercase text-amber-400">
-          Sprite Picker
-        </span>
-        <button
-          type="button"
+    <div className="flex flex-col h-full overflow-hidden bg-[#050b14]/90 font-mono -m-3 mb-0">
+      {/* ── WINDOW SUB-MENU APP BAR ── */}
+      <WindowMenuBar>
+        <WindowMenuDropdown
+          label="Assets"
+          items={[
+            {
+              label: 'Open Full Asset Studio',
+              onClick: () => setStudioMode('assets'),
+            },
+            {
+              label: 'Sprite Slicer Tool',
+              onClick: () => setStudioMode('assets'),
+            },
+          ]}
+        />
+        <WindowMenuDivider />
+        <WindowMenuButton
+          label="Asset Studio"
+          icon={ArrowUpRight}
           onClick={() => setStudioMode('assets')}
-          className="flex items-center gap-1 text-[10px] text-amber-400/80 hover:text-amber-300 font-bold cursor-pointer"
           title="Switch to full Asset Management Studio (Upload, Slicer, Packs)"
-        >
-          <span>Asset Studio</span>
-          <ArrowUpRight className="w-3 h-3" />
-        </button>
-      </div>
+        />
+        <div className="flex-1" />
+        <span className="text-[9px] text-muted-foreground font-mono">
+          {studioMode === 'npc' ? 'Character Sprites' : 'Global Asset Library'}
+        </span>
+      </WindowMenuBar>
 
       {/* Main Sprite Browser */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden p-2">
         <SpriteBrowser
           filterTags={studioMode === 'npc' ? ['npc'] : []}
           filterType={studioMode === 'npc' ? 'CHARACTER' : undefined}

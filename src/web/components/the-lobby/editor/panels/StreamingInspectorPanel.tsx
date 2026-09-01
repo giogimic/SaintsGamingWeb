@@ -1,9 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Activity, HardDrive, Network, Map as MapIcon } from 'lucide-react';
-// import { getCachedContentChunk } from '@/shared/game/chunkCache'; // Future integration
-// import { useEditorStore } from '../editor-store'; // Future integration
+import { Activity, HardDrive, Network, Map as MapIcon, RefreshCw, Trash2 } from 'lucide-react';
+import {
+  WindowMenuBar,
+  WindowMenuDropdown,
+  WindowMenuButton,
+  WindowMenuDivider,
+} from '../WindowMenuBar';
 
 export const StreamingInspectorPanel: React.FC = () => {
   // Mock data for Phase 1 UI setup
@@ -17,10 +21,47 @@ export const StreamingInspectorPanel: React.FC = () => {
     activeFootprint: 'DEMO_SANDBOX'
   });
 
-  // Future: Effect to poll or subscribe to chunkCache / BabylonEngine events
+  const handleRefresh = () => {
+    setStats((prev) => ({
+      ...prev,
+      networkFetchesSec: Math.floor(Math.random() * 5),
+      cacheHits: prev.cacheHits + 1,
+    }));
+  };
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto p-3 font-mono text-xs text-slate-300 gap-4 bg-[#050b14]">
+    <div className="flex flex-col h-full overflow-hidden font-mono text-xs text-slate-300 bg-[#050b14] -m-3 mb-0">
+      {/* ── WINDOW SUB-MENU APP BAR ── */}
+      <WindowMenuBar>
+        <WindowMenuDropdown
+          label="Telemetry"
+          items={[
+            {
+              label: 'Refresh Chunk Metrics',
+              shortcut: 'F5',
+              onClick: handleRefresh,
+            },
+            { divider: true, label: '' },
+            {
+              label: 'Flush Local Chunk Cache',
+              onClick: () => setStats((p) => ({ ...p, cacheHits: 0 })),
+            },
+          ]}
+        />
+        <WindowMenuDivider />
+        <WindowMenuButton
+          label="Refresh"
+          icon={RefreshCw}
+          onClick={handleRefresh}
+          title="Query live chunk pipeline stats"
+        />
+        <div className="flex-1" />
+        <span className="text-[9px] text-emerald-400 font-mono font-bold">
+          {stats.visibleChunks} chunks live
+        </span>
+      </WindowMenuBar>
+
+      <div className="flex-1 overflow-y-auto p-3 space-y-4">
       <div className="border border-[#806f47]/20 rounded bg-transparent/50 p-2">
         <h3 className="flex items-center gap-2 text-indigo-400 font-semibold mb-2 uppercase tracking-wider text-[10px]">
           <MapIcon className="w-3 h-3" /> Active World Footprint
@@ -76,6 +117,7 @@ export const StreamingInspectorPanel: React.FC = () => {
       
       <div className="text-[10px] text-slate-500 italic px-1">
         * Hooked up to mock data for Phase 1 setup. Engine integration pending.
+      </div>
       </div>
     </div>
   );
