@@ -16,6 +16,10 @@ import {
   Shield,
   Circle,
   Square,
+  Diamond,
+  Star,
+  Hexagon,
+  Lasso,
   FlipHorizontal,
   FlipVertical,
   RotateCw,
@@ -504,26 +508,56 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
           </button>
         </div>
 
-        {/* Brush Shape Toggle */}
+        {/* Brush Shape Cycler */}
         <button
           type="button"
           onClick={() => {
             soundSynth?.playUiClick?.();
-            const nextShape = brushShape === 'circle' ? 'square' : 'circle';
-            setBrushShape(nextShape);
+            const shapes: Array<'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon'> = ['circle', 'square', 'diamond', 'splat-star', 'polygon'];
+            const idx = shapes.indexOf(brushShape);
+            const next = shapes[(idx + 1) % shapes.length];
+            setBrushShape(next);
           }}
           className={`flex items-center gap-1 bg-background/50 border border-border/60 hover:border-primary/50 rounded-lg px-2 py-0.5 text-[10px] font-bold transition-all cursor-pointer ${
-            brushShape === 'square' ? 'text-amber-400 bg-amber-500/10 border-amber-500/40' : 'text-primary'
+            brushShape !== 'circle' ? 'text-amber-400 bg-amber-500/10 border-amber-500/40' : 'text-primary'
           }`}
-          title={`Brush Shape: ${brushShape === 'circle' ? 'Circle (Round)' : 'Square (Box)'} — Click to switch`}
+          title={`Brush Shape: ${brushShape} — Click to cycle (Circle → Square → Diamond → Star → Polygon)`}
         >
-          {brushShape === 'circle' ? (
-            <Circle className="h-3 w-3" />
-          ) : (
-            <Square className="h-3 w-3" />
-          )}
-          <span className="capitalize">{brushShape}</span>
+          {brushShape === 'circle' && <Circle className="h-3 w-3" />}
+          {brushShape === 'square' && <Square className="h-3 w-3" />}
+          {brushShape === 'diamond' && <Diamond className="h-3 w-3" />}
+          {brushShape === 'splat-star' && <Star className="h-3 w-3" />}
+          {brushShape === 'polygon' && <Hexagon className="h-3 w-3" />}
+          <span className="capitalize">{brushShape === 'splat-star' ? 'Star' : brushShape}</span>
         </button>
+
+        {/* Selection Shape Picker (only in select mode) */}
+        {brushMode === 'select' && (
+          <div className="flex items-center gap-0.5 bg-background/50 border border-border/60 rounded-lg p-0.5 text-[9px] font-bold">
+            <span className="text-muted-foreground text-[8px] px-1">SEL:</span>
+            {(['box', 'circle', 'lasso', 'polygon'] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => {
+                  soundSynth?.playUiClick?.();
+                  useEditorStore.getState().setSelectionMode(mode);
+                }}
+                className={`px-1.5 py-0.5 rounded transition-colors cursor-pointer ${
+                  useEditorStore.getState().selectionMode === mode
+                    ? 'bg-amber-600 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                title={`Selection Mode: ${mode}`}
+              >
+                {mode === 'box' && <Square className="h-2.5 w-2.5 inline" />}
+                {mode === 'circle' && <Circle className="h-2.5 w-2.5 inline" />}
+                {mode === 'lasso' && <Lasso className="h-2.5 w-2.5 inline" />}
+                {mode === 'polygon' && <Hexagon className="h-2.5 w-2.5 inline" />}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Stamp Transform Controls */}
         <div className="flex items-center gap-0.5 bg-background/50 border border-border/60 rounded-lg p-0.5">

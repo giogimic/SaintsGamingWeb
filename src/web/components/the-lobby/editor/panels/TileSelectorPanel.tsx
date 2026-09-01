@@ -143,6 +143,32 @@ export const TileSelectorPanel: React.FC = () => {
         </div>
       </div>
 
+      {/* Shape Cutout Mask for tile selection stamping */}
+      <div className="mb-2 flex items-center gap-1 text-[9px]">
+        <span className="text-muted-foreground font-bold mr-1">Brush Shape:</span>
+        {(['circle', 'square', 'diamond', 'splat-star'] as const).map((shape) => {
+          const brushShape = useEditorStore.getState().brushShape;
+          const isActive = brushShape === shape;
+          return (
+            <button
+              key={shape}
+              type="button"
+              onClick={() => {
+                useEditorStore.getState().setBrushShape(shape);
+              }}
+              className={`px-1.5 py-0.5 rounded border transition-colors cursor-pointer capitalize ${
+                isActive
+                  ? 'bg-primary/20 border-primary/50 text-primary font-bold'
+                  : 'border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/30'
+              }`}
+              title={`Stamp cutout shape: ${shape}`}
+            >
+              {shape === 'splat-star' ? 'Star' : shape}
+            </button>
+          );
+        })}
+      </div>
+
       <TilesetPicker
         tilesets={tilesets}
         activeBrushTileId={activeBrushTileId}

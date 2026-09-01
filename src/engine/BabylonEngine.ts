@@ -393,7 +393,8 @@ export class BabylonEngine {
   private eraseVoidMaterial?: StandardMaterial;
   /** Adjustable brush radius for multi-tile paint (1 = single tile). */
   private brushRadius: number = 1;
-  private brushShape: 'circle' | 'square' = 'circle';
+  private brushShape: 'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon' = 'circle';
+  private brushRotation: number = 0;
   public activeBrushPattern: { w: number, h: number } | null = null;
   public prefabStampMode: '1tile' | 'footprint' = 'footprint';
   public stampScale: number = 1;
@@ -2702,9 +2703,14 @@ export class BabylonEngine {
         const h = this.currentMapHeight;
         for (let dr = -rad; dr <= rad; dr++) {
           for (let dc = -rad; dc <= rad; dc++) {
-            // Apply brush shape: circle (euclidean) or square (box)
+            // Apply brush shape filtering
             if (this.brushShape === 'circle') {
               if (dr * dr + dc * dc > rad * rad + rad) continue;
+            } else if (this.brushShape === 'diamond') {
+              if (Math.abs(dr) + Math.abs(dc) > rad) continue;
+            } else if (this.brushShape === 'splat-star') {
+              if (dr * dr + dc * dc > rad * rad + rad) continue;
+              if (dr !== 0 && dc !== 0 && Math.abs(dr) !== Math.abs(dc)) continue;
             }
             const nr = resolved.r + dr;
             const nc = resolved.c + dc;
@@ -2842,9 +2848,14 @@ export class BabylonEngine {
     this.refreshBrushPreview();
   }
 
-  /** Set brush shape ('circle' | 'square'). */
-  public setBrushShape(shape: 'circle' | 'square') {
+  /** Set brush shape ('circle' | 'square' | 'diamond' | 'splat-star' | 'polygon'). */
+  public setBrushShape(shape: 'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon') {
     this.brushShape = shape;
+    this.refreshBrushPreview();
+  }
+
+  public setBrushRotation(rot: number) {
+    this.brushRotation = ((rot % 360) + 360) % 360;
     this.refreshBrushPreview();
   }
 
@@ -2882,7 +2893,7 @@ export class BabylonEngine {
   }
 
   private createUnifiedBrushReticleMaterial(
-    shape: 'circle' | 'square',
+    shape: 'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon',
     rad: number,
     strokeColor: string,
     glassColor: string,
@@ -2906,6 +2917,15 @@ export class BabylonEngine {
       if (shape === 'square') return true;
       const dr = r - rad;
       const dc = c - rad;
+      if (shape === 'diamond') {
+        return Math.abs(dr) + Math.abs(dc) <= rad;
+      }
+      if (shape === 'splat-star') {
+        if (dr * dr + dc * dc > rad * rad + rad) return false;
+        // Only cardinal axes and exact diagonals
+        return dr === 0 || dc === 0 || Math.abs(dr) === Math.abs(dc);
+      }
+      // circle and polygon (polygon falls back to circle reticle)
       return dr * dr + dc * dc <= rad * rad + rad;
     };
 
