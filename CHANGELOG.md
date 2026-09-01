@@ -1,3 +1,8 @@
+# 2.1.606
+- **Flood Fill Hotkey & Comprehensive Paint Audit**:
+  - **Keyboard Shortcut**: Bound key `F` to activate the Flood Fill Bucket tool directly in creation mode.
+  - **Comprehensive Paint Verification**: Audited and confirmed integrity across single-tile paint, radius paint (all 4 shapes), continuous dragging, pattern/stamp tiling, freehand splat/prop placement, layer isolation, and undo/redo stacks.
+
 # 2.1.605
 - **Flood Fill Bucket, Freeform Undo/Redo & Selection Performance**:
   - **Flood Fill Bucket Tool**: Added standard 4-way BFS flood fill algorithm supporting visual and logic layers with selection boundary constraints (`MAX_FILL_CELLS = 4096`), wired to the new Paint Bucket toolbar button (`brushMode === 'fill'`) and integrated with the undo stack.
