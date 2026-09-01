@@ -212,6 +212,8 @@ export class BabylonEngine {
   private waterTexture?: DynamicTexture;
   private waterAnimTime: number = 0;
   private lastWaterUpdateTime: number = 0;
+  private waterFlowSpeed: number = 1.0;
+  private cameraSmoothingFactor: number = 0.6;
   public currentMapId: string = '';
   private currentMapWidth: number = 24;
   private currentMapHeight: number = 24;
@@ -1127,6 +1129,15 @@ export class BabylonEngine {
 
       // 2D Items rendered in 3D (bobbing, spinning, glow updates)
       this.itemBillboards.update(deltaTime);
+
+      // Dynamic Water Animation Shimmer
+      if (this.waterTexture) {
+        this.waterAnimTime += deltaTime * (this.waterFlowSpeed || 1.0);
+        if (performance.now() - this.lastWaterUpdateTime > 50) {
+          this.lastWaterUpdateTime = performance.now();
+          this.updateWaterTexture(this.waterAnimTime);
+        }
+      }
 
       if (onTick) onTick(deltaTime);
       this.scene.render();
