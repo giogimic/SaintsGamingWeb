@@ -442,6 +442,124 @@ export function RealmSettingsPanel() {
               </div>
             </div>
 
+            {/* Environment: Time of Day Atmosphere */}
+            <div className="p-3 rounded-xl bg-black/40 border border-border/30 space-y-3">
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+                <span className="flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-amber-400" /> Time of Day Atmosphere</span>
+                <span className="text-primary font-bold uppercase text-[9px]">{settings.timeOfDayPreset || 'day'}</span>
+              </div>
+              <div className="grid grid-cols-5 gap-1">
+                {[
+                  { id: 'day', label: 'Day', color: '#fef08a' },
+                  { id: 'golden_hour', label: 'Sunset', color: '#fb923c' },
+                  { id: 'dusk', label: 'Dusk', color: '#c084fc' },
+                  { id: 'midnight', label: 'Night', color: '#60a5fa' },
+                  { id: 'fantasy_night', label: 'Mystic', color: '#34d399' },
+                ].map((tod) => (
+                  <button
+                    key={tod.id}
+                    type="button"
+                    onClick={() => setSettings({ ...settings, timeOfDayPreset: tod.id as any })}
+                    className={`py-1.5 px-1 rounded text-[9px] font-bold transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                      (settings.timeOfDayPreset || 'day') === tod.id
+                        ? 'bg-primary/20 border border-primary text-primary'
+                        : 'bg-[#060e1c] border border-border/20 text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: tod.color }} />
+                    <span className="truncate">{tod.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Weather Particle Systems */}
+            <div className="p-3 rounded-xl bg-black/40 border border-border/30 space-y-3">
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+                <span>Weather Particle Systems</span>
+                <span className="text-primary font-bold uppercase text-[9px]">{settings.weatherPreset || 'none'}</span>
+              </div>
+              <div className="grid grid-cols-5 gap-1">
+                {[
+                  { id: 'none', label: 'Clear' },
+                  { id: 'gentle_rain', label: 'Rain' },
+                  { id: 'falling_leaves', label: 'Leaves' },
+                  { id: 'snow_flurries', label: 'Snow' },
+                  { id: 'fireflies', label: 'Glow' },
+                ].map((w) => (
+                  <button
+                    key={w.id}
+                    type="button"
+                    onClick={() => setSettings({ ...settings, weatherPreset: w.id as any })}
+                    className={`py-1.5 px-1 rounded text-[9px] font-bold uppercase transition-colors cursor-pointer text-center ${
+                      (settings.weatherPreset || 'none') === w.id
+                        ? 'bg-primary/20 border border-primary text-primary'
+                        : 'bg-[#060e1c] border border-border/20 text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {w.label}
+                  </button>
+                ))}
+              </div>
+
+              {(settings.weatherPreset && settings.weatherPreset !== 'none') && (
+                <div className="space-y-1 pt-1 border-t border-border/10">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-muted-foreground">Particle Density Intensity</span>
+                    <span className="text-primary font-bold">{settings.weatherIntensity || 50}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={10}
+                    max={100}
+                    step={5}
+                    value={settings.weatherIntensity || 50}
+                    onChange={(e) => setSettings({ ...settings, weatherIntensity: parseInt(e.target.value) })}
+                    className="w-full accent-primary h-1 cursor-pointer"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* 3D Audio & Elevation Mode */}
+            <div className="p-3 rounded-xl bg-black/40 border border-border/30 space-y-3">
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                Spatial Audio & Elevation Geometry
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-muted-foreground">3D Spatial Audio Rolloff Factor</span>
+                  <span className="text-primary font-bold">{((settings.spatialAudioRolloff || 1.2)).toFixed(1)}x</span>
+                </div>
+                <input
+                  type="range"
+                  min={5}
+                  max={30}
+                  step={1}
+                  value={Math.round((settings.spatialAudioRolloff || 1.2) * 10)}
+                  onChange={(e) => setSettings({ ...settings, spatialAudioRolloff: parseInt(e.target.value) / 10 })}
+                  className="w-full accent-primary h-1 cursor-pointer"
+                />
+              </div>
+
+              <div className="pt-2 border-t border-border/10 flex items-center justify-between">
+                <div>
+                  <div className="text-[11px] font-bold text-foreground">Terrain Elevation Incline</div>
+                  <div className="text-[8.5px] text-muted-foreground">Stepped retro cliffs vs smoothed vertex ramps</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSettings({
+                    ...settings,
+                    elevationMode: (settings.elevationMode || 'stepped') === 'stepped' ? 'smooth' : 'stepped',
+                  })}
+                  className="px-2.5 py-1 rounded border border-border/30 bg-[#060e1c] text-[10px] font-bold text-primary hover:border-primary/40 cursor-pointer"
+                >
+                  {(settings.elevationMode || 'stepped') === 'stepped' ? 'Stepped Cliffs' : 'Smooth Slopes'}
+                </button>
+              </div>
+            </div>
+
             {/* Post-Processing Toggles */}
             <div className="p-3 rounded-xl bg-black/40 border border-border/30 space-y-2">
               <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">

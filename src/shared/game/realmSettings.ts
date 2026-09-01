@@ -45,6 +45,13 @@ export interface RealmSettingsConfig {
   enableBloom?: boolean;
   enableAntiAliasing?: boolean;
   showTileCoordinatesOverlay?: boolean;
+  // Environment & Atmosphere
+  timeOfDayPreset?: 'day' | 'golden_hour' | 'dusk' | 'midnight' | 'fantasy_night';
+  ambientColor?: string;
+  weatherPreset?: 'none' | 'gentle_rain' | 'falling_leaves' | 'snow_flurries' | 'fireflies';
+  weatherIntensity?: number;
+  spatialAudioRolloff?: number;
+  elevationMode?: 'stepped' | 'smooth';
 }
 
 export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
@@ -73,6 +80,12 @@ export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
   enableBloom: false,
   enableAntiAliasing: true,
   showTileCoordinatesOverlay: false,
+  timeOfDayPreset: 'day',
+  ambientColor: '#f2f5fa',
+  weatherPreset: 'none',
+  weatherIntensity: 50,
+  spatialAudioRolloff: 1.2,
+  elevationMode: 'stepped',
 };
 
 export const REALM_SETTING_KEYS = {
@@ -100,6 +113,12 @@ export const REALM_SETTING_KEYS = {
   ENABLE_BLOOM: 'ENABLE_BLOOM',
   ENABLE_ANTI_ALIASING: 'ENABLE_ANTI_ALIASING',
   SHOW_TILE_COORDINATES_OVERLAY: 'SHOW_TILE_COORDINATES_OVERLAY',
+  TIME_OF_DAY_PRESET: 'TIME_OF_DAY_PRESET',
+  AMBIENT_COLOR: 'AMBIENT_COLOR',
+  WEATHER_PRESET: 'WEATHER_PRESET',
+  WEATHER_INTENSITY: 'WEATHER_INTENSITY',
+  SPATIAL_AUDIO_ROLLOFF: 'SPATIAL_AUDIO_ROLLOFF',
+  ELEVATION_MODE: 'ELEVATION_MODE',
 } as const;
 
 /**

@@ -1,3 +1,10 @@
+# 2.1.616
+- **Global Environment & Time of Day Systems, Catalog Sub-Menu Architecture & Diagnostics Sub-Bar**:
+  - **Global Environment & Atmosphere (`realmSettings.ts`, `RealmSettingsPanel.tsx`, `BabylonEngine.ts`)**: Added 5 Time of Day atmospheric lighting presets (Day, Golden Hour Sunset, Dusk, Midnight, Mystic Night) with dynamic ambient and directional sun/moon color tints in Babylon 3D engine; weather particle systems (Clear, Gentle Rain, Falling Leaves, Snow Flurries, Fireflies) with particle intensity sliders; 3D spatial audio rolloff multipliers; and stepped cliff vs smooth slope terrain elevation geometry switches.
+  - **Unified Catalog Window Sub-Menus (`CatalogEditorShell.tsx`)**: Upgraded the central catalog chrome with application sub-menu bars (`File` -> New, Save, Revert, Delete; `Edit` -> Undo, Redo; search integration; unsaved indicator badge) benefiting all 10+ definition editors (NPCs, Items, Loot Tables, Monsters, Quests, Dungeons, Recipes, Shops, Mounts, and Professions).
+  - **Diagnostics & Health Sub-Bar (`StudioProblemsPanel.tsx`)**: Replaced redundant tab buttons with standardized sub-menu tabs (`Map Topology`, `Runtime Asset Health`, `Cross-References`), a direct Scan action button, and live issue counters.
+  - **Camera Settings Dock Upgrades (`CameraSettingsPanel.tsx`)**: Integrated `<WindowMenuBar>` with quick preset dropdowns, view alignment shortcuts, 2.5D tilt pitch controls (20°–75°), and control cheatsheet.
+
 # 2.1.615
 - **Window Sub-Menu Bar Architecture & Global 2.5D/3D Visual Pipeline Controls**:
   - **Application Window Sub-Menu Bars (`WindowMenuBar.tsx`)**: Created a standardized desktop application sub-menu component suite (`WindowMenuBar`, `WindowMenuDropdown`, `WindowMenuButton`, `WindowMenuTabGroup`, `WindowMenuDivider`) positioned cleanly beneath window title bars to separate file/tool/mode actions and prevent clutter across studio windows.

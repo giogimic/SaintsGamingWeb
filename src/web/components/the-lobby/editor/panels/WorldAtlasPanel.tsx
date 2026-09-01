@@ -18,6 +18,12 @@ import {
   normalizeAtlasGridData,
   getAdjacentAtlasNeighbors,
 } from '@/shared/game/atlas/spatialAtlas';
+import {
+  WindowMenuBar,
+  WindowMenuDropdown,
+  WindowMenuButton,
+  WindowMenuDivider,
+} from '../WindowMenuBar';
 
 function getBiomeIcon(mapId: string, isSelected: boolean) {
   const lower = mapId.toLowerCase();
@@ -232,7 +238,56 @@ export const WorldAtlasPanel: React.FC = () => {
   } : null;
 
   return (
-    <div className="flex flex-col h-full w-full min-h-0 text-xs font-mono bg-[#070d18] select-none border border-amber-500/30 rounded-xl overflow-hidden shadow-2xl">
+    <div className="flex flex-col h-full w-full min-h-0 text-xs font-mono bg-[#070d18] select-none -m-3 mb-0">
+      {/* ── WINDOW SUB-MENU APP BAR ── */}
+      <WindowMenuBar>
+        <WindowMenuDropdown
+          label="Atlas"
+          icon={Globe}
+          items={[
+            {
+              label: 'Save Atlas Document',
+              icon: Save,
+              shortcut: 'Ctrl+S',
+              onClick: () => void handleSaveAtlas(),
+              disabled: isSaving,
+            },
+            {
+              label: 'Invalidate Client Cache',
+              onClick: () => {
+                invalidateClientAtlas();
+                showToast('Invalidated client atlas cache');
+              },
+            },
+            { divider: true, label: '' },
+            {
+              label: 'Exit to Realm Editor',
+              onClick: () => setStudioMode('develop'),
+            },
+          ]}
+        />
+        <WindowMenuDivider />
+        <WindowMenuButton
+          label={isSaving ? 'Saving...' : 'Save Atlas'}
+          icon={Save}
+          onClick={() => void handleSaveAtlas()}
+          disabled={isSaving}
+          title="Save macro world layout and auto-stitch 4-way borders"
+        />
+        {selectedNode && (
+          <WindowMenuButton
+            label={`Warp to ${selectedNode.mapId}`}
+            icon={ArrowUpRight}
+            onClick={() => void handleWarpToMap(selectedNode.mapId, selectedNode.id)}
+            title="Open active map in 2.5D Studio"
+          />
+        )}
+        <div className="flex-1" />
+        <span className="text-[9px] text-muted-foreground font-mono">
+          {atlasData.nodes.length} realms linked ({GRID_SIZE}x{GRID_SIZE})
+        </span>
+      </WindowMenuBar>
+
       <div className="flex-none p-3 border-b border-amber-500/20 bg-[#0b1320] flex flex-wrap items-center justify-between gap-3 shadow-md">
         <div className="flex items-center gap-4">
           <div className="font-bold text-amber-400 flex items-center gap-1.5 text-sm">
