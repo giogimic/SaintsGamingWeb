@@ -42,6 +42,7 @@ import {
 } from 'lucide-react';
 import { canUseStudioServerControls } from '@/shared/game/studioPermissions';
 import { CharacterSpritePreview } from './CharacterSpritePreview';
+import { CharacterDetailPreview } from './CharacterDetailPreview';
 
 // ── Theme Palettes (matching Saints Dynamic Landing Page) ─────
 const THEME_DARK = {
@@ -488,27 +489,22 @@ export default function GameTitleScreen({
       {/* Dynamic Horizon Background */}
       <MidnightTropicalBackground />
 
-      {/* ── MAIN CHARACTER SELECTION DECK ─────────────────────────────── */}
-      <main className="relative z-20 flex-1 flex flex-col justify-center items-center w-full px-4 my-auto py-6">
-        {/* ── CENTERED CHARACTER SELECTION CARD ──────────── */}
-        <div
-          className="w-full max-w-lg flex flex-col justify-between rounded-2xl border border-border/60 p-6 bg-[#0a0318]/90 backdrop-blur-xl shadow-2xl relative overflow-hidden"
-          style={{
-            borderColor: palette.border || 'rgba(255, 255, 255, 0.15)',
-            boxShadow: `0 0 35px ${palette.glow}, inset 0 0 20px rgba(0,0,0,0.8)`,
-          }}
-        >
-          {/* Top header: Saint Stage + Options/Credits Tab */}
-          <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
+      {/* ── MAIN 2-COLUMN COMMAND DECK: 3-COLUMN PREVIEW ON LEFT · LOBBY CHAT ON RIGHT ── */}
+      <main className="relative z-20 flex-1 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch px-4 my-auto py-4">
+        
+        {/* ── LEFT SECTION: CHARACTER SELECTION & 3-COLUMN DETAIL PREVIEW (Cols 1-8) ── */}
+        <section className="lg:col-span-8 flex flex-col space-y-3.5">
+          {/* Top Bar: Controls & Saint Switcher */}
+          <div className="bg-card/40 p-3 rounded-2xl border border-border/60 backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <Gamepad2 className="w-4 h-4 text-primary" />
-                <span className="text-xs font-bold text-foreground uppercase tracking-widest">
+                <span className="text-xs font-bold text-foreground uppercase tracking-widest font-mono">
                   SAINT STAGE
                 </span>
               </div>
 
-              {/* Options & Credits Tab */}
+              {/* Options & Credits buttons */}
               <div className="flex items-center gap-1 bg-black/60 p-0.5 rounded-lg border border-white/10 shadow-sm">
                 <button
                   type="button"
@@ -537,116 +533,34 @@ export default function GameTitleScreen({
               </div>
             </div>
 
-            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-              <span>Saint {characters.length > 0 ? activeIdx + 1 : 0} / {characters.length}</span>
-            </div>
-          </div>
-
-          {/* Pedestal & Character Visual */}
-          <div className="flex flex-col items-center justify-center my-2 relative py-4">
-            {/* Rune / Energy aura on ground */}
-            <div
-              className="absolute w-44 h-16 rounded-full bottom-2 blur-md opacity-70 pointer-events-none"
-              style={{
-                background: `radial-gradient(ellipse at center, ${palette.accent} 0%, transparent 70%)`,
-              }}
-            />
-
-            {/* Pedestal Platform */}
-            <div
-              className="w-36 h-8 rounded-[50%] border border-primary/40 bg-black/80 flex items-center justify-center relative shadow-inner mb-[-12px]"
-              style={{
-                boxShadow: `0 0 20px ${palette.glow}`,
-              }}
-            >
-              <div className="w-24 h-4 rounded-[50%] border border-primary/30 bg-primary/20 animate-pulse" />
-            </div>
-
-            {/* Character Avatar */}
-            <div className="relative z-10 w-24 h-24 flex items-center justify-center">
-              {activeChar ? (
-                <CharacterSpritePreview
-                  assetProfileId={activeChar.spriteId}
-                  size={32}
-                  scale={2.4}
-                />
-              ) : (
-                <div className="w-16 h-16 rounded-2xl border border-dashed border-primary/40 flex flex-col items-center justify-center text-muted-foreground">
-                  <User className="w-8 h-8" />
+            {/* Right: Quick Switcher & Actions */}
+            <div className="flex items-center gap-2">
+              {characters.length > 1 && (
+                <div className="flex items-center gap-1 bg-black/60 p-0.5 rounded-lg border border-white/10">
+                  <button
+                    type="button"
+                    onClick={handlePrevChar}
+                    className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors cursor-pointer"
+                    title="Previous Saint"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+                  <span className="text-[10px] font-mono font-bold text-muted-foreground px-1.5">
+                    {activeIdx + 1} / {characters.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleNextChar}
+                    className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors cursor-pointer"
+                    title="Next Saint"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
                 </div>
               )}
-            </div>
 
-            {/* Character Selector Carousel Arrows */}
-            {characters.length > 1 && (
-              <div className="flex items-center justify-between w-full px-4 absolute top-1/2 -translate-y-1/2 pointer-events-none">
-                <button
-                  onClick={handlePrevChar}
-                  className="pointer-events-auto p-2 rounded-xl bg-black/70 border border-white/15 text-muted-foreground hover:text-foreground hover:border-primary/50 hover:scale-105 transition-all cursor-pointer shadow-lg"
-                  title="Previous Saint"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <button
-                  onClick={handleNextChar}
-                  className="pointer-events-auto p-2 rounded-xl bg-black/70 border border-white/15 text-muted-foreground hover:text-foreground hover:border-primary/50 hover:scale-105 transition-all cursor-pointer shadow-lg"
-                  title="Next Saint"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Character Info Card */}
-          {activeChar ? (
-            <div className="bg-black/60 rounded-xl p-3 border border-white/10 mb-4 font-mono">
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1.5">
-                  <ClassIcon className="w-3.5 h-3.5" style={{ color: palette.accent }} />
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-white">
-                    {activeChar.name}
-                  </span>
-                </div>
-                <span className="px-2 py-0.5 rounded bg-primary/20 border border-primary/40 text-primary text-[10px] font-bold">
-                  LVL {activeCharState.level || 1}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-300 mt-2 pt-2 border-t border-white/5">
-                <div className="flex items-center gap-1.5">
-                  <Heart className="w-3 h-3 text-rose-400" />
-                  <span>HP: <strong className="text-white">{activeCharState.hp || 100}/{activeCharState.maxHp || 100}</strong></span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Coins className="w-3 h-3 text-amber-400" />
-                  <span>Pouch: <strong className="text-amber-300">{(activeCharState.credits || 1000).toLocaleString()} C</strong></span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center p-4 bg-black/40 rounded-xl border border-dashed border-white/15 mb-4">
-              <p className="text-xs text-foreground font-bold">NO SAINT YET</p>
-              <p className="text-[10px] text-muted-foreground mt-1">Forge your Saint to enter the live world.</p>
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="space-y-2.5">
-            {/* Primary CTA: ENTER WORLD */}
-            <button
-              onClick={handleStartGame}
-              className="group relative w-full py-3.5 overflow-hidden rounded-xl font-bold text-sm sm:text-base tracking-wider uppercase transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] cursor-pointer shadow-lg bg-primary text-primary-foreground flex items-center justify-center gap-2"
-            >
-              <Play size={16} fill="currentColor" className="text-primary-foreground" />
-              <span>
-                {status !== 'authenticated' ? 'LOGIN TO PLAY' : activeChar ? 'ENTER WORLD' : 'CREATE SAINT'}
-              </span>
-            </button>
-
-            {/* Secondary actions: Saint Vault & Forge */}
-            <div className="grid grid-cols-2 gap-2 text-xs">
               <button
+                type="button"
                 onClick={() => {
                   soundSynth?.playSelectSound?.();
                   if (onOpenCharacterSelect) {
@@ -655,12 +569,14 @@ export default function GameTitleScreen({
                     setGameMode('CHARACTER_SELECT');
                   }
                 }}
-                className="py-2 px-3 rounded-lg bg-black/60 border border-white/10 hover:border-primary/40 text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 font-semibold uppercase transition-all cursor-pointer"
+                className="py-1.5 px-2.5 rounded-lg bg-black/60 border border-white/10 hover:border-primary/40 text-muted-foreground hover:text-foreground flex items-center gap-1 text-[11px] font-mono font-bold uppercase transition-all cursor-pointer"
               >
-                <Layers size={13} />
-                Saint Vault
+                <Layers size={12} />
+                <span>Vault</span>
               </button>
+
               <button
+                type="button"
                 onClick={() => {
                   soundSynth?.playActionSound?.();
                   if (onCreateCharacter) {
@@ -669,14 +585,91 @@ export default function GameTitleScreen({
                     setGameMode('CHARACTER_CREATOR');
                   }
                 }}
-                className="py-2 px-3 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 text-primary hover:text-primary-foreground flex items-center justify-center gap-1.5 font-semibold uppercase transition-all cursor-pointer"
+                className="py-1.5 px-2.5 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 text-primary hover:text-primary-foreground flex items-center gap-1 text-[11px] font-mono font-bold uppercase transition-all cursor-pointer"
               >
-                <Plus size={13} />
-                Forge Saint
+                <Plus size={12} strokeWidth={2.5} />
+                <span>Forge</span>
               </button>
             </div>
           </div>
-        </div>
+
+          {/* 3-Column Character Detail Preview (Left: Inventory/Equipment, Center: Sprite, Right: Skills) */}
+          <CharacterDetailPreview
+            character={activeChar}
+            onEnterWorld={handleStartGame}
+            className="flex-1"
+          />
+        </section>
+
+        {/* ── RIGHT SECTION: LOBBY CHAT & CHAMPIONS LEADERBOARD (Cols 9-12) ── */}
+        <section className="lg:col-span-4 flex flex-col justify-between rounded-2xl border border-border/60 p-4 bg-card/60 backdrop-blur-xl shadow-xl relative overflow-hidden">
+          {/* Header with Server presence */}
+          <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-3">
+            <div className="flex items-center gap-2">
+              <MessageSquare size={14} className="text-primary" />
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-foreground">
+                Lobby Comms
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/60 border border-white/10 text-[10px] font-mono text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>{serverStatus.players > 0 ? `${serverStatus.players} Online` : 'Connected'}</span>
+            </div>
+          </div>
+
+          {/* Message History */}
+          <div
+            ref={chatScrollRef}
+            className="space-y-2.5 overflow-y-auto max-h-[340px] pr-1 mb-3 scrollbar-thin font-mono text-xs flex-1"
+          >
+            {chatMessages.map((msg) => {
+              const isSys = msg.type === 'SYSTEM';
+              const isAnn = msg.type === 'ANNOUNCE';
+              const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+              return (
+                <div
+                  key={msg.id}
+                  className={`p-2.5 rounded-xl border leading-relaxed ${
+                    isSys
+                      ? 'bg-primary/10 border-primary/20 text-primary text-[11px]'
+                      : isAnn
+                      ? 'bg-amber-500/10 border-amber-400/20 text-amber-300 text-[11px]'
+                      : 'bg-black/50 border-white/5 text-foreground'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-1 mb-1 text-[10px] text-muted-foreground">
+                    <span className="font-bold text-primary">
+                      {msg.sender}
+                    </span>
+                    <span>{time}</span>
+                  </div>
+                  <p className="text-xs break-words">{msg.text}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Chat Input */}
+          <form onSubmit={handleSendChat} className="flex gap-2">
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="Broadcast to lobby players..."
+              maxLength={160}
+              className="flex-1 px-3 py-2 rounded-xl bg-black/60 border border-border text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/60 transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={!chatInput.trim()}
+              className="px-3.5 py-2 rounded-xl bg-primary hover:brightness-110 text-primary-foreground font-mono font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center shadow-sm"
+            >
+              <Send size={13} />
+            </button>
+          </form>
+        </section>
+
       </main>
 
       {/* Modals */}

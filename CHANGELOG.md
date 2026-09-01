@@ -1,3 +1,13 @@
+# 2.1.594
+- **Lobby Character Preview Deck (Inventory / Equipment, Centered Sprite Showcase & Skills next to Chat)**:
+  - Created `CharacterDetailPreview.tsx` featuring the 3-column pre-game character inspector:
+    - **Left Column**: Equipped gear (Head, Chest, Legs, Weapon, Shield, Boots) with item stats & gear score, backpack items with quantity badges, and combat ratings (ATK/DEF/Credits).
+    - **Center Column**: Centered character sprite on an animated glowing pedestal with character name, class badge, HP/MP vitals, perk badge, and primary "ENTER WORLD" button.
+    - **Right Column**: Skills & Mastery overview showing individual skill levels with icons and total level sum.
+  - Integrated `CharacterDetailPreview` into `character-selector.tsx` (Saints Vault) and `GameTitleScreen.tsx` (Lobby Title Screen) positioned directly alongside the real-time Lobby Comms chat.
+  - Added quick horizontal character roster carousel enabling 1-click selection and preview switching.
+- **Version Bump**: Bumped release version to `v2.1.594` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.593
 - **Multiplayer Character Sprite Synchronization**: Fixed an issue where other players appeared as the default dev test character (`adventurer` / tall purple-shirt model) rather than their selected custom or chibi character sprite.
   - Normalized `assetProfileId` and `spriteId` parameters across `lobbyWorldJoin.ts`, `protocol.ts`, `LobbySocketHandler.ts`, `the-lobby` Go MMO handler (`protocol.go` & `handler.go`), and `store.ts`.
