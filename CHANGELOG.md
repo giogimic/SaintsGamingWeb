@@ -1,3 +1,8 @@
+# 2.1.625
+- **3D Floating Ground Items, Spin Dynamics & Avatar Footstep Dust Particles**:
+  - **3D Floating Ground Items & Spin Dynamics (`realmSettings.ts`, `RealmSettingsPanel.tsx`, `ItemBillboardRenderer.ts`)**: Added global toggle for upright 3D floating ground loot drops with configurable rotational spin speed slider (`0.0` to `3.0` rad/s).
+  - **Avatar Footstep Dust Puffs (`realmSettings.ts`, `RealmSettingsPanel.tsx`)**: Added toggle for procedural dust particle puffs when avatars traverse dirt, grass, and dungeon terrain.
+
 # 2.1.624
 - **Celestial Moon Phase Night Glow, Ground Grid Line Styles & Water Shoreline Wave Foam**:
   - **Celestial Moon Phase Night Glow (`realmSettings.ts`, `RealmSettingsPanel.tsx`, `BabylonEngine.ts`)**: Added 4 nocturnal moon presets (`Full Moon`, `Crescent Moon`, `New Moon`, `Eclipse`) with real-time ambient lighting shifts, specular moon highlights, and blood moon eclipse tints.
