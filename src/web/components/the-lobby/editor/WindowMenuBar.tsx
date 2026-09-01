@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, LucideIcon } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
 
@@ -47,25 +48,66 @@ export const WindowMenuDropdown: React.FC<WindowMenuDropdownProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+
+  const updatePosition = useCallback(() => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const menuWidth = 180;
+      let left = rect.left;
+      if (typeof window !== 'undefined' && left + menuWidth > window.innerWidth - 12) {
+        left = Math.max(12, window.innerWidth - menuWidth - 12);
+      }
+      setPos({
+        top: rect.bottom + 4,
+        left,
+      });
+    }
+  }, []);
 
   useEffect(() => {
+    if (!isOpen) return;
+
+    updatePosition();
+
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
+
+    const handleWindowChange = () => {
+      setIsOpen(false);
+    };
+
+    document.addEventListener('mousedown', handleClickOutside, true);
+    window.addEventListener('resize', handleWindowChange);
+    window.addEventListener('scroll', handleWindowChange, true);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside, true);
+      window.removeEventListener('resize', handleWindowChange);
+      window.removeEventListener('scroll', handleWindowChange, true);
+    };
+  }, [isOpen, updatePosition]);
 
   return (
-    <div className="relative inline-block" ref={dropdownRef}>
+    <div className="relative inline-block">
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => {
           soundSynth?.playUiClick?.();
+          if (!isOpen) {
+            updatePosition();
+          }
           setIsOpen(!isOpen);
         }}
         className={`
@@ -81,8 +123,17 @@ export const WindowMenuDropdown: React.FC<WindowMenuDropdownProps> = ({
         <ChevronDown className="w-2.5 h-2.5 opacity-60" />
       </button>
 
-      {isOpen && (
-        <div className="absolute top-full left-0 mt-1 min-w-[170px] bg-[#050b14]/95 border border-border/50 rounded-lg shadow-2xl p-1 z-50 backdrop-blur-xl animate-in fade-in-50 zoom-in-95 duration-100">
+      {isOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          ref={dropdownRef}
+          style={{
+            position: 'fixed',
+            top: `${pos.top}px`,
+            left: `${pos.left}px`,
+            zIndex: 999999,
+          }}
+          className="min-w-[180px] bg-[#050b14]/95 border border-border/60 shadow-[0_12px_40px_rgba(0,0,0,0.85)] rounded-lg p-1 backdrop-blur-2xl animate-in fade-in-50 zoom-in-95 duration-100 font-mono text-[10px] pointer-events-auto select-none"
+        >
           {items.map((item, idx) => {
             if (item.divider) {
               return <div key={idx} className="my-1 border-t border-border/30" />;
@@ -93,14 +144,15 @@ export const WindowMenuDropdown: React.FC<WindowMenuDropdownProps> = ({
                 key={idx}
                 type="button"
                 disabled={item.disabled}
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   if (item.disabled) return;
                   soundSynth?.playSelectSound?.();
                   setIsOpen(false);
                   item.onClick?.();
                 }}
                 className={`
-                  w-full flex items-center justify-between gap-2 px-2 py-1 rounded text-left text-[10px] transition-colors cursor-pointer
+                  w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded text-left text-[10px] transition-colors cursor-pointer
                   ${item.disabled ? 'opacity-40 cursor-not-allowed' : ''}
                   ${item.danger
                     ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300'
@@ -122,7 +174,8 @@ export const WindowMenuDropdown: React.FC<WindowMenuDropdownProps> = ({
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

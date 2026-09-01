@@ -1,3 +1,7 @@
+# 2.1.623
+- **Studio Window Sub-Menu Dropdown Stacking Fix (React Portal & High Z-Index)**:
+  - **Fixed Window Sub-Menu Dropdown Clipping (`WindowMenuBar.tsx`)**: Re-architected `WindowMenuDropdown` with `createPortal(..., document.body)`, dynamic viewport coordinate measurement, and `z-[999999]`. Dropdown menus now float completely over all dock windows, viewports, canvases, and title bars without clipping or hidden overflow.
+
 # 2.1.622
 - **2.5D/3D Engine Audit, Water Flow Dynamics Shimmer Loop & Documentation Sync**:
   - **Dynamic Water Shimmer Animation Loop (`BabylonEngine.ts`)**: Wired water texture animation tick to `waterFlowSpeed` multiplier in `startRenderLoop` for realistic caustic water waves.
