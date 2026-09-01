@@ -68,7 +68,8 @@ export interface HudEngineConfig {
   opacity: number;
   borderRadius: 'rounded' | 'compact' | 'capsule';
   borderGlow: boolean;
-  vitalsFormat: 'dual-bar' | 'compact' | 'orbs';
+  vitalsFormat: 'dual-bar' | 'compact' | 'compact-stacked' | 'orbs' | 'heart-containers' | 'pokemon-gauge';
+  heartContainerCount?: number;
   minimapShape: 'rounded' | 'circle' | 'square';
   showMinimapRadar: boolean;
   showCoords: boolean;
