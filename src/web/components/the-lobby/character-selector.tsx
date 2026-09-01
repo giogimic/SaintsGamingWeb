@@ -38,6 +38,7 @@ import { useRealtimeStore } from '@/web/hooks/useRealtimeStore';
 import { useSession } from 'next-auth/react';
 import { useTheme } from 'next-themes';
 import { MidnightTropicalBackground } from './MidnightTropicalBackground';
+import { CharacterSpritePreview } from './CharacterSpritePreview';
 import { CharacterDetailPreview } from './CharacterDetailPreview';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 
