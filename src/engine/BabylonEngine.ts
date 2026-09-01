@@ -215,6 +215,7 @@ export class BabylonEngine {
   private currentTileSize: number = 1;
   private tilesetTextureCache: Map<string, Texture> = new Map();
   private tilesetMaterialCache: Map<string, StandardMaterial> = new Map();
+  private spriteTextureCache: Map<string, Texture> = new Map();
   private static failedSpriteUrls: Set<string> = new Set();
 
   public static isSpriteUrlFailed(url?: string | null): boolean {
@@ -3934,6 +3935,45 @@ private resolveTilePick(
     }
   }
 
+  /**
+   * Retrieves or instantiates a pooled GPU Texture for entity sprites.
+   * Multiple entities sharing the same sprite sheet share the same Texture instance in VRAM.
+   */
+  private getOrCreateSpriteTexture(
+    url: string,
+    onLoaded?: (tex: Texture) => void,
+    onError?: () => void
+  ): Texture {
+    const rawUrl = url.split('?')[0];
+    const cached = this.spriteTextureCache.get(rawUrl);
+    if (cached && !(cached as any)._isDisposed) {
+      if (cached.isReady()) {
+        if (onLoaded) onLoaded(cached);
+      } else if (onLoaded) {
+        cached.onLoadObservable.addOnce(() => onLoaded(cached));
+      }
+      return cached;
+    }
+
+    const tex = new Texture(
+      url,
+      this.scene,
+      true,
+      true,
+      Texture.NEAREST_SAMPLINGMODE,
+      () => {
+        if (onLoaded) onLoaded(tex);
+      },
+      () => {
+        BabylonEngine.markSpriteUrlFailed(url);
+        if (onError) onError();
+      }
+    );
+    tex.hasAlpha = true;
+    this.spriteTextureCache.set(rawUrl, tex);
+    return tex;
+  }
+
   public updateEntity(entity: BabylonEntityData) {
     let spriteMesh = this.entityMeshes.get(entity.id);
     const targetPos = new Vector3(entity.x, ENTITY_GROUND_CLEARANCE, entity.y);
@@ -3995,18 +4035,10 @@ private resolveTilePick(
       spriteMesh.renderingGroupId = 1;
 
       if (entity.spriteUrl && !BabylonEngine.isSpriteUrlFailed(entity.spriteUrl)) {
-        // Always invertY=true (Babylon default). Re-apply UV in onLoad — Babylon can
-        // reset transforms when the image bytes arrive, which showed full 3×4 sheets.
-        // Unique URL per mesh so Babylon's texture cache can't share UV state.
-        const texUrl = `${entity.spriteUrl}${entity.spriteUrl.includes("?") ? "&" : "?"}mesh=${encodeURIComponent(entity.id)}`;
-        const tex = new Texture(
-          texUrl,
-          this.scene,
-          true,
-          true,
-          Texture.NEAREST_SAMPLINGMODE,
-          () => {
-            const size = tex.getBaseSize();
+        const tex = this.getOrCreateSpriteTexture(
+          entity.spriteUrl,
+          (loadedTex) => {
+            const size = loadedTex.getBaseSize();
             if (size.width > 0 && size.height > 0) {
               if (createdMesh.metadata) {
                 createdMesh.metadata.spriteDimensions = { width: size.width, height: size.height };
@@ -4022,7 +4054,7 @@ private resolveTilePick(
               if (createdMesh.metadata) {
                 createdMesh.metadata.spriteConfig = updatedConfig;
               }
-              this.applySpriteSheetUv(tex, updatedConfig);
+              this.applySpriteSheetUv(loadedTex, updatedConfig);
               const isSingle = updatedConfig.columns <= 1 && updatedConfig.rows <= 1;
               if (isSingle) {
                 this.setSpriteCellUVs(createdMesh, 0, 0, 1, 1);
@@ -4040,11 +4072,10 @@ private resolveTilePick(
                 }
               }
             } else {
-              this.applySpriteSheetUv(tex, resolvedConfig);
+              this.applySpriteSheetUv(loadedTex, resolvedConfig);
             }
           },
           () => {
-            BabylonEngine.markSpriteUrlFailed(entity.spriteUrl);
             if (!entity.spriteUrl?.includes('adventurer')) {
               console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl} (cached failure, using fallback)`);
             }
@@ -4054,7 +4085,6 @@ private resolveTilePick(
             }
           }
         );
-        tex.hasAlpha = true;
         mat.diffuseTexture = tex;
         mat.emissiveTexture = tex;
         mat.emissiveColor = new Color3(1, 1, 1);
@@ -4078,8 +4108,6 @@ private resolveTilePick(
           spriteMesh.metadata.uvCols = resolvedConfig.columns;
           spriteMesh.metadata.uvRows = resolvedConfig.rows;
         }
-
-        mat.diffuseTexture = tex;
       } else if (this.defaultPlayerTexture) {
         this.applyDefaultPlayerFallback(createdMesh, mat);
         if (createdMesh.metadata) {
@@ -4143,15 +4171,10 @@ private resolveTilePick(
               existingMesh.metadata.spriteUrl = entity.spriteUrl;
             }
           } else {
-            const texUrl = `${entity.spriteUrl}${entity.spriteUrl.includes("?") ? "&" : "?"}mesh=${encodeURIComponent(entity.id)}`;
-            const newTex = new Texture(
-              texUrl,
-              this.scene,
-              true,
-              true,
-              Texture.NEAREST_SAMPLINGMODE,
-              () => {
-                const size = newTex.getBaseSize();
+            const newTex = this.getOrCreateSpriteTexture(
+              entity.spriteUrl,
+              (loadedTex) => {
+                const size = loadedTex.getBaseSize();
                 if (size.width > 0 && size.height > 0) {
                   if (existingMesh.metadata) {
                     existingMesh.metadata.spriteDimensions = { width: size.width, height: size.height };
@@ -4167,7 +4190,7 @@ private resolveTilePick(
                   if (existingMesh.metadata) {
                     existingMesh.metadata.spriteConfig = updatedConfig;
                   }
-                  this.applySpriteSheetUv(newTex, updatedConfig);
+                  this.applySpriteSheetUv(loadedTex, updatedConfig);
                   const isSingle = updatedConfig.columns <= 1 && updatedConfig.rows <= 1;
                   if (isSingle) {
                     this.setSpriteCellUVs(existingMesh, 0, 0, 1, 1);
@@ -4185,11 +4208,10 @@ private resolveTilePick(
                     }
                   }
                 } else {
-                  this.applySpriteSheetUv(newTex, resolvedConfig);
+                  this.applySpriteSheetUv(loadedTex, resolvedConfig);
                 }
               },
               () => {
-                BabylonEngine.markSpriteUrlFailed(entity.spriteUrl);
                 if (!entity.spriteUrl?.includes('adventurer')) {
                   console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl} (cached failure, using fallback)`);
                 }
@@ -4199,17 +4221,17 @@ private resolveTilePick(
                 }
               }
             );
-            newTex.hasAlpha = true;
-            this.applySpriteSheetUv(newTex, resolvedConfig);
-            if (spriteMesh.metadata) {
-              spriteMesh.metadata.spriteConfig = resolvedConfig;
-              spriteMesh.metadata.spriteUrl = entity.spriteUrl;
-              // Force UV cell recompute next anim tick
-              spriteMesh.metadata.uvCol = undefined;
-              spriteMesh.metadata.uvRow = undefined;
-              spriteMesh.metadata.uvFullFrame = false;
-            }
             mat.diffuseTexture = newTex;
+            mat.emissiveTexture = newTex;
+            mat.emissiveColor = new Color3(1, 1, 1);
+            if (existingMesh.metadata) {
+              existingMesh.metadata.spriteConfig = resolvedConfig;
+              existingMesh.metadata.spriteUrl = entity.spriteUrl;
+              // Force UV cell recompute next anim tick
+              existingMesh.metadata.uvCol = undefined;
+              existingMesh.metadata.uvRow = undefined;
+              existingMesh.metadata.uvFullFrame = false;
+            }
           }
         } else if (!entity.spriteUrl && currentUrl !== 'defaultPlayerTex' && this.defaultPlayerTexture) {
           this.applyDefaultPlayerFallback(existingMesh, mat);
@@ -4541,6 +4563,8 @@ private resolveTilePick(
     this.selectionBoxMesh?.dispose();
     this.actionPreviewBoundsMesh?.dispose();
     this.itemBillboards?.dispose();
+    this.spriteTextureCache.forEach((tex) => tex.dispose());
+    this.spriteTextureCache.clear();
     this.guiTexture.dispose();
     this.scene.dispose();
     this.engine.dispose();

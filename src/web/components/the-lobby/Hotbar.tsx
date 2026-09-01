@@ -17,25 +17,37 @@ type HotbarAbility = {
 };
 
 export default function Hotbar() {
-  const { player, gameMode, combatTarget, emitSocketEvent, cooldowns, setCooldown } = useGameStore();
+  const combatStyle = useGameStore((s) => s.player.combatStyle);
+  const inventory = useGameStore((s) => s.player.inventory);
+  const gameMode = useGameStore((s) => s.gameMode);
+  const combatTarget = useGameStore((s) => s.combatTarget);
+  const cooldowns = useGameStore((s) => s.cooldowns);
+  const emitSocketEvent = useGameStore((s) => s.emitSocketEvent);
+  const setCooldown = useGameStore((s) => s.setCooldown);
+
   const [globalCooldown, setGlobalCooldown] = useState(0);
   const [now, setNow] = useState(Date.now());
 
-  // Force re-render for smooth cooldown countdown
+  // Check if any cooldowns are actively running
+  const hasActiveCooldown = useMemo(() => {
+    const time = Date.now();
+    if (globalCooldown > time) return true;
+    return Object.values(cooldowns || {}).some((cdEnd) => typeof cdEnd === 'number' && cdEnd > time);
+  }, [globalCooldown, cooldowns, now]);
+
+  // Smooth cooldown ticker — only runs while an active cooldown exists (saves 60-144fps React re-renders)
   useEffect(() => {
-    let frame: number;
-    const loop = () => {
+    if (!hasActiveCooldown) return;
+    const interval = setInterval(() => {
       setNow(Date.now());
-      frame = requestAnimationFrame(loop);
-    };
-    frame = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(frame);
-  }, []);
+    }, 50); // 20 FPS cooldown sweep
+    return () => clearInterval(interval);
+  }, [hasActiveCooldown]);
 
   // RT MMO abilities only — capture tools are turn-based (bible 07 / 11)
   const abilities = useMemo((): HotbarAbility[] => {
     let list: HotbarAbility[];
-    const style = String(player.combatStyle || 'MELEE').toUpperCase();
+    const style = String(combatStyle || 'MELEE').toUpperCase();
     if (style === 'MELEE' || style === 'WARRIOR' || style === 'BRAWLER') {
       list = [
         { id: 'strike', name: 'Power Strike', icon: '⚔️', cooldownMs: 1500, type: 'damage', mpCost: 0 },
@@ -59,11 +71,11 @@ export default function Hotbar() {
       ];
     }
     return list.filter((a) => !isForbiddenRtCaptureAbility(a.id));
-  }, [player.combatStyle]);
+  }, [combatStyle]);
 
   // Inventory consumable count
   const potionCount = useMemo(() => {
-    const inv = player.inventory || {};
+    const inv = inventory || {};
     let total = 0;
     for (const [k, v] of Object.entries(inv)) {
       if (
@@ -77,7 +89,7 @@ export default function Hotbar() {
       }
     }
     return total;
-  }, [player.inventory]);
+  }, [inventory]);
 
   const slots = useMemo(
     () => [

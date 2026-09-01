@@ -35,7 +35,7 @@ export function MessengerPopup() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 30, scale: 0.95 }}
           transition={{ duration: 0.2 }}
-          className="fixed bottom-12 sm:bottom-14 right-3 sm:right-6 w-80 sm:w-96 h-[480px] max-h-[75vh] bg-card/95 backdrop-blur-2xl border border-primary/40 rounded-xl shadow-2xl flex flex-col overflow-hidden z-50 pointer-events-auto"
+          className="fixed bottom-12 sm:bottom-14 right-3 sm:right-6 w-80 sm:w-96 h-[480px] max-h-[75vh] bg-card/95 backdrop-blur-2xl border border-primary/40 rounded-xl shadow-2xl flex flex-col overflow-hidden z-[300] pointer-events-auto"
         >
           {/* Header */}
           <div className="flex items-center justify-between p-3 border-b border-border/50 bg-black/40">

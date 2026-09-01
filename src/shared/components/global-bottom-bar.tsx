@@ -498,7 +498,7 @@ export function GlobalBottomBar({
 
       {/* â”€â”€ DEVELOPER POP-OUT CONSOLE DRAWER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {devConsoleOpen && isDevOrAdmin && (
-        <div className="fixed bottom-11 right-2 sm:right-6 w-full max-w-xl bg-card/95 backdrop-blur-2xl border border-primary/40 rounded-t-xl shadow-2xl z-50 flex flex-col max-h-[70vh] font-mono text-xs overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
+        <div className="fixed bottom-11 right-2 sm:right-6 w-full max-w-xl bg-card/95 backdrop-blur-2xl border border-primary/40 rounded-t-xl shadow-2xl z-[300] flex flex-col max-h-[70vh] font-mono text-xs overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
           {/* Drawer Header */}
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/50 bg-black/40">
             <div className="flex items-center gap-2">
@@ -703,7 +703,7 @@ export function GlobalBottomBar({
 
       {/* â”€â”€ MODERATOR POP-OUT DRAWER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {modDrawerOpen && isMod && (
-        <div className="fixed bottom-11 right-2 sm:right-6 w-full max-w-md bg-card/95 backdrop-blur-2xl border border-amber-500/40 rounded-t-xl shadow-2xl z-50 flex flex-col max-h-[60vh] font-mono text-xs overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
+        <div className="fixed bottom-11 right-2 sm:right-6 w-full max-w-md bg-card/95 backdrop-blur-2xl border border-amber-500/40 rounded-t-xl shadow-2xl z-[300] flex flex-col max-h-[60vh] font-mono text-xs overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/50 bg-black/40">
             <div className="flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 text-amber-400" />
