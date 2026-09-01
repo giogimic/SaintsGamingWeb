@@ -15,20 +15,33 @@ import {
   CheckCircle2,
   AlertCircle,
   Globe2,
-  Users,
-  MapPin,
+  Sun,
+  Layers,
+  Eye,
+  Sliders,
+  FileText,
+  Palette,
+  CloudSun,
 } from 'lucide-react';
 import {
   DEFAULT_REALM_SETTINGS,
   RealmSettingsConfig,
 } from '@/shared/game/realmSettings';
+import {
+  WindowMenuBar,
+  WindowMenuDropdown,
+  WindowMenuButton,
+  WindowMenuTabGroup,
+  WindowMenuDivider,
+} from '../WindowMenuBar';
+import { soundSynth } from '@/engine/sound-synth';
 
 export function RealmSettingsPanel() {
   const [settings, setSettings] = useState<RealmSettingsConfig>(DEFAULT_REALM_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'heroes' | 'comms' | 'capture' | 'realm'>('heroes');
+  const [activeTab, setActiveTab] = useState<'heroes' | 'comms' | 'capture' | 'visuals' | 'realm'>('visuals');
   const { maps: availableMaps } = useMapIndex();
 
   // Load existing realm settings from server
@@ -67,6 +80,14 @@ export function RealmSettingsPanel() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save realm settings');
       setStatusMessage({ type: 'success', text: 'Server settings saved successfully!' });
+      
+      // Notify Babylon Engine of visual updates
+      window.dispatchEvent(
+        new CustomEvent('studio_update_realm_visuals', {
+          detail: { settings },
+        })
+      );
+      
       setTimeout(() => setStatusMessage(null), 4000);
     } catch (err: any) {
       setStatusMessage({ type: 'error', text: err.message || 'Error saving settings' });
@@ -76,10 +97,21 @@ export function RealmSettingsPanel() {
   };
 
   const handleResetToDefaults = () => {
-    if (window.confirm('Reset all server & realm identity settings to defaults?')) {
+    if (window.confirm('Reset all server, 2.5D visual & realm identity settings to defaults?')) {
       setSettings(DEFAULT_REALM_SETTINGS);
       setStatusMessage({ type: 'success', text: 'Reset to canonical defaults. Click Save to persist.' });
+      window.dispatchEvent(
+        new CustomEvent('studio_update_realm_visuals', {
+          detail: { settings: DEFAULT_REALM_SETTINGS },
+        })
+      );
     }
+  };
+
+  const applyPreset = (presetName: string, presetUpdates: Partial<RealmSettingsConfig>) => {
+    soundSynth?.playSelectSound?.();
+    setSettings((prev) => ({ ...prev, ...presetUpdates }));
+    setStatusMessage({ type: 'success', text: `Applied visual preset: ${presetName}. Click Save to persist.` });
   };
 
   if (loading) {
@@ -93,35 +125,106 @@ export function RealmSettingsPanel() {
     );
   }
 
+  const tabs = [
+    { id: 'visuals', label: '2.5D / 3D Visuals', icon: Sun },
+    { id: 'heroes', label: 'Hero Identity', icon: Shield },
+    { id: 'comms', label: 'Soul Link Chat', icon: Radio },
+    { id: 'capture', label: 'Souls & Cameras', icon: Camera },
+    { id: 'realm', label: 'Realm Info', icon: Globe2 },
+  ];
+
   return (
     <div className="flex flex-col h-full bg-[#050b14]/95 text-slate-200 font-mono text-xs overflow-hidden">
-      {/* Top Header */}
-      <div className="flex items-center justify-between p-3 border-b border-amber-500/20 bg-black/50/40 shrink-0">
-        <div className="flex items-center gap-2">
-          <Settings className="w-4 h-4 text-amber-400" />
-          <span className="font-bold text-white uppercase tracking-wider text-[11px]">Server & Game Settings</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleResetToDefaults}
-            className="flex items-center gap-1 px-2.5 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-[10px] transition cursor-pointer"
-            title="Reset to canonical defaults (Saint/Soul Link/Soul/Camera)"
-          >
-            <RotateCcw className="w-3 h-3" />
-            <span>Defaults</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-1 px-3 py-1 rounded bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-bold text-[10px] uppercase tracking-wider shadow transition disabled:opacity-50 cursor-pointer"
-          >
-            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-            <span>{saving ? 'Saving...' : 'Save'}</span>
-          </button>
-        </div>
-      </div>
+      {/* ── SUB-MENU APP TOOLBAR (Under Title Bar) ── */}
+      <WindowMenuBar>
+        <WindowMenuDropdown
+          label="File"
+          icon={FileText}
+          items={[
+            { label: 'Save Realm Config', icon: Save, shortcut: 'Ctrl+S', onClick: handleSave },
+            { label: 'Reset to Defaults', icon: RotateCcw, onClick: handleResetToDefaults, danger: true },
+          ]}
+        />
+        <WindowMenuDropdown
+          label="Visual Presets"
+          icon={Palette}
+          items={[
+            {
+              label: 'Default 2.5D High Fantasy',
+              icon: CloudSun,
+              onClick: () =>
+                applyPreset('Default 2.5D High Fantasy', {
+                  enable3DLighting: true,
+                  enableShadows: true,
+                  shadowQuality: 'medium',
+                  enableAtmosphericFog: true,
+                  fogDensity: 0.015,
+                  fogColor: '#0b1626',
+                  terrainElevationScale: 1.0,
+                  waterReflectionQuality: 'high',
+                }),
+            },
+            {
+              label: 'Midnight Atmosphere',
+              icon: Sparkles,
+              onClick: () =>
+                applyPreset('Midnight Atmosphere', {
+                  enable3DLighting: true,
+                  enableShadows: true,
+                  shadowQuality: 'high',
+                  enableAtmosphericFog: true,
+                  fogDensity: 0.025,
+                  fogColor: '#050a14',
+                  terrainElevationScale: 1.2,
+                  waterReflectionQuality: 'high',
+                }),
+            },
+            {
+              label: 'Sunlit Golden Coast',
+              icon: Sun,
+              onClick: () =>
+                applyPreset('Sunlit Golden Coast', {
+                  enable3DLighting: true,
+                  enableShadows: true,
+                  shadowQuality: 'high',
+                  enableAtmosphericFog: true,
+                  fogDensity: 0.01,
+                  fogColor: '#1a1810',
+                  terrainElevationScale: 1.1,
+                  waterReflectionQuality: 'high',
+                }),
+            },
+            {
+              label: 'Clean Flat Performance (Mobile/Low-End)',
+              icon: Sliders,
+              onClick: () =>
+                applyPreset('Clean Flat Performance', {
+                  enable3DLighting: false,
+                  enableShadows: false,
+                  shadowQuality: 'low',
+                  enableAtmosphericFog: false,
+                  terrainElevationScale: 1.0,
+                  waterReflectionQuality: 'off',
+                }),
+            },
+          ]}
+        />
+        <WindowMenuDivider />
+        <WindowMenuTabGroup
+          tabs={tabs}
+          activeTab={activeTab}
+          onChange={(id) => setActiveTab(id as any)}
+        />
+        <div className="flex-1" />
+        <WindowMenuButton
+          label={saving ? 'Saving...' : 'Save'}
+          icon={saving ? Loader2 : Save}
+          onClick={handleSave}
+          disabled={saving}
+          active
+          title="Save and broadcast settings to live server"
+        />
+      </WindowMenuBar>
 
       {/* Status Feedback Banner */}
       {statusMessage && (
@@ -133,44 +236,241 @@ export function RealmSettingsPanel() {
           }`}
         >
           {statusMessage.type === 'success' ? (
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
           ) : (
-            <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
+            <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
           )}
-          <span>{statusMessage.text}</span>
+          <span className="truncate">{statusMessage.text}</span>
         </div>
       )}
 
-      {/* Navigation Sub-Tabs */}
-      <div className="flex border-b border-[#806f47]/20 bg-[#070e1a]/80 p-1 gap-1 text-[11px] shrink-0">
-        {[
-          { id: 'heroes', label: 'Hero Identity', icon: Shield },
-          { id: 'comms', label: 'Soul Link Chat', icon: Radio },
-          { id: 'capture', label: 'Souls & Cameras', icon: Camera },
-          { id: 'realm', label: 'Realm Info', icon: Globe2 },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex-1 py-1.5 px-2 rounded flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                isActive
-                  ? 'bg-amber-500/20 border border-amber-400/40 text-amber-300 font-bold shadow'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-              }`}
-            >
-              <Icon className="w-3 h-3" />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+        {/* ── 2.5D / 3D VISUALS & ENGINE PIPELINE ── */}
+        {activeTab === 'visuals' && (
+          <div className="space-y-4">
+            <div className="p-3 rounded-xl bg-amber-950/20 border border-primary/30">
+              <div className="flex items-center gap-2 text-primary font-bold mb-1">
+                <Sun className="w-3.5 h-3.5 text-amber-400" />
+                <span>Global 2.5D & 3D Visual Pipeline</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                Tune the realm-wide 2.5D lighting, dynamic sun cascades, atmospheric fog, elevation exaggeration, and depth simulation rendered across all maps.
+              </p>
+            </div>
+
+            {/* Lighting & Shadows */}
+            <div className="p-3 rounded-xl bg-black/40 border border-border/30 space-y-3">
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Sun className="w-3 h-3 text-amber-400" /> Lighting & Shadow Cascades
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="flex items-center justify-between p-2.5 rounded-lg bg-[#060e1c] border border-border/20 cursor-pointer">
+                  <div>
+                    <div className="text-[11px] font-bold text-foreground">3D Dynamic Lighting</div>
+                    <div className="text-[8.5px] text-muted-foreground">Enable directional celestial sun/moon shader</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={settings.enable3DLighting !== false}
+                    onChange={(e) => setSettings({ ...settings, enable3DLighting: e.target.checked })}
+                    className="h-4 w-4 rounded accent-primary cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-2.5 rounded-lg bg-[#060e1c] border border-border/20 cursor-pointer">
+                  <div>
+                    <div className="text-[11px] font-bold text-foreground">Real-time Shadows</div>
+                    <div className="text-[8.5px] text-muted-foreground">Cast shadows from hero & world props</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={settings.enableShadows !== false}
+                    onChange={(e) => setSettings({ ...settings, enableShadows: e.target.checked })}
+                    className="h-4 w-4 rounded accent-primary cursor-pointer"
+                  />
+                </label>
+              </div>
+
+              {settings.enableShadows !== false && (
+                <div className="pt-2 border-t border-border/10 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground">Shadow Generator Quality</span>
+                    <span className="text-[9px] font-bold text-primary uppercase">{settings.shadowQuality || 'medium'}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(['low', 'medium', 'high'] as const).map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => setSettings({ ...settings, shadowQuality: q })}
+                        className={`py-1.5 rounded text-[10px] font-bold uppercase transition-colors cursor-pointer ${
+                          (settings.shadowQuality || 'medium') === q
+                            ? 'bg-primary/20 border border-primary text-primary'
+                            : 'bg-[#060e1c] border border-border/20 text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Atmosphere & Fog */}
+            <div className="p-3 rounded-xl bg-black/40 border border-border/30 space-y-3">
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-cyan-400" /> Atmospheric Fog & Sky Depth
+              </div>
+
+              <label className="flex items-center justify-between p-2.5 rounded-lg bg-[#060e1c] border border-border/20 cursor-pointer">
+                <div>
+                  <div className="text-[11px] font-bold text-foreground">Atmospheric Depth Fog</div>
+                  <div className="text-[8.5px] text-muted-foreground">Soft horizon falloff that gives 2.5D visual depth</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={settings.enableAtmosphericFog !== false}
+                  onChange={(e) => setSettings({ ...settings, enableAtmosphericFog: e.target.checked })}
+                  className="h-4 w-4 rounded accent-primary cursor-pointer"
+                />
+              </label>
+
+              {settings.enableAtmosphericFog !== false && (
+                <div className="space-y-3 pt-1 border-t border-border/10">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground">Fog Density Falloff</span>
+                      <span className="text-[10px] font-bold text-primary">{((settings.fogDensity || 0.015) * 1000).toFixed(1)}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={5}
+                      max={50}
+                      step={1}
+                      value={Math.round((settings.fogDensity || 0.015) * 1000)}
+                      onChange={(e) => setSettings({ ...settings, fogDensity: parseInt(e.target.value) / 1000 })}
+                      className="w-full accent-primary h-1 cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[8px] text-muted-foreground">
+                      <span>Subtle Crisp (0.005)</span>
+                      <span>Dense Mystic (0.050)</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] text-muted-foreground block">Sky & Horizon Fog Tint</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={settings.fogColor || '#0b1626'}
+                        onChange={(e) => setSettings({ ...settings, fogColor: e.target.value })}
+                        className="h-7 w-10 rounded border border-border/40 bg-transparent cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={settings.fogColor || '#0b1626'}
+                        onChange={(e) => setSettings({ ...settings, fogColor: e.target.value })}
+                        className="flex-1 bg-[#060e1c] border border-border/30 rounded px-2 py-1 text-foreground text-xs font-mono"
+                      />
+                      {['#0b1626', '#120d20', '#1c150c', '#081414'].map((col) => (
+                        <button
+                          key={col}
+                          type="button"
+                          onClick={() => setSettings({ ...settings, fogColor: col })}
+                          style={{ backgroundColor: col }}
+                          className="w-6 h-6 rounded-full border border-white/20 hover:scale-110 transition-transform cursor-pointer"
+                          title={col}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 2.5D Elevation & Water */}
+            <div className="p-3 rounded-xl bg-black/40 border border-border/30 space-y-3">
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Layers className="w-3 h-3 text-teal-400" /> Terrain Elevation & Water Simulation
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-muted-foreground">2.5D Elevation Step Multiplier</span>
+                  <span className="text-[10px] font-bold text-primary">{((settings.terrainElevationScale || 1.0)).toFixed(2)}x</span>
+                </div>
+                <input
+                  type="range"
+                  min={50}
+                  max={250}
+                  step={5}
+                  value={Math.round((settings.terrainElevationScale || 1.0) * 100)}
+                  onChange={(e) => setSettings({ ...settings, terrainElevationScale: parseInt(e.target.value) / 100 })}
+                  className="w-full accent-primary h-1 cursor-pointer"
+                />
+                <div className="flex justify-between text-[8px] text-muted-foreground">
+                  <span>Flat Tiles (0.5x)</span>
+                  <span>Standard (1.0x)</span>
+                  <span>Dramatic Cliffs (2.5x)</span>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-border/10 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-muted-foreground">Water Shader & Reflections</span>
+                  <span className="text-[9px] font-bold text-primary uppercase">{settings.waterReflectionQuality || 'high'}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {(['off', 'low', 'high'] as const).map((w) => (
+                    <button
+                      key={w}
+                      type="button"
+                      onClick={() => setSettings({ ...settings, waterReflectionQuality: w })}
+                      className={`py-1.5 rounded text-[10px] font-bold uppercase transition-colors cursor-pointer ${
+                        (settings.waterReflectionQuality || 'high') === w
+                          ? 'bg-primary/20 border border-primary text-primary'
+                          : 'bg-[#060e1c] border border-border/20 text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {w}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Post-Processing Toggles */}
+            <div className="p-3 rounded-xl bg-black/40 border border-border/30 space-y-2">
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                Post-Processing & Overlays
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label className="flex items-center justify-between p-2 rounded bg-[#060e1c] border border-border/20 cursor-pointer text-[10px]">
+                  <span>Anti-Aliasing (FXAA)</span>
+                  <input
+                    type="checkbox"
+                    checked={settings.enableAntiAliasing !== false}
+                    onChange={(e) => setSettings({ ...settings, enableAntiAliasing: e.target.checked })}
+                    className="accent-primary"
+                  />
+                </label>
+                <label className="flex items-center justify-between p-2 rounded bg-[#060e1c] border border-border/20 cursor-pointer text-[10px]">
+                  <span>Subtle Bloom Highlights</span>
+                  <input
+                    type="checkbox"
+                    checked={!!settings.enableBloom}
+                    onChange={(e) => setSettings({ ...settings, enableBloom: e.target.checked })}
+                    className="accent-primary"
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── HERO & PLAYER IDENTITY ── */}
         {activeTab === 'heroes' && (
           <div className="space-y-4">
@@ -179,14 +479,14 @@ export function RealmSettingsPanel() {
                 <Shield className="w-3.5 h-3.5 text-purple-400" />
                 <span>Player Hero Title & Class Name</span>
               </div>
-              <p className="text-[10px] text-slate-400 leading-relaxed">
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
                 Configure what players/heroes are named in your world. By default, heroes in Saints Gaming MMO are called <strong className="text-amber-300">Saints</strong>.
               </p>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
                   Singular Hero Title (e.g. Saint, Operative, Hero)
                 </label>
                 <input
@@ -194,12 +494,12 @@ export function RealmSettingsPanel() {
                   value={settings.playerClassName}
                   onChange={(e) => setSettings({ ...settings, playerClassName: e.target.value })}
                   placeholder="Saint"
-                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-amber-400 rounded-lg p-2 text-white text-xs outline-none"
+                  className="w-full bg-[#060e1c] border border-border/30 focus:border-primary rounded-lg p-2 text-foreground text-xs outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
                   Plural Hero Title (e.g. Saints, Operatives, Heroes)
                 </label>
                 <input
@@ -207,13 +507,13 @@ export function RealmSettingsPanel() {
                   value={settings.playerClassNamePlural}
                   onChange={(e) => setSettings({ ...settings, playerClassNamePlural: e.target.value })}
                   placeholder="Saints"
-                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-amber-400 rounded-lg p-2 text-white text-xs outline-none"
+                  className="w-full bg-[#060e1c] border border-border/30 focus:border-primary rounded-lg p-2 text-foreground text-xs outline-none"
                 />
               </div>
             </div>
 
             {/* Live Preview Box */}
-            <div className="p-3 rounded-xl bg-black/50/20 border border-[#806f47]/20 space-y-1.5">
+            <div className="p-3 rounded-xl bg-black/40 border border-border/20 space-y-1.5">
               <div className="text-[10px] font-bold text-cyan-300 flex items-center gap-1.5">
                 <Sparkles className="w-3 h-3 text-cyan-400" /> Live In-Game Preview
               </div>
@@ -238,14 +538,14 @@ export function RealmSettingsPanel() {
                 <Radio className="w-3.5 h-3.5 text-teal-400" />
                 <span>Soul Link & In-Game Communication</span>
               </div>
-              <p className="text-[10px] text-slate-400 leading-relaxed">
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
                 By default, the global & local player communication channel is titled <strong className="text-teal-300">Soul Link</strong>.
               </p>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
                   Chat Box Title / Channel Name
                 </label>
                 <input
@@ -253,12 +553,12 @@ export function RealmSettingsPanel() {
                   value={settings.chatTitle}
                   onChange={(e) => setSettings({ ...settings, chatTitle: e.target.value })}
                   placeholder="Soul Link"
-                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-teal-400 rounded-lg p-2 text-white text-xs outline-none"
+                  className="w-full bg-[#060e1c] border border-border/30 focus:border-teal-400 rounded-lg p-2 text-foreground text-xs outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
                   Message of the Day (MOTD)
                 </label>
                 <textarea
@@ -266,17 +566,17 @@ export function RealmSettingsPanel() {
                   value={settings.motd}
                   onChange={(e) => setSettings({ ...settings, motd: e.target.value })}
                   placeholder="Welcome to Saints MMO — where spirit captures and heroic battles unfold!"
-                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-teal-400 rounded-lg p-2 text-white text-xs outline-none resize-none"
+                  className="w-full bg-[#060e1c] border border-border/30 focus:border-teal-400 rounded-lg p-2 text-foreground text-xs outline-none resize-none"
                 />
               </div>
             </div>
 
             {/* Live Preview Box */}
-            <div className="p-3 rounded-xl bg-black/50/20 border border-[#806f47]/20 space-y-2">
+            <div className="p-3 rounded-xl bg-black/40 border border-border/20 space-y-2">
               <div className="text-[10px] font-bold text-teal-300 flex items-center gap-1.5">
                 <Radio className="w-3 h-3 text-teal-400" /> Chat Header Preview
               </div>
-              <div className="p-2 rounded bg-black/50/80 border border-teal-500/30 flex items-center justify-between">
+              <div className="p-2 rounded bg-black/80 border border-teal-500/30 flex items-center justify-between">
                 <div className="flex items-center gap-1.5 font-bold uppercase tracking-widest text-teal-300 text-[10px]">
                   <Radio className="w-3 h-3 text-teal-400" />
                   <span>{settings.chatTitle || 'Soul Link'}</span>
@@ -295,14 +595,14 @@ export function RealmSettingsPanel() {
                 <Camera className="w-3.5 h-3.5 text-amber-400" />
                 <span>Souls, Spirits & Camera Capture Tools</span>
               </div>
-              <p className="text-[10px] text-slate-400 leading-relaxed">
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
                 Configure the names of collectible beings and the equipment used to capture them. By default, beings are <strong className="text-amber-300">Souls</strong>, captured using <strong className="text-amber-300">Cameras</strong> and <strong className="text-amber-300">Film</strong>.
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
                   Creature Identity (Singular)
                 </label>
                 <input
@@ -310,12 +610,12 @@ export function RealmSettingsPanel() {
                   value={settings.creatureIdentity}
                   onChange={(e) => setSettings({ ...settings, creatureIdentity: e.target.value })}
                   placeholder="Soul"
-                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-amber-400 rounded-lg p-2 text-white text-xs outline-none"
+                  className="w-full bg-[#060e1c] border border-border/30 focus:border-primary rounded-lg p-2 text-foreground text-xs outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
                   Creature Identity (Plural)
                 </label>
                 <input
@@ -323,12 +623,12 @@ export function RealmSettingsPanel() {
                   value={settings.creatureIdentityPlural}
                   onChange={(e) => setSettings({ ...settings, creatureIdentityPlural: e.target.value })}
                   placeholder="Souls"
-                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-amber-400 rounded-lg p-2 text-white text-xs outline-none"
+                  className="w-full bg-[#060e1c] border border-border/30 focus:border-primary rounded-lg p-2 text-foreground text-xs outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
                   Capture Device Name
                 </label>
                 <input
@@ -336,12 +636,12 @@ export function RealmSettingsPanel() {
                   value={settings.captureToolName}
                   onChange={(e) => setSettings({ ...settings, captureToolName: e.target.value })}
                   placeholder="Camera"
-                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-amber-400 rounded-lg p-2 text-white text-xs outline-none"
+                  className="w-full bg-[#060e1c] border border-border/30 focus:border-primary rounded-lg p-2 text-foreground text-xs outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
                   Capture Ammo / Item Name
                 </label>
                 <input
@@ -349,13 +649,13 @@ export function RealmSettingsPanel() {
                   value={settings.captureAmmoName}
                   onChange={(e) => setSettings({ ...settings, captureAmmoName: e.target.value })}
                   placeholder="Film"
-                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-amber-400 rounded-lg p-2 text-white text-xs outline-none"
+                  className="w-full bg-[#060e1c] border border-border/30 focus:border-primary rounded-lg p-2 text-foreground text-xs outline-none"
                 />
               </div>
             </div>
 
             {/* Live Preview Box */}
-            <div className="p-3 rounded-xl bg-black/50/20 border border-[#806f47]/20 space-y-1.5">
+            <div className="p-3 rounded-xl bg-black/40 border border-border/20 space-y-1.5">
               <div className="text-[10px] font-bold text-amber-300 flex items-center gap-1.5">
                 <Sparkles className="w-3 h-3 text-amber-400" /> Encounter Dialogue Preview
               </div>
@@ -374,14 +674,14 @@ export function RealmSettingsPanel() {
                 <Globe2 className="w-3.5 h-3.5 text-blue-400" />
                 <span>Realm Identity & Showcase</span>
               </div>
-              <p className="text-[10px] text-slate-400 leading-relaxed">
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
                 Configure your game realm name and tagline displayed on the home page showcase card.
               </p>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
                   Realm / Game Name
                 </label>
                 <input
@@ -389,12 +689,12 @@ export function RealmSettingsPanel() {
                   value={settings.realmName}
                   onChange={(e) => setSettings({ ...settings, realmName: e.target.value })}
                   placeholder="The Lobby"
-                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-blue-400 rounded-lg p-2 text-white text-xs outline-none"
+                  className="w-full bg-[#060e1c] border border-border/30 focus:border-blue-400 rounded-lg p-2 text-foreground text-xs outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
                   Game Description / Tagline
                 </label>
                 <textarea
@@ -402,23 +702,23 @@ export function RealmSettingsPanel() {
                   value={settings.realmDescription}
                   onChange={(e) => setSettings({ ...settings, realmDescription: e.target.value })}
                   placeholder="The Lobby ~ Socialize, Battle, Capture, Explore! ~ Coming Soon ~"
-                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-blue-400 rounded-lg p-2 text-white text-xs outline-none resize-none"
+                  className="w-full bg-[#060e1c] border border-border/30 focus:border-blue-400 rounded-lg p-2 text-foreground text-xs outline-none resize-none"
                 />
               </div>
 
               {/* Spawn / Lobby Map Selector */}
               <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30">
                 <div className="flex items-center gap-2 text-emerald-300 font-bold mb-1">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                  <Globe2 className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Spawn Hub Map</span>
                 </div>
-                <p className="text-[10px] text-slate-400 leading-relaxed mb-2">
+                <p className="text-[10px] text-muted-foreground leading-relaxed mb-2">
                   The map where new players spawn and where players return as a fallback. This map cannot be deleted while it is the active spawn hub.
                 </p>
                 <select
                   value={settings.spawnMapId || 'DEMO_SANDBOX'}
                   onChange={(e) => setSettings({ ...settings, spawnMapId: e.target.value })}
-                  className="w-full bg-black/60 border border-emerald-500/30 focus:border-emerald-400 rounded-lg p-2 text-white text-xs outline-none cursor-pointer"
+                  className="w-full bg-[#060e1c] border border-emerald-500/30 focus:border-emerald-400 rounded-lg p-2 text-foreground text-xs outline-none cursor-pointer"
                 >
                   {(availableMaps || []).map((m: MapIndexEntry) => (
                     <option key={m.id} value={m.id}>
@@ -426,21 +726,21 @@ export function RealmSettingsPanel() {
                     </option>
                   ))}
                 </select>
-                <div className="mt-1.5 text-[9px] text-slate-500">
+                <div className="mt-1.5 text-[9px] text-muted-foreground">
                   Current spawn hub: <span className="text-emerald-300 font-bold">{settings.spawnMapId || 'DEMO_SANDBOX'}</span>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-3 rounded-xl bg-black/50/40 border border-[#806f47]/20">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-black/40 border border-border/20">
                 <div>
-                  <div className="text-xs font-bold text-white">Allow Guest Access</div>
-                  <div className="text-[10px] text-slate-400">Allow unregistered visitors to explore the world as guests.</div>
+                  <div className="text-xs font-bold text-foreground">Allow Guest Access</div>
+                  <div className="text-[10px] text-muted-foreground">Allow unregistered visitors to explore the world as guests.</div>
                 </div>
                 <input
                   type="checkbox"
                   checked={settings.allowGuestAccess !== false}
                   onChange={(e) => setSettings({ ...settings, allowGuestAccess: e.target.checked })}
-                  className="w-4 h-4 accent-amber-400 rounded cursor-pointer"
+                  className="w-4 h-4 accent-primary rounded cursor-pointer"
                 />
               </div>
             </div>

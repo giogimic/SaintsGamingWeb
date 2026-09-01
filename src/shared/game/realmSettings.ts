@@ -32,6 +32,19 @@ export interface RealmSettingsConfig {
   motd: string;
   spawnMapId: string;
   allowGuestAccess?: boolean;
+  // 2.5D & 3D Global Visuals
+  enable3DLighting?: boolean;
+  enableShadows?: boolean;
+  shadowQuality?: 'low' | 'medium' | 'high';
+  enableAtmosphericFog?: boolean;
+  fogDensity?: number;
+  fogColor?: string;
+  terrainElevationScale?: number;
+  defaultCameraStyle?: 'isometric' | 'follow45' | 'topdown' | 'free';
+  waterReflectionQuality?: 'off' | 'low' | 'high';
+  enableBloom?: boolean;
+  enableAntiAliasing?: boolean;
+  showTileCoordinatesOverlay?: boolean;
 }
 
 export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
@@ -47,6 +60,19 @@ export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
   motd: DEFAULT_REALM_MOTD,
   spawnMapId: DEFAULT_SPAWN_MAP_ID,
   allowGuestAccess: true,
+  // 2.5D & 3D Global Defaults
+  enable3DLighting: true,
+  enableShadows: true,
+  shadowQuality: 'medium',
+  enableAtmosphericFog: true,
+  fogDensity: 0.015,
+  fogColor: '#0b1626',
+  terrainElevationScale: 1.0,
+  defaultCameraStyle: 'isometric',
+  waterReflectionQuality: 'high',
+  enableBloom: false,
+  enableAntiAliasing: true,
+  showTileCoordinatesOverlay: false,
 };
 
 export const REALM_SETTING_KEYS = {
@@ -62,6 +88,18 @@ export const REALM_SETTING_KEYS = {
   REALM_MOTD: 'REALM_MOTD',
   SPAWN_MAP_ID: 'SPAWN_MAP_ID',
   ALLOW_GUEST_ACCESS: 'ALLOW_GUEST_ACCESS',
+  ENABLE_3D_LIGHTING: 'ENABLE_3D_LIGHTING',
+  ENABLE_SHADOWS: 'ENABLE_SHADOWS',
+  SHADOW_QUALITY: 'SHADOW_QUALITY',
+  ENABLE_ATMOSPHERIC_FOG: 'ENABLE_ATMOSPHERIC_FOG',
+  FOG_DENSITY: 'FOG_DENSITY',
+  FOG_COLOR: 'FOG_COLOR',
+  TERRAIN_ELEVATION_SCALE: 'TERRAIN_ELEVATION_SCALE',
+  DEFAULT_CAMERA_STYLE: 'DEFAULT_CAMERA_STYLE',
+  WATER_REFLECTION_QUALITY: 'WATER_REFLECTION_QUALITY',
+  ENABLE_BLOOM: 'ENABLE_BLOOM',
+  ENABLE_ANTI_ALIASING: 'ENABLE_ANTI_ALIASING',
+  SHOW_TILE_COORDINATES_OVERLAY: 'SHOW_TILE_COORDINATES_OVERLAY',
 } as const;
 
 /**
