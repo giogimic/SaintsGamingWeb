@@ -15,9 +15,11 @@ import {
   Crosshair,
   Sparkles,
   Zap,
+  Heart,
 } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
 import { getHudTheme } from './hud/hud-themes';
+import { HeartContainersView } from './hud/HeartContainersView';
 
 export default function TargetFrame() {
   const combatTarget = useGameStore((state) => state.combatTarget);
@@ -137,29 +139,59 @@ export default function TargetFrame() {
         </div>
 
         {/* Vitality Bar Deck */}
-        <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between items-center text-[10px]">
-            <span className="text-slate-400 font-bold uppercase text-[9px]">TARGET VITALITY</span>
-            <span className="font-extrabold text-rose-300">
-              {Math.ceil(target.hp)} <span className="text-slate-500 font-normal">/ {target.maxHp}</span>
-            </span>
-          </div>
-
-          {/* Health Bar with Animated Loss */}
-          <div className="relative w-full h-2.5 bg-black/90 overflow-hidden rounded-md border border-rose-500/30">
-            <div
-              className={`absolute top-0 left-0 h-full transition-all duration-300 ease-out ${
-                target.behavior === 'ENRAGED'
-                  ? 'bg-gradient-to-r from-orange-600 via-amber-500 to-yellow-400 shadow-[0_0_10px_rgba(249,115,22,0.8)]'
-                  : 'bg-gradient-to-r from-rose-600 via-rose-500 to-red-400 shadow-[0_0_10px_rgba(244,63,94,0.6)]'
-              }`}
-              style={{ width: `${hpPercent}%` }}
+        {hudConfig?.vitalsFormat === 'heart-containers' || theme.id === 'retro-pixel-heart' ? (
+          <div className="flex flex-col gap-1">
+            <HeartContainersView
+              hp={target.hp}
+              maxHp={target.maxHp}
+              containerCount={8}
+              size="sm"
+              showLabel={true}
             />
-            <div className="absolute top-0 bottom-0 w-px bg-black/50 z-10 left-[25%]" />
-            <div className="absolute top-0 bottom-0 w-px bg-black/50 z-10 left-[50%]" />
-            <div className="absolute top-0 bottom-0 w-px bg-black/50 z-10 left-[75%]" />
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            <div className="flex justify-between items-center text-[10px]">
+              <div className="flex items-center gap-1.5">
+                <span className={`px-1.5 py-0.2 rounded border text-[8px] font-black uppercase flex items-center gap-1 ${
+                  hpPercent <= 20
+                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                    : hpPercent <= 50
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                    : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                }`}>
+                  <Heart className="w-2 h-2" fill="currentColor" />
+                  <span>HP</span>
+                </span>
+                <span className="text-slate-400 font-bold uppercase text-[9px]">TARGET VITALITY</span>
+              </div>
+              <span className={`font-extrabold tabular-nums ${
+                hpPercent <= 20 ? 'text-rose-400 animate-pulse' : hpPercent <= 50 ? 'text-amber-300' : 'text-emerald-300'
+              }`}>
+                {Math.ceil(target.hp)} <span className="text-slate-500 font-normal">/ {target.maxHp}</span>
+              </span>
+            </div>
+
+            {/* Health Bar with Animated Loss & Tri-Color Thresholds */}
+            <div className="relative w-full h-2.5 bg-black/90 overflow-hidden rounded-md border border-white/15">
+              <div
+                className={`absolute top-0 left-0 h-full transition-all duration-300 ease-out ${
+                  target.behavior === 'ENRAGED'
+                    ? 'bg-gradient-to-r from-orange-600 via-amber-500 to-yellow-400 shadow-[0_0_10px_rgba(249,115,22,0.8)]'
+                    : hpPercent <= 20
+                    ? 'bg-gradient-to-r from-rose-600 via-rose-500 to-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse'
+                    : hpPercent <= 50
+                    ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]'
+                    : theme.palette.hpFill || 'bg-gradient-to-r from-emerald-500 to-green-400'
+                }`}
+                style={{ width: `${hpPercent}%` }}
+              />
+              <div className="absolute top-0 bottom-0 w-px bg-black/50 z-10 left-[25%]" />
+              <div className="absolute top-0 bottom-0 w-px bg-black/50 z-10 left-[50%]" />
+              <div className="absolute top-0 bottom-0 w-px bg-black/50 z-10 left-[75%]" />
+            </div>
+          </div>
+        )}
 
         {/* Target Behavior / Cast Status */}
         {target.isCasting && target.castName ? (

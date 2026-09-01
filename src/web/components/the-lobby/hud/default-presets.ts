@@ -331,6 +331,75 @@ export const DEFAULT_PRESET_MINIMAL: HudLayoutPreset = {
   },
 };
 
+/**
+ * 5. Pocket Companion / Creature Battler Layout
+ * Tailored for pet collections, companion battles, and heart vital tracking
+ */
+export const DEFAULT_PRESET_CREATURE: HudLayoutPreset = {
+  id: 'preset-creature',
+  name: 'Pocket Trainer (Creature Battler)',
+  version: 1,
+  description: 'Companion & creature battle setup with heart vitality gauges, prominent target cards, and quick creature dock.',
+  widgets: {
+    [HUD_WIDGET_IDS.ORBS]: {
+      widgetId: HUD_WIDGET_IDS.ORBS,
+      zoneId: 'top-left',
+      order: 0,
+      sizeVariant: 'standard',
+      visible: true,
+    },
+    [HUD_WIDGET_IDS.PEER_PRESENCE]: {
+      widgetId: HUD_WIDGET_IDS.PEER_PRESENCE,
+      zoneId: 'top-center',
+      order: 0,
+      sizeVariant: 'compact',
+      visible: false,
+    },
+    [HUD_WIDGET_IDS.TARGET_FRAME]: {
+      widgetId: HUD_WIDGET_IDS.TARGET_FRAME,
+      zoneId: 'top-center',
+      order: 0,
+      sizeVariant: 'standard',
+      visible: true,
+    },
+    [HUD_WIDGET_IDS.MINIMAP]: {
+      widgetId: HUD_WIDGET_IDS.MINIMAP,
+      zoneId: 'top-right',
+      order: 0,
+      sizeVariant: 'standard',
+      visible: true,
+    },
+    [HUD_WIDGET_IDS.QUEST_TRACKER]: {
+      widgetId: HUD_WIDGET_IDS.QUEST_TRACKER,
+      zoneId: 'mid-right',
+      order: 0,
+      sizeVariant: 'compact',
+      visible: true,
+    },
+    [HUD_WIDGET_IDS.CHAT]: {
+      widgetId: HUD_WIDGET_IDS.CHAT,
+      zoneId: 'bottom-left',
+      order: 0,
+      sizeVariant: 'standard',
+      visible: true,
+    },
+    [HUD_WIDGET_IDS.HOTBAR]: {
+      widgetId: HUD_WIDGET_IDS.HOTBAR,
+      zoneId: 'bottom-center',
+      order: 0,
+      sizeVariant: 'standard',
+      visible: true,
+    },
+    [HUD_WIDGET_IDS.CLASSIC_PANEL]: {
+      widgetId: HUD_WIDGET_IDS.CLASSIC_PANEL,
+      zoneId: 'bottom-right',
+      order: 0,
+      sizeVariant: 'standard',
+      visible: true,
+    },
+  },
+};
+
 // Presets for HUD docking modes
 export const DEFAULT_PRESET_MODERN = DEFAULT_PRESET_COMMAND;
 export const DEFAULT_PRESET_RETRO = DEFAULT_PRESET_SIDEBAR;
@@ -341,6 +410,7 @@ export const BUILTIN_HUD_PRESETS: HudLayoutPreset[] = [
   DEFAULT_PRESET_SIDEBAR,
   DEFAULT_PRESET_ACTION,
   DEFAULT_PRESET_MINIMAL,
+  DEFAULT_PRESET_CREATURE,
 ];
 
 /**

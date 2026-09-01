@@ -390,6 +390,23 @@ export default function GameOptionsMenu({
                         className="w-full accent-amber-400 cursor-pointer"
                       />
                     </div>
+
+                    {/* Vitality Gauge Format */}
+                    <div className="space-y-1 sm:col-span-2">
+                      <label className="text-xs font-bold text-slate-300 block">
+                        Vitality Gauge Format
+                      </label>
+                      <select
+                        value={hudConfig?.vitalsFormat || 'dual-bar'}
+                        onChange={(e) => updateHudConfig({ vitalsFormat: e.target.value as any })}
+                        className="w-full text-xs p-2 rounded-xl bg-black/80 border border-white/15 text-slate-200 cursor-pointer hover:border-amber-400/50 transition-colors"
+                      >
+                        <option value="dual-bar">Dual Full Bars (HP + MP + XP)</option>
+                        <option value="compact-stacked">Compact Stacked</option>
+                        <option value="heart-containers">Heart Containers (Pokemon / Zelda)</option>
+                        <option value="pokemon-gauge">Pokemon Battle Gauge (Tri-Color HP)</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2 border-t border-white/5">
