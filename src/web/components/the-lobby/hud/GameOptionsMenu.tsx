@@ -403,8 +403,8 @@ export default function GameOptionsMenu({
                       >
                         <option value="dual-bar">Dual Full Bars (HP + MP + XP)</option>
                         <option value="compact-stacked">Compact Stacked</option>
-                        <option value="heart-containers">Heart Containers (Pokemon / Zelda)</option>
-                        <option value="pokemon-gauge">Pokemon Battle Gauge (Tri-Color HP)</option>
+                        <option value="heart-containers">Heart Containers (Classic Adventure)</option>
+                        <option value="classic-gauge">Classic Battle Gauge (Tri-Color HP)</option>
                       </select>
                     </div>
                   </div>

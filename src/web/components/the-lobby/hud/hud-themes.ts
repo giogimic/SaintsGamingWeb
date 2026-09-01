@@ -201,7 +201,7 @@ export const BUILTIN_HUD_THEMES: Record<string, HudTheme> = {
     id: 'retro-pixel-heart',
     name: 'Retro Pixel Hearts (8-Bit)',
     tagline: 'Classic 8-Bit Heart Adventure',
-    description: 'Charming retro pixel health frames with Zelda & Pokémon heart containers, emerald mana, and golden star XP.',
+    description: 'Charming retro pixel health frames with classic heart containers, emerald mana, and golden star XP.',
     badge: 'Retro 8-Bit',
     palette: {
       primary: '#f59e0b',
@@ -242,7 +242,7 @@ export interface HudEngineConfig {
   borderRadius?: 'rounded' | 'compact' | 'capsule';
   borderGlow?: boolean;
   minimapShape?: 'rounded' | 'circle' | 'square';
-  vitalsFormat?: 'dual-bar' | 'compact-stacked' | 'heart-containers' | 'pokemon-gauge' | 'icon-bars';
+  vitalsFormat?: 'dual-bar' | 'compact-stacked' | 'heart-containers' | 'classic-gauge' | 'icon-bars';
   vitalsLayout?: 'grouped' | 'separate';
   heartContainerCount?: number;
   hotbarLayout?: '1x5' | '1x10' | '2x5';
