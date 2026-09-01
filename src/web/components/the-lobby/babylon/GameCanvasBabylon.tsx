@@ -24,7 +24,8 @@ import {
   evaluateTileTarget,
   type WorldTarget,
 } from '@/shared/game/worldTarget';
-import { isInBrushShape } from '@/shared/game/brushGeometry';
+import { isInBrushShape, generateSplatScatterPoints } from '@/shared/game/brushGeometry';
+import { applyAutoTilingPass } from '@/shared/game/terrainEdgeDetection';
 import {
   LOGIC_LAYER_IDX,
   isPaintableLogicId,
@@ -89,6 +90,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const selectionMode = useEditorStore((state) => state.selectionMode);
   const activeBrushPattern = useEditorStore((state) => state.activeBrushPattern);
   const prefabStampMode = useEditorStore((state) => state.prefabStampMode);
+  const activeLayerType = useEditorStore((state) => state.activeLayerType);
   const isStudioFreeCam = useEditorStore((state) => state.isStudioFreeCam);
   const [isPanDragging, setIsPanDragging] = useState(false);
   const [isSpaceHeld, setIsSpaceHeld] = useState(false);
@@ -1248,10 +1250,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     engine.setActiveBrushPattern(activeBrushPattern);
     engine.setPrefabStampMode(prefabStampMode);
     engine.setActiveLayerIdx(activeLayerIdx);
+    engine.setActiveLayerType(activeLayerType);
     engine.setBrushMode(brushMode);
     engine.setFreeCam(isStudioFreeCam);
     engine.refreshBrushPreview();
-  }, [brushRadius, brushShape, brushRotation, activeBrushTileId, activeBrushPattern, prefabStampMode, activeLayerIdx, brushMode, isStudioFreeCam]);
+  }, [brushRadius, brushShape, brushRotation, activeBrushTileId, activeBrushPattern, prefabStampMode, activeLayerIdx, activeLayerType, brushMode, isStudioFreeCam]);
 
   // Handle Live Dev Editor Tile Picking & Click-to-Move
   useEffect(() => {
@@ -1305,6 +1308,69 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             const isCtrl = (window.event as MouseEvent)?.ctrlKey || (window.event as MouseEvent)?.metaKey;
             const selMode = store.selectionMode || 'box';
             const mode = isAlt || isCtrl ? 'subtract' : isShift ? 'add' : 'normal';
+
+            if (selMode === 'magic-wand') {
+              if (eventType === 'down') {
+                const layerIdx = store.activeLayerIdx;
+                const targetGrid = layerIdx === -1 ? map?.grid : map?.tileLayers?.[layerIdx]?.grid;
+                if (!targetGrid) return;
+                const gh = targetGrid.length;
+                const gw = targetGrid[0]?.length || 0;
+                if (r < 0 || r >= gh || c < 0 || c >= gw) return;
+                const targetVal = targetGrid[r][c];
+
+                // 4-way BFS flood fill
+                const visited = new Set<string>();
+                const queue: Array<{ r: number; c: number }> = [{ r, c }];
+                visited.add(`${r},${c}`);
+                const selectedList: Array<{ r: number; c: number }> = [];
+
+                while (queue.length > 0) {
+                  const cur = queue.shift()!;
+                  selectedList.push(cur);
+                  const neighbors = [
+                    { r: cur.r - 1, c: cur.c },
+                    { r: cur.r + 1, c: cur.c },
+                    { r: cur.r, c: cur.c - 1 },
+                    { r: cur.r, c: cur.c + 1 },
+                  ];
+                  for (const nb of neighbors) {
+                    if (nb.r >= 0 && nb.r < gh && nb.c >= 0 && nb.c < gw) {
+                      const k = `${nb.r},${nb.c}`;
+                      if (!visited.has(k) && targetGrid[nb.r][nb.c] === targetVal) {
+                        visited.add(k);
+                        queue.push(nb);
+                      }
+                    }
+                  }
+                }
+
+                if (mode === 'subtract') {
+                  const remaining = { ...(store.selectedCells || {}) };
+                  selectedList.forEach((pt) => {
+                    delete remaining[`${pt.r},${pt.c}`];
+                  });
+                  store.setSelectedCells(remaining);
+                  engine.setMultiSelectionPreview(remaining);
+                } else if (mode === 'add') {
+                  const combined = { ...(store.selectedCells || {}) };
+                  selectedList.forEach((pt) => {
+                    combined[`${pt.r},${pt.c}`] = true;
+                  });
+                  store.setSelectedCells(combined);
+                  engine.setMultiSelectionPreview(combined);
+                } else {
+                  const mapCells: Record<string, boolean> = {};
+                  selectedList.forEach((pt) => {
+                    mapCells[`${pt.r},${pt.c}`] = true;
+                  });
+                  store.setSelectedCells(mapCells);
+                  engine.setMultiSelectionPreview(mapCells);
+                }
+                showToast(`Magic Wand selected ${selectedList.length} connected tiles`);
+              }
+              return;
+            }
 
             if (eventType === 'down') {
               store.setSelectionStart({ r, c });
@@ -1665,39 +1731,23 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 layer.data[assetUrl] = [...(layer.data[assetUrl] || [])];
 
                 const rad = store.brushRadius || 1;
-                const scatterCount = rad <= 1 ? 1 : Math.max(1, Math.round(rad * (1 + (store.splatScatter ?? 0.5))));
-                const pointsToDrop: Array<{ x: number; y: number; rot: number }> = [];
-
-                if (rad <= 1) {
-                  const rot = store.splatRotationRandomize
-                    ? Math.random() * Math.PI * 2
-                    : store.brushRotation
-                    ? (store.brushRotation * Math.PI) / 180
-                    : 0;
-                  pointsToDrop.push({ x: finalX, y: finalY, rot });
-                } else {
-                  // Scatter particles across brush shape footprint
-                  for (let s = 0; s < scatterCount; s++) {
-                    const angle = Math.random() * Math.PI * 2;
-                    const dist = Math.sqrt(Math.random()) * (rad * 0.9);
-                    const ox = Math.cos(angle) * dist;
-                    const oy = Math.sin(angle) * dist;
-                    if (isInBrushShape(ox, oy, rad, bShape)) {
-                      const rot = store.splatRotationRandomize
-                        ? Math.random() * Math.PI * 2
-                        : store.brushRotation
-                        ? (store.brushRotation * Math.PI) / 180
-                        : 0;
-                      pointsToDrop.push({ x: finalX + ox, y: finalY + oy, rot });
-                    }
-                  }
-                  if (pointsToDrop.length === 0) {
-                    pointsToDrop.push({ x: finalX, y: finalY, rot: 0 });
-                  }
-                }
+                const scatterVal = store.splatScatter ?? 0.5;
+                const baseCount = rad <= 1 ? 1 : Math.max(1, Math.round(rad * (1 + scatterVal * 1.5)));
+                const rotRad = store.brushRotation ? (store.brushRotation * Math.PI) / 180 : 0;
+                
+                const pointsToDrop = generateSplatScatterPoints(
+                  finalX,
+                  finalY,
+                  rad * 0.9,
+                  bShape,
+                  scatterVal,
+                  baseCount,
+                  rotRad,
+                  Boolean(store.splatRotationRandomize)
+                );
 
                 // Density proximity threshold
-                const minSqDist = Math.max(0.01, (rad * rad * (1 - (store.splatScatter ?? 0.5) * 0.5)) / 25);
+                const minSqDist = Math.max(0.005, (rad * rad * (1 - scatterVal * 0.5)) / 30);
 
                 for (const pt of pointsToDrop) {
                   const isTooClose = layer.data[assetUrl].some((existing: any) => {
@@ -1953,6 +2003,32 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             }
           }
           if (paintedOps.length > 0) {
+            if (store.isAutoEdgeEnabled && target.kind === 'visual') {
+              const curGrid = liveMap.tileLayers?.[target.layerIdx]?.grid;
+              if (curGrid) {
+                const customRule = (liveMap as any).terrainTransitionRules?.find?.(
+                  (r: any) => r.centerGid === store.activeBrushTileId
+                );
+                const autoChanges = applyAutoTilingPass(
+                  curGrid,
+                  paintedOps.map((p: any) => ({ r: p.r, c: p.c })),
+                  store.activeBrushTileId,
+                  customRule?.columns || liveMap.tilesets?.[0]?.columns || 8,
+                  undefined,
+                  customRule
+                );
+                for (const change of autoChanges) {
+                  engine.updateSingleTile(change.r, change.c, change.after, target.layerIdx, liveMap.tilesets);
+                  paintedOps.push({
+                    r: change.r,
+                    c: change.c,
+                    layerIdx: target.layerIdx,
+                    before: change.before,
+                    after: change.after,
+                  });
+                }
+              }
+            }
             useEditorStore.getState().pushPaintOp(paintedOps);
           }
         }, {

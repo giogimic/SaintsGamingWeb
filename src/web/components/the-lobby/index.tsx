@@ -96,6 +96,10 @@ const StudioEditorShell = dynamic(
   () => import('./editor/StudioEditorShell').then((m) => m.StudioEditorShell),
   { ssr: false }
 );
+const StudioEscapeMenu = dynamic(
+  () => import('./editor/StudioEscapeMenu').then((m) => m.StudioEscapeMenu),
+  { ssr: false }
+);
 const UiEditToolbar = dynamic(
   () => import('./editor/UiEditToolbar').then((m) => m.UiEditToolbar),
   { ssr: false }
@@ -1880,20 +1884,32 @@ export default function TheLobby({
           </Suspense>
         )}
 
-        <GameOptionsMenu 
-          isOpen={isOptionsOpen}
-          onClose={() => setIsOptionsOpen(false)}
-          isFullscreen={isFullscreen}
-          onToggleFullscreen={toggleFullscreen}
-          isAdminUser={enableStudio && canStudio}
-          isCreationMode={studioToolsOpen}
-          onToggleDevEditor={() => {
-            if (!enableStudio || !canStudio) return;
-            if (!studioToolsOpen) useGameStore.getState().setGameMode('EXPLORING');
-            useEditorStore.getState().toggleCreationMode(); 
-            setIsOptionsOpen(false);
-          }}
-        />
+        {studioToolsOpen ? (
+          <StudioEscapeMenu
+            isOpen={isOptionsOpen}
+            onClose={() => setIsOptionsOpen(false)}
+            onExitStudio={() => {
+              useEditorStore.getState().toggleCreationMode();
+              useGameStore.getState().setGameMode('EXPLORING');
+              setIsOptionsOpen(false);
+            }}
+          />
+        ) : (
+          <GameOptionsMenu 
+            isOpen={isOptionsOpen}
+            onClose={() => setIsOptionsOpen(false)}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={toggleFullscreen}
+            isAdminUser={enableStudio && canStudio}
+            isCreationMode={studioToolsOpen}
+            onToggleDevEditor={() => {
+              if (!enableStudio || !canStudio) return;
+              if (!studioToolsOpen) useGameStore.getState().setGameMode('EXPLORING');
+              useEditorStore.getState().toggleCreationMode(); 
+              setIsOptionsOpen(false);
+            }}
+          />
+        )}
 
         {/* Viewfinder Edit Mode — player + studio */}
         <ViewfinderOverlay />

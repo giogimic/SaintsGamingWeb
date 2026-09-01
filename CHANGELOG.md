@@ -1,3 +1,16 @@
+# 2.1.631
+- **Dedicated Game & Studio Escape System Menus in Sleek Saints OS Window Architecture**:
+  - **Dedicated Studio Escape Menu (`StudioEscapeMenu.tsx`, `StudioEditorShell.tsx`)**: Created a standalone creator system menu tailored specifically to Studio operations. Includes Project & Map management (Live save status, Revert, Blueprint JSON export, Playtest toggle), Viewport & Camera controls (Perspective presets, sensitivity sliders, reset to origin), Editor Visual Guides (Grid overlay, edge skirts, author pins), Studio Audio synthesizer preferences, and a complete hotkey cheat-sheet.
+  - **Remade In-Game Escape Menu (`GameOptionsMenu.tsx`)**: Completely redesigned the in-game options menu into the Saints OS dark glass and amber window format. Features live session telemetry (Player profile, region, ping latency), emergency 5-second channeled Unstuck transport, In-Game Camera style & follow spring tuning, Performance & 3D Loot graphics controls, multi-track audio sliders, touch/mobile control toggles, and live Viewfinder interface layout editor integration.
+  - **Independent Keybinding & State Architecture**: Disjointed game and studio Escape handlers so in-game and studio states never share or collide modal states. Handled smart contextual Escape in Studio (first clears selections/cancels paste stamps, then opens the Studio Escape menu).
+
+# 2.1.630
+- **Studio Tools Rework — Unified Tile Selector, Continuous Splat & Shape Painting, Camera In-Game Wiring & Smart Edge Auto-Tiling**:
+  - **Camera Controls In-Game Wiring (`BabylonEngine.ts`, `CameraSettingsPanel.tsx`)**: Wired `playerCameraStyle` (Isometric, Follow 45°, Top-Down 90°, Free Orbit) and `borderClamping` through to the active Babylon engine render loop. In-game player view now reacts immediately to studio configuration and dynamic pitch angle calculations.
+  - **Unified Tile & Terrain Selector (`TileSelectorPanel.tsx`, `BrushSettingsBar.tsx`, `TerrainBrushPalette.tsx`)**: Rebuilt the Tile Selector dock into a multi-mode tool suite with texture swatches, quick application tabs (`Grid Tiles`, `Terrain Splat`, `Smart Border`, `Props`), and an extracted, reusable `BrushSettingsBar`.
+  - **Continuous Freeform Splat & Shape Geometry (`BabylonEngine.ts`, `GameCanvasBabylon.tsx`, `brushGeometry.ts`)**: Decoupled splat painting from discrete grid-loops into sub-tile continuous mathematical coordinate emission with live rotation, area-weighted scatter distributions, and opacity falloff.
+  - **Terrain Edge Detection & 9-Slice Auto-Tiling (`terrainEdgeDetection.ts`, `TerrainAtlasEditor.tsx`, `StudioBottomToolbar.tsx`)**: Created 8-neighbor boundary analysis engine with 9-slice tile mapping. Added real-time Auto-Edge / Smart Border toggle in StudioBottomToolbar and a dedicated 9-slice matrix inspection tool.
+
 # 2.1.628
 - **Sunshaft Godrays, Volumetric Light Rays & Film Tone Color Grading**:
   - **Sun Shafts & Volumetric Rays (`realmSettings.ts`, `RealmSettingsPanel.tsx`)**: Added toggle and intensity slider (`10%` to `100%`) for atmospheric celestial godrays passing terrain elevations.

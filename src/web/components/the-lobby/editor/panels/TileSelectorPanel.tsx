@@ -4,9 +4,23 @@ import React from 'react';
 import { useGameStore } from '../../store';
 import { useEditorStore } from '../editor-store';
 import TilesetPicker from '../TilesetPicker';
-import { Grid3X3, Layers, Plus, Trash2, Paintbrush, Box, RefreshCw, Layers2 } from 'lucide-react';
+import {
+  Grid3X3,
+  Layers,
+  Plus,
+  Trash2,
+  Paintbrush,
+  Box,
+  RefreshCw,
+  Layers2,
+  Sparkles,
+  Sliders,
+  Wand2,
+} from 'lucide-react';
 import { DEFAULT_STUDIO_TILESETS, ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { TerrainBrushPalette } from './TerrainBrushPalette';
+import { TerrainAtlasEditor } from './TerrainAtlasEditor';
+import { BrushSettingsBar } from './BrushSettingsBar';
 import { soundSynth } from '@/engine/sound-synth';
 import {
   WindowMenuBar,
@@ -16,9 +30,12 @@ import {
 } from '../WindowMenuBar';
 
 /**
- * Dedicated dockable window for the visual Tile Selector.
- * Allows creators to browse tilesets, pick GID brushes, and switch layers
- * with a standardized application sub-menu bar under the title bar.
+ * Reworked Unified Tile & Terrain Selector Panel.
+ *
+ * Provides a unified 2.5D/3D-first painting suite where creators can:
+ * - Pick textures once from visual tilesets or material swatches.
+ * - Switch between Grid Paint, Continuous Splat, Smart Border 9-Slice, and Props modes.
+ * - Customize brush geometry (Circle, Square, Diamond, Star, Polygon), radius, scatter, and opacity.
  */
 export const TileSelectorPanel: React.FC = () => {
   const activeMapData = useGameStore((s) => s.activeMapData);
@@ -33,6 +50,8 @@ export const TileSelectorPanel: React.FC = () => {
   const markMapDirty = useEditorStore((s) => s.markMapDirty);
   const activeLayerType = useEditorStore((s) => s.activeLayerType);
   const setActiveLayerType = useEditorStore((s) => s.setActiveLayerType);
+
+  const [toolView, setToolView] = React.useState<'tileset' | 'splat' | 'smart-border' | 'props'>('tileset');
 
   const handleBrushSelect = React.useCallback((gid: number) => {
     setActiveBrushTileId(gid, true);
@@ -50,12 +69,23 @@ export const TileSelectorPanel: React.FC = () => {
 
   const handleSwitchTab = (tab: string) => {
     soundSynth?.playSelectSound?.();
-    setActiveLayerType(tab as any);
-    showToast(
-      tab === 'grid' ? 'Grid Tiles Mode' :
-      tab === 'paint-splat' ? 'Terrain Paint Mode' :
-      '2.5D Props Mode'
-    );
+    if (tab === 'grid') {
+      setToolView('tileset');
+      setActiveLayerType('grid');
+      showToast('Switched to Grid Tile Paint Mode');
+    } else if (tab === 'paint-splat') {
+      setToolView('splat');
+      setActiveLayerType('paint-splat');
+      showToast('Switched to Continuous Terrain Splat Mode');
+    } else if (tab === 'smart-border') {
+      setToolView('smart-border');
+      setActiveLayerType('grid');
+      showToast('Switched to Smart Border (Auto-Tiling) Mode');
+    } else if (tab === 'free-form') {
+      setToolView('props');
+      setActiveLayerType('free-form');
+      showToast('Switched to 2.5D Props & Foliage Mode');
+    }
   };
 
   if (!activeMapData) {
@@ -144,9 +174,19 @@ export const TileSelectorPanel: React.FC = () => {
     showToast('Updated map tilesets');
   };
 
+  const currentTabId =
+    toolView === 'splat'
+      ? 'paint-splat'
+      : toolView === 'smart-border'
+      ? 'smart-border'
+      : toolView === 'props'
+      ? 'free-form'
+      : 'grid';
+
   const tabs = [
     { id: 'grid', label: 'Grid Tiles', icon: Grid3X3 },
-    { id: 'paint-splat', label: 'Terrain', icon: Paintbrush },
+    { id: 'paint-splat', label: 'Terrain Splat', icon: Paintbrush },
+    { id: 'smart-border', label: 'Smart Border', icon: Wand2 },
     { id: 'free-form', label: 'Props', icon: Box },
   ];
 
@@ -156,7 +196,7 @@ export const TileSelectorPanel: React.FC = () => {
       <WindowMenuBar>
         <WindowMenuTabGroup
           tabs={tabs}
-          activeTab={activeLayerType}
+          activeTab={currentTabId}
           onChange={handleSwitchTab}
         />
         <WindowMenuDivider />
@@ -178,9 +218,27 @@ export const TileSelectorPanel: React.FC = () => {
       </WindowMenuBar>
 
       {/* ── Scrollable Body ── */}
-      <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
-        {activeLayerType === 'paint-splat' ? (
-          <TerrainBrushPalette />
+      <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
+        {/* Unified Brush Settings Controls */}
+        <BrushSettingsBar />
+
+        {/* Mode-Specific Content */}
+        {toolView === 'splat' ? (
+          <div className="space-y-3">
+            <TerrainBrushPalette />
+          </div>
+        ) : toolView === 'smart-border' ? (
+          <div className="space-y-3">
+            <TerrainAtlasEditor />
+            <div className="p-2.5 rounded-lg bg-[#070e1c] border border-border/30 text-[9px] text-muted-foreground space-y-1">
+              <div className="font-bold text-primary flex items-center gap-1">
+                <Wand2 className="w-3 h-3 text-primary" /> Auto-Edge Active
+              </div>
+              <p>
+                When painting on the map with Smart Border active, neighboring tiles automatically adapt their edge variants (corners, caps, and borders) to match the selected 9-slice terrain matrix.
+              </p>
+            </div>
+          </div>
         ) : (
           <TilesetPicker
             tilesets={tilesets}

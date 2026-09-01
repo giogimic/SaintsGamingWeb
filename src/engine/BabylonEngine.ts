@@ -340,6 +340,8 @@ export class BabylonEngine {
     isometricPitch: Math.PI / 4,
     isometricDistance: 14,
     playerFollowSmoothing: 0.35,
+    playerCameraStyle: 'isometric' as 'isometric' | 'follow45' | 'topdown' | 'free',
+    borderClamping: true,
     vignetteEnabled: true,
     vignetteWeight: 1.5,
   };
@@ -444,6 +446,7 @@ export class BabylonEngine {
   public stampScale: number = 1;
   private activeBrushTileId: number = 0;
   private activeLayerIdx: number = 0;
+  private activeLayerType: string = 'grid';
   private brushMode: string = 'paint';
   private currentTilesets: any[] = [];
   private lastHoveredR: number = -1;
@@ -454,6 +457,7 @@ export class BabylonEngine {
   private footprintSqMesh?: Mesh;
   private footprintUnifiedMesh?: Mesh;
   private patternPreviewMesh?: Mesh;
+  private splatPreviewMesh?: Mesh;
   private footprintCircMeshes: Mesh[] = [];
   private selectionBoxMesh?: Mesh;
   private multiSelectionBaseMesh?: Mesh;
@@ -654,6 +658,12 @@ export class BabylonEngine {
         this.updateCameraAspect(10);
         this.snapCameraTo(this.cameraTargetX, this.cameraTargetZ);
       }
+    });
+
+    window.addEventListener('studio_preview_player_camera', () => {
+      this.isFreeCam = false;
+      this.applyPlayerCameraStyle(this.cameraSettings.playerCameraStyle);
+      this.snapCameraTo(this.cameraTargetX, this.cameraTargetZ);
     });
 
     window.addEventListener('studio_update_realm_visuals', (e: Event) => {
@@ -1188,20 +1198,25 @@ export class BabylonEngine {
    * Move camera instantly to a world position (used on map load / spawn)
    */
   public snapCameraTo(worldX: number, worldZ: number) {
-    // Soft edge margin: keep north/south border tiles in frame for avatars + paint.
-    const clamped = clampCameraFocus(
-      worldX,
-      worldZ,
-      this.currentMapWidth,
-      this.currentMapHeight,
-      this.currentTileSize
-    );
-    worldX = clamped.x;
-    worldZ = clamped.z;
+    if (this.cameraSettings.borderClamping) {
+      const clamped = clampCameraFocus(
+        worldX,
+        worldZ,
+        this.currentMapWidth,
+        this.currentMapHeight,
+        this.currentTileSize
+      );
+      worldX = clamped.x;
+      worldZ = clamped.z;
+    }
 
     this.cameraTargetX = worldX;
     this.cameraTargetZ = worldZ;
-    this.camera.position = new Vector3(worldX, this.cameraProfile.distance, worldZ - this.cameraProfile.distance);
+    const pitch = this.cameraProfile.pitch || Math.PI / 4;
+    const dist = this.cameraProfile.distance || 14;
+    const camY = Math.max(2, dist * Math.sin(pitch));
+    const camOffsetZ = -Math.max(0.01, dist * Math.cos(pitch));
+    this.camera.position = new Vector3(worldX, camY, worldZ + camOffsetZ);
     this.camera.setTarget(new Vector3(worldX, 0, worldZ));
     this.cameraSnapped = true;
   }
@@ -1213,15 +1228,17 @@ export class BabylonEngine {
   public setCameraPosition(targetX: number, targetZ: number, lerpFactor: number = 0.35) {
     if (this.editorCameraMode) return;
 
-    const clamped = clampCameraFocus(
-      targetX,
-      targetZ,
-      this.currentMapWidth,
-      this.currentMapHeight,
-      this.currentTileSize
-    );
-    targetX = clamped.x;
-    targetZ = clamped.z;
+    if (this.cameraSettings.borderClamping) {
+      const clamped = clampCameraFocus(
+        targetX,
+        targetZ,
+        this.currentMapWidth,
+        this.currentMapHeight,
+        this.currentTileSize
+      );
+      targetX = clamped.x;
+      targetZ = clamped.z;
+    }
 
     this.cameraTargetX = targetX;
     this.cameraTargetZ = targetZ;
@@ -1232,11 +1249,15 @@ export class BabylonEngine {
       return;
     }
 
-    const targetCamPos = new Vector3(targetX, this.cameraProfile.distance, targetZ - this.cameraProfile.distance);
+    const pitch = this.cameraProfile.pitch || Math.PI / 4;
+    const dist = this.cameraProfile.distance || 14;
+    const camY = Math.max(2, dist * Math.sin(pitch));
+    const camOffsetZ = -Math.max(0.01, dist * Math.cos(pitch));
+    const targetCamPos = new Vector3(targetX, camY, targetZ + camOffsetZ);
     
     // Spring damper / Decoupled Physics with snappy responsive follow
     const dt = this.engine.getDeltaTime() / 1000.0;
-    const factor = lerpFactor ?? this.cameraProfile.lerpFactor ?? 0.35;
+    const factor = this.cameraSettings.playerFollowSmoothing ?? lerpFactor ?? this.cameraProfile.lerpFactor ?? 0.35;
     const smoothFactor = 1.0 - Math.exp(-factor * 60 * dt);
     
     this.camera.position = Vector3.Lerp(this.camera.position, targetCamPos, smoothFactor);
@@ -1332,6 +1353,26 @@ export class BabylonEngine {
     return { ...this.cameraSettings };
   }
 
+  public applyPlayerCameraStyle(style: 'isometric' | 'follow45' | 'topdown' | 'free') {
+    this.cameraSettings.playerCameraStyle = style;
+    if (style === 'topdown') {
+      this.cameraProfile.pitch = Math.PI / 2 - 0.02;
+      this.cameraProfile.distance = 14;
+      this.cameraYaw = 0;
+    } else if (style === 'follow45') {
+      this.cameraProfile.pitch = Math.PI / 4;
+      this.cameraProfile.distance = 16;
+      this.cameraYaw = 0;
+    } else if (style === 'isometric') {
+      this.cameraProfile.pitch = this.cameraSettings.isometricPitch || Math.PI / 4;
+      this.cameraProfile.distance = this.cameraSettings.isometricDistance || 14;
+      this.cameraYaw = 0;
+    }
+    if (!this.editorCameraMode) {
+      this.snapCameraTo(this.cameraTargetX, this.cameraTargetZ);
+    }
+  }
+
   public setCameraSettings(settings: Partial<typeof this.cameraSettings>) {
     this.cameraSettings = { ...this.cameraSettings, ...settings };
     if (settings.fov !== undefined && this.camera) {
@@ -1343,12 +1384,23 @@ export class BabylonEngine {
     if (settings.vignetteWeight !== undefined && this.vignettePostProcess) {
       this.vignettePostProcess.vignetteWeight = settings.vignetteWeight;
     }
+    if (settings.playerFollowSmoothing !== undefined) {
+      this.cameraProfile.lerpFactor = settings.playerFollowSmoothing;
+    }
+    if (settings.playerCameraStyle !== undefined) {
+      this.applyPlayerCameraStyle(settings.playerCameraStyle);
+    }
     if (settings.isometricPitch !== undefined && !this.isFreeCam) {
       this.cameraProfile.pitch = settings.isometricPitch;
       this.snapCameraTo(this.cameraTargetX, this.cameraTargetZ);
     }
     if (this.isFreeCam) {
       this.updateFreeCamPosition();
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('studio_camera_state_changed', { detail: { settings: this.cameraSettings } })
+      );
     }
   }
 
@@ -3111,8 +3163,8 @@ export class BabylonEngine {
       if (key === lastKey && eventType === 'move' && !resolved.point) return;
       lastKey = key;
 
-      // Apply brush radius — emit all cells within radius.
-      if (this.brushRadius <= 1 || this.activeBrushPattern) {
+      // Apply brush radius — when in splat/freeform mode, emit single continuous pick point
+      if (this.activeLayerType === 'paint-splat' || this.activeLayerType === 'free-form' || this.brushRadius <= 1 || this.activeBrushPattern) {
         onTileClick(resolved.r, resolved.c, resolved.layerIdx, eventType, resolved.point);
       } else {
         const rad = this.brushRadius - 1;
@@ -3125,7 +3177,7 @@ export class BabylonEngine {
             const nr = resolved.r + dr;
             const nc = resolved.c + dc;
             if (nr >= 0 && nr < h && nc >= 0 && nc < w) {
-              // Offset the point for brushed tiles based on grid center, because it's a radius brush spreading out from center
+              // Offset the point for brushed tiles based on grid center
               const pt = resolved.point ? {
                 x: resolved.point.x + (nc - resolved.c) * this.currentTileSize,
                 z: resolved.point.z - (nr - resolved.r) * this.currentTileSize
@@ -3161,12 +3213,21 @@ export class BabylonEngine {
       // Keep natural cursor visible
       if (this.canvas && this.canvas.style.cursor === 'none') this.canvas.style.cursor = 'default';
 
-      // Memoize tile cell hover reticle rebuilds, but always trigger hover callback if point changes
-      const sameCell = this.lastHoveredR === resolved.r && this.lastHoveredC === resolved.c;
-      this.lastHoveredR = resolved.r;
-      this.lastHoveredC = resolved.c;
-      if (!sameCell) {
-        this.renderBrushPreview(resolved.r, resolved.c);
+      if (this.activeLayerType === 'paint-splat' || this.activeLayerType === 'free-form') {
+        if (resolved.point) {
+          this.renderContinuousSplatPreview(resolved.point.x, resolved.point.z);
+        }
+      } else {
+        if (this.splatPreviewMesh && this.splatPreviewMesh.isVisible) {
+          this.splatPreviewMesh.isVisible = false;
+        }
+        // Memoize tile cell hover reticle rebuilds, but always trigger hover callback if point changes
+        const sameCell = this.lastHoveredR === resolved.r && this.lastHoveredC === resolved.c;
+        this.lastHoveredR = resolved.r;
+        this.lastHoveredC = resolved.c;
+        if (!sameCell) {
+          this.renderBrushPreview(resolved.r, resolved.c);
+        }
       }
       if (options?.onTileHover) {
         options.onTileHover(resolved.r, resolved.c);
@@ -3290,6 +3351,11 @@ export class BabylonEngine {
     this.refreshBrushPreview();
   }
 
+  public setActiveLayerType(type: string) {
+    this.activeLayerType = type;
+    this.refreshBrushPreview();
+  }
+
   public setBrushMode(mode: string) {
     this.brushMode = mode;
     this.refreshBrushPreview();
@@ -3297,9 +3363,160 @@ export class BabylonEngine {
 
   /** Re-render the brush preview at the last hovered coordinate. */
   public refreshBrushPreview() {
-    if (this.lastHoveredR !== -1 && this.lastHoveredC !== -1) {
-      this.renderBrushPreview(this.lastHoveredR, this.lastHoveredC);
+    if (this.activeLayerType === 'paint-splat' || this.activeLayerType === 'free-form') {
+      if (this.scene) {
+        const pick = this.scene.pick(
+          this.scene.pointerX,
+          this.scene.pointerY,
+          (m) => m.isPickable && isTilePickTarget(m.name)
+        );
+        const res = this.resolveTilePick(pick) || this.pickTileFromGroundPlane(this.scene.pointerX, this.scene.pointerY);
+        if (res?.point) {
+          this.renderContinuousSplatPreview(res.point.x, res.point.z);
+        }
+      }
+    } else {
+      if (this.lastHoveredR !== -1 && this.lastHoveredC !== -1) {
+        this.renderBrushPreview(this.lastHoveredR, this.lastHoveredC);
+      }
     }
+  }
+
+  private createSplatBrushReticleMaterial(
+    shape: BrushShape,
+    strokeColor: string,
+    glassColor: string
+  ): StandardMaterial {
+    const matName = `hud_splat_brush_${shape}_${strokeColor.replace('#', '')}`;
+    let mat = this.scene.getMaterialByName(matName) as StandardMaterial | null;
+    if (mat) return mat;
+
+    mat = new StandardMaterial(matName, this.scene);
+    const texSize = 512;
+    const dt = new DynamicTexture(`${matName}_tex`, { width: texSize, height: texSize }, this.scene, false);
+    const ctx = dt.getContext();
+    ctx.clearRect(0, 0, texSize, texSize);
+
+    const cx = texSize / 2;
+    const cy = texSize / 2;
+    const radius = texSize * 0.44;
+
+    ctx.save();
+    if (shape === 'square') {
+      const minX = cx - radius;
+      const minY = cy - radius;
+      const size = radius * 2;
+      ctx.fillStyle = glassColor;
+      ctx.fillRect(minX, minY, size, size);
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 6;
+      ctx.strokeRect(minX, minY, size, size);
+    } else if (shape === 'diamond') {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - radius);
+      ctx.lineTo(cx + radius, cy);
+      ctx.lineTo(cx, cy + radius);
+      ctx.lineTo(cx - radius, cy);
+      ctx.closePath();
+      ctx.fillStyle = glassColor;
+      ctx.fill();
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 6;
+      ctx.stroke();
+    } else if (shape === 'splat-star') {
+      ctx.beginPath();
+      const numPoints = 8;
+      for (let i = 0; i < numPoints * 2; i++) {
+        const r = i % 2 === 0 ? radius : radius * 0.45;
+        const angle = (i * Math.PI) / numPoints - Math.PI / 2;
+        const px = cx + r * Math.cos(angle);
+        const py = cy + r * Math.sin(angle);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fillStyle = glassColor;
+      ctx.fill();
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 6;
+      ctx.stroke();
+    } else {
+      // Circle
+      const grad = ctx.createRadialGradient(cx, cy, radius * 0.1, cx, cy, radius);
+      grad.addColorStop(0, glassColor);
+      grad.addColorStop(0.8, glassColor.replace('0.25', '0.12').replace('0.22', '0.10'));
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Center focal reticle pip & crosshairs
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    const crosshairLen = 14;
+    const gap = 8;
+    // N, S, W, E ticks
+    ctx.beginPath(); ctx.moveTo(cx, cy - gap - crosshairLen); ctx.lineTo(cx, cy - gap); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy + gap); ctx.lineTo(cx, cy + gap + crosshairLen); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - gap - crosshairLen, cy); ctx.lineTo(cx - gap, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + gap, cy); ctx.lineTo(cx + gap + crosshairLen, cy); ctx.stroke();
+
+    ctx.restore();
+
+    dt.hasAlpha = true;
+    dt.update();
+
+    mat.diffuseTexture = dt;
+    mat.emissiveColor = new Color3(1, 1, 1);
+    mat.useAlphaFromDiffuseTexture = true;
+    mat.disableLighting = true;
+    mat.backFaceCulling = false;
+    return mat;
+  }
+
+  public renderContinuousSplatPreview(worldX: number, worldZ: number) {
+    if (!this.scene) return;
+
+    if (this.footprintUnifiedMesh) this.footprintUnifiedMesh.isVisible = false;
+    if (this.hoverReticleMesh) this.hoverReticleMesh.isVisible = false;
+    if (this.footprintSqMesh) this.footprintSqMesh.isVisible = false;
+    if (this.patternPreviewMesh) this.patternPreviewMesh.isVisible = false;
+    this.clearFootprintCircMeshes();
+
+    const isErase = this.brushMode === 'erase';
+    const stroke = isErase ? '#f43f5e' : '#f59e0b';
+    const glass = isErase ? 'rgba(244, 63, 94, 0.22)' : 'rgba(245, 158, 11, 0.22)';
+    const mat = this.createSplatBrushReticleMaterial(this.brushShape, stroke, glass);
+
+    if (!this.splatPreviewMesh || this.splatPreviewMesh.isDisposed()) {
+      this.splatPreviewMesh = MeshBuilder.CreatePlane('brush_splat_preview', { size: 1 }, this.scene);
+      this.splatPreviewMesh.parent = this.rootNode;
+      this.splatPreviewMesh.isPickable = false;
+    }
+
+    const rad = this.brushRadius || 1;
+    const scale = (rad * 0.9 * 2) * (this.stampScale || 1);
+    const altitude = SPATIAL_LAYER_ALTITUDES.BRUSH_PREVIEW;
+
+    this.splatPreviewMesh.rotation.set(Math.PI / 2, 0, (this.brushRotation * Math.PI) / 180);
+    this.splatPreviewMesh.scaling.x = scale;
+    this.splatPreviewMesh.scaling.y = scale;
+    this.splatPreviewMesh.position.set(worldX, altitude, worldZ);
+    this.splatPreviewMesh.material = mat;
+    this.splatPreviewMesh.isVisible = true;
   }
 
   private createUnifiedBrushReticleMaterial(
@@ -3709,6 +3926,7 @@ export class BabylonEngine {
 
   /** Clear brush preview overlay. */
   public clearBrushPreview() {
+    if (this.splatPreviewMesh) this.splatPreviewMesh.isVisible = false;
     if (this.footprintUnifiedMesh) this.footprintUnifiedMesh.isVisible = false;
     if (this.hoverReticleMesh) this.hoverReticleMesh.isVisible = false;
     if (this.footprintSqMesh) this.footprintSqMesh.isVisible = false;
