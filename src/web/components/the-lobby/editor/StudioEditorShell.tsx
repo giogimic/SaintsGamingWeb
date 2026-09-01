@@ -40,6 +40,7 @@ import {
   Film,
   Compass,
   Palette,
+  Camera,
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
@@ -92,6 +93,7 @@ const AnimationStudioPanel = lazy(() => import('./panels/AnimationStudioPanel').
 const MapTabPanel = lazy(() => import('./panels/MapTabPanel').then((m) => ({ default: m.MapTabPanel })));
 const MapListPanel = lazy(() => import('./panels/MapListPanel').then((m) => ({ default: m.MapListPanel })));
 const InterfaceEditorPanel = lazy(() => import('./panels/InterfaceEditorPanel').then((m) => ({ default: m.InterfaceEditorPanel })));
+const CameraSettingsPanel = lazy(() => import('./panels/CameraSettingsPanel').then((m) => ({ default: m.CameraSettingsPanel })));
 
 import { RuleDebuggerOverlay } from './RuleDebuggerOverlay';
 import { DraggablePanel } from './DraggablePanel';
@@ -933,6 +935,10 @@ export const StudioEditorShell: React.FC = () => {
               <Suspense fallback={<div>Loading...</div>}><InterfaceEditorPanel /></Suspense>
             </DraggablePanel>
           )}
+
+          <DraggablePanel id="camera" icon={<Camera className="w-4 h-4 text-primary" />} title="Camera & View Settings">
+            <Suspense fallback={<div>Loading...</div>}><CameraSettingsPanel /></Suspense>
+          </DraggablePanel>
         </div>
 
         </div>

@@ -882,6 +882,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 480,
     zIndex: 10,
   },
+  camera: {
+    id: 'camera',
+    title: 'Camera & View Settings',
+    isOpen: false,
+    isCollapsed: false,
+    x: 350,
+    y: 90,
+    width: 480,
+    height: 560,
+    zIndex: 10,
+  },
 };
 
 

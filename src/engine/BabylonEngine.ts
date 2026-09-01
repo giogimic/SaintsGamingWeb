@@ -322,12 +322,32 @@ export class BabylonEngine {
   private cameraVelocityPitch: number = 0;
   private cameraVelocityPanX: number = 0;
   private cameraVelocityPanZ: number = 0;
-  private readonly cameraDamping: number = 0.90;
+  private cameraSettings = {
+    fov: 0.8,
+    orbitSensitivity: 1.0,
+    panSensitivity: 1.0,
+    damping: 0.90,
+    invertOrbitX: false,
+    invertOrbitY: false,
+    cursorAnchoredZoom: true,
+    isometricPitch: Math.PI / 4,
+    isometricDistance: 14,
+    playerFollowSmoothing: 0.35,
+    vignetteEnabled: true,
+    vignetteWeight: 1.5,
+  };
+
   private onEditorPointerDown = (e: PointerEvent) => this.handleEditorPointerDown(e);
   private onEditorPointerMove = (e: PointerEvent) => this.handleEditorPointerMove(e);
   private onEditorPointerUp = (e: PointerEvent) => this.handleEditorPointerUp(e);
   private onEditorWheel = (e: WheelEvent) => {
     if (!this.editorCameraMode) return;
+    if (e.shiftKey || e.altKey) {
+      e.preventDefault();
+      const step = e.deltaY > 0 ? 15 : -15;
+      window.dispatchEvent(new CustomEvent('studio_rotate_brush', { detail: { step } }));
+      return;
+    }
     if (this.isFreeCam) {
       e.preventDefault();
       this.zoomFreeCam(e.deltaY);
@@ -341,35 +361,45 @@ export class BabylonEngine {
       e.preventDefault();
       this.editorSpaceHeld = true;
     }
+
+    // Brush / Stamp / Splat Rotation Hotkeys (R / Shift+R for 90°, [ / ] for 15°)
+    if (e.code === 'KeyR') {
+      e.preventDefault();
+      const step = e.shiftKey ? -90 : 90;
+      window.dispatchEvent(new CustomEvent('studio_rotate_brush', { detail: { step } }));
+      return;
+    }
+    if (e.code === 'BracketLeft') {
+      e.preventDefault();
+      window.dispatchEvent(new CustomEvent('studio_rotate_brush', { detail: { step: -15 } }));
+      return;
+    }
+    if (e.code === 'BracketRight') {
+      e.preventDefault();
+      window.dispatchEvent(new CustomEvent('studio_rotate_brush', { detail: { step: 15 } }));
+      return;
+    }
+
     if (!this.editorCameraMode) return;
 
-    // FreeCam 3D Orbit Shortcuts (Q/E Orbit, R/F Pitch, Numpad 1/3/7 Angles)
+    // FreeCam 3D Orbit & Angle Shortcuts (Q/E Orbit, PageUp/PageDown Pitch, Numpad 1/3/7 Angles)
     if (this.isFreeCam) {
       if (e.code === 'KeyQ') {
-        this.cameraVelocityYaw -= 0.035;
+        this.cameraVelocityYaw -= 0.035 * this.cameraSettings.orbitSensitivity;
       } else if (e.code === 'KeyE') {
-        this.cameraVelocityYaw += 0.035;
-      } else if (e.code === 'KeyR') {
+        this.cameraVelocityYaw += 0.035 * this.cameraSettings.orbitSensitivity;
+      } else if (e.code === 'PageUp') {
         this.cameraVelocityPitch = Math.min(Math.PI / 2 - 0.05, this.cameraPitch + 0.06);
         this.updateFreeCamPosition();
-      } else if (e.code === 'KeyF') {
+      } else if (e.code === 'PageDown') {
         this.cameraVelocityPitch = Math.max(0.08, this.cameraPitch - 0.06);
         this.updateFreeCamPosition();
       } else if (e.code === 'Numpad1') {
-        this.cameraYaw = 0;
-        this.cameraPitch = 0.15;
-        this.killCameraMomentum();
-        this.updateFreeCamPosition();
+        this.setViewAngle('front');
       } else if (e.code === 'Numpad3') {
-        this.cameraYaw = Math.PI / 2;
-        this.cameraPitch = 0.15;
-        this.killCameraMomentum();
-        this.updateFreeCamPosition();
+        this.setViewAngle('east');
       } else if (e.code === 'Numpad7') {
-        this.cameraYaw = 0;
-        this.cameraPitch = Math.PI / 2 - 0.05;
-        this.killCameraMomentum();
-        this.updateFreeCamPosition();
+        this.setViewAngle('topdown');
       }
     }
   };
@@ -589,6 +619,34 @@ export class BabylonEngine {
 
     window.addEventListener('studio_fit_map', () => {
       this.fitMapInView();
+    });
+
+    window.addEventListener('studio_set_view_angle', (e: Event) => {
+      const custom = e as CustomEvent<{ angle: 'isometric' | 'topdown' | 'front' | 'back' | 'east' | 'west' | 'free' }>;
+      if (custom.detail?.angle) {
+        this.setViewAngle(custom.detail.angle);
+      }
+    });
+
+    window.addEventListener('studio_update_camera_settings', (e: Event) => {
+      const custom = e as CustomEvent<{ settings: any }>;
+      if (custom.detail?.settings) {
+        this.setCameraSettings(custom.detail.settings);
+      }
+    });
+
+    window.addEventListener('studio_reset_camera', () => {
+      this.cameraYaw = 0;
+      this.cameraPitch = this.cameraSettings.isometricPitch || Math.PI / 4;
+      this.cameraDistance = 20;
+      this.targetCameraDistance = 20;
+      this.killCameraMomentum();
+      if (this.isFreeCam) {
+        this.updateFreeCamPosition();
+      } else {
+        this.updateCameraAspect(10);
+        this.snapCameraTo(this.cameraTargetX, this.cameraTargetZ);
+      }
     });
 
     // Entity Pointer Interaction
@@ -1054,16 +1112,86 @@ export class BabylonEngine {
     this.isFreeCam = enabled;
     if (enabled) {
       this.camera.mode = FreeCamera.PERSPECTIVE_CAMERA;
-      this.camera.fov = 0.8;
+      this.camera.fov = this.cameraSettings.fov || 0.8;
       this.updateFreeCamPosition();
     } else {
       this.camera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
       this.cameraYaw = 0;
-      this.cameraPitch = Math.PI / 4;
+      this.cameraPitch = this.cameraSettings.isometricPitch || Math.PI / 4;
       this.updateCameraAspect(this.camera.orthoTop || 10);
-      this.camera.position = new Vector3(this.cameraTargetX, 14, this.cameraTargetZ - 14);
+      this.camera.position = new Vector3(this.cameraTargetX, this.cameraSettings.isometricDistance || 14, this.cameraTargetZ - (this.cameraSettings.isometricDistance || 14));
       this.camera.setTarget(new Vector3(this.cameraTargetX, 0, this.cameraTargetZ));
       this.cameraSnapped = true;
+    }
+  }
+
+  public getCameraSettings() {
+    return { ...this.cameraSettings };
+  }
+
+  public setCameraSettings(settings: Partial<typeof this.cameraSettings>) {
+    this.cameraSettings = { ...this.cameraSettings, ...settings };
+    if (settings.fov !== undefined && this.camera) {
+      this.camera.fov = settings.fov;
+    }
+    if (settings.vignetteEnabled !== undefined && this.vignettePostProcess) {
+      this.vignettePostProcess.vignetteEnabled = settings.vignetteEnabled;
+    }
+    if (settings.vignetteWeight !== undefined && this.vignettePostProcess) {
+      this.vignettePostProcess.vignetteWeight = settings.vignetteWeight;
+    }
+    if (settings.isometricPitch !== undefined && !this.isFreeCam) {
+      this.cameraProfile.pitch = settings.isometricPitch;
+      this.snapCameraTo(this.cameraTargetX, this.cameraTargetZ);
+    }
+    if (this.isFreeCam) {
+      this.updateFreeCamPosition();
+    }
+  }
+
+  public setViewAngle(preset: 'isometric' | 'topdown' | 'front' | 'back' | 'east' | 'west' | 'free') {
+    switch (preset) {
+      case 'isometric':
+        this.cameraYaw = 0;
+        this.cameraPitch = this.cameraSettings.isometricPitch || Math.PI / 4;
+        this.killCameraMomentum();
+        this.updateFreeCamPosition();
+        break;
+      case 'topdown':
+        this.cameraYaw = 0;
+        this.cameraPitch = Math.PI / 2 - 0.02;
+        this.killCameraMomentum();
+        this.updateFreeCamPosition();
+        break;
+      case 'front':
+        this.cameraYaw = 0;
+        this.cameraPitch = 0.15;
+        this.killCameraMomentum();
+        this.updateFreeCamPosition();
+        break;
+      case 'back':
+        this.cameraYaw = Math.PI;
+        this.cameraPitch = 0.15;
+        this.killCameraMomentum();
+        this.updateFreeCamPosition();
+        break;
+      case 'east':
+        this.cameraYaw = Math.PI / 2;
+        this.cameraPitch = 0.15;
+        this.killCameraMomentum();
+        this.updateFreeCamPosition();
+        break;
+      case 'west':
+        this.cameraYaw = -Math.PI / 2;
+        this.cameraPitch = 0.15;
+        this.killCameraMomentum();
+        this.updateFreeCamPosition();
+        break;
+      case 'free':
+        if (!this.isFreeCam) {
+          this.setFreeCam(true);
+        }
+        break;
     }
   }
 
@@ -1081,8 +1209,10 @@ export class BabylonEngine {
   }
 
   public rotateFreeCam(dxPx: number, dyPx: number) {
-    const yawDelta = dxPx * 0.004;
-    const pitchDelta = -dyPx * 0.004;
+    const invX = this.cameraSettings.invertOrbitX ? -1 : 1;
+    const invY = this.cameraSettings.invertOrbitY ? -1 : 1;
+    const yawDelta = dxPx * 0.004 * (this.cameraSettings.orbitSensitivity || 1.0) * invX;
+    const pitchDelta = -dyPx * 0.004 * (this.cameraSettings.orbitSensitivity || 1.0) * invY;
     this.cameraYaw += yawDelta;
     this.cameraPitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, this.cameraPitch + pitchDelta));
     // Store velocity for momentum on release
@@ -1094,7 +1224,7 @@ export class BabylonEngine {
   public panFreeCamByScreenDelta(dxPx: number, dyPx: number) {
     const sinY = Math.sin(this.cameraYaw);
     const cosY = Math.cos(this.cameraYaw);
-    const speed = (this.cameraDistance / 20) * 0.035;
+    const speed = (this.cameraDistance / 20) * 0.035 * (this.cameraSettings.panSensitivity || 1.0);
     const moveX = (-dxPx * cosY + dyPx * sinY) * speed;
     const moveZ = (-dxPx * sinY - dyPx * cosY) * speed;
     this.cameraTargetX += moveX;
@@ -1118,6 +1248,7 @@ export class BabylonEngine {
   public applyFreeCamMomentum() {
     if (!this.isFreeCam) return;
     let needsUpdate = false;
+    const damping = this.cameraSettings.damping || 0.90;
 
     // Only apply momentum when pointer is NOT actively dragging
     if (this.editorPanPointerId === null) {
@@ -1125,16 +1256,16 @@ export class BabylonEngine {
       if (Math.abs(this.cameraVelocityYaw) > 0.0001 || Math.abs(this.cameraVelocityPitch) > 0.0001) {
         this.cameraYaw += this.cameraVelocityYaw;
         this.cameraPitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, this.cameraPitch + this.cameraVelocityPitch));
-        this.cameraVelocityYaw *= this.cameraDamping;
-        this.cameraVelocityPitch *= this.cameraDamping;
+        this.cameraVelocityYaw *= damping;
+        this.cameraVelocityPitch *= damping;
         needsUpdate = true;
       }
       // Pan momentum
       if (Math.abs(this.cameraVelocityPanX) > 0.0001 || Math.abs(this.cameraVelocityPanZ) > 0.0001) {
         this.cameraTargetX += this.cameraVelocityPanX;
         this.cameraTargetZ += this.cameraVelocityPanZ;
-        this.cameraVelocityPanX *= this.cameraDamping;
-        this.cameraVelocityPanZ *= this.cameraDamping;
+        this.cameraVelocityPanX *= damping;
+        this.cameraVelocityPanZ *= damping;
         needsUpdate = true;
       }
     }

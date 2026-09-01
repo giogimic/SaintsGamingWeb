@@ -55,7 +55,8 @@ export type StudioDockId =
   | 'publishing'
   | 'maps'
   | 'animations'
-  | 'interface';
+  | 'interface'
+  | 'camera';
 
 /** Map stable internal ids → canonical engine-editor labels. */
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
@@ -274,6 +275,10 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   tileset_canvas: {
     label: 'Tileset Canvas',
     blurb: 'Detached tileset image for picking tiles.',
+  },
+  camera: {
+    label: 'Camera & View Settings',
+    blurb: 'Projection modes, view angle presets, FOV, sensitivity, in-game camera defaults, and object rotation.',
   },
 };
 
