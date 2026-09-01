@@ -62,3 +62,24 @@ Pressing **Ctrl+K** opens the Omnisearch command palette, allowing creators to q
 | **`B` / `R` / `G`** | Stamp / Rect / Fill | Switches active painting tool (Brush, Bounding Box, Bucket). |
 | **`I` / `E`** | Eyedropper / Eraser | Picks tile/logic GID from viewport or erases cell contents. |
 | **`[` / `]`** | Brush Radius | Decreases or increases brush radius from $1\times 1$ up to $7\times 7$. |
+
+---
+
+## 5. Window Sub-Menu Ribbon Suite (`WindowMenuBar.tsx`)
+
+Every dockable studio window is equipped with a flush application sub-menu ribbon located directly under the window title bar:
+- **Modular Window Menus**: Standardized File, Edit, Tools, Presets, and Layers dropdowns on each window.
+- **De-cluttered Viewports**: Keeps action controls separate from the main workspace while remaining 1-click accessible.
+- **Contextual Badges**: Live state pills displaying current layer mode, validation status, and tool dimensions.
+
+---
+
+## 6. Global 2.5D & 3D Environment Pipeline
+
+The Realm Settings system provides real-time global atmosphere controls:
+- **Atmospheric Time of Day**: Day, Golden Hour, Dusk, Midnight, and Fantasy Night lighting tints.
+- **Dynamic Weather Simulations**: Gentle Rain, Falling Leaves, Snow Flurries, and Fireflies with wind vector physics.
+- **2.5D Tilt-Shift Depth of Field**: Miniature diorama depth blurring with customizable focal distances.
+- **Water Shader Dynamics**: Real-time water shimmer and flow speed multipliers (0.5x–3.0x).
+- **3D Spatial Audio Acoustics**: Reverb environment simulation (Dry, Open Field, Cavern, Cathedral, Catacomb).
+

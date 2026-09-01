@@ -1,3 +1,9 @@
+# 2.1.622
+- **2.5D/3D Engine Audit, Water Flow Dynamics Shimmer Loop & Documentation Sync**:
+  - **Dynamic Water Shimmer Animation Loop (`BabylonEngine.ts`)**: Wired water texture animation tick to `waterFlowSpeed` multiplier in `startRenderLoop` for realistic caustic water waves.
+  - **Documentation & Wiki Architecture Overhaul (`docs/`, `docs/wiki/`, `README.md`)**: Updated studio architecture guides, wiki overviews, and public documentation covering window sub-menu ribbons and 2.5D/3D atmospheric controls.
+  - **Audit & Future Task Backlog (`.docs/audit/`)**: Generated comprehensive audit document and prioritized task list for upcoming graphics and studio enhancements.
+
 # 2.1.621
 - **Dungeon Studio Sub-Bar & 2.5D Instance Controls**:
   - **Dungeon Studio Sub-Bar (`DungeonStudioPanel.tsx`)**: Integrated `<WindowMenuBar>` application sub-menu with `Dungeon` dropdown (New Dungeon Instance, Save Dungeon Config), direct action triggers, and admin studio state badge.

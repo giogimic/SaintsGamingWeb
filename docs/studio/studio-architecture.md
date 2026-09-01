@@ -47,3 +47,23 @@ Pressing **Ctrl+K** or clicking the search bar brings up the global search palet
 - **`E`**: Eraser Tool.
 - **`I`**: Eyedropper (Pick Tile/Tag).
 - **`[` / `]`**: Decrease / Increase Brush Radius.
+
+---
+
+## 4. Window Sub-Menu Ribbon Suite (`WindowMenuBar.tsx`)
+
+Every dockable studio window is equipped with a flush application ribbon directly beneath its title bar:
+- **Separation of Concerns**: File, tool, and layer controls are separated from the main viewport, preventing clutter.
+- **Unified Actions**: Direct access to `New`, `Save`, `Undo`, `Redo`, layer mode toggles, and contextual telemetry badges.
+
+---
+
+## 5. Global 2.5D & 3D Environment Engine
+
+Saints Studio provides real-time global atmosphere and visual customization:
+- **Time of Day Presets**: Day, Golden Hour, Dusk, Midnight, and Fantasy Night with dynamic ambient sun/moon lighting tints.
+- **Dynamic Weather Particle Simulations**: GPU/CPU particle systems for Gentle Rain, Falling Autumn Leaves, Snow Flurries, and Glowing Fireflies with directional wind vectors.
+- **2.5D Tilt-Shift Depth of Field**: Miniature diorama blurring with customizable focal distances.
+- **Water Shader Dynamics**: Real-time water shimmer and flow speed multipliers (0.5x–3.0x).
+- **3D Spatial Audio Acoustics**: Reverb environment simulation (Dry, Open Field, Cavern, Cathedral, Catacomb) and distance rolloff factors.
+
