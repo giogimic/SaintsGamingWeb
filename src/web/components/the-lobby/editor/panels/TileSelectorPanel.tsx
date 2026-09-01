@@ -4,19 +4,21 @@ import React from 'react';
 import { useGameStore } from '../../store';
 import { useEditorStore } from '../editor-store';
 import TilesetPicker from '../TilesetPicker';
-import { Grid3X3, Layers, Sparkles, RefreshCw, Paintbrush, Box } from 'lucide-react';
+import { Grid3X3, Layers, Plus, Trash2, Paintbrush, Box, RefreshCw, Layers2 } from 'lucide-react';
 import { DEFAULT_STUDIO_TILESETS, ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
-import { normalizeStudioMapVisuals } from '@/shared/game/studioMapCreate';
 import { TerrainBrushPalette } from './TerrainBrushPalette';
 import { soundSynth } from '@/engine/sound-synth';
+import {
+  WindowMenuBar,
+  WindowMenuDropdown,
+  WindowMenuTabGroup,
+  WindowMenuDivider,
+} from '../WindowMenuBar';
 
 /**
  * Dedicated dockable window for the visual Tile Selector.
  * Allows creators to browse tilesets, pick GID brushes, and switch layers
- * without navigating away from the active map or atlas.
- * 
- * Now features tabbed navigation:
- *   Grid Tiles | Terrain Paint | Props
+ * with a standardized application sub-menu bar under the title bar.
  */
 export const TileSelectorPanel: React.FC = () => {
   const activeMapData = useGameStore((s) => s.activeMapData);
@@ -46,9 +48,9 @@ export const TileSelectorPanel: React.FC = () => {
     }
   }, [setActiveBrushPattern, setActiveLayerIdx]);
 
-  const handleSwitchTab = (tab: 'grid' | 'paint-splat' | 'free-form') => {
+  const handleSwitchTab = (tab: string) => {
     soundSynth?.playSelectSound?.();
-    setActiveLayerType(tab);
+    setActiveLayerType(tab as any);
     showToast(
       tab === 'grid' ? 'Grid Tiles Mode' :
       tab === 'paint-splat' ? 'Terrain Paint Mode' :
@@ -142,61 +144,41 @@ export const TileSelectorPanel: React.FC = () => {
     showToast('Updated map tilesets');
   };
 
-  const tabs: Array<{ id: 'grid' | 'paint-splat' | 'free-form'; label: string; icon: React.ReactNode; color: string }> = [
-    { id: 'grid', label: 'Grid Tiles', icon: <Grid3X3 className="w-3 h-3" />, color: 'purple' },
-    { id: 'paint-splat', label: 'Terrain', icon: <Paintbrush className="w-3 h-3" />, color: 'amber' },
-    { id: 'free-form', label: 'Props', icon: <Box className="w-3 h-3" />, color: 'emerald' },
+  const tabs = [
+    { id: 'grid', label: 'Grid Tiles', icon: Grid3X3 },
+    { id: 'paint-splat', label: 'Terrain', icon: Paintbrush },
+    { id: 'free-form', label: 'Props', icon: Box },
   ];
 
   return (
-    <div className="h-full w-full overflow-y-auto custom-scrollbar font-mono text-xs bg-[#050b14]/50">
-      {/* ── Tab Bar ── */}
-      <div className="flex items-center gap-0.5 p-1.5 border-b border-border/30 bg-[#0a1628]/40">
-        {tabs.map((tab) => {
-          const isActive = activeLayerType === tab.id;
-          const activeColors: Record<string, string> = {
-            purple: 'bg-purple-600 text-white shadow-sm ring-1 ring-purple-300',
-            amber: 'bg-amber-600 text-white shadow-sm ring-1 ring-amber-300',
-            emerald: 'bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-300',
-          };
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => handleSwitchTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
-                isActive
-                  ? activeColors[tab.color]
-                  : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
-              }`}
-              title={tab.label}
-            >
-              {tab.icon}
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* ── Status Bar ── */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/20 bg-[#060e1c]/30">
-        <div className="flex items-center gap-2">
-          <Layers className="h-3 w-3 text-primary/60" />
-          <span className="text-[10px] text-muted-foreground">
-            {activeLayerType === 'paint-splat' ? 'Terrain Paint (Splat)'
-              : activeLayerType === 'free-form' ? 'Foliage & Props (2.5D)'
-              : activeLayerIdx === -1 ? 'Collision Layer'
-              : `Layer ${activeLayerIdx}`
-            }
-          </span>
-        </div>
-        <span className="rounded bg-primary/10 border border-primary/30 px-1.5 py-0.5 text-[9px] font-bold text-primary">
-          GID {activeBrushTileId}
+    <div className="h-full w-full flex flex-col font-mono text-xs bg-[#050b14]/50 -m-3 mb-0">
+      {/* ── WINDOW SUB-MENU APP BAR ── */}
+      <WindowMenuBar>
+        <WindowMenuTabGroup
+          tabs={tabs}
+          activeTab={activeLayerType}
+          onChange={handleSwitchTab}
+        />
+        <WindowMenuDivider />
+        <WindowMenuDropdown
+          label="Layers"
+          icon={Layers2}
+          items={[
+            { label: 'Add Visual Layer', icon: Plus, onClick: handleAddLayer },
+            { label: `Clear Layer ${activeLayerIdx}`, icon: Trash2, onClick: () => handleClearLayer(activeLayerIdx), danger: true },
+            { label: `Fill Layer ${activeLayerIdx} with GID #${activeBrushTileId}`, onClick: () => handleFillLayer(activeLayerIdx, activeBrushTileId) },
+            { divider: true, label: '' },
+            { label: 'Re-sync Default Tilesets', icon: RefreshCw, onClick: () => handleUpdateTilesets(DEFAULT_STUDIO_TILESETS) },
+          ]}
+        />
+        <div className="flex-1" />
+        <span className="rounded bg-primary/15 border border-primary/40 px-2 py-0.5 text-[9px] font-bold text-primary shrink-0">
+          GID #{activeBrushTileId}
         </span>
-      </div>
+      </WindowMenuBar>
 
-      {/* ── Content ── */}
-      <div className="p-3">
+      {/* ── Scrollable Body ── */}
+      <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
         {activeLayerType === 'paint-splat' ? (
           <TerrainBrushPalette />
         ) : (

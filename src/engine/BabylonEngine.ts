@@ -298,6 +298,8 @@ export class BabylonEngine {
   private chatBubbles: Map<string, Rectangle> = new Map();
   /** Floating name labels for multiplayer peers (not local player_main). */
   private nameplates: Map<string, Rectangle> = new Map();
+  private ambientLight?: HemisphericLight;
+  private dirLight?: DirectionalLight;
   private shadowGen?: ShadowGenerator;
   private cameraTargetX: number = 0;
   private cameraTargetZ: number = 0;
@@ -534,16 +536,16 @@ export class BabylonEngine {
     this.updateCameraAspect(10);
 
     // Primary ambient light
-    const ambientLight = new HemisphericLight('ambientLight', new Vector3(0.2, 1, -0.3), this.scene);
-    ambientLight.intensity = 0.85;
-    ambientLight.diffuse = new Color3(0.95, 0.95, 1.0);
-    ambientLight.groundColor = new Color3(0.15, 0.2, 0.15);
+    this.ambientLight = new HemisphericLight('ambientLight', new Vector3(0.2, 1, -0.3), this.scene);
+    this.ambientLight.intensity = 0.85;
+    this.ambientLight.diffuse = new Color3(0.95, 0.95, 1.0);
+    this.ambientLight.groundColor = new Color3(0.15, 0.2, 0.15);
 
     // Directional sun light for 2.5D depth
-    const dirLight = new DirectionalLight('sunLight', new Vector3(-0.5, -1.0, 0.5), this.scene);
-    dirLight.intensity = 0.55;
-    dirLight.diffuse = new Color3(1.0, 0.97, 0.88);
-    dirLight.position = new Vector3(5, 15, -10);
+    this.dirLight = new DirectionalLight('sunLight', new Vector3(-0.5, -1.0, 0.5), this.scene);
+    this.dirLight.intensity = 0.55;
+    this.dirLight.diffuse = new Color3(1.0, 0.97, 0.88);
+    this.dirLight.position = new Vector3(5, 15, -10);
 
     // Shadow Generator (soft shadows for 2.5D depth)
     this.shadowGen = undefined; // ShadowGenerator disabled in Unlit pixel-art pipeline
@@ -649,6 +651,13 @@ export class BabylonEngine {
       }
     });
 
+    window.addEventListener('studio_update_realm_visuals', (e: Event) => {
+      const custom = e as CustomEvent<{ settings: any }>;
+      if (custom.detail?.settings) {
+        this.updateRealmVisuals(custom.detail.settings);
+      }
+    });
+
     // Entity Pointer Interaction
     this.scene.onPointerObservable.add((pointerInfo) => {
       if (pointerInfo.type === 1) { // PointerEventTypes.POINTERDOWN
@@ -744,6 +753,34 @@ export class BabylonEngine {
     this.waterMaterials.forEach(m => {
       m.diffuseTexture = this.waterTexture!;
     });
+  }
+
+  public updateRealmVisuals(settings: any) {
+    if (!this.scene) return;
+
+    // 3D Lighting
+    if (this.ambientLight) {
+      this.ambientLight.intensity = settings.enable3DLighting !== false ? 0.85 : 1.1;
+    }
+    if (this.dirLight) {
+      this.dirLight.intensity = settings.enable3DLighting !== false ? 0.55 : 0.0;
+    }
+
+    // Atmospheric Depth Fog
+    if (settings.enableAtmosphericFog !== false) {
+      this.scene.fogMode = Scene.FOGMODE_EXP2;
+      this.scene.fogDensity = settings.fogDensity || 0.015;
+      if (settings.fogColor) {
+        this.scene.fogColor = Color3.FromHexString(settings.fogColor);
+      }
+    } else {
+      this.scene.fogMode = Scene.FOGMODE_NONE;
+    }
+
+    // Vignette Post-Process
+    if (this.vignettePostProcess) {
+      this.vignettePostProcess.vignetteEnabled = settings.vignetteEnabled !== false;
+    }
   }
 
   private updateCameraAspect = (orthoSize: number = 10) => {

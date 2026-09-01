@@ -32,6 +32,13 @@ import { getAdjacentAtlasNeighbors, type NeighborNodes } from '@/shared/game/atl
 import { getEdgeStrip } from '@/shared/game/atlas/edgeStrip';
 import { loadMap, getClientAtlas } from '../../data/maps';
 import { soundSynth } from '@/engine/sound-synth';
+import {
+  WindowMenuBar,
+  WindowMenuDropdown,
+  WindowMenuButton,
+  WindowMenuDivider,
+  WindowMenuTabGroup,
+} from '../WindowMenuBar';
 
 export const WorldBuilderPanel: React.FC = () => {
   const currentMapId = useGameStore((state) => state.currentMapId);
@@ -368,7 +375,72 @@ export const WorldBuilderPanel: React.FC = () => {
   const hasAnyNeighbor = Boolean(neighbors.north || neighbors.south || neighbors.east || neighbors.west);
 
   return (
-    <div className="space-y-3 text-xs font-mono select-none">
+    <div className="space-y-3 text-xs font-mono select-none -m-3 mb-0">
+      {/* ── WINDOW SUB-MENU BAR ── */}
+      <WindowMenuBar>
+        <WindowMenuDropdown
+          label="Map"
+          items={[
+            {
+              label: 'Save Map Document',
+              icon: Save,
+              shortcut: 'Ctrl+S',
+              onClick: () => {
+                if (!isSaving && activeMapData) {
+                  window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
+                }
+              },
+              disabled: isSaving || !activeMapData,
+            },
+            {
+              label: 'Fit Map in View',
+              icon: Maximize2,
+              shortcut: 'Home',
+              onClick: () => window.dispatchEvent(new CustomEvent('studio_fit_map')),
+            },
+            {
+              label: 'Open Atlas Studio',
+              icon: Globe,
+              shortcut: 'Ctrl+Shift+M',
+              onClick: () => setStudioMode('atlas'),
+            },
+          ]}
+        />
+        <WindowMenuDropdown
+          label="Layers"
+          items={[
+            { label: 'Ground Layer (0)', active: activeLayerIdx === 0, onClick: () => setActiveLayerIdx(0) },
+            { label: 'Add Tile Layer', icon: Plus, onClick: handleAddLayer },
+            { label: 'Add Splat Layer', icon: Brush, onClick: () => handleAddFreeformLayer('paint-splat') },
+            { label: 'Add Prop Layer', icon: Layers, onClick: () => handleAddFreeformLayer('free-form') },
+            { divider: true, label: '' },
+            { label: 'Clear Current Layer', danger: true, onClick: () => handleClearLayer(activeLayerIdx) },
+          ]}
+        />
+        <WindowMenuDivider />
+        <WindowMenuButton
+          label={neighborBleedPreview ? 'Bleed ON' : 'Bleed'}
+          icon={neighborBleedPreview ? Eye : EyeOff}
+          active={neighborBleedPreview}
+          onClick={handleToggleNeighborBleed}
+          title="Toggle seamless look-ahead preview of neighboring atlas maps"
+        />
+        <div className="flex-1" />
+        <WindowMenuButton
+          label={isSaving ? 'Saving...' : isMapDirty ? 'Save*' : 'Saved'}
+          icon={Save}
+          active={isMapDirty}
+          onClick={() => {
+            if (!isSaving && activeMapData) {
+              window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
+            }
+          }}
+          disabled={isSaving || !activeMapData}
+          title="Save active map document"
+        />
+      </WindowMenuBar>
+
+      <div className="p-3 space-y-3">
       {/* SECTION 1: Active Realm Overview & Atlas Jump */}
       <div className="bg-[#0b1320]/80 border border-[#806f47]/40 rounded-xl overflow-hidden shadow-lg">
         <div className="w-full flex items-center justify-between p-2.5 bg-black/50/40 text-[#cbb26a] font-bold">
@@ -841,6 +913,7 @@ export const WorldBuilderPanel: React.FC = () => {
         )}
       </div>
 
+      </div>
     </div>
   );
 };

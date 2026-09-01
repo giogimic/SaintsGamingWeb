@@ -15,6 +15,13 @@ import {
   type LogicComponentKind,
   type LogicComponentPreset,
 } from '@/shared/game/logicComponents';
+import {
+  WindowMenuBar,
+  WindowMenuDropdown,
+  WindowMenuButton,
+  WindowMenuDivider,
+} from '../WindowMenuBar';
+import { soundSynth } from '@/engine/sound-synth';
 
 export const PropertiesPanel: React.FC = () => {
   const currentMapId = useGameStore((state) => state.currentMapId);
@@ -118,7 +125,56 @@ export const PropertiesPanel: React.FC = () => {
   const mapGates = normalizeGates(currentMapData.gates);
 
   return (
-    <div className="space-y-4 text-xs font-mono">
+    <div className="space-y-4 text-xs font-mono -m-3 mb-0">
+      {/* ── SUB-MENU APP BAR ── */}
+      <WindowMenuBar>
+        <WindowMenuDropdown
+          label="Presets"
+          icon={Trees}
+          items={LOGIC_COMPONENT_PRESETS.map((p) => ({
+            label: p.label,
+            onClick: () => {
+              setComponentKind(p.kind);
+              applyPresetBrush(p);
+            },
+          }))}
+        />
+        <WindowMenuDropdown
+          label="Mode"
+          items={[
+            {
+              label: 'Visual Mode (Layer 0)',
+              onClick: () => {
+                setLayer(0);
+                showToast('Switched to Visual Layer 0');
+              },
+            },
+            {
+              label: 'Logic Mode (Layer -1)',
+              active: true,
+              onClick: () => {
+                setLayer(-1);
+                showToast('Active Layer: Logic (-1)');
+              },
+            },
+          ]}
+        />
+        <WindowMenuDivider />
+        <WindowMenuButton
+          label="Clear Selection"
+          onClick={() => useEditorStore.setState({ clickedTile: null })}
+          disabled={!clickedTile}
+          title="Deselect active tile coordinate"
+        />
+        <div className="flex-1" />
+        {clickedTile && (
+          <span className="rounded bg-primary/20 border border-primary/40 px-2 py-0.5 text-[9px] font-bold text-primary shrink-0">
+            X:{clickedTile.c} Y:{clickedTile.r}
+          </span>
+        )}
+      </WindowMenuBar>
+
+      <div className="p-3 space-y-4">
       {/* SELECTION CONTEXT */}
       <div className="bg-[#0b1320]/60 border border-[#cbb26a]/40 rounded p-3 space-y-2 shadow-[0_0_15px_rgba(203,178,106,0.1)]">
         <div className="flex items-center gap-1.5 font-bold text-[#e2d5b3] border-b border-[#cbb26a]/30 pb-1 uppercase tracking-widest text-[10px]">
@@ -400,6 +456,7 @@ export const PropertiesPanel: React.FC = () => {
         >
           Register & Paint
         </button>
+      </div>
       </div>
     </div>
   );

@@ -1,3 +1,10 @@
+# 2.1.615
+- **Window Sub-Menu Bar Architecture & Global 2.5D/3D Visual Pipeline Controls**:
+  - **Application Window Sub-Menu Bars (`WindowMenuBar.tsx`)**: Created a standardized desktop application sub-menu component suite (`WindowMenuBar`, `WindowMenuDropdown`, `WindowMenuButton`, `WindowMenuTabGroup`, `WindowMenuDivider`) positioned cleanly beneath window title bars to separate file/tool/mode actions and prevent clutter across studio windows.
+  - **Global 2.5D & 3D Visual Pipeline Options (`RealmSettingsPanel.tsx`, `BabylonEngine.ts`)**: Added dedicated `2.5D & 3D Visuals` configuration tab featuring real-time 3D lighting, directional sunlight/moonlight toggles, shadow quality controls (Low/Medium/High), atmospheric depth fog with density and color presets, 2.5D elevation height step multiplier (0.5x–2.5x), water reflection simulation, post-processing FXAA, and bloom highlights.
+  - **Sub-Menu Window Upgrades**: Modernized `RealmSettingsPanel`, `WorldBuilderPanel`, `TileSelectorPanel`, `LogicPainterPanel`, and `MapListPanel` with integrated sub-menu toolbars, structured dropdowns, and clean Saints Gaming dark glass aesthetic.
+  - **Informative Micro-Instructions & Metric Badges**: Embedded compact monospace badges and inline parameter explanations across panels providing clear instructions without visual clutter.
+
 # 2.1.614
 - **Global Camera & View Settings Window, Object/Splat Rotation Decoupling & In-Game Camera Controls**:
   - **Decoupled Object Rotation from Viewport Orbit (`BabylonEngine.ts`, `GameCanvasBabylon.tsx`)**: Reassigned `KeyR` / `Shift+R` to rotate active brush stamps/splats by 90° and `[` / `]` for 15° fine rotation without pitching or rotating the camera. Added `Shift+MouseWheel` rotation over canvas and isolated camera orbiting strictly to Right-Click Drag / Middle-Click Drag.

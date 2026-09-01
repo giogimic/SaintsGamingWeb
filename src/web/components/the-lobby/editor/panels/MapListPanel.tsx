@@ -17,6 +17,13 @@ import { canWriteStudioContent } from '@/shared/game/studioPermissions';
 import { useDebounce } from '@/web/hooks/useDebounce';
 import { useMapIndex, useRealmSettings } from '@/web/hooks/studio-data';
 import { DEFAULT_SPAWN_MAP_ID } from '@/shared/game/realmSettings';
+import {
+  WindowMenuBar,
+  WindowMenuDropdown,
+  WindowMenuButton,
+  WindowMenuTabGroup,
+  WindowMenuDivider,
+} from '../WindowMenuBar';
 
 export const MapListPanel: React.FC = () => {
   const { data: session } = useSession();
@@ -188,9 +195,40 @@ export const MapListPanel: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#050b14] text-slate-200 font-mono select-none overflow-hidden rounded-b-xl">
+    <div className="flex flex-col h-full bg-[#050b14] text-slate-200 font-mono select-none overflow-hidden -m-3 mb-0">
+      {/* ── SUB-MENU APP BAR ── */}
+      <WindowMenuBar>
+        <WindowMenuDropdown
+          label="Map"
+          icon={Globe}
+          items={[
+            {
+              label: 'Create New Map',
+              icon: Plus,
+              onClick: () => setShowCreateModal(true),
+              disabled: !canEdit,
+            },
+            {
+              label: 'Reload Map Index',
+              icon: ArrowRight,
+              onClick: () => mutateMaps(),
+            },
+          ]}
+        />
+        <WindowMenuDivider />
+        <WindowMenuTabGroup
+          tabs={categories.map((c) => ({ id: c, label: c }))}
+          activeTab={selectedCategory}
+          onChange={setSelectedCategory}
+        />
+        <div className="flex-1" />
+        <span className="text-[9px] text-muted-foreground font-mono">
+          {filtered.length} of {combined.length} maps
+        </span>
+      </WindowMenuBar>
+
       {/* Top Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-amber-500/30 bg-[#050b14]/80">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-amber-500/30 bg-[#050b14]/80">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400">
             <Globe className="w-6 h-6" />
