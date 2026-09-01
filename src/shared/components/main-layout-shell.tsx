@@ -61,6 +61,7 @@ export function MainLayoutShell({
         </main>
         <div className={`transition-opacity duration-300 ${isBarsHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
           {commandPalette}
+          {messengerPopup}
         </div>
         {bottomBar}
         {toaster}

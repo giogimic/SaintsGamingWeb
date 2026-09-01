@@ -1,3 +1,18 @@
+# 2.1.596
+- **Global Bottom-Bar Drawers & Messenger Chat Overlay Elevation**:
+  - Elevated `MessengerPopup` (`messenger-popup.tsx`), Dev Console Drawer (`global-bottom-bar.tsx`), and Moderator Drawer to top-level `z-[300]` stacking contexts so they float cleanly over the Babylon game canvas, HUD docks, and persistent bottom navigation bar.
+  - Added `{messengerPopup}` overlay portal to `isStudio` in `main-layout-shell.tsx` for consistent global communication.
+- **Game Engine Entity Sprite Texture Cache & Pooling**:
+  - Implemented `spriteTextureCache` and `getOrCreateSpriteTexture` in `BabylonEngine.ts`.
+  - Removed duplicate `?mesh=` URL parameter cache busters across entity sprite creation and updates, allowing multiple players and NPCs using the same sprite sheet to share a single GPU texture instance in VRAM.
+  - Added texture cache disposal on engine shutdown to prevent memory leaks.
+- **In-Game HUD Responsiveness & Re-render Optimization**:
+  - Optimized `Hotbar.tsx` with atomic granular Zustand selectors, preventing unnecessary re-renders when unrelated game store properties change.
+  - Replaced continuous 60–144Hz unthrottled `requestAnimationFrame` state loop with a conditional 20 FPS cooldown ticker that only runs when active cooldowns are ticking down, eliminating substantial React reconciliation overhead during gameplay.
+- **Game Data SWR Hook Layer**:
+  - Created `src/web/hooks/game-data.ts` introducing cached, deduplicated SWR hooks (`useUserCharacters`, `useGameQuests`, `useGameCreatureDefs`) for instant UI responses and background synchronization.
+- **Version Bump**: Bumped release version to `v2.1.596` across all application layouts, headers, footers, settings, and documentation.
+
 # 2.1.595
 - **Pokémon & Heart-Container UI Styles & Vitals Engine**:
   - Added new HUD themes to `BUILTIN_HUD_THEMES`:
