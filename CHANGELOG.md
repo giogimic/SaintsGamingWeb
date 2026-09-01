@@ -1,5 +1,10 @@
+# 2.1.633
+- **Gateway Server Selection & Core Tooling Disambiguation**:
+  - **Gateway / Server Selection Flow**: The Server/Gateway Selection screen is now enforced as the very first screen players encounter when clicking "Play" on the title screen, adhering to MMO standards. Players pick their server region/shard before authenticating their character roster.
+  - **Tooling UI Disambiguation**: Explicitly split "Cut from Sheet" shortcuts in the Studio Editor (`TerrainBrushPalette.tsx` and `PropLibraryPanel.tsx`) into distinct "Full Sheet" and "Cut New Prop / Slice Tool" actions so creators understand they can use raw seamless textures directly without the slicer.
+  - **Brush Fallback Safety**: Fixed `paint-splat` brush behavior to provide a UI warning toast when attempting to paint without a valid material selected, preventing it from incorrectly painting fallback zero-GID logic grids or black voids on the map.
+
 # 2.1.632
-- **World Studio Tooling Overhaul — Sheet Slicer, Prop & Foliage Suite, Seamless vs Sliced Materials & Studio Camera Authority**:
   - **Studio Camera Authority & Persistence (`realmSettings.ts`, `BabylonEngine.ts`, `CameraSettingsPanel.tsx`, `GameOptionsMenu.tsx`)**:
     - Added creator master toggle `allowCustomPlayerCamera` ("Allow Players to Choose Perspective").
     - When locked by author, in-game ESC menu reflects locked creator authority badge and preserves the author's intended view angle. When unlocked, players can freely switch between 2.5D Isometric, Smooth Dynamic Follow, Top-Down 90°, and Free Orbit.

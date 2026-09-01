@@ -1075,7 +1075,7 @@ export const useEditorStore = create<EditorState>()(
             engine.setStampScale(state.stampScale);
           }
         }),
-      snapToGrid: true,
+      snapToGrid: false,
       setSnapToGrid: (snap: boolean) =>
         set((state) => {
           state.snapToGrid = snap;

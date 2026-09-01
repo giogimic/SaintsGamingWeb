@@ -509,10 +509,11 @@ export const CameraSettingsPanel: React.FC = () => {
                     soundSynth?.playUiClick?.();
                     const val = e.target.checked;
                     setAllowCustomPlayerCamera(val);
-                    if (activeMapData) {
-                      (activeMapData as any).allowCustomCamera = val;
-                      (activeMapData as any).allowCustomPlayerCamera = val;
-                    }
+                      if (activeMapData) {
+                        (activeMapData as any).allowCustomCamera = val;
+                        (activeMapData as any).allowCustomPlayerCamera = val;
+                        useEditorStore.getState().markMapDirty();
+                      }
                   }}
                   className="accent-primary rounded mt-0.5"
                 />
@@ -553,6 +554,10 @@ export const CameraSettingsPanel: React.FC = () => {
                     onClick={() => {
                       soundSynth?.playUiClick?.();
                       setPlayerCameraStyle(mode.id as any);
+                      if (activeMapData) {
+                        (activeMapData as any).cameraStyle = mode.id;
+                        useEditorStore.getState().markMapDirty();
+                      }
                     }}
                     className={`p-2 rounded border text-left transition-colors cursor-pointer ${
                       playerCameraStyle === mode.id
