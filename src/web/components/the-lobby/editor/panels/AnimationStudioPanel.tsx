@@ -27,6 +27,12 @@ import {
 import { soundSynth } from '@/engine/sound-synth';
 import { useGameStore } from '../../store';
 import { AssetManager, type GameAssetItem } from '@/engine/assets/AssetManager';
+import {
+  WindowMenuBar,
+  WindowMenuDropdown,
+  WindowMenuButton,
+  WindowMenuDivider,
+} from '../WindowMenuBar';
 
 export interface AnimationSequence {
   id: string;
@@ -368,23 +374,94 @@ export function AnimationStudioPanel() {
   };
 
   return (
-    <div className="flex h-full w-full bg-[#050b14]/95 text-slate-200 font-mono text-xs select-none overflow-hidden">
-      {/* ─── LEFT COLUMN: ANIMATION SEQUENCES ─── */}
-      <div className="w-56 flex flex-col border-r border-[#806f47]/30 bg-black/50/40">
-        <div className="flex items-center justify-between p-3 border-b border-[#806f47]/30 bg-black/50/20">
-          <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
-            <Film className="w-4 h-4 text-amber-400" />
-            <span>Animations</span>
+    <div className="flex h-full w-full flex-col bg-[#050b14]/95 text-slate-200 font-mono text-xs select-none -m-3 mb-0 overflow-hidden">
+      {/* ── WINDOW SUB-MENU APP BAR ── */}
+      <WindowMenuBar>
+        <WindowMenuDropdown
+          label="Sequence"
+          items={[
+            {
+              label: 'New Sequence',
+              shortcut: 'Ctrl+N',
+              onClick: handleAddAnimation,
+            },
+            {
+              label: 'Duplicate Sequence',
+              onClick: handleDuplicateAnimation,
+              disabled: !activeAnim,
+            },
+            { divider: true, label: '' },
+            {
+              label: 'Save All Sequences',
+              shortcut: 'Ctrl+S',
+              onClick: handleSaveAnimations,
+            },
+            {
+              label: 'Delete Active Sequence',
+              onClick: () => activeAnim && handleDeleteAnimation(activeAnim.id),
+              disabled: !activeAnim || animations.length <= 1,
+            },
+          ]}
+        />
+        <WindowMenuDropdown
+          label="Playback"
+          items={[
+            {
+              label: isPlaying ? 'Pause Playback' : 'Play Sequence',
+              shortcut: 'Space',
+              onClick: () => setIsPlaying(!isPlaying),
+            },
+            {
+              label: 'Step Forward Frame',
+              onClick: () => {
+                if (activeAnim) {
+                  setCurrentFrameIdx((prev) => (prev + 1) % activeAnim.frames.length);
+                }
+              },
+            },
+            {
+              label: 'Step Backward Frame',
+              onClick: () => {
+                if (activeAnim) {
+                  setCurrentFrameIdx((prev) => (prev - 1 + activeAnim.frames.length) % activeAnim.frames.length);
+                }
+              },
+            },
+            { divider: true, label: '' },
+            {
+              label: showOnionSkin ? 'Disable Onion Skinning' : 'Enable Onion Skinning',
+              onClick: () => setShowOnionSkin(!showOnionSkin),
+            },
+          ]}
+        />
+        <WindowMenuDivider />
+        <WindowMenuButton
+          label={isPlaying ? 'Pause' : 'Play'}
+          icon={isPlaying ? Pause : Play}
+          onClick={() => setIsPlaying(!isPlaying)}
+          title="Toggle animation playback"
+        />
+        <WindowMenuButton
+          label="New Sequence"
+          icon={Plus}
+          onClick={handleAddAnimation}
+          title="Create a new animation sequence"
+        />
+        <div className="flex-1" />
+        <span className="text-[9px] text-muted-foreground font-mono truncate max-w-[160px]">
+          {activeAnim ? `${activeAnim.name} (${activeAnim.frames.length}f @ ${activeAnim.fps}fps)` : 'No Sequence'}
+        </span>
+      </WindowMenuBar>
+
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+        {/* ─── LEFT COLUMN: ANIMATION SEQUENCES ─── */}
+        <div className="w-56 flex flex-col border-r border-[#806f47]/30 bg-black/50/40">
+          <div className="flex items-center justify-between p-3 border-b border-[#806f47]/30 bg-black/50/20">
+            <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
+              <Film className="w-4 h-4 text-amber-400" />
+              <span>Animations</span>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={handleAddAnimation}
-            className="p-1 rounded bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-500/40 transition cursor-pointer"
-            title="Create New Animation"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-        </div>
 
         <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-thin scrollbar-thumb-[#806f47]/30">
           {animations.map((anim) => {
@@ -769,6 +846,7 @@ export function AnimationStudioPanel() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

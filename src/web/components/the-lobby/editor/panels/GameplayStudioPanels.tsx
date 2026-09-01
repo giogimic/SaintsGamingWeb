@@ -22,6 +22,13 @@ import { getAllStatusDefs, StatusDef } from '@/shared/game/combat/statusRegistry
 import { getAllCanonicalSkillDefs, CanonicalSkillDef } from '@/shared/game/skills/skillRegistry';
 import { getAllProfessionDefs, ProfessionDef } from '@/shared/game/professions/professionRegistry';
 import { simulateCombatScenario, BalanceScenario, BalanceReport } from '@/shared/game/combat/combatBalanceEngine';
+import {
+  WindowMenuBar,
+  WindowMenuDropdown,
+  WindowMenuButton,
+  WindowMenuTabGroup,
+  WindowMenuDivider,
+} from '../WindowMenuBar';
 
 type ActiveStudioTab = 'abilities' | 'status' | 'skills' | 'professions' | 'balance';
 
@@ -70,64 +77,36 @@ export default function GameplayStudioPanels() {
   });
 
   return (
-    <div className="flex flex-col h-full bg-transparent text-slate-200 font-mono text-xs select-none">
-      {/* Top Dock Navigation Tabs */}
-      <div className="flex border-b border-[#806f47]/20 bg-black/50/20 px-2 pt-2 gap-1 shrink-0 overflow-x-auto">
-        <button
-          onClick={() => setActiveTab('abilities')}
-          className={`px-3 py-1.5 rounded-t-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
-            activeTab === 'abilities'
-              ? 'bg-[#cbb26a]/20 text-[#e2d5b3] border-t border-x border-[#cbb26a]/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-          }`}
-        >
-          <Sword className="w-3.5 h-3.5" /> Abilities ({abilities.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('status')}
-          className={`px-3 py-1.5 rounded-t-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
-            activeTab === 'status'
-              ? 'bg-[#cbb26a]/20 text-[#e2d5b3] border-t border-x border-[#cbb26a]/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-          }`}
-        >
-          <Activity className="w-3.5 h-3.5" /> Status ({statuses.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('skills')}
-          className={`px-3 py-1.5 rounded-t-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
-            activeTab === 'skills'
-              ? 'bg-[#cbb26a]/20 text-[#e2d5b3] border-t border-x border-[#cbb26a]/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5" /> Skills ({skills.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('professions')}
-          className={`px-3 py-1.5 rounded-t-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
-            activeTab === 'professions'
-              ? 'bg-[#cbb26a]/20 text-[#e2d5b3] border-t border-x border-[#cbb26a]/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-          }`}
-        >
-          <Zap className="w-3.5 h-3.5" /> Professions ({professions.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('balance')}
-          className={`px-3 py-1.5 rounded-t-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
-            activeTab === 'balance'
-              ? 'bg-[#cbb26a]/20 text-[#e2d5b3] border-t border-x border-[#cbb26a]/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-          }`}
-        >
-          <Crosshair className="w-3.5 h-3.5" /> Combat Simulator
-        </button>
-      </div>
+    <div className="flex flex-col h-full bg-transparent text-slate-200 font-mono text-xs select-none -m-3 mb-0 overflow-hidden">
+      {/* ── WINDOW SUB-MENU APP BAR ── */}
+      <WindowMenuBar>
+        <WindowMenuTabGroup
+          tabs={[
+            { id: 'abilities', label: `Abilities (${abilities.length})` },
+            { id: 'status', label: `Status (${statuses.length})` },
+            { id: 'skills', label: `Skills (${skills.length})` },
+            { id: 'professions', label: `Professions (${professions.length})` },
+            { id: 'balance', label: 'Combat Sim' },
+          ]}
+          activeTab={activeTab}
+          onChange={(t) => setActiveTab(t as any)}
+        />
+        {activeTab === 'balance' && (
+          <>
+            <WindowMenuDivider />
+            <WindowMenuButton
+              label="Run Sim"
+              icon={Play}
+              onClick={handleRunSimulation}
+              title="Run combat balance simulation"
+            />
+          </>
+        )}
+        <div className="flex-1" />
+        <span className="text-[9px] text-muted-foreground font-mono">
+          Gameplay Systems Engine
+        </span>
+      </WindowMenuBar>
 
       {/* Content Area */}
       <div className="flex-1 p-3 overflow-y-auto">

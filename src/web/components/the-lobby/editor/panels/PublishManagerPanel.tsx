@@ -25,6 +25,12 @@ import {
 } from '@/app/actions/publishing';
 import type { WorldPublishSnapshot } from '@prisma/client';
 import { useEditorStore } from '../editor-store';
+import {
+  WindowMenuBar,
+  WindowMenuDropdown,
+  WindowMenuButton,
+  WindowMenuDivider,
+} from '../WindowMenuBar';
 
 export const PublishManagerPanel: React.FC = () => {
   const dataVersion = useEditorStore((s) => s.dataVersion);
@@ -113,41 +119,73 @@ export const PublishManagerPanel: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full w-full flex-col bg-[#050b14]/95 text-slate-200 font-mono text-xs p-4 overflow-y-auto space-y-6">
-      {/* ── Header ──────────────────────────────────────── */}
-      <div className="flex items-center justify-between border-b border-[#806f47]/30 pb-3">
-        <div className="flex items-center gap-2">
-          <UploadCloud className="w-5 h-5 text-amber-400" />
-          <div>
-            <h2 className="font-extrabold text-[#cbb26a] tracking-wider uppercase text-sm">
-              Publishing & Release Gates
-            </h2>
-            <p className="text-[10px] text-slate-500 font-sans">
-              Author → Validate → Snapshot → Publish pipeline (Bible 35 / Studio Plan Part 6).
-            </p>
+    <div className="flex h-full w-full flex-col bg-[#050b14]/95 text-slate-200 font-mono text-xs -m-3 mb-0 overflow-hidden">
+      {/* ── WINDOW SUB-MENU APP BAR ── */}
+      <WindowMenuBar>
+        <WindowMenuDropdown
+          label="Releases"
+          items={[
+            {
+              label: 'Create Release Snapshot',
+              shortcut: 'Ctrl+Shift+P',
+              onClick: () => setShowPublishModal(true),
+            },
+            { divider: true, label: '' },
+            {
+              label: 'Re-run Pre-Flight Validation',
+              onClick: runValidation,
+              disabled: validating,
+            },
+            {
+              label: 'Refresh Snapshot History',
+              onClick: loadSnapshots,
+              disabled: loadingSnapshots,
+            },
+          ]}
+        />
+        <WindowMenuDivider />
+        <WindowMenuButton
+          label={validating ? 'Validating...' : 'Validate'}
+          icon={RefreshCw}
+          onClick={runValidation}
+          disabled={validating}
+          title="Run pre-flight integrity check on all maps, spawners, and loot"
+        />
+        <WindowMenuButton
+          label="Create Release Snapshot"
+          icon={UploadCloud}
+          onClick={() => setShowPublishModal(true)}
+          title="Package active world into an immutable snapshot"
+        />
+        <div className="flex-1" />
+        {validation && (
+          <span
+            className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+              validation.valid
+                ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-600/40'
+                : 'bg-rose-950/80 text-rose-400 border border-rose-600/40'
+            }`}
+          >
+            {validation.valid ? 'VALIDATION PASSED' : `${validation.errorCount} ERRORS`}
+          </span>
+        )}
+      </WindowMenuBar>
+
+      <div className="flex-1 p-4 overflow-y-auto space-y-6">
+        {/* ── Header ──────────────────────────────────────── */}
+        <div className="flex items-center justify-between border-b border-[#806f47]/30 pb-3">
+          <div className="flex items-center gap-2">
+            <UploadCloud className="w-5 h-5 text-amber-400" />
+            <div>
+              <h2 className="font-extrabold text-[#cbb26a] tracking-wider uppercase text-sm">
+                Publishing & Release Gates
+              </h2>
+              <p className="text-[10px] text-slate-500 font-sans">
+                Author → Validate → Snapshot → Publish pipeline.
+              </p>
+            </div>
           </div>
         </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={runValidation}
-            disabled={validating}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-[#806f47]/30 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${validating ? 'animate-spin' : ''}`} />
-            <span>Re-validate</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowPublishModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold border border-amber-400/50 shadow-[0_0_15px_rgba(217,119,6,0.3)] transition-all cursor-pointer"
-          >
-            <UploadCloud className="w-4 h-4" />
-            <span>Create Release Snapshot</span>
-          </button>
-        </div>
-      </div>
 
       {/* ── Validation Gate Status Banner ───────────────── */}
       <div className="rounded-xl border border-[#806f47]/20 bg-[#0a1120] p-4 space-y-3">
@@ -378,6 +416,7 @@ export const PublishManagerPanel: React.FC = () => {
           </form>
         </div>
       )}
+      </div>
     </div>
   );
 };
