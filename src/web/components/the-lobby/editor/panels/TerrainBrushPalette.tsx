@@ -11,6 +11,9 @@ import {
   Shuffle,
   Droplets,
   Paintbrush,
+  RotateCw,
+  RotateCcw,
+  Compass,
 } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
 import { ensureMapHasStudioTilesets, DEFAULT_STUDIO_TILESETS } from '@/shared/game/studioTilesetBootstrap';
@@ -44,6 +47,10 @@ export const TerrainBrushPalette: React.FC = () => {
   const setSplatOpacity = useEditorStore((s) => s.setSplatOpacity);
   const splatScatter = useEditorStore((s) => s.splatScatter);
   const setSplatScatter = useEditorStore((s) => s.setSplatScatter);
+  const brushRotation = useEditorStore((s) => s.brushRotation || 0);
+  const setBrushRotation = useEditorStore((s) => s.setBrushRotation);
+  const stampScale = useEditorStore((s) => s.stampScale || 1);
+  const setStampScale = useEditorStore((s) => s.setStampScale);
   const splatRotationRandomize = useEditorStore((s) => s.splatRotationRandomize);
   const setSplatRotationRandomize = useEditorStore((s) => s.setSplatRotationRandomize);
   const showToast = useGameStore((s) => s.showToast);
@@ -277,10 +284,10 @@ export const TerrainBrushPalette: React.FC = () => {
           <span className="text-[9px] text-foreground font-bold w-8 text-right">{Math.round(splatScatter * 100)}%</span>
         </div>
 
-        {/* Rotation Randomize */}
-        <label className="flex items-center gap-2 cursor-pointer">
-          <span className="text-[9px] text-muted-foreground w-12 shrink-0 flex items-center gap-1">
-            <Shuffle className="w-3 h-3" /> Rotate
+        {/* Rotation Mode */}
+        <div className="flex items-center justify-between">
+          <span className="text-[9px] text-muted-foreground flex items-center gap-1">
+            <Shuffle className="w-3 h-3 text-primary/70" /> Rotation
           </span>
           <button
             type="button"
@@ -292,6 +299,7 @@ export const TerrainBrushPalette: React.FC = () => {
               relative w-7 h-4 rounded-full transition-colors cursor-pointer
               ${splatRotationRandomize ? 'bg-primary' : 'bg-border/60'}
             `}
+            title={splatRotationRandomize ? 'Random particle rotation enabled' : 'Fixed particle angle'}
           >
             <span
               className={`
@@ -300,10 +308,93 @@ export const TerrainBrushPalette: React.FC = () => {
               `}
             />
           </button>
-          <span className="text-[9px] text-muted-foreground">
-            {splatRotationRandomize ? 'Random' : 'Fixed'}
-          </span>
-        </label>
+        </div>
+
+        {/* Fixed Angle & Dial (when random is off) */}
+        {!splatRotationRandomize && (
+          <div className="flex flex-col gap-1.5 pt-1 border-t border-border/10">
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] text-muted-foreground w-12 shrink-0 flex items-center gap-1">
+                <Compass className="w-3 h-3" /> Angle
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={360}
+                step={5}
+                value={brushRotation}
+                onChange={(e) => setBrushRotation(parseInt(e.target.value))}
+                className="flex-1 accent-primary h-1 cursor-pointer"
+              />
+              <span className="text-[9px] text-foreground font-bold w-8 text-right">{brushRotation}°</span>
+            </div>
+
+            {/* Step rotation buttons */}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  soundSynth?.playUiClick?.();
+                  setBrushRotation(((brushRotation - 90) % 360 + 360) % 360);
+                }}
+                className="flex-1 flex items-center justify-center gap-0.5 py-1 rounded bg-[#0b1626] border border-border/30 hover:border-primary/40 text-[9px] font-bold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                title="Rotate -90° (Shift+R)"
+              >
+                <RotateCcw className="w-2.5 h-2.5" /> -90°
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  soundSynth?.playUiClick?.();
+                  setBrushRotation(((brushRotation + 90) % 360 + 360) % 360);
+                }}
+                className="flex-1 flex items-center justify-center gap-0.5 py-1 rounded bg-[#0b1626] border border-border/30 hover:border-primary/40 text-[9px] font-bold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                title="Rotate +90° (R)"
+              >
+                <RotateCw className="w-2.5 h-2.5" /> +90°
+              </button>
+              {[0, 45, 180, 270].map((deg) => (
+                <button
+                  key={deg}
+                  type="button"
+                  onClick={() => {
+                    soundSynth?.playUiClick?.();
+                    setBrushRotation(deg);
+                  }}
+                  className={`px-1.5 py-1 rounded border text-[9px] font-bold transition-colors cursor-pointer ${
+                    brushRotation === deg
+                      ? 'bg-primary/20 border-primary text-primary'
+                      : 'bg-[#0b1626] border-border/30 text-muted-foreground hover:text-foreground'
+                  }`}
+                  title={`Set angle to ${deg}°`}
+                >
+                  {deg}°
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Scale Modifier */}
+        <div className="flex items-center gap-2 pt-1 border-t border-border/10">
+          <span className="text-[9px] text-muted-foreground w-12 shrink-0">Scale</span>
+          <input
+            type="range"
+            min={50}
+            max={250}
+            step={10}
+            value={Math.round(stampScale * 100)}
+            onChange={(e) => setStampScale(parseInt(e.target.value) / 100)}
+            className="flex-1 accent-primary h-1 cursor-pointer"
+          />
+          <span className="text-[9px] text-foreground font-bold w-8 text-right">{Math.round(stampScale * 100)}%</span>
+        </div>
+
+        {/* Shortcut hint */}
+        <div className="text-[8.5px] text-muted-foreground/80 bg-black/30 rounded px-1.5 py-1 border border-border/10 flex items-center justify-between">
+          <span>Rotate: <strong className="text-primary font-mono">[R]</strong> (+90°) / <strong className="text-primary font-mono">[Shift+R]</strong></span>
+          <span>Fine: <strong className="text-primary font-mono">[ / ]</strong> (15°)</span>
+        </div>
       </div>
 
       {/* ── Quick Terrain Presets ── */}

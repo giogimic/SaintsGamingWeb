@@ -2427,6 +2427,21 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     mapHeight,
   ]);
 
+  // Studio Brush / Splat / Stamp Rotation Event Listener
+  useEffect(() => {
+    const handleRotateBrush = (e: Event) => {
+      const custom = e as CustomEvent<{ step: number }>;
+      const step = custom.detail?.step || 90;
+      const current = useEditorStore.getState().brushRotation || 0;
+      const next = ((current + step) % 360 + 360) % 360;
+      useEditorStore.getState().setBrushRotation(next);
+      soundSynth?.playUiClick?.();
+    };
+
+    window.addEventListener('studio_rotate_brush', handleRotateBrush);
+    return () => window.removeEventListener('studio_rotate_brush', handleRotateBrush);
+  }, []);
+
   // Keyboard WASD / interact / auto-walk loop — playtest only (editor runtime keeps sim dormant)
   useEffect(() => {
     if (isDevEditorOpen) return;

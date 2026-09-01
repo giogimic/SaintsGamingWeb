@@ -1,3 +1,10 @@
+# 2.1.614
+- **Global Camera & View Settings Window, Object/Splat Rotation Decoupling & In-Game Camera Controls**:
+  - **Decoupled Object Rotation from Viewport Orbit (`BabylonEngine.ts`, `GameCanvasBabylon.tsx`)**: Reassigned `KeyR` / `Shift+R` to rotate active brush stamps/splats by 90° and `[` / `]` for 15° fine rotation without pitching or rotating the camera. Added `Shift+MouseWheel` rotation over canvas and isolated camera orbiting strictly to Right-Click Drag / Middle-Click Drag.
+  - **Dedicated Camera & View Settings Dock (`CameraSettingsPanel.tsx`)**: Built a full-featured studio floating window with tabs for **Studio Camera** (projection mode, view angle presets: Isometric 45°, Top-Down 90°, Front South, Side East/West, Free Orbit 3D, FOV, orbit/pan sensitivity, damping, and cursor-anchored zoom), **Player Camera Defaults** (camera styles, follow spring smoothness, border clamping, vignette), and **Object Transforms**.
+  - **Splat & Terrain Rotation Suite (`TerrainBrushPalette.tsx`)**: Integrated angle slider (0°–360°), step rotation buttons (`+90°`, `-90°`, `+45°`, `-45°`, `0°`, `90°`, `180°`, `270°`), stamp scale slider (50%–250%), randomize rotation toggle, and shortcut hints.
+  - **In-Game Camera Tab (`GameOptionsMenu.tsx`)**: Added a dedicated `Camera & View` tab to player in-game options menu for configuring player camera style, follow smoothness, border clamping, and cinematic vignette with browser profile persistence.
+
 # 2.1.613
 - **Unconstrained Canvas Pop-Out, 3D Splat Material Grouping & Particle Spray Engine**:
   - **Unconstrained Pop-Out Canvas (`TilesetPicker.tsx`)**: Portaled the detached tileset canvas directly to `document.body` via React Portal, completely removing parent window transform and overflow scroll constraints so creators can move the popped-out canvas anywhere across the entire workspace.

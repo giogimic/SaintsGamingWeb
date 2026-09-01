@@ -428,6 +428,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem label="Fit Map to View" shortcut="Home" icon={Maximize2} onClick={() => { window.dispatchEvent(new CustomEvent('studio_fit_map')); }} />
             <MenuItem divider />
             <MenuSectionLabel label="Tools" />
+            <MenuItem label="Camera & View Settings..." icon={Camera} onClick={() => openPanel('camera')} />
             <MenuItem label={`Snap to Grid: ${useEditorStore.getState().snapToGrid ? 'ON' : 'OFF'}`} icon={Grid3X3} onClick={() => { const snap = useEditorStore.getState().snapToGrid; useEditorStore.getState().setSnapToGrid(!snap); showToast(`Snap to Grid: ${!snap ? 'ON' : 'OFF'}`); }} />
             <MenuItem label="Diagnostics & Problems" icon={AlertCircle} onClick={() => openPanel('problems')} />
             <MenuItem label="Rule Debugger" icon={Bug} onClick={() => window.dispatchEvent(new CustomEvent('studio_open_rule_debugger'))} />
@@ -479,6 +480,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
 
           {/* ── TOOLS ── */}
           <TopLevelMenu id="tools" label="Tools">
+            <MenuItem label="Camera & View Settings" icon={Camera} onClick={() => openPanel('camera')} />
             <MenuItem label="Gameplay & Combat Hub" icon={Activity} onClick={() => openPanel('gameplay')} />
             <MenuItem label="Simulation Presets" icon={Activity} onClick={() => openPanel('simulation')} />
             <MenuItem divider />

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../store';
-import { X, Monitor, Volume2, Gamepad2, Settings2, Layout, Sliders, LogOut, Check, RotateCcw, Sparkles, LifeBuoy, Hammer, Palette } from 'lucide-react';
+import { X, Monitor, Volume2, Gamepad2, Settings2, Layout, Sliders, LogOut, Check, RotateCcw, Sparkles, LifeBuoy, Hammer, Palette, Camera } from 'lucide-react';
 import { BUILTIN_HUD_PRESETS } from './default-presets';
 import { HUD_THEME_LIST, getHudTheme } from './hud-themes';
 import { soundSynth } from '@/engine/sound-synth';
@@ -20,7 +20,7 @@ interface GameOptionsMenuProps {
   onToggleDevEditor: () => void;
 }
 
-type TabType = 'GAME' | 'GRAPHICS' | 'AUDIO' | 'CONTROLS' | 'INTERFACE' | 'GAMEPLAY';
+type TabType = 'GAME' | 'CAMERA' | 'GRAPHICS' | 'AUDIO' | 'CONTROLS' | 'INTERFACE' | 'GAMEPLAY';
 
 export default function GameOptionsMenu({
   isOpen,
@@ -152,6 +152,47 @@ export default function GameOptionsMenu({
   const [autoAcceptFriendParty, setAutoAcceptFriendParty] = useState(false);
   const [combatAutoTarget, setCombatAutoTarget] = useState(true);
 
+  // Player In-Game Camera Settings
+  const [inGameCameraStyle, setInGameCameraStyle] = useState<'isometric' | 'follow45' | 'topdown' | 'free'>('isometric');
+  const [inGameFollowSmoothing, setInGameFollowSmoothing] = useState(35);
+  const [inGameBorderClamping, setInGameBorderClamping] = useState(true);
+  const [inGameVignette, setInGameVignette] = useState(true);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('saints_camera_settings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.playerCameraStyle) setInGameCameraStyle(parsed.playerCameraStyle);
+        if (parsed.followSmoothing) setInGameFollowSmoothing(parsed.followSmoothing);
+        if (parsed.borderClamping !== undefined) setInGameBorderClamping(parsed.borderClamping);
+        if (parsed.vignetteEnabled !== undefined) setInGameVignette(parsed.vignetteEnabled);
+      }
+    } catch {}
+  }, []);
+
+  const saveInGameCamera = (style: any, smooth: number, clamp: boolean, vig: boolean) => {
+    try {
+      const saved = localStorage.getItem('saints_camera_settings') || '{}';
+      const parsed = JSON.parse(saved);
+      parsed.playerCameraStyle = style;
+      parsed.followSmoothing = smooth;
+      parsed.borderClamping = clamp;
+      parsed.vignetteEnabled = vig;
+      localStorage.setItem('saints_camera_settings', JSON.stringify(parsed));
+      window.dispatchEvent(
+        new CustomEvent('studio_update_camera_settings', {
+          detail: {
+            settings: {
+              playerFollowSmoothing: smooth / 100,
+              vignetteEnabled: vig,
+            },
+          },
+        })
+      );
+    } catch {}
+  };
+
   const enterViewfinderEdit = () => {
     setIsEditingInterface(true);
     onClose(); // Auto-close options so the HUD is immediately editable
@@ -161,6 +202,7 @@ export default function GameOptionsMenu({
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
     { id: 'GAME', label: 'Game', icon: <Settings2 className="w-5 h-5" /> },
+    { id: 'CAMERA', label: 'Camera & View', icon: <Camera className="w-5 h-5" /> },
     { id: 'GRAPHICS', label: 'Graphics', icon: <Monitor className="w-5 h-5" /> },
     { id: 'AUDIO', label: 'Audio', icon: <Volume2 className="w-5 h-5" /> },
     { id: 'CONTROLS', label: 'Controls', icon: <Gamepad2 className="w-5 h-5" /> },
@@ -274,6 +316,111 @@ export default function GameOptionsMenu({
                     >
                       {isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
                     </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'CAMERA' && (
+              <div className="space-y-6">
+                {/* Camera Style */}
+                <div className="rounded-3xl border border-[#22d3ee]/20 bg-black/40 p-4 sm:p-6 shadow-inner space-y-4">
+                  <h4 className="text-sm font-extrabold uppercase tracking-widest text-cyan-200/50">Camera Perspective</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { id: 'isometric', label: 'Classic 2.5D Isometric', desc: 'Standard angled top-down perspective' },
+                      { id: 'follow45', label: 'Follow Perspective', desc: 'Slightly closer angled view' },
+                      { id: 'topdown', label: 'Classic Top-Down', desc: 'Direct 90° overhead angle' },
+                      { id: 'free', label: 'Free Orbit 3D', desc: 'Unlocked camera rotation' },
+                    ].map((style) => {
+                      const isSelected = inGameCameraStyle === style.id;
+                      return (
+                        <button
+                          key={style.id}
+                          type="button"
+                          onClick={() => {
+                            soundSynth?.playUiClick?.();
+                            setInGameCameraStyle(style.id as any);
+                            saveInGameCamera(style.id, inGameFollowSmoothing, inGameBorderClamping, inGameVignette);
+                            showToast(`Camera style set to: ${style.label}`);
+                          }}
+                          className={`p-3 rounded-2xl text-left border transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-cyan-500/20 border-cyan-400 text-cyan-50 shadow-[0_0_12px_rgba(34,211,238,0.2)]'
+                              : 'bg-black/30 border-white/10 text-slate-400 hover:text-cyan-100 hover:border-cyan-400/40'
+                          }`}
+                        >
+                          <div className="font-extrabold text-sm flex items-center justify-between">
+                            <span>{style.label}</span>
+                            {isSelected && <Check className="w-4 h-4 text-cyan-300" />}
+                          </div>
+                          <div className="text-xs text-slate-400 mt-0.5">{style.desc}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Follow Dynamics & Smoothness */}
+                <div className="rounded-3xl border border-[#22d3ee]/20 bg-black/40 p-4 sm:p-6 shadow-inner space-y-4">
+                  <h4 className="text-sm font-extrabold uppercase tracking-widest text-cyan-200/50">Follow & Motion Dynamics</h4>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-cyan-50">Camera Follow Smoothness</span>
+                      <span className="font-mono text-xs font-bold text-cyan-300">{inGameFollowSmoothing}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={10}
+                      max={80}
+                      step={5}
+                      value={inGameFollowSmoothing}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value);
+                        setInGameFollowSmoothing(v);
+                        saveInGameCamera(inGameCameraStyle, v, inGameBorderClamping, inGameVignette);
+                      }}
+                      className="w-full accent-cyan-400 h-1.5 cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[10px] text-slate-500">
+                      <span>Snappy & Tight</span>
+                      <span>Cinematic Loose Spring</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-bold text-cyan-50">Map Edge Clamping</div>
+                      <div className="text-xs text-slate-400">Keep camera focused within world boundaries.</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={inGameBorderClamping}
+                      onChange={(e) => {
+                        const v = e.target.checked;
+                        setInGameBorderClamping(v);
+                        saveInGameCamera(inGameCameraStyle, inGameFollowSmoothing, v, inGameVignette);
+                      }}
+                      className="h-5 w-5 rounded accent-cyan-400 cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-bold text-cyan-50">Cinematic Vignette</div>
+                      <div className="text-xs text-slate-400">Subtle edge darkening around game viewport.</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={inGameVignette}
+                      onChange={(e) => {
+                        const v = e.target.checked;
+                        setInGameVignette(v);
+                        saveInGameCamera(inGameCameraStyle, inGameFollowSmoothing, inGameBorderClamping, v);
+                      }}
+                      className="h-5 w-5 rounded accent-cyan-400 cursor-pointer"
+                    />
                   </div>
                 </div>
               </div>
