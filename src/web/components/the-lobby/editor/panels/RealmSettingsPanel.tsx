@@ -353,6 +353,39 @@ export function RealmSettingsPanel() {
                       className="accent-primary"
                     />
                   </label>
+
+                  {/* Sun Shafts / Volumetric Light Rays */}
+                  <div className="space-y-1.5 pt-1 border-t border-border/10">
+                    <label className="flex items-center justify-between p-2 rounded bg-[#060e1c] border border-border/20 cursor-pointer text-[10px]">
+                      <div>
+                        <div className="font-bold">Sun Shafts & Volumetric Light Rays</div>
+                        <div className="text-[8.5px] text-muted-foreground">Atmospheric celestial godrays passing terrain</div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={!!settings.enableSunShafts}
+                        onChange={(e) => setSettings({ ...settings, enableSunShafts: e.target.checked })}
+                        className="accent-primary"
+                      />
+                    </label>
+                    {settings.enableSunShafts && (
+                      <div className="space-y-1 p-2 rounded bg-[#060e1c]/60 border border-border/10">
+                        <div className="flex items-center justify-between text-[9px]">
+                          <span className="text-muted-foreground">Sun Shaft Intensity</span>
+                          <span className="text-primary font-bold">{settings.sunShaftIntensity || 40}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={10}
+                          max={100}
+                          step={5}
+                          value={settings.sunShaftIntensity || 40}
+                          onChange={(e) => setSettings({ ...settings, sunShaftIntensity: parseInt(e.target.value) })}
+                          className="w-full accent-primary h-1 cursor-pointer"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -915,6 +948,38 @@ export function RealmSettingsPanel() {
                   </div>
                 )}
               </div>
+
+              {/* Color Grading & Tone Palette */}
+              <div className="space-y-2 pt-2 border-t border-border/10">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-muted-foreground">Color Grading & Film Tone</span>
+                  <span className="text-primary font-bold uppercase text-[9px]">{settings.colorGradingPreset || 'neutral'}</span>
+                </div>
+                <div className="grid grid-cols-5 gap-1">
+                  {[
+                    { id: 'neutral', label: 'Neutral', desc: 'True natural palette' },
+                    { id: 'warm_amber', label: 'Warm', desc: 'Golden retro glow' },
+                    { id: 'cool_emerald', label: 'Emerald', desc: 'Lush forest tones' },
+                    { id: 'vivid_retro', label: 'Vivid', desc: 'High saturation vibrancy' },
+                    { id: 'classic_sepia', label: 'Sepia', desc: 'Nostalgic parchment tint' },
+                  ].map((cg) => (
+                    <button
+                      key={cg.id}
+                      type="button"
+                      onClick={() => setSettings({ ...settings, colorGradingPreset: cg.id as any })}
+                      title={cg.desc}
+                      className={`py-1.5 px-1 rounded text-[8.5px] font-bold transition-colors cursor-pointer text-center truncate ${
+                        (settings.colorGradingPreset || 'neutral') === cg.id
+                          ? 'bg-primary/20 border border-primary text-primary'
+                          : 'bg-[#060e1c] border border-border/20 text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {cg.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* 3D Ground Items & Footsteps */}
               <div className="space-y-2 pt-2 border-t border-border/10">
                 <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">

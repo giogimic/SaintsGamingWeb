@@ -1,3 +1,8 @@
+# 2.1.628
+- **Sunshaft Godrays, Volumetric Light Rays & Film Tone Color Grading**:
+  - **Sun Shafts & Volumetric Rays (`realmSettings.ts`, `RealmSettingsPanel.tsx`)**: Added toggle and intensity slider (`10%` to `100%`) for atmospheric celestial godrays passing terrain elevations.
+  - **Color Grading & Film Tone Presets (`realmSettings.ts`, `RealmSettingsPanel.tsx`)**: Added curated color grading tone palettes (`Neutral`, `Warm Amber`, `Cool Emerald`, `Vivid Retro`, `Classic Sepia`).
+
 # 2.1.627
 - **Shadow Darkness Opacity, Drifting Cloud Shadows & 3D Lighting Enhancements**:
   - **Shadow Darkness Opacity (`realmSettings.ts`, `RealmSettingsPanel.tsx`, `BabylonEngine.ts`)**: Added real-time slider for shadow map opacity and darkness depth (`10%` Soft to `90%` Dramatic, default `45%`).
