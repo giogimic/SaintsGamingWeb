@@ -68,7 +68,7 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (isDragging) {
       const newX = Math.max(0, Math.min(window.innerWidth - 100, e.clientX - dragOffset.current.x));
-      const newY = Math.max(0, Math.min(window.innerHeight - 50, e.clientY - dragOffset.current.y));
+      const newY = Math.max(40, Math.min(window.innerHeight - 40, e.clientY - dragOffset.current.y));
       dragPosRef.current = { x: newX, y: newY };
       // GPU-composited transform — no React re-render, no layout reflow
       if (panelRef.current) {
@@ -119,9 +119,9 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
         touchAction: 'none',
       }}
       className={`
-        sg-glass pointer-events-auto relative bg-[#050b14]/90 rounded-lg border flex flex-col overflow-hidden font-sans
+        sg-glass pointer-events-auto relative bg-[#050b14]/80 backdrop-blur-xl rounded-xl border flex flex-col overflow-hidden font-sans
         transition-shadow duration-200 shadow-2xl
-        ${isActive ? 'border-[#cbb26a]/60 shadow-[0_0_20px_rgba(203,178,106,0.1)]' : 'border-[#806f47]/30'}
+        ${isActive ? 'border-primary/40 shadow-[0_0_30px_rgba(203,178,106,0.15)]' : 'border-border/50'}
       `}
     >
       {/* Compact Header / Drag Handle */}
@@ -129,15 +129,15 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
         onPointerDown={handlePointerDown}
         onDoubleClick={handleDoubleClick}
         className={`
-          flex items-center justify-between px-2 py-1 cursor-move
+          flex items-center justify-between px-3 py-1.5 cursor-move
           bg-gradient-to-r select-none
-          ${isActive ? 'from-[#162238] via-[#0b1320] to-[#162238] border-b border-[#cbb26a]/30' : 'from-[#0b1320] to-[#050b14] border-b border-[#806f47]/20'}
+          ${isActive ? 'from-primary/10 via-transparent to-primary/5 border-b border-primary/20' : 'from-card/50 to-transparent border-b border-border/40'}
         `}
         title={blurb || undefined}
       >
-        <div className="flex min-w-0 items-center gap-1.5 pointer-events-none">
-          {icon && <span className="text-[#cbb26a] [&>svg]:w-3 [&>svg]:h-3">{icon}</span>}
-          <span className={`font-semibold text-[10px] tracking-wide uppercase font-mono truncate ${isActive ? 'text-white' : 'text-slate-400'}`}>
+        <div className="flex min-w-0 items-center gap-2 pointer-events-none">
+          {icon && <span className="text-primary [&>svg]:w-3.5 [&>svg]:h-3.5">{icon}</span>}
+          <span className={`font-semibold text-[11px] tracking-widest uppercase font-mono truncate ${isActive ? 'sg-text-gradient' : 'text-muted-foreground'}`}>
             {propsTitle || title}
           </span>
         </div>

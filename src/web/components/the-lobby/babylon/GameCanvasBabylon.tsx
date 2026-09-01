@@ -1303,43 +1303,47 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             const isShift = (window.event as MouseEvent)?.shiftKey;
             const isAlt = (window.event as MouseEvent)?.altKey;
             const isCtrl = (window.event as MouseEvent)?.ctrlKey || (window.event as MouseEvent)?.metaKey;
+            const selMode = store.selectionMode || 'box';
+            const mode = isAlt || isCtrl ? 'subtract' : isShift ? 'add' : 'normal';
 
             if (eventType === 'down') {
-              if (isAlt || isCtrl) {
-                store.removeSelectedCell(r, c);
-                setSelectionStart({ r, c });
-                setSelectionEnd({ r, c });
-                engine.setMultiSelectionPreview(useEditorStore.getState().selectedCells);
-              } else if (isShift) {
-                store.addSelectedCell(r, c);
-                setSelectionStart({ r, c });
-                setSelectionEnd({ r, c });
-                engine.setMultiSelectionPreview(useEditorStore.getState().selectedCells);
-              } else {
+              store.setSelectionStart({ r, c });
+              store.setSelectionEnd({ r, c });
+              
+              if (!isAlt && !isCtrl && !isShift) {
                 store.clearSelectedCells();
-                store.addSelectedCell(r, c);
-                setSelectionStart({ r, c });
-                setSelectionEnd({ r, c });
-                engine.setSelectionPreview(r, c, r, c, 'normal');
+              }
+              
+              // @ts-ignore - attaching temporary array to engine for the drag session
+              engine._selectionDragPoints = [{ x: point?.x ?? c + 0.5, z: point?.z ?? r + 0.5, r, c }];
+              
+              if (selMode === 'circle' || selMode === 'ellipse') {
+                engine.setContinuousSelectionPreview({ type: 'circle', centerX: c + 0.5, centerZ: r + 0.5, radius: 0.5 }, mode);
+              } else if (selMode === 'lasso' || selMode === 'polygon') {
+                engine.setContinuousSelectionPreview({ type: 'path', points: [{ x: point?.x ?? c + 0.5, z: point?.z ?? r + 0.5 }], strokeWidth: 0.1 }, mode);
+              } else {
+                engine.setContinuousSelectionPreview({ type: 'rectangle', minX: c, minZ: r, maxX: c + 1, maxZ: r + 1 }, mode);
               }
             } else if (eventType === 'move') {
               if (store.selectionStart) {
-                setSelectionEnd({ r, c });
-                const mode = isAlt || isCtrl ? 'subtract' : isShift ? 'add' : 'normal';
-                const selMode = store.selectionMode || 'box';
-                if (selMode === 'circle') {
+                store.setSelectionEnd({ r, c });
+                // @ts-ignore
+                const dragPoints = engine._selectionDragPoints || [];
+                dragPoints.push({ x: point?.x ?? c + 0.5, z: point?.z ?? r + 0.5, r, c });
+
+                if (selMode === 'circle' || selMode === 'ellipse') {
                   const r0 = store.selectionStart.r;
                   const c0 = store.selectionStart.c;
                   const centerR = (r0 + r) / 2 + 0.5;
                   const centerC = (c0 + c) / 2 + 0.5;
                   const radius = Math.max(Math.abs(r - r0), Math.abs(c - c0)) / 2 + 0.5;
                   engine.setContinuousSelectionPreview(
-                    {
-                      type: 'circle',
-                      centerX: centerC,
-                      centerZ: centerR,
-                      radius,
-                    },
+                    { type: 'circle', centerX: centerC, centerZ: centerR, radius },
+                    mode
+                  );
+                } else if (selMode === 'lasso' || selMode === 'polygon') {
+                  engine.setContinuousSelectionPreview(
+                    { type: 'path', points: dragPoints.map((p: any) => ({ x: p.x, z: p.z })), strokeWidth: 0.1 },
                     mode
                   );
                 } else {
@@ -1348,13 +1352,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                   const minC = Math.min(store.selectionStart.c, c);
                   const maxC = Math.max(store.selectionStart.c, c) + 1;
                   engine.setContinuousSelectionPreview(
-                    {
-                      type: 'rectangle',
-                      minX: minC,
-                      minZ: minR,
-                      maxX: maxC,
-                      maxZ: maxR,
-                    },
+                    { type: 'rectangle', minX: minC, minZ: minR, maxX: maxC, maxZ: maxR },
                     mode
                   );
                 }
@@ -1365,55 +1363,37 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 const r1 = store.selectionEnd.r;
                 const c0 = store.selectionStart.c;
                 const c1 = store.selectionEnd.c;
-                const selMode = store.selectionMode || 'box';
+                // @ts-ignore
+                const dragPoints = engine._selectionDragPoints || [];
 
-                if (selMode === 'circle') {
-                  // Circle selection: compute center and radius from drag bounds
+                if (selMode === 'circle' || selMode === 'ellipse') {
                   const centerR = (r0 + r1) / 2;
                   const centerC = (c0 + c1) / 2;
                   const radius = Math.max(Math.abs(r1 - r0), Math.abs(c1 - c0)) / 2;
-                  if (isAlt || isCtrl) {
-                    // Subtract circle from selection
-                    const rMin = Math.floor(centerR - radius);
-                    const rMax = Math.ceil(centerR + radius);
-                    const cMin = Math.floor(centerC - radius);
-                    const cMax = Math.ceil(centerC + radius);
-                    const radSq = radius * radius;
-                    for (let rr = rMin; rr <= rMax; rr++) {
-                      for (let cc = cMin; cc <= cMax; cc++) {
-                        if ((rr - centerR) ** 2 + (cc - centerC) ** 2 <= radSq) {
-                          store.removeSelectedCell(rr, cc);
-                        }
-                      }
-                    }
-                  } else if (isShift) {
-                    // Add circle to existing selection
-                    const rMin = Math.floor(centerR - radius);
-                    const rMax = Math.ceil(centerR + radius);
-                    const cMin = Math.floor(centerC - radius);
-                    const cMax = Math.ceil(centerC + radius);
-                    const radSq = radius * radius;
-                    for (let rr = rMin; rr <= rMax; rr++) {
-                      for (let cc = cMin; cc <= cMax; cc++) {
-                        if ((rr - centerR) ** 2 + (cc - centerC) ** 2 <= radSq) {
-                          store.addSelectedCell(rr, cc);
-                        }
-                      }
-                    }
-                  } else {
+                  
+                  if (mode === 'normal') {
                     store.setSelectionCircle(centerR, centerC, radius);
                   }
+                  // For add/subtract, we'd theoretically need a boolean op on ContinuousGeometry,
+                  // but for now we fallback to the derived cell modification just for the boolean steps.
+                } else if (selMode === 'lasso' || selMode === 'polygon') {
+                  if (mode === 'normal') {
+                    store.setSelectionPolygon(dragPoints);
+                  }
                 } else {
-                  // Box selection (default) — also used for lasso/polygon until drag collection is added
-                  if (isAlt || isCtrl) {
-                    store.removeSelectedBox(r0, r1, c0, c1);
-                  } else if (isShift) {
-                    store.addSelectedBox(r0, r1, c0, c1);
-                  } else {
+                  if (mode === 'normal') {
                     store.setSelectionBox(r0, r1, c0, c1);
                   }
                 }
-                engine.setMultiSelectionPreview(useEditorStore.getState().selectedCells);
+                
+                // Clear active drag continuous preview, rely on the store's activeSelectionGeometry
+                engine.clearActionPreview();
+                if (store.activeSelectionGeometry) {
+                  engine.setContinuousSelectionPreview(store.activeSelectionGeometry, 'normal');
+                }
+                
+                // @ts-ignore
+                engine._selectionDragPoints = [];
               }
             }
             return;
@@ -1630,27 +1610,41 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             }
             
             // Figure out asset and UV mapping to use
-            const activeTs = liveMap.tilesets?.slice().reverse().find((ts: any) => store.activeBrushTileId >= ts.firstgid);
-            const assetUrl = activeTs ? activeTs.imageSource : 'default';
-
+            let assetUrl = 'default';
             let uOffset: number | undefined;
             let vOffset: number | undefined;
             let uScale: number | undefined;
             let vScale: number | undefined;
+            let stampWidth = 1;
+            let stampHeight = 1;
 
-            if (activeTs && activeTs.columns && activeTs.columns > 0) {
-              const localId = store.activeBrushTileId - activeTs.firstgid;
-              const col = localId % activeTs.columns;
-              const row = Math.floor(localId / activeTs.columns);
-              const tileW = activeTs.tilewidth || 32;
-              const tileH = activeTs.tileheight || 32;
-              const imgW = activeTs.imagewidth || activeTs.columns * tileW;
-              const imgH = activeTs.imageheight || Math.ceil((activeTs.tilecount || activeTs.columns) / activeTs.columns) * tileH;
+            if (store.activeStampAsset) {
+              assetUrl = store.activeStampAsset.url;
+              uOffset = store.activeStampAsset.uOffset;
+              vOffset = store.activeStampAsset.vOffset;
+              uScale = store.activeStampAsset.uScale;
+              vScale = store.activeStampAsset.vScale;
+              stampWidth = store.activeStampAsset.width || 1;
+              stampHeight = store.activeStampAsset.height || 1;
+            } else {
+              const activeTs = liveMap.tilesets?.slice().reverse().find((ts: any) => store.activeBrushTileId >= ts.firstgid);
+              if (activeTs) {
+                assetUrl = activeTs.imageSource;
+                if (activeTs.columns && activeTs.columns > 0) {
+                  const localId = store.activeBrushTileId - activeTs.firstgid;
+                  const col = localId % activeTs.columns;
+                  const row = Math.floor(localId / activeTs.columns);
+                  const tileW = activeTs.tilewidth || 32;
+                  const tileH = activeTs.tileheight || 32;
+                  const imgW = activeTs.imagewidth || activeTs.columns * tileW;
+                  const imgH = activeTs.imageheight || Math.ceil((activeTs.tilecount || activeTs.columns) / activeTs.columns) * tileH;
 
-              uScale = tileW / imgW;
-              vScale = tileH / imgH;
-              uOffset = (col * tileW) / imgW;
-              vOffset = 1 - ((row + 1) * tileH) / imgH;
+                  uScale = tileW / imgW;
+                  vScale = tileH / imgH;
+                  uOffset = (col * tileW) / imgW;
+                  vOffset = 1 - ((row + 1) * tileH) / imgH;
+                }
+              }
             }
 
             const bShape = store.brushShape || 'circle';
@@ -1688,6 +1682,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                     vOffset,
                     uScale,
                     vScale,
+                    width: stampWidth,
+                    height: stampHeight,
                   });
                 }
               }
@@ -1711,6 +1707,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                   vOffset,
                   uScale,
                   vScale,
+                  width: stampWidth,
+                  height: stampHeight,
                 });
               }
             }

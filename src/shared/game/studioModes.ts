@@ -50,6 +50,7 @@ export type StudioDockId =
   | 'worldevent'
   | 'simulation'
   | 'tileset'
+  | 'tileset_canvas'
   | 'logic'
   | 'publishing'
   | 'maps'
@@ -269,6 +270,10 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   interface: {
     label: 'Interface Designer',
     blurb: 'Game engine UI theme styles, HUD scaling, and in-game widget customizer.',
+  },
+  tileset_canvas: {
+    label: 'Tileset Canvas',
+    blurb: 'Detached tileset image for picking tiles.',
   },
 };
 

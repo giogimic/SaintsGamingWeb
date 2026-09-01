@@ -260,6 +260,8 @@ interface EditorState {
 
   activeBrushTileId: number;
   activeBrushPattern: BrushPattern | null;
+  activeStampAsset: { assetId?: string; url: string; width?: number; height?: number; uOffset?: number; vOffset?: number; uScale?: number; vScale?: number } | null;
+  setActiveStampAsset: (asset: { assetId?: string; url: string; width?: number; height?: number; uOffset?: number; vOffset?: number; uScale?: number; vScale?: number } | null) => void;
   activeLogicTileId: number;
   activeLayerIdx: number;
   activeLayerType: 'grid' | 'paint-splat' | 'free-form' | 'polygon';
@@ -861,6 +863,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 580,
     zIndex: 10,
   },
+  tileset_canvas: {
+    id: 'tileset_canvas',
+    title: 'Tileset Canvas',
+    isOpen: false,
+    isCollapsed: false,
+    x: 400,
+    y: 80,
+    width: 520,
+    height: 480,
+    zIndex: 10,
+  },
 };
 
 
@@ -954,6 +967,11 @@ export const useEditorStore = create<EditorState>()(
         }),
       activeBrushTileId: DEFAULT_STUDIO_GROUND_GID,
       activeBrushPattern: null,
+      activeStampAsset: null,
+      setActiveStampAsset: (asset) =>
+        set((state) => {
+          state.activeStampAsset = asset;
+        }),
       activeLogicTileId: 1,
       activeLayerIdx: 0,
       activeLayerType: 'grid',
@@ -1490,13 +1508,6 @@ export const useEditorStore = create<EditorState>()(
             maxX: c1 + 1,
             maxZ: r1 + 1,
           };
-          const next: Record<string, boolean> = {};
-          for (let r = r0; r <= r1; r++) {
-            for (let c = c0; c <= c1; c++) {
-              next[`${r},${c}`] = true;
-            }
-          }
-          state.selectedCells = next;
           state.selectionStart = { r: r0, c: c0 };
           state.selectionEnd = { r: r1, c: c1 };
         }),
@@ -1508,22 +1519,10 @@ export const useEditorStore = create<EditorState>()(
             centerZ: centerR + 0.5,
             radius,
           };
-          const next: Record<string, boolean> = {};
           const r0 = Math.floor(centerR - radius);
           const r1 = Math.ceil(centerR + radius);
           const c0 = Math.floor(centerC - radius);
           const c1 = Math.ceil(centerC + radius);
-          const radSq = radius * radius;
-          for (let r = r0; r <= r1; r++) {
-            for (let c = c0; c <= c1; c++) {
-              const dr = r - centerR;
-              const dc = c - centerC;
-              if (dr * dr + dc * dc <= radSq) {
-                next[`${r},${c}`] = true;
-              }
-            }
-          }
-          state.selectedCells = next;
           state.selectionStart = { r: r0, c: c0 };
           state.selectionEnd = { r: r1, c: c1 };
         }),
@@ -1542,25 +1541,6 @@ export const useEditorStore = create<EditorState>()(
             if (p.c < minC) minC = p.c;
             if (p.c > maxC) maxC = p.c;
           });
-          const next: Record<string, boolean> = {};
-          const isPointInPoly = (r: number, c: number) => {
-            let inside = false;
-            for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
-              const xi = points[i].c, yi = points[i].r;
-              const xj = points[j].c, yj = points[j].r;
-              const intersect = ((yi > r) !== (yj > r)) && (c < (xj - xi) * (r - yi) / (yj - yi) + xi);
-              if (intersect) inside = !inside;
-            }
-            return inside;
-          };
-          for (let r = Math.floor(minR); r <= Math.ceil(maxR); r++) {
-            for (let c = Math.floor(minC); c <= Math.ceil(maxC); c++) {
-              if (isPointInPoly(r, c)) {
-                next[`${r},${c}`] = true;
-              }
-            }
-          }
-          state.selectedCells = next;
           state.selectionStart = { r: Math.floor(minR), c: Math.floor(minC) };
           state.selectionEnd = { r: Math.ceil(maxR), c: Math.ceil(maxC) };
         }),

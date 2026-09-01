@@ -1852,8 +1852,12 @@ export class BabylonEngine {
               const posX = (p.x - width / 2) * tileSize;
               const posZ = (height / 2 - p.y) * tileSize;
               
+              const baseScale = p.scale || 1;
+              const scaleX = baseScale * (p.width || 1);
+              const scaleY = baseScale * (p.height || 1);
+              
               const matrix = Matrix.Compose(
-                new Vector3(p.scale || 1, p.scale || 1, p.scale || 1),
+                new Vector3(scaleX, scaleY, baseScale),
                 Quaternion.RotationAxis(Vector3.Up(), p.rotation || 0),
                 new Vector3(posX, 0.01 + i * 0.001, posZ) // Slight Y offset to avoid Z-fighting
               );
@@ -1869,8 +1873,13 @@ export class BabylonEngine {
             const posX = (obj.x - width / 2) * tileSize;
             const posZ = (height / 2 - obj.y) * tileSize;
             
+            const baseScale = obj.scale || 1;
+            const w = baseScale * tileSize * (obj.width || 1);
+            const h = baseScale * tileSize * (obj.height || 1);
+            
             const plane = MeshBuilder.CreatePlane(`prop_${obj.id}`, {
-              size: (obj.scale || 1) * tileSize,
+              width: w,
+              height: h,
               sideOrientation: Mesh.DOUBLESIDE,
             }, this.scene);
             
