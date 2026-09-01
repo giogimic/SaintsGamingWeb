@@ -294,27 +294,65 @@ export function RealmSettingsPanel() {
               </div>
 
               {settings.enableShadows !== false && (
-                <div className="pt-2 border-t border-border/10 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground">Shadow Generator Quality</span>
-                    <span className="text-[9px] font-bold text-primary uppercase">{settings.shadowQuality || 'medium'}</span>
+                <div className="pt-2 border-t border-border/10 space-y-3">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground">Shadow Generator Quality</span>
+                      <span className="text-[9px] font-bold text-primary uppercase">{settings.shadowQuality || 'medium'}</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {(['low', 'medium', 'high'] as const).map((q) => (
+                        <button
+                          key={q}
+                          type="button"
+                          onClick={() => setSettings({ ...settings, shadowQuality: q })}
+                          className={`py-1.5 rounded text-[10px] font-bold uppercase transition-colors cursor-pointer ${
+                            (settings.shadowQuality || 'medium') === q
+                              ? 'bg-primary/20 border border-primary text-primary'
+                              : 'bg-[#060e1c] border border-border/20 text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {(['low', 'medium', 'high'] as const).map((q) => (
-                      <button
-                        key={q}
-                        type="button"
-                        onClick={() => setSettings({ ...settings, shadowQuality: q })}
-                        className={`py-1.5 rounded text-[10px] font-bold uppercase transition-colors cursor-pointer ${
-                          (settings.shadowQuality || 'medium') === q
-                            ? 'bg-primary/20 border border-primary text-primary'
-                            : 'bg-[#060e1c] border border-border/20 text-muted-foreground hover:text-foreground'
-                        }`}
-                      >
-                        {q}
-                      </button>
-                    ))}
+
+                  {/* Shadow Darkness Opacity */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="text-muted-foreground">Shadow Darkness Opacity</span>
+                      <span className="text-primary font-bold">{settings.shadowDarkness ?? 45}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={10}
+                      max={90}
+                      step={5}
+                      value={settings.shadowDarkness ?? 45}
+                      onChange={(e) => setSettings({ ...settings, shadowDarkness: parseInt(e.target.value) })}
+                      className="w-full accent-primary h-1 cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[8px] text-muted-foreground">
+                      <span>Soft (10%)</span>
+                      <span>Balanced (45%)</span>
+                      <span>Dramatic (90%)</span>
+                    </div>
                   </div>
+
+                  {/* Cloud Shadow Drift */}
+                  <label className="flex items-center justify-between p-2 rounded bg-[#060e1c] border border-border/20 cursor-pointer text-[10px]">
+                    <div>
+                      <div className="font-bold">Drifting Cloud Shadows</div>
+                      <div className="text-[8.5px] text-muted-foreground">Procedural cloud shadows gliding across landscape</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!settings.enableCloudShadows}
+                      onChange={(e) => setSettings({ ...settings, enableCloudShadows: e.target.checked })}
+                      className="accent-primary"
+                    />
+                  </label>
                 </div>
               )}
             </div>
