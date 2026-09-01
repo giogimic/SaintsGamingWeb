@@ -215,14 +215,24 @@ export const PropLibraryPanel: React.FC<PropLibraryPanelProps> = ({ onOpenSlicer
         </div>
 
         {onOpenSlicer && (
-          <button
-            type="button"
-            onClick={onOpenSlicer}
-            className="px-2.5 py-1 rounded bg-primary/20 hover:bg-primary/30 text-primary border border-primary/50 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <Scissors className="w-3.5 h-3.5" />
-            <span>Cut New Prop</span>
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => onOpenSlicer()}
+              className="px-2.5 py-1 rounded bg-[#0a1628]/60 hover:bg-primary/20 text-muted-foreground hover:text-primary border border-border/40 hover:border-primary/50 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Full Sheet</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpenSlicer()}
+              className="px-2.5 py-1 rounded bg-primary/20 hover:bg-primary/30 text-primary border border-primary/50 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Scissors className="w-3.5 h-3.5" />
+              <span>Cut New Prop</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -357,14 +367,24 @@ export const PropLibraryPanel: React.FC<PropLibraryPanelProps> = ({ onOpenSlicer
               <TreePine className="w-8 h-8 mx-auto mb-2 text-muted-foreground/40" />
               <div>No props found in this category.</div>
               {onOpenSlicer && (
-                <button
-                  type="button"
-                  onClick={onOpenSlicer}
-                  className="mt-3 px-3 py-1.5 rounded bg-primary/20 text-primary border border-primary/40 font-bold cursor-pointer inline-flex items-center gap-1.5"
-                >
-                  <Scissors className="w-3.5 h-3.5" />
-                  <span>Open Sheet Slicer</span>
-                </button>
+                <div className="mt-3 flex items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onOpenSlicer()}
+                    className="px-3 py-1.5 rounded bg-[#0a1628]/60 text-muted-foreground hover:text-primary hover:bg-primary/20 border border-border/40 hover:border-primary/50 font-bold cursor-pointer inline-flex items-center gap-1.5 transition-colors"
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>Use Full Sheet</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onOpenSlicer()}
+                    className="px-3 py-1.5 rounded bg-primary/20 text-primary border border-primary/40 font-bold cursor-pointer inline-flex items-center gap-1.5 transition-colors"
+                  >
+                    <Scissors className="w-3.5 h-3.5" />
+                    <span>Open Sheet Slicer</span>
+                  </button>
+                </div>
               )}
             </div>
           )}

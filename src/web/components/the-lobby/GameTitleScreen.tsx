@@ -408,27 +408,10 @@ export default function GameTitleScreen({
       return;
     }
 
-    if (characters.length === 0) {
-      if (onCreateCharacter) {
-        onCreateCharacter();
-      } else {
-        setGameMode('CHARACTER_CREATOR');
-      }
-      return;
-    }
-
-    if (activeChar) {
-      if (onSelectCharacter) {
-        onSelectCharacter(activeChar.id);
-      } else {
-        setGameMode('EXPLORING');
-      }
+    if (onOpenServerSelect) {
+      onOpenServerSelect();
     } else {
-      if (onOpenCharacterSelect) {
-        onOpenCharacterSelect();
-      } else {
-        setGameMode('CHARACTER_SELECT');
-      }
+      setGameMode('SERVER_SELECT');
     }
   };
 

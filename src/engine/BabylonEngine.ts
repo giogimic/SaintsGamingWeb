@@ -1690,6 +1690,17 @@ export class BabylonEngine {
     if (!this.editorCameraMode) {
       const targetOrtho = 6.0;
       this.updateCameraAspect(targetOrtho);
+
+      // Apply map-specific camera style restrictions
+      const mapCameraStyle = (mapData as any).cameraStyle;
+      const allowCustom = (mapData as any).allowCustomCamera ?? (mapData as any).allowCustomPlayerCamera ?? false;
+      
+      if (mapCameraStyle && !allowCustom) {
+        this.applyPlayerCameraStyle(mapCameraStyle as any);
+      } else {
+        // Apply user's active camera style
+        this.applyPlayerCameraStyle(this.cameraSettings.playerCameraStyle);
+      }
     }
 
     // Rich multi-layer tileset rendering

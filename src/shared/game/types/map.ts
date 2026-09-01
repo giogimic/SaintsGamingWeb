@@ -142,6 +142,8 @@ export interface MapData {
   lightingPreset?: string | null;
   biome?: string | null;
   description?: string | null;
+  cameraStyle?: 'isometric' | 'follow45' | 'topdown' | 'free';
+  allowCameraOverride?: boolean;
   connections?: {
     north?: string | MapConnection;
     south?: string | MapConnection;

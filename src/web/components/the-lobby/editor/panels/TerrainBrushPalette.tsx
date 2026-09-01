@@ -161,14 +161,24 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
         </div>
 
         {onOpenSlicer && (
-          <button
-            type="button"
-            onClick={onOpenSlicer}
-            className="px-2.5 py-1 rounded bg-primary/20 hover:bg-primary/30 text-primary border border-primary/50 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <Scissors className="w-3.5 h-3.5" />
-            <span>Cut from Sheet</span>
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => onOpenSlicer()}
+              className="px-2.5 py-1 rounded bg-[#0a1628]/60 hover:bg-primary/20 text-muted-foreground hover:text-primary border border-border/40 hover:border-primary/50 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Full Sheet</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpenSlicer()}
+              className="px-2.5 py-1 rounded bg-primary/20 hover:bg-primary/30 text-primary border border-primary/50 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Scissors className="w-3.5 h-3.5" />
+              <span>Cut from Sheet</span>
+            </button>
+          </div>
         )}
       </div>
 

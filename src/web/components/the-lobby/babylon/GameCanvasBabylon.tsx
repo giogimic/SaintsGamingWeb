@@ -1715,25 +1715,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               vScale = store.activeStampAsset.vScale;
               stampWidth = store.activeStampAsset.width || 1;
               stampHeight = store.activeStampAsset.height || 1;
-            } else {
-              const activeTs = liveMap.tilesets?.slice().reverse().find((ts: any) => store.activeBrushTileId >= ts.firstgid);
-              if (activeTs) {
-                assetUrl = activeTs.imageSource;
-                if (activeTs.columns && activeTs.columns > 0) {
-                  const localId = store.activeBrushTileId - activeTs.firstgid;
-                  const col = localId % activeTs.columns;
-                  const row = Math.floor(localId / activeTs.columns);
-                  const tileW = activeTs.tilewidth || 32;
-                  const tileH = activeTs.tileheight || 32;
-                  const imgW = activeTs.imagewidth || activeTs.columns * tileW;
-                  const imgH = activeTs.imageheight || Math.ceil((activeTs.tilecount || activeTs.columns) / activeTs.columns) * tileH;
-
-                  uScale = tileW / imgW;
-                  vScale = tileH / imgH;
-                  uOffset = (col * tileW) / imgW;
-                  vOffset = 1 - ((row + 1) * tileH) / imgH;
-                }
-              }
+            } else if (brushMode !== 'erase') {
+              useGameStore.getState().showToast("Please select a Material or Prop from the palette first.");
+              return;
             }
 
             const bShape = store.brushShape || 'circle';
