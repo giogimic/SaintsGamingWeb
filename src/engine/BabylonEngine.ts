@@ -3311,6 +3311,235 @@ export class BabylonEngine {
     this.selectionPreviewMeshes = [];
   }
 
+  private createSelectionBoxMaterial(
+    mode: 'normal' | 'add' | 'subtract',
+    spanW: number,
+    spanH: number
+  ): StandardMaterial {
+    const matName = `hud_selection_box_${mode}_${spanW}x${spanH}`;
+    let mat = this.scene.getMaterialByName(matName) as StandardMaterial | null;
+    if (mat) return mat;
+
+    mat = new StandardMaterial(matName, this.scene);
+    const strokeColor = mode === 'add' ? '#10b981' : mode === 'subtract' ? '#f43f5e' : '#f59e0b';
+    const glassColor = mode === 'add' ? 'rgba(16, 185, 129, 0.20)' : mode === 'subtract' ? 'rgba(244, 63, 94, 0.20)' : 'rgba(245, 158, 11, 0.20)';
+    const cornerColor = '#ffffff';
+
+    const texW = Math.min(1024, Math.max(256, spanW * 64));
+    const texH = Math.min(1024, Math.max(256, spanH * 64));
+    const dt = new DynamicTexture(`${matName}_tex`, { width: texW, height: texH }, this.scene, false);
+    const ctx = dt.getContext();
+
+    ctx.clearRect(0, 0, texW, texH);
+
+    const pad = 4;
+    const innerW = texW - pad * 2;
+    const innerH = texH - pad * 2;
+
+    // 1. Ambient Glass Fill
+    ctx.fillStyle = glassColor;
+    ctx.fillRect(pad, pad, innerW, innerH);
+
+    // 2. Subtle internal grid dividers
+    if (spanW > 1 || spanH > 1) {
+      ctx.save();
+      ctx.strokeStyle = mode === 'add' ? 'rgba(52, 211, 153, 0.25)' : mode === 'subtract' ? 'rgba(251, 113, 133, 0.25)' : 'rgba(251, 191, 36, 0.25)';
+      ctx.lineWidth = 1.5;
+      for (let c = 1; c < spanW; c++) {
+        const x = pad + (c / spanW) * innerW;
+        ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, texH - pad); ctx.stroke();
+      }
+      for (let r = 1; r < spanH; r++) {
+        const y = pad + (r / spanH) * innerH;
+        ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(texW - pad, y); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // 3. Glowing Perimeter Border
+    ctx.save();
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = strokeColor;
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 3.5;
+    ctx.strokeRect(pad, pad, innerW, innerH);
+    ctx.restore();
+
+    // 4. Outer Boundary Corner L-Brackets
+    ctx.save();
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = strokeColor;
+    ctx.strokeStyle = cornerColor;
+    ctx.lineWidth = 4;
+    const bracketLen = Math.min(Math.min(innerW, innerH) * 0.35, 24);
+
+    const minX = pad;
+    const maxX = texW - pad;
+    const minY = pad;
+    const maxY = texH - pad;
+
+    // Top-Left
+    ctx.beginPath(); ctx.moveTo(minX, minY + bracketLen); ctx.lineTo(minX, minY); ctx.lineTo(minX + bracketLen, minY);
+    // Top-Right
+    ctx.beginPath(); ctx.moveTo(maxX - bracketLen, minY); ctx.lineTo(maxX, minY); ctx.lineTo(maxX, minY + bracketLen);
+    // Bottom-Right
+    ctx.beginPath(); ctx.moveTo(maxX, maxY - bracketLen); ctx.lineTo(maxX, maxY); ctx.lineTo(maxX - bracketLen, maxY);
+    // Bottom-Left
+    ctx.beginPath(); ctx.moveTo(minX + bracketLen, maxY); ctx.lineTo(minX, maxY); ctx.lineTo(minX, maxY - bracketLen);
+    ctx.stroke();
+    ctx.restore();
+
+    dt.hasAlpha = true;
+    dt.update();
+
+    mat.diffuseTexture = dt;
+    mat.emissiveColor = new Color3(1, 1, 1);
+    mat.useAlphaFromDiffuseTexture = true;
+    mat.disableLighting = true;
+    mat.backFaceCulling = false;
+    return mat;
+  }
+
+  private createMultiSelectionCellMaterial(): StandardMaterial {
+    const matName = 'hud_multi_selection_cell_mat';
+    let mat = this.scene.getMaterialByName(matName) as StandardMaterial | null;
+    if (mat) return mat;
+
+    mat = new StandardMaterial(matName, this.scene);
+    const texSize = 128;
+    const dt = new DynamicTexture(`${matName}_tex`, { width: texSize, height: texSize }, this.scene, false);
+    const ctx = dt.getContext();
+
+    ctx.clearRect(0, 0, texSize, texSize);
+
+    const pad = 4;
+    const w = texSize - pad * 2;
+    const h = texSize - pad * 2;
+
+    // 1. Sleek warm gold/amber glass fill
+    const grad = ctx.createRadialGradient(texSize / 2, texSize / 2, 8, texSize / 2, texSize / 2, texSize / 2);
+    grad.addColorStop(0, 'rgba(245, 158, 11, 0.30)');
+    grad.addColorStop(1, 'rgba(245, 158, 11, 0.14)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(pad, pad, w, h);
+
+    // 2. Glowing perimeter border
+    ctx.save();
+    ctx.shadowBlur = 5;
+    ctx.shadowColor = '#f59e0b';
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(pad, pad, w, h);
+    ctx.restore();
+
+    // 3. Crisp white corner brackets
+    ctx.save();
+    ctx.shadowBlur = 4;
+    ctx.shadowColor = '#f59e0b';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3.5;
+    const bLen = 14;
+
+    const minX = pad;
+    const maxX = texSize - pad;
+    const minY = pad;
+    const maxY = texSize - pad;
+
+    ctx.beginPath(); ctx.moveTo(minX, minY + bLen); ctx.lineTo(minX, minY); ctx.lineTo(minX + bLen, minY);
+    ctx.beginPath(); ctx.moveTo(maxX - bLen, minY); ctx.lineTo(maxX, minY); ctx.lineTo(maxX, minY + bLen);
+    ctx.beginPath(); ctx.moveTo(maxX, maxY - bLen); ctx.lineTo(maxX, maxY); ctx.lineTo(maxX - bLen, maxY);
+    ctx.beginPath(); ctx.moveTo(minX + bLen, maxY); ctx.lineTo(minX, maxY); ctx.lineTo(minX, maxY - bLen);
+    ctx.stroke();
+    ctx.restore();
+
+    dt.hasAlpha = true;
+    dt.update();
+
+    mat.diffuseTexture = dt;
+    mat.emissiveColor = new Color3(1, 1, 1);
+    mat.useAlphaFromDiffuseTexture = true;
+    mat.disableLighting = true;
+    mat.backFaceCulling = false;
+    return mat;
+  }
+
+  private createActionPreviewMaterial(isValid: boolean, spanW: number, spanH: number): StandardMaterial {
+    const matName = `hud_action_preview_${isValid ? 'valid' : 'overflow'}_${spanW}x${spanH}`;
+    let mat = this.scene.getMaterialByName(matName) as StandardMaterial | null;
+    if (mat) return mat;
+
+    mat = new StandardMaterial(matName, this.scene);
+    const strokeColor = isValid ? '#06b6d4' : '#f59e0b';
+    const glassColor = isValid ? 'rgba(6, 182, 212, 0.20)' : 'rgba(245, 158, 11, 0.22)';
+    const cornerColor = '#ffffff';
+
+    const texW = Math.min(1024, Math.max(256, spanW * 64));
+    const texH = Math.min(1024, Math.max(256, spanH * 64));
+    const dt = new DynamicTexture(`${matName}_tex`, { width: texW, height: texH }, this.scene, false);
+    const ctx = dt.getContext();
+
+    ctx.clearRect(0, 0, texW, texH);
+
+    const pad = 4;
+    const innerW = texW - pad * 2;
+    const innerH = texH - pad * 2;
+
+    ctx.fillStyle = glassColor;
+    ctx.fillRect(pad, pad, innerW, innerH);
+
+    if (spanW > 1 || spanH > 1) {
+      ctx.save();
+      ctx.strokeStyle = isValid ? 'rgba(6, 182, 212, 0.30)' : 'rgba(245, 158, 11, 0.30)';
+      ctx.lineWidth = 1.5;
+      for (let c = 1; c < spanW; c++) {
+        const x = pad + (c / spanW) * innerW;
+        ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, texH - pad); ctx.stroke();
+      }
+      for (let r = 1; r < spanH; r++) {
+        const y = pad + (r / spanH) * innerH;
+        ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(texW - pad, y); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    ctx.save();
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = strokeColor;
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 3.5;
+    ctx.strokeRect(pad, pad, innerW, innerH);
+    ctx.restore();
+
+    ctx.save();
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = strokeColor;
+    ctx.strokeStyle = cornerColor;
+    ctx.lineWidth = 4;
+    const bracketLen = Math.min(Math.min(innerW, innerH) * 0.35, 24);
+
+    const minX = pad;
+    const maxX = texW - pad;
+    const minY = pad;
+    const maxY = texH - pad;
+
+    ctx.beginPath(); ctx.moveTo(minX, minY + bracketLen); ctx.lineTo(minX, minY); ctx.lineTo(minX + bracketLen, minY);
+    ctx.beginPath(); ctx.moveTo(maxX - bracketLen, minY); ctx.lineTo(maxX, minY); ctx.lineTo(maxX, minY + bracketLen);
+    ctx.beginPath(); ctx.moveTo(maxX, maxY - bracketLen); ctx.lineTo(maxX, maxY); ctx.lineTo(maxX - bracketLen, maxY);
+    ctx.beginPath(); ctx.moveTo(minX + bracketLen, maxY); ctx.lineTo(minX, maxY); ctx.lineTo(minX, maxY - bracketLen);
+    ctx.stroke();
+    ctx.restore();
+
+    dt.hasAlpha = true;
+    dt.update();
+
+    mat.diffuseTexture = dt;
+    mat.emissiveColor = new Color3(1, 1, 1);
+    mat.useAlphaFromDiffuseTexture = true;
+    mat.disableLighting = true;
+    mat.backFaceCulling = false;
+    return mat;
+  }
+
   public setSelectionPreview(
     r1: number,
     c1: number,
@@ -3327,30 +3556,12 @@ export class BabylonEngine {
     const w = this.currentMapWidth;
     const h = this.currentMapHeight;
 
-    const matKey = `selection_preview_mat_${mode}`;
-    let previewMat = this.scene.getMaterialByName(matKey) as StandardMaterial | null;
-    if (!previewMat) {
-      const mat = new StandardMaterial(matKey, this.scene);
-      if (mode === 'add') {
-        mat.diffuseColor = new Color3(0.2, 0.9, 0.4);
-        mat.emissiveColor = new Color3(0.1, 0.4, 0.2);
-        mat.alpha = 0.45;
-      } else if (mode === 'subtract') {
-        mat.diffuseColor = new Color3(1.0, 0.3, 0.3);
-        mat.emissiveColor = new Color3(0.5, 0.1, 0.1);
-        mat.alpha = 0.45;
-      } else {
-        mat.diffuseColor = new Color3(0.4, 0.5, 1.0);
-        mat.emissiveColor = new Color3(0.2, 0.3, 0.6);
-        mat.alpha = 0.45;
-      }
-      mat.disableLighting = true;
-      mat.backFaceCulling = false;
-      previewMat = mat;
-    }
+    const spanW = maxC - minC + 1;
+    const spanH = maxR - minR + 1;
+    const previewMat = this.createSelectionBoxMaterial(mode, spanW, spanH);
 
-    const rectWidth = (maxC - minC + 1) * s;
-    const rectHeight = (maxR - minR + 1) * s;
+    const rectWidth = spanW * s;
+    const rectHeight = spanH * s;
     const centerPosX = ((minC + maxC) / 2 - w / 2) * s;
     const centerPosZ = (h / 2 - (minR + maxR) / 2) * s;
 
@@ -3385,22 +3596,13 @@ export class BabylonEngine {
     const w = this.currentMapWidth;
     const h = this.currentMapHeight;
 
-    let previewMat = this.scene.getMaterialByName('selection_multi_mat') as StandardMaterial | null;
-    if (!previewMat) {
-      const mat = new StandardMaterial('selection_multi_mat', this.scene);
-      mat.diffuseColor = new Color3(0.45, 0.55, 1.0);
-      mat.emissiveColor = new Color3(0.2, 0.3, 0.7);
-      mat.alpha = 0.48;
-      mat.disableLighting = true;
-      mat.backFaceCulling = false;
-      previewMat = mat;
-    }
+    const previewMat = this.createMultiSelectionCellMaterial();
 
     const validCells = cellList.filter(({ r, c }) => r >= 0 && r < h && c >= 0 && c < w);
     if (validCells.length === 0) return;
 
     if (!this.multiSelectionBaseMesh || this.multiSelectionBaseMesh.isDisposed()) {
-      this.multiSelectionBaseMesh = MeshBuilder.CreatePlane('multi_selection_plane', { size: s * 0.96 }, this.scene);
+      this.multiSelectionBaseMesh = MeshBuilder.CreatePlane('multi_selection_plane', { size: s * 0.98 }, this.scene);
       this.multiSelectionBaseMesh.rotation.x = Math.PI / 2;
       this.multiSelectionBaseMesh.material = previewMat;
       this.multiSelectionBaseMesh.isPickable = false;
@@ -3441,30 +3643,10 @@ export class BabylonEngine {
     const w = this.currentMapWidth;
     const h = this.currentMapHeight;
 
-    let validMat = this.scene.getMaterialByName('action_preview_valid_mat') as StandardMaterial | null;
-    if (!validMat) {
-      validMat = new StandardMaterial('action_preview_valid_mat', this.scene);
-      validMat.diffuseColor = new Color3(0.3, 1.0, 0.6);
-      validMat.emissiveColor = new Color3(0.1, 0.5, 0.2);
-      validMat.alpha = 0.4;
-      validMat.disableLighting = true;
-      validMat.backFaceCulling = false;
-    }
-
-    let overflowMat = this.scene.getMaterialByName('action_preview_overflow_mat') as StandardMaterial | null;
-    if (!overflowMat) {
-      overflowMat = new StandardMaterial('action_preview_overflow_mat', this.scene);
-      overflowMat.diffuseColor = new Color3(1.0, 0.7, 0.2);
-      overflowMat.emissiveColor = new Color3(0.6, 0.3, 0.1);
-      overflowMat.alpha = 0.4;
-      overflowMat.disableLighting = true;
-      overflowMat.backFaceCulling = false;
-    }
-
     const totalW = data.width || 1;
     const totalH = data.height || 1;
     const isOverflow = targetR < 0 || targetC < 0 || targetR + totalH > h || targetC + totalW > w;
-    const matToUse = isOverflow ? overflowMat : validMat;
+    const matToUse = this.createActionPreviewMaterial(!isOverflow, totalW, totalH);
 
     const rectWidth = totalW * s;
     const rectHeight = totalH * s;

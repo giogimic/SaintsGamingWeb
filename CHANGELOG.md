@@ -1,3 +1,9 @@
+# 2.1.607
+- **Modern Glassmorphic Selection & Marquee Overlays**:
+  - **Dynamic Texture Selection Boxes**: Replaced plain flat color planes in `setSelectionPreview` with high-definition dynamic textures featuring glowing outer borders (`#f59e0b` normal, `#10b981` add, `#f43f5e` subtract), subtle internal cell dividers, soft glass fills, and crisp white corner L-brackets.
+  - **Premium Multi-Selection Cell Rendering**: Upgraded `setMultiSelectionPreview` ThinInstance rendering with dedicated 128×128 gold/amber radial glass textures, glowing perimeters, and micro-corner brackets.
+  - **Enhanced Action / Paste Previews**: Upgraded `setActionPreview` to use cyan/amber glassmorphic textures with glowing outlines and corner brackets for valid vs overflow states.
+
 # 2.1.606
 - **Flood Fill Hotkey & Comprehensive Paint Audit**:
   - **Keyboard Shortcut**: Bound key `F` to activate the Flood Fill Bucket tool directly in creation mode.
