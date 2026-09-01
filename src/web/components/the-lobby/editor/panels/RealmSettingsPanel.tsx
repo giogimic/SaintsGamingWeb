@@ -504,6 +504,30 @@ export function RealmSettingsPanel() {
                   </div>
                 </div>
               )}
+
+              {/* Dynamic Day/Night Cycle Duration */}
+              <div className="space-y-1 pt-2 border-t border-border/10">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-muted-foreground">Dynamic Day/Night Cycle Duration</span>
+                  <span className="text-primary font-bold">
+                    {(settings.dayNightCycleDurationMinutes || 0) === 0 ? 'Static / Manual' : `${settings.dayNightCycleDurationMinutes} min cycle`}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={60}
+                  step={5}
+                  value={settings.dayNightCycleDurationMinutes || 0}
+                  onChange={(e) => setSettings({ ...settings, dayNightCycleDurationMinutes: parseInt(e.target.value) })}
+                  className="w-full accent-primary h-1 cursor-pointer"
+                />
+                <div className="flex justify-between text-[8px] text-muted-foreground">
+                  <span>Static (0m)</span>
+                  <span>Fast (15m)</span>
+                  <span>Real-Time (60m)</span>
+                </div>
+              </div>
             </div>
 
             {/* Weather Particle Systems */}
@@ -815,6 +839,39 @@ export function RealmSettingsPanel() {
                       step={1}
                       value={settings.dofFocusDistance || 20}
                       onChange={(e) => setSettings({ ...settings, dofFocusDistance: parseInt(e.target.value) })}
+                      className="w-full accent-primary h-1 cursor-pointer"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Cinematic Vignette Shadow */}
+              <div className="space-y-2 pt-2 border-t border-border/10">
+                <label className="flex items-center justify-between p-2 rounded bg-[#060e1c] border border-border/20 cursor-pointer text-[10px]">
+                  <div>
+                    <div className="font-bold">Cinematic Viewport Vignette</div>
+                    <div className="text-[8.5px] text-muted-foreground">Soft shadow gradient around screen edges</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={settings.enableVignette !== false}
+                    onChange={(e) => setSettings({ ...settings, enableVignette: e.target.checked })}
+                    className="accent-primary"
+                  />
+                </label>
+                {settings.enableVignette !== false && (
+                  <div className="space-y-1 p-2 rounded bg-[#060e1c]/60 border border-border/10">
+                    <div className="flex items-center justify-between text-[9px]">
+                      <span className="text-muted-foreground">Vignette Edge Intensity</span>
+                      <span className="text-primary font-bold">{((settings.vignetteWeight ?? 15) / 10).toFixed(1)}x</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={5}
+                      max={35}
+                      step={1}
+                      value={settings.vignetteWeight ?? 15}
+                      onChange={(e) => setSettings({ ...settings, vignetteWeight: parseInt(e.target.value) })}
                       className="w-full accent-primary h-1 cursor-pointer"
                     />
                   </div>
