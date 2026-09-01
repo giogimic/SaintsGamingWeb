@@ -7,7 +7,7 @@ import { CharacterSpritePreview } from '../CharacterSpritePreview';
 import { getHudTheme } from './hud-themes';
 import { HeartContainersView } from './HeartContainersView';
 import { IconContainersView } from './IconContainersView';
-import { PokemonBattleGauge } from './PokemonBattleGauge';
+import { ClassicBattleGauge } from './ClassicBattleGauge';
 
 function StatBar({
   label,
@@ -119,7 +119,7 @@ export const PlayerVitalsHud: React.FC = () => {
   const effectiveVitalsFormat =
     hudConfig?.vitalsFormat ||
     (theme.id === 'pocket-creature'
-      ? 'pokemon-gauge'
+      ? 'classic-gauge'
       : theme.id === 'retro-pixel-heart'
       ? 'heart-containers'
       : 'dual-bar');
@@ -196,10 +196,10 @@ export const PlayerVitalsHud: React.FC = () => {
         <div className={isSeparated ? 'flex flex-col gap-2' : ''}>
 
         {/* 2. Vitality Display (Theme / Format Responsive) */}
-        {effectiveVitalsFormat === 'pokemon-gauge' ? (
-          /* ── POKÉMON BATTLE GAUGE ── */
+        {effectiveVitalsFormat === 'classic-gauge' ? (
+          /* ── CLASSIC BATTLE GAUGE ── */
           <div className={isSeparated ? panelClass : ''}>
-            <PokemonBattleGauge
+            <ClassicBattleGauge
               name={name}
               level={level}
               hp={hp}
@@ -402,7 +402,7 @@ export const PlayerVitalsHud: React.FC = () => {
         </div>
 
         {/* 3. Active Perk / Buff Footer */}
-        {perk && effectiveVitalsFormat !== 'pokemon-gauge' && (
+        {perk && effectiveVitalsFormat !== 'classic-gauge' && (
           <div className={isSeparated ? panelClass : `mt-2 pt-2 border-t ${theme.palette.border} flex items-center justify-between text-[9px] text-amber-300`}>
             <span className="flex items-center gap-1">
               <Zap size={10} className="text-amber-400" />

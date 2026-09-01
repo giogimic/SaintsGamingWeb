@@ -4,7 +4,7 @@ import React from 'react';
 import { Heart, Zap, Sparkles, Shield, Swords } from 'lucide-react';
 import { getHudTheme } from './hud-themes';
 
-interface PokemonBattleGaugeProps {
+interface ClassicBattleGaugeProps {
   name: string;
   level: number;
   hp: number;
@@ -21,14 +21,14 @@ interface PokemonBattleGaugeProps {
 }
 
 /**
- * Pokemon-Style Dynamic Battle Vitality Gauge
+ * Classic Dynamic Battle Vitality Gauge
  * Features:
  * - Tri-color status HP gauge (>50% Green, 20-50% Yellow, <=20% Red Critical)
- * - Distinctive "HP" & "PP" status badges
+ * - Distinctive "HP" & "ENERGY" status badges
  * - Tabular numerical readout
  * - Smooth EXP progress bar
  */
-export const PokemonBattleGauge: React.FC<PokemonBattleGaugeProps> = ({
+export const ClassicBattleGauge: React.FC<ClassicBattleGaugeProps> = ({
   name,
   level,
   hp,
@@ -53,7 +53,7 @@ export const PokemonBattleGauge: React.FC<PokemonBattleGaugeProps> = ({
   const safeMp = Math.max(0, Math.min(safeMaxMp, mp));
   const mpPercent = Math.min(100, Math.max(0, Math.floor((safeMp / safeMaxMp) * 100)));
 
-  // Dynamic Pokémon Tri-Color HP Thresholds
+  // Dynamic Tri-Color HP Thresholds
   let hpColorClass = 'bg-gradient-to-r from-emerald-500 to-green-400 shadow-[0_0_8px_rgba(34,197,94,0.6)]';
   let hpBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
   let hpTextClass = 'text-emerald-400';
@@ -72,7 +72,7 @@ export const PokemonBattleGauge: React.FC<PokemonBattleGaugeProps> = ({
 
   return (
     <div className={`flex flex-col gap-2 w-full select-none font-mono ${className}`}>
-      {/* ── POKEMON-STYLE HP SECTION ── */}
+      {/* ── CLASSIC HP SECTION ── */}
       <div className="p-2.5 rounded-xl bg-black/70 border border-white/10 shadow-inner flex flex-col gap-1.5 relative overflow-hidden">
         {/* Top Header: HP Tag & Exact Numeric Count */}
         <div className="flex items-center justify-between">
@@ -98,7 +98,7 @@ export const PokemonBattleGauge: React.FC<PokemonBattleGaugeProps> = ({
             className={`h-full rounded-full transition-all duration-300 ${hpColorClass}`}
             style={{ width: `${hpPercent}%` }}
           />
-          {/* Tick marks (Pokemon segmented style) */}
+          {/* Tick marks (Segmented classic style) */}
           <div className="absolute inset-0 flex justify-between pointer-events-none px-2">
             <div className="w-px h-full bg-black/30" />
             <div className="w-px h-full bg-black/30" />
@@ -144,4 +144,4 @@ export const PokemonBattleGauge: React.FC<PokemonBattleGaugeProps> = ({
   );
 };
 
-export default PokemonBattleGauge;
+export default ClassicBattleGauge;

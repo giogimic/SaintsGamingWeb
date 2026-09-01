@@ -1,3 +1,9 @@
+# 2.1.610
+- **Purge 3rd-Party Trademarked Game References & New AI Policy Rule**:
+  - **Renamed Component (`ClassicBattleGauge.tsx`)**: Renamed `PokemonBattleGauge.tsx` to `ClassicBattleGauge.tsx` and purged all trademarked names across component internals, types, and comments.
+  - **Generic HUD & UI Options**: Updated `GameOptionsMenu.tsx`, `InterfaceEditorPanel.tsx`, `HeartContainersView.tsx`, `PlayerVitalsHud.tsx`, and `hud-themes.ts` to replace trademarked titles with generic retro descriptors (*"Heart Containers (Classic Adventure)"*, *"Classic Battle Gauge (Tri-Color HP)"*, `classic-gauge`).
+  - **Project Rule 12 (`AGENTS.md` & `.agents/AGENTS.md`)**: Enforced a strict rule prohibiting trademarked game names in code, components, file names, UI copy, and comments (with exceptions reserved exclusively for real-world industry news reporting).
+
 # 2.1.609
 - **Studio Tileset Overhaul, Pop-Out Canvas & Window Bounds Clamping**:
   - **Tileset Library Modal (`TilesetPicker.tsx`)**: Replaced the native `<select>` dropdown with a sleek, visual grid modal for selecting and switching between available tilesets.
@@ -99,18 +105,18 @@
 - **Version Bump**: Bumped release version to `v2.1.596` across all application layouts, headers, footers, settings, and documentation.
 
 # 2.1.595
-- **Pokémon & Heart-Container UI Styles & Vitals Engine**:
+- **Classic Creature & Heart-Container UI Styles & Vitals Engine**:
   - Added new HUD themes to `BUILTIN_HUD_THEMES`:
-    - **Pocket Companion (Monster Hearts)** (`pocket-creature`): Vibrant ruby Pokéball trim, electric yellow PP energy bars, cyan EXP gauges, and dynamic tri-color Pokémon battle vitality cards.
-    - **Retro Pixel Hearts (8-Bit)** (`retro-pixel-heart`): Classic 8-bit adventure aesthetic featuring animated segmented Zelda/Pokémon heart containers, emerald mana, and golden star XP.
+    - **Pocket Companion (Monster Hearts)** (`pocket-creature`): Vibrant ruby creature trim, electric yellow energy bars, cyan EXP gauges, and dynamic tri-color battle vitality cards.
+    - **Retro Pixel Hearts (8-Bit)** (`retro-pixel-heart`): Classic 8-bit adventure aesthetic featuring animated segmented retro heart containers, emerald mana, and golden star XP.
   - Created `HeartContainersView.tsx`:
     - Animated heart container system supporting full hearts, half hearts, and empty heart wireframes with custom SVG gradients and glowing low-HP pulsing heartbeat alerts.
-  - Created `PokemonBattleGauge.tsx`:
-    - Authentic Pokémon-style battle status frame featuring tri-color segmented HP bars (>50% Green, 20-50% Yellow, <=20% Red Critical), bold tabular numerical readouts, and PP/Energy gauges.
+  - Created `ClassicBattleGauge.tsx`:
+    - Authentic classic battle status frame featuring tri-color segmented HP bars (>50% Green, 20-50% Yellow, <=20% Red Critical), bold tabular numerical readouts, and PP/Energy gauges.
   - Enhanced `PlayerVitalsHud.tsx`:
-    - Added responsive format branching for `heart-containers`, `pokemon-gauge`, `compact-stacked`, and `dual-bar`.
+    - Added responsive format branching for `heart-containers`, `classic-gauge`, `compact-stacked`, and `dual-bar`.
   - Enhanced `TargetFrame.tsx`:
-    - Added Pokémon tri-color HP gauge and heart container rendering for wild creatures, bosses, and players.
+    - Added classic tri-color HP gauge and heart container rendering for wild creatures, bosses, and players.
   - Added `DEFAULT_PRESET_CREATURE` ("Pocket Trainer / Creature Battler") to `default-presets.ts`.
   - Updated `InterfaceEditorPanel.tsx` (World Studio UI Designer) and `GameOptionsMenu.tsx` (In-Game Options Menu) with new themes and Vitality Gauge Format selectors.
 - **Version Bump**: Bumped release version to `v2.1.595` across all application layouts, headers, footers, settings, and documentation.

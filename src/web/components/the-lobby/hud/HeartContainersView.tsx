@@ -98,7 +98,7 @@ export const HeartContainerItem: React.FC<{
 
 /**
  * Full Heart Containers Grid Component
- * Displays segmented hearts (like classic Pokémon / Zelda adventure titles)
+ * Displays segmented hearts (like classic retro adventure titles)
  */
 export const HeartContainersView: React.FC<HeartContainersViewProps> = ({
   hp,
