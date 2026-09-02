@@ -68,15 +68,6 @@ const CLASS_OPTIONS = [
   { id: 'PALADIN', name: 'Paladin', icon: Shield, color: '#60a5fa' },
 ];
 
-const PRESET_SPRITES = [
-  { id: 'evil-berserker-bloodaxe-male', label: 'Warrior / Berserker', classId: 'WARRIOR' },
-  { id: 'good-paladin-templar-female', label: 'Paladin / Templar', classId: 'PALADIN' },
-  { id: 'good-wizard-archmage-male', label: 'Mage / Archmage', classId: 'MAGE' },
-  { id: 'good-ranger-grovekeeper-female', label: 'Ranger / Scout', classId: 'RANGER' },
-  { id: 'good-cleric-highpriestess-female', label: 'Priest / Cleric', classId: 'PRIEST' },
-  { id: 'evil-assassin-nightstalker-female', label: 'Assassin / Shadow', classId: 'WARRIOR' },
-];
-
 const ELEMENT_TYPES = ['Solar', 'Hydro', 'Bio', 'Volt', 'Geo', 'Cryo', 'Aero', 'Cyber'];
 
 export function EntitySetupStep({
@@ -92,7 +83,7 @@ export function EntitySetupStep({
   const [activeTab, setActiveTab] = useState<'characters' | 'creatures'>('characters');
 
   // Asset Picker State
-  const [pickerContext, setPickerContext] = useState<{ entityType: 'CHARACTER' | 'CREATURE', role: string } | null>(null);
+  const [pickerContext, setPickerContext] = useState<{ entityType: 'CHARACTER' | 'CREATURE'; role: string } | null>(null);
 
   // Character Form State
   const [charName, setCharName] = useState('Knight Commander');
@@ -101,13 +92,9 @@ export function EntitySetupStep({
   const [charSpriteAsset, setCharSpriteAsset] = useState<GameAssetItem | undefined>(undefined);
   const [charFlavor, setCharFlavor] = useState('A steadfast frontline protector of the realm.');
 
-  // Modular Character Details
-  const [charBaseBody, setCharBaseBody] = useState<string>('');
-  const [charClothing, setCharClothing] = useState<string>('');
-
   // Form State: Creatures
   const [creatureName, setCreatureName] = useState('Aerochick');
-  const [creatureElement, setCreatureElement] = useState('NATURE');
+  const [creatureElement, setCreatureElement] = useState('Solar');
   const [creatureSpriteAsset, setCreatureSpriteAsset] = useState<GameAssetItem | undefined>(undefined);
   const [creatureHp, setCreatureHp] = useState(100);
   const [creatureAtk, setCreatureAtk] = useState(14);
@@ -116,9 +103,8 @@ export function EntitySetupStep({
   const handleAddCharacter = () => {
     if (!charName.trim()) return;
     const slug = charName.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + Date.now().toString().slice(-4);
-    
-    // Phase 3: Canonical Asset Mapping
-    const spriteKey = charSpriteAsset?.id || '';
+
+    const spriteKey = charSpriteAsset?.source || charSpriteAsset?.id || 'evil-berserker-bloodaxe-male';
     const bundleId = charSpriteAsset?.isModularComponent ? charSpriteAsset.id : (charSpriteAsset?.id || null);
 
     const newChar: SetupCharacterData = {
@@ -136,6 +122,7 @@ export function EntitySetupStep({
     onUpdateCharacters([...characters, newChar]);
     setCharName('');
     setCharFlavor('');
+    setCharSpriteAsset(undefined);
   };
 
   const handleRemoveCharacter = (index: number) => {
@@ -146,7 +133,7 @@ export function EntitySetupStep({
     if (!creatureName.trim()) return;
     const slug = creatureName.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + Date.now().toString().slice(-4);
 
-    const sprite = creatureSpriteAsset?.source || creatureSpriteAsset?.id || '';
+    const sprite = creatureSpriteAsset?.source || creatureSpriteAsset?.id || 'monster/battle/agnite-sheet';
 
     const newCreature: SetupCreatureData = {
       slug,
@@ -164,6 +151,7 @@ export function EntitySetupStep({
 
     onUpdateCreatures([...creatures, newCreature]);
     setCreatureName('');
+    setCreatureSpriteAsset(undefined);
   };
 
   const handleRemoveCreature = (index: number) => {
@@ -173,7 +161,7 @@ export function EntitySetupStep({
   const hasMinimumRequirements = characters.length >= 1 && (!isCreatureGame || creatures.length >= 1);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* SETUP ASSET PICKER OVERLAY */}
       {pickerContext && (
         <RoleAwareAssetPicker
@@ -191,395 +179,333 @@ export function EntitySetupStep({
         />
       )}
 
-      <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 backdrop-blur-xl space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-1">
-              <User className="w-5 h-5 text-amber-400" />
-              3. Entity & Character Content Setup
-            </h2>
-            <p className="text-sm text-slate-400">
-              Create the initial character archetypes (and creatures) for your game world.
-            </p>
-          </div>
-
-          {/* TAB SWITCHER IF CREATURE GAME */}
-          {isCreatureGame && (
-            <div className="flex items-center gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800">
-              <button
-                onClick={() => setActiveTab('characters')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-                  activeTab === 'characters'
-                    ? 'bg-amber-600 text-white shadow-md'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <User className="w-3.5 h-3.5" />
-                Player Characters ({characters.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('creatures')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-                  activeTab === 'creatures'
-                    ? 'bg-emerald-600 text-white shadow-md'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                Companion Creatures ({creatures.length})
-              </button>
-            </div>
-          )}
+      {/* SECTION HEADER & TABS */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/40">
+        <div>
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 font-mono">
+            <User className="w-4 h-4 text-amber-400" />
+            4. Entity & Character Content Setup
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Configure initial player character archetypes and starter creatures.
+          </p>
         </div>
 
-        {/* ─── TAB 1: PLAYER CHARACTERS ─── */}
-        {activeTab === 'characters' && (
-          <div className="space-y-6">
-            {/* CURRENT CHARACTERS LIST */}
-            {characters.length > 0 && (
-              <div className="space-y-3">
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Configured Player Characters ({characters.length})
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {characters.map((char, idx) => (
-                    <div
-                      key={char.slug}
-                      className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-start justify-between gap-3"
-                    >
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-white text-sm truncate">{char.name}</span>
-                          <span
-                            className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase"
-                            style={{ backgroundColor: `${char.tagColor}20`, color: char.tagColor }}
-                          >
-                            {char.classId}
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-slate-400 truncate">{char.flavor}</div>
-                        <div className="text-[10px] font-mono text-slate-500">Asset: {char.assetType}</div>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveCharacter(idx)}
-                        className="text-slate-500 hover:text-red-400 transition p-1 cursor-pointer"
-                        title="Remove Character"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* CHARACTER BUILDER FORM */}
-            <div className="p-6 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-6">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-amber-300 flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                Add Player Character
-              </h3>
-
-              {/* ASSET TYPE SELECTION */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-                  Character Asset Type
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {[
-                    { id: 'SPRITE_SHEET', label: 'Sprite Sheet', desc: '4-directional sheet with walk cycles', icon: Layers },
-                    { id: 'MODULAR', label: 'Modular Character', desc: 'Modular composite (body, hair, clothing)', icon: ImageIcon },
-                    { id: 'SINGLE_IMAGE', label: 'Single Image', desc: 'Static icon / 2D token sprite', icon: FileImage },
-                  ].map((type) => {
-                    const Icon = type.icon;
-                    const isSelected = charAssetType === type.id;
-                    return (
-                      <div
-                        key={type.id}
-                        onClick={() => setCharAssetType(type.id as any)}
-                        className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-amber-950/20 border-amber-400 text-white shadow-md'
-                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 font-bold text-xs">
-                          <Icon className="w-4 h-4 text-amber-400" />
-                          {type.label}
-                        </div>
-                        <div className="text-[11px] text-slate-500 mt-1">{type.desc}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* NAME & CLASS */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                    Character Name
-                  </label>
-                  <input
-                    type="text"
-                    value={charName}
-                    onChange={(e) => setCharName(e.target.value)}
-                    placeholder="e.g. Knight Commander, Shadow Assassin"
-                    className="w-full bg-slate-900 border border-slate-700 focus:border-amber-400 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                    Class Archetype
-                  </label>
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
-                    {CLASS_OPTIONS.map((c) => {
-                      const isSelected = charClass === c.id;
-                      return (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => setCharClass(c.id)}
-                          className={`py-2 px-2 rounded-xl text-xs font-semibold transition flex flex-col items-center gap-1 cursor-pointer border ${
-                            isSelected
-                              ? 'bg-amber-600 text-white border-amber-400'
-                              : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'
-                          }`}
-                        >
-                          <span className="text-[11px]">{c.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* ASSET SPECIFIC OPTIONS */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-                  Select Character Asset
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <button
-                      onClick={() => setPickerContext({ entityType: 'CHARACTER', role: 'walk' })}
-                      className="w-full flex items-center justify-between p-4 bg-slate-900 border border-slate-700 hover:border-indigo-500 rounded-xl transition-colors text-left min-h-[5rem]"
-                    >
-                      <div className="flex flex-col overflow-hidden mr-2">
-                        <span className="text-sm font-semibold text-white truncate">
-                          {charSpriteAsset ? charSpriteAsset.metadata?.originalName || charSpriteAsset.id : 'Choose Character Asset...'}
-                        </span>
-                        <span className="text-xs text-slate-400 mt-1 line-clamp-2">
-                          {charSpriteAsset ? `Selected Canonical Asset: ${charSpriteAsset.id}` : 'Opens the Asset Manager to select or upload a canonical asset'}
-                        </span>
-                      </div>
-                      <ImageIcon className="w-5 h-5 text-slate-400 shrink-0" />
-                    </button>
-                    {charSpriteAsset && (
-                      <div className="text-[10px] text-slate-500 bg-slate-900/50 p-2 rounded-lg font-mono truncate">
-                        Source: {charSpriteAsset.source}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="h-48 md:h-56 rounded-xl overflow-hidden border border-slate-700 bg-slate-900 shadow-inner">
-                    <CanonicalAssetPreview asset={charSpriteAsset} role="walk" />
-                  </div>
-                </div>
-              </div>
-
-              {/* FLAVOR TEXT */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                  Flavor Text / Description
-                </label>
-                <input
-                  type="text"
-                  value={charFlavor}
-                  onChange={(e) => setCharFlavor(e.target.value)}
-                  placeholder="e.g. Master of arcane arts, strikes swiftly from distance..."
-                  className="w-full bg-slate-900 border border-slate-700 focus:border-amber-400 rounded-xl px-3.5 py-2 text-white text-xs outline-none transition"
-                />
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleAddCharacter}
-                  disabled={!charName.trim()}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs bg-amber-600 hover:bg-amber-500 text-white transition disabled:opacity-50 cursor-pointer shadow-md"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add This Character
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ─── TAB 2: COMPANION CREATURES ─── */}
-        {activeTab === 'creatures' && (
-          <div className="space-y-6">
-            {/* CURRENT CREATURES LIST */}
-            {creatures.length > 0 && (
-              <div className="space-y-3">
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Configured Companion Creatures ({creatures.length})
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {creatures.map((c, idx) => (
-                    <div
-                      key={c.slug}
-                      className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-start justify-between gap-3"
-                    >
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-white text-sm truncate">{c.name}</span>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                            {c.typePrimary}
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-slate-400">HP: {c.baseHp} · Atk: {c.physicalPower} · Def: {c.physicalDefense}</div>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveCreature(idx)}
-                        className="text-slate-500 hover:text-red-400 transition p-1 cursor-pointer"
-                        title="Remove Creature"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* CREATURE BUILDER FORM */}
-            <div className="p-6 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-6">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                Add Companion Creature
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                    Creature Species Name
-                  </label>
-                  <input
-                    type="text"
-                    value={creatureName}
-                    onChange={(e) => setCreatureName(e.target.value)}
-                    placeholder="e.g. Emberfang, Aquafin, Zephyros"
-                    className="w-full bg-slate-900 border border-slate-700 focus:border-emerald-400 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                    Primary Element Type
-                  </label>
-                  <select
-                    value={creatureElement}
-                    onChange={(e) => setCreatureElement(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white outline-none"
-                  >
-                    {ELEMENT_TYPES.map((elem) => (
-                      <option key={elem} value={elem}>
-                        {elem}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-                  Creature Asset (Battle/Overworld)
-                </label>
-                <button
-                  onClick={() => setPickerContext({ entityType: 'CREATURE', role: 'idle' })}
-                  className="w-full flex items-center justify-between p-4 bg-slate-900 border border-slate-700 hover:border-emerald-500 rounded-xl transition-colors text-left"
-                >
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-white">
-                      {creatureSpriteAsset ? creatureSpriteAsset.metadata?.originalName || creatureSpriteAsset.id : 'Choose Creature Asset...'}
-                    </span>
-                    <span className="text-xs text-slate-400 mt-1">
-                      {creatureSpriteAsset ? `Selected Canonical Asset: ${creatureSpriteAsset.id}` : 'Opens the Asset Manager to select or upload a canonical asset'}
-                    </span>
-                  </div>
-                  <ImageIcon className="w-5 h-5 text-slate-400" />
-                </button>
-                <div className="mt-4 h-48 rounded-xl overflow-hidden border border-slate-700 bg-slate-900 shadow-inner">
-                  <CanonicalAssetPreview asset={creatureSpriteAsset} role="idle" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-400 mb-1">Base HP</label>
-                  <input
-                    type="number"
-                    value={creatureHp}
-                    onChange={(e) => setCreatureHp(Number(e.target.value))}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-400 mb-1">Attack Power</label>
-                  <input
-                    type="number"
-                    value={creatureAtk}
-                    onChange={(e) => setCreatureAtk(Number(e.target.value))}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-400 mb-1">Defense</label>
-                  <input
-                    type="number"
-                    value={creatureDef}
-                    onChange={(e) => setCreatureDef(Number(e.target.value))}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleAddCreature}
-                  disabled={!creatureName.trim()}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white transition disabled:opacity-50 cursor-pointer shadow-md"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add This Creature
-                </button>
-              </div>
-            </div>
+        {/* TAB SWITCHER */}
+        {isCreatureGame && (
+          <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800 text-xs font-mono self-start sm:self-auto">
+            <button
+              onClick={() => setActiveTab('characters')}
+              className={`px-3 py-1.5 rounded-md transition flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'characters'
+                  ? 'bg-amber-600 text-white font-bold shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <User className="w-3 h-3" />
+              Heroes ({characters.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('creatures')}
+              className={`px-3 py-1.5 rounded-md transition flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'creatures'
+                  ? 'bg-emerald-600 text-white font-bold shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Sparkles className="w-3 h-3" />
+              Creatures ({creatures.length})
+            </button>
           </div>
         )}
       </div>
 
-      {/* NAVIGATION */}
-      <div className="flex items-center justify-between">
+      {/* ─── TAB 1: PLAYER CHARACTERS ─── */}
+      {activeTab === 'characters' && (
+        <div className="space-y-3">
+          {/* CURRENT CHARACTERS LIST */}
+          {characters.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+              {characters.map((char, idx) => (
+                <div
+                  key={char.slug}
+                  className="p-3 rounded-lg bg-[#070e1b] border border-slate-800/80 flex items-start justify-between gap-2 text-xs"
+                >
+                  <div className="space-y-0.5 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-white truncate">{char.name}</span>
+                      <span
+                        className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold uppercase"
+                        style={{ backgroundColor: `${char.tagColor}20`, color: char.tagColor }}
+                      >
+                        {char.classId}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-400 truncate">{char.flavor}</div>
+                  </div>
+                  <button
+                    onClick={() => handleRemoveCharacter(idx)}
+                    className="text-slate-500 hover:text-rose-400 transition p-1 cursor-pointer"
+                    title="Remove Character"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* CHARACTER BUILDER FORM */}
+          <div className="p-4 rounded-xl bg-[#070e1b] border border-slate-800/80 space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5 font-mono">
+              <Plus className="w-3.5 h-3.5" />
+              Add Character Archetype
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="sm:col-span-2">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1 font-mono">
+                  Character Name
+                </label>
+                <input
+                  type="text"
+                  value={charName}
+                  onChange={(e) => setCharName(e.target.value)}
+                  placeholder="e.g. Knight Commander, Shadow Assassin"
+                  className="w-full bg-[#050b14] border border-slate-700/80 focus:border-amber-400 rounded-lg px-2.5 py-1.5 text-white text-xs outline-none font-sans"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1 font-mono">
+                  Class Archetype
+                </label>
+                <select
+                  value={charClass}
+                  onChange={(e) => setCharClass(e.target.value)}
+                  className="w-full bg-[#050b14] border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none font-sans"
+                >
+                  {CLASS_OPTIONS.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* ASSET SELECTOR & 3D PREVIEW */}
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1 font-mono">
+                Character Sprite Asset
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                <button
+                  type="button"
+                  onClick={() => setPickerContext({ entityType: 'CHARACTER', role: 'walk' })}
+                  className="w-full flex items-center justify-between p-3 bg-[#050b14] border border-slate-700 hover:border-amber-400 rounded-lg transition text-left cursor-pointer"
+                >
+                  <div className="flex flex-col min-w-0 mr-2">
+                    <span className="text-xs font-semibold text-white truncate">
+                      {charSpriteAsset ? charSpriteAsset.metadata?.originalName || charSpriteAsset.id : 'Select Character Sprite...'}
+                    </span>
+                    <span className="text-[10px] text-slate-400 mt-0.5 font-mono truncate">
+                      {charSpriteAsset ? `Asset: ${charSpriteAsset.id}` : 'Click to browse canonical sprite library'}
+                    </span>
+                  </div>
+                  <ImageIcon className="w-4 h-4 text-amber-400 shrink-0" />
+                </button>
+
+                <div className="h-28 rounded-lg overflow-hidden border border-slate-700 bg-slate-950 shadow-inner">
+                  <CanonicalAssetPreview asset={charSpriteAsset} role="walk" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <input
+                type="text"
+                value={charFlavor}
+                onChange={(e) => setCharFlavor(e.target.value)}
+                placeholder="Flavor text description..."
+                className="w-2/3 bg-[#050b14] border border-slate-700/80 focus:border-amber-400 rounded-lg px-2.5 py-1.5 text-white text-xs outline-none font-sans"
+              />
+
+              <button
+                type="button"
+                onClick={handleAddCharacter}
+                disabled={!charName.trim()}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-mono font-bold text-xs bg-amber-600 hover:bg-amber-500 text-white transition disabled:opacity-50 cursor-pointer shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Hero
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── TAB 2: COMPANION CREATURES ─── */}
+      {activeTab === 'creatures' && (
+        <div className="space-y-3">
+          {/* CURRENT CREATURES LIST */}
+          {creatures.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+              {creatures.map((c, idx) => (
+                <div
+                  key={c.slug}
+                  className="p-3 rounded-lg bg-[#070e1b] border border-slate-800/80 flex items-start justify-between gap-2 text-xs"
+                >
+                  <div className="space-y-0.5 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-white truncate">{c.name}</span>
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        {c.typePrimary}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-400 font-mono">
+                      HP: {c.baseHp} · Atk: {c.physicalPower} · Def: {c.physicalDefense}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleRemoveCreature(idx)}
+                    className="text-slate-500 hover:text-rose-400 transition p-1 cursor-pointer"
+                    title="Remove Creature"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* CREATURE BUILDER FORM */}
+          <div className="p-4 rounded-xl bg-[#070e1b] border border-slate-800/80 space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 font-mono">
+              <Plus className="w-3.5 h-3.5" />
+              Add Companion Creature
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="sm:col-span-2">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1 font-mono">
+                  Creature Species Name
+                </label>
+                <input
+                  type="text"
+                  value={creatureName}
+                  onChange={(e) => setCreatureName(e.target.value)}
+                  placeholder="e.g. Emberfang, Aquafin, Zephyros"
+                  className="w-full bg-[#050b14] border border-slate-700/80 focus:border-emerald-400 rounded-lg px-2.5 py-1.5 text-white text-xs outline-none font-sans"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1 font-mono">
+                  Primary Element
+                </label>
+                <select
+                  value={creatureElement}
+                  onChange={(e) => setCreatureElement(e.target.value)}
+                  className="w-full bg-[#050b14] border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none font-sans"
+                >
+                  {ELEMENT_TYPES.map((elem) => (
+                    <option key={elem} value={elem}>
+                      {elem}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* ASSET SELECTOR & 3D PREVIEW */}
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1 font-mono">
+                Creature Sprite Asset (Classic Battler Sheet / Spritesheet)
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                <button
+                  type="button"
+                  onClick={() => setPickerContext({ entityType: 'CREATURE', role: 'idle' })}
+                  className="w-full flex items-center justify-between p-3 bg-[#050b14] border border-slate-700 hover:border-emerald-400 rounded-lg transition text-left cursor-pointer"
+                >
+                  <div className="flex flex-col min-w-0 mr-2">
+                    <span className="text-xs font-semibold text-white truncate">
+                      {creatureSpriteAsset ? creatureSpriteAsset.metadata?.originalName || creatureSpriteAsset.id : 'Choose Creature Sprite...'}
+                    </span>
+                    <span className="text-[10px] text-slate-400 mt-0.5 font-mono truncate">
+                      {creatureSpriteAsset ? `Asset: ${creatureSpriteAsset.id}` : 'Click to select or upload a creature battler sheet'}
+                    </span>
+                  </div>
+                  <ImageIcon className="w-4 h-4 text-emerald-400 shrink-0" />
+                </button>
+
+                <div className="h-28 rounded-lg overflow-hidden border border-slate-700 bg-slate-950 shadow-inner">
+                  <CanonicalAssetPreview asset={creatureSpriteAsset} role="idle" />
+                </div>
+              </div>
+            </div>
+
+            {/* STATS & ADD BUTTON */}
+            <div className="grid grid-cols-4 gap-2 pt-1 items-end">
+              <div>
+                <label className="block text-[9px] font-mono font-bold uppercase text-slate-400 mb-0.5">HP</label>
+                <input
+                  type="number"
+                  value={creatureHp}
+                  onChange={(e) => setCreatureHp(Number(e.target.value))}
+                  className="w-full bg-[#050b14] border border-slate-700 rounded-lg px-2 py-1 text-xs text-white outline-none font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-[9px] font-mono font-bold uppercase text-slate-400 mb-0.5">Atk</label>
+                <input
+                  type="number"
+                  value={creatureAtk}
+                  onChange={(e) => setCreatureAtk(Number(e.target.value))}
+                  className="w-full bg-[#050b14] border border-slate-700 rounded-lg px-2 py-1 text-xs text-white outline-none font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-[9px] font-mono font-bold uppercase text-slate-400 mb-0.5">Def</label>
+                <input
+                  type="number"
+                  value={creatureDef}
+                  onChange={(e) => setCreatureDef(Number(e.target.value))}
+                  className="w-full bg-[#050b14] border border-slate-700 rounded-lg px-2 py-1 text-xs text-white outline-none font-mono"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleAddCreature}
+                disabled={!creatureName.trim()}
+                className="w-full inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg font-mono font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white transition disabled:opacity-50 cursor-pointer shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Beast
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FOOTER NAVIGATION */}
+      <div className="flex items-center justify-between pt-3 border-t border-border/40">
         <button
           onClick={onBack}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-semibold text-slate-400 hover:text-white transition cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-mono font-semibold text-slate-400 hover:text-white transition cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-3.5 h-3.5" />
           Back
         </button>
 
         <button
           onClick={onNext}
           disabled={!hasMinimumRequirements}
-          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-white bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 shadow-xl shadow-amber-500/20 transition disabled:opacity-50 cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg font-mono font-bold text-xs bg-amber-600 hover:bg-amber-500 text-white transition disabled:opacity-50 cursor-pointer shadow-md shadow-amber-600/20"
         >
-          Continue to Environment Setup
-          <ArrowRight className="w-4 h-4" />
+          Continue to Atmosphere
+          <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>

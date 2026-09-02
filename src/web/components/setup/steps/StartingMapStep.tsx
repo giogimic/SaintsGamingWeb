@@ -5,14 +5,12 @@ import {
   Compass,
   Boxes,
   MapPin,
-  Maximize2,
   RefreshCw,
   ArrowRight,
   ArrowLeft,
   Sparkles,
   Shield,
   Layers,
-  Palette,
   CheckCircle2,
 } from 'lucide-react';
 import type { SetupEnvironmentData } from './EnvironmentSetupStep';
@@ -42,33 +40,33 @@ interface StartingMapStepProps {
 }
 
 const FOUNDATION_MATERIALS = [
-  { id: 'gunmetal', name: 'Gunmetal Bedrock', colorHex: '#2a2d34', desc: 'Standard industrial slate bedrock (Default)' },
-  { id: 'grass', name: 'Lush Meadow', colorHex: '#22c55e', desc: 'Vibrant green grass with loam soil base' },
-  { id: 'stone', name: 'Cobblestone Masonry', colorHex: '#64748b', desc: 'Ancient quarried grey stone blocks' },
-  { id: 'sand', name: 'Desert Sandstone', colorHex: '#f59e0b', desc: 'Warm desert sand and sandstone dunes' },
-  { id: 'dark_cavern', name: 'Deep Obsidian Cavern', colorHex: '#1e293b', desc: 'Volcanic basalt and subterranean rock' },
+  { id: 'gunmetal', name: 'Gunmetal Bedrock', colorHex: '#2a2d34', desc: 'Standard industrial bedrock (Default)' },
+  { id: 'grass', name: 'Lush Meadow', colorHex: '#22c55e', desc: 'Vibrant green grass with loam base' },
+  { id: 'stone', name: 'Cobblestone', colorHex: '#64748b', desc: 'Ancient quarried grey stone blocks' },
+  { id: 'sand', name: 'Desert Sandstone', colorHex: '#f59e0b', desc: 'Warm desert sandstone dunes' },
+  { id: 'dark_cavern', name: 'Deep Obsidian', colorHex: '#1e293b', desc: 'Volcanic basalt and subterranean rock' },
 ];
 
 const TOPOLOGY_ARCHETYPES = [
   {
     id: 'flat_bedrock',
     name: 'Flat Bedrock Plane',
-    desc: 'Solid bottom half (0..15) with open buildable atmosphere (16..31). Clean canvas for Studio creation.',
+    desc: 'Solid bottom bedrock with open atmosphere. Clean canvas for Studio creation.',
   },
   {
     id: 'valley_meadow',
     name: 'Rolling Valley Meadow',
-    desc: 'Gentle elevated terraces and recessed grassy clearings for organic outdoor regions.',
+    desc: 'Elevated terraces and clearings for organic outdoor regions.',
   },
   {
     id: 'fortress_outpost',
     name: 'Fortified Outpost',
-    desc: 'Raised stepped stronghold plateau with defensive perimeter foundations.',
+    desc: 'Raised stronghold plateau with defensive foundations.',
   },
   {
     id: 'sunken_dungeon',
     name: 'Subterranean Vault',
-    desc: 'Enclosed dungeon cavity with perimeter rock walls and interior courtyard.',
+    desc: 'Enclosed dungeon cavity with perimeter rock walls.',
   },
 ] as const;
 
@@ -97,304 +95,269 @@ export function StartingMapStep({
     ctx.clearRect(0, 0, width, height);
 
     // Background
-    ctx.fillStyle = '#070d17';
+    ctx.fillStyle = '#060c18';
     ctx.fillRect(0, 0, width, height);
 
-    // Isometric math
-    const centerX = width / 2;
-    const centerY = height / 2 + 30;
-    const tileW = 28;
-    const tileH = 14;
-    const blockHeight = 40;
+    // Grid Coordinates
+    const originX = width / 2;
+    const originY = height / 2 - 20;
+    const isoTileW = Math.min(22, Math.floor((width - 40) / (totalWidthBlocks + totalDepthBlocks)));
+    const isoTileH = Math.floor(isoTileW / 2);
 
-    const mat = FOUNDATION_MATERIALS.find((m) => m.id === startingMap.foundationMaterial) || FOUNDATION_MATERIALS[0];
+    const foundationColor =
+      FOUNDATION_MATERIALS.find((m) => m.id === startingMap.foundationMaterial)?.colorHex || '#2a2d34';
 
-    // Draw Chunks Volume Box
-    for (let cx = 0; cx < widthChunks; cx++) {
-      for (let cz = 0; cz < depthChunks; cz++) {
-        const isoX = centerX + (cx - cz) * (tileW * 2);
-        const isoY = centerY + (cx + cz) * (tileH * 2);
+    // Draw Isometric Bedrock Foundation Grid
+    for (let d = 0; d < totalDepthBlocks; d += 2) {
+      for (let w = 0; w < totalWidthBlocks; w += 2) {
+        const screenX = originX + (w - d) * (isoTileW / 2);
+        const screenY = originY + (w + d) * (isoTileH / 2);
 
-        // Bedrock Lower Half (0..16)
-        ctx.fillStyle = mat.colorHex;
+        // Bedrock Volume base
         ctx.beginPath();
-        ctx.moveTo(isoX, isoY);
-        ctx.lineTo(isoX + tileW * 2, isoY + tileH * 2);
-        ctx.lineTo(isoX, isoY + tileH * 4);
-        ctx.lineTo(isoX - tileW * 2, isoY + tileH * 2);
+        ctx.moveTo(screenX, screenY);
+        ctx.lineTo(screenX + isoTileW / 2, screenY + isoTileH / 2);
+        ctx.lineTo(screenX, screenY + isoTileH);
+        ctx.lineTo(screenX - isoTileW / 2, screenY + isoTileH / 2);
         ctx.closePath();
+
+        ctx.fillStyle = foundationColor;
         ctx.fill();
-
-        // Top Border
-        ctx.strokeStyle = '#475569';
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#00000030';
+        ctx.lineWidth = 0.5;
         ctx.stroke();
-
-        // 3D Depth Extrusion (Front faces)
-        ctx.fillStyle = '#181b20';
-        ctx.beginPath();
-        ctx.moveTo(isoX - tileW * 2, isoY + tileH * 2);
-        ctx.lineTo(isoX, isoY + tileH * 4);
-        ctx.lineTo(isoX, isoY + tileH * 4 + blockHeight);
-        ctx.lineTo(isoX - tileW * 2, isoY + tileH * 2 + blockHeight);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.fillStyle = '#0f172a';
-        ctx.beginPath();
-        ctx.moveTo(isoX, isoY + tileH * 4);
-        ctx.lineTo(isoX + tileW * 2, isoY + tileH * 2);
-        ctx.lineTo(isoX + tileW * 2, isoY + tileH * 2 + blockHeight);
-        ctx.lineTo(isoX, isoY + tileH * 4 + blockHeight);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-
-        // Upper Atmosphere Volume (Wireframe)
-        ctx.strokeStyle = 'rgba(251, 191, 36, 0.25)';
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(isoX, isoY - blockHeight);
-        ctx.lineTo(isoX + tileW * 2, isoY + tileH * 2 - blockHeight);
-        ctx.lineTo(isoX, isoY + tileH * 4 - blockHeight);
-        ctx.lineTo(isoX - tileW * 2, isoY + tileH * 2 - blockHeight);
-        ctx.closePath();
-        ctx.stroke();
-        ctx.setLineDash([]);
       }
     }
 
-    // Draw Spawn Point Indicator
-    const spawnXRatio = (startingMap.spawnPoint.x / totalWidthBlocks) * 2 - 1;
-    const spawnZRatio = (startingMap.spawnPoint.y / totalDepthBlocks) * 2 - 1;
-    const spawnIsoX = centerX + (spawnXRatio - spawnZRatio) * (tileW * widthChunks);
-    const spawnIsoY = centerY + (spawnXRatio + spawnZRatio) * (tileH * depthChunks);
+    // Draw Chunk Boundary Wireframes
+    for (let cZ = 0; cZ < depthChunks; cZ++) {
+      for (let cX = 0; cX < widthChunks; cX++) {
+        const cornerW = cX * 16;
+        const cornerD = cZ * 16;
+        const screenX = originX + (cornerW - cornerD) * (isoTileW / 2);
+        const screenY = originY + (cornerW + cornerD) * (isoTileH / 2);
 
-    // Spawn Beacon Glow
-    ctx.fillStyle = '#fbbf24';
-    ctx.shadowColor = '#fbbf24';
-    ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.moveTo(screenX, screenY);
+        ctx.lineTo(screenX + 8 * isoTileW, screenY + 8 * isoTileH);
+        ctx.lineTo(screenX, screenY + 16 * isoTileH);
+        ctx.lineTo(screenX - 8 * isoTileW, screenY + 8 * isoTileH);
+        ctx.closePath();
+
+        ctx.strokeStyle = '#fbbf2460';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+    }
+
+    // Draw Player Spawn Beacon
+    const spawnX = startingMap.spawnPoint?.x ?? Math.floor(totalWidthBlocks / 2);
+    const spawnY = startingMap.spawnPoint?.y ?? Math.floor(totalDepthBlocks / 2);
+    const spawnScreenX = originX + (spawnX - spawnY) * (isoTileW / 2);
+    const spawnScreenY = originY + (spawnX + spawnY) * (isoTileH / 2);
+
+    // Glowing spawn anchor
     ctx.beginPath();
-    ctx.arc(spawnIsoX, spawnIsoY - 10, 6, 0, Math.PI * 2);
+    ctx.arc(spawnScreenX, spawnScreenY, 6, 0, Math.PI * 2);
+    ctx.fillStyle = '#38bdf8';
     ctx.fill();
-    ctx.shadowBlur = 0;
-
-    // Beacon Line
-    ctx.strokeStyle = '#fbbf24';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(spawnIsoX, spawnIsoY);
-    ctx.lineTo(spawnIsoX, spawnIsoY - 24);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
     ctx.stroke();
-  }, [widthChunks, depthChunks, startingMap.foundationMaterial, startingMap.spawnPoint, totalWidthBlocks, totalDepthBlocks]);
+
+    // Beacon beam
+    ctx.beginPath();
+    ctx.moveTo(spawnScreenX, spawnScreenY);
+    ctx.lineTo(spawnScreenX, spawnScreenY - 30);
+    ctx.strokeStyle = '#38bdf8aa';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }, [widthChunks, depthChunks, totalWidthBlocks, totalDepthBlocks, startingMap.foundationMaterial, startingMap.spawnPoint]);
+
+  const handleApplyDimensions = (wChunks: number, dChunks: number) => {
+    const w = wChunks * 16;
+    const h = dChunks * 16;
+    onChange({
+      ...startingMap,
+      widthChunks: wChunks,
+      depthChunks: dChunks,
+      width: w,
+      height: h,
+      spawnPoint: { x: Math.floor(w / 2), y: Math.floor(h / 2), z: 16 },
+    });
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 backdrop-blur-xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div>
-            <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-1">
-              <Boxes className="w-5 h-5 text-amber-400" />
-              Starting 3D Voxel Realm Specification
-            </h2>
-            <p className="text-sm text-slate-400">
-              Configure the initial volumetric chunk dimensions, foundation bedrock material, and player spawn point.
-            </p>
+    <div className="space-y-4">
+      {/* SECTION HEADER */}
+      <div className="flex items-center justify-between pb-3 border-b border-border/40">
+        <div>
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 font-mono">
+            <Compass className="w-4 h-4 text-amber-400" />
+            6. Starting 3D Volumetric Realm & Spawn
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Define initial world chunk boundaries, foundation bedrock material, and player spawn anchor.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+        {/* LEFT COLUMN: CONFIGURATION CONTROLS */}
+        <div className="md:col-span-6 space-y-3">
+          {/* REALM NAME & ID */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1 font-mono">
+                Map ID / Slug
+              </label>
+              <input
+                type="text"
+                value={startingMap.id}
+                onChange={(e) => onChange({ ...startingMap, id: e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '_') })}
+                className="w-full bg-[#050b14] border border-slate-700/80 focus:border-amber-400 rounded-lg px-2.5 py-1.5 text-white text-xs font-mono outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1 font-mono">
+                Display Name
+              </label>
+              <input
+                type="text"
+                value={startingMap.name}
+                onChange={(e) => onChange({ ...startingMap, name: e.target.value })}
+                className="w-full bg-[#050b14] border border-slate-700/80 focus:border-amber-400 rounded-lg px-2.5 py-1.5 text-white text-xs outline-none"
+              />
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-2xl">
-              Volume: {totalWidthBlocks} × {totalDepthBlocks} × 32 Blocks ({widthChunks} × {depthChunks} Chunks)
-            </span>
+          {/* CHUNK VOLUME PRESETS */}
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1 font-mono">
+              Chunk Volume Dimensions (1 Chunk = 16x16x32 Blocks)
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { w: 2, d: 2, label: '2x2 Chunks', blocks: '32x32 Blocks', desc: 'Starting Zone' },
+                { w: 3, d: 3, label: '3x3 Chunks', blocks: '48x48 Blocks', desc: 'Regional Hub' },
+                { w: 4, d: 4, label: '4x4 Chunks', blocks: '64x64 Blocks', desc: 'Open World' },
+              ].map((preset) => {
+                const isSelected = widthChunks === preset.w && depthChunks === preset.d;
+                return (
+                  <button
+                    key={`${preset.w}x${preset.d}`}
+                    type="button"
+                    onClick={() => handleApplyDimensions(preset.w, preset.d)}
+                    className={`p-2 rounded-lg border text-left transition cursor-pointer flex flex-col justify-between ${
+                      isSelected
+                        ? 'bg-amber-500/20 border-amber-400 text-white shadow-sm'
+                        : 'bg-[#070e1b] border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <span className="font-mono text-xs font-bold text-white">{preset.label}</span>
+                    <span className="text-[10px] text-amber-300/80 font-mono mt-0.5">{preset.blocks}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* BEDROCK FOUNDATION MATERIAL */}
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1 font-mono">
+              Bedrock Foundation Base
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {FOUNDATION_MATERIALS.map((mat) => {
+                const isSelected = startingMap.foundationMaterial === mat.id;
+                return (
+                  <button
+                    key={mat.id}
+                    type="button"
+                    onClick={() => onChange({ ...startingMap, foundationMaterial: mat.id })}
+                    className={`p-2 rounded-lg border text-left transition flex items-center gap-2 cursor-pointer ${
+                      isSelected
+                        ? 'bg-amber-500/15 border-amber-400 text-white shadow-sm'
+                        : 'bg-[#070e1b] border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <span
+                      className="w-3.5 h-3.5 rounded-full shrink-0 border border-black/40"
+                      style={{ backgroundColor: mat.colorHex }}
+                    />
+                    <span className="text-xs font-semibold truncate">{mat.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* TOPOLOGY ARCHETYPE */}
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1 font-mono">
+              Surface Topology Archetype
+            </label>
+            <select
+              value={startingMap.topologyArchetype}
+              onChange={(e) => onChange({ ...startingMap, topologyArchetype: e.target.value as any })}
+              className="w-full bg-[#050b14] border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none font-sans"
+            >
+              {TOPOLOGY_ARCHETYPES.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Controls Column */}
-          <div className="lg:col-span-7 space-y-6">
-            {/* 1. Realm Name & ID */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-                  Realm Identifier
-                </label>
-                <input
-                  type="text"
-                  value={startingMap.id}
-                  onChange={(e) => onChange({ ...startingMap, id: e.target.value.toUpperCase().replace(/\s+/g, '_') })}
-                  className="w-full bg-slate-950/60 border border-slate-700/80 focus:border-amber-400 rounded-2xl px-4 py-2.5 text-white font-mono text-sm uppercase focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-                  Display Name
-                </label>
-                <input
-                  type="text"
-                  value={startingMap.name}
-                  onChange={(e) => onChange({ ...startingMap, name: e.target.value })}
-                  className="w-full bg-slate-950/60 border border-slate-700/80 focus:border-amber-400 rounded-2xl px-4 py-2.5 text-white text-sm focus:outline-none"
-                />
-              </div>
+        {/* RIGHT COLUMN: 2.5D ISOMETRIC VOLUMETRIC PREVIEW */}
+        <div className="md:col-span-6 flex flex-col">
+          <div className="h-full rounded-xl overflow-hidden border border-slate-700/80 bg-[#060c18] flex flex-col">
+            <div className="flex items-center justify-between px-3 py-1.5 bg-[#0a1424] border-b border-slate-800 text-[10px] font-mono select-none">
+              <span className="text-slate-300 flex items-center gap-1 font-bold">
+                <Boxes className="w-3.5 h-3.5 text-amber-400" />
+                2.5D Volumetric Realm Canvas
+              </span>
+              <span className="text-amber-300">
+                {totalWidthBlocks}x{totalDepthBlocks}x32 Blocks
+              </span>
             </div>
-
-            {/* 2. World Chunk Dimensions */}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-                World Chunk Dimensions (16×16×32 Blocks per Chunk)
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { w: 2, d: 2, label: 'Small Realm', blocks: '32 × 32' },
-                  { w: 3, d: 3, label: 'Medium Realm', blocks: '48 × 48' },
-                  { w: 4, d: 4, label: 'Large Realm', blocks: '64 × 64' },
-                ].map((dim) => {
-                  const isSelected = widthChunks === dim.w && depthChunks === dim.d;
-                  return (
-                    <button
-                      key={dim.w}
-                      type="button"
-                      onClick={() =>
-                        onChange({
-                          ...startingMap,
-                          widthChunks: dim.w,
-                          depthChunks: dim.d,
-                          width: dim.w * 16,
-                          height: dim.d * 16,
-                          spawnPoint: { x: (dim.w * 16) / 2, y: (dim.d * 16) / 2, z: 16 },
-                        })
-                      }
-                      className={`p-3.5 rounded-2xl border text-left transition-all ${
-                        isSelected
-                          ? 'bg-amber-500/20 border-amber-400 text-white shadow-lg ring-1 ring-amber-400/30'
-                          : 'bg-slate-950/40 border-slate-800 hover:border-slate-700 text-slate-300'
-                      }`}
-                    >
-                      <div className="font-bold text-sm text-white">{dim.label}</div>
-                      <div className="font-mono text-xs text-amber-400 mt-1">{dim.blocks} Blocks</div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">{dim.w}×{dim.d} Chunks</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 3. Bedrock Foundation Material */}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-                Bedrock Foundation Material (Lower 0..15 Stratum)
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {FOUNDATION_MATERIALS.map((mat) => {
-                  const isSelected = (startingMap.foundationMaterial || 'gunmetal') === mat.id;
-                  return (
-                    <button
-                      key={mat.id}
-                      type="button"
-                      onClick={() => onChange({ ...startingMap, foundationMaterial: mat.id })}
-                      className={`p-3 rounded-2xl border flex items-center gap-3 text-left transition-all ${
-                        isSelected
-                          ? 'bg-amber-500/20 border-amber-400 text-white shadow-md ring-1 ring-amber-400/30'
-                          : 'bg-slate-950/40 border-slate-800 hover:border-slate-700 text-slate-300'
-                      }`}
-                    >
-                      <div
-                        className="w-8 h-8 rounded-xl shrink-0 border border-slate-700 shadow-inner"
-                        style={{ backgroundColor: mat.colorHex }}
-                      />
-                      <div>
-                        <div className="text-xs font-bold text-white">{mat.name}</div>
-                        <div className="text-[10px] text-slate-400 leading-tight">{mat.desc}</div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 4. Topology Archetype */}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-                Starting Surface Topology
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {TOPOLOGY_ARCHETYPES.map((arch) => {
-                  const isSelected = (startingMap.topologyArchetype || 'flat_bedrock') === arch.id;
-                  return (
-                    <button
-                      key={arch.id}
-                      type="button"
-                      onClick={() => onChange({ ...startingMap, topologyArchetype: arch.id as any })}
-                      className={`p-3 rounded-2xl border text-left transition-all ${
-                        isSelected
-                          ? 'bg-amber-500/20 border-amber-400 text-white shadow-md ring-1 ring-amber-400/30'
-                          : 'bg-slate-950/40 border-slate-800 hover:border-slate-700 text-slate-300'
-                      }`}
-                    >
-                      <div className="text-xs font-bold text-white">{arch.name}</div>
-                      <div className="text-[10px] text-slate-400 mt-1 leading-tight">{arch.desc}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* 3D Isometric Preview Canvas */}
-          <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
-            <div className="bg-slate-950 border border-slate-800 rounded-3xl p-4 overflow-hidden shadow-2xl relative flex flex-col items-center justify-center">
-              <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-3 py-1 rounded-full text-[10px] font-mono text-slate-300">
-                <Sparkles className="w-3 h-3 text-amber-400" />
-                3D Volumetric Mesh Preview
-              </div>
-
+            <div className="flex-1 relative min-h-[220px]">
               <canvas
                 ref={canvasRef}
-                width={360}
-                height={320}
-                className="w-full max-w-[360px] h-auto rounded-2xl"
+                width={400}
+                height={260}
+                className="w-full h-full object-contain"
               />
-
-              <div className="w-full mt-3 pt-3 border-t border-slate-900 flex items-center justify-between text-[11px] text-slate-400 px-2">
-                <span className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
-                  Spawn Point: ({startingMap.spawnPoint.x}, {startingMap.spawnPoint.y}, Y=16)
-                </span>
-                <span className="font-mono text-slate-500">Volumetric Grid</span>
-              </div>
             </div>
-
-            <div className="p-4 bg-slate-950/50 border border-slate-800/80 rounded-2xl text-xs text-slate-400 space-y-1.5">
-              <div className="font-bold text-slate-300 flex items-center gap-1.5">
-                <Shield className="w-3.5 h-3.5 text-amber-400" />
-                Greedy Meshing & Zero Seams
-              </div>
-              <p>
-                Chunks are generated with a 1-block boundary halo and greedy quad merging to guarantee maximum frame rates with minimal draw calls.
-              </p>
+            <div className="p-2 bg-[#0a1424]/60 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-mono text-slate-400">
+              <span className="flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-sky-400" />
+                Spawn Anchor: X: {startingMap.spawnPoint?.x || 16}, Y: {startingMap.spawnPoint?.y || 16}
+              </span>
+              <span className="text-emerald-400 font-bold">VoxelDocV3 Ready</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
+      {/* FOOTER ACTIONS */}
+      <div className="flex items-center justify-between pt-3 border-t border-border/40">
         <button
-          type="button"
           onClick={onBack}
-          className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 text-sm font-semibold transition-all"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-mono font-semibold text-slate-400 hover:text-white transition cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-3.5 h-3.5" />
           Back
         </button>
 
         <button
-          type="button"
           onClick={onNext}
-          className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white text-sm font-bold shadow-xl shadow-amber-500/20 transition-all"
+          className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg font-mono font-bold text-xs bg-amber-600 hover:bg-amber-500 text-white transition cursor-pointer shadow-md shadow-amber-600/20"
         >
-          Continue: Environment & Atmosphere
-          <ArrowRight className="w-4 h-4" />
+          Continue to Final Review
+          <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
