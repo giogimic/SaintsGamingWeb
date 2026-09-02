@@ -1,3 +1,10 @@
+# 2.1.644
+- **Prop Library Expansion & Test TypeScript Typings Polish**:
+  - **New Builtin Prop Assets (`PropLibraryPanel.tsx`)**:
+    - Expanded builtin 2.5D/3D prop library with Cyan Aether Crystals (`Decor`), Campfire & Embers (`Decor`), Ancient Stone Arch (`Structure`), Forest Mushrooms (`Foliage`), Treasure Chest (`Decor`), and Iron Sconce Torches (`Decor`).
+  - **Test Suite TypeScript Typings**:
+    - Polished typing annotations in `ToolDispatcher.test.ts` and `StudioServices.test.ts` for 100% clean `tsc` compilation.
+
 # 2.1.643
 - **Terrain Brush Palette Biome Expansions & Dispatcher Hover Routing Polish**:
   - **New Terrain Splat Biomes (`TerrainBrushPalette.tsx`)**:

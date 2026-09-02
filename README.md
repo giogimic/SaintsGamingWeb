@@ -13,7 +13,7 @@ The core technology stack is built on Next.js 15, React 19, TypeScript, Prisma O
 - **Live Platform:** [https://saintsgaming.net](https://saintsgaming.net)
 - **AI & LLM Context:** [`llms.txt`](llms.txt)
 - **License:** [Business Source License 1.1 (BSL-1.1)](LICENSE)
-- **Release Version:** `v2.1.643`
+- **Release Version:** `v2.1.644`
 - **Lead Developer:** **GioGimic**
 - **Community Discord:** [discord.saintsgaming.net](https://discord.saintsgaming.net)
 
