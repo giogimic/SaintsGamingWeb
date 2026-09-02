@@ -21,7 +21,7 @@ import { soundSynth } from '@/engine/sound-synth';
 export interface SeamlessMaterial {
   id: string;
   name: string;
-  material: 'GRASS' | 'DIRT' | 'SAND' | 'STONE' | 'WATER' | 'SNOW' | 'WOOD';
+  material: 'GRASS' | 'DIRT' | 'SAND' | 'STONE' | 'WATER' | 'SNOW' | 'WOOD' | 'LAVA' | 'SWAMP' | 'DUNGEON' | 'ICE';
   textureUrl: string;
   color: string;
   uOffset?: number;
@@ -106,6 +106,50 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     uOffset: 0.5,
     vOffset: 0,
     uScale: 0.5,
+    vScale: 0.333,
+  },
+  {
+    id: 'mat_lava_molten',
+    name: 'Molten Magma Flow',
+    material: 'LAVA',
+    textureUrl: '/game-assets/tilesets/terrain-overworld.png',
+    color: '#ef4444',
+    uOffset: 0.667,
+    vOffset: 0.333,
+    uScale: 0.333,
+    vScale: 0.333,
+  },
+  {
+    id: 'mat_swamp_marsh',
+    name: 'Dark Murky Marsh',
+    material: 'SWAMP',
+    textureUrl: '/game-assets/tilesets/terrain-overworld.png',
+    color: '#3f6212',
+    uOffset: 0.333,
+    vOffset: 0,
+    uScale: 0.333,
+    vScale: 0.333,
+  },
+  {
+    id: 'mat_brick_dungeon',
+    name: 'Ancient Flagstone',
+    material: 'DUNGEON',
+    textureUrl: '/game-assets/tilesets/terrain-overworld.png',
+    color: '#475569',
+    uOffset: 0,
+    vOffset: 0,
+    uScale: 0.333,
+    vScale: 0.333,
+  },
+  {
+    id: 'mat_ice_glacial',
+    name: 'Glacial Blue Ice',
+    material: 'ICE',
+    textureUrl: '/game-assets/tilesets/terrain-overworld.png',
+    color: '#67e8f9',
+    uOffset: 0,
+    vOffset: 0.333,
+    uScale: 0.333,
     vScale: 0.333,
   },
 ];
@@ -278,7 +322,7 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
       {/* Category Filter for Seamless */}
       {activeTab === 'SEAMLESS' && (
         <div className="p-2 border-b border-border/30 bg-[#060e1c] flex flex-wrap gap-1.5">
-          {['ALL', 'GRASS', 'DIRT', 'SAND', 'STONE', 'WATER', 'SNOW', 'WOOD'].map((cat) => (
+          {['ALL', 'GRASS', 'DIRT', 'SAND', 'STONE', 'WATER', 'SNOW', 'WOOD', 'LAVA', 'SWAMP', 'DUNGEON', 'ICE'].map((cat) => (
             <button
               key={cat}
               type="button"

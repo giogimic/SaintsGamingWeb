@@ -81,7 +81,8 @@ export class ToolDispatcher {
   public dispatchHover(event: ToolPointerEvent, context: ToolExecutionContext): boolean {
     const handler = this.handlers.get(this.currentToolId);
     if (handler?.onHover) {
-      return Boolean(handler.onHover(event, context));
+      handler.onHover(event, context);
+      return true;
     }
     return false;
   }

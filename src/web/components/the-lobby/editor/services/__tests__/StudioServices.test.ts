@@ -14,7 +14,7 @@ describe('Studio Services (Keyboard Router & Map Persistence)', () => {
       brushMode: 'paint',
     });
     useGameStore.setState({
-      currentMapId: null,
+      currentMapId: undefined,
       activeMapData: null,
     });
   });
@@ -163,7 +163,7 @@ describe('Studio Services (Keyboard Router & Map Persistence)', () => {
 
   describe('MapPersistenceService', () => {
     it('returns error when saving without an active map loaded', async () => {
-      useGameStore.setState({ currentMapId: null, activeMapData: null });
+      useGameStore.setState({ currentMapId: undefined, activeMapData: null });
       const result = await MapPersistenceService.saveActiveMap();
       expect(result.ok).toBe(false);
       expect(result.error).toBe('No map loaded to save.');
