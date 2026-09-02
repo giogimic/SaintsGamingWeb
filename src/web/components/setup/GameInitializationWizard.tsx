@@ -58,9 +58,29 @@ export function GameInitializationWizard() {
       name: 'Knight Commander',
       classId: 'WARRIOR',
       spriteKey: 'evil-berserker-bloodaxe-male',
-      flavor: 'Frontline champion with high fortitude.',
+      flavor: 'Frontline champion with high fortitude and stalwart melee combat prowess.',
       tag: 'Primary Hero',
       tagColor: '#f87171',
+      assetType: 'SPRITE_SHEET',
+    },
+    {
+      slug: 'arcane_elementalist',
+      name: 'Arcane Elementalist',
+      classId: 'MAGE',
+      spriteKey: 'good-wizard-archmage-male',
+      flavor: 'Master of elemental forces, burst damage, and tactical zone control.',
+      tag: 'Spellcaster',
+      tagColor: '#a78bfa',
+      assetType: 'SPRITE_SHEET',
+    },
+    {
+      slug: 'shadow_stalker',
+      name: 'Shadow Stalker',
+      classId: 'RANGER',
+      spriteKey: 'good-ranger-grovekeeper-female',
+      flavor: 'Agile wilderness hunter with swift movement and precision strikes.',
+      tag: 'Agile Marksman',
+      tagColor: '#fbbf24',
       assetType: 'SPRITE_SHEET',
     },
   ]);
@@ -233,7 +253,7 @@ export function GameInitializationWizard() {
 
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-primary/20 text-primary border border-primary/40 font-semibold">
-              v2.1.665
+              v2.1.666
             </span>
             <button
               onClick={() => router.push('/')}
