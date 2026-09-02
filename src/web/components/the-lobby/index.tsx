@@ -1454,6 +1454,8 @@ export default function TheLobby({
               ? 'Warden Vance'
               : (data.name || templateId || 'Creature'),
           dialogueKey,
+          hp: data.hp,
+          maxHp: data.maxHp,
         };
         if (idx >= 0) state.mapEntities[idx] = ent;
         else state.mapEntities.push(ent);

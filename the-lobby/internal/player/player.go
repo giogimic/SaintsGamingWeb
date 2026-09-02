@@ -235,6 +235,8 @@ func (m *Manager) SnapshotPeers(instanceID, excludeAccount string) map[string]pr
 			Name:      p.Name,
 			SpriteID:  p.SpriteID,
 			IsMoving:  p.IsMoving,
+			HP:        p.HP,
+			MaxHP:     p.MaxHP,
 		}
 	}
 	return out
@@ -381,5 +383,7 @@ func (p *State) Peer() protocol.PeerSnapshot {
 		Name:      p.Name,
 		SpriteID:  p.SpriteID,
 		IsMoving:  p.IsMoving,
+		HP:        p.HP,
+		MaxHP:     p.MaxHP,
 	}
 }

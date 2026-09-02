@@ -10,7 +10,11 @@ import {
   VOXEL_MAT_SAND,
   VOXEL_MAT_WATER,
   VOXEL_MAT_WOOD,
-  VOXEL_MAT_SNOW
+  VOXEL_MAT_SNOW,
+  VOXEL_MAT_LAVA,
+  VOXEL_MAT_SWAMP,
+  VOXEL_MAT_DUNGEON,
+  VOXEL_MAT_ICE
 } from './VoxelWord';
 
 export type UvRect = [number, number, number, number]; // [uMin, vMin, uMax, vMax]
@@ -34,7 +38,10 @@ export type VoxelTerrainCategory =
   | 'WOOD' 
   | 'SNOW' 
   | 'METAL' 
-  | 'LAVA';
+  | 'LAVA'
+  | 'SWAMP'
+  | 'DUNGEON'
+  | 'ICE';
 
 export interface VoxelMaterialDefinition {
   id: number;
@@ -54,7 +61,7 @@ export interface VoxelMaterialDefinition {
 
 export const CANONICAL_VOXEL_TEXTURE = '/game-assets/tilesets/terrain-overworld.png';
 
-// UV Regions for the 3x3 clean terrain atlas
+// UV Regions for the clean terrain atlas
 const UV_GRASS_TOP: UvRect = [0, 0.667, 0.333, 1.0];
 const UV_GRASS_SIDE: UvRect = [0, 0.667, 0.333, 1.0];
 const UV_DIRT: UvRect = [0.333, 0.667, 0.667, 1.0];
@@ -64,6 +71,10 @@ const UV_WATER: UvRect = [0.333, 0.333, 0.667, 0.667];
 const UV_STONE: UvRect = [0, 0, 0.333, 0.333];
 const UV_WOOD: UvRect = [0.333, 0, 0.667, 0.333];
 const UV_GUNMETAL: UvRect = [0, 0, 0.333, 0.333];
+const UV_LAVA: UvRect = [0.667, 0.333, 1.0, 0.667];
+const UV_SWAMP: UvRect = [0.333, 0, 0.667, 0.333];
+const UV_DUNGEON: UvRect = [0, 0, 0.333, 0.333];
+const UV_ICE: UvRect = [0, 0.333, 0.333, 0.667];
 
 export const VOXEL_MATERIAL_CATALOG: Record<number, VoxelMaterialDefinition> = {
   [VOXEL_MAT_AIR]: {
@@ -253,6 +264,91 @@ export const VOXEL_MATERIAL_CATALOG: Record<number, VoxelMaterialDefinition> = {
     physics: VoxelPhysics.SOLID_OBSTACLE,
     terrainCategory: 'SNOW',
     roughness: 0.4,
+  },
+
+  [VOXEL_MAT_LAVA]: {
+    id: VOXEL_MAT_LAVA,
+    slug: 'molten_lava',
+    name: 'Molten Magma Flow Block',
+    textureSource: CANONICAL_VOXEL_TEXTURE,
+    colorHex: '#ef4444',
+    tintRgba: [0.937, 0.267, 0.267, 1.0],
+    faceMapping: {
+      top: UV_LAVA,
+      bottom: UV_LAVA,
+      north: UV_LAVA,
+      south: UV_LAVA,
+      east: UV_LAVA,
+      west: UV_LAVA,
+      side: UV_LAVA,
+    },
+    physics: VoxelPhysics.HAZARD,
+    terrainCategory: 'LAVA',
+    roughness: 0.2,
+  },
+
+  [VOXEL_MAT_SWAMP]: {
+    id: VOXEL_MAT_SWAMP,
+    slug: 'murky_swamp',
+    name: 'Dark Murky Marsh Block',
+    textureSource: CANONICAL_VOXEL_TEXTURE,
+    colorHex: '#3f6212',
+    tintRgba: [0.247, 0.384, 0.071, 1.0],
+    faceMapping: {
+      top: UV_SWAMP,
+      bottom: UV_SWAMP,
+      north: UV_SWAMP,
+      south: UV_SWAMP,
+      east: UV_SWAMP,
+      west: UV_SWAMP,
+      side: UV_SWAMP,
+    },
+    physics: VoxelPhysics.SWIMMABLE_FLUID,
+    terrainCategory: 'SWAMP',
+    roughness: 0.8,
+  },
+
+  [VOXEL_MAT_DUNGEON]: {
+    id: VOXEL_MAT_DUNGEON,
+    slug: 'ancient_dungeon',
+    name: 'Ancient Flagstone Block',
+    textureSource: CANONICAL_VOXEL_TEXTURE,
+    colorHex: '#475569',
+    tintRgba: [0.278, 0.333, 0.412, 1.0],
+    faceMapping: {
+      top: UV_DUNGEON,
+      bottom: UV_DUNGEON,
+      north: UV_DUNGEON,
+      south: UV_DUNGEON,
+      east: UV_DUNGEON,
+      west: UV_DUNGEON,
+      side: UV_DUNGEON,
+    },
+    physics: VoxelPhysics.SOLID_OBSTACLE,
+    terrainCategory: 'DUNGEON',
+    roughness: 0.5,
+  },
+
+  [VOXEL_MAT_ICE]: {
+    id: VOXEL_MAT_ICE,
+    slug: 'glacial_ice',
+    name: 'Glacial Blue Ice Block',
+    textureSource: CANONICAL_VOXEL_TEXTURE,
+    colorHex: '#67e8f9',
+    tintRgba: [0.404, 0.910, 0.976, 0.9],
+    faceMapping: {
+      top: UV_ICE,
+      bottom: UV_ICE,
+      north: UV_ICE,
+      south: UV_ICE,
+      east: UV_ICE,
+      west: UV_ICE,
+      side: UV_ICE,
+    },
+    physics: VoxelPhysics.SOLID_OBSTACLE,
+    terrainCategory: 'ICE',
+    isTransparent: true,
+    roughness: 0.1,
   },
 };
 

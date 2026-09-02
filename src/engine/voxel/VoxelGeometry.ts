@@ -42,8 +42,8 @@ export class VoxelMeshBuilder {
       this.colors.push(rgba[0] * ao, rgba[1] * ao, rgba[2] * ao, rgba[3]);
     }
 
-    // 2 Triangles (p0 -> p1 -> p2, p0 -> p2 -> p3)
-    this.indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+    // 2 Triangles (p0 -> p2 -> p1, p0 -> p3 -> p2) for outward front-facing normals
+    this.indices.push(base, base + 2, base + 1, base, base + 3, base + 2);
     this.vertexCount += 4;
   }
 
@@ -174,7 +174,7 @@ export class VoxelMeshBuilder {
         // Bottom
         this.addQuad([x0, y0, z1], [x1, y0, z1], [x1, y0, z0], [x0, y0, z0], [0, -1, 0], bottomUv, [1, 1, 1, 1], botLight);
         // Front/Back triangles
-        this.addTriangle([x0, y0, z0], [x0, y0, z0], [x1, y1, z0], [0, 0, -1], [sideUv[0], sideUv[3], sideUv[0], sideUv[3], sideUv[2], sideUv[1]], [1, 1, 1], sideLight);
+        this.addTriangle([x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [0, 0, -1], [sideUv[0], sideUv[3], sideUv[0], sideUv[3], sideUv[2], sideUv[1]], [1, 1, 1], sideLight);
         this.addTriangle([x0, y0, z1], [x1, y1, z1], [x1, y0, z1], [0, 0, 1], [sideUv[0], sideUv[3], sideUv[2], sideUv[1], sideUv[2], sideUv[3]], [1, 1, 1], sideLight);
         break;
     }

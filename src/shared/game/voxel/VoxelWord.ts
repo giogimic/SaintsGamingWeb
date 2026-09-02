@@ -76,6 +76,10 @@ export const VOXEL_MAT_SAND = 5;
 export const VOXEL_MAT_WATER = 6;
 export const VOXEL_MAT_WOOD = 7;
 export const VOXEL_MAT_SNOW = 8;
+export const VOXEL_MAT_LAVA = 9;
+export const VOXEL_MAT_SWAMP = 10;
+export const VOXEL_MAT_DUNGEON = 11;
+export const VOXEL_MAT_ICE = 12;
 
 export interface VoxelDecoded {
   materialId: number;

@@ -181,16 +181,18 @@ func executeHit(atk, def Stats, moveId string, rng *rand.Rand) (dmg int, wasCrit
 	return calcDamageARPG(atk, def, move, stab, typeMod, rng)
 }
 
-func (m *Manager) ApplyPlayerHit(playerID string, dmg int) *Session {
+func (m *Manager) ApplyPlayerHit(playerID string, abilityID string) *Session {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	s := m.sessionLocked(playerID)
 	if s == nil || s.Ended {
 		return s
 	}
-	if dmg < 1 {
-		dmg, s.LastCrit = executeHit(s.PlayerStats, s.CreatureStats, "strike", m.rng)
+	if abilityID == "" {
+		abilityID = "strike"
 	}
+	dmg, crit := executeHit(s.PlayerStats, s.CreatureStats, abilityID, m.rng)
+	s.LastCrit = crit
 	s.LastDamage = dmg
 	s.CreatureHP -= dmg
 	if s.CreatureHP <= 0 {
@@ -204,16 +206,18 @@ func (m *Manager) ApplyPlayerHit(playerID string, dmg int) *Session {
 	return s
 }
 
-func (m *Manager) ApplyCreatureHit(playerID string, dmg int) *Session {
+func (m *Manager) ApplyCreatureHit(playerID string, abilityID string) *Session {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	s := m.sessionLocked(playerID)
 	if s == nil || s.Ended {
 		return s
 	}
-	if dmg < 1 {
-		dmg, s.LastCrit = executeHit(s.CreatureStats, s.PlayerStats, "strike", m.rng)
+	if abilityID == "" {
+		abilityID = "strike"
 	}
+	dmg, crit := executeHit(s.CreatureStats, s.PlayerStats, abilityID, m.rng)
+	s.LastCrit = crit
 	s.LastDamage = dmg
 	s.PlayerHP -= dmg
 	if s.PlayerHP <= 0 {
