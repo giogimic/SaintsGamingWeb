@@ -66,11 +66,13 @@ function SparklesIcon(props: any) {
 export function AssetUploadView({
   initialAssetType,
   initialImportProfile,
+  initialSlotRole,
   onUploadComplete,
   onOpenSlicer,
 }: {
   initialAssetType?: string;
   initialImportProfile?: AssetImportProfileId | '';
+  initialSlotRole?: string;
   onUploadComplete?: (asset: any) => void;
   onOpenSlicer?: (asset: { id: string; filename: string; storagePath: string }) => void;
 }) {
@@ -82,7 +84,7 @@ export function AssetUploadView({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [assetName, setAssetName] = useState('');
   const [assetType, setAssetType] = useState(initialAssetType || 'OBJECT');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState(initialAssetType === 'CREATURE' || initialImportProfile === 'creature' ? 'creature' : '');
   const [componentCategory, setComponentCategory] = useState('');
   const [componentLayer, setComponentLayer] = useState('');
   const [variantFamily, setVariantFamily] = useState('');
@@ -94,13 +96,24 @@ export function AssetUploadView({
   const [importProfile, setImportProfile] = useState<AssetImportProfileId | ''>(initialImportProfile || '');
 
   useEffect(() => {
-    if (initialAssetType) setAssetType(initialAssetType);
-  }, [initialAssetType]);
+    if (initialAssetType) {
+      setAssetType(initialAssetType);
+      if (initialAssetType === 'CREATURE' && !category) setCategory('creature');
+    }
+  }, [initialAssetType, category]);
 
   useEffect(() => {
-    if (initialImportProfile) setImportProfile(initialImportProfile);
-  }, [initialImportProfile]);
-  const [slotRole, setSlotRole] = useState('');
+    if (initialImportProfile) {
+      setImportProfile(initialImportProfile);
+      if (initialImportProfile === 'creature' && !category) setCategory('creature');
+    }
+  }, [initialImportProfile, category]);
+
+  const [slotRole, setSlotRole] = useState(initialSlotRole || '');
+
+  useEffect(() => {
+    if (initialSlotRole !== undefined) setSlotRole(initialSlotRole);
+  }, [initialSlotRole]);
   const [animationProfile, setAnimationProfile] = useState<SpriteAnimationProfile | ''>('');
   const [tagsInput, setTagsInput] = useState('');
   const [visibility, setVisibility] = useState('COMMUNITY');
@@ -355,8 +368,9 @@ export function AssetUploadView({
       soundSynth?.playSelectSound?.();
       showToast(`Asset ingested: ${assetName || selectedFile.name}`);
       AssetManager.getInstance().broadcastRefresh();
+      const assetPayload = data.gameAsset || data.usableAsset || data.asset || data;
       setUploadSuccess(data);
-      if (onUploadComplete) onUploadComplete(data);
+      if (onUploadComplete) onUploadComplete(assetPayload);
     } catch (err: any) {
       console.error('Asset upload error:', err);
       setErrorMessage(err.message || 'Asset upload failed.');

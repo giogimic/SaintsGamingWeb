@@ -97,12 +97,16 @@ export async function GET(req: NextRequest) {
               { type: "CREATURE" },
               { type: "MONSTER" },
               { type: "monster" },
+              { type: "creature" },
               { categories: { contains: "monster" } },
+              { categories: { contains: "creature" } },
               { tags: { contains: "monster" } },
               { tags: { contains: "creature" } },
+              { tags: { contains: "profile:creature" } },
               { source: { contains: "/monster/" } },
               { source: { contains: "/creatures/" } },
               { source: { contains: "/world-monsters/" } },
+              { source: { contains: "-sheet" } },
             ],
           },
         ];
@@ -261,36 +265,83 @@ export async function GET(req: NextRequest) {
 
     if (role) {
       const lowerRole = role.toLowerCase();
-      whereClause.AND = [
-        ...(whereClause.AND || []),
-        {
-          OR: [
-            { metadata: { contains: `"role":"${lowerRole}"` } },
-            { metadata: { contains: `"role": "${lowerRole}"` } },
-            { metadata: { contains: `"slotRole":"${lowerRole}"` } },
-            { metadata: { contains: `"slotRole": "${lowerRole}"` } },
-            { tags: { contains: `"role:${lowerRole}"` } },
-            { tags: { contains: `role:${lowerRole}` } },
-          ],
-        },
-      ];
+      const isCreatureSearch = type?.toUpperCase() === 'CREATURE' || type?.toUpperCase() === 'MONSTER' || profile?.toLowerCase() === 'creature';
+      if (isCreatureSearch) {
+        whereClause.AND = [
+          ...(whereClause.AND || []),
+          {
+            OR: [
+              { metadata: { contains: `"role":"${lowerRole}"` } },
+              { metadata: { contains: `"role": "${lowerRole}"` } },
+              { metadata: { contains: `"slotRole":"${lowerRole}"` } },
+              { metadata: { contains: `"slotRole": "${lowerRole}"` } },
+              { tags: { contains: `"role:${lowerRole}"` } },
+              { tags: { contains: `role:${lowerRole}` } },
+              { type: "CREATURE" },
+              { type: "MONSTER" },
+              { tags: { contains: "creature" } },
+              { tags: { contains: "monster" } },
+              { source: { contains: "/monster/" } },
+              { source: { contains: "/creatures/" } },
+              { source: { contains: "-sheet" } },
+            ],
+          },
+        ];
+      } else {
+        whereClause.AND = [
+          ...(whereClause.AND || []),
+          {
+            OR: [
+              { metadata: { contains: `"role":"${lowerRole}"` } },
+              { metadata: { contains: `"role": "${lowerRole}"` } },
+              { metadata: { contains: `"slotRole":"${lowerRole}"` } },
+              { metadata: { contains: `"slotRole": "${lowerRole}"` } },
+              { tags: { contains: `"role:${lowerRole}"` } },
+              { tags: { contains: `role:${lowerRole}` } },
+            ],
+          },
+        ];
+      }
     }
 
     if (profile) {
       const lowerProfile = profile.toLowerCase();
-      whereClause.AND = [
-        ...(whereClause.AND || []),
-        {
-          OR: [
-            { metadata: { contains: `"profile":"${lowerProfile}"` } },
-            { metadata: { contains: `"profile": "${lowerProfile}"` } },
-            { metadata: { contains: `"importProfile":"${lowerProfile}"` } },
-            { metadata: { contains: `"importProfile": "${lowerProfile}"` } },
-            { tags: { contains: `"profile:${lowerProfile}"` } },
-            { tags: { contains: `profile:${lowerProfile}` } },
-          ],
-        },
-      ];
+      if (lowerProfile === 'creature') {
+        whereClause.AND = [
+          ...(whereClause.AND || []),
+          {
+            OR: [
+              { metadata: { contains: `"profile":"${lowerProfile}"` } },
+              { metadata: { contains: `"profile": "${lowerProfile}"` } },
+              { metadata: { contains: `"importProfile":"${lowerProfile}"` } },
+              { metadata: { contains: `"importProfile": "${lowerProfile}"` } },
+              { tags: { contains: `"profile:${lowerProfile}"` } },
+              { tags: { contains: `profile:${lowerProfile}` } },
+              { type: "CREATURE" },
+              { type: "MONSTER" },
+              { tags: { contains: "creature" } },
+              { tags: { contains: "monster" } },
+              { source: { contains: "/monster/" } },
+              { source: { contains: "/creatures/" } },
+              { source: { contains: "-sheet" } },
+            ],
+          },
+        ];
+      } else {
+        whereClause.AND = [
+          ...(whereClause.AND || []),
+          {
+            OR: [
+              { metadata: { contains: `"profile":"${lowerProfile}"` } },
+              { metadata: { contains: `"profile": "${lowerProfile}"` } },
+              { metadata: { contains: `"importProfile":"${lowerProfile}"` } },
+              { metadata: { contains: `"importProfile": "${lowerProfile}"` } },
+              { tags: { contains: `"profile:${lowerProfile}"` } },
+              { tags: { contains: `profile:${lowerProfile}` } },
+            ],
+          },
+        ];
+      }
     }
 
     if (showInCharacterCreation) {
