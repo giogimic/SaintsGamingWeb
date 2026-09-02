@@ -14,6 +14,7 @@ import { rasterizeLine } from '@/shared/game/lineRaster';
 import { isPointInGeometry } from '@/shared/game/geometry/continuousGeometry';
 import { STUDIO_MAP_HOT_RELOAD_EVENT } from '@/shared/game/studioEvents';
 import { generateSplatScatterPoints, isInBrushShape } from '@/shared/game/brushGeometry';
+import { resolveMapDimensions } from '@/shared/game/mapDocVisual';
 
 import { applyAutoTilingPass } from '@/shared/game/terrainEdgeDetection';
 
@@ -77,8 +78,9 @@ export class BrushToolHandler implements IToolHandler {
 
     // 1. Freeform Splat / Props Handling
     if (store.activeLayerType === 'paint-splat' || store.activeLayerType === 'free-form') {
-      const mapWidth = liveMap.grid?.[0]?.length || 24;
-      const mapHeight = liveMap.grid?.length || 24;
+      const dims = resolveMapDimensions(liveMap);
+      const mapWidth = dims.width;
+      const mapHeight = dims.height;
       const tileSize = context.engine.getCurrentTileSize?.() || 1;
       const tileX = (x / tileSize) + mapWidth / 2;
       const tileY = mapHeight / 2 - (z / tileSize);

@@ -154,12 +154,11 @@ export function normalizeStudioMapVisuals<
   },
 >(map: T): T {
   let next = ensureMapHasStudioTilesets(map);
-  const hasTilesets = Array.isArray(next.tilesets) && next.tilesets.length > 0;
-  if (!hasTilesets && isLogicGridCopiedToVisual(next.grid, next.tileLayers)) {
+  if (isLogicGridCopiedToVisual(next.grid, next.tileLayers)) {
     next = {
       ...next,
       tileLayers: [buildDefaultGroundLayer(next.grid)],
-      tilesets: [...DEFAULT_STUDIO_TILESETS],
+      tilesets: Array.isArray(next.tilesets) && next.tilesets.length > 0 ? next.tilesets : [...DEFAULT_STUDIO_TILESETS],
     };
   }
   return next;

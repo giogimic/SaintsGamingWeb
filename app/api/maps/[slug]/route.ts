@@ -8,6 +8,7 @@ import { ensureStudioMapFoundation } from "@/server/DemoBootstrap";
 import { notifyGoMapSynced } from "@/server/goMmoNotify";
 import { DEMO_MAP_ID } from "@/server/demoMapSeed";
 import { resolveMapDimensions } from "@/shared/game/mapDocVisual";
+import { DEFAULT_STUDIO_TILESETS } from "@/shared/game/studioTilesetBootstrap";
 import { npcToEntity } from "@/shared/game/entities";
 import { AuditService } from "@/server/audit/AuditService";
 import { MapSyncService } from "@/server/mapSyncService";
@@ -18,14 +19,54 @@ export const dynamic = 'force-dynamic';
 async function loadMapPayload(slug: string) {
   const worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
   if (worldMap) {
-    const grid = JSON.parse(worldMap.gridData || "[]");
-    const tileLayers = JSON.parse(worldMap.tileLayersData || "[]");
-    const tilesets = JSON.parse(worldMap.tilesetsData || "[]");
+    let grid = [];
+    try {
+      grid = JSON.parse(worldMap.gridData || "[]");
+    } catch {
+      grid = [];
+    }
+
+    let tileLayers: any[] = [];
+    let voxelDoc: any = undefined;
+    try {
+      const parsed = JSON.parse(worldMap.tileLayersData || "[]");
+      if (Array.isArray(parsed)) {
+        tileLayers = parsed;
+      } else if (parsed && typeof parsed === 'object') {
+        voxelDoc = parsed;
+        const w = (parsed.widthChunks || 2) * 16;
+        const h = (parsed.depthChunks || 2) * 16;
+        tileLayers = [
+          {
+            name: 'Ground',
+            grid: Array.from({ length: h }, () => Array(w).fill(17)),
+          },
+        ];
+      }
+    } catch {
+      tileLayers = [];
+    }
+
+    let tilesets = [];
+    try {
+      tilesets = JSON.parse(worldMap.tilesetsData || "[]");
+    } catch {
+      tilesets = [];
+    }
+    if (!Array.isArray(tilesets) || tilesets.length === 0) {
+      tilesets = DEFAULT_STUDIO_TILESETS;
+    }
+
     const dims = resolveMapDimensions({ grid, tileLayers });
     const rawGates = JSON.parse(worldMap.gatesData || "{}");
     const connections = rawGates.connections || undefined;
     const actualGates = rawGates.gates !== undefined ? rawGates.gates : rawGates;
     const spawnPoint = rawGates.spawnPoint || (Array.isArray(actualGates) ? actualGates.find((g: any) => g.id === 'spawn' || g.category === 'SPAWN')?.position : undefined) || { x: Math.floor(dims.width / 2), y: Math.floor(dims.height / 2) };
+    
+    if (!Array.isArray(grid) || grid.length === 0) {
+      grid = Array.from({ length: dims.height }, () => Array(dims.width).fill(0));
+    }
+
     return {
       id: worldMap.id,
       gameId: worldMap.gameId,
@@ -41,6 +82,7 @@ async function loadMapPayload(slug: string) {
       tileLayers,
       freeformLayers: JSON.parse(worldMap.freeformLayersData || "[]"),
       tilesets,
+      voxelDoc,
       version: worldMap.version,
       source: "worldMap" as const,
     };
@@ -65,6 +107,7 @@ async function loadMapPayload(slug: string) {
       encounterPool: JSON.parse(gameMap.encounters || "[]"),
       tileLayers: [],
       tilesets: [],
+      voxelDoc: undefined,
       source: "gameMap" as const,
     };
   }
@@ -108,6 +151,7 @@ export async function GET(
         tileLayers: [],
         freeformLayers: [],
         tilesets: [],
+        voxelDoc: undefined,
         version: 0,
         source: 'worldMap' as const,
       };

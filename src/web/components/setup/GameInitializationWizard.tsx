@@ -216,7 +216,7 @@ export function GameInitializationWizard() {
 
           <div className="flex items-center gap-2 shrink-0">
             <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-primary/10 border border-primary/30 text-[10px] font-mono text-primary/90 font-semibold">
-              v2.1.660
+              v2.1.661
             </span>
             <button
               onClick={() => router.push('/')}

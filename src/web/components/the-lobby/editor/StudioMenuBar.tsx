@@ -82,6 +82,35 @@ interface StudioMenuBarProps {
   onOpenAssetBrowser?: () => void;
 }
 
+interface SubMenuProps {
+  label: string;
+  children: React.ReactNode;
+}
+
+const SubMenu: React.FC<SubMenuProps> = ({ label, children }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      <div className="w-full text-left px-3 py-1.5 text-[11px] font-mono flex items-center justify-between text-foreground/90 hover:bg-primary/15 hover:text-foreground cursor-pointer">
+        <div className="flex items-center gap-2.5">
+          <Layers className="w-3.5 h-3.5 text-primary/80" />
+          <span>{label}</span>
+        </div>
+        <ChevronRight className="w-3.5 h-3.5" />
+      </div>
+      {open && (
+        <div className="absolute left-full top-0 ml-1 min-w-[200px] bg-card/95 border border-border/80 shadow-2xl rounded-xl py-1.5 backdrop-blur-2xl z-[160] flex flex-col font-mono">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const MenuSectionLabel: React.FC<{ label: string }> = ({ label }) => (
+  <div className="px-3 py-1 text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest select-none">{label}</div>
+);
+
 export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMenuBarProps) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -196,30 +225,6 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
       </div>
     );
   };
-
-  const SubMenu = ({ label, children }: { label: string; children: React.ReactNode }) => {
-    const [open, setOpen] = useState(false);
-    return (
-      <div className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
-        <div className="w-full text-left px-3 py-1.5 text-[11px] font-mono flex items-center justify-between text-foreground/90 hover:bg-primary/15 hover:text-foreground cursor-pointer">
-          <div className="flex items-center gap-2.5">
-            <Layers className="w-3.5 h-3.5 text-primary/80" />
-            <span>{label}</span>
-          </div>
-          <ChevronRight className="w-3.5 h-3.5" />
-        </div>
-        {open && (
-          <div className="absolute left-full top-0 ml-1 min-w-[200px] bg-card/95 border border-border/80 shadow-2xl rounded-xl py-1.5 backdrop-blur-2xl z-[160] flex flex-col font-mono">
-            {children}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const MenuSectionLabel = ({ label }: { label: string }) => (
-    <div className="px-3 py-1 text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest select-none">{label}</div>
-  );
 
   const MenuItem = ({ label, shortcut, icon: Icon, onClick, disabled, divider }: any) => {
     if (divider) {
