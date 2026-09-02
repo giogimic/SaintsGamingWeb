@@ -6,6 +6,10 @@
 
 import type { IToolHandler, ToolExecutionContext } from './IToolHandler';
 import { SelectToolHandler } from './SelectToolHandler';
+import { BrushToolHandler } from './BrushToolHandler';
+import { FillToolHandler } from './FillToolHandler';
+import { EraserToolHandler } from './EraserToolHandler';
+import { EyedropperToolHandler } from './EyedropperToolHandler';
 import type { ToolPointerEvent, EditorToolId } from '../types';
 
 export class ToolDispatcher {
@@ -14,6 +18,10 @@ export class ToolDispatcher {
 
   constructor() {
     this.registerHandler(new SelectToolHandler());
+    this.registerHandler(new BrushToolHandler());
+    this.registerHandler(new FillToolHandler());
+    this.registerHandler(new EraserToolHandler());
+    this.registerHandler(new EyedropperToolHandler());
   }
 
   public registerHandler(handler: IToolHandler): void {

@@ -17,9 +17,9 @@ export interface ToolExecutionContext {
 export interface IToolHandler {
   readonly id: EditorToolId;
   
-  onPointerDown(event: ToolPointerEvent, context: ToolExecutionContext): boolean | void;
-  onPointerMove(event: ToolPointerEvent, context: ToolExecutionContext): boolean | void;
-  onPointerUp(event: ToolPointerEvent, context: ToolExecutionContext): boolean | void;
+  onPointerDown?(event: ToolPointerEvent, context: ToolExecutionContext): boolean | void;
+  onPointerMove?(event: ToolPointerEvent, context: ToolExecutionContext): boolean | void;
+  onPointerUp?(event: ToolPointerEvent, context: ToolExecutionContext): boolean | void;
   onHover?(event: ToolPointerEvent, context: ToolExecutionContext): void;
   onCancel?(context: ToolExecutionContext): void;
 }
