@@ -25,6 +25,7 @@ import {
   type EditorOp,
   type EditorOpStack,
   type PaintedCell,
+  type PaintedVoxel,
 } from '@/shared/game/editorOps';
 import {
   eraseTilesInRegion,
@@ -143,6 +144,21 @@ function dispatchOpEvents(op: EditorOp, direction: 'undo' | 'redo') {
                 c: c.c,
                 layerIdx: c.layerIdx,
                 value: direction === 'undo' ? c.before : c.after,
+              })),
+            },
+          })
+        );
+        break;
+      }
+      case 'paint_voxels': {
+        window.dispatchEvent(
+          new CustomEvent('studio_voxels_changed', {
+            detail: {
+              voxels: subOp.voxels.map((v) => ({
+                wx: v.wx,
+                wy: v.wy,
+                wz: v.wz,
+                word: direction === 'undo' ? v.before : v.after,
               })),
             },
           })
@@ -470,6 +486,7 @@ interface EditorState {
   setHasUnsavedChanges: (val: boolean) => void;
   setIsSavingMap: (val: boolean) => void;
   pushPaintOp: (cells: PaintedCell[]) => void;
+  pushVoxelOp: (voxels: PaintedVoxel[]) => void;
   pushFreeformOp: (before: any[], after: any[]) => void;
   undoLastOp: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
   redoLastOp: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
@@ -1878,6 +1895,17 @@ export const useEditorStore = create<EditorState>()(
               state.hasUnsavedChanges = true;
             }
           }
+        }),
+
+      pushVoxelOp: (voxels) =>
+        set((state) => {
+          if (voxels.length === 0) return;
+          state.opStack = pushEditorOp(state.opStack, {
+            kind: 'paint_voxels',
+            voxels,
+          });
+          state.mapDirty = true;
+          state.hasUnsavedChanges = true;
         }),
 
       pushFreeformOp: (before, after) =>

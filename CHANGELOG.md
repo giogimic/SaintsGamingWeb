@@ -1,3 +1,17 @@
+# 2.1.674
+- **Studio 3D Voxel Undo/Redo Engine & Complete Tool Fallthrough Elimination**:
+  - **Reversible 3D Voxel History & Undo/Redo (`editorOps.ts`, `editor-store.ts`, `GameCanvasBabylon.tsx`)**:
+    - Created `PaintVoxelsOp` (`paint_voxels`) and `pushVoxelOp` in the editor operation stack, enabling first-class atomic Undo (Ctrl+Z) and Redo (Ctrl+Y) across all 3D voxel brush, eraser, and flood-fill operations.
+    - Wired `studio_voxels_changed` event listeners to dynamically remesh dirty voxel chunks in Babylon.js upon undo/redo without requiring a full scene reload.
+    - Added automated unit test suite in `editorOps.test.ts` covering voxel mutability, stack reversal, and doc synchronization.
+  - **Tool Fallthrough Elimination Across All Handlers**:
+    - Added strict Voxel Mode guards (`store.studioMode === 'voxel'`) across `EraserToolHandler.ts`, `FillToolHandler.ts`, `EyedropperToolHandler.ts`, and `BrushToolHandler.ts` to guarantee that pointer raycast misses or void clicks never accidentally write to or erase background 2D tilemaps or splat decals.
+  - **Voxel Mode Auto-Switching (`TerrainBrushPalette.tsx`)**:
+    - Configured `TerrainBrushPalette.handleSelectSeamless` to automatically activate `setStudioMode('voxel')` upon selecting any 3D voxel material swatch.
+  - **WebGL Memory & Resource Leak Elimination (`BabylonEngine.ts`)**:
+    - Added automatic chunk mesh disposal for all active voxel chunks and disposal of `voxelCursorMesh` and `voxelCursorMaterial` inside `loadTilemap` and `BabylonEngine.dispose`.
+    - Hidden 2D `footprintUnifiedMesh` reticle plane whenever the 3D voxel cursor is active.
+
 # 2.1.673
 - **Studio Viewport Green Line Elimination & 3D Voxel Engine Integration**:
   - **Viewport Green Lines & Perimeter Boundary Fix (`GameCanvasBabylon.tsx`)**:

@@ -27,6 +27,11 @@ export class EyedropperToolHandler implements IToolHandler {
       context.showToast?.(
         `Sampled Voxel: Mat #${unpacked.materialId}, Shape #${unpacked.shapeId}, Orient #${unpacked.orientation} at [${event.voxelTarget.voxelCoord.wx}, ${event.voxelTarget.voxelCoord.wy}, ${event.voxelTarget.voxelCoord.wz}]`
       );
+      store.setBrushMode('paint');
+      return true;
+    } else if (store.studioMode === 'voxel') {
+      context.showToast?.('No voxel found at pointer target');
+      return false;
     } else if (curLayerIdx === LOGIC_LAYER_IDX) {
       const tagId = map.grid?.[r]?.[c] ?? 0;
       store.setActiveLogicTileId(tagId);

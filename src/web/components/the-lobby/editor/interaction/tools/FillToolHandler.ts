@@ -41,9 +41,13 @@ export class FillToolHandler implements IToolHandler {
       const totalZ = voxelWorld.totalDepthBlocks;
       const totalH = voxelWorld.totalHeightBlocks;
 
+      const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: number; after: number }> = [];
+
       while (queue.length > 0 && filledCount < MAX_VOXEL_FILL) {
         const [wx, wy, wz] = queue.shift()!;
+        const before = voxelWorld.getVoxel(wx, wy, wz);
         voxelWorld.setVoxel(wx, wy, wz, fillWord);
+        changedVoxels.push({ wx, wy, wz, before, after: fillWord });
         filledCount++;
 
         const neighbors: Array<[number, number, number]> = [
@@ -72,11 +76,15 @@ export class FillToolHandler implements IToolHandler {
         context.engine.meshDirtyVoxelChunks?.();
         const doc = voxelWorld.serializeToDoc();
         gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });
+        store.pushVoxelOp(changedVoxels);
         store.markMapDirty();
         context.showToast?.(`Voxel flood filled ${filledCount} blocks`);
       }
       return true;
     }
+
+    // Guard: Never fall through to 2D discrete flood fill when editing in 3D Voxel Mode
+    if (store.studioMode === 'voxel') return false;
 
     const { r, c } = event.tilePos;
     const height = liveMap.grid?.length || 24;

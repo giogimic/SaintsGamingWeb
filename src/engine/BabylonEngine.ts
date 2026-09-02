@@ -1665,6 +1665,13 @@ export class BabylonEngine {
       this.clearAuthorOverlays();
       this.batchedQuadIndex.clear();
       this.tilesetMeshBySource.clear();
+
+      if (this.voxelWorld) {
+        for (const chunk of this.voxelWorld.chunks.values()) {
+          this.voxelMesher?.disposeChunkMesh(chunk.key);
+        }
+        this.voxelWorld = undefined;
+      }
       
       this.disableLogicGridOverlay();
       if (this.mapPickPlane) {
@@ -3516,6 +3523,9 @@ export class BabylonEngine {
       if (this.canvas && this.canvas.style.cursor === 'none') this.canvas.style.cursor = 'default';
 
       if (voxelTarget && this.voxelWorld) {
+        if (this.footprintUnifiedMesh && this.footprintUnifiedMesh.isVisible) {
+          this.footprintUnifiedMesh.isVisible = false;
+        }
         this.renderVoxelCursor(voxelTarget, this.brushMode === 'eraser' ? 'erase' : this.brushMode === 'eyedropper' ? 'inspect' : 'place');
       } else {
         this.clearVoxelCursor();
@@ -6225,6 +6235,15 @@ export class BabylonEngine {
     this.selectionBoxMesh?.dispose();
     this.actionPreviewBoundsMesh?.dispose();
     this.itemBillboards?.dispose();
+    this.voxelCursorMesh?.dispose();
+    this.voxelCursorMaterial?.dispose();
+
+    if (this.voxelWorld) {
+      for (const chunk of this.voxelWorld.chunks.values()) {
+        this.voxelMesher?.disposeChunkMesh(chunk.key);
+      }
+      this.voxelWorld = undefined;
+    }
     
     this.spriteTextureCache.forEach((tex) => tex.dispose());
     this.spriteTextureCache.clear();

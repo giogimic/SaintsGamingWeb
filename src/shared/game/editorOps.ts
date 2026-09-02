@@ -11,6 +11,7 @@ import {
   resolvePaintTarget,
   type PaintableMap,
 } from "./tilePaint";
+import { VoxelWorld } from "./voxel/VoxelWorldDoc";
 
 export type PaintedCell = {
   r: number;
@@ -24,6 +25,19 @@ export type PaintedCell = {
 export type PaintCellsOp = {
   kind: "paint_cells";
   cells: PaintedCell[];
+};
+
+export type PaintedVoxel = {
+  wx: number;
+  wy: number;
+  wz: number;
+  before: number;
+  after: number;
+};
+
+export type PaintVoxelsOp = {
+  kind: "paint_voxels";
+  voxels: PaintedVoxel[];
 };
 
 export type LayerOp =
@@ -109,6 +123,7 @@ export type FreeformLayersOp = {
 
 export type EditorOp =
   | PaintCellsOp
+  | PaintVoxelsOp
   | LayerOp
   | EntityOp
   | GateOp
@@ -228,6 +243,19 @@ export function applyEditorOp(
         const result = writeCell(map, cell.layerIdx, cell.r, cell.c, value);
         if (!result.ok) return result;
       }
+      return { ok: true };
+    }
+
+    case "paint_voxels": {
+      const voxelDoc = (map as any).voxelDoc;
+      if (!voxelDoc) return { ok: false, reason: "No voxelDoc on map." };
+      const world = VoxelWorld.deserializeFromDoc(voxelDoc);
+      const voxels = direction === "undo" ? [...op.voxels].reverse() : op.voxels;
+      for (const v of voxels) {
+        const word = direction === "do" ? v.after : v.before;
+        world.setVoxel(v.wx, v.wy, v.wz, word);
+      }
+      (map as any).voxelDoc = world.serializeToDoc();
       return { ok: true };
     }
 
@@ -417,6 +445,7 @@ export function applyEditorOp(
 
 export function pushEditorOp(stack: EditorOpStack, op: EditorOp): EditorOpStack {
   if (op.kind === "paint_cells" && op.cells.length === 0) return stack;
+  if (op.kind === "paint_voxels" && op.voxels.length === 0) return stack;
   if (op.kind === "compound" && op.ops.length === 0) return stack;
   const undo = [...stack.undo, op];
   if (undo.length > MAX_EDITOR_OPS) undo.shift();
@@ -508,5 +537,9 @@ export function makeModifyMapPropsOp(before: Record<string, any>, after: Record<
 
 export function makeCompoundOp(ops: EditorOp[], description?: string): CompoundOp {
   return { kind: "compound", ops, description };
+}
+
+export function makePaintVoxelsOp(voxels: PaintedVoxel[]): PaintVoxelsOp {
+  return { kind: "paint_voxels", voxels };
 }
 
