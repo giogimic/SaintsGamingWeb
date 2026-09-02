@@ -94,6 +94,34 @@ export class VoxelWorld {
     return this.heightChunks * CHUNK_SIZE_Y;
   }
 
+  public get originOffsetX(): number {
+    return -this.totalWidthBlocks / 2;
+  }
+
+  public get originOffsetZ(): number {
+    return -this.totalDepthBlocks / 2;
+  }
+
+  public get originOffsetY(): number {
+    return -16;
+  }
+
+  public voxelToWorldMesh(wx: number, wy: number, wz: number): { x: number; y: number; z: number } {
+    return {
+      x: wx + this.originOffsetX,
+      y: wy + this.originOffsetY,
+      z: wz + this.originOffsetZ,
+    };
+  }
+
+  public worldMeshToVoxel(x: number, y: number, z: number): { wx: number; wy: number; wz: number } {
+    return {
+      wx: Math.floor(x - this.originOffsetX),
+      wy: Math.floor(y - this.originOffsetY),
+      wz: Math.floor(z - this.originOffsetZ),
+    };
+  }
+
   public static worldToChunkCoords(wx: number, wy: number, wz: number): {
     cx: number;
     cz: number;

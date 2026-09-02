@@ -14,6 +14,8 @@ import { rasterizeLine } from '@/shared/game/lineRaster';
 import { isPointInGeometry } from '@/shared/game/geometry/continuousGeometry';
 import { STUDIO_MAP_HOT_RELOAD_EVENT } from '@/shared/game/studioEvents';
 import { isInBrushShape } from '@/shared/game/brushGeometry';
+import { VOXEL_WORD_AIR } from '@/shared/game/voxel/VoxelWord';
+import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
 
 export class EraserToolHandler implements IToolHandler {
   public readonly id = 'eraser' as const;
@@ -36,19 +38,19 @@ export class EraserToolHandler implements IToolHandler {
     const { r, c } = event.tilePos;
     const { x, z } = event.worldPos;
 
-    // 0. 3D Voxel Erasure
-    if (store.studioMode === 'voxel') {
-      const voxelWorld = (context.engine as any).voxelWorld;
-      if (voxelWorld) {
-        const vy = 16; // Top surface block height
-        voxelWorld.setVoxel(c, vy, r, 0); // Set to AIR
+    // 0. Authoritative 3D Voxel Erasure
+    if (event.voxelTarget && (context.engine as any).voxelWorld) {
+      const voxelWorld: VoxelWorld = (context.engine as any).voxelWorld;
+      const targetCoord = event.voxelTarget.voxelCoord;
+
+      const changed = voxelWorld.setVoxel(targetCoord.wx, targetCoord.wy, targetCoord.wz, VOXEL_WORD_AIR);
+      if (changed) {
         context.engine.meshDirtyVoxelChunks?.();
-        
         const doc = voxelWorld.serializeToDoc();
         gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });
         store.markMapDirty();
-        return true;
       }
+      return true;
     }
 
     // 1. Freeform Splat / Props Erasure

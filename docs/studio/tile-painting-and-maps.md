@@ -1,54 +1,64 @@
-# 🎨 Dual-Grid Tile Painting & Map Building
+# 🎨 3D Voxel World Authoring & Studio Editing
 
-Saints Studio features a **dual-grid map authoring pipeline**: visual graphics and functional gameplay logic are stored and edited together.
+Saints Studio features an authoritative **Greenfield 3D Voxel World Architecture**: volumetric geometry, material physics, logic tags, and entity instances are stored and edited in true 3D voxel space, while the game renders in an orthographic / 2.5D presentation.
 
 ---
 
-## 1. Hybrid Grid & Freeform Layer Architecture
+## 1. Authoritative 3D Voxel World Architecture
 
-A map document (`WorldMap`) supports both discrete dual-grid layers and continuous freeform layers:
-1. **Visual Tile Layers (`tileLayers`):** Multi-layered discrete tiles (Ground, Details, Overhead) referenced by Global Tile IDs (GIDs) mapped to sprite sheet tilesets.
-2. **Logic Layer (`grid` / Layer `-1`):** A single integer array where each cell contains a logic tag ID defining collision, warps, water, ice, safe zones, or interaction components.
-3. **Freeform Layers (`freeformLayers`):** Continuous sub-tile mathematical layers for organic terrain splats and 3D billboard props/foliage.
-   - `splats`: Smooth ground decals with scatter distributions, opacity falloff, and subregion UV offsets.
-   - `objects`: 2.5D/3D billboard entities (Props, Foliage) with continuous $(X, Y, Z)$ positions, custom scaling, jitter, and collision tags.
+The canonical world representation is structured hierarchically:
 
 ```
-┌────────────────────────────────────────────────────────┐
-│ 2.5D Props & Foliage (`freeformLayers.objects`)        │ Freestanding 3D billboards
-├────────────────────────────────────────────────────────┤
-│ Visual Details Layer (Trees, Roofs)                    │ GID > 0
-├────────────────────────────────────────────────────────┤
-│ Terrain Splats (`freeformLayers.splats`)               │ Continuous sub-tile texture blends
-├────────────────────────────────────────────────────────┤
-│ Visual Ground Layer (Grass, Paths)                     │ GID = 17 (Default Solid Grass)
-├────────────────────────────────────────────────────────┤
-│ Logic Collision Layer (Layer -1)                       │ Solid=1, Water=2, Warp=3, etc.
-└────────────────────────────────────────────────────────┘
+WORLD ATLAS
+    ↓
+MAP (`WorldMap`)
+    ↓
+VOXEL CHUNKS (16 × 16 × 32 cells, RLE-compressed)
+    ↓
+VOXEL CELLS (32-bit packed VoxelWords)
+    ↓
+MATERIAL + SHAPE + ORIENTATION + AO/TINT + PHYSICS + LOGIC
 ```
 
----
-
-## 2. Logic Tag Palette (`LogicTagPalette.tsx`)
-
-Logic tags define functional tile properties at runtime:
-- **`0: Clear / Walkable`**: Passable ground with no special behavior.
-- **`1: Solid / Collision`**: Blocks character and projectile movement.
-- **`2: Water`**: Impassable unless swimming/surfing or using water familiars.
-- **`3: Warp Gate`**: Teleports player to target map and coordinates ($X/Y$).
-- **`4: Tall Grass / Encounter Zone`**: Steps trigger wild creature encounter rolls.
-- **`5: Safe Zone / Town`**: Disables PvP and hostile monster aggro.
-- **`6: Damage / Hazard`**: Periodically ticks damage or applies environmental status effects (lava, spikes, poison gas).
+1. **Voxel World is the Source of Truth**: The world representation is volumetric 3D chunks of 32-bit compact voxel words (`VoxelWorld` / `VoxelWorldDocV3`).
+2. **2.5D is Presentation**: The camera perspective (isometric 45°, top-down 90°), UI overlays, minimaps, and billboard sprites are presentation layers—**NOT** a second authoritative world representation.
+3. **Unified Spatial Target Resolver (`VoxelTargetResolver`)**: All Studio editing interactions (`Brush`, `Eraser`, `Eyedropper`, `Fill`, `Select`, `Prefab`, `Prop`) route through a single authoritative spatial resolver that converts camera raycasts into exact 3D voxel coordinates `(wx, wy, wz)`, chunk coordinates, and hit face normals.
+4. **Separation of Block Scale vs Material Texture**: Block world scale (e.g. 64px = 1 Babylon unit) defines physical geometry; palette material definitions determine visual appearance without dictating grid dimensions.
+5. **Transactional Editing (`VoxelTransaction`)**: Edits are grouped into atomic transactions. Only dirty chunks rebuild via `meshDirtyVoxelChunks()`, maintaining 60 FPS without scene reloads.
+6. **Operational Lifecycle**: `Save` (persist draft/editor content) $\neq$ `Publish` (create immutable version) $\neq$ `Deploy` (activate runtime version on Gateway).
 
 ---
 
-## 3. Painting & Authoring Suites
+## 2. 32-Bit Compact VoxelWord Bitpacking
 
-- **Continuous Selection Tools:** Supports Box, Circle, Lasso (Freehand), and Regular Polygon. Previews are rendered as smooth vector paths in WebGL (`setContinuousSelectionPreview`) and retain mathematical shape fidelity upon mouse release.
-- **5 Multi-Shape Brushes:** Circle, Square, Diamond, Star, and Polygon brush footprints with dynamic radius scaling ($1\times 1$ to $7\times 7$) and angle rotation ($0^\circ$ to $360^\circ$).
-- **Stamp / Brush (`B`):** Paints single or multi-cell patches centered on cursor $(0.5, 0.5)$ pivot.
-- **Rectangle (`R`):** Drag-and-drop bounding box fill for large rooms and fields.
-- **Flood Fill (`F` / `G`):** 4-way BFS flood fill algorithm supporting visual and logic layers with selection boundary clipping (`MAX_FILL_CELLS = 4096`).
-- **Sheet Slicer & Precision Cutter (`SheetSlicerPanel.tsx`):** Pixel cutter for slicing custom tileset subregions with normalized UV coordinates (`uOffset, vOffset, uScale, vScale`) for 1-click export to Terrain or Props.
-- **Eyedropper (`I`):** Click any cell in the viewport to immediately select its GID or Logic Tag.
-- **Incremental Remeshing:** When visual tiles or splats are painted, only affected chunk meshes (`tileset_mesh_*` / `splat_mesh_*`) rebuild in Babylon.js, maintaining real-time 60 FPS performance during painting.
+Every voxel cell in the 3D world is stored as a high-efficiency 32-bit integer:
+
+| Bits | Field | Description | Values |
+| :--- | :--- | :--- | :--- |
+| `0..7` (8 bits) | `materialId` | Visual terrain/block material | `0: Air`, `1: Gunmetal`, `2: Grass`, `3: Dirt`, `4: Stone`, `5: Water`, `6: Sand`, `7: Wood`, `8: Snow` |
+| `8..12` (5 bits) | `shapeId` | Geometric mesh shape | `0: Air`, `1: Full Cube`, `2: Slope 45°`, `3: Slab Half`, `4: Stairs Straight`, `5: Corner Wedge` |
+| `13..15` (3 bits) | `orientation` | Cardinal facing direction | `0: North`, `1: East`, `2: South`, `3: West` |
+| `16..19` (4 bits) | `aoTint` | Baked ambient occlusion & tint | `0..15` |
+| `20..23` (4 bits) | `physics` | Collision and movement rules | `0: Pass-Through`, `1: Solid Obstacle`, `2: Walkable Slope`, `3: Swimmable Fluid`, `4: Climbable` |
+| `24..31` (8 bits) | `logic` | Interactive trigger components | `0: None`, `1: Warp Gate`, `2: Wild Encounter`, `3: Safe Zone`, `4: Hazard Damage`, `5: Spawn Point` |
+
+---
+
+## 3. Spatial Target Resolver (`VoxelTargetResolver.ts`)
+
+When interacting with the 3D viewport, `resolveVoxelTarget` processes camera rays:
+- **Normal-Snapped Hit Resolution**: Raycasts landing on chunk meshes (`voxel_chunk_*`) determine the dominant cardinal face normal (`±X, ±Y, ±Z`).
+- **Targeted Solid Block**: Stepping inward along $-N \times 0.05$ yields $(wx, wy, wz)$ for erasure, eyedropper sampling, or direct replacement.
+- **Adjacent Placement Block**: Stepping outward along $+N \times 0.05$ yields $(adjWx, adjWy, adjWz)$ for building on top or against side faces.
+- **Analytical Foundation Raycast**: Rays passing through open air project to the base foundation plane ($Y = 0 \to wy = 16$), ensuring 100% reliable picking from any camera angle.
+
+---
+
+## 4. Studio Editing Tools & World-Space Workflow
+
+- **Brush Tool (`B`):** Places 3D voxels with active `materialId`, `shapeId`, and `orientation`.
+- **Eraser Tool (`E`):** Clears targeted voxels directly to `VOXEL_WORD_AIR` $(0)$.
+- **Eyedropper Tool (`I`):** Samples exact material, shape, and orientation attributes from any clicked voxel.
+- **Volumetric Flood Fill (`F` / `G`):** 3D BFS flood fill across contiguous matching voxel words.
+- **3D Voxel Cursor**: Real-time gold/amber wireframe box with glowing edges highlights the targeted or adjacent voxel.
+- **Live Voxel HUD**: Displays `Voxel [X: wx, Y: wy, Z: wz]` live in the bottom status bar.

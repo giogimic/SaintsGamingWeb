@@ -18,6 +18,7 @@ import {
   VoxelHistoryStack,
   resolveSlopeShape,
   convertLegacy2DToVoxelWorld,
+  resolveVoxelTarget,
   VOXEL_MAT_GRASS,
   VOXEL_MAT_GUNMETAL,
   VOXEL_WORD_GUNMETAL
@@ -198,6 +199,76 @@ describe('Voxel Core Engine (Option A)', () => {
       const waterVoxel = world.getVoxel(1, surfaceY, 1);
       const unpackedWater = unpackVoxel(waterVoxel);
       expect(unpackedWater.physics).toBe(VoxelPhysics.SWIMMABLE_FLUID);
+    });
+  });
+
+  describe('VoxelTargetResolver', () => {
+    it('accurately resolves 3D picked block and adjacent placement voxel for top face', () => {
+      const world = new VoxelWorld('target_test', 'Target Test', 2, 2, 1);
+      world.generateDefaultWorld();
+
+      // Top of chunk foundation at wy=15 is at Babylon mesh Y = -1 to 0 (top face at Y=0)
+      // Center of world is X=0, Z=0 (originOffsetX = -16, originOffsetZ = -16)
+      // A hit at (0.5, 0.0, 0.5) with normal (0, 1, 0)
+      const mockPick = {
+        hit: true,
+        pickedMesh: { name: 'voxel_chunk_0_0_0' },
+        pickedPoint: { x: 0.5, y: 0.0, z: 0.5 },
+        getNormal: () => ({ x: 0, y: 1, z: 0 }),
+      };
+
+      const res = resolveVoxelTarget(mockPick, world);
+      expect(res).not.toBeNull();
+      if (res) {
+        expect(res.hit).toBe(true);
+        expect(res.voxelCoord.wx).toBe(16); // 0.5 - (-16) = 16.5 -> floor = 16
+        expect(res.voxelCoord.wz).toBe(16);
+        expect(res.voxelCoord.wy).toBe(15); // Top solid block of foundation
+        expect(res.adjacentVoxelCoord.wy).toBe(16); // Air block right above
+        expect(res.hitNormal).toEqual({ x: 0, y: 1, z: 0 });
+      }
+    });
+
+    it('accurately resolves side face hits for building out adjacent blocks', () => {
+      const world = new VoxelWorld('side_test', 'Side Test', 2, 2, 1);
+      world.generateDefaultWorld();
+
+      // Hit east face of a block at (meshX=1.0, meshY=-0.5, meshZ=0.5) with normal (+1, 0, 0)
+      const mockPick = {
+        hit: true,
+        pickedMesh: { name: 'voxel_chunk_0_0_0' },
+        pickedPoint: { x: 1.0, y: -0.5, z: 0.5 },
+        getNormal: () => ({ x: 1, y: 0, z: 0 }),
+      };
+
+      const res = resolveVoxelTarget(mockPick, world);
+      expect(res).not.toBeNull();
+      if (res) {
+        expect(res.hitNormal).toEqual({ x: 1, y: 0, z: 0 });
+        expect(res.voxelCoord.wx).toBe(16);
+        expect(res.adjacentVoxelCoord.wx).toBe(17); // Neighbor block to the East
+      }
+    });
+
+    it('falls back to analytical foundation raycast when ray passes through open air', () => {
+      const world = new VoxelWorld('ray_test', 'Ray Test', 2, 2, 1);
+      world.generateDefaultWorld();
+
+      // Camera ray pointing down towards (X=0, Y=0, Z=0)
+      const ray = {
+        origin: { x: 0, y: 10, z: 0 },
+        direction: { x: 0, y: -1, z: 0 },
+      };
+
+      const res = resolveVoxelTarget(null, world, ray);
+      expect(res).not.toBeNull();
+      if (res) {
+        expect(res.hit).toBe(true);
+        expect(res.voxelCoord.wx).toBe(16);
+        expect(res.voxelCoord.wz).toBe(16);
+        expect(res.voxelCoord.wy).toBe(15);
+        expect(res.adjacentVoxelCoord.wy).toBe(16);
+      }
     });
   });
 });

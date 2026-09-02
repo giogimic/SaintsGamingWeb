@@ -74,6 +74,7 @@ import {
 import { ItemBillboardRenderer, type ItemBillboardConfig } from "./ItemBillboardRenderer";
 import { VoxelChunkMesher } from './voxel/VoxelChunkMesher';
 import { VoxelWorld, type VoxelWorldDocV3, generateDefaultWorldDoc } from '../shared/game/voxel/VoxelWorldDoc';
+import { resolveVoxelTarget, type VoxelTargetResolution } from '../shared/game/voxel/VoxelTargetResolver';
 
 export interface RenderedChunk {
   mapId?: string;
@@ -2467,6 +2468,94 @@ export class BabylonEngine {
     }
   }
 
+  private voxelCursorMesh?: Mesh;
+  private voxelCursorMaterial?: StandardMaterial;
+
+  /**
+   * Resolves authoritative 3D voxel target from screen pixel coordinates.
+   */
+  public resolveVoxelTargetAtScreenCoord(screenX: number, screenY: number): VoxelTargetResolution | null {
+    if (!this.scene || !this.voxelWorld) return null;
+    const ray = this.camera
+      ? this.scene.createPickingRay(screenX, screenY, Matrix.Identity(), this.camera)
+      : null;
+    const pickResult = this.scene.pick(
+      screenX,
+      screenY,
+      (mesh) => mesh.isPickable && isTilePickTarget(mesh.name)
+    );
+    return resolveVoxelTarget(
+      pickResult,
+      this.voxelWorld,
+      ray ? { origin: ray.origin, direction: ray.direction } : null
+    );
+  }
+
+  /**
+   * Renders a crisp 3D bounding box / highlight cube over the targeted voxel.
+   */
+  public renderVoxelCursor(
+    target: VoxelTargetResolution,
+    mode: 'place' | 'erase' | 'inspect' = 'place'
+  ): void {
+    if (!this.scene || !this.voxelWorld) return;
+
+    if (!this.voxelCursorMesh || this.voxelCursorMesh.isDisposed()) {
+      this.voxelCursorMesh = MeshBuilder.CreateBox('voxel_hover_cursor', { size: 1 }, this.scene);
+      this.voxelCursorMesh.parent = this.rootNode;
+      this.voxelCursorMesh.isPickable = false;
+      this.voxelCursorMesh.enableEdgesRendering();
+      this.voxelCursorMesh.edgesWidth = 3.0;
+
+      this.voxelCursorMaterial = new StandardMaterial('voxel_cursor_mat', this.scene);
+      this.voxelCursorMaterial.diffuseColor = new Color3(1, 0.75, 0.1);
+      this.voxelCursorMaterial.emissiveColor = new Color3(0.9, 0.6, 0.05);
+      this.voxelCursorMaterial.alpha = 0.35;
+      this.voxelCursorMaterial.disableLighting = true;
+      this.voxelCursorMesh.material = this.voxelCursorMaterial;
+    }
+
+    const coord = mode === 'place' ? target.adjacentVoxelCoord : target.voxelCoord;
+    const worldPos = this.voxelWorld.voxelToWorldMesh(coord.wx, coord.wy, coord.wz);
+
+    this.voxelCursorMesh.position.set(
+      worldPos.x + 0.5,
+      worldPos.y + 0.5,
+      worldPos.z + 0.5
+    );
+
+    if (mode === 'erase') {
+      this.voxelCursorMesh.edgesColor = new Color4(0.95, 0.25, 0.25, 0.95);
+      if (this.voxelCursorMaterial) {
+        this.voxelCursorMaterial.diffuseColor = new Color3(0.95, 0.25, 0.25);
+        this.voxelCursorMaterial.emissiveColor = new Color3(0.8, 0.1, 0.1);
+        this.voxelCursorMaterial.alpha = 0.4;
+      }
+    } else if (mode === 'inspect') {
+      this.voxelCursorMesh.edgesColor = new Color4(0.2, 0.8, 0.95, 0.95);
+      if (this.voxelCursorMaterial) {
+        this.voxelCursorMaterial.diffuseColor = new Color3(0.2, 0.8, 0.95);
+        this.voxelCursorMaterial.emissiveColor = new Color3(0.1, 0.7, 0.9);
+        this.voxelCursorMaterial.alpha = 0.35;
+      }
+    } else {
+      this.voxelCursorMesh.edgesColor = new Color4(0.96, 0.7, 0.1, 0.95);
+      if (this.voxelCursorMaterial) {
+        this.voxelCursorMaterial.diffuseColor = new Color3(0.96, 0.7, 0.1);
+        this.voxelCursorMaterial.emissiveColor = new Color3(0.85, 0.55, 0.05);
+        this.voxelCursorMaterial.alpha = 0.35;
+      }
+    }
+
+    this.voxelCursorMesh.isVisible = true;
+  }
+
+  public clearVoxelCursor(): void {
+    if (this.voxelCursorMesh && !this.voxelCursorMesh.isDisposed()) {
+      this.voxelCursorMesh.isVisible = false;
+    }
+  }
+
   private applyTileMaterial(mat: StandardMaterial, tileId: number, r: number = 0, c: number = 0, isBlock: boolean = false) {
     const isAlt = (r + c) % 2 === 0;
     const tone = isAlt ? 0.025 : 0;
@@ -3209,10 +3298,17 @@ export class BabylonEngine {
    * With brushRadius >= 1, renders in-world 3D hover reticle (1x1 or circular/square multi-tile).
    */
   public enableTilePicking(
-    onTileClick: (r: number, c: number, layerIdx?: number, eventType?: 'down' | 'move' | 'up', point?: { x: number; z: number }) => void,
+    onTileClick: (
+      r: number,
+      c: number,
+      layerIdx?: number,
+      eventType?: 'down' | 'move' | 'up',
+      point?: { x: number; z: number },
+      voxelTarget?: VoxelTargetResolution | null
+    ) => void,
     options?: { 
       drag?: boolean; 
-      onTileHover?: (r: number, c: number) => void;
+      onTileHover?: (r: number, c: number, voxelTarget?: VoxelTargetResolution | null) => void;
       onTileLeave?: () => void;
       onDragStart?: () => void;
       onDragEnd?: () => void;
@@ -3254,53 +3350,54 @@ export class BabylonEngine {
     const emitFromScenePick = (eventType?: 'down' | 'move' | 'up') => {
       if (!this.scene) return;
       const resolved = getResolvedTile(this.scene.pointerX, this.scene.pointerY);
-      if (!resolved) return;
+      const voxelTarget = this.resolveVoxelTargetAtScreenCoord(this.scene.pointerX, this.scene.pointerY);
+      if (!resolved && !voxelTarget) return;
+
+      const r = resolved?.r ?? voxelTarget?.localCoord.lz ?? 0;
+      const c = resolved?.c ?? voxelTarget?.localCoord.lx ?? 0;
+      const layerIdx = resolved?.layerIdx ?? -1;
+      const point = resolved?.point ?? (voxelTarget ? { x: voxelTarget.hitPoint.x, z: voxelTarget.hitPoint.z } : undefined);
 
       const isContinuousMode = this.activeLayerType === 'paint-splat' || this.activeLayerType === 'free-form';
 
-      if (isContinuousMode && resolved.point) {
+      if (isContinuousMode && point) {
         // --- Continuous (splat / freeform) duplicate suppression ---
-        // Use distance-based threshold instead of grid-cell key to allow smooth sub-cell painting.
         if (eventType === 'move') {
-          const dx = resolved.point.x - lastContinuousX;
-          const dz = resolved.point.z - lastContinuousZ;
+          const dx = point.x - lastContinuousX;
+          const dz = point.z - lastContinuousZ;
           if (dx * dx + dz * dz < CONTINUOUS_MIN_DIST_SQ) return;
         }
-        // Always reset on 'down' so new strokes start fresh
-        lastContinuousX = resolved.point.x;
-        lastContinuousZ = resolved.point.z;
-        lastKey = ''; // clear grid key so grid modes don't stale
+        lastContinuousX = point.x;
+        lastContinuousZ = point.z;
+        lastKey = '';
 
-        // Emit single continuous world point — never expand via grid brush radius
-        onTileClick(resolved.r, resolved.c, resolved.layerIdx, eventType, resolved.point);
+        onTileClick(r, c, layerIdx, eventType, point, voxelTarget);
         return;
       }
 
       // --- Grid / discrete mode duplicate suppression ---
-      const key = `${resolved.r},${resolved.c}`;
+      const key = voxelTarget ? `${voxelTarget.voxelCoord.wx}_${voxelTarget.voxelCoord.wy}_${voxelTarget.voxelCoord.wz}` : `${r},${c}`;
       if (key === lastKey && eventType === 'move') return;
       lastKey = key;
 
       // Apply brush radius for grid painting
       if (this.brushRadius <= 1 || this.activeBrushPattern) {
-        onTileClick(resolved.r, resolved.c, resolved.layerIdx, eventType, resolved.point);
+        onTileClick(r, c, layerIdx, eventType, point, voxelTarget);
       } else {
         const rad = this.brushRadius - 1;
         const w = this.currentMapWidth;
         const h = this.currentMapHeight;
         for (let dr = -rad; dr <= rad; dr++) {
           for (let dc = -rad; dc <= rad; dc++) {
-            // Apply brush shape filtering
             if (!isInGridFootprint(dr, dc, rad, this.brushShape)) continue;
-            const nr = resolved.r + dr;
-            const nc = resolved.c + dc;
+            const nr = r + dr;
+            const nc = c + dc;
             if (nr >= 0 && nr < h && nc >= 0 && nc < w) {
-              // Offset the point for brushed tiles based on grid center
-              const pt = resolved.point ? {
-                x: resolved.point.x + (nc - resolved.c) * this.currentTileSize,
-                z: resolved.point.z - (nr - resolved.r) * this.currentTileSize
+              const pt = point ? {
+                x: point.x + (nc - c) * this.currentTileSize,
+                z: point.z - (nr - r) * this.currentTileSize
               } : undefined;
-              onTileClick(nr, nc, resolved.layerIdx, eventType, pt);
+              onTileClick(nr, nc, layerIdx, eventType, pt, voxelTarget);
             }
           }
         }
@@ -3313,42 +3410,58 @@ export class BabylonEngine {
           this.lastHoveredR = -1;
           this.lastHoveredC = -1;
           this.clearBrushPreview();
+          this.clearVoxelCursor();
         }
         if (this.canvas) this.canvas.style.cursor = 'default';
         return;
       }
+
+      const voxelTarget = this.resolveVoxelTargetAtScreenCoord(this.scene.pointerX, this.scene.pointerY);
       const resolved = getResolvedTile(this.scene.pointerX, this.scene.pointerY);
-      if (!resolved) {
+
+      if (!resolved && !voxelTarget) {
         if (this.lastHoveredR !== -1 || this.lastHoveredC !== -1) {
           this.lastHoveredR = -1;
           this.lastHoveredC = -1;
           this.clearBrushPreview();
+          this.clearVoxelCursor();
           if (options?.onTileLeave) options.onTileLeave();
         }
         if (this.canvas) this.canvas.style.cursor = 'default';
         return;
       }
+
       // Keep natural cursor visible
       if (this.canvas && this.canvas.style.cursor === 'none') this.canvas.style.cursor = 'default';
 
-      if (this.activeLayerType === 'paint-splat' || this.activeLayerType === 'free-form') {
-        if (resolved.point) {
-          this.renderContinuousSplatPreview(resolved.point.x, resolved.point.z);
-        }
+      if (voxelTarget && this.voxelWorld) {
+        this.renderVoxelCursor(voxelTarget, this.brushMode === 'eraser' ? 'erase' : this.brushMode === 'eyedropper' ? 'inspect' : 'place');
       } else {
+        this.clearVoxelCursor();
+      }
+
+      const r = resolved?.r ?? voxelTarget?.localCoord.lz ?? 0;
+      const c = resolved?.c ?? voxelTarget?.localCoord.lx ?? 0;
+
+      if (this.activeLayerType === 'paint-splat' || this.activeLayerType === 'free-form') {
+        const pt = resolved?.point ?? (voxelTarget ? { x: voxelTarget.hitPoint.x, z: voxelTarget.hitPoint.z } : undefined);
+        if (pt) {
+          this.renderContinuousSplatPreview(pt.x, pt.z);
+        }
+      } else if (!this.voxelWorld) {
         if (this.splatPreviewMesh && this.splatPreviewMesh.isVisible) {
           this.splatPreviewMesh.isVisible = false;
         }
-        // Memoize tile cell hover reticle rebuilds, but always trigger hover callback if point changes
-        const sameCell = this.lastHoveredR === resolved.r && this.lastHoveredC === resolved.c;
-        this.lastHoveredR = resolved.r;
-        this.lastHoveredC = resolved.c;
+        const sameCell = this.lastHoveredR === r && this.lastHoveredC === c;
+        this.lastHoveredR = r;
+        this.lastHoveredC = c;
         if (!sameCell) {
-          this.renderBrushPreview(resolved.r, resolved.c);
+          this.renderBrushPreview(r, c);
         }
       }
+
       if (options?.onTileHover) {
-        options.onTileHover(resolved.r, resolved.c);
+        options.onTileHover(r, c, voxelTarget);
       }
     };
 

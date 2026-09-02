@@ -12,6 +12,7 @@ import { DEFAULT_STUDIO_TILESETS } from "@/shared/game/studioTilesetBootstrap";
 import { npcToEntity } from "@/shared/game/entities";
 import { AuditService } from "@/server/audit/AuditService";
 import { MapSyncService } from "@/server/mapSyncService";
+import { generateDefaultWorldDoc } from "@/shared/game/voxel/VoxelWorldDoc";
 
 
 export const dynamic = 'force-dynamic';
@@ -32,19 +33,20 @@ async function loadMapPayload(slug: string) {
       const parsed = JSON.parse(worldMap.tileLayersData || "[]");
       if (Array.isArray(parsed)) {
         tileLayers = parsed;
-      } else if (parsed && typeof parsed === 'object') {
+      } else if (parsed && typeof parsed === 'object' && parsed.formatVersion === 3) {
         voxelDoc = parsed;
-        const w = (parsed.widthChunks || 2) * 16;
-        const h = (parsed.depthChunks || 2) * 16;
-        tileLayers = [
-          {
-            name: 'Ground',
-            grid: Array.from({ length: h }, () => Array(w).fill(17)),
-          },
-        ];
       }
     } catch {
       tileLayers = [];
+    }
+
+    if (!voxelDoc) {
+      try {
+        const parsedGrid = JSON.parse(worldMap.gridData || "{}");
+        if (parsedGrid && typeof parsedGrid === 'object' && parsedGrid.formatVersion === 3) {
+          voxelDoc = parsedGrid;
+        }
+      } catch {}
     }
 
     let tilesets = [];
@@ -58,6 +60,15 @@ async function loadMapPayload(slug: string) {
     }
 
     const dims = resolveMapDimensions({ grid, tileLayers });
+    if (!voxelDoc) {
+      voxelDoc = generateDefaultWorldDoc(
+        Math.max(1, Math.ceil(dims.width / 16)),
+        Math.max(1, Math.ceil(dims.height / 16)),
+        64
+      );
+      voxelDoc.id = worldMap.id;
+      voxelDoc.name = worldMap.name;
+    }
     const rawGates = JSON.parse(worldMap.gatesData || "{}");
     const connections = rawGates.connections || undefined;
     const actualGates = rawGates.gates !== undefined ? rawGates.gates : rawGates;
@@ -107,7 +118,11 @@ async function loadMapPayload(slug: string) {
       encounterPool: JSON.parse(gameMap.encounters || "[]"),
       tileLayers: [],
       tilesets: [],
-      voxelDoc: undefined,
+      voxelDoc: generateDefaultWorldDoc(
+        Math.max(1, Math.ceil(gameMap.width / 16)),
+        Math.max(1, Math.ceil(gameMap.height / 16)),
+        64
+      ),
       source: "gameMap" as const,
     };
   }
@@ -151,7 +166,11 @@ export async function GET(
         tileLayers: [],
         freeformLayers: [],
         tilesets: [],
-        voxelDoc: undefined,
+        voxelDoc: generateDefaultWorldDoc(
+          Math.max(1, Math.ceil(blankW / 16)),
+          Math.max(1, Math.ceil(blankH / 16)),
+          64
+        ),
         version: 0,
         source: 'worldMap' as const,
       };

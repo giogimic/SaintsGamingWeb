@@ -1,9 +1,3 @@
-/**
- * Saints Gaming Studio — Brush Tool Handler
- *
- * Handles 2D discrete tile paint, continuous terrain splat spray, and straight-line rasterization.
- */
-
 import type { IToolHandler, ToolExecutionContext } from './IToolHandler';
 import type { ToolPointerEvent } from '../types';
 import { useEditorStore } from '../../editor-store';
@@ -15,8 +9,15 @@ import { isPointInGeometry } from '@/shared/game/geometry/continuousGeometry';
 import { STUDIO_MAP_HOT_RELOAD_EVENT } from '@/shared/game/studioEvents';
 import { generateSplatScatterPoints, isInBrushShape } from '@/shared/game/brushGeometry';
 import { resolveMapDimensions } from '@/shared/game/mapDocVisual';
-
 import { applyAutoTilingPass } from '@/shared/game/terrainEdgeDetection';
+import {
+  packVoxel,
+  VoxelShape,
+  VoxelOrientation,
+  VoxelPhysics,
+  VOXEL_MAT_GRASS,
+} from '@/shared/game/voxel/VoxelWord';
+import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
 
 export class BrushToolHandler implements IToolHandler {
   public readonly id = 'brush' as const;
@@ -39,41 +40,28 @@ export class BrushToolHandler implements IToolHandler {
     const { r, c } = event.tilePos;
     const { x, z } = event.worldPos;
 
-    // 0. 3D Voxel Placement
-    if (store.studioMode === 'voxel') {
-      const { packVoxel } = require('@/shared/game/voxel/VoxelWord');
-      const { VoxelWorld } = require('@/shared/game/voxel/VoxelWorldDoc');
-      
-      let voxelWorld = (context.engine as any).voxelWorld;
-      if (!voxelWorld) {
-        if (liveMap.voxelDoc) {
-          context.engine.loadVoxelWorld?.(liveMap.voxelDoc);
-          voxelWorld = (context.engine as any).voxelWorld;
-        } else {
-          voxelWorld = new VoxelWorld(liveMap.id, liveMap.name, 2, 2, 1, store.voxelBlockSizePx || 64);
-          voxelWorld.generateDefaultWorld();
-          context.engine.loadVoxelWorld?.(voxelWorld);
-        }
-      }
+    // 0. Authoritative 3D Voxel Placement
+    if (event.voxelTarget && (context.engine as any).voxelWorld) {
+      const voxelWorld: VoxelWorld = (context.engine as any).voxelWorld;
+      const targetCoord = event.isAlt
+        ? event.voxelTarget.voxelCoord // Replace target voxel directly
+        : event.voxelTarget.adjacentVoxelCoord; // Place adjacent block along face normal
 
-      if (voxelWorld) {
-        const voxel = packVoxel(
-          store.activeVoxelMaterialId || 1,
-          store.activeVoxelShape || 0,
-          store.activeVoxelOrientation || 0,
-          0,
-          1,
-          0
-        );
-        const vy = 16; // Top surface block height
-        voxelWorld.setVoxel(c, vy, r, voxel);
+      const shapeId = (store.activeVoxelShape ?? VoxelShape.FULL_CUBE) as any;
+      const orient = (store.activeVoxelOrientation ?? VoxelOrientation.NORTH) as any;
+      const matId = store.activeVoxelMaterialId || VOXEL_MAT_GRASS;
+      const physics = shapeId === VoxelShape.SLOPE_45 ? VoxelPhysics.WALKABLE_SLOPE : VoxelPhysics.SOLID_OBSTACLE;
+
+      const voxelWord = packVoxel(matId, shapeId, orient, 0, physics, 0);
+      const changed = voxelWorld.setVoxel(targetCoord.wx, targetCoord.wy, targetCoord.wz, voxelWord);
+
+      if (changed) {
         context.engine.meshDirtyVoxelChunks?.();
-        
         const doc = voxelWorld.serializeToDoc();
         gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });
         store.markMapDirty();
-        return true;
       }
+      return true;
     }
 
     // 1. Freeform Splat / Props Handling

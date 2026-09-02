@@ -1,9 +1,3 @@
-/**
- * Saints Gaming Studio — Fill Tool Handler
- *
- * Executes BFS 4-way flood fill bounded by target layer and continuous geometry selection constraint.
- */
-
 import type { IToolHandler, ToolExecutionContext } from './IToolHandler';
 import type { ToolPointerEvent } from '../types';
 import { useEditorStore } from '../../editor-store';
@@ -11,6 +5,8 @@ import { useGameStore } from '../../../store';
 import { LOGIC_LAYER_IDX, resolvePaintTarget } from '@/shared/game/tilePaint';
 import { paintWorldCell } from '@/shared/game/worldDocument';
 import { isPointInGeometry } from '@/shared/game/geometry/continuousGeometry';
+import { packVoxel, VoxelShape, VoxelOrientation, VoxelPhysics, VOXEL_MAT_GRASS } from '@/shared/game/voxel/VoxelWord';
+import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
 
 export class FillToolHandler implements IToolHandler {
   public readonly id = 'fill' as const;
@@ -21,6 +17,66 @@ export class FillToolHandler implements IToolHandler {
     const gameStore = useGameStore.getState();
     const liveMap = context.mapData || gameStore.activeMapData;
     if (!liveMap) return false;
+
+    // 0. Authoritative 3D Voxel Volumetric Flood Fill
+    if (event.voxelTarget && (context.engine as any).voxelWorld) {
+      const voxelWorld: VoxelWorld = (context.engine as any).voxelWorld;
+      const startCoord = event.voxelTarget.voxelCoord;
+      const targetWord = voxelWorld.getVoxel(startCoord.wx, startCoord.wy, startCoord.wz);
+
+      const shapeId = (store.activeVoxelShape ?? VoxelShape.FULL_CUBE) as any;
+      const orient = (store.activeVoxelOrientation ?? VoxelOrientation.NORTH) as any;
+      const matId = store.activeVoxelMaterialId || VOXEL_MAT_GRASS;
+      const fillWord = packVoxel(matId, shapeId, orient, 0, VoxelPhysics.SOLID_OBSTACLE, 0);
+
+      if (targetWord === fillWord) return true;
+
+      const queue: Array<[number, number, number]> = [[startCoord.wx, startCoord.wy, startCoord.wz]];
+      const visited = new Set<string>();
+      visited.add(`${startCoord.wx}_${startCoord.wy}_${startCoord.wz}`);
+      let filledCount = 0;
+      const MAX_VOXEL_FILL = 2048;
+
+      const totalW = voxelWorld.totalWidthBlocks;
+      const totalZ = voxelWorld.totalDepthBlocks;
+      const totalH = voxelWorld.totalHeightBlocks;
+
+      while (queue.length > 0 && filledCount < MAX_VOXEL_FILL) {
+        const [wx, wy, wz] = queue.shift()!;
+        voxelWorld.setVoxel(wx, wy, wz, fillWord);
+        filledCount++;
+
+        const neighbors: Array<[number, number, number]> = [
+          [wx + 1, wy, wz],
+          [wx - 1, wy, wz],
+          [wx, wy + 1, wz],
+          [wx, wy - 1, wz],
+          [wx, wy, wz + 1],
+          [wx, wy, wz - 1],
+        ];
+
+        for (const [nx, ny, nz] of neighbors) {
+          if (nx >= 0 && nx < totalW && nz >= 0 && nz < totalZ && ny >= 0 && ny < totalH) {
+            const key = `${nx}_${ny}_${nz}`;
+            if (!visited.has(key)) {
+              visited.add(key);
+              if (voxelWorld.getVoxel(nx, ny, nz) === targetWord) {
+                queue.push([nx, ny, nz]);
+              }
+            }
+          }
+        }
+      }
+
+      if (filledCount > 0) {
+        context.engine.meshDirtyVoxelChunks?.();
+        const doc = voxelWorld.serializeToDoc();
+        gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });
+        store.markMapDirty();
+        context.showToast?.(`Voxel flood filled ${filledCount} blocks`);
+      }
+      return true;
+    }
 
     const { r, c } = event.tilePos;
     const height = liveMap.grid?.length || 24;
