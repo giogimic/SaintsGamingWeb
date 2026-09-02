@@ -74,7 +74,6 @@ export const TileSelectorPanel: React.FC = () => {
     soundSynth?.playSelectSound?.();
     if (tab === 'voxel') {
       setToolView('voxel');
-      useEditorStore.getState().setStudioMode('voxel');
       showToast('Switched to 3D Voxel Block System');
     } else if (tab === 'grid') {
       setToolView('tileset');

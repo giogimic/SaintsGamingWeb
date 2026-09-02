@@ -996,9 +996,9 @@ function openModePanels(
   },
   mode: StudioMode
 ) {
-  closeAllPanels(state);
   const defaults = STUDIO_MODE_DEFAULTS[mode] || [];
   for (const id of defaults) {
+    if (!state.panels[id]) continue;
     state.panels[id].isOpen = true;
     state.highestZIndex += 1;
     state.panels[id].zIndex = state.highestZIndex;
@@ -1394,6 +1394,7 @@ export const useEditorStore = create<EditorState>()(
 
       setStudioMode: (mode) =>
         set((state) => {
+          if (state.studioMode === mode) return;
           const wasEditor = state.isCreationMode;
           state.studioMode = mode;
           if (mode === 'test') {
