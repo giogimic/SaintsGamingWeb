@@ -27,11 +27,12 @@ export type StudioTilesetMeta = {
 };
 
 export const DEFAULT_STUDIO_TILESETS: StudioTilesetMeta[] = [
-  { firstgid: 1, imageSource: "Terrain_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 },
-  { firstgid: 100001, imageSource: "Furniture_and_Fittings_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
-  { firstgid: 200001, imageSource: "Interior_Walls_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
-  { firstgid: 300001, imageSource: "Interior_Floors_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
-  { firstgid: 400001, imageSource: "Vegetation_and_Outdoor_Fittings_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 },
+  { firstgid: 1, imageSource: "terrain-overworld.png", columns: 3, tilewidth: 16, tileheight: 16 },
+  { firstgid: 100001, imageSource: "Terrain_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 },
+  { firstgid: 200001, imageSource: "Furniture_and_Fittings_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
+  { firstgid: 300001, imageSource: "Interior_Walls_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
+  { firstgid: 400001, imageSource: "Interior_Floors_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
+  { firstgid: 500001, imageSource: "Vegetation_and_Outdoor_Fittings_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 },
 ];
 
 export function checkTilesetExistsOnDisk(filename: string): boolean {
