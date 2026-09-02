@@ -100,6 +100,7 @@ export function FinalReviewStep({
           foundationMaterial: startingMap.foundationMaterial,
           topologyArchetype: startingMap.topologyArchetype,
           spawnPoint: startingMap.spawnPoint,
+          gates: startingMap.gates,
         },
       };
 
@@ -223,8 +224,8 @@ export function FinalReviewStep({
           </div>
 
           <div className="flex items-center justify-between p-2 rounded bg-[#050b14] border border-slate-800 font-mono text-[11px]">
-            <span className="text-slate-400">Database Engine:</span>
-            <span className="text-emerald-400 font-bold">Prisma SQLite / MySQL Ready</span>
+            <span className="text-slate-400">Gateways Configured:</span>
+            <span className="text-teal-400 font-bold">{startingMap.gates?.length || 1} Gateways Named</span>
           </div>
         </div>
       </div>

@@ -63,6 +63,15 @@ export interface InitializeGamePayload {
     grid?: number[][];
     tileLayers?: Array<{ name: string; grid: number[][] }>;
     tilesetAsset?: any;
+    gates?: Array<{
+      id: string;
+      name: string;
+      category?: string;
+      position: { x: number; y: number; z?: number };
+      targetMapId?: string;
+      targetPosition?: { x: number; y: number; z?: number };
+      interactPrompt?: string;
+    }>;
   };
 }
 
@@ -125,16 +134,32 @@ export async function POST(req: Request) {
 
     const serializedVoxelDoc = JSON.stringify(voxelDoc);
 
+    const userGates = Array.isArray(map.gates) && map.gates.length > 0
+      ? map.gates.map((g: any, idx: number) => ({
+          id: g.id?.trim() || (idx === 0 ? 'spawn' : `gate_${idx}`),
+          name: g.name?.trim() || (idx === 0 ? 'Player Spawn' : `Gateway ${idx}`),
+          category: g.category || (idx === 0 ? 'SPAWN' : 'WARP'),
+          position: {
+            x: typeof g.position?.x === 'number' ? g.position.x : spawnX,
+            y: typeof g.position?.y === 'number' ? g.position.y : spawnY,
+            z: typeof g.position?.z === 'number' ? g.position.z : 16,
+          },
+          targetMapId: g.targetMapId?.trim() || undefined,
+          targetPosition: g.targetPosition || undefined,
+          interactPrompt: g.interactPrompt?.trim() || undefined,
+        }))
+      : [
+          {
+            id: 'spawn',
+            name: 'Player Spawn',
+            category: 'SPAWN',
+            position: { x: spawnX, y: spawnY, z: 16 },
+          },
+        ];
+
     const gatesPayload = {
       spawnPoint: { x: spawnX, y: spawnY },
-      gates: [
-        {
-          id: 'spawn',
-          name: 'Player Spawn',
-          category: 'SPAWN',
-          position: { x: spawnX, y: spawnY },
-        },
-      ],
+      gates: userGates,
     };
 
     // 4. Atomic Transaction Persistence

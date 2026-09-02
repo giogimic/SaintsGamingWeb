@@ -102,6 +102,23 @@ export function GameInitializationWizard() {
     foundationMaterial: 'gunmetal',
     topologyArchetype: 'flat_bedrock',
     spawnPoint: { x: 16, y: 16, z: 16 },
+    gates: [
+      {
+        id: 'spawn',
+        name: 'Sanctuary Spawn Point',
+        category: 'SPAWN',
+        position: { x: 16, y: 16, z: 16 },
+        interactPrompt: 'Respawn Sanctuary',
+      },
+      {
+        id: 'town_gate',
+        name: 'Capital City Portal',
+        category: 'WARP',
+        position: { x: 4, y: 16, z: 16 },
+        targetMapId: 'SAINTS_VILLAGE',
+        interactPrompt: 'Warp to Capital City',
+      },
+    ],
   }));
 
   // Fetch initial setup status
@@ -215,8 +232,8 @@ export function GameInitializationWizard() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-primary/10 border border-primary/30 text-[10px] font-mono text-primary/90 font-semibold">
-              v2.1.662
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-primary/20 text-primary border border-primary/40 font-semibold">
+              v2.1.663
             </span>
             <button
               onClick={() => router.push('/')}

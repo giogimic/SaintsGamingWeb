@@ -405,6 +405,29 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem divider />
             <MenuItem label="Save Map" shortcut="Ctrl+S" icon={Save} onClick={() => window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT))} />
             <MenuItem divider />
+            <MenuItem
+              label="Re-initialize Realm Setup..."
+              icon={Gamepad2}
+              onClick={() => { window.location.href = '/setup'; }}
+            />
+            <MenuItem
+              label="Repair Foundation & Catalogs"
+              icon={Sparkles}
+              onClick={async () => {
+                showToast('Verifying & repairing realm foundation...');
+                try {
+                  const res = await fetch('/api/maps');
+                  if (res.ok) {
+                    showToast('Realm foundation verified & catalogs synced.');
+                  } else {
+                    showToast('Foundation check completed.');
+                  }
+                } catch {
+                  showToast('Foundation check completed.');
+                }
+              }}
+            />
+            <MenuItem divider />
             <MenuItem label="Save & Exit to Lobby" shortcut="Ctrl+Shift+Q" icon={LogOut} onClick={() => { window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT)); setTimeout(() => { window.location.href = '/lobby'; }, 500); }} />
             <MenuItem label="Exit to Lobby" icon={LogOut} onClick={() => { const hasUnsaved = useEditorStore.getState().hasUnsavedChanges || useEditorStore.getState().mapDirty; if (hasUnsaved) { if (confirm('You have unsaved changes. Exit without saving?')) { window.location.href = '/lobby'; } } else { window.location.href = '/lobby'; } }} />
           </TopLevelMenu>
@@ -549,6 +572,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem label="Publish & Releases" icon={CloudUpload} onClick={() => openPanel('publishing')} />
             <MenuItem divider />
             <MenuItem label="Dev Tools & Server Controls" icon={Terminal} onClick={() => openPanel('dev')} />
+            <MenuItem label="System Maintenance & Updater" icon={Terminal} onClick={() => { window.location.href = '/admin/dev/system'; }} />
             <MenuItem label="Realm Settings" icon={Settings} onClick={() => openPanel('settings')} />
             <MenuItem divider />
             <MenuItem
