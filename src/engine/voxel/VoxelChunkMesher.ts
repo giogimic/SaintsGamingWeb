@@ -58,6 +58,12 @@ export class VoxelChunkMesher {
 
     let quadCount = 0;
 
+    const totalW = world.widthChunks * CHUNK_SIZE_X;
+    const totalZ = world.depthChunks * CHUNK_SIZE_Z;
+    const originOffsetX = -totalW / 2;
+    const originOffsetZ = -totalZ / 2;
+    const originOffsetY = -16; // Top of Gunmetal foundation (y=16) maps to y=0
+
     for (let ly = 0; ly < CHUNK_SIZE_Y; ly++) {
       for (let lz = 0; lz < CHUNK_SIZE_Z; lz++) {
         for (let lx = 0; lx < CHUNK_SIZE_X; lx++) {
@@ -66,9 +72,9 @@ export class VoxelChunkMesher {
 
           const shape = getVoxelShape(word);
           const orientation = getVoxelOrientation(word);
-          const wx = startWX + lx;
-          const wy = startWY + ly;
-          const wz = startWZ + lz;
+          const wx = startWX + lx + originOffsetX;
+          const wy = startWY + ly + originOffsetY;
+          const wz = startWZ + lz + originOffsetZ;
 
           // Non-cube specialized shapes
           if (shape === VoxelShape.SLOPE_45) {

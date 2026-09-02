@@ -206,3 +206,9 @@ export class VoxelWorld {
     return world;
   }
 }
+
+export function generateDefaultWorldDoc(widthChunks = 2, depthChunks = 2, blockSizePx = DEFAULT_BLOCK_SIZE_PX): VoxelWorldDocV3 {
+  const world = new VoxelWorld('world_default', 'Default Voxel World', widthChunks, depthChunks, 1, blockSizePx);
+  world.generateDefaultWorld();
+  return world.serializeToDoc();
+}

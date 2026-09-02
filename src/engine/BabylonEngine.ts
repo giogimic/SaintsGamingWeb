@@ -73,7 +73,7 @@ import {
 } from "../shared/game/spriteDefinitions";
 import { ItemBillboardRenderer, type ItemBillboardConfig } from "./ItemBillboardRenderer";
 import { VoxelChunkMesher } from './voxel/VoxelChunkMesher';
-import { VoxelWorld, type VoxelWorldDocV3 } from '../shared/game/voxel/VoxelWorldDoc';
+import { VoxelWorld, type VoxelWorldDocV3, generateDefaultWorldDoc } from '../shared/game/voxel/VoxelWorldDoc';
 
 export interface RenderedChunk {
   mapId?: string;
@@ -2420,15 +2420,25 @@ export class BabylonEngine {
       this.applyPlayerCameraStyle(this.cameraSettings.playerCameraStyle);
     }
 
-    if ((mapData as any).voxelDoc) {
-      this.loadVoxelWorld((mapData as any).voxelDoc);
-    }
+    // Always ensure 3D Voxel World is loaded and rendered
+    const voxelDoc = (mapData as any).voxelDoc || generateDefaultWorldDoc(
+      Math.max(1, Math.ceil((width || 32) / 16)),
+      Math.max(1, Math.ceil((height || 32) / 16)),
+      (mapData as any).blockSizePx || 64
+    );
+    this.loadVoxelWorld(voxelDoc);
   }
 
   public loadVoxelWorld(docOrWorld: VoxelWorld | VoxelWorldDocV3) {
     if (!this.scene) return;
     if (!this.voxelMesher) {
       this.voxelMesher = new VoxelChunkMesher(this.scene);
+    }
+
+    if (this.voxelWorld) {
+      for (const chunk of this.voxelWorld.chunks.values()) {
+        this.voxelMesher.disposeChunkMesh(chunk.key);
+      }
     }
 
     if (docOrWorld instanceof VoxelWorld) {
