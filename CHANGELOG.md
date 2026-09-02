@@ -1,3 +1,16 @@
+# 2.1.676
+- **Fix React Error #310, Panel Thrashing & WebGL / Studio Disconnect on Material Change**:
+  - **Eliminate Material Change Panel Thrashing (`TerrainBrushPalette.tsx`)**:
+    - Removed rogue `useEditorStore.getState().setStudioMode('voxel')` call from `handleSelectSeamless`.
+    - Selecting a terrain or voxel material swatch is an attribute of the active brush (`activeVoxelMaterialId`, `activeStampAsset`, `activeLayerType`), not a full studio workspace layout reset. Calling `setStudioMode` during a swatch click was triggering a full panel tear-down and remount mid-interaction.
+  - **Non-Destructive Mode Panel Management (`editor-store.ts`)**:
+    - Updated `openModePanels` in `editor-store.ts` to open default mode docks without aggressively calling `closeAllPanels(state)`. Creators' active floating panels (Tile Selector, Properties, NPC Editor, etc.) now remain stable when switching modes rather than being wiped out.
+    - Added an equality guard (`if (state.studioMode === mode) return;`) in `setStudioMode` to prevent duplicate renders and microtask dispatch loops.
+  - **Eliminate Unsynchronized Tab Switching in TileSelectorPanel (`TileSelectorPanel.tsx`)**:
+    - Removed rogue `setStudioMode('voxel')` from `handleSwitchTab`, aligning the Voxel tab with all other tabs (`grid`, `paint-splat`, `free-form`, `slicer`, `smart-border`).
+  - **Resolved Root Cause of WebGL Context Loss & Session Expiry**:
+    - Eliminating React Error #310 prevents `app/error.tsx` boundary fallback from unmounting the Babylon/Three canvas and terminating WebGL context, entirely fixing the subsequent socket disconnect and 25-second session expiry.
+
 # 2.1.675
 - **Studio 3D Voxel Region Selection & Prefab/Paste Safety Integration**:
   - **Authoritative 3D Voxel Region Deletion (`editor-store.ts`)**:
