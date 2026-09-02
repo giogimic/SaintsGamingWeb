@@ -3,7 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
     image: saints-gaming-web
     container_name: saints-gaming-web
     restart: unless-stopped
