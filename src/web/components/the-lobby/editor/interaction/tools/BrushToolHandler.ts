@@ -16,6 +16,7 @@ import {
   VoxelOrientation,
   VoxelPhysics,
   VOXEL_MAT_GRASS,
+  getVoxelBrushOffsets,
 } from '@/shared/game/voxel/VoxelWord';
 import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
 
@@ -53,9 +54,15 @@ export class BrushToolHandler implements IToolHandler {
       const physics = shapeId === VoxelShape.SLOPE_45 ? VoxelPhysics.WALKABLE_SLOPE : VoxelPhysics.SOLID_OBSTACLE;
 
       const voxelWord = packVoxel(matId, shapeId, orient, 0, physics, 0);
-      const changed = voxelWorld.setVoxel(targetCoord.wx, targetCoord.wy, targetCoord.wz, voxelWord);
+      const offsets = getVoxelBrushOffsets(store.brushRadius || 1);
+      let anyChanged = false;
 
-      if (changed) {
+      for (const { dx, dz } of offsets) {
+        const changed = voxelWorld.setVoxel(targetCoord.wx + dx, targetCoord.wy, targetCoord.wz + dz, voxelWord);
+        if (changed) anyChanged = true;
+      }
+
+      if (anyChanged) {
         context.engine.meshDirtyVoxelChunks?.();
         const doc = voxelWorld.serializeToDoc();
         gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });

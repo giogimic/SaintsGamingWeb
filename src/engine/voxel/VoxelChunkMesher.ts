@@ -9,6 +9,11 @@ import {
   getVoxelShape, 
   getVoxelOrientation 
 } from '@/shared/game/voxel/VoxelWord';
+import { 
+  getVoxelMaterialDef, 
+  getFaceUv, 
+  CANONICAL_VOXEL_TEXTURE 
+} from '@/shared/game/voxel/VoxelMaterialDefinition';
 import { VoxelMeshBuilder } from './VoxelGeometry';
 
 export interface ChunkMeshResult {
@@ -20,19 +25,35 @@ export interface ChunkMeshResult {
 export class VoxelChunkMesher {
   private scene: Scene;
   private materialCache = new Map<number, StandardMaterial>();
+  private textureCache?: Texture;
 
   constructor(scene: Scene) {
     this.scene = scene;
   }
 
-  public getOrCreateMaterial(materialId: number, colorHex: string = '#2a2d34'): StandardMaterial {
-    let mat = this.materialCache.get(materialId);
+  public getOrCreateMaterial(): StandardMaterial {
+    let mat = this.materialCache.get(1);
     if (!mat) {
-      mat = new StandardMaterial(`voxel_mat_${materialId}`, this.scene);
-      mat.diffuseColor = Color3.FromHexString(colorHex);
-      mat.specularColor = new Color3(0.1, 0.1, 0.1);
+      mat = new StandardMaterial('voxel_world_mat', this.scene);
+      if (!this.textureCache) {
+        this.textureCache = new Texture(
+          CANONICAL_VOXEL_TEXTURE,
+          this.scene,
+          true,
+          false,
+          Texture.NEAREST_SAMPLINGMODE
+        );
+        this.textureCache.hasAlpha = true;
+      }
+      mat.diffuseTexture = this.textureCache;
+      mat.emissiveTexture = this.textureCache;
+      mat.diffuseColor = new Color3(1, 1, 1);
+      mat.emissiveColor = new Color3(1, 1, 1);
+      mat.specularColor = new Color3(0, 0, 0);
+      mat.useAlphaFromDiffuseTexture = true;
       mat.backFaceCulling = true;
-      this.materialCache.set(materialId, mat);
+      mat.disableLighting = true; // Unlit vertex-colored pipeline for crisp voxel rendering
+      this.materialCache.set(1, mat);
     }
     return mat;
   }
@@ -72,21 +93,33 @@ export class VoxelChunkMesher {
 
           const shape = getVoxelShape(word);
           const orientation = getVoxelOrientation(word);
+          const materialId = getVoxelMaterial(word);
+          const matDef = getVoxelMaterialDef(materialId);
+          const baseRgba = matDef.tintRgba;
+
+          const topUv = getFaceUv(matDef, 'top');
+          const bottomUv = getFaceUv(matDef, 'bottom');
+          const northUv = getFaceUv(matDef, 'north');
+          const southUv = getFaceUv(matDef, 'south');
+          const eastUv = getFaceUv(matDef, 'east');
+          const westUv = getFaceUv(matDef, 'west');
+          const sideUv = matDef.faceMapping.side || northUv;
+
           const wx = startWX + lx + originOffsetX;
           const wy = startWY + ly + originOffsetY;
           const wz = startWZ + lz + originOffsetZ;
 
           // Non-cube specialized shapes
           if (shape === VoxelShape.SLOPE_45) {
-            builder.addSlope45(wx, wy, wz, orientation);
+            builder.addSlope45(wx, wy, wz, orientation, baseRgba, topUv, sideUv, bottomUv);
             quadCount += 3;
             continue;
           } else if (shape === VoxelShape.SLAB_BOTTOM) {
-            builder.addHalfSlab(wx, wy, wz, false);
+            builder.addHalfSlab(wx, wy, wz, false, baseRgba, topUv, sideUv, bottomUv);
             quadCount += 6;
             continue;
           } else if (shape === VoxelShape.SLAB_TOP) {
-            builder.addHalfSlab(wx, wy, wz, true);
+            builder.addHalfSlab(wx, wy, wz, true, baseRgba, topUv, sideUv, bottomUv);
             quadCount += 6;
             continue;
           }
@@ -100,7 +133,10 @@ export class VoxelChunkMesher {
               [wx + 1, wy + 1, wz],
               [wx + 1, wy + 1, wz + 1],
               [wx, wy + 1, wz + 1],
-              [0, 1, 0]
+              [0, 1, 0],
+              topUv,
+              [1, 1, 1, 1],
+              [baseRgba[0] * 1.0, baseRgba[1] * 1.0, baseRgba[2] * 1.0, baseRgba[3]]
             );
             quadCount++;
           }
@@ -113,7 +149,10 @@ export class VoxelChunkMesher {
               [wx + 1, wy, wz + 1],
               [wx + 1, wy, wz],
               [wx, wy, wz],
-              [0, -1, 0]
+              [0, -1, 0],
+              bottomUv,
+              [1, 1, 1, 1],
+              [baseRgba[0] * 0.55, baseRgba[1] * 0.55, baseRgba[2] * 0.55, baseRgba[3]]
             );
             quadCount++;
           }
@@ -126,7 +165,10 @@ export class VoxelChunkMesher {
               [wx, wy, wz + 1],
               [wx, wy + 1, wz + 1],
               [wx + 1, wy + 1, wz + 1],
-              [0, 0, 1]
+              [0, 0, 1],
+              northUv,
+              [1, 1, 1, 1],
+              [baseRgba[0] * 0.88, baseRgba[1] * 0.88, baseRgba[2] * 0.88, baseRgba[3]]
             );
             quadCount++;
           }
@@ -139,7 +181,10 @@ export class VoxelChunkMesher {
               [wx + 1, wy, wz],
               [wx + 1, wy + 1, wz],
               [wx, wy + 1, wz],
-              [0, 0, -1]
+              [0, 0, -1],
+              southUv,
+              [1, 1, 1, 1],
+              [baseRgba[0] * 0.84, baseRgba[1] * 0.84, baseRgba[2] * 0.84, baseRgba[3]]
             );
             quadCount++;
           }
@@ -152,7 +197,10 @@ export class VoxelChunkMesher {
               [wx + 1, wy, wz + 1],
               [wx + 1, wy + 1, wz + 1],
               [wx + 1, wy + 1, wz],
-              [1, 0, 0]
+              [1, 0, 0],
+              eastUv,
+              [1, 1, 1, 1],
+              [baseRgba[0] * 0.78, baseRgba[1] * 0.78, baseRgba[2] * 0.78, baseRgba[3]]
             );
             quadCount++;
           }
@@ -165,7 +213,10 @@ export class VoxelChunkMesher {
               [wx, wy, wz],
               [wx, wy + 1, wz],
               [wx, wy + 1, wz + 1],
-              [-1, 0, 0]
+              [-1, 0, 0],
+              westUv,
+              [1, 1, 1, 1],
+              [baseRgba[0] * 0.74, baseRgba[1] * 0.74, baseRgba[2] * 0.74, baseRgba[3]]
             );
             quadCount++;
           }
@@ -173,7 +224,11 @@ export class VoxelChunkMesher {
       }
     }
 
-    if (builder.positions.length === 0) return null;
+    if (builder.positions.length === 0) {
+      this.disposeChunkMesh(chunk.key);
+      chunk.isDirty = false;
+      return null;
+    }
 
     const meshName = `voxel_chunk_${chunk.key}`;
     let mesh = this.scene.getMeshByName(meshName) as Mesh;
@@ -189,8 +244,8 @@ export class VoxelChunkMesher {
     vertexData.colors = builder.colors;
     vertexData.applyToMesh(mesh);
 
-    // Apply default Gunmetal/Terrain material
-    mesh.material = this.getOrCreateMaterial(1, '#2a2d34');
+    // Apply vertex-colored voxel world material
+    mesh.material = this.getOrCreateMaterial();
     mesh.isPickable = true;
     mesh.checkCollisions = true;
 

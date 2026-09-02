@@ -107,8 +107,90 @@ const SubMenu: React.FC<SubMenuProps> = ({ label, children }) => {
   );
 };
 
+interface MenuContextValue {
+  activeMenu: MenuState;
+  handleMenuClick: (id: string) => void;
+  handleItemClick: (action: () => void) => void;
+  setActiveMenu: React.Dispatch<React.SetStateAction<MenuState>>;
+}
+
+const MenuContext = React.createContext<MenuContextValue | null>(null);
+
+const TopLevelMenu: React.FC<{ id: string; label: string; children: React.ReactNode }> = ({
+  id,
+  label,
+  children,
+}) => {
+  const ctx = React.useContext(MenuContext);
+  if (!ctx) return null;
+  const isActive = ctx.activeMenu === id;
+  return (
+    <div className="relative">
+      <button
+        onClick={() => ctx.handleMenuClick(id)}
+        onMouseEnter={() => {
+          if (ctx.activeMenu && ctx.activeMenu !== id) ctx.setActiveMenu(id as MenuState);
+        }}
+        className={`px-2 py-1 text-[11px] font-bold tracking-wider uppercase font-mono rounded transition-colors cursor-pointer ${
+          isActive
+            ? 'bg-primary/20 text-primary'
+            : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+        }`}
+      >
+        {label}
+      </button>
+      {isActive && (
+        <div className="absolute top-full left-0 mt-1 min-w-[230px] max-h-[70vh] overflow-y-auto custom-scrollbar bg-card/95 border border-border/80 shadow-2xl rounded-xl py-1.5 backdrop-blur-2xl z-[150] flex flex-col pointer-events-auto font-mono">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const MenuItem: React.FC<{
+  label?: string;
+  shortcut?: string;
+  icon?: any;
+  onClick?: () => void;
+  disabled?: boolean;
+  divider?: boolean;
+}> = ({ label, shortcut, icon: Icon, onClick, disabled, divider }) => {
+  const ctx = React.useContext(MenuContext);
+  if (divider) {
+    return <div className="h-px w-full bg-border/30 my-1" />;
+  }
+  return (
+    <button
+      onClick={() => {
+        if (onClick) {
+          if (ctx?.handleItemClick) {
+            ctx.handleItemClick(onClick);
+          } else {
+            onClick();
+          }
+        }
+      }}
+      disabled={disabled}
+      className={`w-full text-left px-3 py-1.5 text-[11px] font-mono flex items-center justify-between group transition-colors cursor-pointer ${
+        disabled
+          ? 'opacity-40 cursor-not-allowed text-muted-foreground'
+          : 'text-foreground/90 hover:bg-primary/15 hover:text-foreground'
+      }`}
+    >
+      <div className="flex items-center gap-2.5">
+        {Icon ? <Icon className="w-3.5 h-3.5 text-primary/80 group-hover:text-primary group-hover:scale-110 transition-all" /> : <div className="w-3.5 h-3.5" />}
+        <span>{label}</span>
+      </div>
+      {shortcut && <span className="text-muted-foreground/60 text-[10px] ml-4">{shortcut}</span>}
+    </button>
+  );
+};
+
 const MenuSectionLabel: React.FC<{ label: string }> = ({ label }) => (
-  <div className="px-3 py-1 text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest select-none">{label}</div>
+  <div className="px-3 pt-1.5 pb-0.5 text-[9px] font-bold tracking-wider uppercase text-muted-foreground/60 select-none">
+    {label}
+  </div>
 );
 
 export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMenuBarProps) {
@@ -200,62 +282,14 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
     else setTheme('dark');
   };
 
-  const TopLevelMenu = ({ id, label, children }: { id: string; label: string; children: React.ReactNode }) => {
-    const isActive = activeMenu === id;
-    return (
-      <div className="relative">
-        <button
-          onClick={() => handleMenuClick(id)}
-          onMouseEnter={() => {
-            if (activeMenu && activeMenu !== id) setActiveMenu(id);
-          }}
-          className={`px-2 py-1 text-[11px] font-bold tracking-wider uppercase font-mono rounded transition-colors cursor-pointer ${
-            isActive
-              ? 'bg-primary/20 text-primary'
-              : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
-          }`}
-        >
-          {label}
-        </button>
-        {isActive && (
-          <div className="absolute top-full left-0 mt-1 min-w-[230px] max-h-[70vh] overflow-y-auto custom-scrollbar bg-card/95 border border-border/80 shadow-2xl rounded-xl py-1.5 backdrop-blur-2xl z-[150] flex flex-col pointer-events-auto font-mono">
-            {children}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const MenuItem = ({ label, shortcut, icon: Icon, onClick, disabled, divider }: any) => {
-    if (divider) {
-      return <div className="h-px w-full bg-border/30 my-1" />;
-    }
-    return (
-      <button
-        onClick={() => handleItemClick(onClick)}
-        disabled={disabled}
-        className={`w-full text-left px-3 py-1.5 text-[11px] font-mono flex items-center justify-between group transition-colors cursor-pointer ${
-          disabled
-            ? 'opacity-40 cursor-not-allowed text-muted-foreground'
-            : 'text-foreground/90 hover:bg-primary/15 hover:text-foreground'
-        }`}
-      >
-        <div className="flex items-center gap-2.5">
-          {Icon ? <Icon className="w-3.5 h-3.5 text-primary/80 group-hover:text-primary group-hover:scale-110 transition-all" /> : <div className="w-3.5 h-3.5" />}
-          <span>{label}</span>
-        </div>
-        {shortcut && <span className="text-muted-foreground/60 text-[10px] ml-4">{shortcut}</span>}
-      </button>
-    );
-  };
-
   const activeProfile = profiles.find((p) => p.id === activeGameId) || profiles[0];
 
   return (
-    <div
-      ref={menuRef}
-      className="pointer-events-auto absolute top-0 left-0 right-0 h-10 z-[110] bg-[#050b14]/90 border-b border-border/50 flex items-center justify-between px-3 select-none backdrop-blur-xl shadow-lg font-mono"
-    >
+    <MenuContext.Provider value={{ activeMenu, handleMenuClick, handleItemClick, setActiveMenu }}>
+      <div
+        ref={menuRef}
+        className="pointer-events-auto absolute top-0 left-0 right-0 h-10 z-[110] bg-[#050b14]/90 border-b border-border/50 flex items-center justify-between px-3 select-none backdrop-blur-xl shadow-lg font-mono"
+      >
       {/* ─── ZONE 1: Identity, Project Context & Primary Menus ─── */}
       <div className="flex items-center gap-2.5">
         {/* Studio Brand & Navigation Links */}
@@ -799,5 +833,6 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
         onClose={() => setNotificationHistoryOpen(false)}
       />
     </div>
+  </MenuContext.Provider>
   );
 }

@@ -42,6 +42,7 @@ import {
   Palette,
   Camera,
 } from 'lucide-react';
+import { resolveTilesetTextureUrl } from '@/shared/game/tileBatchHelpers';
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
 import { STUDIO_MAP_CELLS_CHANGED_EVENT, STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
@@ -124,10 +125,8 @@ export const StudioEditorShell: React.FC = () => {
     const uniqueImages = new Set<string>();
     activeMapData.tilesets.forEach((ts: { imageSource?: string }) => {
       if (ts.imageSource) {
-        const url = ts.imageSource.startsWith('/') || ts.imageSource.startsWith('http')
-          ? ts.imageSource
-          : `/game-assets/tilesets/${ts.imageSource}`;
-        uniqueImages.add(url);
+        const url = resolveTilesetTextureUrl(ts.imageSource);
+        if (url) uniqueImages.add(url);
       }
     });
     

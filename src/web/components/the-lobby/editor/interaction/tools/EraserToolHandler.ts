@@ -14,7 +14,7 @@ import { rasterizeLine } from '@/shared/game/lineRaster';
 import { isPointInGeometry } from '@/shared/game/geometry/continuousGeometry';
 import { STUDIO_MAP_HOT_RELOAD_EVENT } from '@/shared/game/studioEvents';
 import { isInBrushShape } from '@/shared/game/brushGeometry';
-import { VOXEL_WORD_AIR } from '@/shared/game/voxel/VoxelWord';
+import { VOXEL_WORD_AIR, getVoxelBrushOffsets } from '@/shared/game/voxel/VoxelWord';
 import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
 
 export class EraserToolHandler implements IToolHandler {
@@ -42,9 +42,15 @@ export class EraserToolHandler implements IToolHandler {
     if (event.voxelTarget && (context.engine as any).voxelWorld) {
       const voxelWorld: VoxelWorld = (context.engine as any).voxelWorld;
       const targetCoord = event.voxelTarget.voxelCoord;
+      const offsets = getVoxelBrushOffsets(store.brushRadius || 1);
+      let anyChanged = false;
 
-      const changed = voxelWorld.setVoxel(targetCoord.wx, targetCoord.wy, targetCoord.wz, VOXEL_WORD_AIR);
-      if (changed) {
+      for (const { dx, dz } of offsets) {
+        const changed = voxelWorld.setVoxel(targetCoord.wx + dx, targetCoord.wy, targetCoord.wz + dz, VOXEL_WORD_AIR);
+        if (changed) anyChanged = true;
+      }
+
+      if (anyChanged) {
         context.engine.meshDirtyVoxelChunks?.();
         const doc = voxelWorld.serializeToDoc();
         gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });

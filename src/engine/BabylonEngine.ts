@@ -75,6 +75,7 @@ import { ItemBillboardRenderer, type ItemBillboardConfig } from "./ItemBillboard
 import { VoxelChunkMesher } from './voxel/VoxelChunkMesher';
 import { VoxelWorld, type VoxelWorldDocV3, generateDefaultWorldDoc } from '../shared/game/voxel/VoxelWorldDoc';
 import { resolveVoxelTarget, type VoxelTargetResolution } from '../shared/game/voxel/VoxelTargetResolver';
+import { getVoxelBrushOffsets } from '../shared/game/voxel/VoxelWord';
 
 export interface RenderedChunk {
   mapId?: string;
@@ -2538,11 +2539,20 @@ export class BabylonEngine {
     const coord = mode === 'place' ? target.adjacentVoxelCoord : target.voxelCoord;
     const worldPos = this.voxelWorld.voxelToWorldMesh(coord.wx, coord.wy, coord.wz);
 
-    this.voxelCursorMesh.position.set(
-      worldPos.x + 0.5,
-      worldPos.y + 0.5,
-      worldPos.z + 0.5
-    );
+    const offsets = getVoxelBrushOffsets(this.brushRadius || 1);
+    const minDx = Math.min(...offsets.map((o) => o.dx));
+    const maxDx = Math.max(...offsets.map((o) => o.dx));
+    const minDz = Math.min(...offsets.map((o) => o.dz));
+    const maxDz = Math.max(...offsets.map((o) => o.dz));
+
+    const width = maxDx - minDx + 1;
+    const depth = maxDz - minDz + 1;
+    const centerX = worldPos.x + minDx + width / 2;
+    const centerY = worldPos.y + 0.5;
+    const centerZ = worldPos.z + minDz + depth / 2;
+
+    this.voxelCursorMesh.scaling.set(width, 1.02, depth);
+    this.voxelCursorMesh.position.set(centerX, centerY, centerZ);
 
     if (mode === 'erase') {
       this.voxelCursorMesh.edgesColor = new Color4(0.95, 0.25, 0.25, 0.95);
