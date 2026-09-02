@@ -200,11 +200,12 @@ export function tilesetUvForOverlayPlane(
 }
 
 const CASE_FIXES: Record<string, string> = {
-  'terrain_by_george.png': 'Terrain_by_George.png',
-  'furniture_and_fittings_by_george.png': 'Furniture_and_Fittings_by_George.png',
-  'interior_walls_by_george.png': 'Interior_Walls_by_George.png',
-  'interior_floors_by_george.png': 'Interior_Floors_by_George.png',
-  'vegetation_and_outdoor_fittings_by_george.png': 'Vegetation_and_Outdoor_Fittings_by_George.png',
+  'terrain_by_george.png': 'terrain-overworld.png',
+  'terrain_by_george': 'terrain-overworld.png',
+  'furniture_and_fittings_by_george.png': 'terrain-overworld.png',
+  'interior_walls_by_george.png': 'terrain-overworld.png',
+  'interior_floors_by_george.png': 'terrain-overworld.png',
+  'vegetation_and_outdoor_fittings_by_george.png': 'terrain-overworld.png',
 };
 
 /**

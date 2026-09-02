@@ -1992,7 +1992,10 @@ export class BabylonEngine {
               () => console.log(`[BabylonEngine] Texture loaded SUCCESS: ${tilesetPath}`),
               (message) => {
                 console.warn(`[BabylonEngine] Tileset image not found at ${tilesetPath}, using fallback color`, message);
-                newMat.emissiveColor = new Color3(0.18, 0.42, 0.22);
+                newMat.diffuseTexture = null;
+                newMat.emissiveTexture = null;
+                newMat.diffuseColor = new Color3(0.18, 0.42, 0.22);
+                newMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
               }
             );
             tex.hasAlpha = true;
@@ -2025,9 +2028,11 @@ export class BabylonEngine {
       console.log(`[BabylonEngine] Canvas size:`, this.canvas.width, this.canvas.height);
     }
 
-    // If rich layers were all GID 0 (or failed), fall back to colored logic grid.
+    const hasVoxelWorld = Boolean((mapData as any).voxelDoc || this.voxelWorld);
+
+    // If rich layers were all GID 0 (or failed), fall back to colored logic grid ONLY if no 3D voxel world is present.
     // Otherwise Studio shows only scene clearColor (near-black) — DEMO after PR #20.
-    if (this.tileMeshes.length === 0) {
+    if (this.tileMeshes.length === 0 && !hasVoxelWorld) {
       // Fallback: simple colored grid rendering with 2.5D geometry
       const baseGrounds: Record<number, Mesh> = {};
       const baseObjects: Record<number, Mesh[]> = {};
@@ -2281,8 +2286,23 @@ export class BabylonEngine {
 
             let mat = this.tilesetMaterialCache.get(matKey);
             if (!mat) {
-              mat = new StandardMaterial(matKey, this.scene);
-              let tex = new Texture(group.texUrl, this.scene, true, false, Texture.NEAREST_SAMPLINGMODE);
+              const newMat = new StandardMaterial(matKey, this.scene);
+              mat = newMat;
+              let tex = new Texture(
+                group.texUrl,
+                this.scene,
+                true,
+                false,
+                Texture.NEAREST_SAMPLINGMODE,
+                undefined,
+                (message) => {
+                  console.warn(`[BabylonEngine] Splat texture not found at ${group.texUrl}, using fallback color`, message);
+                  newMat.diffuseTexture = null;
+                  newMat.emissiveTexture = null;
+                  newMat.diffuseColor = new Color3(0.2, 0.35, 0.2);
+                  newMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
+                }
+              );
               tex.hasAlpha = true;
               if (hasUv) {
                 tex.uOffset = group.uOffset || 0;
@@ -2732,7 +2752,10 @@ export class BabylonEngine {
           undefined,
           (message) => {
             console.warn(`[BabylonEngine] Tileset image not found at ${tilesetPath}, using fallback color`, message);
-            newMat.emissiveColor = new Color3(0.18, 0.42, 0.22);
+            newMat.diffuseTexture = null;
+            newMat.emissiveTexture = null;
+            newMat.diffuseColor = new Color3(0.18, 0.42, 0.22);
+            newMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
           }
         );
         tex.hasAlpha = true;
