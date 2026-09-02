@@ -505,7 +505,7 @@ export function CharacterCreator({
       <MidnightTropicalBackground />
 
       {/* ── TOP BREADCRUMB & HEADER ── */}
-      <header className="relative z-30 w-full max-w-5xl mx-auto flex items-center justify-between border-b border-pink-500/20 pb-3 mb-4">
+      <header className="relative z-30 w-full max-w-5xl mx-auto flex items-center justify-between border-b border-border/40 pb-3 mb-4">
         <button
           onClick={() => {
             soundSynth?.playSelectSound?.();
@@ -520,10 +520,10 @@ export function CharacterCreator({
             }
             else if (step === 'REVIEW') setStep('GIFT');
           }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-cyan-300 font-mono text-xs transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card/60 hover:bg-card border border-border/40 text-foreground font-mono text-xs transition-colors cursor-pointer"
         >
           <ArrowLeft size={14} />
-          <span>{step === 'HERO_PICK' ? 'Abort' : 'Back'}</span>
+          <span>{step === 'HERO_PICK' ? 'Back to Select' : 'Back'}</span>
         </button>
 
         {/* Steps Breadcrumb */}
@@ -541,34 +541,34 @@ export function CharacterCreator({
                 : s === 'APPEARANCE'
                 ? 'Avatar'
                 : s === 'GIFT'
-                ? 'Blessing'
-                : 'Dossier';
+                ? 'Perk'
+                : 'Summary';
 
             return (
               <React.Fragment key={s}>
                 <div
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
                     isCur
-                      ? 'bg-gradient-to-r from-pink-600/40 to-cyan-500/40 border border-cyan-400 text-white font-bold shadow-[0_0_10px_rgba(0,245,212,0.4)]'
+                      ? 'bg-primary/20 border border-primary/50 text-primary font-bold shadow-[0_0_10px_rgba(234,179,8,0.2)]'
                       : isDone
-                      ? 'text-[#00f5d4] opacity-80'
-                      : 'text-slate-500 opacity-50'
+                      ? 'text-primary/80 opacity-90'
+                      : 'text-muted-foreground opacity-50'
                   }`}
                 >
                   <span
                     className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black ${
                       isCur
-                        ? 'bg-[#00bfa5] text-white'
+                        ? 'bg-primary text-primary-foreground'
                         : isDone
-                        ? 'bg-pink-500/40 text-pink-200'
-                        : 'bg-white/10 text-slate-400'
+                        ? 'bg-primary/30 text-primary'
+                        : 'bg-white/10 text-muted-foreground'
                     }`}
                   >
                     {isDone ? '✓' : i + 1}
                   </span>
                   <span className="hidden sm:inline uppercase tracking-wider text-[11px]">{label}</span>
                 </div>
-                {i < arr.length - 1 && <span className="text-pink-500/30 text-xs">›</span>}
+                {i < arr.length - 1 && <span className="text-border/60 text-xs">›</span>}
               </React.Fragment>
             );
           })}
@@ -583,19 +583,11 @@ export function CharacterCreator({
         {step === 'HERO_PICK' && (
           <div className="w-full flex flex-col items-center">
             <div className="text-center mb-6">
-              <h2
-                className="text-3xl md:text-4xl font-black uppercase font-mono tracking-widest mb-1 text-white"
-                style={{
-                  background: 'linear-gradient(180deg, #ffffff 0%, #00f5d4 50%, #f20089 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  filter: 'drop-shadow(0 0 20px rgba(242,0,137,0.5))',
-                }}
-              >
-                SELECT ARCHETYPE
+              <h2 className="text-2xl sm:text-3xl font-black uppercase font-mono tracking-wider mb-1 text-foreground">
+                <span className="sg-text-gradient">Choose Your Hero Archetype</span>
               </h2>
-              <p className="text-cyan-300/70 text-xs font-mono tracking-widest uppercase">
-                Choose a foundation archetype for combat bonuses and abilities
+              <p className="text-muted-foreground text-xs font-mono tracking-wide">
+                Select a foundation archetype to begin your journey with tuned stats and starting abilities
               </p>
 
               {starterHeroes.length > 0 && !heroesLoading && (
@@ -603,11 +595,11 @@ export function CharacterCreator({
                   <button
                     type="button"
                     onClick={handleRollHero}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-400/50 text-purple-200 hover:text-white font-mono text-xs font-bold uppercase tracking-wider transition-all hover:scale-105 shadow-[0_0_15px_rgba(168,85,247,0.3)] cursor-pointer"
-                    title="Randomly selects a hero archetype, class, and compatible appearance"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-card/80 hover:bg-card border border-primary/40 text-primary hover:text-foreground font-mono text-xs font-bold uppercase tracking-wider transition-all hover:scale-105 shadow-[0_0_15px_rgba(234,179,8,0.15)] cursor-pointer"
+                    title="Randomly selects a hero archetype and appearance"
                   >
-                    <Dice5 size={14} className="text-[#00f5d4]" />
-                    Quick Roll Saint (Archetype, Class & Presentation)
+                    <Dice5 size={14} className="text-primary" />
+                    Random Hero (Archetype & Class)
                   </button>
                 </div>
               )}
@@ -615,15 +607,15 @@ export function CharacterCreator({
 
             {heroesLoading ? (
               <div className="flex flex-col items-center py-16">
-                <Loader2 className="w-10 h-10 text-[#00f5d4] animate-spin mb-3" />
-                <p className="text-xs font-mono text-cyan-200">Initializing Operative Matrix...</p>
+                <Loader2 className="w-10 h-10 text-primary animate-spin mb-3" />
+                <p className="text-xs font-mono text-muted-foreground">Loading Hero Archetypes...</p>
               </div>
             ) : starterHeroes.length === 0 ? (
               <div className="flex flex-col items-center py-16">
-                <p className="text-sm font-mono text-pink-400">No archetypes available. An administrator must create archetypes in the Hero Studio.</p>
+                <p className="text-sm font-mono text-destructive">No archetypes available. Please create archetypes in the Hero Studio or Game Setup.</p>
               </div>
             ) : (
-              <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto p-1">
+              <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto p-1">
                 {starterHeroes.map((hero) => {
                   const isSelected = selectedHeroSlug === hero.slug;
                   const classDef = classDefs.find((c) => c.classId === hero.classId) || emptyClassDef();
@@ -632,64 +624,47 @@ export function CharacterCreator({
                     <div
                       key={hero.slug}
                       onClick={() => handleHeroPick(hero)}
-                      className={`cursor-pointer rounded-2xl p-[1px] transition-all group overflow-hidden ${
+                      className={`cursor-pointer rounded-xl p-4 transition-all group flex flex-col justify-between border ${
                         isSelected
-                          ? 'ring-2 ring-[#00f5d4] shadow-[0_0_25px_rgba(0,245,212,0.5)] scale-[1.02]'
-                          : 'hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,0,137,0.4)]'
+                          ? 'bg-[#0a1628] border-primary ring-2 ring-primary/60 shadow-[0_0_25px_rgba(234,179,8,0.25)] scale-[1.02]'
+                          : 'bg-[#050b14]/90 border-border/50 hover:border-primary/50 hover:bg-[#0a1628]/80 hover:scale-[1.01]'
                       }`}
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(242,0,137,0.5) 0%, rgba(0,245,212,0.3) 100%)',
-                        clipPath: 'polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px)',
-                      }}
                     >
-                      <div
-                        className="w-full h-full bg-[#0a0318]/95 p-4 flex flex-col justify-between"
-                        style={{
-                          clipPath: 'polygon(11px 0%, 100% 0%, 100% calc(100% - 11px), calc(100% - 11px) 100%, 0% 100%, 0% 11px)',
-                        }}
-                      >
-                        {/* Tag */}
+                      <div>
+                        {/* Tag & Class Badge */}
                         <div className="flex items-center justify-between mb-2">
                           <span
-                            className="px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase"
+                            className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase"
                             style={{ backgroundColor: `${hero.tagColor}22`, color: hero.tagColor, border: `1px solid ${hero.tagColor}44` }}
                           >
                             {hero.tag}
                           </span>
-                          <span className="text-[10px] font-mono text-cyan-300 font-extrabold uppercase">
+                          <span className="text-[10px] font-mono text-primary font-bold uppercase">
                             {hero.classId}
                           </span>
                         </div>
 
-                        {/* Avatar / Icon */}
-                        <div className="w-16 h-16 rounded-xl bg-black/60 border border-pink-500/30 mx-auto my-2 flex items-center justify-center shadow-inner group-hover:border-[#00f5d4] transition-all">
-                          {(() => {
-                            const Icon = CLASS_ICONS[hero.classId] || Swords;
-                            return (
-                              <Icon 
-                                size={32} 
-                                className="text-white group-hover:text-[#00f5d4] drop-shadow-[0_0_10px_rgba(242,0,137,0.6)] transition-all" 
-                              />
-                            );
-                          })()}
+                        {/* Character Sprite Preview */}
+                        <div className="w-20 h-20 rounded-xl bg-black/60 border border-border/50 mx-auto my-2.5 flex items-center justify-center shadow-inner group-hover:border-primary/60 transition-all overflow-hidden">
+                          <CharacterSpritePreview assetProfileId={hero.assetProfileId} size={32} scale={1.8} />
                         </div>
 
-                        {/* Name & Lore */}
+                        {/* Name & Flavor */}
                         <div className="text-center mt-2">
-                          <h3 className="text-sm font-black font-mono text-white group-hover:text-[#00f5d4] transition-colors">
+                          <h3 className="text-sm font-bold font-mono text-foreground group-hover:text-primary transition-colors">
                             {hero.name}
                           </h3>
-                          <p className="text-[10px] font-mono text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                          <p className="text-[11px] font-sans text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
                             {hero.flavor}
                           </p>
                         </div>
+                      </div>
 
-                        {/* Pick Button */}
-                        <div className="mt-3 pt-2 border-t border-pink-500/20 text-center">
-                          <span className="text-[11px] font-mono font-bold text-[#ffbe0b] group-hover:text-white uppercase tracking-wider flex items-center justify-center gap-1">
-                            Select Archetype <ChevronRight size={12} />
-                          </span>
-                        </div>
+                      {/* Pick Button */}
+                      <div className="mt-3 pt-2.5 border-t border-border/30 text-center">
+                        <span className="text-[11px] font-mono font-semibold text-primary group-hover:text-foreground uppercase tracking-wider flex items-center justify-center gap-1">
+                          Select Archetype <ChevronRight size={12} />
+                        </span>
                       </div>
                     </div>
                   );
@@ -699,40 +674,28 @@ export function CharacterCreator({
           </div>
         )}
 
-        {/* ── STEP 2: NAME / CALLSIGN ── */}
+        {/* ── STEP 2: NAME / IDENTITY ── */}
         {step === 'NAME' && (
           <div className="w-full max-w-lg mx-auto flex flex-col items-center">
             <div className="text-center mb-6">
-              <h2
-                className="text-3xl font-black uppercase font-mono tracking-widest mb-1 text-white"
-                style={{
-                  background: 'linear-gradient(180deg, #ffffff 0%, #00f5d4 70%, #3b82f6 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                SAINT IDENTITY
+              <h2 className="text-2xl sm:text-3xl font-black uppercase font-mono tracking-wider mb-1 text-foreground">
+                <span className="sg-text-gradient">Hero Identity</span>
               </h2>
-              <p className="text-cyan-300/70 text-xs font-mono tracking-widest uppercase">
-                Assign a unique identity to your champion Saint
+              <p className="text-muted-foreground text-xs font-mono tracking-wide">
+                Assign a unique character name for your hero in the realm
               </p>
             </div>
 
             {/* Avatar Preview */}
-            <div className="w-24 h-24 rounded-2xl bg-black/80 border-2 border-[#00f5d4] flex items-center justify-center mb-6 shadow-[0_0_25px_rgba(0,245,212,0.4)]">
+            <div className="w-24 h-24 rounded-2xl bg-black/80 border-2 border-primary/60 flex items-center justify-center mb-6 shadow-[0_0_25px_rgba(234,179,8,0.2)]">
               <CharacterSpritePreview layers={activeLayers} size={32} scale={2.2} />
             </div>
 
             {/* Input Form */}
-            <div
-              className="w-full bg-[#0a0318]/90 border border-pink-500/40 rounded-2xl p-6 shadow-2xl backdrop-blur-xl flex flex-col gap-4"
-              style={{
-                clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
-              }}
-            >
-              <label className="text-xs font-mono font-bold text-cyan-200 uppercase tracking-wider flex items-center justify-between">
-                <span>Saint Codename</span>
-                <span className="text-[10px] text-slate-400">Min 3 characters</span>
+            <div className="w-full bg-[#050b14]/95 border border-border/50 rounded-2xl p-6 shadow-2xl backdrop-blur-xl flex flex-col gap-4">
+              <label className="text-xs font-mono font-bold text-foreground uppercase tracking-wider flex items-center justify-between">
+                <span>Character Name</span>
+                <span className="text-[10px] text-muted-foreground">Min 3 characters</span>
               </label>
 
               <div className="flex gap-2">
@@ -740,15 +703,15 @@ export function CharacterCreator({
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter Saint Name..."
+                  placeholder="Enter Character Name..."
                   maxLength={18}
                   autoFocus
-                  className="flex-1 px-4 py-3 rounded-xl bg-black/70 border-2 border-pink-500/40 text-white placeholder:text-slate-500 font-mono text-base focus:outline-none focus:border-[#00f5d4] shadow-inner"
+                  className="flex-1 px-4 py-3 rounded-xl bg-card/60 border border-border/60 text-foreground placeholder:text-muted-foreground font-mono text-base focus:outline-none focus:border-primary shadow-inner"
                 />
                 <button
                   type="button"
                   onClick={handleRandomizeName}
-                  className="px-4 py-3 rounded-xl bg-purple-950/60 hover:bg-purple-900/80 border border-purple-500/50 text-purple-300 hover:text-white transition-all cursor-pointer flex items-center gap-1.5 font-mono text-xs font-bold"
+                  className="px-4 py-3 rounded-xl bg-card hover:bg-card/80 border border-border text-foreground transition-all cursor-pointer flex items-center gap-1.5 font-mono text-xs font-bold"
                   title="Generate Random Name"
                 >
                   <Dice5 size={16} />
@@ -765,9 +728,9 @@ export function CharacterCreator({
                     if (mode === 'modular') setStep('APPEARANCE');
                     else setStep('GIFT');
                   }}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-mono font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-pink-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white shadow-[0_0_20px_rgba(0,245,212,0.4)] disabled:opacity-40 cursor-pointer"
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-mono font-bold text-xs uppercase tracking-wider bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_20px_rgba(234,179,8,0.25)] disabled:opacity-40 cursor-pointer transition-all"
                 >
-                  {detectPresentationMode(assetProfileId, allSprites) === 'modular' ? 'Proceed to Avatar' : 'Proceed to Blessing'} <ArrowRight size={14} />
+                  {detectPresentationMode(assetProfileId, allSprites) === 'modular' ? 'Proceed to Avatar' : 'Proceed to Perk'} <ArrowRight size={14} />
                 </button>
               </div>
             </div>
@@ -778,85 +741,68 @@ export function CharacterCreator({
         {step === 'APPEARANCE' && (
           <div className="w-full flex flex-col items-center">
             <div className="text-center mb-4">
-              <h2
-                className="text-3xl font-black uppercase font-mono tracking-widest mb-1 text-white"
-                style={{
-                  background: 'linear-gradient(180deg, #ffffff 0%, #ffbe0b 50%, #f20089 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                SAINT CUSTOMIZATION
+              <h2 className="text-2xl sm:text-3xl font-black uppercase font-mono tracking-wider mb-1 text-foreground">
+                <span className="sg-text-gradient">Hero Customization</span>
               </h2>
-              <p className="text-cyan-300/70 text-xs font-mono tracking-widest uppercase">
-                Modular Sprite System: Assemble base Saint body, capes, headgear & armor
+              <p className="text-muted-foreground text-xs font-mono tracking-wide">
+                Modular Sprite System: Customize base body, capes, headgear & armor
               </p>
             </div>
 
             <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
               {/* Selected Preview Stage */}
-              <div
-                className="lg:col-span-4 bg-[#0a0318]/90 border border-pink-500/40 rounded-2xl p-5 flex flex-col items-center justify-between text-center"
-                style={{
-                  clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
-                }}
-              >
+              <div className="lg:col-span-4 bg-[#050b14]/95 border border-border/50 rounded-2xl p-5 flex flex-col items-center justify-between text-center">
                 <div>
-                  <span className="px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-400/40 text-[#00f5d4] text-[10px] font-mono font-extrabold uppercase tracking-wider">
-                    Saint Preview
+                  <span className="px-3 py-1 rounded-full bg-primary/20 border border-primary/40 text-primary text-[10px] font-mono font-bold uppercase tracking-wider">
+                    Hero Preview
                   </span>
-                  <h3 className="text-lg font-black font-mono text-white mt-2">{name || 'Saint'}</h3>
-                  <span className="text-xs font-mono text-pink-300">{classId}</span>
+                  <h3 className="text-lg font-bold font-mono text-foreground mt-2">{name || 'Hero'}</h3>
+                  <span className="text-xs font-mono text-primary font-bold">{classId}</span>
                 </div>
 
-                <div className="w-32 h-32 rounded-2xl bg-black/80 border-2 border-cyan-400/80 flex items-center justify-center my-3 shadow-[0_0_30px_rgba(0,245,212,0.4)]">
+                <div className="w-32 h-32 rounded-2xl bg-black/80 border-2 border-primary/60 flex items-center justify-center my-3 shadow-[0_0_25px_rgba(234,179,8,0.2)]">
                   <CharacterSpritePreview layers={activeLayers} size={32} scale={2.8} />
                 </div>
 
                 {/* Layer Badges */}
                 <div className="flex flex-wrap gap-1.5 justify-center mb-3">
-                  <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-cyan-950/60 border border-cyan-500/30 text-cyan-200">
+                  <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-card border border-border text-foreground">
                     Base: {dynamicBases.find((b: any) => b.id === assetProfileId)?.label || assetProfileId}
                   </span>
                   {selectedCape && (
-                    <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-purple-950/60 border border-purple-500/30 text-purple-200">
+                    <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-card border border-border text-foreground">
                       Cape: {dynamicCapes.find((c: any) => c.id === selectedCape)?.label}
                     </span>
                   )}
                   {selectedHat && (
-                    <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-pink-950/60 border border-pink-500/30 text-pink-200">
+                    <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-card border border-border text-foreground">
                       Hat: {dynamicHats.find((h: any) => h.id === selectedHat)?.label}
                     </span>
                   )}
                   {selectedArmor && (
-                    <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-amber-950/60 border border-amber-500/30 text-amber-200">
+                    <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-card border border-border text-foreground">
                       Armor: {dynamicArmor.find((a: any) => a.id === selectedArmor)?.label}
                     </span>
                   )}
                 </div>
 
-                <div className="w-full pt-3 border-t border-pink-500/20">
+                <div className="w-full pt-3 border-t border-border/40">
                   <button
                     onClick={() => {
                       soundSynth?.playActionSound?.();
                       setStep('GIFT');
                     }}
-                    className="w-full py-2.5 rounded-xl font-mono font-bold text-xs uppercase bg-gradient-to-r from-pink-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white shadow-[0_0_15px_rgba(0,245,212,0.3)] cursor-pointer flex items-center justify-center gap-2"
+                    className="w-full py-2.5 rounded-xl font-mono font-bold text-xs uppercase bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_15px_rgba(234,179,8,0.2)] cursor-pointer flex items-center justify-center gap-2"
                   >
-                    Confirm Avatar <ArrowRight size={14} />
+                    Confirm Appearance <ArrowRight size={14} />
                   </button>
                 </div>
               </div>
 
               {/* Modular Deck & Tabs */}
-              <div
-                className="lg:col-span-8 bg-[#0a0318]/90 border border-pink-500/40 rounded-2xl p-4 flex flex-col justify-between"
-                style={{
-                  clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
-                }}
-              >
+              <div className="lg:col-span-8 bg-[#050b14]/95 border border-border/50 rounded-2xl p-4 flex flex-col justify-between">
                 {/* Category Tabs */}
-                <div className="flex items-center gap-1.5 border-b border-pink-500/20 pb-3 mb-3 overflow-x-auto">
+                <div className="flex items-center gap-1.5 border-b border-border/40 pb-3 mb-3 overflow-x-auto">
                   {(
                     [
                       { id: 'BASE', label: '1. Body Base' },
@@ -877,8 +823,8 @@ export function CharacterCreator({
                         }}
                         className={`px-3 py-1.5 rounded-xl font-mono text-xs uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
                           isTabCur
-                            ? 'bg-gradient-to-r from-pink-600 to-cyan-600 text-white font-black shadow-[0_0_15px_rgba(0,245,212,0.4)]'
-                            : 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-transparent'
+                            ? 'bg-primary text-primary-foreground font-bold shadow-[0_0_12px_rgba(234,179,8,0.25)]'
+                            : 'bg-card/60 hover:bg-card text-muted-foreground hover:text-foreground border border-border/40'
                         }`}
                       >
                         {tab.label}
@@ -903,17 +849,17 @@ export function CharacterCreator({
                             }}
                             className={`p-2.5 rounded-xl border flex flex-col items-center justify-between cursor-pointer transition-all ${
                               isCur
-                                ? 'bg-cyan-500/30 border-cyan-400 shadow-[0_0_15px_rgba(0,245,212,0.5)] scale-[1.02]'
-                                : 'bg-black/50 border-pink-500/20 hover:border-pink-400 hover:scale-[1.02]'
+                                ? 'bg-primary/20 border-primary shadow-[0_0_15px_rgba(234,179,8,0.3)] scale-[1.02]'
+                                : 'bg-[#0a1628]/80 border-border/40 hover:border-primary/50 hover:scale-[1.02]'
                             }`}
                           >
                             <div className="w-14 h-14 flex items-center justify-center">
                               <CharacterSpritePreview assetProfileId={b.id} size={32} scale={1.4} />
                             </div>
-                            <span className="text-[11px] font-mono font-bold text-white mt-1 text-center line-clamp-1">
+                            <span className="text-[11px] font-mono font-bold text-foreground mt-1 text-center line-clamp-1">
                               {b.label}
                             </span>
-                            <span className="text-[9px] font-mono text-cyan-300/80 uppercase">
+                            <span className="text-[9px] font-mono text-primary uppercase">
                               {b.tag}
                             </span>
                           </div>
@@ -936,18 +882,18 @@ export function CharacterCreator({
                             }}
                             className={`p-3 rounded-xl border flex flex-col items-center justify-between cursor-pointer transition-all ${
                               isCur
-                                ? 'bg-purple-500/30 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.5)] scale-[1.02]'
-                                : 'bg-black/50 border-pink-500/20 hover:border-pink-400 hover:scale-[1.02]'
+                                ? 'bg-primary/20 border-primary shadow-[0_0_15px_rgba(234,179,8,0.3)] scale-[1.02]'
+                                : 'bg-[#0a1628]/80 border-border/40 hover:border-primary/50 hover:scale-[1.02]'
                             }`}
                           >
                             <div className="w-14 h-14 flex items-center justify-center">
                               {cape.id ? (
                                 <CharacterSpritePreview assetProfileId={cape.id} size={32} scale={1.4} />
                               ) : (
-                                <span className="text-xs font-mono text-slate-500">None</span>
+                                <span className="text-xs font-mono text-muted-foreground">None</span>
                               )}
                             </div>
-                            <span className="text-xs font-mono font-bold text-white mt-1 text-center">
+                            <span className="text-xs font-mono font-bold text-foreground mt-1 text-center">
                               {cape.label}
                             </span>
                           </div>
@@ -970,18 +916,18 @@ export function CharacterCreator({
                             }}
                             className={`p-3 rounded-xl border flex flex-col items-center justify-between cursor-pointer transition-all ${
                               isCur
-                                ? 'bg-pink-500/30 border-pink-400 shadow-[0_0_15px_rgba(242,0,137,0.5)] scale-[1.02]'
-                                : 'bg-black/50 border-pink-500/20 hover:border-pink-400 hover:scale-[1.02]'
+                                ? 'bg-primary/20 border-primary shadow-[0_0_15px_rgba(234,179,8,0.3)] scale-[1.02]'
+                                : 'bg-[#0a1628]/80 border-border/40 hover:border-primary/50 hover:scale-[1.02]'
                             }`}
                           >
                             <div className="w-14 h-14 flex items-center justify-center">
                               {hat.id ? (
                                 <CharacterSpritePreview assetProfileId={hat.id} size={32} scale={1.4} />
                               ) : (
-                                <span className="text-xs font-mono text-slate-500">None</span>
+                                <span className="text-xs font-mono text-muted-foreground">None</span>
                               )}
                             </div>
-                            <span className="text-xs font-mono font-bold text-white mt-1 text-center">
+                            <span className="text-xs font-mono font-bold text-foreground mt-1 text-center">
                               {hat.label}
                             </span>
                           </div>
@@ -1004,18 +950,18 @@ export function CharacterCreator({
                             }}
                             className={`p-3 rounded-xl border flex flex-col items-center justify-between cursor-pointer transition-all ${
                               isCur
-                                ? 'bg-amber-500/30 border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)] scale-[1.02]'
-                                : 'bg-black/50 border-pink-500/20 hover:border-pink-400 hover:scale-[1.02]'
+                                ? 'bg-primary/20 border-primary shadow-[0_0_15px_rgba(234,179,8,0.3)] scale-[1.02]'
+                                : 'bg-[#0a1628]/80 border-border/40 hover:border-primary/50 hover:scale-[1.02]'
                             }`}
                           >
                             <div className="w-14 h-14 flex items-center justify-center">
                               {armor.id ? (
                                 <CharacterSpritePreview assetProfileId={armor.id} size={32} scale={1.4} />
                               ) : (
-                                <span className="text-xs font-mono text-slate-500">None</span>
+                                <span className="text-xs font-mono text-muted-foreground">None</span>
                               )}
                             </div>
-                            <span className="text-xs font-mono font-bold text-white mt-1 text-center">
+                            <span className="text-xs font-mono font-bold text-foreground mt-1 text-center">
                               {armor.label}
                             </span>
                           </div>
@@ -1030,7 +976,7 @@ export function CharacterCreator({
                       {/* Search & Filter Header */}
                       <div className="flex items-center justify-between gap-3 mb-3">
                         <div className="relative flex-1">
-                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                           <input
                             type="text"
                             value={spriteSearch}
@@ -1039,16 +985,16 @@ export function CharacterCreator({
                               setSpritePage(0);
                             }}
                             placeholder="Filter sprite catalog..."
-                            className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-black/60 border border-pink-500/30 text-white placeholder:text-slate-500 text-xs font-mono focus:outline-none focus:border-[#00f5d4]"
+                            className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-card/60 border border-border/50 text-foreground placeholder:text-muted-foreground text-xs font-mono focus:outline-none focus:border-primary"
                           />
                         </div>
 
                         {/* Pagination */}
-                        <div className="flex items-center gap-1 font-mono text-xs text-slate-400">
+                        <div className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
                           <button
                             onClick={() => setSpritePage((p: number) => Math.max(0, p - 1))}
                             disabled={spritePage === 0}
-                            className="p-1.5 rounded bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 cursor-pointer"
+                            className="p-1.5 rounded bg-card hover:bg-card/80 text-foreground disabled:opacity-30 cursor-pointer"
                           >
                             <ChevronLeft size={14} />
                           </button>
@@ -1056,7 +1002,7 @@ export function CharacterCreator({
                           <button
                             onClick={() => setSpritePage((p: number) => Math.min(totalSpritePages - 1, p + 1))}
                             disabled={spritePage >= totalSpritePages - 1}
-                            className="p-1.5 rounded bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 cursor-pointer"
+                            className="p-1.5 rounded bg-card hover:bg-card/80 text-foreground disabled:opacity-30 cursor-pointer"
                           >
                             <ChevronRight size={14} />
                           </button>
@@ -1076,8 +1022,8 @@ export function CharacterCreator({
                               }}
                               className={`p-2 rounded-xl border flex flex-col items-center justify-center cursor-pointer transition-all ${
                                 isCur
-                                  ? 'bg-cyan-500/30 border-cyan-400 shadow-[0_0_15px_rgba(0,245,212,0.5)] scale-105'
-                                  : 'bg-black/50 border-pink-500/20 hover:border-pink-400 hover:scale-105'
+                                  ? 'bg-primary/20 border-primary shadow-[0_0_15px_rgba(234,179,8,0.3)] scale-105'
+                                  : 'bg-[#0a1628]/80 border-border/40 hover:border-primary/50 hover:scale-105'
                               }`}
                             >
                               <CharacterSpritePreview assetProfileId={sprite} size={32} scale={1.5} />
@@ -1089,30 +1035,23 @@ export function CharacterCreator({
                   )}
                 </div>
 
-                <div className="text-[10px] font-mono text-slate-400 text-center pt-2 border-t border-pink-500/20 mt-2">
-                  ✦ Layered Modular Character Ingestion // Bible 35 Standard ✦
+                <div className="text-[10px] font-mono text-muted-foreground text-center pt-2 border-t border-border/40 mt-2">
+                  ✦ Layered Modular Character Ingestion ✦
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* ── STEP 4: PERK / SAINT GIFT ── */}
+        {/* ── STEP 4: PERK / STARTING TRAIT ── */}
         {step === 'GIFT' && (
           <div className="w-full max-w-3xl mx-auto flex flex-col items-center">
             <div className="text-center mb-6">
-              <h2
-                className="text-3xl font-black uppercase font-mono tracking-widest mb-1 text-white"
-                style={{
-                  background: 'linear-gradient(180deg, #ffffff 0%, #ffbe0b 50%, #f20089 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                SAINT BLESSING
+              <h2 className="text-2xl sm:text-3xl font-black uppercase font-mono tracking-wider mb-1 text-foreground">
+                <span className="sg-text-gradient">Starting Perk</span>
               </h2>
-              <p className="text-cyan-300/70 text-xs font-mono tracking-widest uppercase">
-                Select a permanent passive bonus trait for this operative
+              <p className="text-muted-foreground text-xs font-mono tracking-wide">
+                Select a permanent passive bonus perk for this character
               </p>
             </div>
 
@@ -1128,10 +1067,10 @@ export function CharacterCreator({
                       soundSynth?.playSelectSound?.();
                       setPerkId(perk.id);
                     }}
-                    className={`cursor-pointer rounded-2xl p-4 border transition-all ${
+                    className={`cursor-pointer rounded-xl p-4 border transition-all ${
                       isSelected
-                        ? 'bg-amber-950/40 border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.3)] scale-[1.02]'
-                        : 'bg-[#0a0318]/90 border-pink-500/30 hover:border-pink-400 hover:scale-[1.01]'
+                        ? 'bg-primary/15 border-primary shadow-[0_0_20px_rgba(234,179,8,0.25)] scale-[1.02]'
+                        : 'bg-[#050b14]/90 border-border/50 hover:border-primary/40 hover:bg-[#0a1628]/80 hover:scale-[1.01]'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -1142,16 +1081,16 @@ export function CharacterCreator({
                         >
                           <Icon size={16} />
                         </div>
-                        <span className="font-bold font-mono text-sm text-white">{perk.name}</span>
+                        <span className="font-bold font-mono text-sm text-foreground">{perk.name}</span>
                       </div>
                       <span
-                        className="px-2 py-0.5 rounded text-[9px] font-mono font-black uppercase"
+                        className="px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase"
                         style={{ backgroundColor: `${perk.color}22`, color: perk.color }}
                       >
                         {perk.badge}
                       </span>
                     </div>
-                    <p className="text-xs font-mono text-slate-300 leading-relaxed">{perk.desc}</p>
+                    <p className="text-xs font-sans text-muted-foreground leading-relaxed">{perk.desc}</p>
                   </div>
                 );
               })}
@@ -1163,75 +1102,62 @@ export function CharacterCreator({
                   soundSynth?.playActionSound?.();
                   setStep('REVIEW');
                 }}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl font-mono font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-pink-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white shadow-[0_0_20px_rgba(0,245,212,0.4)] cursor-pointer"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl font-mono font-bold text-xs uppercase tracking-wider bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_20px_rgba(234,179,8,0.25)] cursor-pointer transition-all"
               >
-                Review Dossier <ArrowRight size={14} />
+                Review Character <ArrowRight size={14} />
               </button>
             </div>
           </div>
         )}
 
-        {/* ── STEP 5: REVIEW & FINAL FORGE ── */}
+        {/* ── STEP 5: REVIEW & ENTER WORLD ── */}
         {step === 'REVIEW' && (
           <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
             <div className="text-center mb-6">
-              <h2
-                className="text-3xl font-black uppercase font-mono tracking-widest mb-1 text-white"
-                style={{
-                  background: 'linear-gradient(180deg, #ffffff 0%, #00f5d4 50%, #f20089 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  filter: 'drop-shadow(0 0 20px rgba(0,245,212,0.5))',
-                }}
-              >
-                SAINT DOSSIER
+              <h2 className="text-2xl sm:text-3xl font-black uppercase font-mono tracking-wider mb-1 text-foreground">
+                <span className="sg-text-gradient">Hero Summary</span>
               </h2>
-              <p className="text-cyan-300/70 text-xs font-mono tracking-widest uppercase">
-                Review Saint attributes and confirm realm deployment
+              <p className="text-muted-foreground text-xs font-mono tracking-wide">
+                Review your character attributes and confirm realm entry
               </p>
             </div>
 
-            <div
-              className="w-full bg-[#0a0318]/95 border-2 border-[#00f5d4]/60 rounded-2xl p-6 shadow-[0_0_35px_rgba(0,245,212,0.25)] flex flex-col gap-5"
-              style={{
-                clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
-              }}
-            >
+            <div className="w-full bg-[#050b14]/95 border-2 border-primary/50 rounded-2xl p-6 shadow-[0_0_35px_rgba(234,179,8,0.15)] flex flex-col gap-5">
               {/* Profile Card */}
-              <div className="flex items-center gap-5 border-b border-pink-500/20 pb-4">
-                <div className="w-20 h-20 rounded-2xl bg-black/80 border border-[#00f5d4] flex items-center justify-center shrink-0 shadow-inner">
+              <div className="flex items-center gap-5 border-b border-border/40 pb-4">
+                <div className="w-20 h-20 rounded-2xl bg-black/80 border border-primary/50 flex items-center justify-center shrink-0 shadow-inner overflow-hidden">
                   <CharacterSpritePreview layers={activeLayers} size={32} scale={2} />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-black font-mono text-white">{name}</h3>
+                  <h3 className="text-2xl font-black font-mono text-foreground">{name}</h3>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="px-2.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-400/40 text-[#00f5d4] text-xs font-mono font-bold">
+                    <span className="px-2.5 py-0.5 rounded bg-primary/20 border border-primary/40 text-primary text-xs font-mono font-bold">
                       {classId}
                     </span>
-                    <span className="text-xs font-mono text-purple-300">Level 1 Saint</span>
+                    <span className="text-xs font-mono text-muted-foreground">Level 1 Saint</span>
                   </div>
                 </div>
               </div>
 
               {/* Attributes Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
-                <div className="p-3 rounded-xl bg-black/50 border border-pink-500/20">
-                  <span className="text-slate-400 text-[10px] block">HEALTH</span>
+                <div className="p-3 rounded-xl bg-card/60 border border-border/40">
+                  <span className="text-muted-foreground text-[10px] block font-bold">HEALTH</span>
                   <strong className="text-rose-400 text-sm">
                     {100 + (perkId === 'STAMINA_SURGE' ? 30 : 0)} HP
                   </strong>
                 </div>
-                <div className="p-3 rounded-xl bg-black/50 border border-pink-500/20">
-                  <span className="text-slate-400 text-[10px] block">POUCH</span>
-                  <strong className="text-amber-300 text-sm">1,000 C</strong>
+                <div className="p-3 rounded-xl bg-card/60 border border-border/40">
+                  <span className="text-muted-foreground text-[10px] block font-bold">POUCH</span>
+                  <strong className="text-primary text-sm">1,000 C</strong>
                 </div>
-                <div className="p-3 rounded-xl bg-black/50 border border-pink-500/20">
-                  <span className="text-slate-400 text-[10px] block">BLESSING</span>
-                  <strong className="text-[#00f5d4] text-sm">{selectedPerk.name}</strong>
+                <div className="p-3 rounded-xl bg-card/60 border border-border/40">
+                  <span className="text-muted-foreground text-[10px] block font-bold">STARTING PERK</span>
+                  <strong className="text-foreground text-sm">{selectedPerk.name}</strong>
                 </div>
-                <div className="p-3 rounded-xl bg-black/50 border border-pink-500/20">
-                  <span className="text-slate-400 text-[10px] block">BAG CAPACITY</span>
-                  <strong className="text-purple-300 text-sm">
+                <div className="p-3 rounded-xl bg-card/60 border border-border/40">
+                  <span className="text-muted-foreground text-[10px] block font-bold">CARRY CAPACITY</span>
+                  <strong className="text-foreground text-sm">
                     {perkId === 'PACK_MULE' ? '150 KG' : '100 KG'}
                   </strong>
                 </div>
@@ -1242,17 +1168,17 @@ export function CharacterCreator({
                 <button
                   disabled={loading}
                   onClick={handleCreate}
-                  className="w-full py-4 rounded-xl font-mono font-black text-sm uppercase tracking-widest bg-gradient-to-r from-amber-500 via-pink-600 to-cyan-600 hover:from-amber-400 hover:via-pink-500 hover:to-cyan-500 text-white shadow-[0_0_30px_rgba(242,0,137,0.5)] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-4 rounded-xl font-mono font-black text-sm uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_30px_rgba(234,179,8,0.3)] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin text-white" />
-                      Forging Saint...
+                      <Loader2 className="w-5 h-5 animate-spin text-primary-foreground" />
+                      Creating Hero...
                     </>
                   ) : (
                     <>
-                      <Flame className="w-5 h-5 text-white" />
-                      FORGE SAINT // ENTER REALM
+                      <Flame className="w-5 h-5 text-primary-foreground" />
+                      CREATE HERO &amp; ENTER REALM
                     </>
                   )}
                 </button>
@@ -1263,9 +1189,9 @@ export function CharacterCreator({
       </main>
 
       {/* ── FOOTER BAR ── */}
-      <footer className="relative z-30 w-full max-w-5xl mx-auto flex items-center justify-between text-[10px] font-mono text-pink-500/60 pt-3 border-t border-pink-500/20">
-        <span>⚔ Saints Gaming MMO Core Engine // Saint Forge ⚔</span>
-        <span className="text-cyan-400/80">Step {currentNum} of 5</span>
+      <footer className="relative z-30 w-full max-w-5xl mx-auto flex items-center justify-between text-[10px] font-mono text-muted-foreground pt-3 border-t border-border/30">
+        <span>Saints Gaming: Time To Play</span>
+        <span className="text-primary">Step {currentNum} of 5</span>
       </footer>
     </div>
   );

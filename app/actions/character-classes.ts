@@ -7,6 +7,7 @@ import {
   ClassDefData,
   DEFAULT_GAME_CONFIG_SLUG,
   DEFAULT_GLOBAL_SHINY_CHANCE_PERCENT,
+  DEFAULT_PLAYABLE_CLASSES,
 } from '@/shared/game/classCatalog';
 import { classDataToDb, classRowToData } from '@/shared/game/classDefMap';
 import { ensureDefaultGameConfig } from '@/server/classDefs';
@@ -30,15 +31,15 @@ export async function getPlayableClasses(profileId?: string) {
       orderBy: { sortOrder: 'asc' },
     });
     if (rows.length === 0) {
-      return { success: true, data: [] as ClassDefData[], source: 'db' as const };
+      return { success: true, data: DEFAULT_PLAYABLE_CLASSES, source: 'default' as const };
     }
     return { success: true, data: rows.map(classRowToData), source: 'db' as const };
   } catch (err) {
     console.error('[getPlayableClasses]', err);
     return {
       success: true,
-      data: [] as ClassDefData[],
-      source: 'db' as const,
+      data: DEFAULT_PLAYABLE_CLASSES,
+      source: 'default' as const,
     };
   }
 }

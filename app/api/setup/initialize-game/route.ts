@@ -5,6 +5,9 @@ import { getSystemSetupStatus, SETUP_SETTING_KEYS } from '@/shared/game/setup/se
 import { generateDefaultWorldDoc, type VoxelWorldDocV3 } from '@/shared/game/voxel/VoxelWorldDoc';
 import { DEFAULT_STUDIO_TILESETS, DEFAULT_STUDIO_GROUND_GID } from '@/shared/game/studioTilesetBootstrap';
 import { notifyGoMapSynced } from '@/server/goMmoNotify';
+import { DEFAULT_STARTER_HERO_PRESETS } from '@/app/actions/starter-heroes';
+import { DEFAULT_PLAYABLE_CLASSES } from '@/shared/game/classCatalog';
+import { classDataToDb } from '@/shared/game/classDefMap';
 
 export const dynamic = 'force-dynamic';
 
@@ -165,7 +168,7 @@ export async function POST(req: Request) {
     // 4. Atomic Transaction Persistence
     await prisma.$transaction(async (tx) => {
       // 4a. Update / Create GameConfig
-      await tx.gameConfig.upsert({
+      const gameConfig = await tx.gameConfig.upsert({
         where: { slug: 'saints' },
         create: {
           slug: 'saints',
@@ -182,19 +185,34 @@ export async function POST(req: Request) {
         },
       });
 
-      // 4b. Upsert Starter Heroes
-      for (let i = 0; i < body.characters.length; i++) {
-        const char = body.characters[i];
-        const assetProfileId = char.assetProfileId || char.spriteKey || 'evil-berserker-bloodaxe-male';
+      // 4b. Seed Character Classes
+      for (const classDef of DEFAULT_PLAYABLE_CLASSES) {
+        const payload = classDataToDb(classDef, gameConfig.id);
+        await tx.characterClass.upsert({
+          where: { gameId_slug: { gameId: gameConfig.id, slug: classDef.slug } },
+          create: payload,
+          update: payload,
+        });
+      }
+
+      // 4c. Upsert Starter Heroes
+      const charList = (Array.isArray(body.characters) && body.characters.length > 0)
+        ? body.characters
+        : DEFAULT_STARTER_HERO_PRESETS;
+
+      for (let i = 0; i < charList.length; i++) {
+        const char = charList[i];
+        const assetProfileId = char.assetProfileId || (char as any).spriteKey || 'evil-berserker-bloodaxe-male';
+        const heroSlug = char.slug || `hero_${i + 1}`;
         await tx.starterHero.upsert({
-          where: { slug: char.slug },
+          where: { slug: heroSlug },
           create: {
-            slug: char.slug,
+            slug: heroSlug,
             gameId: 'saints',
             name: char.name.trim(),
             classId: char.classId || 'WARRIOR',
             assetProfileId,
-            assetBundleId: char.spriteBundleId || null,
+            assetBundleId: (char as any).spriteBundleId || (char as any).assetBundleId || null,
             flavor: char.flavor?.trim() || `${char.name} the ${char.classId || 'Adventurer'}`,
             tag: char.tag || (i === 0 ? 'Primary' : 'Hero'),
             tagColor: char.tagColor || '#38bdf8',
@@ -203,13 +221,13 @@ export async function POST(req: Request) {
             startingMap: mapId,
             startingX: spawnX,
             startingY: spawnY,
-            startingInventory: '{"capture_script":10,"patch_kit":5}',
+            startingInventory: (char as any).startingInventory || '{"patch_kit":5}',
           },
           update: {
             name: char.name.trim(),
             classId: char.classId || 'WARRIOR',
             assetProfileId,
-            assetBundleId: char.spriteBundleId || null,
+            assetBundleId: (char as any).spriteBundleId || (char as any).assetBundleId || null,
             flavor: char.flavor?.trim() || `${char.name} the ${char.classId || 'Adventurer'}`,
             tag: char.tag || (i === 0 ? 'Primary' : 'Hero'),
             tagColor: char.tagColor || '#38bdf8',

@@ -17,23 +17,24 @@ export interface CharacterSpritePreviewProps {
  */
 export function resolveSpriteUrl(key: string): string {
   if (!key) return '/game-assets/npc/adventurer.png';
-  if (key.startsWith('/') || key.startsWith('http://') || key.startsWith('https://')) {
-    return key;
+  const trimmed = key.trim();
+  if (trimmed.startsWith('/') || trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
   }
-  if (key.startsWith('game-assets/')) {
-    return `/${key}`;
+  if (trimmed.startsWith('game-assets/')) {
+    return `/${trimmed}`;
   }
-  if (key.startsWith('npc/') || key.startsWith('monster/') || key.startsWith('creatures/') || key.startsWith('objects/')) {
-    return `/game-assets/${key.endsWith('.png') ? key : `${key}.png`}`;
+  if (trimmed.startsWith('npc/') || trimmed.startsWith('monster/') || trimmed.startsWith('creatures/') || trimmed.startsWith('objects/')) {
+    return `/game-assets/${trimmed.endsWith('.png') ? trimmed : `${trimmed}.png`}`;
   }
-  if (key.includes('.') || key.startsWith('upload_') || key.startsWith('asset_')) {
-    return `/uploads/${key}`;
+  if (trimmed.startsWith('uploads/')) {
+    return `/${trimmed}`;
   }
-  // Dynamic pattern detection for all modular directory packs (good-*, evil-*, item-*)
-  if (key.startsWith('good-') || key.startsWith('evil-') || key.startsWith('item-')) {
-    return `/game-assets/npc/${key}/${key}.png`;
+  if (trimmed.startsWith('upload_') || trimmed.startsWith('asset_custom_')) {
+    return `/uploads/${trimmed.endsWith('.png') ? trimmed : `${trimmed}.png`}`;
   }
-  return `/game-assets/npc/${key}.png`;
+  const clean = trimmed.replace(/\.png$/i, '');
+  return `/game-assets/npc/${clean}.png`;
 }
 
 const SPRITE_SIZE_CACHE = new Map<string, { width: number; height: number }>();
