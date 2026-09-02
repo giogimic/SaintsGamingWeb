@@ -23,6 +23,7 @@ export async function POST(req: Request) {
     }
 
     let updateType = "auto";
+    let wipeGameData = false;
     try {
       const body = await req.json();
       if (body && typeof body.updateType === "string") {
@@ -31,8 +32,25 @@ export async function POST(req: Request) {
           updateType = cleanType;
         }
       }
+      if (body && typeof body.wipeGameData === "boolean") {
+        wipeGameData = body.wipeGameData;
+      }
     } catch {
       // Fall back to default 'auto' if no JSON body
+    }
+
+    if (wipeGameData) {
+      console.log("[SystemUpdate] Admin requested game data wipe. Resetting gameplay records...");
+      try {
+        await prisma.playerCreature.deleteMany({});
+        await prisma.playerInventoryItem.deleteMany({});
+        await prisma.playerSkill.deleteMany({});
+        await prisma.playerStats.deleteMany({});
+        await prisma.worldMap.deleteMany({});
+        await prisma.gameMap.deleteMany({});
+      } catch (wipeErr) {
+        console.warn("[SystemUpdate] Non-fatal error during table wipe:", wipeErr);
+      }
     }
 
     const isWindows = os.platform() === "win32";
@@ -56,7 +74,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ 
       success: true, 
       updateType,
-      message: `System update (${updateType.toUpperCase()}) initiated. The server may restart shortly.` 
+      wipeGameData,
+      message: `System update (${updateType.toUpperCase()}) initiated${wipeGameData ? ' with clean data wipe' : ''}. The server may restart shortly.` 
     });
 
   } catch (error) {
