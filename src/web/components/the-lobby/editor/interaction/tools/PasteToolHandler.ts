@@ -18,6 +18,10 @@ export class PasteToolHandler implements IToolHandler {
     const gameStore = useGameStore.getState();
     const map = context.mapData || gameStore.activeMapData;
     if (!map) return false;
+    if (store.studioMode === 'voxel') {
+      context.showToast?.('Clipboard tile paste is for 2D layers.');
+      return false;
+    }
 
     const { r, c } = event.tilePos;
     const res = store.pasteClipboard(map, context.engine, r, c, store.pasteMode);

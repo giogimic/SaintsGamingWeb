@@ -20,6 +20,10 @@ export class PrefabToolHandler implements IToolHandler {
     const gameStore = useGameStore.getState();
     const map = context.mapData || gameStore.activeMapData;
     if (!map) return false;
+    if (store.studioMode === 'voxel') {
+      context.showToast?.('Tile prefabs are for 2D layers. Switch to Visual Grid to stamp.');
+      return false;
+    }
 
     const { r, c } = event.tilePos;
     const activePrefabId = store.activePrefabId;

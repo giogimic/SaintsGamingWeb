@@ -27,6 +27,8 @@ import {
   type PaintedCell,
   type PaintedVoxel,
 } from '@/shared/game/editorOps';
+import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
+import { packVoxel, VOXEL_WORD_AIR } from '@/shared/game/voxel/VoxelWord';
 import {
   eraseTilesInRegion,
   eraseSparseCells,
@@ -1965,8 +1967,63 @@ export const useEditorStore = create<EditorState>()(
         const start = get().selectionStart;
         const end = get().selectionEnd;
         const hovered = get().hoveredTile;
-
         const geom = get().activeSelectionGeometry;
+
+        if (get().studioMode === 'voxel') {
+          const voxelDoc = (map as any)?.voxelDoc;
+          if (!voxelDoc) return { count: 0, layerIdx, error: 'No voxelDoc on map.' };
+          const world = (map as any).__voxelWorldInstance || VoxelWorld.deserializeFromDoc(voxelDoc);
+          const mapHeight = map.grid?.length || (map as any).height || 24;
+          const changedVoxels: PaintedVoxel[] = [];
+
+          const clearColumn = (r: number, c: number) => {
+            const wx = c;
+            const wz = mapHeight - 1 - r;
+            for (let wy = 0; wy < world.totalHeightBlocks; wy++) {
+              const before = world.getVoxel(wx, wy, wz);
+              if (before !== VOXEL_WORD_AIR) {
+                world.setVoxel(wx, wy, wz, VOXEL_WORD_AIR);
+                changedVoxels.push({ wx, wy, wz, before, after: VOXEL_WORD_AIR });
+              }
+            }
+          };
+
+          if (geom && geom.type !== 'rectangle') {
+            const width = map.grid?.[0]?.length || (map as any).width || 24;
+            const height = map.grid?.length || (map as any).height || 24;
+            const cells = rasterizeGeometryToCells(geom, { width, height });
+            for (const key of Object.keys(cells)) {
+              const [r, c] = key.split(',').map(Number);
+              clearColumn(r, c);
+            }
+          } else if (hasSparseSelection) {
+            for (const key of Object.keys(selectedCells)) {
+              const [r, c] = key.split(',').map(Number);
+              clearColumn(r, c);
+            }
+          } else if (start && end) {
+            const minR = Math.min(start.r, end.r);
+            const maxR = Math.max(start.r, end.r);
+            const minC = Math.min(start.c, end.c);
+            const maxC = Math.max(start.c, end.c);
+            for (let r = minR; r <= maxR; r++) {
+              for (let c = minC; c <= maxC; c++) {
+                clearColumn(r, c);
+              }
+            }
+          } else if (hovered) {
+            clearColumn(hovered.r, hovered.c);
+          }
+
+          if (changedVoxels.length > 0) {
+            (map as any).voxelDoc = world.serializeToDoc();
+            get().pushVoxelOp(changedVoxels);
+            get().markMapDirty();
+            if (engine?.meshDirtyVoxelChunks) engine.meshDirtyVoxelChunks();
+          }
+          return { count: changedVoxels.length, layerIdx };
+        }
+
         let eraseResult;
         if (geom && geom.type !== 'rectangle') {
           const width = map.grid?.[0]?.length || (map as any).width || 24;
@@ -2060,6 +2117,66 @@ export const useEditorStore = create<EditorState>()(
         const start = get().selectionStart;
         const end = get().selectionEnd;
         const hovered = get().hoveredTile;
+        const geom = get().activeSelectionGeometry;
+
+        if (get().studioMode === 'voxel') {
+          const voxelDoc = (map as any)?.voxelDoc;
+          if (!voxelDoc) return { count: 0, layerIdx, error: 'No voxelDoc on map.' };
+          const world = (map as any).__voxelWorldInstance || VoxelWorld.deserializeFromDoc(voxelDoc);
+          const mapHeight = map.grid?.length || (map as any).height || 24;
+          const matId = get().activeVoxelMaterialId || 1;
+          const shapeId = get().activeVoxelShape || 0;
+          const orient = get().activeVoxelOrientation || 0;
+          const physics = get().activeVoxelPhysics || 0;
+          const voxelWord = packVoxel(matId, shapeId, orient, 0, physics, 0);
+          const changedVoxels: PaintedVoxel[] = [];
+
+          const paintColumn = (r: number, c: number) => {
+            const wx = c;
+            const wz = mapHeight - 1 - r;
+            const wy = get().hoveredVoxel?.wy ?? 16;
+            const before = world.getVoxel(wx, wy, wz);
+            if (before !== voxelWord) {
+              world.setVoxel(wx, wy, wz, voxelWord);
+              changedVoxels.push({ wx, wy, wz, before, after: voxelWord });
+            }
+          };
+
+          if (geom && geom.type !== 'rectangle') {
+            const width = map.grid?.[0]?.length || (map as any).width || 24;
+            const height = map.grid?.length || (map as any).height || 24;
+            const cells = rasterizeGeometryToCells(geom, { width, height });
+            for (const key of Object.keys(cells)) {
+              const [r, c] = key.split(',').map(Number);
+              paintColumn(r, c);
+            }
+          } else if (hasSparseSelection) {
+            for (const key of Object.keys(selectedCells)) {
+              const [r, c] = key.split(',').map(Number);
+              paintColumn(r, c);
+            }
+          } else if (start && end) {
+            const minR = Math.min(start.r, end.r);
+            const maxR = Math.max(start.r, end.r);
+            const minC = Math.min(start.c, end.c);
+            const maxC = Math.max(start.c, end.c);
+            for (let r = minR; r <= maxR; r++) {
+              for (let c = minC; c <= maxC; c++) {
+                paintColumn(r, c);
+              }
+            }
+          } else if (hovered) {
+            paintColumn(hovered.r, hovered.c);
+          }
+
+          if (changedVoxels.length > 0) {
+            (map as any).voxelDoc = world.serializeToDoc();
+            get().pushVoxelOp(changedVoxels);
+            get().markMapDirty();
+            if (engine?.meshDirtyVoxelChunks) engine.meshDirtyVoxelChunks();
+          }
+          return { count: changedVoxels.length, layerIdx };
+        }
 
         const tileId =
           customTileId !== undefined
@@ -2070,7 +2187,6 @@ export const useEditorStore = create<EditorState>()(
 
         if (!map) return { count: 0, layerIdx, error: 'No active map.' };
 
-        const geom = get().activeSelectionGeometry;
         let paintResult: { ok: boolean; count?: number; cells?: PaintedCell[]; reason?: string } = { ok: false };
         if (geom && geom.type !== 'rectangle') {
           const width = map.grid?.[0]?.length || (map as any).width || 24;
