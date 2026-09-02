@@ -1090,6 +1090,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       engineRef.current = null;
       lastLoadedMapDataRef.current = null;
       lastVisualFingerprintRef.current = '';
+      if (typeof window !== 'undefined' && (window as any).__babylonEngine === babylonEngine) {
+        (window as any).__babylonEngine = null;
+      }
     };
   // Remount only when the base map seat changes — not on every mapData object identity.
   // eslint-disable-next-line react-hooks/exhaustive-deps -- mapData read when engineMapKey flips
@@ -1221,9 +1224,6 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       window.removeEventListener('combat_update_event', handleCombatUpdate);
       window.removeEventListener('loot_dropped_event', handleLootDropped);
       window.removeEventListener('loot_despawned_event', handleLootDespawned);
-      if (typeof window !== 'undefined' && (window as any).__babylonEngine === engineRef.current) {
-        (window as any).__babylonEngine = null;
-      }
     };
   }, [activeMap]);
 
