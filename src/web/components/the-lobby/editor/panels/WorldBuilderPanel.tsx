@@ -22,7 +22,8 @@ import {
   Plus,
   Brush,
   Magnet,
-  Maximize2
+  Maximize2,
+  Box,
 } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
 
@@ -472,11 +473,68 @@ export const WorldBuilderPanel: React.FC = () => {
 
         {openSections.overview && (
           <div className="p-3 space-y-2.5 border-t border-[#806f47]/20 bg-[#050b14]/50">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-slate-400">Dimensions:</span>
-              <span className="text-white font-bold bg-black/50/20 px-2 py-0.5 rounded border border-[#806f47]/20">
-                {currentMapData.grid?.[0]?.length || 24} × {currentMapData.grid?.length || 24} tiles
-              </span>
+            {/* 3D Voxel Volume Dimensions */}
+            <div className="p-2 rounded-lg bg-[#040812] border border-border/40 space-y-2">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-primary font-bold flex items-center gap-1.5">
+                  <Box className="w-3.5 h-3.5 text-primary" />
+                  <span>3D Voxel Volume:</span>
+                </span>
+                <span className="text-white font-mono font-bold bg-black/60 px-2 py-0.5 rounded border border-primary/30">
+                  {Math.max(1, Math.ceil((currentMapData.grid?.[0]?.length || 32) / 16))} × {Math.max(1, Math.ceil((currentMapData.grid?.length || 32) / 16))} × 1 Chunks
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                <span>Block Scale Resolution:</span>
+                <div className="flex items-center gap-1">
+                  {[16, 32, 48, 64, 128].map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => {
+                        soundSynth?.playUiClick?.();
+                        useEditorStore.getState().setVoxelBlockSizePx(size);
+                        showToast(`Block Scale set to ${size}px`);
+                      }}
+                      className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all ${
+                        useEditorStore((s) => s.voxelBlockSizePx) === size
+                          ? 'bg-primary text-primary-foreground font-bold'
+                          : 'bg-black/40 text-muted-foreground hover:text-white'
+                      }`}
+                    >
+                      {size}px
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Generate Gunmetal Base Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  soundSynth?.playActionSound?.();
+                  const world = new (require('@/shared/game/voxel/VoxelWorldDoc').VoxelWorld)(
+                    baseMapId || 'DEMO_SANDBOX',
+                    baseMapId || 'DEMO_SANDBOX',
+                    2,
+                    2,
+                    1,
+                    useEditorStore.getState().voxelBlockSizePx || 64
+                  );
+                  world.generateDefaultWorld();
+                  const doc = world.serializeToDoc();
+                  if (activeMapData) {
+                    useGameStore.setState({ activeMapData: { ...activeMapData, voxelDoc: doc } });
+                  }
+                  useEditorStore.getState().markMapDirty();
+                  showToast('Generated Gunmetal Base 3D Voxel Volume');
+                }}
+                className="w-full py-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary border border-primary/40 font-mono font-bold text-[10px] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Initialize 3D Voxel Gunmetal Foundation</span>
+              </button>
             </div>
 
             {/* Neighbor Bleed Toggle */}

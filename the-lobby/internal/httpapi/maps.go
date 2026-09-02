@@ -126,6 +126,7 @@ type mapSaveBody struct {
 	MapID          string          `json:"mapId"`
 	Name           string          `json:"name"`
 	GridData       json.RawMessage `json:"gridData"`
+	GatesData      json.RawMessage `json:"gatesData,omitempty"`
 	NpcsData       json.RawMessage `json:"npcsData"`
 	TileLayersData json.RawMessage `json:"tileLayersData"`
 	TilesetsData   json.RawMessage `json:"tilesetsData"`
@@ -162,6 +163,10 @@ func (s *Server) saveMap(w http.ResponseWriter, r *http.Request, pathID string) 
 	if grid == "" {
 		grid = "[]"
 	}
+	gates := string(payload.GatesData)
+	if gates == "" {
+		gates = "{}"
+	}
 	npcs := string(payload.NpcsData)
 	if npcs == "" {
 		npcs = "[]"
@@ -174,7 +179,7 @@ func (s *Server) saveMap(w http.ResponseWriter, r *http.Request, pathID string) 
 	if tilesets == "" {
 		tilesets = "[]"
 	}
-	if err := PersistMap(s.DB, s.World, id, name, grid, npcs, tiles, tilesets); err != nil {
+	if err := PersistMap(s.DB, s.World, id, name, grid, gates, npcs, tiles, tilesets); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -183,6 +188,7 @@ func (s *Server) saveMap(w http.ResponseWriter, r *http.Request, pathID string) 
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "id": id})
 }
+
 
 func (s *Server) internalSyncDialogue(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -231,25 +237,29 @@ func (s *Server) authorizeInternal(r *http.Request) bool {
 }
 
 // PersistMap writes WorldMap + refreshes in-memory def.
-func PersistMap(db *sql.DB, wm *world.Manager, id, name, grid, npcs, tiles, tilesets string) error {
+func PersistMap(db *sql.DB, wm *world.Manager, id, name, grid, gates, npcs, tiles, tilesets string) error {
 	if grid != "[]" && grid != "" {
 		if err := wm.ApplyGrid(id, name, grid); err != nil {
 			// still persist even if parse fails for empty
 			_ = err
 		}
 	}
+	if gates == "" {
+		gates = "{}"
+	}
 	var count int
 	_ = db.QueryRow(`SELECT COUNT(1) FROM WorldMap WHERE id = ?`, id).Scan(&count)
 	var err error
 	if count > 0 {
-		_, err = db.Exec(`UPDATE WorldMap SET name=?, gridData=?, npcsData=?, tileLayersData=?, tilesetsData=?, version=version+1, updatedAt=datetime('now') WHERE id=?`,
-			name, grid, npcs, tiles, tilesets, id)
+		_, err = db.Exec(`UPDATE WorldMap SET name=?, gridData=?, gatesData=?, npcsData=?, tileLayersData=?, tilesetsData=?, version=version+1, updatedAt=datetime('now') WHERE id=?`,
+			name, grid, gates, npcs, tiles, tilesets, id)
 	} else {
 		_, err = db.Exec(`INSERT INTO WorldMap (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, version)
-			VALUES (?, 'saints', ?, ?, '{}', ?, '[]', ?, ?, 1)`, id, name, grid, npcs, tiles, tilesets)
+			VALUES (?, 'saints', ?, ?, ?, ?, '[]', ?, ?, 1)`, id, name, grid, gates, npcs, tiles, tilesets)
 	}
 	return err
 }
+
 
 func (s *Server) gtcListings(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"listings": []any{}, "note": "live listings via socket gtc_* events"})

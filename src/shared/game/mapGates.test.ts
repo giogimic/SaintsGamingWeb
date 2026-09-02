@@ -53,4 +53,19 @@ describe("mapGates", () => {
       ])
     ).toEqual(["A", "B"]);
   });
+
+  it("preserves disabled state and filters active gates correctly", () => {
+    const raw = [
+      { id: "g1", position: { x: 1, y: 1 }, targetMapId: "MAP_A", disabled: false },
+      { id: "g2", position: { x: 2, y: 2 }, targetMapId: "MAP_B", disabled: true },
+    ];
+    const normalized = normalizeGatesToArray(raw);
+    expect(normalized).toHaveLength(2);
+    expect(normalized[0].disabled).toBe(false);
+    expect(normalized[1].disabled).toBe(true);
+
+    const activeOnly = listGateTargets(raw, true);
+    expect(activeOnly).toEqual(["MAP_A"]);
+  });
 });
+

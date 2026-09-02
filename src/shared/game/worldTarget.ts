@@ -179,7 +179,7 @@ export function evaluateTileTarget(params: {
   playerPos: { x: number; y: number };
   isSolid: boolean;
   logicTag?: { id: number; name: string; tagType?: string };
-  warpGate?: { name?: string; targetMapId?: string };
+  warpGate?: { name?: string; targetMapId?: string; disabled?: boolean };
   tileName?: string;
 }): WorldTarget {
   const { r, c, playerPos, isSolid, logicTag, warpGate, tileName } = params;
@@ -188,7 +188,7 @@ export function evaluateTileTarget(params: {
   const actions: InteractionOption[] = [];
   let kind: WorldTargetKind = 'tile';
 
-  if (warpGate) {
+  if (warpGate && !warpGate.disabled) {
     kind = 'gate';
     actions.push({
       id: `gate_${r}_${c}`,

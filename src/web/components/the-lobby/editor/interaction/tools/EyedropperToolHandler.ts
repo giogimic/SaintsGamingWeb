@@ -23,8 +23,18 @@ export class EyedropperToolHandler implements IToolHandler {
 
     const { r, c } = event.tilePos;
     const curLayerIdx = store.activeLayerIdx;
+    const studioMode = store.studioMode;
 
-    if (curLayerIdx === LOGIC_LAYER_IDX) {
+    if (studioMode === 'voxel' && (context.engine as any)?.voxelWorld) {
+      const voxelWorld = (context.engine as any).voxelWorld;
+      const { unpackVoxel } = require('@/shared/game/voxel/VoxelWord');
+      const voxel = voxelWorld.getVoxel(c, 15, r);
+      const unpacked = unpackVoxel(voxel);
+      store.setActiveVoxelMaterialId(unpacked.materialId);
+      store.setActiveVoxelShape(unpacked.shapeId);
+      store.setActiveVoxelOrientation(unpacked.orientation);
+      context.showToast?.(`Sampled Voxel: Material #${unpacked.materialId}, Shape #${unpacked.shapeId}`);
+    } else if (curLayerIdx === LOGIC_LAYER_IDX) {
       const tagId = map.grid?.[r]?.[c] ?? 0;
       store.setActiveLogicTileId(tagId);
       const meta = gameStore.logicTiles?.[tagId];

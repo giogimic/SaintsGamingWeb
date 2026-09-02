@@ -10,6 +10,7 @@ import { DEMO_MAP_ID } from "@/server/demoMapSeed";
 import { resolveMapDimensions } from "@/shared/game/mapDocVisual";
 import { npcToEntity } from "@/shared/game/entities";
 import { AuditService } from "@/server/audit/AuditService";
+import { MapSyncService } from "@/server/mapSyncService";
 
 
 export const dynamic = 'force-dynamic';
@@ -306,14 +307,11 @@ export async function POST(
       },
     });
 
-    // Hybrid: Next remains map writer; push live world to Go when enabled.
-    void notifyGoMapSynced({
-      id: worldMap.id,
-      name: worldMap.name,
-      gridData: body.grid ?? JSON.parse(worldMap.gridData || "[]"),
-      npcsData: body.npcs ?? JSON.parse(worldMap.npcsData || "[]"),
-      tileLayersData: visualsForWrite?.tileLayers ?? JSON.parse(worldMap.tileLayersData || "[]"),
-      tilesetsData: visualsForWrite?.tilesets ?? JSON.parse(worldMap.tilesetsData || "[]"),
+    // Enqueue sync for game engine / Go MMO shards (tracks pending status and executes eager push if enabled)
+    await MapSyncService.enqueue({
+      mapId: worldMap.id,
+      version: worldMap.version,
+      userId: session.user.id,
     });
 
     return NextResponse.json({ success: true, map: { id: worldMap.id, version: worldMap.version } });

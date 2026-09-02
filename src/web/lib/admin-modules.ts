@@ -40,6 +40,7 @@ import {
   HardDrive,
   Gift,
   Globe,
+  DoorOpen,
   type LucideIcon,
 } from "lucide-react";
 import { PERMISSION_LEVELS } from "./permissions";
@@ -205,6 +206,16 @@ export const ADMIN_MODULES: AdminModule[] = [
     permission: PERMISSION_LEVELS.DEVELOPER,
     statusSource: "mmo-gateway",
     keywords: ["lobby", "gateway", "server status", "shards", "engine", "mmo status", "realtime"],
+  },
+  {
+    id: "game-gates",
+    category: "operations",
+    label: "Gateway Management",
+    description: "Start, stop, and route warp gates across the MMO world and configure travel links.",
+    icon: DoorOpen,
+    href: "/admin/game/gates",
+    permission: PERMISSION_LEVELS.ADMIN,
+    keywords: ["gates", "gateways", "warps", "teleport", "travel", "doors", "maps", "routes"],
   },
   {
     id: "game-studio",
@@ -557,6 +568,16 @@ export const ADMIN_MODULES: AdminModule[] = [
     permission: PERMISSION_LEVELS.DEVELOPER,
     exact: true,
     keywords: ["dev", "console", "sitemap", "terminal", "actions", "index", "routes"],
+  },
+  {
+    id: "dev-sync",
+    category: "developer",
+    label: "Map Sync Queue",
+    description: "Inspect pull queue synchronization status between Studio and game engine shards.",
+    icon: RefreshCw,
+    href: "/admin/dev/sync",
+    permission: PERMISSION_LEVELS.DEVELOPER,
+    keywords: ["sync", "queue", "pull", "maps", "shards", "mmo", "engine", "versions"],
   },
   {
     id: "dev-database",

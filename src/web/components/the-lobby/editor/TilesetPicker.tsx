@@ -292,23 +292,34 @@ export function getStarterTilePresets(activeTs?: TilesetMeta | null): TileDefini
 
 export function suggestGridForImage(w: number, h: number): { size: number; reason: string } {
   if (w > 0 && h > 0) {
+    // Small sprite/pixel-art sheets (≤256px either dimension) → prefer 16px classic grids
+    const isSmallSheet = w <= 256 || h <= 256;
+
+    if (isSmallSheet && w % 16 === 0 && h % 16 === 0) {
+      return { size: 16, reason: 'Detected 16×16px classic pixel grid (small sheet)' };
+    }
+    // 48px RPG character/tilesheet — check before 32 since 48 is NOT divisible by 32
+    if (w % 48 === 0 && h % 48 === 0 && !(w % 32 === 0 && h % 32 === 0)) {
+      return { size: 48, reason: 'Detected 48×48px RPG tilesheet' };
+    }
+    // 24px retro grid — check before 32 since 24 is NOT divisible by 32
+    if (w % 24 === 0 && h % 24 === 0 && !(w % 32 === 0 && h % 32 === 0)) {
+      return { size: 24, reason: 'Detected 24×24px retro grid' };
+    }
+    // Standard 32px — the most common tile size for larger sheets
     if (w % 32 === 0 && h % 32 === 0 && w >= 256) {
       return { size: 32, reason: 'Detected standard 32×32px pixel grid' };
     }
-    if (w % 48 === 0 && h % 48 === 0) {
-      return { size: 48, reason: 'Detected 48×48px RPG tilesheet' };
-    }
-    if (w % 24 === 0 && h % 24 === 0) {
-      return { size: 24, reason: 'Detected 24×24px retro grid' };
-    }
+    // Large HD sheets → 64px tiles
     if (w % 64 === 0 && h % 64 === 0 && w >= 512) {
       return { size: 64, reason: 'Detected 64×64px HD tile blocks' };
     }
+    // Fallback: 16px works for any 16-divisible image not caught above
     if (w % 16 === 0 && h % 16 === 0) {
       return { size: 16, reason: 'Detected 16×16px classic pixel grid' };
     }
   }
-  return { size: 32, reason: 'Standard 32×32px grid suggested' };
+  return { size: 16, reason: 'Standard 16×16px grid suggested' };
 }
 
 export interface TilesetPickerProps {
@@ -2167,17 +2178,45 @@ export default function TilesetPicker({
             </div>
 
             {filteredTilesets.length > 0 ? (
-              <button
-                type="button"
-                onClick={() => {
-                  soundSynth?.playUiClick?.();
-                  setIsLibraryModalOpen(true);
-                }}
-                className="w-full bg-[#050b14]/50 border border-primary/30 rounded-lg px-2.5 py-2 text-primary font-mono text-[11px] font-bold hover:bg-primary/10 hover:border-primary/50 transition cursor-pointer flex items-center justify-between"
-              >
-                <span>{ts ? ts.imageSource.split('/').pop() : 'Select Tileset...'}</span>
-                <ChevronDown className="w-3.5 h-3.5" />
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundSynth?.playUiClick?.();
+                    setIsLibraryModalOpen(true);
+                  }}
+                  className="w-full bg-[#050b14]/50 border border-primary/30 rounded-lg px-2.5 py-2 text-primary font-mono text-[11px] font-bold hover:bg-primary/10 hover:border-primary/50 transition cursor-pointer flex items-center justify-between"
+                >
+                  <span>{ts ? ts.imageSource.split('/').pop() : 'Select Tileset...'}</span>
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+                {/* Always-visible tile size badge + quick presets */}
+                {ts && (
+                  <div className="flex items-center gap-1.5 mt-1 px-1">
+                    <span className="text-[9px] text-slate-500 font-mono shrink-0">Grid:</span>
+                    {[16, 24, 32, 48, 64].map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => {
+                          soundSynth?.playUiClick?.();
+                          handleUpdateTilesetSettings({ tilewidth: size, tileheight: size });
+                          showToast(`Tile size: ${size}×${size}px`);
+                        }}
+                        className={`px-1.5 py-0.5 rounded text-[9px] font-bold font-mono transition cursor-pointer ${
+                          ts.tilewidth === size && ts.tileheight === size
+                            ? 'bg-primary/30 text-primary border border-primary/50 shadow-sm shadow-primary/20'
+                            : 'text-slate-500 hover:text-slate-200 bg-black/30 hover:bg-black/50 border border-transparent'
+                        }`}
+                        title={`Set tile grid to ${size}×${size}px`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                    <span className="text-[8px] text-slate-600 font-mono ml-auto">{ts.tilewidth}×{ts.tileheight}px</span>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-[11px] text-amber-300/70 italic px-2 py-1.5 bg-black/40 border border-amber-500/20 rounded-lg flex items-center justify-between">
                 <span>{tilesets.length === 0 ? 'No tilesets in map' : 'No matching tilesets'}</span>

@@ -6,12 +6,13 @@
  * Internal ids stay stable for permissions / defaults.
  */
 
-export type StudioMode = 'develop' | 'logic' | 'atlas' | 'npc' | 'quest' | 'creature' | 'assets' | 'hero' | 'test';
+export type StudioMode = 'develop' | 'voxel' | 'logic' | 'atlas' | 'npc' | 'quest' | 'creature' | 'assets' | 'hero' | 'test';
 
 /** Bible 29 canonical tool modes (UI vocabulary). */
 export type StudioCanonicalMode =
   | 'walk'
   | 'paint'
+  | 'voxel'
   | 'logic'
   | 'place'
   | 'populate'
@@ -62,6 +63,7 @@ export type StudioDockId =
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
   test: 'walk',
   develop: 'paint',
+  voxel: 'voxel',
   logic: 'logic',
   atlas: 'atlas',
   npc: 'populate',
@@ -74,6 +76,7 @@ export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> =
 /** Default panels opened when entering each studio mode (Walk/test closes all). */
 export const STUDIO_MODE_DEFAULTS: Record<StudioMode, StudioDockId[]> = {
   develop: ['build', 'tileset'],
+  voxel: ['build', 'tileset'],
   logic: ['logic'],
   atlas: ['atlas'],
   npc: ['npc', 'properties', 'assets', 'spawner'],
@@ -92,6 +95,11 @@ export const STUDIO_MODE_META: Record<
     label: 'Paint',
     canonical: 'paint',
     blurb: 'Paint terrain tiles, manage tilesets, and author visual layers.',
+  },
+  voxel: {
+    label: 'Voxel',
+    canonical: 'voxel',
+    blurb: '3D block chunk building, slope ramps, and terrain stratigraphy.',
   },
   logic: {
     label: 'Logic',

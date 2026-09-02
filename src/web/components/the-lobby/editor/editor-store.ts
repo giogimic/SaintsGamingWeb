@@ -344,6 +344,18 @@ interface EditorState {
   removeCustomPropItem: (id: string) => void;
   activeCustomPropId: string | null;
   setActiveCustomPropId: (id: string | null) => void;
+
+  // 3D Voxel Core & Unified Editing Language (Option A)
+  voxelBlockSizePx: number;
+  setVoxelBlockSizePx: (size: number) => void;
+  activeVoxelMaterialId: number;
+  setActiveVoxelMaterialId: (id: number) => void;
+  activeVoxelShape: number;
+  setActiveVoxelShape: (shape: number) => void;
+  activeVoxelOrientation: number;
+  setActiveVoxelOrientation: (orient: number) => void;
+  voxelToolMode: 'block-pen' | 'box-fill' | 'extrude' | 'slope-ramp' | 'smart-terrain' | 'eraser' | 'eyedropper';
+  setVoxelToolMode: (mode: 'block-pen' | 'box-fill' | 'extrude' | 'slope-ramp' | 'smart-terrain' | 'eraser' | 'eyedropper') => void;
   
   // Gate Pairing and Placement Wizard State
   pendingGateConnection: {
@@ -1107,6 +1119,33 @@ export const useEditorStore = create<EditorState>()(
       setIsStudioEscapeMenuOpen: (open: boolean) =>
         set((state) => {
           state.isStudioEscapeMenuOpen = open;
+        }),
+
+      // 3D Voxel Core & Unified Editing Language (Option A)
+      voxelBlockSizePx: 64,
+      setVoxelBlockSizePx: (size: number) =>
+        set((state) => {
+          state.voxelBlockSizePx = Math.max(6, Math.min(1024, Number(size) || 64));
+        }),
+      activeVoxelMaterialId: 2,
+      setActiveVoxelMaterialId: (id: number) =>
+        set((state) => {
+          state.activeVoxelMaterialId = id;
+        }),
+      activeVoxelShape: 1,
+      setActiveVoxelShape: (shape: number) =>
+        set((state) => {
+          state.activeVoxelShape = shape;
+        }),
+      activeVoxelOrientation: 0,
+      setActiveVoxelOrientation: (orient: number) =>
+        set((state) => {
+          state.activeVoxelOrientation = orient;
+        }),
+      voxelToolMode: 'block-pen',
+      setVoxelToolMode: (mode) =>
+        set((state) => {
+          state.voxelToolMode = mode;
         }),
       customTerrainSwatches: [],
       addCustomTerrainSwatch: (swatch) =>

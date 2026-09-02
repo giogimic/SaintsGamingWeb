@@ -787,6 +787,20 @@ model WorldMap {
   @@index([gameId])
 }
 
+model MapSyncEntry {
+  id        String   @id @default(cuid())
+  mapId     String
+  version   Int
+  status    String   @default("PENDING") // PENDING | SYNCED | FAILED
+  syncedBy  String?
+  syncedAt  DateTime?
+  error     String?
+  createdAt DateTime @default(now())
+
+  @@index([mapId])
+  @@index([status])
+}
+
 model GameQuest {
   id             String   @id @default(cuid())
   name           String

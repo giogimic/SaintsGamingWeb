@@ -32,6 +32,17 @@ export interface SeamlessMaterial {
 
 const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
   {
+    id: 'mat_gunmetal_base',
+    name: 'Gunmetal Base Block',
+    material: 'STONE',
+    textureUrl: '/game-assets/tilesets/terrain-overworld.png',
+    color: '#2a2d34',
+    uOffset: 0,
+    vOffset: 0,
+    uScale: 0.333,
+    vScale: 0.333,
+  },
+  {
     id: 'mat_grass_lush',
     name: 'Lush Meadow Grass',
     material: 'GRASS',
@@ -218,44 +229,106 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
     <div className="flex flex-col h-full bg-[#050b14]/95 text-foreground font-mono select-none text-xs">
       
       {/* Top Header & Slicer Shortcut */}
-      <div className="p-3 border-b border-border/40 bg-[#0a1628]/80 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-md bg-primary/20 text-primary border border-primary/40">
-            <Paintbrush className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="font-bold text-foreground text-xs flex items-center gap-1.5">
-              <span>Terrain Splat Materials</span>
-              <span className="text-[9px] px-1.5 py-0.2 rounded bg-primary/20 text-primary border border-primary/40">
-                Splat Mode
-              </span>
+      <div className="p-3 border-b border-border/40 bg-[#0a1628]/80 flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-md bg-primary/20 text-primary border border-primary/40">
+              <Paintbrush className="w-4 h-4" />
             </div>
-            <div className="text-[10px] text-muted-foreground">
-              Organic ground painting with scatter & auto-edges
+            <div>
+              <div className="font-bold text-foreground text-xs flex items-center gap-1.5">
+                <span>3D Voxel &amp; Terrain Blocks</span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-primary/20 text-primary border border-primary/40">
+                  Voxel Mode
+                </span>
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                Unified block-based 2.5D / 3D world building with adaptive slopes
+              </div>
+            </div>
+          </div>
+
+          {onOpenSlicer && (
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => onOpenSlicer()}
+                className="px-2.5 py-1 rounded bg-[#0a1628]/60 hover:bg-primary/20 text-muted-foreground hover:text-primary border border-border/40 hover:border-primary/50 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Full Sheet</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onOpenSlicer()}
+                className="px-2.5 py-1 rounded bg-primary/20 hover:bg-primary/30 text-primary border border-primary/50 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Scissors className="w-3.5 h-3.5" />
+                <span>Cut from Sheet</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Voxel Block Resolution & Shape Archetypes Toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/30 text-[10px]">
+          {/* Block Size Preset Selector */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted-foreground font-bold">Block Scale:</span>
+            <div className="flex items-center gap-1 bg-[#040912] p-1 rounded-md border border-border/40">
+              {[16, 32, 48, 64, 128, 256].map((size) => (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => {
+                    soundSynth?.playSelectSound?.();
+                    useEditorStore.getState().setVoxelBlockSizePx(size);
+                    showToast(`Block Scale set to ${size}px`);
+                  }}
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-colors ${
+                    useEditorStore((s) => s.voxelBlockSizePx) === size
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                  }`}
+                >
+                  {size}px
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Voxel Shape Archetypes Selector */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted-foreground font-bold">Shape:</span>
+            <div className="flex items-center gap-1 bg-[#040912] p-1 rounded-md border border-border/40">
+              {[
+                { id: 1, label: 'Cube' },
+                { id: 2, label: 'Slope 45°' },
+                { id: 3, label: 'Gentle 22°' },
+                { id: 5, label: 'Corner' },
+                { id: 7, label: 'Slab' },
+                { id: 9, label: 'Stairs' },
+              ].map((shape) => (
+                <button
+                  key={shape.id}
+                  type="button"
+                  onClick={() => {
+                    soundSynth?.playSelectSound?.();
+                    useEditorStore.getState().setActiveVoxelShape(shape.id);
+                    showToast(`Shape set to ${shape.label}`);
+                  }}
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-colors ${
+                    useEditorStore((s) => s.activeVoxelShape) === shape.id
+                      ? 'bg-primary/20 text-primary border border-primary/40 font-bold'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                  }`}
+                >
+                  {shape.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>
-
-        {onOpenSlicer && (
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => onOpenSlicer()}
-              className="px-2.5 py-1 rounded bg-[#0a1628]/60 hover:bg-primary/20 text-muted-foreground hover:text-primary border border-border/40 hover:border-primary/50 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Full Sheet</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onOpenSlicer()}
-              className="px-2.5 py-1 rounded bg-primary/20 hover:bg-primary/30 text-primary border border-primary/50 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Scissors className="w-3.5 h-3.5" />
-              <span>Cut from Sheet</span>
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Interactive Tool Guide Banner */}

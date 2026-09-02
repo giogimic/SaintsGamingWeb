@@ -1,0 +1,157 @@
+/**
+ * Saints Gaming — 32-Bit Compact Voxel Word Data Model
+ *
+ * Bit Layout:
+ * [31..28] LOGIC (4 bits: 0..15)
+ * [27..24] PHYSICS (4 bits: 0..15)
+ * [23..20] AO / TINT (4 bits: 0..15)
+ * [19..17] ORIENTATION (3 bits: 0..7)
+ * [16..12] SHAPE_ID (5 bits: 0..31)
+ * [11..0]  MATERIAL_ID (12 bits: 0..4095)
+ */
+
+export const VoxelShape = {
+  AIR: 0,
+  FULL_CUBE: 1,
+  SLOPE_45: 2,
+  SLOPE_GENTLE_BASE: 3,
+  SLOPE_GENTLE_TOP: 4,
+  SLOPE_CORNER_OUTER: 5,
+  SLOPE_CORNER_INNER: 6,
+  SLAB_BOTTOM: 7,
+  SLAB_TOP: 8,
+  STAIRS_STRAIGHT: 9,
+  STAIRS_CORNER: 10,
+  PRISM_DIAGONAL: 11,
+  COLUMN_CENTER: 12,
+  FENCE_RAIL: 13,
+  ADAPTIVE_ALPHA: 14,
+} as const;
+
+export type VoxelShapeType = (typeof VoxelShape)[keyof typeof VoxelShape];
+
+export const VoxelOrientation = {
+  NORTH: 0, // 0 deg
+  EAST: 1,  // 90 deg
+  SOUTH: 2, // 180 deg
+  WEST: 3,  // 270 deg
+  INVERTED_NORTH: 4,
+  INVERTED_EAST: 5,
+  INVERTED_SOUTH: 6,
+  INVERTED_WEST: 7,
+} as const;
+
+export type VoxelOrientationType = (typeof VoxelOrientation)[keyof typeof VoxelOrientation];
+
+export const VoxelPhysics = {
+  PASS_THROUGH: 0,
+  SOLID_OBSTACLE: 1,
+  WALKABLE_SLOPE: 2,
+  SWIMMABLE_FLUID: 3,
+  CLIMBABLE: 4,
+  HAZARD: 5,
+} as const;
+
+export type VoxelPhysicsType = (typeof VoxelPhysics)[keyof typeof VoxelPhysics];
+
+export const VoxelLogic = {
+  NONE: 0,
+  SPAWN_ANCHOR: 1,
+  WARP_GATE: 2,
+  HARVEST_NODE: 3,
+  SHOP_COUNTER: 4,
+  SAFE_ZONE: 5,
+  QUEST_TARGET: 6,
+} as const;
+
+export type VoxelLogicType = (typeof VoxelLogic)[keyof typeof VoxelLogic];
+
+// Standard Material Constants
+export const VOXEL_MAT_AIR = 0;
+export const VOXEL_MAT_GUNMETAL = 1;
+export const VOXEL_MAT_GRASS = 2;
+export const VOXEL_MAT_DIRT = 3;
+export const VOXEL_MAT_STONE = 4;
+export const VOXEL_MAT_SAND = 5;
+export const VOXEL_MAT_WATER = 6;
+export const VOXEL_MAT_WOOD = 7;
+export const VOXEL_MAT_SNOW = 8;
+
+export interface VoxelDecoded {
+  materialId: number;
+  shapeId: VoxelShapeType;
+  orientation: VoxelOrientationType;
+  aoTint: number;
+  physics: VoxelPhysicsType;
+  logic: VoxelLogicType;
+}
+
+/** Pack distinct attributes into a 32-bit uint32 word */
+export function packVoxel(
+  materialId: number,
+  shapeId: VoxelShapeType = VoxelShape.FULL_CUBE,
+  orientation: VoxelOrientationType = VoxelOrientation.NORTH,
+  aoTint: number = 0,
+  physics: VoxelPhysicsType = VoxelPhysics.SOLID_OBSTACLE,
+  logic: VoxelLogicType = VoxelLogic.NONE
+): number {
+  const mat = (materialId & 0xfff) >>> 0;
+  const shape = ((shapeId & 0x1f) << 12) >>> 0;
+  const orient = ((orientation & 0x7) << 17) >>> 0;
+  const ao = ((aoTint & 0xf) << 20) >>> 0;
+  const phys = ((physics & 0xf) << 24) >>> 0;
+  const log = ((logic & 0xf) << 28) >>> 0;
+
+  return (mat | shape | orient | ao | phys | log) >>> 0;
+}
+
+/** Extract all fields from a 32-bit uint32 word */
+export function unpackVoxel(word: number): VoxelDecoded {
+  const uWord = word >>> 0;
+  return {
+    materialId: (uWord & 0xfff) >>> 0,
+    shapeId: ((uWord >>> 12) & 0x1f) as VoxelShapeType,
+    orientation: ((uWord >>> 17) & 0x7) as VoxelOrientationType,
+    aoTint: (uWord >>> 20) & 0xf,
+    physics: ((uWord >>> 24) & 0xf) as VoxelPhysicsType,
+    logic: ((uWord >>> 28) & 0xf) as VoxelLogicType,
+  };
+}
+
+/** Fast extraction helpers */
+export function getVoxelMaterial(word: number): number {
+  return (word & 0xfff) >>> 0;
+}
+
+export function getVoxelShape(word: number): VoxelShapeType {
+  return ((word >>> 12) & 0x1f) as VoxelShapeType;
+}
+
+export function getVoxelOrientation(word: number): VoxelOrientationType {
+  return ((word >>> 17) & 0x7) as VoxelOrientationType;
+}
+
+export function getVoxelPhysics(word: number): VoxelPhysicsType {
+  return ((word >>> 24) & 0xf) as VoxelPhysicsType;
+}
+
+export function getVoxelLogic(word: number): VoxelLogicType {
+  return ((word >>> 28) & 0xf) as VoxelLogicType;
+}
+
+export function isVoxelSolid(word: number): boolean {
+  if (word === 0) return false;
+  const shape = getVoxelShape(word);
+  if (shape === VoxelShape.AIR) return false;
+  const phys = getVoxelPhysics(word);
+  return phys === VoxelPhysics.SOLID_OBSTACLE || phys === VoxelPhysics.WALKABLE_SLOPE;
+}
+
+export function isVoxelAir(word: number): boolean {
+  return (word & 0xfff) === 0 || getVoxelShape(word) === VoxelShape.AIR;
+}
+
+// Pre-packed constant words
+export const VOXEL_WORD_AIR = packVoxel(VOXEL_MAT_AIR, VoxelShape.AIR, VoxelOrientation.NORTH, 0, VoxelPhysics.PASS_THROUGH, VoxelLogic.NONE);
+export const VOXEL_WORD_GUNMETAL = packVoxel(VOXEL_MAT_GUNMETAL, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE, VoxelLogic.NONE);
+export const VOXEL_WORD_GRASS = packVoxel(VOXEL_MAT_GRASS, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE, VoxelLogic.NONE);

@@ -564,6 +564,7 @@ export type StudioWarpGate = {
   category?: string;
   name?: string;
   bidirectional?: boolean;
+  disabled?: boolean;
   errorMessage?: string;
 };
 
@@ -595,6 +596,7 @@ export function normalizeGates(gates: unknown): StudioWarpGate[] {
         category: g.category || 'MAP',
         name: g.name,
         bidirectional: g.bidirectional !== false,
+        disabled: Boolean((g as any).disabled),
         errorMessage: g.errorMessage,
       }));
   }
@@ -603,7 +605,7 @@ export function normalizeGates(gates: unknown): StudioWarpGate[] {
     const out: StudioWarpGate[] = [];
     for (const [key, raw] of Object.entries(gates as Record<string, unknown>)) {
       if (!raw || typeof raw !== "object") continue;
-      const v = raw as Partial<StudioWarpGate> & { spawnPoint?: { x: number; y: number } };
+      const v = raw as Partial<StudioWarpGate> & { spawnPoint?: { x: number; y: number }; disabled?: boolean };
       if (typeof v.targetMapId !== "string") continue;
 
       let x: number | undefined;
@@ -629,6 +631,7 @@ export function normalizeGates(gates: unknown): StudioWarpGate[] {
         category: v.category || 'MAP',
         name: v.name,
         bidirectional: v.bidirectional !== false,
+        disabled: Boolean(v.disabled),
         errorMessage: v.errorMessage,
       });
     }
@@ -637,6 +640,12 @@ export function normalizeGates(gates: unknown): StudioWarpGate[] {
 
   return [];
 }
+
+/** Filter to only active Studio gates (non-disabled). */
+export function filterActiveStudioGates(gates: unknown): StudioWarpGate[] {
+  return normalizeGates(gates).filter((g) => !g.disabled);
+}
+
 
 /** Upsert a gate keyed for save — keep array form (WorldSimulation-friendly). */
 export function upsertWarpGate(
