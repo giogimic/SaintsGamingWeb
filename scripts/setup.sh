@@ -104,7 +104,7 @@ elif [ "$SETUP_ACTION" = "3" ]; then
     fi
 elif [ "$SETUP_ACTION" = "4" ]; then
     if ! whiptail --title "☢️ CONFIRM NUCLEAR REINSTALL ☢️" --yesno \
-"Are you ABSOLUTELY sure you want to perform a NUCLEAR REINSTALL?\n\nThis will:\n• FORCE STOP and REMOVE all Saints Gaming containers & volumes\n• WIPE ./mysql_data and SQLite dev.db completely\n• RESET .env and regenerate all cryptographic secrets\n• Bypass all repetitive confirmation & warning prompts\n\nWARNING: THIS CANNOT BE UNDONE!" 16 75; then
+"Are you ABSOLUTELY sure you want to perform a NUCLEAR REINSTALL?\n\nThis will:\n• FORCE STOP and REMOVE all Saints Gaming containers & volumes\n• WIPE ./mysql_data database volume completely\n• RESET .env and regenerate all cryptographic secrets\n• Bypass all repetitive confirmation & warning prompts\n\nWARNING: THIS CANNOT BE UNDONE!" 16 75; then
         echo -e "${GREEN}[*] Nuclear reinstall cancelled.${NC}"
         exit 0
     fi
@@ -358,9 +358,8 @@ db_service_exists() {
 }
 
 # --- Database Backend Selection ---
-DB_PROVIDER_OPT=$(whiptail --title "Database Backend" --menu "Select Database Backend:" 16 75 3 \
-"1" "SQLite (Default — Zero Config)" \
-"2" "MariaDB (Docker — Integrated)" \
+DB_PROVIDER_OPT=$(whiptail --title "Database Backend" --menu "Select Database Backend:" 16 75 2 \
+"1" "MariaDB (Docker — Integrated, Recommended)" \
 "2" "MySQL/MariaDB (External Host)" 3>&1 1>&2 2>&3)
 
 if [ $? -ne 0 ]; then exit 1; fi

@@ -13,7 +13,7 @@ The core technology stack is built on Next.js 15, React 19, TypeScript, Prisma O
 - **Live Platform:** [https://saintsgaming.net](https://saintsgaming.net)
 - **AI & LLM Context:** [`llms.txt`](llms.txt)
 - **License:** [Business Source License 1.1 (BSL-1.1)](LICENSE)
-- **Release Version:** `v2.1.652`
+- **Release Version:** `v2.1.653`
 - **Lead Developer:** **GioGimic**
 - **Community Discord:** [discord.saintsgaming.net](https://discord.saintsgaming.net)
 
@@ -49,7 +49,7 @@ Saints Gaming brings together web community management and live multiplayer gami
 
 ### Persistence & Data Access
 - **ORM**: Prisma ORM with automated migrations and seed routines.
-- **Database Engine**: SQLite for local development (`prisma/db/dev.db`); MariaDB or MySQL for production environments.
+- **Database Engine**: MariaDB / MySQL (integrated Docker or external host).
 - **Authentication & RBAC**: Auth.js (NextAuth v5) supporting credentials and session authentication with numeric role tiers from Lurker (0) to Developer (1000).
 
 ### Responsive-First Social Data Architecture & Traffic Control
