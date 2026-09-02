@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Gamepad2, Sparkles, Swords, Compass, Users, ArrowRight, ArrowLeft, Flame, Info } from 'lucide-react';
+import { Gamepad2, Sparkles, Swords, Compass, Users, ArrowRight, ArrowLeft, Boxes, Info, Sliders } from 'lucide-react';
 
 export interface GameDefinitionData {
   name: string;
@@ -9,6 +9,7 @@ export interface GameDefinitionData {
   genre: 'CREATURE_MMO' | 'ARPG' | 'SOCIAL_METAVERSE' | 'CLASSIC_RPG';
   style: 'SAINTS_HYBRID' | 'ACTION_REALTIME' | 'TURN_BASED' | 'EXPLORATION';
   camera: 'ISOMETRIC_25D' | 'TOPDOWN_2D';
+  defaultBlockSizePx?: number; // 16..512, default 64
 }
 
 interface GameDefinitionStepProps {
@@ -23,7 +24,7 @@ const GENRES = [
     id: 'CREATURE_MMO',
     name: 'Creature Collection MMO',
     description: 'Capture, train, and battle companion creatures across a living open world.',
-    similarTo: 'Creature Collection, Pet Battler, Open-World Monster Taming',
+    similarTo: 'Creature Collection, Pet Battler, Open-World Companion Taming',
     icon: Sparkles,
     badge: 'Popular',
   },
@@ -37,7 +38,7 @@ const GENRES = [
   },
   {
     id: 'SOCIAL_METAVERSE',
-    name: 'Social Hub & Metaverse',
+    name: 'Social Hub & Virtual Realm',
     description: 'Community hangout spaces, customizable characters, mini-games, and player housing.',
     similarTo: 'Community Hangout, Virtual Worlds, Social Sandbox',
     icon: Users,
@@ -60,7 +61,7 @@ const GAMEPLAY_STYLES = [
     badge: 'Signature / Recommended',
     badgeColor: 'bg-amber-400/20 text-amber-300 border-amber-400/40',
     description: 'The signature Saints experience: seamless real-time overworld Hero Battles combined with tactical turn-based Saints Buddy Battles.',
-    similarTo: 'Real-time Overworld MMO Action + Tactical Turn-Based Creature Encounters',
+    similarTo: 'Real-time Overworld MMO Action + Tactical Turn-Based Companion Encounters',
   },
   {
     id: 'ACTION_REALTIME',
@@ -97,100 +98,183 @@ const CAMERA_STYLES = [
   },
   {
     id: 'TOPDOWN_2D',
-    name: 'Top-Down 2D Grid',
-    description: 'Classic pixel-grid top-down camera with crisp pixel snapping.',
-    similarTo: 'Orthographic Top-Down Grid, Pixel-Perfect Camera',
+    name: 'Top-Down 3D Perspective',
+    description: 'Orthographic top-down vantage with crisp volumetric depth.',
+    similarTo: 'Classic Top-Down View, Clean Orthographic Projection',
   },
 ] as const;
 
-export function GameDefinitionStep({ data, onChange, onNext, onBack }: GameDefinitionStepProps) {
-  const isValid = Boolean(data.name.trim());
+const BLOCK_SIZES = [
+  { size: 16, label: '16px', desc: 'High density / Micro detail' },
+  { size: 32, label: '32px', desc: 'Classic retro pixel scale' },
+  { size: 64, label: '64px', desc: 'Saints Standard (Recommended)' },
+  { size: 128, label: '128px', desc: 'High-res large block aesthetic' },
+  { size: 256, label: '256px', desc: 'Stylized low-poly chunky' },
+];
+
+export function GameDefinitionStep({
+  data,
+  onChange,
+  onNext,
+  onBack,
+}: GameDefinitionStepProps) {
+  const currentBlockSize = data.defaultBlockSizePx || 64;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!data.name.trim()) return;
+    onNext();
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 backdrop-blur-xl space-y-8">
-        <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-2">
-            <Gamepad2 className="w-5 h-5 text-amber-400" />
-            1. Define Your Game
-          </h2>
-          <p className="text-sm text-slate-400">
-            Tell us about the game you want to build. Each option includes references to similar games to help you choose the right design foundation.
-          </p>
-        </div>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 backdrop-blur-xl">
+        <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-2">
+          <Gamepad2 className="w-5 h-5 text-amber-400" />
+          Game Identity & 3D Voxel Engine Specs
+        </h2>
+        <p className="text-sm text-slate-400 mb-6">
+          Define the identity, combat formula, camera viewpoint, and 3D voxel block scale for your new game realm.
+        </p>
 
-        {/* GAME NAME & DESCRIPTION */}
-        <div className="grid grid-cols-1 gap-5 max-w-2xl">
+        {/* 1. Core Metadata */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-              Game Name <span className="text-amber-400">*</span>
+              Game Title <span className="text-amber-400">*</span>
             </label>
             <input
               type="text"
+              required
               value={data.name}
               onChange={(e) => onChange({ name: e.target.value })}
-              placeholder="e.g. Chronicles of Aether, Monster Horizon, Knights of the Realm"
-              className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-2xl px-4 py-3.5 text-white text-base outline-none transition shadow-inner"
+              placeholder="e.g. Saints Adventure, Chrono Realm"
+              className="w-full bg-slate-950/60 border border-slate-700/80 focus:border-amber-400 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none transition-colors"
             />
           </div>
 
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-              Game Description / Tagline
+              Description / Tagline
             </label>
-            <textarea
-              rows={2}
+            <input
+              type="text"
               value={data.description}
               onChange={(e) => onChange({ description: e.target.value })}
-              placeholder="A brief tagline or summary describing your game experience..."
-              className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-2xl px-4 py-3 text-white text-sm outline-none transition resize-none shadow-inner"
+              placeholder="A brief summary of your world..."
+              className="w-full bg-slate-950/60 border border-slate-700/80 focus:border-amber-400 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none transition-colors"
             />
           </div>
         </div>
 
-        {/* GENRE SELECTION */}
-        <div>
+        {/* 2. Voxel Block Resolution Selector */}
+        <div className="mb-8 p-5 bg-slate-950/50 border border-slate-800 rounded-2xl">
           <div className="flex items-center justify-between mb-3">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
-              Game Genre & Type
-            </label>
-            <span className="text-[11px] text-slate-400 italic">Game references shown to help guide your choice</span>
+            <div className="flex items-center gap-2">
+              <Boxes className="w-4 h-4 text-amber-400" />
+              <span className="text-sm font-bold text-white">Default 3D Voxel Block Scale</span>
+            </div>
+            <span className="font-mono text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 rounded-full">
+              {currentBlockSize}px per block
+            </span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {GENRES.map((genre) => {
-              const Icon = genre.icon;
-              const isSelected = data.genre === genre.id;
+          <p className="text-xs text-slate-400 mb-4">
+            Determines the spatial resolution of voxel chunks. Half the starting world volume is generated with solid foundation blocks.
+          </p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            {BLOCK_SIZES.map((b) => {
+              const isSelected = currentBlockSize === b.size;
+              return (
+                <button
+                  key={b.size}
+                  type="button"
+                  onClick={() => onChange({ defaultBlockSizePx: b.size })}
+                  className={`p-3 rounded-xl text-left border transition-all ${
+                    isSelected
+                      ? 'bg-amber-500/20 border-amber-400 text-white shadow-lg ring-1 ring-amber-400/30'
+                      : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <div className="font-mono font-bold text-sm text-amber-300">{b.label}</div>
+                  <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">{b.desc}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 3. Genre Selection */}
+        <div className="mb-8">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">
+            Game Genre & Experience Archetype
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {GENRES.map((g) => {
+              const Icon = g.icon;
+              const isSelected = data.genre === g.id;
               return (
                 <div
-                  key={genre.id}
-                  onClick={() => onChange({ genre: genre.id })}
-                  className={`relative p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                  key={g.id}
+                  onClick={() => onChange({ genre: g.id as any })}
+                  className={`relative p-5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
                     isSelected
-                      ? 'bg-amber-950/20 border-amber-400 ring-2 ring-amber-400/20 shadow-xl'
-                      : 'bg-slate-950/50 border-slate-800 hover:border-slate-700'
+                      ? 'bg-amber-500/10 border-amber-400 ring-2 ring-amber-400/20 shadow-lg'
+                      : 'bg-slate-950/40 border-slate-800 hover:border-slate-700 hover:bg-slate-950/70'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                          isSelected ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-400'
+                        }`}
+                      >
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <h4 className="font-bold text-white text-sm">{g.name}</h4>
+                    </div>
+                    {g.badge && (
+                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-slate-800 text-amber-300 border border-slate-700">
+                        {g.badge}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">{g.description}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 4. Gameplay & Combat Style */}
+        <div className="mb-8">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">
+            Combat & Progression Mechanics
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {GAMEPLAY_STYLES.map((style) => {
+              const isSelected = data.style === style.id;
+              return (
+                <div
+                  key={style.id}
+                  onClick={() => onChange({ style: style.id as any })}
+                  className={`p-5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
+                    isSelected
+                      ? 'bg-amber-500/10 border-amber-400 ring-2 ring-amber-400/20 shadow-lg'
+                      : 'bg-slate-950/40 border-slate-800 hover:border-slate-700 hover:bg-slate-950/70'
                   }`}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2.5">
-                        <div
-                          className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                            isSelected ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-400'
-                          }`}
-                        >
-                          <Icon className="w-4 h-4" />
-                        </div>
-                        <h4 className="font-bold text-white text-sm">{genre.name}</h4>
-                      </div>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-800 border border-slate-700 text-slate-300">
-                        {genre.badge}
-                      </span>
+                      <h4 className="font-bold text-white text-sm">{style.name}</h4>
+                      {style.badge && (
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${style.badgeColor}`}>
+                          {style.badge}
+                        </span>
+                      )}
                     </div>
-                    <p className="text-xs text-slate-400 leading-relaxed pl-10 mb-3">{genre.description}</p>
-                    <div className="pl-10 flex items-center gap-1.5 text-[11px] text-amber-300/90 font-medium">
-                      <span className="text-slate-500 font-normal">Similar to:</span>
-                      <span>{genre.similarTo}</span>
-                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed">{style.description}</p>
                   </div>
                 </div>
               );
@@ -198,101 +282,52 @@ export function GameDefinitionStep({ data, onChange, onNext, onBack }: GameDefin
           </div>
         </div>
 
-        {/* GAMEPLAY STYLE & CAMERA */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
-          {/* GAMEPLAY STYLE */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
-                Gameplay & Combat Style
-              </label>
-            </div>
-            <div className="space-y-3">
-              {GAMEPLAY_STYLES.map((style) => {
-                const isSelected = data.style === style.id;
-                return (
-                  <div
-                    key={style.id}
-                    onClick={() => onChange({ style: style.id })}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-amber-950/25 border-amber-400 ring-2 ring-amber-400/20 text-white shadow-lg'
-                        : 'bg-slate-950/50 border-slate-800/80 hover:border-slate-700 text-slate-400'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="font-bold text-xs text-slate-100 flex items-center gap-1.5">
-                        {style.id === 'SAINTS_HYBRID' && <Flame className="w-3.5 h-3.5 text-amber-400" />}
-                        {style.name}
-                      </div>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${style.badgeColor}`}>
-                        {style.badge}
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-slate-300 mt-1 leading-relaxed">{style.description}</div>
-                    <div className="mt-2 pt-2 border-t border-slate-800/60 flex items-center gap-1.5 text-[10.5px] text-amber-300/80 font-medium">
-                      <span className="text-slate-500 font-normal">Feels like:</span>
-                      <span>{style.similarTo}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* CAMERA STYLE */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
-                Camera & Perspective
-              </label>
-            </div>
-            <div className="space-y-3">
-              {CAMERA_STYLES.map((cam) => {
-                const isSelected = data.camera === cam.id;
-                return (
-                  <div
-                    key={cam.id}
-                    onClick={() => onChange({ camera: cam.id })}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-amber-950/25 border-amber-400 ring-2 ring-amber-400/20 text-white shadow-lg'
-                        : 'bg-slate-950/50 border-slate-800/80 hover:border-slate-700 text-slate-400'
-                    }`}
-                  >
-                    <div className="font-bold text-xs text-slate-100">{cam.name}</div>
-                    <div className="text-[11px] text-slate-300 mt-1 leading-relaxed">{cam.description}</div>
-                    <div className="mt-2 pt-2 border-t border-slate-800/60 flex items-center gap-1.5 text-[10.5px] text-cyan-300/80 font-medium">
-                      <span className="text-slate-500 font-normal">Examples:</span>
-                      <span>{cam.similarTo}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+        {/* 5. Camera & Viewpoint */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">
+            3D Rendering Viewpoint
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {CAMERA_STYLES.map((cam) => {
+              const isSelected = data.camera === cam.id;
+              return (
+                <div
+                  key={cam.id}
+                  onClick={() => onChange({ camera: cam.id as any })}
+                  className={`p-5 rounded-2xl border cursor-pointer transition-all ${
+                    isSelected
+                      ? 'bg-amber-500/10 border-amber-400 ring-2 ring-amber-400/20 shadow-lg'
+                      : 'bg-slate-950/40 border-slate-800 hover:border-slate-700 hover:bg-slate-950/70'
+                  }`}
+                >
+                  <h4 className="font-bold text-white text-sm mb-1">{cam.name}</h4>
+                  <p className="text-xs text-slate-400">{cam.description}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* NAVIGATION */}
       <div className="flex items-center justify-between">
         <button
+          type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-semibold text-slate-400 hover:text-white transition cursor-pointer"
+          className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 text-sm font-semibold transition-all"
         >
           <ArrowLeft className="w-4 h-4" />
           Back
         </button>
 
         <button
-          onClick={onNext}
-          disabled={!isValid}
-          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-white bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 shadow-xl shadow-amber-500/20 transition disabled:opacity-50 cursor-pointer"
+          type="submit"
+          disabled={!data.name.trim()}
+          className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white text-sm font-bold shadow-xl shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
-          View Game Requirements
+          Continue: Starting 3D Realm
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
-    </div>
+    </form>
   );
 }
