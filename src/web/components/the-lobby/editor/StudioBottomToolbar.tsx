@@ -98,6 +98,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
   const brushMode = useEditorStore((s) => s.brushMode);
   const setBrushMode = useEditorStore((s) => s.setBrushMode);
   const setStudioMode = useEditorStore((s) => s.setStudioMode);
+  const studioMode = useEditorStore((s) => s.studioMode);
   const paintMode = useEditorStore((s) => s.paintMode);
   const setPaintMode = useEditorStore((s) => s.setPaintMode);
   const activeLayerIdx = useEditorStore((s) => s.activeLayerIdx);
@@ -189,7 +190,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
   };
 
   const isLogic = activeLayerIdx === -1;
-  const isGridLayer = activeLayerType === 'grid' || useEditorStore((s) => s.studioMode) === 'voxel';
+  const isGridLayer = activeLayerType === 'grid' || studioMode === 'voxel';
   const layerName = isLogic ? 'Collision Layer' : `Layer ${activeLayerIdx}`;
   const logicMeta = isLogic
     ? logicTiles[activeLogicTileId] || LOGIC_COMPONENT_PRESETS.find((p) => p.paintTileId === activeLogicTileId)

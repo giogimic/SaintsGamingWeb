@@ -77,6 +77,61 @@ for (const file of files) {
           ts.forEachChild(stmt, checkDescendantHooks);
         }
 
+        // Check short-circuit expressions (&&, ||, ??) and ternary operators (? :)
+        function checkShortCircuitHooks(n: ts.Node) {
+          if (ts.isBinaryExpression(n)) {
+            const op = n.operatorToken.kind;
+            if (
+              op === ts.SyntaxKind.AmpersandAmpersandToken ||
+              op === ts.SyntaxKind.BarBarToken ||
+              op === ts.SyntaxKind.QuestionQuestionToken
+            ) {
+              function checkExpr(child: ts.Node) {
+                if (ts.isCallExpression(child)) {
+                  let hookName = '';
+                  if (ts.isIdentifier(child.expression)) hookName = child.expression.text;
+                  else if (ts.isPropertyAccessExpression(child.expression) && ts.isIdentifier(child.expression.name)) hookName = child.expression.name.text;
+                  if (isHookName(hookName)) {
+                    const { line, character } = sourceFile.getLineAndCharacterOfPosition(child.getStart());
+                    findings.push({
+                      file,
+                      line: line + 1,
+                      character: character + 1,
+                      type: `Conditional hook call: '${hookName}' called inside short-circuit expression in function '${functionName}'`,
+                    });
+                  }
+                }
+                ts.forEachChild(child, checkExpr);
+              }
+              checkExpr(n.right);
+            }
+          } else if (ts.isConditionalExpression(n)) {
+            function checkExpr(child: ts.Node) {
+              if (ts.isCallExpression(child)) {
+                let hookName = '';
+                if (ts.isIdentifier(child.expression)) hookName = child.expression.text;
+                else if (ts.isPropertyAccessExpression(child.expression) && ts.isIdentifier(child.expression.name)) hookName = child.expression.name.text;
+                if (isHookName(hookName)) {
+                  const { line, character } = sourceFile.getLineAndCharacterOfPosition(child.getStart());
+                  findings.push({
+                    file,
+                    line: line + 1,
+                    character: character + 1,
+                    type: `Conditional hook call: '${hookName}' called inside ternary branch in function '${functionName}'`,
+                  });
+                }
+              }
+              ts.forEachChild(child, checkExpr);
+            }
+            checkExpr(n.whenTrue);
+            checkExpr(n.whenFalse);
+          }
+          if (!ts.isFunctionDeclaration(n) && !ts.isFunctionExpression(n) && !ts.isArrowFunction(n)) {
+            ts.forEachChild(n, checkShortCircuitHooks);
+          }
+        }
+        checkShortCircuitHooks(stmt);
+
         // Check if statement is a return statement or if with return
         if (ts.isReturnStatement(stmt)) {
           hasEarlyReturn = true;
