@@ -151,7 +151,33 @@ export function isVoxelAir(word: number): boolean {
   return (word & 0xfff) === 0 || getVoxelShape(word) === VoxelShape.AIR;
 }
 
-// Pre-packed constant words
 export const VOXEL_WORD_AIR = packVoxel(VOXEL_MAT_AIR, VoxelShape.AIR, VoxelOrientation.NORTH, 0, VoxelPhysics.PASS_THROUGH, VoxelLogic.NONE);
 export const VOXEL_WORD_GUNMETAL = packVoxel(VOXEL_MAT_GUNMETAL, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE, VoxelLogic.NONE);
 export const VOXEL_WORD_GRASS = packVoxel(VOXEL_MAT_GRASS, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE, VoxelLogic.NONE);
+
+/**
+ * Calculates deterministic voxel-space (dx, dz) footprint offsets for a given brush size.
+ * Brush Size 1 = 1x1 voxel footprint
+ * Brush Size 2 = 2x2 voxel footprint
+ * Brush Size 3 = 3x3 voxel footprint, etc.
+ */
+export function getVoxelBrushOffsets(brushRadius: number): Array<{ dx: number; dz: number }> {
+  const rad = Math.max(1, Math.floor(brushRadius));
+  const offsets: Array<{ dx: number; dz: number }> = [];
+  if (rad === 1) {
+    return [{ dx: 0, dz: 0 }];
+  }
+  const half = Math.floor(rad / 2);
+  const isOdd = rad % 2 === 1;
+  const minX = isOdd ? -half : 0;
+  const maxX = isOdd ? half : rad - 1;
+  const minZ = isOdd ? -half : 0;
+  const maxZ = isOdd ? half : rad - 1;
+
+  for (let dz = minZ; dz <= maxZ; dz++) {
+    for (let dx = minX; dx <= maxX; dx++) {
+      offsets.push({ dx, dz });
+    }
+  }
+  return offsets;
+}

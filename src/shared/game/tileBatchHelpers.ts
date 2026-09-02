@@ -213,23 +213,21 @@ const CASE_FIXES: Record<string, string> = {
  * Handles remote URLs, uploaded assets, absolute and relative paths.
  */
 export function resolveTilesetTextureUrl(source: string): string {
-  if (!source) return '';
+  if (!source) return '/game-assets/tilesets/terrain-overworld.png';
   const trimmed = source.trim();
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
     return trimmed;
   }
-  if (trimmed.startsWith('/uploads/') || trimmed.startsWith('/game-assets/')) {
-    return trimmed;
+  
+  let filename = trimmed.replace(/^\/?(game-assets\/)?tilesets\//i, '');
+  filename = filename.replace(/^\/?uploads\//i, '');
+  
+  if (CASE_FIXES[filename.toLowerCase()]) {
+    filename = CASE_FIXES[filename.toLowerCase()];
   }
-  if (trimmed.startsWith('uploads/')) {
-    return `/${trimmed}`;
+  
+  if (trimmed.startsWith('/uploads/') || trimmed.startsWith('uploads/')) {
+    return `/uploads/${encodeURIComponent(filename)}`;
   }
-  if (trimmed.startsWith('/')) {
-    return trimmed;
-  }
-  let rawSource = trimmed.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
-  if (CASE_FIXES[rawSource.toLowerCase()]) {
-    rawSource = CASE_FIXES[rawSource.toLowerCase()];
-  }
-  return `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
+  return `/game-assets/tilesets/${encodeURIComponent(filename)}`;
 }

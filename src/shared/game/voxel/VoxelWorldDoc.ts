@@ -161,7 +161,31 @@ export class VoxelWorld {
   public setVoxel(wx: number, wy: number, wz: number, word: number): boolean {
     const { cx, cz, cy, lx, ly, lz } = VoxelWorld.worldToChunkCoords(wx, wy, wz);
     const chunk = this.getChunk(cx, cz, cy, true)!;
-    return chunk.set(lx, ly, lz, word);
+    const changed = chunk.set(lx, ly, lz, word);
+    if (changed) {
+      if (lx === 0) {
+        const neighbor = this.getChunk(cx - 1, cz, cy, false);
+        if (neighbor) neighbor.isDirty = true;
+      } else if (lx === CHUNK_SIZE_X - 1) {
+        const neighbor = this.getChunk(cx + 1, cz, cy, false);
+        if (neighbor) neighbor.isDirty = true;
+      }
+      if (lz === 0) {
+        const neighbor = this.getChunk(cx, cz - 1, cy, false);
+        if (neighbor) neighbor.isDirty = true;
+      } else if (lz === CHUNK_SIZE_Z - 1) {
+        const neighbor = this.getChunk(cx, cz + 1, cy, false);
+        if (neighbor) neighbor.isDirty = true;
+      }
+      if (ly === 0) {
+        const neighbor = this.getChunk(cx, cz, cy - 1, false);
+        if (neighbor) neighbor.isDirty = true;
+      } else if (ly === CHUNK_SIZE_Y - 1) {
+        const neighbor = this.getChunk(cx, cz, cy + 1, false);
+        if (neighbor) neighbor.isDirty = true;
+      }
+    }
+    return changed;
   }
 
   /**

@@ -21,7 +21,11 @@ import {
   resolveVoxelTarget,
   VOXEL_MAT_GRASS,
   VOXEL_MAT_GUNMETAL,
-  VOXEL_WORD_GUNMETAL
+  VOXEL_WORD_GUNMETAL,
+  VOXEL_WORD_GRASS,
+  getVoxelBrushOffsets,
+  getVoxelMaterialDef,
+  getFaceUv,
 } from './index';
 
 describe('Voxel Core Engine (Option A)', () => {
@@ -269,6 +273,59 @@ describe('Voxel Core Engine (Option A)', () => {
         expect(res.voxelCoord.wy).toBe(15);
         expect(res.adjacentVoxelCoord.wy).toBe(16);
       }
+    });
+  });
+
+  describe('Voxel-Space Brush Footprint Math', () => {
+    it('calculates deterministic footprints for odd and even brush sizes', () => {
+      const rad1 = getVoxelBrushOffsets(1);
+      expect(rad1).toEqual([{ dx: 0, dz: 0 }]);
+      expect(rad1.length).toBe(1);
+
+      const rad2 = getVoxelBrushOffsets(2);
+      expect(rad2.length).toBe(4);
+      expect(rad2).toContainEqual({ dx: 0, dz: 0 });
+      expect(rad2).toContainEqual({ dx: 1, dz: 1 });
+
+      const rad3 = getVoxelBrushOffsets(3);
+      expect(rad3.length).toBe(9);
+      expect(rad3).toContainEqual({ dx: -1, dz: -1 });
+      expect(rad3).toContainEqual({ dx: 0, dz: 0 });
+      expect(rad3).toContainEqual({ dx: 1, dz: 1 });
+    });
+  });
+
+  describe('Canonical Voxel Material Definition & Face UV Mapping', () => {
+    it('retrieves distinct face UV coordinates for Lush Grass block', () => {
+      const grassDef = getVoxelMaterialDef(VOXEL_MAT_GRASS);
+      expect(grassDef.slug).toBe('lush_grass');
+
+      const topUv = getFaceUv(grassDef, 'top');
+      const bottomUv = getFaceUv(grassDef, 'bottom');
+      const northUv = getFaceUv(grassDef, 'north');
+
+      expect(topUv).toEqual([0, 0.667, 0.333, 1.0]);
+      expect(bottomUv).toEqual([0.333, 0.667, 0.667, 1.0]);
+      expect(northUv).toEqual([0, 0.667, 0.333, 1.0]);
+    });
+  });
+
+  describe('Boundary Chunk Dirtying', () => {
+    it('marks adjacent neighbor chunk dirty when a voxel on the chunk boundary changes', () => {
+      const world = new VoxelWorld('dirty_test', 'Dirty Test', 2, 2, 1);
+      world.generateDefaultWorld();
+
+      const chunk0 = world.getChunk(0, 0, 0)!;
+      const chunk1 = world.getChunk(1, 0, 0)!;
+
+      chunk0.isDirty = false;
+      chunk1.isDirty = false;
+
+      // Set voxel at boundary lx = 15 of chunk 0 (wx = 15)
+      world.setVoxel(15, 16, 5, VOXEL_WORD_GRASS);
+
+      expect(chunk0.isDirty).toBe(true);
+      expect(chunk1.isDirty).toBe(true); // Neighbor chunk 1 was dirtied!
     });
   });
 });
