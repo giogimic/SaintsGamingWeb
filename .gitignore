@@ -50,6 +50,7 @@ next-env.d.ts
 /mysql_data/
 /data/
 /uploads/
+/public/uploads/
 /docker_build.log
 docker-compose.yml
 
