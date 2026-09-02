@@ -187,6 +187,8 @@ export interface BabylonEntityData {
   frameIndex?: number;
   isPlayer?: boolean;
   isNpc?: boolean;
+  hp?: number;
+  maxHp?: number;
   isCreature?: boolean;
   chatMessage?: string;
   spriteConfig?: SpriteSheetConfig;
@@ -307,6 +309,8 @@ export class BabylonEngine {
   private chatBubbles: Map<string, Rectangle> = new Map();
   /** Floating name labels for multiplayer peers (not local player_main). */
   private nameplates: Map<string, Rectangle> = new Map();
+  /** Floating HP bars for creatures during combat. */
+  private healthBars: Map<string, Rectangle> = new Map();
   private ambientLight?: HemisphericLight;
   private dirLight?: DirectionalLight;
   private shadowGen?: ShadowGenerator;
@@ -5798,6 +5802,43 @@ export class BabylonEngine {
       nameplate.dispose();
       this.nameplates.delete(entity.id);
     }
+
+    // Handle Health Bars
+    const wantsHealthBar = entity.hp !== undefined && entity.maxHp !== undefined && entity.maxHp > 0;
+    let healthBar = this.healthBars.get(entity.id);
+    if (wantsHealthBar) {
+      const hpRatio = Math.max(0, Math.min(1, entity.hp! / entity.maxHp!));
+      if (!healthBar) {
+        healthBar = new Rectangle(`healthBar_${entity.id}`);
+        healthBar.width = '60px';
+        healthBar.height = '8px';
+        healthBar.thickness = 1;
+        healthBar.color = 'black';
+        healthBar.background = 'red';
+        
+        const hpFill = new Rectangle(`hpFill_${entity.id}`);
+        hpFill.width = `${hpRatio * 100}%`;
+        hpFill.height = '100%';
+        hpFill.thickness = 0;
+        hpFill.background = '#22c55e'; // green-500
+        hpFill.horizontalAlignment = 0; // Left align
+        
+        healthBar.addControl(hpFill);
+        this.guiTexture.addControl(healthBar);
+        healthBar.linkWithMesh(spriteMesh);
+        healthBar.linkOffsetY = -65;
+        this.healthBars.set(entity.id, healthBar);
+      } else {
+        const hpFill = healthBar.children[0] as Rectangle;
+        if (hpFill) {
+          hpFill.width = `${hpRatio * 100}%`;
+        }
+      }
+    } else if (healthBar) {
+      this.guiTexture.removeControl(healthBar);
+      healthBar.dispose();
+      this.healthBars.delete(entity.id);
+    }
   }
 
   public getTargetEntityMesh(targetId: string | null): Mesh | undefined {
@@ -6159,6 +6200,12 @@ export class BabylonEngine {
       this.guiTexture.removeControl(nameplate);
       nameplate.dispose();
       this.nameplates.delete(id);
+    }
+    const healthBar = this.healthBars.get(id);
+    if (healthBar) {
+      this.guiTexture.removeControl(healthBar);
+      healthBar.dispose();
+      this.healthBars.delete(id);
     }
   }
 

@@ -100,25 +100,22 @@ export class VoxelChunkMesher {
               const fallbackTex = new Texture(fallbackUrl, this.scene, true, false, Texture.NEAREST_SAMPLINGMODE);
               fallbackTex.hasAlpha = true;
               mat.diffuseTexture = fallbackTex;
-              mat.emissiveTexture = fallbackTex;
             } else if (mat) {
               mat.diffuseTexture = null;
-              mat.emissiveTexture = null;
               mat.diffuseColor = new Color3(0.29, 0.52, 0.02);
-              mat.emissiveColor = new Color3(0.29, 0.52, 0.02);
             }
           }
         );
         this.textureCache.hasAlpha = true;
       }
       mat.diffuseTexture = this.textureCache;
-      mat.emissiveTexture = this.textureCache;
       mat.diffuseColor = new Color3(1, 1, 1);
-      mat.emissiveColor = new Color3(1, 1, 1);
+      mat.ambientColor = new Color3(0.6, 0.6, 0.6);
+      mat.emissiveColor = new Color3(0.08, 0.08, 0.08);
       mat.specularColor = new Color3(0, 0, 0);
       mat.useAlphaFromDiffuseTexture = true;
-      mat.backFaceCulling = true;
-      mat.disableLighting = true; // Unlit vertex-colored pipeline for crisp voxel rendering
+      mat.backFaceCulling = false;
+      mat.disableLighting = false;
       this.materialCache.set(1, mat);
     }
     return mat;

@@ -865,7 +865,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             direction: freshPlayer.direction,
             isMoving: freshPlayer.isMoving,
             chatMessage: liveStore.localChat || undefined,
-            spriteConfig: freshPlayer.spriteConfig
+            spriteConfig: freshPlayer.spriteConfig,
+            hp: freshPlayer.hp,
+            maxHp: freshPlayer.maxHp
           });
           babylonEngine.setEntityVisible('player_main', true);
 
@@ -958,7 +960,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             direction: other.direction,
             isMoving: other.isMoving,
             chatMessage: other.chatMessage,
-            spriteConfig: (other as any).spriteConfig
+            spriteConfig: (other as any).spriteConfig,
+            hp: other.hp,
+            maxHp: other.maxHp
           });
         }
       }
@@ -985,6 +989,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               worldZ: (cHeight / 2 - npc.y) + cOffsetZ - offset.y,
               mapId: chunk.mapId || currentMapId,
               name: npc.name || npc.id,
+              hp: (npc as any).hp,
+              maxHp: (npc as any).maxHp,
             });
           }
         }
@@ -999,6 +1005,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             worldZ: liveH / 2 - npc.y - offset.y,
             mapId: currentMapId,
             name: npc.name || npc.id,
+            hp: (npc as any).hp,
+            maxHp: (npc as any).maxHp,
           });
         }
       }
@@ -1068,6 +1076,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             isPlayer: false,
             isNpc: ent.type === 'NPC',
             isCreature: ent.type === 'MONSTER' || ent.type === 'ANIMAL',
+            hp: (ent as any).hp,
+            maxHp: (ent as any).maxHp,
             spriteConfig:
               (ent as any).spriteConfig ||
               (isSingleFrameSpriteUrl(spriteUrl) ? SINGLE_FRAME_SPRITE_CONFIG : undefined),
@@ -1167,16 +1177,47 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       const data = customEvent.detail;
       const engine = engineRef.current;
       if (engine && data.attackerId && data.targetId) {
+        const store = useGameStore.getState();
+        
+        // Map backend IDs (like accountIds) to Babylon mesh IDs
+        const resolveEngineId = (id: string) => {
+          if (!id) return id;
+          if (store.player && store.player.accountId === id) return 'player_main';
+          if (id === 'player_main') return id;
+          
+          for (const socketId of Object.keys(store.otherPlayers || {})) {
+            if (store.otherPlayers[socketId]?.accountId === id) {
+              return `multiplayer_${socketId}`;
+            }
+          }
+          
+          if (store.mapEntities?.some((e) => e.id === id)) return id;
+          if (store.activeMapData?.npcs?.some((n: any) => n.id === id)) return `mapnpc_${id}`;
+          
+          return id;
+        };
+
+        const engineAttackerId = resolveEngineId(data.attackerId);
+        const engineTargetId = resolveEngineId(data.targetId);
+
         // Fire projectile
-        engine.renderProjectile(data.attackerId, data.targetId, 'fireball', 500); // 500ms cast/travel time
+        engine.renderProjectile(engineAttackerId, engineTargetId, 'fireball', 500); // 500ms cast/travel time
         
         // Show damage text slightly delayed to match projectile impact
         setTimeout(() => {
-          engine.renderDamageText(data.targetId, data.damage, data.isCrit);
+          engine.renderDamageText(engineTargetId, data.damage, data.isCrit);
           if (data.isCrit) {
             soundSynth?.playCriticalHit?.();
           } else if (data.damage > 0) {
             soundSynth?.playCombatHit?.();
+          }
+          
+          // Update HP in store (which will then flow to Babylon Engine via mapData subscription)
+          if (data.attackerHp !== undefined) {
+            store.updateEntityHp(data.attackerId, data.attackerHp);
+          }
+          if (data.targetHp !== undefined) {
+            store.updateEntityHp(data.targetId, data.targetHp);
           }
         }, 500);
       }

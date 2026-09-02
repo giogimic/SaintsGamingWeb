@@ -177,6 +177,8 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
   const setActiveLayerType = useEditorStore((s) => s.setActiveLayerType);
   const setBrushMode = useEditorStore((s) => s.setBrushMode);
   const setActiveVoxelMaterialId = useEditorStore((s) => s.setActiveVoxelMaterialId);
+  const voxelBlockSizePx = useEditorStore((s) => s.voxelBlockSizePx);
+  const activeVoxelShape = useEditorStore((s) => s.activeVoxelShape);
   const showToast = useGameStore((s) => s.showToast);
 
   const [activeTab, setActiveTab] = useState<'SEAMLESS' | 'CUSTOM'>('SEAMLESS');
@@ -201,6 +203,10 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
       WATER: 6,
       WOOD: 7,
       SNOW: 8,
+      LAVA: 9,
+      SWAMP: 10,
+      DUNGEON: 11,
+      ICE: 12,
     };
     const voxelMat = mat.id === 'mat_gunmetal_base' ? 1 : (materialMap[mat.material] ?? 2);
     setActiveVoxelMaterialId(voxelMat);
@@ -299,7 +305,7 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
                     showToast(`Block Scale set to ${size}px`);
                   }}
                   className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-colors ${
-                    useEditorStore((s) => s.voxelBlockSizePx) === size
+                    voxelBlockSizePx === size
                       ? 'bg-primary text-primary-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
                   }`}
@@ -331,7 +337,7 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
                     showToast(`Shape set to ${shape.label}`);
                   }}
                   className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-colors ${
-                    useEditorStore((s) => s.activeVoxelShape) === shape.id
+                    activeVoxelShape === shape.id
                       ? 'bg-primary/20 text-primary border border-primary/40 font-bold'
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
                   }`}

@@ -436,7 +436,7 @@ func (h *Hub) handleEncounter(accountID string) {
 	h.EmitToRoom(p.MapID, protocol.EvCreatureSpawned, spawned)
 }
 
-func (h *Hub) handleAttack(accountID, targetID string) {
+func (h *Hub) handleAttack(accountID, targetID, abilityID string) {
 	p := h.eng.Players().GetByAccount(accountID)
 	if p == nil {
 		return
@@ -449,18 +449,24 @@ func (h *Hub) handleAttack(accountID, targetID string) {
 	if sess == nil {
 		return
 	}
-	sess = h.deps.Combat.ApplyPlayerHit(accountID, 10)
-	h.EmitToSocket(p.SocketID, protocol.EvCombatUpdate, map[string]any{
-		"combatId": sess.ID, "creatureHp": sess.CreatureHP, "playerHp": sess.PlayerHP, "ended": sess.Ended, "winner": sess.Winner,
+	
+	sess = h.deps.Combat.ApplyPlayerHit(accountID, abilityID)
+	h.EmitToRoom(p.MapID, protocol.EvCombatUpdate, map[string]any{
+		"combatId": sess.ID, "attackerHp": sess.PlayerHP, "targetHp": sess.CreatureHP, "ended": sess.Ended, "winner": sess.Winner,
+		"attackerId": accountID, "targetId": sess.CreatureID, "damage": sess.LastDamage, "isCrit": sess.LastCrit,
 	})
+	
 	if sess.Ended {
 		h.finishCombat(accountID, p.SocketID, p.MapID, sess.CreatureID, sess.Winner)
 		return
 	}
-	sess = h.deps.Combat.ApplyCreatureHit(accountID, 6)
-	h.EmitToSocket(p.SocketID, protocol.EvCombatUpdate, map[string]any{
-		"combatId": sess.ID, "creatureHp": sess.CreatureHP, "playerHp": sess.PlayerHP, "ended": sess.Ended, "winner": sess.Winner,
+	
+	sess = h.deps.Combat.ApplyCreatureHit(accountID, "strike")
+	h.EmitToRoom(p.MapID, protocol.EvCombatUpdate, map[string]any{
+		"combatId": sess.ID, "attackerHp": sess.CreatureHP, "targetHp": sess.PlayerHP, "ended": sess.Ended, "winner": sess.Winner,
+		"attackerId": sess.CreatureID, "targetId": accountID, "damage": sess.LastDamage, "isCrit": sess.LastCrit,
 	})
+	
 	if sess.Ended {
 		h.finishCombat(accountID, p.SocketID, p.MapID, sess.CreatureID, sess.Winner)
 	}

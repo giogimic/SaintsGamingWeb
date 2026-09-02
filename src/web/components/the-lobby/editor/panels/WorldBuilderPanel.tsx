@@ -71,6 +71,7 @@ export const WorldBuilderPanel: React.FC = () => {
   const isMapDirty = useEditorStore((state) => state.mapDirty);
   const setBrushTileId = useEditorStore((state) => state.setActiveBrushTileId);
   const setBrushPattern = useEditorStore((state) => state.setActiveBrushPattern);
+  const voxelBlockSizePx = useEditorStore((state) => state.voxelBlockSizePx);
 
   const [neighbors, setNeighbors] = useState<NeighborNodes>({});
   const [neighborBleedPreview, setNeighborBleedPreview] = useState(false);
@@ -498,7 +499,7 @@ export const WorldBuilderPanel: React.FC = () => {
                         showToast(`Block Scale set to ${size}px`);
                       }}
                       className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all ${
-                        useEditorStore((s) => s.voxelBlockSizePx) === size
+                        voxelBlockSizePx === size
                           ? 'bg-primary text-primary-foreground font-bold'
                           : 'bg-black/40 text-muted-foreground hover:text-white'
                       }`}

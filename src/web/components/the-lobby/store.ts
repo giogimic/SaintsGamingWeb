@@ -129,6 +129,8 @@ export interface MapEntity {
   name?: string;
   dialogueKey?: string;
   spriteConfig?: import('@/engine/BabylonEngine').SpriteSheetConfig;
+  hp?: number;
+  maxHp?: number;
 }
 
 export interface SkillData {
@@ -301,7 +303,7 @@ export interface GameState {
   logicTiles: Record<number, MapLogicTile>;
   gameMode: GameMode;
   player: PlayerState;
-  otherPlayers: Record<string, { x: number; y: number; name: string; assetProfileId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>;
+  otherPlayers: Record<string, { accountId?: string; x: number; y: number; name: string; assetProfileId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; hp?: number; maxHp?: number; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>;
   pathQueue: Point[];
   worldOriginOffset: { x: number; y: number };
   currentMapId: string;
@@ -322,8 +324,9 @@ export interface GameState {
   setActiveDialog: (dialog: { npcId: string; node?: string; text: string; options?: { label: string; nextNode: string }[] } | null) => void;
   acceptQuest: (questId: string) => void;
   completeQuest: (questId: string) => void;
-  setOtherPlayers: (players: Record<string, { x: number; y: number; name: string; assetProfileId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>) => void;
-  updateOtherPlayer: (socketId: string, data: { x?: number; y?: number; name?: string; assetProfileId?: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }) => void;
+  setOtherPlayers: (players: Record<string, { accountId?: string; x: number; y: number; name: string; assetProfileId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; hp?: number; maxHp?: number; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>) => void;
+  updateOtherPlayer: (socketId: string, data: { x?: number; y?: number; name?: string; assetProfileId?: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string }; hp?: number; maxHp?: number }) => void;
+  updateEntityHp: (entityId: string, hp: number, maxHp?: number) => void;
   removeOtherPlayer: (socketId: string) => void;
   setPlayerChat: (message: string) => void;
   localChat: string | null;
@@ -1067,6 +1070,46 @@ export const useGameStore = create<GameState>()(
               }), 4000);
             }
           }
+          if (data.hp !== undefined) state.otherPlayers[socketId].hp = data.hp;
+          if (data.maxHp !== undefined) state.otherPlayers[socketId].maxHp = data.maxHp;
+        }
+      }),
+      updateEntityHp: (entityId, hp, maxHp) => set((state) => {
+        // Try mapEntities
+        const mapEntityIndex = state.mapEntities.findIndex((e) => e.id === entityId);
+        if (mapEntityIndex >= 0) {
+          state.mapEntities[mapEntityIndex].hp = hp;
+          if (maxHp !== undefined) state.mapEntities[mapEntityIndex].maxHp = maxHp;
+          return;
+        }
+
+        // Try NPCs
+        if (state.activeMapData?.npcs) {
+          const npcIndex = state.activeMapData.npcs.findIndex((n: any) => n.id === entityId);
+          if (npcIndex >= 0) {
+            state.activeMapData.npcs[npcIndex].hp = hp;
+            if (maxHp !== undefined) state.activeMapData.npcs[npcIndex].maxHp = maxHp;
+            return; // done
+          }
+        }
+        
+        // Try other players
+        const otherPlayerKeys = Object.keys(state.otherPlayers);
+        for (const k of otherPlayerKeys) {
+          // In GameCanvasBabylon multiplayer peers IDs are constructed as `multiplayer_${socketId}` or something,
+          // but we can just check if entityId includes the socketId or matches it. We'll use strict match first, 
+          // or assume it's `multiplayer_${k}`.
+          if (k === entityId || `multiplayer_${k}` === entityId || state.otherPlayers[k].accountId === entityId) {
+            state.otherPlayers[k].hp = hp;
+            if (maxHp !== undefined) state.otherPlayers[k].maxHp = maxHp;
+            return;
+          }
+        }
+        
+        // Try self
+        if (state.player && (entityId === 'player_main' || entityId === (state.player as any).id || entityId === state.player.accountId)) { 
+           state.player.hp = hp;
+           if (maxHp !== undefined) state.player.maxHp = maxHp;
         }
       }),
       removeOtherPlayer: (socketId) => set((state) => {

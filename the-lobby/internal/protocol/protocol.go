@@ -150,6 +150,8 @@ type PeerSnapshot struct {
 	Name      string  `json:"name"`
 	SpriteID  string  `json:"spriteId"`
 	IsMoving  bool    `json:"isMoving"`
+	HP        int     `json:"hp"`
+	MaxHP     int     `json:"maxHp"`
 }
 
 // MapJoinedPayload is emitted after successful seat.

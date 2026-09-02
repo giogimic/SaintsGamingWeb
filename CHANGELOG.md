@@ -1,3 +1,27 @@
+# 2.1.672
+- **Studio Voxel Palette Hook Safety & 3D Voxel Meshing Quality**:
+  - **React Error #310 Elimination (`TerrainBrushPalette.tsx`, `WorldBuilderPanel.tsx`)**:
+    - Extracted `voxelBlockSizePx` and `activeVoxelShape` to top-level hooks instead of invoking `useEditorStore` inside dynamic `.map(...)` render loops, preventing hook count/order mutations that crashed Studio into `app/error.tsx`.
+    - Automated AST hook verification across all TS/TSX source files with 0 violations.
+  - **Voxel Geometry Winding Order & Normal Correction (`VoxelGeometry.ts`)**:
+    - Corrected quad triangle winding order in `addQuad` from counter-clockwise to clockwise outward normals, resolving the inside-out / hollow cube visual artifacts.
+    - Set `backFaceCulling = false` on voxel materials as a defense-in-depth guarantee against face clipping.
+    - Fixed degenerate triangle coordinate duplication in `addSlope45` for West-oriented slope ramps.
+  - **Voxel Shading & Lighting Pipeline (`VoxelChunkMesher.ts`)**:
+    - Enabled directional shading and vertex color tinting across all chunk meshes, ensuring top, north, south, east, and west face lighting multipliers render vividly.
+  - **Expanded Voxel Material Palette (`VoxelWord.ts`, `VoxelMaterialDefinition.ts`)**:
+    - Added first-class voxel terrain materials for Molten Magma Flow (`LAVA`), Dark Murky Marsh (`SWAMP`), Ancient Flagstone (`DUNGEON`), and Glacial Blue Ice (`ICE`) with dedicated UV mappings, physics properties, and color tints.
+  - **State Store & TypeScript Cleanup (`store.ts`, `GameCanvasBabylon.tsx`)**:
+    - Fixed unclosed brace in `updateOtherPlayer` within `store.ts`.
+    - Cleared all strict TypeScript type-checking diagnostics across game and combat systems.
+
+# 2.1.671
+- **MMO Combat Foundation (End-to-End)**:
+  - **Health Bar GUI**: Added automatic frontend health bars for players and creatures based on entity `hp` and `maxHp` using Babylon.js AdvancedDynamicTexture.
+  - **HP State Sync**: Wired `store.updateEntityHp` to automatically route incoming socket `combat_update` events to either `otherPlayers`, the local `player`, or map `npcs`, translating backend `accountID`s properly.
+  - **Projectile & Damage Text UI**: Implemented `resolveEngineId` to correctly fire fireball projectiles and render animated floating damage text on the correct meshes during multiplayer open-world combat.
+  - **Memory Leak Fix**: Integrated proper health bar and nameplate disposal during `removeEntity` (e.g. creature despawning) to eliminate zombie UI elements.
+
 # 2.1.644
 - **Prop Library Expansion & Test TypeScript Typings Polish**:
   - **New Builtin Prop Assets (`PropLibraryPanel.tsx`)**:

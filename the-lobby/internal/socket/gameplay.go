@@ -82,7 +82,21 @@ func (h *Hub) registerGameplay(client *socket.Socket, accountID, sid string) {
 		}
 	})
 	client.On(protocol.EvCombatCast, func(datas ...any) {
-		h.handleAttack(accountID, "")
+		targetID := ""
+		abilityID := "strike"
+		if len(datas) > 0 {
+			b, _ := json.Marshal(datas[0])
+			var m map[string]any
+			if json.Unmarshal(b, &m) == nil {
+				if t, ok := m["targetId"].(string); ok {
+					targetID = t
+				}
+				if a, ok := m["abilityId"].(string); ok {
+					abilityID = a
+				}
+			}
+		}
+		h.handleAttack(accountID, targetID, abilityID)
 	})
 }
 
