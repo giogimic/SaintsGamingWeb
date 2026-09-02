@@ -151,6 +151,8 @@ export interface MapData {
     west?: string | MapConnection;
   };
   chunks?: RenderedChunk[];
+  voxelDoc?: any; // VoxelWorldDocV3
+  blockSizePx?: number; // 6..1024, default 64
 }
 
 export interface LogicTile {

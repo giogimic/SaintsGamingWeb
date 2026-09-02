@@ -72,6 +72,9 @@ import {
   type SpriteDefinition,
 } from "../shared/game/spriteDefinitions";
 import { ItemBillboardRenderer, type ItemBillboardConfig } from "./ItemBillboardRenderer";
+import { VoxelChunkMesher } from './voxel/VoxelChunkMesher';
+import { VoxelWorld, type VoxelWorldDocV3 } from '../shared/game/voxel/VoxelWorldDoc';
+
 export interface RenderedChunk {
   mapId?: string;
   chunkX?: number; // Legacy
@@ -345,6 +348,9 @@ export class BabylonEngine {
     vignetteEnabled: true,
     vignetteWeight: 1.5,
   };
+
+  public voxelMesher?: VoxelChunkMesher;
+  public voxelWorld?: VoxelWorld;
 
   private onEditorPointerDown = (e: PointerEvent) => this.handleEditorPointerDown(e);
   private onEditorPointerMove = (e: PointerEvent) => this.handleEditorPointerMove(e);
@@ -2413,6 +2419,42 @@ export class BabylonEngine {
     if (!this.editorCameraMode) {
       this.applyPlayerCameraStyle(this.cameraSettings.playerCameraStyle);
     }
+
+    if ((mapData as any).voxelDoc) {
+      this.loadVoxelWorld((mapData as any).voxelDoc);
+    }
+  }
+
+  public loadVoxelWorld(docOrWorld: VoxelWorld | VoxelWorldDocV3) {
+    if (!this.scene) return;
+    if (!this.voxelMesher) {
+      this.voxelMesher = new VoxelChunkMesher(this.scene);
+    }
+
+    if (docOrWorld instanceof VoxelWorld) {
+      this.voxelWorld = docOrWorld;
+    } else {
+      this.voxelWorld = VoxelWorld.deserializeFromDoc(docOrWorld);
+    }
+
+    for (const chunk of this.voxelWorld.chunks.values()) {
+      const result = this.voxelMesher.meshChunk(this.voxelWorld, chunk);
+      if (result) {
+        result.mesh.parent = this.rootNode;
+      }
+    }
+  }
+
+  public meshDirtyVoxelChunks() {
+    if (!this.scene || !this.voxelWorld || !this.voxelMesher) return;
+    for (const chunk of this.voxelWorld.chunks.values()) {
+      if (chunk.isDirty) {
+        const result = this.voxelMesher.meshChunk(this.voxelWorld, chunk);
+        if (result) {
+          result.mesh.parent = this.rootNode;
+        }
+      }
+    }
   }
 
   private applyTileMaterial(mat: StandardMaterial, tileId: number, r: number = 0, c: number = 0, isBlock: boolean = false) {
@@ -3173,6 +3215,11 @@ export class BabylonEngine {
     let lastPointerX = 0;
     let lastPointerY = 0;
     let lastKey = '';
+    // Track last continuous world point for distance-based dedup in splat/freeform modes
+    let lastContinuousX = -99999;
+    let lastContinuousZ = -99999;
+    /** Minimum squared world-unit distance before we emit another splat/freeform paint event */
+    const CONTINUOUS_MIN_DIST_SQ = 0.0025; // 0.05 world units
     const allowDrag = !!options?.drag;
 
     const onContextMenu = (e: MouseEvent) => {
@@ -3198,14 +3245,34 @@ export class BabylonEngine {
       if (!this.scene) return;
       const resolved = getResolvedTile(this.scene.pointerX, this.scene.pointerY);
       if (!resolved) return;
+
+      const isContinuousMode = this.activeLayerType === 'paint-splat' || this.activeLayerType === 'free-form';
+
+      if (isContinuousMode && resolved.point) {
+        // --- Continuous (splat / freeform) duplicate suppression ---
+        // Use distance-based threshold instead of grid-cell key to allow smooth sub-cell painting.
+        if (eventType === 'move') {
+          const dx = resolved.point.x - lastContinuousX;
+          const dz = resolved.point.z - lastContinuousZ;
+          if (dx * dx + dz * dz < CONTINUOUS_MIN_DIST_SQ) return;
+        }
+        // Always reset on 'down' so new strokes start fresh
+        lastContinuousX = resolved.point.x;
+        lastContinuousZ = resolved.point.z;
+        lastKey = ''; // clear grid key so grid modes don't stale
+
+        // Emit single continuous world point — never expand via grid brush radius
+        onTileClick(resolved.r, resolved.c, resolved.layerIdx, eventType, resolved.point);
+        return;
+      }
+
+      // --- Grid / discrete mode duplicate suppression ---
       const key = `${resolved.r},${resolved.c}`;
-      // In grid mode, suppress duplicate calls within the same grid cell.
-      // When resolved.point is defined (freeform painting), allow continuous sub-tile mouse drag moves.
-      if (key === lastKey && eventType === 'move' && !resolved.point) return;
+      if (key === lastKey && eventType === 'move') return;
       lastKey = key;
 
-      // Apply brush radius — when in splat/freeform mode, emit single continuous pick point
-      if (this.activeLayerType === 'paint-splat' || this.activeLayerType === 'free-form' || this.brushRadius <= 1 || this.activeBrushPattern) {
+      // Apply brush radius for grid painting
+      if (this.brushRadius <= 1 || this.activeBrushPattern) {
         onTileClick(resolved.r, resolved.c, resolved.layerIdx, eventType, resolved.point);
       } else {
         const rad = this.brushRadius - 1;

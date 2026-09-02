@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
-  Terminal, Database, Radio, Cpu, Activity, RefreshCw, Code 
+  Terminal, Database, Radio, Cpu, Activity, RefreshCw, Code, Layers 
 } from "lucide-react";
 
 export const DEV_NAV_ITEMS = [
   { href: "/admin/dev", label: "Console Home", icon: Terminal, exact: true },
+  { href: "/admin/dev/sync", label: "Sync Queue", icon: RefreshCw },
   { href: "/admin/dev/database", label: "Database", icon: Database },
   { href: "/admin/realtime", label: "Realtime Bus", icon: Radio },
   { href: "/admin/dev/system", label: "System State", icon: Cpu },
   { href: "/admin/dev/metrics", label: "Metrics", icon: Activity },
-  { href: "/admin/dev/tasks", label: "Background Tasks", icon: RefreshCw },
+  { href: "/admin/dev/tasks", label: "Background Tasks", icon: Layers },
   { href: "/admin/dev/sandbox", label: "API Sandbox", icon: Code },
 ];
 

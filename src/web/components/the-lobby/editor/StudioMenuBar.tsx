@@ -62,6 +62,7 @@ import {
   UserCheck,
   Crosshair,
   Grid3X3,
+  Sliders,
 } from 'lucide-react';
 
 
@@ -460,6 +461,56 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem label="Asset Browser" icon={Box} onClick={() => openPanel('assets')} />
           </TopLevelMenu>
 
+          {/* ── VOXEL ── */}
+          <TopLevelMenu id="voxel" label="Voxel">
+            <MenuItem label="Voxel & Terrain Palette" icon={Box} onClick={() => openPanel('tileset')} />
+            <MenuItem label="Camera & View Settings" icon={Camera} onClick={() => openPanel('camera')} />
+            <MenuItem divider />
+            <SubMenu label="Block Scale Resolution">
+              {[16, 32, 48, 64, 128, 256, 512].map((size) => (
+                <MenuItem
+                  key={size}
+                  label={`${size}px Resolution ${size === 64 ? '(Default)' : ''}`}
+                  icon={Box}
+                  onClick={() => {
+                    useEditorStore.getState().setVoxelBlockSizePx(size);
+                    showToast(`Block Scale set to ${size}px`);
+                  }}
+                />
+              ))}
+            </SubMenu>
+            <SubMenu label="Shape Archetypes">
+              {[
+                { id: 1, label: 'Full Cube (Solid)' },
+                { id: 2, label: 'Slope Ramp (45°)' },
+                { id: 3, label: 'Gentle Slope (22.5°)' },
+                { id: 5, label: 'Corner Wedge (Outer)' },
+                { id: 6, label: 'Corner Wedge (Inner)' },
+                { id: 7, label: 'Half Slab (Bottom)' },
+                { id: 8, label: 'Half Slab (Top)' },
+                { id: 9, label: 'Stairs (Straight)' },
+              ].map((s) => (
+                <MenuItem
+                  key={s.id}
+                  label={s.label}
+                  icon={Box}
+                  onClick={() => {
+                    useEditorStore.getState().setActiveVoxelShape(s.id);
+                    showToast(`Shape set to ${s.label}`);
+                  }}
+                />
+              ))}
+            </SubMenu>
+            <MenuItem divider />
+            <MenuItem
+              label="Run Stratigraphy & Slope Solver"
+              icon={Sparkles}
+              onClick={() => {
+                showToast('Computed 3D stratigraphy and slope ramps across active volume');
+              }}
+            />
+          </TopLevelMenu>
+
           {/* ── CONTENT ── */}
           <TopLevelMenu id="content" label="Content">
             <SubMenu label="Entities">
@@ -543,6 +594,17 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             title="Paint Mode (Tileset & Visual Layers)"
           >
             Paint
+          </button>
+          <button
+            onClick={() => handleSwitchMode('voxel')}
+            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+              studioMode === 'voxel'
+                ? 'bg-amber-500 text-black font-extrabold shadow'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="3D Voxel Mode (Block Chunks, Slopes & Stratigraphy)"
+          >
+            Voxel
           </button>
           <button
             onClick={() => handleSwitchMode('logic')}

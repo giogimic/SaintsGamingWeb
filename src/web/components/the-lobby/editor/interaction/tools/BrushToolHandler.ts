@@ -38,6 +38,43 @@ export class BrushToolHandler implements IToolHandler {
     const { r, c } = event.tilePos;
     const { x, z } = event.worldPos;
 
+    // 0. 3D Voxel Placement
+    if (store.studioMode === 'voxel') {
+      const { packVoxel } = require('@/shared/game/voxel/VoxelWord');
+      const { VoxelWorld } = require('@/shared/game/voxel/VoxelWorldDoc');
+      
+      let voxelWorld = (context.engine as any).voxelWorld;
+      if (!voxelWorld) {
+        if (liveMap.voxelDoc) {
+          context.engine.loadVoxelWorld?.(liveMap.voxelDoc);
+          voxelWorld = (context.engine as any).voxelWorld;
+        } else {
+          voxelWorld = new VoxelWorld(liveMap.id, liveMap.name, 2, 2, 1, store.voxelBlockSizePx || 64);
+          voxelWorld.generateDefaultWorld();
+          context.engine.loadVoxelWorld?.(voxelWorld);
+        }
+      }
+
+      if (voxelWorld) {
+        const voxel = packVoxel(
+          store.activeVoxelMaterialId || 1,
+          store.activeVoxelShape || 0,
+          store.activeVoxelOrientation || 0,
+          0,
+          1,
+          0
+        );
+        const vy = 16; // Top surface block height
+        voxelWorld.setVoxel(c, vy, r, voxel);
+        context.engine.meshDirtyVoxelChunks?.();
+        
+        const doc = voxelWorld.serializeToDoc();
+        gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });
+        store.markMapDirty();
+        return true;
+      }
+    }
+
     // 1. Freeform Splat / Props Handling
     if (store.activeLayerType === 'paint-splat' || store.activeLayerType === 'free-form') {
       const mapWidth = liveMap.grid?.[0]?.length || 24;

@@ -54,7 +54,7 @@ export const TileSelectorPanel: React.FC = () => {
   const activeLayerType = useEditorStore((s) => s.activeLayerType);
   const setActiveLayerType = useEditorStore((s) => s.setActiveLayerType);
 
-  const [toolView, setToolView] = React.useState<'tileset' | 'splat' | 'props' | 'slicer' | 'smart-border'>('tileset');
+  const [toolView, setToolView] = React.useState<'voxel' | 'tileset' | 'splat' | 'props' | 'slicer' | 'smart-border'>('voxel');
 
   const handleBrushSelect = React.useCallback((gid: number) => {
     setActiveBrushTileId(gid, true);
@@ -72,25 +72,29 @@ export const TileSelectorPanel: React.FC = () => {
 
   const handleSwitchTab = (tab: string) => {
     soundSynth?.playSelectSound?.();
-    if (tab === 'grid') {
+    if (tab === 'voxel') {
+      setToolView('voxel');
+      useEditorStore.getState().setStudioMode('voxel');
+      showToast('Switched to 3D Voxel Block System');
+    } else if (tab === 'grid') {
       setToolView('tileset');
       setActiveLayerType('grid');
-      showToast('Switched to Grid Tile Paint Mode');
+      showToast('Switched to Block Texture Paint Mode');
     } else if (tab === 'paint-splat') {
       setToolView('splat');
       setActiveLayerType('paint-splat');
-      showToast('Switched to Continuous Terrain Splat Mode');
+      showToast('Switched to Continuous Terrain Swatches');
     } else if (tab === 'free-form') {
       setToolView('props');
       setActiveLayerType('free-form');
-      showToast('Switched to 2.5D Props & Foliage Mode');
+      showToast('Switched to 3D Props & Objects Mode');
     } else if (tab === 'slicer') {
       setToolView('slicer');
-      showToast('Opened Sheet Slicer & Cutter');
+      showToast('Opened Texture Sheet Slicer');
     } else if (tab === 'smart-border') {
       setToolView('smart-border');
       setActiveLayerType('grid');
-      showToast('Switched to Smart Border (Auto-Tiling) Mode');
+      showToast('Switched to Slope & Edge Matrix Mode');
     }
   };
 
@@ -181,7 +185,9 @@ export const TileSelectorPanel: React.FC = () => {
   };
 
   const currentTabId =
-    toolView === 'splat'
+    toolView === 'voxel'
+      ? 'voxel'
+      : toolView === 'splat'
       ? 'paint-splat'
       : toolView === 'props'
       ? 'free-form'
@@ -192,11 +198,12 @@ export const TileSelectorPanel: React.FC = () => {
       : 'grid';
 
   const tabs = [
-    { id: 'grid', label: 'Grid Paint', icon: Grid3X3 },
-    { id: 'paint-splat', label: 'Terrain Splat', icon: Paintbrush },
-    { id: 'free-form', label: 'Props & Foliage', icon: TreePine },
-    { id: 'slicer', label: 'Sheet Slicer', icon: Scissors },
-    { id: 'smart-border', label: 'Smart Border', icon: Wand2 },
+    { id: 'voxel', label: 'Voxel Blocks', icon: Box },
+    { id: 'grid', label: 'Block Textures', icon: Grid3X3 },
+    { id: 'paint-splat', label: 'Terrain Swatches', icon: Paintbrush },
+    { id: 'free-form', label: '3D Props & Objects', icon: TreePine },
+    { id: 'slicer', label: 'Texture Slicer', icon: Scissors },
+    { id: 'smart-border', label: 'Slope & Edge Matrix', icon: Wand2 },
   ];
 
   return (
@@ -222,17 +229,25 @@ export const TileSelectorPanel: React.FC = () => {
         />
         <div className="flex-1" />
         <span className="rounded bg-primary/15 border border-primary/40 px-2 py-0.5 text-[9px] font-bold text-primary shrink-0">
-          GID #{activeBrushTileId}
+          {toolView === 'voxel' ? '3D Voxel Engine' : `GID #${activeBrushTileId}`}
         </span>
       </WindowMenuBar>
 
       {/* ── Scrollable Body ── */}
       <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
-        {/* Unified Brush Settings Controls (shown for painting modes) */}
-        {toolView !== 'slicer' && <BrushSettingsBar />}
+        {/* Unified Brush Settings Controls (shown for painting modes only, with mode-specific controls) */}
+        {toolView !== 'slicer' && toolView !== 'smart-border' && (
+          <BrushSettingsBar
+            mode={toolView === 'voxel' ? 'voxel' : toolView === 'splat' ? 'splat' : toolView === 'props' ? 'prop' : 'grid'}
+          />
+        )}
 
         {/* Mode-Specific Content */}
-        {toolView === 'splat' ? (
+        {toolView === 'voxel' ? (
+          <div className="space-y-3">
+            <TerrainBrushPalette onOpenSlicer={() => setToolView('slicer')} />
+          </div>
+        ) : toolView === 'splat' ? (
           <div className="space-y-3">
             <TerrainBrushPalette onOpenSlicer={() => setToolView('slicer')} />
           </div>

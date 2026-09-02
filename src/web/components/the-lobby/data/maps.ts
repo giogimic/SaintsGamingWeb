@@ -89,6 +89,8 @@ export interface GameMapData {
     east?: string;
     west?: string;
   };
+  voxelDoc?: any;
+  blockSizePx?: number;
 }
 
 export function getPlacementCacheKey(mapId: string, atlasNodeId?: string, depth: number = 0): string {

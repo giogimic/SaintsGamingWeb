@@ -22,6 +22,7 @@ export type NormalizedGate = {
   name?: string;
   targetGateId?: string;
   bidirectional?: boolean;
+  disabled?: boolean;
 };
 
 function asSpawn(raw: unknown, fallback: GateSpawn = { x: 6, y: 2 }): GateSpawn {
@@ -75,6 +76,7 @@ export function normalizeGatesToArray(gates: unknown): NormalizedGate[] {
         name: typeof row.name === 'string' ? row.name : undefined,
         targetGateId: typeof row.targetGateId === 'string' ? row.targetGateId : undefined,
         bidirectional: row.bidirectional !== false,
+        disabled: Boolean(row.disabled),
       });
     }
     return out;
@@ -117,6 +119,7 @@ export function normalizeGatesToArray(gates: unknown): NormalizedGate[] {
         name: typeof row.name === 'string' ? row.name : undefined,
         targetGateId: typeof row.targetGateId === 'string' ? row.targetGateId : undefined,
         bidirectional: row.bidirectional !== false,
+        disabled: Boolean(row.disabled),
       });
     }
     return out;
@@ -125,11 +128,22 @@ export function normalizeGatesToArray(gates: unknown): NormalizedGate[] {
   return [];
 }
 
+/** Filter to only active (non-disabled) gates. */
+export function filterActiveGates(gates: unknown): NormalizedGate[] {
+  return normalizeGatesToArray(gates).filter((g) => !g.disabled);
+}
+
+/** Check if a specific normalized gate is active. */
+export function isGateActive(gate: NormalizedGate): boolean {
+  return !gate.disabled;
+}
+
 /** Unique target map ids for navigator / preload. */
-export function listGateTargets(gates: unknown): string[] {
+export function listGateTargets(gates: unknown, onlyActive: boolean = false): string[] {
   const ids = new Set<string>();
-  for (const g of normalizeGatesToArray(gates)) ids.add(g.targetMapId);
-  if (gates && typeof gates === "object" && !Array.isArray(gates)) {
+  const list = onlyActive ? filterActiveGates(gates) : normalizeGatesToArray(gates);
+  for (const g of list) ids.add(g.targetMapId);
+  if (!onlyActive && gates && typeof gates === "object" && !Array.isArray(gates)) {
     for (const value of Object.values(gates as Record<string, unknown>)) {
       if (!value || typeof value !== "object") continue;
       const id = String((value as any).targetMapId || "");
@@ -138,3 +152,4 @@ export function listGateTargets(gates: unknown): string[] {
   }
   return Array.from(ids);
 }
+

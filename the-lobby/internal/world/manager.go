@@ -15,8 +15,21 @@ type MapDef struct {
 	Height   int
 	Grid     [][]int // [y][x] logic tile ids
 	NPCs     []NPCDef
+	Gates    []GateDef
 	SpawnX   float64
 	SpawnY   float64
+}
+
+// GateDef is a warp gateway definition in the live world.
+type GateDef struct {
+	ID          string `json:"id"`
+	X           int    `json:"x"`
+	Y           int    `json:"y"`
+	TargetMapID string `json:"targetMapId"`
+	TargetX     int    `json:"targetX"`
+	TargetY     int    `json:"targetY"`
+	Category    string `json:"category,omitempty"`
+	Disabled    bool   `json:"disabled,omitempty"`
 }
 
 // NPCDef is a static overworld NPC seed.

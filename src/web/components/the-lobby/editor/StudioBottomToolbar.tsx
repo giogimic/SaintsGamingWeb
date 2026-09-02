@@ -136,6 +136,13 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
   const openPanel = useEditorStore((s) => s.openPanel);
   const showToast = useGameStore((s) => s.showToast);
 
+  // Voxel Tools
+  const voxelToolMode = useEditorStore((s) => s.voxelToolMode);
+  const setVoxelToolMode = useEditorStore((s) => s.setVoxelToolMode);
+  const voxelBlockSizePx = useEditorStore((s) => s.voxelBlockSizePx);
+  const activeVoxelShape = useEditorStore((s) => s.activeVoxelShape);
+  const setActiveVoxelShape = useEditorStore((s) => s.setActiveVoxelShape);
+
   const activeMapData = useGameStore((s) => s.activeMapData);
   const logicTiles = useGameStore((s) => s.logicTiles);
   const connectionStatus = useGameStore((s) => s.connectionStatus);
@@ -181,7 +188,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
   };
 
   const isLogic = activeLayerIdx === -1;
-  const isGridLayer = activeLayerType === 'grid';
+  const isGridLayer = activeLayerType === 'grid' || useEditorStore((s) => s.studioMode) === 'voxel';
   const layerName = isLogic ? 'Collision Layer' : `Layer ${activeLayerIdx}`;
   const logicMeta = isLogic
     ? logicTiles[activeLogicTileId] || LOGIC_COMPONENT_PRESETS.find((p) => p.paintTileId === activeLogicTileId)
@@ -193,11 +200,30 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
       <div className="flex items-center gap-2 border-r border-border/40 pr-3 shrink-0">
         {/* Brush Mode Buttons */}
         <div className="flex items-center gap-0.5 bg-background/50 border border-border/60 rounded-lg p-0.5">
+          {/* 3D Voxel Pen */}
+          <button
+            type="button"
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              setVoxelToolMode('block-pen');
+              setBrushMode('paint');
+              showToast('3D Voxel Pen active');
+            }}
+            className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
+              brushMode === 'paint' && voxelToolMode === 'block-pen'
+                ? 'bg-amber-500 text-black font-bold shadow-[0_0_12px_rgba(245,158,11,0.5)] scale-105'
+                : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
+            }`}
+            title="3D Voxel Pen (V)"
+          >
+            <Box className="h-3.5 w-3.5" />
+          </button>
+
           <button
             type="button"
             onClick={() => setBrushMode('paint')}
             className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
-              brushMode === 'paint'
+              brushMode === 'paint' && voxelToolMode !== 'block-pen'
                 ? 'bg-primary text-primary-foreground font-bold shadow-[0_0_12px_rgba(203,178,106,0.5)] scale-105'
                 : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
             }`}

@@ -36,6 +36,21 @@ export class EraserToolHandler implements IToolHandler {
     const { r, c } = event.tilePos;
     const { x, z } = event.worldPos;
 
+    // 0. 3D Voxel Erasure
+    if (store.studioMode === 'voxel') {
+      const voxelWorld = (context.engine as any).voxelWorld;
+      if (voxelWorld) {
+        const vy = 16; // Top surface block height
+        voxelWorld.setVoxel(c, vy, r, 0); // Set to AIR
+        context.engine.meshDirtyVoxelChunks?.();
+        
+        const doc = voxelWorld.serializeToDoc();
+        gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });
+        store.markMapDirty();
+        return true;
+      }
+    }
+
     // 1. Freeform Splat / Props Erasure
     if (store.activeLayerType === 'paint-splat' || store.activeLayerType === 'free-form') {
       const mapWidth = liveMap.grid?.[0]?.length || 24;

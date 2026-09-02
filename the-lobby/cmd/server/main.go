@@ -57,7 +57,7 @@ func main() {
 		Skills:     skill.NewManager(sqlDB),
 		Loot:       world.NewLootManager(),
 		SaveMap: func(id, name, grid, npcs, tiles, tilesets string) error {
-			return httpapi.PersistMap(sqlDB, wm, id, name, grid, npcs, tiles, tilesets)
+			return httpapi.PersistMap(sqlDB, wm, id, name, grid, "{}", npcs, tiles, tilesets)
 		},
 	}
 
