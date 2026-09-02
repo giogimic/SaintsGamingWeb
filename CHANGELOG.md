@@ -1,3 +1,14 @@
+# 2.1.678
+- **Root-Cause Fix for React Error #310 & Studio Disconnection on Material Change**:
+  - **Eliminated Short-Circuit Conditional Hook (`StudioBottomToolbar.tsx`)**:
+    - Identified the exact source of `Minified React error #310` (`843-*.js` / `656-*.js` at `useCallback`):
+      `const isGridLayer = activeLayerType === 'grid' || useEditorStore((s) => s.studioMode) === 'voxel';`
+    - When `activeLayerType` was `'grid'`, JavaScript short-circuited `||` and never evaluated `useEditorStore`. When changing material to terrain splat (`activeLayerType = 'paint-splat'`), `activeLayerType === 'grid'` became `false`, invoking `useEditorStore` for the first time mid-lifecycle and triggering React Error #310 ("Rendered more hooks than during previous render").
+    - Hoisted `const studioMode = useEditorStore((s) => s.studioMode);` unconditionally to the top of `StudioBottomToolbar`.
+  - **Upgraded Repository-Wide Hook Linter (`validate-hooks.ts`)**:
+    - Added AST inspection for binary short-circuit expressions (`&&`, `||`, `??`) and ternary operators (`? :`) to permanently prevent inline hook calls in the future.
+    - Verified 0 hook violations across the entire codebase.
+
 # 2.1.677
 - **Fix Docker / Next.js Production Build Type Error on Voxel Physics (`editor-store.ts`)**:
   - **Restore `activeVoxelPhysics` on `EditorState` (`editor-store.ts`)**:
