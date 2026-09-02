@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Compass,
-  Paintbrush,
+  Boxes,
   MapPin,
   Maximize2,
   RefreshCw,
@@ -12,24 +12,25 @@ import {
   Sparkles,
   Shield,
   Layers,
-  Image as ImageIcon,
-  Grid3X3,
-  X
+  Palette,
+  CheckCircle2,
 } from 'lucide-react';
 import type { SetupEnvironmentData } from './EnvironmentSetupStep';
-import type { GameAssetItem } from '@/engine/assets/AssetManager';
-import { SpriteBrowser } from '@/web/components/the-lobby/editor/SpriteBrowser';
-import { AssetUploadView } from '@/web/components/the-lobby/editor/AssetUploadView';
+import { generateDefaultWorldDoc, type VoxelWorldDocV3 } from '@/shared/game/voxel/VoxelWorldDoc';
 
 export interface SetupStartingMapData {
   id: string;
   name: string;
-  width: number;
-  height: number;
-  grid: number[][];
-  tileLayers: Array<{ name: string; grid: number[][] }>;
-  spawnPoint: { x: number; y: number };
-  tilesetAsset?: GameAssetItem;
+  widthChunks: number; // e.g. 2
+  depthChunks: number; // e.g. 2
+  heightChunks: number; // e.g. 1
+  width: number; // widthChunks * 16
+  height: number; // depthChunks * 16
+  blockSizePx: number; // 16..512, default 64
+  foundationMaterial: string; // 'gunmetal' | 'grass' | 'stone' | 'sand' | 'dark_cavern'
+  topologyArchetype: 'flat_bedrock' | 'valley_meadow' | 'fortress_outpost' | 'sunken_dungeon';
+  spawnPoint: { x: number; y: number; z?: number };
+  voxelDoc?: VoxelWorldDocV3;
 }
 
 interface StartingMapStepProps {
@@ -40,510 +41,362 @@ interface StartingMapStepProps {
   onBack: () => void;
 }
 
+const FOUNDATION_MATERIALS = [
+  { id: 'gunmetal', name: 'Gunmetal Bedrock', colorHex: '#2a2d34', desc: 'Standard industrial slate bedrock (Default)' },
+  { id: 'grass', name: 'Lush Meadow', colorHex: '#22c55e', desc: 'Vibrant green grass with loam soil base' },
+  { id: 'stone', name: 'Cobblestone Masonry', colorHex: '#64748b', desc: 'Ancient quarried grey stone blocks' },
+  { id: 'sand', name: 'Desert Sandstone', colorHex: '#f59e0b', desc: 'Warm desert sand and sandstone dunes' },
+  { id: 'dark_cavern', name: 'Deep Obsidian Cavern', colorHex: '#1e293b', desc: 'Volcanic basalt and subterranean rock' },
+];
+
+const TOPOLOGY_ARCHETYPES = [
+  {
+    id: 'flat_bedrock',
+    name: 'Flat Bedrock Plane',
+    desc: 'Solid bottom half (0..15) with open buildable atmosphere (16..31). Clean canvas for Studio creation.',
+  },
+  {
+    id: 'valley_meadow',
+    name: 'Rolling Valley Meadow',
+    desc: 'Gentle elevated terraces and recessed grassy clearings for organic outdoor regions.',
+  },
+  {
+    id: 'fortress_outpost',
+    name: 'Fortified Outpost',
+    desc: 'Raised stepped stronghold plateau with defensive perimeter foundations.',
+  },
+  {
+    id: 'sunken_dungeon',
+    name: 'Subterranean Vault',
+    desc: 'Enclosed dungeon cavity with perimeter rock walls and interior courtyard.',
+  },
+] as const;
+
 export function StartingMapStep({
-  environment,
   startingMap,
   onChange,
   onNext,
   onBack,
 }: StartingMapStepProps) {
-  const [toolMode, setToolMode] = useState<'paint' | 'solid' | 'spawn'>('paint');
-  const [activeGid, setActiveGid] = useState<number>(1);
-  const [isMouseDown, setIsMouseDown] = useState(false);
-  const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>(null);
-  
-  // Tileset Picker Modal
-  const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [pickerTab, setPickerTab] = useState<'catalog' | 'upload'>('catalog');
-
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const tilesetImgRef = useRef<HTMLImageElement | null>(null);
-  const [tilesetLoaded, setTilesetLoaded] = useState(false);
 
-  const width = startingMap.width || 24;
-  const height = startingMap.height || 24;
+  const widthChunks = startingMap.widthChunks || 2;
+  const depthChunks = startingMap.depthChunks || 2;
+  const totalWidthBlocks = widthChunks * 16;
+  const totalDepthBlocks = depthChunks * 16;
 
-  // Inherit tileset asset from environment step if not explicitly set
-  useEffect(() => {
-    if (!startingMap.tilesetAsset && environment.defaultTilesetAsset) {
-      const defaultGid = environment.defaultGroundGid || 1;
-      setActiveGid(defaultGid);
-
-      // Also ensure ground layer uses the chosen ground GID
-      const currentVisual = startingMap.tileLayers?.[0]?.grid;
-      const updatedVisual = currentVisual
-        ? currentVisual.map(row => row.map(cell => (cell === 17 || cell === 0 ? defaultGid : cell)))
-        : Array.from({ length: height }, () => Array.from({ length: width }, () => defaultGid));
-
-      onChange({
-        ...startingMap,
-        tilesetAsset: environment.defaultTilesetAsset,
-        tileLayers: [{ name: 'Ground', grid: updatedVisual }],
-      });
-    }
-  }, [environment.defaultTilesetAsset, environment.defaultGroundGid]);
-
-  const currentTileset = startingMap.tilesetAsset || environment.defaultTilesetAsset;
-
-  useEffect(() => {
-    if (!currentTileset?.source) {
-      setTilesetLoaded(false);
-      return;
-    }
-    const img = new Image();
-    img.src = currentTileset.source;
-    img.onload = () => {
-      tilesetImgRef.current = img;
-      setTilesetLoaded(true);
-    };
-  }, [currentTileset?.source]);
-
-  const handleResize = (newW: number, newH: number) => {
-    const clampedW = Math.max(8, Math.min(64, newW));
-    const clampedH = Math.max(8, Math.min(64, newH));
-
-    const defaultGid = environment.defaultGroundGid || 1;
-
-    const newGrid = Array.from({ length: clampedH }, (_, r) =>
-      Array.from({ length: clampedW }, (_, c) => {
-        if (startingMap.grid && r < startingMap.grid.length && c < startingMap.grid[r].length) {
-          return startingMap.grid[r][c];
-        }
-        return r === 0 || r === clampedH - 1 || c === 0 || c === clampedW - 1 ? 1 : 0;
-      })
-    );
-
-    const newVisual = Array.from({ length: clampedH }, (_, r) =>
-      Array.from({ length: clampedW }, (_, c) => {
-        if (
-          startingMap.tileLayers?.[0]?.grid &&
-          r < startingMap.tileLayers[0].grid.length &&
-          c < startingMap.tileLayers[0].grid[r].length
-        ) {
-          return startingMap.tileLayers[0].grid[r][c];
-        }
-        return defaultGid;
-      })
-    );
-
-    const safeSpawnX = Math.min(clampedW - 2, Math.max(1, startingMap.spawnPoint.x));
-    const safeSpawnY = Math.min(clampedH - 2, Math.max(1, startingMap.spawnPoint.y));
-
-    onChange({
-      ...startingMap,
-      width: clampedW,
-      height: clampedH,
-      grid: newGrid,
-      tileLayers: [{ name: 'Ground', grid: newVisual }],
-      spawnPoint: { x: safeSpawnX, y: safeSpawnY },
-    });
-  };
-
-  const paintCell = useCallback(
-    (x: number, y: number, e: React.MouseEvent) => {
-      if (x < 0 || x >= width || y < 0 || y >= height) return;
-
-      if (toolMode === 'spawn') {
-        onChange({
-          ...startingMap,
-          spawnPoint: { x, y },
-        });
-        return;
-      }
-
-      const isErase = e.buttons === 2 || e.button === 2 || e.shiftKey;
-
-      const nextGrid = startingMap.grid.map((row, rIdx) =>
-        row.map((cell, cIdx) => {
-          if (rIdx === y && cIdx === x && toolMode === 'solid') {
-             return isErase ? 0 : 1;
-          }
-          return cell;
-        })
-      );
-
-      const nextVisual = (startingMap.tileLayers?.[0]?.grid || []).map((row, rIdx) =>
-        row.map((cell, cIdx) => {
-          if (rIdx === y && cIdx === x && toolMode === 'paint') {
-             return isErase ? 0 : activeGid;
-          }
-          return cell;
-        })
-      );
-
-      onChange({
-        ...startingMap,
-        grid: nextGrid,
-        tileLayers: [{ name: 'Ground', grid: nextVisual }],
-      });
-    },
-    [width, height, toolMode, activeGid, startingMap, onChange]
-  );
-
+  // Draw 2.5D Volumetric Isometric Preview
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const cellSize = Math.floor(Math.min(600 / width, 600 / height, 32));
-    canvas.width = width * cellSize;
-    canvas.height = height * cellSize;
+    const width = canvas.width;
+    const height = canvas.height;
+    ctx.clearRect(0, 0, width, height);
 
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Background
+    ctx.fillStyle = '#070d17';
+    ctx.fillRect(0, 0, width, height);
 
-    const visualLayer = startingMap.tileLayers?.[0]?.grid;
-    const img = tilesetLoaded ? tilesetImgRef.current : null;
+    // Isometric math
+    const centerX = width / 2;
+    const centerY = height / 2 + 30;
+    const tileW = 28;
+    const tileH = 14;
+    const blockHeight = 40;
 
-    let cols = 1;
-    if (img && currentTileset?.metadata?.tilewidth) {
-       cols = Math.floor(img.width / Number(currentTileset.metadata.tilewidth));
-    } else if (img) {
-       cols = Math.floor(img.width / 32);
-    }
+    const mat = FOUNDATION_MATERIALS.find((m) => m.id === startingMap.foundationMaterial) || FOUNDATION_MATERIALS[0];
 
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const gid = visualLayer?.[y]?.[x] || 0;
-        const isSolid = startingMap.grid?.[y]?.[x] === 1;
+    // Draw Chunks Volume Box
+    for (let cx = 0; cx < widthChunks; cx++) {
+      for (let cz = 0; cz < depthChunks; cz++) {
+        const isoX = centerX + (cx - cz) * (tileW * 2);
+        const isoY = centerY + (cx + cz) * (tileH * 2);
 
-        if (gid > 0) {
-           if (img && cols > 0) {
-              const localGid = gid - 1;
-              const tw = Number(currentTileset?.metadata?.tilewidth || 32);
-              const th = Number(currentTileset?.metadata?.tileheight || 32);
-              const tx = (localGid % cols) * tw;
-              const ty = Math.floor(localGid / cols) * th;
-              ctx.drawImage(img, tx, ty, tw, th, x * cellSize, y * cellSize, cellSize, cellSize);
-           } else {
-              let fill = '#16a34a'; 
-              if (gid === 32) fill = '#92400e';
-              else if (gid === 60) fill = '#64748b';
-              else if (gid === 80) fill = '#0284c7';
-              else if (gid === 1) fill = '#450a0a';
-              ctx.fillStyle = fill;
-              ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-           }
-        }
+        // Bedrock Lower Half (0..16)
+        ctx.fillStyle = mat.colorHex;
+        ctx.beginPath();
+        ctx.moveTo(isoX, isoY);
+        ctx.lineTo(isoX + tileW * 2, isoY + tileH * 2);
+        ctx.lineTo(isoX, isoY + tileH * 4);
+        ctx.lineTo(isoX - tileW * 2, isoY + tileH * 2);
+        ctx.closePath();
+        ctx.fill();
 
-        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-        ctx.lineWidth = 0.5;
-        ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
+        // Top Border
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
 
-        if (isSolid) {
-          ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
-          ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-          ctx.strokeStyle = '#ef4444';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
-        }
+        // 3D Depth Extrusion (Front faces)
+        ctx.fillStyle = '#181b20';
+        ctx.beginPath();
+        ctx.moveTo(isoX - tileW * 2, isoY + tileH * 2);
+        ctx.lineTo(isoX, isoY + tileH * 4);
+        ctx.lineTo(isoX, isoY + tileH * 4 + blockHeight);
+        ctx.lineTo(isoX - tileW * 2, isoY + tileH * 2 + blockHeight);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.moveTo(isoX, isoY + tileH * 4);
+        ctx.lineTo(isoX + tileW * 2, isoY + tileH * 2);
+        ctx.lineTo(isoX + tileW * 2, isoY + tileH * 2 + blockHeight);
+        ctx.lineTo(isoX, isoY + tileH * 4 + blockHeight);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Upper Atmosphere Volume (Wireframe)
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.25)';
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(isoX, isoY - blockHeight);
+        ctx.lineTo(isoX + tileW * 2, isoY + tileH * 2 - blockHeight);
+        ctx.lineTo(isoX, isoY + tileH * 4 - blockHeight);
+        ctx.lineTo(isoX - tileW * 2, isoY + tileH * 2 - blockHeight);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.setLineDash([]);
       }
     }
 
-    const spawn = startingMap.spawnPoint;
-    if (spawn && spawn.x >= 0 && spawn.x < width && spawn.y >= 0 && spawn.y < height) {
-      const centerX = spawn.x * cellSize + cellSize / 2;
-      const centerY = spawn.y * cellSize + cellSize / 2;
+    // Draw Spawn Point Indicator
+    const spawnXRatio = (startingMap.spawnPoint.x / totalWidthBlocks) * 2 - 1;
+    const spawnZRatio = (startingMap.spawnPoint.y / totalDepthBlocks) * 2 - 1;
+    const spawnIsoX = centerX + (spawnXRatio - spawnZRatio) * (tileW * widthChunks);
+    const spawnIsoY = centerY + (spawnXRatio + spawnZRatio) * (tileH * depthChunks);
 
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, cellSize * 0.6, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(251, 191, 36, 0.4)';
-      ctx.fill();
+    // Spawn Beacon Glow
+    ctx.fillStyle = '#fbbf24';
+    ctx.shadowColor = '#fbbf24';
+    ctx.shadowBlur = 15;
+    ctx.beginPath();
+    ctx.arc(spawnIsoX, spawnIsoY - 10, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
 
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, cellSize * 0.35, 0, Math.PI* 2);
-      ctx.fillStyle = '#fbbf24';
-      ctx.fill();
-      ctx.strokeStyle = '#78350f';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    }
-  }, [width, height, startingMap, environment, tilesetLoaded]);
-
-  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    setIsMouseDown(true);
-    const rect = e.currentTarget.getBoundingClientRect();
-    const cellSize = Math.floor(Math.min(600 / width, 600 / height, 32));
-    const x = Math.floor((e.clientX - rect.left) / cellSize);
-    const y = Math.floor((e.clientY - rect.top) / cellSize);
-    paintCell(x, y, e);
-  };
-
-  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const cellSize = Math.floor(Math.min(600 / width, 600 / height, 32));
-    const x = Math.floor((e.clientX - rect.left) / cellSize);
-    const y = Math.floor((e.clientY - rect.top) / cellSize);
-
-    setHoveredCell({ x, y });
-
-    if (isMouseDown) {
-      paintCell(x, y, e);
-    }
-  };
-
-  const handleCanvasMouseUp = () => {
-    setIsMouseDown(false);
-  };
+    // Beacon Line
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(spawnIsoX, spawnIsoY);
+    ctx.lineTo(spawnIsoX, spawnIsoY - 24);
+    ctx.stroke();
+  }, [widthChunks, depthChunks, startingMap.foundationMaterial, startingMap.spawnPoint, totalWidthBlocks, totalDepthBlocks]);
 
   return (
     <div className="space-y-6">
-      <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 backdrop-blur-xl space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 backdrop-blur-xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-1">
-              <Compass className="w-5 h-5 text-amber-400" />
-              5. Create Your Starting Map
+              <Boxes className="w-5 h-5 text-amber-400" />
+              Starting 3D Voxel Realm Specification
             </h2>
             <p className="text-sm text-slate-400">
-              Name your initial zone, select a tile sheet, paint terrain features, and set collision boundaries.
+              Configure the initial volumetric chunk dimensions, foundation bedrock material, and player spawn point.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="text-xs font-mono text-amber-300 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
-              Spawn: ({startingMap.spawnPoint.x}, {startingMap.spawnPoint.y})
+            <span className="font-mono text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-2xl">
+              Volume: {totalWidthBlocks} × {totalDepthBlocks} × 32 Blocks ({widthChunks} × {depthChunks} Chunks)
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Controls Column */}
+          <div className="lg:col-span-7 space-y-6">
+            {/* 1. Realm Name & ID */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+                  Realm Identifier
+                </label>
+                <input
+                  type="text"
+                  value={startingMap.id}
+                  onChange={(e) => onChange({ ...startingMap, id: e.target.value.toUpperCase().replace(/\s+/g, '_') })}
+                  className="w-full bg-slate-950/60 border border-slate-700/80 focus:border-amber-400 rounded-2xl px-4 py-2.5 text-white font-mono text-sm uppercase focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+                  Display Name
+                </label>
+                <input
+                  type="text"
+                  value={startingMap.name}
+                  onChange={(e) => onChange({ ...startingMap, name: e.target.value })}
+                  className="w-full bg-slate-950/60 border border-slate-700/80 focus:border-amber-400 rounded-2xl px-4 py-2.5 text-white text-sm focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* 2. World Chunk Dimensions */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+                World Chunk Dimensions (16×16×32 Blocks per Chunk)
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { w: 2, d: 2, label: 'Small Realm', blocks: '32 × 32' },
+                  { w: 3, d: 3, label: 'Medium Realm', blocks: '48 × 48' },
+                  { w: 4, d: 4, label: 'Large Realm', blocks: '64 × 64' },
+                ].map((dim) => {
+                  const isSelected = widthChunks === dim.w && depthChunks === dim.d;
+                  return (
+                    <button
+                      key={dim.w}
+                      type="button"
+                      onClick={() =>
+                        onChange({
+                          ...startingMap,
+                          widthChunks: dim.w,
+                          depthChunks: dim.d,
+                          width: dim.w * 16,
+                          height: dim.d * 16,
+                          spawnPoint: { x: (dim.w * 16) / 2, y: (dim.d * 16) / 2, z: 16 },
+                        })
+                      }
+                      className={`p-3.5 rounded-2xl border text-left transition-all ${
+                        isSelected
+                          ? 'bg-amber-500/20 border-amber-400 text-white shadow-lg ring-1 ring-amber-400/30'
+                          : 'bg-slate-950/40 border-slate-800 hover:border-slate-700 text-slate-300'
+                      }`}
+                    >
+                      <div className="font-bold text-sm text-white">{dim.label}</div>
+                      <div className="font-mono text-xs text-amber-400 mt-1">{dim.blocks} Blocks</div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">{dim.w}×{dim.d} Chunks</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3. Bedrock Foundation Material */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+                Bedrock Foundation Material (Lower 0..15 Stratum)
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {FOUNDATION_MATERIALS.map((mat) => {
+                  const isSelected = (startingMap.foundationMaterial || 'gunmetal') === mat.id;
+                  return (
+                    <button
+                      key={mat.id}
+                      type="button"
+                      onClick={() => onChange({ ...startingMap, foundationMaterial: mat.id })}
+                      className={`p-3 rounded-2xl border flex items-center gap-3 text-left transition-all ${
+                        isSelected
+                          ? 'bg-amber-500/20 border-amber-400 text-white shadow-md ring-1 ring-amber-400/30'
+                          : 'bg-slate-950/40 border-slate-800 hover:border-slate-700 text-slate-300'
+                      }`}
+                    >
+                      <div
+                        className="w-8 h-8 rounded-xl shrink-0 border border-slate-700 shadow-inner"
+                        style={{ backgroundColor: mat.colorHex }}
+                      />
+                      <div>
+                        <div className="text-xs font-bold text-white">{mat.name}</div>
+                        <div className="text-[10px] text-slate-400 leading-tight">{mat.desc}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 4. Topology Archetype */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+                Starting Surface Topology
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {TOPOLOGY_ARCHETYPES.map((arch) => {
+                  const isSelected = (startingMap.topologyArchetype || 'flat_bedrock') === arch.id;
+                  return (
+                    <button
+                      key={arch.id}
+                      type="button"
+                      onClick={() => onChange({ ...startingMap, topologyArchetype: arch.id as any })}
+                      className={`p-3 rounded-2xl border text-left transition-all ${
+                        isSelected
+                          ? 'bg-amber-500/20 border-amber-400 text-white shadow-md ring-1 ring-amber-400/30'
+                          : 'bg-slate-950/40 border-slate-800 hover:border-slate-700 text-slate-300'
+                      }`}
+                    >
+                      <div className="text-xs font-bold text-white">{arch.name}</div>
+                      <div className="text-[10px] text-slate-400 mt-1 leading-tight">{arch.desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div className="col-span-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-              Map Name
-            </label>
-            <input
-              type="text"
-              value={startingMap.name}
-              onChange={(e) => {
-                const name = e.target.value;
-                const slug = name.trim().toUpperCase().replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, '') || 'STARTING_MEADOW';
-                onChange({ ...startingMap, name, id: slug });
-              }}
-              placeholder="e.g. Starting Meadow, Town Square"
-              className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none transition"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-              Width ({width} tiles)
-            </label>
-            <input
-              type="range"
-              min={16}
-              max={64}
-              step={2}
-              value={width}
-              onChange={(e) => handleResize(Number(e.target.value), height)}
-              className="w-full accent-amber-400 mt-2"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-              Height ({height} tiles)
-            </label>
-            <input
-              type="range"
-              min={16}
-              max={64}
-              step={2}
-              value={height}
-              onChange={(e) => handleResize(width, Number(e.target.value))}
-              className="w-full accent-amber-400 mt-2"
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-slate-950/80 border border-slate-800">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setToolMode('paint')}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                toolMode === 'paint'
-                  ? 'bg-amber-600 text-white shadow-md'
-                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-              }`}
-            >
-              <Paintbrush className="w-3.5 h-3.5" />
-              Paint Terrain
-            </button>
-
-            <button
-              onClick={() => setToolMode('solid')}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                toolMode === 'solid'
-                  ? 'bg-red-500 text-white shadow-md'
-                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-              }`}
-            >
-              <Grid3X3 className="w-3.5 h-3.5" />
-              Collision
-            </button>
-
-            <button
-              onClick={() => setToolMode('spawn')}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                toolMode === 'spawn'
-                  ? 'bg-amber-600 text-white shadow-md'
-                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-              }`}
-            >
-              <MapPin className="w-3.5 h-3.5" />
-              Spawn Point
-            </button>
-          </div>
-
-          <button onClick={() => setIsPickerOpen(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-800 text-white border border-slate-700 hover:border-slate-500">
-            <ImageIcon className="w-4 h-4 text-indigo-400" />
-            {currentTileset ? (currentTileset.metadata?.name || currentTileset.id.split('/').pop() || 'Selected') : 'Select Tile Sheet'}
-          </button>
-        </div>
-
-        <div className="flex gap-4">
-           {currentTileset && toolMode === 'paint' && (
-              <div className="w-64 bg-slate-950 border border-slate-800 rounded-xl flex flex-col p-2 max-h-[500px]">
-                 <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-2 flex items-center justify-between">
-                   <span>Palette</span>
-                   <span className="font-mono text-[10px] text-amber-300">GID #{activeGid}</span>
-                 </div>
-                 <div className="flex-1 overflow-auto border border-slate-800 rounded relative cursor-crosshair">
-                    <img 
-                       src={currentTileset.source} 
-                       alt="Tileset Palette" 
-                       className="max-w-none select-none pixelated"
-                       style={{ imageRendering: 'pixelated' }}
-                       onMouseDown={(e) => {
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          const tw = Number(currentTileset?.metadata?.tilewidth || 32);
-                          const th = Number(currentTileset?.metadata?.tileheight || 32);
-                          const cols = Math.max(1, Math.floor(e.currentTarget.naturalWidth / tw));
-                          const x = Math.floor((e.clientX - rect.left) / tw);
-                          const y = Math.floor((e.clientY - rect.top) / th);
-                          const newGid = (y * cols + x) + 1;
-                          setActiveGid(newGid);
-                       }}
-                    />
-                 </div>
-                 <div className="text-[10px] text-slate-500 mt-2 px-2">
-                    Click tile to select. Right-click canvas to erase.
-                 </div>
+          {/* 3D Isometric Preview Canvas */}
+          <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
+            <div className="bg-slate-950 border border-slate-800 rounded-3xl p-4 overflow-hidden shadow-2xl relative flex flex-col items-center justify-center">
+              <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-3 py-1 rounded-full text-[10px] font-mono text-slate-300">
+                <Sparkles className="w-3 h-3 text-amber-400" />
+                3D Volumetric Mesh Preview
               </div>
-           )}
 
-           <div className="flex-1 flex flex-col items-center justify-center p-4 rounded-xl bg-[#09090b] border border-slate-800 shadow-inner overflow-auto max-h-[500px]" onContextMenu={e => e.preventDefault()}>
-             <canvas
-               ref={canvasRef}
-               onMouseDown={handleCanvasMouseDown}
-               onMouseMove={handleCanvasMouseMove}
-               onMouseUp={handleCanvasMouseUp}
-               onMouseLeave={() => {
-                 setIsMouseDown(false);
-                 setHoveredCell(null);
-               }}
-               className="cursor-crosshair shadow-2xl rounded-sm"
-               style={{ imageRendering: 'pixelated' }}
-             />
-           </div>
+              <canvas
+                ref={canvasRef}
+                width={360}
+                height={320}
+                className="w-full max-w-[360px] h-auto rounded-2xl"
+              />
+
+              <div className="w-full mt-3 pt-3 border-t border-slate-900 flex items-center justify-between text-[11px] text-slate-400 px-2">
+                <span className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+                  Spawn Point: ({startingMap.spawnPoint.x}, {startingMap.spawnPoint.y}, Y=16)
+                </span>
+                <span className="font-mono text-slate-500">Volumetric Grid</span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-950/50 border border-slate-800/80 rounded-2xl text-xs text-slate-400 space-y-1.5">
+              <div className="font-bold text-slate-300 flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5 text-amber-400" />
+                Greedy Meshing & Zero Seams
+              </div>
+              <p>
+                Chunks are generated with a 1-block boundary halo and greedy quad merging to guarantee maximum frame rates with minimal draw calls.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="flex items-center justify-between">
         <button
+          type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-semibold text-slate-400 hover:text-white transition cursor-pointer"
+          className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 text-sm font-semibold transition-all"
         >
           <ArrowLeft className="w-4 h-4" />
           Back
         </button>
 
         <button
+          type="button"
           onClick={onNext}
-          disabled={!startingMap.name.trim()}
-          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-white bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 shadow-xl shadow-amber-500/20 transition disabled:opacity-50 cursor-pointer"
+          className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white text-sm font-bold shadow-xl shadow-amber-500/20 transition-all"
         >
-          Review & Create Game
+          Continue: Environment & Atmosphere
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
-
-      {isPickerOpen && (
-         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 sm:p-8 backdrop-blur-sm">
-           <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl flex flex-col w-full max-w-5xl h-[85vh] overflow-hidden">
-             
-             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/50">
-               <div>
-                 <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-                   <ImageIcon className="w-5 h-5 text-indigo-400" />
-                   Select Tile Sheet
-                 </h2>
-               </div>
-               <button 
-                 onClick={() => setIsPickerOpen(false)}
-                 className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-               >
-                 <X className="w-5 h-5" />
-               </button>
-             </div>
-
-             <div className="flex px-4 pt-2 border-b border-slate-800 bg-slate-900">
-               <button
-                 onClick={() => setPickerTab('catalog')}
-                 className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                   pickerTab === 'catalog' 
-                     ? 'border-indigo-500 text-indigo-400' 
-                     : 'border-transparent text-slate-400 hover:text-slate-300'
-                 }`}
-               >
-                 Existing Assets
-               </button>
-               <button
-                 onClick={() => setPickerTab('upload')}
-                 className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                   pickerTab === 'upload' 
-                     ? 'border-emerald-500 text-emerald-400' 
-                     : 'border-transparent text-slate-400 hover:text-slate-300'
-                 }`}
-               >
-                 Upload New
-               </button>
-             </div>
-
-             <div className="flex-1 overflow-hidden relative bg-slate-950">
-               {pickerTab === 'catalog' && (
-                 <div className="absolute inset-0 overflow-y-auto">
-                     <SpriteBrowser 
-                       filterType="TILESET"
-                       onSelect={(assets: GameAssetItem[]) => {
-                         if (assets.length > 0) {
-                            onChange({ ...startingMap, tilesetAsset: assets[0] });
-                            setIsPickerOpen(false);
-                         }
-                       }} 
-                     />
-                 </div>
-               )}
-               {pickerTab === 'upload' && (
-                 <div className="absolute inset-0 overflow-y-auto p-4">
-                   <AssetUploadView
-                     initialAssetType="TILESET"
-                     initialImportProfile="tile"
-                     onUploadComplete={(asset) => {
-                       if (asset?.id) {
-                          onChange({ ...startingMap, tilesetAsset: asset as GameAssetItem });
-                          setIsPickerOpen(false);
-                       }
-                     }}
-                   />
-                 </div>
-               )}
-             </div>
-           </div>
-         </div>
-      )}
     </div>
   );
 }

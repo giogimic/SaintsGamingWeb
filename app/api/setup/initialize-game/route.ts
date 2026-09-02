@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/web/lib/prisma';
 import { auth } from '@/auth';
 import { getSystemSetupStatus, SETUP_SETTING_KEYS } from '@/shared/game/setup/setupDetection';
-import { buildDefaultGroundLayer, DEFAULT_STUDIO_TILESETS } from '@/shared/game/studioTilesetBootstrap';
+import { generateDefaultWorldDoc, type VoxelWorldDocV3 } from '@/shared/game/voxel/VoxelWorldDoc';
 import { notifyGoMapSynced } from '@/server/goMmoNotify';
 
 export const dynamic = 'force-dynamic';
@@ -14,13 +14,15 @@ export interface InitializeGamePayload {
     genre?: string;
     style?: string;
     camera?: string;
+    defaultBlockSizePx?: number;
   };
   characters: Array<{
     slug: string;
     name: string;
     classId: string;
-    assetProfileId: string;
-    assetBundleId?: string | null;
+    assetProfileId?: string;
+    spriteKey?: string;
+    spriteBundleId?: string | null;
     flavor?: string;
     tag?: string;
     tagColor?: string;
@@ -40,16 +42,25 @@ export interface InitializeGamePayload {
     flavor?: string;
   }>;
   environment: {
-    defaultGroundGid: number;
+    defaultGroundGid?: number;
+    defaultBlockSizePx?: number;
+    foundationMaterial?: string;
+    atmospherePreset?: string;
   };
   startingMap: {
     id: string;
     name: string;
-    width: number;
-    height: number;
-    grid: number[][];
+    widthChunks?: number;
+    depthChunks?: number;
+    heightChunks?: number;
+    width?: number;
+    height?: number;
+    blockSizePx?: number;
+    foundationMaterial?: string;
+    spawnPoint: { x: number; y: number; z?: number };
+    voxelDoc?: VoxelWorldDocV3;
+    grid?: number[][];
     tileLayers?: Array<{ name: string; grid: number[][] }>;
-    spawnPoint: { x: number; y: number };
     tilesetAsset?: any;
   };
 }
@@ -84,78 +95,34 @@ export async function POST(req: Request) {
     const gameGenre = body?.game?.genre?.trim() || 'CREATURE_MMO';
     const gameStyle = body?.game?.style?.trim() || 'SAINTS_HYBRID';
     const gameCamera = body?.game?.camera?.trim() || 'ISOMETRIC_25D';
+    const blockSizePx = Number(body?.game?.defaultBlockSizePx || body?.environment?.defaultBlockSizePx || 64);
 
     // 2. Validate Characters (Minimum 1 Required)
     if (!Array.isArray(body?.characters) || body.characters.length === 0) {
       return NextResponse.json({ error: 'At least one player character is required' }, { status: 400 });
     }
 
-    for (const char of body.characters) {
-      if (!char.name?.trim() || !char.slug?.trim() || !char.assetProfileId?.trim()) {
-        return NextResponse.json(
-          { error: `Invalid character configuration for '${char.name || 'Unnamed'}'` },
-          { status: 400 }
-        );
-      }
-      const asset = await prisma.gameAsset.findUnique({ where: { id: char.assetProfileId } });
-      if (!asset) {
-        return NextResponse.json(
-          { error: `Strict Validation Failed: Canonical Asset ID '${char.assetProfileId}' not found in library.` },
-          { status: 400 }
-        );
-      }
+    // 3. Build Starting 3D Voxel World Document
+    const map = body?.startingMap || ({} as any);
+    const mapId = map.id?.trim() || 'STARTING_MEADOW';
+    const mapName = map.name?.trim() || 'Starting Realm';
+    const widthChunks = Math.max(1, map.widthChunks || Math.ceil((map.width || 32) / 16));
+    const depthChunks = Math.max(1, map.depthChunks || Math.ceil((map.height || 32) / 16));
+    const mapWidth = widthChunks * 16;
+    const mapHeight = depthChunks * 16;
+    const spawnX = typeof map.spawnPoint?.x === 'number' ? map.spawnPoint.x : Math.floor(mapWidth / 2);
+    const spawnY = typeof map.spawnPoint?.y === 'number' ? map.spawnPoint.y : Math.floor(mapHeight / 2);
+
+    let voxelDoc: VoxelWorldDocV3;
+    if (map.voxelDoc && map.voxelDoc.formatVersion === 3) {
+      voxelDoc = map.voxelDoc;
+    } else {
+      voxelDoc = generateDefaultWorldDoc(widthChunks, depthChunks, blockSizePx);
+      voxelDoc.id = mapId;
+      voxelDoc.name = mapName;
     }
 
-    // Validate Creatures
-    if (Array.isArray(body.creatures)) {
-      for (const c of body.creatures) {
-        if (!c.slug?.trim() || !c.name?.trim() || !c.spriteOverworld?.trim()) continue;
-        const asset = await prisma.gameAsset.findUnique({ where: { id: c.spriteOverworld } });
-        if (!asset) {
-          return NextResponse.json(
-            { error: `Strict Validation Failed: Canonical Asset ID '${c.spriteOverworld}' not found for creature '${c.name}'.` },
-            { status: 400 }
-          );
-        }
-      }
-    }
-
-    // 3. Validate Starting Map & Spawn
-    const map = body?.startingMap;
-    if (!map || !map.id?.trim() || !map.name?.trim()) {
-      return NextResponse.json({ error: 'Starting map definition is required' }, { status: 400 });
-    }
-
-    const mapId = map.id.trim().toUpperCase().replace(/\s+/g, '_');
-    const mapWidth = Math.max(8, Math.min(128, map.width || 24));
-    const mapHeight = Math.max(8, Math.min(128, map.height || 24));
-
-    const spawnX = typeof map.spawnPoint?.x === 'number' ? Math.floor(map.spawnPoint.x) : Math.floor(mapWidth / 2);
-    const spawnY = typeof map.spawnPoint?.y === 'number' ? Math.floor(map.spawnPoint.y) : Math.floor(mapHeight / 2);
-
-    if (spawnX < 0 || spawnX >= mapWidth || spawnY < 0 || spawnY >= mapHeight) {
-      return NextResponse.json(
-        { error: `Player spawn point (${spawnX}, ${spawnY}) must be inside map bounds (${mapWidth}x${mapHeight})` },
-        { status: 400 }
-      );
-    }
-
-    const defaultGid = Number.isFinite(body?.environment?.defaultGroundGid)
-      ? body.environment.defaultGroundGid
-      : 17;
-
-    // Build or sanitize grid and visual tile layers
-    const logicGrid = Array.isArray(map.grid) && map.grid.length === mapHeight
-      ? map.grid
-      : Array.from({ length: mapHeight }, (_, r) =>
-          Array.from({ length: mapWidth }, (_, c) =>
-            r === 0 || r === mapHeight - 1 || c === 0 || c === mapWidth - 1 ? 1 : 0
-          )
-        );
-
-    const tileLayers = Array.isArray(map.tileLayers) && map.tileLayers.length > 0
-      ? map.tileLayers
-      : [buildDefaultGroundLayer(logicGrid, defaultGid)];
+    const serializedVoxelDoc = JSON.stringify(voxelDoc);
 
     const gatesPayload = {
       spawnPoint: { x: spawnX, y: spawnY },
@@ -192,6 +159,7 @@ export async function POST(req: Request) {
       // 4b. Upsert Starter Heroes
       for (let i = 0; i < body.characters.length; i++) {
         const char = body.characters[i];
+        const assetProfileId = char.assetProfileId || char.spriteKey || 'evil-berserker-bloodaxe-male';
         await tx.starterHero.upsert({
           where: { slug: char.slug },
           create: {
@@ -199,8 +167,8 @@ export async function POST(req: Request) {
             gameId: 'saints',
             name: char.name.trim(),
             classId: char.classId || 'WARRIOR',
-            assetProfileId: char.assetProfileId,
-            assetBundleId: char.assetBundleId || null,
+            assetProfileId,
+            assetBundleId: char.spriteBundleId || null,
             flavor: char.flavor?.trim() || `${char.name} the ${char.classId || 'Adventurer'}`,
             tag: char.tag || (i === 0 ? 'Primary' : 'Hero'),
             tagColor: char.tagColor || '#38bdf8',
@@ -214,8 +182,8 @@ export async function POST(req: Request) {
           update: {
             name: char.name.trim(),
             classId: char.classId || 'WARRIOR',
-            assetProfileId: char.assetProfileId,
-            assetBundleId: char.assetBundleId || null,
+            assetProfileId,
+            assetBundleId: char.spriteBundleId || null,
             flavor: char.flavor?.trim() || `${char.name} the ${char.classId || 'Adventurer'}`,
             tag: char.tag || (i === 0 ? 'Primary' : 'Hero'),
             tagColor: char.tagColor || '#38bdf8',
@@ -278,41 +246,27 @@ export async function POST(req: Request) {
         }
       }
 
-      const tilesetsDataPayload = map.tilesetAsset
-        ? [
-            {
-              firstgid: 1,
-              imageSource: map.tilesetAsset.source,
-              columns: Math.floor(640 / (Number(map.tilesetAsset.metadata?.tilewidth) || 32)),
-              tilewidth: Number(map.tilesetAsset.metadata?.tilewidth || 32),
-              tileheight: Number(map.tilesetAsset.metadata?.tileheight || 32),
-            },
-          ]
-        : DEFAULT_STUDIO_TILESETS;
-
       // 4d. Upsert Starting WorldMap & GameMap
       await tx.worldMap.upsert({
         where: { id: mapId },
         create: {
           id: mapId,
           gameId: 'saints',
-          name: map.name.trim(),
-          gridData: JSON.stringify(logicGrid),
+          name: mapName,
+          gridData: JSON.stringify([]),
           gatesData: JSON.stringify(gatesPayload),
           npcsData: JSON.stringify([]),
           encountersData: JSON.stringify([]),
           entitiesData: JSON.stringify([]),
-          tileLayersData: JSON.stringify(tileLayers),
-          tilesetsData: JSON.stringify(tilesetsDataPayload),
+          tileLayersData: serializedVoxelDoc,
+          tilesetsData: JSON.stringify([]),
           version: 1,
         },
         update: {
-          name: map.name.trim(),
+          name: mapName,
           gameId: 'saints',
-          gridData: JSON.stringify(logicGrid),
           gatesData: JSON.stringify(gatesPayload),
-          tileLayersData: JSON.stringify(tileLayers),
-          tilesetsData: JSON.stringify(tilesetsDataPayload),
+          tileLayersData: serializedVoxelDoc,
           version: { increment: 1 },
         },
       });
@@ -321,19 +275,19 @@ export async function POST(req: Request) {
         where: { id: mapId },
         create: {
           id: mapId,
-          name: map.name.trim(),
+          name: mapName,
           width: mapWidth,
           height: mapHeight,
-          tilesetData: JSON.stringify(logicGrid),
+          tilesetData: serializedVoxelDoc,
           gates: JSON.stringify(gatesPayload),
           npcs: JSON.stringify([]),
           encounters: JSON.stringify([]),
         },
         update: {
-          name: map.name.trim(),
+          name: mapName,
           width: mapWidth,
           height: mapHeight,
-          tilesetData: JSON.stringify(logicGrid),
+          tilesetData: serializedVoxelDoc,
           gates: JSON.stringify(gatesPayload),
         },
       });
@@ -348,7 +302,7 @@ export async function POST(req: Request) {
         { key: SETUP_SETTING_KEYS.GAME_STYLE, value: gameStyle },
         { key: SETUP_SETTING_KEYS.GAME_CAMERA, value: gameCamera },
         { key: SETUP_SETTING_KEYS.DEFAULT_MAP_ID, value: mapId },
-        { key: SETUP_SETTING_KEYS.DEFAULT_GROUND_GID, value: String(defaultGid) },
+        { key: 'DEFAULT_BLOCK_SIZE_PX', value: String(blockSizePx) },
         // Legacy keys for backward compatibility
         { key: SETUP_SETTING_KEYS.SETUP_COMPLETED, value: 'true' },
         { key: SETUP_SETTING_KEYS.SETUP_COMPLETED_AT, value: new Date().toISOString() },
@@ -365,21 +319,21 @@ export async function POST(req: Request) {
       }
     });
 
-    // 5. Notify Go MMO realtime server of new starting map
+    // 5. Notify Go MMO realtime server of new starting voxel map
     void notifyGoMapSynced({
       id: mapId,
-      name: map.name.trim(),
-      gridData: logicGrid,
+      name: mapName,
+      gridData: voxelDoc,
       npcsData: [],
-      tileLayersData: tileLayers,
-      tilesetsData: DEFAULT_STUDIO_TILESETS,
-    });
+      tileLayersData: [],
+      tilesetsData: [],
+    }).catch(() => {});
 
     return NextResponse.json({
       success: true,
       gameName,
       defaultMapId: mapId,
-      message: `Game '${gameName}' initialized successfully!`,
+      message: `3D Voxel Game '${gameName}' initialized successfully!`,
       targetUrl: '/studio',
     });
   } catch (error: any) {

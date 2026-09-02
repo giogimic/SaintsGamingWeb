@@ -9,7 +9,7 @@ import {
   Loader2,
   ShieldAlert,
   Info,
-  Hammer,
+  Boxes,
 } from 'lucide-react';
 import type { SetupStatus } from '@/shared/game/setup/setupDetection';
 
@@ -38,10 +38,11 @@ export function GameInitializationWizard() {
   // 1. Game Identity
   const [gameDefinition, setGameDefinition] = useState<GameDefinitionData>({
     name: 'Saints Adventure',
-    description: 'A 2.5D multiplayer MMO world filled with quests, monsters, and player creation.',
+    description: 'A 2.5D multiplayer 3D voxel MMO world filled with quests, monsters, and player creation.',
     genre: 'CREATURE_MMO',
     style: 'SAINTS_HYBRID',
     camera: 'ISOMETRIC_25D',
+    defaultBlockSizePx: 64,
   });
 
   // 2. Characters & Creatures
@@ -74,37 +75,28 @@ export function GameInitializationWizard() {
     },
   ]);
 
-  // 3. Environment & Default Tile
+  // 3. Environment & Materials
   const [environment, setEnvironment] = useState<SetupEnvironmentData>({
-    enabledCategories: ['terrain', 'nature', 'structures', 'furniture'],
-    defaultGroundGid: 1,
+    enabledMaterialSets: ['natural_stone', 'nature_foliage', 'architecture', 'fluids_elemental'],
+    foundationMaterial: 'gunmetal',
+    atmospherePreset: 'noon',
+    soundscapeTrack: 'track_peaceful_meadow',
   });
 
-  // 4. Starting Map & Spawn
-  const [startingMap, setStartingMap] = useState<SetupStartingMapData>(() => {
-    const w = 24;
-    const h = 24;
-    const defaultGid = 1;
-    const grid = Array.from({ length: h }, (_, r) =>
-      Array.from({ length: w }, (_, c) => (r === 0 || r === h - 1 || c === 0 || c === w - 1 ? 1 : 0))
-    );
-    const tileLayers = [
-      {
-        name: 'Ground',
-        grid: Array.from({ length: h }, () => Array.from({ length: w }, () => defaultGid)),
-      },
-    ];
-
-    return {
-      id: 'STARTING_MEADOW',
-      name: 'Starting Meadow',
-      width: w,
-      height: h,
-      grid,
-      tileLayers,
-      spawnPoint: { x: Math.floor(w / 2), y: Math.floor(h / 2) },
-    };
-  });
+  // 4. Starting 3D Voxel Realm & Spawn
+  const [startingMap, setStartingMap] = useState<SetupStartingMapData>(() => ({
+    id: 'STARTING_MEADOW',
+    name: 'Starting Meadow',
+    widthChunks: 2,
+    depthChunks: 2,
+    heightChunks: 1,
+    width: 32,
+    height: 32,
+    blockSizePx: 64,
+    foundationMaterial: 'gunmetal',
+    topologyArchetype: 'flat_bedrock',
+    spawnPoint: { x: 16, y: 16, z: 16 },
+  }));
 
   // Fetch initial setup status
   useEffect(() => {
@@ -173,8 +165,8 @@ export function GameInitializationWizard() {
     { num: 1, label: 'Identity' },
     { num: 2, label: 'Requirements' },
     { num: 3, label: 'Entities' },
-    { num: 4, label: 'Environment' },
-    { num: 5, label: 'Starting Map' },
+    { num: 4, label: 'Atmosphere' },
+    { num: 5, label: '3D Realm' },
     { num: 6, label: 'Review' },
   ];
 
@@ -186,14 +178,14 @@ export function GameInitializationWizard() {
         <div className="flex flex-wrap items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5" />
-              Game Initialization
+              <Boxes className="w-3.5 h-3.5" />
+              3D Voxel Game Initialization
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
               Saints <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-500">Game Setup</span>
             </h1>
             <p className="text-slate-300 text-sm md:text-base max-w-2xl">
-              Initialize a new game experience inside Saints. Define game rules, configure starting characters, and author your initial starting map.
+              Initialize a new 3D Voxel MMO experience. Define game rules, configure starting characters, and author your initial 3D volumetric starting realm.
             </p>
           </div>
 
@@ -262,12 +254,15 @@ export function GameInitializationWizard() {
         </div>
       )}
 
-      {/* STEP 0: MODE SELECTION */}
+      {/* STEP 0: MODE SELECTION & MIGRATION EXPORT/IMPORT */}
       {step === 0 && (
-        <SetupModeSelection onSelectFresh={() => setStep(1)} />
+        <SetupModeSelection
+          onSelectFresh={() => setStep(1)}
+          onImportSuccess={handleCompleteSuccess}
+        />
       )}
 
-      {/* STEP 1: GAME QUESTIONS */}
+      {/* STEP 1: GAME QUESTIONS & 3D VOXEL SPECS */}
       {step === 1 && (
         <GameDefinitionStep
           data={gameDefinition}
@@ -299,7 +294,7 @@ export function GameInitializationWizard() {
         />
       )}
 
-      {/* STEP 4: ENVIRONMENT TILES & DEFAULT FILL */}
+      {/* STEP 4: ENVIRONMENT & MATERIAL SETS */}
       {step === 4 && (
         <EnvironmentSetupStep
           environment={environment}
@@ -309,7 +304,7 @@ export function GameInitializationWizard() {
         />
       )}
 
-      {/* STEP 5: STARTING MAP & SPAWN */}
+      {/* STEP 5: STARTING 3D VOXEL REALM */}
       {step === 5 && (
         <StartingMapStep
           environment={environment}
@@ -320,7 +315,7 @@ export function GameInitializationWizard() {
         />
       )}
 
-      {/* STEP 6: FINAL REVIEW & TRANSACTION-SAFE SUBMIT */}
+      {/* STEP 6: FINAL REVIEW & TRANSACTION-SAFE DEPLOY */}
       {step === 6 && (
         <FinalReviewStep
           gameDefinition={gameDefinition}
