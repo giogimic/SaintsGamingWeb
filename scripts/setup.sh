@@ -425,6 +425,7 @@ mkdir -p data uploads
 chmod -R 777 data uploads
 
 cp docker-compose.base.yml docker-compose.yml
+sed -i '/^\s*args:\s*$/d' docker-compose.yml 2>/dev/null || true
 sed -i "s/- \"3000:3000\"/- \"$WEB_PORT:3000\"/g" docker-compose.yml
 sed -i "s/container_name: saints-gaming-web/container_name: ${WEB_CONTAINER_NAME}/g" docker-compose.yml
 # Keep image name stable; only container_name must be unique across parallel installs.
@@ -435,6 +436,7 @@ else
     sed -i "s/- \"80:80\"/- \"$HTTP_PORT:80\"/g" docker-compose.yml
     sed -i "s/- \"443:443\"/- \"$HTTPS_PORT:443\"/g" docker-compose.yml
 fi
+sed -i '/^\s*args:\s*$/d' docker-compose.yml 2>/dev/null || true
 
 # --- Generate .env (pure bash, no Node.js required) ---
 if [ "$REUSE_ENV" = "1" ] && [ -n "$OLD_AUTH_SECRET" ]; then
