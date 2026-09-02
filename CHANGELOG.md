@@ -1,3 +1,10 @@
+# 2.1.642
+- **Studio Services Unit Testing & Full Test Suite Coverage**:
+  - **Comprehensive Studio Services Test Suite (`StudioServices.test.ts`)**:
+    - Added unit test coverage for `StudioKeyboardRouter` (hotkeys, input isolation, brush radius cycling, Omnisearch, save trigger, and mode switching) and `MapPersistenceService` (validation guards and safe state fallbacks).
+  - **100% Green Test Suite**:
+    - Verified all 257 test suites and 1,108 Vitest tests pass cleanly.
+
 # 2.1.641
 - **Studio Tool Handler Unit Testing & Vitest Configuration**:
   - **Comprehensive ToolDispatcher Test Suite (`ToolDispatcher.test.ts`)**:
