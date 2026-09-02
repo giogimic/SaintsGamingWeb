@@ -1413,64 +1413,45 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           }
 
           if (brushMode === 'paste' || store.isPasting) {
-            if (eventType !== 'down') return;
-            const res = store.pasteClipboard(map, engine, r, c, store.pasteMode);
-            if (res.ok) {
-              showToast(`Pasted ${res.count} tiles (${store.pasteMode})`);
-              store.cancelPaste();
-            } else {
-              showToast(res.error || 'Paste failed.');
+            const rawEv = typeof window !== 'undefined' ? ((window.event as MouseEvent) || null) : null;
+            const validEventType = eventType || 'down';
+            const toolContext = { engine, mapData: map, showToast };
+            const toolEvent = {
+              eventType: validEventType,
+              button: rawEv?.button ?? 0,
+              tilePos: { r, c },
+              worldPos: { x: point?.x ?? c + 0.5, y: 0, z: point?.z ?? r + 0.5 },
+              rawEvent: rawEv || ({} as any),
+              isShift: Boolean(rawEv?.shiftKey),
+              isCtrl: Boolean(rawEv?.ctrlKey || rawEv?.metaKey),
+              isAlt: Boolean(rawEv?.altKey),
+              isSpace: isSpaceHeldRef.current,
+            };
+            toolDispatcherRef.current.setActiveTool('paste', toolContext);
+            if (validEventType === 'down') {
+              toolDispatcherRef.current.dispatchPointerDown(toolEvent, toolContext);
             }
             return;
           }
 
           if (brushMode === 'prefab') {
-            if (eventType !== 'down') return;
-            const prefab = store.prefabs.find((p) => p.id === activePrefabId);
-            if (!prefab) {
-              showToast('Select a prefab from the Prefab Builder first.');
-              return;
-            }
-
-            const ops: any[] = [];
-            // Center prefab on cursor pivot
-            const offsetR = Math.floor(((prefab.height || 1) - 1) / 2);
-            const offsetC = Math.floor(((prefab.width || 1) - 1) / 2);
-            
-            // Paste Visual Data
-            prefab.visualData?.forEach((v: any) => {
-              const tr = r + v.r - offsetR;
-              const tc = c + v.c - offsetC;
-              if (tr < 0 || tr >= mapHeight || tc < 0 || tc >= mapWidth) return;
-              
-              // Base the target layer off the currently active layer in the editor, offsetting by the prefab's built-in layer offset
-              const targetLayer = Math.min(2, Math.max(0, store.activeLayerIdx + (v.layerOffset || 0)));
-              
-              const painted = paintWorldCell(map, targetLayer, tr, tc, v.tileId, worldSync);
-              if (!('error' in painted)) {
-                ops.push(painted.cell);
-                engine.updateSingleTile(tr, tc, v.tileId, targetLayer, map.tilesets);
-              }
-            });
-
-            // Paste Logic Data
-            prefab.logicData?.forEach((l: any) => {
-              const tr = r + l.r - offsetR;
-              const tc = c + l.c - offsetC;
-              if (tr < 0 || tr >= mapHeight || tc < 0 || tc >= mapWidth) return;
-              const painted = paintWorldCell(map, LOGIC_LAYER_IDX, tr, tc, l.tileId, worldSync);
-              if (!('error' in painted)) {
-                ops.push(painted.cell);
-                if (!engine.updateLogicTile(tr, tc, l.tileId)) {
-                  engine.enableLogicGridOverlay(map.grid || []);
-                  engine.updateLogicTile(tr, tc, l.tileId);
-                }
-              }
-            });
-
-            if (ops.length > 0) {
-              store.pushPaintOp(ops);
-              store.markMapDirty();
+            const rawEv = typeof window !== 'undefined' ? ((window.event as MouseEvent) || null) : null;
+            const validEventType = eventType || 'down';
+            const toolContext = { engine, mapData: map, showToast };
+            const toolEvent = {
+              eventType: validEventType,
+              button: rawEv?.button ?? 0,
+              tilePos: { r, c },
+              worldPos: { x: point?.x ?? c + 0.5, y: 0, z: point?.z ?? r + 0.5 },
+              rawEvent: rawEv || ({} as any),
+              isShift: Boolean(rawEv?.shiftKey),
+              isCtrl: Boolean(rawEv?.ctrlKey || rawEv?.metaKey),
+              isAlt: Boolean(rawEv?.altKey),
+              isSpace: isSpaceHeldRef.current,
+            };
+            toolDispatcherRef.current.setActiveTool('prefab', toolContext);
+            if (validEventType === 'down') {
+              toolDispatcherRef.current.dispatchPointerDown(toolEvent, toolContext);
             }
             return;
           }
