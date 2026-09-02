@@ -43,6 +43,7 @@ import {
 import { getIsEditorMode } from '@/shared/game/studioSession';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { shouldKeepActiveMapData } from '@/shared/game/mapSwitch';
+import { ToolDispatcher } from '../editor/interaction/tools/ToolDispatcher';
 import { joinWorld, startMapTransition } from '@/shared/game/lobbyWorldJoin';
 import {
   mapVisualFingerprint,
@@ -101,6 +102,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const [isShiftHeld, setIsShiftHeld] = useState(false);
   const isShiftHeldRef = useRef(false);
   isShiftHeldRef.current = isShiftHeld;
+  const toolDispatcherRef = useRef<ToolDispatcher>(new ToolDispatcher());
 
   useEffect(() => {
     if (!isDevEditorOpen) return;
@@ -1375,117 +1377,31 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               return;
             }
 
-            if (eventType === 'down') {
-              store.setSelectionStart({ r, c });
-              store.setSelectionEnd({ r, c });
-              
-              if (!isAlt && !isCtrl && !isShift) {
-                store.clearSelectedCells();
-              }
-              
-              // @ts-ignore - attaching temporary array to engine for the drag session
-              engine._selectionDragPoints = [{ x: point?.x ?? c + 0.5, z: point?.z ?? r + 0.5, r, c }];
-              
-              if (selMode === 'circle' || selMode === 'ellipse') {
-                engine.setContinuousSelectionPreview({ type: 'circle', centerX: c + 0.5, centerZ: r + 0.5, radius: 0.5 }, mode);
-              } else if (selMode === 'lasso' || selMode === 'polygon') {
-                engine.setContinuousSelectionPreview({ type: 'path', points: [{ x: point?.x ?? c + 0.5, z: point?.z ?? r + 0.5 }], strokeWidth: 0.1 }, mode);
-              } else {
-                engine.setContinuousSelectionPreview({ type: 'rectangle', minX: c, minZ: r, maxX: c + 1, maxZ: r + 1 }, mode);
-              }
-            } else if (eventType === 'move') {
-              if (store.selectionStart) {
-                store.setSelectionEnd({ r, c });
-                // @ts-ignore
-                const dragPoints = engine._selectionDragPoints || [];
-                dragPoints.push({ x: point?.x ?? c + 0.5, z: point?.z ?? r + 0.5, r, c });
-
-                if (selMode === 'circle') {
-                  const r0 = store.selectionStart.r;
-                  const c0 = store.selectionStart.c;
-                  const centerR = (r0 + r) / 2 + 0.5;
-                  const centerC = (c0 + c) / 2 + 0.5;
-                  const radius = Math.max(Math.abs(r - r0), Math.abs(c - c0)) / 2 + 0.5;
-                  engine.setContinuousSelectionPreview(
-                    { type: 'circle', centerX: centerC, centerZ: centerR, radius },
-                    mode
-                  );
-                } else if (selMode === 'ellipse') {
-                  const r0 = store.selectionStart.r;
-                  const c0 = store.selectionStart.c;
-                  const centerR = (r0 + r) / 2 + 0.5;
-                  const centerC = (c0 + c) / 2 + 0.5;
-                  const radX = Math.abs(c - c0) / 2 + 0.5;
-                  const radZ = Math.abs(r - r0) / 2 + 0.5;
-                  engine.setContinuousSelectionPreview(
-                    { type: 'ellipse', centerX: centerC, centerZ: centerR, radiusX: radX, radiusZ: radZ },
-                    mode
-                  );
-                } else if (selMode === 'lasso' || selMode === 'polygon') {
-                  engine.setContinuousSelectionPreview(
-                    { type: 'path', points: dragPoints.map((p: any) => ({ x: p.x, z: p.z })), strokeWidth: 0.1 },
-                    mode
-                  );
-                } else {
-                  const minR = Math.min(store.selectionStart.r, r);
-                  const maxR = Math.max(store.selectionStart.r, r) + 1;
-                  const minC = Math.min(store.selectionStart.c, c);
-                  const maxC = Math.max(store.selectionStart.c, c) + 1;
-                  engine.setContinuousSelectionPreview(
-                    { type: 'rectangle', minX: minC, minZ: minR, maxX: maxC, maxZ: maxR },
-                    mode
-                  );
-                }
-              }
-            } else if (eventType === 'up') {
-              if (store.selectionStart && store.selectionEnd) {
-                const r0 = store.selectionStart.r;
-                const r1 = store.selectionEnd.r;
-                const c0 = store.selectionStart.c;
-                const c1 = store.selectionEnd.c;
-                // @ts-ignore
-                const dragPoints = engine._selectionDragPoints || [];
-
-                if (selMode === 'circle') {
-                  const centerR = (r0 + r1) / 2 + 0.5;
-                  const centerC = (c0 + c1) / 2 + 0.5;
-                  const radius = Math.max(Math.abs(r1 - r0), Math.abs(c1 - c0)) / 2 + 0.5;
-                  store.setSelectionCircle(centerR, centerC, radius);
-                } else if (selMode === 'ellipse') {
-                  const centerR = (r0 + r1) / 2 + 0.5;
-                  const centerC = (c0 + c1) / 2 + 0.5;
-                  const radX = Math.abs(c1 - c0) / 2 + 0.5;
-                  const radZ = Math.abs(r1 - r0) / 2 + 0.5;
-                  store.setSelectionEllipse(centerR, centerC, radX, radZ);
-                } else if (selMode === 'lasso' || selMode === 'polygon') {
-                  store.setSelectionPolygon(dragPoints);
-                } else {
-                  if (mode === 'normal') {
-                    store.setSelectionBox(r0, r1, c0, c1);
-                  } else if (mode === 'add') {
-                    store.addSelectedBox(r0, r1, c0, c1);
-                  } else if (mode === 'subtract') {
-                    store.removeSelectedBox(r0, r1, c0, c1);
-                  }
-                }
-                
-                // Clear active drag preview, sync persistent continuous selection preview
-                engine.clearActionPreview();
-                const activeGeom = useEditorStore.getState().activeSelectionGeometry;
-                if (activeGeom) {
-                  engine.setContinuousSelectionPreview(activeGeom, mode);
-                } else {
-                  const latestCells = useEditorStore.getState().selectedCells;
-                  if (latestCells && Object.keys(latestCells).length > 0) {
-                    engine.setMultiSelectionPreview(latestCells);
-                  } else {
-                    engine.clearSelectionPreview();
-                  }
-                }
-                
-                // @ts-ignore
-                engine._selectionDragPoints = [];
-              }
+            const toolContext = {
+              engine,
+              mapData: map,
+              showToast,
+            };
+            const rawEv = typeof window !== 'undefined' ? ((window.event as MouseEvent) || null) : null;
+            const validEventType = eventType || 'down';
+            const toolEvent = {
+              eventType: validEventType,
+              button: rawEv?.button ?? 0,
+              tilePos: { r, c },
+              worldPos: { x: point?.x ?? c + 0.5, y: 0, z: point?.z ?? r + 0.5 },
+              rawEvent: rawEv || ({} as any),
+              isShift: Boolean(isShift),
+              isCtrl: Boolean(isCtrl),
+              isAlt: Boolean(isAlt),
+              isSpace: isSpaceHeldRef.current,
+            };
+            toolDispatcherRef.current.setActiveTool('select', toolContext);
+            if (validEventType === 'down') {
+              toolDispatcherRef.current.dispatchPointerDown(toolEvent, toolContext);
+            } else if (validEventType === 'move') {
+              toolDispatcherRef.current.dispatchPointerMove(toolEvent, toolContext);
+            } else if (validEventType === 'up') {
+              toolDispatcherRef.current.dispatchPointerUp(toolEvent, toolContext);
             }
             return;
           }

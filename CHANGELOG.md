@@ -1,3 +1,15 @@
+# 2.1.636
+- **Studio Architecture Reset & Shell Boundary Separation (Phase 8)**:
+  - **Shared Editor Contracts (`types.ts`)**:
+    - Created clean mathematical contracts establishing independent boundaries for `SourceAsset` ("What am I holding?"), `WorldSelection` ("What is selected in the scene?"), `EditorToolId` ("What action?"), `TransformState` ("Spatial pivot and orientation"), `LayerTarget` ("Target layer"), and `SurfaceMode` (2D, 2.5D, 3D).
+  - **Extracted Map Persistence Service (`MapPersistenceService.ts`)**:
+    - Decoupled map serialization, overlay stripping, visual normalization, REST persistence, and Go MMO cache invalidation from `StudioEditorShell.tsx` into a dedicated service.
+  - **Centralized Keyboard Command Router (`StudioKeyboardRouter.ts`)**:
+    - Extracted 25+ global studio shortcuts (PIE, Undo, Redo, Cut/Copy/Paste, Brush sizes, Omnisearch, Tool switching) into a dedicated event dispatcher.
+  - **Modular Tool Handlers & Pointer Dispatcher (`IToolHandler.ts`, `SelectToolHandler.ts`, `ToolDispatcher.ts`)**:
+    - Created `IToolHandler` interface and `SelectToolHandler` to encapsulate continuous geometric selection logic.
+    - Integrated `ToolDispatcher` into `GameCanvasBabylon.tsx` to cleanly route canvas pointer events.
+
 # 2.1.635
 - **Studio Continuous Selection Geometry, UV Subregion Mapping, Centered Pivot & Layer Rasterization Adapters**:
   - **Continuous Selection Geometry Retention (`BabylonEngine.ts`, `GameCanvasBabylon.tsx`, `editor-store.ts`)**:
