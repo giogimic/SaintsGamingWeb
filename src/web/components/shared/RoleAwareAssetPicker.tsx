@@ -22,10 +22,12 @@ export function RoleAwareAssetPicker({ entityType, assetRole, onSelectAsset, onC
   const profileTypeHint = entityType === 'CHARACTER' ? 'CHARACTER' : 'CREATURE';
   const importProfile: AssetImportProfileId = entityType === 'CHARACTER' ? 'character' : 'creature';
 
-  const handleUploadComplete = (asset: any) => {
-    // If it's a full usable asset
-    if (asset.id && asset.source) {
-      onSelectAsset(asset as GameAssetItem);
+  const handleUploadComplete = (data: any) => {
+    AssetManager.getInstance().broadcastRefresh();
+    const asset = data?.gameAsset || data?.usableAsset || data?.asset || data;
+    if (asset && (asset.id || asset.source || asset.storagePath)) {
+      const formatted = (AssetManager.getInstance() as any).hydrate ? (AssetManager.getInstance() as any).hydrate(asset) : asset;
+      onSelectAsset(formatted as GameAssetItem);
     }
   };
 
@@ -117,7 +119,7 @@ export function RoleAwareAssetPicker({ entityType, assetRole, onSelectAsset, onC
             <div className="absolute inset-0 overflow-y-auto">
                 <SpriteBrowser 
                   filterType={profileTypeHint}
-                  filterRole={assetRole}
+                  filterRole={entityType === 'CREATURE' ? undefined : assetRole}
                   filterProfile={importProfile}
                   onSelect={(assets: GameAssetItem[]) => {
                     if (assets.length === 0) return;
@@ -138,6 +140,7 @@ export function RoleAwareAssetPicker({ entityType, assetRole, onSelectAsset, onC
               <AssetUploadView
                 initialAssetType={profileTypeHint}
                 initialImportProfile={importProfile}
+                initialSlotRole={assetRole}
                 onUploadComplete={handleUploadComplete}
                 onOpenSlicer={handleOpenSlicer}
               />

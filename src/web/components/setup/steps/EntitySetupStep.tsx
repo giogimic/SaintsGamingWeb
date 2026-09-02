@@ -146,7 +146,7 @@ export function EntitySetupStep({
     if (!creatureName.trim()) return;
     const slug = creatureName.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + Date.now().toString().slice(-4);
 
-    const sprite = creatureSpriteAsset?.id || '';
+    const sprite = creatureSpriteAsset?.source || creatureSpriteAsset?.id || '';
 
     const newCreature: SetupCreatureData = {
       slug,

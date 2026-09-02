@@ -160,6 +160,13 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
           return false;
         });
         count = result.length;
+      } else if (filterType === 'CREATURE' || filterProfile === 'creature') {
+        result = result.filter((a: any) => {
+          if (a.type === 'CREATURE' || a.type === 'MONSTER' || (a.tags || []).includes('profile:creature') || (a.tags || []).includes('creature') || (a.tags || []).includes('monster')) return true;
+          const src = (a.source || '').toLowerCase();
+          return src.includes('monster') || src.includes('creature') || src.includes('-sheet');
+        });
+        count = result.length;
       }
 
       if (activeClassFilter && searchQuery) {

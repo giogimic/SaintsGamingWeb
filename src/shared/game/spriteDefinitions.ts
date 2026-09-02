@@ -429,6 +429,25 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
       }
     }
 
+    // Classic Creature Battle Sheet (128x88: front 64x64 at 0,0 and back 64x64 at 64,0)
+    if ((w === 128 && h === 88) || (w === 128 && h === 64)) {
+      return {
+        profile: 'custom',
+        sheetWidth: w,
+        sheetHeight: h,
+        frameWidth: 64,
+        frameHeight: 64,
+        columns: 2,
+        rows: 1,
+        idleFrame: 0,
+        walkCycle: [0],
+        walkSpeed: 1,
+        directions: { down: 0, left: 0, right: 0, up: 0 },
+        isModular: false,
+        label: 'Creature Battle Sheet (Front 64x64)',
+      };
+    }
+
     // Classic 3x4 (96x128, 48x128, 48x64, 96x96, etc.)
     if ((w === 96 && h === 128) || (w === 48 && h === 128) || (w % 3 === 0 && h % 4 === 0 && w < 300)) {
       return {
