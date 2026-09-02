@@ -1,3 +1,11 @@
+# 2.1.677
+- **Fix Docker / Next.js Production Build Type Error on Voxel Physics (`editor-store.ts`)**:
+  - **Restore `activeVoxelPhysics` on `EditorState` (`editor-store.ts`)**:
+    - Added `activeVoxelPhysics: number;` and `setActiveVoxelPhysics: (physics: number) => void;` to the `EditorState` interface and initialized it in the store with `0`.
+    - Imported `VoxelShape, VoxelOrientation, VoxelPhysics, type VoxelShapeType, type VoxelOrientationType, type VoxelPhysicsType` from `@/shared/game/voxel/VoxelWord`.
+    - Resolved TypeScript build failure where `get().activeVoxelPhysics` was missing from `EditorState` and shape argument types in `packVoxel` inside `paintSelection`.
+    - Fully validated with `npx tsc --noEmit` passing with 0 errors across the entire codebase.
+
 # 2.1.676
 - **Fix React Error #310, Panel Thrashing & WebGL / Studio Disconnect on Material Change**:
   - **Eliminate Material Change Panel Thrashing (`TerrainBrushPalette.tsx`)**:

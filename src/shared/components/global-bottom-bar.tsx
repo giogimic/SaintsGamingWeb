@@ -80,7 +80,7 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "v2.1.676",
+  siteVersion = "v2.1.677",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;

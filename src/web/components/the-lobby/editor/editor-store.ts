@@ -28,7 +28,16 @@ import {
   type PaintedVoxel,
 } from '@/shared/game/editorOps';
 import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
-import { packVoxel, VOXEL_WORD_AIR } from '@/shared/game/voxel/VoxelWord';
+import {
+  packVoxel,
+  VOXEL_WORD_AIR,
+  VoxelShape,
+  VoxelOrientation,
+  VoxelPhysics,
+  type VoxelShapeType,
+  type VoxelOrientationType,
+  type VoxelPhysicsType,
+} from '@/shared/game/voxel/VoxelWord';
 import {
   eraseTilesInRegion,
   eraseSparseCells,
@@ -372,6 +381,8 @@ interface EditorState {
   setActiveVoxelShape: (shape: number) => void;
   activeVoxelOrientation: number;
   setActiveVoxelOrientation: (orient: number) => void;
+  activeVoxelPhysics: number;
+  setActiveVoxelPhysics: (physics: number) => void;
   voxelToolMode: 'block-pen' | 'box-fill' | 'extrude' | 'slope-ramp' | 'smart-terrain' | 'eraser' | 'eyedropper';
   setVoxelToolMode: (mode: 'block-pen' | 'box-fill' | 'extrude' | 'slope-ramp' | 'smart-terrain' | 'eraser' | 'eyedropper') => void;
   
@@ -1162,6 +1173,11 @@ export const useEditorStore = create<EditorState>()(
       setActiveVoxelOrientation: (orient: number) =>
         set((state) => {
           state.activeVoxelOrientation = orient;
+        }),
+      activeVoxelPhysics: 0,
+      setActiveVoxelPhysics: (physics: number) =>
+        set((state) => {
+          state.activeVoxelPhysics = physics;
         }),
       voxelToolMode: 'block-pen',
       setVoxelToolMode: (mode) =>
@@ -2126,9 +2142,9 @@ export const useEditorStore = create<EditorState>()(
           const world = (map as any).__voxelWorldInstance || VoxelWorld.deserializeFromDoc(voxelDoc);
           const mapHeight = map.grid?.length || (map as any).height || 24;
           const matId = get().activeVoxelMaterialId || 1;
-          const shapeId = get().activeVoxelShape || 0;
-          const orient = get().activeVoxelOrientation || 0;
-          const physics = get().activeVoxelPhysics || 0;
+          const shapeId = (get().activeVoxelShape ?? VoxelShape.FULL_CUBE) as VoxelShapeType;
+          const orient = (get().activeVoxelOrientation ?? VoxelOrientation.NORTH) as VoxelOrientationType;
+          const physics = (get().activeVoxelPhysics || (shapeId === VoxelShape.SLOPE_45 ? VoxelPhysics.WALKABLE_SLOPE : VoxelPhysics.SOLID_OBSTACLE)) as VoxelPhysicsType;
           const voxelWord = packVoxel(matId, shapeId, orient, 0, physics, 0);
           const changedVoxels: PaintedVoxel[] = [];
 
