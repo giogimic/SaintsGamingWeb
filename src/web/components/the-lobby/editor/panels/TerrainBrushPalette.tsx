@@ -210,6 +210,7 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
     };
     const voxelMat = mat.id === 'mat_gunmetal_base' ? 1 : (materialMap[mat.material] ?? 2);
     setActiveVoxelMaterialId(voxelMat);
+    useEditorStore.getState().setStudioMode('voxel');
 
     setActiveStampAsset({
       assetId: mat.id,

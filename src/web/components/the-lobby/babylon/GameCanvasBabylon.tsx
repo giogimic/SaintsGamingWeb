@@ -1981,8 +1981,26 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
       }
     };
+
+    const onVoxelsChanged = (e: Event) => {
+      const engine = engineRef.current;
+      const map = useGameStore.getState().activeMapData;
+      if (!engine?.voxelWorld || !map) return;
+      const detail = (e as CustomEvent<{ voxels: Array<{ wx: number; wy: number; wz: number; word: number }> }>).detail;
+      if (!detail?.voxels?.length) return;
+      for (const v of detail.voxels) {
+        engine.voxelWorld.setVoxel(v.wx, v.wy, v.wz, v.word);
+      }
+      engine.meshDirtyVoxelChunks?.();
+      const doc = engine.voxelWorld.serializeToDoc();
+      useGameStore.getState().setActiveMapData({ ...map, voxelDoc: doc });
+    };
     window.addEventListener(STUDIO_MAP_CELLS_CHANGED_EVENT, onCellsChanged);
-    return () => window.removeEventListener(STUDIO_MAP_CELLS_CHANGED_EVENT, onCellsChanged);
+    window.addEventListener('studio_voxels_changed', onVoxelsChanged);
+    return () => {
+      window.removeEventListener(STUDIO_MAP_CELLS_CHANGED_EVENT, onCellsChanged);
+      window.removeEventListener('studio_voxels_changed', onVoxelsChanged);
+    };
   }, []);
 
   // Server map_reloaded — prefer incremental tile patches when dims unchanged

@@ -3,8 +3,9 @@ import {
   emptyEditorOpStack,
   paintCellWithHistory,
   pushEditorOp,
-  redoEditorOp,
   undoEditorOp,
+  redoEditorOp,
+  applyEditorOp,
   deduplicatePaintedCells,
 } from "./editorOps";
 import type { PaintableMap } from "./tilePaint";
@@ -292,11 +293,48 @@ describe("editorOps", () => {
       expect(map.tileLayers).toHaveLength(1);
       expect(map.tileLayers[0]?.name).toBe("Ground");
 
-      // Single Redo restores both
       redoEditorOp(map, undone.stack);
       expect(map.tileLayers).toHaveLength(2);
       expect(map.tileLayers[1]?.name).toBe("Overlay 2");
       expect(map.tileLayers[1]?.grid?.[0]?.[0]).toBe(77);
+    });
+  });
+
+  describe("Voxel Operations", () => {
+    it("correctly applies, undoes, and redoes 3D voxel mutations", () => {
+      const voxelDoc = {
+        formatVersion: 3 as const,
+        id: "test_voxel_map",
+        name: "Test Voxel Map",
+        gameId: "saints",
+        version: 1,
+        blockSizePx: 64,
+        dimensions: { widthChunks: 1, depthChunks: 1, heightChunks: 1 },
+        chunks: {},
+      };
+      const map: any = { ...makeMap(), voxelDoc };
+      let stack = emptyEditorOpStack();
+
+      const voxelOp = {
+        kind: "paint_voxels" as const,
+        voxels: [
+          { wx: 5, wy: 16, wz: 5, before: 0, after: 12345 },
+          { wx: 6, wy: 16, wz: 5, before: 0, after: 67890 },
+        ],
+      };
+
+      // Do: apply mutation
+      stack = pushEditorOp(stack, voxelOp);
+      applyEditorOp(map, voxelOp, "do");
+      expect(Object.keys(map.voxelDoc.chunks).length).toBeGreaterThan(0);
+
+      // Undo: restore before state
+      const undone = undoEditorOp(map, stack);
+      expect(undone.op?.kind).toBe("paint_voxels");
+      
+      // Redo: restore after state
+      const redone = redoEditorOp(map, undone.stack);
+      expect(redone.op?.kind).toBe("paint_voxels");
     });
   });
 });

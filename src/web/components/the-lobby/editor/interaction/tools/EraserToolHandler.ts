@@ -43,21 +43,31 @@ export class EraserToolHandler implements IToolHandler {
       const voxelWorld: VoxelWorld = (context.engine as any).voxelWorld;
       const targetCoord = event.voxelTarget.voxelCoord;
       const offsets = getVoxelBrushOffsets(store.brushRadius || 1);
-      let anyChanged = false;
+      const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: number; after: number }> = [];
 
       for (const { dx, dz } of offsets) {
-        const changed = voxelWorld.setVoxel(targetCoord.wx + dx, targetCoord.wy, targetCoord.wz + dz, VOXEL_WORD_AIR);
-        if (changed) anyChanged = true;
+        const wx = targetCoord.wx + dx;
+        const wy = targetCoord.wy;
+        const wz = targetCoord.wz + dz;
+        const before = voxelWorld.getVoxel(wx, wy, wz);
+        if (before !== VOXEL_WORD_AIR) {
+          voxelWorld.setVoxel(wx, wy, wz, VOXEL_WORD_AIR);
+          changedVoxels.push({ wx, wy, wz, before, after: VOXEL_WORD_AIR });
+        }
       }
 
-      if (anyChanged) {
+      if (changedVoxels.length > 0) {
         context.engine.meshDirtyVoxelChunks?.();
         const doc = voxelWorld.serializeToDoc();
         gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });
+        store.pushVoxelOp(changedVoxels);
         store.markMapDirty();
       }
       return true;
     }
+
+    // Guard: Never fall through to 2D/splat erasure when editing in 3D Voxel Mode
+    if (store.studioMode === 'voxel') return false;
 
     // 1. Freeform Splat / Props Erasure
     if (store.activeLayerType === 'paint-splat' || store.activeLayerType === 'free-form') {

@@ -55,17 +55,24 @@ export class BrushToolHandler implements IToolHandler {
 
       const voxelWord = packVoxel(matId, shapeId, orient, 0, physics, 0);
       const offsets = getVoxelBrushOffsets(store.brushRadius || 1);
-      let anyChanged = false;
+      const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: number; after: number }> = [];
 
       for (const { dx, dz } of offsets) {
-        const changed = voxelWorld.setVoxel(targetCoord.wx + dx, targetCoord.wy, targetCoord.wz + dz, voxelWord);
-        if (changed) anyChanged = true;
+        const wx = targetCoord.wx + dx;
+        const wy = targetCoord.wy;
+        const wz = targetCoord.wz + dz;
+        const before = voxelWorld.getVoxel(wx, wy, wz);
+        if (before !== voxelWord) {
+          voxelWorld.setVoxel(wx, wy, wz, voxelWord);
+          changedVoxels.push({ wx, wy, wz, before, after: voxelWord });
+        }
       }
 
-      if (anyChanged) {
+      if (changedVoxels.length > 0) {
         context.engine.meshDirtyVoxelChunks?.();
         const doc = voxelWorld.serializeToDoc();
         gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });
+        store.pushVoxelOp(changedVoxels);
         store.markMapDirty();
       }
       return true;
