@@ -1292,18 +1292,24 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           }
 
           if (brushMode === 'eyedropper') {
-            if (eventType !== 'down') return;
-            if (curLayerIdx === LOGIC_LAYER_IDX) {
-              const tagId = map.grid?.[r]?.[c] ?? 0;
-              store.setActiveLogicTileId(tagId);
-              const meta = useGameStore.getState().logicTiles?.[tagId];
-              showToast(`Sampled Logic Tag: ${meta?.name || `#${tagId}`}`);
-            } else {
-              const gid = map.tileLayers?.[curLayerIdx]?.grid?.[r]?.[c] ?? 0;
-              store.setActiveBrushTileId(gid);
-              showToast(`Sampled Visual Tile: GID ${gid}`);
+            const rawEv = typeof window !== 'undefined' ? ((window.event as MouseEvent) || null) : null;
+            const validEventType = eventType || 'down';
+            const toolContext = { engine, mapData: map, showToast };
+            const toolEvent = {
+              eventType: validEventType,
+              button: rawEv?.button ?? 0,
+              tilePos: { r, c },
+              worldPos: { x: point?.x ?? c + 0.5, y: 0, z: point?.z ?? r + 0.5 },
+              rawEvent: rawEv || ({} as any),
+              isShift: Boolean(rawEv?.shiftKey),
+              isCtrl: Boolean(rawEv?.ctrlKey || rawEv?.metaKey),
+              isAlt: Boolean(rawEv?.altKey),
+              isSpace: isSpaceHeldRef.current,
+            };
+            toolDispatcherRef.current.setActiveTool('eyedropper', toolContext);
+            if (validEventType === 'down') {
+              toolDispatcherRef.current.dispatchPointerDown(toolEvent, toolContext);
             }
-            store.setBrushMode('paint');
             return;
           }
 

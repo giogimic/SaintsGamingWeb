@@ -1,3 +1,14 @@
+# 2.1.637
+- **Modular Studio Tool Handlers & Interaction Engine (Phase 3)**:
+  - **Modular Tool Handlers (`BrushToolHandler.ts`, `FillToolHandler.ts`, `EraserToolHandler.ts`, `EyedropperToolHandler.ts`)**:
+    - Extracted all canvas-level tool implementations into dedicated, decoupled class handlers implementing the `IToolHandler` contract.
+    - `BrushToolHandler`: Handles discrete 2D tile paint, continuous terrain splat scatter spraying, and straight-line rasterization.
+    - `FillToolHandler`: Implements 4-way BFS flood-fill bounded by layer targets and continuous mathematical selection geometry.
+    - `EraserToolHandler`: Implements 2D tile zeroing and shape-aware continuous splat and prop object erasure.
+    - `EyedropperToolHandler`: Handles sampling visual GIDs, logic tags, and materials directly into the editor brush.
+  - **Centralized Tool Dispatcher Registration (`ToolDispatcher.ts`, `GameCanvasBabylon.tsx`)**:
+    - Registered all 5 tool handlers in `ToolDispatcher` and routed canvas pointer events cleanly through `toolDispatcherRef`.
+
 # 2.1.636
 - **Studio Architecture Reset & Shell Boundary Separation (Phase 8)**:
   - **Shared Editor Contracts (`types.ts`)**:
