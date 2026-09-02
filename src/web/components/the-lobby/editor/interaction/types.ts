@@ -173,6 +173,8 @@ export type LayerTarget =
   | { type: 'prop'; layerIdx?: number }
   | { type: 'foliage'; layerIdx?: number };
 
+import type { VoxelTargetResolution } from '@/shared/game/voxel/VoxelTargetResolver';
+
 // ==========================================
 // 5. POINTER CONTEXT FOR TOOL DISPATCH
 // ==========================================
@@ -182,6 +184,7 @@ export interface ToolPointerEvent {
   button: number; // 0: left, 1: middle, 2: right
   tilePos: { r: number; c: number };
   worldPos: { x: number; y: number; z: number };
+  voxelTarget?: VoxelTargetResolution | null;
   rawEvent: PointerEvent | MouseEvent;
   isShift: boolean;
   isCtrl: boolean;

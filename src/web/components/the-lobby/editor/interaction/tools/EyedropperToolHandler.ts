@@ -1,15 +1,9 @@
-/**
- * Saints Gaming Studio — Eyedropper Tool Handler
- *
- * Samples the visual GID, logic tile tag, or terrain material under the pointer
- * and sets it as the active brush asset.
- */
-
 import type { IToolHandler, ToolExecutionContext } from './IToolHandler';
 import type { ToolPointerEvent } from '../types';
 import { useEditorStore } from '../../editor-store';
 import { useGameStore } from '../../../store';
 import { LOGIC_LAYER_IDX } from '@/shared/game/tilePaint';
+import { unpackVoxel } from '@/shared/game/voxel/VoxelWord';
 
 export class EyedropperToolHandler implements IToolHandler {
   public readonly id = 'eyedropper' as const;
@@ -23,17 +17,16 @@ export class EyedropperToolHandler implements IToolHandler {
 
     const { r, c } = event.tilePos;
     const curLayerIdx = store.activeLayerIdx;
-    const studioMode = store.studioMode;
 
-    if (studioMode === 'voxel' && (context.engine as any)?.voxelWorld) {
-      const voxelWorld = (context.engine as any).voxelWorld;
-      const { unpackVoxel } = require('@/shared/game/voxel/VoxelWord');
-      const voxel = voxelWorld.getVoxel(c, 15, r);
-      const unpacked = unpackVoxel(voxel);
+    // 0. Authoritative 3D Voxel Sampling
+    if (event.voxelTarget && event.voxelTarget.existingVoxel > 0) {
+      const unpacked = unpackVoxel(event.voxelTarget.existingVoxel);
       store.setActiveVoxelMaterialId(unpacked.materialId);
       store.setActiveVoxelShape(unpacked.shapeId);
       store.setActiveVoxelOrientation(unpacked.orientation);
-      context.showToast?.(`Sampled Voxel: Material #${unpacked.materialId}, Shape #${unpacked.shapeId}`);
+      context.showToast?.(
+        `Sampled Voxel: Mat #${unpacked.materialId}, Shape #${unpacked.shapeId}, Orient #${unpacked.orientation} at [${event.voxelTarget.voxelCoord.wx}, ${event.voxelTarget.voxelCoord.wy}, ${event.voxelTarget.voxelCoord.wz}]`
+      );
     } else if (curLayerIdx === LOGIC_LAYER_IDX) {
       const tagId = map.grid?.[r]?.[c] ?? 0;
       store.setActiveLogicTileId(tagId);

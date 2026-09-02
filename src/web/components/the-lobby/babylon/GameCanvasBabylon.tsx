@@ -1282,7 +1282,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
       if (isDevEditorOpen) {
         cleanupPan = engine.startEditorKeyboardPan() || (() => {});
-        engine.enableTilePicking((r, c, _, eventType, point) => {
+        engine.enableTilePicking((r, c, _, eventType, point, voxelTarget) => {
           const map = useGameStore.getState().activeMapData || activeMap;
           const store = useEditorStore.getState();
           const { brushMode, setSelectionStart, setSelectionEnd, activePrefabId, activeLayerIdx: curLayerIdx } = store;
@@ -1300,6 +1300,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               button: rawEv?.button ?? 0,
               tilePos: { r, c },
               worldPos: { x: point?.x ?? c + 0.5, y: 0, z: point?.z ?? r + 0.5 },
+              voxelTarget,
               rawEvent: rawEv || ({} as any),
               isShift: Boolean(rawEv?.shiftKey),
               isCtrl: Boolean(rawEv?.ctrlKey || rawEv?.metaKey),
@@ -1395,6 +1396,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               button: rawEv?.button ?? 0,
               tilePos: { r, c },
               worldPos: { x: point?.x ?? c + 0.5, y: 0, z: point?.z ?? r + 0.5 },
+              voxelTarget,
               rawEvent: rawEv || ({} as any),
               isShift: Boolean(isShift),
               isCtrl: Boolean(isCtrl),
@@ -1421,6 +1423,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               button: rawEv?.button ?? 0,
               tilePos: { r, c },
               worldPos: { x: point?.x ?? c + 0.5, y: 0, z: point?.z ?? r + 0.5 },
+              voxelTarget,
               rawEvent: rawEv || ({} as any),
               isShift: Boolean(rawEv?.shiftKey),
               isCtrl: Boolean(rawEv?.ctrlKey || rawEv?.metaKey),
@@ -1443,6 +1446,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               button: rawEv?.button ?? 0,
               tilePos: { r, c },
               worldPos: { x: point?.x ?? c + 0.5, y: 0, z: point?.z ?? r + 0.5 },
+              voxelTarget,
               rawEvent: rawEv || ({} as any),
               isShift: Boolean(rawEv?.shiftKey),
               isCtrl: Boolean(rawEv?.ctrlKey || rawEv?.metaKey),
@@ -1573,6 +1577,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             button: rawEv?.button ?? 0,
             tilePos: { r, c },
             worldPos: { x: point?.x ?? c + 0.5, y: 0, z: point?.z ?? r + 0.5 },
+            voxelTarget,
             rawEvent: rawEv || ({} as any),
             isShift: Boolean(rawEv?.shiftKey),
             isCtrl: Boolean(rawEv?.ctrlKey || rawEv?.metaKey),
@@ -1610,9 +1615,14 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           onDragEnd: () => {
             useEditorStore.getState().commitPaintTransaction();
           },
-          onTileHover: (r, c) => {
+          onTileHover: (r, c, voxelTarget) => {
             const store = useEditorStore.getState();
             store.setHoveredTile({ r, c });
+            if (voxelTarget) {
+              store.setHoveredVoxel(voxelTarget.voxelCoord);
+            } else {
+              store.setHoveredVoxel(null);
+            }
             if ((store.brushMode === 'paste' || store.isPasting) && store.tileClipboard) {
               engine.setActionPreview(store.tileClipboard, r, c);
             } else if (store.brushMode === 'prefab' && store.activePrefabId) {
@@ -1629,8 +1639,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             }
           },
           onTileLeave: () => {
-            useEditorStore.getState().setHoveredTile(null);
+            const store = useEditorStore.getState();
+            store.setHoveredTile(null);
+            store.setHoveredVoxel(null);
             engine.clearActionPreview();
+            engine.clearVoxelCursor();
           },
         });
     } else {

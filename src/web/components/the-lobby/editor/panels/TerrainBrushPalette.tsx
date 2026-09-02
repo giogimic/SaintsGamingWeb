@@ -176,6 +176,7 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
   const setActiveStampAsset = useEditorStore((s) => s.setActiveStampAsset);
   const setActiveLayerType = useEditorStore((s) => s.setActiveLayerType);
   const setBrushMode = useEditorStore((s) => s.setBrushMode);
+  const setActiveVoxelMaterialId = useEditorStore((s) => s.setActiveVoxelMaterialId);
   const showToast = useGameStore((s) => s.showToast);
 
   const [activeTab, setActiveTab] = useState<'SEAMLESS' | 'CUSTOM'>('SEAMLESS');
@@ -192,6 +193,18 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
     setActiveLayerType('paint-splat');
     setBrushMode('paint');
 
+    const materialMap: Record<string, number> = {
+      GRASS: 2,
+      DIRT: 3,
+      STONE: 4,
+      SAND: 5,
+      WATER: 6,
+      WOOD: 7,
+      SNOW: 8,
+    };
+    const voxelMat = mat.id === 'mat_gunmetal_base' ? 1 : (materialMap[mat.material] ?? 2);
+    setActiveVoxelMaterialId(voxelMat);
+
     setActiveStampAsset({
       assetId: mat.id,
       url: mat.textureUrl,
@@ -203,7 +216,7 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
       vScale: mat.vScale ?? 1,
     });
 
-    showToast(`Selected "${mat.name}". Left-click to paint continuous terrain.`);
+    showToast(`Selected "${mat.name}". Left-click to paint 3D voxel terrain.`);
   };
 
   const handleSelectCustomSwatch = (swatch: CustomTerrainSwatch) => {

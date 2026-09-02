@@ -126,6 +126,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
   const isStudioFreeCam = useEditorStore((s) => s.isStudioFreeCam);
   const setStudioFreeCam = useEditorStore((s) => s.setStudioFreeCam);
   const hoveredTile = useEditorStore((s) => s.hoveredTile);
+  const hoveredVoxel = useEditorStore((s) => s.hoveredVoxel);
   const activeBrushPattern = useEditorStore((s) => s.activeBrushPattern);
   const prefabStampMode = useEditorStore((s) => s.prefabStampMode);
   const setPrefabStampMode = useEditorStore((s) => s.setPrefabStampMode);
@@ -704,7 +705,11 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
         <div className="hidden md:flex items-center gap-1 px-2 py-0.5 rounded-lg bg-background/50 border border-border/60 text-[10px] text-muted-foreground">
           <span>Pos:</span>
           <span className="font-bold text-foreground">
-            [{hoveredTile ? `${hoveredTile.c}, ${hoveredTile.r}` : '—, —'}]
+            {hoveredVoxel
+              ? `Voxel [X: ${hoveredVoxel.wx}, Y: ${hoveredVoxel.wy}, Z: ${hoveredVoxel.wz}]`
+              : hoveredTile
+                ? `[${hoveredTile.c}, ${hoveredTile.r}]`
+                : '—, —'}
           </span>
         </div>
 

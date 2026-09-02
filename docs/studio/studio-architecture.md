@@ -20,12 +20,11 @@ Every dock is equipped with a `<WindowMenuBar>` application sub-menu ribbon:
 
 | Dock Window | Component | Key Capabilities |
 | :--- | :--- | :--- |
-| **Tile Selector** | `TileSelectorPanel.tsx` | 5 unified tabs (`Grid Paint`, `Terrain Splat`, `Props & Foliage`, `Sheet Slicer`, `Smart Border`). |
-| **Terrain Splat Palette** | `TerrainBrushPalette.tsx` | Seamless ground material swatches with subregion UV sampling, continuous scatter density, opacity falloff, and rotation. |
-| **Props & Foliage** | `PropLibraryPanel.tsx` | 2.5D/3D billboard prop placement, scale jitter, rotation steps, category filters (Trees, Rocks, Structures, Decor), and collision modes. |
+| **Voxel & Terrain Palette** | `TerrainBrushPalette.tsx` | 3D Voxel materials (Grass, Dirt, Stone, Water, Sand, Wood, Snow), geometry shapes (`FULL_CUBE`, `SLOPE_45`, `SLAB`, `STAIRS`, `CORNER_WEDGE`), and cardinal orientations. |
+| **Props & Foliage** | `PropLibraryPanel.tsx` | 3D world-anchored prop placement, scale jitter, rotation steps, category filters (Trees, Rocks, Structures, Decor), and collision modes. |
 | **Sheet Slicer** | `SheetSlicerPanel.tsx` | Spritesheet pixel cutter with grid snapping (16px–64px or freeform), normalized UV calculation, and 1-click export to Terrain/Props. |
-| **Logic Painter** | `LogicPainterPanel.tsx` | Visual collision, water, warp gate, encounter zone, safe town, and environmental hazard tags. |
-| **World Builder & Atlas** | `WorldBuilderPanel.tsx` | Visual & collision layer stack, map topology, chunk streaming, neighbor map linkings. |
+| **Logic & Trigger Painter** | `LogicPainterPanel.tsx` | 3D Voxel physics and logic tags (Collision, Water, Warp Gate, Encounter Zone, Safe Town, Hazard Damage). |
+| **World Builder & Atlas** | `WorldBuilderPanel.tsx` | 3D Voxel chunk management, world volume dimensions, chunk streaming, neighbor map linkings. |
 | **Camera & View** | `CameraSettingsPanel.tsx` | 2.5D Isometric, Top-Down 90°, Free Orbit 3D presets, FOV, and Creator Camera Authority locking. |
 | **Catalog Editor** | `CatalogEditorShell.tsx` | Centralized definition chrome for NPCs, Items, Loot Tables, Monsters, Quests, Dungeons, and Mounts. |
 | **Loot Table Manager** | `LootManagerPanel.tsx` | Weighted drop tables, min/max quantity curves, and live drop simulation testers. |
@@ -41,8 +40,8 @@ Every dock is equipped with a `<WindowMenuBar>` application sub-menu ribbon:
 └──────────────────────────────────────────────────────────┘
 ```
 
-1. **🎨 Paint Mode (`develop`):** Focuses on map layout. Enables dual-grid painting (visual tiles and collision logic), continuous vector selections, brush shapes (Circle, Square, Diamond, Star, Polygon), and terrain splats.
-2. **👾 Populate Mode (`npc`):** Focuses on placing entities into the scene. Place NPCs, monster spawners, harvestable nodes, and 2.5D prop obstacles.
+1. **🎨 Paint Mode (`develop`):** Focuses on volumetric 3D voxel terrain layout. Operates through `VoxelTargetResolver` on 32-bit compact voxel words, greedy meshing, and dirty chunk rebuilds.
+2. **👾 Populate Mode (`npc`):** Focuses on placing entities into the 3D scene. Place NPCs, monster spawners, harvestable nodes, and world-anchored 3D prop obstacles.
 3. **📜 Script Mode (`script`):** Focuses on narrative and mechanics. Edit dialogue trees, assign quest triggers, link warp destinations, and set up event triggers.
 4. **📚 Catalog Mode (`catalog`):** Full-screen or docked definition management. Create and modify global game data: Items, Creatures, Loot Tables, Classes, and Starter Heroes.
 5. **▶️ Playtest Mode (`test` - PIE):** Hit **Ctrl+E** to instantly test the map with full player movement, physics, combat, and interactions without leaving the browser tab.

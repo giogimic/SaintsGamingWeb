@@ -413,6 +413,7 @@ interface EditorState {
   getSelectedCount: () => number;
   clickedTile: { r: number; c: number } | null;
   hoveredTile: { r: number; c: number } | null;
+  hoveredVoxel: { wx: number; wy: number; wz: number } | null;
   lastPaintedTile: { r: number; c: number } | null;
   /** Soft editor overlay: show tile XY in paint HUD. */
   showEditorCoords: boolean;
@@ -450,6 +451,7 @@ interface EditorState {
   setActiveLayerType: (type: 'grid' | 'paint-splat' | 'free-form' | 'polygon') => void;
   setClickedTile: (tile: { r: number; c: number } | null) => void;
   setHoveredTile: (tile: { r: number; c: number } | null) => void;
+  setHoveredVoxel: (voxel: { wx: number; wy: number; wz: number } | null) => void;
   setLastPaintedTile: (tile: { r: number; c: number } | null) => void;
   setShowEditorCoords: (on: boolean) => void;
   setShowWarpOverlays: (on: boolean) => void;
@@ -1254,6 +1256,7 @@ export const useEditorStore = create<EditorState>()(
       selectedCells: {},
       clickedTile: null,
       hoveredTile: null,
+      hoveredVoxel: null,
       lastPaintedTile: null,
       showEditorCoords: true,
       showWarpOverlays: true,
@@ -1589,6 +1592,20 @@ export const useEditorStore = create<EditorState>()(
             return;
           }
           state.hoveredTile = tile;
+        }),
+      setHoveredVoxel: (voxel) =>
+        set((state) => {
+          if (
+            (state.hoveredVoxel === null && voxel === null) ||
+            (state.hoveredVoxel &&
+              voxel &&
+              state.hoveredVoxel.wx === voxel.wx &&
+              state.hoveredVoxel.wy === voxel.wy &&
+              state.hoveredVoxel.wz === voxel.wz)
+          ) {
+            return;
+          }
+          state.hoveredVoxel = voxel;
         }),
       setLastPaintedTile: (tile) =>
         set((state) => {
