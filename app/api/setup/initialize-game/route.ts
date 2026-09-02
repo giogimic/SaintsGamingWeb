@@ -5,7 +5,7 @@ import { getSystemSetupStatus, SETUP_SETTING_KEYS } from '@/shared/game/setup/se
 import { generateDefaultWorldDoc, type VoxelWorldDocV3 } from '@/shared/game/voxel/VoxelWorldDoc';
 import { DEFAULT_STUDIO_TILESETS, DEFAULT_STUDIO_GROUND_GID } from '@/shared/game/studioTilesetBootstrap';
 import { notifyGoMapSynced } from '@/server/goMmoNotify';
-import { DEFAULT_STARTER_HERO_PRESETS } from '@/app/actions/starter-heroes';
+import { DEFAULT_STARTER_HERO_PRESETS } from '@/shared/game/starterHeroCatalog';
 import { DEFAULT_PLAYABLE_CLASSES } from '@/shared/game/classCatalog';
 import { classDataToDb } from '@/shared/game/classDefMap';
 
