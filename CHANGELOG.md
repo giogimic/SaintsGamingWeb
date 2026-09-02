@@ -1,3 +1,10 @@
+# 2.1.643
+- **Terrain Brush Palette Biome Expansions & Dispatcher Hover Routing Polish**:
+  - **New Terrain Splat Biomes (`TerrainBrushPalette.tsx`)**:
+    - Added high-fidelity continuous terrain materials and filter categories for Lava / Magma (`LAVA`), Swamp / Marsh (`SWAMP`), Ancient Dungeon Flagstone (`DUNGEON`), and Glacial Blue Ice (`ICE`).
+  - **ToolDispatcher Hover Routing Polish (`ToolDispatcher.ts`)**:
+    - Ensured `dispatchHover` returns true when active handler implements `onHover`.
+
 # 2.1.642
 - **Studio Services Unit Testing & Full Test Suite Coverage**:
   - **Comprehensive Studio Services Test Suite (`StudioServices.test.ts`)**:

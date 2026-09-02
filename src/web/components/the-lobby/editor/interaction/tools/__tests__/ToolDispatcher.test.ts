@@ -136,7 +136,7 @@ describe('ToolDispatcher & Modular Tool Handlers', () => {
 
   it('dispatches onHover to active tool handler', () => {
     const selectHandler = dispatcher.getHandler('select');
-    const onHoverSpy = vi.spyOn(selectHandler!, 'onHover').mockReturnValue(true);
+    const onHoverSpy = vi.spyOn(selectHandler!, 'onHover').mockReturnValue(undefined);
 
     dispatcher.setActiveTool('select', mockContext);
 
