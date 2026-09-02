@@ -36,31 +36,31 @@ interface EnvironmentSetupStepProps {
 const MATERIAL_SETS = [
   {
     id: 'natural_stone',
-    name: 'Bedrock, Stone & Ore',
+    name: 'Bedrock & Ore',
     icon: Mountain,
-    desc: 'Gunmetal bedrock, granite, cobblestone, sandstone, and mineral ores.',
-    badge: 'Core Foundation',
+    desc: 'Gunmetal bedrock, granite, stone blocks, and mineral ores.',
+    badge: 'Core',
   },
   {
     id: 'nature_foliage',
-    name: 'Foliage, Earth & Wood',
+    name: 'Foliage & Wood',
     icon: Trees,
     desc: 'Lush grass, fertile loam, oak timber, leaves, and wild flora.',
-    badge: 'Biome Essential',
+    badge: 'Biome',
   },
   {
     id: 'architecture',
-    name: 'Masonry & Architecture',
+    name: 'Masonry & Struct',
     icon: Castle,
     desc: 'Fortress bricks, roof tiles, reinforced steel, and interior stone.',
-    badge: 'Structures',
+    badge: 'Build',
   },
   {
     id: 'fluids_elemental',
-    name: 'Elemental & Fluids',
+    name: 'Fluids & Energy',
     icon: Flame,
-    desc: 'Clear stream water, magma lava, crystalline ice, and glowing ether.',
-    badge: 'Dynamic Voxels',
+    desc: 'Stream water, magma lava, crystalline ice, and glowing ether.',
+    badge: 'Dynamic',
   },
 ];
 
@@ -68,46 +68,34 @@ const ATMOSPHERE_PRESETS = [
   {
     id: 'noon',
     name: 'High Noon',
-    desc: 'Bright golden sunlight with crisp ambient shadows and vivid contrast.',
+    desc: 'Bright golden sunlight with crisp shadows.',
     icon: Sun,
-    gradient: 'from-amber-400/20 via-sky-500/10 to-transparent',
   },
   {
     id: 'dawn',
     name: 'Saints Dawn',
-    desc: 'Soft warm pastel morning sunrise with gentle orange horizon glow.',
+    desc: 'Warm pastel sunrise with gentle horizon glow.',
     icon: CloudSun,
-    gradient: 'from-orange-400/20 via-amber-500/10 to-transparent',
   },
   {
     id: 'dusk',
     name: 'Amber Twilight',
-    desc: 'Deep cinematic sunset with rich gold, purple, and copper hues.',
+    desc: 'Deep cinematic sunset with rich gold and copper hues.',
     icon: CloudSun,
-    gradient: 'from-purple-500/20 via-amber-600/10 to-transparent',
   },
   {
     id: 'night',
     name: 'Starry Midnight',
-    desc: 'Dark moody twilight with cool blue rim lighting and luminescent stars.',
+    desc: 'Dark moody twilight with cool blue rim lighting.',
     icon: Moon,
-    gradient: 'from-indigo-600/20 via-slate-900/40 to-transparent',
   },
   {
     id: 'fog',
     name: 'Mystic Overcast',
-    desc: 'Muted atmospheric fog and diffused overcast lighting for dungeons and marshes.',
+    desc: 'Diffused atmospheric overcast lighting.',
     icon: CloudFog,
-    gradient: 'from-slate-400/20 via-slate-800/20 to-transparent',
   },
 ] as const;
-
-const AUDIO_TRACKS = [
-  { id: 'track_peaceful_meadow', name: 'Meadow Breeze (Peaceful Adventure)' },
-  { id: 'track_citadel_march', name: 'Citadel Anthem (Heroic Orchestral)' },
-  { id: 'track_cozy_tavern', name: 'Fireside Gathering (Acoustic Strings)' },
-  { id: 'track_deep_dungeon', name: 'Cavern Echoes (Atmospheric Ambient)' },
-];
 
 export function EnvironmentSetupStep({
   environment,
@@ -116,64 +104,106 @@ export function EnvironmentSetupStep({
   onBack,
 }: EnvironmentSetupStepProps) {
   const toggleMaterialSet = (setId: string) => {
-    const current = environment.enabledMaterialSets || ['natural_stone', 'nature_foliage', 'architecture', 'fluids_elemental'];
-    const next = current.includes(setId)
+    const current = environment.enabledMaterialSets || [];
+    const updated = current.includes(setId)
       ? current.filter((id) => id !== setId)
       : [...current, setId];
-    onChange({ enabledMaterialSets: next });
+    onChange({ enabledMaterialSets: updated });
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 backdrop-blur-xl">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-2">
-          <Sparkles className="w-5 h-5 text-amber-400" />
-          Environment, Material Sets & Atmosphere
-        </h2>
-        <p className="text-sm text-slate-400 mb-6">
-          Choose the 3D voxel material libraries, dynamic atmospheric lighting, and ambient soundscape for your world.
-        </p>
+    <div className="space-y-4">
+      {/* SECTION HEADER */}
+      <div className="flex items-center justify-between pb-3 border-b border-border/40">
+        <div>
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 font-mono">
+            <Layers className="w-4 h-4 text-amber-400" />
+            5. Atmosphere & 3D Voxel Palettes
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Configure celestial lighting presets and enabled 3D block libraries.
+          </p>
+        </div>
+      </div>
 
-        {/* 1. Voxel Material Libraries */}
-        <div className="mb-8">
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">
-            Active 3D Voxel Material Libraries
+      <div className="space-y-4">
+        {/* 1. ATMOSPHERE PRESETS */}
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5 font-mono">
+            Celestial Atmosphere Preset
           </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {MATERIAL_SETS.map((set) => {
-              const Icon = set.icon;
-              const isEnabled = (environment.enabledMaterialSets || []).includes(set.id);
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {ATMOSPHERE_PRESETS.map((preset) => {
+              const Icon = preset.icon;
+              const isSelected = environment.atmospherePreset === preset.id;
               return (
-                <div
-                  key={set.id}
-                  onClick={() => toggleMaterialSet(set.id)}
-                  className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-start justify-between gap-3 ${
-                    isEnabled
-                      ? 'bg-amber-500/10 border-amber-400/80 ring-1 ring-amber-400/30'
-                      : 'bg-slate-950/40 border-slate-800 opacity-60 hover:opacity-100'
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => onChange({ atmospherePreset: preset.id as any })}
+                  className={`p-2.5 rounded-lg border text-left transition flex flex-col justify-between cursor-pointer ${
+                    isSelected
+                      ? 'bg-amber-500/20 border-amber-400 text-white shadow-sm'
+                      : 'bg-[#070e1b] border-slate-800 text-slate-400 hover:border-slate-700'
                   }`}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                      isEnabled ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-400'
-                    }`}>
-                      <Icon className="w-5 h-5" />
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <span className="font-mono text-xs font-bold text-white flex items-center gap-1.5">
+                      <Icon className="w-3.5 h-3.5 text-amber-400" />
+                      {preset.name}
+                    </span>
+                    {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />}
+                  </div>
+                  <span className="text-[10px] text-slate-400 leading-tight">{preset.desc}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 2. 3D VOXEL MATERIAL SETS */}
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5 font-mono">
+            Active 3D Voxel Block Palettes
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {MATERIAL_SETS.map((mat) => {
+              const Icon = mat.icon;
+              const isSelected = environment.enabledMaterialSets?.includes(mat.id);
+              return (
+                <div
+                  key={mat.id}
+                  onClick={() => toggleMaterialSet(mat.id)}
+                  className={`p-3 rounded-lg border transition cursor-pointer flex items-start justify-between gap-2.5 ${
+                    isSelected
+                      ? 'bg-amber-500/10 border-amber-500/40 text-white'
+                      : 'bg-[#070e1b] border-slate-800 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <div className="p-1.5 rounded bg-slate-900 border border-slate-800 text-amber-400 shrink-0">
+                      <Icon className="w-4 h-4" />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-white text-sm">{set.name}</h4>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-amber-300 border border-slate-700">
-                          {set.badge}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-xs text-white truncate">{mat.name}</span>
+                        <span className="text-[9px] font-mono uppercase px-1 rounded bg-slate-900 text-slate-400">
+                          {mat.badge}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-400 mt-1 leading-relaxed">{set.desc}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5 leading-tight">{mat.desc}</p>
                     </div>
                   </div>
-
-                  <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 mt-1 ${
-                    isEnabled ? 'border-amber-400 bg-amber-500 text-white' : 'border-slate-700 bg-slate-900'
-                  }`}>
-                    {isEnabled && <CheckCircle2 className="w-3.5 h-3.5" />}
+                  <div className="shrink-0 pt-0.5">
+                    <div
+                      className={`w-4 h-4 rounded border flex items-center justify-center ${
+                        isSelected
+                          ? 'border-amber-400 bg-amber-500 text-slate-950 font-black'
+                          : 'border-slate-700 bg-slate-900'
+                      }`}
+                    >
+                      {isSelected && <CheckCircle2 className="w-3 h-3 text-slate-950" />}
+                    </div>
                   </div>
                 </div>
               );
@@ -181,85 +211,41 @@ export function EnvironmentSetupStep({
           </div>
         </div>
 
-        {/* 2. Atmospheric Lighting Presets */}
-        <div className="mb-8">
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">
-            Atmospheric Skybox & Celestial Lighting Preset
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-3">
-            {ATMOSPHERE_PRESETS.map((preset) => {
-              const Icon = preset.icon;
-              const isSelected = (environment.atmospherePreset || 'noon') === preset.id;
-              return (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => onChange({ atmospherePreset: preset.id as any })}
-                  className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between ${
-                    isSelected
-                      ? 'bg-amber-500/20 border-amber-400 text-white shadow-lg ring-1 ring-amber-400/30'
-                      : 'bg-slate-950/40 border-slate-800 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <Icon className={`w-5 h-5 ${isSelected ? 'text-amber-300' : 'text-slate-400'}`} />
-                    {isSelected && <CheckCircle2 className="w-4 h-4 text-amber-400" />}
-                  </div>
-                  <div>
-                    <div className="font-bold text-xs text-white mb-1">{preset.name}</div>
-                    <div className="text-[10px] text-slate-400 leading-tight">{preset.desc}</div>
-                  </div>
-                </button>
-              );
-            })}
+        {/* 3. SOUNDSCAPE TRACK */}
+        <div className="p-3 rounded-lg bg-[#070e1b] border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Volume2 className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="text-xs font-mono font-bold text-white">Starting Soundscape Audio:</span>
           </div>
-        </div>
-
-        {/* 3. Ambient Audio Soundscape */}
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">
-            Initial World Soundscape Track
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {AUDIO_TRACKS.map((track) => {
-              const isSelected = (environment.soundscapeTrack || 'track_peaceful_meadow') === track.id;
-              return (
-                <button
-                  key={track.id}
-                  type="button"
-                  onClick={() => onChange({ soundscapeTrack: track.id })}
-                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all ${
-                    isSelected
-                      ? 'bg-amber-500/10 border-amber-400 text-white ring-1 ring-amber-400/30'
-                      : 'bg-slate-950/40 border-slate-800 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <Volume2 className={`w-4 h-4 shrink-0 ${isSelected ? 'text-amber-400' : 'text-slate-500'}`} />
-                  <span className="text-xs font-medium">{track.name}</span>
-                </button>
-              );
-            })}
-          </div>
+          <select
+            value={environment.soundscapeTrack}
+            onChange={(e) => onChange({ soundscapeTrack: e.target.value })}
+            className="bg-[#050b14] border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white font-mono outline-none"
+          >
+            <option value="track_peaceful_meadow">Peaceful Meadow (Acoustic Folk)</option>
+            <option value="track_mystic_sanctuary">Mystic Sanctuary (Ambient Ethereal)</option>
+            <option value="track_fortress_march">Fortress March (Orchestral Brass)</option>
+            <option value="track_ancient_ruins">Ancient Ruins (Subterranean Drone)</option>
+          </select>
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
+      {/* FOOTER ACTIONS */}
+      <div className="flex items-center justify-between pt-3 border-t border-border/40">
         <button
-          type="button"
           onClick={onBack}
-          className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 text-sm font-semibold transition-all"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-mono font-semibold text-slate-400 hover:text-white transition cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-3.5 h-3.5" />
           Back
         </button>
 
         <button
-          type="button"
           onClick={onNext}
-          className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white text-sm font-bold shadow-xl shadow-amber-500/20 transition-all"
+          className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg font-mono font-bold text-xs bg-amber-600 hover:bg-amber-500 text-white transition cursor-pointer shadow-md shadow-amber-600/20"
         >
-          Continue: Characters & Battlers
-          <ArrowRight className="w-4 h-4" />
+          Continue to 3D Realm
+          <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>

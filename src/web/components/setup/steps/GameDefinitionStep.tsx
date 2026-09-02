@@ -1,15 +1,27 @@
 'use client';
 
 import React from 'react';
-import { Gamepad2, Sparkles, Swords, Compass, Users, ArrowRight, ArrowLeft, Boxes, Info, Sliders } from 'lucide-react';
+import {
+  Gamepad2,
+  Boxes,
+  Eye,
+  Camera,
+  Layers,
+  ArrowRight,
+  ArrowLeft,
+  Sparkles,
+  Swords,
+  Shield,
+  Compass,
+} from 'lucide-react';
 
 export interface GameDefinitionData {
   name: string;
   description: string;
-  genre: 'CREATURE_MMO' | 'ARPG' | 'SOCIAL_METAVERSE' | 'CLASSIC_RPG';
-  style: 'SAINTS_HYBRID' | 'ACTION_REALTIME' | 'TURN_BASED' | 'EXPLORATION';
-  camera: 'ISOMETRIC_25D' | 'TOPDOWN_2D';
-  defaultBlockSizePx?: number; // 16..512, default 64
+  genre: 'CREATURE_MMO' | 'CLASSIC_MMO';
+  style: 'SAINTS_HYBRID' | 'REAL_TIME' | 'TURN_BASED';
+  camera: 'ISOMETRIC_25D' | 'TOP_DOWN';
+  defaultBlockSizePx: number; // 16, 32, 64, 128, 256
 }
 
 interface GameDefinitionStepProps {
@@ -19,315 +31,248 @@ interface GameDefinitionStepProps {
   onBack: () => void;
 }
 
-const GENRES = [
-  {
-    id: 'CREATURE_MMO',
-    name: 'Creature Collection MMO',
-    description: 'Capture, train, and battle companion creatures across a living open world.',
-    similarTo: 'Creature Collection, Pet Battler, Open-World Companion Taming',
-    icon: Sparkles,
-    badge: 'Popular',
-  },
-  {
-    id: 'ARPG',
-    name: 'Action RPG / Dungeon Crawler',
-    description: 'Real-time combat, equipment affixes, dungeon exploration, and boss encounters.',
-    similarTo: 'Action RPG, Isometric Hack & Slash, Dungeon Crawler',
-    icon: Swords,
-    badge: 'Combat Heavy',
-  },
-  {
-    id: 'SOCIAL_METAVERSE',
-    name: 'Social Hub & Virtual Realm',
-    description: 'Community hangout spaces, customizable characters, mini-games, and player housing.',
-    similarTo: 'Community Hangout, Virtual Worlds, Social Sandbox',
-    icon: Users,
-    badge: 'Social',
-  },
-  {
-    id: 'CLASSIC_RPG',
-    name: 'Classic Story RPG',
-    description: 'Narrative-driven quests, NPC dialogue trees, exploration, and turn-based progression.',
-    similarTo: 'Story-Driven RPG, Tactical Adventure, Pixel Journey',
-    icon: Compass,
-    badge: 'Story',
-  },
-] as const;
-
-const GAMEPLAY_STYLES = [
-  {
-    id: 'SAINTS_HYBRID',
-    name: 'Saints Hybrid Combat',
-    badge: 'Signature / Recommended',
-    badgeColor: 'bg-amber-400/20 text-amber-300 border-amber-400/40',
-    description: 'The signature Saints experience: seamless real-time overworld Hero Battles combined with tactical turn-based Saints Buddy Battles.',
-    similarTo: 'Real-time Overworld MMO Action + Tactical Turn-Based Companion Encounters',
-  },
-  {
-    id: 'ACTION_REALTIME',
-    name: 'Real-Time Action Combat',
-    badge: 'Fast-Paced',
-    badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
-    description: 'Direct keyboard/mouse movement with instant attack hotbars, cooldowns, and dodge mechanics directly on the open map.',
-    similarTo: 'Real-Time Action RPG, Open-World Hack & Slash, Skill-Shot Combat',
-  },
-  {
-    id: 'TURN_BASED',
-    name: 'Turn-Based Tactics',
-    badge: 'Strategic',
-    badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
-    description: 'Step into dedicated battle encounters with menu commands, action points, speed priority, and elemental advantages.',
-    similarTo: 'Turn-Based Strategy, Tactical Menu Combat, Elemental Matrix',
-  },
-  {
-    id: 'EXPLORATION',
-    name: 'Narrative & Exploration',
-    badge: 'Cozy / Relaxed',
-    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    description: 'Focus on gathering, artisan crafting, player housing, NPC questlines, and lore with pacifist or optional encounters.',
-    similarTo: 'Farming & Life Sim, Sandbox Gathering, Cozy World Building',
-  },
-] as const;
-
-const CAMERA_STYLES = [
-  {
-    id: 'ISOMETRIC_25D',
-    name: '2.5D Angled View',
-    description: 'Smooth 3D perspective projection with 2.5D sprite billboards and depth.',
-    similarTo: '2.5D Isometric Projection, Dynamic Angled Billboard View',
-  },
-  {
-    id: 'TOPDOWN_2D',
-    name: 'Top-Down 3D Perspective',
-    description: 'Orthographic top-down vantage with crisp volumetric depth.',
-    similarTo: 'Classic Top-Down View, Clean Orthographic Projection',
-  },
-] as const;
-
-const BLOCK_SIZES = [
-  { size: 16, label: '16px', desc: 'High density / Micro detail' },
-  { size: 32, label: '32px', desc: 'Classic retro pixel scale' },
-  { size: 64, label: '64px', desc: 'Saints Standard (Recommended)' },
-  { size: 128, label: '128px', desc: 'High-res large block aesthetic' },
-  { size: 256, label: '256px', desc: 'Stylized low-poly chunky' },
+const BLOCK_RESOLUTION_OPTIONS = [
+  { size: 16, label: '16px Block', desc: 'Micro voxel detail (High density)' },
+  { size: 32, label: '32px Block', desc: 'Classic retro pixel block scale' },
+  { size: 64, label: '64px Block', desc: 'Saints Standard (Recommended)', recommended: true },
+  { size: 128, label: '128px Block', desc: 'High-res large block aesthetic' },
+  { size: 256, label: '256px Block', desc: 'Stylized low-poly chunky' },
 ];
 
-export function GameDefinitionStep({
-  data,
-  onChange,
-  onNext,
-  onBack,
-}: GameDefinitionStepProps) {
-  const currentBlockSize = data.defaultBlockSizePx || 64;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!data.name.trim()) return;
-    onNext();
-  };
-
+export function GameDefinitionStep({ data, onChange, onNext, onBack }: GameDefinitionStepProps) {
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 backdrop-blur-xl">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-2">
-          <Gamepad2 className="w-5 h-5 text-amber-400" />
-          Game Identity & 3D Voxel Engine Specs
-        </h2>
-        <p className="text-sm text-slate-400 mb-6">
-          Define the identity, combat formula, camera viewpoint, and 3D voxel block scale for your new game realm.
-        </p>
+    <div className="space-y-4">
+      {/* SECTION HEADER */}
+      <div className="flex items-center justify-between pb-3 border-b border-border/40">
+        <div>
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 font-mono">
+            <Gamepad2 className="w-4 h-4 text-amber-400" />
+            2. Game Engine & Identity Configuration
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Configure your 3D voxel engine specifications, game name, and vantage perspective.
+          </p>
+        </div>
+      </div>
 
-        {/* 1. Core Metadata */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="space-y-4">
+        {/* 1. GAME NAME & DESCRIPTION */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1 font-mono">
               Game Title <span className="text-amber-400">*</span>
             </label>
             <input
               type="text"
-              required
               value={data.name}
               onChange={(e) => onChange({ name: e.target.value })}
-              placeholder="e.g. Saints Adventure, Chrono Realm"
-              className="w-full bg-slate-950/60 border border-slate-700/80 focus:border-amber-400 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none transition-colors"
+              placeholder="e.g. Saints Adventure, Realm of Elyria"
+              className="w-full bg-[#050b14] border border-slate-700/80 focus:border-amber-400 rounded-lg px-3 py-2 text-white text-xs outline-none transition font-sans"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-              Description / Tagline
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1 font-mono">
+              Game Genre & Ruleset
             </label>
-            <input
-              type="text"
-              value={data.description}
-              onChange={(e) => onChange({ description: e.target.value })}
-              placeholder="A brief summary of your world..."
-              className="w-full bg-slate-950/60 border border-slate-700/80 focus:border-amber-400 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none transition-colors"
-            />
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                {
+                  id: 'CREATURE_MMO',
+                  name: 'Creature Battler',
+                  icon: Sparkles,
+                },
+                {
+                  id: 'CLASSIC_MMO',
+                  name: 'Classic Hero MMO',
+                  icon: Swords,
+                },
+              ].map((g) => {
+                const Icon = g.icon;
+                const isSelected = data.genre === g.id;
+                return (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => onChange({ genre: g.id as any })}
+                    className={`p-2 rounded-lg border text-left transition flex items-center gap-2 cursor-pointer ${
+                      isSelected
+                        ? 'bg-amber-500/15 border-amber-400 text-white shadow-sm'
+                        : 'bg-[#050b14] border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <Icon className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-amber-400' : 'text-slate-500'}`} />
+                    <span className="text-xs font-semibold truncate">{g.name}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        {/* 2. Voxel Block Resolution Selector */}
-        <div className="mb-8 p-5 bg-slate-950/50 border border-slate-800 rounded-2xl">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Boxes className="w-4 h-4 text-amber-400" />
-              <span className="text-sm font-bold text-white">Default 3D Voxel Block Scale</span>
+        {/* 2. DESCRIPTION */}
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1 font-mono">
+            World Overview / Description
+          </label>
+          <input
+            type="text"
+            value={data.description}
+            onChange={(e) => onChange({ description: e.target.value })}
+            placeholder="A brief overview of your world lore, game mechanics, and player objectives..."
+            className="w-full bg-[#050b14] border border-slate-700/80 focus:border-amber-400 rounded-lg px-3 py-2 text-white text-xs outline-none transition font-sans"
+          />
+        </div>
+
+        {/* 3. 3D VOXEL BLOCK RESOLUTION */}
+        <div className="p-3.5 rounded-xl bg-[#070e1b] border border-slate-800/80 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-1.5 font-mono">
+                <Boxes className="w-3.5 h-3.5 text-amber-400" />
+                3D Voxel Block Resolution Scale
+              </label>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Defines the physical pixel unit size for world voxel blocks in the Babylon 3D engine.
+              </p>
             </div>
-            <span className="font-mono text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 rounded-full">
-              {currentBlockSize}px per block
+            <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono text-[11px] font-bold">
+              {data.defaultBlockSizePx || 64}px
             </span>
           </div>
-          <p className="text-xs text-slate-400 mb-4">
-            Determines the spatial resolution of voxel chunks. Half the starting world volume is generated with solid foundation blocks.
-          </p>
 
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            {BLOCK_SIZES.map((b) => {
-              const isSelected = currentBlockSize === b.size;
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {BLOCK_RESOLUTION_OPTIONS.map((opt) => {
+              const isSelected = (data.defaultBlockSizePx || 64) === opt.size;
               return (
                 <button
-                  key={b.size}
+                  key={opt.size}
                   type="button"
-                  onClick={() => onChange({ defaultBlockSizePx: b.size })}
-                  className={`p-3 rounded-xl text-left border transition-all ${
+                  onClick={() => onChange({ defaultBlockSizePx: opt.size })}
+                  className={`p-2.5 rounded-lg border text-left transition cursor-pointer flex flex-col justify-between ${
                     isSelected
-                      ? 'bg-amber-500/20 border-amber-400 text-white shadow-lg ring-1 ring-amber-400/30'
-                      : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 text-slate-300'
+                      ? 'bg-amber-500/20 border-amber-400 text-white shadow-sm'
+                      : 'bg-[#050b14] border-slate-800 text-slate-400 hover:border-slate-700'
                   }`}
                 >
-                  <div className="font-mono font-bold text-sm text-amber-300">{b.label}</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">{b.desc}</div>
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <span className="font-mono text-xs font-bold">{opt.size}px</span>
+                    {opt.recommended && (
+                      <span className="text-[8px] uppercase tracking-wider px-1 py-0.2 rounded bg-amber-400/20 text-amber-300 font-black">
+                        Std
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-slate-400 leading-tight line-clamp-2">{opt.desc}</span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* 3. Genre Selection */}
-        <div className="mb-8">
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">
-            Game Genre & Experience Archetype
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {GENRES.map((g) => {
-              const Icon = g.icon;
-              const isSelected = data.genre === g.id;
-              return (
-                <div
-                  key={g.id}
-                  onClick={() => onChange({ genre: g.id as any })}
-                  className={`relative p-5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
-                    isSelected
-                      ? 'bg-amber-500/10 border-amber-400 ring-2 ring-amber-400/20 shadow-lg'
-                      : 'bg-slate-950/40 border-slate-800 hover:border-slate-700 hover:bg-slate-950/70'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <div className="flex items-center gap-2.5">
-                      <div
-                        className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-                          isSelected ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-400'
-                        }`}
-                      >
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <h4 className="font-bold text-white text-sm">{g.name}</h4>
+        {/* 4. CAMERA & VANTAGE */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5 font-mono">
+              3D Camera Perspective
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                {
+                  id: 'ISOMETRIC_25D',
+                  name: '2.5D Angled View',
+                  desc: 'Classic angled perspective',
+                  icon: Compass,
+                },
+                {
+                  id: 'TOP_DOWN',
+                  name: 'Top-Down Ortho',
+                  desc: 'Direct overhead view',
+                  icon: Eye,
+                },
+              ].map((c) => {
+                const Icon = c.icon;
+                const isSelected = data.camera === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => onChange({ camera: c.id as any })}
+                    className={`p-2.5 rounded-lg border text-left transition flex flex-col justify-between cursor-pointer ${
+                      isSelected
+                        ? 'bg-amber-500/15 border-amber-400 text-white'
+                        : 'bg-[#050b14] border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1 font-semibold text-xs text-white">
+                      <Icon className="w-3.5 h-3.5 text-amber-400" />
+                      {c.name}
                     </div>
-                    {g.badge && (
-                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-slate-800 text-amber-300 border border-slate-700">
-                        {g.badge}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">{g.description}</p>
-                </div>
-              );
-            })}
+                    <span className="text-[10px] text-slate-400">{c.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
 
-        {/* 4. Gameplay & Combat Style */}
-        <div className="mb-8">
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">
-            Combat & Progression Mechanics
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {GAMEPLAY_STYLES.map((style) => {
-              const isSelected = data.style === style.id;
-              return (
-                <div
-                  key={style.id}
-                  onClick={() => onChange({ style: style.id as any })}
-                  className={`p-5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
-                    isSelected
-                      ? 'bg-amber-500/10 border-amber-400 ring-2 ring-amber-400/20 shadow-lg'
-                      : 'bg-slate-950/40 border-slate-800 hover:border-slate-700 hover:bg-slate-950/70'
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-bold text-white text-sm">{style.name}</h4>
-                      {style.badge && (
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${style.badgeColor}`}>
-                          {style.badge}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-400 leading-relaxed">{style.description}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 5. Camera & Viewpoint */}
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">
-            3D Rendering Viewpoint
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {CAMERA_STYLES.map((cam) => {
-              const isSelected = data.camera === cam.id;
-              return (
-                <div
-                  key={cam.id}
-                  onClick={() => onChange({ camera: cam.id as any })}
-                  className={`p-5 rounded-2xl border cursor-pointer transition-all ${
-                    isSelected
-                      ? 'bg-amber-500/10 border-amber-400 ring-2 ring-amber-400/20 shadow-lg'
-                      : 'bg-slate-950/40 border-slate-800 hover:border-slate-700 hover:bg-slate-950/70'
-                  }`}
-                >
-                  <h4 className="font-bold text-white text-sm mb-1">{cam.name}</h4>
-                  <p className="text-xs text-slate-400">{cam.description}</p>
-                </div>
-              );
-            })}
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5 font-mono">
+              Combat Engine Flow
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                {
+                  id: 'SAINTS_HYBRID',
+                  name: 'Real-Time Hybrid',
+                  desc: 'Action movement with pacing',
+                },
+                {
+                  id: 'TURN_BASED',
+                  name: 'Turn-Based Classic',
+                  desc: 'Discrete strategic turns',
+                },
+              ].map((s) => {
+                const isSelected = data.style === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => onChange({ style: s.id as any })}
+                    className={`p-2.5 rounded-lg border text-left transition flex flex-col justify-between cursor-pointer ${
+                      isSelected
+                        ? 'bg-amber-500/15 border-amber-400 text-white'
+                        : 'bg-[#050b14] border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <span className="font-semibold text-xs text-white mb-1">{s.name}</span>
+                    <span className="text-[10px] text-slate-400">{s.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
+      {/* FOOTER ACTIONS */}
+      <div className="flex items-center justify-between pt-3 border-t border-border/40">
         <button
-          type="button"
           onClick={onBack}
-          className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 text-sm font-semibold transition-all"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-mono font-semibold text-slate-400 hover:text-white transition cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-3.5 h-3.5" />
           Back
         </button>
 
         <button
-          type="submit"
+          onClick={onNext}
           disabled={!data.name.trim()}
-          className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white text-sm font-bold shadow-xl shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg font-mono font-bold text-xs bg-amber-600 hover:bg-amber-500 text-white transition disabled:opacity-50 cursor-pointer shadow-md shadow-amber-600/20"
         >
-          Continue: Starting 3D Realm
-          <ArrowRight className="w-4 h-4" />
+          Continue to Requirements
+          <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
-    </form>
+    </div>
   );
 }

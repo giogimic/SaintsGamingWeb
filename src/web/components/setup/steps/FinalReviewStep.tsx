@@ -11,11 +11,11 @@ import {
   Sparkles,
   Layers,
   Compass,
-  MapPin,
   ArrowLeft,
   ArrowRight,
   Sun,
   Shield,
+  Zap,
 } from 'lucide-react';
 import type { GameDefinitionData } from './GameDefinitionStep';
 import type { SetupCharacterData, SetupCreatureData } from './EntitySetupStep';
@@ -98,6 +98,7 @@ export function FinalReviewStep({
           height: (startingMap.depthChunks || 2) * 16,
           blockSizePx: gameDefinition.defaultBlockSizePx || 64,
           foundationMaterial: startingMap.foundationMaterial,
+          topologyArchetype: startingMap.topologyArchetype,
           spawnPoint: startingMap.spawnPoint,
         },
       };
@@ -110,13 +111,18 @@ export function FinalReviewStep({
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Game initialization failed');
+        throw new Error(data.error || 'Failed to initialize 3D Voxel game');
       }
 
-      setPersistedMapId(data.defaultMapId || startingMap.id || 'STARTING_MEADOW');
       setCompleted(true);
+      const defaultId = data.startingMapId || startingMap.id || 'STARTING_MEADOW';
+      setPersistedMapId(defaultId);
+
+      setTimeout(() => {
+        onCompleteSuccess(defaultId);
+      }, 1500);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Initialization encountered an error');
+      setErrorMessage(err.message || 'An error occurred during world initialization.');
     } finally {
       setSubmitting(false);
     }
@@ -124,176 +130,130 @@ export function FinalReviewStep({
 
   if (completed) {
     return (
-      <div className="bg-slate-900/90 border border-amber-400/50 rounded-3xl p-8 md:p-12 text-center backdrop-blur-xl shadow-2xl space-y-6 animate-in fade-in">
-        <div className="w-16 h-16 rounded-3xl bg-amber-500 text-white flex items-center justify-center mx-auto shadow-xl shadow-amber-400/30 animate-bounce">
+      <div className="text-center py-10 space-y-4 font-mono">
+        <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/10">
           <CheckCircle2 className="w-8 h-8" />
         </div>
-
-        <div>
-          <h2 className="text-2xl font-extrabold text-white">3D Voxel World Deployed!</h2>
-          <p className="text-sm text-slate-300 mt-2 max-w-md mx-auto">
-            <span className="font-bold text-amber-300">{gameDefinition.name}</span> has been initialized in MariaDB/MySQL. Starting 3D Voxel Realm is live and synchronized with the GameEngine.
-          </p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-          <button
-            onClick={() => onCompleteSuccess(persistedMapId)}
-            className="flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white text-sm font-bold shadow-xl shadow-amber-500/30 transition-all"
-          >
-            Launch World Studio (Ctrl+E)
-            <ArrowRight className="w-4 h-4" />
-          </button>
-          <a
-            href="/lobby"
-            className="px-6 py-3.5 rounded-2xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 text-sm font-semibold transition-all"
-          >
-            Enter Multiplayer Realm
-          </a>
-        </div>
+        <h2 className="text-base font-bold text-white uppercase tracking-widest sg-text-gradient">
+          3D Voxel World Initialized!
+        </h2>
+        <p className="text-xs text-slate-400 max-w-md mx-auto">
+          Generated starting realm <strong className="text-white">{startingMap.name}</strong> ({startingMap.id}). Redirecting to Saints Studio...
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 backdrop-blur-xl">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-2">
-          <Sparkles className="w-5 h-5 text-amber-400" />
-          Review & Deploy 3D Voxel Realm
-        </h2>
-        <p className="text-sm text-slate-400 mb-6">
-          Verify your game settings and starting 3D voxel world configuration before initializing the database.
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Card 1: Game Definition */}
-          <div className="p-5 bg-slate-950/60 border border-slate-800 rounded-2xl space-y-3">
-            <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
-              <Gamepad2 className="w-4 h-4" />
-              Game Identity & Engine
-            </div>
-            <div className="space-y-1.5 text-xs">
-              <div className="flex justify-between py-1 border-b border-slate-900">
-                <span className="text-slate-400">Title:</span>
-                <span className="font-bold text-white">{gameDefinition.name}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-900">
-                <span className="text-slate-400">Genre:</span>
-                <span className="text-slate-200">{gameDefinition.genre}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-900">
-                <span className="text-slate-400">Combat Style:</span>
-                <span className="text-slate-200">{gameDefinition.style}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-900">
-                <span className="text-slate-400">Block Scale:</span>
-                <span className="font-mono text-amber-400 font-bold">{gameDefinition.defaultBlockSizePx || 64}px</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 2: 3D Voxel Starting Realm */}
-          <div className="p-5 bg-slate-950/60 border border-slate-800 rounded-2xl space-y-3">
-            <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
-              <Boxes className="w-4 h-4" />
-              Starting 3D Voxel Realm
-            </div>
-            <div className="space-y-1.5 text-xs">
-              <div className="flex justify-between py-1 border-b border-slate-900">
-                <span className="text-slate-400">Realm ID:</span>
-                <span className="font-mono font-bold text-amber-300">{startingMap.id}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-900">
-                <span className="text-slate-400">Volume Dimensions:</span>
-                <span className="font-mono text-white">
-                  {(startingMap.widthChunks || 2) * 16} × {(startingMap.depthChunks || 2) * 16} × 32 Blocks
-                </span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-900">
-                <span className="text-slate-400">Bedrock Stratum:</span>
-                <span className="text-slate-200 capitalize">{startingMap.foundationMaterial || 'gunmetal'}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-900">
-                <span className="text-slate-400">Spawn Beacon:</span>
-                <span className="font-mono text-amber-400">({startingMap.spawnPoint.x}, {startingMap.spawnPoint.y}, Y=16)</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3: Starter Characters */}
-          <div className="p-5 bg-slate-950/60 border border-slate-800 rounded-2xl space-y-3">
-            <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
-              <User className="w-4 h-4" />
-              Starter Heroes ({characters.length})
-            </div>
-            <div className="space-y-2">
-              {characters.map((c) => (
-                <div key={c.slug} className="flex items-center justify-between text-xs bg-slate-900/70 px-3 py-2 rounded-xl">
-                  <span className="font-bold text-white">{c.name}</span>
-                  <span className="text-slate-400 font-mono text-[10px]">{c.classId}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Card 4: Companion Battlers & Atmosphere */}
-          <div className="p-5 bg-slate-950/60 border border-slate-800 rounded-2xl space-y-3">
-            <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
-              <Sun className="w-4 h-4" />
-              Creatures & Atmosphere
-            </div>
-            <div className="space-y-1.5 text-xs">
-              <div className="flex justify-between py-1 border-b border-slate-900">
-                <span className="text-slate-400">Creatures:</span>
-                <span className="font-bold text-white">{creatures.length} Starter Battlers</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-900">
-                <span className="text-slate-400">Atmosphere Preset:</span>
-                <span className="text-slate-200 capitalize">{environment.atmospherePreset || 'noon'}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-900">
-                <span className="text-slate-400">Greedy Meshing:</span>
-                <span className="text-emerald-400 font-semibold">Enabled (Seamless)</span>
-              </div>
-            </div>
-          </div>
+    <div className="space-y-4">
+      {/* SECTION HEADER */}
+      <div className="flex items-center justify-between pb-3 border-b border-border/40">
+        <div>
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 font-mono">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            7. Final Review & World Deployment
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Review your world parameters and initialize the 3D Voxel foundation.
+          </p>
         </div>
-
-        {errorMessage && (
-          <div className="mt-6 p-4 rounded-2xl bg-red-950/40 border border-red-500/50 text-red-300 text-xs flex items-center gap-3">
-            <ShieldAlert className="w-5 h-5 shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
-        )}
       </div>
 
-      <div className="flex items-center justify-between">
+      {errorMessage && (
+        <div className="p-3 rounded-lg bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2">
+          <ShieldAlert className="w-4 h-4 shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {/* 4 SUMMARY METRIC CARDS */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div className="p-3 rounded-lg bg-[#070e1b] border border-slate-800/80">
+          <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block mb-0.5">Game Title</span>
+          <span className="text-xs font-bold text-white truncate block">{gameDefinition.name}</span>
+          <span className="text-[10px] font-mono text-amber-400">{gameDefinition.defaultBlockSizePx || 64}px Blocks</span>
+        </div>
+
+        <div className="p-3 rounded-lg bg-[#070e1b] border border-slate-800/80">
+          <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block mb-0.5">Heroes & Beasts</span>
+          <span className="text-xs font-bold text-white block">
+            {characters.length} Heroes · {creatures.length} Beasts
+          </span>
+          <span className="text-[10px] font-mono text-emerald-400">Class & Type Configured</span>
+        </div>
+
+        <div className="p-3 rounded-lg bg-[#070e1b] border border-slate-800/80">
+          <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block mb-0.5">Atmosphere</span>
+          <span className="text-xs font-bold text-white capitalize block">{environment.atmospherePreset}</span>
+          <span className="text-[10px] font-mono text-sky-400">{environment.enabledMaterialSets?.length || 4} Material Sets</span>
+        </div>
+
+        <div className="p-3 rounded-lg bg-[#070e1b] border border-slate-800/80">
+          <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block mb-0.5">3D Starting Realm</span>
+          <span className="text-xs font-bold text-white block">
+            {(startingMap.widthChunks || 2) * 16}x{(startingMap.depthChunks || 2) * 16} Blocks
+          </span>
+          <span className="text-[10px] font-mono text-purple-400 capitalize">{startingMap.foundationMaterial} Bedrock</span>
+        </div>
+      </div>
+
+      {/* DETAILED SUMMARY ACCORDION */}
+      <div className="p-3.5 rounded-xl bg-[#070e1b] border border-slate-800/80 space-y-2.5 text-xs">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-amber-300 font-mono flex items-center gap-1.5">
+          <Boxes className="w-3.5 h-3.5" />
+          Deployment Summary
+        </h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-300">
+          <div className="flex items-center justify-between p-2 rounded bg-[#050b14] border border-slate-800 font-mono text-[11px]">
+            <span className="text-slate-400">Voxel Engine Resolution:</span>
+            <span className="text-amber-300 font-bold">{gameDefinition.defaultBlockSizePx || 64}px / Voxel Block</span>
+          </div>
+
+          <div className="flex items-center justify-between p-2 rounded bg-[#050b14] border border-slate-800 font-mono text-[11px]">
+            <span className="text-slate-400">Camera Vantage:</span>
+            <span className="text-white font-bold">{gameDefinition.camera === 'ISOMETRIC_25D' ? '2.5D Angled' : 'Top-Down Ortho'}</span>
+          </div>
+
+          <div className="flex items-center justify-between p-2 rounded bg-[#050b14] border border-slate-800 font-mono text-[11px]">
+            <span className="text-slate-400">Spawn Coordinates:</span>
+            <span className="text-sky-300 font-bold">
+              X: {startingMap.spawnPoint?.x || 16}, Y: {startingMap.spawnPoint?.y || 16}, Z: 16
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between p-2 rounded bg-[#050b14] border border-slate-800 font-mono text-[11px]">
+            <span className="text-slate-400">Database Engine:</span>
+            <span className="text-emerald-400 font-bold">Prisma SQLite / MySQL Ready</span>
+          </div>
+        </div>
+      </div>
+
+      {/* FOOTER ACTIONS */}
+      <div className="flex items-center justify-between pt-3 border-t border-border/40">
         <button
-          type="button"
-          disabled={submitting}
           onClick={onBack}
-          className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 text-sm font-semibold transition-all disabled:opacity-50"
+          disabled={submitting}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-mono font-semibold text-slate-400 hover:text-white transition disabled:opacity-50 cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-3.5 h-3.5" />
           Back
         </button>
 
         <button
-          type="button"
-          disabled={submitting}
           onClick={handleInitializeGame}
-          className="flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white text-sm font-bold shadow-xl shadow-amber-500/30 disabled:opacity-50 transition-all"
+          disabled={submitting}
+          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg font-mono font-bold text-xs bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-950 transition disabled:opacity-50 cursor-pointer shadow-lg shadow-amber-500/20"
         >
           {submitting ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              Deploying 3D Voxel World...
+              Initializing 3D World...
             </>
           ) : (
             <>
-              Initialize & Deploy Game
-              <ArrowRight className="w-4 h-4" />
+              <Zap className="w-4 h-4" />
+              Launch Game & Open Studio
             </>
           )}
         </button>

@@ -10,6 +10,12 @@ import {
   ShieldAlert,
   Info,
   Boxes,
+  Layers,
+  Settings,
+  X,
+  Minus,
+  Maximize2,
+  Terminal,
 } from 'lucide-react';
 import type { SetupStatus } from '@/shared/game/setup/setupDetection';
 
@@ -132,201 +138,251 @@ export function GameInitializationWizard() {
 
   if (loading) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center text-center p-6">
-        <Loader2 className="w-12 h-12 text-amber-400 animate-spin mb-4" />
-        <h2 className="text-xl font-bold text-white tracking-wide">Checking Game State...</h2>
-        <p className="text-sm text-slate-400 mt-2">Checking database schema and game initialization status</p>
+      <div className="min-h-[70vh] flex flex-col items-center justify-center text-center p-6 font-mono">
+        <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-amber-500/40 flex items-center justify-center mb-4 shadow-xl shadow-amber-500/10">
+          <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
+        </div>
+        <h2 className="text-base font-bold text-white tracking-widest uppercase sg-text-gradient">Initializing System...</h2>
+        <p className="text-xs text-slate-400 mt-1">Verifying 3D Voxel Engine and database status</p>
       </div>
     );
   }
 
   if (!canSetup && setupStatus?.userCount && setupStatus.userCount > 0) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-slate-900/90 border border-red-500/30 rounded-2xl p-8 text-center backdrop-blur-xl shadow-2xl">
-          <ShieldAlert className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">Administrator Access Required</h2>
-          <p className="text-sm text-slate-300 mb-6">
-            Game Setup is restricted to server administrators and game developers.
-          </p>
-          <button
-            onClick={() => router.push('/')}
-            className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-semibold transition cursor-pointer"
-          >
-            Return to Home
-          </button>
+      <div className="min-h-[60vh] flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-[#050b14]/95 border border-red-500/40 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-xl">
+          <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-red-950/40 via-[#0a1225] to-[#050b14] border-b border-red-500/30">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+              <span className="font-mono text-xs font-semibold text-red-300 uppercase tracking-wider">Access Restricted</span>
+            </div>
+            <button onClick={() => router.push('/')} className="text-slate-500 hover:text-white transition">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div className="p-6 text-center space-y-4">
+            <ShieldAlert className="w-10 h-10 text-red-400 mx-auto" />
+            <div>
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider">Administrator Access Required</h2>
+              <p className="text-xs text-slate-400 mt-1">
+                Game Setup is restricted to server administrators and game developers.
+              </p>
+            </div>
+            <button
+              onClick={() => router.push('/')}
+              className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-mono font-semibold transition cursor-pointer"
+            >
+              Return to Home
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   const STEP_LABELS = [
-    { num: 0, label: 'Mode' },
-    { num: 1, label: 'Identity' },
-    { num: 2, label: 'Requirements' },
-    { num: 3, label: 'Entities' },
-    { num: 4, label: 'Atmosphere' },
-    { num: 5, label: '3D Realm' },
-    { num: 6, label: 'Review' },
+    { num: 0, label: 'Mode', sub: 'Setup or Import' },
+    { num: 1, label: 'Identity', sub: 'Game Engine' },
+    { num: 2, label: 'Specs', sub: 'Requirements' },
+    { num: 3, label: 'Entities', sub: 'Heroes & Beasts' },
+    { num: 4, label: 'Atmosphere', sub: 'Voxel Palette' },
+    { num: 5, label: '3D Realm', sub: 'Volume & Spawn' },
+    { num: 6, label: 'Review', sub: 'Deploy World' },
   ];
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 md:py-12">
-      {/* HEADER BANNER */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-950/60 via-slate-900/80 to-amber-950/40 border border-purple-500/20 p-8 md:p-10 mb-8 backdrop-blur-2xl shadow-2xl">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="flex flex-wrap items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold uppercase tracking-wider">
-              <Boxes className="w-3.5 h-3.5" />
-              3D Voxel Game Initialization
+    <div className="max-w-5xl mx-auto px-3 py-6 md:py-8 font-sans">
+      {/* ─── SAINTS OS WINDOW FRAME ─── */}
+      <div className="bg-[#050b14]/95 border border-primary/40 rounded-2xl shadow-[0_0_32px_rgba(203,178,106,0.12),0_12px_40px_rgba(0,0,0,0.6)] backdrop-blur-2xl overflow-hidden flex flex-col">
+        
+        {/* WINDOW TITLE BAR */}
+        <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-primary/10 via-[#0a1628] to-[#050b14] border-b border-primary/20 select-none">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Window Traffic Lights */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80 border border-rose-400/40" />
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 border border-amber-400/40" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 border border-emerald-400/40" />
             </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
-              Saints <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-500">Game Setup</span>
-            </h1>
-            <p className="text-slate-300 text-sm md:text-base max-w-2xl">
-              Initialize a new 3D Voxel MMO experience. Define game rules, configure starting characters, and author your initial 3D volumetric starting realm.
-            </p>
+
+            <div className="flex items-center gap-2 min-w-0">
+              <Boxes className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span className="font-mono text-xs font-bold tracking-widest uppercase sg-text-gradient truncate">
+                Saints Game Studio — 3D Voxel World Initializer
+              </span>
+            </div>
           </div>
 
-          {/* STEP INDICATOR */}
-          <div className="flex items-center gap-1.5 bg-slate-950/70 border border-slate-800 px-3.5 py-2 rounded-2xl overflow-x-auto">
-            {STEP_LABELS.map(({ num, label }) => (
-              <div key={num} className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-primary/10 border border-primary/30 text-[10px] font-mono text-primary/90 font-semibold">
+              v2.1.660
+            </span>
+            <button
+              onClick={() => router.push('/')}
+              className="p-1 text-slate-400 hover:text-white hover:bg-slate-800/60 rounded-md transition cursor-pointer"
+              title="Close Wizard"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* STEP PROGRESS MENUBAR */}
+        <div className="px-3 py-2 bg-[#08101e]/80 border-b border-border/40 overflow-x-auto flex items-center justify-between gap-1 text-xs font-mono select-none">
+          <div className="flex items-center gap-1 min-w-max">
+            {STEP_LABELS.map(({ num, label, sub }) => {
+              const isCurrent = step === num;
+              const isPast = step > num;
+              return (
                 <button
+                  key={num}
                   type="button"
                   onClick={() => {
                     if (num < step) setStep(num);
                   }}
                   disabled={num > step}
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs transition-all cursor-pointer ${
-                    step === num
-                      ? 'bg-amber-600 text-white ring-2 ring-amber-400/30 scale-105'
-                      : step > num
-                      ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30'
-                      : 'bg-slate-800 text-slate-500 opacity-50 cursor-not-allowed'
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all ${
+                    isCurrent
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 font-bold shadow-sm'
+                      : isPast
+                      ? 'text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 cursor-pointer'
+                      : 'text-slate-600 opacity-60 cursor-not-allowed'
                   }`}
-                  title={label}
                 >
-                  {step > num ? <CheckCircle2 className="w-3.5 h-3.5" /> : num + 1}
+                  <span
+                    className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                      isCurrent
+                        ? 'bg-amber-500 text-slate-950 font-black'
+                        : isPast
+                        ? 'bg-emerald-500/20 text-emerald-400'
+                        : 'bg-slate-800 text-slate-500'
+                    }`}
+                  >
+                    {isPast ? <CheckCircle2 className="w-3 h-3" /> : num + 1}
+                  </span>
+                  <span>{label}</span>
                 </button>
-                {num < 6 && <div className={`w-2 h-0.5 ${step > num ? 'bg-emerald-500/40' : 'bg-slate-800'}`} />}
-              </div>
-            ))}
+              );
+            })}
+          </div>
+
+          <div className="hidden md:flex items-center gap-2 text-[11px] text-slate-400 font-mono shrink-0 pl-2">
+            <span>Step {step + 1} of {STEP_LABELS.length}</span>
           </div>
         </div>
-      </div>
 
-      {errorMessage && (
-        <div className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm flex items-center gap-3">
-          <ShieldAlert className="w-5 h-5 flex-shrink-0" />
-          <span>{errorMessage}</span>
-        </div>
-      )}
+        {/* ERROR NOTIFICATION BANNER */}
+        {errorMessage && (
+          <div className="mx-4 mt-4 p-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2.5">
+            <ShieldAlert className="w-4 h-4 shrink-0 text-rose-400" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
 
-      {/* UPDATED SERVER / EXISTING DATA NOTICE */}
-      {setupStatus && !setupStatus.isFreshInstall && (
-        <div className="mb-8 p-6 rounded-3xl bg-slate-900/90 border border-amber-500/30 backdrop-blur-xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <Info className="w-6 h-6 text-amber-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-bold text-white text-base">Existing Game Detected</h3>
-              <p className="text-sm text-slate-300">
-                This installation already has <span className="text-amber-300 font-semibold">{setupStatus.mapCount} active maps</span> and existing game configuration. Game setup is non-blocking and will preserve all your live world data.
-              </p>
+        {/* EXISTING DATA NOTICE */}
+        {setupStatus && !setupStatus.isFreshInstall && (
+          <div className="mx-4 mt-4 p-3.5 rounded-xl bg-[#081224] border border-amber-500/30 flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <Info className="w-4 h-4 text-amber-400 shrink-0" />
+              <span className="text-slate-300 truncate">
+                Existing realm detected (<strong className="text-amber-300">{setupStatus.mapCount} maps</strong>). Setup preserves live database state.
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => router.push('/studio')}
+                className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-[11px] font-semibold transition cursor-pointer"
+              >
+                Studio
+              </button>
+              <button
+                onClick={() => router.push('/lobby')}
+                className="px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-mono text-[11px] font-bold transition cursor-pointer"
+              >
+                Play Lobby
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <button
-              onClick={() => router.push('/studio')}
-              className="flex-1 md:flex-initial px-5 py-2.5 rounded-xl bg-purple-600/30 border border-purple-500/40 hover:bg-purple-600/50 text-purple-200 text-sm font-semibold transition cursor-pointer"
-            >
-              Enter Studio
-            </button>
-            <button
-              onClick={() => router.push('/lobby')}
-              className="flex-1 md:flex-initial px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold transition cursor-pointer shadow-lg shadow-amber-500/20 inline-flex items-center justify-center gap-1.5"
-            >
-              <Gamepad2 className="w-4 h-4" />
-              The Lobby
-            </button>
-          </div>
+        )}
+
+        {/* ─── WINDOW BODY CONTENT ─── */}
+        <div className="p-4 sm:p-6 text-foreground">
+          {/* STEP 0: MODE SELECTION & MIGRATION EXPORT/IMPORT */}
+          {step === 0 && (
+            <SetupModeSelection
+              onSelectFresh={() => setStep(1)}
+              onImportSuccess={handleCompleteSuccess}
+            />
+          )}
+
+          {/* STEP 1: GAME QUESTIONS & 3D VOXEL SPECS */}
+          {step === 1 && (
+            <GameDefinitionStep
+              data={gameDefinition}
+              onChange={(updates) => setGameDefinition((prev) => ({ ...prev, ...updates }))}
+              onNext={() => setStep(2)}
+              onBack={() => setStep(0)}
+            />
+          )}
+
+          {/* STEP 2: REQUIREMENTS SUMMARY */}
+          {step === 2 && (
+            <GameRequirementsStep
+              gameDefinition={gameDefinition}
+              onNext={() => setStep(3)}
+              onBack={() => setStep(1)}
+            />
+          )}
+
+          {/* STEP 3: CHARACTERS & CREATURES */}
+          {step === 3 && (
+            <EntitySetupStep
+              gameDefinition={gameDefinition}
+              characters={characters}
+              creatures={creatures}
+              onUpdateCharacters={setCharacters}
+              onUpdateCreatures={setCreatures}
+              onNext={() => setStep(4)}
+              onBack={() => setStep(2)}
+            />
+          )}
+
+          {/* STEP 4: ENVIRONMENT & MATERIAL SETS */}
+          {step === 4 && (
+            <EnvironmentSetupStep
+              environment={environment}
+              onChange={(updates) => setEnvironment((prev) => ({ ...prev, ...updates }))}
+              onNext={() => setStep(5)}
+              onBack={() => setStep(3)}
+            />
+          )}
+
+          {/* STEP 5: STARTING 3D VOXEL REALM */}
+          {step === 5 && (
+            <StartingMapStep
+              environment={environment}
+              startingMap={startingMap}
+              onChange={setStartingMap}
+              onNext={() => setStep(6)}
+              onBack={() => setStep(4)}
+            />
+          )}
+
+          {/* STEP 6: FINAL REVIEW & TRANSACTION-SAFE DEPLOY */}
+          {step === 6 && (
+            <FinalReviewStep
+              gameDefinition={gameDefinition}
+              characters={characters}
+              creatures={creatures}
+              environment={environment}
+              startingMap={startingMap}
+              onBack={() => setStep(5)}
+              onCompleteSuccess={handleCompleteSuccess}
+            />
+          )}
         </div>
-      )}
-
-      {/* STEP 0: MODE SELECTION & MIGRATION EXPORT/IMPORT */}
-      {step === 0 && (
-        <SetupModeSelection
-          onSelectFresh={() => setStep(1)}
-          onImportSuccess={handleCompleteSuccess}
-        />
-      )}
-
-      {/* STEP 1: GAME QUESTIONS & 3D VOXEL SPECS */}
-      {step === 1 && (
-        <GameDefinitionStep
-          data={gameDefinition}
-          onChange={(updates) => setGameDefinition((prev) => ({ ...prev, ...updates }))}
-          onNext={() => setStep(2)}
-          onBack={() => setStep(0)}
-        />
-      )}
-
-      {/* STEP 2: REQUIREMENTS SUMMARY */}
-      {step === 2 && (
-        <GameRequirementsStep
-          gameDefinition={gameDefinition}
-          onNext={() => setStep(3)}
-          onBack={() => setStep(1)}
-        />
-      )}
-
-      {/* STEP 3: CHARACTERS & CREATURES */}
-      {step === 3 && (
-        <EntitySetupStep
-          gameDefinition={gameDefinition}
-          characters={characters}
-          creatures={creatures}
-          onUpdateCharacters={setCharacters}
-          onUpdateCreatures={setCreatures}
-          onNext={() => setStep(4)}
-          onBack={() => setStep(2)}
-        />
-      )}
-
-      {/* STEP 4: ENVIRONMENT & MATERIAL SETS */}
-      {step === 4 && (
-        <EnvironmentSetupStep
-          environment={environment}
-          onChange={(updates) => setEnvironment((prev) => ({ ...prev, ...updates }))}
-          onNext={() => setStep(5)}
-          onBack={() => setStep(3)}
-        />
-      )}
-
-      {/* STEP 5: STARTING 3D VOXEL REALM */}
-      {step === 5 && (
-        <StartingMapStep
-          environment={environment}
-          startingMap={startingMap}
-          onChange={setStartingMap}
-          onNext={() => setStep(6)}
-          onBack={() => setStep(4)}
-        />
-      )}
-
-      {/* STEP 6: FINAL REVIEW & TRANSACTION-SAFE DEPLOY */}
-      {step === 6 && (
-        <FinalReviewStep
-          gameDefinition={gameDefinition}
-          characters={characters}
-          creatures={creatures}
-          environment={environment}
-          startingMap={startingMap}
-          onBack={() => setStep(5)}
-          onCompleteSuccess={handleCompleteSuccess}
-        />
-      )}
+      </div>
     </div>
   );
 }
