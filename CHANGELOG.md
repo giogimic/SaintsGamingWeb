@@ -1,3 +1,8 @@
+# 2.1.640
+- **Studio Shell Boundary Polish & Import Cleanups**:
+  - **Decoupled Shell Imports (`StudioEditorShell.tsx`)**:
+    - Removed unused and extracted backend/persistence imports from `StudioEditorShell.tsx`, finalizing shell separation boundaries with `MapPersistenceService`.
+
 # 2.1.639
 - **Studio Prefab & Clipboard Paste Handler Modularization**:
   - **Modular Prefab & Paste Handlers (`PrefabToolHandler.ts`, `PasteToolHandler.ts`)**:

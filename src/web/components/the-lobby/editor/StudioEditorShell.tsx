@@ -45,12 +45,6 @@ import {
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
 import { STUDIO_MAP_CELLS_CHANGED_EVENT, STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
-import { stripEditorOverlaysFromMapPayload } from '@/shared/game/mapLayers';
-import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
-import { invalidateMapCache } from '@/shared/game/mapCache';
-import { normalizeStudioMapVisuals, formatMapWriteError } from '@/shared/game/studioMapCreate';
-import { isGoMmoSocketEnabled } from '@/shared/net/goMmoSocket';
-import { toBaseMapId } from '@/shared/net/mapIds';
 import { soundSynth } from '@/engine/sound-synth';
 import { PasteOptionsToolbar } from './PasteOptionsToolbar';
 import { StudioOmnisearch } from './StudioOmnisearch';
