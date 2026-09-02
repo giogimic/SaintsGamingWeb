@@ -71,7 +71,8 @@ export class BrushToolHandler implements IToolHandler {
       return true;
     }
 
-    // 1. Freeform Splat / Props Handling
+    // 1. Freeform Splat / Props Handling (Suppressed in Voxel Mode)
+    if (store.studioMode === 'voxel') return false;
     if (store.activeLayerType === 'paint-splat' || store.activeLayerType === 'free-form') {
       const dims = resolveMapDimensions(liveMap);
       const mapWidth = dims.width;

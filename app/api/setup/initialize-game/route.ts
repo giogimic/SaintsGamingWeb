@@ -311,6 +311,14 @@ export async function POST(req: Request) {
           encountersData: JSON.stringify([]),
           entitiesData: JSON.stringify([]),
           tileLayersData: JSON.stringify(initialTileLayers),
+          freeformLayersData: JSON.stringify([
+            {
+              id: 'voxel_world_doc',
+              name: 'Voxel World Model',
+              type: 'voxel',
+              voxelDoc: voxelDoc,
+            },
+          ]),
           tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
           version: 1,
         },
@@ -320,6 +328,14 @@ export async function POST(req: Request) {
           gatesData: JSON.stringify(gatesPayload),
           gridData: JSON.stringify(initialLogicGrid),
           tileLayersData: JSON.stringify(initialTileLayers),
+          freeformLayersData: JSON.stringify([
+            {
+              id: 'voxel_world_doc',
+              name: 'Voxel World Model',
+              type: 'voxel',
+              voxelDoc: voxelDoc,
+            },
+          ]),
           tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
           version: { increment: 1 },
         },

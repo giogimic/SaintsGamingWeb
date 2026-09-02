@@ -64,6 +64,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
   const openPanel = useEditorStore((s) => s.openPanel);
   const activeMapData = useGameStore((s) => s.activeMapData);
   const showToast = useGameStore((s) => s.showToast);
+  const logicTiles = useGameStore((s) => s.logicTiles);
 
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
   const [isSelectingGateType, setIsSelectingGateType] = useState(false);
@@ -401,7 +402,6 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
   const isWarpTag = logicTag === 3 || (logicTag >= 14 && logicTag <= 23);
   const isEncounterTag = logicTag === 6 || logicTag === 10;
   const isLootTag = logicTag === 4 || logicTag === 11;
-  const logicTiles = useGameStore((s) => s.logicTiles);
   const currentTagObj = logicTiles[logicTag];
   const tagLabel = currentTagObj?.name || `Tag #${logicTag}`;
   const hasSmartActions = npcsOnTile.length > 0 || gateOnTile || isWarpTag || logicTag > 0;

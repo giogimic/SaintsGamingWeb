@@ -116,6 +116,7 @@ export class VoxelChunkMesher {
       mat.useAlphaFromDiffuseTexture = true;
       mat.backFaceCulling = false;
       mat.disableLighting = false;
+      mat.zOffset = -1;
       this.materialCache.set(1, mat);
     }
     return mat;

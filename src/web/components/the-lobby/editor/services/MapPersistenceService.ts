@@ -59,6 +59,8 @@ export class MapPersistenceService {
         tileLayers: saveDoc.tileLayers || [],
         freeformLayers: saveDoc.freeformLayers || [],
         tilesets: saveDoc.tilesets || [],
+        voxelDoc: saveDoc.voxelDoc,
+        blockSizePx: saveDoc.blockSizePx,
       });
 
       const res = await fetch(`/api/maps/${encodeURIComponent(baseMapId)}`, {

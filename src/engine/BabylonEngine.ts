@@ -1834,7 +1834,8 @@ export class BabylonEngine {
       // --- PHASE B: FILL SKIRT & NEIGHBOR EDGE BLEED ---
       const isEditor = this.editorCameraMode;
       const shouldRenderNeighborBleed = this.showNeighborBleedPreview || !isEditor;
-      const SKIRT_PADDING = isEditor ? 0 : 64;
+      const hasVoxelWorldMesh = Boolean((mapData as any).voxelDoc || this.voxelWorld);
+      const SKIRT_PADDING = (isEditor || hasVoxelWorldMesh) ? 0 : 64;
 
       const biome = (mapData as any).biome || 'default';
       const skirtConfig = BIOME_SKIRT_CONFIG[biome] || BIOME_SKIRT_CONFIG['default'];
@@ -3433,10 +3434,8 @@ export class BabylonEngine {
       if (!this.scene) return;
       const resolved = getResolvedTile(this.scene.pointerX, this.scene.pointerY);
       const voxelTarget = this.resolveVoxelTargetAtScreenCoord(this.scene.pointerX, this.scene.pointerY);
-      if (!resolved && !voxelTarget) return;
-
-      const r = resolved?.r ?? voxelTarget?.localCoord.lz ?? 0;
-      const c = resolved?.c ?? voxelTarget?.localCoord.lx ?? 0;
+      const r = resolved?.r ?? (voxelTarget ? Math.max(0, Math.min(this.currentMapHeight - 1, this.currentMapHeight - 1 - voxelTarget.voxelCoord.wz)) : 0);
+      const c = resolved?.c ?? (voxelTarget ? Math.max(0, Math.min(this.currentMapWidth - 1, voxelTarget.voxelCoord.wx)) : 0);
       const layerIdx = resolved?.layerIdx ?? -1;
       const point = resolved?.point ?? (voxelTarget ? { x: voxelTarget.hitPoint.x, z: voxelTarget.hitPoint.z } : undefined);
 
@@ -3522,8 +3521,8 @@ export class BabylonEngine {
         this.clearVoxelCursor();
       }
 
-      const r = resolved?.r ?? voxelTarget?.localCoord.lz ?? 0;
-      const c = resolved?.c ?? voxelTarget?.localCoord.lx ?? 0;
+      const r = resolved?.r ?? (voxelTarget ? Math.max(0, Math.min(this.currentMapHeight - 1, this.currentMapHeight - 1 - voxelTarget.voxelCoord.wz)) : 0);
+      const c = resolved?.c ?? (voxelTarget ? Math.max(0, Math.min(this.currentMapWidth - 1, voxelTarget.voxelCoord.wx)) : 0);
 
       if (this.activeLayerType === 'paint-splat' || this.activeLayerType === 'free-form') {
         const pt = resolved?.point ?? (voxelTarget ? { x: voxelTarget.hitPoint.x, z: voxelTarget.hitPoint.z } : undefined);

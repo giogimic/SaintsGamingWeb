@@ -21,6 +21,7 @@ export interface WorldState {
     east?: string | any;
     west?: string | any;
   };
+  voxelWorld?: any;
 }
 
 export type MoveSimulationResult = 
@@ -107,6 +108,20 @@ export class WorldSimulation {
 
     if (logicTile?.isSolid && !isConnectedSeam) {
       return { type: 'BLOCKED', direction: dir, reason: 'WALL' };
+    }
+
+    // 3D Voxel Collision Check (Authoritative 3D volume)
+    if (state.voxelWorld) {
+      const wz = mapHeight - 1 - targetY;
+      const bodyWord = state.voxelWorld.getVoxel(targetX, 16, wz);
+      const bodyPhys = (bodyWord >>> 24) & 0xf;
+      if (bodyWord && (bodyPhys === 1 || bodyPhys === 5) && !isConnectedSeam) {
+        return { type: 'BLOCKED', direction: dir, reason: 'WALL' };
+      }
+      const groundWord = state.voxelWorld.getVoxel(targetX, 15, wz);
+      if ((!groundWord || (groundWord & 0xfff) === 0) && !isConnectedSeam) {
+        return { type: 'BLOCKED', direction: dir, reason: 'WALL' };
+      }
     }
 
     // NPC Collision Check
