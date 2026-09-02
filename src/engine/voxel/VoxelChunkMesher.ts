@@ -22,6 +22,56 @@ export interface ChunkMeshResult {
   quadCount: number;
 }
 
+/** Helper to create a fallback procedural texture data URL so red/black checkerboard is NEVER displayed */
+function createProceduralVoxelAtlasDataUrl(): string {
+  if (typeof document === 'undefined') return '';
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 48;
+    canvas.height = 48;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+    
+    // Fill top-left: grass green
+    ctx.fillStyle = '#4a8505';
+    ctx.fillRect(0, 0, 16, 16);
+    ctx.fillStyle = '#3b6b04';
+    ctx.fillRect(0, 0, 16, 2);
+
+    // Fill top-mid: dirt brown
+    ctx.fillStyle = '#6d4c41';
+    ctx.fillRect(16, 0, 16, 16);
+
+    // Fill top-right: stone grey
+    ctx.fillStyle = '#757575';
+    ctx.fillRect(32, 0, 16, 16);
+
+    // Fill mid-left: sand
+    ctx.fillStyle = '#ffd54f';
+    ctx.fillRect(0, 16, 16, 16);
+
+    // Fill mid-mid: water
+    ctx.fillStyle = '#0288d1';
+    ctx.fillRect(16, 16, 16, 16);
+
+    // Fill mid-right: wood
+    ctx.fillStyle = '#8d6e63';
+    ctx.fillRect(32, 16, 16, 16);
+
+    // Fill bot-left: snow
+    ctx.fillStyle = '#eceff1';
+    ctx.fillRect(0, 32, 16, 16);
+
+    // Fill bot-mid: gunmetal
+    ctx.fillStyle = '#2a2d34';
+    ctx.fillRect(16, 32, 16, 16);
+
+    return canvas.toDataURL('image/png');
+  } catch {
+    return '';
+  }
+}
+
 export class VoxelChunkMesher {
   private scene: Scene;
   private materialCache = new Map<number, StandardMaterial>();
@@ -41,7 +91,23 @@ export class VoxelChunkMesher {
           this.scene,
           true,
           false,
-          Texture.NEAREST_SAMPLINGMODE
+          Texture.NEAREST_SAMPLINGMODE,
+          undefined,
+          (message) => {
+            console.warn('[VoxelChunkMesher] Failed to load canonical voxel texture, using fallback procedural atlas', message);
+            const fallbackUrl = createProceduralVoxelAtlasDataUrl();
+            if (fallbackUrl && mat) {
+              const fallbackTex = new Texture(fallbackUrl, this.scene, true, false, Texture.NEAREST_SAMPLINGMODE);
+              fallbackTex.hasAlpha = true;
+              mat.diffuseTexture = fallbackTex;
+              mat.emissiveTexture = fallbackTex;
+            } else if (mat) {
+              mat.diffuseTexture = null;
+              mat.emissiveTexture = null;
+              mat.diffuseColor = new Color3(0.29, 0.52, 0.02);
+              mat.emissiveColor = new Color3(0.29, 0.52, 0.02);
+            }
+          }
         );
         this.textureCache.hasAlpha = true;
       }

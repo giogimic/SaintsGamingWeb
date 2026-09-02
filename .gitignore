@@ -87,7 +87,5 @@ docker_build.log
 
 # Archived / Offline Game Assets
 /.old-assets/
-/public/game-assets/
-/public/assets/
 /tuxemon-data/
 /tuxemon-db/

@@ -231,3 +231,36 @@ export function resolveTilesetTextureUrl(source: string): string {
   }
   return `/game-assets/tilesets/${encodeURIComponent(filename)}`;
 }
+
+/**
+ * Procedural fallback 32x32 grass tile data-URI for when a remote tileset fails to load or 404s.
+ * Ensures Babylon.js NEVER renders the default red/black checkerboard missing texture.
+ */
+export function createProceduralTileDataUrl(): string {
+  if (typeof document === 'undefined') return '';
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 32;
+    canvas.height = 32;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+
+    // Lush meadow grass base
+    ctx.fillStyle = '#4a8505';
+    ctx.fillRect(0, 0, 32, 32);
+
+    // Subtle grass texture flecks
+    ctx.fillStyle = '#5c9e08';
+    ctx.fillRect(4, 4, 6, 6);
+    ctx.fillRect(18, 12, 8, 6);
+    ctx.fillRect(8, 22, 6, 6);
+
+    ctx.fillStyle = '#3c6e04';
+    ctx.fillRect(12, 8, 4, 4);
+    ctx.fillRect(24, 24, 4, 4);
+
+    return canvas.toDataURL('image/png');
+  } catch {
+    return '';
+  }
+}

@@ -47,6 +47,7 @@ import {
   tilesetUvForOverlayPlane,
   worldToTileCoord,
   resolveTilesetTextureUrl,
+  createProceduralTileDataUrl,
   type TilesetUvInput,
 } from "../shared/game/tileBatchHelpers";
 import {
@@ -1992,11 +1993,19 @@ export class BabylonEngine {
               1,
               () => console.log(`[BabylonEngine] Texture loaded SUCCESS: ${tilesetPath}`),
               (message) => {
-                console.warn(`[BabylonEngine] Tileset image not found at ${tilesetPath}, using fallback color`, message);
-                newMat.diffuseTexture = null;
-                newMat.emissiveTexture = null;
-                newMat.diffuseColor = new Color3(0.18, 0.42, 0.22);
-                newMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
+                console.warn(`[BabylonEngine] Tileset image not found at ${tilesetPath}, using fallback procedural tile texture`, message);
+                const fallbackData = createProceduralTileDataUrl();
+                if (fallbackData) {
+                  const fallbackTex = new Texture(fallbackData, this.scene, true, false, 1);
+                  fallbackTex.hasAlpha = true;
+                  newMat.diffuseTexture = fallbackTex;
+                  newMat.emissiveTexture = fallbackTex;
+                } else {
+                  newMat.diffuseTexture = null;
+                  newMat.emissiveTexture = null;
+                  newMat.diffuseColor = new Color3(0.18, 0.42, 0.22);
+                  newMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
+                }
               }
             );
             tex.hasAlpha = true;
@@ -2761,11 +2770,19 @@ export class BabylonEngine {
           1,
           undefined,
           (message) => {
-            console.warn(`[BabylonEngine] Tileset image not found at ${tilesetPath}, using fallback color`, message);
-            newMat.diffuseTexture = null;
-            newMat.emissiveTexture = null;
-            newMat.diffuseColor = new Color3(0.18, 0.42, 0.22);
-            newMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
+            console.warn(`[BabylonEngine] Tileset image not found at ${tilesetPath}, using fallback procedural tile texture`, message);
+            const fallbackData = createProceduralTileDataUrl();
+            if (fallbackData) {
+              const fallbackTex = new Texture(fallbackData, this.scene, true, false, 1);
+              fallbackTex.hasAlpha = true;
+              newMat.diffuseTexture = fallbackTex;
+              newMat.emissiveTexture = fallbackTex;
+            } else {
+              newMat.diffuseTexture = null;
+              newMat.emissiveTexture = null;
+              newMat.diffuseColor = new Color3(0.18, 0.42, 0.22);
+              newMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
+            }
           }
         );
         tex.hasAlpha = true;
