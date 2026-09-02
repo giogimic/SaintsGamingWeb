@@ -1,3 +1,12 @@
+# 2.1.639
+- **Studio Prefab & Clipboard Paste Handler Modularization**:
+  - **Modular Prefab & Paste Handlers (`PrefabToolHandler.ts`, `PasteToolHandler.ts`)**:
+    - Extracted composite multi-layer prefab stamping and clipboard tile placement into modular tool handler classes.
+    - `PrefabToolHandler`: Places composite visual and logic tiles centered on cursor pivot with auto-overlay registration.
+    - `PasteToolHandler`: Dispatches clipboard tile pasting cleanly through the central `ToolDispatcher`.
+  - **Clean Tool Dispatcher Registration (`ToolDispatcher.ts`, `GameCanvasBabylon.tsx`)**:
+    - Fully wired `prefab` and `paste` events through `toolDispatcherRef.current`.
+
 # 2.1.638
 - **Complete Canvas Tool Delegation & Pattern Auto-Tiling Modularization**:
   - **Full Canvas Tool Delegation (`GameCanvasBabylon.tsx`)**:
