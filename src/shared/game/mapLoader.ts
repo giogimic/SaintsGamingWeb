@@ -76,6 +76,21 @@ export async function loadMapData(mapId: string): Promise<MapData> {
       const height = Array.isArray(grid) ? grid.length : 20;
       const width = Array.isArray(grid?.[0]) ? grid[0].length : 20;
 
+      let freeformLayers: any[] = [];
+      let voxelDoc: any = undefined;
+      try {
+        freeformLayers = JSON.parse(worldMap.freeformLayersData || "[]");
+        if (Array.isArray(freeformLayers)) {
+          const voxelLayer = freeformLayers.find((l: any) => l.type === 'voxel' || l.id === 'voxel_world_doc');
+          if (voxelLayer && voxelLayer.voxelDoc) {
+            voxelDoc = voxelLayer.voxelDoc;
+          }
+          freeformLayers = freeformLayers.filter((l: any) => l.type !== 'voxel' && l.id !== 'voxel_world_doc');
+        }
+      } catch {
+        freeformLayers = [];
+      }
+
       const data: MapData = {
         id: worldMap.id,
         name: worldMap.name,
@@ -85,7 +100,9 @@ export async function loadMapData(mapId: string): Promise<MapData> {
         npcs,
         encountersData: encounters,
         tileLayers: JSON.parse(worldMap.tileLayersData || "[]"),
+        freeformLayers,
         tilesets: JSON.parse(worldMap.tilesetsData || "[]"),
+        voxelDoc,
         width,
         height,
       };

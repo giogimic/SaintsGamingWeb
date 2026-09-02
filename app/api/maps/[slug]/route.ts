@@ -78,6 +78,23 @@ async function loadMapPayload(slug: string) {
       grid = Array.from({ length: dims.height }, () => Array(dims.width).fill(0));
     }
 
+    let freeformLayers: any[] = [];
+    try {
+      freeformLayers = JSON.parse(worldMap.freeformLayersData || "[]");
+    } catch {
+      freeformLayers = [];
+    }
+
+    if (!voxelDoc && Array.isArray(freeformLayers)) {
+      const voxelLayer = freeformLayers.find((l: any) => l.type === 'voxel' || l.id === 'voxel_world_doc');
+      if (voxelLayer && voxelLayer.voxelDoc) {
+        voxelDoc = voxelLayer.voxelDoc;
+      }
+    }
+    const cleanFreeformLayers = Array.isArray(freeformLayers)
+      ? freeformLayers.filter((l: any) => l.type !== 'voxel' && l.id !== 'voxel_world_doc')
+      : [];
+
     return {
       id: worldMap.id,
       gameId: worldMap.gameId,
@@ -91,7 +108,7 @@ async function loadMapPayload(slug: string) {
       npcs: JSON.parse(worldMap.npcsData || "[]"),
       encounterPool: JSON.parse(worldMap.encountersData || "[]"),
       tileLayers,
-      freeformLayers: JSON.parse(worldMap.freeformLayersData || "[]"),
+      freeformLayers: cleanFreeformLayers,
       tilesets,
       voxelDoc,
       version: worldMap.version,
@@ -312,6 +329,17 @@ export async function POST(
       },
     });
 
+    let freeformLayersForSave = Array.isArray(body.freeformLayers) ? [...body.freeformLayers] : [];
+    if (body.voxelDoc) {
+      freeformLayersForSave = freeformLayersForSave.filter((l: any) => l.type !== 'voxel' && l.id !== 'voxel_world_doc');
+      freeformLayersForSave.push({
+        id: 'voxel_world_doc',
+        name: 'Voxel World Model',
+        type: 'voxel',
+        voxelDoc: body.voxelDoc,
+      });
+    }
+
     const worldMap = await prisma.worldMap.upsert({
 
       where: { id: slug },
@@ -329,7 +357,7 @@ export async function POST(
               tilesetsData: JSON.stringify(visualsForWrite.tilesets || []),
             }
           : {}),
-        ...(body.freeformLayers ? { freeformLayersData: JSON.stringify(body.freeformLayers) } : {}),
+        ...(body.freeformLayers || body.voxelDoc ? { freeformLayersData: JSON.stringify(freeformLayersForSave) } : {}),
         version: { increment: 1 },
       },
       create: {
@@ -342,7 +370,7 @@ export async function POST(
         encountersData: JSON.stringify(body.encounterPool || []),
         entitiesData: JSON.stringify(entitiesPayload),
         tileLayersData: JSON.stringify(visualsForCreate.tileLayers || []),
-        freeformLayersData: JSON.stringify(body.freeformLayers || []),
+        freeformLayersData: JSON.stringify(freeformLayersForSave),
         tilesetsData: JSON.stringify(visualsForCreate.tilesets || []),
       },
     });

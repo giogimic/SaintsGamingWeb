@@ -264,6 +264,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       isDevEditorOpen,
       connections: activeMap.connections,
       nodeConnections: activeMap.nodeConnections,
+      voxelWorld: (engineRef.current as any)?.voxelWorld,
     };
 
     const result = WorldSimulation.tryMove(worldState, targetX, targetY);
@@ -1750,6 +1751,14 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           const isWalkable = (x: number, y: number) => {
             const tileId = map.grid[y]?.[x];
             if (logicTiles[tileId]?.isSolid) return false;
+            if (engine.voxelWorld) {
+              const wz = mapHeight - 1 - y;
+              const bodyWord = engine.voxelWorld.getVoxel(x, 16, wz);
+              const bodyPhys = (bodyWord >>> 24) & 0xf;
+              if (bodyWord && (bodyPhys === 1 || bodyPhys === 5)) return false;
+              const groundWord = engine.voxelWorld.getVoxel(x, 15, wz);
+              if (!groundWord || (groundWord & 0xfff) === 0) return false;
+            }
             const isStaticNpc = map.npcs?.some((npc: any) => npc.x === x && npc.y === y);
             const isDynamicNpc = dynamicEntities.some(
               (e) => Math.round(e.position.x) === x && Math.round(e.position.y) === y && (e.mapId === currentMapId || !e.mapId)
@@ -2014,8 +2023,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               }
             }
           }
-          if (Array.isArray(map.grid)) {
+          if (activeLayerIdx === LOGIC_LAYER_IDX && Array.isArray(map.grid)) {
             engine.enableLogicGridOverlay?.(map.grid);
+          } else {
+            engine.disableLogicGridOverlay?.();
           }
           useGameStore.getState().setActiveMapData(map);
           mapDataRef.current = map;

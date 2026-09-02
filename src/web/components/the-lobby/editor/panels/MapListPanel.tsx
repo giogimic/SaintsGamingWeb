@@ -173,6 +173,8 @@ export const MapListPanel: React.FC = () => {
           encounterPool: newMapData.encounterPool,
           tileLayers: newMapData.tileLayers,
           tilesets: newMapData.tilesets,
+          voxelDoc: (newMapData as any).voxelDoc,
+          blockSizePx: (newMapData as any).blockSizePx,
         }),
       });
       if (!res.ok) {

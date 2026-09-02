@@ -1,3 +1,23 @@
+# 2.1.673
+- **Studio Viewport Green Line Elimination & 3D Voxel Engine Integration**:
+  - **Viewport Green Lines & Perimeter Boundary Fix (`GameCanvasBabylon.tsx`)**:
+    - Eliminated rogue logic grid overlay leak in `onHotReload` (line 2018) that was unconditionally creating 900+ green `#10b981` planes at $Y = 0.5$ across the viewport. Strictly gated `enableLogicGridOverlay` to `activeLayerIdx === LOGIC_LAYER_IDX` (`-1`) and called `disableLogicGridOverlay()` when in Visual Grid or Voxel modes.
+  - **24,000 Redundant Legacy 2D Tiles Elimination (`BabylonEngine.ts`)**:
+    - Discovered that `loadTilemap` was generating a 64-tile wide legacy skirt padding in all directions (24,064 flat quads across 25 chunks) even when a 3D Voxel World is present. Suppressed skirt padding generation when `hasVoxelWorldMesh` is true, cutting JS heap usage by 90MB and stopping main-thread click violation lag.
+  - **Non-Destructive Voxel Persistence Pipeline**:
+    - Wired `voxelDoc` through `MapPersistenceService.ts`, `MapListPanel.tsx`, `app/api/maps/[slug]/route.ts`, `mapLoader.ts`, and `app/api/setup/initialize-game/route.ts`.
+    - Stores `voxelDoc` inside `freeformLayersData` under a dedicated `{ id: 'voxel_world_doc', type: 'voxel', voxelDoc }` payload, ensuring full backward compatibility and zero database migration risks across SQLite, MySQL, and Docker.
+  - **Authoritative 3D Voxel Collision Pipeline (`WorldSimulation.ts`, `GameCanvasBabylon.tsx`)**:
+    - Upgraded `WorldSimulation.tryMove` and `GameCanvasBabylon.isWalkable` to sample 3D voxel volume physics. Solid obstacles and hazards at body height ($wy = 16$) now block movement, and empty air/pit voxels underfoot ($wy = 15$) prevent players from walking on thin air.
+  - **Coordinate Translation & Z-Fighting Resolution**:
+    - Fixed inverted North/South coordinate translation in `BabylonEngine.ts` (`r = height - 1 - wz`, `c = wx`).
+    - Added `zOffset = -1` on `VoxelChunkMesher.ts` material to completely eliminate coplanar z-fighting between the 3D voxel foundation and legacy 2D planes.
+    - Guarded against falling through to 2.5D splat decals when editing in Voxel Mode (`BrushToolHandler.ts`).
+  - **Zero Hook Violations & 100% Green Test Suite**:
+    - Hoisted `useGameStore` call in `StudioContextMenu.tsx` to prevent hook-order drift.
+    - Verified 0 hook violations across the entire codebase with `validate:hooks`.
+    - Verified all 258 test suites and 1,123 Vitest tests pass with 0 failures.
+
 # 2.1.672
 - **Studio Voxel Palette Hook Safety & 3D Voxel Meshing Quality**:
   - **React Error #310 Elimination (`TerrainBrushPalette.tsx`, `WorldBuilderPanel.tsx`)**:
