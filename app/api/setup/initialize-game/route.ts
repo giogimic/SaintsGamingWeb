@@ -3,6 +3,7 @@ import { prisma } from '@/web/lib/prisma';
 import { auth } from '@/auth';
 import { getSystemSetupStatus, SETUP_SETTING_KEYS } from '@/shared/game/setup/setupDetection';
 import { generateDefaultWorldDoc, type VoxelWorldDocV3 } from '@/shared/game/voxel/VoxelWorldDoc';
+import { DEFAULT_STUDIO_TILESETS, DEFAULT_STUDIO_GROUND_GID } from '@/shared/game/studioTilesetBootstrap';
 import { notifyGoMapSynced } from '@/server/goMmoNotify';
 
 export const dynamic = 'force-dynamic';
@@ -247,26 +248,36 @@ export async function POST(req: Request) {
       }
 
       // 4d. Upsert Starting WorldMap & GameMap
+      const initialLogicGrid = Array.from({ length: mapHeight }, () => Array(mapWidth).fill(0));
+      const initialTileLayers = [
+        {
+          name: 'Ground',
+          grid: Array.from({ length: mapHeight }, () => Array(mapWidth).fill(DEFAULT_STUDIO_GROUND_GID || 17)),
+        },
+      ];
+
       await tx.worldMap.upsert({
         where: { id: mapId },
         create: {
           id: mapId,
           gameId: 'saints',
           name: mapName,
-          gridData: JSON.stringify([]),
+          gridData: JSON.stringify(initialLogicGrid),
           gatesData: JSON.stringify(gatesPayload),
           npcsData: JSON.stringify([]),
           encountersData: JSON.stringify([]),
           entitiesData: JSON.stringify([]),
-          tileLayersData: serializedVoxelDoc,
-          tilesetsData: JSON.stringify([]),
+          tileLayersData: JSON.stringify(initialTileLayers),
+          tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
           version: 1,
         },
         update: {
           name: mapName,
           gameId: 'saints',
           gatesData: JSON.stringify(gatesPayload),
-          tileLayersData: serializedVoxelDoc,
+          gridData: JSON.stringify(initialLogicGrid),
+          tileLayersData: JSON.stringify(initialTileLayers),
+          tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
           version: { increment: 1 },
         },
       });
@@ -278,7 +289,7 @@ export async function POST(req: Request) {
           name: mapName,
           width: mapWidth,
           height: mapHeight,
-          tilesetData: serializedVoxelDoc,
+          tilesetData: JSON.stringify(initialLogicGrid),
           gates: JSON.stringify(gatesPayload),
           npcs: JSON.stringify([]),
           encounters: JSON.stringify([]),
@@ -287,7 +298,7 @@ export async function POST(req: Request) {
           name: mapName,
           width: mapWidth,
           height: mapHeight,
-          tilesetData: serializedVoxelDoc,
+          tilesetData: JSON.stringify(initialLogicGrid),
           gates: JSON.stringify(gatesPayload),
         },
       });
