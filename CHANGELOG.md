@@ -1,3 +1,16 @@
+# 2.1.635
+- **Studio Continuous Selection Geometry, UV Subregion Mapping, Centered Pivot & Layer Rasterization Adapters**:
+  - **Continuous Selection Geometry Retention (`BabylonEngine.ts`, `GameCanvasBabylon.tsx`, `editor-store.ts`)**:
+    - Eliminated square-cell visual fallbacks upon mouse release (`eventType === 'up'`). Studio now retains mathematically smooth continuous vector boundaries for Circle/Ellipse, Lasso/Freehand, and Regular Polygon selection tools via `setContinuousSelectionPreview`.
+    - Added dedicated continuous geometry persistence methods in `editor-store.ts` (`setSelectionEllipse`, `setSelectionRegularPolygon`, `setSelectionFreehand`).
+    - Upgraded `isCellInsideSelection` to evaluate `isPointInGeometry(cellC + 0.5, cellR + 0.5, activeGeom)` dynamically for true sub-cell boundary calculations.
+  - **Seamless Terrain Atlas UV Subregions (`TerrainBrushPalette.tsx`)**:
+    - Added exact `uOffset, vOffset, uScale, vScale` UV subregions to `BUILTIN_SEAMLESS_MATERIALS` and wired them dynamically into `setActiveStampAsset`, preventing whole-atlas stretching when sampling individual material swatches.
+  - **Centered Pivot (0.5, 0.5) Multi-Tile Placement (`GameCanvasBabylon.tsx`, `BabylonEngine.ts`)**:
+    - Centered multi-tile patterns, custom sliced prefabs, and stamps precisely under the cursor pivot (`Math.floor((targetW - 1) / 2)`, `Math.floor((targetH - 1) / 2)`), aligning the preview hover reticle and actual placed world entities with continuous cursor tracking.
+  - **Discrete Grid Layer Rasterization Adapters (`editor-store.ts`)**:
+    - Integrated automatic `rasterizeGeometryToCells` conversion when executing discrete grid operations (`deleteSelectionTiles`, `paintSelection`, `copySelection`) over continuous selections, maintaining smooth continuous selections while accurately modifying discrete tile layers.
+
 # 2.1.633
 - **Gateway Server Selection & Core Tooling Disambiguation**:
   - **Gateway / Server Selection Flow**: The Server/Gateway Selection screen is now enforced as the very first screen players encounter when clicking "Play" on the title screen, adhering to MMO standards. Players pick their server region/shard before authenticating their character roster.

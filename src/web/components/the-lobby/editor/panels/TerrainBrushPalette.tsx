@@ -24,6 +24,10 @@ export interface SeamlessMaterial {
   material: 'GRASS' | 'DIRT' | 'SAND' | 'STONE' | 'WATER' | 'SNOW' | 'WOOD';
   textureUrl: string;
   color: string;
+  uOffset?: number;
+  vOffset?: number;
+  uScale?: number;
+  vScale?: number;
 }
 
 const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
@@ -33,6 +37,10 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     material: 'GRASS',
     textureUrl: '/game-assets/tilesets/terrain-overworld.png',
     color: '#22c55e',
+    uOffset: 0,
+    vOffset: 0.667,
+    uScale: 0.333,
+    vScale: 0.333,
   },
   {
     id: 'mat_dirt_soil',
@@ -40,6 +48,10 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     material: 'DIRT',
     textureUrl: '/game-assets/tilesets/terrain-overworld.png',
     color: '#a16207',
+    uOffset: 0.333,
+    vOffset: 0.667,
+    uScale: 0.333,
+    vScale: 0.333,
   },
   {
     id: 'mat_sand_fine',
@@ -47,6 +59,10 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     material: 'SAND',
     textureUrl: '/game-assets/tilesets/terrain-overworld.png',
     color: '#eab308',
+    uOffset: 0.667,
+    vOffset: 0.667,
+    uScale: 0.333,
+    vScale: 0.333,
   },
   {
     id: 'mat_stone_cobble',
@@ -54,6 +70,10 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     material: 'STONE',
     textureUrl: '/game-assets/tilesets/terrain-overworld.png',
     color: '#94a3b8',
+    uOffset: 0,
+    vOffset: 0,
+    uScale: 0.333,
+    vScale: 0.333,
   },
   {
     id: 'mat_water_river',
@@ -61,6 +81,10 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     material: 'WATER',
     textureUrl: '/game-assets/tilesets/terrain-overworld.png',
     color: '#38bdf8',
+    uOffset: 0.333,
+    vOffset: 0.333,
+    uScale: 0.333,
+    vScale: 0.333,
   },
   {
     id: 'mat_snow_powder',
@@ -68,6 +92,10 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     material: 'SNOW',
     textureUrl: '/game-assets/tilesets/terrain-overworld.png',
     color: '#e2e8f0',
+    uOffset: 0,
+    vOffset: 0.333,
+    uScale: 0.333,
+    vScale: 0.333,
   },
   {
     id: 'mat_wood_plank',
@@ -75,6 +103,10 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     material: 'WOOD',
     textureUrl: '/game-assets/tilesets/terrain-overworld.png',
     color: '#78350f',
+    uOffset: 0.5,
+    vOffset: 0,
+    uScale: 0.5,
+    vScale: 0.333,
   },
 ];
 
@@ -110,10 +142,10 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
       url: mat.textureUrl,
       width: 1,
       height: 1,
-      uOffset: 0,
-      vOffset: 0,
-      uScale: 1,
-      vScale: 1,
+      uOffset: mat.uOffset ?? 0,
+      vOffset: mat.vOffset ?? 0,
+      uScale: mat.uScale ?? 1,
+      vScale: mat.vScale ?? 1,
     });
 
     showToast(`Selected "${mat.name}". Left-click to paint continuous terrain.`);

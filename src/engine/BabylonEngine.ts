@@ -1632,6 +1632,10 @@ export class BabylonEngine {
     this.cameraSnapped = false;
   }
 
+  public getCurrentTileSize(): number {
+    return this.currentTileSize || 1;
+  }
+
   public loadTilemap(mapData: BabylonTileMapData, seamlessOffset?: { x: number, y: number }) {
     if (!this.scene) return;
 
@@ -2289,8 +2293,13 @@ export class BabylonEngine {
               this.tilesetMaterialCache.set(matKey, mat);
             }
 
-            // Thin Instances
-            const plane = MeshBuilder.CreatePlane(`splat_mesh_${groupKey}`, { size: tileSize }, this.scene);
+            // Thin Instances: Use discs for seamless terrain to prevent blocky square edges
+            let plane: Mesh;
+            if (!hasUv) {
+              plane = MeshBuilder.CreateDisc(`splat_mesh_${groupKey}`, { radius: tileSize * 0.7, tessellation: 24 }, this.scene);
+            } else {
+              plane = MeshBuilder.CreatePlane(`splat_mesh_${groupKey}`, { size: tileSize }, this.scene);
+            }
             plane.material = mat;
             plane.rotation.x = Math.PI / 2;
             plane.isPickable = false;
@@ -3873,8 +3882,8 @@ export class BabylonEngine {
       const scale = this.stampScale || 1;
       const effW = Math.max(1, Math.round(pat.w * scale));
       const effH = Math.max(1, Math.round(pat.h * scale));
-      const patPosX = centerPosX + ((effW - 1) / 2) * s;
-      const patPosZ = centerPosZ - ((effH - 1) / 2) * s;
+      const patPosX = centerPosX;
+      const patPosZ = centerPosZ;
 
       const patMat = this.createMultiTileReticleMaterial(effW, effH);
 

@@ -181,6 +181,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
   };
 
   const isLogic = activeLayerIdx === -1;
+  const isGridLayer = activeLayerType === 'grid';
   const layerName = isLogic ? 'Collision Layer' : `Layer ${activeLayerIdx}`;
   const logicMeta = isLogic
     ? logicTiles[activeLogicTileId] || LOGIC_COMPONENT_PRESETS.find((p) => p.paintTileId === activeLogicTileId)
@@ -218,73 +219,77 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
             <Eraser className="h-3.5 w-3.5" />
           </button>
 
-          <button
-            type="button"
-            onClick={() => setBrushMode('fill')}
-            className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
-              brushMode === 'fill'
-                ? 'bg-amber-600 text-white font-bold shadow-[0_0_12px_rgba(245,158,11,0.5)] scale-105'
-                : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
-            }`}
-            title="Flood Fill Bucket"
-          >
-            <PaintBucket className="h-3.5 w-3.5" />
-          </button>
+          {isGridLayer && (
+            <>
+              <button
+                type="button"
+                onClick={() => setBrushMode('fill')}
+                className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
+                  brushMode === 'fill'
+                    ? 'bg-amber-600 text-white font-bold shadow-[0_0_12px_rgba(245,158,11,0.5)] scale-105'
+                    : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
+                }`}
+                title="Flood Fill Bucket"
+              >
+                <PaintBucket className="h-3.5 w-3.5" />
+              </button>
 
-          <button
-            type="button"
-            onClick={() => setBrushMode('eyedropper')}
-            className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
-              brushMode === 'eyedropper'
-                ? 'bg-cyan-600 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.5)] scale-105'
-                : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
-            }`}
-            title="Eyedropper (I)"
-          >
-            <Pipette className="h-3.5 w-3.5" />
-          </button>
+              <button
+                type="button"
+                onClick={() => setBrushMode('eyedropper')}
+                className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
+                  brushMode === 'eyedropper'
+                    ? 'bg-cyan-600 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.5)] scale-105'
+                    : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
+                }`}
+                title="Eyedropper (I)"
+              >
+                <Pipette className="h-3.5 w-3.5" />
+              </button>
 
-          <button
-            type="button"
-            onClick={() => setBrushMode('select')}
-            className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
-              brushMode === 'select'
-                ? 'bg-amber-600 text-white font-bold shadow-[0_0_12px_rgba(245,158,11,0.5)] scale-105'
-                : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
-            }`}
-            title="Marquee Selection (M)"
-          >
-            <SquareDashed className="h-3.5 w-3.5" />
-          </button>
+              <button
+                type="button"
+                onClick={() => setBrushMode('select')}
+                className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
+                  brushMode === 'select'
+                    ? 'bg-amber-600 text-white font-bold shadow-[0_0_12px_rgba(245,158,11,0.5)] scale-105'
+                    : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
+                }`}
+                title="Marquee Selection (M)"
+              >
+                <SquareDashed className="h-3.5 w-3.5" />
+              </button>
 
-          <button
-            type="button"
-            onClick={() => setBrushMode('prefab')}
-            className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
-              brushMode === 'prefab'
-                ? 'bg-primary text-primary-foreground font-bold shadow-[0_0_12px_rgba(203,178,106,0.5)] scale-105'
-                : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
-            }`}
-            title="Prefab Stamp (G)"
-          >
-            <Box className="h-3.5 w-3.5" />
-          </button>
+              <button
+                type="button"
+                onClick={() => setBrushMode('prefab')}
+                className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
+                  brushMode === 'prefab'
+                    ? 'bg-primary text-primary-foreground font-bold shadow-[0_0_12px_rgba(203,178,106,0.5)] scale-105'
+                    : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
+                }`}
+                title="Prefab Stamp (G)"
+              >
+                <Box className="h-3.5 w-3.5" />
+              </button>
 
-          <button
-            type="button"
-            onClick={() => {
-              setBrushMode('gate');
-              setShowWarpOverlays(true);
-            }}
-            className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
-              brushMode === 'gate'
-                ? 'bg-purple-600 text-white font-bold shadow-[0_0_12px_rgba(168,85,247,0.5)] scale-105'
-                : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
-            }`}
-            title="Warp Gate Tool"
-          >
-            <DoorOpen className="h-3.5 w-3.5" />
-          </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setBrushMode('gate');
+                  setShowWarpOverlays(true);
+                }}
+                className={`p-1.5 rounded transition-all duration-100 cursor-pointer ${
+                  brushMode === 'gate'
+                    ? 'bg-purple-600 text-white font-bold shadow-[0_0_12px_rgba(168,85,247,0.5)] scale-105'
+                    : 'text-muted-foreground hover:text-foreground hover:scale-105 active:scale-95'
+                }`}
+                title="Warp Gate Tool"
+              >
+                <DoorOpen className="h-3.5 w-3.5" />
+              </button>
+            </>
+          )}
         </div>
 
         {/* Paint Mode Toggle (Stamp vs Paste) */}

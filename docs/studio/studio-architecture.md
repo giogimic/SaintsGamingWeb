@@ -6,14 +6,34 @@ The **Saints Studio** (`src/web/components/the-lobby/editor/`) is a comprehensiv
 
 ## 1. Studio Architecture & State Management
 
-Studio state is coordinated across dedicated stores and UI shells:
-- **`StudioEditorShell.tsx`**: The main viewport and docking container wrapping the Babylon.js canvas.
-- **`editor-store.ts`**: Zustand store managing active tool selection, brush radius, active layer, selected entity/cell, history stack (undo/redo), and unsaved changes flags.
-- **FlexLayout Dock Panels**: Draggable, tabbed docking panels allowing creators to arrange their workspace (World Builder, Inspector, Asset Browser, Problems, Catalogs, Server Controls).
+Studio state is coordinated across dedicated stores, docking containers, and Babylon.js WebGL:
+- **`StudioEditorShell.tsx`**: The main viewport, top menu bar, and docking container wrapping the Babylon.js canvas.
+- **`editor-store.ts`**: Zustand store managing active tool selection, brush radius/shape, active layer, continuous selection geometry, history stack (undo/redo), and unsaved changes flags.
+- **Continuous Geometry Pipeline (`continuousGeometry.ts`)**: Mathematical shapes (`circle`, `ellipse`, `rectangle`, `regularPolygon`, `polygon`, `freehand`) serve as the source of truth, dynamically rendered in WebGL via `setContinuousSelectionPreview` and rasterized downstream for discrete grid operations.
+- **FlexLayout Dock Panels**: Draggable, dockable dark glass windows (`DraggablePanel.tsx`) allowing creators to arrange custom layouts.
 
 ---
 
-## 2. The 5 Core Studio Modes
+## 2. Core Studio Dock Windows
+
+Every dock is equipped with a `<WindowMenuBar>` application sub-menu ribbon:
+
+| Dock Window | Component | Key Capabilities |
+| :--- | :--- | :--- |
+| **Tile Selector** | `TileSelectorPanel.tsx` | 5 unified tabs (`Grid Paint`, `Terrain Splat`, `Props & Foliage`, `Sheet Slicer`, `Smart Border`). |
+| **Terrain Splat Palette** | `TerrainBrushPalette.tsx` | Seamless ground material swatches with subregion UV sampling, continuous scatter density, opacity falloff, and rotation. |
+| **Props & Foliage** | `PropLibraryPanel.tsx` | 2.5D/3D billboard prop placement, scale jitter, rotation steps, category filters (Trees, Rocks, Structures, Decor), and collision modes. |
+| **Sheet Slicer** | `SheetSlicerPanel.tsx` | Spritesheet pixel cutter with grid snapping (16px–64px or freeform), normalized UV calculation, and 1-click export to Terrain/Props. |
+| **Logic Painter** | `LogicPainterPanel.tsx` | Visual collision, water, warp gate, encounter zone, safe town, and environmental hazard tags. |
+| **World Builder & Atlas** | `WorldBuilderPanel.tsx` | Visual & collision layer stack, map topology, chunk streaming, neighbor map linkings. |
+| **Camera & View** | `CameraSettingsPanel.tsx` | 2.5D Isometric, Top-Down 90°, Free Orbit 3D presets, FOV, and Creator Camera Authority locking. |
+| **Catalog Editor** | `CatalogEditorShell.tsx` | Centralized definition chrome for NPCs, Items, Loot Tables, Monsters, Quests, Dungeons, and Mounts. |
+| **Loot Table Manager** | `LootManagerPanel.tsx` | Weighted drop tables, min/max quantity curves, and live drop simulation testers. |
+| **Diagnostics & Health** | `StudioProblemsPanel.tsx` | Real-time map topology verification, missing texture validation, and orphan tag detection. |
+
+---
+
+## 3. The 5 Core Studio Modes
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -21,15 +41,15 @@ Studio state is coordinated across dedicated stores and UI shells:
 └──────────────────────────────────────────────────────────┘
 ```
 
-1. **🎨 Paint Mode (`develop`):** Focuses on map layout. Enables dual-grid painting (visual tiles and collision logic), brush radii, fills, tileset selection, and terrain styling.
-2. **👾 Populate Mode (`npc`):** Focuses on placing entities into the scene. Place NPCs, monster spawners, resource nodes, harvestable trees/rocks, and prop blockers.
+1. **🎨 Paint Mode (`develop`):** Focuses on map layout. Enables dual-grid painting (visual tiles and collision logic), continuous vector selections, brush shapes (Circle, Square, Diamond, Star, Polygon), and terrain splats.
+2. **👾 Populate Mode (`npc`):** Focuses on placing entities into the scene. Place NPCs, monster spawners, harvestable nodes, and 2.5D prop obstacles.
 3. **📜 Script Mode (`script`):** Focuses on narrative and mechanics. Edit dialogue trees, assign quest triggers, link warp destinations, and set up event triggers.
 4. **📚 Catalog Mode (`catalog`):** Full-screen or docked definition management. Create and modify global game data: Items, Creatures, Loot Tables, Classes, and Starter Heroes.
 5. **▶️ Playtest Mode (`test` - PIE):** Hit **Ctrl+E** to instantly test the map with full player movement, physics, combat, and interactions without leaving the browser tab.
 
 ---
 
-## 3. Studio Omnisearch & Hotkeys
+## 4. Studio Omnisearch & Hotkeys
 
 ### 🔍 Studio Omnisearch (`StudioOmnisearch.tsx`)
 Pressing **Ctrl+K** or clicking the search bar brings up the global search palette:
@@ -38,19 +58,20 @@ Pressing **Ctrl+K** or clicking the search bar brings up the global search palet
 - Execute quick actions (e.g. *Toggle Grid*, *Save Map*, *Switch to Logic Layer*).
 
 ### ⌨️ Standard Keybindings
-- **`Ctrl + S`**: Save Map to database and sync to Go MMO.
+- **`Ctrl + S`**: Save Map to database and sync to Go MMO backend.
 - **`Ctrl + E`**: Toggle Playtest Mode (PIE).
 - **`Ctrl + Z` / `Ctrl + Y`**: Undo / Redo map edits.
 - **`B`**: Brush Tool (Stamp).
-- **`R`**: Rect Fill Tool.
-- **`G`**: Bucket Fill Tool.
+- **`R`**: Rect Fill Tool / Rotate Stamp.
+- **`F` / `G`**: Flood Fill Bucket Tool.
 - **`E`**: Eraser Tool.
 - **`I`**: Eyedropper (Pick Tile/Tag).
-- **`[` / `]`**: Decrease / Increase Brush Radius.
+- **`[` / `]`**: Decrease / Increase Brush Radius (or 15° rotation).
+- **`M`**: Toggle Magnet (Snap to Grid).
 
 ---
 
-## 4. Window Sub-Menu Ribbon Suite (`WindowMenuBar.tsx`)
+## 5. Window Sub-Menu Ribbon Suite (`WindowMenuBar.tsx`)
 
 Every dockable studio window is equipped with a flush application ribbon directly beneath its title bar:
 - **Separation of Concerns**: File, tool, and layer controls are separated from the main viewport, preventing clutter.
@@ -58,7 +79,7 @@ Every dockable studio window is equipped with a flush application ribbon directl
 
 ---
 
-## 5. Global 2.5D & 3D Environment Engine
+## 6. Global 2.5D & 3D Environment Engine
 
 Saints Studio provides real-time global atmosphere and visual customization:
 - **Time of Day Presets**: Day, Golden Hour, Dusk, Midnight, and Fantasy Night with dynamic ambient sun/moon lighting tints.

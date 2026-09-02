@@ -108,6 +108,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
   const setShowWarpOverlays = useEditorStore((s) => s.setShowWarpOverlays);
   const showSpawnOverlays = useEditorStore((s) => s.showSpawnOverlays);
   const setShowSpawnOverlays = useEditorStore((s) => s.setShowSpawnOverlays);
+  const activeLayerType = useEditorStore((s) => s.activeLayerType);
 
   const currentMapId = useGameStore((s) => s.currentMapId);
   const showToast = useGameStore((s) => s.showToast);
@@ -406,11 +407,15 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           <TopLevelMenu id="edit" label="Edit">
             <MenuItem label="Undo" shortcut="Ctrl+Z" icon={Undo2} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().triggerUndo(map); }} />
             <MenuItem label="Redo" shortcut="Ctrl+Y" icon={Redo2} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().triggerRedo(map); }} />
-            <MenuItem divider />
-            <MenuItem label="Cut Selection" shortcut="Ctrl+X" icon={Scissors} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().cutSelection(map); }} />
-            <MenuItem label="Copy Selection" shortcut="Ctrl+C" icon={Copy} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().copySelection(map); }} />
-            <MenuItem label="Paste" shortcut="Ctrl+V" icon={Clipboard} onClick={() => { useEditorStore.getState().setIsPasting(true); useEditorStore.getState().setBrushMode('paste'); }} />
-            <MenuItem label="Paste in Place" shortcut="Ctrl+Shift+V" icon={Pin} onClick={() => { const map = useGameStore.getState().activeMapData; const clip = useEditorStore.getState().tileClipboard; if (!map || !clip) return; useEditorStore.getState().pasteClipboard(map, null, clip.sourceOrigin.r, clip.sourceOrigin.c); }} />
+            {activeLayerType === 'grid' && (
+              <>
+                <MenuItem divider />
+                <MenuItem label="Cut Selection" shortcut="Ctrl+X" icon={Scissors} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().cutSelection(map); }} />
+                <MenuItem label="Copy Selection" shortcut="Ctrl+C" icon={Copy} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().copySelection(map); }} />
+                <MenuItem label="Paste" shortcut="Ctrl+V" icon={Clipboard} onClick={() => { useEditorStore.getState().setIsPasting(true); useEditorStore.getState().setBrushMode('paste'); }} />
+                <MenuItem label="Paste in Place" shortcut="Ctrl+Shift+V" icon={Pin} onClick={() => { const map = useGameStore.getState().activeMapData; const clip = useEditorStore.getState().tileClipboard; if (!map || !clip) return; useEditorStore.getState().pasteClipboard(map, null, clip.sourceOrigin.r, clip.sourceOrigin.c); }} />
+              </>
+            )}
           </TopLevelMenu>
 
           {/* ── VIEW ── */}

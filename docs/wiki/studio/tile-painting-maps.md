@@ -1,16 +1,20 @@
-# Dual-Grid Tile Painting & Map Authoring
+# Dual-Grid & Hybrid Freeform Layer Map Authoring
 
-Saints Studio provides a **dual-grid map authoring pipeline** where visual graphics layers and gameplay logic collision tags are authored and synchronized simultaneously.
+Saints Studio provides a **hybrid dual-grid and freeform authoring pipeline** where discrete tile graphics, logic collision tags, continuous terrain splats, and 2.5D/3D billboard props are authored and synchronized simultaneously.
 
 ---
 
-## 1. Dual-Grid Architecture
+## 1. Layer Hierarchy
 
-A `WorldMap` document stores two synchronized grid structures:
+A `WorldMap` document stores synchronized discrete and continuous layers:
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│ Visual Details Layer (Roofs, Canopy, Foliage)          │ GID > 0
+│ 2.5D Props & Foliage (`freeformLayers.objects`)        │ Freestanding 3D billboards (Trees, Rocks, Decor)
+├────────────────────────────────────────────────────────┤
+│ Visual Details Layer (Roofs, Canopy, Overlays)         │ GID > 0
+├────────────────────────────────────────────────────────┤
+│ Terrain Splats (`freeformLayers.splats`)               │ Continuous sub-tile decal splats & blends
 ├────────────────────────────────────────────────────────┤
 │ Visual Ground Layer (Grass, Paths, Water Shallows)     │ GID = 17 (Default Grass)
 ├────────────────────────────────────────────────────────┤
@@ -18,8 +22,9 @@ A `WorldMap` document stores two synchronized grid structures:
 └────────────────────────────────────────────────────────┘
 ```
 
-1. **Visual Layers (`tileLayers`):** Multi-layered 2D tile arrays storing Global Tile IDs (GIDs) mapped to sprite sheet atlas textures.
+1. **Visual Tile Layers (`tileLayers`):** Multi-layered 2D tile arrays storing Global Tile IDs (GIDs) mapped to sprite sheet atlas textures.
 2. **Logic Layer (`grid` / Layer `-1`):** A flat integer array where each index corresponds to a cell $(r \times \text{Width} + c)$ containing runtime behavioral tags.
+3. **Freeform Layers (`freeformLayers`):** Non-destructive continuous sub-tile layers for organic ground splats and 3D billboard prop entities with fractional coordinates $(X, Z)$.
 
 ---
 
@@ -41,12 +46,16 @@ Logic tags define functional tile properties at runtime:
 
 ## 3. Painting Tools & Workflow
 
-Studio offers four specialized painting tools bound to quick hotkeys:
+Studio offers rich painting and selection tools bound to quick hotkeys:
 
-- **Stamp / Brush (`B`):** Applies the active GID or Logic Tag to the cell under the cursor. Brush radius can be expanded up to $7\times 7$ tiles using `[` and `]`.
-- **Rectangle (`R`):** Click and drag to create rectangular fills for walls, paths, and clearings.
-- **Flood Fill (`G`):** Replaces all contiguous matching tiles with the selected GID or logic tag.
+- **Continuous Vector Selection:** Box, Circle/Ellipse, Lasso/Freehand, and Regular Polygon with mathematical curve retention on mouse release and dynamic rasterization adapters for discrete grid operations.
+- **5 Multi-Shape Brushes:** Circle, Square, Diamond, Star, and Polygon shapes with configurable radius ($1\times 1$ to $7\times 7$), angle rotation ($0^\circ$ to $360^\circ$), and centered pivot $(0.5, 0.5)$.
+- **Stamp / Brush (`B`):** Applies the active GID, seamless swatch, or logic tag under cursor.
+- **Rectangle (`R`):** Drag-and-drop bounding box fill for walls, paths, and clearings.
+- **Flood Fill (`F` / `G`):** Replaces all contiguous matching tiles with the selected GID or logic tag.
+- **Sheet Slicer (`SheetSlicerPanel.tsx`):** Pixel-precision crop tool generating normalized UV offsets (`uOffset, vOffset, uScale, vScale`) for 1-click export to Terrain Swatches or the Prop Library.
 - **Eyedropper (`I`):** Samples the visual GID or logic tag under the cursor directly into the active brush.
+- **Magnet Snap (`M`):** Toggles grid-locking on or off for sub-tile precision placement.
 
 ---
 
@@ -58,4 +67,4 @@ To maintain 60 FPS in the editor while painting large maps ($128 \times 128$ or 
 - Babylon.js rebuilds vertex indices only for the dirty chunk, eliminating whole-scene rebuild hitches.
 
 > [!TIP]
-> Use the Tile Selector (`TilesetPicker.tsx`) to switch between ground, architectural, and nature sprite sheets without losing your active layer selection.
+> Use the Tile Selector (`TileSelectorPanel.tsx`) to switch seamlessly between Grid Paint, Terrain Splats, Props & Foliage, the Sheet Slicer, and Smart Auto-Border tools.
