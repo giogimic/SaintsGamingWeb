@@ -161,9 +161,14 @@ export class SelectToolHandler implements IToolHandler {
     return true;
   }
 
+  public onHover(event: ToolPointerEvent, context: ToolExecutionContext): boolean {
+    // When not dragging, hover can highlight the tile or vertex under cursor
+    return true;
+  }
+
   public onCancel(context: ToolExecutionContext): void {
     this.isDragging = false;
     this.dragPoints = [];
-    context.engine.clearActionPreview();
+    context.engine.clearActionPreview?.();
   }
 }

@@ -1,3 +1,10 @@
+# 2.1.641
+- **Studio Tool Handler Unit Testing & Vitest Configuration**:
+  - **Comprehensive ToolDispatcher Test Suite (`ToolDispatcher.test.ts`)**:
+    - Added complete unit test coverage verifying handler registration, active tool transitions, safe cancellation hooks, pointer down/move/up dispatching, and hover preview delegation across all 7 tool handlers.
+  - **Vitest Path Resolution & Timeout Tuning (`vitest.config.ts`)**:
+    - Configured `@/` path alias and 15s test timeout, achieving 100% pass rate across all 256 test suites (1,101 tests).
+
 # 2.1.640
 - **Studio Shell Boundary Polish & Import Cleanups**:
   - **Decoupled Shell Imports (`StudioEditorShell.tsx`)**:

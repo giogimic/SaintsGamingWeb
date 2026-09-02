@@ -42,6 +42,14 @@ export class ToolDispatcher {
     }
   }
 
+  public getHandler(toolId: EditorToolId): IToolHandler | undefined {
+    return this.handlers.get(toolId);
+  }
+
+  public getActiveToolId(): EditorToolId {
+    return this.currentToolId;
+  }
+
   public getActiveToolHandler(): IToolHandler | undefined {
     return this.handlers.get(this.currentToolId);
   }
@@ -69,4 +77,13 @@ export class ToolDispatcher {
     }
     return false;
   }
+
+  public dispatchHover(event: ToolPointerEvent, context: ToolExecutionContext): boolean {
+    const handler = this.handlers.get(this.currentToolId);
+    if (handler?.onHover) {
+      return Boolean(handler.onHover(event, context));
+    }
+    return false;
+  }
 }
+
