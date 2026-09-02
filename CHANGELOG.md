@@ -1,3 +1,13 @@
+# 2.1.675
+- **Studio 3D Voxel Region Selection & Prefab/Paste Safety Integration**:
+  - **Authoritative 3D Voxel Region Deletion (`editor-store.ts`)**:
+    - Wired `deleteSelectionTiles` in `editor-store.ts` to clear full 3D voxel columns across active selection geometries (Box, Circle, Ellipse, Lasso, Polygon, Sparse) when in Voxel Mode (`studioMode === 'voxel'`).
+    - Eliminates legacy bug where pressing Delete in Voxel Mode erased background 2D tilemaps rather than the 3D voxel volume. Records atomic `PaintVoxelsOp` history for undo/redo.
+  - **Authoritative 3D Voxel Region Painting (`editor-store.ts`)**:
+    - Upgraded `paintSelection` to batch-paint 3D voxels across geometric selections with the active voxel material, shape, orientation, and physics flags, and dynamically meshes dirty chunks.
+  - **Tool Fallthrough Elimination on Prefabs and Pastes**:
+    - Added Voxel Mode guards (`store.studioMode === 'voxel'`) to `PrefabToolHandler.ts` and `PasteToolHandler.ts` to prevent accidentally stamping or pasting 2D tiles into the 3D voxel scene.
+
 # 2.1.674
 - **Studio 3D Voxel Undo/Redo Engine & Complete Tool Fallthrough Elimination**:
   - **Reversible 3D Voxel History & Undo/Redo (`editorOps.ts`, `editor-store.ts`, `GameCanvasBabylon.tsx`)**:
