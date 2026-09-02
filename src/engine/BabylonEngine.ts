@@ -2397,8 +2397,29 @@ export class BabylonEngine {
 
             let mat = this.tilesetMaterialCache.get(matKey);
             if (!mat) {
-              mat = new StandardMaterial(matKey, this.scene);
-              let tex = new Texture(propUrl, this.scene, true, false, Texture.NEAREST_SAMPLINGMODE);
+              const newPropMat = new StandardMaterial(matKey, this.scene);
+              mat = newPropMat;
+              let tex = new Texture(
+                propUrl,
+                this.scene,
+                true,
+                false,
+                Texture.NEAREST_SAMPLINGMODE,
+                undefined,
+                (message) => {
+                  console.warn(`[BabylonEngine] Prop texture not found at ${propUrl}, using fallback`, message);
+                  const fallbackData = createProceduralTileDataUrl();
+                  if (fallbackData) {
+                    const fallbackTex = new Texture(fallbackData, this.scene, true, false, 1);
+                    fallbackTex.hasAlpha = true;
+                    newPropMat.diffuseTexture = fallbackTex;
+                  } else {
+                    newPropMat.diffuseTexture = null;
+                    newPropMat.diffuseColor = new Color3(0.2, 0.35, 0.2);
+                    newPropMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
+                  }
+                }
+              );
               tex.hasAlpha = true;
               if (hasUv) {
                 tex.uOffset = obj.uOffset || 0;
@@ -3001,11 +3022,34 @@ export class BabylonEngine {
     if (legacyMesh) {
       let mat = this.tilesetMaterialCache.get(ts.imageSource);
       if (!mat) {
-        mat = new StandardMaterial(`tileset_${ts.imageSource}`, this.scene);
+        const newLegacyMat = new StandardMaterial(`tileset_${ts.imageSource}`, this.scene);
+        mat = newLegacyMat;
         let tex = this.tilesetTextureCache.get(ts.imageSource);
         if (!tex) {
           const tilesetPath = resolveTilesetTextureUrl(ts.imageSource);
-          tex = new Texture(tilesetPath, this.scene, true, false, 1);
+          tex = new Texture(
+            tilesetPath,
+            this.scene,
+            true,
+            false,
+            1,
+            undefined,
+            (message) => {
+              console.warn(`[BabylonEngine] Legacy paint tileset not found at ${tilesetPath}, using fallback`, message);
+              const fallbackData = createProceduralTileDataUrl();
+              if (fallbackData) {
+                const fallbackTex = new Texture(fallbackData, this.scene, true, false, 1);
+                fallbackTex.hasAlpha = true;
+                newLegacyMat.diffuseTexture = fallbackTex;
+                newLegacyMat.emissiveTexture = fallbackTex;
+              } else {
+                newLegacyMat.diffuseTexture = null;
+                newLegacyMat.emissiveTexture = null;
+                newLegacyMat.diffuseColor = new Color3(0.18, 0.42, 0.22);
+                newLegacyMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
+              }
+            }
+          );
           tex.hasAlpha = true;
           this.tilesetTextureCache.set(ts.imageSource, tex);
         }
@@ -3048,11 +3092,34 @@ export class BabylonEngine {
 
     let mat = this.tilesetMaterialCache.get(ts.imageSource);
     if (!mat) {
-      mat = new StandardMaterial(`tileset_${ts.imageSource}`, this.scene);
+      const newOverlayMat = new StandardMaterial(`tileset_${ts.imageSource}`, this.scene);
+      mat = newOverlayMat;
       let tex = this.tilesetTextureCache.get(ts.imageSource);
       if (!tex) {
         const tilesetPath = resolveTilesetTextureUrl(ts.imageSource);
-        tex = new Texture(tilesetPath, this.scene, true, false, 1);
+        tex = new Texture(
+          tilesetPath,
+          this.scene,
+          true,
+          false,
+          1,
+          undefined,
+          (message) => {
+            console.warn(`[BabylonEngine] Paint overlay tileset not found at ${tilesetPath}, using fallback`, message);
+            const fallbackData = createProceduralTileDataUrl();
+            if (fallbackData) {
+              const fallbackTex = new Texture(fallbackData, this.scene, true, false, 1);
+              fallbackTex.hasAlpha = true;
+              newOverlayMat.diffuseTexture = fallbackTex;
+              newOverlayMat.emissiveTexture = fallbackTex;
+            } else {
+              newOverlayMat.diffuseTexture = null;
+              newOverlayMat.emissiveTexture = null;
+              newOverlayMat.diffuseColor = new Color3(0.18, 0.42, 0.22);
+              newOverlayMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
+            }
+          }
+        );
         tex.hasAlpha = true;
         this.tilesetTextureCache.set(ts.imageSource, tex);
       }
