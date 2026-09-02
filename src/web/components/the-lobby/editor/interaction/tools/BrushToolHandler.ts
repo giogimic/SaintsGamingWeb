@@ -15,6 +15,8 @@ import { isPointInGeometry } from '@/shared/game/geometry/continuousGeometry';
 import { STUDIO_MAP_HOT_RELOAD_EVENT } from '@/shared/game/studioEvents';
 import { generateSplatScatterPoints, isInBrushShape } from '@/shared/game/brushGeometry';
 
+import { applyAutoTilingPass } from '@/shared/game/terrainEdgeDetection';
+
 export class BrushToolHandler implements IToolHandler {
   public readonly id = 'brush' as const;
 
@@ -220,15 +222,79 @@ export class BrushToolHandler implements IToolHandler {
     } else {
       const paintedOps: any[] = [];
       const layerIdx = target.layerIdx;
+      const pat = store.activeBrushPattern;
+      const isFullFootprintPattern = !!pat && store.prefabStampMode !== '1tile';
+      const scale = store.stampScale || 1;
+      const targetW = isFullFootprintPattern && pat ? Math.max(1, Math.round(pat.w * scale)) : 1;
+      const targetH = isFullFootprintPattern && pat ? Math.max(1, Math.round(pat.h * scale)) : 1;
+      const offsetR = Math.floor((targetH - 1) / 2);
+      const offsetC = Math.floor((targetW - 1) / 2);
+
+      const mapWidth = liveMap.grid?.[0]?.length || 24;
+      const mapHeight = liveMap.grid?.length || 24;
+
       for (const pt of coordsToPaint) {
-        if (hasSelection && !isCellInsideSelection(pt.r, pt.c)) continue;
-        const painted = paintWorldCell(liveMap, layerIdx, pt.r, pt.c, paintValue, worldDocSync);
-        if (!('error' in painted)) {
-          paintedOps.push(painted.cell);
-          context.engine.updateSingleTile(pt.r, pt.c, paintValue, layerIdx, liveMap.tilesets);
+        if (isFullFootprintPattern && pat) {
+          for (let br = 0; br < targetH; br++) {
+            for (let bc = 0; bc < targetW; bc++) {
+              const tr = pt.r + br - offsetR;
+              const tc = pt.c + bc - offsetC;
+              if (tr < 0 || tr >= mapHeight || tc < 0 || tc >= mapWidth) continue;
+              if (hasSelection && !isCellInsideSelection(tr, tc)) continue;
+
+              const srcR = Math.min(pat.h - 1, Math.floor((br / targetH) * pat.h));
+              const srcC = Math.min(pat.w - 1, Math.floor((bc / targetW) * pat.w));
+              const patVal = pat.gids[srcR][srcC];
+              if (patVal === 0) continue;
+
+              const painted = paintWorldCell(liveMap, layerIdx, tr, tc, patVal, worldDocSync);
+              if (!('error' in painted)) {
+                paintedOps.push(painted.cell);
+                context.engine.updateSingleTile(tr, tc, patVal, layerIdx, liveMap.tilesets);
+              }
+            }
+          }
+        } else {
+          if (hasSelection && !isCellInsideSelection(pt.r, pt.c)) continue;
+          const valToPaint = (store.activeBrushPattern && (store.paintMode === 'stamp' || store.prefabStampMode === '1tile'))
+            ? (store.activeBrushPattern.gids[0]?.[0] || paintValue)
+            : paintValue;
+
+          const painted = paintWorldCell(liveMap, layerIdx, pt.r, pt.c, valToPaint, worldDocSync);
+          if (!('error' in painted)) {
+            paintedOps.push(painted.cell);
+            context.engine.updateSingleTile(pt.r, pt.c, valToPaint, layerIdx, liveMap.tilesets);
+          }
         }
       }
+
       if (paintedOps.length > 0) {
+        if (store.isAutoEdgeEnabled && target.kind === 'visual') {
+          const curGrid = liveMap.tileLayers?.[layerIdx]?.grid;
+          if (curGrid) {
+            const customRule = (liveMap as any).terrainTransitionRules?.find?.(
+              (r: any) => r.centerGid === store.activeBrushTileId
+            );
+            const autoChanges = applyAutoTilingPass(
+              curGrid,
+              paintedOps.map((p: any) => ({ r: p.r, c: p.c })),
+              store.activeBrushTileId,
+              customRule?.columns || liveMap.tilesets?.[0]?.columns || 8,
+              undefined,
+              customRule
+            );
+            for (const change of autoChanges) {
+              context.engine.updateSingleTile(change.r, change.c, change.after, layerIdx, liveMap.tilesets);
+              paintedOps.push({
+                layer: layerIdx,
+                r: change.r,
+                c: change.c,
+                before: change.before,
+                after: change.after,
+              });
+            }
+          }
+        }
         store.pushPaintOp(paintedOps);
         store.markMapDirty();
       }
