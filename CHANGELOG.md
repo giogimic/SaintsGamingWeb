@@ -1,3 +1,10 @@
+# 2.1.638
+- **Complete Canvas Tool Delegation & Pattern Auto-Tiling Modularization**:
+  - **Full Canvas Tool Delegation (`GameCanvasBabylon.tsx`)**:
+    - Replaced 380+ lines of imperative inlined painting, erasing, freeform splat placement, and flood-filling in `GameCanvasBabylon.tsx` with unified, typed calls to `ToolDispatcher`.
+  - **Multi-Tile Patterns & Auto-Tiling (`BrushToolHandler.ts`)**:
+    - Encapsulated multi-tile brush pattern stamp footprints, continuous sub-region UV placement, and smart 9-slice terrain auto-edge generation into `BrushToolHandler`.
+
 # 2.1.637
 - **Modular Studio Tool Handlers & Interaction Engine (Phase 3)**:
   - **Modular Tool Handlers (`BrushToolHandler.ts`, `FillToolHandler.ts`, `EraserToolHandler.ts`, `EyedropperToolHandler.ts`)**:
