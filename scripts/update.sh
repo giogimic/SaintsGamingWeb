@@ -427,6 +427,7 @@ else
     WEB_PORT_MAP=${WEB_PORT_MAP:-3000:3000}
 
     cp docker-compose.base.yml docker-compose.yml
+    sed -i '/^\s*args:\s*$/d' docker-compose.yml 2>/dev/null || true
     sed -i "s/container_name: saints-gaming-web/container_name: ${WEB_CN}/g" docker-compose.yml
     sed -i "s/- \"3000:3000\"/- \"${WEB_PORT_MAP}\"/g" docker-compose.yml
 
