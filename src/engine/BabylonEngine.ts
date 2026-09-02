@@ -1993,19 +1993,11 @@ export class BabylonEngine {
               1,
               () => console.log(`[BabylonEngine] Texture loaded SUCCESS: ${tilesetPath}`),
               (message) => {
-                console.warn(`[BabylonEngine] Tileset image not found at ${tilesetPath}, using fallback procedural tile texture`, message);
-                const fallbackData = createProceduralTileDataUrl();
-                if (fallbackData) {
-                  const fallbackTex = new Texture(fallbackData, this.scene, true, false, 1);
-                  fallbackTex.hasAlpha = true;
-                  newMat.diffuseTexture = fallbackTex;
-                  newMat.emissiveTexture = fallbackTex;
-                } else {
-                  newMat.diffuseTexture = null;
-                  newMat.emissiveTexture = null;
-                  newMat.diffuseColor = new Color3(0.18, 0.42, 0.22);
-                  newMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
-                }
+                console.warn(`[BabylonEngine] Tileset image not found at ${tilesetPath}, using fallback color`, message);
+                newMat.diffuseTexture = null;
+                newMat.emissiveTexture = null;
+                newMat.diffuseColor = new Color3(0.18, 0.42, 0.22);
+                newMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
               }
             );
             tex.hasAlpha = true;
@@ -2407,17 +2399,10 @@ export class BabylonEngine {
                 Texture.NEAREST_SAMPLINGMODE,
                 undefined,
                 (message) => {
-                  console.warn(`[BabylonEngine] Prop texture not found at ${propUrl}, using fallback`, message);
-                  const fallbackData = createProceduralTileDataUrl();
-                  if (fallbackData) {
-                    const fallbackTex = new Texture(fallbackData, this.scene, true, false, 1);
-                    fallbackTex.hasAlpha = true;
-                    newPropMat.diffuseTexture = fallbackTex;
-                  } else {
-                    newPropMat.diffuseTexture = null;
-                    newPropMat.diffuseColor = new Color3(0.2, 0.35, 0.2);
-                    newPropMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
-                  }
+                  console.warn(`[BabylonEngine] Prop texture not found at ${propUrl}, using fallback color`, message);
+                  newPropMat.diffuseTexture = null;
+                  newPropMat.diffuseColor = new Color3(0.2, 0.35, 0.2);
+                  newPropMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
                 }
               );
               tex.hasAlpha = true;
@@ -2791,19 +2776,11 @@ export class BabylonEngine {
           1,
           undefined,
           (message) => {
-            console.warn(`[BabylonEngine] Tileset image not found at ${tilesetPath}, using fallback procedural tile texture`, message);
-            const fallbackData = createProceduralTileDataUrl();
-            if (fallbackData) {
-              const fallbackTex = new Texture(fallbackData, this.scene, true, false, 1);
-              fallbackTex.hasAlpha = true;
-              newMat.diffuseTexture = fallbackTex;
-              newMat.emissiveTexture = fallbackTex;
-            } else {
-              newMat.diffuseTexture = null;
-              newMat.emissiveTexture = null;
-              newMat.diffuseColor = new Color3(0.18, 0.42, 0.22);
-              newMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
-            }
+            console.warn(`[BabylonEngine] Tileset image not found at ${tilesetPath}, using fallback color`, message);
+            newMat.diffuseTexture = null;
+            newMat.emissiveTexture = null;
+            newMat.diffuseColor = new Color3(0.18, 0.42, 0.22);
+            newMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
           }
         );
         tex.hasAlpha = true;
@@ -3035,19 +3012,11 @@ export class BabylonEngine {
             1,
             undefined,
             (message) => {
-              console.warn(`[BabylonEngine] Legacy paint tileset not found at ${tilesetPath}, using fallback`, message);
-              const fallbackData = createProceduralTileDataUrl();
-              if (fallbackData) {
-                const fallbackTex = new Texture(fallbackData, this.scene, true, false, 1);
-                fallbackTex.hasAlpha = true;
-                newLegacyMat.diffuseTexture = fallbackTex;
-                newLegacyMat.emissiveTexture = fallbackTex;
-              } else {
-                newLegacyMat.diffuseTexture = null;
-                newLegacyMat.emissiveTexture = null;
-                newLegacyMat.diffuseColor = new Color3(0.18, 0.42, 0.22);
-                newLegacyMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
-              }
+              console.warn(`[BabylonEngine] Legacy paint tileset not found at ${tilesetPath}, using fallback color`, message);
+              newLegacyMat.diffuseTexture = null;
+              newLegacyMat.emissiveTexture = null;
+              newLegacyMat.diffuseColor = new Color3(0.18, 0.42, 0.22);
+              newLegacyMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
             }
           );
           tex.hasAlpha = true;
@@ -3105,19 +3074,11 @@ export class BabylonEngine {
           1,
           undefined,
           (message) => {
-            console.warn(`[BabylonEngine] Paint overlay tileset not found at ${tilesetPath}, using fallback`, message);
-            const fallbackData = createProceduralTileDataUrl();
-            if (fallbackData) {
-              const fallbackTex = new Texture(fallbackData, this.scene, true, false, 1);
-              fallbackTex.hasAlpha = true;
-              newOverlayMat.diffuseTexture = fallbackTex;
-              newOverlayMat.emissiveTexture = fallbackTex;
-            } else {
-              newOverlayMat.diffuseTexture = null;
-              newOverlayMat.emissiveTexture = null;
-              newOverlayMat.diffuseColor = new Color3(0.18, 0.42, 0.22);
-              newOverlayMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
-            }
+            console.warn(`[BabylonEngine] Paint overlay tileset not found at ${tilesetPath}, using fallback color`, message);
+            newOverlayMat.diffuseTexture = null;
+            newOverlayMat.emissiveTexture = null;
+            newOverlayMat.diffuseColor = new Color3(0.18, 0.42, 0.22);
+            newOverlayMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
           }
         );
         tex.hasAlpha = true;
@@ -6218,8 +6179,16 @@ export class BabylonEngine {
     this.selectionBoxMesh?.dispose();
     this.actionPreviewBoundsMesh?.dispose();
     this.itemBillboards?.dispose();
+    
     this.spriteTextureCache.forEach((tex) => tex.dispose());
     this.spriteTextureCache.clear();
+    
+    this.tilesetTextureCache.forEach((tex) => tex.dispose());
+    this.tilesetTextureCache.clear();
+    
+    this.tilesetMaterialCache.forEach((mat) => mat.dispose());
+    this.tilesetMaterialCache.clear();
+    
     this.guiTexture.dispose();
     this.scene.dispose();
     this.engine.dispose();
