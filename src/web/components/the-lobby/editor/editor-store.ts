@@ -389,7 +389,10 @@ interface EditorState {
   toggleSelectedCell: (r: number, c: number) => void;
   setSelectionBox: (minR: number, maxR: number, minC: number, maxC: number) => void;
   setSelectionCircle: (centerR: number, centerC: number, radius: number) => void;
+  setSelectionEllipse: (centerR: number, centerC: number, radiusX: number, radiusZ: number, rotation?: number) => void;
+  setSelectionRegularPolygon: (centerR: number, centerC: number, radius: number, sides: number, rotation?: number) => void;
   setSelectionPolygon: (points: Array<{ r: number; c: number }>) => void;
+  setSelectionFreehand: (strokes: Array<{ x: number; z: number }>, strokeWidth?: number) => void;
   addSelectedBox: (minR: number, maxR: number, minC: number, maxC: number) => void;
   removeSelectedBox: (minR: number, maxR: number, minC: number, maxC: number) => void;
   clearSelectedCells: () => void;
@@ -1637,9 +1640,44 @@ export const useEditorStore = create<EditorState>()(
         set((state) => {
           state.activeSelectionGeometry = {
             type: 'circle',
-            centerX: centerC + 0.5,
-            centerZ: centerR + 0.5,
+            centerX: centerC,
+            centerZ: centerR,
             radius,
+          };
+          const r0 = Math.floor(centerR - radius);
+          const r1 = Math.ceil(centerR + radius);
+          const c0 = Math.floor(centerC - radius);
+          const c1 = Math.ceil(centerC + radius);
+          state.selectionStart = { r: r0, c: c0 };
+          state.selectionEnd = { r: r1, c: c1 };
+        }),
+      setSelectionEllipse: (centerR, centerC, radiusX, radiusZ, rotation = 0) =>
+        set((state) => {
+          state.activeSelectionGeometry = {
+            type: 'ellipse',
+            centerX: centerC,
+            centerZ: centerR,
+            radiusX,
+            radiusZ,
+            rotation,
+          };
+          const maxRad = Math.max(radiusX, radiusZ);
+          const r0 = Math.floor(centerR - maxRad);
+          const r1 = Math.ceil(centerR + maxRad);
+          const c0 = Math.floor(centerC - maxRad);
+          const c1 = Math.ceil(centerC + maxRad);
+          state.selectionStart = { r: r0, c: c0 };
+          state.selectionEnd = { r: r1, c: c1 };
+        }),
+      setSelectionRegularPolygon: (centerR, centerC, radius, sides, rotation = 0) =>
+        set((state) => {
+          state.activeSelectionGeometry = {
+            type: 'regularPolygon',
+            centerX: centerC,
+            centerZ: centerR,
+            radius,
+            sides,
+            rotation,
           };
           const r0 = Math.floor(centerR - radius);
           const r1 = Math.ceil(centerR + radius);
@@ -1665,6 +1703,25 @@ export const useEditorStore = create<EditorState>()(
           });
           state.selectionStart = { r: Math.floor(minR), c: Math.floor(minC) };
           state.selectionEnd = { r: Math.ceil(maxR), c: Math.ceil(maxC) };
+        }),
+      setSelectionFreehand: (strokes, strokeWidth = 0.5) =>
+        set((state) => {
+          if (!strokes.length) return;
+          state.activeSelectionGeometry = {
+            type: 'freehand',
+            strokes,
+            strokeWidth,
+          };
+          let minX = strokes[0].x, maxX = strokes[0].x;
+          let minZ = strokes[0].z, maxZ = strokes[0].z;
+          strokes.forEach((s) => {
+            if (s.x < minX) minX = s.x;
+            if (s.x > maxX) maxX = s.x;
+            if (s.z < minZ) minZ = s.z;
+            if (s.z > maxZ) maxZ = s.z;
+          });
+          state.selectionStart = { r: Math.floor(minZ), c: Math.floor(minX) };
+          state.selectionEnd = { r: Math.ceil(maxZ), c: Math.ceil(maxX) };
         }),
       addSelectedBox: (minR, maxR, minC, maxC) =>
         set((state) => {
@@ -1825,10 +1882,18 @@ export const useEditorStore = create<EditorState>()(
         const end = get().selectionEnd;
         const hovered = get().hoveredTile;
 
-        if (!map) return { count: 0, layerIdx, error: 'No active map.' };
-
+        const geom = get().activeSelectionGeometry;
         let eraseResult;
-        if (hasSparseSelection) {
+        if (geom && geom.type !== 'rectangle') {
+          const width = map.grid?.[0]?.length || (map as any).width || 24;
+          const height = map.grid?.length || (map as any).height || 24;
+          const cells = rasterizeGeometryToCells(geom, { width, height });
+          eraseResult = eraseSparseCells({
+            map,
+            layerIdx,
+            cells,
+          });
+        } else if (hasSparseSelection) {
           eraseResult = eraseSparseCells({
             map,
             layerIdx,
@@ -1921,8 +1986,19 @@ export const useEditorStore = create<EditorState>()(
 
         if (!map) return { count: 0, layerIdx, error: 'No active map.' };
 
+        const geom = get().activeSelectionGeometry;
         let paintResult: { ok: boolean; count?: number; cells?: PaintedCell[]; reason?: string } = { ok: false };
-        if (hasSparseSelection) {
+        if (geom && geom.type !== 'rectangle') {
+          const width = map.grid?.[0]?.length || (map as any).width || 24;
+          const height = map.grid?.length || (map as any).height || 24;
+          const cells = rasterizeGeometryToCells(geom, { width, height });
+          paintResult = paintSparseCells({
+            map,
+            layerIdx,
+            cells,
+            tileId,
+          });
+        } else if (hasSparseSelection) {
           paintResult = paintSparseCells({
             map,
             layerIdx,
@@ -2365,10 +2441,18 @@ export const useEditorStore = create<EditorState>()(
         const end = get().selectionEnd;
         const hovered = get().hoveredTile;
 
-        if (!map) return { ok: false, error: 'No active map.' };
-
         let clipboard: TileClipboardData | null = null;
-        if (hasSparseSelection) {
+        const geom = get().activeSelectionGeometry;
+        if (geom && geom.type !== 'rectangle') {
+          const width = map.grid?.[0]?.length || (map as any).width || 24;
+          const height = map.grid?.length || (map as any).height || 24;
+          const cells = rasterizeGeometryToCells(geom, { width, height });
+          clipboard = extractSparseCellsFromMap({
+            map,
+            cells,
+            activeLayerIdx: layerIdx,
+          });
+        } else if (hasSparseSelection) {
           clipboard = extractSparseCellsFromMap({
             map,
             cells: selectedCells,

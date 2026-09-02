@@ -25,6 +25,7 @@ import {
   type WorldTarget,
 } from '@/shared/game/worldTarget';
 import { isInBrushShape, generateSplatScatterPoints } from '@/shared/game/brushGeometry';
+import { isPointInGeometry } from '@/shared/game/geometry/continuousGeometry';
 import { applyAutoTilingPass } from '@/shared/game/terrainEdgeDetection';
 import {
   LOGIC_LAYER_IDX,
@@ -87,6 +88,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const brushRadius = useEditorStore((state) => state.brushRadius);
   const brushShape = useEditorStore((state) => state.brushShape);
   const brushRotation = useEditorStore((state) => state.brushRotation);
+  const stampScale = useEditorStore((state) => state.stampScale);
   const selectionMode = useEditorStore((state) => state.selectionMode);
   const activeBrushPattern = useEditorStore((state) => state.activeBrushPattern);
   const prefabStampMode = useEditorStore((state) => state.prefabStampMode);
@@ -1246,6 +1248,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     engine.setBrushRadius(brushRadius);
     engine.setBrushShape(brushShape);
     engine.setBrushRotation(brushRotation);
+    engine.setStampScale(stampScale || 1);
     engine.setActiveBrushTileId(activeBrushTileId);
     engine.setActiveBrushPattern(activeBrushPattern);
     engine.setPrefabStampMode(prefabStampMode);
@@ -1254,7 +1257,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     engine.setBrushMode(brushMode);
     engine.setFreeCam(isStudioFreeCam);
     engine.refreshBrushPreview();
-  }, [brushRadius, brushShape, brushRotation, activeBrushTileId, activeBrushPattern, prefabStampMode, activeLayerIdx, activeLayerType, brushMode, isStudioFreeCam]);
+  }, [brushRadius, brushShape, brushRotation, stampScale, activeBrushTileId, activeBrushPattern, prefabStampMode, activeLayerIdx, activeLayerType, brushMode, isStudioFreeCam]);
 
   // Handle Live Dev Editor Tile Picking & Click-to-Move
   useEffect(() => {
@@ -1397,7 +1400,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 const dragPoints = engine._selectionDragPoints || [];
                 dragPoints.push({ x: point?.x ?? c + 0.5, z: point?.z ?? r + 0.5, r, c });
 
-                if (selMode === 'circle' || selMode === 'ellipse') {
+                if (selMode === 'circle') {
                   const r0 = store.selectionStart.r;
                   const c0 = store.selectionStart.c;
                   const centerR = (r0 + r) / 2 + 0.5;
@@ -1405,6 +1408,17 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                   const radius = Math.max(Math.abs(r - r0), Math.abs(c - c0)) / 2 + 0.5;
                   engine.setContinuousSelectionPreview(
                     { type: 'circle', centerX: centerC, centerZ: centerR, radius },
+                    mode
+                  );
+                } else if (selMode === 'ellipse') {
+                  const r0 = store.selectionStart.r;
+                  const c0 = store.selectionStart.c;
+                  const centerR = (r0 + r) / 2 + 0.5;
+                  const centerC = (c0 + c) / 2 + 0.5;
+                  const radX = Math.abs(c - c0) / 2 + 0.5;
+                  const radZ = Math.abs(r - r0) / 2 + 0.5;
+                  engine.setContinuousSelectionPreview(
+                    { type: 'ellipse', centerX: centerC, centerZ: centerR, radiusX: radX, radiusZ: radZ },
                     mode
                   );
                 } else if (selMode === 'lasso' || selMode === 'polygon') {
@@ -1432,36 +1446,19 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 // @ts-ignore
                 const dragPoints = engine._selectionDragPoints || [];
 
-                if (selMode === 'circle' || selMode === 'ellipse') {
+                if (selMode === 'circle') {
                   const centerR = (r0 + r1) / 2 + 0.5;
                   const centerC = (c0 + c1) / 2 + 0.5;
                   const radius = Math.max(Math.abs(r1 - r0), Math.abs(c1 - c0)) / 2 + 0.5;
-                  
-                  if (mode === 'normal') {
-                    store.setSelectionCircle(centerR, centerC, radius);
-                  } else {
-                    const radSq = radius * radius;
-                    const next = { ...(store.selectedCells || {}) };
-                    const minRow = Math.floor(centerR - radius);
-                    const maxRow = Math.ceil(centerR + radius);
-                    const minCol = Math.floor(centerC - radius);
-                    const maxCol = Math.ceil(centerC + radius);
-                    for (let row = minRow; row <= maxRow; row++) {
-                      for (let col = minCol; col <= maxCol; col++) {
-                        const dr = row + 0.5 - centerR;
-                        const dc = col + 0.5 - centerC;
-                        if (dr * dr + dc * dc <= radSq) {
-                          if (mode === 'subtract') delete next[`${row},${col}`];
-                          else next[`${row},${col}`] = true;
-                        }
-                      }
-                    }
-                    store.setSelectedCells(next);
-                  }
+                  store.setSelectionCircle(centerR, centerC, radius);
+                } else if (selMode === 'ellipse') {
+                  const centerR = (r0 + r1) / 2 + 0.5;
+                  const centerC = (c0 + c1) / 2 + 0.5;
+                  const radX = Math.abs(c1 - c0) / 2 + 0.5;
+                  const radZ = Math.abs(r1 - r0) / 2 + 0.5;
+                  store.setSelectionEllipse(centerR, centerC, radX, radZ);
                 } else if (selMode === 'lasso' || selMode === 'polygon') {
-                  if (mode === 'normal') {
-                    store.setSelectionPolygon(dragPoints);
-                  }
+                  store.setSelectionPolygon(dragPoints);
                 } else {
                   if (mode === 'normal') {
                     store.setSelectionBox(r0, r1, c0, c1);
@@ -1472,13 +1469,18 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                   }
                 }
                 
-                // Clear active drag continuous preview, sync multi-cell selection preview
+                // Clear active drag preview, sync persistent continuous selection preview
                 engine.clearActionPreview();
-                const latestCells = useEditorStore.getState().selectedCells;
-                if (latestCells && Object.keys(latestCells).length > 0) {
-                  engine.setMultiSelectionPreview(latestCells);
+                const activeGeom = useEditorStore.getState().activeSelectionGeometry;
+                if (activeGeom) {
+                  engine.setContinuousSelectionPreview(activeGeom, mode);
                 } else {
-                  engine.clearSelectionPreview();
+                  const latestCells = useEditorStore.getState().selectedCells;
+                  if (latestCells && Object.keys(latestCells).length > 0) {
+                    engine.setMultiSelectionPreview(latestCells);
+                  } else {
+                    engine.clearSelectionPreview();
+                  }
                 }
                 
                 // @ts-ignore
@@ -1672,8 +1674,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             const mapWidth = liveMap.grid?.[0]?.length || 24;
             const mapHeight = liveMap.grid?.length || 24;
             // Convert world coordinates to map tile-space coordinates
-            const tileX = point.x + mapWidth / 2;
-            const tileY = mapHeight / 2 - point.z;
+            const tileSize = engineRef.current?.getCurrentTileSize() || 1;
+            const tileX = (point.x / tileSize) + mapWidth / 2;
+            const tileY = mapHeight / 2 - (point.z / tileSize);
 
             // Apply Snap-to-Grid
             const finalX = store.snapToGrid ? Math.floor(tileX) + 0.5 : tileX;
@@ -1739,7 +1742,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
                 const rad = store.brushRadius || 1;
                 const scatterVal = store.splatScatter ?? 0.5;
-                const baseCount = rad <= 1 ? 1 : Math.max(1, Math.round(rad * (1 + scatterVal * 1.5)));
+                const area = Math.PI * rad * rad;
+                const baseCount = rad <= 1 ? 1 : Math.max(1, Math.round(area * (1 + scatterVal * 2)));
                 const rotRad = store.brushRotation ? (store.brushRotation * Math.PI) / 180 : 0;
                 
                 const pointsToDrop = generateSplatScatterPoints(
@@ -1842,6 +1846,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
           const isCellInsideSelection = (cellR: number, cellC: number): boolean => {
             if (!hasSelection) return true;
+            if (store.activeSelectionGeometry) {
+              return isPointInGeometry(cellC + 0.5, cellR + 0.5, store.activeSelectionGeometry);
+            }
             if (hasSparse) {
               return Boolean(selectedCells[`${cellR},${cellC}`]);
             }
@@ -1959,13 +1966,15 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           const scale = store.stampScale || 1;
           const targetW = isFullFootprintPattern && pat ? Math.max(1, Math.round(pat.w * scale)) : 1;
           const targetH = isFullFootprintPattern && pat ? Math.max(1, Math.round(pat.h * scale)) : 1;
+          const offsetR = Math.floor((targetH - 1) / 2);
+          const offsetC = Math.floor((targetW - 1) / 2);
 
           for (const pt of coordsToPaint) {
             if (isFullFootprintPattern && pat) {
               for (let br = 0; br < targetH; br++) {
                 for (let bc = 0; bc < targetW; bc++) {
-                  const tr = pt.r + br;
-                  const tc = pt.c + bc;
+                  const tr = pt.r + br - offsetR;
+                  const tc = pt.c + bc - offsetC;
                   if (tr < 0 || tr >= mapHeight || tc < 0 || tc >= mapWidth) continue;
                   if (hasSelection && !isCellInsideSelection(tr, tc)) continue;
                   
@@ -2300,6 +2309,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
         if (state.brushRotation !== prevState.brushRotation) {
           engine.setBrushRotation(state.brushRotation);
+          engine.refreshBrushPreview();
+        }
+        if (state.stampScale !== prevState.stampScale) {
+          engine.setStampScale(state.stampScale || 1);
           engine.refreshBrushPreview();
         }
         if (state.activeBrushTileId !== prevState.activeBrushTileId) {
