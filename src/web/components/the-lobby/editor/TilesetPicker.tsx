@@ -168,7 +168,7 @@ export const TileVisualThumbnail: React.FC<TileVisualThumbnailProps> = ({
 };
 
 export function getStarterTilePresets(activeTs?: TilesetMeta | null): TileDefinition[] {
-  const sheet = activeTs?.imageSource || 'Terrain_by_George.png';
+  const sheet = activeTs?.imageSource || 'terrain-overworld.png';
   const tw = activeTs?.tilewidth || 16;
   const th = activeTs?.tileheight || 16;
   const fg = activeTs?.firstgid || 1;

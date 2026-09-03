@@ -27,7 +27,7 @@ export type StudioTilesetMeta = {
 };
 
 export const DEFAULT_STUDIO_TILESETS: StudioTilesetMeta[] = [
-  { firstgid: 1, imageSource: "terrain-overworld.png", columns: 6, tilewidth: 16, tileheight: 16, imagewidth: 1024, imageheight: 1024 },
+  { firstgid: 1, imageSource: "terrain-overworld.png", columns: 8, tilewidth: 128, tileheight: 128, imagewidth: 1024, imageheight: 1024 },
 ];
 
 export function checkTilesetExistsOnDisk(filename: string): boolean {
