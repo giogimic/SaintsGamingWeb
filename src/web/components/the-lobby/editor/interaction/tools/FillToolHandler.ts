@@ -7,6 +7,7 @@ import { paintWorldCell } from '@/shared/game/worldDocument';
 import { isPointInGeometry } from '@/shared/game/geometry/continuousGeometry';
 import { packVoxel, VoxelShape, VoxelOrientation, VoxelPhysics, VOXEL_MAT_GRASS } from '@/shared/game/voxel/VoxelWord';
 import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
+import { VoxelTransactionBuilder } from '@/shared/game/voxel/VoxelTransaction';
 
 export class FillToolHandler implements IToolHandler {
   public readonly id = 'fill' as const;
@@ -41,13 +42,11 @@ export class FillToolHandler implements IToolHandler {
       const totalZ = voxelWorld.totalDepthBlocks;
       const totalH = voxelWorld.totalHeightBlocks;
 
-      const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: number; after: number }> = [];
+      const txBuilder = new VoxelTransactionBuilder('Flood Fill Voxel', liveMap.id || '');
 
       while (queue.length > 0 && filledCount < MAX_VOXEL_FILL) {
         const [wx, wy, wz] = queue.shift()!;
-        const before = voxelWorld.getVoxel(wx, wy, wz);
-        voxelWorld.setVoxel(wx, wy, wz, fillWord);
-        changedVoxels.push({ wx, wy, wz, before, after: fillWord });
+        txBuilder.record(voxelWorld, wx, wy, wz, fillWord);
         filledCount++;
 
         const neighbors: Array<[number, number, number]> = [
@@ -72,13 +71,25 @@ export class FillToolHandler implements IToolHandler {
         }
       }
 
-      if (filledCount > 0) {
+      const tx = txBuilder.build();
+      if (tx && tx.mutations.length > 0) {
+        const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: number; after: number }> = [];
+        for (const mut of tx.mutations) {
+          voxelWorld.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel);
+          changedVoxels.push({
+            wx: mut.worldX,
+            wy: mut.worldY,
+            wz: mut.worldZ,
+            before: mut.previousVoxel,
+            after: mut.newVoxel,
+          });
+        }
         context.engine.meshDirtyVoxelChunks?.();
         const doc = voxelWorld.serializeToDoc();
         gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });
         store.pushVoxelOp(changedVoxels);
         store.markMapDirty();
-        context.showToast?.(`Voxel flood filled ${filledCount} blocks`);
+        context.showToast?.(`Voxel flood filled ${tx.mutations.length} blocks`);
       }
       return true;
     }

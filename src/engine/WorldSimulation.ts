@@ -1,6 +1,14 @@
 import { Point } from '@/web/components/the-lobby/store';
 import { isSameBaseMap } from '@/shared/net/mapIds';
 import { normalizeGatesToArray } from '@/shared/game/mapGates';
+import {
+  isVoxelSolid,
+  isVoxelAir,
+  getVoxelPhysics,
+  getVoxelShape,
+  VoxelPhysics,
+  VoxelShape,
+} from '@/shared/game/voxel/VoxelWord';
 
 export type Direction = 'up' | 'down' | 'left' | 'right';
 
@@ -114,12 +122,23 @@ export class WorldSimulation {
     if (state.voxelWorld) {
       const wz = mapHeight - 1 - targetY;
       const bodyWord = state.voxelWorld.getVoxel(targetX, 16, wz);
-      const bodyPhys = (bodyWord >>> 24) & 0xf;
-      if (bodyWord && (bodyPhys === 1 || bodyPhys === 5) && !isConnectedSeam) {
+      const bodyPhys = getVoxelPhysics(bodyWord);
+      const bodyShape = getVoxelShape(bodyWord);
+
+      // Traversable elevations (slopes, stairs, bottom slabs) allow the player to step up/walk through
+      const isTraversableElevation =
+        bodyPhys === VoxelPhysics.WALKABLE_SLOPE ||
+        bodyShape === VoxelShape.STAIRS_STRAIGHT ||
+        bodyShape === VoxelShape.STAIRS_CORNER ||
+        bodyShape === VoxelShape.SLAB_BOTTOM;
+
+      if (bodyWord && (bodyPhys === VoxelPhysics.SOLID_OBSTACLE || bodyPhys === VoxelPhysics.HAZARD) && !isTraversableElevation && !isConnectedSeam) {
         return { type: 'BLOCKED', direction: dir, reason: 'WALL' };
       }
+
+      // Check ground support (must not be empty air unless active elevated block or connected seam exists)
       const groundWord = state.voxelWorld.getVoxel(targetX, 15, wz);
-      if ((!groundWord || (groundWord & 0xfff) === 0) && !isConnectedSeam) {
+      if ((!groundWord || isVoxelAir(groundWord)) && !bodyWord && !isConnectedSeam) {
         return { type: 'BLOCKED', direction: dir, reason: 'WALL' };
       }
     }
@@ -163,6 +182,21 @@ export class WorldSimulation {
             }
           };
         }
+      }
+    }
+
+    // 3D Voxel Fluid / Hazard step triggers
+    if (!stepAction && state.voxelWorld) {
+      const wz = mapHeight - 1 - targetY;
+      const groundWord = state.voxelWorld.getVoxel(targetX, 15, wz);
+      const groundPhys = getVoxelPhysics(groundWord);
+      const bodyWord = state.voxelWorld.getVoxel(targetX, 16, wz);
+      const bodyPhys = getVoxelPhysics(bodyWord);
+
+      if (groundPhys === VoxelPhysics.SWIMMABLE_FLUID || bodyPhys === VoxelPhysics.SWIMMABLE_FLUID) {
+        stepAction = 'SWIM';
+      } else if (groundPhys === VoxelPhysics.HAZARD || bodyPhys === VoxelPhysics.HAZARD) {
+        stepAction = 'HAZARD';
       }
     }
 

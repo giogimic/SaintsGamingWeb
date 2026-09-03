@@ -338,6 +338,8 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
   const setActiveVoxelMaterialId = useEditorStore((s) => s.setActiveVoxelMaterialId);
   const voxelBlockSizePx = useEditorStore((s) => s.voxelBlockSizePx);
   const activeVoxelShape = useEditorStore((s) => s.activeVoxelShape);
+  const activeVoxelBrushAxis = useEditorStore((s) => s.activeVoxelBrushAxis);
+  const setActiveVoxelBrushAxis = useEditorStore((s) => s.setActiveVoxelBrushAxis);
   const showToast = useGameStore((s) => s.showToast);
 
   const [activeTab, setActiveTab] = useState<'SEAMLESS' | 'CUSTOM'>('SEAMLESS');
@@ -486,6 +488,9 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
                 { id: 5, label: 'Corner' },
                 { id: 7, label: 'Slab' },
                 { id: 9, label: 'Stairs' },
+                { id: 11, label: 'Prism' },
+                { id: 12, label: 'Column' },
+                { id: 13, label: 'Fence' },
               ].map((shape) => (
                 <button
                   key={shape.id}
@@ -502,6 +507,35 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
                   }`}
                 >
                   {shape.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Voxel Brush Plane / Axis Selector */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted-foreground font-bold">Plane:</span>
+            <div className="flex items-center gap-1 bg-[#040912] p-1 rounded-md border border-border/40">
+              {[
+                { id: 'xz' as const, label: 'Ground (XZ)' },
+                { id: 'xy' as const, label: 'Wall (XY)' },
+                { id: 'yz' as const, label: 'Wall (YZ)' },
+              ].map((axis) => (
+                <button
+                  key={axis.id}
+                  type="button"
+                  onClick={() => {
+                    soundSynth?.playSelectSound?.();
+                    setActiveVoxelBrushAxis(axis.id);
+                    showToast(`Brush Plane set to ${axis.label}`);
+                  }}
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-colors ${
+                    activeVoxelBrushAxis === axis.id
+                      ? 'bg-primary/20 text-primary border border-primary/40 font-bold'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                  }`}
+                >
+                  {axis.label}
                 </button>
               ))}
             </div>

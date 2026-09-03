@@ -155,6 +155,17 @@ export function isVoxelAir(word: number): boolean {
   return (word & 0xfff) === 0 || getVoxelShape(word) === VoxelShape.AIR;
 }
 
+/**
+ * Checks if a neighboring voxel fully occludes a 1x1 cube face.
+ * Only non-air FULL_CUBE shapes provide full face occlusion.
+ * Slopes, stairs, slabs, columns, fences, and transparent voxels do NOT fully occlude.
+ */
+export function isVoxelFaceOccluding(word: number): boolean {
+  if (isVoxelAir(word)) return false;
+  const shape = getVoxelShape(word);
+  return shape === VoxelShape.FULL_CUBE;
+}
+
 export const VOXEL_WORD_AIR = packVoxel(VOXEL_MAT_AIR, VoxelShape.AIR, VoxelOrientation.NORTH, 0, VoxelPhysics.PASS_THROUGH, VoxelLogic.NONE);
 export const VOXEL_WORD_GUNMETAL = packVoxel(VOXEL_MAT_GUNMETAL, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE, VoxelLogic.NONE);
 export const VOXEL_WORD_GRASS = packVoxel(VOXEL_MAT_GRASS, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE, VoxelLogic.NONE);
@@ -184,4 +195,26 @@ export function getVoxelBrushOffsets(brushRadius: number): Array<{ dx: number; d
     }
   }
   return offsets;
+}
+
+export type VoxelBrushAxis = 'xz' | 'xy' | 'yz';
+
+/**
+ * Calculates deterministic 3D voxel-space (dx, dy, dz) footprint offsets
+ * allowing horizontal ground painting (xz plane) or vertical wall building (xy or yz planes).
+ */
+export function getVoxelBrushOffsets3D(
+  brushRadius: number,
+  axis: VoxelBrushAxis = 'xz'
+): Array<{ dx: number; dy: number; dz: number }> {
+  const planar = getVoxelBrushOffsets(brushRadius);
+  switch (axis) {
+    case 'xy': // Vertical wall along X axis (dx, dy)
+      return planar.map(({ dx, dz }) => ({ dx, dy: dz, dz: 0 }));
+    case 'yz': // Vertical wall along Z axis (dy, dz)
+      return planar.map(({ dx, dz }) => ({ dx: 0, dy: dx, dz }));
+    case 'xz': // Horizontal ground plane (dx, dz)
+    default:
+      return planar.map(({ dx, dz }) => ({ dx, dy: 0, dz }));
+  }
 }

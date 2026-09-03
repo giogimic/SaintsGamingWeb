@@ -13,6 +13,8 @@ import {
   type PaintedCell,
   deduplicatePaintedCells,
 } from './editorOps';
+import { VoxelWorld } from './voxel/VoxelWorldDoc';
+import { isVoxelAir } from './voxel/VoxelWord';
 
 export type PasteMode = 'overlay' | 'replace' | 'new_layer';
 
@@ -30,6 +32,13 @@ export interface ClipboardLogicTile {
   tileId: number;
 }
 
+export interface ClipboardVoxelBlock {
+  dx: number;
+  dy: number;
+  dz: number;
+  word: number;
+}
+
 export interface TileClipboardData {
   width: number;
   height: number;
@@ -37,6 +46,7 @@ export interface TileClipboardData {
   logicData: ClipboardLogicTile[];
   sourceOrigin: { r: number; c: number };
   activeLayerAtCopy: number;
+  voxelVolume?: ClipboardVoxelBlock[];
 }
 
 export interface ExtractSubgridParams {
@@ -109,6 +119,31 @@ export function extractSubgridFromMap(params: ExtractSubgridParams): TileClipboa
     }
   }
 
+  // Extract 3D voxel volume if map has voxelDoc
+  let voxelVolume: ClipboardVoxelBlock[] | undefined = undefined;
+  if ((map as any).voxelDoc) {
+    const world = VoxelWorld.deserializeFromDoc((map as any).voxelDoc);
+    const mapH = map.grid?.length || (map as any).height || 24;
+    voxelVolume = [];
+    for (let r = r0; r <= r1; r++) {
+      const wz = mapH - 1 - r;
+      for (let c = c0; c <= c1; c++) {
+        const wx = c;
+        for (let wy = 0; wy < world.totalHeightBlocks; wy++) {
+          const word = world.getVoxel(wx, wy, wz);
+          if (word !== 0 && !isVoxelAir(word)) {
+            voxelVolume.push({
+              dx: c - c0,
+              dy: wy,
+              dz: (mapH - 1 - r0) - wz,
+              word,
+            });
+          }
+        }
+      }
+    }
+  }
+
   return {
     width,
     height,
@@ -116,6 +151,7 @@ export function extractSubgridFromMap(params: ExtractSubgridParams): TileClipboa
     logicData,
     sourceOrigin: { r: r0, c: c0 },
     activeLayerAtCopy: activeLayerIdx,
+    voxelVolume,
   };
 }
 
