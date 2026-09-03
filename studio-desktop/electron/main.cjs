@@ -77,16 +77,27 @@ function createWindow() {
     console.error(`[Electron] Failed to load ${validatedURL}: ${errorCode} (${errorDescription})`);
   });
 
+  mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    console.log(`[Renderer] [Level ${level}] ${message} (${sourceId}:${line})`);
+  });
+
   if (process.argv.includes('--dev-tools') || process.argv.includes('--debug')) {
     mainWindow.webContents.openDevTools();
   }
 
-  const initialDeepLink = process.argv.find((arg) => arg && arg.startsWith(`${PROTOCOL_PREFIX}://`));
-  if (initialDeepLink) {
-    mainWindow.webContents.once('did-finish-load', () => {
+  mainWindow.webContents.once('did-finish-load', async () => {
+    try {
+      const rootHtml = await mainWindow.webContents.executeJavaScript("document.getElementById('root')?.innerHTML");
+      console.log('[Electron] React Root mounted successfully! Length:', rootHtml?.length);
+    } catch (e) {
+      console.error('[Electron] Error querying root:', e);
+    }
+
+    const initialDeepLink = process.argv.find((arg) => arg && arg.startsWith(`${PROTOCOL_PREFIX}://`));
+    if (initialDeepLink) {
       mainWindow?.webContents?.send('deep-link', initialDeepLink);
-    });
-  }
+    }
+  });
 
   mainWindow.on('closed', () => {
     mainWindow = null;

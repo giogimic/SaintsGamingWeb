@@ -15,6 +15,10 @@ export default defineConfig({
     alias: [
       { find: 'next-auth/react', replacement: path.resolve(__dirname, './src/providers/NextAuthShim.tsx') },
       { find: '@/auth', replacement: path.resolve(__dirname, './src/providers/NextAuthShim.tsx') },
+      { find: '@prisma/client', replacement: path.resolve(__dirname, './src/shims/prismaShim.ts') },
+      { find: '.prisma/client/index-browser', replacement: path.resolve(__dirname, './src/shims/prismaShim.ts') },
+      { find: '.prisma/client', replacement: path.resolve(__dirname, './src/shims/prismaShim.ts') },
+      { find: '@/web/lib/prisma', replacement: path.resolve(__dirname, './src/shims/prismaShim.ts') },
       { find: '@/app', replacement: path.resolve(__dirname, '../app') },
       { find: '@', replacement: path.resolve(__dirname, '../src') },
       { find: '~', replacement: path.resolve(__dirname, './src') },
