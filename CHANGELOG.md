@@ -1,3 +1,24 @@
+# 2.1.696
+- **Studio Interface 2D Debt Elimination & 3D Perspective Volumetric Reroute**:
+  - **Aggressive Removal of Obsolete 2D Tile Systems**:
+    - Deleted legacy 2D visual tile picker `TilesetPicker.tsx` (4,100+ lines).
+    - Deleted legacy 2D tile selector dock `TileSelectorPanel.tsx`.
+    - Deleted legacy 2D 9-slice smart border atlas editor `TerrainAtlasEditor.tsx`.
+    - Deleted deprecated 2D edge detection pass `terrainEdgeDetection.ts`.
+  - **Editor Store & State Cleanup (`editor-store.ts`, `studioModes.ts`)**:
+    - Stripped `tileset` and `tileset_canvas` from `StudioDockId`, `STUDIO_DOCK_META`, and `DEFAULT_PANELS`.
+    - Removed `isAutoEdgeEnabled` state, actions, and reducers from `useEditorStore`.
+    - Updated `STUDIO_MODE_DEFAULTS` to open `['build']` for develop and voxel modes.
+    - Set default studio mode to `atlas` (World Atlas regional viewer).
+  - **Babylon Canvas 3D Perspective Initialization (`BabylonEngine.ts`)**:
+    - Changed default camera mode to `FreeCamera.PERSPECTIVE_CAMERA` (`camera3D`).
+    - Updated `loadTilemap` to directly render authoritative 3D `voxelDoc` without requesting or expecting 2D tileset textures.
+  - **Studio Interface & Navigation Polish**:
+    - Removed anticipatory 2D tileset spritesheet caching from `StudioEditorShell.tsx`.
+    - Removed `tilesets` sub-workspace from `AssetStudioSuite.tsx`.
+    - Replaced 2D Tile Selector references in `StudioMenuBar.tsx` and `StudioContextMenu.tsx` with World Builder.
+    - Removed 2D auto-edge toggle button from `StudioBottomToolbar.tsx`.
+
 # 2.1.695
 - **32³ Chunk Data Migration & Server-Side Volumetric Collision Rejection**:
   - **Chunk Spatial Re-Indexing & Database Migration ([`chunkMigration.ts`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/shared/game/voxel/chunkMigration.ts) & [`migrate-to-32-cubic.ts`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/scripts/migrate-to-32-cubic.ts))**:

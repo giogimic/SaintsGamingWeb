@@ -726,12 +726,12 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
           {/* Quick Tool Windows */}
           <button
             type="button"
-            onClick={() => handleAction(() => openPanel('tileset'))}
+            onClick={() => handleAction(() => openPanel('build'))}
             className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-foreground hover:bg-primary/20 transition-colors cursor-pointer"
           >
             <div className="flex items-center gap-2">
               <Grid3X3 className="h-3.5 w-3.5 text-primary" />
-              <span>Open Tile Selector</span>
+              <span>Open World Builder</span>
             </div>
             <span className="text-[9px] text-muted-foreground">Dock</span>
           </button>

@@ -550,8 +550,8 @@ export class BabylonEngine {
     // Root Node for 2.5D Isometric World
     this.rootNode = new TransformNode('rootNode', this.scene);
 
-    // 2.5D Camera: Orthographic angled at ~40 degrees looking down
-    this.camera = new FreeCamera('camera2D', new Vector3(0, this.cameraProfile.distance, -this.cameraProfile.distance), this.scene);
+    // 3D Perspective Volumetric Camera
+    this.camera = new FreeCamera('camera3D', new Vector3(0, this.cameraProfile.distance, -this.cameraProfile.distance), this.scene);
     
     // Enable Vignette
     this.vignettePostProcess = new ImageProcessingPostProcess("vignette", 1.0, this.camera);
@@ -560,7 +560,7 @@ export class BabylonEngine {
     this.vignettePostProcess.vignetteColor = new Color4(0, 0, 0, 1);
     this.vignettePostProcess.vignetteBlendMode = ImageProcessingConfiguration.VIGNETTEMODE_MULTIPLY;
     this.camera.setTarget(Vector3.Zero());
-    this.camera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
+    this.camera.mode = FreeCamera.PERSPECTIVE_CAMERA;
 
     this.updateCameraAspect(10);
 
@@ -1731,8 +1731,10 @@ export class BabylonEngine {
       }
     }
 
-    // Rich multi-layer tileset rendering
-    if (tileLayers && tileLayers.length > 0 && tilesets && tilesets.length > 0) {
+    // Authoritative 3D Voxel World Rendering
+    if (mapData.voxelDoc && mapData.voxelDoc.chunks && Object.keys(mapData.voxelDoc.chunks).length > 0) {
+      this.loadVoxelWorld(mapData.voxelDoc);
+    } else if (tileLayers && tileLayers.length > 0 && tilesets && tilesets.length > 0) {
       const sortedTilesets = [...tilesets].sort((a, b) => b.firstgid - a.firstgid);
 
       // Group meshes by imageSource AND chunk (32x32)

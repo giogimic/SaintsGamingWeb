@@ -516,7 +516,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
 
           {/* ── PAINT ── */}
           <TopLevelMenu id="paint" label="Paint">
-            <MenuItem label="Tile Selector" icon={LayoutGrid} onClick={() => openPanel('tileset')} />
+            <MenuItem label="World Builder" icon={LayoutGrid} onClick={() => openPanel('build')} />
             <MenuItem label="Logic Painter" icon={Shield} onClick={() => openPanel('logic')} />
             <MenuItem label="Properties / Inspector" icon={Settings} onClick={() => openPanel('properties')} />
             <MenuItem divider />
@@ -527,7 +527,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
 
           {/* ── VOXEL ── */}
           <TopLevelMenu id="voxel" label="Voxel">
-            <MenuItem label="Voxel & Terrain Palette" icon={Box} onClick={() => openPanel('tileset')} />
+            <MenuItem label="World Builder" icon={Box} onClick={() => openPanel('build')} />
             <MenuItem label="Camera & View Settings" icon={Camera} onClick={() => openPanel('camera')} />
             <MenuItem divider />
             <SubMenu label="Block Scale Resolution">

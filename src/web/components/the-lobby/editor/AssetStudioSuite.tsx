@@ -33,7 +33,6 @@ export type AssetWorkspaceId =
   | 'characters'
   | 'creatures'
   | 'animations'
-  | 'tilesets'
   | 'items'
   | 'audio'
   | 'catalog';
@@ -61,12 +60,6 @@ const WORKSPACE_META: Record<
     blurb: 'Frame sequence timelines, sprite playback, onion skinning, and loop timing.',
     color: 'text-pink-400 border-pink-500/40 bg-pink-500/10',
   },
-  tilesets: {
-    label: 'Tilesets & World Art',
-    icon: Map,
-    blurb: 'Map terrain, autotiles, environment props, buildings, and decorations.',
-    color: 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10',
-  },
   items: {
     label: 'Items & UI Icons',
     icon: Sword,
@@ -91,7 +84,6 @@ const WORKSPACE_ORDER: AssetWorkspaceId[] = [
   'characters',
   'creatures',
   'animations',
-  'tilesets',
   'items',
   'audio',
   'catalog',
@@ -119,8 +111,6 @@ export function AssetStudioSuite() {
         return 'CHARACTER';
       case 'creatures':
         return 'CREATURE';
-      case 'tilesets':
-        return 'TILESET';
       case 'items':
         return 'ITEM';
       case 'audio':
@@ -136,8 +126,6 @@ export function AssetStudioSuite() {
         return ['character', 'npc', 'player'];
       case 'creatures':
         return ['creature', 'monster', 'pet'];
-      case 'tilesets':
-        return ['tileset', 'map', 'terrain'];
       case 'items':
         return ['item', 'icon', 'weapon', 'armor'];
       case 'audio':
@@ -153,8 +141,6 @@ export function AssetStudioSuite() {
         return 'character';
       case 'creatures':
         return 'creature';
-      case 'tilesets':
-        return 'tile';
       case 'items':
         return 'item';
       default:
@@ -164,8 +150,6 @@ export function AssetStudioSuite() {
 
   const getDefaultGridSize = (): number => {
     switch (activeWorkspace) {
-      case 'tilesets':
-        return 16;
       case 'items':
         return 32;
       default:
@@ -179,8 +163,6 @@ export function AssetStudioSuite() {
         return 'CHARACTER';
       case 'creatures':
         return 'CREATURE';
-      case 'tilesets':
-        return 'TILESET';
       case 'items':
         return 'ITEM';
       case 'audio':
@@ -211,12 +193,6 @@ export function AssetStudioSuite() {
         return [
           { id: 'browse', label: 'Animation Studio', icon: Film },
           { id: 'slicer', label: 'Sprite Slicer', icon: Scissors },
-        ];
-      case 'tilesets':
-        return [
-          { id: 'browse', label: 'Browse Tilesets', icon: Layers },
-          { id: 'upload', label: 'Upload Tiles', icon: Upload },
-          { id: 'slicer', label: 'Grid Slicer', icon: Scissors },
         ];
       case 'items':
         return [

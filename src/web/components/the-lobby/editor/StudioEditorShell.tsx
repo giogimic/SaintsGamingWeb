@@ -84,7 +84,6 @@ const MountEditorPanel = lazy(() => import('./panels/MountEditorPanel').then((m)
 const WorldEventPanel = lazy(() => import('./panels/WorldEventPanel').then((m) => ({ default: m.WorldEventPanel })));
 const SimulationPresetPanel = lazy(() => import('./panels/SimulationPresetPanel').then((m) => ({ default: m.SimulationPresetPanel })));
 const PublishManagerPanel = lazy(() => import('./panels/PublishManagerPanel').then((m) => ({ default: m.PublishManagerPanel })));
-const TileSelectorPanel = lazy(() => import('./panels/TileSelectorPanel').then((m) => ({ default: m.TileSelectorPanel })));
 const LogicPainterPanel = lazy(() => import('./panels/LogicPainterPanel').then((m) => ({ default: m.LogicPainterPanel })));
 const AnimationStudioPanel = lazy(() => import('./panels/AnimationStudioPanel').then((m) => ({ default: m.AnimationStudioPanel })));
 const MapTabPanel = lazy(() => import('./panels/MapTabPanel').then((m) => ({ default: m.MapTabPanel })));
@@ -119,29 +118,12 @@ export const StudioEditorShell: React.FC = () => {
   const [omnisearchOpen, setOmnisearchOpen] = useState(false);
   const [isStudioReady, setIsStudioReady] = useState(false);
 
-  // Anticipatory Asset Caching for Studio Tilesets
-  useEffect(() => {
-    if (!activeMapData?.tilesets) return;
-    const uniqueImages = new Set<string>();
-    activeMapData.tilesets.forEach((ts: { imageSource?: string }) => {
-      if (ts.imageSource) {
-        const url = resolveTilesetTextureUrl(ts.imageSource);
-        if (url) uniqueImages.add(url);
-      }
-    });
-    
-    uniqueImages.forEach(url => {
-      const img = new Image();
-      img.src = url;
-    });
-  }, [activeMapData?.tilesets]);
-
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tileR: number; tileC: number } | null>(null);
 
   useEffect(() => {
-    // Restore dock geometry, then enter Development Mode (tools on by default).
+    // Restore dock geometry, then enter World Atlas Mode by default.
     useEditorStore.getState().hydratePanelLayouts();
-    useEditorStore.getState().enterDevelopmentMode();
+    useEditorStore.getState().setStudioMode('atlas');
     
     // Simulate studio initialization and hide loading screen
     const timer = setTimeout(() => setIsStudioReady(true), 800);
@@ -350,12 +332,6 @@ export const StudioEditorShell: React.FC = () => {
           {canUseStudioDock(permissionLevel, 'build') && (
             <DraggablePanel id="build" icon={<Hammer className="w-4 h-4" />} title="World Builder">
               <Suspense fallback={<div>Loading...</div>}><WorldBuilderPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'tileset') && (
-            <DraggablePanel id="tileset" icon={<Grid3X3 className="w-4 h-4" />} title="Tile Selector">
-              <Suspense fallback={<div>Loading...</div>}><TileSelectorPanel /></Suspense>
             </DraggablePanel>
           )}
 

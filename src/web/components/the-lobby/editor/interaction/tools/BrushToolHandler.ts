@@ -9,7 +9,6 @@ import { isPointInGeometry } from '@/shared/game/geometry/continuousGeometry';
 import { STUDIO_MAP_HOT_RELOAD_EVENT } from '@/shared/game/studioEvents';
 import { generateSplatScatterPoints, isInBrushShape } from '@/shared/game/brushGeometry';
 import { resolveMapDimensions } from '@/shared/game/mapDocVisual';
-import { applyAutoTilingPass } from '@/shared/game/terrainEdgeDetection';
 import {
   packVoxel,
   VoxelShape,
@@ -341,32 +340,6 @@ export class BrushToolHandler implements IToolHandler {
       }
 
       if (paintedOps.length > 0) {
-        if (store.isAutoEdgeEnabled && target.kind === 'visual') {
-          const curGrid = liveMap.tileLayers?.[layerIdx]?.grid;
-          if (curGrid) {
-            const customRule = (liveMap as any).terrainTransitionRules?.find?.(
-              (r: any) => r.centerGid === store.activeBrushTileId
-            );
-            const autoChanges = applyAutoTilingPass(
-              curGrid,
-              paintedOps.map((p: any) => ({ r: p.r, c: p.c })),
-              store.activeBrushTileId,
-              customRule?.columns || liveMap.tilesets?.[0]?.columns || 8,
-              undefined,
-              customRule
-            );
-            for (const change of autoChanges) {
-              context.engine.updateSingleTile(change.r, change.c, change.after, layerIdx, liveMap.tilesets);
-              paintedOps.push({
-                layer: layerIdx,
-                r: change.r,
-                c: change.c,
-                before: change.before,
-                after: change.after,
-              });
-            }
-          }
-        }
         store.pushPaintOp(paintedOps);
         store.markMapDirty();
       }
