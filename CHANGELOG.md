@@ -1,3 +1,15 @@
+# 2.1.702
+- **Fix Standalone Windows Executable Asset Loading & Runtime Resolution**:
+  - **Relative Base Asset Pathing**:
+    - Configured `base: './'` in `studio-desktop/vite.config.ts`. In previous builds, default `/` root paths caused Chromium to request assets from `file:///assets/...` at the filesystem root, failing with 404s and preventing the app from rendering.
+  - **App Path Resolution & Diagnostics**:
+    - Updated `studio-desktop/electron/main.cjs` to resolve `dist/index.html` via `path.join(app.getAppPath(), 'dist/index.html')`.
+    - Added Chrome DevTools keyboard shortcut (`F12` and `Ctrl+Shift+I`) and `--dev-tools` CLI flag.
+    - Added `did-fail-load` error listeners.
+  - **Asar Optimization & Exe Synchronization**:
+    - Excluded `.exe` and `win-unpacked/` from `package.json` build files to prevent recursive archive bloat in `app.asar`.
+    - Updated `studio-desktop/scripts/copy-dist-exe.cjs` to always select and sync the newest executable by modification time and clean up stale build artifacts.
+
 # 2.1.701
 - **Standalone Windows Executable (.exe) Packaging & Studio Distribution in `studio-desktop/dist/`**:
   - **Native Executable Distribution**:

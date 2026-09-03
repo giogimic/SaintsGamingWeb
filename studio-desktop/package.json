@@ -1,6 +1,6 @@
 {
   "name": "saints-world-studio",
-  "version": "2.1.701",
+  "version": "2.1.702",
   "private": true,
   "description": "Saints Gaming World Studio — Standalone 3D Volumetric CAD Authoring Suite",
   "type": "module",
@@ -23,6 +23,8 @@
     },
     "files": [
       "dist/**/*",
+      "!dist/*.exe",
+      "!dist/win-unpacked/**/*",
       "electron/**/*"
     ],
     "win": {

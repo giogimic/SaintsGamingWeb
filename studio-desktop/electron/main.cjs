@@ -57,9 +57,28 @@ function createWindow() {
 
   const isDev = !app.isPackaged && process.env.NODE_ENV === 'development';
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.loadURL('http://localhost:1420');
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    const indexPath = path.join(app.getAppPath(), 'dist/index.html');
+    mainWindow.loadFile(indexPath).catch((err) => {
+      console.error('[Electron] Failed to loadFile:', err);
+    });
+  }
+
+  // Developer shortcuts: F12 or Ctrl+Shift+I toggles DevTools
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if ((input.control && input.shift && input.key.toLowerCase() === 'i') || input.key === 'F12') {
+      mainWindow?.webContents?.toggleDevTools();
+      event.preventDefault();
+    }
+  });
+
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    console.error(`[Electron] Failed to load ${validatedURL}: ${errorCode} (${errorDescription})`);
+  });
+
+  if (process.argv.includes('--dev-tools') || process.argv.includes('--debug')) {
+    mainWindow.webContents.openDevTools();
   }
 
   const initialDeepLink = process.argv.find((arg) => arg && arg.startsWith(`${PROTOCOL_PREFIX}://`));

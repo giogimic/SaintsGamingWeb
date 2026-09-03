@@ -9,15 +9,23 @@ if (fs.existsSync(releaseDir)) {
     fs.mkdirSync(distDir, { recursive: true });
   }
 
-  // Find any portable or standalone exe
+  // Find latest exe by mtime
   const files = fs.readdirSync(releaseDir);
-  const exeFile = files.find((f) => f.endsWith('.exe'));
-  if (exeFile) {
+  const exeFiles = files
+    .filter((f) => f.endsWith('.exe'))
+    .map((f) => ({
+      name: f,
+      time: fs.statSync(path.join(releaseDir, f)).mtime.getTime(),
+    }))
+    .sort((a, b) => b.time - a.time);
+
+  if (exeFiles.length > 0) {
+    const latestExe = exeFiles[0].name;
     fs.copyFileSync(
-      path.join(releaseDir, exeFile),
+      path.join(releaseDir, latestExe),
       path.join(distDir, 'Saints World Studio.exe')
     );
-    console.log(`[✓] Successfully placed executable in dist/Saints World Studio.exe`);
+    console.log(`[✓] Successfully placed latest executable (${latestExe}) in dist/Saints World Studio.exe`);
   }
 
   // Also sync win-unpacked folder into dist/win-unpacked
