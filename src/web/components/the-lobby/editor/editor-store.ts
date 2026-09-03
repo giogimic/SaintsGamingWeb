@@ -388,6 +388,17 @@ interface EditorState {
   setActiveVoxelBrushAxis: (axis: 'xz' | 'xy' | 'yz') => void;
   voxelToolMode: 'block-pen' | 'box-fill' | 'extrude' | 'slope-ramp' | 'smart-terrain' | 'eraser' | 'eyedropper';
   setVoxelToolMode: (mode: 'block-pen' | 'box-fill' | 'extrude' | 'slope-ramp' | 'smart-terrain' | 'eraser' | 'eyedropper') => void;
+
+  // Voxel Constraint & Layer Locking
+  voxelPlaneLockEnabled: boolean;
+  setVoxelPlaneLockEnabled: (enabled: boolean) => void;
+  voxelTargetPlaneY: number;
+  setVoxelTargetPlaneY: (y: number) => void;
+  voxelPlaneMask: number[] | null;
+  setVoxelPlaneMask: (planes: number[] | null) => void;
+  toggleVoxelPlaneInMask: (planeY: number) => void;
+  voxelBuildUpMode: boolean;
+  setVoxelBuildUpMode: (enabled: boolean) => void;
   
   // Gate Pairing and Placement Wizard State
   pendingGateConnection: {
@@ -1191,6 +1202,36 @@ export const useEditorStore = create<EditorState>()(
       setVoxelToolMode: (mode) =>
         set((state) => {
           state.voxelToolMode = mode;
+        }),
+      voxelPlaneLockEnabled: true,
+      setVoxelPlaneLockEnabled: (enabled: boolean) =>
+        set((state) => {
+          state.voxelPlaneLockEnabled = enabled;
+        }),
+      voxelTargetPlaneY: 0,
+      setVoxelTargetPlaneY: (y: number) =>
+        set((state) => {
+          state.voxelTargetPlaneY = Math.max(0, Math.min(31, Math.floor(y)));
+        }),
+      voxelPlaneMask: null,
+      setVoxelPlaneMask: (planes: number[] | null) =>
+        set((state) => {
+          state.voxelPlaneMask = planes ? [...planes] : null;
+        }),
+      toggleVoxelPlaneInMask: (planeY: number) =>
+        set((state) => {
+          const current = state.voxelPlaneMask || [];
+          if (current.includes(planeY)) {
+            const next = current.filter((p) => p !== planeY);
+            state.voxelPlaneMask = next.length > 0 ? next : null;
+          } else {
+            state.voxelPlaneMask = [...current, planeY].sort((a, b) => a - b);
+          }
+        }),
+      voxelBuildUpMode: false,
+      setVoxelBuildUpMode: (enabled: boolean) =>
+        set((state) => {
+          state.voxelBuildUpMode = enabled;
         }),
       customTerrainSwatches: [],
       addCustomTerrainSwatch: (swatch) =>

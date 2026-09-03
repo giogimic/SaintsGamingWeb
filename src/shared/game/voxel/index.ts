@@ -6,3 +6,4 @@ export * from './VoxelSlopeSolver';
 export * from './Voxel2DConverter';
 export * from './VoxelTargetResolver';
 export * from './VoxelMaterialDefinition';
+export * from './VoxelWorldGenerator';

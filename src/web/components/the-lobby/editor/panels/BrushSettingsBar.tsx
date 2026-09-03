@@ -19,6 +19,11 @@ import {
   Layers,
   Wand2,
   Box,
+  Lock,
+  Unlock,
+  Crosshair,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
 import type { BrushShape } from '@/shared/game/brushGeometry';
@@ -72,6 +77,16 @@ export const BrushSettingsBar: React.FC<BrushSettingsBarProps> = ({
   const setActiveVoxelShape = useEditorStore((s) => s.setActiveVoxelShape);
   const voxelToolMode = useEditorStore((s) => s.voxelToolMode);
   const setVoxelToolMode = useEditorStore((s) => s.setVoxelToolMode);
+  const voxelPlaneLockEnabled = useEditorStore((s) => s.voxelPlaneLockEnabled);
+  const setVoxelPlaneLockEnabled = useEditorStore((s) => s.setVoxelPlaneLockEnabled);
+  const voxelTargetPlaneY = useEditorStore((s) => s.voxelTargetPlaneY);
+  const setVoxelTargetPlaneY = useEditorStore((s) => s.setVoxelTargetPlaneY);
+  const voxelPlaneMask = useEditorStore((s) => s.voxelPlaneMask);
+  const setVoxelPlaneMask = useEditorStore((s) => s.setVoxelPlaneMask);
+  const toggleVoxelPlaneInMask = useEditorStore((s) => s.toggleVoxelPlaneInMask);
+  const voxelBuildUpMode = useEditorStore((s) => s.voxelBuildUpMode);
+  const setVoxelBuildUpMode = useEditorStore((s) => s.setVoxelBuildUpMode);
+  const hoveredVoxel = useEditorStore((s) => s.hoveredVoxel);
 
   // Resolve the effective mode from prop or store
   const effectiveMode: 'voxel' | 'grid' | 'splat' | 'prop' =
@@ -196,6 +211,178 @@ export const BrushSettingsBar: React.FC<BrushSettingsBarProps> = ({
                   {s.label}
                 </button>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Voxel Editing Constraints: Layer Lock, Plane Selector & Build Up Mode */}
+      {showVoxelControls && (
+        <div className="pt-2 pb-1 border-b border-border/20 space-y-2">
+          <div className="flex items-center justify-between text-[9px]">
+            <span className="text-muted-foreground font-bold uppercase flex items-center gap-1">
+              <Shield className="w-3 h-3 text-primary" /> Editing Constraints
+            </span>
+            <span className="text-[8px] font-mono text-muted-foreground">
+              Map Bounds: Strict
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            {/* 1. Layer Lock / Plane Lock Button */}
+            <button
+              type="button"
+              onClick={() => {
+                soundSynth?.playUiClick?.();
+                setVoxelPlaneLockEnabled(!voxelPlaneLockEnabled);
+              }}
+              title={
+                voxelPlaneLockEnabled
+                  ? `Locked to Plane Y=${voxelTargetPlaneY}. Painting will only touch this elevation.`
+                  : 'Layer Lock is OFF. Brushing touches any hit surface.'
+              }
+              className={`flex items-center justify-between px-2 py-1 rounded text-[9px] font-bold border transition-all cursor-pointer ${
+                voxelPlaneLockEnabled
+                  ? 'bg-primary/20 text-primary border-primary/50 shadow-sm shadow-primary/20'
+                  : 'bg-[#040812] text-muted-foreground border-border/30 hover:border-border hover:text-foreground'
+              }`}
+            >
+              <div className="flex items-center gap-1">
+                {voxelPlaneLockEnabled ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                <span>Layer Lock</span>
+              </div>
+              <span className="font-mono text-[8px] px-1 rounded bg-black/40">
+                {voxelPlaneLockEnabled ? `Y=${voxelTargetPlaneY}` : 'OFF'}
+              </span>
+            </button>
+
+            {/* 2. Build Up Mode Button */}
+            <button
+              type="button"
+              onClick={() => {
+                soundSynth?.playUiClick?.();
+                setVoxelBuildUpMode(!voxelBuildUpMode);
+              }}
+              title={
+                voxelBuildUpMode
+                  ? 'Build Up Mode ON: Stacks blocks vertically atop clicked surface voxels.'
+                  : 'Build Up Mode OFF: Normal surface/plane paint.'
+              }
+              className={`flex items-center justify-between px-2 py-1 rounded text-[9px] font-bold border transition-all cursor-pointer ${
+                voxelBuildUpMode
+                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/50 shadow-sm shadow-amber-500/20'
+                  : 'bg-[#040812] text-muted-foreground border-border/30 hover:border-border hover:text-foreground'
+              }`}
+            >
+              <div className="flex items-center gap-1">
+                <Layers className="w-3 h-3" />
+                <span>Build Up</span>
+              </div>
+              <span className="font-mono text-[8px] px-1 rounded bg-black/40">
+                {voxelBuildUpMode ? 'STACK' : 'OFF'}
+              </span>
+            </button>
+          </div>
+
+          {/* Plane Y Adjuster & Quick Elevation Buttons */}
+          <div className="flex items-center gap-1.5 pt-0.5">
+            <span className="text-[9px] text-muted-foreground w-12 shrink-0 font-bold uppercase">Plane Y:</span>
+            <div className="flex items-center gap-1 flex-1 bg-[#040812] p-1 rounded border border-border/30">
+              <button
+                type="button"
+                onClick={() => {
+                  soundSynth?.playUiClick?.();
+                  setVoxelTargetPlaneY(Math.max(0, voxelTargetPlaneY - 1));
+                }}
+                disabled={voxelTargetPlaneY <= 0}
+                className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-muted/20 hover:bg-muted/40 disabled:opacity-30 cursor-pointer"
+                title="Decrease Plane Y"
+              >
+                <ArrowDown className="w-2.5 h-2.5" />
+              </button>
+              <input
+                type="range"
+                min={0}
+                max={31}
+                value={voxelTargetPlaneY}
+                onChange={(e) => setVoxelTargetPlaneY(parseInt(e.target.value))}
+                className="flex-1 accent-primary h-1 cursor-pointer"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  soundSynth?.playUiClick?.();
+                  setVoxelTargetPlaneY(Math.min(31, voxelTargetPlaneY + 1));
+                }}
+                disabled={voxelTargetPlaneY >= 31}
+                className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-muted/20 hover:bg-muted/40 disabled:opacity-30 cursor-pointer"
+                title="Increase Plane Y"
+              >
+                <ArrowUp className="w-2.5 h-2.5" />
+              </button>
+              <span className="text-[9px] font-mono font-bold text-foreground w-6 text-center">
+                {voxelTargetPlaneY}
+              </span>
+            </div>
+
+            {/* Pick Surface Elevation Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (hoveredVoxel) {
+                  soundSynth?.playUiClick?.();
+                  setVoxelTargetPlaneY(hoveredVoxel.wy);
+                }
+              }}
+              disabled={!hoveredVoxel}
+              className="px-1.5 py-1 rounded text-[8px] font-bold border border-border/30 bg-[#040812] hover:border-primary/40 text-muted-foreground hover:text-foreground disabled:opacity-40 flex items-center gap-1 cursor-pointer"
+              title="Lock plane to currently hovered voxel elevation"
+            >
+              <Crosshair className="w-2.5 h-2.5 text-primary" />
+              <span>Pick</span>
+            </button>
+          </div>
+
+          {/* Multi-Plane Mask Selector */}
+          <div className="flex items-center gap-1 pt-0.5">
+            <span className="text-[9px] text-muted-foreground w-12 shrink-0 font-bold uppercase">Planes:</span>
+            <div className="flex items-center gap-1 flex-1 overflow-x-auto py-0.5 scrollbar-none">
+              <button
+                type="button"
+                onClick={() => {
+                  soundSynth?.playUiClick?.();
+                  setVoxelPlaneMask(null);
+                }}
+                className={`px-1.5 py-0.5 rounded text-[8px] font-bold transition-all cursor-pointer ${
+                  voxelPlaneMask === null
+                    ? 'bg-primary text-black font-extrabold'
+                    : 'bg-[#040812] text-muted-foreground hover:text-foreground border border-border/20'
+                }`}
+                title="Single active plane governed by Plane Y"
+              >
+                Target Only
+              </button>
+              {[0, 1, 2, 3, 4, 5, 6, 7].map((p) => {
+                const isActive = voxelPlaneMask?.includes(p) ?? false;
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => {
+                      soundSynth?.playUiClick?.();
+                      toggleVoxelPlaneInMask(p);
+                    }}
+                    className={`px-1.5 py-0.5 rounded text-[8px] font-mono font-bold transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-primary/30 text-primary border border-primary/50'
+                        : 'bg-[#040812] text-muted-foreground hover:text-foreground border border-border/20'
+                    }`}
+                    title={`Toggle plane Y=${p} in multi-plane paint mask`}
+                  >
+                    Y{p}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

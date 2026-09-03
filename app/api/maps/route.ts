@@ -23,6 +23,7 @@ export async function GET(request: Request) {
         name: true,
         gameId: true,
         version: true,
+        publishedVersion: true,
         updatedAt: true,
       },
       orderBy: { name: "asc" },

@@ -29,11 +29,24 @@ async function loadMapPayload(slug: string) {
 
     let tileLayers: any[] = [];
     let voxelDoc: any = undefined;
+
+    // 1. Authoritative native voxelData column
+    if (worldMap.voxelData) {
+      try {
+        const parsedNative = JSON.parse(worldMap.voxelData);
+        if (parsedNative && parsedNative.formatVersion === 3) {
+          voxelDoc = parsedNative;
+        }
+      } catch (e) {
+        console.warn(`[MapAPI] Failed to parse native voxelData for ${slug}:`, e);
+      }
+    }
+
     try {
       const parsed = JSON.parse(worldMap.tileLayersData || "[]");
       if (Array.isArray(parsed)) {
         tileLayers = parsed;
-      } else if (parsed && typeof parsed === 'object' && parsed.formatVersion === 3) {
+      } else if (!voxelDoc && parsed && typeof parsed === 'object' && parsed.formatVersion === 3) {
         voxelDoc = parsed;
       }
     } catch {
@@ -126,6 +139,7 @@ async function loadMapPayload(slug: string) {
       tilesets,
       voxelDoc,
       version: worldMap.version,
+      publishedVersion: (worldMap as any).publishedVersion ?? 0,
       source: "worldMap" as const,
     };
   }
@@ -211,6 +225,7 @@ export async function GET(
           64
         ),
         version: 0,
+        publishedVersion: 0,
         source: 'worldMap' as const,
       };
     }
@@ -398,6 +413,7 @@ export async function POST(
             }
           : {}),
         ...(body.freeformLayers || body.voxelDoc ? { freeformLayersData: JSON.stringify(freeformLayersForSave) } : {}),
+        ...(body.voxelDoc ? { voxelData: JSON.stringify(body.voxelDoc) } : {}),
         version: { increment: 1 },
       },
       create: {
@@ -412,6 +428,7 @@ export async function POST(
         tileLayersData: JSON.stringify(visualsForCreate.tileLayers || []),
         freeformLayersData: JSON.stringify(freeformLayersForSave),
         tilesetsData: JSON.stringify(visualsForCreate.tilesets || []),
+        voxelData: body.voxelDoc ? JSON.stringify(body.voxelDoc) : null,
       },
     });
 
@@ -438,12 +455,14 @@ export async function POST(
       },
     });
 
-    // Enqueue sync for game engine / Go MMO shards (tracks pending status and executes eager push if enabled)
-    await MapSyncService.enqueue({
-      mapId: worldMap.id,
-      version: worldMap.version,
-      userId: session.user.id,
-    });
+    // Enqueue sync for game engine / Go MMO shards if explicitly published or if live sync requested
+    if (body.isPublish) {
+      await MapSyncService.enqueue({
+        mapId: worldMap.id,
+        version: worldMap.version,
+        userId: session.user.id,
+      });
+    }
 
     // Realtime bus broadcast: notify all live game clients and studio viewports
     try {

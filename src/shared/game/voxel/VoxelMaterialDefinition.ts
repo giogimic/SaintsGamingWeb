@@ -14,8 +14,24 @@ import {
   VOXEL_MAT_LAVA,
   VOXEL_MAT_SWAMP,
   VOXEL_MAT_DUNGEON,
-  VOXEL_MAT_ICE
+  VOXEL_MAT_ICE,
 } from './VoxelWord';
+
+export { 
+  VOXEL_MAT_AIR,
+  VOXEL_MAT_GUNMETAL,
+  VOXEL_MAT_GRASS,
+  VOXEL_MAT_DIRT,
+  VOXEL_MAT_STONE,
+  VOXEL_MAT_SAND,
+  VOXEL_MAT_WATER,
+  VOXEL_MAT_WOOD,
+  VOXEL_MAT_SNOW,
+  VOXEL_MAT_LAVA,
+  VOXEL_MAT_SWAMP,
+  VOXEL_MAT_DUNGEON,
+  VOXEL_MAT_ICE,
+};
 
 export type UvRect = [number, number, number, number]; // [uMin, vMin, uMax, vMax]
 

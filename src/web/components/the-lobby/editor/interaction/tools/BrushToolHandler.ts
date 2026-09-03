@@ -18,6 +18,7 @@ import {
   VOXEL_MAT_GRASS,
   getVoxelBrushOffsets,
   getVoxelBrushOffsets3D,
+  resolveConstrainedVoxelCoordinates,
 } from '@/shared/game/voxel/VoxelWord';
 import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
 import { VoxelTransactionBuilder } from '@/shared/game/voxel/VoxelTransaction';
@@ -30,10 +31,18 @@ export class BrushToolHandler implements IToolHandler {
   }
 
   public onPointerMove(event: ToolPointerEvent, context: ToolExecutionContext): boolean {
-    return this.executePaint(event, context, 'move');
+    return this.executePaint(event, context, 'drag');
   }
 
-  private executePaint(event: ToolPointerEvent, context: ToolExecutionContext, eventType: 'down' | 'move'): boolean {
+  public onPointerDrag(event: ToolPointerEvent, context: ToolExecutionContext): boolean {
+    return this.executePaint(event, context, 'drag');
+  }
+
+  public onPointerUp(event: ToolPointerEvent, context: ToolExecutionContext): boolean {
+    return false;
+  }
+
+  private executePaint(event: ToolPointerEvent, context: ToolExecutionContext, eventType: 'down' | 'drag'): boolean {
     if (event.button !== 0 && event.rawEvent.buttons !== 1) return false;
     const store = useEditorStore.getState();
     const gameStore = useGameStore.getState();
@@ -46,23 +55,34 @@ export class BrushToolHandler implements IToolHandler {
     // 0. Authoritative 3D Voxel Placement
     if (event.voxelTarget && (context.engine as any).voxelWorld) {
       const voxelWorld: VoxelWorld = (context.engine as any).voxelWorld;
-      const targetCoord = event.isAlt
-        ? event.voxelTarget.voxelCoord // Replace target voxel directly
-        : event.voxelTarget.adjacentVoxelCoord; // Place adjacent block along face normal
+      const dims = resolveMapDimensions(liveMap);
+      const mapWidth = dims.width;
+      const mapHeight = dims.height;
 
       const shapeId = (store.activeVoxelShape ?? VoxelShape.FULL_CUBE) as any;
       const orient = (store.activeVoxelOrientation ?? VoxelOrientation.NORTH) as any;
       const matId = store.activeVoxelMaterialId || VOXEL_MAT_GRASS;
       const physics = shapeId === VoxelShape.SLOPE_45 ? VoxelPhysics.WALKABLE_SLOPE : VoxelPhysics.SOLID_OBSTACLE;
-
       const voxelWord = packVoxel(matId, shapeId, orient, 0, physics, 0);
-      const offsets = getVoxelBrushOffsets3D(store.brushRadius || 1, store.activeVoxelBrushAxis || 'xz');
+
+      const targetCoords = resolveConstrainedVoxelCoordinates({
+        centerCoord: event.voxelTarget.voxelCoord,
+        brushRadius: store.brushRadius || 1,
+        brushShape: store.brushShape || 'square',
+        brushAxis: store.activeVoxelBrushAxis || 'xz',
+        planeLockEnabled: store.voxelPlaneLockEnabled,
+        targetPlaneY: store.voxelTargetPlaneY,
+        planeMask: store.voxelPlaneMask,
+        buildUpMode: store.voxelBuildUpMode,
+        mapWidth,
+        mapHeight,
+        maxElevation: 32,
+      });
+
+      if (targetCoords.length === 0) return true;
 
       const txBuilder = new VoxelTransactionBuilder('Brush Paint Voxel', liveMap.id || '');
-      for (const { dx, dy, dz } of offsets) {
-        const wx = targetCoord.wx + dx;
-        const wy = targetCoord.wy + dy;
-        const wz = targetCoord.wz + dz;
+      for (const { wx, wy, wz } of targetCoords) {
         txBuilder.record(voxelWorld, wx, wy, wz, voxelWord);
       }
 

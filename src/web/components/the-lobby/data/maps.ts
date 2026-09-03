@@ -43,6 +43,7 @@ export interface RenderedChunk {
     sprite: string;
     dialogueKey: string;
   }>;
+  voxelDoc?: any;
 }
 
 export interface GameMapData {
@@ -320,6 +321,7 @@ export async function loadMap(
                 tileLayers: neighborData.tileLayers,
                 tilesets: neighborData.tilesets,
                 npcs: neighborData.npcs || [],
+                voxelDoc: neighborData.voxelDoc,
               });
             }).catch(e => {
               console.warn(`[MapLoader] Failed to load neighbor ${targetMapId}:`, e);

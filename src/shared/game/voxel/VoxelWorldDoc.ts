@@ -35,6 +35,17 @@ export interface VoxelWorldDocV3 {
     weather?: string;
     musicTrack?: string;
   };
+  generationMetadata?: {
+    mode?: string;
+    terrainProfile?: string;
+    seed?: string | number;
+    baseMaterial?: number;
+    baseElevation?: number;
+    elevationRange?: number;
+    createdAt?: number;
+  };
+  saveStatus?: 'saved' | 'saving' | 'unsaved' | 'error';
+  publishedVersion?: number;
 }
 
 export const DEFAULT_BLOCK_SIZE_PX = 64;
@@ -196,6 +207,101 @@ export class VoxelWorld {
     return changed;
   }
 
+  /** Connected adjacent neighbors for boundary halo sampling and seamless transitions */
+  public adjacentNeighbors = new Map<
+    'north' | 'east' | 'south' | 'west',
+    { mapId: string; world: VoxelWorld; offsetWX: number; offsetWZ: number }
+  >();
+
+  public registerAdjacentNeighbor(
+    direction: 'north' | 'east' | 'south' | 'west',
+    neighborWorld: VoxelWorld,
+    offsetWX = 0,
+    offsetWZ = 0
+  ): void {
+    this.adjacentNeighbors.set(direction, {
+      mapId: neighborWorld.id,
+      world: neighborWorld,
+      offsetWX,
+      offsetWZ,
+    });
+  }
+
+  public clearAdjacentNeighbors(): void {
+    this.adjacentNeighbors.clear();
+  }
+
+  public isWithinLocalBounds(wx: number, wy: number, wz: number): boolean {
+    return (
+      wx >= 0 &&
+      wx < (this.mapWidth ?? this.totalWidthBlocks) &&
+      wz >= 0 &&
+      wz < (this.mapHeight ?? this.totalDepthBlocks) &&
+      wy >= 0 &&
+      wy < this.totalHeightBlocks
+    );
+  }
+
+  /**
+   * Safety guard: verifies coordinate is within local map boundary.
+   * Protects adjacent maps from accidental brush corruption during editing.
+   */
+  public canEditVoxel(wx: number, wy: number, wz: number): boolean {
+    return this.isWithinLocalBounds(wx, wy, wz);
+  }
+
+  /**
+   * 1-Block Halo Boundary Voxel Query.
+   * If (wx, wy, wz) is inside this map, returns local voxel.
+   * If (wx, wy, wz) is outside, queries the connected adjacent neighbor map.
+   * Eliminates cracks, seams, and false perimeter air at borders.
+   */
+  public getVoxelWithHalo(wx: number, wy: number, wz: number): number {
+    const width = this.mapWidth ?? this.totalWidthBlocks;
+    const depth = this.mapHeight ?? this.totalDepthBlocks;
+
+    // Within local bounds
+    if (wx >= 0 && wx < width && wz >= 0 && wz < depth && wy >= 0 && wy < this.totalHeightBlocks) {
+      return this.getVoxel(wx, wy, wz);
+    }
+
+    // West boundary (wx < 0)
+    if (wx < 0) {
+      const westNeighbor = this.adjacentNeighbors.get('west');
+      if (westNeighbor) {
+        const nWidth = westNeighbor.world.mapWidth ?? westNeighbor.world.totalWidthBlocks;
+        return westNeighbor.world.getVoxel(nWidth + wx, wy, wz - westNeighbor.offsetWZ);
+      }
+    }
+
+    // East boundary (wx >= width)
+    if (wx >= width) {
+      const eastNeighbor = this.adjacentNeighbors.get('east');
+      if (eastNeighbor) {
+        return eastNeighbor.world.getVoxel(wx - width, wy, wz - eastNeighbor.offsetWZ);
+      }
+    }
+
+    // South boundary (wz < 0)
+    if (wz < 0) {
+      const southNeighbor = this.adjacentNeighbors.get('south');
+      if (southNeighbor) {
+        const nDepth = southNeighbor.world.mapHeight ?? southNeighbor.world.totalDepthBlocks;
+        return southNeighbor.world.getVoxel(wx - southNeighbor.offsetWX, wy, nDepth + wz);
+      }
+    }
+
+    // North boundary (wz >= depth)
+    if (wz >= depth) {
+      const northNeighbor = this.adjacentNeighbors.get('north');
+      if (northNeighbor) {
+        return northNeighbor.world.getVoxel(wx - northNeighbor.offsetWX, wy, wz - depth);
+      }
+    }
+
+    return VOXEL_WORD_AIR;
+  }
+
   /**
    * Generates default Gunmetal base for all chunks in the world volume.
    */
@@ -285,3 +391,74 @@ export function generateDefaultWorldDoc(
   world.generateDefaultWorld();
   return world.serializeToDoc();
 }
+
+/**
+ * Multi-map spatial registry managing spatial coordinates, cross-map adjacency,
+ * and halo queries across the continuous World Atlas.
+ */
+export class SpatialVoxelWorldManager {
+  private static instance: SpatialVoxelWorldManager;
+  private worlds = new Map<string, VoxelWorld>();
+  private worldOffsets = new Map<string, { x: number; z: number }>();
+
+  public static getInstance(): SpatialVoxelWorldManager {
+    if (!SpatialVoxelWorldManager.instance) {
+      SpatialVoxelWorldManager.instance = new SpatialVoxelWorldManager();
+    }
+    return SpatialVoxelWorldManager.instance;
+  }
+
+  public registerWorld(world: VoxelWorld, offsetWX = 0, offsetWZ = 0): void {
+    this.worlds.set(world.id, world);
+    this.worldOffsets.set(world.id, { x: offsetWX, z: offsetWZ });
+  }
+
+  public unregisterWorld(mapId: string): void {
+    const world = this.worlds.get(mapId);
+    if (world) {
+      world.clearAdjacentNeighbors();
+      this.worlds.delete(mapId);
+      this.worldOffsets.delete(mapId);
+    }
+  }
+
+  public getWorld(mapId: string): VoxelWorld | undefined {
+    return this.worlds.get(mapId);
+  }
+
+  public getWorldOffset(mapId: string): { x: number; z: number } {
+    return this.worldOffsets.get(mapId) || { x: 0, z: 0 };
+  }
+
+  public connectAdjacent(
+    sourceMapId: string,
+    targetMapId: string,
+    direction: 'north' | 'east' | 'south' | 'west',
+    offsetWX = 0,
+    offsetWZ = 0
+  ): boolean {
+    const src = this.worlds.get(sourceMapId);
+    const tgt = this.worlds.get(targetMapId);
+    if (!src || !tgt) return false;
+
+    src.registerAdjacentNeighbor(direction, tgt, offsetWX, offsetWZ);
+
+    const reverse: Record<'north' | 'east' | 'south' | 'west', 'north' | 'east' | 'south' | 'west'> = {
+      north: 'south',
+      south: 'north',
+      east: 'west',
+      west: 'east',
+    };
+    tgt.registerAdjacentNeighbor(reverse[direction], src, -offsetWX, -offsetWZ);
+    return true;
+  }
+
+  public clear(): void {
+    for (const w of this.worlds.values()) {
+      w.clearAdjacentNeighbors();
+    }
+    this.worlds.clear();
+    this.worldOffsets.clear();
+  }
+}
+

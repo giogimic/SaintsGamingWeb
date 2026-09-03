@@ -15,6 +15,10 @@ import {
   Layers,
   Trash2,
   Plus,
+  Lock,
+  Unlock,
+  ArrowDown,
+  ArrowUp,
 } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
 
@@ -340,6 +344,12 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
   const activeVoxelShape = useEditorStore((s) => s.activeVoxelShape);
   const activeVoxelBrushAxis = useEditorStore((s) => s.activeVoxelBrushAxis);
   const setActiveVoxelBrushAxis = useEditorStore((s) => s.setActiveVoxelBrushAxis);
+  const voxelPlaneLockEnabled = useEditorStore((s) => s.voxelPlaneLockEnabled);
+  const setVoxelPlaneLockEnabled = useEditorStore((s) => s.setVoxelPlaneLockEnabled);
+  const voxelTargetPlaneY = useEditorStore((s) => s.voxelTargetPlaneY);
+  const setVoxelTargetPlaneY = useEditorStore((s) => s.setVoxelTargetPlaneY);
+  const voxelBuildUpMode = useEditorStore((s) => s.voxelBuildUpMode);
+  const setVoxelBuildUpMode = useEditorStore((s) => s.setVoxelBuildUpMode);
   const showToast = useGameStore((s) => s.showToast);
 
   const [activeTab, setActiveTab] = useState<'SEAMLESS' | 'CUSTOM'>('SEAMLESS');
@@ -539,6 +549,45 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Quick Editing Constraints: Layer Lock & Build Up Mode */}
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                soundSynth?.playSelectSound?.();
+                setVoxelPlaneLockEnabled(!voxelPlaneLockEnabled);
+                showToast(voxelPlaneLockEnabled ? 'Layer Lock disabled' : `Layer Lock active: Y=${voxelTargetPlaneY}`);
+              }}
+              title={voxelPlaneLockEnabled ? `Plane Lock ON (Y=${voxelTargetPlaneY})` : 'Plane Lock OFF'}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-colors cursor-pointer border ${
+                voxelPlaneLockEnabled
+                  ? 'bg-primary/20 text-primary border-primary/40'
+                  : 'bg-[#040912] text-muted-foreground border-border/30 hover:border-border'
+              }`}
+            >
+              {voxelPlaneLockEnabled ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+              <span>Lock Y={voxelTargetPlaneY}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                soundSynth?.playSelectSound?.();
+                setVoxelBuildUpMode(!voxelBuildUpMode);
+                showToast(voxelBuildUpMode ? 'Build Up Mode disabled' : 'Build Up Mode ON (Stacking voxels)');
+              }}
+              title="Build Up Mode: Stacks voxels vertically atop hit surface"
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-colors cursor-pointer border ${
+                voxelBuildUpMode
+                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/50'
+                  : 'bg-[#040912] text-muted-foreground border-border/30 hover:border-border'
+              }`}
+            >
+              <Layers className="w-3 h-3" />
+              <span>Stack</span>
+            </button>
           </div>
         </div>
       </div>
