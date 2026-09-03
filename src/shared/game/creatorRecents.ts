@@ -87,3 +87,26 @@ export class CreatorRecentsManager {
     }
   }
 }
+
+export const creatorRecents = new CreatorRecentsManager(25);
+
+if (typeof window !== 'undefined') {
+  try {
+    const saved = window.localStorage.getItem('saints.creatorRecents');
+    if (saved) creatorRecents.deserialize(saved);
+  } catch {
+    // Ignore localStorage failures
+  }
+}
+
+export function recordRecentItem(item: Omit<RecentItem, 'lastModified'>): RecentItem {
+  const recorded = creatorRecents.recordRecent(item);
+  if (typeof window !== 'undefined') {
+    try {
+      window.localStorage.setItem('saints.creatorRecents', creatorRecents.serialize());
+    } catch {
+      // Ignore quota errors
+    }
+  }
+  return recorded;
+}
