@@ -30,21 +30,27 @@ export const DesktopTitlebar: React.FC<{ activeMapTitle?: string }> = ({ activeM
     try {
       const { getCurrentWindow } = await import('@tauri-apps/api/window');
       await getCurrentWindow().minimize();
-    } catch {}
+    } catch {
+      (window as any).electronAPI?.minimize?.();
+    }
   };
 
   const handleMaximize = async () => {
     try {
       const { getCurrentWindow } = await import('@tauri-apps/api/window');
       await getCurrentWindow().toggleMaximize();
-    } catch {}
+    } catch {
+      (window as any).electronAPI?.toggleMaximize?.();
+    }
   };
 
   const handleClose = async () => {
     try {
       const { getCurrentWindow } = await import('@tauri-apps/api/window');
       await getCurrentWindow().close();
-    } catch {}
+    } catch {
+      (window as any).electronAPI?.close?.();
+    }
   };
 
   return (

@@ -93,6 +93,7 @@ docker_build.log
 # Studio Desktop Application Build Artifacts
 /studio-desktop/node_modules/
 /studio-desktop/dist/
+/studio-desktop/release/
 /studio-desktop/src-tauri/target/
 /public/downloads/
 *.exe

@@ -1,3 +1,15 @@
+# 2.1.701
+- **Standalone Windows Executable (.exe) Packaging & Studio Distribution in `studio-desktop/dist/`**:
+  - **Native Executable Distribution**:
+    - Integrated Electron & `electron-builder` toolchain to package the Vite production bundle into true standalone Windows binaries without requiring Rust or MSVC C++ compiler toolchains.
+    - Emitted signed standalone portable executable `Saints World Studio.exe` (109 MB) and unpacked runtime directory (`dist/win-unpacked/`).
+    - Added `copy-dist-exe.cjs` and updated `build` / `build:exe` npm scripts so every build places `Saints World Studio.exe` directly into `studio-desktop/dist/`.
+  - **Multi-Runtime Desktop Support**:
+    - Created `electron/main.cjs` and `electron/preload.cjs` handling frameless windows, custom `DesktopTitlebar` window controls (minimize/maximize/close), deep link URL protocol (`saints-studio://`), and single-instance locks.
+    - Updated `DesktopTitlebar.tsx` and `DesktopAuthProvider.tsx` to transparently support both Tauri 2.x and Electron runtimes.
+  - **Git Integrity**:
+    - Added `/studio-desktop/release/` to `.gitignore`, keeping all `.exe`, `.msi`, and packaging directories strictly untracked.
+
 # 2.1.700
 - **Decouple World Studio to Standalone Desktop App & Purge Website Remnants**:
   - **Standalone Desktop Application (`studio-desktop/`)**:

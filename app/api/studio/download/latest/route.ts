@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(_req: NextRequest) {
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: 'SITE_VERSION' } });
-    const version = (versionSetting?.value || packageJson.version || '2.1.700').replace(/^v/, '');
+    const version = (versionSetting?.value || packageJson.version || '2.1.701').replace(/^v/, '');
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
 
     // Direct download link for Windows setup
