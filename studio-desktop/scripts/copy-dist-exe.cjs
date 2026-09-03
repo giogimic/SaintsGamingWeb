@@ -31,6 +31,27 @@ if (fs.existsSync(releaseDir)) {
         path.join(distDir, 'Saints World Studio.exe')
       );
       console.log(`[✓] Successfully placed latest executable (${latestExe}) in dist/Saints Gaming.exe`);
+
+      // Also place in public/downloads for website download endpoints
+      try {
+        const pkg = require('../package.json');
+        const cleanVersion = (pkg.version || '2.1.712').replace(/^v/, '');
+        const publicDownloadsDir = path.resolve(__dirname, '../../public/downloads');
+        if (!fs.existsSync(publicDownloadsDir)) {
+          fs.mkdirSync(publicDownloadsDir, { recursive: true });
+        }
+        fs.copyFileSync(
+          path.join(releaseDir, latestExe),
+          path.join(publicDownloadsDir, 'Saints Gaming.exe')
+        );
+        fs.copyFileSync(
+          path.join(releaseDir, latestExe),
+          path.join(publicDownloadsDir, `SaintsWorldStudio-Setup-${cleanVersion}.exe`)
+        );
+        console.log(`[✓] Synced installer to public/downloads/ for web download endpoints`);
+      } catch (pubErr) {
+        console.warn(`[!] Note: Could not sync to public/downloads:`, pubErr.message);
+      }
     } catch (err) {
       console.warn(`[!] Note: dist/ executable is currently locked or running. Release executable is available at release/${latestExe}`);
     }
