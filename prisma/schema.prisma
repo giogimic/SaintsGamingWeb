@@ -55,6 +55,19 @@ model PasswordResetToken {
   @@unique([email, token])
 }
 
+model StudioSessionToken {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  name       String    @default("Windows Desktop Studio")
+  lastUsedAt DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 // ─── Roles & Permissions ──────────────────────────────────────────
 
 model Role {
@@ -101,6 +114,7 @@ model User {
   // Relations
   accounts       Account[]
   sessions       Session[]
+  studioTokens   StudioSessionToken[]
   threads        Thread[]
   replies        Reply[]
   reactions      Reaction[]

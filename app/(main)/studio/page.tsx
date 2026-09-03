@@ -1,24 +1,39 @@
-import { StudioLobby } from '@/web/components/the-lobby/dynamic';
-import { MidnightTropicalBackground } from '@/web/components/the-lobby/MidnightTropicalBackground';
+import { auth } from '@/auth';
+import { prisma } from '@/web/lib/prisma';
+import { redirect } from 'next/navigation';
+import { StudioHubClient } from './StudioHubClient';
+import packageJson from '@/../package.json';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Studio | Saints Gaming',
-  description: 'Developer Studio for The Lobby — world building and game tools.',
+  title: 'World Studio | Saints Gaming',
+  description: 'Download and launch the Saints Gaming World Studio standalone 3D volumetric authoring suite.',
 };
 
-export default async function StudioPage(props: {
-  searchParams: Promise<{ characterId?: string; create?: string }>;
-}) {
-  const params = await props.searchParams;
+export default async function StudioPage() {
+  const session = await auth();
 
-  return (
-    <div className="fixed inset-0 w-screen h-screen overflow-hidden z-50">
-      <MidnightTropicalBackground />
-      <StudioLobby
-        characterId={params.characterId}
-        forceCreate={params.create === 'true'}
-      />
-    </div>
-  );
+  if (!session?.user?.id) {
+    redirect('/login?callbackUrl=/studio');
+  }
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      id: true,
+      username: true,
+      displayName: true,
+      permissionLevel: true,
+      email: true,
+    },
+  });
+
+  if (!dbUser) {
+    redirect('/login?callbackUrl=/studio');
+  }
+
+  const versionSetting = await prisma.siteSetting.findUnique({ where: { key: 'SITE_VERSION' } });
+  const siteVersion = versionSetting?.value || packageJson.version || '2.1.699';
+
+  return <StudioHubClient user={dbUser} siteVersion={siteVersion} />;
 }

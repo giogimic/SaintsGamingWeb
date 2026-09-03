@@ -15,6 +15,7 @@ import { toBaseMapId } from '@/shared/net/mapIds';
 import { useGameStore } from '../../store';
 import { useEditorStore } from '../editor-store';
 import { SpatialVoxelWorldManager } from '@/shared/game/voxel/VoxelWorldDoc';
+import { StudioApiClient } from '@/shared/api/StudioApiClient';
 
 export interface SaveMapResult {
   ok: boolean;
@@ -121,16 +122,9 @@ export class MapPersistenceService {
         allowCustomPlayerCamera: (saveDoc as any).allowCustomCamera ?? (saveDoc as any).allowCustomPlayerCamera,
       });
 
-      const res = await fetch(`/api/maps/${encodeURIComponent(baseMapId)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        const formattedErr = formatMapWriteError(res.status, err);
-        return { ok: false, error: formattedErr };
+      const saveRes = await StudioApiClient.getInstance().saveMap(baseMapId, payload);
+      if (!saveRes.ok) {
+        return { ok: false, error: saveRes.error || 'Save failed' };
       }
 
       // Invalidate both shared and runtime lobby caches so fresh authoritative data is loaded everywhere
@@ -168,34 +162,27 @@ export class MapPersistenceService {
     }
 
     try {
-      const res = await fetch(`/api/maps/${encodeURIComponent(baseMapId)}/publish`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: description || 'Published release from Studio' }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        return { ok: false, error: err.error || `Publish failed (${res.status})` };
+      const pubRes = await StudioApiClient.getInstance().publishMap(baseMapId, description);
+      if (!pubRes.ok) {
+        return { ok: false, error: pubRes.error || 'Publish failed' };
       }
 
-      const data = await res.json();
       invalidateMapCache(baseMapId);
       invalidateLobbyMapCache(baseMapId);
 
       // Update publishedVersion in activeMapData
       const active = useGameStore.getState().activeMapData;
-      if (active) {
+      if (active && pubRes.publishedVersion !== undefined) {
         useGameStore.getState().setActiveMapData({
           ...active,
-          publishedVersion: data.publishedVersion,
+          publishedVersion: pubRes.publishedVersion,
         });
       }
 
       return {
         ok: true,
         mapId: baseMapId,
-        publishedVersion: data.publishedVersion,
+        publishedVersion: pubRes.publishedVersion,
       };
     } catch (e: any) {
       return { ok: false, error: e?.message || 'Network error publishing map.' };
@@ -213,18 +200,11 @@ export class MapPersistenceService {
     }
 
     try {
-      const res = await fetch(`/api/maps/${encodeURIComponent(baseMapId)}/rollback`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetVersion }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        return { ok: false, error: err.error || `Rollback failed (${res.status})` };
+      const rollRes = await StudioApiClient.getInstance().rollbackMap(baseMapId, targetVersion);
+      if (!rollRes.ok) {
+        return { ok: false, error: rollRes.error || 'Rollback failed' };
       }
 
-      const data = await res.json();
       invalidateMapCache(baseMapId);
       invalidateLobbyMapCache(baseMapId);
 
@@ -237,7 +217,7 @@ export class MapPersistenceService {
       return {
         ok: true,
         mapId: baseMapId,
-        restoredVersion: data.restoredVersion,
+        restoredVersion: rollRes.restoredVersion,
       };
     } catch (e: any) {
       return { ok: false, error: e?.message || 'Network error rolling back map.' };
@@ -249,13 +229,6 @@ export class MapPersistenceService {
    */
   public static async fetchVersionHistory(mapId: string): Promise<MapVersionItem[]> {
     const baseId = toBaseMapId(mapId);
-    try {
-      const res = await fetch(`/api/maps/${encodeURIComponent(baseId)}/versions`);
-      if (!res.ok) return [];
-      const data = await res.json();
-      return Array.isArray(data.versions) ? data.versions : [];
-    } catch {
-      return [];
-    }
+    return StudioApiClient.getInstance().fetchVersionHistory(baseId);
   }
 }

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
-import { canWriteStudioContent } from "@/shared/game/studioPermissions";
+import { canWriteStudioContent, STUDIO_CONTENT_WRITE_LEVEL } from "@/shared/game/studioPermissions";
+import { verifyStudioPermission } from "@/server/auth/studioApiAuth";
 import { AuditService } from "@/server/audit/AuditService";
 import { MapSyncService } from "@/server/mapSyncService";
 
@@ -16,24 +17,11 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized — sign in required to rollback maps." },
-        { status: 401 }
-      );
+    const authCheck = await verifyStudioPermission(request, STUDIO_CONTENT_WRITE_LEVEL);
+    if ("errorResponse" in authCheck) {
+      return authCheck.errorResponse;
     }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { permissionLevel: true },
-    });
-    if (!user || !canWriteStudioContent(user.permissionLevel)) {
-      return NextResponse.json(
-        { error: "Forbidden — Admin+ (permission level 400) required to rollback maps." },
-        { status: 403 }
-      );
-    }
+    const user = authCheck.user;
 
     const { slug } = await params;
     const body = await request.json();
@@ -128,13 +116,13 @@ export async function POST(
     await MapSyncService.enqueue({
       mapId: slug,
       version: targetVersion,
-      userId: session.user.id,
+      userId: user.id,
       eagerPush: true,
     });
 
     // 5. Audit Log
     await AuditService.write({
-      userId: session.user.id,
+      userId: user.id,
       action: "map.rollback",
       resource: { type: "map", id: slug },
       after: {
