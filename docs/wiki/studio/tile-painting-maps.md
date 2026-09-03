@@ -68,3 +68,38 @@ To maintain 60 FPS in the editor while painting large maps ($128 \times 128$ or 
 
 > [!TIP]
 > Use the Tile Selector (`TileSelectorPanel.tsx`) to switch seamlessly between Grid Paint, Terrain Splats, Props & Foliage, the Sheet Slicer, and Smart Auto-Border tools.
+
+---
+
+## 5. Greenfield 3D Voxel World Block Architecture
+
+In addition to 2D dual-grid tile layers, the modern Saints engine incorporates true volumetric 3D voxel authoring:
+
+### Voxel Data Model (`VoxelWorldBlock`)
+Each volumetric voxel block is defined by:
+```typescript
+interface VoxelWorldBlock {
+  x: number;          // Discrete grid X coordinate
+  y: number;          // Vertical elevation Y coordinate
+  z: number;          // Discrete grid Z coordinate
+  materialId: string; // Canonical material identifier (e.g. "grass", "stone", "water")
+  metadata?: {
+    customUvs?: { [face in VoxelFace]?: [u0, v0, u1, v1] };
+    tint?: string;
+    lightLevel?: number;
+  };
+}
+```
+
+### Canonical Materials & Face-Specific UVs
+- **Materials:** Pre-configured materials include `grass`, `dirt`, `stone`, `sand`, `water`, `wood`, `stone_brick`, and `snow`.
+- **6-Face UV Orientation:** Blocks support multi-face texturing:
+  - `top`: Surface grass texture.
+  - `bottom`: Sub-surface soil texture.
+  - `north`, `south`, `east`, `west`: Lateral cliff edge textures with seamless procedural blending.
+
+### Voxel Collision & Raycasting (`VoxelTargetResolver`)
+- **Deterministic Raycasting:** The pointer ray determines the exact 3D voxel cube and normal face hit.
+- **Placement & Digging:** Placing a block positions it against the targeted face normal; erasing/digging removes the targeted block.
+- **Volumetric Collision Bounds:** In playtest and MMO modes, voxel blocks generate solid AABB bounding volumes preventing player clipping through multi-tiered terrain.
+- **3D Voxel Undo/Redo Engine:** Mutations push state deltas directly to the undo history stack, guaranteeing fast rollback without full-scene reloads.

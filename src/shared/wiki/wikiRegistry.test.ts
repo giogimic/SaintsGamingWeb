@@ -115,7 +115,7 @@ describe("wikiRegistry", () => {
       const crumbs = getWikiBreadcrumbs("game-systems/core-loop");
       expect(crumbs).toHaveLength(3);
       expect(crumbs[1].label).toBe("Game Systems");
-      expect(crumbs[2].label).toBe("Core Loop & 2.5D Renderer");
+      expect(crumbs[2].label).toBe("Core Loop & 3D Voxel Renderer");
     });
   });
 

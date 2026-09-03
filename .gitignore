@@ -96,5 +96,6 @@ docker_build.log
 /studio-desktop/release/
 /studio-desktop/src-tauri/target/
 /public/downloads/
+/downloads/
 *.exe
 *.msi

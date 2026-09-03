@@ -43,7 +43,15 @@ export type StudioDockId =
   | "dungeon"
   | "maps"
   | "animations"
-  | "interface";
+  | "interface"
+  | "camera"
+  | "biome"
+  | "hierarchy"
+  | "layers"
+  | "materials"
+  | "selection"
+  | "transform"
+  | "procedural";
 
 /** Minimum level to enter `/studio` and use create docks (= ADMIN). */
 export const STUDIO_ENTRY_LEVEL = 400;
@@ -92,6 +100,14 @@ export const STUDIO_DOCK_MIN_LEVEL: Record<StudioDockId, number> = {
   maps: STUDIO_ENTRY_LEVEL,
   animations: STUDIO_ENTRY_LEVEL,
   interface: STUDIO_ENTRY_LEVEL,
+  camera: STUDIO_ENTRY_LEVEL,
+  biome: STUDIO_ENTRY_LEVEL,
+  hierarchy: STUDIO_ENTRY_LEVEL,
+  layers: STUDIO_ENTRY_LEVEL,
+  materials: STUDIO_ENTRY_LEVEL,
+  selection: STUDIO_ENTRY_LEVEL,
+  transform: STUDIO_ENTRY_LEVEL,
+  procedural: STUDIO_ENTRY_LEVEL,
 };
 
 

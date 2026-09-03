@@ -44,6 +44,10 @@ export const PropertiesPanel: React.FC = () => {
   };
 
   const [componentKind, setComponentKind] = useState<LogicComponentKind>('harvest_wood');
+  const [activeTab, setActiveTab] = useState<'context' | 'logic' | 'map'>('context');
+  const hoveredVoxel = useEditorStore((s) => s.hoveredVoxel);
+  const activeVoxelMaterialId = useEditorStore((s) => s.activeVoxelMaterialId);
+  const activeVoxelShape = useEditorStore((s) => s.activeVoxelShape);
   const preset = useMemo(
     () => LOGIC_COMPONENT_PRESETS.find((p) => p.kind === componentKind) || LOGIC_COMPONENT_PRESETS[0],
     [componentKind]
@@ -174,75 +178,153 @@ export const PropertiesPanel: React.FC = () => {
         )}
       </WindowMenuBar>
 
+      {/* ── Tabs Bar ── */}
+      <div className="flex items-center gap-1 px-3 pt-2 pb-1 border-b border-border/30">
+        {(
+          [
+            { id: 'context', label: 'Inspector' },
+            { id: 'logic', label: 'Logic Presets' },
+            { id: 'map', label: 'Map Info' },
+          ] as const
+        ).map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setActiveTab(t.id)}
+            className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+              activeTab === t.id
+                ? 'bg-primary/20 text-primary border border-primary/40'
+                : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
       <div className="p-3 space-y-4">
-      {/* SELECTION CONTEXT */}
-      <div className="bg-[#0b1320]/60 border border-[#cbb26a]/40 rounded p-3 space-y-2 shadow-[0_0_15px_rgba(203,178,106,0.1)]">
-        <div className="flex items-center gap-1.5 font-bold text-[#e2d5b3] border-b border-[#cbb26a]/30 pb-1 uppercase tracking-widest text-[10px]">
-          <MapPin className="w-4 h-4" /> Selection Context
-        </div>
-        {clickedTile ? (
-          <div className="space-y-2 pt-1">
-            <div className="grid grid-cols-2 gap-2 text-[10px]">
-              <div className="bg-[#050b14] border border-[#806f47]/30 p-2 rounded">
-                <span className="text-slate-500 block mb-0.5">Coordinates</span>
-                <span className="text-white font-bold">X: {clickedTile.c} <span className="text-[#806f47]">|</span> Y: {clickedTile.r}</span>
-              </div>
-              <div className="bg-[#050b14] border border-[#806f47]/30 p-2 rounded">
-                <span className="text-slate-500 block mb-0.5">Base Tile ID</span>
-                <span className="text-white font-bold">
-                  {currentMapData?.grid?.[clickedTile.r]?.[clickedTile.c] ?? 'Empty (0)'}
-                </span>
-              </div>
+      {/* ── 1. INSPECTOR / SELECTION TAB ── */}
+      {activeTab === 'context' && (
+        <div className="space-y-3">
+          <div className="bg-[#0b1320]/60 border border-[#cbb26a]/40 rounded p-3 space-y-2 shadow-[0_0_15px_rgba(203,178,106,0.1)]">
+            <div className="flex items-center gap-1.5 font-bold text-[#e2d5b3] border-b border-[#cbb26a]/30 pb-1 uppercase tracking-widest text-[10px]">
+              <MapPin className="w-4 h-4 text-primary" /> Selection Context
             </div>
-            
-            {/* Logic Tile Data */}
-            {(() => {
-              const logicId = currentMapData?.grid?.[clickedTile.r]?.[clickedTile.c];
-              const logicObj = logicId && logicTiles[logicId];
-              if (!logicObj) return null;
-              return (
-                <div className="bg-[#050b14] border border-blue-900/40 p-2 rounded flex items-center gap-2">
-                  <span className={`w-3 h-3 rounded-sm ${logicObj.color || 'bg-blue-500'}`} />
-                  <div>
-                    <span className="block text-white font-bold">{logicObj.name} <span className="text-slate-500 font-normal">#{logicObj.id}</span></span>
-                    {logicObj.onInteractAction && <span className="text-blue-300 text-[9px] block">Interact: {logicObj.onInteractAction}</span>}
+            {clickedTile ? (
+              <div className="space-y-2 pt-1">
+                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                  <div className="bg-[#050b14] border border-[#806f47]/30 p-2 rounded">
+                    <span className="text-slate-500 block mb-0.5">Coordinates</span>
+                    <span className="text-white font-bold">X: {clickedTile.c} <span className="text-[#806f47]">|</span> Y: {clickedTile.r}</span>
+                  </div>
+                  <div className="bg-[#050b14] border border-[#806f47]/30 p-2 rounded">
+                    <span className="text-slate-500 block mb-0.5">Base Tile ID</span>
+                    <span className="text-white font-bold">
+                      {currentMapData?.grid?.[clickedTile.r]?.[clickedTile.c] ?? 'Empty (0)'}
+                    </span>
                   </div>
                 </div>
-              );
-            })()}
+                
+                {/* Logic Tile Data */}
+                {(() => {
+                  const logicId = currentMapData?.grid?.[clickedTile.r]?.[clickedTile.c];
+                  const logicObj = logicId && logicTiles[logicId];
+                  if (!logicObj) return null;
+                  return (
+                    <div className="bg-[#050b14] border border-blue-900/40 p-2 rounded flex items-center gap-2">
+                      <span className={`w-3 h-3 rounded-sm ${logicObj.color || 'bg-blue-500'}`} />
+                      <div>
+                        <span className="block text-white font-bold">{logicObj.name} <span className="text-slate-500 font-normal">#{logicObj.id}</span></span>
+                        {logicObj.onInteractAction && <span className="text-blue-300 text-[9px] block">Interact: {logicObj.onInteractAction}</span>}
+                      </div>
+                    </div>
+                  );
+                })()}
 
-            {/* Warp Gate Data */}
-            {mapGates.some(g => g.position.x === clickedTile.c && g.position.y === clickedTile.r) && (
-              <div className="bg-purple-900/20 border border-purple-500/30 p-2 rounded">
-                <span className="text-purple-300 font-bold block mb-0.5">Warp Gate Present</span>
-                <span className="text-purple-200/70 block text-[9px]">Target: {mapGates.find(g => g.position.x === clickedTile.c && g.position.y === clickedTile.r)?.targetMapId}</span>
+                {/* Warp Gate Data */}
+                {mapGates.some(g => g.position.x === clickedTile.c && g.position.y === clickedTile.r) && (
+                  <div className="bg-purple-900/20 border border-purple-500/30 p-2 rounded">
+                    <span className="text-purple-300 font-bold block mb-0.5">Warp Gate Present</span>
+                    <span className="text-purple-200/70 block text-[9px]">Target: {mapGates.find(g => g.position.x === clickedTile.c && g.position.y === clickedTile.r)?.targetMapId}</span>
+                  </div>
+                )}
+
+                {/* NPC Entities at coordinate */}
+                {currentMapData?.npcs?.filter((n: any) => n.position?.x === clickedTile.c && n.position?.y === clickedTile.r).map((npc: any) => (
+                  <div key={npc.id} className="bg-emerald-950/30 border border-emerald-500/40 p-2 rounded flex items-center justify-between">
+                    <div>
+                      <span className="text-emerald-300 font-bold block">{npc.name}</span>
+                      <span className="text-[9px] text-slate-400">Sprite: {npc.assetProfileId} · {npc.dialogId ? `Dialog: ${npc.dialogId}` : 'No Dialog'}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-slate-500 italic py-2 text-center text-[10px]">
+                Click a tile in the viewport to inspect its properties.
               </div>
             )}
+          </div>
 
-            {/* NPC Entities at coordinate */}
-            {currentMapData?.npcs?.filter((n: any) => n.position?.x === clickedTile.c && n.position?.y === clickedTile.r).map((npc: any) => (
-              <div key={npc.id} className="bg-emerald-950/30 border border-emerald-500/40 p-2 rounded flex items-center justify-between">
-                <div>
-                  <span className="text-emerald-300 font-bold block">{npc.name}</span>
-                  <span className="text-[9px] text-slate-400">Sprite: {npc.assetProfileId} · {npc.dialogId ? `Dialog: ${npc.dialogId}` : 'No Dialog'}</span>
+          {/* Voxel 3D Cursor Telemetry */}
+          {hoveredVoxel && (
+            <div className="bg-[#0b1320]/60 border border-primary/30 rounded p-2.5 space-y-1.5">
+              <span className="text-[10px] font-bold text-primary uppercase tracking-wider block">3D Voxel Cursor</span>
+              <div className="grid grid-cols-3 gap-1.5 text-[10px]">
+                <div className="bg-black/40 p-1.5 rounded border border-white/5 text-center">
+                  <span className="text-muted-foreground block text-[8px]">WX</span>
+                  <span className="font-bold text-foreground">{hoveredVoxel.wx}</span>
+                </div>
+                <div className="bg-black/40 p-1.5 rounded border border-white/5 text-center">
+                  <span className="text-muted-foreground block text-[8px]">WY (Altitude)</span>
+                  <span className="font-bold text-primary">{hoveredVoxel.wy}</span>
+                </div>
+                <div className="bg-black/40 p-1.5 rounded border border-white/5 text-center">
+                  <span className="text-muted-foreground block text-[8px]">WZ</span>
+                  <span className="font-bold text-foreground">{hoveredVoxel.wz}</span>
                 </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-slate-500 italic py-2 text-center text-[10px]">
-            Click a tile in the viewport to inspect its properties.
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </div>
+      )}
 
-      <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-3 text-[10px] text-slate-400 leading-relaxed">
-        Fun-first: pick a component → paint on Logic (−1) → <span className="text-[#e2d5b3]">Walk Mode</span> to feel it → tweak →{' '}
-        <span className="text-[#e2d5b3]">Save Map</span>.
-      </div>
+      {/* ── 2. MAP INFO TAB ── */}
+      {activeTab === 'map' && (
+        <div className="space-y-3">
+          <div className="bg-[#0b1320]/60 border border-border/40 rounded p-3 space-y-2">
+            <span className="font-bold text-primary uppercase tracking-widest text-[10px] block">World Map Metrics</span>
+            <div className="grid grid-cols-2 gap-2 text-[10px]">
+              <div className="bg-black/40 p-2 rounded border border-white/5">
+                <span className="text-muted-foreground block text-[9px]">Map Base ID</span>
+                <span className="text-foreground font-bold">{currentMapId || 'DEMO_SANDBOX'}</span>
+              </div>
+              <div className="bg-black/40 p-2 rounded border border-white/5">
+                <span className="text-muted-foreground block text-[9px]">Grid Bounds</span>
+                <span className="text-foreground font-bold">{currentMapData?.width || 64} × {currentMapData?.height || 64}</span>
+              </div>
+              <div className="bg-black/40 p-2 rounded border border-white/5">
+                <span className="text-muted-foreground block text-[9px]">Registered NPCs</span>
+                <span className="text-foreground font-bold">{currentMapData?.npcs?.length || 0}</span>
+              </div>
+              <div className="bg-black/40 p-2 rounded border border-white/5">
+                <span className="text-muted-foreground block text-[9px]">Warp Gateways</span>
+                <span className="text-foreground font-bold">{mapGates.length}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Quick components (bible tags) */}
-      <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-2 space-y-2">
+      {/* ── 3. LOGIC PRESETS TAB ── */}
+      {activeTab === 'logic' && (
+        <>
+        <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-3 text-[10px] text-slate-400 leading-relaxed">
+          Fun-first: pick a component → paint on Logic (−1) → <span className="text-[#e2d5b3]">Walk Mode</span> to feel it → tweak →{' '}
+          <span className="text-[#e2d5b3]">Save Map</span>.
+        </div>
+
+        {/* Quick components (bible tags) */}
+        <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-2 space-y-2">
         <div className="flex items-center gap-1.5 font-bold text-[#cbb26a] border-b border-[#806f47]/30 pb-1">
           <Paintbrush className="w-3.5 h-3.5" /> Components (paint)
         </div>
@@ -457,6 +539,8 @@ export const PropertiesPanel: React.FC = () => {
           Register & Paint
         </button>
       </div>
+      </>
+      )}
       </div>
     </div>
   );

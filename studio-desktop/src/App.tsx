@@ -5,6 +5,7 @@ import { DesktopTitlebar } from './components/DesktopTitlebar';
 import { DesktopConnectScreen } from './components/DesktopConnectScreen';
 import { StudioEditorShell } from '@/web/components/the-lobby/editor/StudioEditorShell';
 import { StudioMenuBar } from '@/web/components/the-lobby/editor/StudioMenuBar';
+import { StudioContextualBar } from '@/web/components/the-lobby/editor/StudioContextualBar';
 import { StudioBottomToolbar } from '@/web/components/the-lobby/editor/StudioBottomToolbar';
 import GameCanvasBabylon from '@/web/components/the-lobby/babylon/GameCanvasBabylon';
 import { useGameStore } from '@/web/components/the-lobby/store';
@@ -103,9 +104,10 @@ const StudioMainWorkspace: React.FC = () => {
         <MidnightTropicalBackground showPalms={true} showWater={true} />
       </div>
 
-      {/* ── Top Studio Menu Bar (File, Edit, View, Mode switchers, Save) ── */}
-      <div className="relative z-50 pointer-events-auto h-10 shrink-0">
+      {/* ── Top Studio Menu Bar & Contextual Workflow Bar ── */}
+      <div className="relative z-50 pointer-events-auto shrink-0 flex flex-col">
         <StudioMenuBar />
+        <StudioContextualBar />
       </div>
 
       {/* ── Main 3D Viewport & MDI Panels Container ── */}

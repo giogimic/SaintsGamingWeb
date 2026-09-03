@@ -56,7 +56,13 @@ export type StudioDockId =
   | 'animations'
   | 'interface'
   | 'camera'
-  | 'biome';
+  | 'biome'
+  | 'hierarchy'
+  | 'layers'
+  | 'materials'
+  | 'selection'
+  | 'transform'
+  | 'procedural';
 
 /** Map stable internal ids → canonical engine-editor labels. */
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
@@ -283,5 +289,87 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
     label: 'Biome Configurator',
     blurb: 'Configure procedural fractal noise, strata layers, and environment.',
   },
+  hierarchy: {
+    label: 'World Hierarchy',
+    blurb: 'Scene outliner: terrain volumes, objects, entities, markers, and visibility locks.',
+  },
+  layers: {
+    label: 'Layers',
+    blurb: 'Layer manager: scope control, visual/logic layers, visibility, and locking.',
+  },
+  materials: {
+    label: 'Material Library',
+    blurb: 'Source selection: voxel materials, terrain textures, and environment palettes.',
+  },
+  selection: {
+    label: 'Selection',
+    blurb: '3D volumetric selection tools, booleans, grow/shrink, and selection presets.',
+  },
+  transform: {
+    label: 'Transform',
+    blurb: 'Numeric precision coordinates, rotation, scaling, pivot alignment, and mirroring.',
+  },
+  procedural: {
+    label: 'Procedural Authoring',
+    blurb: 'Procedural world rules, biomes, seeds, fractal terrain strata, and generation.',
+  },
 };
+
+export interface WorkspacePresetDef {
+  id: string;
+  name: string;
+  blurb: string;
+  openDocks: StudioDockId[];
+}
+
+export const STUDIO_WORKSPACE_PRESETS: WorkspacePresetDef[] = [
+  {
+    id: 'world-building',
+    name: 'World Building',
+    blurb: 'Dominant 3D viewport with Material Library, Inspector, and Layers.',
+    openDocks: ['materials', 'properties', 'layers'],
+  },
+  {
+    id: 'voxel-sculpting',
+    name: 'Voxel Sculpting',
+    blurb: 'Direct block carving and sculpt brushes with Material Library and Inspector.',
+    openDocks: ['materials', 'properties', 'selection'],
+  },
+  {
+    id: 'terrain-shaping',
+    name: 'Terrain Shaping',
+    blurb: 'Macro terrain sculpting, elevation smoothing, and material painting.',
+    openDocks: ['materials', 'properties', 'build'],
+  },
+  {
+    id: 'region-planning',
+    name: 'Region Planning',
+    blurb: 'World Atlas topology navigation with Map Browser and Region Inspector.',
+    openDocks: ['atlas', 'maps', 'properties'],
+  },
+  {
+    id: 'procedural-authoring',
+    name: 'Procedural Authoring',
+    blurb: 'Procedural biome synthesis, fractal strata preview, and generation.',
+    openDocks: ['procedural', 'properties', 'atlas'],
+  },
+  {
+    id: 'population-entities',
+    name: 'Population / Entities',
+    blurb: 'Spawn NPCs, creatures, monsters, and interactive anchors.',
+    openDocks: ['npc', 'spawner', 'creature', 'properties'],
+  },
+  {
+    id: 'debugging',
+    name: 'Debugging',
+    blurb: 'Diagnostics, problem reporting, rule evaluation, and streaming.',
+    openDocks: ['problems', 'streaming', 'dev'],
+  },
+  {
+    id: 'city-district-editing',
+    name: 'City / District Editing',
+    blurb: 'Precision layout: Selection, Transform, Prefab/Blueprint Library, and Outliner.',
+    openDocks: ['selection', 'transform', 'prefab', 'layers', 'properties'],
+  },
+];
 

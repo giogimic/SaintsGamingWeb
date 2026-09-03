@@ -41,6 +41,8 @@ import {
   Compass,
   Palette,
   Camera,
+  Crosshair,
+  RotateCw,
 } from 'lucide-react';
 import { resolveTilesetTextureUrl } from '@/shared/game/tileBatchHelpers';
 import { useGameStore } from '../store';
@@ -91,10 +93,17 @@ const MapListPanel = lazy(() => import('./panels/MapListPanel').then((m) => ({ d
 const InterfaceEditorPanel = lazy(() => import('./panels/InterfaceEditorPanel').then((m) => ({ default: m.InterfaceEditorPanel })));
 const CameraSettingsPanel = lazy(() => import('./panels/CameraSettingsPanel').then((m) => ({ default: m.CameraSettingsPanel })));
 const BiomeConfiguratorPanel = lazy(() => import('./panels/BiomeConfiguratorPanel').then((m) => ({ default: m.BiomeConfiguratorPanel })));
+const MaterialLibraryPanel = lazy(() => import('./panels/MaterialLibraryPanel').then((m) => ({ default: m.MaterialLibraryPanel })));
+const LayersPanel = lazy(() => import('./panels/LayersPanel').then((m) => ({ default: m.LayersPanel })));
+const WorldHierarchyPanel = lazy(() => import('./panels/WorldHierarchyPanel').then((m) => ({ default: m.WorldHierarchyPanel })));
+const SelectionPanel = lazy(() => import('./panels/SelectionPanel').then((m) => ({ default: m.SelectionPanel })));
+const TransformPanel = lazy(() => import('./panels/TransformPanel').then((m) => ({ default: m.TransformPanel })));
+const ProceduralAuthoringPanel = lazy(() => import('./panels/ProceduralAuthoringPanel').then((m) => ({ default: m.ProceduralAuthoringPanel })));
 
 import { RuleDebuggerOverlay } from './RuleDebuggerOverlay';
 import { DraggablePanel } from './DraggablePanel';
 import { StudioEscapeMenu } from './StudioEscapeMenu';
+import { StudioContextualBar } from './StudioContextualBar';
 
 
 export const StudioEditorShell: React.FC = () => {
@@ -332,6 +341,11 @@ export const StudioEditorShell: React.FC = () => {
         </div>
       )}
       <div className={`fixed inset-0 pointer-events-none z-[100] flex flex-col pt-10 pb-9 ${!isStudioReady ? 'opacity-0' : 'opacity-100 transition-opacity duration-500'}`}>
+        {typeof window !== 'undefined' && !(window as any).electronAPI && (
+          <div className="pointer-events-auto">
+            <StudioContextualBar />
+          </div>
+        )}
         <PasteOptionsToolbar />
         <StudioFavoritesStrip />
         <StudioOmnisearch open={omnisearchOpen} onClose={() => setOmnisearchOpen(false)} />
@@ -533,6 +547,42 @@ export const StudioEditorShell: React.FC = () => {
           <DraggablePanel id="camera" icon={<Camera className="w-4 h-4 text-primary" />} title="Camera & View Settings">
             <Suspense fallback={<div>Loading...</div>}><CameraSettingsPanel /></Suspense>
           </DraggablePanel>
+
+          {canUseStudioDock(permissionLevel, 'hierarchy') && (
+            <DraggablePanel id="hierarchy" icon={<Layers className="w-4 h-4 text-emerald-400" />} title="World Hierarchy">
+              <Suspense fallback={<div>Loading...</div>}><WorldHierarchyPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'layers') && (
+            <DraggablePanel id="layers" icon={<Layers className="w-4 h-4 text-cyan-400" />} title="Layers">
+              <Suspense fallback={<div>Loading...</div>}><LayersPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'materials') && (
+            <DraggablePanel id="materials" icon={<Palette className="w-4 h-4 text-amber-400" />} title="Material Library">
+              <Suspense fallback={<div>Loading...</div>}><MaterialLibraryPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'selection') && (
+            <DraggablePanel id="selection" icon={<Crosshair className="w-4 h-4 text-primary" />} title="Selection">
+              <Suspense fallback={<div>Loading...</div>}><SelectionPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'transform') && (
+            <DraggablePanel id="transform" icon={<RotateCw className="w-4 h-4 text-primary" />} title="Transform">
+              <Suspense fallback={<div>Loading...</div>}><TransformPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'procedural') && (
+            <DraggablePanel id="procedural" icon={<Sparkles className="w-4 h-4 text-purple-400" />} title="Procedural Authoring">
+              <Suspense fallback={<div>Loading...</div>}><ProceduralAuthoringPanel /></Suspense>
+            </DraggablePanel>
+          )}
         </div>
 
         </div>

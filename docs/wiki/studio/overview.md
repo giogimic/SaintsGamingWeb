@@ -98,7 +98,7 @@ Every dockable studio window is equipped with a flush application sub-menu ribbo
 
 ---
 
-## 6. Global 2.5D & 3D Environment Pipeline
+## 7. Global 2.5D & 3D Environment Pipeline
 
 The Realm Settings system provides real-time global atmosphere controls:
 - **Atmospheric Time of Day**: Day, Golden Hour, Dusk, Midnight, and Fantasy Night lighting tints.
@@ -106,4 +106,23 @@ The Realm Settings system provides real-time global atmosphere controls:
 - **2.5D Tilt-Shift Depth of Field**: Miniature diorama depth blurring with customizable focal distances.
 - **Water Shader Dynamics**: Real-time water shimmer and flow speed multipliers (0.5x–3.0x).
 - **3D Spatial Audio Acoustics**: Reverb environment simulation (Dry, Open Field, Cavern, Cathedral, Catacomb).
+
+---
+
+## 8. Greenfield 3D Voxel World Architecture
+
+Saints Studio natively supports volumetric 3D voxel world authoring:
+- **`VoxelWorldBlock` Data Layer:** Replaces flat 2D tile constraints with true $(X, Y, Z)$ voxel blocks persisted in the database.
+- **Face-Specific UV Texturing:** Supports separate materials and UV subregions across all 6 cube faces (top, bottom, north, south, east, west) to render natural terrain edges, dirt cliffs, and grass overhangs without artifacting.
+- **Voxel Target Resolver:** Raycasts against the volumetric voxel mesh, providing normal-aligned cursor snapping for block placement, deletion, and continuous sculpting.
+- **3D Voxel Undo/Redo Engine:** Tracks volumetric block mutations in state history stacks, ensuring fast, lossless undo and redo for both individual blocks and volumetric brush strokes.
+
+---
+
+## 9. Desktop Client & In-App Studio Access
+
+World Studio is accessible both via the web and inside the dedicated **Saints Gaming Desktop Client**:
+- **Desktop Application Menu:** The native window menu provides a dedicated `World Studio` tab with `Launch World Studio (Ctrl+Shift+E)` and an offline CAD sandbox mode.
+- **Role-Gated In-App Access:** On both web and desktop, Studio entry is protected by `canEnterStudio(permissionLevel)` (`STUDIO_ENTRY_LEVEL = 400`). Regular community members see only the public gaming platform.
+- **Seamless Navigation:** In the desktop client, authenticated Developers and Admins can launch Studio via the top navigation bar, the user profile dropdown menu, or keyboard shortcut **Ctrl+Shift+E**.
 
