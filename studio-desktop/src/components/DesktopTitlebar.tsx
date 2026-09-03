@@ -64,7 +64,7 @@ export const DesktopTitlebar: React.FC<{ activeMapTitle?: string }> = ({ activeM
           <Sparkles className="w-3 h-3" />
         </div>
         <span className="font-bold tracking-tight text-white flex items-center gap-1.5">
-          <span>Saints World Studio</span>
+          <span>Saints Gaming</span>
           {activeMapTitle && (
             <>
               <span className="text-slate-600">•</span>

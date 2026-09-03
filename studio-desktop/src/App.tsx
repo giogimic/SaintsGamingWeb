@@ -173,7 +173,7 @@ const StudioDesktopContent: React.FC = () => {
         <div className="flex-1 flex items-center justify-center bg-[#050b14] text-primary">
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <span className="text-xs font-mono text-slate-300">Initializing Saints World Studio...</span>
+            <span className="text-xs font-mono text-slate-300">Initializing Saints Gaming...</span>
           </div>
         </div>
       ) : !isAuthenticated ? (

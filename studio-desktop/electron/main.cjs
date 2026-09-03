@@ -4,8 +4,8 @@ const fs = require('fs');
 
 let mainWindow = null;
 
-// Deep link protocol: saints-studio://
-const PROTOCOL_PREFIX = 'saints-studio';
+// Deep link protocol: saints-gaming://
+const PROTOCOL_PREFIX = 'saints-gaming';
 
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
@@ -99,7 +99,7 @@ function createWindow() {
       <html class="dark">
         <head>
           <meta charset="utf-8">
-          <title>Saints World Studio</title>
+          <title>Saints Gaming</title>
           <style>
             body {
               margin: 0;
@@ -155,12 +155,12 @@ function createWindow() {
         <body>
           <div class="card">
             <div class="badge">Connection Alert</div>
-            <h1>World Studio Offline</h1>
-            <p>Could not connect to the Saints Gaming Studio server. Verify your internet connection or configure your server address below:</p>
-            <input id="serverInput" type="text" value="${failedUrl}" placeholder="https://saintsgaming.net/studio" />
+            <h1>Saints Gaming Offline</h1>
+            <p>Could not connect to the Saints Gaming server. Verify your internet connection or configure your server address below:</p>
+            <input id="serverInput" type="text" value="${failedUrl}" placeholder="https://saintsgaming.net" />
             <div class="btn-group">
               <button onclick="window.location.href = document.getElementById('serverInput').value">Retry Connection</button>
-              <button class="secondary" onclick="window.location.href = 'https://saintsgaming.net/studio'">Reset Default</button>
+              <button class="secondary" onclick="window.location.href = 'https://saintsgaming.net'">Reset Default</button>
             </div>
           </div>
         </body>
@@ -179,19 +179,19 @@ function createWindow() {
       return;
     }
 
-    // 1. Check if local Next.js dev server is running on http://localhost:3000/studio
-    const localCheck = await checkUrlReachable('http://localhost:3000/studio', 800);
+    // 1. Check if local Next.js dev server is running on http://localhost:3000
+    const localCheck = await checkUrlReachable('http://localhost:3000', 800);
     if (localCheck.ok) {
-      console.log('[Electron] Connected to local Next.js server: http://localhost:3000/studio');
-      mainWindow.loadURL('http://localhost:3000/studio');
+      console.log('[Electron] Connected to local Next.js server: http://localhost:3000');
+      mainWindow.loadURL('http://localhost:3000');
       return;
     }
 
-    // 2. Check if remote production server returns 200 OK for /studio
-    const prodUrl = 'https://saintsgaming.net/studio';
+    // 2. Check if remote production server returns 200 OK
+    const prodUrl = 'https://saintsgaming.net';
     const prodCheck = await checkUrlReachable(prodUrl, 2000);
     if (prodCheck.ok) {
-      console.log('[Electron] Connected to production World Studio:', prodUrl);
+      console.log('[Electron] Connected to production Saints Gaming:', prodUrl);
       mainWindow.loadURL(prodUrl);
       return;
     }
@@ -200,7 +200,7 @@ function createWindow() {
     // 3. Fallback to bundled local client so user NEVER gets a 404 "Page Not Found"!
     const localIndexPath = path.join(app.getAppPath(), 'dist/index.html');
     if (fs.existsSync(localIndexPath)) {
-      console.log('[Electron] Loading bundled World Studio client:', localIndexPath);
+      console.log('[Electron] Loading bundled client:', localIndexPath);
       mainWindow.loadFile(localIndexPath);
       return;
     }
@@ -239,7 +239,7 @@ function createWindow() {
   }
 
   mainWindow.webContents.once('did-finish-load', () => {
-    console.log('[Electron] World Studio loaded successfully!');
+    console.log('[Electron] Saints Gaming app loaded successfully!');
     const initialDeepLink = process.argv.find((arg) => arg && arg.startsWith(`${PROTOCOL_PREFIX}://`));
     if (initialDeepLink) {
       mainWindow?.webContents?.send('deep-link', initialDeepLink);

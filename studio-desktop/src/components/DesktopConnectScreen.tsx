@@ -70,10 +70,10 @@ export const DesktopConnectScreen: React.FC = () => {
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">
-              Saints <span className="sg-text-gradient font-extrabold">World Studio</span>
+              Saints <span className="sg-text-gradient font-extrabold">Gaming</span>
             </h1>
             <p className="text-xs text-muted-foreground mt-1">
-              Standalone 3D Volumetric CAD Authoring Suite
+              Time To Play — Desktop Client
             </p>
           </div>
         </div>

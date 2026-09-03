@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 
 
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Gamepad2,
   Settings,
@@ -13,7 +13,13 @@ import {
   Shield,
   Sparkles,
   Plus,
+  Minus,
+  Square,
+  Copy,
+  X,
+  Paintbrush,
 } from "lucide-react";
+import { canEnterStudio } from "@/shared/game/studioPermissions";
 import { Button, buttonVariants } from "@/shared/ui/button";
 import { SGMicro3DLogo } from "@/web/components/landing/sg-logo-3d-micro";
 import { GlobalSearch } from "@/shared/components/global-search";
@@ -40,7 +46,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.708",
+  siteVersion = "v2.1.709",
   gameTitle = "The Lobby",
 }: {
   session: any | null;
@@ -55,6 +61,15 @@ export function Navbar({
   const openSettings = useUserSettingsStore((s) => s.openSettings);
   const openComposer = usePostComposerStore((s) => s.openComposer);
 
+  const [isElectron, setIsElectron] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as any).electronAPI) {
+      setIsElectron(true);
+      (window as any).electronAPI.onMaximizeChange?.((max: boolean) => setIsMaximized(max));
+    }
+  }, []);
 
   useEffect(() => {
     if (pathname && !pathname.startsWith("/admin")) {
@@ -69,22 +84,25 @@ export function Navbar({
 
   const user = session?.user;
   const permissionLevel = dbPermissionLevel ?? (user as any)?.permissionLevel ?? 0;
-
+  const canDevStudio = isElectron && canEnterStudio(permissionLevel);
 
   return (
     <div className="fixed top-0 z-[250] w-full pointer-events-none">
-      <header className={`pointer-events-auto w-full bg-[#050b14]/75 backdrop-blur-xl border-b border-white/[0.08] shadow-md transition-all duration-300 ${
-        isBarsHidden ? "opacity-0 -translate-y-full pointer-events-none" : "opacity-100 translate-y-0"
-      }`}>
+      <header
+        style={{ WebkitAppRegion: isElectron ? "drag" : undefined } as any}
+        className={`pointer-events-auto w-full bg-[#050b14]/75 backdrop-blur-xl border-b border-white/[0.08] shadow-md transition-all duration-300 ${
+          isBarsHidden ? "opacity-0 -translate-y-full pointer-events-none" : "opacity-100 translate-y-0"
+        }`}
+      >
         <div className="flex h-13 sm:h-11 items-center justify-between px-4 sm:px-6 relative">
 
           {/* Left: Search */}
-          <div className="flex items-center gap-1 sm:gap-2 flex-1">
+          <div className="flex items-center gap-1 sm:gap-2 flex-1 [app-region:no-drag]" style={{ WebkitAppRegion: "no-drag" as any }}>
             <GlobalSearch />
           </div>
 
           {/* Center: Saints Gaming Logo & Tagline */}
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center [app-region:no-drag]" style={{ WebkitAppRegion: "no-drag" as any }}>
             <Link href="/home" className="flex items-center gap-2 group select-none">
               <div className="transition-transform group-hover:scale-110 shrink-0 hidden sm:block">
                 <SGMicro3DLogo size={34} />
@@ -102,8 +120,25 @@ export function Navbar({
           </div>
 
 
-          {/* Right: Notifications + User dropdown */}
-          <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end">
+          {/* Right: Studio (Dev only in Electron), Notifications, User dropdown, Window Controls */}
+          <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end [app-region:no-drag]" style={{ WebkitAppRegion: "no-drag" as any }}>
+
+            {/* Studio Launch Button (Only visible in Electron executable to Developers/Admins) */}
+            {canDevStudio && (
+              <Link
+                href="/studio"
+                className={buttonVariants({
+                  variant: "ghost",
+                  size: "sm",
+                  className:
+                    "h-7 px-2.5 text-[11px] rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition-colors flex items-center gap-1.5 font-bold shadow-sm",
+                })}
+                title="Open World Studio (Developer Mode)"
+              >
+                <Paintbrush className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden md:inline">Studio</span>
+              </Link>
+            )}
 
             {!user ? (
               <div className="flex items-center p-1 bg-black/40 rounded-xl shadow-inner border border-white/5">
@@ -178,7 +213,7 @@ export function Navbar({
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
 
-                    {/* Game Title â†’ /lobby */}
+                    {/* Game Title → /lobby */}
                     <DropdownMenuItem
                       className="cursor-pointer font-medium"
                       onClick={() => { window.location.href = "/lobby"; }}
@@ -187,7 +222,16 @@ export function Navbar({
                       {gameTitle}
                     </DropdownMenuItem>
 
-
+                    {/* World Studio (Dev only in Electron) */}
+                    {canDevStudio && (
+                      <DropdownMenuItem
+                        className="cursor-pointer font-medium text-amber-300 focus:text-amber-300 focus:bg-amber-500/10"
+                        onClick={() => { window.location.href = "/studio"; }}
+                      >
+                        <Paintbrush className="mr-2 h-4 w-4 text-amber-400" />
+                        World Studio
+                      </DropdownMenuItem>
+                    )}
 
                     {/* FiveM UCP (site setting gated) */}
                     {showUcpLink && (
@@ -205,8 +249,52 @@ export function Navbar({
                       <LogOut className="mr-2 h-4 w-4" />
                       Log out
                     </DropdownMenuItem>
+
+                    {/* Native Desktop Exit (Active in Electron) */}
+                    {isElectron && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="cursor-pointer text-muted-foreground hover:text-red-400 focus:text-red-400 focus:bg-red-500/10"
+                          onClick={() => (window as any).electronAPI?.close?.()}
+                        >
+                          <X className="mr-2 h-4 w-4" />
+                          Exit Saints Gaming
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
+              </div>
+            )}
+
+            {/* Native Window Controls (Active in Electron) */}
+            {isElectron && (
+              <div className="flex items-center ml-1 sm:ml-2 border-l border-white/10 pl-1 sm:pl-2 gap-0.5">
+                <button
+                  type="button"
+                  onClick={() => (window as any).electronAPI?.minimize?.()}
+                  className="p-1.5 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  title="Minimize Window"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => (window as any).electronAPI?.toggleMaximize?.()}
+                  className="p-1.5 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  title={isMaximized ? "Restore Window" : "Maximize Window"}
+                >
+                  {isMaximized ? <Copy className="w-3 h-3 rotate-180" /> : <Square className="w-3 h-3" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => (window as any).electronAPI?.close?.()}
+                  className="p-1.5 rounded-lg hover:bg-red-500/20 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer"
+                  title="Close Saints Gaming"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
             )}
           </div>
