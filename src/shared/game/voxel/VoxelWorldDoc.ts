@@ -1,5 +1,6 @@
 import { VoxelChunk, CHUNK_SIZE_X, CHUNK_SIZE_Z, CHUNK_SIZE_Y } from './VoxelChunk';
 import { VOXEL_WORD_AIR } from './VoxelWord';
+import { VoxelBlockEntity, getBlockEntityKey } from './VoxelBlockEntity';
 
 export interface VoxelMaterialDef {
   id: number;
@@ -29,6 +30,7 @@ export interface VoxelWorldDocV3 {
   palette: VoxelMaterialDef[];
   chunks: Record<string, number[]>; // key: "cx_cz_cy" -> RLE encoded array
   entities?: any[];
+  blockEntities?: Record<string, VoxelBlockEntity>;
   gates?: any[];
   environment?: {
     lightingPreset?: string;
@@ -65,6 +67,23 @@ export class VoxelWorld {
   public mapHeight?: number;
   public chunks = new Map<string, VoxelChunk>();
   public palette: VoxelMaterialDef[] = [];
+  public blockEntities = new Map<string, VoxelBlockEntity>();
+
+  public getBlockEntity(wx: number, wy: number, wz: number): VoxelBlockEntity | undefined {
+    return this.blockEntities.get(getBlockEntityKey(wx, wy, wz));
+  }
+
+  public setBlockEntity(wx: number, wy: number, wz: number, entity: VoxelBlockEntity): void {
+    this.blockEntities.set(getBlockEntityKey(wx, wy, wz), entity);
+  }
+
+  public removeBlockEntity(wx: number, wy: number, wz: number): boolean {
+    return this.blockEntities.delete(getBlockEntityKey(wx, wy, wz));
+  }
+
+  public getAllBlockEntities(): VoxelBlockEntity[] {
+    return Array.from(this.blockEntities.values());
+  }
 
   constructor(
     id: string,
@@ -327,6 +346,11 @@ export class VoxelWorld {
       }
     }
 
+    const blockEntitiesRecord: Record<string, VoxelBlockEntity> = {};
+    for (const [key, be] of this.blockEntities.entries()) {
+      blockEntitiesRecord[key] = be;
+    }
+
     return {
       formatVersion: 3,
       id: this.id,
@@ -343,6 +367,7 @@ export class VoxelWorld {
       mapHeight: this.mapHeight,
       palette: this.palette,
       chunks: chunkPayloads,
+      blockEntities: Object.keys(blockEntitiesRecord).length > 0 ? blockEntitiesRecord : undefined,
     };
   }
 
@@ -371,6 +396,12 @@ export class VoxelWorld {
         const { cx, cz, cy } = VoxelChunk.parseChunkKey(key);
         const chunk = VoxelChunk.deserializeRLE(rleData, cx, cz, cy);
         world.chunks.set(key, chunk);
+      }
+    }
+
+    if (doc.blockEntities && typeof doc.blockEntities === 'object') {
+      for (const [key, be] of Object.entries(doc.blockEntities)) {
+        world.blockEntities.set(key, be);
       }
     }
 

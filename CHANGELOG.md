@@ -1,3 +1,23 @@
+# 2.1.687
+- **Expanded Voxel Block Data, Non-Cube Geometries & Agricultural Simulation**:
+  - **Non-Cube Shape Meshing**:
+    - Added `VoxelShape.FARMLAND` (15): Recessed 15/16 height soil furrow with dynamic moisture tinting.
+    - Added `VoxelShape.CROSS_QUAD` (16): Double-sided intersecting diagonal vertical planes (X-cross) for crops, foliage, herbs, and wildflowers.
+    - Added `VoxelShape.THIN_LAYER` (17): Thin plate geometry for path overlays, carpet, mulch, and snow layers.
+    - Added `VoxelShape.FLUID_SURFACE` (20): Sunken fluid surface (14/16 height) for realistic canals, reservoirs, and pools.
+  - **Dynamic Block Entities & Metadata (`VoxelBlockEntity.ts`)**:
+    - Implemented `VoxelBlockEntity` architecture for persistent block-level state, inventories, and simulation tickers.
+    - Added `FarmlandBlockData` (moisture levels 0..7, soil state, trampling).
+    - Added `CropBlockData` (growth stages 0..7, crop species, growth tickers).
+    - Added `ContainerBlockData` (inventories, slot counts, locks).
+  - **Agricultural Mechanics & Soil Hydration Simulation**:
+    - `tillSoil`: Transforms soil into tilled farmland with an attached block entity.
+    - `updateFarmlandHydration`: Scans for water within a 4-block horizontal radius, moistening soil to moisture level 7 with dark fertile tinting, or gradually drying if distant from water.
+    - `plantCrop`: Seeds wheat, carrots, and herbs onto hydrated farmland.
+    - `tickCropGrowth` & `harvestCrop`: Advances crops through growth stages towards mature harvestable yield.
+  - **Document Persistence**:
+    - Integrated `blockEntities` into `VoxelWorldDocV3` schema with full serialization, deserialization, and test coverage.
+
 # 2.1.686
 - **Continuous Voxel World Foundation & Deterministic Procedural Generation**:
   - Implemented `VoxelWorldGenerator` with Mulberry32 PRNG and multi-octave 2D fractal gradient noise.

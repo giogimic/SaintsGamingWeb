@@ -26,6 +26,12 @@ export const VoxelShape = {
   COLUMN_CENTER: 12,
   FENCE_RAIL: 13,
   ADAPTIVE_ALPHA: 14,
+  FARMLAND: 15,
+  CROSS_QUAD: 16,
+  THIN_LAYER: 17,
+  POST_CENTER: 18,
+  WALL_PANEL: 19,
+  FLUID_SURFACE: 20,
 } as const;
 
 export type VoxelShapeType = (typeof VoxelShape)[keyof typeof VoxelShape];
@@ -80,6 +86,12 @@ export const VOXEL_MAT_LAVA = 9;
 export const VOXEL_MAT_SWAMP = 10;
 export const VOXEL_MAT_DUNGEON = 11;
 export const VOXEL_MAT_ICE = 12;
+export const VOXEL_MAT_FARMLAND_DRY = 13;
+export const VOXEL_MAT_FARMLAND_MOIST = 14;
+export const VOXEL_MAT_CROP_WHEAT = 15;
+export const VOXEL_MAT_CROP_CARROT = 16;
+export const VOXEL_MAT_CROP_HERB = 17;
+export const VOXEL_MAT_FOLIAGE_FLOWER = 18;
 
 export interface VoxelDecoded {
   materialId: number;
