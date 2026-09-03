@@ -108,6 +108,32 @@ func (m *Manager) ApplyGrid(baseMapID, name, gridJSON string) error {
 	return nil
 }
 
+// ApplyVoxel updates authoritative 3D voxel geometry from a JSON voxelDoc payload.
+func (m *Manager) ApplyVoxel(baseMapID, name string, voxelJSON []byte) error {
+	voxelWorld, err := ParseVoxelDoc(voxelJSON)
+	if err != nil {
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	def, ok := m.defs[baseMapID]
+	if !ok {
+		def = &MapDef{ID: baseMapID}
+		m.defs[baseMapID] = def
+	}
+	if name != "" {
+		def.Name = name
+	}
+	def.Voxel = voxelWorld
+	if voxelWorld.MapWidth > 0 {
+		def.Width = voxelWorld.MapWidth
+	}
+	if voxelWorld.MapHeight > 0 {
+		def.Height = voxelWorld.MapHeight
+	}
+	return nil
+}
+
 // NPCsJSON serializes NPCs for persistence.
 func (m *Manager) NPCsJSON(baseMapID string) (string, error) {
 	m.mu.RLock()

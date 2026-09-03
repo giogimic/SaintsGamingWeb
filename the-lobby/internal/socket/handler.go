@@ -149,7 +149,7 @@ func (h *Hub) onConnect(client *socket.Socket) {
 		in := decodeInput(datas)
 		h.eng.Players().EnqueueInput(accountID, in)
 		if in.Type == "ATTACK" {
-			h.handleAttack(accountID, in.TargetID)
+			h.handleAttack(accountID, in.TargetID, "")
 		}
 	})
 	client.On("move", func(datas ...any) {
@@ -482,7 +482,7 @@ func (h *Hub) handleCombatAction(accountID string, datas []any) {
 				action = a
 			}
 			if t, ok := m["targetId"].(string); ok {
-				h.handleAttack(accountID, t)
+				h.handleAttack(accountID, t, "")
 				return
 			}
 		}
@@ -494,7 +494,7 @@ func (h *Hub) handleCombatAction(accountID string, datas []any) {
 		}
 		return
 	}
-	h.handleAttack(accountID, "")
+	h.handleAttack(accountID, "", "")
 }
 
 func (h *Hub) handleShopBuy(accountID string, datas []any) {
