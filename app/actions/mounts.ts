@@ -89,8 +89,6 @@ export async function upsertMount(input: MountTemplateInput) {
         collectionCategory: input.collectionCategory || "mount",
       },
     });
-
-    revalidatePath("/studio");
     return { success: true as const, data: saved };
   } catch (err: any) {
     console.error("[upsertMount] Error:", err.message);
@@ -108,7 +106,6 @@ export async function deleteMount(slug: string) {
     await prisma.mountTemplate.delete({
       where: { slug },
     });
-    revalidatePath("/studio");
     return { success: true as const };
   } catch (err: any) {
     console.error("[deleteMount] Error:", err.message);

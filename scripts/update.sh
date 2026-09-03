@@ -261,6 +261,7 @@ NEED_NPM_INSTALL=0
 NEED_DB_MIGRATE=0
 NEED_BUILD=1
 NEED_ASSET_SYNC=0
+NEED_STUDIO_BUILD=0
 RUN_DB_BACKUP=0
 RUN_CLEAN_PRUNE=0
 
@@ -269,6 +270,7 @@ if [ "$UPDATE_MODE" = "full" ]; then
     NEED_DB_MIGRATE=1
     NEED_BUILD=1
     NEED_ASSET_SYNC=1
+    NEED_STUDIO_BUILD=1
     RUN_DB_BACKUP=1
     RUN_CLEAN_PRUNE=1
 elif [ "$UPDATE_MODE" = "app" ]; then
@@ -276,6 +278,7 @@ elif [ "$UPDATE_MODE" = "app" ]; then
     NEED_DB_MIGRATE=0
     NEED_BUILD=1
     NEED_ASSET_SYNC=1
+    NEED_STUDIO_BUILD=1
     RUN_DB_BACKUP=0
     RUN_CLEAN_PRUNE=0
 elif [ "$UPDATE_MODE" = "db" ]; then
@@ -283,6 +286,7 @@ elif [ "$UPDATE_MODE" = "db" ]; then
     NEED_DB_MIGRATE=1
     NEED_BUILD=0
     NEED_ASSET_SYNC=1
+    NEED_STUDIO_BUILD=0
     RUN_DB_BACKUP=1
     RUN_CLEAN_PRUNE=0
 elif [ "$UPDATE_MODE" = "quick" ]; then
@@ -340,6 +344,11 @@ else
         if echo "$DIFF_FILES" | grep -qE "(data/|the-lobby/|scripts/seed|scripts/ensure)"; then
             NEED_ASSET_SYNC=1
         fi
+
+        # Check studio desktop app
+        if echo "$DIFF_FILES" | grep -qE "(studio-desktop/)"; then
+            NEED_STUDIO_BUILD=1
+        fi
     fi
 fi
 
@@ -351,6 +360,7 @@ printf "${BLUE}│${NC}  • NPM Dependencies:     %-32s ${BLUE}│${NC}\n" "$([
 printf "${BLUE}│${NC}  • Database Migration:   %-32s ${BLUE}│${NC}\n" "$([ "$NEED_DB_MIGRATE" -eq 1 ] && echo -e "${GREEN}MIGRATION REQUIRED${NC}" || echo -e "${YELLOW}SKIPPED (No changes)${NC}")"
 printf "${BLUE}│${NC}  • Web Container Build:  %-32s ${BLUE}│${NC}\n" "$([ "$NEED_BUILD" -eq 1 ] && echo -e "${GREEN}FULL BUILD REQUIRED${NC}" || echo -e "${GREEN}FAST HOT-RESTART (~2s)${NC}")"
 printf "${BLUE}│${NC}  • Game Asset Sync:      %-32s ${BLUE}│${NC}\n" "$([ "$NEED_ASSET_SYNC" -eq 1 ] && echo -e "${GREEN}SYNC REQUIRED${NC}" || echo -e "${YELLOW}SKIPPED${NC}")"
+printf "${BLUE}│${NC}  • Studio Desktop App:   %-32s ${BLUE}│${NC}\n" "$([ "$NEED_STUDIO_BUILD" -eq 1 ] && echo -e "${GREEN}BUILD REQUIRED${NC}" || echo -e "${YELLOW}SKIPPED${NC}")"
 echo -e "${BLUE}└──────────────────────────────────────────────────────────┘${NC}\n"
 
 # --- Database Backup (if required) ---
@@ -569,6 +579,11 @@ else
 
     if [ "$NEED_ASSET_SYNC" -eq 1 ]; then
         npm run sync:assets 2>/dev/null || true
+    fi
+
+    if [ "$NEED_STUDIO_BUILD" -eq 1 ] && [ -f "studio-desktop/package.json" ]; then
+        echo -e "${CYAN}[*] Updating Saints World Studio desktop application...${NC}"
+        (cd studio-desktop && npm install && npm run build) || echo -e "${YELLOW}[!] Studio desktop build completed with warnings.${NC}"
     fi
 
     if command -v pm2 &>/dev/null; then

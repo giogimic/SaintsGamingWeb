@@ -161,16 +161,9 @@ export default async function AdminDashboardPage() {
             </Link>
           </Button>
           {(hasPermission(level, PERMISSION_LEVELS.ADMIN) || isWriter) && (
-            <Button size="sm" asChild className="gap-2">
+            <Button size="sm" asChild className="gap-2 shadow-sm">
               <Link href="/admin/news/new">
                 <Plus className="h-4 w-4" /> New Article
-              </Link>
-            </Button>
-          )}
-          {hasPermission(level, PERMISSION_LEVELS.ADMIN) && (
-            <Button size="sm" variant="secondary" asChild className="gap-2 border border-border/50">
-              <Link href="/studio">
-                <Sparkles className="h-4 w-4 text-amber-400" /> Launch Studio
               </Link>
             </Button>
           )}
@@ -295,22 +288,7 @@ export default async function AdminDashboardPage() {
                 </div>
               </div>
 
-              {/* World Studio Launcher Banner */}
-              {hasPermission(level, PERMISSION_LEVELS.ADMIN) && (
-                <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div className="space-y-0.5">
-                    <h4 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                      <Sparkles className="h-4 w-4 text-primary" /> Integrated 2.5D World Studio
-                    </h4>
-                    <p className="text-xs text-muted-foreground">
-                      Paint terrain tiles, place NPCs, attach logic triggers, and link map atlas portals.
-                    </p>
-                  </div>
-                  <Button size="sm" asChild className="shrink-0 gap-1.5 shadow-md">
-                    <Link href="/studio">Launch Studio</Link>
-                  </Button>
-                </div>
-              )}
+
             </CardContent>
           </Card>
 

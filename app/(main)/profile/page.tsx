@@ -128,15 +128,6 @@ export default async function ProfilePage() {
                     <Settings className="h-3.5 w-3.5" />
                     Admin Command Center
                   </Link>
-                  {roleLevel >= PERMISSION_LEVELS.ADMIN && (
-                    <Link 
-                      href="/studio" 
-                      className={buttonVariants({ variant: "outline", size: "sm", className: "w-full justify-start text-xs gap-2 border-purple-500/30 text-purple-400 hover:bg-purple-500/10" })}
-                    >
-                      <Gamepad2 className="h-3.5 w-3.5" />
-                      2.5D World Studio
-                    </Link>
-                  )}
                 </div>
               )}
 

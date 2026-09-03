@@ -80,8 +80,6 @@ export async function upsertSimulationPreset(input: SimulationPresetInput) {
         goldMultiplier: input.goldMultiplier ?? 1.0,
       },
     });
-
-    revalidatePath("/studio");
     return { success: true as const, data: saved };
   } catch (err: any) {
     console.error("[upsertSimulationPreset] Error:", err.message);
@@ -99,7 +97,6 @@ export async function deleteSimulationPreset(slug: string) {
     await prisma.simulationPreset.delete({
       where: { slug },
     });
-    revalidatePath("/studio");
     return { success: true as const };
   } catch (err: any) {
     console.error("[deleteSimulationPreset] Error:", err.message);
@@ -129,8 +126,6 @@ export async function setActiveSimulationPreset(slug: string) {
       where: { slug },
       data: { isActive: true },
     });
-
-    revalidatePath("/studio");
     revalidatePath("/lobby");
     return {
       success: true as const,

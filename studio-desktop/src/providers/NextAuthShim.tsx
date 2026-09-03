@@ -48,3 +48,9 @@ export const NextAuthShimProvider: React.FC<{ children: React.ReactNode }> = ({ 
 };
 
 export const useSession = () => useContext(SessionContext);
+
+export const auth = async () => null;
+export const signIn = async () => {};
+export const signOut = async () => {};
+export const handlers = { GET: () => {}, POST: () => {} };
+export default { auth, signIn, signOut, handlers, useSession };

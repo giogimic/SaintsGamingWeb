@@ -117,8 +117,6 @@ export async function upsertCraftingRecipe(input: CraftingRecipeInput) {
         }
       },
     });
-
-    revalidatePath("/studio");
     revalidatePath("/lobby");
     return { success: true, data: saved };
   } catch (err) {
@@ -132,7 +130,6 @@ export async function deleteCraftingRecipe(slug: string) {
   if (!isAdmin) return { success: false, error: "Unauthorized" };
   try {
     await prisma.craftingRecipe.delete({ where: { slug } });
-    revalidatePath("/studio");
     return { success: true };
   } catch (err) {
     console.error("[deleteCraftingRecipe]", err);

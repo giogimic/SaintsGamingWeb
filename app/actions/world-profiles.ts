@@ -107,8 +107,6 @@ export async function setActiveWorldProfile(slug: string) {
       }),
       prisma.gameConfig.update({ where: { slug }, data: { isActive: true } }),
     ]);
-
-    revalidatePath("/studio");
     revalidatePath("/lobby");
     return { success: true, activeId: slug };
   } catch (err) {
@@ -180,8 +178,6 @@ export async function createBlankWorldProfile(opts: {
         name: `${opts.name || slug} Start`,
       },
     });
-
-    revalidatePath("/studio");
     return { success: true, slug, starterMapId: mapId };
   } catch (err) {
     console.error("[createBlankWorldProfile]", err);
@@ -214,7 +210,6 @@ export async function cloneTrailWorldProfile(opts: {
       name: opts.name,
       force: opts.force,
     });
-    revalidatePath("/studio");
     revalidatePath("/lobby");
     return { success: true, ...result };
   } catch (err) {

@@ -131,11 +131,6 @@ export default function GameOperationsPage() {
           <Button onClick={loadData} variant="outline" size="sm" disabled={loading} className="gap-2">
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
           </Button>
-          <Button size="sm" asChild className="gap-2 bg-primary text-primary-foreground shadow-md">
-            <Link href="/studio">
-              <Sparkles className="h-4 w-4" /> Open World Studio
-            </Link>
-          </Button>
         </div>
       </div>
 
@@ -375,13 +370,8 @@ export default function GameOperationsPage() {
                 <CardTitle className="text-base flex items-center gap-2">
                   <Compass className="h-5 w-5 text-purple-400" /> World Maps &amp; Atlas Registry
                 </CardTitle>
-                <CardDescription>Inspect map versions, gates, NPC spawns, and launch the 2.5D Studio.</CardDescription>
+                <CardDescription>Inspect map versions, gates, and NPC spawns.</CardDescription>
               </div>
-              <Button size="sm" asChild className="gap-2">
-                <Link href="/studio">
-                  <Sparkles className="h-4 w-4" /> Open World Studio
-                </Link>
-              </Button>
             </CardHeader>
             <CardContent>
               {maps.length === 0 ? (
@@ -424,11 +414,6 @@ export default function GameOperationsPage() {
                         <span className="text-[10px] text-muted-foreground">
                           {new Date(map.updatedAt).toLocaleDateString()}
                         </span>
-                        <Button size="sm" variant="ghost" asChild className="h-7 text-xs gap-1 text-primary hover:bg-primary/10">
-                          <Link href="/studio">
-                            Edit in Studio <ArrowUpRight className="h-3 w-3" />
-                          </Link>
-                        </Button>
                       </div>
                     </div>
                   ))}

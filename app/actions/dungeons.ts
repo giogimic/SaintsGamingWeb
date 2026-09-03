@@ -124,8 +124,6 @@ export async function upsertDungeon(input: DungeonTemplateInput) {
         }
       },
     });
-
-    revalidatePath("/studio");
     return { success: true as const, data: saved };
   } catch (err: any) {
     console.error("[upsertDungeon] Error:", err.message);
@@ -143,7 +141,6 @@ export async function deleteDungeon(slug: string) {
     await prisma.dungeonTemplate.delete({
       where: { slug },
     });
-    revalidatePath("/studio");
     return { success: true as const };
   } catch (err: any) {
     console.error("[deleteDungeon] Error:", err.message);

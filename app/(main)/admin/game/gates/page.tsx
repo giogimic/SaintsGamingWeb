@@ -178,12 +178,6 @@ export default function AdminGatesPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link href="/studio">
-            <Button variant="outline" size="sm" className="text-xs gap-1.5">
-              <Compass className="h-3.5 w-3.5" />
-              Open Studio
-            </Button>
-          </Link>
           <Link href="/admin/dev/sync">
             <Button variant="outline" size="sm" className="text-xs gap-1.5">
               <RefreshCw className="h-3.5 w-3.5" />

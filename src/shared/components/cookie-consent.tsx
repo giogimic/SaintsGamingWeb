@@ -9,8 +9,7 @@ import { usePathname } from "next/navigation";
 export function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);
   const pathname = usePathname();
-  const isGameShell =
-    !!pathname && (pathname.startsWith("/lobby") || pathname.startsWith("/studio"));
+  const isGameShell = !!pathname && pathname.startsWith("/lobby");
 
   useEffect(() => {
     if (isGameShell) {

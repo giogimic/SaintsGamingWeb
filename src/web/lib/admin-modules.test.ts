@@ -61,7 +61,7 @@ describe("Admin Module Registry (Phase 2)", () => {
     const adminIds = adminModules.map((m) => m.id);
     expect(adminIds).toContain("identity-users");
     expect(adminIds).toContain("servers-registry");
-    expect(adminIds).toContain("game-studio");
+    expect(adminIds).toContain("game-gates");
     expect(adminIds).toContain("infra-seo");
     expect(adminIds).not.toContain("identity-roles"); // Developer only
 
@@ -85,7 +85,6 @@ describe("Admin Module Registry (Phase 2)", () => {
     expect(getActiveAdminModule("/admin/users")?.id).toBe("identity-users");
     expect(getActiveAdminModule("/admin/news/new")?.id).toBe("content-news");
     expect(getActiveAdminModule("/admin/dev/database")?.id).toBe("dev-database");
-    expect(getActiveAdminModule("/studio")?.id).toBe("game-studio");
     expect(getActiveAdminModule("/admin/seo")?.id).toBe("infra-seo");
   });
 

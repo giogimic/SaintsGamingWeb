@@ -362,7 +362,7 @@ export function GameChat() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-1.5 pt-1">
+            <div className="grid grid-cols-1 gap-1.5 pt-1">
               <a
                 href="/admin"
                 className="flex items-center justify-center gap-1 px-2 py-1 rounded bg-white/5 border border-white/10 text-slate-200 text-[10px] font-bold hover:bg-white/10"
@@ -370,15 +370,6 @@ export function GameChat() {
                 <ExternalLink className="w-3 h-3 text-amber-400" />
                 Admin Panel
               </a>
-              {isDeveloper && (
-                <a
-                  href="/studio"
-                  className="flex items-center justify-center gap-1 px-2 py-1 rounded bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] font-bold hover:bg-amber-500/25"
-                >
-                  <Hammer className="w-3 h-3" />
-                  Studio
-                </a>
-              )}
             </div>
           </div>
         </HudPanelShell>

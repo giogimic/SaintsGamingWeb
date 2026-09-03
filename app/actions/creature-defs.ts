@@ -85,7 +85,6 @@ export async function upsertCreatureDef(data: CreatureDefData) {
       update: payload,
     });
     revalidatePath('/lobby');
-    revalidatePath('/studio');
     return { success: true, data: creatureRowToData(row) };
   } catch (err: any) {
     console.error('[upsertCreatureDef]', err);
@@ -98,7 +97,6 @@ export async function deleteCreatureDef(slug: string) {
   if (!isAdmin) return { success: false, error: 'Unauthorized' };
   try {
     await prisma.creatureDef.delete({ where: { slug } });
-    revalidatePath('/studio');
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message || 'Delete failed' };
@@ -143,7 +141,6 @@ export async function importCreatureDefsJson(json: string) {
       });
       count++;
     }
-    revalidatePath('/studio');
     return { success: true, count };
   } catch (err: any) {
     return { success: false, error: err.message || 'Invalid JSON', count: 0 };

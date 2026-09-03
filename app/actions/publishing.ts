@@ -152,8 +152,6 @@ export async function createPublishSnapshot(input: {
         snapshotPayload: JSON.stringify(payload),
       },
     });
-
-    revalidatePath("/studio");
     return { success: true as const, data: saved, validation };
   } catch (err: any) {
     console.error("[createPublishSnapshot]", err);
@@ -249,8 +247,6 @@ export async function rollbackToSnapshot(snapshotId: string) {
         });
       }
     }
-
-    revalidatePath("/studio");
     return { success: true as const };
   } catch (err: any) {
     console.error("[rollbackToSnapshot]", err);

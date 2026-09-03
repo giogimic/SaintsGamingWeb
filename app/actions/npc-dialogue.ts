@@ -125,7 +125,6 @@ export async function upsertNpcDialogueTree(input: {
     });
 
     invalidateDialogueCache(npcId);
-    revalidatePath("/studio");
     revalidatePath("/lobby");
     void notifyGoDialogueSynced();
     return { success: true };
@@ -141,7 +140,6 @@ export async function deleteNpcDialogueTree(npcId: string) {
   try {
     await prisma.npcDialogueTree.delete({ where: { npcId } });
     invalidateDialogueCache(npcId);
-    revalidatePath("/studio");
     void notifyGoDialogueSynced();
     return { success: true };
   } catch (err) {

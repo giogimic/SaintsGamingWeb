@@ -11,7 +11,7 @@ export async function GET(
   try {
     const { target } = await params;
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: 'SITE_VERSION' } });
-    const version = versionSetting?.value || packageJson.version || '2.1.699';
+    const version = versionSetting?.value || packageJson.version || '2.1.700';
     const cleanVersion = version.replace(/^v/, '');
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';

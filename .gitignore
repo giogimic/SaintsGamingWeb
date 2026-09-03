@@ -89,3 +89,11 @@ docker_build.log
 /.old-assets/
 /tuxemon-data/
 /tuxemon-db/
+
+# Studio Desktop Application Build Artifacts
+/studio-desktop/node_modules/
+/studio-desktop/dist/
+/studio-desktop/src-tauri/target/
+/public/downloads/
+*.exe
+*.msi

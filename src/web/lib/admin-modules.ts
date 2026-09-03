@@ -217,17 +217,7 @@ export const ADMIN_MODULES: AdminModule[] = [
     permission: PERMISSION_LEVELS.ADMIN,
     keywords: ["gates", "gateways", "warps", "teleport", "travel", "doors", "maps", "routes"],
   },
-  {
-    id: "game-studio",
-    category: "operations",
-    label: "World Studio",
-    description: "Open the full 2.5D Babylon level builder to paint tiles and place NPCs.",
-    icon: Sparkles,
-    href: "/studio",
-    permission: PERMISSION_LEVELS.ADMIN,
-    badge: "Fullscreen",
-    keywords: ["studio", "map editor", "world builder", "paint", "tiles", "tilesets", "npcs", "babylon"],
-  },
+
   {
     id: "game-quests",
     category: "operations",
