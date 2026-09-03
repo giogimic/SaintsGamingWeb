@@ -68,6 +68,7 @@ import {
 
 import { StudioShortcutsModal } from './components/StudioShortcutsModal';
 import { NotificationHistoryModal } from './components/NotificationHistoryModal';
+import { ReinitializeSetupModal } from './components/ReinitializeSetupModal';
 import { STUDIO_MODE_META, STUDIO_DOCK_META, type StudioMode, type StudioDockId } from '@/shared/game/studioModes';
 import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
 import { soundSynth } from '@/engine/sound-synth';
@@ -200,6 +201,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [notificationHistoryOpen, setNotificationHistoryOpen] = useState(false);
   const [worldDropdownOpen, setWorldDropdownOpen] = useState(false);
+  const [reinitializeModalOpen, setReinitializeModalOpen] = useState(false);
   const [profiles, setProfiles] = useState(WORLD_PROFILES);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -442,7 +444,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem
               label="Re-initialize Realm Setup..."
               icon={Gamepad2}
-              onClick={() => { window.location.href = '/setup'; }}
+              onClick={() => setReinitializeModalOpen(true)}
             />
             <MenuItem
               label="Repair Foundation & Catalogs"
@@ -831,6 +833,10 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
       <NotificationHistoryModal
         isOpen={notificationHistoryOpen}
         onClose={() => setNotificationHistoryOpen(false)}
+      />
+      <ReinitializeSetupModal
+        isOpen={reinitializeModalOpen}
+        onClose={() => setReinitializeModalOpen(false)}
       />
     </div>
   </MenuContext.Provider>

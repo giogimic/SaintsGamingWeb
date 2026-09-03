@@ -1,3 +1,16 @@
+# 2.1.690
+- **Studio Re-Initialize Flow: Re-Setup vs. Wipe Non-Bundled Content**:
+  - **Studio Menu Modal Dialog**:
+    - Clicking *File > Re-initialize Realm Setup...* now displays a dedicated portal modal prompt (`ReinitializeSetupModal.tsx`).
+    - Presents two distinct choices:
+      - **Re-Setup (Keep Content)**: Preserves all existing maps, characters, custom creatures, and assets, smoothly navigating to the setup wizard to adjust engine parameters or add starter content.
+      - **Wipe & Fresh Setup**: Secure two-step destructive action requiring explicit `"WIPE"` confirmation.
+  - **Backend Wipe Service & API (`POST /api/setup/wipe`)**:
+    - Cleans all non-bundled maps, map versions, sync logs, prefabs, quests, and non-bundled game assets.
+    - Preserves system Admin credentials and the foundation demo map (`DEMO_SANDBOX`).
+    - Resets `SiteSetting` initialization keys and re-seeds foundation logic tiles.
+    - Automatically redirects to `/setup` for pristine realm generation.
+
 # 2.1.689
 - **Fix Studio World Saving, Voxel Document Preservation & Map Persistence**:
   - **Babylon Engine Voxel Synchronization**:
