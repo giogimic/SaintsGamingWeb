@@ -86,7 +86,7 @@ export const BrushSettingsBar: React.FC<BrushSettingsBarProps> = ({
       : 'voxel'; // Default to unified voxel
 
   const showVoxelControls = effectiveMode === 'voxel' || studioMode === 'voxel' || studioMode === 'develop';
-  const showShapeRadius = effectiveMode === 'grid' || effectiveMode === 'splat';
+  const showShapeRadius = effectiveMode === 'grid' || effectiveMode === 'splat' || effectiveMode === 'voxel';
   const showSplatControls = effectiveMode === 'splat';
   const showPropControls = effectiveMode === 'prop' || effectiveMode === 'splat';
   const showGridSnap = effectiveMode === 'grid';

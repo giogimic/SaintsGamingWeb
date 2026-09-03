@@ -60,23 +60,6 @@ async function loadMapPayload(slug: string) {
     }
 
     const dims = resolveMapDimensions({ grid, tileLayers });
-    if (!voxelDoc) {
-      voxelDoc = generateDefaultWorldDoc(
-        Math.max(1, Math.ceil(dims.width / 16)),
-        Math.max(1, Math.ceil(dims.height / 16)),
-        64
-      );
-      voxelDoc.id = worldMap.id;
-      voxelDoc.name = worldMap.name;
-    }
-    const rawGates = JSON.parse(worldMap.gatesData || "{}");
-    const connections = rawGates.connections || undefined;
-    const actualGates = rawGates.gates !== undefined ? rawGates.gates : rawGates;
-    const spawnPoint = rawGates.spawnPoint || (Array.isArray(actualGates) ? actualGates.find((g: any) => g.id === 'spawn' || g.category === 'SPAWN')?.position : undefined) || { x: Math.floor(dims.width / 2), y: Math.floor(dims.height / 2) };
-    
-    if (!Array.isArray(grid) || grid.length === 0) {
-      grid = Array.from({ length: dims.height }, () => Array(dims.width).fill(0));
-    }
 
     let freeformLayers: any[] = [];
     try {
@@ -94,6 +77,30 @@ async function loadMapPayload(slug: string) {
     const cleanFreeformLayers = Array.isArray(freeformLayers)
       ? freeformLayers.filter((l: any) => l.type !== 'voxel' && l.id !== 'voxel_world_doc')
       : [];
+
+    if (!voxelDoc) {
+      voxelDoc = generateDefaultWorldDoc(
+        Math.max(1, Math.ceil(dims.width / 16)),
+        Math.max(1, Math.ceil(dims.height / 16)),
+        64,
+        dims.width,
+        dims.height
+      );
+      voxelDoc.id = worldMap.id;
+      voxelDoc.name = worldMap.name;
+    } else {
+      voxelDoc.mapWidth = dims.width;
+      voxelDoc.mapHeight = dims.height;
+    }
+
+    const rawGates = JSON.parse(worldMap.gatesData || "{}");
+    const connections = rawGates.connections || undefined;
+    const actualGates = rawGates.gates !== undefined ? rawGates.gates : rawGates;
+    const spawnPoint = rawGates.spawnPoint || (Array.isArray(actualGates) ? actualGates.find((g: any) => g.id === 'spawn' || g.category === 'SPAWN')?.position : undefined) || { x: Math.floor(dims.width / 2), y: Math.floor(dims.height / 2) };
+    
+    if (!Array.isArray(grid) || grid.length === 0) {
+      grid = Array.from({ length: dims.height }, () => Array(dims.width).fill(0));
+    }
 
     return {
       id: worldMap.id,

@@ -10,6 +10,7 @@ import {
   ensureMapHasStudioTilesets,
   type StudioTilesetMeta,
 } from "./studioTilesetBootstrap";
+import { generateDefaultWorldDoc, type VoxelWorldDocV3 } from "./voxel/VoxelWorldDoc";
 
 export const STUDIO_MAP_MIN = 8;
 export const STUDIO_MAP_MAX = 128;
@@ -32,6 +33,8 @@ export type NewStudioMapData = {
   encounterPool: [];
   tileLayers: Array<{ name: string; grid: number[][] }>;
   tilesets: StudioTilesetMeta[];
+  voxelDoc?: VoxelWorldDocV3;
+  blockSizePx?: number;
 };
 
 /** Normalize MAP_ID slug: trim, spaces→_, uppercase. */
@@ -80,6 +83,16 @@ export function buildNewStudioMap(input: NewStudioMapInput):
   const grid = buildBorderedLogicGrid(w, h);
   const ground = buildDefaultGroundLayer(grid);
 
+  const voxelDoc = generateDefaultWorldDoc(
+    Math.max(1, Math.ceil(w / 16)),
+    Math.max(1, Math.ceil(h / 16)),
+    64,
+    w,
+    h
+  );
+  voxelDoc.id = id;
+  voxelDoc.name = (input.name || "").trim() || id;
+
   return {
     ok: true,
     map: {
@@ -92,6 +105,8 @@ export function buildNewStudioMap(input: NewStudioMapInput):
       encounterPool: [],
       tileLayers: [ground],
       tilesets: [...DEFAULT_STUDIO_TILESETS],
+      voxelDoc,
+      blockSizePx: 64,
     },
   };
 }

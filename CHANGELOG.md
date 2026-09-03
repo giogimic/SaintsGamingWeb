@@ -1,3 +1,27 @@
+# 2.1.683
+- **Voxel System Harmonization: Spatial Alignment, Rehydration, Dynamic Elevation & Core Tooling**:
+  - **Zero-Offset Spatial Alignment (`VoxelWorldDoc.ts` & `VoxelChunkMesher.ts`)**:
+    - Added `mapWidth` and `mapHeight` to `VoxelWorld` and `VoxelWorldDocV3`.
+    - Centered `originOffsetX` and `originOffsetZ` around logical map dimensions rather than chunk boundary envelopes (16x16 multiples).
+    - Eliminates the 4-to-5 block shift on 24x24 and other non-multiple-of-16 maps, perfectly aligning 3D voxel vertices with 2D tile meshes and logic grids.
+  - **API Persistence Bug Fixed (`app/api/maps/[slug]/route.ts`)**:
+    - Rehydrated `voxelDoc` from `freeformLayersData` before default world fallback generation.
+    - Preserves saved user voxel worlds across page reloads and map fetches.
+  - **Greenfield New Map Voxel Initialization (`studioMapCreate.ts`)**:
+    - `buildNewStudioMap` now generates and embeds a Greenfield `voxelDoc` into every newly created map.
+  - **Voxel-Ready Paste Tool & Relative Elevation Stamping (`PasteToolHandler.ts` & `editor-store.ts`)**:
+    - Removed legacy 2D-only guard in `PasteToolHandler.ts`.
+    - Enabled pure 3D voxel volume pasting and added dynamic surface elevation offsetting so pasted structures sit atop hills rather than sinking into bedrock.
+  - **Brush Settings Radius Restored in Voxel Mode (`BrushSettingsBar.tsx`)**:
+    - Exposed brush radius presets (1..8) and radius controls in Voxel mode.
+  - **Dynamic Entity Ground Clearance & 3D Combat Ring Height (`BabylonEngine.ts`)**:
+    - Added `getVoxelSurfaceY` to sample top voxel elevation at any world position.
+    - Elevated sprites, players, NPCs, mobs, and loot drops to sit cleanly on top of raised voxel blocks.
+    - Dynamically aligned target selection rings and destination preview rings to follow entity and ground elevation.
+  - **Elevated Terrain Navigation & 3D Voxel Interactions (`GameCanvasBabylon.tsx` & `WorldSimulation.ts`)**:
+    - Updated `isWalkable` in click-to-move to dynamically scan surface voxels and overhead obstacles, permitting walking up hills, slopes, and stairs.
+    - Updated `tryInteract` to inspect 3D `VoxelLogic` for harvest nodes (`VOXEL_MAT_WOOD`, mining ores) and shop counters when pressing 'E'.
+
 # 2.1.682
 - **Voxel 4-Surface Solid Rendering & Hollow Mesh Elimination**:
   - **Alpha-Test & Forced Depth Buffer Writes (`VoxelChunkMesher.ts`)**:

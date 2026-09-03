@@ -146,11 +146,9 @@ export class VoxelChunkMesher {
 
     let quadCount = 0;
 
-    const totalW = world.widthChunks * CHUNK_SIZE_X;
-    const totalZ = world.depthChunks * CHUNK_SIZE_Z;
-    const originOffsetX = -totalW / 2;
-    const originOffsetZ = -totalZ / 2;
-    const originOffsetY = -16; // Top of Gunmetal foundation (y=16) maps to y=0
+    const originOffsetX = world.originOffsetX;
+    const originOffsetZ = world.originOffsetZ;
+    const originOffsetY = world.originOffsetY;
 
     for (let ly = 0; ly < CHUNK_SIZE_Y; ly++) {
       for (let lz = 0; lz < CHUNK_SIZE_Z; lz++) {
