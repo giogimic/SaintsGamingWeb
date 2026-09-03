@@ -97,6 +97,9 @@ async function loadMapPayload(slug: string) {
     const connections = rawGates.connections || undefined;
     const actualGates = rawGates.gates !== undefined ? rawGates.gates : rawGates;
     const spawnPoint = rawGates.spawnPoint || (Array.isArray(actualGates) ? actualGates.find((g: any) => g.id === 'spawn' || g.category === 'SPAWN')?.position : undefined) || { x: Math.floor(dims.width / 2), y: Math.floor(dims.height / 2) };
+    const cameraStyle = rawGates.cameraStyle || undefined;
+    const allowCustomCamera = rawGates.allowCustomCamera ?? undefined;
+    const defaultCameraStyle = rawGates.defaultCameraStyle || cameraStyle;
     
     if (!Array.isArray(grid) || grid.length === 0) {
       grid = Array.from({ length: dims.height }, () => Array(dims.width).fill(0));
@@ -112,6 +115,10 @@ async function loadMapPayload(slug: string) {
       gates: actualGates,
       connections: connections,
       spawnPoint,
+      cameraStyle,
+      allowCustomCamera,
+      allowCustomPlayerCamera: allowCustomCamera,
+      defaultCameraStyle,
       npcs: JSON.parse(worldMap.npcsData || "[]"),
       encounterPool: JSON.parse(worldMap.encountersData || "[]"),
       tileLayers,
@@ -138,6 +145,10 @@ async function loadMapPayload(slug: string) {
       gates: actualGates,
       connections: connections,
       spawnPoint,
+      cameraStyle: rawGates.cameraStyle || undefined,
+      allowCustomCamera: rawGates.allowCustomCamera ?? undefined,
+      allowCustomPlayerCamera: rawGates.allowCustomCamera ?? undefined,
+      defaultCameraStyle: rawGates.defaultCameraStyle || rawGates.cameraStyle || undefined,
       npcs: JSON.parse(gameMap.npcs || "[]"),
       encounterPool: JSON.parse(gameMap.encounters || "[]"),
       tileLayers: [],
@@ -185,6 +196,10 @@ export async function GET(
         gates: [],
         connections: undefined,
         spawnPoint: { x: Math.floor(blankW / 2), y: Math.floor(blankH / 2) },
+        cameraStyle: undefined,
+        allowCustomCamera: undefined,
+        allowCustomPlayerCamera: undefined,
+        defaultCameraStyle: undefined,
         npcs: [],
         encounterPool: [],
         tileLayers: [],
@@ -311,15 +326,33 @@ export async function POST(
 
     const rawGatesToSave = body.gates;
     let serializedGatesData: string | undefined = undefined;
-    if (rawGatesToSave !== undefined || existingConns !== undefined) {
-      if (existingConns) {
-        const baseGates = rawGatesToSave !== undefined 
-          ? (Array.isArray(rawGatesToSave) ? rawGatesToSave : (rawGatesToSave?.gates || rawGatesToSave))
-          : [];
-        serializedGatesData = JSON.stringify({ gates: baseGates, connections: existingConns });
-      } else if (rawGatesToSave !== undefined) {
-        serializedGatesData = typeof rawGatesToSave === 'string' ? rawGatesToSave : JSON.stringify(rawGatesToSave);
+    if (
+      rawGatesToSave !== undefined ||
+      existingConns !== undefined ||
+      body.cameraStyle !== undefined ||
+      body.allowCustomCamera !== undefined ||
+      body.allowCustomPlayerCamera !== undefined
+    ) {
+      let gatesObj: any = {};
+      if (typeof rawGatesToSave === 'string') {
+        try { gatesObj = JSON.parse(rawGatesToSave); } catch { gatesObj = {}; }
+      } else if (Array.isArray(rawGatesToSave)) {
+        gatesObj = { gates: rawGatesToSave };
+      } else if (typeof rawGatesToSave === 'object' && rawGatesToSave !== null) {
+        gatesObj = { ...rawGatesToSave };
       }
+      if (existingConns && !gatesObj.connections) {
+        gatesObj.connections = existingConns;
+      }
+      if (body.cameraStyle !== undefined) {
+        gatesObj.cameraStyle = body.cameraStyle;
+      }
+      if (body.allowCustomCamera !== undefined) {
+        gatesObj.allowCustomCamera = body.allowCustomCamera;
+      } else if (body.allowCustomPlayerCamera !== undefined) {
+        gatesObj.allowCustomCamera = body.allowCustomPlayerCamera;
+      }
+      serializedGatesData = JSON.stringify(gatesObj);
     }
 
     // Security compliance audit record prior to DB write
@@ -411,6 +444,30 @@ export async function POST(
       version: worldMap.version,
       userId: session.user.id,
     });
+
+    // Realtime bus broadcast: notify all live game clients and studio viewports
+    try {
+      const { getRealtimeService } = await import("../../../../server");
+      const realtime = getRealtimeService();
+      if (realtime) {
+        const io = realtime.getIo?.() || (realtime as any).io;
+        if (io) {
+          io.emit("content_reload", {
+            type: "map",
+            mapId: worldMap.id,
+            id: worldMap.id,
+            version: worldMap.version,
+            timestamp: Date.now(),
+          });
+          io.emit("admin_save_map", {
+            mapId: worldMap.id,
+            timestamp: Date.now(),
+          });
+        }
+      }
+    } catch {
+      // Non-fatal if running in plain Next.js test/worker mode without custom server
+    }
 
     return NextResponse.json({ success: true, map: { id: worldMap.id, version: worldMap.version } });
   } catch (error) {

@@ -63,12 +63,24 @@ export const CameraSettingsPanel: React.FC = () => {
   const [allowCustomPlayerCamera, setAllowCustomPlayerCamera] = useState<boolean>(
     Boolean((activeMapData as any)?.allowCustomCamera ?? (activeMapData as any)?.allowCustomPlayerCamera ?? false)
   );
-  const [playerCameraStyle, setPlayerCameraStyle] = useState<'isometric' | 'follow45' | 'topdown' | 'free'>('isometric');
+  const [playerCameraStyle, setPlayerCameraStyle] = useState<'isometric' | 'follow45' | 'topdown' | 'free'>(
+    ((activeMapData as any)?.cameraStyle || (activeMapData as any)?.defaultCameraStyle || 'isometric') as any
+  );
   const [followSmoothing, setFollowSmoothing] = useState(35); // percent
   const [borderClamping, setBorderClamping] = useState(true);
   const [vignetteEnabled, setVignetteEnabled] = useState(true);
   const [vignetteWeight, setVignetteWeight] = useState(15); // 1.5 default
   const isSyncingFromEngineRef = useRef(false);
+
+  // Synchronize state when activeMapData changes
+  useEffect(() => {
+    if (activeMapData) {
+      const mapCamera = (activeMapData as any).cameraStyle || (activeMapData as any).defaultCameraStyle;
+      if (mapCamera) setPlayerCameraStyle(mapCamera);
+      const allowed = Boolean((activeMapData as any).allowCustomCamera ?? (activeMapData as any).allowCustomPlayerCamera ?? false);
+      setAllowCustomPlayerCamera(allowed);
+    }
+  }, [activeMapData?.id, (activeMapData as any)?.cameraStyle, (activeMapData as any)?.allowCustomCamera]);
 
   // Load from localStorage on mount and listen to engine camera state updates
   useEffect(() => {
@@ -509,11 +521,15 @@ export const CameraSettingsPanel: React.FC = () => {
                     soundSynth?.playUiClick?.();
                     const val = e.target.checked;
                     setAllowCustomPlayerCamera(val);
-                      if (activeMapData) {
-                        (activeMapData as any).allowCustomCamera = val;
-                        (activeMapData as any).allowCustomPlayerCamera = val;
-                        useEditorStore.getState().markMapDirty();
-                      }
+                    if (activeMapData) {
+                      const updated = {
+                        ...activeMapData,
+                        allowCustomCamera: val,
+                        allowCustomPlayerCamera: val,
+                      };
+                      useGameStore.getState().setActiveMapData(updated);
+                      useEditorStore.getState().markMapDirty();
+                    }
                   }}
                   className="accent-primary rounded mt-0.5"
                 />
@@ -555,9 +571,23 @@ export const CameraSettingsPanel: React.FC = () => {
                       soundSynth?.playUiClick?.();
                       setPlayerCameraStyle(mode.id as any);
                       if (activeMapData) {
-                        (activeMapData as any).cameraStyle = mode.id;
+                        const updated = {
+                          ...activeMapData,
+                          cameraStyle: mode.id,
+                          defaultCameraStyle: mode.id,
+                        };
+                        useGameStore.getState().setActiveMapData(updated);
                         useEditorStore.getState().markMapDirty();
                       }
+                      window.dispatchEvent(
+                        new CustomEvent('studio_update_camera_settings', {
+                          detail: {
+                            settings: {
+                              playerCameraStyle: mode.id,
+                            },
+                          },
+                        })
+                      );
                     }}
                     className={`p-2 rounded border text-left transition-colors cursor-pointer ${
                       playerCameraStyle === mode.id

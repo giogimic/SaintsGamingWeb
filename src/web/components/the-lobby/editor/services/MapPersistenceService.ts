@@ -9,6 +9,7 @@ import { stripEditorOverlaysFromMapPayload } from '@/shared/game/mapLayers';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { normalizeStudioMapVisuals, formatMapWriteError } from '@/shared/game/studioMapCreate';
 import { invalidateMapCache } from '@/shared/game/mapCache';
+import { invalidateMapCache as invalidateLobbyMapCache } from '../../data/maps';
 import { isGoMmoSocketEnabled } from '@/shared/net/goMmoSocket';
 import { toBaseMapId } from '@/shared/net/mapIds';
 import { soundSynth } from '@/engine/sound-synth';
@@ -24,19 +25,22 @@ export interface SaveMapResult {
 
 export class MapPersistenceService {
   /**
-   * Serializes and saves the active studio map document to the backend database.
+   * Authoritative map persistence method for Saints Gaming Studio.
+   * Serializes current state, strips editor overlays, sends to REST endpoint,
+   * invalidates local cache, and triggers synchronization.
    */
   public static async saveActiveMap(): Promise<SaveMapResult> {
+    return this.saveMap();
+  }
+
+  public static async saveMap(): Promise<SaveMapResult> {
     const currentMapId = useGameStore.getState().currentMapId;
     const baseMapId = currentMapId ? toBaseMapId(currentMapId) : null;
-    
     if (!baseMapId) {
       return { ok: false, error: 'No map loaded to save.' };
     }
 
-    soundSynth?.playActionSound?.();
     const live = useGameStore.getState().activeMapData;
-    
     if (!live?.grid) {
       return { ok: false, error: 'Map data not loaded yet — wait for the world to appear, then Save.' };
     }
@@ -61,6 +65,9 @@ export class MapPersistenceService {
         tilesets: saveDoc.tilesets || [],
         voxelDoc: saveDoc.voxelDoc,
         blockSizePx: saveDoc.blockSizePx,
+        cameraStyle: (saveDoc as any).cameraStyle || (saveDoc as any).defaultCameraStyle,
+        allowCustomCamera: (saveDoc as any).allowCustomCamera ?? (saveDoc as any).allowCustomPlayerCamera,
+        allowCustomPlayerCamera: (saveDoc as any).allowCustomCamera ?? (saveDoc as any).allowCustomPlayerCamera,
       });
 
       const res = await fetch(`/api/maps/${encodeURIComponent(baseMapId)}`, {
@@ -75,7 +82,9 @@ export class MapPersistenceService {
         return { ok: false, error: formattedErr };
       }
 
+      // Invalidate both shared and runtime lobby caches so fresh authoritative data is loaded everywhere
       invalidateMapCache(baseMapId);
+      invalidateLobbyMapCache(baseMapId);
       useEditorStore.getState().clearMapDirty();
       const backendUsed = isGoMmoSocketEnabled() ? 'Go MMO' : 'TS Server';
       

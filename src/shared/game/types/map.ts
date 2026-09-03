@@ -145,7 +145,10 @@ export interface MapData {
   biome?: string | null;
   description?: string | null;
   cameraStyle?: 'isometric' | 'follow45' | 'topdown' | 'free';
+  defaultCameraStyle?: 'isometric' | 'follow45' | 'topdown' | 'free';
   allowCameraOverride?: boolean;
+  allowCustomCamera?: boolean;
+  allowCustomPlayerCamera?: boolean;
   connections?: {
     north?: string | MapConnection;
     south?: string | MapConnection;
