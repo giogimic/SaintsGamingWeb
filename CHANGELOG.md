@@ -1,3 +1,26 @@
+# 2.1.680
+- **3D Voxel Full Block Material Previews & Comprehensive 3D Shape Geometry Engine**:
+  - **Isometric 3D Full Block Material Previews (`TerrainBrushPalette.tsx`)**:
+    - Replaced flat, struggling 2D square crops with mathematically exact 3D isometric block previews in the Seamless Materials palette.
+    - Each block renders distinct Top (rhombus diamond) and Side (dual parallelograms) faces with directional lighting, subtle drop shadow, and crisp isometric crease lines.
+    - Enabled per-face UV offsets so materials like Lush Grass show distinct green top + grass/dirt fringe sides, and Snow shows white top + snow/stone sides.
+  - **Implemented 3D Geometry Builders for All 9 Missing Voxel Shapes (`VoxelGeometry.ts`)**:
+    - Added high-performance 3D vertex/normal/UV/color builders for:
+      - `STAIRS_STRAIGHT`: Full 2-step staircase with 4-way orientation.
+      - `STAIRS_CORNER`: L-shaped wrap-around corner staircase.
+      - `SLOPE_GENTLE_BASE` & `SLOPE_GENTLE_TOP`: Smooth 22.5° multi-block gentle ramps.
+      - `SLOPE_CORNER_OUTER` & `SLOPE_CORNER_INNER`: External and internal corner transitions.
+      - `PRISM_DIAGONAL`: Diagonal wedge prism.
+      - `COLUMN_CENTER`: Centered architectural pillar.
+      - `FENCE_RAIL`: Thin post-and-beam barrier rail.
+  - **Voxel Chunk Mesher Routing (`VoxelChunkMesher.ts`)**:
+    - Routed all 9 newly supported shapes through the mesher pipeline with per-face UV mapping, lighting tints, and proper quad counts.
+  - **Type Safety & Catalog Sync (`types/map.ts` & `VoxelWorldDoc.ts`)**:
+    - Replaced loose `any` typing on `GameMapData.voxelDoc` with `VoxelWorldDocV3`.
+    - Added Lava, Swamp, Dungeon, and Ice to the default palette in `VoxelWorldDoc.ts`.
+  - **Test Suite**:
+    - Added `src/engine/voxel/VoxelGeometry.test.ts` covering all new geometry builders and orientations. All 259 test suites passed with 100% green status.
+
 # 2.1.679
 - **Seamless Voxel Terrain Connections & Authentic Material Palette Swatches**:
   - **Eliminated Black Outlines & Baked Grids on 3D Voxel Blocks (`terrain-overworld.png`)**:

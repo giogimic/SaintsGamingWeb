@@ -1,3 +1,5 @@
+import type { VoxelWorldDocV3 } from '../voxel/VoxelWorldDoc';
+
 export interface GateData {
   targetMapId: string;
   spawnPoint: { x: number; y: number };
@@ -151,7 +153,7 @@ export interface MapData {
     west?: string | MapConnection;
   };
   chunks?: RenderedChunk[];
-  voxelDoc?: any; // VoxelWorldDocV3
+  voxelDoc?: VoxelWorldDocV3;
   blockSizePx?: number; // 6..1024, default 64
 }
 
