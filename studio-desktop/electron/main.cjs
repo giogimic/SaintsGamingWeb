@@ -4,8 +4,8 @@ const fs = require('fs');
 
 let mainWindow = null;
 
-// Deep link protocol: saints-gaming://
-const PROTOCOL_PREFIX = 'saints-gaming';
+// Deep link protocol: saints-studio://
+const PROTOCOL_PREFIX = 'saints-studio';
 
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
@@ -99,7 +99,7 @@ function createWindow() {
       <html class="dark">
         <head>
           <meta charset="utf-8">
-          <title>Saints Gaming</title>
+          <title>Saints World Studio</title>
           <style>
             body {
               margin: 0;
@@ -155,8 +155,8 @@ function createWindow() {
         <body>
           <div class="card">
             <div class="badge">Connection Alert</div>
-            <h1>Saints Gaming Offline</h1>
-            <p>Could not connect to the Saints Gaming server. Verify your internet connection or configure your server address below:</p>
+            <h1>World Studio Offline</h1>
+            <p>Could not connect to the Saints Gaming Studio server. Verify your internet connection or configure your server address below:</p>
             <input id="serverInput" type="text" value="${failedUrl}" placeholder="https://saintsgaming.net/studio" />
             <div class="btn-group">
               <button onclick="window.location.href = document.getElementById('serverInput').value">Retry Connection</button>
@@ -180,28 +180,20 @@ function createWindow() {
     }
 
     // 1. Check if local Next.js dev server is running on http://localhost:3000/studio
-    const localCheck = await checkUrlReachable('http://localhost:3000', 800);
+    const localCheck = await checkUrlReachable('http://localhost:3000/studio', 800);
     if (localCheck.ok) {
-      console.log('[Electron] Connected to local Next.js server: http://localhost:3000');
-      // Load the bundled Vite UI, API calls route to local server via fetch interceptor
-      const localIndexPath = path.join(app.getAppPath(), 'dist/index.html');
-      if (fs.existsSync(localIndexPath)) {
-        mainWindow.loadFile(localIndexPath);
-        return;
-      }
+      console.log('[Electron] Connected to local Next.js server: http://localhost:3000/studio');
+      mainWindow.loadURL('http://localhost:3000/studio');
+      return;
     }
 
     // 2. Check if remote production server returns 200 OK for /studio
-    const prodUrl = 'https://saintsgaming.net';
+    const prodUrl = 'https://saintsgaming.net/studio';
     const prodCheck = await checkUrlReachable(prodUrl, 2000);
     if (prodCheck.ok) {
-      console.log('[Electron] Production Saints Gaming reachable, loading bundled UI with remote API');
-      const localIndexPath = path.join(app.getAppPath(), 'dist/index.html');
-      if (fs.existsSync(localIndexPath)) {
-        mainWindow.loadFile(localIndexPath);
-        return;
-      }
-      // No bundled UI, fall through
+      console.log('[Electron] Connected to production World Studio:', prodUrl);
+      mainWindow.loadURL(prodUrl);
+      return;
     }
     console.log(`[Electron] Production ${prodUrl} returned status ${prodCheck.status}. Falling back to bundled client.`);
 
@@ -247,7 +239,7 @@ function createWindow() {
   }
 
   mainWindow.webContents.once('did-finish-load', () => {
-    console.log('[Electron] Saints Gaming app loaded successfully!');
+    console.log('[Electron] World Studio loaded successfully!');
     const initialDeepLink = process.argv.find((arg) => arg && arg.startsWith(`${PROTOCOL_PREFIX}://`));
     if (initialDeepLink) {
       mainWindow?.webContents?.send('deep-link', initialDeepLink);

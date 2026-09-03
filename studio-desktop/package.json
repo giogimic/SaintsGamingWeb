@@ -1,8 +1,8 @@
 {
-  "name": "saints-gaming",
-  "version": "2.1.709",
+  "name": "saints-world-studio",
+  "version": "2.1.708",
   "private": true,
-  "description": "Saints Gaming — Time To Play",
+  "description": "Saints Gaming World Studio — Standalone 3D Volumetric CAD Authoring Suite",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -16,8 +16,8 @@
     "tauri": "tauri"
   },
   "build": {
-    "appId": "com.saintsgaming.app",
-    "productName": "Saints Gaming",
+    "appId": "com.saintsgaming.worldstudio",
+    "productName": "Saints World Studio",
     "directories": {
       "output": "release"
     },

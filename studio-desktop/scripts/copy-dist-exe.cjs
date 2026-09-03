@@ -23,13 +23,9 @@ if (fs.existsSync(releaseDir)) {
     const latestExe = exeFiles[0].name;
     fs.copyFileSync(
       path.join(releaseDir, latestExe),
-      path.join(distDir, 'Saints Gaming.exe')
-    );
-    fs.copyFileSync(
-      path.join(releaseDir, latestExe),
       path.join(distDir, 'Saints World Studio.exe')
     );
-    console.log(`[✓] Successfully placed latest executable (${latestExe}) in dist/Saints Gaming.exe`);
+    console.log(`[✓] Successfully placed latest executable (${latestExe}) in dist/Saints World Studio.exe`);
   }
 
   // Also sync win-unpacked folder into dist/win-unpacked

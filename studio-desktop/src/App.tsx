@@ -3,7 +3,6 @@ import { DesktopAuthProvider, useDesktopAuth } from './providers/DesktopAuthProv
 import { NextAuthShimProvider } from './providers/NextAuthShim';
 import { DesktopTitlebar } from './components/DesktopTitlebar';
 import { DesktopConnectScreen } from './components/DesktopConnectScreen';
-import { DesktopHomeScreen } from './components/DesktopHomeScreen';
 import { StudioEditorShell } from '@/web/components/the-lobby/editor/StudioEditorShell';
 import { StudioMenuBar } from '@/web/components/the-lobby/editor/StudioMenuBar';
 import { StudioBottomToolbar } from '@/web/components/the-lobby/editor/StudioBottomToolbar';
@@ -13,12 +12,9 @@ import { useEditorStore } from '@/web/components/the-lobby/editor/editor-store';
 import { loadMap } from '@/web/components/the-lobby/data/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { MidnightTropicalBackground } from '@/web/components/the-lobby/MidnightTropicalBackground';
-import { canEnterStudio } from '@/shared/game/studioPermissions';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 
-type AppView = 'home' | 'studio';
-
-const StudioMainWorkspace: React.FC<{ onBackToHome: () => void }> = ({ onBackToHome }) => {
+const StudioMainWorkspace: React.FC = () => {
   const { user } = useDesktopAuth();
   const currentMapId = useGameStore((state) => state.currentMapId);
   const activeMapData = useGameStore((state) => state.activeMapData);
@@ -109,7 +105,7 @@ const StudioMainWorkspace: React.FC<{ onBackToHome: () => void }> = ({ onBackToH
 
       {/* ── Top Studio Menu Bar (File, Edit, View, Mode switchers, Save) ── */}
       <div className="relative z-50 pointer-events-auto h-10 shrink-0">
-        <StudioMenuBar onBackToHome={onBackToHome} />
+        <StudioMenuBar />
       </div>
 
       {/* ── Main 3D Viewport & MDI Panels Container ── */}
@@ -164,46 +160,25 @@ const StudioMainWorkspace: React.FC<{ onBackToHome: () => void }> = ({ onBackToH
 };
 
 const StudioDesktopContent: React.FC = () => {
-  const { isAuthenticated, isLoading, user } = useDesktopAuth();
+  const { isAuthenticated, isLoading } = useDesktopAuth();
   const currentMapId = useGameStore((state) => state.currentMapId);
-  const [activeView, setActiveView] = useState<AppView>('home');
-
-  const userCanStudio = canEnterStudio(user?.permissionLevel);
-
-  // Reset to home when user signs out
-  useEffect(() => {
-    if (!isAuthenticated) setActiveView('home');
-  }, [isAuthenticated]);
-
-  // Guard: if user doesn't have studio permission, force back to home
-  useEffect(() => {
-    if (activeView === 'studio' && !userCanStudio) setActiveView('home');
-  }, [activeView, userCanStudio]);
-
-  const handleLaunchStudio = () => {
-    if (userCanStudio) setActiveView('studio');
-  };
-
-  const titlebarLabel = activeView === 'studio'
-    ? (currentMapId || 'World Studio')
-    : undefined;
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden select-none bg-[#050b14]">
       {/* Native Desktop Window Titlebar */}
-      <DesktopTitlebar activeMapTitle={titlebarLabel} appView={activeView} />
+      <DesktopTitlebar activeMapTitle={currentMapId || undefined} />
 
       {/* Main Container */}
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center bg-[#050b14] text-primary">
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <span className="text-xs font-mono text-slate-300">Initializing Saints Gaming...</span>
+            <span className="text-xs font-mono text-slate-300">Initializing Saints World Studio...</span>
           </div>
         </div>
       ) : !isAuthenticated ? (
         <DesktopConnectScreen />
-      ) : activeView === 'studio' && userCanStudio ? (
+      ) : (
         <NextAuthShimProvider>
           <Suspense
             fallback={
@@ -212,11 +187,9 @@ const StudioDesktopContent: React.FC = () => {
               </div>
             }
           >
-            <StudioMainWorkspace onBackToHome={() => setActiveView('home')} />
+            <StudioMainWorkspace />
           </Suspense>
         </NextAuthShimProvider>
-      ) : (
-        <DesktopHomeScreen onLaunchStudio={handleLaunchStudio} />
       )}
     </div>
   );

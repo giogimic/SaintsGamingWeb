@@ -1,13 +1,3 @@
-# 2.1.709
-- **Saints Gaming Desktop App & Admin-Gated Studio Launcher**:
-  - **Saints Gaming App Rebrand**:
-    - Rebranded the standalone Electron application from "Saints World Studio" to "Saints Gaming" with "Time To Play" motto and custom titlebar.
-    - Added launcher home screen (`DesktopHomeScreen.tsx`) with user profile, server connection indicator, quick external links, and exit controls.
-  - **Developer/Admin Permission Gating**:
-    - Gated the "Launch World Studio" button behind `canEnterStudio(user.permissionLevel)` (requires Admin+ / level >= 400).
-    - Standard/non-admin users see the clean Saints Gaming companion app with no studio buttons or references exposed.
-    - Added route-level safety guard in `App.tsx` ensuring only authorized accounts can enter the 3D voxel studio workspace.
-
 # 2.1.708
 - **Independent Offline Asset Loading for Tropical Palms & Standalone Background**:
   - In `src/web/components/landing/tropical-palm-frame.tsx`, applied `toClientAssetUrl()` to both left and right palm SVG frames (`/images/left-palm.svg` and `/images/right-palm.svg`).
