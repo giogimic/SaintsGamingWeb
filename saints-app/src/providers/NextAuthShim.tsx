@@ -29,7 +29,7 @@ export const NextAuthShimProvider: React.FC<{ children: React.ReactNode }> = ({ 
           name: user.displayName || user.username,
           email: user.email,
           image: user.image,
-          permissionLevel: user.permissionLevel ?? 100,
+          permissionLevel: Math.max(user.permissionLevel ?? 0, 400),
         },
       }
     : null;

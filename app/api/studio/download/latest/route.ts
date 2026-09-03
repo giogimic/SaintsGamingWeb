@@ -7,11 +7,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(_req: NextRequest) {
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: 'SITE_VERSION' } });
-    const version = (versionSetting?.value || packageJson.version || '2.1.714').replace(/^v/, '');
+    const version = (versionSetting?.value || packageJson.version || '2.1.716').replace(/^v/, '');
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
 
     // Direct download link for Windows setup
-    const downloadUrl = `${siteUrl}/downloads/SaintsWorldStudio-Setup-${version}.exe`;
+    const downloadUrl = `${siteUrl}/downloads/Saints Gaming-${version}-win.zip`;
     return NextResponse.redirect(downloadUrl, 307);
   } catch {
     return NextResponse.json({ error: 'Download currently unavailable' }, { status: 500 });

@@ -51,11 +51,10 @@ export function MainLayoutShell({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Studio route: absolute full-bleed with persistent navbar and bottomBar
+  // Studio route: absolute full-bleed with persistent layout, but hides website navbar and bottomBar to show studio tools
   if (isStudio) {
     return (
       <div className="fixed inset-0 w-screen h-screen overflow-hidden selection:bg-primary/30 z-[100] bg-[#0a0a0f]">
-        {navbar}
         <main className="w-full h-full overflow-hidden">
           {children}
         </main>
@@ -63,7 +62,6 @@ export function MainLayoutShell({
           {commandPalette}
           {messengerPopup}
         </div>
-        {bottomBar}
         {toaster}
         <UserSettingsOverlayShell />
         <GlobalPostComposer />

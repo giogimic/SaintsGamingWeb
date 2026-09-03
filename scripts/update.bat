@@ -121,7 +121,7 @@ if /i "%UPDATE_MODE%"=="full" (
         echo %%F | findstr /i "package.json package-lock.json" >nul && set "NEED_NPM=1"
         echo %%F | findstr /i "prisma prepare-prisma.js" >nul && set "NEED_DB=1"
         echo %%F | findstr /i "src/ app/ server.ts next.config tsconfig.json public/" >nul && set "NEED_BUILD=1"
-        echo %%F | findstr /i "studio-desktop" >nul && set "NEED_STUDIO=1"
+        echo %%F | findstr /i "saints-app" >nul && set "NEED_STUDIO=1"
     )
 )
 
@@ -177,9 +177,9 @@ if "!NEED_BUILD!"=="1" (
 
 :: --- Build Studio Desktop (if needed) ---
 if "!NEED_STUDIO!"=="1" (
-    if exist "studio-desktop\package.json" (
+    if exist "saints-app\package.json" (
         echo [*] Building Saints World Studio desktop application...
-        pushd studio-desktop
+        pushd saints-app
         call npm install
         call npm run build
         popd

@@ -1,3 +1,12 @@
+## [2.1.716] - 2026-09-03
+### Added
+- **One Experience Desktop Client & Studio Bridge**:
+  - Integrated Electron desktop app with live Saints Gaming web experience (`https://saintsgaming.net` default).
+  - Added "Native Studio" button in web navigation for developers (permissionLevel >= 400) running inside desktop app.
+  - Seamless authentication bridge via `/api/auth/studio-token` and IPC, launching the local native studio without requiring manual token entry.
+  - Added custom server override options for developers.
+  - Switched desktop packaging pipeline from memory-constrained NSIS to high-performance portable zip archive with automated download directory cleanup.
+
 ## [2.1.714] - 2026-09-03
 ### Added
 - Fully implemented the new Studio UI Window Architecture as outlined in Studio-UI-New-plan.md.

@@ -391,7 +391,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
     <MenuContext.Provider value={{ activeMenu, handleMenuClick, handleItemClick, setActiveMenu }}>
       <div
         ref={menuRef}
-        className="pointer-events-auto absolute top-0 left-0 right-0 h-10 z-[110] bg-[#050b14]/90 border-b border-border/50 flex items-center justify-between px-3 select-none backdrop-blur-xl shadow-lg font-mono [app-region:drag]"
+        className="pointer-events-auto relative w-full h-10 z-[110] bg-[#050b14]/90 border-b border-border/50 flex items-center justify-between px-3 select-none backdrop-blur-xl shadow-lg font-mono [app-region:drag]"
       >
       {/* ─── ZONE 1: Identity, Project Context & Primary Menus ─── */}
       <div className="flex items-center gap-2.5 [app-region:no-drag]">

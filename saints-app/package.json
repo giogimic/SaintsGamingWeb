@@ -1,6 +1,6 @@
 {
   "name": "saints-gaming",
-  "version": "2.1.714",
+  "version": "2.1.716",
   "private": true,
   "description": "Saints Gaming — Time To Play",
   "type": "module",
@@ -8,10 +8,10 @@
   "scripts": {
     "dev": "vite",
     "dev:electron": "electron .",
-    "build": "vite build && electron-builder --win dir portable && node scripts/copy-dist-exe.cjs",
+    "build": "vite build && electron-builder --win zip && node scripts/copy-dist-exe.cjs",
     "build:vite": "vite build",
-    "build:exe": "vite build && electron-builder --win dir portable && node scripts/copy-dist-exe.cjs",
-    "build:installer": "vite build && electron-builder --win nsis && node scripts/copy-dist-exe.cjs",
+    "build:exe": "vite build && electron-builder --win zip && node scripts/copy-dist-exe.cjs",
+    "build:installer": "vite build && electron-builder --win zip && node scripts/copy-dist-exe.cjs",
     "preview": "vite preview",
     "tauri": "tauri"
   },
@@ -28,7 +28,8 @@
       "electron/**/*"
     ],
     "win": {
-      "target": "dir"
+      "target": "zip",
+      "icon": "build/icon.png"
     }
   },
   "dependencies": {
