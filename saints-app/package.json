@@ -8,10 +8,10 @@
   "scripts": {
     "dev": "vite",
     "dev:electron": "electron .",
-    "build": "vite build && electron-builder --win zip && node scripts/copy-dist-exe.cjs",
+    "build": "vite build && node -e \"const fs=require('fs'); fs.rmSync('dist/downloads',{recursive:true,force:true}); fs.rmSync('dist/uploads',{recursive:true,force:true})\" && electron-builder --win zip && node scripts/copy-dist-exe.cjs",
     "build:vite": "vite build",
-    "build:exe": "vite build && electron-builder --win zip && node scripts/copy-dist-exe.cjs",
-    "build:installer": "vite build && electron-builder --win zip && node scripts/copy-dist-exe.cjs",
+    "build:exe": "vite build && node -e \"const fs=require('fs'); fs.rmSync('dist/downloads',{recursive:true,force:true}); fs.rmSync('dist/uploads',{recursive:true,force:true})\" && electron-builder --win zip && node scripts/copy-dist-exe.cjs",
+    "build:installer": "vite build && node -e \"const fs=require('fs'); fs.rmSync('dist/downloads',{recursive:true,force:true}); fs.rmSync('dist/uploads',{recursive:true,force:true})\" && electron-builder --win zip && node scripts/copy-dist-exe.cjs",
     "preview": "vite preview",
     "tauri": "tauri"
   },
@@ -23,6 +23,8 @@
     },
     "files": [
       "dist/**/*",
+      "!dist/downloads/**/*",
+      "!dist/uploads/**/*",
       "!dist/*.exe",
       "!dist/win-unpacked/**/*",
       "electron/**/*"
