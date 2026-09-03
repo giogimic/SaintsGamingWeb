@@ -156,6 +156,12 @@ type VoxelWorld struct {
 }
 
 // ParseVoxelDoc deserializes a JSON voxelDoc into server memory.
+// FormatChunkKey returns the uniform spatial format: ${cx}_${cy}_${cz}.
+func FormatChunkKey(cx, cy, cz int) string {
+	return fmt.Sprintf("%d_%d_%d", cx, cy, cz)
+}
+
+// ParseVoxelDoc deserializes a JSON voxelDoc into server memory.
 func ParseVoxelDoc(data []byte) (*VoxelWorld, error) {
 	var doc VoxelDocJSON
 	if err := json.Unmarshal(data, &doc); err != nil {
@@ -190,12 +196,25 @@ func ParseVoxelDoc(data []byte) (*VoxelWorld, error) {
 	}
 
 	for key, rle := range doc.Chunks {
-		var cx, cz, cy int
-		_, err := fmt.Sscanf(key, "%d_%d_%d", &cx, &cz, &cy)
+		var a, b, c int
+		_, err := fmt.Sscanf(key, "%d_%d_%d", &a, &b, &c)
 		if err != nil {
 			continue
 		}
-		w.Chunks[key] = DecodeChunkRLE(rle, cx, cz, cy)
+		var cx, cy, cz int
+		cx = a
+		if doc.Dimensions.HeightChunks == 1 && c == 0 && b != 0 {
+			// Legacy cx_cz_0 format
+			cz = b
+			cy = c
+		} else {
+			// Uniform spatial format: cx_cy_cz
+			cy = b
+			cz = c
+		}
+		chunk := DecodeChunkRLE(rle, cx, cz, cy)
+		w.Chunks[FormatChunkKey(cx, cy, cz)] = chunk
+		w.Chunks[fmt.Sprintf("%d_%d_%d", cx, cz, cy)] = chunk
 	}
 	return w, nil
 }
@@ -219,9 +238,12 @@ func (w *VoxelWorld) GetVoxel(wx, wy, wz int) uint32 {
 	lz := ((wz % ChunkSizeZ) + ChunkSizeZ) % ChunkSizeZ
 	ly := ((wy % ChunkSizeY) + ChunkSizeY) % ChunkSizeY
 
-	key := fmt.Sprintf("%d_%d_%d", cx, cz, cy)
-	chunk, ok := w.Chunks[key]
+	spatialKey := FormatChunkKey(cx, cy, cz)
+	chunk, ok := w.Chunks[spatialKey]
 	if !ok || chunk == nil {
+		chunk = w.Chunks[fmt.Sprintf("%d_%d_%d", cx, cz, cy)]
+	}
+	if chunk == nil {
 		return VoxelWordAir
 	}
 	return chunk.Get(lx, ly, lz)
@@ -246,11 +268,16 @@ func (w *VoxelWorld) SetVoxel(wx, wy, wz int, word uint32) {
 	lz := ((wz % ChunkSizeZ) + ChunkSizeZ) % ChunkSizeZ
 	ly := ((wy % ChunkSizeY) + ChunkSizeY) % ChunkSizeY
 
-	key := fmt.Sprintf("%d_%d_%d", cx, cz, cy)
-	chunk, ok := w.Chunks[key]
+	spatialKey := FormatChunkKey(cx, cy, cz)
+	legacyKey := fmt.Sprintf("%d_%d_%d", cx, cz, cy)
+	chunk, ok := w.Chunks[spatialKey]
 	if !ok || chunk == nil {
+		chunk = w.Chunks[legacyKey]
+	}
+	if chunk == nil {
 		chunk = &VoxelChunk{CX: cx, CZ: cz, CY: cy}
-		w.Chunks[key] = chunk
+		w.Chunks[spatialKey] = chunk
+		w.Chunks[legacyKey] = chunk
 	}
 	chunk.Set(lx, ly, lz, word)
 }

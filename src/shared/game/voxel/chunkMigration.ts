@@ -4,7 +4,7 @@
  * Converts legacy 16×16×32 volumetric chunks to standard 32×32×32 isotropic chunks.
  */
 
-import { VoxelChunk, CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z } from './VoxelChunk';
+import { VoxelChunk, CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z, CHUNK_TOTAL_CELLS } from './VoxelChunk';
 import type { VoxelWorldDocV3 } from './VoxelWorldDoc';
 import { isVoxelAir } from './VoxelWord';
 
@@ -65,8 +65,8 @@ export function migrateLegacyDocTo32Cubic(doc: VoxelWorldDocV3): VoxelWorldDocV3
   // Map to hold new 32³ chunks
   const newChunks = new Map<string, VoxelChunk>();
 
-  const getOrCreateNewChunk = (cx: number, cz: number, cy: number): VoxelChunk => {
-    const key = VoxelChunk.getChunkKey(cx, cz, cy);
+  const getOrCreateNewChunk = (cx: number, cy: number, cz: number): VoxelChunk => {
+    const key = `${cx}_${cy}_${cz}`;
     let chunk = newChunks.get(key);
     if (!chunk) {
       chunk = new VoxelChunk(cx, cz, cy);
@@ -77,7 +77,15 @@ export function migrateLegacyDocTo32Cubic(doc: VoxelWorldDocV3): VoxelWorldDocV3
 
   // Re-slice legacy chunks into 32³ chunks
   for (const [key, rleArray] of Object.entries(doc.chunks)) {
-    const { cx: oldCx, cz: oldCz, cy: oldCy } = VoxelChunk.parseChunkKey(key);
+    const parts = key.split('_').map(Number);
+    const oldCx = parts[0] ?? 0;
+    // Handle both old formats: cx_cz_cy or cx_cy_cz
+    let oldCz = parts[1] ?? 0;
+    let oldCy = parts[2] ?? 0;
+    if (doc.dimensions?.heightChunks === 1 && parts[2] === 0 && parts[1] !== 0) {
+      oldCz = parts[1];
+      oldCy = parts[2];
+    }
 
     // Decode legacy 8192 array
     const legacyData = new Uint32Array(LEGACY_CHUNK_TOTAL_CELLS);
@@ -111,7 +119,7 @@ export function migrateLegacyDocTo32Cubic(doc: VoxelWorldDocV3): VoxelWorldDocV3
       const newLz = ((wz % CHUNK_SIZE_Z) + CHUNK_SIZE_Z) % CHUNK_SIZE_Z;
       const newLy = ((wy % CHUNK_SIZE_Y) + CHUNK_SIZE_Y) % CHUNK_SIZE_Y;
 
-      const chunk = getOrCreateNewChunk(newCx, newCz, newCy);
+      const chunk = getOrCreateNewChunk(newCx, newCy, newCz);
       chunk.set(newLx, newLy, newLz, word);
     }
   }
@@ -132,5 +140,58 @@ export function migrateLegacyDocTo32Cubic(doc: VoxelWorldDocV3): VoxelWorldDocV3
       heightChunks: newHeightChunks,
     },
     chunks: serializedChunks,
+  };
+}
+
+/**
+ * Re-indexes an existing 32³ document ensuring all chunk keys strictly conform
+ * to the uniform spatial format `${cx}_${cy}_${cz}` and RLE data conforms to 32,768 cells.
+ */
+export function reindexDocToSpatial32Cubic(doc: VoxelWorldDocV3): { doc: VoxelWorldDocV3; modified: boolean } {
+  if (isLegacy16CubicDoc(doc)) {
+    return { doc: migrateLegacyDocTo32Cubic(doc), modified: true };
+  }
+
+  let modified = false;
+  const updatedChunks: Record<string, number[]> = {};
+
+  for (const [key, rleArray] of Object.entries(doc.chunks || {})) {
+    const parts = key.split('_').map(Number);
+    let cx = parts[0] ?? 0;
+    let cy = parts[1] ?? 0;
+    let cz = parts[2] ?? 0;
+
+    if (doc.dimensions?.heightChunks === 1 && parts[2] === 0 && parts[1] !== 0) {
+      cz = parts[1];
+      cy = parts[2];
+      modified = true;
+    }
+
+    const spatialKey = `${cx}_${cy}_${cz}`;
+    if (spatialKey !== key) {
+      modified = true;
+    }
+
+    // Verify cell count
+    let totalCells = 0;
+    for (let i = 0; i < rleArray.length; i += 2) {
+      totalCells += rleArray[i];
+    }
+    if (totalCells !== CHUNK_TOTAL_CELLS) {
+      modified = true;
+      // Re-encode chunk to strict 32,768 cells
+      const chunk = VoxelChunk.deserializeRLE(rleArray, cx, cz, cy);
+      updatedChunks[spatialKey] = chunk.serializeRLE();
+    } else {
+      updatedChunks[spatialKey] = rleArray;
+    }
+  }
+
+  return {
+    doc: {
+      ...doc,
+      chunks: updatedChunks,
+    },
+    modified,
   };
 }
