@@ -41,6 +41,9 @@ import { MidnightTropicalBackground } from './MidnightTropicalBackground';
 import { CharacterSpritePreview } from './CharacterSpritePreview';
 import { CharacterDetailPreview } from './CharacterDetailPreview';
 import GameOptionsMenu from './hud/GameOptionsMenu';
+import { useRealmSettings } from '@/web/hooks/studio-data';
+import { useAuth } from '@/shared/hooks/use-auth';
+import { CharacterSelectAdminWindow } from './admin/CharacterSelectAdminWindow';
 
 interface CharacterSelectorProps {
   characters: any[];
@@ -148,6 +151,12 @@ export function CharacterSelector({
   const [isDeleting, setIsDeleting] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
+  const [showAdminWindow, setShowAdminWindow] = useState(false);
+  const { isModerator, isAdmin, isDeveloper } = useAuth();
+  const { settings: realmSettings } = useRealmSettings();
+  const heroSingular = (realmSettings as any)?.playerClassName || 'Saint';
+  const heroPlural = (realmSettings as any)?.playerClassNamePlural || 'Saints';
+  const realmTitle = (realmSettings as any)?.realmName || 'The Lobby';
   const setGameMode = useGameStore((state) => state.setGameMode);
 
   // Sync selected character if list changes and current selection is missing
@@ -332,12 +341,12 @@ export function CharacterSelector({
           <div className="flex items-center gap-2">
             <Gamepad2 className="w-5 h-5 text-primary drop-shadow-[0_0_8px_rgba(203,178,106,0.6)]" />
             <h1 className="text-base sm:text-xl font-black tracking-widest uppercase font-mono sg-text-gradient">
-              Saints Vault
+              {heroPlural} Vault
             </h1>
           </div>
         </div>
 
-        {/* Right: Options, Credits & Live Presence */}
+        {/* Right: Options, Credits, Admin & Live Presence */}
         <div className="flex items-center gap-2">
           {/* Options Button */}
           <button
@@ -365,6 +374,21 @@ export function CharacterSelector({
             <span className="hidden sm:inline">Credits</span>
           </button>
 
+          {/* Admin Operator Console Button (Staff / Moderator+ Only) */}
+          {isModerator && (
+            <button
+              onClick={() => {
+                soundSynth?.playSelectSound?.();
+                setShowAdminWindow(true);
+              }}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl font-mono font-bold text-xs uppercase transition-all bg-card/60 border border-primary/40 hover:border-primary text-primary hover:text-primary-foreground hover:bg-primary/20 cursor-pointer shadow-md active:scale-95"
+              title="Game Operations Admin Console"
+            >
+              <Shield size={13} className="text-primary" />
+              <span className="hidden sm:inline">Admin</span>
+            </button>
+          )}
+
           {/* Server Online Badge */}
           <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-card/60 border border-border text-foreground text-xs font-mono font-bold shadow-sm">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -384,7 +408,7 @@ export function CharacterSelector({
             <div className="mb-2 flex items-center justify-between">
               <p className="text-muted-foreground text-xs tracking-wider uppercase font-mono flex items-center gap-2">
                 <Layers size={14} className="text-primary" />
-                <span>Saint Roster ({characters.length})</span>
+                <span>{heroSingular} Roster ({characters.length})</span>
               </p>
               <div className="flex items-center gap-2">
                 <button
@@ -396,7 +420,7 @@ export function CharacterSelector({
                   className="text-[11px] font-mono font-bold text-primary hover:text-primary-foreground hover:bg-primary/20 bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/30 transition-all cursor-pointer flex items-center gap-1"
                 >
                   <Plus size={12} strokeWidth={2.5} />
-                  <span>Forge Saint</span>
+                  <span>Forge {heroSingular}</span>
                 </button>
                 <button
                   type="button"
@@ -421,8 +445,8 @@ export function CharacterSelector({
                 }}
                 className="p-4 rounded-xl border border-dashed border-primary/40 bg-black/40 text-center cursor-pointer hover:border-primary transition-all"
               >
-                <p className="text-xs font-bold font-mono text-primary uppercase">No Saints Forged Yet</p>
-                <p className="text-[10px] font-mono text-muted-foreground mt-0.5">Click to forge your first Saint and enter the world.</p>
+                <p className="text-xs font-bold font-mono text-primary uppercase">No {heroPlural} Forged Yet</p>
+                <p className="text-[10px] font-mono text-muted-foreground mt-0.5">Click to forge your first {heroSingular} and enter the world.</p>
               </div>
             ) : (
               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
@@ -660,7 +684,7 @@ export function CharacterSelector({
               <AlertTriangle size={24} />
             </div>
             <h3 className="text-lg font-black text-foreground uppercase tracking-wider mb-2">
-              Archive Saint?
+              Archive {heroSingular}?
             </h3>
             <p className="text-xs text-muted-foreground mb-6 leading-relaxed">
               Are you sure you want to delete <strong className="text-destructive">{deleteModalChar.name}</strong>? This action cannot be undone.
@@ -701,6 +725,14 @@ export function CharacterSelector({
       {/* Credits Modal */}
       {showCredits && (
         <CreditsModal onClose={() => setShowCredits(false)} />
+      )}
+
+      {/* Character Select Admin Operator Console Window */}
+      {showAdminWindow && (
+        <CharacterSelectAdminWindow
+          isOpen={showAdminWindow}
+          onClose={() => setShowAdminWindow(false)}
+        />
       )}
     </div>
   );

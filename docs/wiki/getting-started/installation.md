@@ -66,6 +66,45 @@ npm run validate:data
 
 ---
 
+## 🖥️ Packaging & Running the Desktop Client (`studio-desktop`)
+
+To package and run the standalone Saints Gaming desktop application on Windows:
+
+```bash
+# Navigate to the desktop client directory
+cd studio-desktop
+
+# Install desktop dependencies
+npm install
+
+# Run the desktop app in development mode
+npm run dev
+
+# Build the standalone Windows executable (.exe)
+npm run build:exe
+```
+
+The compiled standalone executable is saved to:
+- `studio-desktop/dist/Saints Gaming.exe`
+- `studio-desktop/release/Saints Gaming <version>.exe`
+
+> [!TIP]
+> You can pass `--server=<URL>` to point the desktop client to a specific local or remote server instance (e.g. `Saints Gaming.exe --server=http://localhost:3000`).
+
+---
+
+## 🧙 Saints Game Initialization Wizard (`/setup`)
+
+For new deployments or fresh database environments:
+1. Navigate to `http://localhost:3000/setup` in your browser.
+2. The modern **Saints OS Setup Wizard** guides you through:
+   - Database connection and schema verification.
+   - Starter hero archetype selection.
+   - Default asset pack seeding (characters, monsters, tilesets).
+   - Administrator account creation and default server settings.
+
+---
+
 ## 🔑 Environment Configuration (`.env`)
 
 Key configuration flags available in `.env`:

@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useCallback } from 'react';
 import { PanelId, useEditorStore, STUDIO_DOCK_META } from './editor-store';
-import { X, Minus, Maximize2, GripVertical } from 'lucide-react';
+import { X, Minus, Maximize2, Square, GripVertical } from 'lucide-react';
 
 interface DraggablePanelProps {
   id: PanelId;
@@ -17,6 +17,7 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
   const panelState = useEditorStore((state) => state.panels[id]);
   const closePanel = useEditorStore((state) => state.closePanel);
   const toggleCollapse = useEditorStore((state) => state.toggleCollapse);
+  const toggleMaximize = useEditorStore((state) => state.toggleMaximize);
   const updatePanelPosition = useEditorStore((state) => state.updatePanelPosition);
   const updatePanelSize = useEditorStore((state) => state.updatePanelSize);
   const bringToFront = useEditorStore((state) => state.bringToFront);
@@ -36,10 +37,11 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
 
   if (!panelState?.isOpen) return null;
 
-  const { x, y, width, height, title, isCollapsed, zIndex } = panelState;
+  const { x, y, width, height, title, isCollapsed, isMaximized, zIndex } = panelState;
   const blurb = STUDIO_DOCK_META[id]?.blurb;
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isMaximized) return;
     // Only drag from the header
     if ((e.target as HTMLElement).closest('.panel-controls')) return;
     if ((e.target as HTMLElement).closest('.panel-resize')) return;
@@ -168,6 +170,15 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
             {isCollapsed ? <Maximize2 className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
           </button>
           <button 
+            onClick={(e) => { e.stopPropagation(); toggleMaximize(id); }}
+            className={`p-1 rounded-md transition-all duration-150 cursor-pointer ${
+              isMaximized ? 'text-primary bg-primary/20' : 'text-muted-foreground/60 hover:text-foreground hover:bg-foreground/8'
+            }`}
+            title={isMaximized ? 'Restore Window' : 'Maximize Window'}
+          >
+            {isMaximized ? <Square className="w-2.5 h-2.5" /> : <Maximize2 className="w-3 h-3" />}
+          </button>
+          <button 
             onClick={(e) => { e.stopPropagation(); closePanel(id); }}
             className="p-1 text-muted-foreground/60 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-all duration-150 cursor-pointer"
             title="Close"
@@ -199,7 +210,7 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
       )}
 
       {/* ── Corner resize grip ── */}
-      {!isCollapsed && (
+      {!isCollapsed && !isMaximized && (
         <div
           className="panel-resize absolute bottom-0 right-0 h-4 w-4 cursor-se-resize group"
           onPointerDown={handleResizeDown}

@@ -7,6 +7,7 @@ import {
   STUDIO_DOCK_META,
   STUDIO_MODE_DEFAULTS,
   STUDIO_MODE_META,
+  STUDIO_WORKSPACE_PRESETS,
   type StudioMode,
   type StudioDockId,
 } from '@/shared/game/studioModes';
@@ -239,6 +240,8 @@ export interface FloatingPanelState {
   title: string;
   isOpen: boolean;
   isCollapsed: boolean;
+  isMaximized?: boolean;
+  preMaximizeBounds?: { x: number; y: number; width: number; height: number };
   x: number;
   y: number;
   width: number;
@@ -480,6 +483,10 @@ interface EditorState {
   resetLayout: () => void;
   togglePanel: (id: PanelId) => void;
   toggleCollapse: (id: PanelId) => void;
+  toggleMaximize: (id: PanelId) => void;
+  applyWorkspacePreset: (presetId: string) => void;
+  activeWorkflowTool: 'select' | 'draw' | 'sculpt' | 'transform' | 'place' | 'procedural';
+  setActiveWorkflowTool: (tool: 'select' | 'draw' | 'sculpt' | 'transform' | 'place' | 'procedural') => void;
   updatePanelPosition: (id: PanelId, x: number, y: number) => void;
   startPaintTransaction: () => void;
   commitPaintTransaction: () => void;
@@ -992,6 +999,72 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     y: 80,
     width: 640,
     height: 600,
+    zIndex: 10,
+  },
+  hierarchy: {
+    id: 'hierarchy',
+    title: 'World Hierarchy',
+    isOpen: false,
+    isCollapsed: false,
+    x: 20,
+    y: 80,
+    width: 280,
+    height: 520,
+    zIndex: 10,
+  },
+  layers: {
+    id: 'layers',
+    title: 'Layers',
+    isOpen: false,
+    isCollapsed: false,
+    x: 20,
+    y: 400,
+    width: 300,
+    height: 380,
+    zIndex: 10,
+  },
+  materials: {
+    id: 'materials',
+    title: 'Material Library',
+    isOpen: false,
+    isCollapsed: false,
+    x: 20,
+    y: 80,
+    width: 360,
+    height: 580,
+    zIndex: 10,
+  },
+  selection: {
+    id: 'selection',
+    title: 'Selection',
+    isOpen: false,
+    isCollapsed: false,
+    x: 340,
+    y: 80,
+    width: 340,
+    height: 480,
+    zIndex: 10,
+  },
+  transform: {
+    id: 'transform',
+    title: 'Transform',
+    isOpen: false,
+    isCollapsed: false,
+    x: 340,
+    y: 120,
+    width: 340,
+    height: 500,
+    zIndex: 10,
+  },
+  procedural: {
+    id: 'procedural',
+    title: 'Procedural Authoring',
+    isOpen: false,
+    isCollapsed: false,
+    x: 260,
+    y: 80,
+    width: 760,
+    height: 620,
     zIndex: 10,
   },
 };
@@ -1524,6 +1597,62 @@ export const useEditorStore = create<EditorState>()(
         });
         persistLayouts(get);
       },
+
+      toggleMaximize: (id) => {
+        set((state) => {
+          const p = state.panels[id];
+          if (!p) return;
+          if (p.isMaximized) {
+            p.isMaximized = false;
+            if (p.preMaximizeBounds) {
+              p.x = p.preMaximizeBounds.x;
+              p.y = p.preMaximizeBounds.y;
+              p.width = p.preMaximizeBounds.width;
+              p.height = p.preMaximizeBounds.height;
+            }
+          } else {
+            p.preMaximizeBounds = { x: p.x, y: p.y, width: p.width, height: p.height };
+            p.isMaximized = true;
+            p.isCollapsed = false;
+            p.x = 8;
+            p.y = 48;
+            p.width = typeof window !== 'undefined' ? Math.max(320, window.innerWidth - 16) : 1264;
+            p.height = typeof window !== 'undefined' ? Math.max(240, window.innerHeight - 96) : 680;
+          }
+          state.highestZIndex += 1;
+          p.zIndex = state.highestZIndex;
+          state.activePanel = id;
+        });
+        persistLayouts(get);
+      },
+
+      applyWorkspacePreset: (presetId) => {
+        set((state) => {
+          const preset = STUDIO_WORKSPACE_PRESETS.find((p) => p.id === presetId);
+          if (!preset) return;
+          (Object.keys(state.panels) as PanelId[]).forEach((id) => {
+            if (!preset.openDocks.includes(id)) {
+              state.panels[id].isOpen = false;
+            }
+          });
+          preset.openDocks.forEach((id) => {
+            if (state.panels[id]) {
+              state.panels[id].isOpen = true;
+              state.panels[id].isCollapsed = false;
+              state.highestZIndex += 1;
+              state.panels[id].zIndex = state.highestZIndex;
+              state.activePanel = id;
+            }
+          });
+        });
+        persistLayouts(get);
+      },
+
+      activeWorkflowTool: 'draw',
+      setActiveWorkflowTool: (tool) =>
+        set((state) => {
+          state.activeWorkflowTool = tool;
+        }),
 
       updatePanelPosition: (id, x, y) => {
         set((state) => {

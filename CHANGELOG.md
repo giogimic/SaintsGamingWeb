@@ -1,3 +1,49 @@
+# 2.1.711
+- **Character Select Admin Window & Dynamic Identity Binding**:
+  - **Locked Image 1 Operator Console**: Built quiet in-game administrative console featuring dark glass surface, shallow draggable titlebar with `ADMIN` identity cluster, section subtitle, OS window controls (minimize/maximize/close), low-chrome workspace, and footer-driven action strip.
+  - **7 Core Operational Sections**: Overview, Realm Control, Camera Policy, Releases & Snapshots, Maintenance Engine (Developer 1000+ only), Diagnostics Telemetry, and Staff Moderation Tools.
+  - **Dynamic Realm & Hero Conventions**: Fully connected in-game terminology ("Heroes Vault", "Hero Roster", "Forge Hero", "Archive Hero") to dynamic Studio/Realm Settings conventions (`playerClassName` / `playerClassNamePlural`) via `useRealmSettings()`.
+  - **Dedicated Summary API (`/api/admin/game-summary`)**: Lightweight server aggregation endpoint delivering status summaries, command metrics, release snapshots, and diagnostics scoped to caller permission level.
+  - **Capability Registry**: Complete matrix specification mapping 38 administrative and game-management controls across native execution, link-outs, and web-only tools.
+
+# 2.1.710
+- **World Studio UI Redesign — Professional MDI Workspace Architecture**:
+  - **Canonical Top-Level Menu Bar (`StudioMenuBar.tsx`)**:
+    - Installed canonical 8 top-level menus: `File`, `Edit`, `View`, `World`, `Create`, `Tools`, `Window`, `Help`.
+    - Added boundary-safe, edge-aware submenu flyouts that calculate bounding rects and automatically flip leftward or shift upward to prevent off-screen overflow.
+    - Added comprehensive Window manager listing all docks grouped by World, Authoring, Content, and Assets with active open checkmarks.
+    - Integrated 8 Workspace Presets: World Building, Voxel Sculpting, Terrain Shaping, Region Planning, Procedural Authoring, Population & Entities, Debugging, and City District Editing.
+  - **Window Infrastructure & Dock Architecture (`DraggablePanel.tsx`, `studioModes.ts`, `studioPermissions.ts`, `editor-store.ts`)**:
+    - Added native Maximize/Restore button next to Collapse and Close on all floating windows, storing pre-maximize bounds and locking draggable grip while maximized.
+    - Registered 6 new core dock panels: `hierarchy`, `layers`, `materials`, `selection`, `transform`, `procedural`.
+  - **World Authoring Panels**:
+    - **Material Library (`MaterialLibraryPanel.tsx`)**: Integrated categorized swatches (Natural, Structural, Liquid, Mineral, Stylized), live physical properties (Solid, Passable, Climbable, Hazard, Fluid), search filtering, and single-click activation syncing `activeVoxelMaterialId` and `activeBrushTileId`.
+    - **Layers Stack Manager (`LayersPanel.tsx`)**: Full visual stack reordering, visibility toggles, lock toggles, and active layer sync across Overhead Canopy, Structures & Props, Foliage & Splat, Base Ground, and Logic Matrix.
+    - **Scene Tree Hierarchy (`WorldHierarchyPanel.tsx`)**: Full treeview for Terrain Matrix, Props, Entities/Spawners, Warp Gates, and Lighting with live node inspection triggers.
+    - **Inspector Tabs (`PropertiesPanel.tsx`)**: Added tabbed navigation across Selection Inspector, Logic Presets, and Map Info.
+  - **Spatial Selection & Geometry Transform (`SelectionPanel.tsx`, `TransformPanel.tsx`)**:
+    - **Selection Panel**: Shape modes (Box, Circle, Lasso, Magic Wand), live bounding box and area coverage readouts, batch Fill Material, Erase Area, Copy Area, Duplicate (+1), and Convert Selection to Blueprint Prefab.
+    - **Transform Panel**: 90° CW, 90° CCW, 180° rotation, Horizontal and Vertical reflection, 4-way spatial translation nudge pad, altitude plane slider (Y=0..31), and stamp scaling (25%..400%).
+  - **Atlas & Procedural Authoring (`ProceduralAuthoringPanel.tsx`, `WorldAtlasPanel.tsx`)**:
+    - **Procedural Studio**: Interactive biome archetypes (Temperate Woodlands, Golden Dunes, Frost Taiga, Volcanic Caldera, Crystalline Cavern), deterministic fractal noise generator, live 64×64 heightmap canvas preview, frequency/octaves/sea-level tuning, and one-click baking into active map volume.
+    - **World Atlas Integration**: Added explicit `[AUTH]`, `[PROC]`, and `[HYBRID]` node badges and quick launch buttons for Procedural Authoring directly from selected atlas nodes.
+  - **Contextual Workflow & Telemetry Bar (`StudioContextualBar.tsx`, `StudioBottomToolbar.tsx`)**:
+    - **StudioContextualBar**: Second-row workflow toolbar featuring primary tools (Select, Draw, Sculpt, Transform, Place, Procedural) with contextual quick-parameter pill strips and quick dock toggles.
+    - **StudioBottomToolbar**: Streamlined telemetry footer displaying XYZ world cursor position, active tool and material GID badges, spatial atlas node connection pips, map dirty/save status, diagnostics problem inspector, and live shard peer count.
+- **Native Desktop Window Controls, Application Menu & Comprehensive Wiki/Docs Synchronization**:
+  - **Native Window Frame & Application Menu (`studio-desktop/electron/main.cjs`)**:
+    - Restored `frame: true` on the Electron `BrowserWindow` so the native Windows Minimize, Maximize, and Close [X] buttons are guaranteed to be visible and functional across all pages and connection states.
+    - Implemented native application menu (`Menu.setApplicationMenu`) with quick actions:
+      - `Saints Gaming`: Home (`Ctrl+H`), The Lobby (`Ctrl+L`), Exit (`Ctrl+Q`).
+      - `World Studio`: Launch World Studio (`Ctrl+Shift+E`), World Studio (Offline Mode).
+      - `View`: Reload, Force Reload, Developer Tools (`F12`), Fullscreen (`F11`).
+  - **Comprehensive Wiki & Documentation Overhaul (`docs/wiki/`, `src/shared/wiki/wikiRegistry.ts`, `docs/README.md`)**:
+    - Synchronized all documentation from recent architecture advances over the past 3 days.
+    - Documented **Greenfield 3D Voxel World Architecture**: `VoxelWorldBlock` volumetric model, 6-face UV texturing (`top`, `bottom`, `north`, `south`, `east`, `west`), volumetric collision (`VoxelTargetResolver`), and 3D voxel undo/redo engine.
+    - Documented **Standalone Desktop App Architecture & Packaging**: `studio-desktop` Electron runtime, dynamic endpoint resolution, dev-gated Studio entry, and CLI `--server` arguments.
+    - Documented the modernized **Saints Game Initialization Wizard** (`/setup`).
+    - Updated search tags, read times, and category summaries across `wikiRegistry.ts`.
+
 # 2.1.709
 - **Saints Gaming Desktop App Integration & In-App Dev Studio Access**:
   - **Saints Gaming App Root Integration**:

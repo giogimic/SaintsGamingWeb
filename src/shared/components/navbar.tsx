@@ -46,7 +46,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.709",
+  siteVersion = "v2.1.711",
   gameTitle = "The Lobby",
 }: {
   session: any | null;
@@ -97,12 +97,12 @@ export function Navbar({
         <div className="flex h-13 sm:h-11 items-center justify-between px-4 sm:px-6 relative">
 
           {/* Left: Search */}
-          <div className="flex items-center gap-1 sm:gap-2 flex-1 [app-region:no-drag]" style={{ WebkitAppRegion: "no-drag" as any }}>
+          <div className="flex items-center gap-1 sm:gap-2 flex-1 [app-region:no-drag]" style={{ WebkitAppRegion: "no-drag" } as any}>
             <GlobalSearch />
           </div>
 
           {/* Center: Saints Gaming Logo & Tagline */}
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center [app-region:no-drag]" style={{ WebkitAppRegion: "no-drag" as any }}>
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center [app-region:no-drag]" style={{ WebkitAppRegion: "no-drag" } as any}>
             <Link href="/home" className="flex items-center gap-2 group select-none">
               <div className="transition-transform group-hover:scale-110 shrink-0 hidden sm:block">
                 <SGMicro3DLogo size={34} />
@@ -121,7 +121,7 @@ export function Navbar({
 
 
           {/* Right: Studio (Dev only in Electron), Notifications, User dropdown, Window Controls */}
-          <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end [app-region:no-drag]" style={{ WebkitAppRegion: "no-drag" as any }}>
+          <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end [app-region:no-drag]" style={{ WebkitAppRegion: "no-drag" } as any}>
 
             {/* Studio Launch Button (Only visible in Electron executable to Developers/Admins) */}
             {canDevStudio && (

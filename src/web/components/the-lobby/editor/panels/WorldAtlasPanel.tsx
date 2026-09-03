@@ -454,9 +454,9 @@ export const WorldAtlasPanel: React.FC = () => {
                     key={node.id || `${node.x}_${node.y}`}
                     onClick={() => handleGridClick(node.x, node.y)}
                     onDoubleClick={() => {
-                      if (nodeType === 'procedural') {
-                        useEditorStore.getState().togglePanel('biome');
-                        showToast(`Opened Biome Configurator for ${node.mapId}`);
+                      if (nodeType === 'procedural' || nodeType === 'hybrid') {
+                        useEditorStore.getState().openPanel('procedural');
+                        showToast(`Opened Procedural Authoring for ${node.mapId}`);
                       } else {
                         handleWarpToMap(node.mapId, node.id);
                         setStudioMode('voxel');
@@ -467,7 +467,7 @@ export const WorldAtlasPanel: React.FC = () => {
                       isSelected ? 'scale-105 z-10' : ''
                     } border-2 ${borderClass}`}
                     style={{ left: node.x * 72, top: node.y * 72 }}
-                    title={`[${nodeType.toUpperCase()}] ${node.mapId} · Double-click to open ${nodeType === 'procedural' ? 'Biome Config' : '3D Voxel Studio'}`}
+                    title={`[${nodeType.toUpperCase()}] ${node.mapId} · Double-click to open ${nodeType === 'procedural' ? 'Procedural Authoring' : '3D Voxel Studio'}`}
                   >
                     {/* Neighbor edge indicator pips */}
                     {hasNorth && <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-1.5 bg-cyan-300 rounded-full shadow-[0_0_6px_rgba(34,211,238,0.9)] border border-cyan-100" title="North Connected" />}
@@ -481,8 +481,8 @@ export const WorldAtlasPanel: React.FC = () => {
                     </span>
 
                     {/* Node class badge */}
-                    <div className="text-[7px] uppercase font-bold tracking-wider opacity-75">
-                      {nodeType === 'procedural' ? 'PROC' : nodeType === 'hybrid' ? 'HYBR' : 'AUTH'}
+                    <div className="text-[7px] uppercase font-bold tracking-wider px-1 py-0.5 rounded bg-black/40 border border-white/10 mt-0.5">
+                      {nodeType === 'procedural' ? '[PROC]' : nodeType === 'hybrid' ? '[HYBRID]' : '[AUTH]'}
                     </div>
 
                     {node.mapId === lobbyMapId && (
@@ -579,17 +579,30 @@ export const WorldAtlasPanel: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 {(selectedNode.nodeType === 'procedural' || selectedNode.nodeType === 'hybrid') && (
-                  <button
-                    onClick={() => {
-                      useEditorStore.getState().togglePanel('biome');
-                      showToast(`Configuring Biome for ${selectedNode.mapId}`);
-                    }}
-                    className="px-3 py-1.5 bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 font-bold rounded-lg border border-emerald-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow"
-                    title="Open Biome Configurator Panel"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Biome Config</span>
-                  </button>
+                  <>
+                    <button
+                      onClick={() => {
+                        useEditorStore.getState().openPanel('procedural');
+                        showToast(`Procedural Authoring for ${selectedNode.mapId}`);
+                      }}
+                      className="px-3 py-1.5 bg-purple-950/60 hover:bg-purple-900/80 text-purple-300 font-bold rounded-lg border border-purple-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow"
+                      title="Open Procedural Authoring Panel"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                      <span>Procedural Authoring</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        useEditorStore.getState().togglePanel('biome');
+                        showToast(`Configuring Biome for ${selectedNode.mapId}`);
+                      }}
+                      className="px-3 py-1.5 bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 font-bold rounded-lg border border-emerald-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow"
+                      title="Open Biome Configurator Panel"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Biome Config</span>
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={() => {

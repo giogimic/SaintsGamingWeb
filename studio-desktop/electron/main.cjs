@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, net } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, net, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -80,7 +80,8 @@ function createWindow() {
     height: 920,
     minWidth: 1024,
     minHeight: 700,
-    frame: false, // Frameless for custom native-styled titlebar
+    frame: true, // Native Windows titlebar and close [X] controls
+    title: 'Saints Gaming',
     backgroundColor: '#050b14',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -89,6 +90,84 @@ function createWindow() {
       webSecurity: false,
     },
   });
+
+  const menuTemplate = [
+    {
+      label: 'Saints Gaming',
+      submenu: [
+        {
+          label: 'Home',
+          accelerator: 'CmdOrCtrl+H',
+          click: () => {
+            const currentUrl = mainWindow?.webContents.getURL() || '';
+            try {
+              const origin = currentUrl.startsWith('http') ? new URL(currentUrl).origin : 'http://localhost:3000';
+              mainWindow?.loadURL(`${origin}/home`);
+            } catch {
+              mainWindow?.loadURL('http://localhost:3000/home');
+            }
+          },
+        },
+        {
+          label: 'The Lobby',
+          accelerator: 'CmdOrCtrl+L',
+          click: () => {
+            const currentUrl = mainWindow?.webContents.getURL() || '';
+            try {
+              const origin = currentUrl.startsWith('http') ? new URL(currentUrl).origin : 'http://localhost:3000';
+              mainWindow?.loadURL(`${origin}/lobby`);
+            } catch {
+              mainWindow?.loadURL('http://localhost:3000/lobby');
+            }
+          },
+        },
+        { type: 'separator' },
+        {
+          label: 'Exit Saints Gaming',
+          accelerator: 'CmdOrCtrl+Q',
+          click: () => app.quit(),
+        },
+      ],
+    },
+    {
+      label: 'World Studio',
+      submenu: [
+        {
+          label: 'Launch World Studio',
+          accelerator: 'CmdOrCtrl+Shift+E',
+          click: () => {
+            const currentUrl = mainWindow?.webContents.getURL() || '';
+            try {
+              const origin = currentUrl.startsWith('http') ? new URL(currentUrl).origin : 'http://localhost:3000';
+              mainWindow?.loadURL(`${origin}/studio`);
+            } catch {
+              mainWindow?.loadURL('http://localhost:3000/studio');
+            }
+          },
+        },
+        {
+          label: 'World Studio (Offline Mode)',
+          click: () => {
+            const localIndexPath = path.join(app.getAppPath(), 'dist/index.html');
+            if (fs.existsSync(localIndexPath)) {
+              mainWindow?.loadFile(localIndexPath);
+            }
+          },
+        },
+      ],
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' },
+      ],
+    },
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
 
   mainWindow.on('maximize', () => mainWindow?.webContents?.send('window-maximize-changed', true));
   mainWindow.on('unmaximize', () => mainWindow?.webContents?.send('window-maximize-changed', false));

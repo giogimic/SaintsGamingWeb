@@ -3,13 +3,13 @@
 # 📖 Saints Gaming Documentation & Engine Wiki
 ### *Technical Specification, 2.5D Game Architecture & Studio Manual*
 
-🌐 **Official Portal:** [**SaintsGaming.net**](https://SaintsGaming.net) &nbsp;•&nbsp; 🕹️ **Repository:** [**giogimic/SaintsGamingWeb**](https://github.com/giogimic/SaintsGamingWeb) &nbsp;•&nbsp; 📄 **AI Index:** [`llms.txt`](../llms.txt) &nbsp;•&nbsp; 👤 **Author:** **GioGimic** &nbsp;•&nbsp; 📦 **Release:** `v2.1.577`
+🌐 **Official Portal:** [**SaintsGaming.net**](https://SaintsGaming.net) &nbsp;•&nbsp; 🕹️ **Repository:** [**giogimic/SaintsGamingWeb**](https://github.com/giogimic/SaintsGamingWeb) &nbsp;•&nbsp; 📄 **AI Index:** [`llms.txt`](../llms.txt) &nbsp;•&nbsp; 👤 **Author:** **GioGimic** &nbsp;•&nbsp; 📦 **Release:** `v2.1.710`
 
 ---
 
 </div>
 
-Welcome to the **Saints Gaming Platform & Game Engine Technical Documentation** (`saints-gaming-web`). This comprehensive handbook details the internal mechanics, WebGL rendering pipeline, networking protocols, combat algorithms, database schemas, responsive-first social data architecture, and live World Studio editor architecture powering the Saints Gaming web and MMO ecosystem.
+Welcome to the **Saints Gaming Platform & Game Engine Technical Documentation** (`saints-gaming-web`). This comprehensive handbook details the internal mechanics, Greenfield 3D Voxel engine, WebGL rendering pipeline, networking protocols, combat algorithms, database schemas, standalone desktop application architecture, and live World Studio editor architecture powering the Saints Gaming web and MMO ecosystem.
 
 > [!TIP]
 > **Browse the Interactive Web Wiki at [`/wiki`](https://saintsgaming.net/wiki)** — The full documentation is integrated into the web application as a searchable, categorized knowledge portal with table of contents navigation, code snippets, and `Ctrl+K` instant search.

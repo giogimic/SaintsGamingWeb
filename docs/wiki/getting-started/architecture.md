@@ -63,3 +63,24 @@ Client state is partitioned into specialized Zustand stores to isolate high-freq
 
 > [!IMPORTANT]
 > Game loop ticks modify Babylon.js mesh positions directly and push updates to Zustand stores only when user-facing state (such as HP or XP) changes.
+
+---
+
+## 5. Desktop Client & Electron Runtime (`studio-desktop`)
+
+For dedicated desktop authoring and standalone play, Saints Gaming provides a packaged desktop executable built with Electron and Vite:
+
+- **Desktop Shell (`studio-desktop/electron/main.cjs`):** Launches the primary Saints Gaming client with native window controls, hardware-accelerated WebGL viewports, and deep link protocol integration (`saints-gaming://`).
+- **Dynamic Resolver:** Checks if the local Next.js dev server is active (`http://localhost:3000`), connects to production (`https://saintsgaming.net`) when online, and automatically falls back to an offline bundled client (`dist/index.html`) if no server is reachable.
+- **In-App Developer Gating:** World Studio controls and direct navigation (`Ctrl+Shift+E`) are conditionally exposed in the native menu and UI navbar only to users with Developer or Admin permissions (`permissionLevel >= 400`). Regular community players experience a clean, focused gaming app.
+
+---
+
+## 6. Greenfield 3D Voxel World Architecture
+
+The world engine combines 3D volumetric voxels with hybrid 2.5D billboard sprites:
+
+- **Volumetric Voxel Blocks:** Terrain geometry is stored as discrete 3D voxel blocks (`VoxelWorldBlock`) in voxel coordinates $(X, Y, Z)$ rather than flat 2D tiles.
+- **Face-Specific UV Mapping:** Each voxel cube dynamically assigns material textures across its six faces (`top`, `bottom`, `north`, `south`, `east`, `west`), supporting multi-face materials like grass-topped dirt or layered stone strata.
+- **Voxel Target Resolver:** Raycasts resolve exact hit coordinates and surface normals to determine block placement, removal, and volumetric collision bounds.
+- **Chunk Partitioning:** Voxels are grouped into $16 \times 16 \times 16$ spatial chunks to ensure sub-millisecond dynamic mesh rebuilding and 60 FPS performance.

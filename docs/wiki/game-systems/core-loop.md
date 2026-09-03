@@ -67,3 +67,12 @@ When traversing a warp gate, `mapLoader.ts` executes a structured scene transiti
 3. Fetches the target map payload via `GET /api/maps?id={mapId}`.
 4. Generates new static chunk meshes and sets the player spawn coordinate.
 5. Emits `join_map` to the Go MMO server to subscribe to the new shard's AOI grid.
+
+---
+
+## 5. 3D Voxel Remeshing & Volumetric Collision
+
+For volumetric maps using the Greenfield 3D Voxel architecture:
+- **Voxel Chunk Meshing:** The 3D world is decomposed into $16 \times 16 \times 16$ voxel clusters. Adjacent hidden faces are culled before vertex buffer generation to maximize GPU rasterization efficiency.
+- **Volumetric Collision Checking:** Local physics checks sample the discrete 3D voxel grid around the player's bounding box ($X, Y, Z$), supporting true step heights, slopes, and multi-tier platforms without falling through terrain.
+- **Dynamic Voxel Mutation:** When blocks are placed or dug during building or environmental events, only the intersecting chunk and immediate neighbors update their geometry buffers.
