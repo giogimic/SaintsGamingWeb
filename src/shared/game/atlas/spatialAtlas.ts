@@ -18,6 +18,8 @@ export interface AtlasNode {
   nodeType?: AtlasNodeClass; // 'authored' | 'procedural' | 'hybrid'
   biomeId?: string; // Configured biome for procedural/hybrid regions
   seamThreshold?: number; // Seam-stitching blend threshold in blocks (for hybrid anchors)
+  generationScope?: 'finite' | 'infinite'; // Whether procedural region is bounded or boundless stream
+  allowedMapPool?: string[]; // Map IDs permitted to instantiate/stream within this procedural region
 }
 
 export interface AtlasEdge {
