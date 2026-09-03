@@ -1,0 +1,40 @@
+import { Metadata } from 'next';
+import { auth } from '@/auth';
+import { redirect } from 'next/navigation';
+import { prisma } from '@/web/lib/prisma';
+import { canEnterStudio } from '@/shared/game/studioPermissions';
+import { getSystemSetupStatus } from '@/shared/game/setup/setupDetection';
+
+export const metadata: Metadata = {
+  title: 'World Studio | Saints Gaming',
+  description: 'World Studio 3D volumetric authoring suite for The Lobby.',
+};
+
+export default async function StudioLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const setupStatus = await getSystemSetupStatus(prisma);
+  if (!setupStatus.isSetupCompleted) {
+    redirect('/setup');
+  }
+
+  const session = await auth();
+  if (!session?.user?.id) redirect('/login?callbackUrl=/studio');
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { permissionLevel: true },
+  });
+
+  if (!dbUser || !canEnterStudio(dbUser.permissionLevel)) {
+    redirect('/lobby');
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-[#0a0a0f] overflow-hidden">
+      {children}
+    </div>
+  );
+}

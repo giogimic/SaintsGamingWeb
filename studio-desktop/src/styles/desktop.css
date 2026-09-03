@@ -1,9 +1,36 @@
+@import 'flexlayout-react/style/dark.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
+:root, .dark {
   color-scheme: dark;
+  --background: oklch(0.11 0.005 280);
+  --foreground: oklch(0.93 0.005 280);
+  --card: oklch(0.15 0.008 280);
+  --card-foreground: oklch(0.93 0.005 280);
+  --popover: oklch(0.15 0.008 280);
+  --popover-foreground: oklch(0.93 0.005 280);
+  --primary: oklch(0.82 0.12 85);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.2 0.015 280);
+  --secondary-foreground: oklch(0.88 0.005 280);
+  --muted: oklch(0.2 0.01 280);
+  --muted-foreground: oklch(0.6 0.01 280);
+  --accent: oklch(0.22 0.02 280);
+  --accent-foreground: oklch(0.93 0.005 280);
+  --destructive: oklch(0.6 0.22 25);
+  --border: oklch(0.25 0.015 280);
+  --input: oklch(0.2 0.015 280);
+  --ring: oklch(0.75 0.22 55);
+  --radius: 0.625rem;
+
+  --color-sg-gold: oklch(0.82 0.12 85);
+  --color-sg-gold-dim: oklch(0.65 0.1 85);
+  --color-sg-purple: oklch(0.55 0.2 290);
+  --color-sg-blue: oklch(0.6 0.15 250);
+  --color-sg-glow: oklch(0.82 0.12 85 / 40%);
 }
 
 body {
@@ -39,4 +66,171 @@ body {
 
 button, a, input, [data-no-drag] {
   -webkit-app-region: no-drag;
+}
+
+/* Text gradient for headings with crisp dark outline drop-shadow */
+.sg-text-gradient {
+  background: linear-gradient(135deg, var(--primary), var(--ring), oklch(0.82 0.12 85));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 1px rgba(0, 0, 0, 0.9));
+  text-shadow: none !important;
+  animation: text-shine 4s linear infinite;
+}
+
+@keyframes text-shine {
+  to {
+    background-position: 200% center;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* Glassmorphism panel styling */
+.sg-glass {
+  background: rgba(11, 16, 27, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Text outlines */
+.sg-text-outline,
+.text-outline {
+  text-shadow:
+    -1px -1px 0 rgba(0, 0, 0, 0.95),
+     1px -1px 0 rgba(0, 0, 0, 0.95),
+    -1px  1px 0 rgba(0, 0, 0, 0.95),
+     1px  1px 0 rgba(0, 0, 0, 0.95),
+     0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+.sg-text-outline-thick,
+.text-outline-thick {
+  text-shadow:
+    -1.5px -1.5px 0 #000,
+     1.5px -1.5px 0 #000,
+    -1.5px  1.5px 0 #000,
+     1.5px  1.5px 0 #000,
+     0 0 4px #000,
+     0 2px 6px rgba(0, 0, 0, 0.95);
+}
+
+/* ─── Studio Window & FlexLayout Design System (Theme-Aware) ─── */
+.flexlayout__layout {
+  pointer-events: none !important;
+  background: transparent !important;
+}
+.flexlayout__tabset {
+  pointer-events: auto !important;
+  background: var(--card) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.45) !important;
+  overflow: hidden !important;
+}
+.flexlayout__splitter {
+  pointer-events: auto !important;
+  background: transparent !important;
+  transition: background 0.15s ease;
+}
+.flexlayout__splitter:hover,
+.flexlayout__splitter_drag {
+  background: var(--primary) !important;
+  opacity: 0.7;
+}
+.flexlayout__border {
+  pointer-events: auto !important;
+  background: var(--card) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid var(--border) !important;
+}
+.flexlayout__tab {
+  pointer-events: auto !important;
+  background: transparent !important;
+}
+.flexlayout__tabset_header {
+  pointer-events: auto !important;
+  background: rgba(0, 0, 0, 0.25) !important;
+  border-bottom: 1px solid var(--border) !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+}
+.flexlayout__tabset_tabbar_outer {
+  background: transparent !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.flexlayout__tab_button {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em !important;
+  color: var(--muted-foreground) !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 4px 4px 0 0 !important;
+  padding: 4px 10px !important;
+  transition: all 0.15s ease !important;
+}
+.flexlayout__tab_button:hover {
+  color: var(--foreground) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+.flexlayout__tab_button--selected {
+  color: var(--primary) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-bottom: 2px solid var(--primary) !important;
+  font-weight: 700 !important;
+}
+.flexlayout__tab_button_trailing {
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+}
+.flexlayout__tab_button_trailing:hover {
+  opacity: 1;
+  color: var(--destructive) !important;
+}
+.flexlayout__popup {
+  pointer-events: auto !important;
+  background: var(--card) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* ─── Windowed Map Viewport Styling ─── */
+.sg-viewport-container {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 4px !important;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.6) !important;
+  overflow: hidden !important;
+}
+
+/* Custom Scrollbar for Studio surfaces */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
 }

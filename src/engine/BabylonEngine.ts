@@ -47,6 +47,7 @@ import {
   tilesetUvForOverlayPlane,
   worldToTileCoord,
   resolveTilesetTextureUrl,
+  toClientAssetUrl,
   createProceduralTileDataUrl,
   type TilesetUvInput,
 } from "../shared/game/tileBatchHelpers";
@@ -2012,7 +2013,34 @@ export class BabylonEngine {
               1,
               () => console.log(`[BabylonEngine] Texture loaded SUCCESS: ${tilesetPath}`),
               (message) => {
-                console.warn(`[BabylonEngine] Tileset image not found at ${tilesetPath}, using fallback color`, message);
+                console.warn(`[BabylonEngine] Tileset image not found at ${tilesetPath}, checking remote server fallback`, message);
+                const baseUrl = typeof window !== 'undefined'
+                  ? ((window as any).__studioBaseUrl || localStorage.getItem('saints_studio_server_url') || 'https://saintsgaming.net')
+                  : 'https://saintsgaming.net';
+                if (!tilesetPath.startsWith('http')) {
+                  const remotePath = `${baseUrl.replace(/\/+$/, '')}/${tilesetPath.replace(/^\.?\/+/, '')}`;
+                  const remoteTex = new Texture(
+                    remotePath,
+                    this.scene,
+                    true,
+                    false,
+                    1,
+                    () => {
+                      console.log(`[BabylonEngine] Remote fallback texture loaded SUCCESS: ${remotePath}`);
+                      newMat.diffuseTexture = remoteTex;
+                      this.configureTilesetMaterial(newMat, remoteTex);
+                      this.tilesetTextureCache.set(imageSource, remoteTex);
+                    },
+                    () => {
+                      newMat.diffuseTexture = null;
+                      newMat.emissiveTexture = null;
+                      newMat.diffuseColor = new Color3(0.18, 0.42, 0.22);
+                      newMat.emissiveColor = new Color3(0.05, 0.15, 0.05);
+                    }
+                  );
+                  remoteTex.hasAlpha = true;
+                  return;
+                }
                 newMat.diffuseTexture = null;
                 newMat.emissiveTexture = null;
                 newMat.diffuseColor = new Color3(0.18, 0.42, 0.22);
@@ -2273,9 +2301,9 @@ export class BabylonEngine {
           Object.entries(layer.data).forEach(([rawUrl, rawPoints]) => {
             const points = rawPoints as any[];
             if (!points.length) return;
-            const texUrl = (rawUrl.startsWith('/') || rawUrl.startsWith('http'))
+            const texUrl = toClientAssetUrl((rawUrl.startsWith('/') || rawUrl.startsWith('http'))
               ? rawUrl
-              : `/game-assets/tilesets/${rawUrl}`;
+              : `/game-assets/tilesets/${rawUrl}`);
 
             for (const p of points) {
               const hasUv = typeof p.uOffset === 'number' && typeof p.uScale === 'number';
@@ -2397,9 +2425,9 @@ export class BabylonEngine {
             plane.rotation.y = obj.rotation || 0;
 
             const rawPropUrl = obj.asset || 'default';
-            const propUrl = (rawPropUrl.startsWith('/') || rawPropUrl.startsWith('http'))
+            const propUrl = toClientAssetUrl((rawPropUrl.startsWith('/') || rawPropUrl.startsWith('http'))
               ? rawPropUrl
-              : `/game-assets/tilesets/${rawPropUrl}`;
+              : `/game-assets/tilesets/${rawPropUrl}`);
 
             const hasUv = typeof obj.uOffset === 'number' && typeof obj.uScale === 'number';
             const matKey = hasUv
@@ -2462,9 +2490,9 @@ export class BabylonEngine {
           y: (height / 2 - npc.y) * tileSize,
           isNpc: true,
           // Overworld NPC sheets live under /game-assets/npc/ (not /assets/sprites/).
-          spriteUrl: npc.sprite
+          spriteUrl: toClientAssetUrl(npc.sprite
             ? (String(npc.sprite).startsWith("/") ? npc.sprite : `/game-assets/npc/${npc.sprite}.png`)
-            : "/game-assets/npc/professor.png"
+            : "/game-assets/npc/professor.png")
         });
       });
     }

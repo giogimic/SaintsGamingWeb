@@ -209,11 +209,28 @@ const CASE_FIXES: Record<string, string> = {
 };
 
 /**
+ * Formats an asset path for client runtime.
+ * Under Electron / file:// protocol or relative Vite builds,
+ * leading-slash paths like `/game-assets/...` resolve to `file:///C:/game-assets/...` (disk root)
+ * instead of the application directory. Converting leading slash to `./` fixes local asset loading.
+ */
+export function toClientAssetUrl(path: string): string {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
+    return path;
+  }
+  if (typeof window !== 'undefined' && window.location?.protocol === 'file:') {
+    return path.replace(/^\/+/, './');
+  }
+  return path;
+}
+
+/**
  * Resolves a tileset image source string into a browser-loadable URL.
  * Handles remote URLs, uploaded assets, absolute and relative paths.
  */
 export function resolveTilesetTextureUrl(source: string): string {
-  if (!source) return '/game-assets/tilesets/terrain-overworld.png';
+  if (!source) return toClientAssetUrl('/game-assets/tilesets/terrain-overworld.png');
   const trimmed = source.trim();
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
     return trimmed;
@@ -227,9 +244,9 @@ export function resolveTilesetTextureUrl(source: string): string {
   }
   
   if (trimmed.startsWith('/uploads/') || trimmed.startsWith('uploads/')) {
-    return `/uploads/${encodeURIComponent(filename)}`;
+    return toClientAssetUrl(`/uploads/${encodeURIComponent(filename)}`);
   }
-  return `/game-assets/tilesets/${encodeURIComponent(filename)}`;
+  return toClientAssetUrl(`/game-assets/tilesets/${encodeURIComponent(filename)}`);
 }
 
 /**

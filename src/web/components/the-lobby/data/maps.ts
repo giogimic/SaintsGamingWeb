@@ -10,6 +10,14 @@ import {
 } from '../../../../shared/game/atlas/spatialAtlas';
 import { RuntimeAssetManager } from '../../../../shared/game/assetRuntimeManager';
 
+function getStudioApiUrl(path: string): string {
+  const base = typeof window !== 'undefined' ? (window as any).__studioBaseUrl || '' : '';
+  if (!base) return path;
+  const cleanBase = base.replace(/\/+$/, '');
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${cleanBase}${cleanPath}`;
+}
+
 export interface MapGate {
   targetMapId: string;
   spawnPoint: Point;
@@ -115,7 +123,7 @@ export function invalidateClientAtlas() {
 export async function getClientAtlas(forceRefresh = false): Promise<AtlasGridData> {
   if (!forceRefresh && cachedAtlas) return cachedAtlas;
   try {
-    const res = await fetch(`/api/world/atlas?t=${Date.now()}`);
+    const res = await fetch(getStudioApiUrl(`/api/world/atlas?t=${Date.now()}`));
     if (res.ok) {
       const data = await res.json();
       if (data?.atlas?.atlasData) {
@@ -188,7 +196,7 @@ export async function loadMap(
 
   const pending = (async (): Promise<GameMapData> => {
     try {
-      const res = await fetch(`/api/maps/${encodeURIComponent(mapId)}`);
+      const res = await fetch(getStudioApiUrl(`/api/maps/${encodeURIComponent(mapId)}`));
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: Failed to load map ${mapId}`);
       }
@@ -410,7 +418,7 @@ export interface MapIndexEntry {
 /** List WorldMap index rows from the DB (no grid payload). */
 export async function listMaps(gameId?: string): Promise<MapIndexEntry[]> {
   const qs = gameId ? `?gameId=${encodeURIComponent(gameId)}` : "";
-  const res = await fetch(`/api/maps${qs}`);
+  const res = await fetch(getStudioApiUrl(`/api/maps${qs}`));
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}: Failed to list maps`);
   }

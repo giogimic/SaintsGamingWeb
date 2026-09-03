@@ -4,6 +4,7 @@ import path from 'path';
 
 export default defineConfig({
   base: './',
+  publicDir: path.resolve(__dirname, '../public'),
   plugins: [react()],
   clearScreen: false,
   server: {
@@ -19,6 +20,10 @@ export default defineConfig({
       { find: '.prisma/client/index-browser', replacement: path.resolve(__dirname, './src/shims/prismaShim.ts') },
       { find: '.prisma/client', replacement: path.resolve(__dirname, './src/shims/prismaShim.ts') },
       { find: '@/web/lib/prisma', replacement: path.resolve(__dirname, './src/shims/prismaShim.ts') },
+      { find: 'next-themes', replacement: path.resolve(__dirname, './src/shims/nextThemesShim.ts') },
+      { find: 'next/link', replacement: path.resolve(__dirname, './src/shims/nextLinkShim.tsx') },
+      { find: 'next/image', replacement: path.resolve(__dirname, './src/shims/nextImageShim.tsx') },
+      { find: 'next/navigation', replacement: path.resolve(__dirname, './src/shims/nextNavigationShim.ts') },
       { find: '@/app', replacement: path.resolve(__dirname, '../app') },
       { find: '@', replacement: path.resolve(__dirname, '../src') },
       { find: '~', replacement: path.resolve(__dirname, './src') },
