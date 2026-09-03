@@ -100,7 +100,8 @@ if (isSqlite) {
     'freeformLayersData',
     'voxelData',
     'publishedData',
-    'gates'
+    'gates',
+    'proceduralConfig'
   ];
   for (const col of longTextCols) {
     const regex = new RegExp(`^([ \\t]*${col}[ \\t]+String\\??[ \\t]*(?:@[^\\n\\/]+)*)([ \\t]*(?:\\/\\/.*)?)?$`, 'gm');

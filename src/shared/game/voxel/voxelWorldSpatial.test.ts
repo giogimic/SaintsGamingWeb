@@ -9,13 +9,13 @@ import { VOXEL_MAT_STONE, VOXEL_MAT_GRASS } from './VoxelMaterialDefinition';
 
 describe('VoxelWorld Spatial Adjacency & Boundary Halo', () => {
   it('connects two adjacent worlds and resolves halo boundary voxels seamlessly', () => {
-    // World A (West): 2x2 chunks = 32x32 blocks
-    const docA = generateDefaultWorldDoc(2, 2, 64);
+    // World A (West): 1x1 chunk = 32x32 blocks (32³ isotropic)
+    const docA = generateDefaultWorldDoc(1, 1, 64);
     docA.id = 'map_west';
     const worldA = VoxelWorld.deserializeFromDoc(docA);
 
-    // World B (East): 2x2 chunks = 32x32 blocks
-    const docB = generateDefaultWorldDoc(2, 2, 64);
+    // World B (East): 1x1 chunk = 32x32 blocks (32³ isotropic)
+    const docB = generateDefaultWorldDoc(1, 1, 64);
     docB.id = 'map_east';
     const worldB = VoxelWorld.deserializeFromDoc(docB);
 
@@ -65,7 +65,7 @@ describe('VoxelWorld Spatial Adjacency & Boundary Halo', () => {
   });
 
   it('canEditVoxel enforces spatial boundaries to prevent accidental cross-boundary corruption', () => {
-    const world = new VoxelWorld('guarded_realm', 'Guarded', 2, 2);
+    const world = new VoxelWorld('guarded_realm', 'Guarded', 1, 1);
     // 32x32 blocks
     expect(world.canEditVoxel(0, 10, 0)).toBe(true);
     expect(world.canEditVoxel(31, 10, 31)).toBe(true);

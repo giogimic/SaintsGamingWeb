@@ -1,3 +1,23 @@
+# 2.1.693
+- **Phase 1: Volumetric Engine Data Contract & 32³ Isotropic Chunk Migration**:
+  - **Prisma Schema 3D Decoupling**:
+    - Made legacy 2D fields (`gridData`, `tileLayersData`, `freeformLayersData`, `tilesetsData`) nullable in `WorldMap`.
+    - Set `voxelData` as the primary non-nullable persistent column (`@default("{}")`).
+    - Added `regionClass` (`"authored"` | `"procedural"` | `"hybrid"`) and `proceduralConfig` (`String?`) to `WorldMap` schema and pushed changes to database.
+    - Updated `scripts/prepare-prisma.js` to ensure `proceduralConfig` is in `longTextCols`.
+  - **Mandatory 32³ Isotropic Chunk Standard**:
+    - Locked `CHUNK_SIZE_X = 32`, `CHUNK_SIZE_Z = 32`, `CHUNK_SIZE_Y = 32` with `CHUNK_TOTAL_CELLS = 32,768` in `VoxelChunk.ts`.
+    - Implemented high-performance bitwise indexing math (`(lx & 31) | ((lz & 31) << 5) | ((ly & 31) << 10)`).
+  - **Legacy Map Migration**:
+    - Created `src/shared/game/voxel/chunkMigration.ts` with `isLegacy16CubicDoc` and `migrateLegacyDocTo32Cubic`.
+    - Integrated automatic on-the-fly migration directly into `VoxelWorld.deserializeFromDoc` so any legacy map loads seamlessly.
+    - Created and executed `scripts/migrate-to-32-cubic.ts`, successfully migrating/synthesizing all 424 database maps to 32³.
+  - **Voxel-To-Grid 2D Projection Utility**:
+    - Built `src/shared/game/voxel/voxelToGrid.ts` (`generateGridFromVoxelDoc`) to auto-project 3D voxel physics and logic into 2D logic grids for legacy systems and the Go backend.
+  - **Map Save & Validation Hardening**:
+    - Added `validateVoxelDocSave` in `src/shared/game/mapSaveValidation.ts`.
+    - Updated `app/api/maps/[slug]/route.ts` to strictly validate `voxelDoc`, auto-generate 2D grids, and persist `regionClass` and `proceduralConfig`.
+
 # 2.1.692
 - **Map Save & Generation Resilience Across Production Databases**:
   - **Prisma Schema LongText Migration**:

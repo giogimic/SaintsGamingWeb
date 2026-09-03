@@ -1,6 +1,7 @@
 import { VoxelChunk, CHUNK_SIZE_X, CHUNK_SIZE_Z, CHUNK_SIZE_Y } from './VoxelChunk';
 import { VOXEL_WORD_AIR } from './VoxelWord';
 import { VoxelBlockEntity, getBlockEntityKey } from './VoxelBlockEntity';
+import { migrateLegacyDocTo32Cubic } from './chunkMigration';
 
 export interface VoxelMaterialDef {
   id: number;
@@ -372,9 +373,10 @@ export class VoxelWorld {
   }
 
   /**
-   * Reconstruct world from V3 Document.
+   * Reconstruct world from V3 Document. Automatically migrates legacy 16x16x32 chunks to 32³.
    */
-  public static deserializeFromDoc(doc: VoxelWorldDocV3): VoxelWorld {
+  public static deserializeFromDoc(inputDoc: VoxelWorldDocV3): VoxelWorld {
+    const doc = migrateLegacyDocTo32Cubic(inputDoc);
     const world = new VoxelWorld(
       doc.id,
       doc.name,
