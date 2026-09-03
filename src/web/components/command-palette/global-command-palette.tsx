@@ -70,30 +70,15 @@ export function GlobalCommandPalette({
   }, [visibleModules]);
 
   const isOperator = permissionLevel >= 200 || isWriter;
-  const canAccessStudio = permissionLevel >= 300;
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen} title="Saints Command Palette" description="Search modules, actions, and public pages...">
-      <CommandInput placeholder="Type a command or search modules... (e.g. news, studio, users)" />
+      <CommandInput placeholder="Type a command or search modules... (e.g. news, users, settings)" />
       <CommandList className="max-h-[380px] overflow-y-auto">
         <CommandEmpty>No matching commands or modules found.</CommandEmpty>
 
         {/* ─── QUICK SHORTCUTS / HIGH PRIORITY ACTIONS ──────────────────────── */}
         <CommandGroup heading="Quick Actions">
-          {canAccessStudio && (
-            <CommandItem
-              onSelect={() => runCommand(() => router.push("/studio"))}
-              className="flex items-center justify-between cursor-pointer"
-            >
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-purple-400" />
-                <span className="font-semibold text-purple-300">Launch 2.5D World Studio</span>
-              </div>
-              <Badge variant="outline" className="text-[10px] font-mono border-purple-500/30 text-purple-400">
-                /studio
-              </Badge>
-            </CommandItem>
-          )}
 
           {(permissionLevel >= 300 || isWriter) && (
             <CommandItem

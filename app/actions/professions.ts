@@ -145,8 +145,6 @@ export async function upsertProfessionTemplate(input: ProfessionTemplateInput) {
       },
       update: dataPayload,
     });
-
-    revalidatePath("/studio");
     revalidatePath("/lobby");
     return { success: true, data: saved };
   } catch (err) {
@@ -160,7 +158,6 @@ export async function deleteProfessionTemplate(slug: string) {
   if (!isAdmin) return { success: false, error: "Unauthorized" };
   try {
     await prisma.professionTemplate.delete({ where: { slug } });
-    revalidatePath("/studio");
     return { success: true };
   } catch (err) {
     console.error("[deleteProfessionTemplate]", err);

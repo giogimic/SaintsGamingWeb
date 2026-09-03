@@ -104,8 +104,6 @@ export async function upsertQuestTemplate(input: QuestTemplateInput) {
         },
       });
     }
-
-    revalidatePath("/studio");
     revalidatePath("/lobby");
     return { success: true, id: questId };
   } catch (err) {
@@ -120,7 +118,6 @@ export async function deleteQuestTemplate(slug: string) {
 
   try {
     await prisma.questTemplate.delete({ where: { slug } });
-    revalidatePath("/studio");
     return { success: true };
   } catch (err) {
     console.error("[deleteQuestTemplate]", err);

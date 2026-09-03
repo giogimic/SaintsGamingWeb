@@ -11,10 +11,7 @@ import { useGameStore } from "@/web/components/the-lobby/store";
 import { soundSynth } from "@/engine/sound-synth";
 import { getUserStatusStats, UserStatusStats } from "@/app/actions/user";
 
-const StudioBottomToolbar = dynamic(
-  () => import("@/web/components/the-lobby/editor/StudioBottomToolbar").then((m) => m.StudioBottomToolbar),
-  { ssr: false }
-);
+
 import { useImmersiveStore } from "@/web/hooks/useImmersiveStore";
 import { usePostComposerStore } from "@/web/hooks/usePostComposerStore";
 import {
@@ -80,7 +77,7 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "v2.1.699",
+  siteVersion = "v2.1.700",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;
@@ -221,7 +218,6 @@ export function GlobalBottomBar({
   const getRouteLabel = () => {
     if (!pathname) return "Saints";
     if (pathname.startsWith("/lobby")) return `The Lobby · ${gameMode}`;
-    if (pathname.startsWith("/studio")) return `World Studio · ${activeMapId || "Editor"}`;
     if (pathname.startsWith("/hub") || pathname.startsWith("/news") || pathname.startsWith("/modpacks") || pathname.startsWith("/servers")) {
       return "The Nexus · Operations Hub";
     }
@@ -243,14 +239,6 @@ export function GlobalBottomBar({
     openComposer();
   };
 
-  const isStudioRoute = pathname?.startsWith("/studio");
-  if (isStudioRoute) {
-    return (
-      <div className="fixed bottom-0 left-0 right-0 z-[250] pointer-events-none">
-        <StudioBottomToolbar />
-      </div>
-    );
-  }
   const isGameRoute = pathname?.startsWith("/lobby");
 
   // If fullscreen in game mode, suppress bottom bar to allow pure immersive gameplay
@@ -641,14 +629,6 @@ export function GlobalBottomBar({
                       onClick={() => (window.location.href = "/admin")}
                     >
                       <ExternalLink className="w-3 h-3" /> /admin
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-xs h-7 gap-1"
-                      onClick={() => (window.location.href = "/studio")}
-                    >
-                      <ExternalLink className="w-3 h-3" /> /studio
                     </Button>
                     <Button
                       size="sm"

@@ -89,8 +89,6 @@ export async function upsertItemTemplate(input: ItemTemplateInput) {
         iconAssetId: input.iconAssetId,
       },
     });
-
-    revalidatePath("/studio");
     revalidatePath("/lobby");
     return { success: true, data: saved };
   } catch (err) {
@@ -104,7 +102,6 @@ export async function deleteItemTemplate(slug: string) {
   if (!isAdmin) return { success: false, error: "Unauthorized" };
   try {
     await prisma.itemTemplate.delete({ where: { slug } });
-    revalidatePath("/studio");
     return { success: true };
   } catch (err) {
     console.error("[deleteItemTemplate]", err);

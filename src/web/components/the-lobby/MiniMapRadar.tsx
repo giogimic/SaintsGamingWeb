@@ -260,17 +260,7 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
               <Hammer className="w-3 h-3 text-amber-400" />
               <span>{studioToolsOpen ? 'Play' : 'Edit'}</span>
             </button>
-          ) : (
-            <a
-              href="/studio"
-              onClick={() => soundSynth?.playSelectSound?.()}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-amber-300 hover:text-white text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
-              title="Open Studio Map Editor"
-            >
-              <Hammer className="w-3 h-3 text-amber-400" />
-              <span>Studio</span>
-            </a>
-          )}
+          ) : null}
 
           <button
             type="button"

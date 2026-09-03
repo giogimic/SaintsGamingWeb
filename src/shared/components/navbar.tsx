@@ -3,10 +3,7 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 
-const StudioMenuBar = dynamic(
-  () => import("@/web/components/the-lobby/editor/StudioMenuBar").then((m) => m.StudioMenuBar),
-  { ssr: false }
-);
+
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import {
@@ -43,7 +40,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.699",
+  siteVersion = "v2.1.700",
   gameTitle = "The Lobby",
 }: {
   session: any | null;
@@ -72,16 +69,7 @@ export function Navbar({
 
   const user = session?.user;
   const permissionLevel = dbPermissionLevel ?? (user as any)?.permissionLevel ?? 0;
-  const canAccessStudio = permissionLevel >= 200 || process.env.NODE_ENV === "development";
 
-  const isStudioRoute = pathname?.startsWith("/studio");
-  if (isStudioRoute) {
-    return (
-      <div className="fixed top-0 z-[250] w-full pointer-events-none">
-        <StudioMenuBar />
-      </div>
-    );
-  }
 
   return (
     <div className="fixed top-0 z-[250] w-full pointer-events-none">
@@ -199,17 +187,7 @@ export function Navbar({
                       {gameTitle}
                     </DropdownMenuItem>
 
-                    {/* Saints Studio (permission-gated) */}
-                    {canAccessStudio && (
-                      <DropdownMenuItem
-                        render={
-                          <Link href="/studio" className="cursor-pointer text-purple-400 font-medium" />
-                        }
-                      >
-                        <Sparkles className="mr-2 h-4 w-4 text-purple-400" />
-                        Saints Studio
-                      </DropdownMenuItem>
-                    )}
+
 
                     {/* FiveM UCP (site setting gated) */}
                     {showUcpLink && (

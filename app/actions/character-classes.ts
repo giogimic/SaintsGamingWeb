@@ -81,7 +81,6 @@ export async function upsertCharacterClass(data: ClassDefData) {
       update: payload,
     });
     revalidatePath('/lobby');
-    revalidatePath('/studio');
     return { success: true, data: classRowToData(row) };
   } catch (err: any) {
     console.error('[upsertCharacterClass]', err);
@@ -97,7 +96,6 @@ export async function deleteCharacterClass(slug: string) {
     await prisma.characterClass.delete({
       where: { gameId_slug: { gameId: config.id, slug } },
     });
-    revalidatePath('/studio');
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message || 'Delete failed' };
@@ -139,7 +137,6 @@ export async function importCharacterClassesJson(json: string) {
       });
       count++;
     }
-    revalidatePath('/studio');
     return { success: true, count };
   } catch (err: any) {
     return { success: false, error: err.message || 'Invalid JSON', count: 0 };
@@ -172,7 +169,6 @@ export async function setGlobalShinyChance(percent: number) {
       where: { slug: DEFAULT_GAME_CONFIG_SLUG },
       data: { globalShinyChancePercent: clamped },
     });
-    revalidatePath('/studio');
     return { success: true, percent: clamped };
   } catch (err: any) {
     return { success: false, error: err.message || 'Failed to save' };

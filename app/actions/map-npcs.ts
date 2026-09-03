@@ -132,8 +132,6 @@ export async function placeMapNpc(opts: {
         data: JSON.stringify(tree),
       },
     });
-
-    revalidatePath('/studio');
     revalidatePath('/lobby');
     invalidateDialogueCache(id);
     return { success: true, npc, count: npcs.length };
@@ -251,8 +249,6 @@ export async function updateMapNpc(opts: {
       });
       invalidateDialogueCache(npcId);
     }
-
-    revalidatePath('/studio');
     revalidatePath('/lobby');
     return { success: true, npc: next, count: npcs.length };
   } catch (err: any) {
@@ -298,8 +294,6 @@ export async function deleteMapNpc(opts: { mapId: string; npcId: string }) {
       /* tree may not exist */
     }
     invalidateDialogueCache(npcId);
-
-    revalidatePath('/studio');
     revalidatePath('/lobby');
     return { success: true, npcId, count: next.length };
   } catch (err: any) {

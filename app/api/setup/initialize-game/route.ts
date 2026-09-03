@@ -404,7 +404,7 @@ export async function POST(req: Request) {
       gameName,
       defaultMapId: mapId,
       message: `3D Voxel Game '${gameName}' initialized successfully!`,
-      targetUrl: '/studio',
+      targetUrl: '/lobby',
     });
   } catch (error: any) {
     console.error('[api/setup/initialize-game] Initialization failed:', error);

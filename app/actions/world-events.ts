@@ -80,8 +80,6 @@ export async function upsertWorldEvent(input: WorldEventInput) {
         mutationsData: input.mutationsData || "{}",
       },
     });
-
-    revalidatePath("/studio");
     return { success: true as const, data: saved };
   } catch (err: any) {
     console.error("[upsertWorldEvent] Error:", err.message);
@@ -99,7 +97,6 @@ export async function deleteWorldEvent(slug: string) {
     await prisma.worldEventTemplate.delete({
       where: { slug },
     });
-    revalidatePath("/studio");
     return { success: true as const };
   } catch (err: any) {
     console.error("[deleteWorldEvent] Error:", err.message);
@@ -127,8 +124,6 @@ export async function triggerLiveWorldEvent(slug: string, durationSeconds?: numb
         durationSeconds: dur,
       },
     });
-
-    revalidatePath("/studio");
     revalidatePath("/lobby");
     return {
       success: true as const,
@@ -160,8 +155,6 @@ export async function stopLiveWorldEvent(slug: string) {
       where: { slug },
       data: { isActive: false },
     });
-
-    revalidatePath("/studio");
     revalidatePath("/lobby");
     return { success: true as const, slug };
   } catch (err: any) {

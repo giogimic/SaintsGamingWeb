@@ -92,13 +92,7 @@ const QUICK_ACTIONS = [
     icon: Gamepad2,
     color: "text-amber-400 bg-amber-500/10 border-amber-500/30",
   },
-  {
-    title: "World Studio",
-    description: "Map editor, tileset painter & world creator",
-    href: "/studio",
-    icon: Sparkles,
-    color: "text-purple-400 bg-purple-500/10 border-purple-500/30",
-  },
+
   {
     title: "The Feed",
     description: "Community gameplay clips, reels & discussions",

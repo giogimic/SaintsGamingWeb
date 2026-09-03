@@ -1,3 +1,32 @@
+# 2.1.700
+- **Decouple World Studio to Standalone Desktop App & Purge Website Remnants**:
+  - **Standalone Desktop Application (`studio-desktop/`)**:
+    - Complete Tauri 2.x + Vite + React 19 architecture running Direct3D 11/12 GPU hardware acceleration.
+    - Verified production build (`npm run build` / `vite build`) transforming 7,244 modules and outputting to `studio-desktop/dist/`.
+    - Added comprehensive `.gitignore` rules ensuring all build artifacts (`studio-desktop/dist/`, `studio-desktop/src-tauri/target/`, `node_modules/`, `*.exe`, `*.msi`) remain strictly untracked in git.
+    - Added root npm scripts (`setup:studio`, `build:studio`, `dev:studio`, `tauri:studio`).
+  - **Setup & Update Engine Integration (`update.bat`, `update.sh`)**:
+    - Updated Windows `scripts/update.bat` and Linux/POSIX `scripts/update.sh` to auto-detect changes in `studio-desktop/` and trigger dependency installation and build updates.
+    - Added `Studio Desktop App` status indicator to the Smart Update Execution Plan diagnostics matrix.
+  - **Complete Removal of Studio from Website**:
+    - Removed `/studio` website route (`app/(main)/studio`).
+    - Stripped Studio references, buttons, and links across all website pages and components:
+      - `navbar.tsx`: Removed dynamic `StudioMenuBar` import, `canAccessStudio` checks, and dropdown menu item.
+      - `global-bottom-bar.tsx`: Removed dynamic `StudioBottomToolbar` import, `/studio` route override, and quick dev teleport button.
+      - `admin/page.tsx`: Removed header Launch Studio button and promotional card.
+      - `admin/game/page.tsx`: Removed header Open World Studio button and map card edit links.
+      - `admin/game/gates/page.tsx`: Removed Open Studio button.
+      - `admin/dev/page.tsx`: Removed `/studio` from public route index.
+      - `profile/page.tsx`: Removed 2.5D World Studio button from Operator Tools.
+      - `GameChat.tsx`: Removed Studio link from staff popup.
+      - `global-search.tsx`: Removed World Studio from Quick Actions.
+      - `global-command-palette.tsx`: Removed Launch Studio command item.
+      - `cookie-consent.tsx`: Removed `/studio` pathname check.
+      - `MiniMapRadar.tsx` & `StaffFloatingMenu.tsx`: Removed `/studio` fallback links.
+      - `admin-modules.ts`: Removed `game-studio` module and updated tests.
+      - `dynamic.tsx`: Removed `StudioLobby` export and removed `StudioClient.tsx`.
+      - `app/actions/`: Removed `revalidatePath('/studio')` across all 15 server action files.
+
 # 2.1.699
 - **Casual & Welcoming Community README Refresh**:
   - Rewrote project `README.md` with an authentic, friendly, and casual gaming tone.

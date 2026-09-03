@@ -40,7 +40,6 @@ export default async function DevDashboard() {
     { path: "/profile/inbox", desc: "Social Activity Feed" },
     { path: "/support", desc: "Support & Ticketing Center" },
     { path: "/ucp", desc: "FiveM User Control Panel" },
-    { path: "/studio", desc: "2.5D Babylon Level & World Studio" },
   ];
 
   const API_ENDPOINTS = [

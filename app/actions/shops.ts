@@ -125,8 +125,6 @@ export async function upsertShop(input: ShopTemplateInput) {
         }
       },
     });
-
-    revalidatePath("/studio");
     return { success: true as const, data: saved };
   } catch (err: any) {
     console.error("[upsertShop] Error:", err.message);
@@ -144,7 +142,6 @@ export async function deleteShop(slug: string) {
     await prisma.shopTemplate.delete({
       where: { slug },
     });
-    revalidatePath("/studio");
     return { success: true as const };
   } catch (err: any) {
     console.error("[deleteShop] Error:", err.message);

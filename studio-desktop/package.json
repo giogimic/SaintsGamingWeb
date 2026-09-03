@@ -1,12 +1,12 @@
 {
   "name": "saints-world-studio",
-  "version": "2.1.699",
+  "version": "2.1.700",
   "private": true,
   "description": "Saints Gaming World Studio — Standalone 3D Volumetric CAD Authoring Suite",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri"
   },

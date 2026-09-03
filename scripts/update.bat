@@ -93,29 +93,35 @@ if %ERRORLEVEL% neq 0 (
 set "NEED_NPM=0"
 set "NEED_DB=0"
 set "NEED_BUILD=1"
+set "NEED_STUDIO=0"
 
 if /i "%UPDATE_MODE%"=="full" (
     set "NEED_NPM=1"
     set "NEED_DB=1"
     set "NEED_BUILD=1"
+    set "NEED_STUDIO=1"
 ) else if /i "%UPDATE_MODE%"=="app" (
     set "NEED_NPM=1"
     set "NEED_DB=0"
     set "NEED_BUILD=1"
+    set "NEED_STUDIO=1"
 ) else if /i "%UPDATE_MODE%"=="db" (
     set "NEED_NPM=0"
     set "NEED_DB=1"
     set "NEED_BUILD=0"
+    set "NEED_STUDIO=0"
 ) else if /i "%UPDATE_MODE%"=="quick" (
     set "NEED_NPM=0"
     set "NEED_DB=0"
     set "NEED_BUILD=0"
+    set "NEED_STUDIO=0"
 ) else (
     :: AUTO Mode: Analyze git diff
     for /f "tokens=*" %%F in ('git diff HEAD origin/main --name-only') do (
         echo %%F | findstr /i "package.json package-lock.json" >nul && set "NEED_NPM=1"
         echo %%F | findstr /i "prisma prepare-prisma.js" >nul && set "NEED_DB=1"
         echo %%F | findstr /i "src/ app/ server.ts next.config tsconfig.json public/" >nul && set "NEED_BUILD=1"
+        echo %%F | findstr /i "studio-desktop" >nul && set "NEED_STUDIO=1"
     )
 )
 
@@ -124,6 +130,7 @@ echo  Smart Update Execution Plan:
 echo   - NPM Install:      !NEED_NPM!
 echo   - DB Migration:     !NEED_DB!
 echo   - Next.js Build:    !NEED_BUILD!
+echo   - Studio Desktop:   !NEED_STUDIO!
 echo ------------------------------------------------------
 echo.
 
@@ -166,6 +173,22 @@ if "!NEED_BUILD!"=="1" (
     )
 ) else (
     echo [*] Skipping full build (Fast hot-update).
+)
+
+:: --- Build Studio Desktop (if needed) ---
+if "!NEED_STUDIO!"=="1" (
+    if exist "studio-desktop\package.json" (
+        echo [*] Building Saints World Studio desktop application...
+        pushd studio-desktop
+        call npm install
+        call npm run build
+        popd
+        if %ERRORLEVEL% neq 0 (
+            echo [!] Studio desktop build failed.
+        ) else (
+            echo [v] Studio desktop build succeeded.
+        )
+    )
 )
 
 echo.

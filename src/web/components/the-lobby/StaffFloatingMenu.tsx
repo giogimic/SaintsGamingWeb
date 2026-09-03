@@ -20,13 +20,10 @@ import { soundSynth } from '@/engine/sound-synth';
 
 interface StaffFloatingMenuProps {
   permissionLevel: number;
-  /** When true, hide "Open Studio" (already on /studio) */
-  isStudioRoute?: boolean;
 }
 
 export function StaffFloatingMenu({
   permissionLevel,
-  isStudioRoute = false,
 }: StaffFloatingMenuProps) {
   const [open, setOpen] = useState(false);
   const [announce, setAnnounce] = useState('');
@@ -162,15 +159,6 @@ export function StaffFloatingMenu({
                   <ExternalLink className="w-3.5 h-3.5 text-amber-400" />
                   Open Admin Dashboard
                 </a>
-                {isDev && !isStudioRoute && (
-                  <a
-                    href="/studio"
-                    className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-amber-950/40 border border-amber-500/40 text-amber-300 text-xs font-bold hover:bg-amber-900/60 transition-colors"
-                  >
-                    <Hammer className="w-3.5 h-3.5 text-amber-400" />
-                    Open Saints Studio
-                  </a>
-                )}
               </div>
             </div>
           </HudPanelShell>
