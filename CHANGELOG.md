@@ -1,3 +1,20 @@
+# 2.1.688
+- **Map Browser Redesign: Compact List View, Multi-Select Management & Popout Window**:
+  - **Popout Creation Window**:
+    - Decoupled the Create Map interface from the Map Browser panel container using `createPortal(..., document.body)`.
+    - Eliminates all parent container transforms, clipping, and overflow boundary issues.
+    - Added clean floating window chrome with header, subtitle, close button, and backdrop dismiss.
+  - **Sleek Compact List View (Default)**:
+    - Replaced bulky oversized cards with a streamlined data-table list view.
+    - Columns for Selection, Map Name & Slug, Category badge, Dimensions & Chunks, Version, Status, and Actions.
+    - Redesigned action buttons to compact, crisp proportions (`h-7 px-2.5 text-[11px]`), eliminating giant blocky buttons.
+    - Added View Switcher toggle between Compact List and Compact Grid modes.
+    - Added multi-criteria sorting (Name, Map ID, Size, Category) with ascending/descending order.
+  - **Multi-Map Selection & Batch Operations**:
+    - Added checkboxes to every map row and a header "Select All" toggle.
+    - Sticky batch action bar appears when $\ge 1$ maps are selected.
+    - Supported batch operations: Batch Publish, Batch JSON Export, and Batch Delete with spawn-protection.
+
 # 2.1.687
 - **Expanded Voxel Block Data, Non-Cube Geometries & Agricultural Simulation**:
   - **Non-Cube Shape Meshing**:
