@@ -1,3 +1,16 @@
+## [2.1.713] - 2026-09-03
+### Added
+- Fully implemented the new Studio UI Window Architecture as outlined in Studio-UI-New-plan.md.
+- Added dedicated floating panels for World Atlas, Procedural Authoring, Diagnostics, Camera & View, and other systems.
+- Fixed TypeScript compilation issues in React 19 SVGs and missing next-auth types.
+
+# 2.1.712
+- **Frameless Saints OS Desktop Experience & Seamless Window Chrome**:
+  - **Native Frameless Window (`main.cjs`)**: Set `frame: false` and removed the native OS application menu (`Menu.setApplicationMenu(null)`). The desktop application now renders completely borderless with clean dark-glass Saints OS styling without double titlebars or native Windows chrome.
+  - **Integrated Window Titlebar & Controls (`StudioMenuBar.tsx`)**: In-site titlebar natively handles window dragging (`[app-region:drag]`) with custom interactive controls (`[app-region:no-drag]`) for minimize, maximize/restore, and closing.
+  - **Procedural Atlas Normalization Fix (`spatialAtlas.ts`)**: Fixed `normalizeAtlasNode` to preserve `nodeType`, `biomeId`, `seamThreshold`, `generationScope`, and `allowedMapPool` when saving or streaming world atlas topologies.
+  - **Recent Blueprints & Prefabs History (`StudioMenuBar.tsx`, `PrefabBuilderPanel.tsx`)**: Extended creator recents history to track blueprint and prefab interactions, adding a dynamic `Recent Blueprints` flyout under `File -> Open`.
+
 # 2.1.711
 - **Character Select Admin Window & Dynamic Identity Binding**:
   - **Locked Image 1 Operator Console**: Built quiet in-game administrative console featuring dark glass surface, shallow draggable titlebar with `ADMIN` identity cluster, section subtitle, OS window controls (minimize/maximize/close), low-chrome workspace, and footer-driven action strip.

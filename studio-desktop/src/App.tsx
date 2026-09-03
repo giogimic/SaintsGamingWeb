@@ -59,9 +59,9 @@ const StudioMainWorkspace: React.FC = () => {
       mp: 50,
       maxMp: 50,
       skills: {},
-      inventory: [],
-      equipment: {},
-    });
+      inventory: {},
+      equipment: { head: null, chest: null, legs: null, weapon: null },
+    } as any);
 
     // 5. Authoritatively fetch and set activeMapData to boot Babylon
     try {

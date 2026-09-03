@@ -217,5 +217,30 @@ describe('World Atlas Spatial Adjacency Engine (Bible 23 & 24)', () => {
       expect(townANeighbors.north).toBeUndefined();
       expect(townANeighbors.south).toBeUndefined();
     });
+
+    it('preserves procedural and hybrid properties during node and grid normalization', () => {
+      const procNode = normalizeAtlasNode({
+        id: 'node_proc_1',
+        mapId: 'WILD_TAIGA',
+        x: 12,
+        y: 15,
+        nodeType: 'procedural',
+        biomeId: 'alpine',
+        generationScope: 'infinite',
+        allowedMapPool: ['WILD_TAIGA', 'FROST_CAVE'],
+      });
+
+      expect(procNode.nodeType).toBe('procedural');
+      expect(procNode.biomeId).toBe('alpine');
+      expect(procNode.generationScope).toBe('infinite');
+      expect(procNode.allowedMapPool).toEqual(['WILD_TAIGA', 'FROST_CAVE']);
+
+      const grid = normalizeAtlasGridData({
+        nodes: [procNode],
+      });
+      expect(grid.nodes[0].nodeType).toBe('procedural');
+      expect(grid.nodes[0].generationScope).toBe('infinite');
+      expect(grid.nodes[0].allowedMapPool).toEqual(['WILD_TAIGA', 'FROST_CAVE']);
+    });
   });
 });

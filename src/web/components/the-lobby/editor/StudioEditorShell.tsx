@@ -108,7 +108,7 @@ import { StudioContextualBar } from './StudioContextualBar';
 
 export const StudioEditorShell: React.FC = () => {
   const { data: session } = useSession();
-  const permissionLevel = session?.user?.permissionLevel ?? 0;
+  const permissionLevel = (session?.user as any)?.permissionLevel ?? 0;
   const isCreationMode = useEditorStore((state) => state.isCreationMode);
   const studioMode = useEditorStore((state) => state.studioMode);
   const mapDirty = useEditorStore((state) => state.mapDirty);

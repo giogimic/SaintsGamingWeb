@@ -1,8 +1,8 @@
 import { JSX } from "react";
 
-export function AchievementFirstBlood(props: React.SVGProps<SVGSVGElement>): JSX.Element {
+export function AchievementFirstBlood(props: any): JSX.Element {
   return (
-    <svg xmlns="http://www.w3.org/-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
       <path d="M12 2C7 2 4.5 6 4.5 10c0 3 2.5 5.5 4.5 8 1 1.2 2.5 4 3 4s2-2.8 3-4c2-2.5 4.5-5 4.5-8 0-4-2.5-8-7.5-8z" fill="currentColor" fillOpacity="0.2" />
       <path d="M12 2C7 2 4.5 6 4.5 10c0 3 2.5 5.5 4.5 8 1 1.2 2.5 4 3 4s2-2.8 3-4c2-2.5 4.5-5 4.5-8 0-4-2.5-8-7.5-8z" />
       <path d="M11 6h2" />
@@ -11,9 +11,9 @@ export function AchievementFirstBlood(props: React.SVGProps<SVGSVGElement>): JSX
   );
 }
 
-export function AchievementBetaTester(props: React.SVGProps<SVGSVGElement>): JSX.Element {
+export function AchievementBetaTester(props: any): JSX.Element {
   return (
-    <svg xmlns="http://www.w3.org/-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
       <path d="M10 2v7.31" />
       <path d="M14 9.3V1.99" />
       <path d="M8.5 2h7" />
@@ -24,9 +24,9 @@ export function AchievementBetaTester(props: React.SVGProps<SVGSVGElement>): JSX
   );
 }
 
-export function AchievementSocialButterfly(props: React.SVGProps<SVGSVGElement>): JSX.Element {
+export function AchievementSocialButterfly(props: any): JSX.Element {
   return (
-    <svg xmlns="http://www.w3.org/-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
       <circle cx="9" cy="7" r="4" fill="currentColor" fillOpacity="0.2" />
       <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
@@ -36,9 +36,9 @@ export function AchievementSocialButterfly(props: React.SVGProps<SVGSVGElement>)
   );
 }
 
-export function AchievementRich(props: React.SVGProps<SVGSVGElement>): JSX.Element {
+export function AchievementRich(props: any): JSX.Element {
   return (
-    <svg xmlns="http://www.w3.org/-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
       <rect x="2" y="5" width="20" height="14" rx="2" fill="currentColor" fillOpacity="0.1" />
       <line x1="2" y1="10" x2="22" y2="10" />
       <path d="M7 15h.01" strokeWidth="3" />
@@ -51,9 +51,9 @@ export function AchievementRich(props: React.SVGProps<SVGSVGElement>): JSX.Eleme
   );
 }
 
-export function AchievementVeteran(props: React.SVGProps<SVGSVGElement>): JSX.Element {
+export function AchievementVeteran(props: any): JSX.Element {
   return (
-    <svg xmlns="http://www.w3.org/-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
       <path d="M12 15l-3.5 2 1-4-3-2.5 4-.5L12 6l1.5 4 4 .5-3 2.5 1 4L12 15z" fill="currentColor" fillOpacity="0.3" />
       <circle cx="12" cy="12" r="10" />
       <path d="M12 2v2" />
