@@ -6,8 +6,11 @@ import {
   isVoxelAir,
   getVoxelPhysics,
   getVoxelShape,
+  getVoxelLogic,
+  getVoxelMaterial,
   VoxelPhysics,
   VoxelShape,
+  VoxelLogic,
 } from '@/shared/game/voxel/VoxelWord';
 
 export type Direction = 'up' | 'down' | 'left' | 'right';
@@ -231,6 +234,37 @@ export class WorldSimulation {
         payload = logicTile.onInteractPayload ? JSON.parse(logicTile.onInteractPayload) : {};
       } catch (e) {}
       return { type: 'LOGIC_INTERACT', action: logicTile.onInteractAction, payload, targetX: faceX, targetY: faceY };
+    }
+
+    // Check 3D Voxel World Interactive Logic Blocks
+    if (state.voxelWorld) {
+      const wz = state.mapHeight - 1 - faceY;
+      for (let wy = state.voxelWorld.totalHeightBlocks - 1; wy >= 0; wy--) {
+        const word = state.voxelWorld.getVoxel(faceX, wy, wz);
+        if (word && (word & 0xfff) !== 0) {
+          const logic = getVoxelLogic(word);
+          const mat = getVoxelMaterial(word);
+          if (logic === VoxelLogic.HARVEST_NODE) {
+            return {
+              type: 'LOGIC_INTERACT',
+              action: mat === 7 ? 'HARVEST_WOOD' : 'MINE_ORE',
+              payload: { materialId: mat, wx: faceX, wy, wz },
+              targetX: faceX,
+              targetY: faceY,
+            };
+          }
+          if (logic === VoxelLogic.SHOP_COUNTER) {
+            return {
+              type: 'LOGIC_INTERACT',
+              action: 'OPEN_SHOP',
+              payload: { wx: faceX, wy, wz },
+              targetX: faceX,
+              targetY: faceY,
+            };
+          }
+          break;
+        }
+      }
     }
 
     // Check NPCs

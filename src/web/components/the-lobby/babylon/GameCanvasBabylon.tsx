@@ -1753,11 +1753,22 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             if (logicTiles[tileId]?.isSolid) return false;
             if (engine.voxelWorld) {
               const wz = mapHeight - 1 - y;
-              const bodyWord = engine.voxelWorld.getVoxel(x, 16, wz);
-              const bodyPhys = (bodyWord >>> 24) & 0xf;
-              if (bodyWord && (bodyPhys === 1 || bodyPhys === 5)) return false;
-              const groundWord = engine.voxelWorld.getVoxel(x, 15, wz);
+              let targetWY = 15;
+              for (let wy = engine.voxelWorld.totalHeightBlocks - 1; wy >= 0; wy--) {
+                const w = engine.voxelWorld.getVoxel(x, wy, wz);
+                if (w && (w & 0xfff) !== 0) {
+                  targetWY = wy;
+                  break;
+                }
+              }
+              const overheadWord = engine.voxelWorld.getVoxel(x, targetWY + 1, wz);
+              const overheadPhys = (overheadWord >>> 24) & 0xf;
+              if (overheadWord && (overheadPhys === 1 || overheadPhys === 5)) return false;
+
+              const groundWord = engine.voxelWorld.getVoxel(x, targetWY, wz);
               if (!groundWord || (groundWord & 0xfff) === 0) return false;
+              const groundPhys = (groundWord >>> 24) & 0xf;
+              if (groundPhys === 5) return false; // Hazard
             }
             const isStaticNpc = map.npcs?.some((npc: any) => npc.x === x && npc.y === y);
             const isDynamicNpc = dynamicEntities.some(

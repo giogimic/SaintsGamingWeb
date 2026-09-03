@@ -2496,6 +2496,9 @@ export class BabylonEngine {
       this.voxelWorld = VoxelWorld.deserializeFromDoc(docOrWorld);
     }
 
+    if (this.currentMapWidth && !this.voxelWorld.mapWidth) this.voxelWorld.mapWidth = this.currentMapWidth;
+    if (this.currentMapHeight && !this.voxelWorld.mapHeight) this.voxelWorld.mapHeight = this.currentMapHeight;
+
     for (const chunk of this.voxelWorld.chunks.values()) {
       const result = this.voxelMesher.meshChunk(this.voxelWorld, chunk);
       if (result) {
@@ -2514,6 +2517,25 @@ export class BabylonEngine {
         }
       }
     }
+  }
+
+  public getVoxelSurfaceY(worldX: number, worldZ: number): number {
+    if (!this.voxelWorld) return 0;
+    const voxelCoords = this.voxelWorld.worldMeshToVoxel(worldX, 0, worldZ);
+    const wx = voxelCoords.wx;
+    const wz = voxelCoords.wz;
+
+    if (wx < 0 || wx >= this.voxelWorld.totalWidthBlocks || wz < 0 || wz >= this.voxelWorld.totalDepthBlocks) {
+      return 0;
+    }
+
+    for (let wy = this.voxelWorld.totalHeightBlocks - 1; wy >= 0; wy--) {
+      const word = this.voxelWorld.getVoxel(wx, wy, wz);
+      if (word && (word & 0xfff) !== 0) {
+        return (wy - 15) * 1.0;
+      }
+    }
+    return 0;
   }
 
   private voxelCursorMesh?: Mesh;
@@ -4989,8 +5011,9 @@ export class BabylonEngine {
     // Stop any currently playing animation
     this.scene.stopAnimation(this.destinationIndicatorMesh);
 
+    const elevation = this.getVoxelSurfaceY(posX, posZ);
     this.destinationIndicatorMesh.material = mat;
-    this.destinationIndicatorMesh.position = new Vector3(posX, SPATIAL_LAYER_ALTITUDES.DESTINATION_PREVIEW, posZ);
+    this.destinationIndicatorMesh.position = new Vector3(posX, elevation + SPATIAL_LAYER_ALTITUDES.DESTINATION_PREVIEW, posZ);
     this.destinationIndicatorMesh.isVisible = true;
 
     // Reset visibility and scaling for the animation
@@ -5470,7 +5493,8 @@ export class BabylonEngine {
 
   public updateEntity(entity: BabylonEntityData) {
     let spriteMesh = this.entityMeshes.get(entity.id);
-    const targetPos = new Vector3(entity.x, ENTITY_GROUND_CLEARANCE, entity.y);
+    const elevation = this.getVoxelSurfaceY(entity.x, entity.y);
+    const targetPos = new Vector3(entity.x, elevation + ENTITY_GROUND_CLEARANCE, entity.y);
     const existingDims = spriteMesh?.metadata?.spriteDimensions as { width: number; height: number } | undefined;
     const resolvedConfig = this.resolveSpriteConfig(entity, existingDims);
     const singleFrame = resolvedConfig.columns <= 1 && resolvedConfig.rows <= 1;
@@ -5958,7 +5982,7 @@ export class BabylonEngine {
     ring.isVisible = true;
     ring.position.x = targetMesh.position.x;
     ring.position.z = targetMesh.position.z;
-    ring.position.y = 0.08;
+    ring.position.y = targetMesh.position.y + 0.03;
   }
 
   private updateTargetSelectionIndicator(deltaTime: number) {
@@ -5983,7 +6007,7 @@ export class BabylonEngine {
     // Follow target's real-time position smoothly
     ring.position.x = targetMesh.position.x;
     ring.position.z = targetMesh.position.z;
-    ring.position.y = 0.08;
+    ring.position.y = targetMesh.position.y + 0.03;
 
     // Continuous smooth rotation
     ring.rotation.y += deltaTime * 2.2;

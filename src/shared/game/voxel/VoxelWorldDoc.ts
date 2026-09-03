@@ -24,6 +24,8 @@ export interface VoxelWorldDocV3 {
     depthChunks: number;
     heightChunks: number;
   };
+  mapWidth?: number;
+  mapHeight?: number;
   palette: VoxelMaterialDef[];
   chunks: Record<string, number[]>; // key: "cx_cz_cy" -> RLE encoded array
   entities?: any[];
@@ -48,6 +50,8 @@ export class VoxelWorld {
   public widthChunks: number;
   public depthChunks: number;
   public heightChunks: number;
+  public mapWidth?: number;
+  public mapHeight?: number;
   public chunks = new Map<string, VoxelChunk>();
   public palette: VoxelMaterialDef[] = [];
 
@@ -99,11 +103,11 @@ export class VoxelWorld {
   }
 
   public get originOffsetX(): number {
-    return -this.totalWidthBlocks / 2;
+    return -(this.mapWidth ?? this.totalWidthBlocks) / 2;
   }
 
   public get originOffsetZ(): number {
-    return -this.totalDepthBlocks / 2;
+    return -(this.mapHeight ?? this.totalDepthBlocks) / 2;
   }
 
   public get originOffsetY(): number {
@@ -229,6 +233,8 @@ export class VoxelWorld {
         depthChunks: this.depthChunks,
         heightChunks: this.heightChunks,
       },
+      mapWidth: this.mapWidth,
+      mapHeight: this.mapHeight,
       palette: this.palette,
       chunks: chunkPayloads,
     };
@@ -247,6 +253,9 @@ export class VoxelWorld {
       doc.blockSizePx || DEFAULT_BLOCK_SIZE_PX
     );
 
+    world.mapWidth = doc.mapWidth;
+    world.mapHeight = doc.mapHeight;
+
     if (doc.palette && Array.isArray(doc.palette)) {
       world.palette = doc.palette;
     }
@@ -263,8 +272,16 @@ export class VoxelWorld {
   }
 }
 
-export function generateDefaultWorldDoc(widthChunks = 2, depthChunks = 2, blockSizePx = DEFAULT_BLOCK_SIZE_PX): VoxelWorldDocV3 {
+export function generateDefaultWorldDoc(
+  widthChunks = 2,
+  depthChunks = 2,
+  blockSizePx = DEFAULT_BLOCK_SIZE_PX,
+  mapWidth?: number,
+  mapHeight?: number
+): VoxelWorldDocV3 {
   const world = new VoxelWorld('world_default', 'Default Voxel World', widthChunks, depthChunks, 1, blockSizePx);
+  world.mapWidth = mapWidth;
+  world.mapHeight = mapHeight;
   world.generateDefaultWorld();
   return world.serializeToDoc();
 }

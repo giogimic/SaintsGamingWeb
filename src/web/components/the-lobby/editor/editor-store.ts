@@ -2767,55 +2767,58 @@ export const useEditorStore = create<EditorState>()(
           activeLayerIdx: activeLayer,
         });
 
-        if (!stampRes.ok || stampRes.cells.length === 0) {
+        const hasVoxelVolume = !!(activeClip.voxelVolume && activeClip.voxelVolume.length > 0 && (map as any).voxelDoc);
+
+        if (!hasVoxelVolume && (!stampRes.ok || stampRes.cells.length === 0)) {
           return { ok: false, error: stampRes.error || 'Nothing pasted.' };
         }
 
-        const op: EditorOp =
-          stampRes.newLayerCreated && stampRes.createdLayer && typeof stampRes.newLayerIdx === 'number'
-            ? {
-                kind: 'compound',
-                description: 'Paste onto New Layer',
-                ops: [
-                  {
-                    kind: 'create_layer',
-                    layerIdx: stampRes.newLayerIdx,
-                    layer: stampRes.createdLayer,
-                  },
-                  {
-                    kind: 'paint_cells',
-                    cells: stampRes.cells,
-                  },
-                ],
-              }
-            : {
-                kind: 'paint_cells',
-                cells: stampRes.cells,
-              };
+        if (stampRes.cells.length > 0) {
+          const op: EditorOp =
+            stampRes.newLayerCreated && stampRes.createdLayer && typeof stampRes.newLayerIdx === 'number'
+              ? {
+                  kind: 'compound',
+                  description: 'Paste onto New Layer',
+                  ops: [
+                    {
+                      kind: 'create_layer',
+                      layerIdx: stampRes.newLayerIdx,
+                      layer: stampRes.createdLayer,
+                    },
+                    {
+                      kind: 'paint_cells',
+                      cells: stampRes.cells,
+                    },
+                  ],
+                }
+              : {
+                  kind: 'paint_cells',
+                  cells: stampRes.cells,
+                };
 
-        set((state) => {
-          state.opStack = pushEditorOp(state.opStack, op);
-          state.mapDirty = true;
-          state.hasUnsavedChanges = true;
-          if (stampRes.newLayerCreated && typeof stampRes.newLayerIdx === 'number') {
-            state.activeLayerIdx = stampRes.newLayerIdx;
+          set((state) => {
+            state.opStack = pushEditorOp(state.opStack, op);
+            state.mapDirty = true;
+            state.hasUnsavedChanges = true;
+            if (stampRes.newLayerCreated && typeof stampRes.newLayerIdx === 'number') {
+              state.activeLayerIdx = stampRes.newLayerIdx;
+            }
+          });
+
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
+                detail: {
+                  cells: stampRes.cells.map((cell) => ({
+                    layerIdx: cell.layerIdx,
+                    r: cell.r,
+                    c: cell.c,
+                    value: cell.after,
+                  })),
+                },
+              })
+            );
           }
-        });
-
-
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(
-            new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
-              detail: {
-                cells: stampRes.cells.map((cell) => ({
-                  layerIdx: cell.layerIdx,
-                  r: cell.r,
-                  c: cell.c,
-                  value: cell.after,
-                })),
-              },
-            })
-          );
         }
 
         const activeEng = engine || (typeof window !== 'undefined' ? (window as any).__babylonEngine : null);
@@ -2824,15 +2827,26 @@ export const useEditorStore = create<EditorState>()(
         }
 
         // 3D Voxel Volume Paste
+        let voxelPastedCount = 0;
         if (activeClip.voxelVolume && activeClip.voxelVolume.length > 0 && (map as any).voxelDoc) {
           const world = VoxelWorld.deserializeFromDoc((map as any).voxelDoc);
           const mapH = map.grid?.length || (map as any).height || 24;
           const originWZ = mapH - 1 - r;
           const txBuilder = new VoxelTransactionBuilder('Paste Voxel Volume', map.id || '');
 
+          // Calculate surface height delta: find highest solid voxel at target (c, originWZ)
+          let deltaWY = 0;
+          for (let checkY = world.totalHeightBlocks - 1; checkY >= 0; checkY--) {
+            const word = world.getVoxel(c, checkY, originWZ);
+            if (word && (word & 0xfff) !== 0) {
+              deltaWY = checkY - 15; // Ground foundation is wy=15
+              break;
+            }
+          }
+
           for (const v of activeClip.voxelVolume) {
             const wx = c + v.dx;
-            const wy = v.dy;
+            const wy = v.dy + deltaWY;
             const wz = originWZ - v.dz;
             if (wx >= 0 && wx < world.totalWidthBlocks && wz >= 0 && wz < world.totalDepthBlocks && wy >= 0 && wy < world.totalHeightBlocks) {
               txBuilder.record(world, wx, wy, wz, v.word);
@@ -2854,13 +2868,14 @@ export const useEditorStore = create<EditorState>()(
             }
             (map as any).voxelDoc = world.serializeToDoc();
             get().pushVoxelOp(changedVoxels);
+            voxelPastedCount = changedVoxels.length;
             if (activeEng?.meshDirtyVoxelChunks) {
               activeEng.meshDirtyVoxelChunks();
             }
           }
         }
 
-        return { ok: true, count: stampRes.cells.length };
+        return { ok: true, count: stampRes.cells.length || voxelPastedCount };
       },
 
       cancelPaste: () => {
