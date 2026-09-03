@@ -8,6 +8,7 @@ import { listPrefabs, savePrefab, deletePrefab, seedBasicPrefabs, type PrefabTil
 import { extractSubgridFromMap, extractSparseCellsFromMap } from '@/shared/game/subgridStamp';
 import type { MapPrefab } from '@prisma/client';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
+import { recordRecentItem } from '@/shared/game/creatorRecents';
 
 export const PrefabBuilderPanel: React.FC = () => {
   const isOpen = useEditorStore((s) => s.panels.prefab?.isOpen);
@@ -180,6 +181,12 @@ export const PrefabBuilderPanel: React.FC = () => {
               onClick={() => {
                 setActivePrefabId(p.id);
                 setBrushMode('prefab');
+                recordRecentItem({
+                  id: p.id,
+                  type: 'asset',
+                  title: p.name,
+                  subtitle: `${p.width || 0}×${p.height || 0} Blueprint`,
+                });
               }}
               className={`flex items-center justify-between p-2 rounded cursor-pointer group ${
                 activePrefabId === p.id && brushMode === 'prefab'

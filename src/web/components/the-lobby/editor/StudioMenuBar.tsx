@@ -287,6 +287,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
   const [isElectron, setIsElectron] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const [recentMaps, setRecentMaps] = useState<any[]>(() => creatorRecents.getRecents('map', 8));
+  const [recentBlueprints, setRecentBlueprints] = useState<any[]>(() => creatorRecents.getRecents('asset', 6));
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -357,6 +358,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
     soundSynth?.playSelectSound?.();
     if (menuId === 'file') {
       setRecentMaps(creatorRecents.getRecents('map', 8));
+      setRecentBlueprints(creatorRecents.getRecents('asset', 6));
     }
     setActiveMenu((prev) => (prev === menuId ? null : menuId));
     setWorldDropdownOpen(false);
@@ -559,6 +561,25 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
                   ))
                 ) : (
                   <MenuItem label="No Recent Maps" icon={X} disabled />
+                )}
+              </SubMenu>
+              <SubMenu label="Recent Blueprints" icon={Package}>
+                {recentBlueprints.length > 0 ? (
+                  recentBlueprints.map((b) => (
+                    <MenuItem
+                      key={b.id}
+                      label={b.title}
+                      icon={Package}
+                      onClick={() => {
+                        useEditorStore.getState().setActivePrefabId(b.id);
+                        useEditorStore.getState().setBrushMode('prefab');
+                        openPanel('prefab');
+                        showToast(`Selected blueprint: ${b.title}`);
+                      }}
+                    />
+                  ))
+                ) : (
+                  <MenuItem label="No Recent Blueprints" icon={X} disabled />
                 )}
               </SubMenu>
             </SubMenu>
