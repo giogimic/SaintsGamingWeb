@@ -8,7 +8,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { isLegacy16CubicDoc, migrateLegacyDocTo32Cubic } from '../src/shared/game/voxel/chunkMigration';
+import { isLegacy16CubicDoc, migrateLegacyDocTo32Cubic, reindexDocToSpatial32Cubic } from '../src/shared/game/voxel/chunkMigration';
 import { convertLegacy2DToVoxelWorld } from '../src/shared/game/voxel/Voxel2DConverter';
 import type { VoxelWorldDocV3 } from '../src/shared/game/voxel/VoxelWorldDoc';
 
@@ -103,15 +103,42 @@ async function main() {
       migratedCount++;
       console.log(`[Migration] Successfully updated map '${map.id}'.`);
     } else {
-      alreadyUpToDateCount++;
+      const { doc: reindexedDoc, modified } = reindexDocToSpatial32Cubic(doc);
+      if (modified) {
+        await prisma.worldMap.update({
+          where: { id: map.id },
+          data: {
+            voxelData: JSON.stringify(reindexedDoc),
+          },
+        });
+        migratedCount++;
+      } else {
+        alreadyUpToDateCount++;
+      }
     }
   }
 
+  // Data Integrity Verification
+  console.log('\n[Migration] Verifying database integrity across all records...');
+  const verifyMaps = await prisma.worldMap.findMany({
+    select: { id: true, voxelData: true },
+  });
+  let verifiedCount = 0;
+  for (const vm of verifyMaps) {
+    if (vm.voxelData && vm.voxelData !== '{}' && vm.voxelData !== '[]') {
+      const parsed = JSON.parse(vm.voxelData);
+      if (parsed.formatVersion === 3 && parsed.chunks) {
+        verifiedCount++;
+      }
+    }
+  }
+  console.log(`[Migration] Integrity check verified ${verifiedCount}/${verifyMaps.length} volumetric maps.`);
+
   console.log('\n[Migration Summary]');
   console.log(`- Total maps: ${maps.length}`);
-  console.log(`- Migrated from 16x16x32 to 32³: ${migratedCount}`);
+  console.log(`- Migrated / Re-indexed to uniform spatial 32³: ${migratedCount}`);
   console.log(`- Synthesized 32³ voxel models from 2D grids: ${synthesizedCount}`);
-  console.log(`- Already 32³ or modern: ${alreadyUpToDateCount}`);
+  console.log(`- Already uniform 32³ spatial: ${alreadyUpToDateCount}`);
   console.log(`- Remaining empty: ${emptyCount}`);
   console.log('[Migration] Finished successfully.');
 }

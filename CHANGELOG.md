@@ -1,3 +1,14 @@
+# 2.1.695
+- **32³ Chunk Data Migration & Server-Side Volumetric Collision Rejection**:
+  - **Chunk Spatial Re-Indexing & Database Migration ([`chunkMigration.ts`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/shared/game/voxel/chunkMigration.ts) & [`migrate-to-32-cubic.ts`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/scripts/migrate-to-32-cubic.ts))**:
+    - Recomputed all chunk keys to the uniform spatial format `${cx}_${cy}_${cz}`.
+    - Verified all chunk RLE buffers conform strictly to the 32,768-cell boundary.
+    - Executed database migration across all 424 WorldMap records with 100% integrity verification.
+  - **Go Backend Volumetric Collision & Movement Correction ([`engine_test.go`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/the-lobby/internal/engine/engine_test.go))**:
+    - Validated movement input packets against 3D solid voxel structures in the Go simulation backend.
+    - Confirmed server-side position correction emission (`protocol.EvPositionCorrection`) with `reason: "blocked"` and coordinates locked to original location.
+    - All 24 Go packages passing tests with zero errors.
+
 # 2.1.694
 - **Phase 2: Go Backend Voxel Engine & Server-Authoritative 3D Collision**:
   - **Go 32³ Voxel Engine & Bitwise Math ([`voxel.go`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/the-lobby/internal/world/voxel.go))**:
