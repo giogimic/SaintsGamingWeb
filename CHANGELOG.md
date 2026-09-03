@@ -1,3 +1,13 @@
+# 2.1.703
+- **Fix Black Screen on Startup via Prisma Client Browser Shim & React Mount Verification**:
+  - **Prisma Client Browser Shim**:
+    - Identified unhandled browser TypeError (`Uncaught TypeError: Failed to resolve module specifier ".prisma/client/index-browser"`) caused by server panel imports resolving to Prisma's default browser stub with an invalid relative module path.
+    - Implemented client-side `studio-desktop/src/shims/prismaShim.ts` providing proxy fallbacks for `PrismaClient` and `prisma`.
+    - Aliased `@prisma/client`, `.prisma/client`, and `.prisma/client/index-browser` to `prismaShim.ts` in `studio-desktop/vite.config.ts`.
+  - **React Mount Verification**:
+    - Confirmed successful DOM mount of the full desktop CAD workspace (3,900+ bytes of HTML: titlebar, connection screen, and UI panels).
+    - Verified all 4 executables in `studio-desktop/dist/` and `studio-desktop/release/` launch without errors.
+
 # 2.1.702
 - **Fix Standalone Windows Executable Asset Loading & Runtime Resolution**:
   - **Relative Base Asset Pathing**:
