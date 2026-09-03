@@ -29,6 +29,7 @@ import {
 } from '@/shared/game/editorOps';
 import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
 import { VoxelTransactionBuilder } from '@/shared/game/voxel/VoxelTransaction';
+import { VoxelPrefabData, rotatePrefab90CW } from '@/shared/game/voxel/VoxelPrefab';
 import {
   packVoxel,
   VOXEL_WORD_AIR,
@@ -334,6 +335,9 @@ interface EditorState {
   setSelectionMode: (mode: 'box' | 'circle' | 'ellipse' | 'lasso' | 'polygon' | 'magic-wand') => void;
   brushMode: 'paint' | 'erase' | 'eyedropper' | 'fill' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste';
   activePrefabId: string | null;
+  activeVoxelPrefab: VoxelPrefabData | null;
+  setActiveVoxelPrefab: (prefab: VoxelPrefabData | null) => void;
+  rotateActiveVoxelPrefab: () => void;
   prefabs: any[];
   tileClipboard: TileClipboardData | null;
   tileDefinitions: TileDefinition[];
@@ -1234,6 +1238,17 @@ export const useEditorStore = create<EditorState>()(
           state.activeCustomPropId = id;
         }),
       activePrefabId: null,
+      activeVoxelPrefab: null,
+      setActiveVoxelPrefab: (prefab) =>
+        set((state) => {
+          state.activeVoxelPrefab = prefab;
+        }),
+      rotateActiveVoxelPrefab: () =>
+        set((state) => {
+          if (state.activeVoxelPrefab) {
+            state.activeVoxelPrefab = rotatePrefab90CW(state.activeVoxelPrefab);
+          }
+        }),
       prefabs: [],
       tileClipboard: null,
       tileDefinitions: [],

@@ -3,6 +3,8 @@
  * Manages multi-map coordinate placement, directional neighbor queries, and seamless border warp offsets.
  */
 
+export type AtlasNodeClass = 'authored' | 'procedural' | 'hybrid';
+
 export interface AtlasNode {
   id: string;
   mapId: string;
@@ -13,11 +15,22 @@ export interface AtlasNode {
   width?: number; // In-game tile width
   height?: number; // In-game tile height
   label?: string;
+  nodeType?: AtlasNodeClass; // 'authored' | 'procedural' | 'hybrid'
+  biomeId?: string; // Configured biome for procedural/hybrid regions
+  seamThreshold?: number; // Seam-stitching blend threshold in blocks (for hybrid anchors)
+}
+
+export interface AtlasEdge {
+  id: string;
+  fromNodeId: string;
+  toNodeId: string;
+  transitionType: 'border_seamless' | 'portal_gate' | 'hybrid_seam';
+  alignment?: 'center' | 'flush_min' | 'flush_max';
 }
 
 export interface AtlasGridData {
   nodes: AtlasNode[];
-  edges?: any[];
+  edges?: AtlasEdge[];
   bufferPresets?: any[];
   options?: any;
 }

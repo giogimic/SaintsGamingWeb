@@ -14,6 +14,7 @@ export class SelectToolHandler implements IToolHandler {
 
   private isDragging = false;
   private dragPoints: Array<{ x: number; z: number; r: number; c: number }> = [];
+  private anchorVoxel: { x: number; y: number; z: number } | null = null;
 
   public onPointerDown(event: ToolPointerEvent, context: ToolExecutionContext): boolean {
     if (event.button !== 0) return false; // Left-click only
@@ -23,6 +24,20 @@ export class SelectToolHandler implements IToolHandler {
 
     this.isDragging = true;
     this.dragPoints = [{ x, z, r, c }];
+
+    if (store.studioMode === 'voxel') {
+      const vT = event.voxelTarget;
+      const wx = vT ? vT.voxelCoord.x : Math.floor(event.worldPos.x);
+      const wy = vT ? vT.voxelCoord.y : 16;
+      const wz = vT ? vT.voxelCoord.z : Math.floor(event.worldPos.z);
+      this.anchorVoxel = { x: wx, y: wy, z: wz };
+      if (context.engine.set3DBoxSelectionPreview) {
+        context.engine.set3DBoxSelectionPreview(wx, wy, wz, wx, wy, wz);
+      }
+      store.setSelectionStart({ r: wz, c: wx });
+      store.setSelectionEnd({ r: wz, c: wx });
+      return true;
+    }
 
     store.setSelectionStart({ r, c });
     store.setSelectionEnd({ r, c });
@@ -58,6 +73,19 @@ export class SelectToolHandler implements IToolHandler {
   public onPointerMove(event: ToolPointerEvent, context: ToolExecutionContext): boolean {
     if (!this.isDragging) return false;
     const store = useEditorStore.getState();
+
+    if (store.studioMode === 'voxel' && this.anchorVoxel) {
+      const vT = event.voxelTarget;
+      const wx = vT ? vT.voxelCoord.x : Math.floor(event.worldPos.x);
+      const wy = vT ? vT.voxelCoord.y : 16;
+      const wz = vT ? vT.voxelCoord.z : Math.floor(event.worldPos.z);
+      if (context.engine.set3DBoxSelectionPreview) {
+        context.engine.set3DBoxSelectionPreview(this.anchorVoxel.x, this.anchorVoxel.y, this.anchorVoxel.z, wx, wy, wz);
+      }
+      store.setSelectionEnd({ r: wz, c: wx });
+      return true;
+    }
+
     if (!store.selectionStart) return false;
 
     const { r, c } = event.tilePos;
@@ -111,6 +139,19 @@ export class SelectToolHandler implements IToolHandler {
     if (!this.isDragging) return false;
     this.isDragging = false;
     const store = useEditorStore.getState();
+
+    if (store.studioMode === 'voxel' && this.anchorVoxel) {
+      const vT = event.voxelTarget;
+      const wx = vT ? vT.voxelCoord.x : Math.floor(event.worldPos.x);
+      const wy = vT ? vT.voxelCoord.y : 16;
+      const wz = vT ? vT.voxelCoord.z : Math.floor(event.worldPos.z);
+      if (context.engine.set3DBoxSelectionPreview) {
+        context.engine.set3DBoxSelectionPreview(this.anchorVoxel.x, this.anchorVoxel.y, this.anchorVoxel.z, wx, wy, wz);
+      }
+      store.setSelectionEnd({ r: wz, c: wx });
+      this.dragPoints = [];
+      return true;
+    }
 
     if (store.selectionStart && store.selectionEnd) {
       const r0 = store.selectionStart.r;
@@ -169,6 +210,8 @@ export class SelectToolHandler implements IToolHandler {
   public onCancel(context: ToolExecutionContext): void {
     this.isDragging = false;
     this.dragPoints = [];
+    this.anchorVoxel = null;
     context.engine.clearActionPreview?.();
+    (context.engine as any).clear3DBoxSelectionPreview?.();
   }
 }

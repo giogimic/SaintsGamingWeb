@@ -90,6 +90,7 @@ const MapTabPanel = lazy(() => import('./panels/MapTabPanel').then((m) => ({ def
 const MapListPanel = lazy(() => import('./panels/MapListPanel').then((m) => ({ default: m.MapListPanel })));
 const InterfaceEditorPanel = lazy(() => import('./panels/InterfaceEditorPanel').then((m) => ({ default: m.InterfaceEditorPanel })));
 const CameraSettingsPanel = lazy(() => import('./panels/CameraSettingsPanel').then((m) => ({ default: m.CameraSettingsPanel })));
+const BiomeConfiguratorPanel = lazy(() => import('./panels/BiomeConfiguratorPanel').then((m) => ({ default: m.BiomeConfiguratorPanel })));
 
 import { RuleDebuggerOverlay } from './RuleDebuggerOverlay';
 import { DraggablePanel } from './DraggablePanel';
@@ -228,6 +229,26 @@ export const StudioEditorShell: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showToast]);
+
+  // Dynamic Brush Radius: R in [1..16] via Ctrl + Mouse Wheel
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        const store = useEditorStore.getState();
+        if (!store.isCreationMode) return;
+        const delta = e.deltaY < 0 ? 1 : -1;
+        const current = store.brushRadius;
+        const next = Math.max(1, Math.min(16, current + delta));
+        if (next !== current) {
+          store.setBrushRadius(next);
+          showToast(`Brush Radius: ${next} blocks (Ctrl+Scroll)`);
+        }
+      }
+    };
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => window.removeEventListener('wheel', handleWheel);
   }, [showToast]);
 
   if (gameMode !== 'EXPLORING' && gameMode !== 'BATTLE') {
@@ -422,6 +443,12 @@ export const StudioEditorShell: React.FC = () => {
           {canUseStudioDock(permissionLevel, 'atlas') && (
             <DraggablePanel id="atlas" icon={<Globe className="w-4 h-4" />} title="World Atlas">
               <Suspense fallback={<div>Loading...</div>}><WorldAtlasPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'atlas') && (
+            <DraggablePanel id="biome" icon={<Sparkles className="w-4 h-4 text-emerald-400" />} title="Biome Configurator">
+              <Suspense fallback={<div>Loading...</div>}><BiomeConfiguratorPanel /></Suspense>
             </DraggablePanel>
           )}
 

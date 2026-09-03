@@ -55,7 +55,8 @@ export type StudioDockId =
   | 'maps'
   | 'animations'
   | 'interface'
-  | 'camera';
+  | 'camera'
+  | 'biome';
 
 /** Map stable internal ids → canonical engine-editor labels. */
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
@@ -277,6 +278,10 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   camera: {
     label: 'Camera & View Settings',
     blurb: 'Projection modes, view angle presets, FOV, sensitivity, in-game camera defaults, and object rotation.',
+  },
+  biome: {
+    label: 'Biome Configurator',
+    blurb: 'Configure procedural fractal noise, strata layers, and environment.',
   },
 };
 
