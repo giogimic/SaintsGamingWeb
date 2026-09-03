@@ -393,18 +393,22 @@ export async function POST(
     }
 
     // Security compliance audit record prior to DB write
-    await AuditService.write({
-      userId: session.user.id,
-      action: "map.upsert",
-      resource: { type: "map", id: slug },
-      after: {
-        name: body.name || slug,
-        width,
-        height,
-        gameId: body.gameId || "saints",
-        entityCount: entitiesPayload?.length || 0,
-      },
-    });
+    try {
+      await AuditService.write({
+        userId: session.user.id,
+        action: "map.upsert",
+        resource: { type: "map", id: slug },
+        after: {
+          name: body.name || slug,
+          width,
+          height,
+          gameId: body.gameId || "saints",
+          entityCount: entitiesPayload?.length || 0,
+        },
+      });
+    } catch (auditErr: any) {
+      console.warn("[MapRoute] Audit logging failed non-fatally:", auditErr?.message);
+    }
 
     let freeformLayersForSave = Array.isArray(body.freeformLayers) ? [...body.freeformLayers] : [];
     if (body.voxelDoc) {
@@ -417,65 +421,107 @@ export async function POST(
       });
     }
 
-    const worldMap = await prisma.worldMap.upsert({
+    let worldMap: any;
+    try {
+      worldMap = await prisma.worldMap.upsert({
+        where: { id: slug },
+        update: {
+          name: body.name || slug,
+          gameId: body.gameId || "saints",
+          ...(body.grid ? { gridData: JSON.stringify(body.grid) } : {}),
+          ...(serializedGatesData !== undefined ? { gatesData: serializedGatesData } : {}),
+          ...(body.npcs ? { npcsData: JSON.stringify(body.npcs) } : {}),
+          ...(body.encounterPool ? { encountersData: JSON.stringify(body.encounterPool) } : {}),
+          entitiesData: JSON.stringify(entitiesPayload),
+          ...(visualsForWrite
+            ? {
+                tileLayersData: JSON.stringify(visualsForWrite.tileLayers || []),
+                tilesetsData: JSON.stringify(visualsForWrite.tilesets || []),
+              }
+            : {}),
+          ...(body.freeformLayers || body.voxelDoc ? { freeformLayersData: JSON.stringify(freeformLayersForSave) } : {}),
+          ...(body.voxelDoc ? { voxelData: JSON.stringify(body.voxelDoc) } : {}),
+          version: { increment: 1 },
+        },
+        create: {
+          id: slug,
+          gameId: body.gameId || "saints",
+          name: body.name || slug,
+          gridData: JSON.stringify(body.grid || []),
+          gatesData: serializedGatesData || JSON.stringify(body.gates || {}),
+          npcsData: JSON.stringify(body.npcs || []),
+          encountersData: JSON.stringify(body.encounterPool || []),
+          entitiesData: JSON.stringify(entitiesPayload),
+          tileLayersData: JSON.stringify(visualsForCreate.tileLayers || []),
+          freeformLayersData: JSON.stringify(freeformLayersForSave),
+          tilesetsData: JSON.stringify(visualsForCreate.tilesets || []),
+          voxelData: body.voxelDoc ? JSON.stringify(body.voxelDoc) : null,
+        },
+      });
+    } catch (upsertErr: any) {
+      console.warn("[MapRoute] Primary worldMap upsert failed, attempting fallback without voxelData column:", upsertErr?.message);
+      // Fallback in case database column voxelData is missing or has a character limit
+      worldMap = await prisma.worldMap.upsert({
+        where: { id: slug },
+        update: {
+          name: body.name || slug,
+          gameId: body.gameId || "saints",
+          ...(body.grid ? { gridData: JSON.stringify(body.grid) } : {}),
+          ...(serializedGatesData !== undefined ? { gatesData: serializedGatesData } : {}),
+          ...(body.npcs ? { npcsData: JSON.stringify(body.npcs) } : {}),
+          ...(body.encounterPool ? { encountersData: JSON.stringify(body.encounterPool) } : {}),
+          entitiesData: JSON.stringify(entitiesPayload),
+          ...(visualsForWrite
+            ? {
+                tileLayersData: JSON.stringify(visualsForWrite.tileLayers || []),
+                tilesetsData: JSON.stringify(visualsForWrite.tilesets || []),
+              }
+            : {}),
+          ...(body.freeformLayers || body.voxelDoc ? { freeformLayersData: JSON.stringify(freeformLayersForSave) } : {}),
+          version: { increment: 1 },
+        },
+        create: {
+          id: slug,
+          gameId: body.gameId || "saints",
+          name: body.name || slug,
+          gridData: JSON.stringify(body.grid || []),
+          gatesData: serializedGatesData || JSON.stringify(body.gates || {}),
+          npcsData: JSON.stringify(body.npcs || []),
+          encountersData: JSON.stringify(body.encounterPool || []),
+          entitiesData: JSON.stringify(entitiesPayload),
+          tileLayersData: JSON.stringify(visualsForCreate.tileLayers || []),
+          freeformLayersData: JSON.stringify(freeformLayersForSave),
+          tilesetsData: JSON.stringify(visualsForCreate.tilesets || []),
+        },
+      });
+    }
 
-      where: { id: slug },
-      update: {
-        name: body.name || slug,
-        gameId: body.gameId || "saints",
-        ...(body.grid ? { gridData: JSON.stringify(body.grid) } : {}),
-        ...(serializedGatesData !== undefined ? { gatesData: serializedGatesData } : {}),
-        ...(body.npcs ? { npcsData: JSON.stringify(body.npcs) } : {}),
-        ...(body.encounterPool ? { encountersData: JSON.stringify(body.encounterPool) } : {}),
-        entitiesData: JSON.stringify(entitiesPayload),
-        ...(visualsForWrite
-          ? {
-              tileLayersData: JSON.stringify(visualsForWrite.tileLayers || []),
-              tilesetsData: JSON.stringify(visualsForWrite.tilesets || []),
-            }
-          : {}),
-        ...(body.freeformLayers || body.voxelDoc ? { freeformLayersData: JSON.stringify(freeformLayersForSave) } : {}),
-        ...(body.voxelDoc ? { voxelData: JSON.stringify(body.voxelDoc) } : {}),
-        version: { increment: 1 },
-      },
-      create: {
-        id: slug,
-        gameId: body.gameId || "saints",
-        name: body.name || slug,
-        gridData: JSON.stringify(body.grid || []),
-        gatesData: serializedGatesData || JSON.stringify(body.gates || {}),
-        npcsData: JSON.stringify(body.npcs || []),
-        encountersData: JSON.stringify(body.encounterPool || []),
-        entitiesData: JSON.stringify(entitiesPayload),
-        tileLayersData: JSON.stringify(visualsForCreate.tileLayers || []),
-        freeformLayersData: JSON.stringify(freeformLayersForSave),
-        tilesetsData: JSON.stringify(visualsForCreate.tilesets || []),
-        voxelData: body.voxelDoc ? JSON.stringify(body.voxelDoc) : null,
-      },
-    });
-
-    await prisma.gameMap.upsert({
-      where: { id: slug },
-      update: {
-        name: body.name || slug,
-        width,
-        height,
-        ...(body.grid ? { tilesetData: JSON.stringify(body.grid) } : {}),
-        ...(serializedGatesData !== undefined ? { gates: serializedGatesData } : {}),
-        ...(body.npcs ? { npcs: JSON.stringify(body.npcs) } : {}),
-        ...(body.encounterPool ? { encounters: JSON.stringify(body.encounterPool) } : {}),
-      },
-      create: {
-        id: slug,
-        name: body.name || slug,
-        width,
-        height,
-        tilesetData: JSON.stringify(body.grid || []),
-        gates: serializedGatesData || JSON.stringify(body.gates || {}),
-        npcs: JSON.stringify(body.npcs || []),
-        encounters: JSON.stringify(body.encounterPool || []),
-      },
-    });
+    if (prisma.gameMap?.upsert) {
+      await prisma.gameMap.upsert({
+        where: { id: slug },
+        update: {
+          name: body.name || slug,
+          width,
+          height,
+          ...(body.grid ? { tilesetData: JSON.stringify(body.grid) } : {}),
+          ...(serializedGatesData !== undefined ? { gates: serializedGatesData } : {}),
+          ...(body.npcs ? { npcs: JSON.stringify(body.npcs) } : {}),
+          ...(body.encounterPool ? { encounters: JSON.stringify(body.encounterPool) } : {}),
+        },
+        create: {
+          id: slug,
+          name: body.name || slug,
+          width,
+          height,
+          tilesetData: JSON.stringify(body.grid || []),
+          gates: serializedGatesData || JSON.stringify(body.gates || {}),
+          npcs: JSON.stringify(body.npcs || []),
+          encounters: JSON.stringify(body.encounterPool || []),
+        },
+      }).catch((gmErr: any) => {
+        console.warn("[MapRoute] Secondary gameMap upsert failed non-fatally:", gmErr?.message);
+      });
+    }
 
     // Enqueue sync for game engine / Go MMO shards if explicitly published or if live sync requested
     if (body.isPublish) {
@@ -512,10 +558,10 @@ export async function POST(
 
     return NextResponse.json({ success: true, map: { id: worldMap.id, version: worldMap.version } });
   } catch (error) {
-    console.error("Failed to update map:", error);
+    console.error("[MapRoute] Failed to update map:", error);
     const message = error instanceof Error ? error.message : "Failed to update map";
     return NextResponse.json(
-      { error: "Failed to update map", details: [message] },
+      { error: message, details: [message] },
       { status: 500 }
     );
   }

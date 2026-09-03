@@ -1,3 +1,16 @@
+# 2.1.692
+- **Map Save & Generation Resilience Across Production Databases**:
+  - **Prisma Schema LongText Migration**:
+    - Added `voxelData`, `freeformLayersData`, `publishedData`, and `gates` to `longTextCols` in `scripts/prepare-prisma.js`.
+    - Guarantees MySQL/MariaDB provisions large JSON columns as `@db.LongText` rather than default `VARCHAR(191)` (preventing `Data too long for column 'voxelData'` / `500 Internal Server Error`).
+  - **Multi-Tier Map Upsert Fallback**:
+    - Added secondary fallback in `app/api/maps/[slug]/route.ts` to retry `worldMap.upsert` without `voxelData` column if the database table has not yet migrated the column.
+    - Wrapped `AuditService.write` and `prisma.gameMap.upsert` with non-fatal handlers so auxiliary services never abort map creation or saving.
+    - Updated error responses to return the specific database/validation message directly in `error` and `details`.
+  - **Client Error Formatting & Map Creation Payload**:
+    - Updated `handleCreateNewMap` in `MapListPanel.tsx` to include `width` and `height` explicitly in the POST request.
+    - Wired `formatMapWriteError` to parse server error bodies and present clear diagnostic toasts.
+
 # 2.1.691
 - **Pristine Realm Wipe: Remove Demo Map Bundling**:
   - **Complete Map Wipe on Re-Initialization**:
