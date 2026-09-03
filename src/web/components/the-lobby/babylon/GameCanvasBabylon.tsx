@@ -822,6 +822,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       tilesets: mapData.tilesets,
       npcs: [],
       chunks: mapData.chunks,
+      freeformLayers: mapData.freeformLayers,
+      voxelDoc: mapData.voxelDoc,
+      blockSizePx: mapData.blockSizePx,
     }, useGameStore.getState().worldOriginOffset);
     setMapMeshEpoch((n) => n + 1);
 
@@ -1145,6 +1148,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       npcs: [],
       chunks: mapData.chunks,
       connections: mapData.connections,
+      freeformLayers: mapData.freeformLayers,
+      voxelDoc: mapData.voxelDoc,
+      blockSizePx: mapData.blockSizePx,
     });
     setMapMeshEpoch((n) => n + 1);
     if (editorToolsRef.current) {
@@ -2106,6 +2112,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         freeformLayers: map.freeformLayers,
         tilesets: map.tilesets,
         npcs: [],
+        chunks: map.chunks,
+        voxelDoc: map.voxelDoc,
+        blockSizePx: map.blockSizePx,
       });
       // loadTilemap clears author overlays — re-seed pins/sprites.
       setMapMeshEpoch((n) => n + 1);

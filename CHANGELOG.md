@@ -1,3 +1,17 @@
+# 2.1.689
+- **Fix Studio World Saving, Voxel Document Preservation & Map Persistence**:
+  - **Babylon Engine Voxel Synchronization**:
+    - Added `voxelDoc` and `blockSizePx` to `BabylonTileMapData` interface.
+    - Updated all 3 `loadTilemap` invocations in `GameCanvasBabylon.tsx` to pass `voxelDoc`, `blockSizePx`, and `freeformLayers`, preventing default world doc regeneration from overwriting live painted voxels.
+    - Guaranteed `this.voxelWorld.id` is explicitly synced with `currentMapId` so `SpatialVoxelWorldManager.getInstance().getWorld(baseMapId)` reliably locates the active world.
+  - **Map Persistence Service Auto-Healing**:
+    - Ensured `saveDoc.grid` is always a valid 2D array matching map dimensions before dispatching to `/api/maps/[slug]`.
+    - Auto-heals empty or omitted collision grids via `buildBorderedLogicGrid(width, height)`, preventing HTTP 400 rejection.
+  - **Server-Side Robustness & Collision Sanitization**:
+    - Auto-heals empty grids in `/api/maps/[slug]` and dynamically remaps unregistered tile IDs (e.g. visual GIDs painted into logic grid) to valid walkable or solid tiles instead of throwing fatal 400 errors.
+  - **Document In-Place Hot Reloading**:
+    - Added `voxelDoc`, `freeformLayers`, `blockSizePx`, `publishedVersion`, and camera styles to `mergeMapDocumentInPlace` in `lobbyReconnect.ts`, preserving complete map state on socket hot-reload.
+
 # 2.1.688
 - **Map Browser Redesign: Compact List View, Multi-Select Management & Popout Window**:
   - **Popout Creation Window**:

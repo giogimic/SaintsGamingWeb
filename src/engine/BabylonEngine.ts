@@ -110,6 +110,8 @@ export interface BabylonTileMapData {
   freeformLayers?: FreeformLayer[];
   chunks?: RenderedChunk[];
   connections?: any;
+  voxelDoc?: VoxelWorldDocV3;
+  blockSizePx?: number;
 }
 
 export interface SpriteSheetConfig {
@@ -2472,11 +2474,17 @@ export class BabylonEngine {
     }
 
     // Always ensure 3D Voxel World is loaded and rendered
-    const voxelDoc = (mapData as any).voxelDoc || generateDefaultWorldDoc(
+    const rawVoxel = mapData.voxelDoc || (this.currentRawMapData as any)?.voxelDoc;
+    const voxelDoc = rawVoxel || generateDefaultWorldDoc(
       Math.max(1, Math.ceil((width || 32) / 16)),
       Math.max(1, Math.ceil((height || 32) / 16)),
-      (mapData as any).blockSizePx || 64
+      mapData.blockSizePx || (this.currentRawMapData as any)?.blockSizePx || 64,
+      width,
+      height
     );
+    if (mapId && voxelDoc.id !== mapId) {
+      voxelDoc.id = mapId;
+    }
     this.loadVoxelWorld(voxelDoc);
   }
 
@@ -2499,6 +2507,9 @@ export class BabylonEngine {
       this.voxelWorld = VoxelWorld.deserializeFromDoc(docOrWorld);
     }
 
+    if (this.currentMapId && this.voxelWorld.id !== this.currentMapId) {
+      this.voxelWorld.id = this.currentMapId;
+    }
     if (this.currentMapWidth && !this.voxelWorld.mapWidth) this.voxelWorld.mapWidth = this.currentMapWidth;
     if (this.currentMapHeight && !this.voxelWorld.mapHeight) this.voxelWorld.mapHeight = this.currentMapHeight;
 
