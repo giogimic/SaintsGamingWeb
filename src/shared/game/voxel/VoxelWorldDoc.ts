@@ -87,19 +87,28 @@ export class VoxelWorld {
   }
 
   constructor(
-    id: string,
-    name: string,
+    idOrOptions: string | { id: string; name?: string; dimensions?: { widthChunks?: number; depthChunks?: number; heightChunks?: number }; blockSizePx?: number },
+    name?: string,
     widthChunks: number = 2,
     depthChunks: number = 2,
     heightChunks: number = 1,
     blockSizePx: number = DEFAULT_BLOCK_SIZE_PX
   ) {
-    this.id = id;
-    this.name = name;
-    this.widthChunks = Math.max(1, widthChunks);
-    this.depthChunks = Math.max(1, depthChunks);
-    this.heightChunks = Math.max(1, heightChunks);
-    this.blockSizePx = Math.min(MAX_BLOCK_SIZE_PX, Math.max(MIN_BLOCK_SIZE_PX, blockSizePx));
+    if (typeof idOrOptions === 'object') {
+      this.id = idOrOptions.id;
+      this.name = idOrOptions.name || idOrOptions.id;
+      this.widthChunks = Math.max(1, idOrOptions.dimensions?.widthChunks ?? 2);
+      this.depthChunks = Math.max(1, idOrOptions.dimensions?.depthChunks ?? 2);
+      this.heightChunks = Math.max(1, idOrOptions.dimensions?.heightChunks ?? 1);
+      this.blockSizePx = Math.min(MAX_BLOCK_SIZE_PX, Math.max(MIN_BLOCK_SIZE_PX, idOrOptions.blockSizePx ?? DEFAULT_BLOCK_SIZE_PX));
+    } else {
+      this.id = idOrOptions;
+      this.name = name || idOrOptions;
+      this.widthChunks = Math.max(1, widthChunks);
+      this.depthChunks = Math.max(1, depthChunks);
+      this.heightChunks = Math.max(1, heightChunks);
+      this.blockSizePx = Math.min(MAX_BLOCK_SIZE_PX, Math.max(MIN_BLOCK_SIZE_PX, blockSizePx));
+    }
     this.initDefaultPalette();
   }
 

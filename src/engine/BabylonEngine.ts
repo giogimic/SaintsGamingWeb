@@ -4422,6 +4422,7 @@ export class BabylonEngine {
     }
     for (const m of this.selectionPreviewMeshes) m.dispose();
     this.selectionPreviewMeshes = [];
+    this.clear3DBoxSelectionPreview();
   }
 
   private createSelectionBoxMaterial(
@@ -4797,15 +4798,7 @@ export class BabylonEngine {
     return mat;
   }
 
-  public clearSelectionPreview() {
-    if (this.selectionBoxMesh) {
-      this.selectionBoxMesh.isVisible = false;
-    }
-    if (this.multiSelectionBaseMesh) {
-      this.multiSelectionBaseMesh.isVisible = false;
-    }
-    this.clear3DBoxSelectionPreview();
-  }
+
 
   public set3DBoxSelectionPreview(
     minWX: number,

@@ -22,7 +22,7 @@ export class PrefabToolHandler implements IToolHandler {
 
     // 3D Volumetric Voxel Stamping
     if (store.studioMode === 'voxel') {
-      const voxelWorld = gameStore.voxelWorld;
+      const voxelWorld: any = (context.engine as any)?.voxelWorld;
       const activeVoxelPrefab = store.activeVoxelPrefab;
       if (!activeVoxelPrefab) {
         context.showToast?.('Select a 3D Voxel Prefab first.');
@@ -37,7 +37,7 @@ export class PrefabToolHandler implements IToolHandler {
       const targetWY = event.voxelTarget?.adjacentVoxelCoord?.wy ?? 16;
       const targetWZ = event.voxelTarget?.adjacentVoxelCoord?.wz ?? event.tilePos.r;
 
-      const { modifiedCount, dirtyChunks } = stampVoxelPrefab(
+      const { modifiedCount } = stampVoxelPrefab(
         voxelWorld,
         activeVoxelPrefab,
         targetWX,
@@ -47,9 +47,12 @@ export class PrefabToolHandler implements IToolHandler {
 
       if (modifiedCount > 0) {
         store.markMapDirty();
-        dirtyChunks.forEach((chunkKey) => {
-          context.engine?.rebuildChunkMeshByKey?.(chunkKey);
-        });
+        (context.engine as any)?.meshDirtyVoxelChunks?.();
+        const doc = voxelWorld.serializeToDoc?.();
+        const liveMap = context.mapData || gameStore.activeMapData;
+        if (liveMap && doc) {
+          gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });
+        }
         context.showToast?.(`Stamped ${activeVoxelPrefab.name} (${modifiedCount} voxels).`);
       }
       return true;

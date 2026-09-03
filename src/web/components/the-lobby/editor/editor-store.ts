@@ -983,6 +983,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 560,
     zIndex: 10,
   },
+  biome: {
+    id: 'biome',
+    title: 'Biome Configurator',
+    isOpen: false,
+    isCollapsed: false,
+    x: 300,
+    y: 80,
+    width: 640,
+    height: 600,
+    zIndex: 10,
+  },
 };
 
 

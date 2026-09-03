@@ -5,7 +5,7 @@ import { useEditorStore } from '../editor-store';
 import { useGameStore } from '../../store';
 import {
   Save, Map as MapIcon, Plus, Trash2, Crosshair, HelpCircle, Compass, Radio,
-  Castle, Trees, Waves, Mountain, Flame, Navigation, ArrowUpRight, Globe
+  Castle, Trees, Waves, Mountain, Flame, Navigation, ArrowUpRight, Globe, Sparkles
 } from 'lucide-react';
 import { MapIndexEntry, loadMap, invalidateMapCache, invalidateClientAtlas } from '../../data/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
@@ -455,7 +455,7 @@ export const WorldAtlasPanel: React.FC = () => {
                     onClick={() => handleGridClick(node.x, node.y)}
                     onDoubleClick={() => {
                       if (nodeType === 'procedural') {
-                        useEditorStore.getState().toggleDock('biome');
+                        useEditorStore.getState().togglePanel('biome');
                         showToast(`Opened Biome Configurator for ${node.mapId}`);
                       } else {
                         handleWarpToMap(node.mapId, node.id);
@@ -581,7 +581,7 @@ export const WorldAtlasPanel: React.FC = () => {
                 {(selectedNode.nodeType === 'procedural' || selectedNode.nodeType === 'hybrid') && (
                   <button
                     onClick={() => {
-                      useEditorStore.getState().toggleDock('biome');
+                      useEditorStore.getState().togglePanel('biome');
                       showToast(`Configuring Biome for ${selectedNode.mapId}`);
                     }}
                     className="px-3 py-1.5 bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 font-bold rounded-lg border border-emerald-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow"
