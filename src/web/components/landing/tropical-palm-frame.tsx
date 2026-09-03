@@ -2,6 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
+import { toClientAssetUrl } from "@/shared/game/tileBatchHelpers";
 
 export function TropicalPalmFrame({
   glowColor = "rgba(248, 150, 30, 0.4)",
@@ -25,9 +26,15 @@ export function TropicalPalmFrame({
         style={{ transformOrigin: "0% 100%", pointerEvents: "none", userSelect: "none" }}
       >
         <img
-          src="/images/left-palm.svg"
+          src={toClientAssetUrl('/images/left-palm.svg')}
           alt="Left Palm Silhouette Frame"
           draggable={false}
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (!target.src.includes('https://saintsgaming.net')) {
+              target.src = 'https://saintsgaming.net/images/left-palm.svg';
+            }
+          }}
           className="w-full h-full object-contain object-left-bottom pointer-events-none select-none"
           style={{
             filter: `drop-shadow(4px 0 25px rgba(0,0,0,0.85)) drop-shadow(0 0 14px ${glowColor})`,
@@ -50,9 +57,15 @@ export function TropicalPalmFrame({
         style={{ transformOrigin: "100% 100%", pointerEvents: "none", userSelect: "none" }}
       >
         <img
-          src="/images/right-palm.svg"
+          src={toClientAssetUrl('/images/right-palm.svg')}
           alt="Right Palm Silhouette Frame"
           draggable={false}
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (!target.src.includes('https://saintsgaming.net')) {
+              target.src = 'https://saintsgaming.net/images/right-palm.svg';
+            }
+          }}
           className="w-full h-full object-contain object-right-bottom pointer-events-none select-none"
           style={{
             filter: `drop-shadow(-4px 0 25px rgba(0,0,0,0.85)) drop-shadow(0 0 14px ${glowColor})`,

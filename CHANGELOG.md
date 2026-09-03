@@ -1,3 +1,9 @@
+# 2.1.708
+- **Independent Offline Asset Loading for Tropical Palms & Standalone Background**:
+  - In `src/web/components/landing/tropical-palm-frame.tsx`, applied `toClientAssetUrl()` to both left and right palm SVG frames (`/images/left-palm.svg` and `/images/right-palm.svg`).
+  - Converts absolute `/images/...` paths to `./images/...` under `file:` protocol so palm tree silhouettes render independently in offline desktop executables without 404s.
+  - Added dynamic `onError` remote fallback to stream from `https://saintsgaming.net/images/*.svg` if local file access fails.
+
 # 2.1.707
 - **Restore Website Studio & Smart Desktop Hybrid Fallback**:
   - **Restored Website Studio Routes**:
