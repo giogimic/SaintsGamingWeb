@@ -770,6 +770,9 @@ model WorldMap {
   tileLayersData     String  @default("[]") // JSON for TMX tile layers
   freeformLayersData String  @default("[]") // JSON for 2.5D freeform layers (splats, props, polygons)
   tilesetsData       String  @default("[]") // JSON for tilesets metadata
+  voxelData          String? // JSON for authoritative VoxelWorldDocV3
+  publishedVersion   Int     @default(0) // 0 means draft only, >=1 indicates published release
+  publishedData      String? // Immutable JSON snapshot of active published release
   version        Int     @default(1)
 
   // Rich Map Metadata
@@ -785,6 +788,20 @@ model WorldMap {
   updatedAt DateTime @updatedAt
 
   @@index([gameId])
+}
+
+model WorldMapVersion {
+  id          String   @id @default(cuid())
+  mapId       String
+  version     Int
+  name        String
+  data        String   // Serialized JSON map payload
+  description String?
+  publishedBy String?
+  createdAt   DateTime @default(now())
+
+  @@unique([mapId, version])
+  @@index([mapId])
 }
 
 model MapSyncEntry {

@@ -123,6 +123,7 @@ export interface RenderedChunk {
   grid?: number[][];
   tileLayers?: TileLayer[];
   tilesets?: TilesetMeta[];
+  voxelDoc?: any;
 }
 
 export interface MapData {

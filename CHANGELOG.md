@@ -1,3 +1,45 @@
+# 2.1.686
+- **Continuous Voxel World Foundation & Deterministic Procedural Generation**:
+  - Implemented `VoxelWorldGenerator` with Mulberry32 PRNG and multi-octave 2D fractal gradient noise.
+  - Added deterministic procedural terrain profiles: `rolling_hills`, `mountains`, `islands`, `canyon`, `plateau`, `flat`.
+  - Added world generation modes: `blank` (empty volume), `foundation` (flat slab), and `procedural` (noise-driven).
+  - Seed-deterministic generation with live randomize and configurable surface materials (Grass, Stone, Sand, Dirt, Snow).
+- **Authoritative Voxel Persistence & Multi-Tier Lifecycle (Save ≠ Publish ≠ Live & Rollback)**:
+  - Added `voxelData`, `publishedVersion`, and `publishedData` native columns to `WorldMap` model in `prisma/schema.prisma`.
+  - Added `WorldMapVersion` model for immutable release snapshots and 1-click rollback.
+  - Implemented `/api/maps/[slug]/publish`, `/api/maps/[slug]/rollback`, and `/api/maps/[slug]/versions` endpoints.
+  - Separated editor draft saves from live runtime: Studio saves persist drafts without disrupting live game shards; only explicit publishes push snapshots to the runtime.
+  - Synchronized authoritative `BabylonEngine.voxelWorld` into `MapPersistenceService.saveMap()` pre-flight to prevent stale overwrites.
+- **Seamless Spatial Adjacency, Continuous Streaming & Boundary Halo Meshing**:
+  - Added `SpatialVoxelWorldManager` managing cross-map spatial offsets, chunk streaming, and neighbor connectivity across the World Atlas.
+  - Enhanced `VoxelChunkMesher` with 1-block cross-map boundary halo sampling (`getVoxelWithHalo`), eliminating outer border cracks, gaps, and seams between adjacent maps.
+  - Added adjacent voxel chunk pre-streaming in `BabylonEngine` and smooth border transitions in `WorldSimulation` and `GameCanvasBabylon` without canvas unmounting or screen flicker.
+  - Added `canEditVoxel` spatial safety boundaries to protect neighbor maps during editing.
+- **Upgraded Map Browser & Macro World Atlas UX**:
+  - Redesigned Map Creation modal in `MapListPanel.tsx` with size presets (Tiny 16x16, Small 32x32, Standard 64x64, Large 128x128, Custom), procedural generation settings, seed inputs, and base material selectors.
+  - Displayed voxel dimensions, chunk counts (`NxM Chk`), V3 Voxel badges, and published release versions on map browser cards.
+  - Added Version History modal allowing developers to view published releases and rollback to previous world snapshots with one click.
+  - Upgraded `WorldAtlasPanel.tsx` with spatial voxel region details and dark glass Saints Gaming aesthetic.
+
+# 2.1.685
+- **Studio Editing Constraints: Layer Lock, Build Up Mode & 3D Footprint Preview**:
+  - **Layer Lock (Plane Lock)**:
+    - Added `voxelPlaneLockEnabled` and `voxelTargetPlaneY` (0..31) in `editor-store.ts`.
+    - Constrains painting and erasing strictly to the designated horizontal plane ($Y$), preventing accidental elevation leaps when brushing near stairs, hills, or walls.
+    - Added multi-plane mask selection (`voxelPlaneMask`) to enable simultaneous multi-layer painting or elevation filtering.
+  - **Build Up Mode (Vertical Stacking)**:
+    - Added `voxelBuildUpMode` in `editor-store.ts`.
+    - Enables effortless vertical extrusion where clicks and brush strokes place blocks directly atop existing surfaces ($Y = \text{surface} + 1$).
+  - **Visible 3D Brush Footprint Preview (`BabylonEngine.ts`)**:
+    - Replaced single bounding cursor with an exact multi-cube 3D footprint preview matching the active brush shape (`circle`, `square`, `diamond`, `star`) and radius (1..8).
+    - Accurately renders at the target plane elevation or build-up height in real-time.
+    - Color-coded: translucent amber/gold (`#f59e0b`, alpha 0.4) for place/build-up, ruby red (`#ef4444`, alpha 0.45) for eraser, and cyan for inspect.
+  - **Strict Map Boundary Enforcement**:
+    - Centralized `resolveConstrainedVoxelCoordinates` in `VoxelWord.ts`.
+    - Strictly clips brush footprints, mutations, and preview meshes to map boundaries ($[0..\text{mapWidth}-1] \times [0..\text{mapHeight}-1]$), preventing paint from spilling outside the map.
+  - **Studio UI Integration**:
+    - Added Editing Constraints toolbar to `BrushSettingsBar.tsx` and `TerrainBrushPalette.tsx` with Layer Lock toggle, Build Up toggle, Plane Y stepper with range slider, surface elevation picker, and multi-plane mask chips.
+
 # 2.1.684
 - **Studio Authority Pipeline & In-Game Texture Polish**:
   - **Authoritative Studio Camera Configuration**:

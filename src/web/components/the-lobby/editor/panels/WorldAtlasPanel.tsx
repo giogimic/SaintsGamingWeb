@@ -498,6 +498,11 @@ export const WorldAtlasPanel: React.FC = () => {
                 <span className="text-slate-400 text-[11px]">
                   Grid Position: [{selectedNode.y}, {selectedNode.x}]
                 </span>
+                {allMaps.find(m => m.id === selectedNode.mapId) && (
+                  <span className="text-amber-400/90 text-[11px] bg-black/40 px-2 py-0.5 rounded border border-amber-500/20">
+                    Region: {allMaps.find(m => m.id === selectedNode.mapId)!.name || selectedNode.mapId}
+                  </span>
+                )}
                 {activeConnections && (
                   <div className="flex items-center gap-2 bg-black/50/20 px-2.5 py-1 rounded-lg border border-amber-500/20 text-[10px]">
                     <span className="text-slate-400 font-bold">Adjacency:</span>

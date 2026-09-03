@@ -95,6 +95,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const prefabStampMode = useEditorStore((state) => state.prefabStampMode);
   const activeLayerType = useEditorStore((state) => state.activeLayerType);
   const isStudioFreeCam = useEditorStore((state) => state.isStudioFreeCam);
+  const voxelPlaneLockEnabled = useEditorStore((state) => state.voxelPlaneLockEnabled);
+  const voxelTargetPlaneY = useEditorStore((state) => state.voxelTargetPlaneY);
+  const voxelPlaneMask = useEditorStore((state) => state.voxelPlaneMask);
+  const voxelBuildUpMode = useEditorStore((state) => state.voxelBuildUpMode);
+  const activeVoxelBrushAxis = useEditorStore((state) => state.activeVoxelBrushAxis);
   const [isPanDragging, setIsPanDragging] = useState(false);
   const [isSpaceHeld, setIsSpaceHeld] = useState(false);
   const isSpaceHeldRef = useRef(false);
@@ -710,6 +715,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     engineRef.current = babylonEngine;
     if (typeof window !== 'undefined') {
       (window as any).__babylonEngine = babylonEngine;
+      (window as any).__sg_babylon_engine = babylonEngine;
     }
     setIsEngineReady(true);
 
@@ -1285,7 +1291,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     }
   }, [activeLayerIdx, mapData, activeMap]);
 
-  // Sync live dev editor brush and view settings without tearing down picking listeners
+  // Sync live dev editor brush, voxel constraints, and view settings without tearing down picking listeners
   useEffect(() => {
     const engine = engineRef.current;
     if (!engine) return;
@@ -1300,8 +1306,34 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     engine.setActiveLayerType(activeLayerType);
     engine.setBrushMode(brushMode);
     engine.setFreeCam(isStudioFreeCam);
+    engine.setVoxelConstraints({
+      planeLockEnabled: voxelPlaneLockEnabled,
+      targetPlaneY: voxelTargetPlaneY,
+      planeMask: voxelPlaneMask,
+      buildUpMode: voxelBuildUpMode,
+      brushAxis: activeVoxelBrushAxis,
+      brushRadius,
+      brushShape,
+    });
     engine.refreshBrushPreview();
-  }, [brushRadius, brushShape, brushRotation, stampScale, activeBrushTileId, activeBrushPattern, prefabStampMode, activeLayerIdx, activeLayerType, brushMode, isStudioFreeCam]);
+  }, [
+    brushRadius,
+    brushShape,
+    brushRotation,
+    stampScale,
+    activeBrushTileId,
+    activeBrushPattern,
+    prefabStampMode,
+    activeLayerIdx,
+    activeLayerType,
+    brushMode,
+    isStudioFreeCam,
+    voxelPlaneLockEnabled,
+    voxelTargetPlaneY,
+    voxelPlaneMask,
+    voxelBuildUpMode,
+    activeVoxelBrushAxis,
+  ]);
 
   // Handle Live Dev Editor Tile Picking & Click-to-Move
   useEffect(() => {

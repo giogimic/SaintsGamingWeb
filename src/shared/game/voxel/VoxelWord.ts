@@ -170,13 +170,19 @@ export const VOXEL_WORD_AIR = packVoxel(VOXEL_MAT_AIR, VoxelShape.AIR, VoxelOrie
 export const VOXEL_WORD_GUNMETAL = packVoxel(VOXEL_MAT_GUNMETAL, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE, VoxelLogic.NONE);
 export const VOXEL_WORD_GRASS = packVoxel(VOXEL_MAT_GRASS, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE, VoxelLogic.NONE);
 
+import { isInGridFootprint, type BrushShape } from '../brushGeometry';
+
 /**
- * Calculates deterministic voxel-space (dx, dz) footprint offsets for a given brush size.
+ * Calculates deterministic 2D/3D voxel-space (dx, dz) footprint offsets
  * Brush Size 1 = 1x1 voxel footprint
  * Brush Size 2 = 2x2 voxel footprint
  * Brush Size 3 = 3x3 voxel footprint, etc.
+ * Supports shaped footprints (circle, diamond, splat-star, square).
  */
-export function getVoxelBrushOffsets(brushRadius: number): Array<{ dx: number; dz: number }> {
+export function getVoxelBrushOffsets(
+  brushRadius: number,
+  shape: BrushShape = 'square'
+): Array<{ dx: number; dz: number }> {
   const rad = Math.max(1, Math.floor(brushRadius));
   const offsets: Array<{ dx: number; dz: number }> = [];
   if (rad === 1) {
@@ -191,10 +197,12 @@ export function getVoxelBrushOffsets(brushRadius: number): Array<{ dx: number; d
 
   for (let dz = minZ; dz <= maxZ; dz++) {
     for (let dx = minX; dx <= maxX; dx++) {
-      offsets.push({ dx, dz });
+      if (shape === 'square' || isInGridFootprint(dz, dx, half, shape)) {
+        offsets.push({ dx, dz });
+      }
     }
   }
-  return offsets;
+  return offsets.length > 0 ? offsets : [{ dx: 0, dz: 0 }];
 }
 
 export type VoxelBrushAxis = 'xz' | 'xy' | 'yz';
@@ -205,9 +213,10 @@ export type VoxelBrushAxis = 'xz' | 'xy' | 'yz';
  */
 export function getVoxelBrushOffsets3D(
   brushRadius: number,
-  axis: VoxelBrushAxis = 'xz'
+  axis: VoxelBrushAxis = 'xz',
+  shape: BrushShape = 'square'
 ): Array<{ dx: number; dy: number; dz: number }> {
-  const planar = getVoxelBrushOffsets(brushRadius);
+  const planar = getVoxelBrushOffsets(brushRadius, shape);
   switch (axis) {
     case 'xy': // Vertical wall along X axis (dx, dy)
       return planar.map(({ dx, dz }) => ({ dx, dy: dz, dz: 0 }));
@@ -217,4 +226,76 @@ export function getVoxelBrushOffsets3D(
     default:
       return planar.map(({ dx, dz }) => ({ dx, dy: 0, dz }));
   }
+}
+
+export interface VoxelConstraintOptions {
+  centerCoord: { wx: number; wy: number; wz: number };
+  brushRadius: number;
+  brushShape?: BrushShape;
+  brushAxis?: VoxelBrushAxis;
+  planeLockEnabled?: boolean;
+  targetPlaneY?: number;
+  planeMask?: number[] | null;
+  buildUpMode?: boolean;
+  mapWidth: number;
+  mapHeight: number;
+  maxElevation?: number;
+}
+
+/**
+ * Authoritative Studio Editing Constraint Resolver.
+ * Filters and clamps voxel operations to enforce:
+ * 1. Hard map boundaries [0..mapWidth-1, 0..mapHeight-1]
+ * 2. Vertical elevation limits [0..maxElevation-1]
+ * 3. Layer / Plane Lock (strictly pins operations to targetPlaneY)
+ * 4. Multi-plane mask filtering (restricts edits to specified planes)
+ * 5. Build Up Mode (stacks voxels vertically atop hit surfaces)
+ */
+export function resolveConstrainedVoxelCoordinates(
+  options: VoxelConstraintOptions
+): Array<{ wx: number; wy: number; wz: number }> {
+  const {
+    centerCoord,
+    brushRadius,
+    brushShape = 'square',
+    brushAxis = 'xz',
+    planeLockEnabled = false,
+    targetPlaneY = 0,
+    planeMask = null,
+    buildUpMode = false,
+    mapWidth,
+    mapHeight,
+    maxElevation = 32,
+  } = options;
+
+  const offsets = getVoxelBrushOffsets3D(brushRadius, brushAxis, brushShape);
+  const result: Array<{ wx: number; wy: number; wz: number }> = [];
+
+  for (const { dx, dy, dz } of offsets) {
+    const wx = centerCoord.wx + dx;
+    let wy = centerCoord.wy + dy;
+    const wz = centerCoord.wz + dz;
+
+    // 1. Build Up Mode: places directly atop hit surface
+    if (buildUpMode) {
+      wy = centerCoord.wy + 1 + dy;
+    } else if (planeLockEnabled && brushAxis === 'xz') {
+      // 2. Plane Lock: strictly constrain horizontal painting to targetPlaneY
+      wy = targetPlaneY;
+    }
+
+    // 3. Plane Mask filtering: if specific planes are whitelisted, ensure wy is in mask
+    if (planeMask && planeMask.length > 0 && !planeMask.includes(wy)) {
+      continue;
+    }
+
+    // 4. Hard Map Boundaries: strictly forbid out-of-bounds painting or spilling over
+    if (wx < 0 || wx >= mapWidth || wz < 0 || wz >= mapHeight || wy < 0 || wy >= maxElevation) {
+      continue;
+    }
+
+    result.push({ wx, wy, wz });
+  }
+
+  return result;
 }

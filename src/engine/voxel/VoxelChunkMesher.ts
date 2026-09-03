@@ -136,12 +136,14 @@ export class VoxelChunkMesher {
     const startWZ = chunk.cz * CHUNK_SIZE_Z;
     const startWY = chunk.cy * CHUNK_SIZE_Y;
 
-    // Helper: sample voxel with 1-block boundary halo across world
+    // Helper: sample voxel with 1-block boundary halo across world and adjacent connected maps
     const sample = (lx: number, ly: number, lz: number): number => {
       const wx = startWX + lx;
       const wy = startWY + ly;
       const wz = startWZ + lz;
-      return world.getVoxel(wx, wy, wz);
+      return typeof world.getVoxelWithHalo === 'function'
+        ? world.getVoxelWithHalo(wx, wy, wz)
+        : world.getVoxel(wx, wy, wz);
     };
 
     let quadCount = 0;

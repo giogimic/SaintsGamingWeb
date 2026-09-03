@@ -14,9 +14,10 @@ import { rasterizeLine } from '@/shared/game/lineRaster';
 import { isPointInGeometry } from '@/shared/game/geometry/continuousGeometry';
 import { STUDIO_MAP_HOT_RELOAD_EVENT } from '@/shared/game/studioEvents';
 import { isInBrushShape } from '@/shared/game/brushGeometry';
-import { VOXEL_WORD_AIR, getVoxelBrushOffsets, getVoxelBrushOffsets3D } from '@/shared/game/voxel/VoxelWord';
+import { VOXEL_WORD_AIR, getVoxelBrushOffsets, getVoxelBrushOffsets3D, resolveConstrainedVoxelCoordinates } from '@/shared/game/voxel/VoxelWord';
 import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
 import { VoxelTransactionBuilder } from '@/shared/game/voxel/VoxelTransaction';
+import { resolveMapDimensions } from '@/shared/game/mapDocVisual';
 
 export class EraserToolHandler implements IToolHandler {
   public readonly id = 'eraser' as const;
@@ -26,10 +27,18 @@ export class EraserToolHandler implements IToolHandler {
   }
 
   public onPointerMove(event: ToolPointerEvent, context: ToolExecutionContext): boolean {
-    return this.executeErase(event, context, 'move');
+    return this.executeErase(event, context, 'drag');
   }
 
-  private executeErase(event: ToolPointerEvent, context: ToolExecutionContext, eventType: 'down' | 'move'): boolean {
+  public onPointerDrag(event: ToolPointerEvent, context: ToolExecutionContext): boolean {
+    return this.executeErase(event, context, 'drag');
+  }
+
+  public onPointerUp(event: ToolPointerEvent, context: ToolExecutionContext): boolean {
+    return false;
+  }
+
+  private executeErase(event: ToolPointerEvent, context: ToolExecutionContext, eventType: 'down' | 'drag'): boolean {
     if (event.button !== 0 && event.rawEvent.buttons !== 1) return false;
     const store = useEditorStore.getState();
     const gameStore = useGameStore.getState();
@@ -42,14 +51,28 @@ export class EraserToolHandler implements IToolHandler {
     // 0. Authoritative 3D Voxel Erasure
     if (event.voxelTarget && (context.engine as any).voxelWorld) {
       const voxelWorld: VoxelWorld = (context.engine as any).voxelWorld;
-      const targetCoord = event.voxelTarget.voxelCoord;
-      const offsets = getVoxelBrushOffsets3D(store.brushRadius || 1, store.activeVoxelBrushAxis || 'xz');
+      const dims = resolveMapDimensions(liveMap);
+      const mapWidth = dims.width;
+      const mapHeight = dims.height;
+
+      const targetCoords = resolveConstrainedVoxelCoordinates({
+        centerCoord: event.voxelTarget.voxelCoord,
+        brushRadius: store.brushRadius || 1,
+        brushShape: store.brushShape || 'square',
+        brushAxis: store.activeVoxelBrushAxis || 'xz',
+        planeLockEnabled: store.voxelPlaneLockEnabled,
+        targetPlaneY: store.voxelTargetPlaneY,
+        planeMask: store.voxelPlaneMask,
+        buildUpMode: false,
+        mapWidth,
+        mapHeight,
+        maxElevation: 32,
+      });
+
+      if (targetCoords.length === 0) return true;
 
       const txBuilder = new VoxelTransactionBuilder('Eraser Clear Voxel', liveMap.id || '');
-      for (const { dx, dy, dz } of offsets) {
-        const wx = targetCoord.wx + dx;
-        const wy = targetCoord.wy + dy;
-        const wz = targetCoord.wz + dz;
+      for (const { wx, wy, wz } of targetCoords) {
         txBuilder.record(voxelWorld, wx, wy, wz, VOXEL_WORD_AIR);
       }
 
