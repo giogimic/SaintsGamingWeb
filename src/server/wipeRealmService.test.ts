@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import { wipeNonBundledRealmContent } from './wipeRealmService';
-import { DEMO_MAP_ID } from './demoMapSeed';
 
 vi.mock('@/server/DemoBootstrap', () => ({
   ensureStudioMapFoundation: vi.fn().mockResolvedValue({ logicTiles: true, demoMap: true }),
@@ -74,9 +73,8 @@ describe('wipeNonBundledRealmContent', () => {
     expect(result.wipedMapsCount).toBe(5);
     expect(result.wipedCharactersCount).toBe(3);
 
-    // Verify maps wiped exclude DEMO_MAP_ID
-    expect(deletedMapWhere.length).toBe(1);
-    expect(deletedMapWhere[0]?.id?.notIn).toContain(DEMO_MAP_ID);
+    // Verify all maps are wiped with no exclusions
+    expect(mockPrisma.worldMap.deleteMany).toHaveBeenCalledWith({});
 
     // Verify non-bundled asset filtering
     expect(deletedAssetWhere.length).toBe(1);

@@ -1012,7 +1012,7 @@ export default function GameOptionsMenu({
         {/* OS Window Footer Bar */}
         <div className="px-4 py-2 bg-[#0a1628]/90 border-t border-border/40 flex items-center justify-between text-[10px] font-mono text-muted-foreground select-none">
           <div className="flex items-center gap-3">
-            <span>Saints Gaming v2.1.690</span>
+            <span>Saints Gaming v2.1.691</span>
             <span>•</span>
             <span>Time To Play</span>
           </div>
