@@ -81,7 +81,7 @@ export const DesktopAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // Handle deep-link auth callback
   const handleAuthUrl = useCallback(async (urlStr: string) => {
     try {
-      if (!urlStr.startsWith('saints-gaming://')) return;
+      if (!urlStr.startsWith('saints-studio://')) return;
       const parsed = new URL(urlStr);
       const incomingToken = parsed.searchParams.get('token');
       if (incomingToken) {

@@ -1,26 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Gamepad2, Minus, Square, Copy, X, Wifi, User, LogOut, ArrowLeft } from 'lucide-react';
+import { Sparkles, Minus, Square, Copy, X, Wifi, User, LogOut } from 'lucide-react';
 import { useDesktopAuth } from '../providers/DesktopAuthProvider';
 
-type AppView = 'home' | 'studio';
-
-export const DesktopTitlebar: React.FC<{ activeMapTitle?: string; appView?: AppView }> = ({
-  activeMapTitle,
-  appView = 'home',
-}) => {
+export const DesktopTitlebar: React.FC<{ activeMapTitle?: string }> = ({ activeMapTitle }) => {
   const { user, serverUrl, logout } = useDesktopAuth();
   const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
-
-    // Listen for Electron maximize changes
-    const electronAPI = (window as any).electronAPI;
-    if (electronAPI?.onMaximizeChange) {
-      electronAPI.onMaximizeChange((val: boolean) => setIsMaximized(val));
-    }
-
-    // Tauri fallback
     const checkMaximized = async () => {
       try {
         const { getCurrentWindow } = await import('@tauri-apps/api/window');
@@ -30,7 +17,7 @@ export const DesktopTitlebar: React.FC<{ activeMapTitle?: string; appView?: AppV
           setIsMaximized(await appWindow.isMaximized());
         });
       } catch {
-        // Not in Tauri
+        // Fallback if not in Tauri
       }
     };
     checkMaximized();
@@ -69,22 +56,19 @@ export const DesktopTitlebar: React.FC<{ activeMapTitle?: string; appView?: AppV
   return (
     <div
       data-tauri-drag-region
-      style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       className="h-9 w-full bg-[#050b14]/95 border-b border-border/40 flex items-center justify-between px-3 select-none text-xs z-50 text-slate-300"
     >
       {/* Left: Brand Icon & Title */}
       <div className="flex items-center gap-2.5 pointer-events-none">
         <div className="w-5 h-5 rounded bg-primary/20 border border-primary/40 flex items-center justify-center text-primary">
-          <Gamepad2 className="w-3 h-3" />
+          <Sparkles className="w-3 h-3" />
         </div>
         <span className="font-bold tracking-tight text-white flex items-center gap-1.5">
-          <span>Saints Gaming</span>
-          {activeMapTitle && appView === 'studio' && (
+          <span>Saints World Studio</span>
+          {activeMapTitle && (
             <>
               <span className="text-slate-600">•</span>
-              <span className="text-primary font-normal text-[11px]">World Studio</span>
-              <span className="text-slate-600">—</span>
-              <span className="text-slate-400 font-normal text-[11px]">{activeMapTitle}</span>
+              <span className="text-primary font-normal">{activeMapTitle}</span>
             </>
           )}
         </span>
@@ -97,7 +81,7 @@ export const DesktopTitlebar: React.FC<{ activeMapTitle?: string; appView?: AppV
       </div>
 
       {/* Right: User & Window Controls */}
-      <div className="flex items-center gap-2" data-no-drag style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+      <div className="flex items-center gap-2" data-no-drag>
         {user && (
           <div className="flex items-center gap-2 mr-2">
             <div className="flex items-center gap-1.5 text-[11px] text-slate-300">
@@ -142,4 +126,3 @@ export const DesktopTitlebar: React.FC<{ activeMapTitle?: string; appView?: AppV
     </div>
   );
 };
-
