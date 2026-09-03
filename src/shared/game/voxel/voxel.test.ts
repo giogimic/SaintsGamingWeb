@@ -24,6 +24,7 @@ import {
   VOXEL_WORD_GUNMETAL,
   VOXEL_WORD_GRASS,
   getVoxelBrushOffsets,
+  getVoxelBrushOffsets3D,
   getVoxelMaterialDef,
   getFaceUv,
 } from './index';
@@ -292,6 +293,24 @@ describe('Voxel Core Engine (Option A)', () => {
       expect(rad3).toContainEqual({ dx: -1, dz: -1 });
       expect(rad3).toContainEqual({ dx: 0, dz: 0 });
       expect(rad3).toContainEqual({ dx: 1, dz: 1 });
+    });
+
+    it('calculates 3D offsets for horizontal and vertical planes', () => {
+      const xz = getVoxelBrushOffsets3D(2, 'xz');
+      expect(xz.length).toBe(4);
+      expect(xz.every(o => o.dy === 0)).toBe(true);
+
+      const xy = getVoxelBrushOffsets3D(2, 'xy');
+      expect(xy.length).toBe(4);
+      expect(xy.every(o => o.dz === 0)).toBe(true);
+      expect(xy).toContainEqual({ dx: 0, dy: 0, dz: 0 });
+      expect(xy).toContainEqual({ dx: 1, dy: 1, dz: 0 });
+
+      const yz = getVoxelBrushOffsets3D(2, 'yz');
+      expect(yz.length).toBe(4);
+      expect(yz.every(o => o.dx === 0)).toBe(true);
+      expect(yz).toContainEqual({ dx: 0, dy: 0, dz: 0 });
+      expect(yz).toContainEqual({ dx: 0, dy: 1, dz: 1 });
     });
   });
 

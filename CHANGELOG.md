@@ -1,3 +1,42 @@
+# 2.1.682
+- **Voxel 4-Surface Solid Rendering & Hollow Mesh Elimination**:
+  - **Alpha-Test & Forced Depth Buffer Writes (`VoxelChunkMesher.ts`)**:
+    - Replaced `mat.useAlphaFromDiffuseTexture = true` with `mat.transparencyMode = Material.MATERIAL_ALPHATESTANDZBUFFER`, `mat.alphaCutOff = 0.5`, and `mat.forceDepthWrite = true`.
+    - Eliminates the root cause of hollow/see-through walls: meshes in the alpha-blended render queue do not write to the Z-buffer, causing triangles to draw over or blend through each other. Forced depth writes ensure every voxel pixel writes solid Z-depth.
+    - Removed the artificial depth bias (`mat.zOffset = 0`).
+  - **Full Face Occlusion vs Physical Solidity (`VoxelWord.ts` & `VoxelChunkMesher.ts`)**:
+    - Introduced `isVoxelFaceOccluding`: only non-air `FULL_CUBE` shapes occlude a 1x1 face.
+    - Replaced `isVoxelSolid` in face culling: full cubes no longer cull their faces against adjacent slopes, slabs, stairs, columns, or fences, eliminating hollow holes peering into the interiors of blocks.
+  - **Standardized Outward-Facing Quad Vertex Ordering (`VoxelChunkMesher.ts`)**:
+    - Fixed vertex ordering for East (+X) and West (-X) faces so all 6 cube faces strictly adhere to `p0` (Bottom-Left), `p1` (Bottom-Right), `p2` (Top-Right), `p3` (Top-Left) relative to an outside viewer.
+    - Resolves inverted winding and mirrored horizontal UVs on side faces, ensuring North, South, East, and West faces all render upright textures with outward front-facing normals.
+  - **Unit Test Coverage (`VoxelGeometry.test.ts`)**:
+    - Added tests for `isVoxelFaceOccluding` confirming strict discrimination of full cubes vs slopes and non-cubes.
+    - Added tests verifying 6-face cube quad generation with uniform outward normals and valid triangle indices (8/8 tests passing).
+    - All 260 test suites (1,141 tests) passed with 0 errors.
+
+# 2.1.681
+- **Voxel System Tool Harmonization, 3D Clipboard Stamping, Multi-Axis Brushes & 3D Voxel Collision**:
+  - **Phase B: Voxel Transaction Integration across Tools (`BrushToolHandler`, `EraserToolHandler`, `FillToolHandler`)**:
+    - Replaced raw non-transactional `setVoxel` calls in Brush, Eraser, and Fill handlers with `VoxelTransactionBuilder`.
+    - Every paint stroke, drag, erase, and flood fill now bundles atomic mutations with affected chunk halo detection and unified undo/redo support.
+  - **Phase C: 3D Voxel Volume Selection & Clipboard (`subgridStamp.ts` & `editor-store.ts`)**:
+    - Extended `TileClipboardData` with `ClipboardVoxelBlock` and `voxelVolume` array.
+    - Updated `extractSubgridFromMap` to extract all 3D voxel words from `y=0` to `y=31` within the selected bounding region.
+    - Updated `pasteClipboard` in `editor-store.ts` to seamlessly stamp 3D voxel volume blocks with transaction recording, map doc persistence, and chunk remeshing.
+  - **Phase D: Multi-Axis Brush Plane Offsets (`VoxelWord.ts` & `TerrainBrushPalette.tsx`)**:
+    - Added `getVoxelBrushOffsets3D(radius, axis)` supporting `xz` (Ground), `xy` (Wall along X), and `yz` (Wall along Z) planes.
+    - Added Plane toggle UI (`Ground (XZ)`, `Wall (XY)`, `Wall (YZ)`) to `TerrainBrushPalette.tsx` for easy vertical cliff and wall sculpting.
+    - Exposed additional 3D shape archetypes (`Prism`, `Column`, `Fence`) directly on the editor palette toolbar.
+  - **Phase E: Authoritative 3D Voxel Collision & Traversability (`WorldSimulation.ts`)**:
+    - Upgraded 3D voxel collision check in `WorldSimulation.tryMove` to recognize traversable slopes (`WALKABLE_SLOPE`) and stairs (`STAIRS_STRAIGHT`, `STAIRS_CORNER`), allowing smooth vertical elevation climbing.
+    - Added ground support checks ensuring characters do not walk over bottomless air pits unless supported by voxels or bridge seams.
+    - Added 3D voxel `SWIM` (swimmable fluid) and `HAZARD` (lava/damage voxels) automatic step triggers.
+  - **Automated Test Coverage**:
+    - Created `src/engine/WorldSimulation.test.ts` verifying 3D voxel collision, walkable slopes, stairs, fluid swimming, hazard damage, and map bounds (7/7 tests passing).
+    - Added unit tests for 3D brush offsets in `voxel.test.ts` and 3D voxel volume extraction in `subgridStamp.test.ts`.
+    - All 260 Vitest suites (1,139 tests) and TypeScript type check (`npx tsc --noEmit`) passed with 0 errors.
+
 # 2.1.680
 - **3D Voxel Full Block Material Previews & Comprehensive 3D Shape Geometry Engine**:
   - **Isometric 3D Full Block Material Previews (`TerrainBrushPalette.tsx`)**:

@@ -17,8 +17,10 @@ import {
   VoxelPhysics,
   VOXEL_MAT_GRASS,
   getVoxelBrushOffsets,
+  getVoxelBrushOffsets3D,
 } from '@/shared/game/voxel/VoxelWord';
 import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
+import { VoxelTransactionBuilder } from '@/shared/game/voxel/VoxelTransaction';
 
 export class BrushToolHandler implements IToolHandler {
   public readonly id = 'brush' as const;
@@ -54,21 +56,29 @@ export class BrushToolHandler implements IToolHandler {
       const physics = shapeId === VoxelShape.SLOPE_45 ? VoxelPhysics.WALKABLE_SLOPE : VoxelPhysics.SOLID_OBSTACLE;
 
       const voxelWord = packVoxel(matId, shapeId, orient, 0, physics, 0);
-      const offsets = getVoxelBrushOffsets(store.brushRadius || 1);
-      const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: number; after: number }> = [];
+      const offsets = getVoxelBrushOffsets3D(store.brushRadius || 1, store.activeVoxelBrushAxis || 'xz');
 
-      for (const { dx, dz } of offsets) {
+      const txBuilder = new VoxelTransactionBuilder('Brush Paint Voxel', liveMap.id || '');
+      for (const { dx, dy, dz } of offsets) {
         const wx = targetCoord.wx + dx;
-        const wy = targetCoord.wy;
+        const wy = targetCoord.wy + dy;
         const wz = targetCoord.wz + dz;
-        const before = voxelWorld.getVoxel(wx, wy, wz);
-        if (before !== voxelWord) {
-          voxelWorld.setVoxel(wx, wy, wz, voxelWord);
-          changedVoxels.push({ wx, wy, wz, before, after: voxelWord });
-        }
+        txBuilder.record(voxelWorld, wx, wy, wz, voxelWord);
       }
 
-      if (changedVoxels.length > 0) {
+      const tx = txBuilder.build();
+      if (tx && tx.mutations.length > 0) {
+        const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: number; after: number }> = [];
+        for (const mut of tx.mutations) {
+          voxelWorld.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel);
+          changedVoxels.push({
+            wx: mut.worldX,
+            wy: mut.worldY,
+            wz: mut.worldZ,
+            before: mut.previousVoxel,
+            after: mut.newVoxel,
+          });
+        }
         context.engine.meshDirtyVoxelChunks?.();
         const doc = voxelWorld.serializeToDoc();
         gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });

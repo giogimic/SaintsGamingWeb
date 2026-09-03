@@ -1,10 +1,11 @@
-import { Scene, Mesh, VertexData, StandardMaterial, Color3, Texture } from '@babylonjs/core';
+import { Scene, Mesh, VertexData, StandardMaterial, Color3, Texture, Material } from '@babylonjs/core';
 import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
 import { VoxelChunk, CHUNK_SIZE_X, CHUNK_SIZE_Z, CHUNK_SIZE_Y } from '@/shared/game/voxel/VoxelChunk';
 import { 
   VoxelShape, 
   isVoxelSolid, 
   isVoxelAir, 
+  isVoxelFaceOccluding,
   getVoxelMaterial, 
   getVoxelShape, 
   getVoxelOrientation 
@@ -113,10 +114,12 @@ export class VoxelChunkMesher {
       mat.ambientColor = new Color3(0.6, 0.6, 0.6);
       mat.emissiveColor = new Color3(0.08, 0.08, 0.08);
       mat.specularColor = new Color3(0, 0, 0);
-      mat.useAlphaFromDiffuseTexture = true;
+      mat.transparencyMode = Material.MATERIAL_ALPHATEST;
+      mat.alphaCutOff = 0.5;
+      mat.forceDepthWrite = true;
       mat.backFaceCulling = false;
       mat.disableLighting = false;
-      mat.zOffset = -1;
+      mat.zOffset = 0;
       this.materialCache.set(1, mat);
     }
     return mat;
@@ -226,10 +229,10 @@ export class VoxelChunkMesher {
             // ADAPTIVE_ALPHA: render as full cube for now (auto-resolution TBD)
           }
 
-          // Full Cube Face Culling (Only emit faces exposed to Air / transparent voxel)
+          // Full Cube Face Culling (Only cull against full cube occluders)
           // Top Face (+Y)
           const above = sample(lx, ly + 1, lz);
-          if (!isVoxelSolid(above)) {
+          if (!isVoxelFaceOccluding(above)) {
             builder.addQuad(
               [wx, wy + 1, wz],
               [wx + 1, wy + 1, wz],
@@ -245,7 +248,7 @@ export class VoxelChunkMesher {
 
           // Bottom Face (-Y)
           const below = sample(lx, ly - 1, lz);
-          if (!isVoxelSolid(below)) {
+          if (!isVoxelFaceOccluding(below)) {
             builder.addQuad(
               [wx, wy, wz + 1],
               [wx + 1, wy, wz + 1],
@@ -261,7 +264,7 @@ export class VoxelChunkMesher {
 
           // North Face (+Z)
           const north = sample(lx, ly, lz + 1);
-          if (!isVoxelSolid(north)) {
+          if (!isVoxelFaceOccluding(north)) {
             builder.addQuad(
               [wx + 1, wy, wz + 1],
               [wx, wy, wz + 1],
@@ -277,7 +280,7 @@ export class VoxelChunkMesher {
 
           // South Face (-Z)
           const south = sample(lx, ly, lz - 1);
-          if (!isVoxelSolid(south)) {
+          if (!isVoxelFaceOccluding(south)) {
             builder.addQuad(
               [wx, wy, wz],
               [wx + 1, wy, wz],
@@ -293,12 +296,12 @@ export class VoxelChunkMesher {
 
           // East Face (+X)
           const east = sample(lx + 1, ly, lz);
-          if (!isVoxelSolid(east)) {
+          if (!isVoxelFaceOccluding(east)) {
             builder.addQuad(
-              [wx + 1, wy, wz],
               [wx + 1, wy, wz + 1],
-              [wx + 1, wy + 1, wz + 1],
+              [wx + 1, wy, wz],
               [wx + 1, wy + 1, wz],
+              [wx + 1, wy + 1, wz + 1],
               [1, 0, 0],
               eastUv,
               [1, 1, 1, 1],
@@ -309,12 +312,12 @@ export class VoxelChunkMesher {
 
           // West Face (-X)
           const west = sample(lx - 1, ly, lz);
-          if (!isVoxelSolid(west)) {
+          if (!isVoxelFaceOccluding(west)) {
             builder.addQuad(
-              [wx, wy, wz + 1],
               [wx, wy, wz],
-              [wx, wy + 1, wz],
+              [wx, wy, wz + 1],
               [wx, wy + 1, wz + 1],
+              [wx, wy + 1, wz],
               [-1, 0, 0],
               westUv,
               [1, 1, 1, 1],

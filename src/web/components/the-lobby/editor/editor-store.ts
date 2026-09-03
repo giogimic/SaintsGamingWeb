@@ -28,6 +28,7 @@ import {
   type PaintedVoxel,
 } from '@/shared/game/editorOps';
 import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
+import { VoxelTransactionBuilder } from '@/shared/game/voxel/VoxelTransaction';
 import {
   packVoxel,
   VOXEL_WORD_AIR,
@@ -383,6 +384,8 @@ interface EditorState {
   setActiveVoxelOrientation: (orient: number) => void;
   activeVoxelPhysics: number;
   setActiveVoxelPhysics: (physics: number) => void;
+  activeVoxelBrushAxis: 'xz' | 'xy' | 'yz';
+  setActiveVoxelBrushAxis: (axis: 'xz' | 'xy' | 'yz') => void;
   voxelToolMode: 'block-pen' | 'box-fill' | 'extrude' | 'slope-ramp' | 'smart-terrain' | 'eraser' | 'eyedropper';
   setVoxelToolMode: (mode: 'block-pen' | 'box-fill' | 'extrude' | 'slope-ramp' | 'smart-terrain' | 'eraser' | 'eyedropper') => void;
   
@@ -1178,6 +1181,11 @@ export const useEditorStore = create<EditorState>()(
       setActiveVoxelPhysics: (physics: number) =>
         set((state) => {
           state.activeVoxelPhysics = physics;
+        }),
+      activeVoxelBrushAxis: 'xz',
+      setActiveVoxelBrushAxis: (axis: 'xz' | 'xy' | 'yz') =>
+        set((state) => {
+          state.activeVoxelBrushAxis = axis;
         }),
       voxelToolMode: 'block-pen',
       setVoxelToolMode: (mode) =>
@@ -2813,6 +2821,43 @@ export const useEditorStore = create<EditorState>()(
         const activeEng = engine || (typeof window !== 'undefined' ? (window as any).__babylonEngine : null);
         if (activeEng?.clearSelectionPreview) {
           activeEng.clearSelectionPreview();
+        }
+
+        // 3D Voxel Volume Paste
+        if (activeClip.voxelVolume && activeClip.voxelVolume.length > 0 && (map as any).voxelDoc) {
+          const world = VoxelWorld.deserializeFromDoc((map as any).voxelDoc);
+          const mapH = map.grid?.length || (map as any).height || 24;
+          const originWZ = mapH - 1 - r;
+          const txBuilder = new VoxelTransactionBuilder('Paste Voxel Volume', map.id || '');
+
+          for (const v of activeClip.voxelVolume) {
+            const wx = c + v.dx;
+            const wy = v.dy;
+            const wz = originWZ - v.dz;
+            if (wx >= 0 && wx < world.totalWidthBlocks && wz >= 0 && wz < world.totalDepthBlocks && wy >= 0 && wy < world.totalHeightBlocks) {
+              txBuilder.record(world, wx, wy, wz, v.word);
+            }
+          }
+
+          const tx = txBuilder.build();
+          if (tx && tx.mutations.length > 0) {
+            const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: number; after: number }> = [];
+            for (const mut of tx.mutations) {
+              world.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel);
+              changedVoxels.push({
+                wx: mut.worldX,
+                wy: mut.worldY,
+                wz: mut.worldZ,
+                before: mut.previousVoxel,
+                after: mut.newVoxel,
+              });
+            }
+            (map as any).voxelDoc = world.serializeToDoc();
+            get().pushVoxelOp(changedVoxels);
+            if (activeEng?.meshDirtyVoxelChunks) {
+              activeEng.meshDirtyVoxelChunks();
+            }
+          }
         }
 
         return { ok: true, count: stampRes.cells.length };

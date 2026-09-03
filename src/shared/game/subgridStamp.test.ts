@@ -6,6 +6,8 @@ import {
   type TileClipboardData,
 } from './subgridStamp';
 import type { PaintableMap } from './tilePaint';
+import { VoxelWorld } from './voxel/VoxelWorldDoc';
+import { packVoxel, VoxelShape, VoxelOrientation, VoxelPhysics, VOXEL_MAT_GRASS } from './voxel/VoxelWord';
 
 function createMockMap(): PaintableMap {
   return {
@@ -162,5 +164,30 @@ describe('stampClipboardOntoMap', () => {
       { r: 0, c: 0, tileId: 1 },
       { r: 1, c: 1, tileId: 2 },
     ]);
+  });
+
+  it('extracts 3D voxel volume when map contains voxelDoc', () => {
+    const map = createMockMap();
+    const world = new VoxelWorld('test_clip', 'Test', 1, 1, 1);
+    const grassWord = packVoxel(VOXEL_MAT_GRASS, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE, 0);
+    // Set voxel at r=0, c=0 (wz = 4 - 1 - 0 = 3, wx = 0)
+    world.setVoxel(0, 16, 3, grassWord);
+
+    (map as any).voxelDoc = world.serializeToDoc();
+
+    const clip = extractSubgridFromMap({
+      map,
+      minR: 0,
+      maxR: 1,
+      minC: 0,
+      maxC: 1,
+    });
+
+    expect(clip).not.toBeNull();
+    expect(clip?.voxelVolume).toBeDefined();
+    expect(clip?.voxelVolume?.length).toBeGreaterThan(0);
+    const targetBlock = clip?.voxelVolume?.find(v => v.dx === 0 && v.dy === 16);
+    expect(targetBlock).toBeDefined();
+    expect(targetBlock?.word).toBe(grassWord);
   });
 });
