@@ -1,24 +1,22 @@
 # Saints Gaming
 
-> **Time To Play** — Welcome to the Saints Gaming community site & game project!
+> **Time To Play** — Welcome to the Saints Gaming community platform & game project!
 
 Hey everyone! Welcome to the repository for **Saints Gaming**. 
 
-This is our community website combined with a multiplayer browser game idea that I'm actively tinkering on. 
-
-A quick heads-up: **this is very much a work in progress and far from complete!** I'm not a professional game developer or software engineer—this is a passion project I build for fun in my spare time for our gaming community. You'll definitely run into rough edges, messy experiments, and things that are actively changing as I learn and build.
+I'm building this for our community. This is a passion project I build for fun in my spare time, designed to serve as our community's home base. It's a completely open-source hybrid that fuses a web forum with an in-browser 2.5D multiplayer world!
 
 ---
 
 ## 🎮 What is Saints Gaming?
 
-Saints Gaming started way back in 2007 as a chill group of friends hanging out on TeamSpeak, playing SA-MP (San Andreas Multiplayer), FiveM, Minecraft, and whatever else sounded fun. Over the years, our motto has always been simple: *Time To Play* — just hang out, game together, and have a good time with zero drama.
+Saints Gaming started way back in 2007 as a chill group of friends hanging out on TeamSpeak, playing SA-MP, FiveM, Minecraft, and whatever else sounded fun. Over the years, our motto has always been simple: *Time To Play* — just hang out, game together, and have a good time with zero drama.
 
 This project brings our community hub together with an interactive multiplayer game:
 
 - **The Community Hub**: Forums to chat, news updates, game server status trackers (so you can see who's online on our servers), and a FiveM player portal.
-- **The Lobby (The Game)**: A browser-based multiplayer world where you can drop in as a character, explore different areas, collect items, level up skills, and battle creatures with friends directly in your browser.
-- **World Studio**: A built-in creative map builder where you can paint terrain, build structures, set up areas, and test them live without needing external mod tools.
+- **The Lobby (The Game)**: A browser-based multiplayer world where you can drop in as a character, explore, and hang out with friends directly in your browser.
+- **World Studio**: A built-in map builder where you can paint terrain, build structures, set up areas, and test them live.
 
 ---
 
@@ -46,21 +44,13 @@ npm run dev
 
 Once it's running, just open [http://localhost:3000](http://localhost:3000) in your browser!
 
-To run the automated tests:
-```bash
-npm test
-```
-
 ---
 
-## 🗺️ What's Under the Hood (In Plain English)
+## 📖 Documentation
 
-For anyone curious how it's put together without all the buzzwords:
+If you are looking for **deep technical breakdowns**, engine architecture, and creator guides, please check out our interactive **Wiki** directly on the website once you have the app running, or navigate to the `/wiki` page on saintsgaming.net!
 
-- **Frontend & Website**: Built with Next.js and React, styled with Tailwind CSS.
-- **In-Browser Game & 3D**: Uses Babylon.js to render the 2.5D game view and voxel maps inside an HTML5 canvas.
-- **Realtime Multiplayer**: Runs through Socket.io (with an optional Go server for bigger multiplayer rooms).
-- **Database**: Prisma handles our database connections (SQLite for quick local dev, MariaDB/MySQL for production).
+*(Note to developers/AI: All internal engine architecture and game bibles are stored privately inside the `.docs` folder for local development.)*
 
 ---
 
