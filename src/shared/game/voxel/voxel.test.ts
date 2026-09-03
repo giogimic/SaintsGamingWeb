@@ -304,9 +304,9 @@ describe('Voxel Core Engine (Option A)', () => {
       const bottomUv = getFaceUv(grassDef, 'bottom');
       const northUv = getFaceUv(grassDef, 'north');
 
-      expect(topUv).toEqual([0, 0.667, 0.333, 1.0]);
-      expect(bottomUv).toEqual([0.333, 0.667, 0.667, 1.0]);
-      expect(northUv).toEqual([0, 0.667, 0.333, 1.0]);
+      expect(topUv).toEqual([0.0, 0.25, 0.25, 0.50]);
+      expect(bottomUv).toEqual([0.25, 0.25, 0.50, 0.50]);
+      expect(northUv).toEqual([0.0, 0.75, 0.25, 1.0]);
     });
   });
 

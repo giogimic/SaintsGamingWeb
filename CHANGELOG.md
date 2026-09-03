@@ -1,3 +1,15 @@
+# 2.1.679
+- **Seamless Voxel Terrain Connections & Authentic Material Palette Swatches**:
+  - **Eliminated Black Outlines & Baked Grids on 3D Voxel Blocks (`terrain-overworld.png`)**:
+    - Replaced the legacy image atlas (which contained baked-in black borders on every sub-tile, causing blocks to render with dark borders and internal grid lines instead of connecting together) with a pristine, 100% mathematically periodic seamless 1024x1024 texture atlas.
+    - Each 256x256 material zone tiles with zero seams, zero black borders, and zero perimeter lines on all axes. Adjacent blocks placed next to each other at the same height now connect together seamlessly into continuous, unbroken terrain surfaces.
+  - **Resolved Tileset Palette "Half-and-Half" Display & Broken Materials (`TerrainBrushPalette.tsx` & `VoxelMaterialDefinition.ts`)**:
+    - Corrected all UV mappings for Gunmetal, Grass, Dirt, Stone, Sand, Water, Wood, Snow, Lava, Swamp, Dungeon, and Glacial Ice to align with Babylon's `invertY: false` coordinate system across the 4x4 symmetrical atlas.
+    - Resolved duplicate and overlapping UV offsets in `BUILTIN_SEAMLESS_MATERIALS` where multiple materials previously shared identical coordinates.
+    - Upgraded swatch visual previews in `TerrainBrushPalette.tsx` to render pixel-accurate, cropped seamless texture thumbnails instead of flat color circles or misaligned slices.
+  - **Studio Bootstrap & GID Stability (`studioTilesetBootstrap.ts` & `demoMapSeed.ts`)**:
+    - Updated `DEFAULT_STUDIO_TILESETS` to 8 columns of 128x128 tiles across the 1024x1024 atlas, preserving `DEFAULT_STUDIO_GROUND_GID = 17` as Lush Meadow Grass across client, server, and test suites.
+
 # 2.1.678
 - **Root-Cause Fix for React Error #310 & Studio Disconnection on Material Change**:
   - **Eliminated Short-Circuit Conditional Hook (`StudioBottomToolbar.tsx`)**:

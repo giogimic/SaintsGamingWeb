@@ -37,10 +37,10 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     material: 'STONE',
     textureUrl: '/game-assets/tilesets/terrain-overworld.png',
     color: '#2a2d34',
-    uOffset: 0,
-    vOffset: 0,
-    uScale: 0.333,
-    vScale: 0.333,
+    uOffset: 0.0,
+    vOffset: 0.0,
+    uScale: 0.25,
+    vScale: 0.25,
   },
   {
     id: 'mat_grass_lush',
@@ -48,10 +48,10 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     material: 'GRASS',
     textureUrl: '/game-assets/tilesets/terrain-overworld.png',
     color: '#22c55e',
-    uOffset: 0,
-    vOffset: 0.667,
-    uScale: 0.333,
-    vScale: 0.333,
+    uOffset: 0.0,
+    vOffset: 0.25,
+    uScale: 0.25,
+    vScale: 0.25,
   },
   {
     id: 'mat_dirt_soil',
@@ -59,10 +59,10 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     material: 'DIRT',
     textureUrl: '/game-assets/tilesets/terrain-overworld.png',
     color: '#a16207',
-    uOffset: 0.333,
-    vOffset: 0.667,
-    uScale: 0.333,
-    vScale: 0.333,
+    uOffset: 0.25,
+    vOffset: 0.25,
+    uScale: 0.25,
+    vScale: 0.25,
   },
   {
     id: 'mat_sand_fine',
@@ -70,10 +70,10 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     material: 'SAND',
     textureUrl: '/game-assets/tilesets/terrain-overworld.png',
     color: '#eab308',
-    uOffset: 0.667,
-    vOffset: 0.667,
-    uScale: 0.333,
-    vScale: 0.333,
+    uOffset: 0.25,
+    vOffset: 0.0,
+    uScale: 0.25,
+    vScale: 0.25,
   },
   {
     id: 'mat_stone_cobble',
@@ -81,10 +81,10 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     material: 'STONE',
     textureUrl: '/game-assets/tilesets/terrain-overworld.png',
     color: '#94a3b8',
-    uOffset: 0,
-    vOffset: 0,
-    uScale: 0.333,
-    vScale: 0.333,
+    uOffset: 0.75,
+    vOffset: 0.0,
+    uScale: 0.25,
+    vScale: 0.25,
   },
   {
     id: 'mat_water_river',
@@ -92,21 +92,10 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     material: 'WATER',
     textureUrl: '/game-assets/tilesets/terrain-overworld.png',
     color: '#38bdf8',
-    uOffset: 0.333,
-    vOffset: 0.333,
-    uScale: 0.333,
-    vScale: 0.333,
-  },
-  {
-    id: 'mat_snow_powder',
-    name: 'Winter Powder Snow',
-    material: 'SNOW',
-    textureUrl: '/game-assets/tilesets/terrain-overworld.png',
-    color: '#e2e8f0',
-    uOffset: 0,
-    vOffset: 0.333,
-    uScale: 0.333,
-    vScale: 0.333,
+    uOffset: 0.50,
+    vOffset: 0.0,
+    uScale: 0.25,
+    vScale: 0.25,
   },
   {
     id: 'mat_wood_plank',
@@ -114,10 +103,21 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     material: 'WOOD',
     textureUrl: '/game-assets/tilesets/terrain-overworld.png',
     color: '#78350f',
-    uOffset: 0.5,
-    vOffset: 0,
-    uScale: 0.5,
-    vScale: 0.333,
+    uOffset: 0.50,
+    vOffset: 0.25,
+    uScale: 0.25,
+    vScale: 0.25,
+  },
+  {
+    id: 'mat_snow_powder',
+    name: 'Winter Powder Snow',
+    material: 'SNOW',
+    textureUrl: '/game-assets/tilesets/terrain-overworld.png',
+    color: '#e2e8f0',
+    uOffset: 0.75,
+    vOffset: 0.25,
+    uScale: 0.25,
+    vScale: 0.25,
   },
   {
     id: 'mat_lava_molten',
@@ -125,10 +125,10 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     material: 'LAVA',
     textureUrl: '/game-assets/tilesets/terrain-overworld.png',
     color: '#ef4444',
-    uOffset: 0.667,
-    vOffset: 0.333,
-    uScale: 0.333,
-    vScale: 0.333,
+    uOffset: 0.0,
+    vOffset: 0.50,
+    uScale: 0.25,
+    vScale: 0.25,
   },
   {
     id: 'mat_swamp_marsh',
@@ -136,10 +136,10 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     material: 'SWAMP',
     textureUrl: '/game-assets/tilesets/terrain-overworld.png',
     color: '#3f6212',
-    uOffset: 0.333,
-    vOffset: 0,
-    uScale: 0.333,
-    vScale: 0.333,
+    uOffset: 0.25,
+    vOffset: 0.50,
+    uScale: 0.25,
+    vScale: 0.25,
   },
   {
     id: 'mat_brick_dungeon',
@@ -147,10 +147,10 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     material: 'DUNGEON',
     textureUrl: '/game-assets/tilesets/terrain-overworld.png',
     color: '#475569',
-    uOffset: 0,
-    vOffset: 0,
-    uScale: 0.333,
-    vScale: 0.333,
+    uOffset: 0.50,
+    vOffset: 0.50,
+    uScale: 0.25,
+    vScale: 0.25,
   },
   {
     id: 'mat_ice_glacial',
@@ -158,10 +158,10 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     material: 'ICE',
     textureUrl: '/game-assets/tilesets/terrain-overworld.png',
     color: '#67e8f9',
-    uOffset: 0,
-    vOffset: 0.333,
-    uScale: 0.333,
-    vScale: 0.333,
+    uOffset: 0.75,
+    vOffset: 0.50,
+    uScale: 0.25,
+    vScale: 0.25,
   },
 ];
 
@@ -456,13 +456,21 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
 
                   {/* Swatch Visual Preview */}
                   <div
-                    className="w-14 h-14 rounded-full border-2 border-border/50 shadow-inner flex items-center justify-center overflow-hidden"
+                    className="w-14 h-14 rounded-lg border-2 border-border/50 shadow-inner flex items-center justify-center overflow-hidden bg-[#040812] group-hover:border-primary/50 transition-colors relative"
                     style={{
-                      backgroundColor: mat.color,
-                      boxShadow: `inset 0 0 15px rgba(0,0,0,0.5)`,
+                      boxShadow: `inset 0 0 12px rgba(0,0,0,0.6)`,
                     }}
                   >
-                    <div className="w-full h-full opacity-30 bg-radial-gradient" />
+                    <div
+                      className="w-full h-full"
+                      style={{
+                        backgroundImage: `url(${mat.textureUrl})`,
+                        backgroundPosition: `-${(mat.uOffset ?? 0) * 224}px -${(mat.vOffset ?? 0) * 224}px`,
+                        backgroundSize: '224px 224px',
+                        backgroundRepeat: 'no-repeat',
+                        imageRendering: 'pixelated',
+                      }}
+                    />
                   </div>
 
                   <div className="text-center font-bold text-foreground text-[11px] truncate w-full">

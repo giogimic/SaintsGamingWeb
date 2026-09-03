@@ -61,20 +61,26 @@ export interface VoxelMaterialDefinition {
 
 export const CANONICAL_VOXEL_TEXTURE = '/game-assets/tilesets/terrain-overworld.png';
 
-// UV Regions for the clean terrain atlas
-const UV_GRASS_TOP: UvRect = [0, 0.667, 0.333, 1.0];
-const UV_GRASS_SIDE: UvRect = [0, 0.667, 0.333, 1.0];
-const UV_DIRT: UvRect = [0.333, 0.667, 0.667, 1.0];
-const UV_SAND: UvRect = [0.667, 0.667, 1.0, 1.0];
-const UV_SNOW: UvRect = [0, 0.333, 0.333, 0.667];
-const UV_WATER: UvRect = [0.333, 0.333, 0.667, 0.667];
-const UV_STONE: UvRect = [0, 0, 0.333, 0.333];
-const UV_WOOD: UvRect = [0.333, 0, 0.667, 0.333];
-const UV_GUNMETAL: UvRect = [0, 0, 0.333, 0.333];
-const UV_LAVA: UvRect = [0.667, 0.333, 1.0, 0.667];
-const UV_SWAMP: UvRect = [0.333, 0, 0.667, 0.333];
-const UV_DUNGEON: UvRect = [0, 0, 0.333, 0.333];
-const UV_ICE: UvRect = [0, 0.333, 0.333, 0.667];
+// UV Regions for the clean 4x4 seamless terrain atlas (1024x1024, 256x256 cells)
+const UV_GUNMETAL: UvRect = [0.0, 0.0, 0.25, 0.25];
+const UV_SAND: UvRect = [0.25, 0.0, 0.50, 0.25];
+const UV_WATER: UvRect = [0.50, 0.0, 0.75, 0.25];
+const UV_STONE: UvRect = [0.75, 0.0, 1.0, 0.25];
+
+const UV_GRASS_TOP: UvRect = [0.0, 0.25, 0.25, 0.50];
+const UV_DIRT: UvRect = [0.25, 0.25, 0.50, 0.50];
+const UV_WOOD: UvRect = [0.50, 0.25, 0.75, 0.50];
+const UV_SNOW: UvRect = [0.75, 0.25, 1.0, 0.50];
+
+const UV_LAVA: UvRect = [0.0, 0.50, 0.25, 0.75];
+const UV_SWAMP: UvRect = [0.25, 0.50, 0.50, 0.75];
+const UV_DUNGEON: UvRect = [0.50, 0.50, 0.75, 0.75];
+const UV_ICE: UvRect = [0.75, 0.50, 1.0, 0.75];
+
+const UV_GRASS_SIDE: UvRect = [0.0, 0.75, 0.25, 1.0];
+const UV_SNOW_SIDE: UvRect = [0.25, 0.75, 0.50, 1.0];
+const UV_SANDSTONE: UvRect = [0.50, 0.75, 0.75, 1.0];
+const UV_OBSIDIAN: UvRect = [0.75, 0.75, 1.0, 1.0];
 
 export const VOXEL_MATERIAL_CATALOG: Record<number, VoxelMaterialDefinition> = {
   [VOXEL_MAT_AIR]: {
@@ -103,7 +109,7 @@ export const VOXEL_MATERIAL_CATALOG: Record<number, VoxelMaterialDefinition> = {
     name: 'Gunmetal Base Foundation',
     textureSource: CANONICAL_VOXEL_TEXTURE,
     colorHex: '#2a2d34',
-    tintRgba: [0.165, 0.176, 0.204, 1.0],
+    tintRgba: [1.0, 1.0, 1.0, 1.0],
     faceMapping: {
       top: UV_GUNMETAL,
       bottom: UV_GUNMETAL,
@@ -111,20 +117,21 @@ export const VOXEL_MATERIAL_CATALOG: Record<number, VoxelMaterialDefinition> = {
       south: UV_GUNMETAL,
       east: UV_GUNMETAL,
       west: UV_GUNMETAL,
+      side: UV_GUNMETAL,
     },
     physics: VoxelPhysics.SOLID_OBSTACLE,
     terrainCategory: 'METAL',
     roughness: 0.75,
   },
 
-  // Grass Block: Distinct top (grass), bottom (dirt), and sides (grass/dirt)
+  // Grass Block: Distinct top (grass), bottom (dirt), and sides (grass/dirt fringe)
   [VOXEL_MAT_GRASS]: {
     id: VOXEL_MAT_GRASS,
     slug: 'lush_grass',
     name: 'Lush Meadow Grass Block',
     textureSource: CANONICAL_VOXEL_TEXTURE,
     colorHex: '#22c55e',
-    tintRgba: [0.133, 0.773, 0.369, 1.0],
+    tintRgba: [1.0, 1.0, 1.0, 1.0],
     faceMapping: {
       top: UV_GRASS_TOP,
       bottom: UV_DIRT,
@@ -145,7 +152,7 @@ export const VOXEL_MATERIAL_CATALOG: Record<number, VoxelMaterialDefinition> = {
     name: 'Rich Loam Dirt Block',
     textureSource: CANONICAL_VOXEL_TEXTURE,
     colorHex: '#a16207',
-    tintRgba: [0.631, 0.384, 0.027, 1.0],
+    tintRgba: [1.0, 1.0, 1.0, 1.0],
     faceMapping: {
       top: UV_DIRT,
       bottom: UV_DIRT,
@@ -166,7 +173,7 @@ export const VOXEL_MATERIAL_CATALOG: Record<number, VoxelMaterialDefinition> = {
     name: 'Cliff Cobblestone Block',
     textureSource: CANONICAL_VOXEL_TEXTURE,
     colorHex: '#94a3b8',
-    tintRgba: [0.580, 0.639, 0.722, 1.0],
+    tintRgba: [1.0, 1.0, 1.0, 1.0],
     faceMapping: {
       top: UV_STONE,
       bottom: UV_STONE,
@@ -187,7 +194,7 @@ export const VOXEL_MATERIAL_CATALOG: Record<number, VoxelMaterialDefinition> = {
     name: 'Golden Desert Sand Block',
     textureSource: CANONICAL_VOXEL_TEXTURE,
     colorHex: '#eab308',
-    tintRgba: [0.918, 0.702, 0.031, 1.0],
+    tintRgba: [1.0, 1.0, 1.0, 1.0],
     faceMapping: {
       top: UV_SAND,
       bottom: UV_SAND,
@@ -208,7 +215,7 @@ export const VOXEL_MATERIAL_CATALOG: Record<number, VoxelMaterialDefinition> = {
     name: 'Crystal River Water',
     textureSource: CANONICAL_VOXEL_TEXTURE,
     colorHex: '#38bdf8',
-    tintRgba: [0.220, 0.741, 0.973, 0.85],
+    tintRgba: [1.0, 1.0, 1.0, 0.9],
     faceMapping: {
       top: UV_WATER,
       bottom: UV_WATER,
@@ -230,7 +237,7 @@ export const VOXEL_MATERIAL_CATALOG: Record<number, VoxelMaterialDefinition> = {
     name: 'Rustic Wood Plank Block',
     textureSource: CANONICAL_VOXEL_TEXTURE,
     colorHex: '#78350f',
-    tintRgba: [0.471, 0.208, 0.059, 1.0],
+    tintRgba: [1.0, 1.0, 1.0, 1.0],
     faceMapping: {
       top: UV_WOOD,
       bottom: UV_WOOD,
@@ -251,15 +258,15 @@ export const VOXEL_MATERIAL_CATALOG: Record<number, VoxelMaterialDefinition> = {
     name: 'Alpine Powder Snow Block',
     textureSource: CANONICAL_VOXEL_TEXTURE,
     colorHex: '#e2e8f0',
-    tintRgba: [0.886, 0.910, 0.941, 1.0],
+    tintRgba: [1.0, 1.0, 1.0, 1.0],
     faceMapping: {
       top: UV_SNOW,
-      bottom: UV_SNOW,
-      north: UV_SNOW,
-      south: UV_SNOW,
-      east: UV_SNOW,
-      west: UV_SNOW,
-      side: UV_SNOW,
+      bottom: UV_STONE,
+      north: UV_SNOW_SIDE,
+      south: UV_SNOW_SIDE,
+      east: UV_SNOW_SIDE,
+      west: UV_SNOW_SIDE,
+      side: UV_SNOW_SIDE,
     },
     physics: VoxelPhysics.SOLID_OBSTACLE,
     terrainCategory: 'SNOW',
@@ -272,7 +279,7 @@ export const VOXEL_MATERIAL_CATALOG: Record<number, VoxelMaterialDefinition> = {
     name: 'Molten Magma Flow Block',
     textureSource: CANONICAL_VOXEL_TEXTURE,
     colorHex: '#ef4444',
-    tintRgba: [0.937, 0.267, 0.267, 1.0],
+    tintRgba: [1.0, 1.0, 1.0, 1.0],
     faceMapping: {
       top: UV_LAVA,
       bottom: UV_LAVA,
@@ -293,7 +300,7 @@ export const VOXEL_MATERIAL_CATALOG: Record<number, VoxelMaterialDefinition> = {
     name: 'Dark Murky Marsh Block',
     textureSource: CANONICAL_VOXEL_TEXTURE,
     colorHex: '#3f6212',
-    tintRgba: [0.247, 0.384, 0.071, 1.0],
+    tintRgba: [1.0, 1.0, 1.0, 1.0],
     faceMapping: {
       top: UV_SWAMP,
       bottom: UV_SWAMP,
@@ -314,7 +321,7 @@ export const VOXEL_MATERIAL_CATALOG: Record<number, VoxelMaterialDefinition> = {
     name: 'Ancient Flagstone Block',
     textureSource: CANONICAL_VOXEL_TEXTURE,
     colorHex: '#475569',
-    tintRgba: [0.278, 0.333, 0.412, 1.0],
+    tintRgba: [1.0, 1.0, 1.0, 1.0],
     faceMapping: {
       top: UV_DUNGEON,
       bottom: UV_DUNGEON,
@@ -335,7 +342,7 @@ export const VOXEL_MATERIAL_CATALOG: Record<number, VoxelMaterialDefinition> = {
     name: 'Glacial Blue Ice Block',
     textureSource: CANONICAL_VOXEL_TEXTURE,
     colorHex: '#67e8f9',
-    tintRgba: [0.404, 0.910, 0.976, 0.9],
+    tintRgba: [1.0, 1.0, 1.0, 0.9],
     faceMapping: {
       top: UV_ICE,
       bottom: UV_ICE,
