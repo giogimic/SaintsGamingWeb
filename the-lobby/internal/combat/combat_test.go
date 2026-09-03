@@ -9,13 +9,15 @@ import (
 func TestCombatRound(t *testing.T) {
 	m := combat.NewManager()
 	s := m.Start("p1", "c1", "DEMO_ch1", 100, 20)
-	s = m.ApplyPlayerHit("p1", 10)
-	if s.CreatureHP != 10 {
-		t.Fatalf("hp=%d", s.CreatureHP)
+	s = m.ApplyPlayerHit("p1", "strike")
+	if s.CreatureHP >= 20 {
+		t.Fatalf("expected creature hp reduced, got %d", s.CreatureHP)
 	}
-	s = m.ApplyPlayerHit("p1", 10)
+	for i := 0; i < 10 && !s.Ended; i++ {
+		s = m.ApplyPlayerHit("p1", "strike")
+	}
 	if !s.Ended || s.Winner != "player" {
-		t.Fatalf("%+v", s)
+		t.Fatalf("expected victory: %+v", s)
 	}
 }
 

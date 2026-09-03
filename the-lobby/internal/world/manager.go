@@ -16,8 +16,10 @@ type MapDef struct {
 	Grid     [][]int // [y][x] logic tile ids
 	NPCs     []NPCDef
 	Gates    []GateDef
-	SpawnX   float64
-	SpawnY   float64
+	SpawnX      float64
+	SpawnY      float64
+	RegionClass string
+	Voxel       *VoxelWorld
 }
 
 // GateDef is a warp gateway definition in the live world.
@@ -184,7 +186,7 @@ func (m *Manager) ListPublicShards(baseMapID string) []PublicShardCandidate {
 	return out
 }
 
-// IsWalkable checks logic grid (walls = TileWall).
+// IsWalkable checks 3D voxel collision if available, or logic grid as fallback.
 func (m *Manager) IsWalkable(baseMapID string, x, y int) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -201,6 +203,14 @@ func (m *Manager) IsWalkable(baseMapID string, x, y int) bool {
 	if def.Height > 0 && y >= def.Height {
 		return false
 	}
+
+	// 1. Authoritative 3D Voxel Collision
+	if def.Voxel != nil {
+		wz := def.Height - 1 - y
+		return def.Voxel.IsTraversableAt(x, 16, wz)
+	}
+
+	// 2. Legacy 2D logic grid fallback
 	if y < len(def.Grid) && x < len(def.Grid[y]) {
 		tile := def.Grid[y][x]
 		return tile != protocol.TileWall
@@ -208,7 +218,18 @@ func (m *Manager) IsWalkable(baseMapID string, x, y int) bool {
 	return true
 }
 
-// BuildDemoMapDef creates an in-memory DEMO_SANDBOX (30x30 grass, border walls).
+// IsWalkable3D performs a full 3D AABB voxel collision check.
+func (m *Manager) IsWalkable3D(baseMapID string, wx, wy, wz int) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	def, ok := m.defs[baseMapID]
+	if !ok || def == nil || def.Voxel == nil {
+		return true
+	}
+	return def.Voxel.IsTraversableAt(wx, wy, wz)
+}
+
+// BuildDemoMapDef creates an in-memory DEMO_SANDBOX (30x30 grass, border walls) with 32³ voxel geometry.
 func BuildDemoMapDef() *MapDef {
 	w, h := protocol.DemoMapW, protocol.DemoMapH
 	grid := make([][]int, h)
@@ -234,13 +255,15 @@ func BuildDemoMapDef() *MapDef {
 		}
 	}
 	return &MapDef{
-		ID:     protocol.DemoMapID,
-		Name:   "Demo Sandbox",
-		Width:  w,
-		Height: h,
-		Grid:   grid,
-		SpawnX: float64(sx),
-		SpawnY: float64(sy),
+		ID:          protocol.DemoMapID,
+		Name:        "Demo Sandbox",
+		Width:       w,
+		Height:      h,
+		Grid:        grid,
+		SpawnX:      float64(sx),
+		SpawnY:      float64(sy),
+		RegionClass: "authored",
+		Voxel:       BuildDemoVoxelWorld(w, h),
 		NPCs: []NPCDef{
 			{ID: "npc_guide", Name: "Trail Guide", X: 12, Y: 15, SpriteID: "npc_guide", Dialogue: "demo_welcome"},
 			{ID: "npc_shop", Name: "Provisioner", X: 16, Y: 15, SpriteID: "npc_shop", Dialogue: "demo_shop"},

@@ -64,22 +64,51 @@ func EnsureDemo(db *sql.DB, wm *world.Manager) error {
 }
 
 func loadExisting(db *sql.DB, wm *world.Manager) error {
-	rows, err := db.Query(`SELECT id, name, gridData, npcsData FROM WorldMap`)
+	rows, err := db.Query(`SELECT id, name, gridData, npcsData, voxelData, regionClass FROM WorldMap`)
 	if err != nil {
-		return nil
+		// Fallback query if columns not present
+		rows, err = db.Query(`SELECT id, name, gridData, npcsData FROM WorldMap`)
+		if err != nil {
+			return nil
+		}
 	}
 	defer rows.Close()
 
+	cols, _ := rows.Columns()
+	hasVoxelCols := len(cols) >= 6
+
 	for rows.Next() {
-		var id, name, gridData, npcsData string
-		if err := rows.Scan(&id, &name, &gridData, &npcsData); err != nil {
-			continue
+		var id, name string
+		var gridData, npcsData, voxelData, regionClass sql.NullString
+
+		if hasVoxelCols {
+			if err := rows.Scan(&id, &name, &gridData, &npcsData, &voxelData, &regionClass); err != nil {
+				continue
+			}
+		} else {
+			if err := rows.Scan(&id, &name, &gridData, &npcsData); err != nil {
+				continue
+			}
 		}
-		grid, _ := world.ParseGridJSON(gridData)
+
+		var voxelWorld *world.VoxelWorld
+		if voxelData.Valid && voxelData.String != "" && voxelData.String != "{}" && voxelData.String != "null" {
+			voxelWorld, _ = world.ParseVoxelDoc([]byte(voxelData.String))
+		}
+
+		grid, _ := world.ParseGridJSON(gridData.String)
 		h := len(grid)
 		w := 0
 		if h > 0 {
 			w = len(grid[0])
+		}
+		if voxelWorld != nil {
+			if voxelWorld.MapWidth > 0 {
+				w = voxelWorld.MapWidth
+			}
+			if voxelWorld.MapHeight > 0 {
+				h = voxelWorld.MapHeight
+			}
 		}
 		if w == 0 {
 			w = 64
@@ -87,13 +116,28 @@ func loadExisting(db *sql.DB, wm *world.Manager) error {
 		if h == 0 {
 			h = 64
 		}
+
 		var npcs []world.NPCDef
-		if npcsData != "" && npcsData != "[]" {
-			_ = json.Unmarshal([]byte(npcsData), &npcs)
+		if npcsData.Valid && npcsData.String != "" && npcsData.String != "[]" {
+			_ = json.Unmarshal([]byte(npcsData.String), &npcs)
 		}
+
+		rClass := "authored"
+		if regionClass.Valid && regionClass.String != "" {
+			rClass = regionClass.String
+		}
+
 		wm.RegisterDef(&world.MapDef{
-			ID: id, Name: name, Width: w, Height: h, Grid: grid, NPCs: npcs,
-			SpawnX: float64(protocol.DefaultSpawnX), SpawnY: float64(protocol.DefaultSpawnY),
+			ID:          id,
+			Name:        name,
+			Width:       w,
+			Height:      h,
+			Grid:        grid,
+			NPCs:        npcs,
+			RegionClass: rClass,
+			Voxel:       voxelWorld,
+			SpawnX:      float64(protocol.DefaultSpawnX),
+			SpawnY:      float64(protocol.DefaultSpawnY),
 		})
 	}
 	return nil

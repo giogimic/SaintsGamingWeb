@@ -1,3 +1,24 @@
+# 2.1.694
+- **Phase 2: Go Backend Voxel Engine & Server-Authoritative 3D Collision**:
+  - **Go 32³ Voxel Engine & Bitwise Math ([`voxel.go`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/the-lobby/internal/world/voxel.go))**:
+    - Created high-performance 32³ `VoxelChunk` in Go with bitwise coordinate indexing `(lx & 31) | ((lz & 31) << 5) | ((ly & 31) << 10)`.
+    - Implemented `DecodeChunkRLE` to unpack wire/database RLE streams into volumetric memory.
+    - Added 32-bit voxel word unpackers (`VoxelPhysics`, `VoxelShape`, `VoxelLogic`, `VoxelMaterial`).
+    - Implemented `VoxelWorld.IsTraversableAt(wx, wy, wz)` for true 3D AABB voxel collision resolution.
+  - **World Manager & Server Authority Integration ([`manager.go`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/the-lobby/internal/world/manager.go) & [`engine.go`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/the-lobby/internal/engine/engine.go))**:
+    - Embedded `Voxel *VoxelWorld` directly on `MapDef`.
+    - Upgraded `Manager.IsWalkable()` to prioritize authoritative 3D voxel physics over legacy 2D grids, and added `IsWalkable3D()`.
+    - Bootstrapped `DEMO_SANDBOX` with authoritative 32³ foundation, surface, and boundary geometry.
+    - Integrated `ApplyVoxel` in `studio.go` to update 3D collision in real-time when maps are saved or synced.
+  - **REST API Sync & Persistence ([`maps.go`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/the-lobby/internal/httpapi/maps.go))**:
+    - Added `PersistMapVoxel` and updated `/api/internal/sync-map` to accept and persist `voxelData`.
+    - Updated `/api/maps/:id` to retrieve and serve `voxelData` alongside legacy payloads.
+    - Updated `loadExisting` in `demo.go` to scan `voxelData` and populate `MapDef.Voxel` at server startup.
+  - **End-to-End Pipeline & Validation Smoke Tests**:
+    - Created `src/shared/game/voxel/mapSavePipeline.test.ts` verifying voxel validation, save without 2D tilesets, and 2D walkability lattice auto-derivation.
+    - Created `scripts/test-map-save-e2e.ts` performing a live end-to-end database upsert, query, deserialization, and cleanup.
+    - All 24 Go packages and 45 TypeScript voxel tests passing cleanly.
+
 # 2.1.693
 - **Phase 1: Volumetric Engine Data Contract & 32³ Isotropic Chunk Migration**:
   - **Prisma Schema 3D Decoupling**:
