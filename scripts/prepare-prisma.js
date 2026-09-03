@@ -96,7 +96,11 @@ if (isSqlite) {
     'perksJson',
     'milestonesJson',
     'battlepassTiersJson',
-    'clearConditions'
+    'clearConditions',
+    'freeformLayersData',
+    'voxelData',
+    'publishedData',
+    'gates'
   ];
   for (const col of longTextCols) {
     const regex = new RegExp(`^([ \\t]*${col}[ \\t]+String\\??[ \\t]*(?:@[^\\n\\/]+)*)([ \\t]*(?:\\/\\/.*)?)?$`, 'gm');

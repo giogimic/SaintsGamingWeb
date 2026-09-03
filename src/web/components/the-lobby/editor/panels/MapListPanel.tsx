@@ -13,7 +13,7 @@ import { useEditorStore } from '../editor-store';
 import { MapIndexEntry, searchMapIndex, unregisterMap } from '../../data/map-index';
 import { loadMap } from '../../data/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
-import { buildNewStudioMap } from '@/shared/game/studioMapCreate';
+import { buildNewStudioMap, formatMapWriteError } from '@/shared/game/studioMapCreate';
 import { soundSynth } from '@/engine/sound-synth';
 import { useSession } from 'next-auth/react';
 import { canWriteStudioContent } from '@/shared/game/studioPermissions';
@@ -366,6 +366,8 @@ export const MapListPanel: React.FC = () => {
         body: JSON.stringify({
           name: newMapData.name,
           gameId: newMapData.gameId,
+          width: newMapW,
+          height: newMapH,
           grid: newMapData.grid,
           gates: newMapData.gates,
           npcs: newMapData.npcs,
@@ -379,7 +381,8 @@ export const MapListPanel: React.FC = () => {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Failed to create map');
+        const msg = formatMapWriteError(res.status, err);
+        throw new Error(msg);
       }
 
       showToast(`Created map: ${slug} (${genMode})`);

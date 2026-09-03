@@ -795,7 +795,7 @@ model WorldMapVersion {
   mapId       String
   version     Int
   name        String
-  data        String   // Serialized JSON map payload
+  data        String // Serialized JSON map payload
   description String?
   publishedBy String?
   createdAt   DateTime @default(now())
