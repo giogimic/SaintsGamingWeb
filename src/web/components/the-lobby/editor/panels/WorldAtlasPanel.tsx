@@ -559,6 +559,74 @@ export const WorldAtlasPanel: React.FC = () => {
                   </div>
                 )}
 
+                {/* Procedural Region Scope (Finite vs Infinite) & Settings */}
+                {(selectedNode.nodeType === 'procedural' || selectedNode.nodeType === 'hybrid') && (
+                  <>
+                    <div className="flex items-center gap-1.5 bg-black/40 px-2 py-0.5 rounded border border-emerald-500/40 text-[10px]">
+                      <span className="text-emerald-300 font-bold">Scope:</span>
+                      <select
+                        value={selectedNode.generationScope || 'finite'}
+                        onChange={(e) => {
+                          const newScope = e.target.value as 'finite' | 'infinite';
+                          const updatedNodes = atlasData.nodes.map(n => n.id === selectedNode.id ? { ...n, generationScope: newScope } : n);
+                          setAtlasData({ ...atlasData, nodes: updatedNodes });
+                          setSelectedNode({ ...selectedNode, generationScope: newScope });
+                          useEditorStore.getState().markMapDirty();
+                        }}
+                        className="bg-transparent text-emerald-200 text-[10px] focus:outline-none cursor-pointer"
+                      >
+                        <option value="finite" className="bg-[#0b1320] text-emerald-300">Finite Region</option>
+                        <option value="infinite" className="bg-[#0b1320] text-purple-300">Boundless Stream</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 bg-black/40 px-2 py-0.5 rounded border border-emerald-500/40 text-[10px]">
+                      <span className="text-emerald-300 font-bold">Biome:</span>
+                      <select
+                        value={selectedNode.biomeId || 'woodlands'}
+                        onChange={(e) => {
+                          const newBiome = e.target.value;
+                          const updatedNodes = atlasData.nodes.map(n => n.id === selectedNode.id ? { ...n, biomeId: newBiome } : n);
+                          setAtlasData({ ...atlasData, nodes: updatedNodes });
+                          setSelectedNode({ ...selectedNode, biomeId: newBiome });
+                          useEditorStore.getState().markMapDirty();
+                        }}
+                        className="bg-transparent text-emerald-200 text-[10px] focus:outline-none cursor-pointer"
+                      >
+                        <option value="woodlands" className="bg-[#0b1320] text-green-300">Woodlands</option>
+                        <option value="desert" className="bg-[#0b1320] text-amber-300">Desert Dunes</option>
+                        <option value="alpine" className="bg-[#0b1320] text-sky-300">Frost Taiga</option>
+                        <option value="volcanic" className="bg-[#0b1320] text-orange-300">Volcanic Caldera</option>
+                        <option value="cavern" className="bg-[#0b1320] text-purple-300">Crystal Cavern</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded border border-emerald-500/40 text-[10px]" title="Which map templates are allowed to load/spawn in this procedural area">
+                      <span className="text-emerald-300 font-bold">Allowed Maps:</span>
+                      <span className="text-white font-mono">{selectedNode.allowedMapPool?.length ? `${selectedNode.allowedMapPool.length} pool` : 'Default'}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentPool = selectedNode.allowedMapPool || [];
+                          const available = allMaps.map(m => m.id);
+                          const chosen = prompt(`Enter comma-separated Map IDs for this procedural area (Available: ${available.slice(0, 5).join(', ')}...):`, currentPool.join(', '));
+                          if (chosen !== null) {
+                            const newPool = chosen.split(',').map(s => s.trim()).filter(Boolean);
+                            const updatedNodes = atlasData.nodes.map(n => n.id === selectedNode.id ? { ...n, allowedMapPool: newPool } : n);
+                            setAtlasData({ ...atlasData, nodes: updatedNodes });
+                            setSelectedNode({ ...selectedNode, allowedMapPool: newPool });
+                            useEditorStore.getState().markMapDirty();
+                            showToast(`Updated allowed map pool (${newPool.length} maps)`);
+                          }
+                        }}
+                        className="ml-1 px-1.5 py-0.2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded text-[9px] font-bold cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </>
+                )}
+
                 <span className="text-slate-400 text-[11px]">
                   Grid Position: [{selectedNode.y}, {selectedNode.x}]
                 </span>

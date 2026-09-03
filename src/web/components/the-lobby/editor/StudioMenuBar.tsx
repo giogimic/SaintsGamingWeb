@@ -594,6 +594,32 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <SubMenu label="Selection" icon={Crosshair}>
               <MenuItem label="Expand (+1)" icon={Plus} onClick={() => { showToast('Selection expanded +1 tile'); }} />
               <MenuItem label="Contract (-1)" icon={Minus} onClick={() => { showToast('Selection contracted -1 tile'); }} />
+              <MenuItem
+                label="Invert Selection"
+                icon={Crosshair}
+                onClick={() => {
+                  const map = useGameStore.getState().activeMapData;
+                  if (!map) return;
+                  const currentSelected = useEditorStore.getState().selectedCells;
+                  useEditorStore.getState().clearSelectedCells();
+                  for (let r = 0; r < map.height; r++) {
+                    for (let c = 0; c < map.width; c++) {
+                      if (!currentSelected[`${r},${c}`]) {
+                        useEditorStore.getState().addSelectedBox(r, r, c, c);
+                      }
+                    }
+                  }
+                  showToast('Inverted selection');
+                }}
+              />
+              <MenuItem
+                label="Convert to Blueprint..."
+                icon={Package}
+                onClick={() => {
+                  openPanel('prefab');
+                  showToast('Save active selection as Blueprint Stamp');
+                }}
+              />
               <MenuItem label="Open Selection Window..." icon={Sliders} onClick={() => openPanel('selection')} />
             </SubMenu>
             <SubMenu label="Transform" icon={RotateCw}>
@@ -601,6 +627,15 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               <MenuItem label="Rotate CCW (-45° / -90°)" icon={RotateCcw} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().rotateSelection(map, null, 270); }} />
               <MenuItem label="Mirror Horizontal" icon={FlipHorizontal} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().flipSelection(map, null, 'h'); }} />
               <MenuItem label="Mirror Vertical" icon={FlipVertical} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().flipSelection(map, null, 'v'); }} />
+              <MenuItem
+                label="Reset Transform"
+                icon={RotateCcw}
+                onClick={() => {
+                  useEditorStore.getState().resetStampTransform();
+                  useEditorStore.getState().setStampScale(1.0);
+                  showToast('Reset all active transforms');
+                }}
+              />
               <MenuItem label="Open Transform Window..." icon={Sliders} onClick={() => openPanel('transform')} />
             </SubMenu>
           </TopLevelMenu>

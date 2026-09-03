@@ -252,6 +252,48 @@ export function ProceduralAuthoringPanel() {
     showToast(`Broke & synthesized procedural terrain across ${mapW}×${mapH} volume!`);
   };
 
+  const [isSavingRules, setIsSavingRules] = useState(false);
+
+  const handleSaveRulesToRegion = async () => {
+    soundSynth?.playActionSound?.();
+    const mapId = activeMapData?.id;
+    if (!mapId) {
+      showToast('No active map loaded to attach rules to');
+      return;
+    }
+    setIsSavingRules(true);
+    try {
+      const config = {
+        biome: selectedBiome.id,
+        seed,
+        frequency,
+        octaves,
+        seaLevel,
+        mountainPeak,
+        slopeSolver,
+      };
+      const res = await fetch(`/api/maps/${encodeURIComponent(mapId)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          regionClass: 'procedural',
+          proceduralConfig: config,
+        }),
+      });
+      if (res.ok) {
+        showToast(`Saved procedural generation rules to region ${mapId}!`);
+        useEditorStore.getState().markMapDirty();
+      } else {
+        showToast('Failed to save procedural rules to region');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error saving procedural rules');
+    } finally {
+      setIsSavingRules(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full gap-3 text-foreground/90 font-mono text-xs select-none">
       {/* ── Biome Presets ── */}
@@ -407,9 +449,20 @@ export function ProceduralAuthoringPanel() {
         <button
           onClick={handleBakeToActiveMap}
           className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/50 text-primary font-bold text-[11px] transition-colors cursor-pointer shadow"
+          title="Synthesize and write procedural voxels directly into current map cells"
         >
           <Sparkles className="w-3.5 h-3.5" />
           <span>Bake into Active Map</span>
+        </button>
+
+        <button
+          onClick={handleSaveRulesToRegion}
+          disabled={isSavingRules}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-purple-950/60 hover:bg-purple-900/80 border border-purple-500/50 text-purple-300 font-bold text-[11px] transition-colors cursor-pointer shadow disabled:opacity-50"
+          title="Save procedural generation parameters to backend region definition"
+        >
+          <Globe className="w-3.5 h-3.5 text-purple-400" />
+          <span>{isSavingRules ? 'Saving Rules...' : 'Save Rules to Region'}</span>
         </button>
       </div>
     </div>
