@@ -1,5 +1,5 @@
 import { VoxelChunk, CHUNK_SIZE_X, CHUNK_SIZE_Z, CHUNK_SIZE_Y } from './VoxelChunk';
-import { VOXEL_WORD_AIR } from './VoxelWord';
+import { VOXEL_WORD_AIR, isVoxelAir, isVoxelSolid } from './VoxelWord';
 import { VoxelBlockEntity, getBlockEntityKey } from './VoxelBlockEntity';
 import { migrateLegacyDocTo32Cubic } from './chunkMigration';
 
@@ -197,6 +197,20 @@ export class VoxelWorld {
     return chunk.get(lx, ly, lz);
   }
 
+  /**
+   * Scans downward from world ceiling to find the highest solid voxel Y coordinate at (wx, wz).
+   * Defaults to 15 (top of base foundation) if only air is encountered.
+   */
+  public getTopSolidVoxelY(wx: number, wz: number): number {
+    for (let wy = this.totalHeightBlocks - 1; wy >= 0; wy--) {
+      const word = this.getVoxel(wx, wy, wz);
+      if (word && !isVoxelAir(word) && isVoxelSolid(word)) {
+        return wy;
+      }
+    }
+    return 15;
+  }
+
   public setVoxel(wx: number, wy: number, wz: number, word: number): boolean {
     const { cx, cz, cy, lx, ly, lz } = VoxelWorld.worldToChunkCoords(wx, wy, wz);
     const chunk = this.getChunk(cx, cz, cy, true)!;
@@ -320,6 +334,34 @@ export class VoxelWorld {
     }
 
     return VOXEL_WORD_AIR;
+  }
+
+  /**
+   * Extracts a 34x34x34 halo buffer for a chunk, extending 1 block in all 6 directions
+   * (X: -1..32, Y: -1..32, Z: -1..32).
+   * Used for off-thread greedy meshing with complete neighbor face culling and ambient occlusion.
+   */
+  public extractChunkHalo34(cx: number, cz: number, cy: number = 0): Uint32Array {
+    const halo = new Uint32Array(34 * 34 * 34);
+    const startWX = cx * CHUNK_SIZE_X;
+    const startWY = cy * CHUNK_SIZE_Y;
+    const startWZ = cz * CHUNK_SIZE_Z;
+
+    for (let rz = -1; rz <= 32; rz++) {
+      const hz = rz + 1;
+      const wz = startWZ + rz;
+      for (let ry = -1; ry <= 32; ry++) {
+        const hy = ry + 1;
+        const wy = startWY + ry;
+        const baseIdx = hy * 34 + hz * 1156;
+        for (let rx = -1; rx <= 32; rx++) {
+          const hx = rx + 1;
+          const wx = startWX + rx;
+          halo[baseIdx + hx] = this.getVoxelWithHalo(wx, wy, wz);
+        }
+      }
+    }
+    return halo;
   }
 
   /**

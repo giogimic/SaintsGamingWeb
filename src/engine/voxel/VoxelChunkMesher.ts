@@ -17,6 +17,7 @@ import {
   CANONICAL_VOXEL_TEXTURE 
 } from '@/shared/game/voxel/VoxelMaterialDefinition';
 import { VoxelMeshBuilder } from './VoxelGeometry';
+import { meshChunkWithHalo34, TransferableVoxelMeshResult } from './VoxelMesherCore';
 
 export interface ChunkMeshResult {
   mesh: Mesh;
@@ -127,248 +128,52 @@ export class VoxelChunkMesher {
   }
 
   /**
-   * Generates a greedy-meshed Babylon.js Mesh for a single chunk using 1-Block Halo boundary queries.
+   * Generates a greedy-meshed Babylon.js Mesh for a single chunk using 34³ halo buffers and vertex AO.
    */
   public meshChunk(world: VoxelWorld, chunk: VoxelChunk): ChunkMeshResult | null {
-    if (chunk.isEmpty()) return null;
-
-    const builder = new VoxelMeshBuilder();
-    const startWX = chunk.cx * CHUNK_SIZE_X;
-    const startWZ = chunk.cz * CHUNK_SIZE_Z;
-    const startWY = chunk.cy * CHUNK_SIZE_Y;
-
-    // Helper: sample voxel with 1-block boundary halo across world and adjacent connected maps
-    const sample = (lx: number, ly: number, lz: number): number => {
-      const wx = startWX + lx;
-      const wy = startWY + ly;
-      const wz = startWZ + lz;
-      return typeof world.getVoxelWithHalo === 'function'
-        ? world.getVoxelWithHalo(wx, wy, wz)
-        : world.getVoxel(wx, wy, wz);
-    };
-
-    let quadCount = 0;
-
-    const originOffsetX = world.originOffsetX;
-    const originOffsetZ = world.originOffsetZ;
-    const originOffsetY = world.originOffsetY;
-
-    for (let ly = 0; ly < CHUNK_SIZE_Y; ly++) {
-      for (let lz = 0; lz < CHUNK_SIZE_Z; lz++) {
-        for (let lx = 0; lx < CHUNK_SIZE_X; lx++) {
-          const word = sample(lx, ly, lz);
-          if (isVoxelAir(word)) continue;
-
-          const shape = getVoxelShape(word);
-          const orientation = getVoxelOrientation(word);
-          const materialId = getVoxelMaterial(word);
-          const matDef = getVoxelMaterialDef(materialId);
-          const baseRgba = matDef.tintRgba;
-
-          const topUv = getFaceUv(matDef, 'top');
-          const bottomUv = getFaceUv(matDef, 'bottom');
-          const northUv = getFaceUv(matDef, 'north');
-          const southUv = getFaceUv(matDef, 'south');
-          const eastUv = getFaceUv(matDef, 'east');
-          const westUv = getFaceUv(matDef, 'west');
-          const sideUv = matDef.faceMapping.side || northUv;
-
-          const wx = startWX + lx + originOffsetX;
-          const wy = startWY + ly + originOffsetY;
-          const wz = startWZ + lz + originOffsetZ;
-
-          // Non-cube specialized shapes
-          if (shape === VoxelShape.SLOPE_45) {
-            builder.addSlope45(wx, wy, wz, orientation, baseRgba, topUv, sideUv, bottomUv);
-            quadCount += 3;
-            continue;
-          } else if (shape === VoxelShape.SLAB_BOTTOM) {
-            builder.addHalfSlab(wx, wy, wz, false, baseRgba, topUv, sideUv, bottomUv);
-            quadCount += 6;
-            continue;
-          } else if (shape === VoxelShape.SLAB_TOP) {
-            builder.addHalfSlab(wx, wy, wz, true, baseRgba, topUv, sideUv, bottomUv);
-            quadCount += 6;
-            continue;
-          } else if (shape === VoxelShape.STAIRS_STRAIGHT) {
-            builder.addStairsStraight(wx, wy, wz, orientation, baseRgba, topUv, sideUv, bottomUv);
-            quadCount += 8;
-            continue;
-          } else if (shape === VoxelShape.STAIRS_CORNER) {
-            builder.addStairsCorner(wx, wy, wz, orientation, baseRgba, topUv, sideUv, bottomUv);
-            quadCount += 11;
-            continue;
-          } else if (shape === VoxelShape.SLOPE_GENTLE_BASE) {
-            builder.addSlopeGentleBase(wx, wy, wz, orientation, baseRgba, topUv, sideUv, bottomUv);
-            quadCount += 4;
-            continue;
-          } else if (shape === VoxelShape.SLOPE_GENTLE_TOP) {
-            builder.addSlopeGentleTop(wx, wy, wz, orientation, baseRgba, topUv, sideUv, bottomUv);
-            quadCount += 5;
-            continue;
-          } else if (shape === VoxelShape.SLOPE_CORNER_OUTER) {
-            builder.addSlopeCornerOuter(wx, wy, wz, orientation, baseRgba, topUv, sideUv, bottomUv);
-            quadCount += 4;
-            continue;
-          } else if (shape === VoxelShape.SLOPE_CORNER_INNER) {
-            builder.addSlopeCornerInner(wx, wy, wz, orientation, baseRgba, topUv, sideUv, bottomUv);
-            quadCount += 7;
-            continue;
-          } else if (shape === VoxelShape.PRISM_DIAGONAL) {
-            builder.addPrismDiagonal(wx, wy, wz, orientation, baseRgba, topUv, sideUv, bottomUv);
-            quadCount += 5;
-            continue;
-          } else if (shape === VoxelShape.COLUMN_CENTER) {
-            builder.addColumnCenter(wx, wy, wz, baseRgba, topUv, sideUv, bottomUv);
-            quadCount += 6;
-            continue;
-          } else if (shape === VoxelShape.FENCE_RAIL) {
-            builder.addFenceRail(wx, wy, wz, orientation, baseRgba, topUv, sideUv, bottomUv);
-            quadCount += 12;
-            continue;
-          } else if (shape === VoxelShape.FARMLAND) {
-            const be = world.getBlockEntity?.(wx, wy, wz);
-            const isMoist = materialId === VOXEL_MAT_FARMLAND_MOIST || (be?.data?.moisture ?? 0) > 0;
-            builder.addFarmland(wx, wy, wz, isMoist, baseRgba, topUv, sideUv, bottomUv);
-            quadCount += 6;
-            continue;
-          } else if (shape === VoxelShape.CROSS_QUAD) {
-            const be = world.getBlockEntity?.(wx, wy, wz);
-            const growthStage = be?.data?.growthStage ?? 7;
-            const stageRatio = Math.max(0.3, Math.min(1.0, (growthStage + 1) / 8));
-            builder.addCrossQuad(wx, wy, wz, stageRatio, baseRgba, topUv);
-            quadCount += 4;
-            continue;
-          } else if (shape === VoxelShape.THIN_LAYER) {
-            builder.addThinLayer(wx, wy, wz, 0.125, baseRgba, topUv, sideUv, bottomUv);
-            quadCount += 6;
-            continue;
-          } else if (shape === VoxelShape.FLUID_SURFACE) {
-            builder.addFluidSurface(wx, wy, wz, 0.875, baseRgba, topUv, sideUv, bottomUv);
-            quadCount += 6;
-            continue;
-          } else if (shape === VoxelShape.ADAPTIVE_ALPHA) {
-            // ADAPTIVE_ALPHA: render as full cube for now (auto-resolution TBD)
-          }
-
-          // Full Cube Face Culling (Only cull against full cube occluders)
-          // Top Face (+Y)
-          const above = sample(lx, ly + 1, lz);
-          if (!isVoxelFaceOccluding(above)) {
-            builder.addQuad(
-              [wx, wy + 1, wz],
-              [wx + 1, wy + 1, wz],
-              [wx + 1, wy + 1, wz + 1],
-              [wx, wy + 1, wz + 1],
-              [0, 1, 0],
-              topUv,
-              [1, 1, 1, 1],
-              [baseRgba[0] * 1.0, baseRgba[1] * 1.0, baseRgba[2] * 1.0, baseRgba[3]]
-            );
-            quadCount++;
-          }
-
-          // Bottom Face (-Y)
-          const below = sample(lx, ly - 1, lz);
-          if (!isVoxelFaceOccluding(below)) {
-            builder.addQuad(
-              [wx, wy, wz + 1],
-              [wx + 1, wy, wz + 1],
-              [wx + 1, wy, wz],
-              [wx, wy, wz],
-              [0, -1, 0],
-              bottomUv,
-              [1, 1, 1, 1],
-              [baseRgba[0] * 0.55, baseRgba[1] * 0.55, baseRgba[2] * 0.55, baseRgba[3]]
-            );
-            quadCount++;
-          }
-
-          // North Face (+Z)
-          const north = sample(lx, ly, lz + 1);
-          if (!isVoxelFaceOccluding(north)) {
-            builder.addQuad(
-              [wx + 1, wy, wz + 1],
-              [wx, wy, wz + 1],
-              [wx, wy + 1, wz + 1],
-              [wx + 1, wy + 1, wz + 1],
-              [0, 0, 1],
-              northUv,
-              [1, 1, 1, 1],
-              [baseRgba[0] * 0.88, baseRgba[1] * 0.88, baseRgba[2] * 0.88, baseRgba[3]]
-            );
-            quadCount++;
-          }
-
-          // South Face (-Z)
-          const south = sample(lx, ly, lz - 1);
-          if (!isVoxelFaceOccluding(south)) {
-            builder.addQuad(
-              [wx, wy, wz],
-              [wx + 1, wy, wz],
-              [wx + 1, wy + 1, wz],
-              [wx, wy + 1, wz],
-              [0, 0, -1],
-              southUv,
-              [1, 1, 1, 1],
-              [baseRgba[0] * 0.84, baseRgba[1] * 0.84, baseRgba[2] * 0.84, baseRgba[3]]
-            );
-            quadCount++;
-          }
-
-          // East Face (+X)
-          const east = sample(lx + 1, ly, lz);
-          if (!isVoxelFaceOccluding(east)) {
-            builder.addQuad(
-              [wx + 1, wy, wz + 1],
-              [wx + 1, wy, wz],
-              [wx + 1, wy + 1, wz],
-              [wx + 1, wy + 1, wz + 1],
-              [1, 0, 0],
-              eastUv,
-              [1, 1, 1, 1],
-              [baseRgba[0] * 0.78, baseRgba[1] * 0.78, baseRgba[2] * 0.78, baseRgba[3]]
-            );
-            quadCount++;
-          }
-
-          // West Face (-X)
-          const west = sample(lx - 1, ly, lz);
-          if (!isVoxelFaceOccluding(west)) {
-            builder.addQuad(
-              [wx, wy, wz],
-              [wx, wy, wz + 1],
-              [wx, wy + 1, wz + 1],
-              [wx, wy + 1, wz],
-              [-1, 0, 0],
-              westUv,
-              [1, 1, 1, 1],
-              [baseRgba[0] * 0.74, baseRgba[1] * 0.74, baseRgba[2] * 0.74, baseRgba[3]]
-            );
-            quadCount++;
-          }
-        }
-      }
-    }
-
-    if (builder.positions.length === 0) {
+    if (chunk.isEmpty()) {
       this.disposeChunkMesh(chunk.key);
       chunk.isDirty = false;
       return null;
     }
 
-    const meshName = `voxel_chunk_${chunk.key}`;
+    const halo = world.extractChunkHalo34(chunk.cx, chunk.cz, chunk.cy);
+    const meshResult = meshChunkWithHalo34({
+      chunkKey: chunk.key,
+      cx: chunk.cx,
+      cy: chunk.cy,
+      cz: chunk.cz,
+      halo,
+      originOffsetX: world.originOffsetX,
+      originOffsetY: world.originOffsetY,
+      originOffsetZ: world.originOffsetZ,
+    });
+
+    chunk.isDirty = false;
+    return this.applyMeshResult(meshResult);
+  }
+
+  /**
+   * Applies transferable vertex arrays (from Web Worker or sync mesher) to a Babylon Mesh.
+   */
+  public applyMeshResult(result: TransferableVoxelMeshResult): ChunkMeshResult | null {
+    if (result.positions.length === 0) {
+      this.disposeChunkMesh(result.chunkKey);
+      return null;
+    }
+
+    const meshName = `voxel_chunk_${result.chunkKey}`;
     let mesh = this.scene.getMeshByName(meshName) as Mesh;
     if (!mesh) {
       mesh = new Mesh(meshName, this.scene);
     }
 
     const vertexData = new VertexData();
-    vertexData.positions = builder.positions;
-    vertexData.normals = builder.normals;
-    vertexData.uvs = builder.uvs;
-    vertexData.indices = builder.indices;
-    vertexData.colors = builder.colors;
+    vertexData.positions = result.positions;
+    vertexData.normals = result.normals;
+    vertexData.uvs = result.uvs;
+    vertexData.indices = result.indices;
+    vertexData.colors = result.colors;
     vertexData.applyToMesh(mesh);
 
     // Apply vertex-colored voxel world material
@@ -376,8 +181,7 @@ export class VoxelChunkMesher {
     mesh.isPickable = true;
     mesh.checkCollisions = true;
 
-    chunk.isDirty = false;
-    return { mesh, chunkKey: chunk.key, quadCount };
+    return { mesh, chunkKey: result.chunkKey, quadCount: result.quadCount };
   }
 
   public disposeChunkMesh(chunkKey: string): void {

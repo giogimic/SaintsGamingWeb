@@ -123,16 +123,27 @@ export function resolveVoxelTarget(
     };
   }
 
-  // 2. Analytical Raycast against Top Foundation Plane (Y = 0 mesh height -> wy = 16)
+  // 2. Analytical Raycast against Top Voxel Surface / Ground Plane
   if (ray && Math.abs(ray.direction.y) > 1e-6) {
-    const t = -ray.origin.y / ray.direction.y;
-    if (t >= 0) {
-      const hitX = ray.origin.x + t * ray.direction.x;
-      const hitZ = ray.origin.z + t * ray.direction.z;
-      const hitY = 0;
+    const t0 = -ray.origin.y / ray.direction.y;
+    if (t0 >= 0) {
+      const approxX = ray.origin.x + t0 * ray.direction.x;
+      const approxZ = ray.origin.z + t0 * ray.direction.z;
+      const approxVoxel = world.worldMeshToVoxel(approxX, 0, approxZ);
 
-      const targetVoxel = world.worldMeshToVoxel(hitX, -0.05, hitZ);
-      const adjacentVoxel = world.worldMeshToVoxel(hitX, 0.05, hitZ);
+      // Derive ground planes directly from the top voxel surface
+      const topWY = typeof world.getTopSolidVoxelY === 'function'
+        ? world.getTopSolidVoxelY(approxVoxel.wx, approxVoxel.wz)
+        : 15;
+      const topSurfaceMeshY = (topWY + 1) + world.originOffsetY;
+
+      const t = (topSurfaceMeshY - ray.origin.y) / ray.direction.y;
+      const hitX = ray.origin.x + t * ray.direction.x;
+      const hitY = topSurfaceMeshY;
+      const hitZ = ray.origin.z + t * ray.direction.z;
+
+      const targetVoxel = world.worldMeshToVoxel(hitX, hitY - 0.05, hitZ);
+      const adjacentVoxel = world.worldMeshToVoxel(hitX, hitY + 0.05, hitZ);
 
       const isInsideWorld =
         targetVoxel.wx >= 0 &&
@@ -165,4 +176,19 @@ export function resolveVoxelTarget(
   }
 
   return null;
+}
+
+/**
+ * Resolves the operational target coordinate based on authoring mode:
+ * - 'add' | 'extrude': P_target = P_hit + n (adjacent placement voxel)
+ * - 'carve' | 'paint' | 'erase' | 'replace': P_target = P_hit (underlying intersected voxel)
+ */
+export function getTargetVoxelCoord(
+  mode: 'add' | 'extrude' | 'carve' | 'paint' | 'erase' | 'replace',
+  target: VoxelTargetResolution
+): { wx: number; wy: number; wz: number } {
+  if (mode === 'add' || mode === 'extrude') {
+    return target.adjacentVoxelCoord;
+  }
+  return target.voxelCoord;
 }

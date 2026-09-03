@@ -260,20 +260,68 @@ export class StudioKeyboardRouter {
       return true;
     }
 
-    // 15. Single key editing shortcuts (B, R, F, G, E, I, M)
+    // 15. Single key editing shortcuts (B, M, E, C, R, F, G, I, P)
     if (!e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) {
       const k = e.key.toLowerCase();
+      const isVoxel = store.studioMode === 'voxel';
+
       if (k === 'b') {
         e.preventDefault();
         store.setBrushMode('paint');
-        showToast('Brush Tool (B)');
+        showToast(isVoxel ? 'Volumetric Brush Tool (B)' : 'Brush Tool (B)');
         return true;
+      }
+      if (k === 'm') {
+        e.preventDefault();
+        if (isVoxel) {
+          store.setBrushMode('select');
+          store.setSelectionMode('box');
+          showToast('3D Marquee Box Selection (M)');
+        } else {
+          store.setSnapToGrid(!store.snapToGrid);
+          showToast(`Grid Snapping: ${!store.snapToGrid ? 'ON' : 'OFF'} (M)`);
+        }
+        return true;
+      }
+      if (k === 'e') {
+        e.preventDefault();
+        if (isVoxel) {
+          store.setBrushMode('paint');
+          showToast('Extrude Face Tool (E)');
+        } else {
+          store.setBrushMode('erase');
+          showToast('Eraser Tool (E)');
+        }
+        return true;
+      }
+      if (k === 'c') {
+        if (isVoxel) {
+          e.preventDefault();
+          store.setBrushMode('erase');
+          showToast('Carve / Erode Tool (C)');
+          return true;
+        }
       }
       if (k === 'r') {
         e.preventDefault();
-        store.rotateStampCW();
-        showToast('Rotated 90° (R)');
+        if (isVoxel && store.activeVoxelPrefab) {
+          store.rotateActiveVoxelPrefab();
+          showToast('Rotated Prefab 90° CW (R)');
+        } else if (isVoxel) {
+          showToast('Material Replace Mode (R)');
+        } else {
+          store.rotateStampCW();
+          showToast('Rotated 90° (R)');
+        }
         return true;
+      }
+      if (k === 'p') {
+        if (isVoxel) {
+          e.preventDefault();
+          store.setBrushMode('prefab');
+          showToast('Prefab Stamp Tool (P)');
+          return true;
+        }
       }
       if (k === 'f' || k === 'g') {
         e.preventDefault();
@@ -281,22 +329,10 @@ export class StudioKeyboardRouter {
         showToast('Flood Fill Tool (F)');
         return true;
       }
-      if (k === 'e') {
-        e.preventDefault();
-        store.setBrushMode('erase');
-        showToast('Eraser Tool (E)');
-        return true;
-      }
       if (k === 'i') {
         e.preventDefault();
         store.setBrushMode('eyedropper');
         showToast('Eyedropper Tool (I)');
-        return true;
-      }
-      if (k === 'm') {
-        e.preventDefault();
-        store.setSnapToGrid(!store.snapToGrid);
-        showToast(`Grid Snapping: ${!store.snapToGrid ? 'ON' : 'OFF'} (M)`);
         return true;
       }
     }

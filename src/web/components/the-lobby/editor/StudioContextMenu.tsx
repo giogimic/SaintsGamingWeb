@@ -34,6 +34,9 @@ import {
   Trees,
 } from 'lucide-react';
 import { savePrefab, listPrefabs } from '@/app/actions/prefabs';
+import { extractVoxelPrefab } from '@/shared/game/voxel/VoxelPrefab';
+import { packVoxel, VoxelShape, VoxelPhysics, VOXEL_WORD_AIR, VOXEL_MAT_GRASS } from '@/shared/game/voxel/VoxelWord';
+import { Box } from 'lucide-react';
 
 import { useEditorStore, type PanelId } from './editor-store';
 import { useGameStore } from '../store';
@@ -320,6 +323,99 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
     } else {
       showToast('Tile already empty.');
     }
+  };
+
+  // --- 3D Voxel Context Actions ---
+  const handleFill3DVolume = () => {
+    if (!activeMapData?.voxelWorldDoc) {
+      showToast('No 3D voxel document loaded.');
+      return;
+    }
+    const store = useEditorStore.getState();
+    const doc = activeMapData.voxelWorldDoc;
+    const r0 = store.selectionStart ? store.selectionStart.r : tileR;
+    const r1 = store.selectionEnd ? store.selectionEnd.r : tileR;
+    const c0 = store.selectionStart ? store.selectionStart.c : tileC;
+    const c1 = store.selectionEnd ? store.selectionEnd.c : tileC;
+
+    const minX = Math.min(c0, c1);
+    const maxX = Math.max(c0, c1);
+    const minZ = Math.min(r0, r1);
+    const maxZ = Math.max(r0, r1);
+
+    const activeMat = store.activeBrushTileId || VOXEL_MAT_GRASS;
+    const activeWord = packVoxel(activeMat, VoxelShape.FULL_CUBE, 0, VoxelPhysics.SOLID_OBSTACLE);
+
+    let filledCount = 0;
+    for (let x = minX; x <= maxX; x++) {
+      for (let z = minZ; z <= maxZ; z++) {
+        for (let y = 0; y < 32; y++) {
+          const currentWord = doc.getVoxel(x, y, z);
+          if (currentWord !== VOXEL_WORD_AIR) {
+            doc.setVoxel(x, y, z, activeWord);
+            filledCount++;
+          }
+        }
+      }
+    }
+    useEditorStore.getState().markMapDirty();
+    showToast(`Filled 3D volume with ${filledCount} blocks`);
+  };
+
+  const handleHollow3DVolume = () => {
+    if (!activeMapData?.voxelWorldDoc) {
+      showToast('No 3D voxel document loaded.');
+      return;
+    }
+    const store = useEditorStore.getState();
+    const doc = activeMapData.voxelWorldDoc;
+    const r0 = store.selectionStart ? store.selectionStart.r : tileR;
+    const r1 = store.selectionEnd ? store.selectionEnd.r : tileR;
+    const c0 = store.selectionStart ? store.selectionStart.c : tileC;
+    const c1 = store.selectionEnd ? store.selectionEnd.c : tileC;
+
+    const minX = Math.min(c0, c1);
+    const maxX = Math.max(c0, c1);
+    const minZ = Math.min(r0, r1);
+    const maxZ = Math.max(r0, r1);
+
+    let cleared = 0;
+    for (let x = minX + 1; x < maxX; x++) {
+      for (let z = minZ + 1; z < maxZ; z++) {
+        for (let y = 2; y < 30; y++) {
+          const currentWord = doc.getVoxel(x, y, z);
+          if (currentWord !== VOXEL_WORD_AIR) {
+            doc.setVoxel(x, y, z, VOXEL_WORD_AIR);
+            cleared++;
+          }
+        }
+      }
+    }
+    useEditorStore.getState().markMapDirty();
+    showToast(`Hollowed volume (erased ${cleared} interior blocks)`);
+  };
+
+  const handleSave3DVolumeAsPrefab = () => {
+    if (!activeMapData?.voxelWorldDoc) {
+      showToast('No 3D voxel document loaded.');
+      return;
+    }
+    const store = useEditorStore.getState();
+    const doc = activeMapData.voxelWorldDoc;
+    const r0 = store.selectionStart ? store.selectionStart.r : tileR;
+    const r1 = store.selectionEnd ? store.selectionEnd.r : tileR;
+    const c0 = store.selectionStart ? store.selectionStart.c : tileC;
+    const c1 = store.selectionEnd ? store.selectionEnd.c : tileC;
+
+    const minX = Math.min(c0, c1);
+    const maxX = Math.max(c0, c1);
+    const minZ = Math.min(r0, r1);
+    const maxZ = Math.max(r0, r1);
+
+    const prefab = extractVoxelPrefab(doc, minX, 0, minZ, maxX, 31, maxZ, `Blueprint_${Date.now()}`);
+    store.setActiveVoxelPrefab(prefab);
+    store.setBrushMode('prefab');
+    showToast(`Saved 3D Prefab [${prefab.dimensions.join('×')}] to Blueprint Library (Press P to stamp)`);
   };
 
   // --- Quick Create Actions ---
@@ -822,6 +918,49 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
           </button>
 
           <div className="my-1 h-px bg-border/40" />
+
+          {useEditorStore.getState().studioMode === 'voxel' && (
+            <>
+              <div className="px-2 py-1 text-[9px] font-bold text-amber-400 uppercase tracking-wider bg-amber-950/30 rounded border border-amber-500/30 mb-1 flex items-center gap-1.5">
+                <Box className="w-3 h-3 text-amber-400" />
+                <span>3D Voxel Authoring Suite</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleAction(handleFill3DVolume)}
+                className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-foreground hover:bg-amber-500/20 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <PaintBucket className="h-3.5 w-3.5 text-amber-400" />
+                  <span>Fill 3D Volume</span>
+                </div>
+                <span className="text-[9px] text-amber-400/80 font-mono">Fill</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAction(handleHollow3DVolume)}
+                className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-foreground hover:bg-amber-500/20 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Box className="h-3.5 w-3.5 text-cyan-400" />
+                  <span>Hollow Interior (Clear Core)</span>
+                </div>
+                <span className="text-[9px] text-cyan-400/80 font-mono">Hollow</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAction(handleSave3DVolumeAsPrefab)}
+                className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-foreground hover:bg-amber-500/20 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Package className="h-3.5 w-3.5 text-purple-400" />
+                  <span>Save Volume as Prefab Asset</span>
+                </div>
+                <span className="text-[9px] text-purple-400/80 font-mono">P</span>
+              </button>
+              <div className="my-1 h-px bg-border/40" />
+            </>
+          )}
 
           {/* --- Sample & Fill --- */}
           <button

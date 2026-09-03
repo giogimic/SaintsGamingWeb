@@ -328,6 +328,7 @@ export class BabylonEngine {
   private cameraSnapped: boolean = false;
   private cameraProfile = { pitch: Math.PI / 4, distance: 14, lerpFactor: 0.15 };
   private vignettePostProcess?: ImageProcessingPostProcess;
+  private voxelSelectionBoxMesh: Mesh | null = null;
   /** When true, camera ignores player follow and accepts editor pan. */
   private editorCameraMode: boolean = false;
   private editorPanPointerId: number | null = null;
@@ -4794,6 +4795,67 @@ export class BabylonEngine {
     mat.disableLighting = true;
     mat.backFaceCulling = false;
     return mat;
+  }
+
+  public clearSelectionPreview() {
+    if (this.selectionBoxMesh) {
+      this.selectionBoxMesh.isVisible = false;
+    }
+    if (this.multiSelectionBaseMesh) {
+      this.multiSelectionBaseMesh.isVisible = false;
+    }
+    this.clear3DBoxSelectionPreview();
+  }
+
+  public set3DBoxSelectionPreview(
+    minWX: number,
+    minWY: number,
+    minWZ: number,
+    maxWX: number,
+    maxWY: number,
+    maxWZ: number,
+    originOffsetX = 0,
+    originOffsetY = 0,
+    originOffsetZ = 0
+  ) {
+    const minX = Math.min(minWX, maxWX);
+    const maxX = Math.max(minWX, maxWX) + 1;
+    const minY = Math.min(minWY, maxWY);
+    const maxY = Math.max(minWY, maxWY) + 1;
+    const minZ = Math.min(minWZ, maxWZ);
+    const maxZ = Math.max(minWZ, maxWZ) + 1;
+
+    const dX = maxX - minX;
+    const dY = maxY - minY;
+    const dZ = maxZ - minZ;
+
+    const centerX = (minX + maxX) / 2 + originOffsetX;
+    const centerY = (minY + maxY) / 2 + originOffsetY;
+    const centerZ = (minZ + maxZ) / 2 + originOffsetZ;
+
+    if (!this.voxelSelectionBoxMesh || this.voxelSelectionBoxMesh.isDisposed()) {
+      this.voxelSelectionBoxMesh = MeshBuilder.CreateBox('voxel_3d_selection_gizmo', { size: 1 }, this.scene);
+      this.voxelSelectionBoxMesh.parent = this.rootNode;
+      this.voxelSelectionBoxMesh.isPickable = false;
+
+      const mat = new StandardMaterial('voxel_3d_selection_mat', this.scene);
+      mat.wireframe = true;
+      mat.diffuseColor = new Color3(0.96, 0.62, 0.07); // Amber gold #f59e0b
+      mat.emissiveColor = new Color3(0.96, 0.62, 0.07);
+      mat.disableLighting = true;
+      mat.backFaceCulling = false;
+      this.voxelSelectionBoxMesh.material = mat;
+    }
+
+    this.voxelSelectionBoxMesh.scaling.set(dX, dY, dZ);
+    this.voxelSelectionBoxMesh.position.set(centerX, centerY, centerZ);
+    this.voxelSelectionBoxMesh.isVisible = true;
+  }
+
+  public clear3DBoxSelectionPreview() {
+    if (this.voxelSelectionBoxMesh) {
+      this.voxelSelectionBoxMesh.isVisible = false;
+    }
   }
 
   public setContinuousSelectionPreview(

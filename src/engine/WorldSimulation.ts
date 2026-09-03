@@ -12,6 +12,9 @@ import {
   VoxelShape,
   VoxelLogic,
 } from '@/shared/game/voxel/VoxelWord';
+import { SweptAABBController } from '@/shared/game/voxel/VoxelCollision';
+
+const voxelSweptController = new SweptAABBController();
 
 export type Direction = 'up' | 'down' | 'left' | 'right';
 
@@ -121,28 +124,32 @@ export class WorldSimulation {
       return { type: 'BLOCKED', direction: dir, reason: 'WALL' };
     }
 
-    // 3D Voxel Collision Check (Authoritative 3D volume)
+    // 3D Voxel Collision Check (Swept AABB)
     if (state.voxelWorld) {
-      const wz = mapHeight - 1 - targetY;
-      const bodyWord = state.voxelWorld.getVoxel(targetX, 16, wz);
-      const bodyPhys = getVoxelPhysics(bodyWord);
-      const bodyShape = getVoxelShape(bodyWord);
+      const fromWX = playerPos.x + 0.5;
+      const fromWZ = mapHeight - 1 - playerPos.y + 0.5;
+      const candWX = targetX + 0.5;
+      const candWZ = mapHeight - 1 - targetY + 0.5;
 
-      // Traversable elevations (slopes, stairs, bottom slabs) allow the player to step up/walk through
-      const isTraversableElevation =
-        bodyPhys === VoxelPhysics.WALKABLE_SLOPE ||
-        bodyShape === VoxelShape.STAIRS_STRAIGHT ||
-        bodyShape === VoxelShape.STAIRS_CORNER ||
-        bodyShape === VoxelShape.SLAB_BOTTOM;
+      const vel = { x: candWX - fromWX, y: 0, z: candWZ - fromWZ };
+      const sweptRes = voxelSweptController.simulateMove(
+        state.voxelWorld,
+        { x: fromWX, y: 16, z: fromWZ },
+        vel,
+        1.0
+      );
 
-      if (bodyWord && (bodyPhys === VoxelPhysics.SOLID_OBSTACLE || bodyPhys === VoxelPhysics.HAZARD) && !isTraversableElevation && !isConnectedSeam) {
+      if (sweptRes.hitWall && !isConnectedSeam && !sweptRes.steppedUp) {
         return { type: 'BLOCKED', direction: dir, reason: 'WALL' };
       }
 
       // Check ground support (must not be empty air unless active elevated block or connected seam exists)
-      const groundWord = state.voxelWorld.getVoxel(targetX, 15, wz);
-      if ((!groundWord || isVoxelAir(groundWord)) && !bodyWord && !isConnectedSeam) {
-        return { type: 'BLOCKED', direction: dir, reason: 'WALL' };
+      const groundWord = state.voxelWorld.getVoxel(targetX, 15, mapHeight - 1 - targetY);
+      if ((!groundWord || isVoxelAir(groundWord)) && !isConnectedSeam && !sweptRes.steppedUp) {
+        const bodyWord = state.voxelWorld.getVoxel(targetX, 16, mapHeight - 1 - targetY);
+        if (!bodyWord || isVoxelAir(bodyWord)) {
+          return { type: 'BLOCKED', direction: dir, reason: 'WALL' };
+        }
       }
     }
 

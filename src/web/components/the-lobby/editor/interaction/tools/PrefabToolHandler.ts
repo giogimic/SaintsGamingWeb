@@ -10,6 +10,7 @@ import { useEditorStore } from '../../editor-store';
 import { useGameStore } from '../../../store';
 import { LOGIC_LAYER_IDX } from '@/shared/game/tilePaint';
 import { paintWorldCell } from '@/shared/game/worldDocument';
+import { stampVoxelPrefab } from '@/shared/game/voxel/VoxelPrefab';
 
 export class PrefabToolHandler implements IToolHandler {
   public readonly id = 'prefab' as const;
@@ -18,12 +19,44 @@ export class PrefabToolHandler implements IToolHandler {
     if (event.button !== 0) return false;
     const store = useEditorStore.getState();
     const gameStore = useGameStore.getState();
+
+    // 3D Volumetric Voxel Stamping
+    if (store.studioMode === 'voxel') {
+      const voxelWorld = gameStore.voxelWorld;
+      const activeVoxelPrefab = store.activeVoxelPrefab;
+      if (!activeVoxelPrefab) {
+        context.showToast?.('Select a 3D Voxel Prefab first.');
+        return false;
+      }
+      if (!voxelWorld) {
+        context.showToast?.('No active 3D Voxel World to stamp into.');
+        return false;
+      }
+
+      const targetWX = event.voxelTarget?.adjacentVoxelCoord?.wx ?? event.tilePos.c;
+      const targetWY = event.voxelTarget?.adjacentVoxelCoord?.wy ?? 16;
+      const targetWZ = event.voxelTarget?.adjacentVoxelCoord?.wz ?? event.tilePos.r;
+
+      const { modifiedCount, dirtyChunks } = stampVoxelPrefab(
+        voxelWorld,
+        activeVoxelPrefab,
+        targetWX,
+        targetWY,
+        targetWZ
+      );
+
+      if (modifiedCount > 0) {
+        store.markMapDirty();
+        dirtyChunks.forEach((chunkKey) => {
+          context.engine?.rebuildChunkMeshByKey?.(chunkKey);
+        });
+        context.showToast?.(`Stamped ${activeVoxelPrefab.name} (${modifiedCount} voxels).`);
+      }
+      return true;
+    }
+
     const map = context.mapData || gameStore.activeMapData;
     if (!map) return false;
-    if (store.studioMode === 'voxel') {
-      context.showToast?.('Tile prefabs are for 2D layers. Switch to Visual Grid to stamp.');
-      return false;
-    }
 
     const { r, c } = event.tilePos;
     const activePrefabId = store.activePrefabId;

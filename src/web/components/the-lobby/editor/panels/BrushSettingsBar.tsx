@@ -123,7 +123,7 @@ export const BrushSettingsBar: React.FC<BrushSettingsBarProps> = ({
   ];
 
   const voxelBlockSizes = [16, 32, 48, 64, 128, 256];
-  const radiusPresets = [1, 2, 3, 5, 8];
+  const radiusPresets = [1, 2, 4, 8, 16];
 
   const handleShapeSelect = (shape: BrushShape) => {
     soundSynth?.playUiClick?.();
@@ -424,7 +424,7 @@ export const BrushSettingsBar: React.FC<BrushSettingsBarProps> = ({
           <input
             type="range"
             min={1}
-            max={10}
+            max={16}
             value={brushRadius}
             onChange={(e) => setBrushRadius(parseInt(e.target.value))}
             className="flex-1 accent-primary h-1 cursor-pointer"

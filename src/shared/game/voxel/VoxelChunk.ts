@@ -146,4 +146,166 @@ export class VoxelChunk {
     chunk.isDirty = true;
     return chunk;
   }
+
+  /**
+   * Palette-Indexed Binary RLE serialization:
+   * Maps unique voxel words to 1-byte indices (P <= 256),
+   * and encodes sequences as [count (uint16), palette_index (uint8)].
+   */
+  public serializePaletteRLEBinary(): Uint8Array {
+    // 1. Build unique palette (words in occurrence order)
+    const paletteMap = new Map<number, number>();
+    const palette: number[] = [];
+
+    for (let i = 0; i < this.data.length; i++) {
+      const word = this.data[i];
+      if (!paletteMap.has(word)) {
+        paletteMap.set(word, palette.length);
+        palette.push(word);
+        if (palette.length > 256) {
+          // Fallback if chunk exceeds 256 unique materials: truncate to 256
+          break;
+        }
+      }
+    }
+
+    const paletteCount = Math.min(256, palette.length);
+
+    // 2. Compute RLE runs using palette indices
+    const runs: Array<{ count: number; palIdx: number }> = [];
+    if (this.data.length > 0) {
+      let currentWord = this.data[0];
+      let currentPalIdx = paletteMap.get(currentWord) ?? 0;
+      let count = 1;
+
+      for (let i = 1; i < this.data.length; i++) {
+        const word = this.data[i];
+        const palIdx = paletteMap.get(word) ?? 0;
+        if (palIdx === currentPalIdx && count < 65535) {
+          count++;
+        } else {
+          runs.push({ count, palIdx: currentPalIdx });
+          currentPalIdx = palIdx;
+          count = 1;
+        }
+      }
+      runs.push({ count, palIdx: currentPalIdx });
+    }
+
+    // 3. Allocate binary buffer:
+    // Header: 1 (type) + 6 (cx, cy, cz) + 1 (paletteCount) + paletteCount * 4
+    // Runs: runs.length * 3 (uint16 count + uint8 palIdx)
+    const headerSize = 1 + 6 + 1 + paletteCount * 4;
+    const bodySize = runs.length * 3;
+    const buffer = new Uint8Array(headerSize + bodySize);
+    const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+
+    let offset = 0;
+    view.setUint8(offset++, 0x01); // CHUNK_PACKET_PALETTE_RLE
+    view.setInt16(offset, this.cx, true); offset += 2;
+    view.setInt16(offset, this.cy, true); offset += 2;
+    view.setInt16(offset, this.cz, true); offset += 2;
+
+    view.setUint8(offset++, paletteCount === 256 ? 0 : paletteCount);
+    for (let p = 0; p < paletteCount; p++) {
+      view.setUint32(offset, palette[p] >>> 0, true);
+      offset += 4;
+    }
+
+    for (let r = 0; r < runs.length; r++) {
+      view.setUint16(offset, runs[r].count, true);
+      offset += 2;
+      view.setUint8(offset++, runs[r].palIdx);
+    }
+
+    return buffer;
+  }
+
+  /**
+   * Reconstruct chunk from a Palette-Indexed Binary RLE buffer.
+   */
+  public static deserializePaletteRLEBinary(bytes: Uint8Array): VoxelChunk {
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    let offset = 0;
+
+    const packetType = view.getUint8(offset++);
+    if (packetType !== 0x01) {
+      throw new Error(`Invalid chunk packet type: 0x${packetType.toString(16)}`);
+    }
+
+    const cx = view.getInt16(offset, true); offset += 2;
+    const cy = view.getInt16(offset, true); offset += 2;
+    const cz = view.getInt16(offset, true); offset += 2;
+
+    let paletteCount = view.getUint8(offset++);
+    if (paletteCount === 0) paletteCount = 256;
+
+    const palette: number[] = new Array(paletteCount);
+    for (let p = 0; p < paletteCount; p++) {
+      palette[p] = view.getUint32(offset, true);
+      offset += 4;
+    }
+
+    const chunk = new VoxelChunk(cx, cz, cy);
+    let targetIdx = 0;
+
+    while (offset + 3 <= bytes.byteLength && targetIdx < CHUNK_TOTAL_CELLS) {
+      const count = view.getUint16(offset, true); offset += 2;
+      const palIdx = view.getUint8(offset++);
+      const word = palette[palIdx] ?? VOXEL_WORD_AIR;
+
+      for (let c = 0; c < count && targetIdx < CHUNK_TOTAL_CELLS; c++) {
+        chunk.data[targetIdx++] = word;
+      }
+    }
+
+    chunk.isDirty = true;
+    return chunk;
+  }
+
+  /**
+   * Serializes a single-voxel mutation into an authoritative delta packet (13 bytes).
+   */
+  public static serializeVoxelDelta(
+    cx: number,
+    cy: number,
+    cz: number,
+    localIndex: number,
+    word: number
+  ): Uint8Array {
+    const buffer = new Uint8Array(13);
+    const view = new DataView(buffer.buffer);
+    view.setUint8(0, 0x02); // CHUNK_PACKET_DELTA_VOXEL
+    view.setInt16(1, cx, true);
+    view.setInt16(3, cy, true);
+    view.setInt16(5, cz, true);
+    view.setUint16(7, localIndex & 0x7fff, true);
+    view.setUint32(9, word >>> 0, true);
+    return buffer;
+  }
+
+  /**
+   * Deserializes a single-voxel mutation delta packet.
+   */
+  public static deserializeVoxelDelta(bytes: Uint8Array): {
+    cx: number;
+    cy: number;
+    cz: number;
+    localIndex: number;
+    word: number;
+  } {
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const packetType = view.getUint8(0);
+    if (packetType !== 0x02) {
+      throw new Error(`Invalid delta packet type: 0x${packetType.toString(16)}`);
+    }
+    return {
+      cx: view.getInt16(1, true),
+      cy: view.getInt16(3, true),
+      cz: view.getInt16(5, true),
+      localIndex: view.getUint16(7, true),
+      word: view.getUint32(9, true),
+    };
+  }
 }
+

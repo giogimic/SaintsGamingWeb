@@ -1,3 +1,24 @@
+# 2.1.697
+- **3D Volumetric CAD Authoring Suite, World Atlas Node Graph & Procedural Generation**:
+  - **3D Volumetric Authoring Suite (CAD Paradigm)**:
+    - Implemented mathematical face-normal hit target resolution ($P_{\text{target}} = P_{\text{hit}} + \vec{n}$ for Add/Extrude vs $P_{\text{target}} = P_{\text{hit}}$ for Carve/Paint) and fixed ground-lock surface elevation in `VoxelTargetResolver.ts`.
+    - Added 3D Volumetric Marquee Selection Tool ($dX \times dY \times dZ$) with real-time wireframe bounding box gizmo in `BabylonEngine.ts` and `SelectToolHandler.ts`.
+    - Integrated 3D Voxel Authoring Suite into `StudioContextMenu.tsx`: Fill 3D Volume, Hollow Interior (Clear Core), and Save Volume as Prefab Asset.
+    - Added dynamic brush radius $R \in [1..16]$ via `Ctrl + Mouse Wheel` in `StudioEditorShell.tsx` and toolbar presets `[1, 2, 4, 8, 16]` in `BrushSettingsBar.tsx`.
+    - Configured CAD standard hotkeys (`B`, `M`, `E`, `C`, `R`, `P`) in `StudioKeyboardRouter.ts`.
+  - **World Atlas Node Graph & Procedural Biome Pipeline**:
+    - Created typed Biome JSON schema (`biomeSchema.ts`) with canonical presets (Emerald Plains, Golden Dunes, Frostpeak Ridge).
+    - Built seedable 2D Simplex noise and multi-octave fBm generator (`simplexNoise.ts`).
+    - Implemented `ProceduralVoxelGenerator` (`proceduralGenerator.ts`) populating 32³ chunks with depth-indexed geological strata (surface, subsurface, mantle, bedrock).
+    - Updated World Atlas Node Graph UI (`spatialAtlas.ts`, `WorldAtlasPanel.tsx`) to support three node classes: Authored Fixed Map (Gold), Generated Procedural Region (Emerald), and Hybrid Anchor Map with seam threshold (Purple). Double-clicking Authored loads 3D Voxel Studio canvas; double-clicking Procedural opens Biome Configurator.
+    - Created `BiomeConfiguratorPanel.tsx` with live 2D cross-section strata canvas preview and noise sliders, docked in `studioModes.ts` and `StudioEditorShell.tsx`.
+  - **Engine Core & Multiplayer Scalability**:
+    - 34³ neighbor-halo extraction in `VoxelWorldDoc.ts` and Ambient Occlusion vertex lighting ($AO \in [0..3]$) in `VoxelMesherCore.ts`.
+    - Palette-indexed byte-level binary RLE compression ($<4\text{ KB}$ per chunk) and 13-byte delta mutation packets in `VoxelChunk.ts` and Go MMO `voxel.go`.
+    - Prefab Blueprint stamp tool with 90° CW matrix rotation in `VoxelPrefab.ts` and `PrefabToolHandler.ts`.
+    - Continuous swept AABB 3D collision resolution with $0.5\text{m}$ step-up in `VoxelCollision.ts` and Go `voxel.go`.
+    - 60 FPS client prediction with 128-slot circular ring buffer and server reconciliation in `MovementPrediction.ts`.
+
 # 2.1.696
 - **Studio Interface 2D Debt Elimination & 3D Perspective Volumetric Reroute**:
   - **Aggressive Removal of Obsolete 2D Tile Systems**:

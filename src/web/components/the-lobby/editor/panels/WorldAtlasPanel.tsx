@@ -436,23 +436,38 @@ export const WorldAtlasPanel: React.FC = () => {
               {/* Placed Nodes */}
               {atlasData.nodes.map((node) => {
                 const isSelected = selectedNode?.x === node.x && selectedNode?.y === node.y;
+                const nodeType = node.nodeType || 'authored';
                 const hasNorth = atlasData.nodes.some(n => n.x === node.x && n.y === node.y - 1);
                 const hasSouth = atlasData.nodes.some(n => n.x === node.x && n.y === node.y + 1);
                 const hasWest = atlasData.nodes.some(n => n.x === node.x - 1 && n.y === node.y);
                 const hasEast = atlasData.nodes.some(n => n.x === node.x + 1 && n.y === node.y);
 
+                const borderClass =
+                  nodeType === 'procedural'
+                    ? isSelected ? 'border-emerald-400 bg-emerald-950/90 shadow-[0_0_20px_rgba(16,185,129,0.4)]' : 'border-emerald-500/50 bg-[#061816]/95 hover:border-emerald-400'
+                    : nodeType === 'hybrid'
+                    ? isSelected ? 'border-purple-400 bg-purple-950/90 shadow-[0_0_20px_rgba(168,85,247,0.4)]' : 'border-purple-500/50 bg-[#160b24]/95 hover:border-purple-400'
+                    : isSelected ? 'border-amber-400 bg-amber-950/90 shadow-[0_0_20px_rgba(245,158,11,0.4)]' : 'border-amber-500/40 bg-[#0f172a]/95 hover:border-amber-400';
+
                 return (
                   <div
                     key={node.id || `${node.x}_${node.y}`}
                     onClick={() => handleGridClick(node.x, node.y)}
-                    onDoubleClick={() => handleWarpToMap(node.mapId, node.id)}
+                    onDoubleClick={() => {
+                      if (nodeType === 'procedural') {
+                        useEditorStore.getState().toggleDock('biome');
+                        showToast(`Opened Biome Configurator for ${node.mapId}`);
+                      } else {
+                        handleWarpToMap(node.mapId, node.id);
+                        setStudioMode('voxel');
+                        showToast(`Loading 3D Voxel Studio for ${node.mapId}`);
+                      }
+                    }}
                     className={`absolute w-[70px] h-[70px] m-[1px] rounded-lg flex flex-col items-center justify-center p-1.5 text-center cursor-pointer shadow-xl transition-all group ${
-                      isSelected
-                        ? 'bg-amber-950/90 border-2 border-amber-400 scale-105 z-10 shadow-[0_0_20px_rgba(245,158,11,0.4)]'
-                        : 'bg-[#0f172a]/95 border-2 border-amber-500/40 hover:border-amber-400'
-                    }`}
+                      isSelected ? 'scale-105 z-10' : ''
+                    } border-2 ${borderClass}`}
                     style={{ left: node.x * 72, top: node.y * 72 }}
-                    title="Click to select actions · Double-click to warp"
+                    title={`[${nodeType.toUpperCase()}] ${node.mapId} · Double-click to open ${nodeType === 'procedural' ? 'Biome Config' : '3D Voxel Studio'}`}
                   >
                     {/* Neighbor edge indicator pips */}
                     {hasNorth && <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-1.5 bg-cyan-300 rounded-full shadow-[0_0_6px_rgba(34,211,238,0.9)] border border-cyan-100" title="North Connected" />}
@@ -464,6 +479,12 @@ export const WorldAtlasPanel: React.FC = () => {
                     <span className="text-[9px] text-slate-200 break-all leading-tight font-bold">
                       {node.mapId}
                     </span>
+
+                    {/* Node class badge */}
+                    <div className="text-[7px] uppercase font-bold tracking-wider opacity-75">
+                      {nodeType === 'procedural' ? 'PROC' : nodeType === 'hybrid' ? 'HYBR' : 'AUTH'}
+                    </div>
+
                     {node.mapId === lobbyMapId && (
                       <div className="absolute -top-1 -right-1 px-1 py-0.2 text-[8px] bg-emerald-600 text-white font-extrabold rounded-full border border-black shadow-[0_0_8px_rgba(0,0,0,0.8)] [text-shadow:_0_1px_2px_rgb(0_0_0)]" title="Spawn Hub">
                         HUB
@@ -495,6 +516,49 @@ export const WorldAtlasPanel: React.FC = () => {
                   Selected Node: <span className="text-white">{selectedNode.mapId}</span>
                   <span className="text-[10px] text-slate-500 font-normal">({selectedNode.id})</span>
                 </span>
+                
+                {/* Node Class Selector */}
+                <div className="flex items-center gap-1.5 bg-black/40 px-2 py-0.5 rounded border border-border/40">
+                  <label className="text-[10px] text-muted-foreground font-bold">Class:</label>
+                  <select
+                    value={selectedNode.nodeType || 'authored'}
+                    onChange={(e) => {
+                      const newType = e.target.value as any;
+                      const updatedNodes = atlasData.nodes.map(n => n.id === selectedNode.id ? { ...n, nodeType: newType } : n);
+                      setAtlasData({ ...atlasData, nodes: updatedNodes });
+                      setSelectedNode({ ...selectedNode, nodeType: newType });
+                      useEditorStore.getState().markMapDirty();
+                    }}
+                    className="bg-transparent text-foreground text-[11px] focus:outline-none cursor-pointer font-sans"
+                  >
+                    <option value="authored" className="bg-[#0b1320] text-amber-400">Authored Fixed Map</option>
+                    <option value="procedural" className="bg-[#0b1320] text-emerald-400">Generated Procedural Region</option>
+                    <option value="hybrid" className="bg-[#0b1320] text-purple-400">Hybrid Anchor Map</option>
+                  </select>
+                </div>
+
+                {/* Hybrid Seam Threshold */}
+                {(selectedNode.nodeType === 'hybrid') && (
+                  <div className="flex items-center gap-1.5 bg-black/40 px-2 py-0.5 rounded border border-purple-500/40 text-[10px]">
+                    <span className="text-purple-300 font-bold">Seam:</span>
+                    <input
+                      type="number"
+                      min="2"
+                      max="16"
+                      value={selectedNode.seamThreshold ?? 4}
+                      onChange={(e) => {
+                        const val = Math.max(2, Math.min(16, Number(e.target.value)));
+                        const updatedNodes = atlasData.nodes.map(n => n.id === selectedNode.id ? { ...n, seamThreshold: val } : n);
+                        setAtlasData({ ...atlasData, nodes: updatedNodes });
+                        setSelectedNode({ ...selectedNode, seamThreshold: val });
+                        useEditorStore.getState().markMapDirty();
+                      }}
+                      className="w-10 bg-transparent text-white font-mono text-center border-b border-purple-400/50 focus:outline-none"
+                    />
+                    <span className="text-muted-foreground">blocks</span>
+                  </div>
+                )}
+
                 <span className="text-slate-400 text-[11px]">
                   Grid Position: [{selectedNode.y}, {selectedNode.x}]
                 </span>
@@ -514,6 +578,31 @@ export const WorldAtlasPanel: React.FC = () => {
                 )}
               </div>
               <div className="flex items-center gap-2">
+                {(selectedNode.nodeType === 'procedural' || selectedNode.nodeType === 'hybrid') && (
+                  <button
+                    onClick={() => {
+                      useEditorStore.getState().toggleDock('biome');
+                      showToast(`Configuring Biome for ${selectedNode.mapId}`);
+                    }}
+                    className="px-3 py-1.5 bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 font-bold rounded-lg border border-emerald-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow"
+                    title="Open Biome Configurator Panel"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Biome Config</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    handleWarpToMap(selectedNode.mapId, selectedNode.id);
+                    setStudioMode('voxel');
+                    showToast(`Loaded 3D Voxel Studio for ${selectedNode.mapId}`);
+                  }}
+                  className="px-3 py-1.5 bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 font-bold rounded-lg border border-amber-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow"
+                  title="Open in 3D Voxel Studio canvas"
+                >
+                  <Castle className="w-3.5 h-3.5 text-amber-400" />
+                  <span>3D Voxel Studio</span>
+                </button>
                 <button
                   onClick={() => handleWarpToMap(selectedNode.mapId, selectedNode.id)}
                   className="px-3 py-1.5 bg-[#1a2333] hover:bg-[#253247] text-cyan-300 font-bold rounded-lg border border-cyan-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"

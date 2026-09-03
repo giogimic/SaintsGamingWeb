@@ -147,6 +147,10 @@ export function getVoxelOrientation(word: number): VoxelOrientationType {
   return ((word >>> 17) & 0x7) as VoxelOrientationType;
 }
 
+export function withVoxelOrientation(word: number, orientation: number): number {
+  return ((word & ~(0x7 << 17)) | ((orientation & 0x7) << 17)) >>> 0;
+}
+
 export function getVoxelPhysics(word: number): VoxelPhysicsType {
   return ((word >>> 24) & 0xf) as VoxelPhysicsType;
 }
