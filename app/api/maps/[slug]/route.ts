@@ -3,7 +3,7 @@ import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
 import { canWriteStudioContent } from "@/shared/game/studioPermissions";
 import { validateMapSave } from "@/shared/game/mapSaveValidation";
-import { normalizeStudioMapVisuals } from "@/shared/game/studioMapCreate";
+import { normalizeStudioMapVisuals, buildBorderedLogicGrid } from "@/shared/game/studioMapCreate";
 import { ensureStudioMapFoundation } from "@/server/DemoBootstrap";
 import { notifyGoMapSynced } from "@/server/goMmoNotify";
 import { DEMO_MAP_ID } from "@/server/demoMapSeed";
@@ -268,9 +268,9 @@ export async function POST(
 
     const { slug } = await params;
     const body = await request.json();
-    const grid = body.grid || [];
+    const rawGrid = body.grid;
     const dims = resolveMapDimensions({
-      grid: Array.isArray(grid) ? grid : [],
+      grid: Array.isArray(rawGrid) && rawGrid.length > 0 ? rawGrid : [],
       tileLayers: Array.isArray(body.tileLayers) ? body.tileLayers : undefined,
       width: body.width,
       height: body.height,
@@ -278,28 +278,50 @@ export async function POST(
     const width = dims.width;
     const height = dims.height;
 
+    // Auto-heal empty or missing grid so saving never fails with "Map grid is empty"
+    let grid = rawGrid;
+    if (!Array.isArray(grid) || grid.length === 0 || !Array.isArray(grid[0]) || grid[0].length === 0) {
+      grid = buildBorderedLogicGrid(width, height);
+      body.grid = grid;
+    }
+
     // Bible 08/16: reject trapped spawns, unknown logic ids, bad NPC placement when grid is sent.
-    if (Array.isArray(body.grid)) {
-      let logicTiles = await prisma.mapLogicTile.findMany({
+    let logicTiles = await prisma.mapLogicTile.findMany({
+      select: { id: true, isSolid: true },
+    });
+    // Empty logic catalog → create map always 400; heal from demo seed first.
+    if (logicTiles.length === 0) {
+      await ensureStudioMapFoundation();
+      logicTiles = await prisma.mapLogicTile.findMany({
         select: { id: true, isSolid: true },
       });
-      // Empty logic catalog → create map always 400; heal from demo seed first.
-      if (logicTiles.length === 0) {
-        await ensureStudioMapFoundation();
-        logicTiles = await prisma.mapLogicTile.findMany({
-          select: { id: true, isSolid: true },
-        });
+    }
+
+    // Sanitize any unrecognized logic tile IDs (e.g. painted visual GIDs like 17) to prevent fatal save rejection
+    const knownLogicIds = new Set<number>(logicTiles.map((t) => t.id));
+    knownLogicIds.add(0);
+
+    for (let r = 0; r < grid.length; r++) {
+      if (Array.isArray(grid[r])) {
+        for (let c = 0; c < grid[r].length; c++) {
+          const val = Number(grid[r][c]);
+          if (!knownLogicIds.has(val)) {
+            // Remap unknown / visual GID to walkable (0) or solid border (1)
+            grid[r][c] = (r === 0 || r === grid.length - 1 || c === 0 || c === grid[r].length - 1) ? 1 : 0;
+          }
+        }
       }
-      const check = validateMapSave(
-        { grid: body.grid, npcs: Array.isArray(body.npcs) ? body.npcs : [] },
-        logicTiles
+    }
+
+    const check = validateMapSave(
+      { grid, npcs: Array.isArray(body.npcs) ? body.npcs : [] },
+      logicTiles
+    );
+    if (!check.ok) {
+      return NextResponse.json(
+        { error: check.error, details: check.details },
+        { status: 400 }
       );
-      if (!check.ok) {
-        return NextResponse.json(
-          { error: check.error, details: check.details },
-          { status: 400 }
-        );
-      }
     }
 
     // Repair missing tilesets / blank Ground / logic→visual copies when visuals

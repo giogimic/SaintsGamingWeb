@@ -57,9 +57,16 @@ export function mergeMapDocumentInPlace(
     "width",
     "height",
     "chunks",
+    "voxelDoc",
+    "freeformLayers",
+    "blockSizePx",
+    "publishedVersion",
+    "cameraStyle",
+    "allowCustomCamera",
+    "defaultCameraStyle",
   ] as const;
   for (const key of keys) {
-    if (key in fresh) {
+    if (key in fresh && fresh[key] !== undefined) {
       live[key] = fresh[key];
     }
   }

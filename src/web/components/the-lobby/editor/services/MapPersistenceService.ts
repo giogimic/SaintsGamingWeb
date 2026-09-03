@@ -7,7 +7,7 @@
 
 import { stripEditorOverlaysFromMapPayload } from '@/shared/game/mapLayers';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
-import { normalizeStudioMapVisuals, formatMapWriteError } from '@/shared/game/studioMapCreate';
+import { normalizeStudioMapVisuals, formatMapWriteError, buildBorderedLogicGrid } from '@/shared/game/studioMapCreate';
 import { invalidateMapCache } from '@/shared/game/mapCache';
 import { invalidateMapCache as invalidateLobbyMapCache } from '../../data/maps';
 import { isGoMmoSocketEnabled } from '@/shared/net/goMmoSocket';
@@ -76,9 +76,25 @@ export class MapPersistenceService {
     } else if (typeof window !== 'undefined' && (window as any).__sg_babylon_engine?.voxelWorld) {
       activeVoxelDoc = (window as any).__sg_babylon_engine.voxelWorld.serializeToDoc();
     }
+    if (activeVoxelDoc) {
+      activeVoxelDoc.id = baseMapId;
+      if (live.name) activeVoxelDoc.name = live.name;
+    }
 
     const mapWithFreshVoxel = activeVoxelDoc ? { ...live, voxelDoc: activeVoxelDoc } : live;
     const saveDoc = normalizeStudioMapVisuals(ensureMapHasStudioTilesets(mapWithFreshVoxel));
+
+    // Resolve authoritative dimensions and ensure grid is ALWAYS a valid non-empty 2D array
+    const width = saveDoc.width || (saveDoc.voxelDoc?.dimensions?.widthChunks ? saveDoc.voxelDoc.dimensions.widthChunks * 16 : 24);
+    const height = saveDoc.height || (saveDoc.voxelDoc?.dimensions?.depthChunks ? saveDoc.voxelDoc.dimensions.depthChunks * 16 : 24);
+    let validGrid = saveDoc.grid;
+    if (!Array.isArray(validGrid) || validGrid.length === 0 || !Array.isArray(validGrid[0]) || validGrid[0].length === 0) {
+      validGrid = buildBorderedLogicGrid(width, height);
+      saveDoc.grid = validGrid;
+    }
+    saveDoc.width = width;
+    saveDoc.height = height;
+
     if (saveDoc !== live) {
       useGameStore.getState().setActiveMapData(saveDoc);
     }
@@ -89,7 +105,9 @@ export class MapPersistenceService {
       const payload = stripEditorOverlaysFromMapPayload({
         name: saveDoc.name || baseMapId,
         gameId: saveDoc.gameId,
-        grid: saveDoc.grid || [],
+        width,
+        height,
+        grid: validGrid,
         gates: saveDoc.gates || {},
         npcs: saveDoc.npcs || [],
         encounterPool: saveDoc.encounterPool || [],
@@ -97,7 +115,7 @@ export class MapPersistenceService {
         freeformLayers: saveDoc.freeformLayers || [],
         tilesets: saveDoc.tilesets || [],
         voxelDoc: saveDoc.voxelDoc,
-        blockSizePx: saveDoc.blockSizePx,
+        blockSizePx: saveDoc.blockSizePx || 64,
         cameraStyle: (saveDoc as any).cameraStyle || (saveDoc as any).defaultCameraStyle,
         allowCustomCamera: (saveDoc as any).allowCustomCamera ?? (saveDoc as any).allowCustomPlayerCamera,
         allowCustomPlayerCamera: (saveDoc as any).allowCustomCamera ?? (saveDoc as any).allowCustomPlayerCamera,
