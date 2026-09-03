@@ -186,6 +186,44 @@ export class VoxelChunkMesher {
             builder.addHalfSlab(wx, wy, wz, true, baseRgba, topUv, sideUv, bottomUv);
             quadCount += 6;
             continue;
+          } else if (shape === VoxelShape.STAIRS_STRAIGHT) {
+            builder.addStairsStraight(wx, wy, wz, orientation, baseRgba, topUv, sideUv, bottomUv);
+            quadCount += 8;
+            continue;
+          } else if (shape === VoxelShape.STAIRS_CORNER) {
+            builder.addStairsCorner(wx, wy, wz, orientation, baseRgba, topUv, sideUv, bottomUv);
+            quadCount += 11;
+            continue;
+          } else if (shape === VoxelShape.SLOPE_GENTLE_BASE) {
+            builder.addSlopeGentleBase(wx, wy, wz, orientation, baseRgba, topUv, sideUv, bottomUv);
+            quadCount += 4;
+            continue;
+          } else if (shape === VoxelShape.SLOPE_GENTLE_TOP) {
+            builder.addSlopeGentleTop(wx, wy, wz, orientation, baseRgba, topUv, sideUv, bottomUv);
+            quadCount += 5;
+            continue;
+          } else if (shape === VoxelShape.SLOPE_CORNER_OUTER) {
+            builder.addSlopeCornerOuter(wx, wy, wz, orientation, baseRgba, topUv, sideUv, bottomUv);
+            quadCount += 4;
+            continue;
+          } else if (shape === VoxelShape.SLOPE_CORNER_INNER) {
+            builder.addSlopeCornerInner(wx, wy, wz, orientation, baseRgba, topUv, sideUv, bottomUv);
+            quadCount += 7;
+            continue;
+          } else if (shape === VoxelShape.PRISM_DIAGONAL) {
+            builder.addPrismDiagonal(wx, wy, wz, orientation, baseRgba, topUv, sideUv, bottomUv);
+            quadCount += 5;
+            continue;
+          } else if (shape === VoxelShape.COLUMN_CENTER) {
+            builder.addColumnCenter(wx, wy, wz, baseRgba, topUv, sideUv, bottomUv);
+            quadCount += 6;
+            continue;
+          } else if (shape === VoxelShape.FENCE_RAIL) {
+            builder.addFenceRail(wx, wy, wz, orientation, baseRgba, topUv, sideUv, bottomUv);
+            quadCount += 12;
+            continue;
+          } else if (shape === VoxelShape.ADAPTIVE_ALPHA) {
+            // ADAPTIVE_ALPHA: render as full cube for now (auto-resolution TBD)
           }
 
           // Full Cube Face Culling (Only emit faces exposed to Air / transparent voxel)

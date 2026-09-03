@@ -28,8 +28,21 @@ export interface SeamlessMaterial {
   vOffset?: number;
   uScale?: number;
   vScale?: number;
+  /** Per-face UV: top face (defaults to uOffset/vOffset if omitted) */
+  topUOffset?: number;
+  topVOffset?: number;
+  /** Per-face UV: side face (defaults to uOffset/vOffset if omitted) */
+  sideUOffset?: number;
+  sideVOffset?: number;
 }
 
+/**
+ * Atlas cell size in the 4x4 1024px atlas → each cell is 256px = 0.25 UV.
+ * Row 0 (v=0.00): Gunmetal, Sand, Water, Stone
+ * Row 1 (v=0.25): Grass Top, Dirt, Wood, Snow
+ * Row 2 (v=0.50): Lava, Swamp, Dungeon, Ice
+ * Row 3 (v=0.75): Grass Side, Snow Side, Sandstone, Obsidian
+ */
 const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
   {
     id: 'mat_gunmetal_base',
@@ -41,6 +54,7 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     vOffset: 0.0,
     uScale: 0.25,
     vScale: 0.25,
+    // All faces same
   },
   {
     id: 'mat_grass_lush',
@@ -52,6 +66,10 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     vOffset: 0.25,
     uScale: 0.25,
     vScale: 0.25,
+    topUOffset: 0.0,
+    topVOffset: 0.25, // Row 1 col 0 = Grass Top
+    sideUOffset: 0.0,
+    sideVOffset: 0.75, // Row 3 col 0 = Grass Side
   },
   {
     id: 'mat_dirt_soil',
@@ -63,6 +81,7 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     vOffset: 0.25,
     uScale: 0.25,
     vScale: 0.25,
+    // All faces same
   },
   {
     id: 'mat_sand_fine',
@@ -74,6 +93,7 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     vOffset: 0.0,
     uScale: 0.25,
     vScale: 0.25,
+    // All faces same
   },
   {
     id: 'mat_stone_cobble',
@@ -85,6 +105,7 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     vOffset: 0.0,
     uScale: 0.25,
     vScale: 0.25,
+    // All faces same
   },
   {
     id: 'mat_water_river',
@@ -96,6 +117,7 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     vOffset: 0.0,
     uScale: 0.25,
     vScale: 0.25,
+    // All faces same
   },
   {
     id: 'mat_wood_plank',
@@ -107,6 +129,7 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     vOffset: 0.25,
     uScale: 0.25,
     vScale: 0.25,
+    // All faces same
   },
   {
     id: 'mat_snow_powder',
@@ -118,6 +141,10 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     vOffset: 0.25,
     uScale: 0.25,
     vScale: 0.25,
+    topUOffset: 0.75,
+    topVOffset: 0.25, // Row 1 col 3 = Snow top
+    sideUOffset: 0.25,
+    sideVOffset: 0.75, // Row 3 col 1 = Snow Side
   },
   {
     id: 'mat_lava_molten',
@@ -129,6 +156,7 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     vOffset: 0.50,
     uScale: 0.25,
     vScale: 0.25,
+    // All faces same
   },
   {
     id: 'mat_swamp_marsh',
@@ -140,6 +168,7 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     vOffset: 0.50,
     uScale: 0.25,
     vScale: 0.25,
+    // All faces same
   },
   {
     id: 'mat_brick_dungeon',
@@ -151,6 +180,7 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     vOffset: 0.50,
     uScale: 0.25,
     vScale: 0.25,
+    // All faces same
   },
   {
     id: 'mat_ice_glacial',
@@ -162,8 +192,137 @@ const BUILTIN_SEAMLESS_MATERIALS: SeamlessMaterial[] = [
     vOffset: 0.50,
     uScale: 0.25,
     vScale: 0.25,
+    // All faces same
   },
 ];
+
+/**
+ * Mathematically exact Isometric 3D block preview for voxel material thumbnails.
+ * Renders Top Face (rhombus), Left Face (parallelogram), and Right Face (parallelogram)
+ * with face-specific textures from the canonical 4x4 atlas, directional lighting,
+ * and crisp isometric crease lines.
+ */
+const IsometricBlockPreview: React.FC<{ mat: SeamlessMaterial; size?: number }> = ({ mat, size = 56 }) => {
+  // Resolve per-face UV offsets (0..1)
+  const topU = mat.topUOffset ?? mat.uOffset ?? 0;
+  const topV = mat.topVOffset ?? mat.vOffset ?? 0;
+  const sideU = mat.sideUOffset ?? mat.uOffset ?? 0;
+  const sideV = mat.sideVOffset ?? mat.vOffset ?? 0;
+
+  // Scale atlas to 4x relative to face span for crisp pixel sampling
+  const atlasPx = size * 4;
+  const topPos = `-${topU * atlasPx}px -${topV * atlasPx}px`;
+  const sidePos = `-${sideU * atlasPx}px -${sideV * atlasPx}px`;
+
+  return (
+    <div
+      className="relative flex items-center justify-center select-none"
+      style={{
+        width: size,
+        height: size,
+      }}
+    >
+      {/* 3D Block Drop Shadow */}
+      <div
+        className="absolute rounded-full bg-black/40 blur-[2px]"
+        style={{
+          width: size * 0.75,
+          height: size * 0.35,
+          bottom: size * 0.05,
+          left: size * 0.125,
+        }}
+      />
+
+      {/* TOP FACE (Rhombus diamond: top: 5px, right: 50px, bottom: 29px, left: 6px) */}
+      <div
+        className="absolute inset-0"
+        style={{
+          clipPath: 'polygon(28px 5px, 50px 17px, 28px 29px, 6px 17px)',
+          backgroundColor: mat.color,
+          backgroundImage: `url(${mat.textureUrl})`,
+          backgroundPosition: topPos,
+          backgroundSize: `${atlasPx}px ${atlasPx}px`,
+          backgroundRepeat: 'no-repeat',
+          imageRendering: 'pixelated',
+          filter: 'brightness(1.08)',
+        }}
+      />
+
+      {/* LEFT FACE (Parallelogram: (6,17) -> (28,29) -> (28,51) -> (6,39)) */}
+      <div
+        className="absolute inset-0"
+        style={{
+          clipPath: 'polygon(6px 17px, 28px 29px, 28px 51px, 6px 39px)',
+          backgroundColor: mat.color,
+          backgroundImage: `url(${mat.textureUrl})`,
+          backgroundPosition: sidePos,
+          backgroundSize: `${atlasPx}px ${atlasPx}px`,
+          backgroundRepeat: 'no-repeat',
+          imageRendering: 'pixelated',
+          filter: 'brightness(0.78)',
+        }}
+      />
+
+      {/* RIGHT FACE (Parallelogram: (28,29) -> (50,17) -> (50,39) -> (28,51)) */}
+      <div
+        className="absolute inset-0"
+        style={{
+          clipPath: 'polygon(28px 29px, 50px 17px, 50px 39px, 28px 51px)',
+          backgroundColor: mat.color,
+          backgroundImage: `url(${mat.textureUrl})`,
+          backgroundPosition: sidePos,
+          backgroundSize: `${atlasPx}px ${atlasPx}px`,
+          backgroundRepeat: 'no-repeat',
+          imageRendering: 'pixelated',
+          filter: 'brightness(0.60)',
+        }}
+      />
+
+      {/* CRISP ISOMETRIC EDGES & CREASES */}
+      <svg
+        className="absolute inset-0 pointer-events-none"
+        width={size}
+        height={size}
+        viewBox="0 0 56 56"
+      >
+        {/* Outer hexagonal block border */}
+        <polygon
+          points="28,5 50,17 50,39 28,51 6,39 6,17"
+          fill="none"
+          stroke="rgba(0,0,0,0.55)"
+          strokeWidth="1.2"
+        />
+        {/* Interior center crease: from center apex straight down */}
+        <line
+          x1="28"
+          y1="29"
+          x2="28"
+          y2="51"
+          stroke="rgba(0,0,0,0.35)"
+          strokeWidth="1.2"
+        />
+        {/* Interior left crease: from center to top-left */}
+        <line
+          x1="28"
+          y1="29"
+          x2="6"
+          y2="17"
+          stroke="rgba(255,255,255,0.15)"
+          strokeWidth="1.0"
+        />
+        {/* Interior right crease: from center to top-right */}
+        <line
+          x1="28"
+          y1="29"
+          x2="50"
+          y2="17"
+          stroke="rgba(255,255,255,0.15)"
+          strokeWidth="1.0"
+        />
+      </svg>
+    </div>
+  );
+};
 
 interface TerrainBrushPaletteProps {
   onOpenSlicer?: () => void;
@@ -454,23 +613,14 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
                     {isSelected && <Check className="w-3.5 h-3.5 text-primary" />}
                   </div>
 
-                  {/* Swatch Visual Preview */}
+                  {/* Swatch Visual Preview — Isometric 3D Block */}
                   <div
                     className="w-14 h-14 rounded-lg border-2 border-border/50 shadow-inner flex items-center justify-center overflow-hidden bg-[#040812] group-hover:border-primary/50 transition-colors relative"
                     style={{
                       boxShadow: `inset 0 0 12px rgba(0,0,0,0.6)`,
                     }}
                   >
-                    <div
-                      className="w-full h-full"
-                      style={{
-                        backgroundImage: `url(${mat.textureUrl})`,
-                        backgroundPosition: `-${(mat.uOffset ?? 0) * 224}px -${(mat.vOffset ?? 0) * 224}px`,
-                        backgroundSize: '224px 224px',
-                        backgroundRepeat: 'no-repeat',
-                        imageRendering: 'pixelated',
-                      }}
-                    />
+                    <IsometricBlockPreview mat={mat} size={56} />
                   </div>
 
                   <div className="text-center font-bold text-foreground text-[11px] truncate w-full">

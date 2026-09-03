@@ -79,6 +79,10 @@ export class VoxelWorld {
       { id: 6, name: 'Crystal Water', colorHex: '#0288d1', isTransparent: true, roughness: 0.1 },
       { id: 7, name: 'Oak Wood', colorHex: '#8d6e63', roughness: 0.7 },
       { id: 8, name: 'Alpine Snow', colorHex: '#eceff1', roughness: 0.4 },
+      { id: 9, name: 'Molten Lava', colorHex: '#ef4444', roughness: 0.2 },
+      { id: 10, name: 'Murky Swamp', colorHex: '#3f6212', roughness: 0.8 },
+      { id: 11, name: 'Ancient Dungeon', colorHex: '#475569', roughness: 0.5 },
+      { id: 12, name: 'Glacial Ice', colorHex: '#67e8f9', isTransparent: true, roughness: 0.1 },
     ];
   }
 
