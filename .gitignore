@@ -94,6 +94,8 @@ docker_build.log
 /saints-app/node_modules/
 /saints-app/dist/
 /saints-app/release/
+/saints-app/Client-Archive/
+/saints-app/Client-Unpacked/
 /saints-app/src-tauri/target/
 /public/downloads/
 /downloads/
