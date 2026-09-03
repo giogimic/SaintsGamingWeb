@@ -1,3 +1,9 @@
+# 2.1.699
+- **Casual & Welcoming Community README Refresh**:
+  - Rewrote project `README.md` with an authentic, friendly, and casual gaming tone.
+  - Reframed the project as a community home for Saints Gaming since 2007 alongside an active, humble work-in-progress multiplayer game and world builder.
+  - Simplified technical architecture descriptions into approachable plain English.
+
 # 2.1.698
 - **Fix BabylonEngine Duplicate Method & Selection Preview Cleanup**:
   - Unified duplicate `clearSelectionPreview()` implementations in `BabylonEngine.ts`.
