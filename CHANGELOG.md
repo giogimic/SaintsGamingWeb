@@ -1,3 +1,27 @@
+# 2.1.684
+- **Studio Authority Pipeline & In-Game Texture Polish**:
+  - **Authoritative Studio Camera Configuration**:
+    - `CameraSettingsPanel.tsx`: Immutably committed `cameraStyle`, `allowCustomPlayerCamera`, and `defaultCameraStyle` to `activeMapData` via `useGameStore.setActiveMapData(...)` and marked map dirty on change.
+    - Added instant live viewport preview by dispatching `studio_update_camera_settings` to Babylon Engine.
+    - Synchronized panel controls when active map document changes.
+  - **Map Persistence Pipeline & Dual Cache Invalidation (`MapPersistenceService.ts`)**:
+    - Included `cameraStyle`, `allowCustomCamera`, and `allowCustomPlayerCamera` in the map save payload.
+    - Invalidated both `@/shared/game/mapCache` AND `src/web/components/the-lobby/data/maps.ts` (`invalidateMapCache`), eliminating stale cached map returns.
+  - **Server-Side Camera Storage & Realtime Broadcast (`app/api/maps/[slug]/route.ts`)**:
+    - `POST` persists camera configuration and permissions into `WorldMap.gatesData` and `GameMap.gates` JSON metadata.
+    - `GET` extracts and returns authoritative `cameraStyle`, `allowCustomCamera`, and `defaultCameraStyle`.
+    - Broadcasts `content_reload` and `admin_save_map` across Socket.io bus on every map save.
+  - **Client-Side Realtime Hot-Reload (`index.tsx`)**:
+    - Updated `socket.on('content_reload')` to accept both `data.mapId` and `data.id`.
+    - Purges local client caches before fetching fresh map state for instantaneous in-game hot-reloading without full page refreshes.
+  - **Runtime Camera Consumer (`BabylonEngine.ts`)**:
+    - Added fallback defaulting to map author's camera style when user camera preference is unset.
+  - **Scanline & Hollow Line Elimination (`terrain-overworld.png` & `generate-terrain-atlas.ts`)**:
+    - Replaced harsh 1-pixel horizontal black divider seams in `genWood` with seamless, warm, natural oak wood grain.
+    - Replaced horizontal sinusoidal scanline streaks in `genGunmetal` with smooth, isotropic dark alloy grain.
+    - Eliminated repeating horizontal stripes across voxel terrain surfaces in-game.
+    - Polished procedural wood texture generator in `BabylonEngine.ts` to avoid 8-line stripes.
+
 # 2.1.683
 - **Voxel System Harmonization: Spatial Alignment, Rehydration, Dynamic Elevation & Core Tooling**:
   - **Zero-Offset Spatial Alignment (`VoxelWorldDoc.ts` & `VoxelChunkMesher.ts`)**:

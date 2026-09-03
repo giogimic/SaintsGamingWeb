@@ -713,13 +713,10 @@ export class BabylonEngine {
     const wCtx = woodTex.getContext();
     wCtx.fillStyle = '#7a4f2a';
     wCtx.fillRect(0, 0, 128, 128);
-    wCtx.fillStyle = '#5c3519';
-    for (let i = 0; i < 8; i++) {
-      wCtx.fillRect(0, i * 16, 128, 2);
-      for (let j = 0; j < 25; j++) {
-        wCtx.globalAlpha = 0.3;
-        wCtx.fillRect(Math.random() * 128, i * 16 + Math.random() * 14, Math.random() * 30 + 5, 1);
-      }
+    wCtx.fillStyle = '#6e4524';
+    for (let j = 0; j < 60; j++) {
+      wCtx.globalAlpha = 0.15;
+      wCtx.fillRect(Math.random() * 128, Math.random() * 128, Math.random() * 20 + 5, Math.random() * 2 + 1);
     }
     wCtx.globalAlpha = 1;
     woodTex.update();
@@ -1722,8 +1719,8 @@ export class BabylonEngine {
       if (mapCameraStyle && !allowCustom) {
         this.applyPlayerCameraStyle(mapCameraStyle as any);
       } else {
-        // Apply user's active camera style
-        this.applyPlayerCameraStyle(this.cameraSettings.playerCameraStyle);
+        // Apply user's active camera style, defaulting to map author's camera style
+        this.applyPlayerCameraStyle(this.cameraSettings.playerCameraStyle || (mapCameraStyle as any) || 'isometric');
       }
     }
 

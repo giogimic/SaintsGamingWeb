@@ -73,7 +73,8 @@ import { resolveSafePlayerSpawn } from '@/shared/game/worldSpawns';
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
 import { fetchAllMaps } from '@/app/actions/game-admin';
 import { fetchAllGameQuests } from '@/app/actions/game-dev';
-import { GAME_MAPS, loadMap, patchCachedMapTile, preloadAdjacentMaps } from './data/maps';
+import { GAME_MAPS, loadMap, patchCachedMapTile, preloadAdjacentMaps, invalidateMapCache } from './data/maps';
+import { invalidateMapCache as invalidateSharedMapCache } from '@/shared/game/mapCache';
 import { QUEST_DB } from './data/quests';
 
 import { CharacterCreator } from './character-creator';
@@ -979,7 +980,8 @@ export default function TheLobby({
     // Phase 9: Real-Time Map Editor Synchronization (hot remesh, no remount blast)
     socket.on('content_reload', async (data: any) => {
       if (!data || (data.type !== 'map' && data.type !== 'map_entities')) return;
-      const mapId = String(data.mapId || '');
+      const mapId = String(data.mapId || data.id || '');
+      if (!mapId) return;
       const state = useGameStore.getState();
       const mapDirty = useEditorStore.getState().mapDirty;
       if (
@@ -1002,6 +1004,8 @@ export default function TheLobby({
 
       state.showToast(`Map updated — hot-reloading ${mapId}…`);
       try {
+        invalidateMapCache(mapId);
+        invalidateSharedMapCache(mapId);
         const res = await fetch(`/api/maps/${encodeURIComponent(mapId)}?t=${Date.now()}`);
         const freshMapData = ensureMapHasStudioTilesets(await res.json());
         const live = useGameStore.getState().activeMapData;

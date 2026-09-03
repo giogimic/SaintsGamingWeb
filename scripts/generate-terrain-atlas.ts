@@ -54,17 +54,18 @@ function lerpColor(c1: [number, number, number], c2: [number, number, number], t
 
 type GeneratorFn = (lx: number, ly: number) => [number, number, number, number];
 
-// 1. Gunmetal Base Foundation (Col 0, Row 0)
+// 1. Gunmetal Base Foundation (Col 0, Row 0) — sleek dark stone / alloy without scanlines
 const genGunmetal: GeneratorFn = (x, y) => {
-  const n = fbm(x, y, 3, 101);
+  const n = fbm(x, y, 4, 101);
+  const grain = periodicNoise(x, y, 20, 102);
   const base: [number, number, number] = [36, 42, 51];
-  const dark: [number, number, number] = [28, 32, 40];
-  const light: [number, number, number] = [48, 56, 68];
+  const dark: [number, number, number] = [28, 33, 40];
+  const light: [number, number, number] = [46, 54, 64];
   const col = n < 0.5 ? lerpColor(dark, base, n * 2) : lerpColor(base, light, (n - 0.5) * 2);
   
-  // Subtle brushed metal streaks along X
-  const streak = Math.sin((y / 256) * Math.PI * 32) * 4;
-  return [clamp(col[0] + streak), clamp(col[1] + streak), clamp(col[2] + streak), 255];
+  // Clean subtle isotropic noise grain (no directional stripes)
+  const speckle = (grain - 0.5) * 4;
+  return [clamp(col[0] + speckle), clamp(col[1] + speckle), clamp(col[2] + speckle), 255];
 };
 
 // 2. Golden Desert Sand (Col 1, Row 0)
@@ -145,22 +146,25 @@ const genDirt: GeneratorFn = (x, y) => {
   return [clamp(col[0]), clamp(col[1]), clamp(col[2]), 255];
 };
 
-// 7. Weathered Wood Planks (Col 2, Row 1)
+// 7. Polished Oak Wood (Col 2, Row 1) — warm natural wood grain without harsh scanlines
 const genWood: GeneratorFn = (x, y) => {
-  // Horizontal planks (8 planks vertically)
-  const plankIdx = Math.floor((y / 256) * 8);
-  const plankY = (y % 32) / 32;
-  const n = fbm(x, y, 4, 707 + plankIdx * 13);
+  // Continuous organic wood grain using stretch-ratio FBM
+  const grainNoise = fbm(x * 0.3, y * 2.5, 4, 707);
+  const ringNoise = periodicNoise(x * 0.5, y * 0.1, 16, 708);
+  const n = (grainNoise * 0.7 + ringNoise * 0.3);
+
+  const deepWood: [number, number, number] = [118, 74, 34];
+  const warmWood: [number, number, number] = [142, 92, 44];
+  const lightWood: [number, number, number] = [168, 114, 58];
+
+  let col = n < 0.5 ? lerpColor(deepWood, warmWood, n * 2) : lerpColor(warmWood, lightWood, (n - 0.5) * 2);
   
-  const plankSeam = plankY < 0.06 || plankY > 0.94;
-  const darkWood: [number, number, number] = [102, 62, 28];
-  const midWood: [number, number, number] = [128, 82, 38];
-  const lightWood: [number, number, number] = [156, 104, 52];
-  
-  let col = lerpColor(darkWood, midWood, n);
-  if (n > 0.65) col = lerpColor(col, lightWood, (n - 0.65) * 2);
-  if (plankSeam) col = lerpColor(darkWood, [55, 32, 14], 0.6);
-  
+  // Subtle organic grain variation (smooth and non-intrusive)
+  const fineGrain = periodicNoise(x * 2, y * 0.5, 24, 709);
+  if (fineGrain > 0.75) {
+    col = lerpColor(col, deepWood, (fineGrain - 0.75) * 0.8);
+  }
+
   return [clamp(col[0]), clamp(col[1]), clamp(col[2]), 255];
 };
 

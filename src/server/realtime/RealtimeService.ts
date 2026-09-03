@@ -28,6 +28,10 @@ export class RealtimeService {
     this.io = io;
   }
 
+  public getIo(): Server {
+    return this.io;
+  }
+
   // ─── Circuit Breaker (Admin Control) ─────────────────────────────────────
   public setCircuitBreaker(open: boolean) {
     this.circuitBreakerOpen = open;
