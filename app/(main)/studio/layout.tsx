@@ -35,7 +35,7 @@ export default async function StudioLayout({
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#0a0a0f] overflow-hidden">
+    <div className="min-h-[90vh] py-8 px-4 sm:px-6 lg:px-8">
       {children}
     </div>
   );

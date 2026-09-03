@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #050b14;
+  color: #f1f5f9;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  user-select: none;
+  overflow: hidden;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(5, 11, 20, 0.8);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(203, 178, 106, 0.25);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(203, 178, 106, 0.5);
+}
+
+/* Window drag regions */
+[data-tauri-drag-region] {
+  -webkit-app-region: drag;
+}
+
+button, a, input, [data-no-drag] {
+  -webkit-app-region: no-drag;
+}

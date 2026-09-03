@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
-import { canWriteStudioContent } from "@/shared/game/studioPermissions";
+import { canWriteStudioContent, STUDIO_CONTENT_WRITE_LEVEL } from "@/shared/game/studioPermissions";
+import { verifyStudioPermission } from "@/server/auth/studioApiAuth";
 import { validateMapSave, validateVoxelDocSave } from "@/shared/game/mapSaveValidation";
 import { normalizeStudioMapVisuals, buildBorderedLogicGrid } from "@/shared/game/studioMapCreate";
 import { ensureStudioMapFoundation } from "@/server/DemoBootstrap";
@@ -261,27 +262,11 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized — sign in required to create or save maps." },
-        { status: 401 }
-      );
+    const authCheck = await verifyStudioPermission(request, STUDIO_CONTENT_WRITE_LEVEL);
+    if ("errorResponse" in authCheck) {
+      return authCheck.errorResponse;
     }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { permissionLevel: true },
-    });
-    if (!user || !canWriteStudioContent(user.permissionLevel)) {
-      return NextResponse.json(
-        {
-          error:
-            "Forbidden — Admin+ (permission level 400) required to create or save maps.",
-        },
-        { status: 403 }
-      );
-    }
+    const user = authCheck.user;
 
     const { slug } = await params;
     const body = await request.json();
@@ -446,7 +431,7 @@ export async function POST(
     // Security compliance audit record prior to DB write
     try {
       await AuditService.write({
-        userId: session.user.id,
+        userId: user.id,
         action: "map.upsert",
         resource: { type: "map", id: slug },
         after: {
@@ -589,7 +574,7 @@ export async function POST(
       await MapSyncService.enqueue({
         mapId: worldMap.id,
         version: worldMap.version,
-        userId: session.user.id,
+        userId: user.id,
       });
     }
 
@@ -632,28 +617,15 @@ export async function POST(
  * DELETE /api/maps/[slug] — Delete a map from WorldMap and GameMap tables. Admin/dev only.
  */
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized — sign in required to delete maps." },
-        { status: 401 }
-      );
+    const authCheck = await verifyStudioPermission(request, STUDIO_CONTENT_WRITE_LEVEL);
+    if ("errorResponse" in authCheck) {
+      return authCheck.errorResponse;
     }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { permissionLevel: true },
-    });
-    if (!user || !canWriteStudioContent(user.permissionLevel)) {
-      return NextResponse.json(
-        { error: "Forbidden — Admin+ (permission level 400) required to delete maps." },
-        { status: 403 }
-      );
-    }
+    const user = authCheck.user;
 
     const { slug } = await params;
     const normalizedSlug = slug.trim();
@@ -674,7 +646,7 @@ export async function DELETE(
 
     // Security compliance audit record prior to DB write
     await AuditService.write({
-      userId: session.user.id,
+      userId: user.id,
       action: "map.delete",
       resource: { type: "map", id: normalizedSlug },
     });

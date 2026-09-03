@@ -43,6 +43,7 @@
     "release-*",
     "scratch",
     "temp_extract",
-    "scripts"
+    "scripts",
+    "studio-desktop"
   ]
 }

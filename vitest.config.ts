@@ -7,8 +7,9 @@ export default defineConfig({
     testTimeout: 15000,
   },
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
+    alias: [
+      { find: '@/auth', replacement: path.resolve(__dirname, './auth') },
+      { find: '@', replacement: path.resolve(__dirname, './src') },
+    ],
   },
 });
