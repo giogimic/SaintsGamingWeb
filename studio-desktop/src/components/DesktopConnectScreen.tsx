@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, ExternalLink, Key, Globe, ArrowRight, Loader2, AlertCircle, CheckCircle2, Settings, RotateCcw } from 'lucide-react';
+import { Gamepad2, ExternalLink, Key, Globe, ArrowRight, Loader2, AlertCircle, CheckCircle2, Settings, RotateCcw } from 'lucide-react';
 import { useDesktopAuth } from '../providers/DesktopAuthProvider';
 import { MidnightTropicalBackground } from '@/web/components/the-lobby/MidnightTropicalBackground';
 
@@ -65,15 +65,15 @@ export const DesktopConnectScreen: React.FC = () => {
       <div className="w-full max-w-md bg-[#0b101b]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-8 shadow-2xl relative z-10 space-y-6">
         {/* Header Badge */}
         <div className="text-center space-y-2.5">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-sky-500/15 border border-sky-500/30 text-sky-400 shadow-lg shadow-sky-500/20">
-            <Sparkles className="w-7 h-7 animate-pulse" />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/15 border border-primary/30 text-primary shadow-lg shadow-primary/20">
+            <Gamepad2 className="w-7 h-7" />
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">
-              Saints <span className="sg-text-gradient font-extrabold">World Studio</span>
+              Saints <span className="sg-text-gradient font-extrabold">Gaming</span>
             </h1>
             <p className="text-xs text-muted-foreground mt-1">
-              Standalone 3D Volumetric CAD Authoring Suite
+              Time To Play
             </p>
           </div>
         </div>
@@ -81,16 +81,16 @@ export const DesktopConnectScreen: React.FC = () => {
         {/* Feature Highlights (Matches site authorization panel) */}
         <div className="p-3.5 rounded-xl bg-card/40 border border-border/40 space-y-2 text-xs text-slate-300">
           <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
-            <span>Directly edit, load, and save 3D voxel maps</span>
+            <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+            <span>Access the World Studio — build 3D voxel worlds</span>
           </div>
           <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
-            <span>Import & export blueprints and custom prefabs</span>
+            <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+            <span>Stay connected with community news and forums</span>
           </div>
           <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
-            <span>Publish world changes to the live multiplayer realm</span>
+            <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+            <span>Publish and share your creations with the community</span>
           </div>
         </div>
 
