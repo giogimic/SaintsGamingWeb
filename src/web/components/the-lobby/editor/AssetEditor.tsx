@@ -476,7 +476,6 @@ export default function AssetEditor({
 
   const isCharactersWorkspace = workspaceId === 'characters' || typeFilter === 'CHARACTER';
   const isCreaturesWorkspace = workspaceId === 'creatures' || typeFilter === 'CREATURE';
-  const isTilesetsWorkspace = workspaceId === 'tilesets' || typeFilter === 'TILE';
   const isItemsWorkspace = workspaceId === 'items' || typeFilter === 'ITEM';
   const isAudioWorkspace = workspaceId === 'audio' || typeFilter === 'AUDIO';
   const isCatalogWorkspace = workspaceId === 'catalog';

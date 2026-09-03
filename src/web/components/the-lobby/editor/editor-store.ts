@@ -358,8 +358,6 @@ interface EditorState {
   setSplatScatter: (scatter: number) => void;
   splatRotationRandomize: boolean;
   setSplatRotationRandomize: (enabled: boolean) => void;
-  isAutoEdgeEnabled: boolean;
-  setIsAutoEdgeEnabled: (enabled: boolean) => void;
   isStudioEscapeMenuOpen: boolean;
   setIsStudioEscapeMenuOpen: (open: boolean) => void;
   
@@ -915,17 +913,6 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 500,
     zIndex: 10,
   },
-  tileset: {
-    id: 'tileset',
-    title: 'Tile Selector',
-    isOpen: false,
-    isCollapsed: false,
-    x: 20,
-    y: 350,
-    width: 360,
-    height: 480,
-    zIndex: 10,
-  },
   logic: {
     id: 'logic',
     title: 'Logic Painter',
@@ -979,17 +966,6 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     y: 80,
     width: 680,
     height: 580,
-    zIndex: 10,
-  },
-  tileset_canvas: {
-    id: 'tileset_canvas',
-    title: 'Tileset Canvas',
-    isOpen: false,
-    isCollapsed: false,
-    x: 400,
-    y: 80,
-    width: 520,
-    height: 480,
     zIndex: 10,
   },
   camera: {
@@ -1072,7 +1048,7 @@ export const useEditorStore = create<EditorState>()(
       // Studio-first foundation
       isCreationMode: true,
       activeGameId: 'default',
-      studioMode: 'develop',
+      studioMode: 'atlas',
       panels: DEFAULT_PANELS,
       activePanel: null,
       highestZIndex: 10,
@@ -1155,11 +1131,6 @@ export const useEditorStore = create<EditorState>()(
       setSplatRotationRandomize: (enabled: boolean) =>
         set((state) => {
           state.splatRotationRandomize = enabled;
-        }),
-      isAutoEdgeEnabled: false,
-      setIsAutoEdgeEnabled: (enabled: boolean) =>
-        set((state) => {
-          state.isAutoEdgeEnabled = enabled;
         }),
       isStudioEscapeMenuOpen: false,
       setIsStudioEscapeMenuOpen: (open: boolean) =>
@@ -1638,9 +1609,6 @@ export const useEditorStore = create<EditorState>()(
               state.panels.logic.zIndex = state.highestZIndex;
               state.activePanel = 'logic';
             }
-            if (state.panels.tileset) {
-              state.panels.tileset.isOpen = false;
-            }
             state.brushMode = 'paint';
           } else {
             // Switching to Visual Paint Mode: open Tile Selector, close Logic Painter
@@ -1648,11 +1616,11 @@ export const useEditorStore = create<EditorState>()(
             if (prev === -1 && state.activeBrushTileId <= 12) {
               state.activeBrushTileId = DEFAULT_STUDIO_GROUND_GID;
             }
-            if (state.panels.tileset) {
-              state.panels.tileset.isOpen = true;
+            if (state.panels.build) {
+              state.panels.build.isOpen = true;
               state.highestZIndex += 1;
-              state.panels.tileset.zIndex = state.highestZIndex;
-              state.activePanel = 'tileset';
+              state.panels.build.zIndex = state.highestZIndex;
+              state.activePanel = 'build';
             }
             if (state.panels.logic) {
               state.panels.logic.isOpen = false;

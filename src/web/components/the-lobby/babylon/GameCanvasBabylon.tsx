@@ -26,7 +26,6 @@ import {
 } from '@/shared/game/worldTarget';
 import { isInBrushShape, generateSplatScatterPoints } from '@/shared/game/brushGeometry';
 import { isPointInGeometry } from '@/shared/game/geometry/continuousGeometry';
-import { applyAutoTilingPass } from '@/shared/game/terrainEdgeDetection';
 import {
   LOGIC_LAYER_IDX,
   isPaintableLogicId,

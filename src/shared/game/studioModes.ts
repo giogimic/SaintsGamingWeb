@@ -50,8 +50,6 @@ export type StudioDockId =
   | 'mounts'
   | 'worldevent'
   | 'simulation'
-  | 'tileset'
-  | 'tileset_canvas'
   | 'logic'
   | 'publishing'
   | 'maps'
@@ -75,8 +73,8 @@ export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> =
 
 /** Default panels opened when entering each studio mode (Walk/test closes all). */
 export const STUDIO_MODE_DEFAULTS: Record<StudioMode, StudioDockId[]> = {
-  develop: ['build', 'tileset'],
-  voxel: ['build', 'tileset'],
+  develop: ['build'],
+  voxel: ['build'],
   logic: ['logic'],
   atlas: ['atlas'],
   npc: ['npc', 'properties', 'assets', 'spawner'],
@@ -256,10 +254,6 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
     label: 'Simulation Presets',
     blurb: 'Configure hardcore rules and experience multipliers.',
   },
-  tileset: {
-    label: 'Tile Selector',
-    blurb: 'Visual tileset picker, GID brush selection, layer selection, and tileset swapping.',
-  },
   logic: {
     label: 'Logic Painter',
     blurb: 'Author gameplay tags, collision boundaries, and interactive triggers directly onto the map.',
@@ -279,10 +273,6 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   interface: {
     label: 'Interface Designer',
     blurb: 'Game engine UI theme styles, HUD scaling, and in-game widget customizer.',
-  },
-  tileset_canvas: {
-    label: 'Tileset Canvas',
-    blurb: 'Detached tileset image for picking tiles.',
   },
   camera: {
     label: 'Camera & View Settings',

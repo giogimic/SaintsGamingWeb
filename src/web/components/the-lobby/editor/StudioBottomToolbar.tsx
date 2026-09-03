@@ -107,8 +107,6 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
   const setActiveLayerType = useEditorStore((s) => s.setActiveLayerType);
   const snapToGrid = useEditorStore((s) => s.snapToGrid);
   const setSnapToGrid = useEditorStore((s) => s.setSnapToGrid);
-  const isAutoEdgeEnabled = useEditorStore((s) => s.isAutoEdgeEnabled);
-  const setIsAutoEdgeEnabled = useEditorStore((s) => s.setIsAutoEdgeEnabled);
   const activeBrushTileId = useEditorStore((s) => s.activeBrushTileId);
   const activeLogicTileId = useEditorStore((s) => s.activeLogicTileId);
   const showEditorCoords = useEditorStore((s) => s.showEditorCoords);
@@ -574,25 +572,6 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
         >
           <Magnet className="h-3 w-3" />
           <span>{snapToGrid ? 'Snap: ON' : 'Snap: OFF'}</span>
-        </button>
-
-        {/* Auto-Edge / Smart Border Toggle Button */}
-        <button
-          type="button"
-          onClick={() => {
-            soundSynth?.playUiClick?.();
-            setIsAutoEdgeEnabled(!isAutoEdgeEnabled);
-            showToast(!isAutoEdgeEnabled ? 'Smart Border (Auto-Edge) ON' : 'Smart Border OFF');
-          }}
-          className={`flex items-center gap-1 border rounded-lg px-2 py-0.5 text-[10px] font-bold transition-all cursor-pointer ${
-            isAutoEdgeEnabled
-              ? 'bg-primary/25 border-primary text-primary shadow-sm shadow-primary/30'
-              : 'bg-background/50 border-border/60 text-muted-foreground hover:text-foreground'
-          }`}
-          title={isAutoEdgeEnabled ? 'Smart Border: ON (9-slice auto-tiling of corners and transitions)' : 'Smart Border: OFF — Click to enable automatic edge and corner alignment'}
-        >
-          <Wand2 className="h-3 w-3" />
-          <span>{isAutoEdgeEnabled ? 'Auto-Edge: ON' : 'Auto-Edge'}</span>
         </button>
 
         {/* Selection Shape Picker (only in select mode) */}
