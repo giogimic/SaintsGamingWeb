@@ -1,9 +1,14 @@
 import { VOXEL_WORD_AIR, VOXEL_WORD_GUNMETAL, isVoxelAir } from './VoxelWord';
 
-export const CHUNK_SIZE_X = 16;
-export const CHUNK_SIZE_Z = 16;
-export const CHUNK_SIZE_Y = 32; // Vertical height
-export const CHUNK_TOTAL_CELLS = CHUNK_SIZE_X * CHUNK_SIZE_Z * CHUNK_SIZE_Y; // 8,192 cells
+export const CHUNK_SIZE_X = 32;
+export const CHUNK_SIZE_Z = 32;
+export const CHUNK_SIZE_Y = 32; // Vertical height — 32x32x32 isotropic standard
+export const CHUNK_TOTAL_CELLS = CHUNK_SIZE_X * CHUNK_SIZE_Z * CHUNK_SIZE_Y; // 32,768 cells
+
+export const CHUNK_SHIFT_X = 5;
+export const CHUNK_SHIFT_Z = 5;
+export const CHUNK_SHIFT_Y = 5;
+export const CHUNK_MASK = 31; // 0x1F
 
 export interface ChunkCoord {
   cx: number;
@@ -44,18 +49,18 @@ export class VoxelChunk {
   }
 
   public static getIndex(localX: number, localY: number, localZ: number): number {
-    return localX + localZ * CHUNK_SIZE_X + localY * (CHUNK_SIZE_X * CHUNK_SIZE_Z);
+    return (localX & 31) | ((localZ & 31) << 5) | ((localY & 31) << 10);
   }
 
   public static getLocalCoords(index: number): { lx: number; ly: number; lz: number } {
-    const lx = index % CHUNK_SIZE_X;
-    const lz = Math.floor(index / CHUNK_SIZE_X) % CHUNK_SIZE_Z;
-    const ly = Math.floor(index / (CHUNK_SIZE_X * CHUNK_SIZE_Z));
+    const lx = index & 31;
+    const lz = (index >> 5) & 31;
+    const ly = (index >> 10) & 31;
     return { lx, ly, lz };
   }
 
   public static isValidLocal(lx: number, ly: number, lz: number): boolean {
-    return lx >= 0 && lx < CHUNK_SIZE_X && lz >= 0 && lz < CHUNK_SIZE_Z && ly >= 0 && ly < CHUNK_SIZE_Y;
+    return lx >= 0 && lx < 32 && lz >= 0 && lz < 32 && ly >= 0 && ly < 32;
   }
 
   public get(lx: number, ly: number, lz: number): number {

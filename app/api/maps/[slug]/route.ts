@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
 import { canWriteStudioContent } from "@/shared/game/studioPermissions";
-import { validateMapSave } from "@/shared/game/mapSaveValidation";
+import { validateMapSave, validateVoxelDocSave } from "@/shared/game/mapSaveValidation";
 import { normalizeStudioMapVisuals, buildBorderedLogicGrid } from "@/shared/game/studioMapCreate";
 import { ensureStudioMapFoundation } from "@/server/DemoBootstrap";
 import { notifyGoMapSynced } from "@/server/goMmoNotify";
@@ -13,6 +13,9 @@ import { npcToEntity } from "@/shared/game/entities";
 import { AuditService } from "@/server/audit/AuditService";
 import { MapSyncService } from "@/server/mapSyncService";
 import { generateDefaultWorldDoc } from "@/shared/game/voxel/VoxelWorldDoc";
+import { generateGridFromVoxelDoc } from "@/shared/game/voxel/voxelToGrid";
+import { migrateLegacyDocTo32Cubic } from "@/shared/game/voxel/chunkMigration";
+import { CHUNK_SIZE_X, CHUNK_SIZE_Z } from "@/shared/game/voxel/VoxelChunk";
 
 
 export const dynamic = 'force-dynamic';
@@ -91,19 +94,20 @@ async function loadMapPayload(slug: string) {
       ? freeformLayers.filter((l: any) => l.type !== 'voxel' && l.id !== 'voxel_world_doc')
       : [];
 
-    if (!voxelDoc) {
+    if (voxelDoc) {
+      voxelDoc = migrateLegacyDocTo32Cubic(voxelDoc);
+      voxelDoc.mapWidth = dims.width;
+      voxelDoc.mapHeight = dims.height;
+    } else {
       voxelDoc = generateDefaultWorldDoc(
-        Math.max(1, Math.ceil(dims.width / 16)),
-        Math.max(1, Math.ceil(dims.height / 16)),
+        Math.max(1, Math.ceil(dims.width / CHUNK_SIZE_X)),
+        Math.max(1, Math.ceil(dims.height / CHUNK_SIZE_Z)),
         64,
         dims.width,
         dims.height
       );
       voxelDoc.id = worldMap.id;
       voxelDoc.name = worldMap.name;
-    } else {
-      voxelDoc.mapWidth = dims.width;
-      voxelDoc.mapHeight = dims.height;
     }
 
     const rawGates = JSON.parse(worldMap.gatesData || "{}");
@@ -115,7 +119,14 @@ async function loadMapPayload(slug: string) {
     const defaultCameraStyle = rawGates.defaultCameraStyle || cameraStyle;
     
     if (!Array.isArray(grid) || grid.length === 0) {
-      grid = Array.from({ length: dims.height }, () => Array(dims.width).fill(0));
+      grid = generateGridFromVoxelDoc(voxelDoc, dims.width, dims.height);
+    }
+
+    let parsedProceduralConfig: any = undefined;
+    if ((worldMap as any).proceduralConfig) {
+      try {
+        parsedProceduralConfig = JSON.parse((worldMap as any).proceduralConfig);
+      } catch {}
     }
 
     return {
@@ -138,6 +149,8 @@ async function loadMapPayload(slug: string) {
       freeformLayers: cleanFreeformLayers,
       tilesets,
       voxelDoc,
+      regionClass: (worldMap as any).regionClass || "authored",
+      proceduralConfig: parsedProceduralConfig,
       version: worldMap.version,
       publishedVersion: (worldMap as any).publishedVersion ?? 0,
       source: "worldMap" as const,
@@ -220,10 +233,14 @@ export async function GET(
         freeformLayers: [],
         tilesets: [],
         voxelDoc: generateDefaultWorldDoc(
-          Math.max(1, Math.ceil(blankW / 16)),
-          Math.max(1, Math.ceil(blankH / 16)),
-          64
+          Math.max(1, Math.ceil(blankW / CHUNK_SIZE_X)),
+          Math.max(1, Math.ceil(blankH / CHUNK_SIZE_Z)),
+          64,
+          blankW,
+          blankH
         ),
+        regionClass: 'authored',
+        proceduralConfig: undefined,
         version: 0,
         publishedVersion: 0,
         source: 'worldMap' as const,
@@ -278,10 +295,34 @@ export async function POST(
     const width = dims.width;
     const height = dims.height;
 
-    // Auto-heal empty or missing grid so saving never fails with "Map grid is empty"
     let grid = rawGrid;
+
+    let voxelDoc = body.voxelDoc;
+    if (voxelDoc && typeof voxelDoc === 'object') {
+      voxelDoc = migrateLegacyDocTo32Cubic(voxelDoc);
+      voxelDoc.mapWidth = width;
+      voxelDoc.mapHeight = height;
+      body.voxelDoc = voxelDoc;
+      if (!rawGrid || !Array.isArray(rawGrid) || rawGrid.length === 0) {
+        grid = generateGridFromVoxelDoc(voxelDoc, width, height);
+        body.grid = grid;
+      }
+    } else {
+      voxelDoc = generateDefaultWorldDoc(
+        Math.max(1, Math.ceil(width / CHUNK_SIZE_X)),
+        Math.max(1, Math.ceil(height / CHUNK_SIZE_Z)),
+        64,
+        width,
+        height
+      );
+      voxelDoc.id = slug;
+      voxelDoc.name = body.name || slug;
+      body.voxelDoc = voxelDoc;
+    }
+
+    // Auto-heal empty or missing grid so saving never fails with "Map grid is empty"
     if (!Array.isArray(grid) || grid.length === 0 || !Array.isArray(grid[0]) || grid[0].length === 0) {
-      grid = buildBorderedLogicGrid(width, height);
+      grid = generateGridFromVoxelDoc(voxelDoc, width, height);
       body.grid = grid;
     }
 
@@ -322,6 +363,16 @@ export async function POST(
         { error: check.error, details: check.details },
         { status: 400 }
       );
+    }
+
+    if (body.voxelDoc) {
+      const voxelCheck = validateVoxelDocSave(body.voxelDoc);
+      if (!voxelCheck.ok) {
+        return NextResponse.json(
+          { error: voxelCheck.error, details: voxelCheck.details },
+          { status: 400 }
+        );
+      }
     }
 
     // Repair missing tilesets / blank Ground / logic→visual copies when visuals
@@ -440,7 +491,11 @@ export async function POST(
               }
             : {}),
           ...(body.freeformLayers || body.voxelDoc ? { freeformLayersData: JSON.stringify(freeformLayersForSave) } : {}),
-          ...(body.voxelDoc ? { voxelData: JSON.stringify(body.voxelDoc) } : {}),
+          voxelData: JSON.stringify(body.voxelDoc),
+          regionClass: body.regionClass || "authored",
+          ...(body.proceduralConfig !== undefined
+            ? { proceduralConfig: typeof body.proceduralConfig === 'string' ? body.proceduralConfig : JSON.stringify(body.proceduralConfig) }
+            : {}),
           version: { increment: 1 },
         },
         create: {
@@ -455,7 +510,11 @@ export async function POST(
           tileLayersData: JSON.stringify(visualsForCreate.tileLayers || []),
           freeformLayersData: JSON.stringify(freeformLayersForSave),
           tilesetsData: JSON.stringify(visualsForCreate.tilesets || []),
-          voxelData: body.voxelDoc ? JSON.stringify(body.voxelDoc) : null,
+          voxelData: JSON.stringify(body.voxelDoc),
+          regionClass: body.regionClass || "authored",
+          proceduralConfig: body.proceduralConfig
+            ? (typeof body.proceduralConfig === 'string' ? body.proceduralConfig : JSON.stringify(body.proceduralConfig))
+            : null,
         },
       });
     } catch (upsertErr: any) {
@@ -478,6 +537,7 @@ export async function POST(
               }
             : {}),
           ...(body.freeformLayers || body.voxelDoc ? { freeformLayersData: JSON.stringify(freeformLayersForSave) } : {}),
+          regionClass: body.regionClass || "authored",
           version: { increment: 1 },
         },
         create: {
@@ -492,6 +552,7 @@ export async function POST(
           tileLayersData: JSON.stringify(visualsForCreate.tileLayers || []),
           freeformLayersData: JSON.stringify(freeformLayersForSave),
           tilesetsData: JSON.stringify(visualsForCreate.tilesets || []),
+          regionClass: body.regionClass || "authored",
         },
       });
     }

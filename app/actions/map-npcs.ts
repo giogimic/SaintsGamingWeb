@@ -156,7 +156,8 @@ export async function listMapNpcs(mapId: string) {
   }
 }
 
-async function writeNpcs(mapId: string, worldName: string, worldGrid: string, worldGates: string, worldEncounters: string, npcs: MapNpcData[]) {
+async function writeNpcs(mapId: string, worldName: string, worldGrid: string | null | undefined, worldGates: string, worldEncounters: string, npcs: MapNpcData[]) {
+  const safeGrid = worldGrid || "[]";
   await prisma.worldMap.update({
     where: { id: mapId },
     data: {
@@ -171,7 +172,7 @@ async function writeNpcs(mapId: string, worldName: string, worldGrid: string, wo
       name: worldName,
       width: 24,
       height: 24,
-      tilesetData: worldGrid,
+      tilesetData: safeGrid,
       gates: worldGates,
       npcs: JSON.stringify(npcs),
       encounters: worldEncounters,

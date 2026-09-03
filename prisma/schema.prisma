@@ -762,15 +762,17 @@ model WorldMap {
   id             String  @id // e.g. "SAINTS_VILLAGE"
   gameId         String? @default("saints")
   name           String
-  gridData       String // JSON 2D Array
+  gridData       String? // JSON 2D Array (legacy fallback)
   gatesData      String // JSON
   npcsData       String // JSON for NPC dialogues/teams
   encountersData String  @default("[]") // JSON for wild beast encounters
   entitiesData   String  @default("[]") // JSON for EntityInstanceV1 records (Bible 20 E2)
-  tileLayersData     String  @default("[]") // JSON for TMX tile layers
-  freeformLayersData String  @default("[]") // JSON for 2.5D freeform layers (splats, props, polygons)
-  tilesetsData       String  @default("[]") // JSON for tilesets metadata
-  voxelData          String? // JSON for authoritative VoxelWorldDocV3
+  tileLayersData     String?  @default("[]") // JSON for TMX tile layers (legacy fallback)
+  freeformLayersData String?  @default("[]") // JSON for 2.5D freeform layers (splats, props, polygons)
+  tilesetsData       String?  @default("[]") // JSON for tilesets metadata (legacy fallback)
+  voxelData          String   @default("{}") // JSON for authoritative VoxelWorldDocV3 (Single source of truth)
+  regionClass        String   @default("authored") // 'authored' | 'procedural' | 'hybrid'
+  proceduralConfig   String?  // JSON for deterministic procedural biome configuration
   publishedVersion   Int     @default(0) // 0 means draft only, >=1 indicates published release
   publishedData      String? // Immutable JSON snapshot of active published release
   version        Int     @default(1)

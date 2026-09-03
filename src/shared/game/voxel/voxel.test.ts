@@ -107,8 +107,8 @@ describe('Voxel Core Engine (Option A)', () => {
       world.generateDefaultWorld();
 
       // Write across chunk boundary (cx: 1, cz: 2, cy: 0)
-      const wx = 16 + 5; // cx: 1, lx: 5
-      const wz = 32 + 9; // cz: 2, lz: 9
+      const wx = CHUNK_SIZE_X + 5; // cx: 1, lx: 5
+      const wz = CHUNK_SIZE_Z * 2 + 9; // cz: 2, lz: 9
       const wy = 12;
 
       const word = packVoxel(77, VoxelShape.STAIRS_STRAIGHT);
@@ -187,8 +187,8 @@ describe('Voxel Core Engine (Option A)', () => {
       };
 
       const world = convertLegacy2DToVoxelWorld(legacy2D);
-      expect(world.totalWidthBlocks).toBe(16);
-      expect(world.totalDepthBlocks).toBe(16);
+      expect(world.totalWidthBlocks).toBe(CHUNK_SIZE_X);
+      expect(world.totalDepthBlocks).toBe(CHUNK_SIZE_Z);
       expect(world.totalHeightBlocks).toBe(32);
 
       // Surface elevation is at y = 15
@@ -204,12 +204,17 @@ describe('Voxel Core Engine (Option A)', () => {
       const waterVoxel = world.getVoxel(1, surfaceY, 1);
       const unpackedWater = unpackVoxel(waterVoxel);
       expect(unpackedWater.physics).toBe(VoxelPhysics.SWIMMABLE_FLUID);
+
+      // (0, 2) was warp (3) -> warp logic
+      const warpVoxel = world.getVoxel(0, surfaceY, 2);
+      const unpackedWarp = unpackVoxel(warpVoxel);
+      expect(unpackedWarp.logic).toBe(VoxelLogic.WARP_GATE);
     });
   });
 
   describe('VoxelTargetResolver', () => {
     it('accurately resolves 3D picked block and adjacent placement voxel for top face', () => {
-      const world = new VoxelWorld('target_test', 'Target Test', 2, 2, 1);
+      const world = new VoxelWorld('test_res', 'Resolver Test', 1, 1, 1);
       world.generateDefaultWorld();
 
       // Top of chunk foundation at wy=15 is at Babylon mesh Y = -1 to 0 (top face at Y=0)
@@ -235,7 +240,7 @@ describe('Voxel Core Engine (Option A)', () => {
     });
 
     it('accurately resolves side face hits for building out adjacent blocks', () => {
-      const world = new VoxelWorld('side_test', 'Side Test', 2, 2, 1);
+      const world = new VoxelWorld('side_test', 'Side Test', 1, 1, 1);
       world.generateDefaultWorld();
 
       // Hit east face of a block at (meshX=1.0, meshY=-0.5, meshZ=0.5) with normal (+1, 0, 0)
@@ -256,7 +261,7 @@ describe('Voxel Core Engine (Option A)', () => {
     });
 
     it('falls back to analytical foundation raycast when ray passes through open air', () => {
-      const world = new VoxelWorld('ray_test', 'Ray Test', 2, 2, 1);
+      const world = new VoxelWorld('ray_test', 'Ray Test', 1, 1, 1);
       world.generateDefaultWorld();
 
       // Camera ray pointing down towards (X=0, Y=0, Z=0)
@@ -340,8 +345,8 @@ describe('Voxel Core Engine (Option A)', () => {
       chunk0.isDirty = false;
       chunk1.isDirty = false;
 
-      // Set voxel at boundary lx = 15 of chunk 0 (wx = 15)
-      world.setVoxel(15, 16, 5, VOXEL_WORD_GRASS);
+      // Set voxel at boundary lx = CHUNK_SIZE_X - 1 of chunk 0 (wx = CHUNK_SIZE_X - 1)
+      world.setVoxel(CHUNK_SIZE_X - 1, 16, 5, VOXEL_WORD_GRASS);
 
       expect(chunk0.isDirty).toBe(true);
       expect(chunk1.isDirty).toBe(true); // Neighbor chunk 1 was dirtied!

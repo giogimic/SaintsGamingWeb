@@ -21,6 +21,33 @@ export type MapSaveValidationResult =
   | { ok: true }
   | { ok: false; error: string; details?: string[] };
 
+/**
+ * Validates a VoxelWorldDocV3 payload for save integrity and 32³ compatibility.
+ */
+export function validateVoxelDocSave(doc: any): MapSaveValidationResult {
+  if (!doc || typeof doc !== 'object') {
+    return { ok: false, error: "Voxel document is missing or invalid." };
+  }
+  if (doc.formatVersion !== 3) {
+    return { ok: false, error: `Unsupported voxel format version ${doc.formatVersion} (expected 3).` };
+  }
+  if (!doc.dimensions || typeof doc.dimensions !== 'object') {
+    return { ok: false, error: "Voxel document missing chunk dimensions." };
+  }
+  const { widthChunks, depthChunks, heightChunks } = doc.dimensions;
+  if (
+    !Number.isInteger(widthChunks) || widthChunks < 1 ||
+    !Number.isInteger(depthChunks) || depthChunks < 1 ||
+    !Number.isInteger(heightChunks) || heightChunks < 1
+  ) {
+    return { ok: false, error: `Invalid chunk dimensions: ${widthChunks}×${depthChunks}×${heightChunks}. Must be positive integers.` };
+  }
+  if (!doc.chunks || typeof doc.chunks !== 'object') {
+    return { ok: false, error: "Voxel document missing chunks collection." };
+  }
+  return { ok: true };
+}
+
 const MIN_DIM = 8;
 const MAX_DIM = 128;
 
