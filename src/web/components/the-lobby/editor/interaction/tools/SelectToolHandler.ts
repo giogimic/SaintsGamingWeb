@@ -27,9 +27,9 @@ export class SelectToolHandler implements IToolHandler {
 
     if (store.studioMode === 'voxel') {
       const vT = event.voxelTarget;
-      const wx = vT ? vT.voxelCoord.x : Math.floor(event.worldPos.x);
-      const wy = vT ? vT.voxelCoord.y : 16;
-      const wz = vT ? vT.voxelCoord.z : Math.floor(event.worldPos.z);
+      const wx = vT ? vT.voxelCoord.wx : Math.floor(event.worldPos.x);
+      const wy = vT ? vT.voxelCoord.wy : 16;
+      const wz = vT ? vT.voxelCoord.wz : Math.floor(event.worldPos.z);
       this.anchorVoxel = { x: wx, y: wy, z: wz };
       if (context.engine.set3DBoxSelectionPreview) {
         context.engine.set3DBoxSelectionPreview(wx, wy, wz, wx, wy, wz);
@@ -76,9 +76,9 @@ export class SelectToolHandler implements IToolHandler {
 
     if (store.studioMode === 'voxel' && this.anchorVoxel) {
       const vT = event.voxelTarget;
-      const wx = vT ? vT.voxelCoord.x : Math.floor(event.worldPos.x);
-      const wy = vT ? vT.voxelCoord.y : 16;
-      const wz = vT ? vT.voxelCoord.z : Math.floor(event.worldPos.z);
+      const wx = vT ? vT.voxelCoord.wx : Math.floor(event.worldPos.x);
+      const wy = vT ? vT.voxelCoord.wy : 16;
+      const wz = vT ? vT.voxelCoord.wz : Math.floor(event.worldPos.z);
       if (context.engine.set3DBoxSelectionPreview) {
         context.engine.set3DBoxSelectionPreview(this.anchorVoxel.x, this.anchorVoxel.y, this.anchorVoxel.z, wx, wy, wz);
       }
@@ -142,9 +142,9 @@ export class SelectToolHandler implements IToolHandler {
 
     if (store.studioMode === 'voxel' && this.anchorVoxel) {
       const vT = event.voxelTarget;
-      const wx = vT ? vT.voxelCoord.x : Math.floor(event.worldPos.x);
-      const wy = vT ? vT.voxelCoord.y : 16;
-      const wz = vT ? vT.voxelCoord.z : Math.floor(event.worldPos.z);
+      const wx = vT ? vT.voxelCoord.wx : Math.floor(event.worldPos.x);
+      const wy = vT ? vT.voxelCoord.wy : 16;
+      const wz = vT ? vT.voxelCoord.wz : Math.floor(event.worldPos.z);
       if (context.engine.set3DBoxSelectionPreview) {
         context.engine.set3DBoxSelectionPreview(this.anchorVoxel.x, this.anchorVoxel.y, this.anchorVoxel.z, wx, wy, wz);
       }

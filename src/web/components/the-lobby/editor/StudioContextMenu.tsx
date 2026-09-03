@@ -412,7 +412,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
     const minZ = Math.min(r0, r1);
     const maxZ = Math.max(r0, r1);
 
-    const prefab = extractVoxelPrefab(doc, minX, 0, minZ, maxX, 31, maxZ, `Blueprint_${Date.now()}`);
+    const prefab = extractVoxelPrefab(doc, { minX, minY: 0, minZ, maxX, maxY: 31, maxZ }, `Blueprint_${Date.now()}`);
     store.setActiveVoxelPrefab(prefab);
     store.setBrushMode('prefab');
     showToast(`Saved 3D Prefab [${prefab.dimensions.join('×')}] to Blueprint Library (Press P to stamp)`);

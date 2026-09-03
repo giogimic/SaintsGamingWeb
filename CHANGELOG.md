@@ -1,3 +1,8 @@
+# 2.1.698
+- **Fix BabylonEngine Duplicate Method & Selection Preview Cleanup**:
+  - Unified duplicate `clearSelectionPreview()` implementations in `BabylonEngine.ts`.
+  - Consolidated 2D multi-selection and 3D volumetric bounding box gizmo reset into a single canonical method, fixing Docker Next.js production build failure.
+
 # 2.1.697
 - **3D Volumetric CAD Authoring Suite, World Atlas Node Graph & Procedural Generation**:
   - **3D Volumetric Authoring Suite (CAD Paradigm)**:
