@@ -9,6 +9,7 @@ import {
   getAdjacentAtlasNeighbors,
 } from '../../../../shared/game/atlas/spatialAtlas';
 import { RuntimeAssetManager } from '../../../../shared/game/assetRuntimeManager';
+import { recordRecentItem } from '../../../../shared/game/creatorRecents';
 
 function getStudioApiUrl(path: string): string {
   const base = typeof window !== 'undefined' ? (window as any).__studioBaseUrl || '' : '';
@@ -347,6 +348,15 @@ export async function loadMap(
 
       // Pre-warm map presentation and tileset assets in RuntimeAssetManager
       registerMapRuntimeAssets(mapData);
+
+      if (depth === 0 && mapData.id) {
+        recordRecentItem({
+          id: mapData.id,
+          type: 'map',
+          title: mapData.name || mapData.id,
+          subtitle: `${mapData.width || 64}×${mapData.height || 64}`,
+        });
+      }
 
       return mapData;
     } catch (err) {

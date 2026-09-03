@@ -108,46 +108,52 @@ export function WorldHierarchyPanel() {
         },
         {
           id: 'entities',
-          label: 'Entities & Spawners',
+          label: `Entities & Spawners (${activeMapData?.npcs?.length ?? 0} NPCs)`,
           type: 'folder',
           children: [
             {
               id: 'ent_player_spawn',
               label: 'Primary Player Spawn Pin',
               type: 'spawn',
-              metadata: 'X: 32, Y: 32',
+              metadata: `X: ${activeMapData?.spawnPoint?.x ?? 32}, Y: ${activeMapData?.spawnPoint?.y ?? 32}`,
             },
-            {
-              id: 'ent_npc_registry',
-              label: 'Registered Regional NPCs',
-              type: 'npc',
-              metadata: 'Active AI Hooks',
-            },
-            {
-              id: 'ent_creature_spawners',
-              label: 'Creature Spawner Nodes',
-              type: 'npc',
-              metadata: 'Encounter Groups',
-            },
+            ...(activeMapData?.npcs?.length ? activeMapData.npcs.map((npc: any, idx: number) => ({
+              id: `npc_${npc.id || idx}`,
+              label: npc.name || `NPC #${idx + 1}`,
+              type: 'npc' as const,
+              metadata: `(${npc.x ?? 0}, ${npc.y ?? 0}) ${npc.role ? `· ${npc.role}` : ''}`,
+            })) : [
+              {
+                id: 'ent_npc_empty',
+                label: 'No Placed NPCs',
+                type: 'npc' as const,
+                metadata: 'Use NPC Studio to place',
+              }
+            ]),
           ],
         },
         {
           id: 'warps',
-          label: 'Warp Gates & Transitions',
+          label: `Warp Gates & Transitions (${(activeMapData?.gates ? (Array.isArray(activeMapData.gates) ? activeMapData.gates.length : Object.keys(activeMapData.gates).length) : 0)} Gates)`,
           type: 'folder',
           children: [
-            {
-              id: 'warp_regional_gates',
-              label: 'Seamless Shard Gateways',
-              type: 'gate',
-              metadata: 'Spatial Links',
-            },
-            {
-              id: 'warp_boundary_triggers',
-              label: 'Boundary World Transitions',
-              type: 'gate',
-              metadata: 'Atlas Cross-Connect',
-            },
+            ...((() => {
+              const gates = activeMapData?.gates ? (Array.isArray(activeMapData.gates) ? activeMapData.gates : Object.values(activeMapData.gates)) : [];
+              if (!gates.length) {
+                return [{
+                  id: 'warp_empty',
+                  label: 'No Regional Gates',
+                  type: 'gate' as const,
+                  metadata: 'Click Gate in Logic Painter to add',
+                }];
+              }
+              return gates.map((gate: any, idx: number) => ({
+                id: `gate_${gate.id || idx}`,
+                label: `Gate → ${gate.targetMapId || 'Region'}`,
+                type: 'gate' as const,
+                metadata: `(${gate.position?.x ?? 0}, ${gate.position?.y ?? 0}) ${gate.category ? `· ${gate.category}` : ''}`,
+              }));
+            })()),
           ],
         },
         {

@@ -93,6 +93,7 @@ import { soundSynth } from '@/engine/sound-synth';
 import { loadMap } from '../data/maps';
 import { WORLD_PROFILES } from '@/shared/game/worldProfiles';
 import { ensureWorldProfiles, setActiveWorldProfile } from '@/app/actions/world-profiles';
+import { creatorRecents } from '@/shared/game/creatorRecents';
 
 type MenuState = string | null;
 
@@ -285,6 +286,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
   const [profiles, setProfiles] = useState(WORLD_PROFILES);
   const [isElectron, setIsElectron] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
+  const [recentMaps, setRecentMaps] = useState<any[]>(() => creatorRecents.getRecents('map', 8));
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -353,6 +355,9 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
 
   const handleMenuClick = (menuId: string) => {
     soundSynth?.playSelectSound?.();
+    if (menuId === 'file') {
+      setRecentMaps(creatorRecents.getRecents('map', 8));
+    }
     setActiveMenu((prev) => (prev === menuId ? null : menuId));
     setWorldDropdownOpen(false);
   };
@@ -538,6 +543,24 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               <MenuItem label="Map Browser..." icon={Globe} onClick={() => { if (onOpenMapBrowser) onOpenMapBrowser(); else openPanel('maps'); }} />
               <MenuItem label="World Atlas (Spatial Grid)..." shortcut="Ctrl+Shift+M" icon={Globe} onClick={() => openPanel('atlas')} />
               <MenuItem label="Quick Open / Search..." shortcut="Ctrl+K" icon={Search} onClick={() => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true })); }} />
+              <MenuItem divider />
+              <SubMenu label="Recent Maps" icon={RotateCcw}>
+                {recentMaps.length > 0 ? (
+                  recentMaps.map((m) => (
+                    <MenuItem
+                      key={m.id}
+                      label={m.title}
+                      icon={Globe}
+                      onClick={() => {
+                        useGameStore.getState().setCurrentMapId(m.id);
+                        showToast(`Loading map: ${m.title}`);
+                      }}
+                    />
+                  ))
+                ) : (
+                  <MenuItem label="No Recent Maps" icon={X} disabled />
+                )}
+              </SubMenu>
             </SubMenu>
             <SubMenu label="Save" icon={Save}>
               <MenuItem label="Save Current World" shortcut="Ctrl+S" icon={Save} onClick={() => window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT))} />
