@@ -352,6 +352,24 @@ export default function GameOptionsMenu({
                 </button>
               </>
             )}
+
+            {typeof window !== 'undefined' && !!(window as any).electronAPI && (
+              <>
+                <WindowMenuDivider />
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundSynth?.playUiClick?.();
+                    (window as any).electronAPI?.close?.();
+                  }}
+                  className="px-2.5 py-1 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold text-[10px] flex items-center gap-1.5 border border-red-500/30 transition-all cursor-pointer"
+                  title="Close Saints Gaming Application"
+                >
+                  <X className="w-3 h-3" />
+                  <span>Exit App</span>
+                </button>
+              </>
+            )}
           </div>
         </WindowMenuBar>
 
@@ -1012,7 +1030,7 @@ export default function GameOptionsMenu({
         {/* OS Window Footer Bar */}
         <div className="px-4 py-2 bg-[#0a1628]/90 border-t border-border/40 flex items-center justify-between text-[10px] font-mono text-muted-foreground select-none">
           <div className="flex items-center gap-3">
-            <span>Saints Gaming v2.1.708</span>
+            <span>Saints Gaming v2.1.709</span>
             <span>•</span>
             <span>Time To Play</span>
           </div>

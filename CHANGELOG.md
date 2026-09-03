@@ -1,3 +1,16 @@
+# 2.1.709
+- **Saints Gaming Desktop App Integration & In-App Dev Studio Access**:
+  - **Saints Gaming App Root Integration**:
+    - Configured Electron `studio-desktop/electron/main.cjs` to launch the full Saints Gaming platform (`http://localhost:3000` / `https://saintsgaming.net`) rather than only booting the isolated Studio view.
+    - Updated package metadata, window title, and deep link handler to Saints Gaming (`saints-gaming://`).
+  - **Developer/Admin Studio Navigation**:
+    - In `src/shared/components/navbar.tsx`, added a dedicated "World Studio" button and user menu option gated behind `isElectron && canEnterStudio(permissionLevel)` (requires Admin+ / level >= 400).
+    - Regular users and standard web browser visitors see the clean public gaming portal with no Studio links exposed.
+  - **Native Desktop Window & Exit Controls**:
+    - Integrated native Minimize, Maximize/Restore, and Close buttons into the global top navigation bar when running inside Electron.
+    - Added "Exit Saints Gaming" action to the user dropdown and "Exit App" in the in-game options menu (`GameOptionsMenu.tsx`).
+    - Enabled frameless window drag region support across the top navigation bar.
+
 # 2.1.708
 - **Independent Offline Asset Loading for Tropical Palms & Standalone Background**:
   - In `src/web/components/landing/tropical-palm-frame.tsx`, applied `toClientAssetUrl()` to both left and right palm SVG frames (`/images/left-palm.svg` and `/images/right-palm.svg`).
