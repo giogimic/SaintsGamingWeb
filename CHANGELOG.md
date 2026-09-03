@@ -1,4 +1,4 @@
-## [2.1.713] - 2026-09-03
+## [2.1.714] - 2026-09-03
 ### Added
 - Fully implemented the new Studio UI Window Architecture as outlined in Studio-UI-New-plan.md.
 - Added dedicated floating panels for World Atlas, Procedural Authoring, Diagnostics, Camera & View, and other systems.
