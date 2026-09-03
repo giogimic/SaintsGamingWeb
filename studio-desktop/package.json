@@ -1,14 +1,33 @@
 {
   "name": "saints-world-studio",
-  "version": "2.1.700",
+  "version": "2.1.701",
   "private": true,
   "description": "Saints Gaming World Studio — Standalone 3D Volumetric CAD Authoring Suite",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "dev:electron": "electron .",
+    "build": "vite build && electron-builder --win dir portable && node scripts/copy-dist-exe.cjs",
+    "build:vite": "vite build",
+    "build:exe": "vite build && electron-builder --win dir portable && node scripts/copy-dist-exe.cjs",
+    "build:installer": "vite build && electron-builder --win nsis && node scripts/copy-dist-exe.cjs",
     "preview": "vite preview",
     "tauri": "tauri"
+  },
+  "build": {
+    "appId": "com.saintsgaming.worldstudio",
+    "productName": "Saints World Studio",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": "dir"
+    }
   },
   "dependencies": {
     "@babylonjs/core": "^9.18.0",
@@ -34,6 +53,8 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "electron": "^44.1.1",
+    "electron-builder": "^26.15.3",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",

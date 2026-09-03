@@ -97,7 +97,12 @@ export const DesktopAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
           handleAuthUrl(event.payload);
         });
       } catch {
-        // Not running in Tauri or mock environment
+        // Fallback for Electron runtime
+        if ((window as any).electronAPI?.onDeepLink) {
+          (window as any).electronAPI.onDeepLink((url: string) => {
+            handleAuthUrl(url);
+          });
+        }
       }
     };
     setupTauriListener();
@@ -113,7 +118,11 @@ export const DesktopAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const { open } = await import('@tauri-apps/plugin-shell');
       await open(authUrl);
     } catch {
-      window.open(authUrl, '_blank');
+      if ((window as any).electronAPI?.openExternal) {
+        (window as any).electronAPI.openExternal(authUrl);
+      } else {
+        window.open(authUrl, '_blank');
+      }
     }
   };
 
