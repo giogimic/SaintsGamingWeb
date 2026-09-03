@@ -80,7 +80,7 @@ function createWindow() {
     height: 920,
     minWidth: 1024,
     minHeight: 700,
-    frame: true, // Native Windows titlebar and close [X] controls
+    frame: false, // Frameless window: in-site custom Saints OS titlebar and controls handle dragging and window states
     title: 'Saints Gaming',
     backgroundColor: '#050b14',
     webPreferences: {
@@ -91,83 +91,7 @@ function createWindow() {
     },
   });
 
-  const menuTemplate = [
-    {
-      label: 'Saints Gaming',
-      submenu: [
-        {
-          label: 'Home',
-          accelerator: 'CmdOrCtrl+H',
-          click: () => {
-            const currentUrl = mainWindow?.webContents.getURL() || '';
-            try {
-              const origin = currentUrl.startsWith('http') ? new URL(currentUrl).origin : 'http://localhost:3000';
-              mainWindow?.loadURL(`${origin}/home`);
-            } catch {
-              mainWindow?.loadURL('http://localhost:3000/home');
-            }
-          },
-        },
-        {
-          label: 'The Lobby',
-          accelerator: 'CmdOrCtrl+L',
-          click: () => {
-            const currentUrl = mainWindow?.webContents.getURL() || '';
-            try {
-              const origin = currentUrl.startsWith('http') ? new URL(currentUrl).origin : 'http://localhost:3000';
-              mainWindow?.loadURL(`${origin}/lobby`);
-            } catch {
-              mainWindow?.loadURL('http://localhost:3000/lobby');
-            }
-          },
-        },
-        { type: 'separator' },
-        {
-          label: 'Exit Saints Gaming',
-          accelerator: 'CmdOrCtrl+Q',
-          click: () => app.quit(),
-        },
-      ],
-    },
-    {
-      label: 'World Studio',
-      submenu: [
-        {
-          label: 'Launch World Studio',
-          accelerator: 'CmdOrCtrl+Shift+E',
-          click: () => {
-            const currentUrl = mainWindow?.webContents.getURL() || '';
-            try {
-              const origin = currentUrl.startsWith('http') ? new URL(currentUrl).origin : 'http://localhost:3000';
-              mainWindow?.loadURL(`${origin}/studio`);
-            } catch {
-              mainWindow?.loadURL('http://localhost:3000/studio');
-            }
-          },
-        },
-        {
-          label: 'World Studio (Offline Mode)',
-          click: () => {
-            const localIndexPath = path.join(app.getAppPath(), 'dist/index.html');
-            if (fs.existsSync(localIndexPath)) {
-              mainWindow?.loadFile(localIndexPath);
-            }
-          },
-        },
-      ],
-    },
-    {
-      label: 'View',
-      submenu: [
-        { role: 'reload' },
-        { role: 'forceReload' },
-        { role: 'toggleDevTools' },
-        { type: 'separator' },
-        { role: 'togglefullscreen' },
-      ],
-    },
-  ];
-  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
+  Menu.setApplicationMenu(null); // No OS native menu bar — in-app StudioMenuBar handles application commands
 
   mainWindow.on('maximize', () => mainWindow?.webContents?.send('window-maximize-changed', true));
   mainWindow.on('unmaximize', () => mainWindow?.webContents?.send('window-maximize-changed', false));

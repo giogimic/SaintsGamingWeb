@@ -72,6 +72,11 @@ export function normalizeAtlasNode(node: Partial<AtlasNode> & { mapId: string })
     ...(node.width !== undefined ? { width: node.width } : {}),
     ...(node.height !== undefined ? { height: node.height } : {}),
     ...(node.label ? { label: node.label } : {}),
+    ...(node.nodeType ? { nodeType: node.nodeType } : {}),
+    ...(node.biomeId ? { biomeId: node.biomeId } : {}),
+    ...(node.seamThreshold !== undefined ? { seamThreshold: node.seamThreshold } : {}),
+    ...(node.generationScope ? { generationScope: node.generationScope } : {}),
+    ...(node.allowedMapPool ? { allowedMapPool: node.allowedMapPool } : {}),
   };
 }
 

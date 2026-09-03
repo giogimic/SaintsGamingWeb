@@ -18,7 +18,7 @@ import {
 /** Dev Tools: server controls. */
 export const DevToolsPanel: React.FC = () => {
   const { data: session } = useSession();
-  const level = session?.user?.permissionLevel ?? 0;
+  const level = (session?.user as any)?.permissionLevel ?? 0;
   const canServer = canUseStudioServerControls(level);
   const canEngine = canUseStudioEngineConfig(level);
 

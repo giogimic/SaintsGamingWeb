@@ -9,7 +9,7 @@ export const ServerControl: React.FC = () => {
   const { data: session } = useSession();
   // Gate here as well as in DevToolsPanel so realm controls stay hidden wherever
   // this component is mounted.
-  const canControlServer = canUseStudioServerControls(session?.user?.permissionLevel);
+  const canControlServer = canUseStudioServerControls((session?.user as any)?.permissionLevel);
   const [statusData, setStatusData] = useState<{ status: 'online' | 'offline'; players: number; capacity: number; isDevMode?: boolean; isDevOverride?: boolean }>({
     status: 'offline',
     players: 0,

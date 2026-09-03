@@ -47,7 +47,7 @@ type SortField = 'name' | 'id' | 'size' | 'category';
 
 export const MapListPanel: React.FC = () => {
   const { data: session } = useSession();
-  const userPermission = session?.user?.permissionLevel ?? 0;
+  const userPermission = (session?.user as any)?.permissionLevel ?? 0;
   const canEdit = canWriteStudioContent(userPermission);
 
   const currentMapId = useGameStore((s) => s.currentMapId);
