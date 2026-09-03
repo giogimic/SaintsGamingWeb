@@ -10,7 +10,6 @@
  */
 
 import { SETUP_SETTING_KEYS } from "@/shared/game/setup/setupDetection";
-import { DEMO_MAP_ID } from "@/server/demoMapSeed";
 import { ensureStudioMapFoundation } from "@/server/DemoBootstrap";
 import { invalidateMapCache, invalidateLogicTilesCache } from "@/shared/game/mapCache";
 
@@ -22,15 +21,14 @@ export interface WipeRealmResult {
 }
 
 export async function wipeNonBundledRealmContent(prisma: any): Promise<WipeRealmResult> {
-  // 1. Wipe non-bundled maps
-  const deletedMaps = await prisma.worldMap.deleteMany({
-    where: {
-      id: { notIn: [DEMO_MAP_ID] },
-    },
-  }).catch((e: any) => {
+  // 1. Wipe all maps so only the map created by the user during setup exists
+  const deletedMaps = await prisma.worldMap.deleteMany({}).catch((e: any) => {
     console.warn('[WipeRealmService] worldMap wipe warning:', e?.message);
     return { count: 0 };
   });
+  if (prisma.gameMap?.deleteMany) {
+    await prisma.gameMap.deleteMany({}).catch(() => {});
+  }
 
   // 2. Wipe map versions and sync entries
   await prisma.worldMapVersion.deleteMany({}).catch(() => {});

@@ -1,3 +1,11 @@
+# 2.1.691
+- **Pristine Realm Wipe: Remove Demo Map Bundling**:
+  - **Complete Map Wipe on Re-Initialization**:
+    - Updated `wipeNonBundledRealmContent` to wipe ALL maps without exempting `DEMO_SANDBOX`.
+    - Guarantees that upon fresh setup, only the map created or chosen by the user during setup exists in the database.
+  - **Clarified Confirmation Dialog**:
+    - Updated `ReinitializeSetupModal` messaging to make clear that all existing maps will be wiped, leaving a clean slate for the user's setup map.
+
 # 2.1.690
 - **Studio Re-Initialize Flow: Re-Setup vs. Wipe Non-Bundled Content**:
   - **Studio Menu Modal Dialog**:

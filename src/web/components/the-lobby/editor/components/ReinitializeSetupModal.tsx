@@ -155,11 +155,11 @@ export const ReinitializeSetupModal: React.FC<ReinitializeSetupModalProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 leading-normal">
-                Wipe everything that isn&apos;t bundled with the engine (all custom maps, custom characters, map versions, and sync logs). Returns you to a clean setup canvas.
+                Wipe all maps, characters, map versions, and sync logs from the database. Returns you to fresh setup so you can build your own starting world map.
               </p>
               <div className="pt-1 flex items-center gap-1.5 text-[10px] text-amber-400/90">
                 <Shield className="w-3 h-3 text-amber-400" />
-                <span>Your Admin user account and bundled foundation (DEMO_SANDBOX) are preserved</span>
+                <span>Your Admin account is preserved. All existing maps are wiped so only your setup map exists.</span>
               </div>
             </div>
           </div>
@@ -171,7 +171,7 @@ export const ReinitializeSetupModal: React.FC<ReinitializeSetupModalProps> = ({
               <div className="space-y-1">
                 <h3 className="font-bold text-sm text-white">Confirm Realm Content Wipe</h3>
                 <p className="text-[11px] text-rose-200/90 leading-relaxed">
-                  This action is permanent and irreversible. All custom authored maps, custom characters, map versions, and non-bundled assets will be deleted.
+                  This action is permanent and irreversible. All maps, custom characters, map versions, and non-bundled assets will be deleted. You will be redirected to setup to create your starting realm.
                 </p>
               </div>
             </div>
