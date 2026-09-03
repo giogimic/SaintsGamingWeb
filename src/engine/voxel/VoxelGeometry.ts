@@ -707,6 +707,129 @@ export class VoxelMeshBuilder {
     this.addQuad([fx1, rY0, fz0], [fx1, rY0, fz1], [fx1, rY1, fz1], [fx1, rY1, fz0], [1, 0, 0], sideUv, [1, 1, 1, 1], sideLight);
   }
 
+  /**
+   * Generates Farmland (tilled soil) geometry.
+   * Recessed top surface (15/16 height = 0.9375y) with moisture tinting.
+   */
+  public addFarmland(
+    x: number,
+    y: number,
+    z: number,
+    isMoist: boolean = false,
+    rgba: [number, number, number, number] = [1, 1, 1, 1],
+    topUv: [number, number, number, number] = [0, 0, 1, 1],
+    sideUv: [number, number, number, number] = [0, 0, 1, 1],
+    bottomUv: [number, number, number, number] = [0, 0, 1, 1]
+  ): void {
+    const x0 = x, x1 = x + 1;
+    const z0 = z, z1 = z + 1;
+    const y0 = y, y1 = y + 0.9375; // 15/16 height
+
+    const topTint: [number, number, number, number] = isMoist
+      ? [rgba[0] * 0.58, rgba[1] * 0.48, rgba[2] * 0.38, rgba[3]]
+      : [rgba[0], rgba[1], rgba[2], rgba[3]];
+
+    const sideLight: [number, number, number, number] = [rgba[0] * 0.82, rgba[1] * 0.82, rgba[2] * 0.82, rgba[3]];
+    const botLight: [number, number, number, number] = [rgba[0] * 0.55, rgba[1] * 0.55, rgba[2] * 0.55, rgba[3]];
+
+    // Top (sunken surface)
+    this.addQuad([x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1], [0, 1, 0], topUv, [1, 1, 1, 1], topTint);
+    // Bottom
+    this.addQuad([x0, y0, z1], [x1, y0, z1], [x1, y0, z0], [x0, y0, z0], [0, -1, 0], bottomUv, [1, 1, 1, 1], botLight);
+    // North (+Z)
+    this.addQuad([x1, y0, z1], [x0, y0, z1], [x0, y1, z1], [x1, y1, z1], [0, 0, 1], sideUv, [1, 1, 1, 1], sideLight);
+    // South (-Z)
+    this.addQuad([x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0], [0, 0, -1], sideUv, [1, 1, 1, 1], sideLight);
+    // East (+X)
+    this.addQuad([x1, y0, z0], [x1, y0, z1], [x1, y1, z1], [x1, y1, z0], [1, 0, 0], sideUv, [1, 1, 1, 1], sideLight);
+    // West (-X)
+    this.addQuad([x0, y0, z1], [x0, y0, z0], [x0, y1, z0], [x0, y1, z1], [-1, 0, 0], sideUv, [1, 1, 1, 1], sideLight);
+  }
+
+  /**
+   * Generates double-sided Cross-Quad geometry for crops, foliage, herbs, and wild plants.
+   * Two intersecting diagonal vertical planes forming an X.
+   */
+  public addCrossQuad(
+    x: number,
+    y: number,
+    z: number,
+    stageHeightRatio: number = 1.0,
+    rgba: [number, number, number, number] = [1, 1, 1, 1],
+    uvRange: [number, number, number, number] = [0, 0, 1, 1]
+  ): void {
+    const x0 = x, x1 = x + 1;
+    const z0 = z, z1 = z + 1;
+    const y0 = y;
+    const y1 = y + Math.max(0.25, Math.min(1.0, stageHeightRatio));
+
+    // Diagonal Plane 1: (x0, z0) -> (x1, z1)
+    // Forward face
+    this.addQuad([x0, y0, z0], [x1, y0, z1], [x1, y1, z1], [x0, y1, z0], [0.707, 0, -0.707], uvRange, [1, 1, 1, 1], rgba);
+    // Reverse face (for double-sided visibility)
+    this.addQuad([x1, y0, z1], [x0, y0, z0], [x0, y1, z0], [x1, y1, z1], [-0.707, 0, 0.707], uvRange, [1, 1, 1, 1], rgba);
+
+    // Diagonal Plane 2: (x0, z1) -> (x1, z0)
+    // Forward face
+    this.addQuad([x0, y0, z1], [x1, y0, z0], [x1, y1, z0], [x0, y1, z1], [0.707, 0, 0.707], uvRange, [1, 1, 1, 1], rgba);
+    // Reverse face (for double-sided visibility)
+    this.addQuad([x1, y0, z0], [x0, y0, z1], [x0, y1, z1], [x1, y1, z0], [-0.707, 0, -0.707], uvRange, [1, 1, 1, 1], rgba);
+  }
+
+  /**
+   * Generates thin carpet/layer geometry (e.g. path overlay, snow crust, mulch).
+   */
+  public addThinLayer(
+    x: number,
+    y: number,
+    z: number,
+    thickness: number = 0.125,
+    rgba: [number, number, number, number] = [1, 1, 1, 1],
+    topUv: [number, number, number, number] = [0, 0, 1, 1],
+    sideUv: [number, number, number, number] = [0, 0, 1, 1],
+    bottomUv: [number, number, number, number] = [0, 0, 1, 1]
+  ): void {
+    const x0 = x, x1 = x + 1;
+    const z0 = z, z1 = z + 1;
+    const y0 = y, y1 = y + Math.max(0.0625, Math.min(0.5, thickness));
+
+    const topLight = rgba;
+    const sideLight: [number, number, number, number] = [rgba[0] * 0.85, rgba[1] * 0.85, rgba[2] * 0.85, rgba[3]];
+    const botLight: [number, number, number, number] = [rgba[0] * 0.55, rgba[1] * 0.55, rgba[2] * 0.55, rgba[3]];
+
+    this.addQuad([x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1], [0, 1, 0], topUv, [1, 1, 1, 1], topLight);
+    this.addQuad([x0, y0, z1], [x1, y0, z1], [x1, y0, z0], [x0, y0, z0], [0, -1, 0], bottomUv, [1, 1, 1, 1], botLight);
+    this.addQuad([x1, y0, z1], [x0, y0, z1], [x0, y1, z1], [x1, y1, z1], [0, 0, 1], sideUv, [1, 1, 1, 1], sideLight);
+    this.addQuad([x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0], [0, 0, -1], sideUv, [1, 1, 1, 1], sideLight);
+    this.addQuad([x1, y0, z0], [x1, y0, z1], [x1, y1, z1], [x1, y1, z0], [1, 0, 0], sideUv, [1, 1, 1, 1], sideLight);
+    this.addQuad([x0, y0, z1], [x0, y0, z0], [x0, y1, z0], [x0, y1, z1], [-1, 0, 0], sideUv, [1, 1, 1, 1], sideLight);
+  }
+
+  /**
+   * Generates slightly sunken fluid surface geometry (e.g. water canals, pools).
+   */
+  public addFluidSurface(
+    x: number,
+    y: number,
+    z: number,
+    level: number = 0.875,
+    rgba: [number, number, number, number] = [1, 1, 1, 1],
+    topUv: [number, number, number, number] = [0, 0, 1, 1],
+    sideUv: [number, number, number, number] = [0, 0, 1, 1],
+    bottomUv: [number, number, number, number] = [0, 0, 1, 1]
+  ): void {
+    const x0 = x, x1 = x + 1;
+    const z0 = z, z1 = z + 1;
+    const y0 = y, y1 = y + Math.max(0.1, Math.min(1.0, level));
+
+    this.addQuad([x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1], [0, 1, 0], topUv, [1, 1, 1, 1], rgba);
+    this.addQuad([x0, y0, z1], [x1, y0, z1], [x1, y0, z0], [x0, y0, z0], [0, -1, 0], bottomUv, [1, 1, 1, 1], [rgba[0] * 0.5, rgba[1] * 0.5, rgba[2] * 0.5, rgba[3]]);
+    this.addQuad([x1, y0, z1], [x0, y0, z1], [x0, y1, z1], [x1, y1, z1], [0, 0, 1], sideUv, [1, 1, 1, 1], [rgba[0] * 0.8, rgba[1] * 0.8, rgba[2] * 0.8, rgba[3]]);
+    this.addQuad([x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0], [0, 0, -1], sideUv, [1, 1, 1, 1], [rgba[0] * 0.8, rgba[1] * 0.8, rgba[2] * 0.8, rgba[3]]);
+    this.addQuad([x1, y0, z0], [x1, y0, z1], [x1, y1, z1], [x1, y1, z0], [1, 0, 0], sideUv, [1, 1, 1, 1], [rgba[0] * 0.75, rgba[1] * 0.75, rgba[2] * 0.75, rgba[3]]);
+    this.addQuad([x0, y0, z1], [x0, y0, z0], [x0, y1, z0], [x0, y1, z1], [-1, 0, 0], sideUv, [1, 1, 1, 1], [rgba[0] * 0.75, rgba[1] * 0.75, rgba[2] * 0.75, rgba[3]]);
+  }
+
   public clear(): void {
     this.positions = [];
     this.normals = [];

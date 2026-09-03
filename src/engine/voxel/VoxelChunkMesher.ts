@@ -8,7 +8,8 @@ import {
   isVoxelFaceOccluding,
   getVoxelMaterial, 
   getVoxelShape, 
-  getVoxelOrientation 
+  getVoxelOrientation,
+  VOXEL_MAT_FARMLAND_MOIST 
 } from '@/shared/game/voxel/VoxelWord';
 import { 
   getVoxelMaterialDef, 
@@ -224,6 +225,27 @@ export class VoxelChunkMesher {
           } else if (shape === VoxelShape.FENCE_RAIL) {
             builder.addFenceRail(wx, wy, wz, orientation, baseRgba, topUv, sideUv, bottomUv);
             quadCount += 12;
+            continue;
+          } else if (shape === VoxelShape.FARMLAND) {
+            const be = world.getBlockEntity?.(wx, wy, wz);
+            const isMoist = materialId === VOXEL_MAT_FARMLAND_MOIST || (be?.data?.moisture ?? 0) > 0;
+            builder.addFarmland(wx, wy, wz, isMoist, baseRgba, topUv, sideUv, bottomUv);
+            quadCount += 6;
+            continue;
+          } else if (shape === VoxelShape.CROSS_QUAD) {
+            const be = world.getBlockEntity?.(wx, wy, wz);
+            const growthStage = be?.data?.growthStage ?? 7;
+            const stageRatio = Math.max(0.3, Math.min(1.0, (growthStage + 1) / 8));
+            builder.addCrossQuad(wx, wy, wz, stageRatio, baseRgba, topUv);
+            quadCount += 4;
+            continue;
+          } else if (shape === VoxelShape.THIN_LAYER) {
+            builder.addThinLayer(wx, wy, wz, 0.125, baseRgba, topUv, sideUv, bottomUv);
+            quadCount += 6;
+            continue;
+          } else if (shape === VoxelShape.FLUID_SURFACE) {
+            builder.addFluidSurface(wx, wy, wz, 0.875, baseRgba, topUv, sideUv, bottomUv);
+            quadCount += 6;
             continue;
           } else if (shape === VoxelShape.ADAPTIVE_ALPHA) {
             // ADAPTIVE_ALPHA: render as full cube for now (auto-resolution TBD)
