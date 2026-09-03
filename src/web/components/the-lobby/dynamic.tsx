@@ -13,5 +13,10 @@ export const TheLobby = dynamic(() => import('./PlayerClient'), {
   loading: () => loading,
 });
 
+export const StudioLobby = dynamic(() => import('./StudioClient'), {
+  ssr: false,
+  loading: () => loading,
+});
+
 // Backwards compatibility alias
 export const CyberTerminal = TheLobby;

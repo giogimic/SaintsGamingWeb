@@ -63,6 +63,9 @@ import {
   Crosshair,
   Grid3X3,
   Sliders,
+  Minus,
+  Square,
+  X,
 } from 'lucide-react';
 
 
@@ -203,7 +206,16 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
   const [worldDropdownOpen, setWorldDropdownOpen] = useState(false);
   const [reinitializeModalOpen, setReinitializeModalOpen] = useState(false);
   const [profiles, setProfiles] = useState(WORLD_PROFILES);
+  const [isElectron, setIsElectron] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).electronAPI) {
+      setIsElectron(true);
+      (window as any).electronAPI.onMaximizeChange?.((max: boolean) => setIsMaximized(max));
+    }
+  }, []);
 
   const isCreationMode = useEditorStore((s) => s.isCreationMode);
   const studioMode = useEditorStore((s) => s.studioMode);
@@ -290,10 +302,10 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
     <MenuContext.Provider value={{ activeMenu, handleMenuClick, handleItemClick, setActiveMenu }}>
       <div
         ref={menuRef}
-        className="pointer-events-auto absolute top-0 left-0 right-0 h-10 z-[110] bg-[#050b14]/90 border-b border-border/50 flex items-center justify-between px-3 select-none backdrop-blur-xl shadow-lg font-mono"
+        className="pointer-events-auto absolute top-0 left-0 right-0 h-10 z-[110] bg-[#050b14]/90 border-b border-border/50 flex items-center justify-between px-3 select-none backdrop-blur-xl shadow-lg font-mono [app-region:drag]"
       >
       {/* ─── ZONE 1: Identity, Project Context & Primary Menus ─── */}
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2.5 [app-region:no-drag]">
         {/* Studio Brand & Navigation Links */}
         <div className="flex items-center gap-2 pr-2 border-r border-border/40">
           <Link href="/home" className="flex items-center gap-1.5 group text-muted-foreground hover:text-primary transition-colors" title="Saints Gaming Home">
@@ -633,7 +645,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
       </div>
 
       {/* ─── ZONE 2: Command Search & Segmented Mode Switcher ─── */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 [app-region:no-drag]">
         {/* Omnisearch Bar */}
         <button
           onClick={() => {
@@ -755,7 +767,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
       </div>
 
       {/* ─── ZONE 3: Problems Badge, PIE Playtest, Theme & Settings ─── */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 [app-region:no-drag]">
         {/* Problems & Validation Counter Badge */}
         <button
           onClick={() => {
@@ -827,6 +839,33 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
         >
           <Bell className="w-3.5 h-3.5" />
         </button>
+
+        {/* Native Desktop Window Controls (Active in Electron) */}
+        {isElectron && (
+          <div className="flex items-center ml-2 border-l border-border/40 pl-2 gap-1 [app-region:no-drag]">
+            <button
+              onClick={() => (window as any).electronAPI?.minimize()}
+              className="p-1.5 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              title="Minimize Window"
+            >
+              <Minus className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => (window as any).electronAPI?.toggleMaximize()}
+              className="p-1.5 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              title={isMaximized ? "Restore Window" : "Maximize Window"}
+            >
+              <Square className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => (window as any).electronAPI?.close()}
+              className="p-1.5 rounded-lg hover:bg-red-500/20 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer"
+              title="Close Studio"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
       <StudioShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />

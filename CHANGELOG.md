@@ -1,3 +1,18 @@
+# 2.1.707
+- **Restore Website Studio & Smart Desktop Hybrid Fallback**:
+  - **Restored Website Studio Routes**:
+    - Recreated `app/(main)/studio/layout.tsx` and `app/(main)/studio/page.tsx` rendering `MidnightTropicalBackground` with water/palms and `StudioLobby`.
+    - Restored `src/web/components/the-lobby/StudioClient.tsx` and exported `StudioLobby` in `dynamic.tsx`.
+  - **Native Electron Launcher with 0-Error Smart Resolver**:
+    - Enhanced `studio-desktop/electron/main.cjs` to test connectivity using Electron's native `net.request`.
+    - Automatically connects to `http://localhost:3000/studio` if local Next.js dev server is running.
+    - Connects to `https://saintsgaming.net/studio` when live production route returns 200 OK.
+    - Seamlessly falls back to the bundled offline client (`dist/index.html`) if the remote server returns 404 or is unreachable, preventing any "page not found" errors.
+  - **Persistent Tropical Background in Desktop Workspace**:
+    - Mounted `<MidnightTropicalBackground showPalms={true} showWater={true} />` in `StudioMainWorkspace` in `studio-desktop/src/App.tsx`.
+  - **Native Window Controls in Studio Menu Bar**:
+    - Added Minimize, Maximize/Restore, and Close buttons to `StudioMenuBar.tsx` with `-webkit-app-region: drag` support for frameless desktop windows.
+
 # 2.1.703
 - **Fix Black Screen on Startup via Prisma Client Browser Shim & React Mount Verification**:
   - **Prisma Client Browser Shim**:

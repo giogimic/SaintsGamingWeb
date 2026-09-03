@@ -24,11 +24,15 @@ interface DesktopAuthContextType {
 
 const DesktopAuthContext = createContext<DesktopAuthContextType | null>(null);
 
-const DEFAULT_SERVER_URL = (import.meta as any).env?.VITE_SERVER_URL || 'http://localhost:3000';
+const DEFAULT_SERVER_URL = (import.meta as any).env?.VITE_SERVER_URL || 'https://saintsgaming.net';
 
 export const DesktopAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [serverUrl, setServerUrlState] = useState<string>(() => {
-    return localStorage.getItem('saints_studio_server_url') || DEFAULT_SERVER_URL;
+    const saved = localStorage.getItem('saints_studio_server_url');
+    if (!saved || saved === 'http://localhost:3000') {
+      return DEFAULT_SERVER_URL;
+    }
+    return saved;
   });
   const [token, setToken] = useState<string | null>(() => {
     return localStorage.getItem('saints_studio_token') || null;
@@ -41,7 +45,17 @@ export const DesktopAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setServerUrlState(cleanUrl);
     localStorage.setItem('saints_studio_server_url', cleanUrl);
     StudioApiClient.getInstance().setBaseUrl(cleanUrl);
+    if (typeof window !== 'undefined') {
+      (window as any).__studioBaseUrl = cleanUrl;
+    }
   }, []);
+
+  useEffect(() => {
+    StudioApiClient.getInstance().setBaseUrl(serverUrl);
+    if (typeof window !== 'undefined') {
+      (window as any).__studioBaseUrl = serverUrl;
+    }
+  }, [serverUrl]);
 
   const verifyToken = useCallback(async (tokenToVerify: string) => {
     setIsLoading(true);
