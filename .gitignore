@@ -91,11 +91,12 @@ docker_build.log
 /tuxemon-db/
 
 # Studio Desktop Application Build Artifacts
-/studio-desktop/node_modules/
-/studio-desktop/dist/
-/studio-desktop/release/
-/studio-desktop/src-tauri/target/
+/saints-app/node_modules/
+/saints-app/dist/
+/saints-app/release/
+/saints-app/src-tauri/target/
 /public/downloads/
 /downloads/
 *.exe
 *.msi
+*.lnk

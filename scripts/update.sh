@@ -346,7 +346,7 @@ else
         fi
 
         # Check studio desktop app
-        if echo "$DIFF_FILES" | grep -qE "(studio-desktop/)"; then
+        if echo "$DIFF_FILES" | grep -qE "(saints-app/)"; then
             NEED_STUDIO_BUILD=1
         fi
     fi
@@ -581,9 +581,9 @@ else
         npm run sync:assets 2>/dev/null || true
     fi
 
-    if [ "$NEED_STUDIO_BUILD" -eq 1 ] && [ -f "studio-desktop/package.json" ]; then
+    if [ "$NEED_STUDIO_BUILD" -eq 1 ] && [ -f "saints-app/package.json" ]; then
         echo -e "${CYAN}[*] Updating Saints World Studio desktop application...${NC}"
-        (cd studio-desktop && npm install && npm run build) || echo -e "${YELLOW}[!] Studio desktop build completed with warnings.${NC}"
+        (cd saints-app && npm install && npm run build) || echo -e "${YELLOW}[!] Studio desktop build completed with warnings.${NC}"
     fi
 
     if command -v pm2 &>/dev/null; then

@@ -96,11 +96,6 @@ export const DesktopAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     StudioApiClient.getInstance().setBaseUrl(serverUrl);
     StudioApiClient.getInstance().setTokenGetter(() => token);
 
-    if (token) {
-      verifyToken(token);
-    } else {
-      setIsLoading(false);
-    }
 
     // Listen for Tauri deep link events if in Tauri runtime
     let unlisten: (() => void) | undefined;
@@ -120,6 +115,31 @@ export const DesktopAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
     };
     setupTauriListener();
+
+    // Check for native studio IPC session passed down from Next.js web wrapper
+    const checkNativeSession = async () => {
+      if ((window as any).electronAPI?.getNativeAuthToken) {
+        try {
+          const nativeSession = await (window as any).electronAPI.getNativeAuthToken();
+          if (nativeSession && nativeSession.token) {
+            console.log('[DesktopAuthProvider] Found native session token from IPC. Authenticating seamlessly.');
+            setServerUrl('https://saintsgaming.net'); // Ensure it points to prod by default for native IPC
+            await verifyToken(nativeSession.token);
+            return;
+          }
+        } catch (e) {
+          console.error('[DesktopAuthProvider] Failed to read native IPC token:', e);
+        }
+      }
+      
+      // If no native token, fallback to standard token
+      if (token) {
+        verifyToken(token);
+      } else {
+        setIsLoading(false);
+      }
+    };
+    checkNativeSession();
 
     return () => {
       if (unlisten) unlisten();

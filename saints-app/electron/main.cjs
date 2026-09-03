@@ -172,6 +172,52 @@ function createWindow() {
     mainWindow?.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(errorHtml)}`);
   }
 
+  // Native Studio Session State
+  let nativeSession = null;
+
+  ipcMain.on('launch-native-studio', (event, token, user) => {
+    console.log('[Electron] Received request to launch native studio for user:', user?.username);
+    nativeSession = { token, user };
+    
+    // Switch the window to the local bundled Native Studio
+    const localIndexPath = path.join(app.getAppPath(), 'dist/index.html');
+    if (fs.existsSync(localIndexPath)) {
+      console.log('[Electron] Switching to native studio bundle...');
+      mainWindow.loadFile(localIndexPath);
+    } else {
+      console.error('[Electron] Could not find dist/index.html to launch native studio!');
+    }
+  });
+
+  ipcMain.handle('get-native-auth-token', () => {
+    return nativeSession;
+  });
+
+  // Settings File Logic
+  const settingsPath = path.join(app.getPath('userData'), 'saints-settings.json');
+  function getCustomServer() {
+    try {
+      if (fs.existsSync(settingsPath)) {
+        const data = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+        return data.customServerUrl || null;
+      }
+    } catch (e) {
+      console.error('[Electron] Error reading settings:', e);
+    }
+    return null;
+  }
+
+  ipcMain.on('set-custom-server', (event, url) => {
+    try {
+      const data = fs.existsSync(settingsPath) ? JSON.parse(fs.readFileSync(settingsPath, 'utf-8')) : {};
+      data.customServerUrl = url;
+      fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2));
+      console.log('[Electron] Custom server URL saved:', url);
+    } catch (e) {
+      console.error('[Electron] Error saving custom server:', e);
+    }
+  });
+
   async function resolveAndLoad() {
     const serverArg = process.argv.find((arg) => arg && arg.startsWith('--server='));
     const serverUrlFromArg = serverArg ? serverArg.split('=')[1] : null;
@@ -182,17 +228,21 @@ function createWindow() {
       return;
     }
 
-    // 1. Check if local Next.js dev server is running on http://localhost:3000
-    const localCheck = await checkUrlReachable('http://localhost:3000', 800);
-    if (localCheck.ok) {
-      console.log('[Electron] Connected to local Next.js server: http://localhost:3000');
-      mainWindow.loadURL('http://localhost:3000');
-      return;
+    // 1. Check Custom Developer Server from Settings
+    const customServer = getCustomServer();
+    if (customServer) {
+      const customCheck = await checkUrlReachable(customServer, 2000);
+      if (customCheck.ok) {
+        console.log('[Electron] Connected to custom developer server:', customServer);
+        mainWindow.loadURL(customServer);
+        return;
+      }
+      console.log(`[Electron] Custom server ${customServer} unreachable. Falling back...`);
     }
 
-    // 2. Check if remote production server returns 200 OK
+    // 2. Default to Production Server (Always)
     const prodUrl = 'https://saintsgaming.net';
-    const prodCheck = await checkUrlReachable(prodUrl, 2000);
+    const prodCheck = await checkUrlReachable(prodUrl, 3000);
     if (prodCheck.ok) {
       console.log('[Electron] Connected to production Saints Gaming:', prodUrl);
       mainWindow.loadURL(prodUrl);

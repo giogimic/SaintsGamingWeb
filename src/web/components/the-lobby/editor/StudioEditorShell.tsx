@@ -135,6 +135,13 @@ export const StudioEditorShell: React.FC = () => {
     useEditorStore.getState().hydratePanelLayouts();
     useEditorStore.getState().setStudioMode('atlas');
     
+    // Check if ANY panel is open. If not, apply default workspace!
+    const state = useEditorStore.getState();
+    const anyOpen = Object.values(state.panels).some(p => p.isOpen);
+    if (!anyOpen) {
+      state.applyWorkspacePreset('world-building');
+    }
+    
     // Simulate studio initialization and hide loading screen
     const timer = setTimeout(() => setIsStudioReady(true), 800);
     return () => clearTimeout(timer);
@@ -363,7 +370,17 @@ export const StudioEditorShell: React.FC = () => {
 
         {/* MDI Free-Floating Windows Workspace Container */}
         <div className="pointer-events-none absolute inset-0 z-40 overflow-hidden">
-          <div className={`absolute inset-0 pointer-events-none ${studioMode === 'assets' || studioMode === 'atlas' || studioMode === 'hero' ? 'hidden' : ''}`}>
+        
+          {/* DEBUG OVERLAY - ALWAYS VISIBLE */}
+          <div className="pointer-events-auto fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-red-600/90 text-white p-6 rounded-xl z-[99999] shadow-2xl border-4 border-white text-lg font-bold font-mono min-w-[300px]">
+            DEBUG INFO:<br/>
+            permissionLevel: {permissionLevel}<br/>
+            studioMode: {studioMode}<br/>
+            isCreationMode: {String(isCreationMode)}<br/>
+            openPanels: {Object.entries(useEditorStore.getState().panels).filter(([_, p]) => p.isOpen).map(([k]) => k).join(', ')}
+          </div>
+
+          <div className={`absolute inset-0 pointer-events-none ${studioMode === 'assets' || studioMode === 'hero' ? 'hidden' : ''}`}>
           {canUseStudioDock(permissionLevel, 'build') && (
             <DraggablePanel id="build" icon={<Hammer className="w-4 h-4" />} title="World Builder">
               <Suspense fallback={<div>Loading...</div>}><WorldBuilderPanel /></Suspense>

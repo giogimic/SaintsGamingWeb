@@ -46,7 +46,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.714",
+  siteVersion = "v2.1.716",
   gameTitle = "The Lobby",
 }: {
   session: any | null;
@@ -125,19 +125,28 @@ export function Navbar({
 
             {/* Studio Launch Button (Only visible in Electron executable to Developers/Admins) */}
             {canDevStudio && (
-              <Link
-                href="/studio"
-                className={buttonVariants({
-                  variant: "ghost",
-                  size: "sm",
-                  className:
-                    "h-7 px-2.5 text-[11px] rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition-colors flex items-center gap-1.5 font-bold shadow-sm",
-                })}
-                title="Open World Studio (Developer Mode)"
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2.5 text-[11px] rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition-colors flex items-center gap-1.5 font-bold shadow-sm cursor-pointer"
+                title="Launch Native Studio"
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/auth/studio-token', { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success && (window as any).electronAPI) {
+                      (window as any).electronAPI.launchNativeStudio(data.token, data.user);
+                    } else {
+                      console.error("Failed to generate studio token or missing electronAPI", data);
+                    }
+                  } catch (e) {
+                    console.error("Error launching native studio:", e);
+                  }
+                }}
               >
                 <Paintbrush className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden md:inline">Studio</span>
-              </Link>
+                <span className="hidden md:inline">Native Studio</span>
+              </Button>
             )}
 
             {!user ? (

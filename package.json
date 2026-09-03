@@ -1,6 +1,6 @@
 {
   "name": "saints-gaming-portal",
-  "version": "2.1.714",
+  "version": "2.1.716",
   "license": "BSL-1.1",
   "private": true,
   "engines": {
@@ -8,10 +8,10 @@
   },
   "scripts": {
     "setup": "node -e \"const fs=require('fs'); if(!fs.existsSync('.env')) fs.copyFileSync('.env.example', '.env')\" && node scripts/prepare-prisma.js && prisma generate && prisma db push",
-    "setup:studio": "npm --prefix studio-desktop install",
-    "build:studio": "npm --prefix studio-desktop run build",
-    "dev:studio": "npm --prefix studio-desktop run dev",
-    "tauri:studio": "npm --prefix studio-desktop run tauri",
+    "setup:app": "npm --prefix saints-app install",
+    "build:app": "npm --prefix saints-app run build",
+    "dev:app": "npm --prefix saints-app run dev",
+    "tauri:app": "npm --prefix saints-app run tauri",
     "dev": "npx tsx server.ts",
     "build": "next build",
     "start": "npx tsx server.ts",
