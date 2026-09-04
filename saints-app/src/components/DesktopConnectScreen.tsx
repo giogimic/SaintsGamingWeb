@@ -57,16 +57,16 @@ export const DesktopConnectScreen: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex items-center justify-center p-6 relative overflow-hidden select-none">
+    <div className="flex-1 flex items-center justify-center p-6 relative overflow-hidden select-none bg-[#050b14]">
       {/* ── Dynamic Website Tropical Midnight Atmosphere ── */}
       <MidnightTropicalBackground showPalms={true} showWater={true} className="z-0" />
 
       {/* ── Central Glass Card ── */}
-      <div className="w-full max-w-md bg-[#0b101b]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-8 shadow-2xl relative z-10 space-y-6">
+      <div className="w-full max-w-md bg-card/85 backdrop-blur-xl border border-border/50 rounded-2xl p-8 shadow-2xl relative z-10 space-y-6">
         {/* Header Badge */}
         <div className="text-center space-y-2.5">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-sky-500/15 border border-sky-500/30 text-sky-400 shadow-lg shadow-sky-500/20">
-            <Sparkles className="w-7 h-7 animate-pulse" />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/20 border border-primary/40 text-primary shadow-lg shadow-primary/10">
+            <Sparkles className="w-7 h-7" />
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">
@@ -78,19 +78,19 @@ export const DesktopConnectScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Feature Highlights (Matches site authorization panel) */}
-        <div className="p-3.5 rounded-xl bg-card/40 border border-border/40 space-y-2 text-xs text-slate-300">
+        {/* Feature Highlights */}
+        <div className="p-3.5 rounded-xl bg-card/40 border border-border/50 space-y-2 text-xs text-slate-300">
           <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
-            <span>Directly edit, load, and save 3D voxel maps</span>
+            <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+            <span>Edit, load, and save 3D world maps</span>
           </div>
           <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
-            <span>Import & export blueprints and custom prefabs</span>
+            <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+            <span>Manage blueprints and custom prefabs</span>
           </div>
           <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
-            <span>Publish world changes to the live multiplayer realm</span>
+            <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+            <span>Publish changes directly to the multiplayer realm</span>
           </div>
         </div>
 
@@ -108,7 +108,7 @@ export const DesktopConnectScreen: React.FC = () => {
             type="button"
             disabled={isLoading}
             onClick={handleConnect}
-            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-400 hover:to-cyan-400 text-slate-950 font-bold text-sm transition flex items-center justify-center gap-2.5 shadow-lg shadow-sky-500/25 cursor-pointer disabled:opacity-50"
+            className="w-full py-3 px-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm transition flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
           >
             {isLoading ? (
               <>
@@ -130,7 +130,7 @@ export const DesktopConnectScreen: React.FC = () => {
               onClick={() => setShowSettings(!showSettings)}
               className="flex items-center gap-1.5 hover:text-slate-200 transition py-1 cursor-pointer"
             >
-              <Globe className="w-3 h-3 text-sky-400" />
+              <Globe className="w-3 h-3 text-primary" />
               <span>Server: <strong className="text-slate-300 font-mono">{displayServerHost()}</strong></span>
             </button>
 
@@ -147,16 +147,16 @@ export const DesktopConnectScreen: React.FC = () => {
 
         {/* Server Settings Drawer / Accordion */}
         {showSettings && (
-          <div className="pt-3 border-t border-border/40 space-y-2.5 animate-fadeIn">
+          <div className="pt-3 border-t border-border/50 space-y-2.5 animate-fadeIn">
             <div className="flex items-center justify-between">
               <label className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
-                <Settings className="w-3.5 h-3.5 text-sky-400" />
+                <Settings className="w-3.5 h-3.5 text-primary" />
                 <span>Target Server URL</span>
               </label>
               <button
                 type="button"
                 onClick={handleResetDefaultUrl}
-                className="text-[10px] text-sky-400 hover:text-sky-300 flex items-center gap-1 cursor-pointer"
+                className="text-[10px] text-primary hover:text-primary/80 flex items-center gap-1 cursor-pointer"
                 title="Reset to saintsgaming.net"
               >
                 <RotateCcw className="w-3 h-3" />
@@ -169,12 +169,12 @@ export const DesktopConnectScreen: React.FC = () => {
                 value={customUrl}
                 onChange={(e) => setCustomUrl(e.target.value)}
                 placeholder="https://saintsgaming.net"
-                className="flex-1 px-3 py-2 bg-[#050b14]/90 border border-border/50 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-sky-400/60 transition"
+                className="flex-1 px-3 py-2 bg-[#050b14] border border-border/50 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-primary/60 transition"
               />
               <button
                 type="button"
                 onClick={handleSaveSettings}
-                className="px-3 py-2 rounded-xl bg-card/60 hover:bg-card border border-border/50 text-xs text-white font-medium transition cursor-pointer"
+                className="px-3 py-2 rounded-xl bg-card hover:bg-card/80 border border-border/50 text-xs text-white font-medium transition cursor-pointer"
               >
                 Apply
               </button>
@@ -187,7 +187,7 @@ export const DesktopConnectScreen: React.FC = () => {
 
         {/* Manual Token Input Accordion */}
         {showManual && (
-          <form onSubmit={handleManualSubmit} className="pt-3 border-t border-border/40 space-y-3 animate-fadeIn">
+          <form onSubmit={handleManualSubmit} className="pt-3 border-t border-border/50 space-y-3 animate-fadeIn">
             <div className="space-y-1.5">
               <label className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
                 <Key className="w-3.5 h-3.5 text-primary" />
@@ -198,13 +198,13 @@ export const DesktopConnectScreen: React.FC = () => {
                 value={tokenInput}
                 onChange={(e) => setTokenInput(e.target.value)}
                 placeholder="sg_studio_..."
-                className="w-full px-3 py-2 bg-[#050b14]/90 border border-border/50 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-primary/60 transition"
+                className="w-full px-3 py-2 bg-[#050b14] border border-border/50 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-primary/60 transition"
               />
             </div>
             <button
               type="submit"
               disabled={manualLoading || !tokenInput.trim()}
-              className="w-full py-2 px-3 rounded-xl bg-card/60 hover:bg-card border border-border/50 text-xs font-medium text-white transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full py-2 px-3 rounded-xl bg-card hover:bg-card/80 border border-border/50 text-xs font-medium text-white transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {manualLoading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -221,3 +221,4 @@ export const DesktopConnectScreen: React.FC = () => {
     </div>
   );
 };
+
