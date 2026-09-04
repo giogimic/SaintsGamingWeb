@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -77,7 +77,7 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "v2.1.720",
+  siteVersion = "v2.1.721",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;
@@ -217,18 +217,18 @@ export function GlobalBottomBar({
   // Resolve dynamic route context pill
   const getRouteLabel = () => {
     if (!pathname) return "Saints";
-    if (pathname.startsWith("/lobby")) return `The Lobby · ${gameMode}`;
+    if (pathname.startsWith("/lobby")) return `The Lobby Â· ${gameMode}`;
     if (pathname.startsWith("/hub") || pathname.startsWith("/news") || pathname.startsWith("/modpacks") || pathname.startsWith("/servers")) {
-      return "The Nexus · Operations Hub";
+      return "The Nexus Â· Operations Hub";
     }
-    if (pathname.startsWith("/forum")) return "Community Forums · Discussions";
-    if (pathname.startsWith("/streams")) return "Live Streams · Media";
-    if (pathname.startsWith("/feed")) return "Saints Feed · Highlights";
-    if (pathname.startsWith("/wiki")) return "Saints Wiki · Guides";
-    if (pathname.startsWith("/support")) return "Support Desk · Help";
+    if (pathname.startsWith("/forum")) return "Community Forums Â· Discussions";
+    if (pathname.startsWith("/streams")) return "Live Streams Â· Media";
+    if (pathname.startsWith("/feed")) return "Saints Feed Â· Highlights";
+    if (pathname.startsWith("/wiki")) return "Saints Wiki Â· Guides";
+    if (pathname.startsWith("/support")) return "Support Desk Â· Help";
     if (pathname.startsWith("/profile") || pathname.startsWith("/user")) return "Player Profile";
     if (pathname.startsWith("/admin")) return "Command & Control Center";
-    return "Saints · Online";
+    return "Saints Â· Online";
   };
 
   const isBarsHidden = useImmersiveStore((s) => s.isBarsHidden);
@@ -253,7 +253,7 @@ export function GlobalBottomBar({
 
   return (
     <>
-      {/* â”€â”€ PERSISTENT GLOBAL BOTTOM BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* Ã¢â€â‚¬Ã¢â€â‚¬ PERSISTENT GLOBAL BOTTOM BAR Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
       <footer className={`fixed bottom-0 left-0 right-0 z-[250] h-12 sm:h-8 bg-[#050b14]/75 backdrop-blur-xl border-t border-white/[0.08] shadow-2xl px-3 sm:px-6 flex items-center justify-between text-xs font-mono select-none pointer-events-auto transition-all duration-300 ${
         isBarsHidden ? "opacity-0 translate-y-full pointer-events-none" : "opacity-100 translate-y-0"
       }`}>
@@ -484,7 +484,7 @@ export function GlobalBottomBar({
           </div>
         </footer>
 
-      {/* â”€â”€ DEVELOPER POP-OUT CONSOLE DRAWER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* Ã¢â€â‚¬Ã¢â€â‚¬ DEVELOPER POP-OUT CONSOLE DRAWER Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
       {devConsoleOpen && isDevOrAdmin && (
         <div className="fixed bottom-11 right-2 sm:right-6 w-full max-w-xl bg-card/95 backdrop-blur-2xl border border-primary/40 rounded-t-xl shadow-2xl z-[300] flex flex-col max-h-[70vh] font-mono text-xs overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
           {/* Drawer Header */}
@@ -681,7 +681,7 @@ export function GlobalBottomBar({
         </div>
       )}
 
-      {/* â”€â”€ MODERATOR POP-OUT DRAWER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* Ã¢â€â‚¬Ã¢â€â‚¬ MODERATOR POP-OUT DRAWER Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
       {modDrawerOpen && isMod && (
         <div className="fixed bottom-11 right-2 sm:right-6 w-full max-w-md bg-card/95 backdrop-blur-2xl border border-amber-500/40 rounded-t-xl shadow-2xl z-[300] flex flex-col max-h-[60vh] font-mono text-xs overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/50 bg-black/40">

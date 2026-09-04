@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -39,7 +39,7 @@ export function GameInitializationWizard() {
   const [authenticatedUser, setAuthenticatedUser] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // ─── WIZARD FORM STATE ───
+  // â”€â”€â”€ WIZARD FORM STATE â”€â”€â”€
 
   // 1. Game Identity
   const [gameDefinition, setGameDefinition] = useState<GameDefinitionData>({
@@ -230,7 +230,7 @@ export function GameInitializationWizard() {
 
   return (
     <div className="max-w-5xl mx-auto px-3 py-6 md:py-8 font-sans">
-      {/* ─── SAINTS OS WINDOW FRAME ─── */}
+      {/* â”€â”€â”€ SAINTS OS WINDOW FRAME â”€â”€â”€ */}
       <div className="bg-[#050b14]/95 border border-primary/40 rounded-2xl shadow-[0_0_32px_rgba(203,178,106,0.12),0_12px_40px_rgba(0,0,0,0.6)] backdrop-blur-2xl overflow-hidden flex flex-col">
         
         {/* WINDOW TITLE BAR */}
@@ -246,14 +246,14 @@ export function GameInitializationWizard() {
             <div className="flex items-center gap-2 min-w-0">
               <Boxes className="w-3.5 h-3.5 text-primary shrink-0" />
               <span className="font-mono text-xs font-bold tracking-widest uppercase sg-text-gradient truncate">
-                Saints Game Studio — 3D Voxel World Initializer
+                Saints Game Studio â€” 3D Voxel World Initializer
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-primary/20 text-primary border border-primary/40 font-semibold">
-              v2.1.720
+              v2.1.721
             </span>
             <button
               onClick={() => router.push('/')}
@@ -343,7 +343,7 @@ export function GameInitializationWizard() {
           </div>
         )}
 
-        {/* ─── WINDOW BODY CONTENT ─── */}
+        {/* â”€â”€â”€ WINDOW BODY CONTENT â”€â”€â”€ */}
         <div className="p-4 sm:p-6 text-foreground">
           {/* STEP 0: MODE SELECTION & MIGRATION EXPORT/IMPORT */}
           {step === 0 && (

@@ -305,7 +305,7 @@ export function GlobalPostComposer() {
       <Sheet open={isOpen} onOpenChange={(open) => { if (!open) closeComposer(); }}>
         <SheetContent
           side="bottom"
-          className="z-[310] rounded-t-3xl bg-[#060c18]/98 border-t border-white/15 p-4 pb-20 max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl"
+          className="z-[310] rounded-t-3xl bg-[#050b14]/70 backdrop-blur-2xl border-t border-white/20 p-4 pb-32 min-h-[75dvh] max-h-[90dvh] overflow-y-auto custom-scrollbar shadow-[0_-10px_40px_rgba(0,0,0,0.5)]"
         >
           <SheetTitle className="sr-only">Create New Post</SheetTitle>
 
@@ -365,9 +365,9 @@ export function GlobalPostComposer() {
               value={body}
               onChange={(e) => setBody(e.target.value)}
               placeholder="What's on your mind? Share a clip, screenshot, or status..."
-              rows={4}
+              rows={6}
               maxLength={1000}
-              className="w-full bg-transparent text-xs font-mono text-foreground placeholder:text-muted-foreground/60 focus:outline-none resize-none"
+              className="w-full bg-transparent text-sm sm:text-xs font-mono text-foreground placeholder:text-muted-foreground/60 focus:outline-none resize-none"
             />
 
             {/* Quick Hashtag Pills Row (Expandable) */}
