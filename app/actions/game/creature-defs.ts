@@ -9,6 +9,7 @@ import {
   emptyCreatureDef,
 } from '@/shared/game/creatureCatalog';
 import { creatureDataToDb, creatureRowToData } from '@/shared/game/creatureDefMap';
+import { notifyGoContentSynced } from '@/server/goMmoNotify';
 
 export type CreatureDefRow = CreatureDefData & { id?: string };
 
@@ -85,6 +86,7 @@ export async function upsertCreatureDef(data: CreatureDefData) {
       update: payload,
     });
     revalidatePath('/lobby');
+    notifyGoContentSynced({ type: 'creature', id: data.slug });
     return { success: true, data: creatureRowToData(row) };
   } catch (err: any) {
     console.error('[upsertCreatureDef]', err);
@@ -97,6 +99,7 @@ export async function deleteCreatureDef(slug: string) {
   if (!isAdmin) return { success: false, error: 'Unauthorized' };
   try {
     await prisma.creatureDef.delete({ where: { slug } });
+    notifyGoContentSynced({ type: 'creature', id: slug });
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message || 'Delete failed' };
@@ -108,6 +111,7 @@ export async function toggleCreatureDefActive(slug: string, isActive: boolean) {
   if (!isAdmin) return { success: false, error: 'Unauthorized' };
   try {
     await prisma.creatureDef.update({ where: { slug }, data: { isActive } });
+    notifyGoContentSynced({ type: 'creature', id: slug });
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message || 'Toggle failed' };
@@ -139,8 +143,10 @@ export async function importCreatureDefsJson(json: string) {
           slug: item.slug,
         }),
       });
+      notifyGoContentSynced({ type: 'creature', id: item.slug });
       count++;
     }
+    revalidatePath('/lobby');
     return { success: true, count };
   } catch (err: any) {
     return { success: false, error: err.message || 'Invalid JSON', count: 0 };

@@ -3,6 +3,7 @@
 import { prisma } from '@/web/lib/prisma';
 import { auth } from '@/auth';
 import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
+import { notifyGoMapSynced } from '@/server/goMmoNotify';
 
 export type MapSpawnerData = {
   id: string;
@@ -100,6 +101,7 @@ export async function placeMapSpawner(data: {
       data: { npcsData: JSON.stringify(npcs) },
     });
 
+    void notifyGoMapSynced({ id: data.mapId });
     return { success: true, spawner, count: npcs.length };
   } catch (err: any) {
     return { success: false, error: err.message };
@@ -159,6 +161,7 @@ export async function updateMapSpawner(data: {
       data: { npcsData: JSON.stringify(npcs) },
     });
 
+    void notifyGoMapSynced({ id: data.mapId });
     return { success: true, spawner };
   } catch (err: any) {
     return { success: false, error: err.message };
@@ -187,6 +190,7 @@ export async function deleteMapSpawner(data: { mapId: string; spawnerId: string 
       data: { npcsData: JSON.stringify(filtered) },
     });
 
+    void notifyGoMapSynced({ id: data.mapId });
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };

@@ -6,7 +6,15 @@ import (
 	"time"
 
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/protocol"
+	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/registry"
 )
+
+// SpawnDef is used to seed creatures from map definitions.
+type SpawnDef struct {
+	ID   string
+	Slug string
+	X, Y float64
+}
 
 // Entity is a live overworld creature.
 type Entity struct {
@@ -110,14 +118,22 @@ func (m *Manager) DrainDirty() []protocol.CreatureSpawn {
 	return out
 }
 
-// SeedDemoSpawns places a few creatures on a public DEMO shard.
-func (m *Manager) SeedDemoSpawns(instanceID string) {
-	m.Spawn(instanceID, Entity{
-		Species: "brushpup", Name: "Brushpup", X: 10, Y: 12,
-		Sprite: "brushpup", Hostile: false, Level: 3,
-	})
-	m.Spawn(instanceID, Entity{
-		Species: "emberkit", Name: "Emberkit", X: 18, Y: 18,
-		Sprite: "emberkit", Hostile: true, Level: 4,
-	})
+// SeedSpawns places creatures based on map definitions.
+func (m *Manager) SeedSpawns(instanceID string, spawns []SpawnDef, reg *registry.Manager) {
+	for _, s := range spawns {
+		lvl := 3
+		name := "Creature"
+		maxHP := 50
+		hostile := false
+		if reg != nil {
+			if c, ok := reg.GetCreature(s.Slug); ok {
+				name = c.SpeciesName
+				hostile = true // Treat all wild spawned creatures as hostile for now, or add flag to schema later
+			}
+		}
+		m.Spawn(instanceID, Entity{
+			ID: s.ID, Species: s.Slug, Name: name, X: s.X, Y: s.Y,
+			Sprite: s.Slug, Hostile: hostile, Level: lvl, MaxHP: maxHP,
+		})
+	}
 }

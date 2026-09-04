@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"sync"
 	"time"
+
+	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/registry"
 )
 
 // Stats used for formula damage (bible-ish physical / ability split).
@@ -73,22 +75,64 @@ type Manager struct {
 	byPlayer map[string]string
 	seq      int64
 	rng      *rand.Rand
+	reg      *registry.Manager
 }
 
-func NewManager() *Manager {
+func NewManager(reg *registry.Manager) *Manager {
 	return &Manager{
 		byID:     make(map[string]*Session),
 		byPlayer: make(map[string]string),
 		rng:      rand.New(rand.NewSource(time.Now().UnixNano())),
+		reg:      reg,
 	}
 }
 
-func (m *Manager) Start(playerID, creatureID, instanceID string, playerHP, creatureHP int) *Session {
-	return m.start(playerID, creatureID, instanceID, playerHP, creatureHP, "rt", DefaultPlayerStats(playerHP), DefaultCreatureStats(3, creatureHP))
+func (m *Manager) BuildPlayerStats(classSlug string, level int) Stats {
+	if m.reg != nil {
+		c, ok := m.reg.GetClass(classSlug)
+		if ok {
+			// Phase B: Use basic parse of c.BaseStats for now, fallback to default if missing.
+			// Ideally, we'd JSON parse c.BaseStats. For MVP data-driven, we just want to prove the wireup.
+			// Currently returning a hybrid that respects the DB lookup existence.
+			_ = c
+			return Stats{
+				PhysicalPower:   15 + float64(level)*2,
+				PhysicalDefense: 12 + float64(level),
+				AbilityPower:    15,
+				AbilityDefense:  12,
+				CombatTempo:     100,
+				Level:           level,
+				Types:           []ElementType{None},
+			}
+		}
+	}
+	return DefaultPlayerStats(100)
 }
 
-func (m *Manager) StartTB(playerID, creatureID, instanceID string, playerHP, creatureHP int) *Session {
-	return m.start(playerID, creatureID, instanceID, playerHP, creatureHP, "tb", DefaultPlayerStats(playerHP), DefaultCreatureStats(3, creatureHP))
+func (m *Manager) BuildCreatureStats(slug string, level int) Stats {
+	if m.reg != nil {
+		c, ok := m.reg.GetCreature(slug)
+		if ok {
+			return Stats{
+				PhysicalPower:   float64(c.PhysicalPower) + float64(level)*1.5,
+				PhysicalDefense: float64(c.PhysicalDefense) + float64(level)*1.0,
+				AbilityPower:    float64(c.AbilityPower) + float64(level)*1.5,
+				AbilityDefense:  float64(c.AbilityDefense) + float64(level)*1.0,
+				CombatTempo:     float64(c.CombatTempo),
+				Level:           level,
+				Types:           []ElementType{None}, // Should parse c.Types
+			}
+		}
+	}
+	return DefaultCreatureStats(level, 100)
+}
+
+func (m *Manager) Start(playerID, playerClassSlug, creatureID, creatureSlug, instanceID string, playerHP, creatureHP, playerLvl, creatureLvl int) *Session {
+	return m.start(playerID, creatureID, instanceID, playerHP, creatureHP, "rt", m.BuildPlayerStats(playerClassSlug, playerLvl), m.BuildCreatureStats(creatureSlug, creatureLvl))
+}
+
+func (m *Manager) StartTB(playerID, playerClassSlug, creatureID, creatureSlug, instanceID string, playerHP, creatureHP, playerLvl, creatureLvl int) *Session {
+	return m.start(playerID, creatureID, instanceID, playerHP, creatureHP, "tb", m.BuildPlayerStats(playerClassSlug, playerLvl), m.BuildCreatureStats(creatureSlug, creatureLvl))
 }
 
 func (m *Manager) StartTBWithStats(playerID, creatureID, instanceID string, playerHP, creatureHP int, player, creature Stats) *Session {

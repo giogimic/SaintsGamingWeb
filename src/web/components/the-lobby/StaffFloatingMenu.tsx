@@ -64,13 +64,21 @@ export function StaffFloatingMenu({
     showToast(`Teleported to ${name}`);
   };
 
-  const kickPlayer = (socketId: string, name: string) => {
-    if (!isAdmin) return;
-    if (!confirm(`Remove ${name} from the map?`)) return;
-    soundSynth?.playActionSound?.();
-    emitSocketEvent?.('staff_kick', socketId);
-    showToast(`Kick requested for ${name}`);
-  };
+	const kickPlayer = (socketId: string, name: string) => {
+		if (!isAdmin) return;
+		if (!confirm(`Remove ${name} from the map?`)) return;
+		soundSynth?.playActionSound?.();
+		emitSocketEvent?.('staff_kick', socketId);
+		showToast(`Kick requested for ${name}`);
+	};
+
+	const syncContent = () => {
+		if (!isAdmin && !isDev) return;
+		if (!confirm(`Force the game server to reload all content from the database?`)) return;
+		soundSynth?.playActionSound?.();
+		emitSocketEvent?.('admin_reload_content', {});
+		showToast(`Requested content sync from Go Server`);
+	};
 
   return (
     <div className="fixed bottom-24 left-4 z-[80] pointer-events-auto sm:bottom-8 sm:left-8 select-none font-mono">
@@ -152,6 +160,15 @@ export function StaffFloatingMenu({
               </div>
 
               <div className="grid grid-cols-1 gap-1.5 pt-1 border-t border-slate-800">
+                {(isAdmin || isDev) && (
+                  <button
+                    onClick={syncContent}
+                    className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-black/60 border border-emerald-500/40 text-emerald-400 text-xs font-bold hover:bg-emerald-950/40 transition-colors cursor-pointer"
+                  >
+                    <Hammer className="w-3.5 h-3.5" />
+                    Sync Game Content
+                  </button>
+                )}
                 <a
                   href="/admin"
                   className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-black/60 border border-slate-700 text-slate-200 text-xs font-bold hover:bg-slate-900 transition-colors"

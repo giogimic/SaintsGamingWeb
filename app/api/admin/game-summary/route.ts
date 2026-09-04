@@ -147,7 +147,7 @@ export async function GET() {
         heartbeatMs,
       },
       releaseSummary: {
-        liveVersion: settingsMap['SITE_VERSION'] || process.env.NEXT_PUBLIC_SITE_VERSION || '2.1.728',
+        liveVersion: settingsMap['SITE_VERSION'] || process.env.NEXT_PUBLIC_SITE_VERSION || '2.1.729',
         snapshotCount,
         latestSnapshot: latestSnapshot
           ? {

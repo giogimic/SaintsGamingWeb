@@ -11,6 +11,7 @@ import {
 } from '@/shared/game/classCatalog';
 import { classDataToDb, classRowToData } from '@/shared/game/classDefMap';
 import { ensureDefaultGameConfig } from '@/server/classDefs';
+import { notifyGoContentSynced } from '@/server/goMmoNotify';
 
 export type ClassDefRow = ClassDefData & { id?: string };
 
@@ -81,6 +82,7 @@ export async function upsertCharacterClass(data: ClassDefData) {
       update: payload,
     });
     revalidatePath('/lobby');
+    notifyGoContentSynced({ type: 'class', id: data.slug });
     return { success: true, data: classRowToData(row) };
   } catch (err: any) {
     console.error('[upsertCharacterClass]', err);
@@ -96,6 +98,7 @@ export async function deleteCharacterClass(slug: string) {
     await prisma.characterClass.delete({
       where: { gameId_slug: { gameId: config.id, slug } },
     });
+    notifyGoContentSynced({ type: 'class', id: slug });
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message || 'Delete failed' };
