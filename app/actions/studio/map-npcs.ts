@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { checkAdminPermission } from '../admin/game-admin';
 import { invalidateDialogueCache } from '@/server/dialogueCache';
 import { toBaseMapId } from '@/shared/net/mapIds';
+import { notifyGoMapSynced, notifyGoDialogueSynced } from '@/server/goMmoNotify';
 
 export type MapNpcData = {
   id: string;
@@ -132,8 +133,11 @@ export async function placeMapNpc(opts: {
         data: JSON.stringify(tree),
       },
     });
+
     revalidatePath('/lobby');
     invalidateDialogueCache(id);
+    void notifyGoMapSynced({ id: mapId });
+    void notifyGoDialogueSynced();
     return { success: true, npc, count: npcs.length };
   } catch (err: any) {
     console.error('[placeMapNpc]', err);
@@ -248,8 +252,10 @@ export async function updateMapNpc(opts: {
         update: { name: next.name, data: JSON.stringify(tree) },
       });
       invalidateDialogueCache(npcId);
+      void notifyGoDialogueSynced();
     }
     revalidatePath('/lobby');
+    void notifyGoMapSynced({ id: mapId });
     return { success: true, npc: next, count: npcs.length };
   } catch (err: any) {
     console.error('[updateMapNpc]', err);
@@ -289,12 +295,14 @@ export async function deleteMapNpc(opts: { mapId: string; npcId: string }) {
     );
 
     try {
-      await prisma.npcDialogueTree.delete({ where: { npcId } });
+      await prisma.npcDialogueTree.delete({ where: { npcId } }).catch(() => {});
+      invalidateDialogueCache(npcId);
+      void notifyGoDialogueSynced();
     } catch {
       /* tree may not exist */
     }
-    invalidateDialogueCache(npcId);
     revalidatePath('/lobby');
+    void notifyGoMapSynced({ id: mapId });
     return { success: true, npcId, count: next.length };
   } catch (err: any) {
     console.error('[deleteMapNpc]', err);

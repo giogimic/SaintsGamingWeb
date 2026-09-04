@@ -21,6 +21,7 @@ import (
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/player"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/protocol"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/quest"
+	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/registry"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/shop"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/skill"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/world"
@@ -39,6 +40,7 @@ type Deps struct {
 	GTC        *economy.Manager
 	Skills     *skill.Manager
 	Loot       *world.LootManager
+	Registry   *registry.Manager
 	SaveMap    func(id, name, grid, npcs, tiles, tilesets string) error
 }
 
@@ -63,7 +65,7 @@ func NewHub(cfg config.Config, eng *engine.Engine, deps Deps) *Hub {
 		deps.Inventory = inventory.NewManager(nil)
 	}
 	if deps.Combat == nil {
-		deps.Combat = combat.NewManager()
+		deps.Combat = combat.NewManager(deps.Registry)
 	}
 	if deps.Encounters == nil {
 		deps.Encounters = encounter.NewManager(nil)
@@ -214,7 +216,7 @@ func (h *Hub) onConnect(client *socket.Socket) {
 		h.handleDialogueSelectFull(accountID, datas)
 	})
 	client.On(protocol.EvShopCatalog, func(datas ...any) {
-		h.EmitToSocket(sid, "shop_catalog", map[string]any{"items": shop.DefaultCatalog()})
+		h.EmitToSocket(sid, "shop_catalog", map[string]any{"items": shop.GenerateCatalog(h.deps.Registry)})
 	})
 	client.On(protocol.EvShopBuy, func(datas ...any) {
 		h.handleShopBuy(accountID, datas)
@@ -383,8 +385,20 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 	h.JoinRoom(sid, inst.InstanceID)
 	h.joinAOI(sid, p)
 
-	if inst.PlayerCount == 1 && world.IsPublicChannel(inst.InstanceID) && base == protocol.DemoMapID {
-		h.eng.Creatures().SeedDemoSpawns(inst.InstanceID)
+	if inst.PlayerCount == 1 && world.IsPublicChannel(inst.InstanceID) {
+		def, ok := h.eng.World().GetDef(base)
+		if ok && def != nil {
+			var spawns []creature.SpawnDef
+			for _, n := range def.NPCs {
+				// If it's defined in the Creature Registry, treat it as a spawn.
+				if _, ok := h.deps.Registry.GetCreature(n.SpriteID); ok {
+					spawns = append(spawns, creature.SpawnDef{
+						ID: n.ID, Slug: n.SpriteID, X: n.X, Y: n.Y,
+					})
+				}
+			}
+			h.eng.Creatures().SeedSpawns(inst.InstanceID, spawns, h.deps.Registry)
+		}
 	}
 
 	h.EmitToSocket(sid, protocol.EvMapJoined, protocol.MapJoinedPayload{
@@ -443,7 +457,7 @@ func (h *Hub) handleAttack(accountID, targetID, abilityID string) {
 	}
 	sess := h.deps.Combat.GetByPlayer(accountID)
 	if sess == nil && targetID != "" {
-		sess = h.deps.Combat.Start(accountID, targetID, p.MapID, p.HP, 50)
+		sess = h.deps.Combat.Start(accountID, "warrior", targetID, "brushpup", p.MapID, p.HP, 50, 5, 3)
 		h.EmitToSocket(p.SocketID, protocol.EvCombatUpdate, map[string]any{"combatId": sess.ID, "phase": "start"})
 	}
 	if sess == nil {
@@ -514,7 +528,7 @@ func (h *Hub) handleShopBuy(accountID string, datas []any) {
 			}
 		}
 	}
-	cat, ok := shop.Find(id)
+	cat, ok := shop.Find(h.deps.Registry, id)
 	p := h.eng.Players().GetByAccount(accountID)
 	sid := ""
 	if p != nil {
@@ -739,7 +753,7 @@ func (h *Hub) handleAcceptBattle(accountID string, datas []any) {
 	if p1 == nil || p2 == nil {
 		return
 	}
-	sess := h.deps.Combat.StartTB(challengerID, accountID, p1.MapID, p2.HP, p1.HP)
+	sess := h.deps.Combat.StartTB(challengerID, "warrior", accountID, "warrior", p1.MapID, p2.HP, p1.HP, 5, 5)
 	h.EmitToSocket(p1.SocketID, protocol.EvBattleStarted, map[string]any{
 		"combatId": sess.ID, "mode": "tb", "creatureId": challengerID, "opponentName": p2.Name,
 		"hp": p1.HP, "maxHp": p1.MaxHP, "opponentHp": p2.HP, "opponentMaxHp": p2.MaxHP,

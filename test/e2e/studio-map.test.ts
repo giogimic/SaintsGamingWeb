@@ -16,7 +16,7 @@ describe('Studio Map Editor E2E', () => {
   });
 
   afterAll(async () => {
-    sa.disconnect();
+    if (sa) sa.disconnect();
     await prisma.$disconnect();
   });
 

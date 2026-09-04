@@ -3,6 +3,7 @@
 import { prisma } from "@/web/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { checkAdminPermission } from "../admin/game-admin";
+import { notifyGoContentSynced } from '@/server/goMmoNotify';
 
 export type ShopTemplateInput = {
   gameId?: string;
@@ -125,6 +126,8 @@ export async function upsertShop(input: ShopTemplateInput) {
         }
       },
     });
+    revalidatePath("/lobby");
+    notifyGoContentSynced({ type: 'shop', id: slug });
     return { success: true as const, data: saved };
   } catch (err: any) {
     console.error("[upsertShop] Error:", err.message);
@@ -142,6 +145,7 @@ export async function deleteShop(slug: string) {
     await prisma.shopTemplate.delete({
       where: { slug },
     });
+    notifyGoContentSynced({ type: 'shop', id: slug });
     return { success: true as const };
   } catch (err: any) {
     console.error("[deleteShop] Error:", err.message);

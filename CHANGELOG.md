@@ -1,3 +1,8 @@
+## [2.1.729] - 2026-09-04
+### Added
+- **Live-Ops Sync**: Converted the Go MMO server to an industry-standard database registry architecture. Studio content updates (Maps, Classes, Creatures, Items, Recipes, Shops, Quests, NPCs) now automatically ping the Go backend via a unified /api/internal/sync endpoint, reloading the memory seamlessly without server restarts.
+- **Voxel Map Priority**: Enforced Voxel arrays as the authoritative source of truth for runtime collisions and map generation.
+
 ## [2.1.728] - 2026-09-04
 ### Fixed
 - **Studio Nav Scaling**: Added responsive `hidden` utility classes to several non-critical elements in `StudioMenuBar` (such as text labels and the profile selector) to prevent the top navigation from overflowing or hiding critical tools on smaller window sizes.
@@ -5780,6 +5785,7 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 - **Profile Integration**: Displayed active MMO characters on the public profile (`app/(main)/user/[username]/page.tsx`) with a "Play Now" launcher.
 
 ---
+
 
 
 

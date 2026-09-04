@@ -3,6 +3,7 @@
 import { prisma } from "@/web/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { checkAdminPermission } from "../admin/game-admin";
+import { notifyGoContentSynced } from '@/server/goMmoNotify';
 
 export type CraftingRecipeInput = {
   gameId?: string;
@@ -117,7 +118,9 @@ export async function upsertCraftingRecipe(input: CraftingRecipeInput) {
         }
       },
     });
+    
     revalidatePath("/lobby");
+    notifyGoContentSynced({ type: 'recipe', id: slug });
     return { success: true, data: saved };
   } catch (err) {
     console.error("[upsertCraftingRecipe]", err);
@@ -130,6 +133,7 @@ export async function deleteCraftingRecipe(slug: string) {
   if (!isAdmin) return { success: false, error: "Unauthorized" };
   try {
     await prisma.craftingRecipe.delete({ where: { slug } });
+    notifyGoContentSynced({ type: 'recipe', id: slug });
     return { success: true };
   } catch (err) {
     console.error("[deleteCraftingRecipe]", err);

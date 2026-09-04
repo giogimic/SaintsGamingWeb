@@ -24,6 +24,7 @@ import (
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/player"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/protocol"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/quest"
+	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/registry"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/skill"
 	mmsocket "github.com/giogimic/SaintsGamingWeb/the-lobby/internal/socket"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/world"
@@ -45,10 +46,12 @@ func main() {
 	pm := player.NewManager(cfg.AOIZoneSize, sqlDB)
 	cm := creature.NewManager()
 
+	reg := registry.NewManager(sqlDB)
+
 	deps := mmsocket.Deps{
 		Parties:    party.NewManager(),
 		Inventory:  inventory.NewManager(sqlDB),
-		Combat:     combat.NewManager(),
+		Combat:     combat.NewManager(reg),
 		Encounters: encounter.NewManager(sqlDB),
 		Dialogue:   dialogue.NewManager(sqlDB),
 		Quests:     quest.NewManager(sqlDB),
@@ -56,6 +59,7 @@ func main() {
 		GTC:        economy.NewManager(),
 		Skills:     skill.NewManager(sqlDB),
 		Loot:       world.NewLootManager(),
+		Registry:   reg,
 		SaveMap: func(id, name, grid, npcs, tiles, tilesets string) error {
 			return httpapi.PersistMap(sqlDB, wm, id, name, grid, "{}", npcs, tiles, tilesets)
 		},
@@ -88,6 +92,7 @@ func main() {
 		Dialogue: deps.Dialogue,
 		Secret:   cfg.AuthSecret,
 		Hub:      hub,
+		Registry: deps.Registry,
 		OnMapSynced: func(mapID string) {
 			hub.BroadcastAll(protocol.EvContentReload, map[string]any{
 				"type":    "map",

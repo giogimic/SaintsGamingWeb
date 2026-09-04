@@ -37,6 +37,7 @@ const (
 	
 	EvAdminSaveMap      = "admin_save_map"
 	EvAdminReloadMap    = "admin_reload_map"
+	EvAdminReloadContent = "admin_reload_content"
 
 	EvStudioSpawnNPC    = "studio_spawn_npc"
 	EvStudioDespawnNPC  = "studio_despawn_npc"

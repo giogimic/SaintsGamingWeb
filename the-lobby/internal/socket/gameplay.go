@@ -23,6 +23,9 @@ func (h *Hub) registerGameplay(client *socket.Socket, accountID, sid string) {
 	client.On(protocol.EvAdminReloadMap, func(datas ...any) {
 		h.handleAdminReloadMap(accountID, datas)
 	})
+	client.On(protocol.EvAdminReloadContent, func(datas ...any) {
+		h.handleAdminReloadContent(accountID, datas)
+	})
 	client.On(protocol.EvStudioSpawnNPC, func(datas ...any) {
 		h.handleStudioSpawnNPC(accountID, datas)
 	})
@@ -129,7 +132,7 @@ func (h *Hub) handleBattleSubmit(accountID string, datas []any) {
 			Species: "brushpup", Name: "Brushpup", X: p.X + 1, Y: p.Y,
 			Sprite: "brushpup", Hostile: true, Level: 3, MaxHP: 45,
 		})
-		sess = h.deps.Combat.StartTB(accountID, cre.ID, p.MapID, p.HP, cre.HP)
+		sess = h.deps.Combat.StartTB(accountID, "warrior", cre.ID, cre.Species, p.MapID, p.HP, cre.HP, 5, cre.Level)
 		h.EmitToSocket(p.SocketID, protocol.EvBattleStarted, map[string]any{
 			"combatId": sess.ID, "mode": "tb", "creatureId": cre.ID, "hp": cre.HP, "maxHp": cre.MaxHP,
 		})
@@ -255,6 +258,23 @@ func (h *Hub) handleAdminReloadMap(accountID string, datas []any) {
 	h.broadcastAll(protocol.EvContentReload, map[string]any{
 		"type":    "map",
 		"mapId":   mapID,
+		"version": 0,
+		"at":      time.Now().Format(time.RFC3339),
+	})
+}
+
+func (h *Hub) handleAdminReloadContent(accountID string, datas []any) {
+	if h.deps.Registry == nil {
+		return
+	}
+	// For Phase B: re-init the registry from the DB.
+	// In production, we'd only do this for Admins, but any staff auth is enough right now.
+	h.deps.Registry.ReloadAll()
+	if p := h.eng.Players().GetByAccount(accountID); p != nil {
+		h.EmitToSocket(p.SocketID, protocol.EvShowToast, map[string]string{"message": "Registry reloaded from DB"})
+	}
+	h.broadcastAll(protocol.EvContentReload, map[string]any{
+		"type":    "all",
 		"version": 0,
 		"at":      time.Now().Format(time.RFC3339),
 	})
@@ -544,7 +564,7 @@ func (h *Hub) handleDialogueSelectFull(accountID string, datas []any) {
 		h.EmitToSocket(sid, protocol.EvQuestUpdate, map[string]any{"quests": h.deps.Quests.List(accountID), "accepted": p})
 	}
 	if res.OpenShop {
-		h.EmitToSocket(sid, "shop_catalog", map[string]any{"items": shop.DefaultCatalog()})
+		h.EmitToSocket(sid, "shop_catalog", map[string]any{"items": shop.GenerateCatalog(h.deps.Registry)})
 	}
 	if res.Action == "grant_demo_tools" {
 		h.deps.Inventory.AddItem(accountID, "axe_bronze", "Rook Hatchet", 1)
@@ -570,7 +590,7 @@ func (h *Hub) handleDialogueSelectFull(accountID string, datas []any) {
 				Species: "rockitten", Name: "Rockitten", X: p.X + 1, Y: p.Y,
 				Sprite: "rockitten", Hostile: true, Level: 6, MaxHP: 60,
 			})
-			sess := h.deps.Combat.StartTB(accountID, cre.ID, p.MapID, p.HP, cre.HP)
+			sess := h.deps.Combat.StartTB(accountID, "warrior", cre.ID, cre.Species, p.MapID, p.HP, cre.HP, 5, cre.Level)
 			h.EmitToSocket(p.SocketID, protocol.EvBattleStarted, map[string]any{
 				"combatId": sess.ID, "mode": "tb", "creatureId": cre.ID, "hp": cre.HP, "maxHp": cre.MaxHP,
 			})

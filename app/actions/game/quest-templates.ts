@@ -4,6 +4,7 @@ import { prisma } from "@/web/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { checkAdminPermission } from "../admin/game-admin";
 import { DEFAULT_WORLD_PROFILE_ID } from "@/shared/game/worldProfiles";
+import { notifyGoContentSynced } from '@/server/goMmoNotify';
 
 export type QuestObjectiveInput = {
   stage: number;
@@ -105,6 +106,7 @@ export async function upsertQuestTemplate(input: QuestTemplateInput) {
       });
     }
     revalidatePath("/lobby");
+    notifyGoContentSynced({ type: 'quest', id: slug });
     return { success: true, id: questId };
   } catch (err) {
     console.error("[upsertQuestTemplate]", err);
@@ -118,6 +120,7 @@ export async function deleteQuestTemplate(slug: string) {
 
   try {
     await prisma.questTemplate.delete({ where: { slug } });
+    notifyGoContentSynced({ type: 'quest', id: slug });
     return { success: true };
   } catch (err) {
     console.error("[deleteQuestTemplate]", err);

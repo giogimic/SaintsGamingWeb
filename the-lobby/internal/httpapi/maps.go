@@ -10,6 +10,7 @@ import (
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/bootstrap"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/dialogue"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/protocol"
+	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/registry"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/world"
 )
 
@@ -21,6 +22,7 @@ type Server struct {
 	Secret      string // AUTH_SECRET / internal bearer for Next → Go sync
 	OnMapSynced func(mapID string)
 	Hub         any // BroadcastHub interface in broadcast.go
+	Registry    *registry.Manager
 }
 
 func (s *Server) Handler() http.Handler {
@@ -29,8 +31,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/health", s.health)
 	mux.HandleFunc("/api/maps", s.mapsRoot)
 	mux.HandleFunc("/api/maps/", s.mapByID)
-	mux.HandleFunc("/api/internal/sync-map", s.internalSyncMap)
-	mux.HandleFunc("/api/internal/sync-dialogue", s.internalSyncDialogue)
+	mux.HandleFunc("/api/internal/sync", s.internalSync)
 	mux.HandleFunc("/internal/broadcast", s.internalBroadcast)
 	mux.HandleFunc("/internal/disconnect", s.internalDisconnect)
 	mux.HandleFunc("/api/gtc/listings", s.gtcListings)
@@ -211,7 +212,7 @@ func (s *Server) saveMap(w http.ResponseWriter, r *http.Request, pathID string) 
 }
 
 
-func (s *Server) internalSyncDialogue(w http.ResponseWriter, r *http.Request) {
+func (s *Server) internalSync(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -220,26 +221,54 @@ func (s *Server) internalSyncDialogue(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
-	if s.Dialogue != nil {
-		if err := s.Dialogue.LoadFromDB(); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "bad body", http.StatusBadRequest)
+		return
+	}
+	var payload struct {
+		Type    string `json:"type"`
+		ID      string `json:"id"`
+		Version int    `json:"version"`
+		Scope   string `json:"scope"`
+	}
+	if err := json.Unmarshal(body, &payload); err != nil {
+		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
+	}
+
+	if s.Registry != nil {
+		switch payload.Type {
+		case "class":
+			s.Registry.ReloadClasses()
+		case "creature":
+			s.Registry.ReloadCreatures()
+		case "item":
+			s.Registry.ReloadItems()
+		case "map":
+			if payload.ID != "" {
+				grid, _, _, _, voxels, ok := s.Registry.GetRawMapData(payload.ID)
+				if ok {
+					ReloadMapInMemory(s.World, payload.ID, payload.ID, grid, voxels)
+				}
+			}
 		}
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
-}
 
-// internalSyncMap accepts map payloads from Next after Prisma save (Bearer AUTH_SECRET).
-func (s *Server) internalSyncMap(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
+	// Always trigger content reload broadcast for clients to fetch new JSON.
+	if s.OnMapSynced != nil && payload.Type == "map" && payload.ID != "" {
+		s.OnMapSynced(payload.ID)
+	} else if s.Hub != nil {
+		// General content broadcast for other types
+		if hub, ok := s.Hub.(interface{ BroadcastAll(string, any) }); ok {
+			hub.BroadcastAll(protocol.EvContentReload, map[string]any{
+				"type": payload.Type,
+				"id":   payload.ID,
+			})
+		}
 	}
-	if !s.authorizeInternal(r) {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-	s.saveMap(w, r, "")
+
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "sync": payload})
 }
 
 func (s *Server) authorizeInternal(r *http.Request) bool {
@@ -260,6 +289,18 @@ func (s *Server) authorizeInternal(r *http.Request) bool {
 // PersistMap writes WorldMap + refreshes in-memory def.
 func PersistMap(db *sql.DB, wm *world.Manager, id, name, grid, gates, npcs, tiles, tilesets string) error {
 	return PersistMapVoxel(db, wm, id, name, grid, gates, npcs, tiles, tilesets, "")
+}
+
+// ReloadMapInMemory applies voxel and grid data to the live engine memory without DB writes.
+func ReloadMapInMemory(wm *world.Manager, id, name, grid, voxel string) {
+	if voxel != "" && voxel != "{}" && voxel != "null" {
+		_ = wm.ApplyVoxel(id, name, []byte(voxel))
+	}
+	if grid != "[]" && grid != "" {
+		if err := wm.ApplyGrid(id, name, grid); err != nil {
+			_ = err
+		}
+	}
 }
 
 // PersistMapVoxel writes WorldMap with 3D voxelDoc + refreshes in-memory def.
