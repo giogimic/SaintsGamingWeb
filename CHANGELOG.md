@@ -1,3 +1,10 @@
+## [2.1.720] - 2026-09-04
+### Added
+- **Desktop WebSocket Implementation**: Engineered a standalone WebSocket layer (`useDesktopMmoSocket`) for the native EXE, successfully bridging real-time binary map sync and multiplayer prediction independent of the monolithic web UI.
+- **Client Prediction Integration**: Integrated movement input buffering (`pendingMoves`), network extrapolation (dynamic peer interpolation accelerating to 14 tiles/sec for gaps), and instantaneous hit sparks for the standalone engine.
+- **Studio Map Live Push**: Verified that Studio map changes now emit `content_reload` globally, automatically triggering hot-reload chunk injections inside the live Desktop engine without page refreshes.
+- **UI Flow Consolidation**: Expanded the EXE internal router (`App.tsx`) to manage the complete lifecycle from `CharacterSelector` into the interactive `GameWorkspace`.
+
 ## [2.1.717] - 2026-09-03
 ### Changed
 ## [2.1.718] - 2026-09-03
