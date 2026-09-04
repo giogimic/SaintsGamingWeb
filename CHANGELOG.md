@@ -1,3 +1,7 @@
+## [2.1.725] - 2026-09-04
+### Changed
+- **Studio Interface**: Removed the permanent debug overlay panel from the World Studio workspace to reduce visual clutter.
+
 ## [2.1.724] - 2026-09-04
 ### Changed
 - **Architectural Overhaul**: Completed a comprehensive 10-phase audit and structural refactoring of the entire codebase.
