@@ -172,27 +172,6 @@ function createWindow() {
     mainWindow?.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(errorHtml)}`);
   }
 
-  // Native Studio Session State
-  let nativeSession = null;
-
-  ipcMain.on('launch-native-studio', (event, token, user) => {
-    console.log('[Electron] Received request to launch native studio for user:', user?.username);
-    nativeSession = { token, user };
-    
-    // Switch the window to the local bundled Native Studio
-    const localIndexPath = path.join(app.getAppPath(), 'dist/index.html');
-    if (fs.existsSync(localIndexPath)) {
-      console.log('[Electron] Switching to native studio bundle...');
-      mainWindow.loadFile(localIndexPath);
-    } else {
-      console.error('[Electron] Could not find dist/index.html to launch native studio!');
-    }
-  });
-
-  ipcMain.handle('get-native-auth-token', () => {
-    return nativeSession;
-  });
-
   // Settings File Logic
   const settingsPath = path.join(app.getPath('userData'), 'saints-settings.json');
   function getCustomServer() {
@@ -240,7 +219,16 @@ function createWindow() {
       console.log(`[Electron] Custom server ${customServer} unreachable. Falling back...`);
     }
 
-    // 2. Default to Production Server (Always)
+    // 2. Check local dev server first (for Studio development)
+    const localUrl = 'http://localhost:3000';
+    const localCheck = await checkUrlReachable(localUrl, 1000);
+    if (localCheck.ok) {
+      console.log('[Electron] Connected to local development server:', localUrl);
+      mainWindow.loadURL(localUrl);
+      return;
+    }
+
+    // 3. Default to Production Server
     const prodUrl = 'https://saintsgaming.net';
     const prodCheck = await checkUrlReachable(prodUrl, 3000);
     if (prodCheck.ok) {
@@ -248,18 +236,9 @@ function createWindow() {
       mainWindow.loadURL(prodUrl);
       return;
     }
-    console.log(`[Electron] Production ${prodUrl} returned status ${prodCheck.status}. Falling back to bundled client.`);
-
-    // 3. Fallback to bundled local client so user NEVER gets a 404 "Page Not Found"!
-    const localIndexPath = path.join(app.getAppPath(), 'dist/index.html');
-    if (fs.existsSync(localIndexPath)) {
-      console.log('[Electron] Loading bundled client:', localIndexPath);
-      mainWindow.loadFile(localIndexPath);
-      return;
-    }
-
-    // 4. Fallback if dist/index.html is missing
-    showConnectionError(prodUrl, 'No local bundle or live server reachable.');
+    
+    // 4. Fallback if no server is reachable
+    showConnectionError(prodUrl, 'Could not connect to the Saints Gaming server.');
   }
 
   resolveAndLoad();
@@ -275,12 +254,7 @@ function createWindow() {
   mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
     if (errorCode === -3 || (validatedURL && validatedURL.startsWith('data:'))) return;
     console.error(`[Electron] Failed to load ${validatedURL}: ${errorCode} (${errorDescription})`);
-    const localIndexPath = path.join(app.getAppPath(), 'dist/index.html');
-    if (fs.existsSync(localIndexPath)) {
-      mainWindow?.loadFile(localIndexPath);
-    } else {
-      showConnectionError(validatedURL, errorDescription);
-    }
+    showConnectionError(validatedURL, errorDescription);
   });
 
   mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {

@@ -6,14 +6,8 @@
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
-    "dev": "vite",
-    "dev:electron": "electron .",
-    "build": "vite build && node -e \"const fs=require('fs'); fs.rmSync('dist/downloads',{recursive:true,force:true}); fs.rmSync('dist/uploads',{recursive:true,force:true})\" && electron-builder --win zip && node scripts/copy-dist-exe.cjs",
-    "build:vite": "vite build",
-    "build:exe": "vite build && node -e \"const fs=require('fs'); fs.rmSync('dist/downloads',{recursive:true,force:true}); fs.rmSync('dist/uploads',{recursive:true,force:true})\" && electron-builder --win zip && node scripts/copy-dist-exe.cjs",
-    "build:installer": "vite build && node -e \"const fs=require('fs'); fs.rmSync('dist/downloads',{recursive:true,force:true}); fs.rmSync('dist/uploads',{recursive:true,force:true})\" && electron-builder --win zip && node scripts/copy-dist-exe.cjs",
-    "preview": "vite preview",
-    "tauri": "tauri"
+    "dev": "electron .",
+    "build": "electron-builder --win zip && node scripts/copy-dist-exe.cjs"
   },
   "build": {
     "appId": "com.saintsgaming.app",
@@ -22,48 +16,14 @@
       "output": "release"
     },
     "files": [
-      "dist/**/*",
-      "!dist/downloads/**/*",
-      "!dist/uploads/**/*",
-      "!dist/*.exe",
-      "!dist/win-unpacked/**/*",
       "electron/**/*"
     ],
     "win": {
-      "target": "zip",
-      "icon": "build/icon.png"
+      "target": "zip"
     }
   },
-  "dependencies": {
-    "@babylonjs/core": "^9.18.0",
-    "@babylonjs/gui": "^9.18.0",
-    "@tauri-apps/api": "^2.0.0",
-    "@tauri-apps/plugin-deep-link": "^2.0.0",
-    "@tauri-apps/plugin-dialog": "^2.0.0",
-    "@tauri-apps/plugin-fs": "^2.0.0",
-    "@tauri-apps/plugin-shell": "^2.0.0",
-    "@tauri-apps/plugin-updater": "^2.0.0",
-    "clsx": "^2.1.1",
-    "immer": "^11.1.15",
-    "lucide-react": "^1.21.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "tailwind-merge": "^3.6.0",
-    "zustand": "^5.0.14"
-  },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.3.3",
-    "@tauri-apps/cli": "^2.0.0",
-    "@types/node": "^20.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^4.3.4",
-    "autoprefixer": "^10.4.20",
     "electron": "^44.1.1",
-    "electron-builder": "^26.15.3",
-    "postcss": "^8.4.49",
-    "tailwindcss": "^4.3.3",
-    "typescript": "^5.7.3",
-    "vite": "^6.0.7"
+    "electron-builder": "^26.15.3"
   }
 }
