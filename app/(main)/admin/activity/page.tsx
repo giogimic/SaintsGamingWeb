@@ -6,8 +6,8 @@ import {
   History, Users, Newspaper, LifeBuoy, Monitor, 
   MessageSquare, Radio, CheckCircle2, Filter
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/ui/card";
-import { Badge } from "@/shared/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/web/components/ui/card";
+import { Badge } from "@/web/components/ui/badge";
 import Link from "next/link";
 
 export const metadata = {

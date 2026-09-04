@@ -23,7 +23,7 @@ import { toBaseMapId } from '@/shared/net/mapIds';
 import { normalizeGatesToArray } from '@/shared/game/mapGates';
 import { AssetManager } from '@/engine/assets/AssetManager';
 import { PLAYABLE_CLASS_IDS } from '@/shared/game/classCatalog';
-import { getOrphanedReferences, type OrphanedReference } from '@/app/actions/cross-references';
+import { getOrphanedReferences, type OrphanedReference } from '@/app/actions/studio/cross-references';
 import {
   WindowMenuBar,
   WindowMenuDropdown,

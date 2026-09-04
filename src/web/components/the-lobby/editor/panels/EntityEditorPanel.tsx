@@ -7,9 +7,9 @@ import {
   placeMapNpc,
   updateMapNpc,
   type MapNpcData,
-} from '@/app/actions/map-npcs';
+} from '@/app/actions/studio/map-npcs';
 import { UserPlus, Save, Loader2, Trash2, RefreshCw, MessageSquare, ScrollText, ExternalLink, Plus, Users } from 'lucide-react';
-import { listQuestTemplates } from '@/app/actions/quest-templates';
+import { listQuestTemplates } from '@/app/actions/game/quest-templates';
 import {
   defaultEntityProps,
   fieldsForCategory,

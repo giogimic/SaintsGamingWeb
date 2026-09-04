@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/web/components/ui/button";
 import { UploadCloud, Loader2 } from "lucide-react";
 
 interface ImageUploadButtonProps {

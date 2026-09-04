@@ -8,7 +8,7 @@ import {
   deleteNpcDialogueTree,
   type DialogueNodeInput,
   type DialogueOptionInput,
-} from '@/app/actions/npc-dialogue';
+} from '@/app/actions/studio/npc-dialogue';
 import { KNOWN_ACTIONS } from '@/shared/game/dialogueActions';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';

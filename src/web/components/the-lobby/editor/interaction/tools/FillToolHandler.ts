@@ -84,7 +84,7 @@ export class FillToolHandler implements IToolHandler {
             after: mut.newVoxel,
           });
         }
-        context.engine.meshDirtyVoxelChunks?.();
+        context.engine.voxel.meshDirtyVoxelChunks?.();
         const doc = voxelWorld.serializeToDoc();
         gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });
         store.pushVoxelOp(changedVoxels);

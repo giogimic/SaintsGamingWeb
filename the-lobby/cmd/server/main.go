@@ -87,6 +87,7 @@ func main() {
 		World:    wm,
 		Dialogue: deps.Dialogue,
 		Secret:   cfg.AuthSecret,
+		Hub:      hub,
 		OnMapSynced: func(mapID string) {
 			hub.BroadcastAll(protocol.EvContentReload, map[string]any{
 				"type":    "map",

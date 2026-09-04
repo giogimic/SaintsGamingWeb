@@ -2,9 +2,9 @@ import { Cpu, Server, Key, Terminal } from "lucide-react";
 import { SystemClient } from "./system-client";
 
 import { SystemUpdater } from "@/web/components/admin/system-updater";
-import { Input } from "@/shared/ui/input";
-import { Label } from "@/shared/ui/label";
-import { Button } from "@/shared/ui/button";
+import { Input } from "@/web/components/ui/input";
+import { Label } from "@/web/components/ui/label";
+import { Button } from "@/web/components/ui/button";
 import { updateSiteSettings } from "@/app/(main)/admin/actions";
 import { prisma } from "@/web/lib/prisma";
 import fs from "fs";

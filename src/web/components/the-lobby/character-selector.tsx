@@ -34,7 +34,7 @@ import { deleteGameCharacter, getTopLobbyOperatives } from '@/app/actions/game';
 import { toast } from 'sonner';
 import { soundSynth } from '@/engine/sound-synth';
 import { useGameStore } from './store';
-import { useRealtimeStore } from '@/web/hooks/useRealtimeStore';
+import { useAppStore } from "@/shared/store/useAppStore";
 import { useSession } from 'next-auth/react';
 import { useTheme } from 'next-themes';
 import { MidnightTropicalBackground } from './MidnightTropicalBackground';
@@ -42,7 +42,7 @@ import { CharacterSpritePreview } from './CharacterSpritePreview';
 import { CharacterDetailPreview } from './CharacterDetailPreview';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 import { useRealmSettings } from '@/web/hooks/studio-data';
-import { useAuth } from '@/shared/hooks/use-auth';
+import { useAuth } from '@/web/hooks/use-auth';
 import { CharacterSelectAdminWindow } from './admin/CharacterSelectAdminWindow';
 
 interface CharacterSelectorProps {
@@ -211,7 +211,7 @@ export function CharacterSelector({
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
   // Realtime count
-  const mmoPlayerCount = useRealtimeStore((state) => state.mmoPlayerCount);
+  const mmoPlayerCount = useAppStore((state) => state.mmoPlayerCount);
   const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
 
   // Fetch leaderboard data

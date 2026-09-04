@@ -2,11 +2,11 @@ import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { redirect } from "next/navigation";
 import { PERMISSION_LEVELS } from "@/web/lib/permissions";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { Label } from "@/shared/ui/label";
-import { Checkbox } from "@/shared/ui/checkbox";
-import { Card, CardContent } from "@/shared/ui/card";
+import { Button } from "@/web/components/ui/button";
+import { Input } from "@/web/components/ui/input";
+import { Label } from "@/web/components/ui/label";
+import { Checkbox } from "@/web/components/ui/checkbox";
+import { Card, CardContent } from "@/web/components/ui/card";
 import { Rss, Trash2, Power } from "lucide-react";
 import { addRssFeed, deleteRssFeed, toggleRssFeed } from "./actions";
 

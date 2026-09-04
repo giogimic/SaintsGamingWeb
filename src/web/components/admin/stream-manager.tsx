@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/shared/ui/input";
-import { Switch } from "@/shared/ui/switch";
+import { Input } from "@/web/components/ui/input";
+import { Switch } from "@/web/components/ui/switch";
 import { ExternalLink, ShieldCheck, ShieldAlert } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 

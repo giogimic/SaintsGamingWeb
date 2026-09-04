@@ -1,3 +1,5 @@
+import "server-only";
+
 import { Resend } from "resend";
 
 // Only initialize if the key is present

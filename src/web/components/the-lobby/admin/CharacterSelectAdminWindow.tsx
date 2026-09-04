@@ -34,7 +34,7 @@ import {
   Radio,
   History,
 } from 'lucide-react';
-import { useAuth } from '@/shared/hooks/use-auth';
+import { useAuth } from '@/web/hooks/use-auth';
 import { PERMISSION_LEVELS } from '@/web/lib/permissions';
 import { useRealmSettings } from '@/web/hooks/studio-data';
 import { useGameStore } from '../store';
@@ -50,7 +50,7 @@ import {
   rollbackToSnapshot,
   createPublishSnapshot,
   type ValidationGateResult,
-} from '@/app/actions/publishing';
+} from '@/app/actions/studio/publishing';
 import type { WorldPublishSnapshot } from '@prisma/client';
 
 interface CharacterSelectAdminWindowProps {

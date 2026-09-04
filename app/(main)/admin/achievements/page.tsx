@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { redirect } from "next/navigation";
-import { getRecentAchievements } from "@/app/actions/achievements";
+import { getRecentAchievements } from "@/app/actions/game/achievements";
 import { AdminAchievementsClient } from "./admin-achievements-client";
 import { ShieldCheck } from "lucide-react";
 

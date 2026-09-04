@@ -2,9 +2,9 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth"; // Standard NextAuth pattern in modern Next.js
 import { prisma } from "@/web/lib/prisma";
 import Link from "next/link";
-import { Button } from "@/shared/ui/button";
-import { Progress } from "@/shared/ui/progress";
-import { Card, CardHeader, CardTitle, CardContent } from "@/shared/ui/card";
+import { Button } from "@/web/components/ui/button";
+import { Progress } from "@/web/components/ui/progress";
+import { Card, CardHeader, CardTitle, CardContent } from "@/web/components/ui/card";
 import { getLevelData } from "@/web/lib/xp";
 import { Character } from "@prisma/client";
 import { ShieldCheck, Star, Crown } from "lucide-react";

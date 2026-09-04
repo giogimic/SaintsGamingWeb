@@ -2,9 +2,9 @@ import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Badge } from "@/shared/ui/badge";
-import { Card, CardContent } from "@/shared/ui/card";
-import { Button } from "@/shared/ui/button";
+import { Badge } from "@/web/components/ui/badge";
+import { Card, CardContent } from "@/web/components/ui/card";
+import { Button } from "@/web/components/ui/button";
 import { LifeBuoy, Eye } from "lucide-react";
 import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 

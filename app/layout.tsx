@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { TooltipProvider } from "@/shared/ui/tooltip";
-import { CookieConsent } from "@/shared/components/cookie-consent";
+import { TooltipProvider } from "@/web/components/ui/tooltip";
+import { CookieConsent } from "@/web/components/shared/cookie-consent";
 import { ForcePasswordRedirect } from "@/web/components/auth/force-password-redirect";
 
 import { DevOverlayLoader } from "@/editor/dev-overlay-loader";
 import { ThemeProvider } from "@/web/components/theme-provider";
 import { AuthProvider } from "@/web/components/auth-provider";
-import { JsonLd } from "@/shared/components/json-ld";
+import { JsonLd } from "@/web/components/shared/json-ld";
 import { auth } from "@/auth";
 import { Suspense } from "react";
 import "./globals.css";

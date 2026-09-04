@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import { prisma } from '@/web/lib/prisma';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/web/components/ui/card';
 import { Gamepad2 } from 'lucide-react';
 import Link from 'next/link';
 

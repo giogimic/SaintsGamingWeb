@@ -1,3 +1,5 @@
+import "server-only";
+
 /**
  * Discord Bot ↔ Saints Web bridge helpers.
  * Used by /api/discord/events (bot producer) and role/account linking.

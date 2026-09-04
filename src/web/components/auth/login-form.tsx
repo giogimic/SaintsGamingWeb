@@ -5,10 +5,10 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { loginSchema } from "@/shared/lib/validators";
 import { ZodError } from "zod";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { Label } from "@/shared/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/shared/ui/card";
+import { Button } from "@/web/components/ui/button";
+import { Input } from "@/web/components/ui/input";
+import { Label } from "@/web/components/ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/web/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import Link from "next/link";
 

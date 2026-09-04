@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/web/components/ui/card";
 import { revalidatePath } from "next/cache";
 import { ProfileForm } from "./profile-form";
 

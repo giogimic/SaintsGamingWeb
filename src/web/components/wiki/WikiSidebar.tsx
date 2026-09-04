@@ -4,8 +4,8 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { getWikiCategories } from '@/shared/wiki/wikiRegistry'
 import { Rocket, Gamepad2, Sparkles, Wand2, BookText, ChevronDown, ChevronRight, Menu } from 'lucide-react'
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/shared/ui/sheet'
-import { Button } from '@/shared/ui/button'
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/web/components/ui/sheet'
+import { Button } from '@/web/components/ui/button'
 
 const ICON_MAP: Record<string, React.FC<any>> = {
   Rocket, Gamepad2, Sparkles, Wand2, BookText

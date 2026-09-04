@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { seedDummyContentAction } from "@/app/actions/game-dev";
+import { seedDummyContentAction } from "@/app/actions/admin/game-dev";
 
 export function DevActions() {
  const [isLoading, setIsLoading] = useState(false);

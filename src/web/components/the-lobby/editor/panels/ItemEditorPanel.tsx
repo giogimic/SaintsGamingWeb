@@ -10,7 +10,7 @@ import {
   deleteItemTemplate,
   getItemDependencies,
   type ItemTemplateInput,
-} from '@/app/actions/item-templates';
+} from '@/app/actions/game/item-templates';
 import type { ItemTemplate } from '@prisma/client';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';

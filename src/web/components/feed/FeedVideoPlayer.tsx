@@ -10,7 +10,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import Hls from "hls.js";
 import { captureVideoFrame, getCachedVideoPoster } from "@/web/lib/video-thumbnail";
-import { useImmersiveStore } from "@/web/hooks/useImmersiveStore";
+import { useAppStore } from "@/shared/store/useAppStore";
 
 interface FeedVideoPlayerProps {
   id: string;
@@ -102,7 +102,7 @@ export function FeedVideoPlayer({
   });
   const [posterError, setPosterError] = useState(false);
 
-  const isBarsHidden = useImmersiveStore((s) => s.isBarsHidden);
+  const isBarsHidden = useAppStore((s) => s.isBarsHidden);
   const isCurrentlyActive = activePlayingId === id;
   const muted = isSharedMuted !== undefined ? isSharedMuted : localMuted;
   const formattedSrc = formatVideoSrc(src);
@@ -534,7 +534,7 @@ export function FeedVideoPlayer({
       handleTogglePiP(e as any);
     } else if (e.key === "Tab") {
       e.preventDefault();
-      useImmersiveStore.getState().toggleBars();
+      useAppStore.getState().toggleBars();
     }
   };
 
@@ -582,9 +582,9 @@ export function FeedVideoPlayer({
           // Horizontal swipe: swipe left to hide interface, swipe right to bring it back
           if (Math.abs(deltaX) > 35 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
             if (deltaX > 35) {
-              useImmersiveStore.getState().hideBars(); // Swipe left: hide interface
+              useAppStore.getState().hideBars(); // Swipe left: hide interface
             } else if (deltaX < -35) {
-              useImmersiveStore.getState().showBars(); // Swipe right: bring it back
+              useAppStore.getState().showBars(); // Swipe right: bring it back
             }
           }
         }
@@ -906,7 +906,7 @@ export function FeedVideoPlayer({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              useImmersiveStore.getState().toggleBars();
+              useAppStore.getState().toggleBars();
             }}
             className="p-2 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md border border-white/10 hover:scale-105 transition-all shadow-md flex sm:hidden"
             title={isBarsHidden ? "Show Interface" : "Hide Interface"}

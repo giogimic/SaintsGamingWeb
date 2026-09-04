@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Input } from "@/shared/ui/input";
-import { Label } from "@/shared/ui/label";
-import { Textarea } from "@/shared/ui/textarea";
-import { Button } from "@/shared/ui/button";
-import { Badge } from "@/shared/ui/badge";
-import { Switch } from "@/shared/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
+import { Input } from "@/web/components/ui/input";
+import { Label } from "@/web/components/ui/label";
+import { Textarea } from "@/web/components/ui/textarea";
+import { Button } from "@/web/components/ui/button";
+import { Badge } from "@/web/components/ui/badge";
+import { Switch } from "@/web/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/web/components/ui/select";
 import {
   Laptop,
   Smartphone,

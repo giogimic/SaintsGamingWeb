@@ -6,8 +6,8 @@ import {
   Flame, Compass, Sparkles, Clock, 
   TrendingUp, Shield, Users, Trophy
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/ui/card";
-import { Badge } from "@/shared/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/web/components/ui/card";
+import { Badge } from "@/web/components/ui/badge";
 
 export const metadata = {
   title: "Dungeons & World Events | Saints Gaming Admin",

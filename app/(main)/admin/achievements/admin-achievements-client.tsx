@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { grantAchievement, revokeAchievement } from "@/app/actions/achievements";
+import { grantAchievement, revokeAchievement } from "@/app/actions/game/achievements";
 import { ACHIEVEMENTS, getAchievementDef } from "@/web/lib/achievements-catalog";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
+import { Button } from "@/web/components/ui/button";
+import { Input } from "@/web/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/web/components/ui/select";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import Image from "next/image";

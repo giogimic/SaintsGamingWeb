@@ -15,11 +15,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import Hls from "hls.js";
 import { prewarmAdjacentFeedMedia } from "@/web/lib/hls-prewarm";
-import { Input } from "@/shared/ui/input";
-import { Button } from "@/shared/ui/button";
+import { Input } from "@/web/components/ui/input";
+import { Button } from "@/web/components/ui/button";
 import { toast } from "sonner";
 import { getPostReplies } from "@/app/actions/social";
-import { useImmersiveStore } from "@/web/hooks/useImmersiveStore";
+import { useAppStore } from "@/shared/store/useAppStore";
 
 interface ShortsViewerModalProps {
   post: any | null;
@@ -58,7 +58,7 @@ export function ShortsViewerModal({
   onPostChange,
 }: ShortsViewerModalProps) {
   const { data: session } = useSession();
-  const isBarsHidden = useImmersiveStore((s) => s.isBarsHidden);
+  const isBarsHidden = useAppStore((s) => s.isBarsHidden);
   const [mounted, setMounted] = useState(false);
   const [currentPost, setCurrentPost] = useState<any>(post);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
@@ -108,9 +108,9 @@ export function ShortsViewerModal({
 
   useEffect(() => {
     setMounted(true);
-    useImmersiveStore.getState().hideBars();
+    useAppStore.getState().hideBars();
     return () => {
-      useImmersiveStore.getState().showBars();
+      useAppStore.getState().showBars();
     };
   }, []);
 
@@ -369,7 +369,7 @@ export function ShortsViewerModal({
         }
       } else if (e.key === "Tab") {
         e.preventDefault();
-        useImmersiveStore.getState().toggleBars();
+        useAppStore.getState().toggleBars();
       }
     };
 
@@ -561,9 +561,9 @@ export function ShortsViewerModal({
         // Horizontal swipe: swipe left to hide interface, swipe right to bring it back
         if (Math.abs(deltaX) > 35 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
           if (deltaX > 35) {
-            useImmersiveStore.getState().hideBars(); // Swiped LEFT -> Hide interface
+            useAppStore.getState().hideBars(); // Swiped LEFT -> Hide interface
           } else if (deltaX < -35) {
-            useImmersiveStore.getState().showBars(); // Swiped RIGHT -> Bring it back
+            useAppStore.getState().showBars(); // Swiped RIGHT -> Bring it back
           }
         } else if (Math.abs(deltaY) > 35) {
           if (deltaY > 35) {
@@ -646,7 +646,7 @@ export function ShortsViewerModal({
       <div className={`absolute top-4 right-4 z-50 flex items-center gap-2.5 transition-opacity duration-200 ${isBarsHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
         {/* Mobile Eyeball Interface Toggle Button */}
         <button 
-          onClick={() => useImmersiveStore.getState().toggleBars()}
+          onClick={() => useAppStore.getState().toggleBars()}
           className="p-2.5 bg-black/70 hover:bg-black/95 border border-white/20 rounded-full text-white backdrop-blur-md transition-all shadow-lg hover:scale-105 flex sm:hidden"
           title={isBarsHidden ? "Show Interface" : "Hide Interface"}
         >

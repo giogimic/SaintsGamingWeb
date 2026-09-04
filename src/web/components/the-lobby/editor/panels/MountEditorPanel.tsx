@@ -8,7 +8,7 @@ import {
   upsertMount,
   deleteMount,
   type MountTemplateInput,
-} from '@/app/actions/mounts';
+} from '@/app/actions/game/mounts';
 import type { MountTemplate } from '@prisma/client';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';

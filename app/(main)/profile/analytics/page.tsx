@@ -1,8 +1,8 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/web/lib/prisma";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/ui/card";
-import { Button } from "@/shared/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/web/components/ui/card";
+import { Button } from "@/web/components/ui/button";
 import { ArrowLeft, BarChart, Heart, MessageSquare, Share, Eye, Bookmark, TrendingUp, Award, DollarSign, Coins, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";

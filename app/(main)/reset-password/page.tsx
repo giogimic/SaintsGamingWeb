@@ -2,13 +2,13 @@
 
 import { useActionState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { Label } from "@/shared/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
+import { Button } from "@/web/components/ui/button";
+import { Input } from "@/web/components/ui/input";
+import { Label } from "@/web/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/web/components/ui/card";
 import { Loader2, KeyRound } from "lucide-react";
 import Link from "next/link";
-import { resetPasswordAction } from "@/app/actions/auth";
+import { resetPasswordAction } from "@/app/actions/user/auth";
 
 function ResetPasswordForm() {
   const router = useRouter();

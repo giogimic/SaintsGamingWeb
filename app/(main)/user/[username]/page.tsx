@@ -1,4 +1,4 @@
-import { getPublicProfile } from "@/app/actions/users";
+import { getPublicProfile } from "@/app/actions/user/users";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { User as UserIcon, Calendar, Gamepad2, Crown, BadgeCheck, ShieldCheck } from "lucide-react";

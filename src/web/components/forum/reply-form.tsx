@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
+import { Button } from "@/web/components/ui/button";
+import { Input } from "@/web/components/ui/input";
 import { MarkdownEditor } from "./markdown-editor";
-import { Card, CardContent } from "@/shared/ui/card";
+import { Card, CardContent } from "@/web/components/ui/card";
 import { Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 

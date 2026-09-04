@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useGameStore } from "@/web/components/the-lobby/store";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/web/components/ui/button";
 import { Download, CheckCircle, Loader2 } from "lucide-react";
 
 export function UiPresetEmbed({ presetId }: { presetId: string }) {

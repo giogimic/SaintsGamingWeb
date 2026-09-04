@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card';
-import { Button } from '@/shared/ui/button';
-import { Input } from '@/shared/ui/input';
-import { Badge } from '@/shared/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/web/components/ui/card';
+import { Button } from '@/web/components/ui/button';
+import { Input } from '@/web/components/ui/input';
+import { Badge } from '@/web/components/ui/badge';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { 
@@ -18,7 +18,7 @@ import {
   adminAdjustPlayerGold, 
   adminDeleteGameCharacter,
   fetchWorldMapsDetailed 
-} from '@/app/actions/game-admin';
+} from '@/app/actions/admin/game-admin';
 
 export default function GameOperationsPage() {
   const [activeTab, setActiveTab] = useState<'heroes' | 'maps' | 'telemetry'>('heroes');

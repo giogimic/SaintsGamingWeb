@@ -1,10 +1,10 @@
-﻿import { Navbar } from "@/shared/components/navbar";
-import { GlobalBottomBar } from "@/shared/components/global-bottom-bar";
+import { Navbar } from "@/web/components/shared/navbar";
+import { GlobalBottomBar } from "@/web/components/shared/global-bottom-bar";
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { MessengerProvider } from "@/web/components/messenger/messenger-provider";
 import { MessengerPopup } from "@/web/components/messenger/messenger-popup";
-import { AmbientBackground } from "@/shared/components/ambient-background";
+import { AmbientBackground } from "@/web/components/shared/ambient-background";
 import { UcpNavigation } from "@/web/components/ucp/ucp-navigation";
 import { RealtimeProvider } from "@/web/components/realtime/RealtimeProvider";
 import { UcpLiveRefresh } from "./ucp/ucp-live-refresh";
@@ -37,7 +37,7 @@ export default async function UcpLayout({
   let gameTitle = "The Lobby";
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.721";
+    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.724";
     const ucpNavSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_in_nav" } });
     if (ucpNavSetting?.value === "true") showUcpInNav = true;
 

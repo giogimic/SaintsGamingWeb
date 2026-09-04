@@ -1,9 +1,9 @@
-﻿import { prisma } from "@/web/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { Label } from "@/shared/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
+import { Button } from "@/web/components/ui/button";
+import { Input } from "@/web/components/ui/input";
+import { Label } from "@/web/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/web/components/ui/select";
 import { updateSiteSettings } from "../actions";
 
 export default async function AdminSettingsPage() {
@@ -23,7 +23,7 @@ export default async function AdminSettingsPage() {
     return acc;
   }, {} as Record<string, string>);
 
-  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.721";
+  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.724";
 
 
 

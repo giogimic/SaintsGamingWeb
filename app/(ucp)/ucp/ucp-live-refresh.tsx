@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useRealtimeStore } from "@/web/hooks/useRealtimeStore";
+import { useAppStore } from "@/shared/store/useAppStore";
 
 /**
  * Refreshes UCP server components when FiveM pushes character/bank updates
@@ -13,8 +13,8 @@ export function UcpLiveRefresh() {
   const router = useRouter();
   const { data: session } = useSession();
   const userId = session?.user?.id;
-  const lastCharacter = useRealtimeStore((s) => s.lastFivemCharacterUpdate);
-  const lastBank = useRealtimeStore((s) => s.lastFivemBankUpdate);
+  const lastCharacter = useAppStore((s) => s.lastFivemCharacterUpdate);
+  const lastBank = useAppStore((s) => s.lastFivemBankUpdate);
   const lastHandled = useRef<number>(0);
 
   useEffect(() => {

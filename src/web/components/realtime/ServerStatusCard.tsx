@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Activity, Users } from "lucide-react";
-import { useRealtimeStore } from "@/web/hooks/useRealtimeStore";
+import { useAppStore } from "@/shared/store/useAppStore";
 
 /**
  * Live MMO population card driven by coarse `game.player.*` bus events.
@@ -15,8 +15,8 @@ export function ServerStatusCard({
   pollFallback?: boolean;
   className?: string;
 }) {
-  const mmoPlayerCount = useRealtimeStore((s) => s.mmoPlayerCount);
-  const mmoOnlineByUserId = useRealtimeStore((s) => s.mmoOnlineByUserId);
+  const mmoPlayerCount = useAppStore((s) => s.mmoPlayerCount);
+  const mmoOnlineByUserId = useAppStore((s) => s.mmoOnlineByUserId);
   const [polledPlayers, setPolledPlayers] = useState<number | null>(null);
   const [status, setStatus] = useState<"online" | "offline">("offline");
 

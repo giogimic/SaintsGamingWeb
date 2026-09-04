@@ -8,7 +8,7 @@ import {
   upsertShop,
   deleteShop,
   type ShopTemplateInput,
-} from '@/app/actions/shops';
+} from '@/app/actions/game/shops';
 import type { ShopTemplate } from '@prisma/client';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useRealtimeStore } from "@/web/hooks/useRealtimeStore";
+import { useAppStore } from "@/shared/store/useAppStore";
 import { toast } from "sonner";
 
 /**
@@ -17,8 +17,8 @@ export function LiveThreadReplies({
   currentUserId?: string | null;
 }) {
   const router = useRouter();
-  const setWatchedThreadId = useRealtimeStore((s) => s.setWatchedThreadId);
-  const lastForumReply = useRealtimeStore((s) => s.lastForumReply);
+  const setWatchedThreadId = useAppStore((s) => s.setWatchedThreadId);
+  const lastForumReply = useAppStore((s) => s.lastForumReply);
   const handledReplyId = useRef<string | null>(null);
 
   useEffect(() => {

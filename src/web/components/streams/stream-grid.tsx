@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent } from "@/shared/ui/card";
-import { Button } from "@/shared/ui/button";
+import { Card, CardContent } from "@/web/components/ui/card";
+import { Button } from "@/web/components/ui/button";
 
 interface Streamer {
   id: string;

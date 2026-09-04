@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { Landmark, ArrowUpRight, ArrowDownRight, CreditCard, PiggyBank, SearchX, Lock } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/ui/card";
-import { Button } from "@/shared/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/web/components/ui/card";
+import { Button } from "@/web/components/ui/button";
 
 export const metadata = { title: "Banking | UCP" };
 

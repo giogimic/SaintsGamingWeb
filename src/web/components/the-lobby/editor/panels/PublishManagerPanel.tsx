@@ -22,7 +22,7 @@ import {
   listPublishSnapshots,
   rollbackToSnapshot,
   type ValidationGateResult,
-} from '@/app/actions/publishing';
+} from '@/app/actions/studio/publishing';
 import type { WorldPublishSnapshot } from '@prisma/client';
 import { useEditorStore } from '../editor-store';
 import {

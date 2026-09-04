@@ -1,7 +1,7 @@
 "use client";
 
 import { Globe, MoreVertical, Star, ExternalLink, Sparkles } from "lucide-react";
-import { Badge } from "@/shared/ui/badge";
+import { Badge } from "@/web/components/ui/badge";
 
 interface GoogleSerpCardProps {
   mode: "desktop" | "mobile";

@@ -6,9 +6,9 @@ import {
   CheckCircle2, Clock, Users, ArrowUpRight, Plus, Newspaper, 
   Gamepad2, Server, LifeBuoy, Monitor, ShieldAlert, Cpu
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/ui/card";
-import { Badge } from "@/shared/ui/badge";
-import { Button } from "@/shared/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/web/components/ui/card";
+import { Badge } from "@/web/components/ui/badge";
+import { Button } from "@/web/components/ui/button";
 import { auth } from "@/auth";
 import { PERMISSION_LEVELS, hasPermission, getRoleName, getRoleColor } from "@/web/lib/permissions";
 import { getVisibleAdminModules } from "@/web/lib/admin-modules";

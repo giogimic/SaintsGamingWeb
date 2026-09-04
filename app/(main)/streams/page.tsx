@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { prisma } from "@/web/lib/prisma";
 import { StreamGrid } from "@/web/components/streams/stream-grid";
 import { MonitorPlay } from "lucide-react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/web/components/ui/button";
 import Link from "next/link";
 
 import { constructPageMetadata } from "@/web/lib/seo";

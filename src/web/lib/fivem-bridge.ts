@@ -1,3 +1,5 @@
+import "server-only";
+
 /**
  * FiveM Server ↔ Saints Web bridge helpers.
  * Used by /api/fivem/events (game server producer).

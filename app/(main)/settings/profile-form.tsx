@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Label } from "@/shared/ui/label";
-import { Input } from "@/shared/ui/input";
-import { Textarea } from "@/shared/ui/textarea";
-import { Button } from "@/shared/ui/button";
+import { Label } from "@/web/components/ui/label";
+import { Input } from "@/web/components/ui/input";
+import { Textarea } from "@/web/components/ui/textarea";
+import { Button } from "@/web/components/ui/button";
 import { Camera, Loader2, Save } from "lucide-react";
 
 type ProfileFormProps = {

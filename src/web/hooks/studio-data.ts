@@ -10,7 +10,7 @@ export const fetcher = async (url: string) => {
   return data;
 };
 
-import { getAllCreatureDefs } from '@/app/actions/creature-defs';
+import { getAllCreatureDefs } from "@/app/actions/game/creature-defs";
 
 // Loot Tables
 export function useLootTables(gameId: string | null) {

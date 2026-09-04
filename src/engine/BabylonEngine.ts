@@ -35,7 +35,7 @@ import {
   ENTITY_GROUND_CLEARANCE,
   clampCameraFocus,
   paintOverlayHeight,
-} from "../shared/game/babylonViewHelpers";
+} from "./helpers/babylonViewHelpers";
 import { SPATIAL_LAYER_ALTITUDES } from "../shared/game/spatialLayers";
 import {
   cellBatchKey,
@@ -83,6 +83,11 @@ import {
   resolveConstrainedVoxelCoordinates,
   type VoxelBrushAxis,
 } from '../shared/game/voxel/VoxelWord';
+
+import { VoxelController } from './VoxelController';
+import { InputController } from './InputController';
+import { Renderer } from './Renderer';
+import { EntityController } from './EntityController';
 
 export interface RenderedChunk {
   mapId?: string;
@@ -210,29 +215,28 @@ export class BabylonEngine {
   // Chunk-Level Resource Pooling (Phase 3)
   private chunkMeshPool: Mesh[] = [];
 
-  private canvas: HTMLCanvasElement;
-  private engine: Engine;
-  private scene: Scene;
-  private camera: FreeCamera;
-  private rootNode: TransformNode;
+  public canvas: HTMLCanvasElement;
+  public engine: Engine;
+  public scene: Scene;
+  public rootNode: TransformNode;
   private tileMeshes: Mesh[] = [];
   private objectMeshes: Mesh[] = [];
-  private entityMeshes: Map<string, Mesh> = new Map();
-  private shadowMeshes: Map<string, Mesh> = new Map();
-  private isRunning: boolean = false;
+  public entityMeshes: Map<string, Mesh> = new Map();
+  public shadowMeshes: Map<string, Mesh> = new Map();
+  public isRunning: boolean = false;
   public _renderedSockets: Set<string> = new Set();
   public _renderedEntities: Set<string> = new Set();
-  private defaultPlayerTexture?: DynamicTexture;
-  private woodFloorTexture?: DynamicTexture;
-  private indoorWallTexture?: DynamicTexture;
-  private waterTexture?: DynamicTexture;
-  private waterAnimTime: number = 0;
-  private lastWaterUpdateTime: number = 0;
-  private waterFlowSpeed: number = 1.0;
+  public defaultPlayerTexture?: DynamicTexture;
+  public woodFloorTexture?: DynamicTexture;
+  public indoorWallTexture?: DynamicTexture;
+  public waterTexture?: DynamicTexture;
+  public waterAnimTime: number = 0;
+  public lastWaterUpdateTime: number = 0;
+  public waterFlowSpeed: number = 1.0;
   private cameraSmoothingFactor: number = 0.6;
   public currentMapId: string = '';
-  private currentMapWidth: number = 24;
-  private currentMapHeight: number = 24;
+  public currentMapWidth: number = 24;
+  public currentMapHeight: number = 24;
 
   /** Live tilemap dims for world↔tile math (peers / camera) after hot remesh. */
   public getMapWidth(): number {
@@ -241,7 +245,7 @@ export class BabylonEngine {
   public getMapHeight(): number {
     return this.currentMapHeight;
   }
-  private currentTileSize: number = 1;
+  public currentTileSize: number = 1;
   private tilesetTextureCache: Map<string, Texture> = new Map();
   private tilesetMaterialCache: Map<string, StandardMaterial> = new Map();
   private spriteTextureCache: Map<string, Texture> = new Map();
@@ -268,9 +272,9 @@ export class BabylonEngine {
     { imageSource: string; vertexBase: number; layerIdx: number; r: number; c: number }
   > = new Map();
   private tilesetMeshBySource: Map<string, Mesh> = new Map();
-  private mapPickPlane?: Mesh;
-  private mapBoundaryMesh?: LinesMesh | Mesh;
-  private currentRawMapData?: BabylonTileMapData;
+  public mapPickPlane?: Mesh;
+  public mapBoundaryMesh?: LinesMesh | Mesh;
+  public currentRawMapData?: BabylonTileMapData;
   private freeformMeshes: Mesh[] = [];
   private neighborEdgeStrips: Map<string, EdgeStripData> = new Map();
   private showNeighborBleedPreview: boolean = false;
@@ -294,8 +298,6 @@ export class BabylonEngine {
     this.showNeighborBleedPreview = show;
   }
 
-  public onEntityClick?: (entityId: string) => void;
-
   public getEntityScreenPosition(entityId: string): { x: number, y: number, isVisible: boolean } | null {
     const mesh = this.entityMeshes.get(entityId);
     if (!mesh) return null;
@@ -305,191 +307,59 @@ export class BabylonEngine {
       mesh.position.add(new Vector3(0, 1.8, 0)),
       Matrix.Identity(),
       this.scene.getTransformMatrix(),
-      this.camera.viewport.toGlobal(this.engine.getRenderWidth(), this.engine.getRenderHeight())
+      this.renderer.camera.viewport.toGlobal(this.engine.getRenderWidth(), this.engine.getRenderHeight())
     );
     
     return { x: pos.x, y: pos.y, isVisible: pos.z < 1.0 && pos.z > 0.0 };
   }
 
-  private waterMaterials: StandardMaterial[] = [];
+  public waterMaterials: StandardMaterial[] = [];
   public itemBillboards: ItemBillboardRenderer;
   private guiTexture: AdvancedDynamicTexture;
   private chatBubbles: Map<string, Rectangle> = new Map();
-  /** Floating name labels for multiplayer peers (not local player_main). */
-  private nameplates: Map<string, Rectangle> = new Map();
   /** Floating HP bars for creatures during combat. */
   private healthBars: Map<string, Rectangle> = new Map();
-  private ambientLight?: HemisphericLight;
-  private dirLight?: DirectionalLight;
-  private shadowGen?: ShadowGenerator;
-  private weatherParticleSystem?: ParticleSystem;
-  private activeWeatherPreset?: string;
-  private cameraTargetX: number = 0;
-  private cameraTargetZ: number = 0;
-  private cameraSnapped: boolean = false;
-  private cameraProfile = { pitch: Math.PI / 4, distance: 14, lerpFactor: 0.15 };
-  private vignettePostProcess?: ImageProcessingPostProcess;
-  private voxelSelectionBoxMesh: Mesh | null = null;
+  public weatherParticleSystem?: ParticleSystem;
+  public activeWeatherPreset?: string;
   /** When true, camera ignores player follow and accepts editor pan. */
-  private editorCameraMode: boolean = false;
-  private editorPanPointerId: number | null = null;
-  private editorPanLastClientX: number = 0;
-  private editorPanLastClientY: number = 0;
-  private editorSpaceHeld: boolean = false;
-  private editorCameraBookmark: { x: number; z: number; ortho: number } | null = null;
-  public isFreeCam: boolean = false;
-  private cameraYaw: number = 0;
-  private cameraPitch: number = Math.PI / 4;
-  private cameraDistance: number = 20;
-  /** Smooth zoom target for lerp-based easing. */
-  private targetCameraDistance: number = 20;
-  /** Momentum velocities for orbit inertia. */
-  private cameraVelocityYaw: number = 0;
-  private cameraVelocityPitch: number = 0;
-  private cameraVelocityPanX: number = 0;
-  private cameraVelocityPanZ: number = 0;
-  private cameraSettings = {
-    fov: 0.8,
-    orbitSensitivity: 1.0,
-    panSensitivity: 1.0,
-    damping: 0.90,
-    invertOrbitX: false,
-    invertOrbitY: false,
-    cursorAnchoredZoom: true,
-    isometricPitch: Math.PI / 4,
-    isometricDistance: 14,
-    playerFollowSmoothing: 0.35,
-    playerCameraStyle: 'isometric' as 'isometric' | 'follow45' | 'topdown' | 'free',
-    borderClamping: true,
-    vignetteEnabled: true,
-    vignetteWeight: 1.5,
-  };
-
-  public voxelMesher?: VoxelChunkMesher;
-  public voxelWorld?: VoxelWorld;
-
-  private onEditorPointerDown = (e: PointerEvent) => this.handleEditorPointerDown(e);
-  private onEditorPointerMove = (e: PointerEvent) => this.handleEditorPointerMove(e);
-  private onEditorPointerUp = (e: PointerEvent) => this.handleEditorPointerUp(e);
-  private onEditorWheel = (e: WheelEvent) => {
-    if (!this.editorCameraMode) return;
-    if (e.shiftKey || e.altKey) {
-      e.preventDefault();
-      const step = e.deltaY > 0 ? 15 : -15;
-      window.dispatchEvent(new CustomEvent('studio_rotate_brush', { detail: { step } }));
-      return;
-    }
-    if (this.isFreeCam) {
-      e.preventDefault();
-      this.zoomFreeCam(e.deltaY);
-    }
-  };
-  private onEditorKeyDown = (e: KeyboardEvent) => {
-    if ((e.target as HTMLElement)?.closest?.('input,textarea,[contenteditable]')) {
-      return;
-    }
-    if (e.code === 'Space') {
-      e.preventDefault();
-      this.editorSpaceHeld = true;
-    }
-
-    // Brush / Stamp / Splat Rotation Hotkeys (R / Shift+R for 90°, [ / ] for 15°)
-    if (e.code === 'KeyR') {
-      e.preventDefault();
-      const step = e.shiftKey ? -90 : 90;
-      window.dispatchEvent(new CustomEvent('studio_rotate_brush', { detail: { step } }));
-      return;
-    }
-    if (e.code === 'BracketLeft') {
-      e.preventDefault();
-      window.dispatchEvent(new CustomEvent('studio_rotate_brush', { detail: { step: -15 } }));
-      return;
-    }
-    if (e.code === 'BracketRight') {
-      e.preventDefault();
-      window.dispatchEvent(new CustomEvent('studio_rotate_brush', { detail: { step: 15 } }));
-      return;
-    }
-
-    if (!this.editorCameraMode) return;
-
-    // FreeCam 3D Orbit & Angle Shortcuts (Q/E Orbit, PageUp/PageDown Pitch, Numpad 1/3/7 Angles)
-    if (this.isFreeCam) {
-      if (e.code === 'KeyQ') {
-        this.cameraVelocityYaw -= 0.035 * this.cameraSettings.orbitSensitivity;
-      } else if (e.code === 'KeyE') {
-        this.cameraVelocityYaw += 0.035 * this.cameraSettings.orbitSensitivity;
-      } else if (e.code === 'PageUp') {
-        this.cameraVelocityPitch = Math.min(Math.PI / 2 - 0.05, this.cameraPitch + 0.06);
-        this.updateFreeCamPosition();
-      } else if (e.code === 'PageDown') {
-        this.cameraVelocityPitch = Math.max(0.08, this.cameraPitch - 0.06);
-        this.updateFreeCamPosition();
-      } else if (e.code === 'Numpad1') {
-        this.setViewAngle('front');
-      } else if (e.code === 'Numpad3') {
-        this.setViewAngle('east');
-      } else if (e.code === 'Numpad7') {
-        this.setViewAngle('topdown');
-      }
-    }
-  };
-  private onEditorDblClick = (e: MouseEvent) => {
-    if (!this.editorCameraMode || !this.scene) return;
-    const pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY);
-    if (pick && pick.hit && pick.pickedPoint) {
-      this.snapCameraTo(pick.pickedPoint.x, pick.pickedPoint.z);
-      if (this.isFreeCam) {
-        this.updateFreeCamPosition();
-      }
-    }
-  };
-  private onEditorAuxClick = (e: MouseEvent) => {
-    if (e.button === 1) e.preventDefault();
-  };
-  private onEditorKeyUp = (e: KeyboardEvent) => {
-    if (e.code === 'Space') this.editorSpaceHeld = false;
-  };
-  private selectionRingMesh?: Mesh;
-  private selectionRingMaterial?: StandardMaterial;
-  private activeTargetEntityId: string | null = null;
+  public editorCameraMode: boolean = false;
+  public selectionRingMesh?: Mesh;
+  public selectionRingMaterial?: StandardMaterial;
+  public activeTargetEntityId: string | null = null;
   private smartTargetRingMesh?: Mesh;
   private destinationIndicatorMesh?: Mesh;
   private abilityAoEMeshes: Mesh[] = [];
-  private activeProjectiles: Map<string, { mesh: Mesh, observer: any }> = new Map();
+  public activeProjectiles: Map<string, { mesh: Mesh, observer: any }> = new Map();
   /** Covers erased cells so batched tileset art disappears without a full remesh. */
   private eraseVoidMaterial?: StandardMaterial;
   /** Adjustable brush radius for multi-tile paint (1 = single tile). */
-  private brushRadius: number = 1;
-  private brushShape: BrushShape = 'circle';
+  public brushRadius: number = 1;
+  public brushShape: BrushShape = 'circle';
   private brushRotation: number = 0;
   public activeBrushPattern: { w: number, h: number } | null = null;
   public prefabStampMode: '1tile' | 'footprint' = 'footprint';
   public stampScale: number = 1;
   private activeBrushTileId: number = 0;
   private activeLayerIdx: number = 0;
-  private activeLayerType: string = 'grid';
-  private brushMode: string = 'paint';
+  public activeLayerType: string = 'grid';
+  public brushMode: string = 'paint';
   private currentTilesets: any[] = [];
-  private lastHoveredR: number = -1;
-  private lastHoveredC: number = -1;
+  public lastHoveredR: number = -1;
+  public lastHoveredC: number = -1;
   /** Brush preview overlay meshes. */
-  private brushPreviewMeshes: Mesh[] = [];
+  public brushPreviewMeshes: Mesh[] = [];
   private hoverReticleMesh?: Mesh;
-  private footprintSqMesh?: Mesh;
-  private footprintUnifiedMesh?: Mesh;
+  public footprintSqMesh?: Mesh;
+  public footprintUnifiedMesh?: Mesh;
   private patternPreviewMesh?: Mesh;
-  private splatPreviewMesh?: Mesh;
+  public splatPreviewMesh?: Mesh;
   private footprintCircMeshes: Mesh[] = [];
   private selectionBoxMesh?: Mesh;
-  private multiSelectionBaseMesh?: Mesh;
-  private selectionPreviewMeshes: Mesh[] = [];
-  private actionPreviewBoundsMesh?: Mesh;
-  private actionPreviewMeshes: Mesh[] = [];
+  public multiSelectionBaseMesh?: Mesh;
+  public selectionPreviewMeshes: Mesh[] = [];
+  public actionPreviewBoundsMesh?: Mesh;
+  public actionPreviewMeshes: Mesh[] = [];
   private editorMapBorderMeshes: (Mesh | LinesMesh)[] = [];
-  /** Editor keyboard pan active keys. */
-  private editorPanKeysHeld: Set<string> = new Set();
-  private editorPanAnimFrameId: number | null = null;
 
   /**
    * Ground tilesets are one batched mesh per image. Alpha-*blend* sorts that
@@ -532,6 +402,10 @@ export class BabylonEngine {
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
+    this.voxel = new VoxelController(this);
+    this.input = new InputController(this);
+    this.renderer = new Renderer(this);
+    this.entity = new EntityController(this);
     this.engine = new Engine(this.canvas, true, {
       preserveDrawingBuffer: false,
       stencil: true,
@@ -553,42 +427,42 @@ export class BabylonEngine {
     this.rootNode = new TransformNode('rootNode', this.scene);
 
     // 3D Perspective Volumetric Camera
-    this.camera = new FreeCamera('camera3D', new Vector3(0, this.cameraProfile.distance, -this.cameraProfile.distance), this.scene);
+    this.renderer.camera = new FreeCamera('camera3D', new Vector3(0, this.renderer.cameraProfile.distance, -this.renderer.cameraProfile.distance), this.scene);
     
     // Enable Vignette
-    this.vignettePostProcess = new ImageProcessingPostProcess("vignette", 1.0, this.camera);
-    this.vignettePostProcess.vignetteEnabled = true;
-    this.vignettePostProcess.vignetteWeight = 1.5;
-    this.vignettePostProcess.vignetteColor = new Color4(0, 0, 0, 1);
-    this.vignettePostProcess.vignetteBlendMode = ImageProcessingConfiguration.VIGNETTEMODE_MULTIPLY;
-    this.camera.setTarget(Vector3.Zero());
-    this.camera.mode = FreeCamera.PERSPECTIVE_CAMERA;
+    this.renderer.vignettePostProcess = new ImageProcessingPostProcess("vignette", 1.0, this.renderer.camera);
+    this.renderer.vignettePostProcess.vignetteEnabled = true;
+    this.renderer.vignettePostProcess.vignetteWeight = 1.5;
+    this.renderer.vignettePostProcess.vignetteColor = new Color4(0, 0, 0, 1);
+    this.renderer.vignettePostProcess.vignetteBlendMode = ImageProcessingConfiguration.VIGNETTEMODE_MULTIPLY;
+    this.renderer.camera.setTarget(Vector3.Zero());
+    this.renderer.camera.mode = FreeCamera.PERSPECTIVE_CAMERA;
 
-    this.updateCameraAspect(10);
+    this.renderer.updateCameraAspect(10);
 
     // Primary ambient light
-    this.ambientLight = new HemisphericLight('ambientLight', new Vector3(0.2, 1, -0.3), this.scene);
-    this.ambientLight.intensity = 0.85;
-    this.ambientLight.diffuse = new Color3(0.95, 0.95, 1.0);
-    this.ambientLight.groundColor = new Color3(0.15, 0.2, 0.15);
+    this.renderer.ambientLight = new HemisphericLight('ambientLight', new Vector3(0.2, 1, -0.3), this.scene);
+    this.renderer.ambientLight.intensity = 0.85;
+    this.renderer.ambientLight.diffuse = new Color3(0.95, 0.95, 1.0);
+    this.renderer.ambientLight.groundColor = new Color3(0.15, 0.2, 0.15);
 
     // Directional sun light for 2.5D depth
-    this.dirLight = new DirectionalLight('sunLight', new Vector3(-0.5, -1.0, 0.5), this.scene);
-    this.dirLight.intensity = 0.55;
-    this.dirLight.diffuse = new Color3(1.0, 0.97, 0.88);
-    this.dirLight.position = new Vector3(5, 15, -10);
+    this.renderer.dirLight = new DirectionalLight('sunLight', new Vector3(-0.5, -1.0, 0.5), this.scene);
+    this.renderer.dirLight.intensity = 0.55;
+    this.renderer.dirLight.diffuse = new Color3(1.0, 0.97, 0.88);
+    this.renderer.dirLight.position = new Vector3(5, 15, -10);
 
     // Shadow Generator (soft shadows for 2.5D depth)
-    this.shadowGen = undefined; // ShadowGenerator disabled in Unlit pixel-art pipeline
+    this.renderer.shadowGen = undefined; // ShadowGenerator disabled in Unlit pixel-art pipeline
 
     // Window Resize Handler
-    window.addEventListener('resize', this.onResize);
+    window.addEventListener('resize', this.renderer.onResize);
 
     // Camera Mouse Wheel Zoom Handler (Cursor-Anchored in Editor)
     this.canvas.addEventListener('wheel', (e: WheelEvent) => {
       e.preventDefault();
       const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
-      const currentOrtho = this.camera.orthoTop || 10;
+      const currentOrtho = this.renderer.camera.orthoTop || 10;
       // Editor mode: max 120 (supports 128x128 full fit), Game mode: range 5.5 - 11.0 (limits zoom-out to maintain crisp immersion)
       const isStudioToolsOpen = Boolean((window as any)._isDevEditorOpen) || this.editorCameraMode;
       const minOrtho = isStudioToolsOpen ? 2.5 : 5.5;
@@ -613,16 +487,16 @@ export class BabylonEngine {
           const deltaX = ndcX * (currentOrtho - newOrtho) * aspect;
           const deltaZ = ndcY * (currentOrtho - newOrtho);
 
-          this.cameraTargetX += deltaX;
-          this.cameraTargetZ += deltaZ;
-          this.snapCameraTo(this.cameraTargetX, this.cameraTargetZ);
+          this.renderer.cameraTargetX += deltaX;
+          this.renderer.cameraTargetZ += deltaZ;
+          this.renderer.snapCameraTo(this.renderer.cameraTargetX, this.renderer.cameraTargetZ);
         }
       }
 
-      this.camera.orthoLeft = -newOrtho * aspect;
-      this.camera.orthoRight = newOrtho * aspect;
-      this.camera.orthoTop = newOrtho;
-      this.camera.orthoBottom = -newOrtho;
+      this.renderer.camera.orthoLeft = -newOrtho * aspect;
+      this.renderer.camera.orthoRight = newOrtho * aspect;
+      this.renderer.camera.orthoTop = newOrtho;
+      this.renderer.camera.orthoBottom = -newOrtho;
 
       // Notify UI of zoom change
       const zoomPercent = Math.round((10 / newOrtho) * 100);
@@ -643,7 +517,7 @@ export class BabylonEngine {
       } else if (custom.detail?.ortho !== undefined) {
         newOrtho = Math.max(minOrtho, Math.min(maxZoom, custom.detail.ortho));
       }
-      this.updateCameraAspect(newOrtho);
+      this.renderer.updateCameraAspect(newOrtho);
       const zoomPercent = Math.round((10 / newOrtho) * 100);
       window.dispatchEvent(
         new CustomEvent('studio_zoom_changed', { detail: { ortho: newOrtho, percent: zoomPercent } })
@@ -651,47 +525,47 @@ export class BabylonEngine {
     });
 
     window.addEventListener('studio_fit_map', () => {
-      this.fitMapInView();
+      this.renderer.fitMapInView();
     });
 
     window.addEventListener('studio_set_view_angle', (e: Event) => {
       const custom = e as CustomEvent<{ angle: 'isometric' | 'topdown' | 'front' | 'back' | 'east' | 'west' | 'free' }>;
       if (custom.detail?.angle) {
-        this.setViewAngle(custom.detail.angle);
+        this.renderer.setViewAngle(custom.detail.angle);
       }
     });
 
     window.addEventListener('studio_update_camera_settings', (e: Event) => {
       const custom = e as CustomEvent<{ settings: any }>;
       if (custom.detail?.settings) {
-        this.setCameraSettings(custom.detail.settings);
+        this.renderer.setCameraSettings(custom.detail.settings);
       }
     });
 
     window.addEventListener('studio_reset_camera', () => {
-      this.cameraYaw = 0;
-      this.cameraPitch = this.cameraSettings.isometricPitch || Math.PI / 4;
-      this.cameraDistance = 20;
-      this.targetCameraDistance = 20;
-      this.killCameraMomentum();
-      if (this.isFreeCam) {
-        this.updateFreeCamPosition();
+      this.renderer.cameraYaw = 0;
+      this.renderer.cameraPitch = this.renderer.cameraSettings.isometricPitch || Math.PI / 4;
+      this.renderer.cameraDistance = 20;
+      this.renderer.targetCameraDistance = 20;
+      this.renderer.killCameraMomentum();
+      if (this.renderer.isFreeCam) {
+        this.renderer.updateFreeCamPosition();
       } else {
-        this.updateCameraAspect(10);
-        this.snapCameraTo(this.cameraTargetX, this.cameraTargetZ);
+        this.renderer.updateCameraAspect(10);
+        this.renderer.snapCameraTo(this.renderer.cameraTargetX, this.renderer.cameraTargetZ);
       }
     });
 
     window.addEventListener('studio_preview_player_camera', () => {
-      this.isFreeCam = false;
-      this.applyPlayerCameraStyle(this.cameraSettings.playerCameraStyle);
-      this.snapCameraTo(this.cameraTargetX, this.cameraTargetZ);
+      this.renderer.isFreeCam = false;
+      this.renderer.applyPlayerCameraStyle(this.renderer.cameraSettings.playerCameraStyle);
+      this.renderer.snapCameraTo(this.renderer.cameraTargetX, this.renderer.cameraTargetZ);
     });
 
     window.addEventListener('studio_update_realm_visuals', (e: Event) => {
       const custom = e as CustomEvent<{ settings: any }>;
       if (custom.detail?.settings) {
-        this.updateRealmVisuals(custom.detail.settings);
+        this.renderer.updateRealmVisuals(custom.detail.settings);
       }
     });
 
@@ -700,9 +574,9 @@ export class BabylonEngine {
       if (pointerInfo.type === 1) { // PointerEventTypes.POINTERDOWN
         if (pointerInfo.pickInfo?.hit && pointerInfo.pickInfo.pickedMesh) {
           const name = pointerInfo.pickInfo.pickedMesh.name;
-          if (name.startsWith('entity_') && this.onEntityClick) {
+          if (name.startsWith('entity_') && this.input.onEntityClick) {
             const entityId = name.replace('entity_', '');
-            this.onEntityClick(entityId);
+            this.input.onEntityClick(entityId);
           }
         }
       }
@@ -712,943 +586,8 @@ export class BabylonEngine {
     this.itemBillboards = new ItemBillboardRenderer(this.scene);
 
     // Generate procedural textures
-    this.createDefaultPlayerTexture();
-    this.createProceduralTextures();
-  }
-
-  private createProceduralTextures() {
-    // Wood Floor Texture
-    const woodTex = new DynamicTexture('woodFloorTex', { width: 128, height: 128 }, this.scene, false);
-    const wCtx = woodTex.getContext();
-    wCtx.fillStyle = '#7a4f2a';
-    wCtx.fillRect(0, 0, 128, 128);
-    wCtx.fillStyle = '#6e4524';
-    for (let j = 0; j < 60; j++) {
-      wCtx.globalAlpha = 0.15;
-      wCtx.fillRect(Math.random() * 128, Math.random() * 128, Math.random() * 20 + 5, Math.random() * 2 + 1);
-    }
-    wCtx.globalAlpha = 1;
-    woodTex.update();
-    this.woodFloorTexture = woodTex;
-
-    // Indoor Wall Texture
-    const wallTex = new DynamicTexture('indoorWallTex', { width: 128, height: 128 }, this.scene, false);
-    const pCtx = wallTex.getContext();
-    pCtx.fillStyle = '#d4dae4';
-    pCtx.fillRect(0, 0, 128, 128);
-    pCtx.fillStyle = '#bdc5d1';
-    pCtx.fillRect(0, 110, 128, 18);
-    pCtx.fillRect(0, 0, 128, 10);
-    pCtx.fillStyle = 'rgba(0,0,0,0.025)';
-    for (let i = 0; i < 300; i++) {
-      pCtx.fillRect(Math.random() * 128, Math.random() * 128, Math.random() * 3 + 1, Math.random() * 3 + 1);
-    }
-    wallTex.update();
-    this.indoorWallTexture = wallTex;
-
-    // Animated Water Base Texture
-    const waterTex = new DynamicTexture('waterTex', { width: 128, height: 128 }, this.scene, true);
-    this.waterTexture = waterTex;
-    this.updateWaterTexture(0);
-  }
-
-  private updateWaterTexture(time: number) {
-    if (!this.waterTexture) return;
-    const ctx = this.waterTexture.getContext();
-    const w = 128; const h = 128;
-    // Base deep water
-    ctx.fillStyle = '#1a4a7a';
-    ctx.fillRect(0, 0, w, h);
-    // Animated shimmer ripples
-    ctx.strokeStyle = 'rgba(100,180,255,0.4)';
-    ctx.lineWidth = 1.5;
-    for (let i = 0; i < 6; i++) {
-      const phase = (time * 0.8 + i * 0.9) % (Math.PI * 2);
-      const y = (i / 6) * h + Math.sin(phase) * 8;
-      ctx.beginPath();
-      for (let x = 0; x <= w; x += 4) {
-        const wy = y + Math.sin(x * 0.15 + phase) * 4;
-        if (x === 0) ctx.moveTo(x, wy);
-        else ctx.lineTo(x, wy);
-      }
-      ctx.stroke();
-    }
-    // Foam highlights
-    ctx.fillStyle = 'rgba(200,230,255,0.15)';
-    for (let i = 0; i < 12; i++) {
-      const fx = (Math.sin(time * 0.3 + i) * 0.5 + 0.5) * w;
-      const fy = (Math.cos(time * 0.4 + i * 1.3) * 0.5 + 0.5) * h;
-      ctx.beginPath();
-      ctx.arc(fx, fy, 4 + Math.sin(time + i) * 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    this.waterTexture.update();
-    // Apply to water materials
-    this.waterMaterials.forEach(m => {
-      m.diffuseTexture = this.waterTexture!;
-    });
-  }
-
-  public updateRealmVisuals(settings: any) {
-    if (!this.scene) return;
-
-    // Time of Day Lighting Palette
-    const tod = settings.timeOfDayPreset || 'day';
-    let ambientDiffuse = new Color3(0.95, 0.95, 1.0);
-    let ambientGround = new Color3(0.15, 0.2, 0.15);
-    let sunDiffuse = new Color3(1.0, 0.97, 0.88);
-    let defaultFog = '#0b1626';
-
-    const moonPhase = settings.moonPhase || 'full';
-
-    if (tod === 'golden_hour') {
-      ambientDiffuse = new Color3(1.0, 0.85, 0.7);
-      ambientGround = new Color3(0.25, 0.15, 0.1);
-      sunDiffuse = new Color3(1.0, 0.6, 0.3);
-      defaultFog = '#1c1208';
-    } else if (tod === 'dusk') {
-      ambientDiffuse = new Color3(0.65, 0.55, 0.85);
-      ambientGround = new Color3(0.15, 0.1, 0.25);
-      sunDiffuse = new Color3(0.85, 0.45, 0.65);
-      defaultFog = '#140c20';
-    } else if (tod === 'midnight') {
-      if (moonPhase === 'eclipse') {
-        ambientDiffuse = new Color3(0.35, 0.15, 0.25);
-        ambientGround = new Color3(0.08, 0.04, 0.08);
-        sunDiffuse = new Color3(0.75, 0.2, 0.25);
-        defaultFog = '#1a0508';
-      } else if (moonPhase === 'crescent') {
-        ambientDiffuse = new Color3(0.18, 0.22, 0.4);
-        ambientGround = new Color3(0.04, 0.06, 0.1);
-        sunDiffuse = new Color3(0.3, 0.38, 0.6);
-        defaultFog = '#040710';
-      } else if (moonPhase === 'new') {
-        ambientDiffuse = new Color3(0.1, 0.12, 0.25);
-        ambientGround = new Color3(0.02, 0.03, 0.06);
-        sunDiffuse = new Color3(0.15, 0.18, 0.35);
-        defaultFog = '#020408';
-      } else {
-        // Full Moon (Default)
-        ambientDiffuse = new Color3(0.3, 0.35, 0.65);
-        ambientGround = new Color3(0.05, 0.08, 0.15);
-        sunDiffuse = new Color3(0.5, 0.6, 0.95);
-        defaultFog = '#050a14';
-      }
-    } else if (tod === 'fantasy_night') {
-      if (moonPhase === 'eclipse') {
-        ambientDiffuse = new Color3(0.35, 0.2, 0.3);
-        ambientGround = new Color3(0.08, 0.05, 0.1);
-        sunDiffuse = new Color3(0.65, 0.3, 0.5);
-        defaultFog = '#160818';
-      } else {
-        ambientDiffuse = new Color3(0.2, 0.45, 0.5);
-        ambientGround = new Color3(0.05, 0.15, 0.12);
-        sunDiffuse = new Color3(0.3, 0.8, 0.65);
-        defaultFog = '#061214';
-      }
-    }
-
-    // 3D Lighting
-    if (this.ambientLight) {
-      this.ambientLight.intensity = settings.enable3DLighting !== false ? 0.85 : 1.1;
-      this.ambientLight.diffuse = ambientDiffuse;
-      this.ambientLight.groundColor = ambientGround;
-    }
-    if (this.dirLight) {
-      this.dirLight.intensity = settings.enable3DLighting !== false ? 0.55 : 0.0;
-      this.dirLight.diffuse = sunDiffuse;
-    }
-
-    // Atmospheric Depth Fog
-    if (settings.enableAtmosphericFog !== false) {
-      this.scene.fogMode = Scene.FOGMODE_EXP2;
-      this.scene.fogDensity = settings.fogDensity || 0.015;
-      const fogHex = settings.fogColor || defaultFog;
-      this.scene.fogColor = Color3.FromHexString(fogHex);
-    } else {
-      this.scene.fogMode = Scene.FOGMODE_NONE;
-    }
-
-    // Vignette Post-Process
-    if (this.vignettePostProcess) {
-      this.vignettePostProcess.vignetteEnabled = settings.enableVignette !== false && settings.vignetteEnabled !== false;
-      if (settings.vignetteWeight !== undefined) {
-        this.vignettePostProcess.vignetteWeight = settings.vignetteWeight / 10;
-      }
-    }
-
-    // Weather Particle Systems
-    const weather = settings.weatherPreset || 'none';
-    const intensity = (settings.weatherIntensity || 50) / 100;
-
-    if (weather === 'none') {
-      if (this.weatherParticleSystem) {
-        this.weatherParticleSystem.stop();
-        this.weatherParticleSystem.dispose();
-        this.weatherParticleSystem = undefined;
-      }
-      this.activeWeatherPreset = 'none';
-    } else if (this.activeWeatherPreset !== weather && this.camera) {
-      if (this.weatherParticleSystem) {
-        this.weatherParticleSystem.stop();
-        this.weatherParticleSystem.dispose();
-        this.weatherParticleSystem = undefined;
-      }
-
-      const ps = new ParticleSystem('realm_weather', Math.round(600 * intensity), this.scene);
-      this.weatherParticleSystem = ps;
-      this.activeWeatherPreset = weather;
-
-      // Particle Emitter Volume
-      ps.emitter = new Vector3(this.cameraTargetX, 12, this.cameraTargetZ);
-      ps.minEmitBox = new Vector3(-25, -2, -25);
-      ps.maxEmitBox = new Vector3(25, 6, 25);
-
-      const wind = settings.windDirection || 'south';
-      const windX = wind === 'east' ? 1.5 : wind === 'west' ? -1.5 : 0;
-      const windZ = wind === 'north' ? 1.5 : wind === 'south' ? -1.5 : 0;
-
-      if (weather === 'gentle_rain') {
-        ps.color1 = new Color4(0.7, 0.85, 1.0, 0.7);
-        ps.color2 = new Color4(0.6, 0.75, 0.95, 0.4);
-        ps.colorDead = new Color4(0.5, 0.7, 0.9, 0.0);
-        ps.minSize = 0.08;
-        ps.maxSize = 0.18;
-        ps.minLifeTime = 0.6;
-        ps.maxLifeTime = 1.2;
-        ps.emitRate = Math.round(400 * intensity);
-        ps.direction1 = new Vector3(windX - 0.5, -18, windZ - 0.5);
-        ps.direction2 = new Vector3(windX - 1.0, -22, windZ - 1.0);
-        ps.gravity = new Vector3(windX * 0.5, -9.81, windZ * 0.5);
-      } else if (weather === 'falling_leaves') {
-        ps.color1 = new Color4(0.95, 0.6, 0.15, 0.9);
-        ps.color2 = new Color4(0.85, 0.35, 0.1, 0.8);
-        ps.colorDead = new Color4(0.6, 0.2, 0.05, 0.0);
-        ps.minSize = 0.25;
-        ps.maxSize = 0.55;
-        ps.minLifeTime = 3.0;
-        ps.maxLifeTime = 6.0;
-        ps.emitRate = Math.round(80 * intensity);
-        ps.direction1 = new Vector3(windX * 1.5 - 1.5, -2.5, windZ * 1.5 - 1.0);
-        ps.direction2 = new Vector3(windX * 1.5 + 1.5, -4.0, windZ * 1.5 + 1.0);
-        ps.minAngularSpeed = -2;
-        ps.maxAngularSpeed = 2;
-        ps.gravity = new Vector3(windX * 0.8 - 0.5, -1.5, windZ * 0.8 - 0.5);
-      } else if (weather === 'snow_flurries') {
-        ps.color1 = new Color4(1.0, 1.0, 1.0, 0.9);
-        ps.color2 = new Color4(0.9, 0.95, 1.0, 0.8);
-        ps.colorDead = new Color4(0.8, 0.9, 1.0, 0.0);
-        ps.minSize = 0.15;
-        ps.maxSize = 0.35;
-        ps.minLifeTime = 2.5;
-        ps.maxLifeTime = 5.0;
-        ps.emitRate = Math.round(200 * intensity);
-        ps.direction1 = new Vector3(windX * 0.8 - 0.8, -2.0, windZ * 0.8 - 0.8);
-        ps.direction2 = new Vector3(windX * 0.8 + 0.8, -3.5, windZ * 0.8 + 0.8);
-        ps.gravity = new Vector3(windX * 0.3, -1.0, windZ * 0.3);
-      } else if (weather === 'fireflies') {
-        ps.color1 = new Color4(0.9, 1.0, 0.3, 0.95);
-        ps.color2 = new Color4(0.4, 1.0, 0.6, 0.85);
-        ps.colorDead = new Color4(0.2, 0.8, 0.4, 0.0);
-        ps.minSize = 0.12;
-        ps.maxSize = 0.28;
-        ps.minLifeTime = 2.0;
-        ps.maxLifeTime = 4.5;
-        ps.emitRate = Math.round(60 * intensity);
-        ps.direction1 = new Vector3(-0.5, 0.2, -0.5);
-        ps.direction2 = new Vector3(0.5, 1.0, 0.5);
-        ps.gravity = new Vector3(0, 0.2, 0);
-      }
-
-      ps.start();
-    } else if (this.weatherParticleSystem && this.activeWeatherPreset === weather) {
-      // Update emission rate on intensity slide
-      this.weatherParticleSystem.emitRate = Math.round(
-        (weather === 'gentle_rain' ? 400 : weather === 'falling_leaves' ? 80 : weather === 'snow_flurries' ? 200 : 60) * intensity
-      );
-    }
-  }
-
-  private updateCameraAspect = (orthoSize: number = 10) => {
-    if (!this.engine || !this.camera) return;
-    const aspect = this.engine.getRenderWidth() / Math.max(1, this.engine.getRenderHeight());
-    this.camera.orthoLeft = -orthoSize * aspect;
-    this.camera.orthoRight = orthoSize * aspect;
-    this.camera.orthoTop = orthoSize;
-    this.camera.orthoBottom = -orthoSize;
-  };
-
-  private onResize = () => {
-    if (!this.engine) return;
-    this.engine.resize();
-    // Re-apply current ortho size on resize
-    const currentOrtho = this.camera.orthoTop || 10;
-    this.updateCameraAspect(currentOrtho);
-  };
-
-  private createDefaultPlayerTexture() {
-    const dynTex = new DynamicTexture('defaultPlayerTex', { width: 64, height: 64 }, this.scene, false);
-    const ctx = dynTex.getContext();
-
-    ctx.clearRect(0, 0, 64, 64);
-
-    // Shadow (oval using scale trick — ICanvasRenderingContext lacks ellipse)
-    ctx.fillStyle = 'rgba(0,0,0,0.22)';
-    ctx.save();
-    ctx.scale(1, 0.28);
-    ctx.beginPath();
-    ctx.arc(32, 60 / 0.28, 14, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-
-    // Legs
-    ctx.fillStyle = '#1e1b4b';
-    ctx.fillRect(20, 46, 10, 16);
-    ctx.fillRect(34, 46, 10, 16);
-
-    // Boots
-    ctx.fillStyle = '#3b2a1a';
-    ctx.fillRect(19, 58, 12, 5);
-    ctx.fillRect(33, 58, 12, 5);
-
-    // Tunic Body (Saints purple)
-    ctx.fillStyle = '#7c3aed';
-    ctx.fillRect(14, 26, 36, 22);
-
-    // Gold belt
-    ctx.fillStyle = '#eab308';
-    ctx.fillRect(14, 44, 36, 3);
-    ctx.fillRect(29, 41, 6, 7);
-
-    // Gold tunic trim center
-    ctx.fillStyle = '#d4a017';
-    ctx.fillRect(28, 26, 8, 18);
-
-    // Cloak/cape sides
-    ctx.fillStyle = '#5b21b6';
-    ctx.fillRect(10, 28, 6, 18);
-    ctx.fillRect(48, 28, 6, 18);
-
-    // Arms / Gauntlets
-    ctx.fillStyle = '#8b5cf6';
-    ctx.fillRect(10, 26, 6, 14);
-    ctx.fillRect(48, 26, 6, 14);
-
-    // Hands
-    ctx.fillStyle = '#f6c99a';
-    ctx.fillRect(10, 38, 7, 7);
-    ctx.fillRect(47, 38, 7, 7);
-
-    // Neck
-    ctx.fillStyle = '#f6c99a';
-    ctx.fillRect(28, 20, 8, 7);
-
-    // Head
-    ctx.fillStyle = '#f6c99a';
-    ctx.fillRect(18, 8, 28, 20);
-
-    // Hair
-    ctx.fillStyle = '#1a0a00';
-    ctx.fillRect(16, 4, 32, 10);
-    ctx.fillRect(16, 8, 4, 12);
-    ctx.fillRect(44, 8, 4, 12);
-
-    // Eyes (expressive)
-    ctx.fillStyle = '#101828';
-    ctx.fillRect(22, 16, 5, 6);
-    ctx.fillRect(37, 16, 5, 6);
-    ctx.fillStyle = '#3b82f6'; // Blue iris
-    ctx.fillRect(23, 17, 3, 4);
-    ctx.fillRect(38, 17, 3, 4);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(24, 17, 1, 1);
-    ctx.fillRect(39, 17, 1, 1);
-
-    // Mouth
-    ctx.fillStyle = '#c07050';
-    ctx.fillRect(26, 24, 12, 2);
-
-    dynTex.update();
-    this.defaultPlayerTexture = dynTex;
-  }
-
-  public startRenderLoop(onTick?: (deltaTime: number) => void) {
-    if (this.isRunning) return;
-    this.isRunning = true;
-
-    this.engine.runRenderLoop(() => {
-      if (typeof performance !== 'undefined') performance.mark('scene_render_start');
-      const deltaTime = this.engine.getDeltaTime() / 1000;
-      this.waterAnimTime += deltaTime;
-      // Animate water tiles smoothly at ~10 Hz (every 100ms) to avoid CPU-to-GPU texture upload thrashing
-      if (this.waterAnimTime - this.lastWaterUpdateTime >= 0.1) {
-        this.lastWaterUpdateTime = this.waterAnimTime;
-        this.updateWaterTexture(this.waterAnimTime);
-      }
-
-      // Viewport bounds for screen-space culling (with a 4-tile margin for seamless transitions)
-      const orthoH = (this.camera.orthoTop || 10) + 4.0;
-      const orthoW = (this.camera.orthoRight || 16) + 4.0;
-      const camX = this.cameraTargetX;
-      const camZ = this.cameraTargetZ;
-
-      // Smooth Grid Interpolation & Walking Animations
-      this.entityMeshes.forEach((mesh, entityId) => {
-        const state = mesh.metadata;
-        if (!state) return;
-
-        // Viewport culling check (players and on-screen entities receive full animation & interpolation)
-        const posX = mesh.position.x;
-        const posZ = mesh.position.z;
-        const isNearScreen =
-          state.isPlayer ||
-          (Math.abs(posX - camX) <= orthoW && Math.abs(posZ - camZ) <= orthoH);
-
-        if (!isNearScreen) {
-          // Off-screen: hide mesh & shadow, snap position directly, skip vertex UV calculations
-          if (mesh.isVisible) mesh.isVisible = false;
-          const shadow = this.shadowMeshes.get(entityId);
-          if (shadow && shadow.isVisible) shadow.isVisible = false;
-
-          mesh.position = state.targetPos;
-          return;
-        }
-
-        // On-screen: ensure visible
-        if (!mesh.isVisible) mesh.isVisible = true;
-        const shadow = this.shadowMeshes.get(entityId);
-        if (shadow && !shadow.isVisible) shadow.isVisible = true;
-
-        // 1. Movement Interpolation
-        const dist = Vector3.Distance(mesh.position, state.targetPos);
-        if (state.isEditor && !state.isPlayer && !state.isCreature) {
-          mesh.position = state.targetPos;
-        } else {
-          if (dist > 0.001) {
-            // Speed matches the 250ms input cadence (4.0 tiles/sec) for seamless continuous gliding.
-            // If network lag or warp creates a gap (> 1.25 tiles), smoothly accelerate to catch up.
-            const speed = dist > 1.25 ? Math.min(14.0, dist * 5.5) : 4.0;
-            const moveStep = speed * deltaTime;
-            if (moveStep >= dist) {
-              mesh.position = state.targetPos;
-            } else {
-              const dir = state.targetPos.subtract(mesh.position).normalize();
-              mesh.position.addInPlace(dir.scale(moveStep));
-            }
-          } else {
-            mesh.position = state.targetPos;
-          }
-        }
-
-        // 2. UV Frame Cycling (per-mesh vertex UVs — not shared Texture.uScale)
-        if (state.spriteConfig) {
-          const config = state.spriteConfig as SpriteSheetConfig;
-          if (config.columns <= 1 && config.rows <= 1) {
-            if (!state.uvFullFrame) {
-              this.setSpriteCellUVs(mesh, 0, 0, 1, 1);
-              state.uvFullFrame = true;
-            }
-          } else {
-            state.uvFullFrame = false;
-            const dir = state.direction || 'down';
-            const rowIdx = config.directions[dir] ?? config.directions.down;
-            let col = config.idleFrame;
-            // Animate walking if moving flag is true OR if actively interpolating to targetPos
-            const isEntityWalking = state.isMoving || dist > 0.01;
-            if (isEntityWalking) {
-              const cycleLength = config.walkCycle?.length || 4;
-              const effectiveSpeed = config.walkSpeed || (cycleLength > 4 ? 10 : 6);
-              state.animTime = (state.animTime || 0) + deltaTime * effectiveSpeed;
-              const frameSeq = config.walkCycle;
-              col = frameSeq[Math.floor(state.animTime) % frameSeq.length];
-            } else {
-              state.animTime = 0;
-            }
-            if (
-              state.uvCol !== col ||
-              state.uvRow !== rowIdx ||
-              state.uvCols !== config.columns ||
-              state.uvRows !== config.rows
-            ) {
-              this.setSpriteCellUVs(mesh, col, rowIdx, config.columns, config.rows);
-              state.uvCol = col;
-              state.uvRow = rowIdx;
-              state.uvCols = config.columns;
-              state.uvRows = config.rows;
-            }
-          }
-        }
-      });
-
-      // Real-time Combat & Focus Target Reticle Following
-      this.updateTargetSelectionIndicator(deltaTime);
-
-      // 3D Camera Momentum & Smooth Zoom Lerping
-      this.applyFreeCamMomentum();
-
-      // 2D Items rendered in 3D (bobbing, spinning, glow updates)
-      this.itemBillboards.update(deltaTime);
-
-      // Dynamic Water Animation Shimmer
-      if (this.waterTexture) {
-        this.waterAnimTime += deltaTime * (this.waterFlowSpeed || 1.0);
-        if (performance.now() - this.lastWaterUpdateTime > 50) {
-          this.lastWaterUpdateTime = performance.now();
-          this.updateWaterTexture(this.waterAnimTime);
-        }
-      }
-
-      if (onTick) onTick(deltaTime);
-      this.scene.render();
-      
-      if (typeof performance !== 'undefined') {
-        performance.mark('scene_render_end');
-        performance.measure('scene_render_time', 'scene_render_start', 'scene_render_end');
-      }
-    });
-  }
-
-  public stopRenderLoop() {
-    this.isRunning = false;
-    this.engine.stopRenderLoop();
-  }
-
-  /**
-   * Move camera instantly to a world position (used on map load / spawn)
-   */
-  public snapCameraTo(worldX: number, worldZ: number) {
-    if (this.cameraSettings.borderClamping) {
-      const clamped = clampCameraFocus(
-        worldX,
-        worldZ,
-        this.currentMapWidth,
-        this.currentMapHeight,
-        this.currentTileSize
-      );
-      worldX = clamped.x;
-      worldZ = clamped.z;
-    }
-
-    this.cameraTargetX = worldX;
-    this.cameraTargetZ = worldZ;
-    const pitch = this.cameraProfile.pitch || Math.PI / 4;
-    const dist = this.cameraProfile.distance || 14;
-    const yaw = this.cameraYaw || 0;
-    const camY = Math.max(1.5, dist * Math.sin(pitch));
-    const horizDist = dist * Math.cos(pitch);
-    const offsetX = -horizDist * Math.sin(yaw);
-    const offsetZ = -horizDist * Math.cos(yaw);
-    this.camera.position = new Vector3(worldX + offsetX, camY, worldZ + offsetZ);
-    this.camera.setTarget(new Vector3(worldX, 0, worldZ));
-    this.cameraSnapped = true;
-  }
-
-  /**
-   * Smoothly follow a world position each tick.
-   * No-op while editor camera mode is active (engine-editor foundation).
-   */
-  public setCameraPosition(targetX: number, targetZ: number, lerpFactor: number = 0.35) {
-    if (this.editorCameraMode) return;
-
-    if (this.cameraSettings.borderClamping) {
-      const clamped = clampCameraFocus(
-        targetX,
-        targetZ,
-        this.currentMapWidth,
-        this.currentMapHeight,
-        this.currentTileSize
-      );
-      targetX = clamped.x;
-      targetZ = clamped.z;
-    }
-
-    this.cameraTargetX = targetX;
-    this.cameraTargetZ = targetZ;
-
-    if (!this.cameraSnapped) {
-      // Snap immediately on first call
-      this.snapCameraTo(targetX, targetZ);
-      return;
-    }
-
-    const pitch = this.cameraProfile.pitch || Math.PI / 4;
-    const dist = this.cameraProfile.distance || 14;
-    const yaw = this.cameraYaw || 0;
-    const camY = Math.max(1.5, dist * Math.sin(pitch));
-    const horizDist = dist * Math.cos(pitch);
-    const offsetX = -horizDist * Math.sin(yaw);
-    const offsetZ = -horizDist * Math.cos(yaw);
-    const targetCamPos = new Vector3(targetX + offsetX, camY, targetZ + offsetZ);
-    
-    // Spring damper / Decoupled Physics with snappy responsive follow
-    const dt = this.engine.getDeltaTime() / 1000.0;
-    const factor = this.cameraSettings.playerFollowSmoothing ?? lerpFactor ?? this.cameraProfile.lerpFactor ?? 0.35;
-    const smoothFactor = 1.0 - Math.exp(-factor * 60 * dt);
-    
-    this.camera.position = Vector3.Lerp(this.camera.position, targetCamPos, smoothFactor);
-    this.camera.setTarget(Vector3.Lerp(
-      this.camera.getTarget(),
-      new Vector3(targetX, 0, targetZ),
-      smoothFactor
-    ));
-  }
-
-  public isEditorCameraMode(): boolean {
-    return this.editorCameraMode;
-  }
-
-  /**
-   * Detach player follow and enable middle-mouse / Space+drag pan.
-   * Call when entering Studio editor runtime; disable on Playtest.
-   */
-  public setEditorCameraMode(enabled: boolean) {
-    if (this.editorCameraMode === enabled) return;
-    this.editorCameraMode = enabled;
-    if (this.currentRawMapData) {
-      this.loadTilemap(this.currentRawMapData);
-    }
-    if (enabled) {
-      this.editorCameraBookmark = {
-        x: this.cameraTargetX,
-        z: this.cameraTargetZ,
-        ortho: this.camera.orthoTop || 10,
-      };
-      this.canvas.addEventListener('pointerdown', this.onEditorPointerDown);
-      this.canvas.addEventListener('dblclick', this.onEditorDblClick);
-      this.canvas.addEventListener('auxclick', this.onEditorAuxClick);
-      this.canvas.addEventListener('wheel', this.onEditorWheel, { passive: false });
-      window.addEventListener('pointermove', this.onEditorPointerMove);
-      window.addEventListener('pointerup', this.onEditorPointerUp);
-      window.addEventListener('keydown', this.onEditorKeyDown);
-      window.addEventListener('keyup', this.onEditorKeyUp);
-      if (this.currentMapWidth > 0 && this.currentMapHeight > 0) {
-        this.fitMapInView();
-      }
-      this.setEditorMapBordersVisible(true);
-    } else {
-      this.setEditorMapBordersVisible(false);
-      this.canvas.removeEventListener('pointerdown', this.onEditorPointerDown);
-      this.canvas.removeEventListener('dblclick', this.onEditorDblClick);
-      this.canvas.removeEventListener('auxclick', this.onEditorAuxClick);
-      this.canvas.removeEventListener('wheel', this.onEditorWheel);
-      window.removeEventListener('pointermove', this.onEditorPointerMove);
-      window.removeEventListener('pointerup', this.onEditorPointerUp);
-      window.removeEventListener('keydown', this.onEditorKeyDown);
-      window.removeEventListener('keyup', this.onEditorKeyUp);
-      this.editorPanPointerId = null;
-      this.editorSpaceHeld = false;
-      this.cameraSnapped = true;
-    }
-  }
-
-  /** Restore camera focus saved when editor mode was entered (optional). */
-  public restoreEditorCameraBookmark() {
-    if (!this.editorCameraBookmark) return;
-    const { x, z, ortho } = this.editorCameraBookmark;
-    this.updateCameraAspect(ortho);
-    this.snapCameraTo(x, z);
-  }
-
-  public getCameraFocus(): { x: number; z: number; ortho: number } {
-    return {
-      x: this.cameraTargetX,
-      z: this.cameraTargetZ,
-      ortho: this.camera.orthoTop || 10,
-    };
-  }
-
-  public setFreeCam(enabled: boolean) {
-    this.isFreeCam = enabled;
-    if (enabled) {
-      this.camera.mode = FreeCamera.PERSPECTIVE_CAMERA;
-      this.camera.fov = this.cameraSettings.fov || 0.8;
-      this.updateFreeCamPosition();
-    } else {
-      this.camera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
-      this.cameraYaw = 0;
-      this.cameraPitch = this.cameraSettings.isometricPitch || Math.PI / 4;
-      this.updateCameraAspect(this.camera.orthoTop || 10);
-      this.camera.position = new Vector3(this.cameraTargetX, this.cameraSettings.isometricDistance || 14, this.cameraTargetZ - (this.cameraSettings.isometricDistance || 14));
-      this.camera.setTarget(new Vector3(this.cameraTargetX, 0, this.cameraTargetZ));
-      this.cameraSnapped = true;
-    }
-  }
-
-  public getCameraSettings() {
-    return { ...this.cameraSettings };
-  }
-
-  public applyPlayerCameraStyle(style: 'isometric' | 'follow45' | 'topdown' | 'free') {
-    this.cameraSettings.playerCameraStyle = style;
-    if (style === 'topdown') {
-      this.camera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
-      this.cameraProfile.pitch = Math.PI / 2 - 0.01;
-      this.cameraProfile.distance = 14;
-      this.cameraYaw = 0;
-      this.updateCameraAspect(this.camera.orthoTop || 10);
-    } else if (style === 'follow45') {
-      this.camera.mode = FreeCamera.PERSPECTIVE_CAMERA;
-      this.camera.fov = this.cameraSettings.fov || 0.8;
-      this.cameraProfile.pitch = Math.PI / 4;
-      this.cameraProfile.distance = 16;
-      this.cameraYaw = 0;
-    } else if (style === 'free') {
-      this.camera.mode = FreeCamera.PERSPECTIVE_CAMERA;
-      this.camera.fov = this.cameraSettings.fov || 0.8;
-      this.cameraProfile.pitch = this.cameraPitch || Math.PI / 4;
-      this.cameraProfile.distance = this.cameraDistance || 18;
-    } else if (style === 'isometric') {
-      this.camera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
-      this.cameraProfile.pitch = this.cameraSettings.isometricPitch || Math.PI / 4;
-      this.cameraProfile.distance = this.cameraSettings.isometricDistance || 14;
-      this.cameraYaw = 0;
-      this.updateCameraAspect(this.camera.orthoTop || 10);
-    }
-    if (!this.editorCameraMode) {
-      this.snapCameraTo(this.cameraTargetX, this.cameraTargetZ);
-    }
-  }
-
-  public setCameraSettings(settings: Partial<typeof this.cameraSettings>) {
-    this.cameraSettings = { ...this.cameraSettings, ...settings };
-    if (settings.fov !== undefined && this.camera) {
-      this.camera.fov = settings.fov;
-    }
-    if (settings.vignetteEnabled !== undefined && this.vignettePostProcess) {
-      this.vignettePostProcess.vignetteEnabled = settings.vignetteEnabled;
-    }
-    if (settings.vignetteWeight !== undefined && this.vignettePostProcess) {
-      this.vignettePostProcess.vignetteWeight = settings.vignetteWeight;
-    }
-    if (settings.playerFollowSmoothing !== undefined) {
-      this.cameraProfile.lerpFactor = settings.playerFollowSmoothing;
-    }
-    if (settings.playerCameraStyle !== undefined) {
-      this.applyPlayerCameraStyle(settings.playerCameraStyle);
-    }
-    if (settings.isometricPitch !== undefined && !this.isFreeCam) {
-      this.cameraProfile.pitch = settings.isometricPitch;
-      this.snapCameraTo(this.cameraTargetX, this.cameraTargetZ);
-    }
-    if (this.isFreeCam) {
-      this.updateFreeCamPosition();
-    }
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('studio_camera_state_changed', { detail: { settings: this.cameraSettings } })
-      );
-    }
-  }
-
-  public setViewAngle(preset: 'isometric' | 'topdown' | 'front' | 'back' | 'east' | 'west' | 'free') {
-    switch (preset) {
-      case 'isometric':
-        this.cameraYaw = 0;
-        this.cameraPitch = this.cameraSettings.isometricPitch || Math.PI / 4;
-        this.killCameraMomentum();
-        this.updateFreeCamPosition();
-        break;
-      case 'topdown':
-        this.cameraYaw = 0;
-        this.cameraPitch = Math.PI / 2 - 0.02;
-        this.killCameraMomentum();
-        this.updateFreeCamPosition();
-        break;
-      case 'front':
-        this.cameraYaw = 0;
-        this.cameraPitch = 0.15;
-        this.killCameraMomentum();
-        this.updateFreeCamPosition();
-        break;
-      case 'back':
-        this.cameraYaw = Math.PI;
-        this.cameraPitch = 0.15;
-        this.killCameraMomentum();
-        this.updateFreeCamPosition();
-        break;
-      case 'east':
-        this.cameraYaw = Math.PI / 2;
-        this.cameraPitch = 0.15;
-        this.killCameraMomentum();
-        this.updateFreeCamPosition();
-        break;
-      case 'west':
-        this.cameraYaw = -Math.PI / 2;
-        this.cameraPitch = 0.15;
-        this.killCameraMomentum();
-        this.updateFreeCamPosition();
-        break;
-      case 'free':
-        if (!this.isFreeCam) {
-          this.setFreeCam(true);
-        }
-        break;
-    }
-  }
-
-  public updateFreeCamPosition() {
-    const cosP = Math.cos(this.cameraPitch);
-    const sinP = Math.sin(this.cameraPitch);
-    const sinY = Math.sin(this.cameraYaw);
-    const cosY = Math.cos(this.cameraYaw);
-    const posX = this.cameraTargetX + this.cameraDistance * cosP * sinY;
-    const posY = Math.max(1.5, this.cameraDistance * sinP);
-    const posZ = this.cameraTargetZ - this.cameraDistance * cosP * cosY;
-    this.camera.position = new Vector3(posX, posY, posZ);
-    this.camera.setTarget(new Vector3(this.cameraTargetX, 0, this.cameraTargetZ));
-    this.cameraSnapped = true;
-  }
-
-  public rotateFreeCam(dxPx: number, dyPx: number) {
-    const invX = this.cameraSettings.invertOrbitX ? -1 : 1;
-    const invY = this.cameraSettings.invertOrbitY ? -1 : 1;
-    const yawDelta = dxPx * 0.004 * (this.cameraSettings.orbitSensitivity || 1.0) * invX;
-    const pitchDelta = -dyPx * 0.004 * (this.cameraSettings.orbitSensitivity || 1.0) * invY;
-    this.cameraYaw += yawDelta;
-    this.cameraPitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, this.cameraPitch + pitchDelta));
-    // Store velocity for momentum on release
-    this.cameraVelocityYaw = yawDelta;
-    this.cameraVelocityPitch = pitchDelta;
-    this.updateFreeCamPosition();
-  }
-
-  public panFreeCamByScreenDelta(dxPx: number, dyPx: number) {
-    const sinY = Math.sin(this.cameraYaw);
-    const cosY = Math.cos(this.cameraYaw);
-    const speed = (this.cameraDistance / 20) * 0.035 * (this.cameraSettings.panSensitivity || 1.0);
-    const moveX = (-dxPx * cosY + dyPx * sinY) * speed;
-    const moveZ = (-dxPx * sinY - dyPx * cosY) * speed;
-    this.cameraTargetX += moveX;
-    this.cameraTargetZ += moveZ;
-    // Store velocity for momentum on release
-    this.cameraVelocityPanX = moveX;
-    this.cameraVelocityPanZ = moveZ;
-    this.updateFreeCamPosition();
-  }
-
-  public zoomFreeCam(deltaY: number) {
-    // Multiplicative zoom for smooth feel instead of fixed +-2 steps
-    const zoomFactor = deltaY > 0 ? 1.08 : 0.93;
-    this.targetCameraDistance = Math.max(4, Math.min(120, this.targetCameraDistance * zoomFactor));
-  }
-
-  /**
-   * Called from render loop — applies inertia damping to orbit/pan and
-   * smooth-lerps zoom distance. No-ops when velocities are below threshold.
-   */
-  public applyFreeCamMomentum() {
-    if (!this.isFreeCam) return;
-    let needsUpdate = false;
-    const damping = this.cameraSettings.damping || 0.90;
-
-    // Only apply momentum when pointer is NOT actively dragging
-    if (this.editorPanPointerId === null) {
-      // Orbit momentum
-      if (Math.abs(this.cameraVelocityYaw) > 0.0001 || Math.abs(this.cameraVelocityPitch) > 0.0001) {
-        this.cameraYaw += this.cameraVelocityYaw;
-        this.cameraPitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, this.cameraPitch + this.cameraVelocityPitch));
-        this.cameraVelocityYaw *= damping;
-        this.cameraVelocityPitch *= damping;
-        needsUpdate = true;
-      }
-      // Pan momentum
-      if (Math.abs(this.cameraVelocityPanX) > 0.0001 || Math.abs(this.cameraVelocityPanZ) > 0.0001) {
-        this.cameraTargetX += this.cameraVelocityPanX;
-        this.cameraTargetZ += this.cameraVelocityPanZ;
-        this.cameraVelocityPanX *= damping;
-        this.cameraVelocityPanZ *= damping;
-        needsUpdate = true;
-      }
-    }
-
-    // Smooth zoom lerp
-    const dDist = this.targetCameraDistance - this.cameraDistance;
-    if (Math.abs(dDist) > 0.01) {
-      this.cameraDistance += dDist * 0.15;
-      needsUpdate = true;
-    } else if (this.cameraDistance !== this.targetCameraDistance) {
-      this.cameraDistance = this.targetCameraDistance;
-      needsUpdate = true;
-    }
-
-    if (needsUpdate) {
-      this.updateFreeCamPosition();
-    }
-  }
-
-  /** Stop all camera momentum (e.g. on pointer-down to grab). */
-  public killCameraMomentum() {
-    this.cameraVelocityYaw = 0;
-    this.cameraVelocityPitch = 0;
-    this.cameraVelocityPanX = 0;
-    this.cameraVelocityPanZ = 0;
-  }
-
-  private handleEditorPointerDown(e: PointerEvent) {
-    if (!this.editorCameraMode) return;
-    const middle = e.button === 1;
-    const right = e.button === 2 && this.isFreeCam;
-    const spaceLeft = e.button === 0 && this.editorSpaceHeld;
-    if (!middle && !right && !spaceLeft) return;
-    e.preventDefault();
-    this.killCameraMomentum();
-    this.editorPanPointerId = e.pointerId;
-    this.editorPanLastClientX = e.clientX;
-    this.editorPanLastClientY = e.clientY;
-    try {
-      this.canvas.setPointerCapture(e.pointerId);
-    } catch {
-      /* ignore */
-    }
-  }
-
-  private handleEditorPointerMove(e: PointerEvent) {
-    if (!this.editorCameraMode || this.editorPanPointerId !== e.pointerId) return;
-    const dx = e.clientX - this.editorPanLastClientX;
-    const dy = e.clientY - this.editorPanLastClientY;
-    this.editorPanLastClientX = e.clientX;
-    this.editorPanLastClientY = e.clientY;
-
-    if (this.isFreeCam) {
-      const isPan = e.shiftKey || this.editorSpaceHeld;
-      if (isPan) {
-        this.panFreeCamByScreenDelta(dx, dy);
-      } else {
-        this.rotateFreeCam(dx, dy);
-      }
-    } else {
-      this.panEditorCameraByScreenDelta(dx, dy);
-    }
-  }
-
-  private handleEditorPointerUp(e: PointerEvent) {
-    if (this.editorPanPointerId !== e.pointerId) return;
-    this.editorPanPointerId = null;
-    try {
-      this.canvas.releasePointerCapture(e.pointerId);
-    } catch {
-      /* ignore */
-    }
-  }
-
-  /** Screen-pixel drag → world pan (orthographic approx). Unclamped in editor. */
-  public panEditorCameraByScreenDelta(dxPx: number, dyPx: number) {
-    const h = Math.max(1, this.engine.getRenderHeight());
-    const ortho = this.camera.orthoTop || 10;
-    // Match isometric view: screen Y maps roughly to world Z with pitch stretch.
-    const worldPerPx = (ortho * 2) / h;
-    const worldDx = -dxPx * worldPerPx;
-    const worldDz = dyPx * worldPerPx * 1.414;
-    // Editor pan must reach map edges — do not use play-mode hard clamp.
-    this.cameraTargetX += worldDx;
-    this.cameraTargetZ += worldDz;
-    this.camera.position = new Vector3(this.cameraTargetX, 14, this.cameraTargetZ - 14);
-    this.camera.setTarget(new Vector3(this.cameraTargetX, 0, this.cameraTargetZ));
-    this.cameraSnapped = true;
-  }
-
-  public resetCameraSnap() {
-    this.cameraSnapped = false;
+    this.renderer.createDefaultPlayerTexture();
+    this.renderer.createProceduralTextures();
   }
 
   public getCurrentTileSize(): number {
@@ -1672,11 +611,11 @@ export class BabylonEngine {
       this.batchedQuadIndex.clear();
       this.tilesetMeshBySource.clear();
 
-      if (this.voxelWorld) {
-        for (const chunk of this.voxelWorld.chunks.values()) {
-          this.voxelMesher?.disposeChunkMesh(chunk.key);
+      if (this.voxel.voxelWorld) {
+        for (const chunk of this.voxel.voxelWorld.chunks.values()) {
+          this.voxel.voxelMesher?.disposeChunkMesh(chunk.key);
         }
-        this.voxelWorld = undefined;
+        this.voxel.voxelWorld = undefined;
       }
       
       this.disableLogicGridOverlay();
@@ -1688,7 +627,7 @@ export class BabylonEngine {
         this.mapBoundaryMesh.dispose();
         this.mapBoundaryMesh = undefined;
       }
-      this.cameraSnapped = false; // Force snap on next setCameraPosition
+      this.renderer.cameraSnapped = false; // Force snap on next setCameraPosition
     } else {
       // Seamless transition: preserve tileMeshes, but clear objects/pickPlane
       this.objectMeshes.forEach((mesh) => mesh.dispose());
@@ -1719,23 +658,23 @@ export class BabylonEngine {
     // In editor mode, keep editor zoom / fitMapInView.
     if (!this.editorCameraMode) {
       const targetOrtho = 6.0;
-      this.updateCameraAspect(targetOrtho);
+      this.renderer.updateCameraAspect(targetOrtho);
 
       // Apply map-specific camera style restrictions
       const mapCameraStyle = (mapData as any).cameraStyle;
       const allowCustom = (mapData as any).allowCustomCamera ?? (mapData as any).allowCustomPlayerCamera ?? false;
       
       if (mapCameraStyle && !allowCustom) {
-        this.applyPlayerCameraStyle(mapCameraStyle as any);
+        this.renderer.applyPlayerCameraStyle(mapCameraStyle as any);
       } else {
         // Apply user's active camera style, defaulting to map author's camera style
-        this.applyPlayerCameraStyle(this.cameraSettings.playerCameraStyle || (mapCameraStyle as any) || 'isometric');
+        this.renderer.applyPlayerCameraStyle(this.renderer.cameraSettings.playerCameraStyle || (mapCameraStyle as any) || 'isometric');
       }
     }
 
     // Authoritative 3D Voxel World Rendering
     if (mapData.voxelDoc && mapData.voxelDoc.chunks && Object.keys(mapData.voxelDoc.chunks).length > 0) {
-      this.loadVoxelWorld(mapData.voxelDoc);
+      this.voxel.loadVoxelWorld(mapData.voxelDoc);
     } else if (tileLayers && tileLayers.length > 0 && tilesets && tilesets.length > 0) {
       const sortedTilesets = [...tilesets].sort((a, b) => b.firstgid - a.firstgid);
 
@@ -1849,7 +788,7 @@ export class BabylonEngine {
       // --- PHASE B: FILL SKIRT & NEIGHBOR EDGE BLEED ---
       const isEditor = this.editorCameraMode;
       const shouldRenderNeighborBleed = this.showNeighborBleedPreview || !isEditor;
-      const hasVoxelWorldMesh = Boolean((mapData as any).voxelDoc || this.voxelWorld);
+      const hasVoxelWorldMesh = Boolean((mapData as any).voxelDoc || this.voxel.voxelWorld);
       const SKIRT_PADDING = (isEditor || hasVoxelWorldMesh) ? 0 : 64;
 
       const biome = (mapData as any).biome || 'default';
@@ -2067,17 +1006,17 @@ export class BabylonEngine {
       });
 
       console.log(`[BabylonEngine] loadTilemap complete. Meshed ${totalTilesMeshed} tiles across ${tilesetVertexData.size} chunks.`);
-      console.log(`[BabylonEngine] Camera position:`, this.camera.position, `Ortho dims:`, {
-        left: this.camera.orthoLeft,
-        right: this.camera.orthoRight,
-        top: this.camera.orthoTop,
-        bottom: this.camera.orthoBottom
+      console.log(`[BabylonEngine] Camera position:`, this.renderer.camera.position, `Ortho dims:`, {
+        left: this.renderer.camera.orthoLeft,
+        right: this.renderer.camera.orthoRight,
+        top: this.renderer.camera.orthoTop,
+        bottom: this.renderer.camera.orthoBottom
       });
       console.log(`[BabylonEngine] Tilesets config:`, tilesets);
       console.log(`[BabylonEngine] Canvas size:`, this.canvas.width, this.canvas.height);
     }
 
-    const hasVoxelWorld = Boolean((mapData as any).voxelDoc || this.voxelWorld);
+    const hasVoxelWorld = Boolean((mapData as any).voxelDoc || this.voxel.voxelWorld);
 
     // If rich layers were all GID 0 (or failed), fall back to colored logic grid ONLY if no 3D voxel world is present.
     // Otherwise Studio shows only scene clearColor (near-black) — DEMO after PR #20.
@@ -2128,7 +1067,7 @@ export class BabylonEngine {
                 const wallMat = new StandardMaterial(`baseWallMat`, this.scene);
                 this.applyTileMaterial(wallMat, tileId, 0, 0, true);
                 block.material = wallMat;
-                if (this.shadowGen) this.shadowGen.addShadowCaster(block);
+                if (this.renderer.shadowGen) this.renderer.shadowGen.addShadowCaster(block);
                 objs.push(block);
               } else if (tileId === 2 || tileId === 3) {
                 for (let t = 0; t < 2; t++) {
@@ -2146,7 +1085,7 @@ export class BabylonEngine {
                 const trunkMat = new StandardMaterial(`baseTrunkMat`, this.scene);
                 trunkMat.diffuseColor = new Color3(0.35, 0.22, 0.12);
                 trunk.material = trunkMat;
-                if (this.shadowGen) this.shadowGen.addShadowCaster(trunk);
+                if (this.renderer.shadowGen) this.renderer.shadowGen.addShadowCaster(trunk);
                 objs.push(trunk);
                 
                 const foliage = MeshBuilder.CreatePlane(`base_tree`, { width: tileSize * 1.4, height: tileSize * 1.5 }, this.scene);
@@ -2155,7 +1094,7 @@ export class BabylonEngine {
                 treeMat.diffuseColor = new Color3(0.1, 0.52, 0.2);
                 treeMat.emissiveColor = new Color3(0.01, 0.08, 0.02);
                 foliage.material = treeMat;
-                if (this.shadowGen) this.shadowGen.addShadowCaster(foliage);
+                if (this.renderer.shadowGen) this.renderer.shadowGen.addShadowCaster(foliage);
                 objs.push(foliage);
               } else if (tileId === 6) {
                 const ore = MeshBuilder.CreateBox(`base_ore`, { width: tileSize * 0.7, height: tileSize * 0.45, depth: tileSize * 0.7 }, this.scene);
@@ -2164,7 +1103,7 @@ export class BabylonEngine {
                 oreMat.specularColor = new Color3(0.4, 0.3, 0.2);
                 oreMat.emissiveColor = new Color3(0.08, 0.06, 0.03);
                 ore.material = oreMat;
-                if (this.shadowGen) this.shadowGen.addShadowCaster(ore);
+                if (this.renderer.shadowGen) this.renderer.shadowGen.addShadowCaster(ore);
                 objs.push(ore);
               } else if (tileId === 10) {
                 const buoy = MeshBuilder.CreateBox(`base_buoy`, { width: 0.15, height: 0.4, depth: 0.15 }, this.scene);
@@ -2179,7 +1118,7 @@ export class BabylonEngine {
                 stallMat.diffuseColor = new Color3(0.72, 0.55, 0.18);
                 stallMat.emissiveColor = new Color3(0.1, 0.07, 0.02);
                 stall.material = stallMat;
-                if (this.shadowGen) this.shadowGen.addShadowCaster(stall);
+                if (this.renderer.shadowGen) this.renderer.shadowGen.addShadowCaster(stall);
                 objs.push(stall);
               } else if (tileId === 9) {
                 const anvil = MeshBuilder.CreateBox(`base_anvil`, { width: tileSize * 0.5, height: tileSize * 0.35, depth: tileSize * 0.4 }, this.scene);
@@ -2188,7 +1127,7 @@ export class BabylonEngine {
                 anvilMat.specularColor = new Color3(0.6, 0.6, 0.7);
                 anvilMat.specularPower = 24;
                 anvil.material = anvilMat;
-                if (this.shadowGen) this.shadowGen.addShadowCaster(anvil);
+                if (this.renderer.shadowGen) this.renderer.shadowGen.addShadowCaster(anvil);
                 objs.push(anvil);
               } else if (tileId === 11) {
                 const thicket = MeshBuilder.CreateBox(`base_bramble`, { width: tileSize * 0.95, height: tileSize * 0.85, depth: tileSize * 0.95 }, this.scene);
@@ -2196,7 +1135,7 @@ export class BabylonEngine {
                 brambleMat.diffuseColor = new Color3(0.22, 0.38, 0.12);
                 brambleMat.emissiveColor = new Color3(0.04, 0.08, 0.02);
                 thicket.material = brambleMat;
-                if (this.shadowGen) this.shadowGen.addShadowCaster(thicket);
+                if (this.renderer.shadowGen) this.renderer.shadowGen.addShadowCaster(thicket);
                 objs.push(thicket);
               } else if (tileId === 12) {
                 const pillar = MeshBuilder.CreateBox(`base_terminal`, { width: tileSize * 0.35, height: tileSize * 1.0, depth: tileSize * 0.35 }, this.scene);
@@ -2206,7 +1145,7 @@ export class BabylonEngine {
                 pillarMat.specularColor = new Color3(0.3, 0.4, 0.8);
                 pillarMat.specularPower = 48;
                 pillar.material = pillarMat;
-                if (this.shadowGen) this.shadowGen.addShadowCaster(pillar);
+                if (this.renderer.shadowGen) this.renderer.shadowGen.addShadowCaster(pillar);
                 objs.push(pillar);
               }
               
@@ -2501,7 +1440,7 @@ export class BabylonEngine {
     this.updateEditorMapBorders();
 
     if (!this.editorCameraMode) {
-      this.applyPlayerCameraStyle(this.cameraSettings.playerCameraStyle);
+      this.renderer.applyPlayerCameraStyle(this.renderer.cameraSettings.playerCameraStyle);
     }
 
     // Always ensure 3D Voxel World is loaded and rendered
@@ -2516,278 +1455,7 @@ export class BabylonEngine {
     if (mapId && voxelDoc.id !== mapId) {
       voxelDoc.id = mapId;
     }
-    this.loadVoxelWorld(voxelDoc);
-  }
-
-  public loadVoxelWorld(docOrWorld: VoxelWorld | VoxelWorldDocV3) {
-    if (!this.scene) return;
-    if (!this.voxelMesher) {
-      this.voxelMesher = new VoxelChunkMesher(this.scene);
-    }
-
-    if (this.voxelWorld) {
-      for (const chunk of this.voxelWorld.chunks.values()) {
-        this.voxelMesher.disposeChunkMesh(chunk.key);
-      }
-      this.clearAdjacentVoxelMeshes();
-    }
-
-    if (docOrWorld instanceof VoxelWorld) {
-      this.voxelWorld = docOrWorld;
-    } else {
-      this.voxelWorld = VoxelWorld.deserializeFromDoc(docOrWorld);
-    }
-
-    if (this.currentMapId && this.voxelWorld.id !== this.currentMapId) {
-      this.voxelWorld.id = this.currentMapId;
-    }
-    if (this.currentMapWidth && !this.voxelWorld.mapWidth) this.voxelWorld.mapWidth = this.currentMapWidth;
-    if (this.currentMapHeight && !this.voxelWorld.mapHeight) this.voxelWorld.mapHeight = this.currentMapHeight;
-
-    // Register with SpatialVoxelWorldManager
-    SpatialVoxelWorldManager.getInstance().registerWorld(this.voxelWorld, 0, 0);
-
-    for (const chunk of this.voxelWorld.chunks.values()) {
-      const result = this.voxelMesher.meshChunk(this.voxelWorld, chunk);
-      if (result) {
-        result.mesh.parent = this.rootNode;
-      }
-    }
-
-    // Stream and mesh any adjacent neighbor maps from active chunks data
-    const rawChunks = (this as any).currentMapData?.chunks;
-    if (Array.isArray(rawChunks)) {
-      for (const c of rawChunks) {
-        if (c.mapId !== this.voxelWorld.id && c.voxelDoc) {
-          this.streamAdjacentVoxelMap(c.mapId, c.voxelDoc, c.offsetX || 0, c.offsetZ || 0);
-        }
-      }
-    }
-  }
-
-  private adjacentVoxelMeshes = new Map<string, Mesh[]>();
-
-  public clearAdjacentVoxelMeshes() {
-    for (const meshes of this.adjacentVoxelMeshes.values()) {
-      for (const m of meshes) {
-        m.dispose();
-      }
-    }
-    this.adjacentVoxelMeshes.clear();
-  }
-
-  public streamAdjacentVoxelMap(mapId: string, voxelDoc: VoxelWorldDocV3, offsetX = 0, offsetZ = 0) {
-    if (!this.scene || !this.voxelWorld || !this.voxelMesher) return;
-    if (this.adjacentVoxelMeshes.has(mapId)) return; // already streamed
-
-    const neighborWorld = VoxelWorld.deserializeFromDoc(voxelDoc);
-    const tileSize = this.getCurrentTileSize?.() || 1;
-
-    let dir: 'north' | 'east' | 'south' | 'west' = 'east';
-    if (offsetZ > 0) dir = 'north';
-    else if (offsetZ < 0) dir = 'south';
-    else if (offsetX > 0) dir = 'east';
-    else if (offsetX < 0) dir = 'west';
-
-    this.voxelWorld.registerAdjacentNeighbor(dir, neighborWorld, 0, 0);
-    const reverse: Record<'north' | 'east' | 'south' | 'west', 'north' | 'east' | 'south' | 'west'> = {
-      north: 'south',
-      south: 'north',
-      east: 'west',
-      west: 'east',
-    };
-    neighborWorld.registerAdjacentNeighbor(reverse[dir], this.voxelWorld, 0, 0);
-
-    const meshes: Mesh[] = [];
-    for (const chunk of neighborWorld.chunks.values()) {
-      const result = this.voxelMesher.meshChunk(neighborWorld, chunk);
-      if (result) {
-        result.mesh.parent = this.rootNode;
-        result.mesh.position.x += offsetX * tileSize;
-        result.mesh.position.z += offsetZ * tileSize;
-        meshes.push(result.mesh);
-      }
-    }
-    this.adjacentVoxelMeshes.set(mapId, meshes);
-    this.meshDirtyVoxelChunks();
-  }
-
-  public meshDirtyVoxelChunks() {
-    if (!this.scene || !this.voxelWorld || !this.voxelMesher) return;
-    for (const chunk of this.voxelWorld.chunks.values()) {
-      if (chunk.isDirty) {
-        const result = this.voxelMesher.meshChunk(this.voxelWorld, chunk);
-        if (result) {
-          result.mesh.parent = this.rootNode;
-        }
-      }
-    }
-  }
-
-  public getVoxelSurfaceY(worldX: number, worldZ: number): number {
-    if (!this.voxelWorld) return 0;
-    const voxelCoords = this.voxelWorld.worldMeshToVoxel(worldX, 0, worldZ);
-    const wx = voxelCoords.wx;
-    const wz = voxelCoords.wz;
-
-    for (let wy = this.voxelWorld.totalHeightBlocks - 1; wy >= 0; wy--) {
-      const word = typeof this.voxelWorld.getVoxelWithHalo === 'function'
-        ? this.voxelWorld.getVoxelWithHalo(wx, wy, wz)
-        : this.voxelWorld.getVoxel(wx, wy, wz);
-      if (word && (word & 0xfff) !== 0) {
-        return (wy - 15) * 1.0;
-      }
-    }
-    return 0;
-  }
-
-  private voxelCursorMesh?: Mesh;
-  private voxelCursorMaterial?: StandardMaterial;
-  private voxelCursorBoxes: Mesh[] = [];
-  private voxelCursorRoot?: TransformNode;
-
-  private voxelPlaneLockEnabled: boolean = true;
-  private voxelTargetPlaneY: number = 0;
-  private voxelPlaneMask: number[] | null = null;
-  private voxelBuildUpMode: boolean = false;
-  private voxelBrushAxis: VoxelBrushAxis = 'xz';
-
-  /**
-   * Sets authoritative Studio editing constraints in BabylonEngine.
-   */
-  public setVoxelConstraints(constraints: {
-    planeLockEnabled?: boolean;
-    targetPlaneY?: number;
-    planeMask?: number[] | null;
-    buildUpMode?: boolean;
-    brushAxis?: VoxelBrushAxis;
-    brushRadius?: number;
-    brushShape?: BrushShape;
-  }): void {
-    if (constraints.planeLockEnabled !== undefined) this.voxelPlaneLockEnabled = constraints.planeLockEnabled;
-    if (constraints.targetPlaneY !== undefined) this.voxelTargetPlaneY = constraints.targetPlaneY;
-    if (constraints.planeMask !== undefined) this.voxelPlaneMask = constraints.planeMask;
-    if (constraints.buildUpMode !== undefined) this.voxelBuildUpMode = constraints.buildUpMode;
-    if (constraints.brushAxis !== undefined) this.voxelBrushAxis = constraints.brushAxis;
-    if (constraints.brushRadius !== undefined) this.brushRadius = Math.max(1, Math.min(10, constraints.brushRadius));
-    if (constraints.brushShape !== undefined) this.brushShape = constraints.brushShape;
-  }
-
-  /**
-   * Resolves authoritative 3D voxel target from screen pixel coordinates.
-   */
-  public resolveVoxelTargetAtScreenCoord(screenX: number, screenY: number): VoxelTargetResolution | null {
-    if (!this.scene || !this.voxelWorld) return null;
-    const ray = this.camera
-      ? this.scene.createPickingRay(screenX, screenY, Matrix.Identity(), this.camera)
-      : null;
-    const pickResult = this.scene.pick(
-      screenX,
-      screenY,
-      (mesh) => mesh.isPickable && isTilePickTarget(mesh.name)
-    );
-    return resolveVoxelTarget(
-      pickResult,
-      this.voxelWorld,
-      ray ? { origin: ray.origin, direction: ray.direction } : null
-    );
-  }
-
-  /**
-   * Renders a crisp 3D footprint preview of the brush over the targeted voxels,
-   * strictly adhering to layer lock, build up mode, brush shape, and hard map boundaries.
-   */
-  public renderVoxelCursor(
-    target: VoxelTargetResolution,
-    mode: 'place' | 'erase' | 'inspect' = 'place'
-  ): void {
-    if (!this.scene || !this.voxelWorld) return;
-
-    if (!this.voxelCursorRoot || this.voxelCursorRoot.isDisposed()) {
-      this.voxelCursorRoot = new TransformNode('voxel_cursor_root', this.scene);
-      this.voxelCursorRoot.parent = this.rootNode;
-    }
-
-    if (!this.voxelCursorMaterial) {
-      this.voxelCursorMaterial = new StandardMaterial('voxel_cursor_mat', this.scene);
-      this.voxelCursorMaterial.disableLighting = true;
-    }
-
-    if (mode === 'erase') {
-      this.voxelCursorMaterial.diffuseColor = new Color3(0.95, 0.25, 0.25);
-      this.voxelCursorMaterial.emissiveColor = new Color3(0.8, 0.1, 0.1);
-      this.voxelCursorMaterial.alpha = 0.45;
-    } else if (mode === 'inspect') {
-      this.voxelCursorMaterial.diffuseColor = new Color3(0.2, 0.8, 0.95);
-      this.voxelCursorMaterial.emissiveColor = new Color3(0.1, 0.7, 0.9);
-      this.voxelCursorMaterial.alpha = 0.35;
-    } else {
-      this.voxelCursorMaterial.diffuseColor = new Color3(0.96, 0.7, 0.1);
-      this.voxelCursorMaterial.emissiveColor = new Color3(0.85, 0.55, 0.05);
-      this.voxelCursorMaterial.alpha = 0.4;
-    }
-
-    const edgeColor = mode === 'erase'
-      ? new Color4(0.95, 0.25, 0.25, 0.95)
-      : mode === 'inspect'
-      ? new Color4(0.2, 0.8, 0.95, 0.95)
-      : new Color4(0.96, 0.7, 0.1, 0.95);
-
-    const targetCoords = resolveConstrainedVoxelCoordinates({
-      centerCoord: target.voxelCoord,
-      brushRadius: this.brushRadius || 1,
-      brushShape: this.brushShape || 'square',
-      brushAxis: this.voxelBrushAxis || 'xz',
-      planeLockEnabled: this.voxelPlaneLockEnabled,
-      targetPlaneY: this.voxelTargetPlaneY,
-      planeMask: this.voxelPlaneMask,
-      buildUpMode: mode === 'place' && this.voxelBuildUpMode,
-      mapWidth: this.currentMapWidth,
-      mapHeight: this.currentMapHeight,
-      maxElevation: 32,
-    });
-
-    if (targetCoords.length === 0) {
-      this.clearVoxelCursor();
-      return;
-    }
-
-    // Ensure we have enough boxes in the pool
-    while (this.voxelCursorBoxes.length < targetCoords.length) {
-      const idx = this.voxelCursorBoxes.length;
-      const box = MeshBuilder.CreateBox(`voxel_cursor_box_${idx}`, { size: 1.01 }, this.scene);
-      box.parent = this.voxelCursorRoot;
-      box.isPickable = false;
-      box.material = this.voxelCursorMaterial;
-      box.enableEdgesRendering();
-      box.edgesWidth = 2.5;
-      this.voxelCursorBoxes.push(box);
-    }
-
-    for (let i = 0; i < targetCoords.length; i++) {
-      const { wx, wy, wz } = targetCoords[i];
-      const worldPos = this.voxelWorld.voxelToWorldMesh(wx, wy, wz);
-      const box = this.voxelCursorBoxes[i];
-      box.position.set(worldPos.x + 0.5, worldPos.y + 0.5, worldPos.z + 0.5);
-      box.edgesColor = edgeColor;
-      box.isVisible = true;
-    }
-
-    // Hide any unused boxes in pool
-    for (let i = targetCoords.length; i < this.voxelCursorBoxes.length; i++) {
-      this.voxelCursorBoxes[i].isVisible = false;
-    }
-  }
-
-  public clearVoxelCursor(): void {
-    if (this.voxelCursorMesh && !this.voxelCursorMesh.isDisposed()) {
-      this.voxelCursorMesh.isVisible = false;
-    }
-    for (const box of this.voxelCursorBoxes) {
-      if (box && !box.isDisposed()) {
-        box.isVisible = false;
-      }
-    }
+    this.voxel.loadVoxelWorld(voxelDoc);
   }
 
   private applyTileMaterial(mat: StandardMaterial, tileId: number, r: number = 0, c: number = 0, isBlock: boolean = false) {
@@ -3478,340 +2146,6 @@ export class BabylonEngine {
     }
   }
 
-  private resolveTilePick(
-    pickResult: { hit?: boolean; pickedMesh?: { name: string } | null; pickedPoint?: { x: number; y: number; z: number } | null } | null
-  ): { r: number; c: number; layerIdx: number; point?: { x: number; z: number } } | null {
-    if (!pickResult?.hit || !pickResult.pickedMesh) return null;
-
-    const name = pickResult.pickedMesh.name;
-
-    // Prefer named logic / legacy per-tile meshes when present.
-    if (name.startsWith('logic_') || name.startsWith('tile_')) {
-      const parts = name.split('_');
-      if (parts[0] === 'logic') {
-        const r = parseInt(parts[1], 10);
-        const c = parseInt(parts[2], 10);
-        const point = pickResult.pickedPoint ? { x: pickResult.pickedPoint.x, z: pickResult.pickedPoint.z } : undefined;
-        if (!Number.isNaN(r) && !Number.isNaN(c)) return { r, c, layerIdx: -2, point };
-        return null;
-      }
-      if (parts.length === 3) {
-        const r = parseInt(parts[1], 10);
-        const c = parseInt(parts[2], 10);
-        const point = pickResult.pickedPoint ? { x: pickResult.pickedPoint.x, z: pickResult.pickedPoint.z } : undefined;
-        if (!Number.isNaN(r) && !Number.isNaN(c)) return { r, c, layerIdx: -1, point };
-        return null;
-      }
-      if (parts.length === 4) {
-        const layerIdx = parseInt(parts[1], 10);
-        const r = parseInt(parts[2], 10);
-        const c = parseInt(parts[3], 10);
-        const point = pickResult.pickedPoint ? { x: pickResult.pickedPoint.x, z: pickResult.pickedPoint.z } : undefined;
-        if (!Number.isNaN(r) && !Number.isNaN(c)) return { r, c, layerIdx, point };
-        return null;
-      }
-    }
-
-    // Batched tilesets (`tileset_mesh_*`), map_pick_plane, paint overlays, etc.
-    // Ignore entity billboards — their picked points sit above the ground and
-    // resolve to the wrong cell (or off-map).
-    if (!isTilePickTarget(name)) return null;
-    const point = pickResult.pickedPoint;
-    if (!point) return null;
-    const tile = this.worldToTile(point.x, point.z);
-    if (!tile) return null;
-    return { r: tile.r, c: tile.c, layerIdx: -1, point: { x: point.x, z: point.z } };
-  }
-
-  /** Ground plane analytical ray projection for 100% reliable picking across all viewport angles and seams. */
-  public pickTileFromGroundPlane(
-    screenX: number,
-    screenY: number
-  ): { r: number; c: number; layerIdx: number; point?: { x: number; z: number } } | null {
-    if (!this.scene || !this.camera) return null;
-    const ray = this.scene.createPickingRay(
-      screenX,
-      screenY,
-      Matrix.Identity(),
-      this.camera
-    );
-    if (!ray || Math.abs(ray.direction.y) < 1e-6) return null;
-    const t = -ray.origin.y / ray.direction.y;
-    if (t < 0) return null;
-    const worldX = ray.origin.x + t * ray.direction.x;
-    const worldZ = ray.origin.z + t * ray.direction.z;
-    const tile = this.worldToTile(worldX, worldZ);
-    if (!tile) return null;
-    return { r: tile.r, c: tile.c, layerIdx: -1, point: { x: worldX, z: worldZ } };
-  }
-
-  /** Screen pixel to tile coordinate projection for drag-and-drop or viewport picking. */
-  public pickTileAtScreenCoord(screenX: number, screenY: number): { r: number; c: number; layerIdx: number; point?: { x: number; z: number } } | null {
-    if (!this.scene) return null;
-    const pickResult = this.scene.pick(
-      screenX,
-      screenY,
-      (mesh) => mesh.isPickable && isTilePickTarget(mesh.name)
-    );
-    const resolved = this.resolveTilePick(pickResult);
-    if (resolved) return resolved;
-    return this.pickTileFromGroundPlane(screenX, screenY);
-  }
-
-  /**
-   * Enable tile picking for paint/explore interactions.
-   * Drag re-picks under the cursor so authors can stroke tiles continuously.
-   * Mouse drag panning supports MMB (button 1), RMB (button 2), and Space+drag / Pan tool.
-   * With brushRadius >= 1, renders in-world 3D hover reticle (1x1 or circular/square multi-tile).
-   */
-  public enableTilePicking(
-    onTileClick: (
-      r: number,
-      c: number,
-      layerIdx?: number,
-      eventType?: 'down' | 'move' | 'up',
-      point?: { x: number; z: number },
-      voxelTarget?: VoxelTargetResolution | null
-    ) => void,
-    options?: { 
-      drag?: boolean; 
-      onTileHover?: (r: number, c: number, voxelTarget?: VoxelTargetResolution | null) => void;
-      onTileLeave?: () => void;
-      onDragStart?: () => void;
-      onDragEnd?: () => void;
-      isPanActive?: () => boolean;
-      onPanStateChange?: (panning: boolean) => void;
-    }
-  ) {
-    let isPainting = false;
-    let isPanning = false;
-    let lastPointerX = 0;
-    let lastPointerY = 0;
-    let lastKey = '';
-    // Track last continuous world point for distance-based dedup in splat/freeform modes
-    let lastContinuousX = -99999;
-    let lastContinuousZ = -99999;
-    /** Minimum squared world-unit distance before we emit another splat/freeform paint event */
-    const CONTINUOUS_MIN_DIST_SQ = 0.0025; // 0.05 world units
-    const allowDrag = !!options?.drag;
-
-    const onContextMenu = (e: MouseEvent) => {
-      if (this.editorCameraMode) {
-        e.preventDefault();
-      }
-    };
-    this.canvas.addEventListener('contextmenu', onContextMenu);
-
-    const getResolvedTile = (screenX: number, screenY: number): { r: number; c: number; layerIdx: number; point?: { x: number; z: number } } | null => {
-      if (!this.scene) return null;
-      const pickResult = this.scene.pick(
-        screenX,
-        screenY,
-        (mesh) => mesh.isPickable && isTilePickTarget(mesh.name)
-      );
-      const resolved = this.resolveTilePick(pickResult);
-      if (resolved) return resolved;
-      return this.pickTileFromGroundPlane(screenX, screenY);
-    };
-
-    const emitFromScenePick = (eventType?: 'down' | 'move' | 'up') => {
-      if (!this.scene) return;
-      const resolved = getResolvedTile(this.scene.pointerX, this.scene.pointerY);
-      const voxelTarget = this.resolveVoxelTargetAtScreenCoord(this.scene.pointerX, this.scene.pointerY);
-      const r = resolved?.r ?? (voxelTarget ? Math.max(0, Math.min(this.currentMapHeight - 1, this.currentMapHeight - 1 - voxelTarget.voxelCoord.wz)) : 0);
-      const c = resolved?.c ?? (voxelTarget ? Math.max(0, Math.min(this.currentMapWidth - 1, voxelTarget.voxelCoord.wx)) : 0);
-      const layerIdx = resolved?.layerIdx ?? -1;
-      const point = resolved?.point ?? (voxelTarget ? { x: voxelTarget.hitPoint.x, z: voxelTarget.hitPoint.z } : undefined);
-
-      const isContinuousMode = this.activeLayerType === 'paint-splat' || this.activeLayerType === 'free-form';
-
-      if (isContinuousMode && point) {
-        // --- Continuous (splat / freeform) duplicate suppression ---
-        if (eventType === 'move') {
-          const dx = point.x - lastContinuousX;
-          const dz = point.z - lastContinuousZ;
-          if (dx * dx + dz * dz < CONTINUOUS_MIN_DIST_SQ) return;
-        }
-        lastContinuousX = point.x;
-        lastContinuousZ = point.z;
-        lastKey = '';
-
-        onTileClick(r, c, layerIdx, eventType, point, voxelTarget);
-        return;
-      }
-
-      // --- Grid / discrete mode duplicate suppression ---
-      const key = voxelTarget ? `${voxelTarget.voxelCoord.wx}_${voxelTarget.voxelCoord.wy}_${voxelTarget.voxelCoord.wz}` : `${r},${c}`;
-      if (key === lastKey && eventType === 'move') return;
-      lastKey = key;
-
-      // Apply brush radius for grid painting
-      if (this.brushRadius <= 1 || this.activeBrushPattern) {
-        onTileClick(r, c, layerIdx, eventType, point, voxelTarget);
-      } else {
-        const rad = this.brushRadius - 1;
-        const w = this.currentMapWidth;
-        const h = this.currentMapHeight;
-        for (let dr = -rad; dr <= rad; dr++) {
-          for (let dc = -rad; dc <= rad; dc++) {
-            if (!isInGridFootprint(dr, dc, rad, this.brushShape)) continue;
-            const nr = r + dr;
-            const nc = c + dc;
-            if (nr >= 0 && nr < h && nc >= 0 && nc < w) {
-              const pt = point ? {
-                x: point.x + (nc - c) * this.currentTileSize,
-                z: point.z - (nr - r) * this.currentTileSize
-              } : undefined;
-              onTileClick(nr, nc, layerIdx, eventType, pt, voxelTarget);
-            }
-          }
-        }
-      }
-    };
-
-    const updateBrushPreview = () => {
-      if (!this.scene) {
-        if (this.lastHoveredR !== -1 || this.lastHoveredC !== -1) {
-          this.lastHoveredR = -1;
-          this.lastHoveredC = -1;
-          this.clearBrushPreview();
-          this.clearVoxelCursor();
-        }
-        if (this.canvas) this.canvas.style.cursor = 'default';
-        return;
-      }
-
-      const voxelTarget = this.resolveVoxelTargetAtScreenCoord(this.scene.pointerX, this.scene.pointerY);
-      const resolved = getResolvedTile(this.scene.pointerX, this.scene.pointerY);
-
-      if (!resolved && !voxelTarget) {
-        if (this.lastHoveredR !== -1 || this.lastHoveredC !== -1) {
-          this.lastHoveredR = -1;
-          this.lastHoveredC = -1;
-          this.clearBrushPreview();
-          this.clearVoxelCursor();
-          if (options?.onTileLeave) options.onTileLeave();
-        }
-        if (this.canvas) this.canvas.style.cursor = 'default';
-        return;
-      }
-
-      // Keep natural cursor visible
-      if (this.canvas && this.canvas.style.cursor === 'none') this.canvas.style.cursor = 'default';
-
-      if (voxelTarget && this.voxelWorld) {
-        if (this.footprintUnifiedMesh && this.footprintUnifiedMesh.isVisible) {
-          this.footprintUnifiedMesh.isVisible = false;
-        }
-        this.renderVoxelCursor(voxelTarget, this.brushMode === 'eraser' ? 'erase' : this.brushMode === 'eyedropper' ? 'inspect' : 'place');
-      } else {
-        this.clearVoxelCursor();
-      }
-
-      const r = resolved?.r ?? (voxelTarget ? Math.max(0, Math.min(this.currentMapHeight - 1, this.currentMapHeight - 1 - voxelTarget.voxelCoord.wz)) : 0);
-      const c = resolved?.c ?? (voxelTarget ? Math.max(0, Math.min(this.currentMapWidth - 1, voxelTarget.voxelCoord.wx)) : 0);
-
-      if (this.activeLayerType === 'paint-splat' || this.activeLayerType === 'free-form') {
-        const pt = resolved?.point ?? (voxelTarget ? { x: voxelTarget.hitPoint.x, z: voxelTarget.hitPoint.z } : undefined);
-        if (pt) {
-          this.renderContinuousSplatPreview(pt.x, pt.z);
-        }
-      } else if (!this.voxelWorld) {
-        if (this.splatPreviewMesh && this.splatPreviewMesh.isVisible) {
-          this.splatPreviewMesh.isVisible = false;
-        }
-        const sameCell = this.lastHoveredR === r && this.lastHoveredC === c;
-        this.lastHoveredR = r;
-        this.lastHoveredC = c;
-        if (!sameCell) {
-          this.renderBrushPreview(r, c);
-        }
-      }
-
-      if (options?.onTileHover) {
-        options.onTileHover(r, c, voxelTarget);
-      }
-    };
-
-    this.scene.onPointerDown = (evt) => {
-      if (!this.scene) return;
-      const button = evt.button;
-      const isPanTrigger = button === 1 || (button === 0 && options?.isPanActive?.());
-
-      if (isPanTrigger) {
-        isPanning = true;
-        lastPointerX = evt.clientX;
-        lastPointerY = evt.clientY;
-        if (this.canvas) this.canvas.style.cursor = 'grab';
-        if (options?.onPanStateChange) options.onPanStateChange(true);
-        return;
-      }
-
-      // Ignore right click (button === 2) for painting; context menu owns right click
-      if (button === 2) {
-        return;
-      }
-
-      if (button === 0) {
-        isPainting = true;
-        lastKey = '';
-        if (options?.onDragStart) options.onDragStart();
-        emitFromScenePick('down');
-      }
-    };
-
-    this.scene.onPointerUp = (evt) => {
-      if (isPanning) {
-        isPanning = false;
-        if (this.canvas) this.canvas.style.cursor = 'default';
-        if (options?.onPanStateChange) options.onPanStateChange(false);
-      }
-      if (isPainting) {
-        isPainting = false;
-        lastKey = '';
-        emitFromScenePick('up');
-        if (options?.onDragEnd) options.onDragEnd();
-      }
-    };
-
-    this.scene.onPointerMove = (evt) => {
-      if (isPanning) {
-        if (this.canvas) this.canvas.style.cursor = 'grabbing';
-        const currentOrtho = this.camera.orthoTop || 10;
-        const renderHeight = Math.max(1, this.engine.getRenderHeight());
-        const worldPerPixel = (currentOrtho * 2) / renderHeight;
-        const deltaX = evt.clientX - lastPointerX;
-        const deltaY = evt.clientY - lastPointerY;
-        lastPointerX = evt.clientX;
-        lastPointerY = evt.clientY;
-
-        const panX = -deltaX * worldPerPixel;
-        const panZ = deltaY * worldPerPixel * 1.414;
-        this.cameraTargetX += panX;
-        this.cameraTargetZ += panZ;
-        this.camera.position = new Vector3(this.cameraTargetX, 14, this.cameraTargetZ - 14);
-        this.camera.setTarget(new Vector3(this.cameraTargetX, 0, this.cameraTargetZ));
-        this.cameraSnapped = true;
-        return;
-      }
-
-      updateBrushPreview();
-      if (!allowDrag || !isPainting || !this.scene) return;
-      emitFromScenePick('move');
-    };
-  }
-
-  public disableTilePicking() {
-    this.scene.onPointerDown = undefined;
-    this.scene.onPointerUp = undefined;
-    this.scene.onPointerMove = undefined;
-    this.lastHoveredR = -1;
-    this.lastHoveredC = -1;
-    this.clearBrushPreview();
-    this.clearActionPreview();
-    if (this.canvas) this.canvas.style.cursor = 'default';
-  }
-
   /** Set brush radius for multi-tile painting. */
   public setBrushRadius(radius: number) {
     this.brushRadius = Math.max(1, Math.min(10, radius));
@@ -3869,7 +2203,7 @@ export class BabylonEngine {
           this.scene.pointerY,
           (m) => m.isPickable && isTilePickTarget(m.name)
         );
-        const res = this.resolveTilePick(pick) || this.pickTileFromGroundPlane(this.scene.pointerX, this.scene.pointerY);
+        const res = this.input.resolveTilePick(pick) || this.input.pickTileFromGroundPlane(this.scene.pointerX, this.scene.pointerY);
         if (res?.point) {
           this.renderContinuousSplatPreview(res.point.x, res.point.z);
         }
@@ -4854,10 +3188,10 @@ export class BabylonEngine {
     const centerY = (minY + maxY) / 2 + originOffsetY;
     const centerZ = (minZ + maxZ) / 2 + originOffsetZ;
 
-    if (!this.voxelSelectionBoxMesh || this.voxelSelectionBoxMesh.isDisposed()) {
-      this.voxelSelectionBoxMesh = MeshBuilder.CreateBox('voxel_3d_selection_gizmo', { size: 1 }, this.scene);
-      this.voxelSelectionBoxMesh.parent = this.rootNode;
-      this.voxelSelectionBoxMesh.isPickable = false;
+    if (!this.voxel.voxelSelectionBoxMesh || this.voxel.voxelSelectionBoxMesh.isDisposed()) {
+      this.voxel.voxelSelectionBoxMesh = MeshBuilder.CreateBox('voxel_3d_selection_gizmo', { size: 1 }, this.scene);
+      this.voxel.voxelSelectionBoxMesh.parent = this.rootNode;
+      this.voxel.voxelSelectionBoxMesh.isPickable = false;
 
       const mat = new StandardMaterial('voxel_3d_selection_mat', this.scene);
       mat.wireframe = true;
@@ -4865,17 +3199,17 @@ export class BabylonEngine {
       mat.emissiveColor = new Color3(0.96, 0.62, 0.07);
       mat.disableLighting = true;
       mat.backFaceCulling = false;
-      this.voxelSelectionBoxMesh.material = mat;
+      this.voxel.voxelSelectionBoxMesh.material = mat;
     }
 
-    this.voxelSelectionBoxMesh.scaling.set(dX, dY, dZ);
-    this.voxelSelectionBoxMesh.position.set(centerX, centerY, centerZ);
-    this.voxelSelectionBoxMesh.isVisible = true;
+    this.voxel.voxelSelectionBoxMesh.scaling.set(dX, dY, dZ);
+    this.voxel.voxelSelectionBoxMesh.position.set(centerX, centerY, centerZ);
+    this.voxel.voxelSelectionBoxMesh.isVisible = true;
   }
 
   public clear3DBoxSelectionPreview() {
-    if (this.voxelSelectionBoxMesh) {
-      this.voxelSelectionBoxMesh.isVisible = false;
+    if (this.voxel.voxelSelectionBoxMesh) {
+      this.voxel.voxelSelectionBoxMesh.isVisible = false;
     }
   }
 
@@ -5220,7 +3554,7 @@ export class BabylonEngine {
     // Stop any currently playing animation
     this.scene.stopAnimation(this.destinationIndicatorMesh);
 
-    const elevation = this.getVoxelSurfaceY(posX, posZ);
+    const elevation = this.voxel.getVoxelSurfaceY(posX, posZ);
     this.destinationIndicatorMesh.material = mat;
     this.destinationIndicatorMesh.position = new Vector3(posX, elevation + SPATIAL_LAYER_ALTITUDES.DESTINATION_PREVIEW, posZ);
     this.destinationIndicatorMesh.isVisible = true;
@@ -5324,76 +3658,6 @@ export class BabylonEngine {
     this.abilityAoEMeshes = [];
   }
 
-  /**
-   * Universal Scene Picking: Checks character/NPC/monster entities first, then falls back to ground plane.
-   */
-  public pickWorldTarget(pointerX?: number, pointerY?: number): {
-    kind: 'entity' | 'tile';
-    entityId?: string;
-    r: number;
-    c: number;
-    hitPoint?: Vector3;
-  } | null {
-    if (!this.scene) return null;
-    const px = pointerX !== undefined ? pointerX : this.scene.pointerX;
-    const py = pointerY !== undefined ? pointerY : this.scene.pointerY;
-
-    // 1. Raycast against entity meshes first (rendering group 1)
-    const entityPick = this.scene.pick(
-      px,
-      py,
-      (mesh) =>
-        mesh.isPickable &&
-        mesh.renderingGroupId === 1 &&
-        (mesh.name.startsWith('player_') ||
-          mesh.name.startsWith('npc_') ||
-          mesh.name.startsWith('creature_') ||
-          this.entityMeshes.has(mesh.name))
-    );
-
-    if (entityPick && entityPick.hit && entityPick.pickedMesh) {
-      const meshName = entityPick.pickedMesh.name;
-      let entityId = meshName;
-      for (const [id, mesh] of this.entityMeshes.entries()) {
-        if (mesh === entityPick.pickedMesh) {
-          entityId = id;
-          break;
-        }
-      }
-      const s = this.currentTileSize || 1;
-      const w = this.currentMapWidth;
-      const h = this.currentMapHeight;
-      const entityPos = entityPick.pickedMesh.position;
-      const c = Math.round(entityPos.x / s + w / 2 - 0.5);
-      const r = Math.round(h / 2 - entityPos.z / s - 0.5);
-      return {
-        kind: 'entity',
-        entityId,
-        r,
-        c,
-        hitPoint: entityPos.clone(),
-      };
-    }
-
-    // 2. Raycast against ground plane / tiles
-    const tilePick = this.scene.pick(
-      px,
-      py,
-      (mesh) => mesh.isPickable && isTilePickTarget(mesh.name)
-    );
-    const resolved = this.resolveTilePick(tilePick);
-    if (resolved) {
-      return {
-        kind: 'tile',
-        r: resolved.r,
-        c: resolved.c,
-        hitPoint: tilePick?.pickedPoint || undefined,
-      };
-    }
-
-    return null;
-  }
-
   private layerIsolationActive: boolean = false;
   private isolatedLayerIdx: number = 0;
 
@@ -5438,134 +3702,6 @@ export class BabylonEngine {
     );
   }
 
-  /** Zoom the camera by a fractional multiplier factor (e.g. 0.85 = zoom in, 1.15 = zoom out). */
-  public zoomCamera(factor: number) {
-    const currentOrtho = this.camera.orthoTop || 10;
-    const maxZoom = this.editorCameraMode ? 120 : 11.0;
-    const newOrtho = Math.max(2.5, Math.min(maxZoom, currentOrtho * factor));
-    this.updateCameraAspect(newOrtho);
-    const zoomPercent = Math.round((10 / newOrtho) * 100);
-    window.dispatchEvent(
-      new CustomEvent('studio_zoom_changed', { detail: { ortho: newOrtho, percent: zoomPercent } })
-    );
-  }
-
-  /** Set camera zoom directly by display percentage (e.g. 100% = ortho 10). */
-  public setZoomPercent(percent: number) {
-    const maxZoom = this.editorCameraMode ? 120 : 11.0;
-    const newOrtho = Math.max(2.5, Math.min(maxZoom, 10 / (Math.max(5, percent) / 100)));
-    this.updateCameraAspect(newOrtho);
-    const zoomPercent = Math.round((10 / newOrtho) * 100);
-    window.dispatchEvent(
-      new CustomEvent('studio_zoom_changed', { detail: { ortho: newOrtho, percent: zoomPercent } })
-    );
-  }
-
-  /** Fit the entire map in the editor viewport. */
-  public fitMapInView() {
-    const w = this.currentMapWidth;
-    const h = this.currentMapHeight;
-    const s = this.currentTileSize || 1;
-    if (!w || !h || !this.engine) return;
-    const aspect = this.engine.getRenderWidth() / Math.max(1, this.engine.getRenderHeight());
-    // The orthographic size needed to fit the larger dimension.
-    const orthoH = (h * s) / 2 + 2;
-    const orthoW = (w * s) / (2 * Math.max(0.1, aspect)) + 2;
-    // Always allow large zooms when trying to fit a map in view
-    const maxZoom = 120;
-    const ortho = Math.max(orthoH, orthoW);
-    const clamped = Math.max(2.5, Math.min(maxZoom, ortho));
-    this.updateCameraAspect(clamped);
-    // Center camera on true geometric map center in Babylon world coordinates
-    const centerX = -0.5 * s;
-    const centerZ = 0.5 * s;
-    this.snapCameraTo(centerX, centerZ);
-    const zoomPercent = Math.round((10 / clamped) * 100);
-    window.dispatchEvent(
-      new CustomEvent('studio_zoom_changed', { detail: { ortho: clamped, percent: zoomPercent } })
-    );
-  }
-
-  /** Jump editor camera to a specific tile coordinate. */
-  public panEditorCameraToTile(r: number, c: number) {
-    const w = this.currentMapWidth;
-    const h = this.currentMapHeight;
-    const s = this.currentTileSize || 1;
-    if (!w || !h) return;
-    const worldX = (c - w / 2) * s;
-    const worldZ = (h / 2 - r) * s;
-    this.snapCameraTo(worldX, worldZ);
-  }
-
-  /** Start WASD/arrow key pan loop for editor camera. */
-  public startEditorKeyboardPan() {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (!this.editorCameraMode) return;
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-      const code = e.code;
-      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home'].includes(code)) {
-        e.preventDefault();
-        if (code === 'Home') {
-          this.fitMapInView();
-          return;
-        }
-        this.editorPanKeysHeld.add(code);
-        this.startEditorPanLoop();
-      }
-    };
-    const onKeyUp = (e: KeyboardEvent) => {
-      this.editorPanKeysHeld.delete(e.code);
-      if (this.editorPanKeysHeld.size === 0 && this.editorPanAnimFrameId !== null) {
-        cancelAnimationFrame(this.editorPanAnimFrameId);
-        this.editorPanAnimFrameId = null;
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('keyup', onKeyUp);
-    // Return cleanup function.
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('keyup', onKeyUp);
-      this.editorPanKeysHeld.clear();
-      if (this.editorPanAnimFrameId !== null) {
-        cancelAnimationFrame(this.editorPanAnimFrameId);
-        this.editorPanAnimFrameId = null;
-      }
-    };
-  }
-
-  private startEditorPanLoop() {
-    if (this.editorPanAnimFrameId !== null) return;
-    let lastTime = performance.now();
-    const loop = (now: number) => {
-      const dt = (now - lastTime) / 1000;
-      lastTime = now;
-      if (this.editorPanKeysHeld.size === 0) {
-        this.editorPanAnimFrameId = null;
-        return;
-      }
-      // Pan speed scales with current zoom level.
-      const ortho = this.camera.orthoTop || 10;
-      const speed = ortho * 1.2 * dt;
-      let dx = 0;
-      let dz = 0;
-      if (this.editorPanKeysHeld.has('KeyW') || this.editorPanKeysHeld.has('ArrowUp')) dz += speed;
-      if (this.editorPanKeysHeld.has('KeyS') || this.editorPanKeysHeld.has('ArrowDown')) dz -= speed;
-      if (this.editorPanKeysHeld.has('KeyA') || this.editorPanKeysHeld.has('ArrowLeft')) dx -= speed;
-      if (this.editorPanKeysHeld.has('KeyD') || this.editorPanKeysHeld.has('ArrowRight')) dx += speed;
-      if (dx !== 0 || dz !== 0) {
-        this.cameraTargetX += dx;
-        this.cameraTargetZ += dz;
-        this.camera.position = new Vector3(this.cameraTargetX, 14, this.cameraTargetZ - 14);
-        this.camera.setTarget(new Vector3(this.cameraTargetX, 0, this.cameraTargetZ));
-        this.cameraSnapped = true;
-      }
-      this.editorPanAnimFrameId = requestAnimationFrame(loop);
-    };
-    this.editorPanAnimFrameId = requestAnimationFrame(loop);
-  }
-
   public getEntityMesh(entityId: string) {
     return this.entityMeshes.get(entityId);
   }
@@ -5608,7 +3744,7 @@ export class BabylonEngine {
    * Prefer this over Texture.uScale — Babylon caches textures by URL, so
    * shared uScale/vOffset fought between meshes and left full 3×4 sheets visible.
    */
-  private setSpriteCellUVs(
+  public setSpriteCellUVs(
     mesh: Mesh,
     col: number,
     row: number,
@@ -5702,7 +3838,7 @@ export class BabylonEngine {
 
   public updateEntity(entity: BabylonEntityData) {
     let spriteMesh = this.entityMeshes.get(entity.id);
-    const elevation = this.getVoxelSurfaceY(entity.x, entity.y);
+    const elevation = this.voxel.getVoxelSurfaceY(entity.x, entity.y);
     const targetPos = new Vector3(entity.x, elevation + ENTITY_GROUND_CLEARANCE, entity.y);
     const existingDims = spriteMesh?.metadata?.spriteDimensions as { width: number; height: number } | undefined;
     const resolvedConfig = this.resolveSpriteConfig(entity, existingDims);
@@ -6012,7 +4148,7 @@ export class BabylonEngine {
       !!entity.isPlayer &&
       entity.id.startsWith('multiplayer_') &&
       !!entity.name;
-    let nameplate = this.nameplates.get(entity.id);
+    let nameplate = this.entity.nameplates.get(entity.id);
     if (wantsNameplate) {
       if (!nameplate) {
         nameplate = new Rectangle(`nameplate_${entity.id}`);
@@ -6034,7 +4170,7 @@ export class BabylonEngine {
         this.guiTexture.addControl(nameplate);
         nameplate.linkWithMesh(spriteMesh);
         nameplate.linkOffsetY = -52;
-        this.nameplates.set(entity.id, nameplate);
+        this.entity.nameplates.set(entity.id, nameplate);
       } else {
         const label = nameplate.children[0] as TextBlock;
         if (label && label.text !== entity.name) label.text = entity.name;
@@ -6042,7 +4178,7 @@ export class BabylonEngine {
     } else if (nameplate) {
       this.guiTexture.removeControl(nameplate);
       nameplate.dispose();
-      this.nameplates.delete(entity.id);
+      this.entity.nameplates.delete(entity.id);
     }
 
     // Handle Health Bars
@@ -6144,7 +4280,7 @@ export class BabylonEngine {
     return undefined;
   }
 
-  private ensureSelectionRingMesh(): Mesh {
+  public ensureSelectionRingMesh(): Mesh {
     if (!this.selectionRingMesh || this.selectionRingMesh.isDisposed()) {
       const s = this.currentTileSize || 1;
       this.selectionRingMesh = MeshBuilder.CreateTorus(
@@ -6192,63 +4328,6 @@ export class BabylonEngine {
     ring.position.x = targetMesh.position.x;
     ring.position.z = targetMesh.position.z;
     ring.position.y = targetMesh.position.y + 0.03;
-  }
-
-  private updateTargetSelectionIndicator(deltaTime: number) {
-    if (!this.activeTargetEntityId) {
-      if (this.selectionRingMesh && this.selectionRingMesh.isVisible) {
-        this.selectionRingMesh.isVisible = false;
-      }
-      return;
-    }
-
-    const targetMesh = this.getTargetEntityMesh(this.activeTargetEntityId);
-    if (!targetMesh || targetMesh.isDisposed()) {
-      if (this.selectionRingMesh && this.selectionRingMesh.isVisible) {
-        this.selectionRingMesh.isVisible = false;
-      }
-      return;
-    }
-
-    const ring = this.ensureSelectionRingMesh();
-    if (!ring.isVisible) ring.isVisible = true;
-
-    // Follow target's real-time position smoothly
-    ring.position.x = targetMesh.position.x;
-    ring.position.z = targetMesh.position.z;
-    ring.position.y = targetMesh.position.y + 0.03;
-
-    // Continuous smooth rotation
-    ring.rotation.y += deltaTime * 2.2;
-
-    // Subtle breathing pulse
-    const pulse = 1.0 + Math.sin(performance.now() * 0.005) * 0.05;
-    const baseScale = (this.currentTileSize || 1) * pulse;
-    ring.scaling.set(baseScale, baseScale, baseScale);
-
-    // Dynamic color coding based on entity type
-    if (this.selectionRingMaterial) {
-      const isCreature =
-        targetMesh.metadata?.isCreature ||
-        this.activeTargetEntityId.startsWith('creature_') ||
-        this.activeTargetEntityId.startsWith('mob_') ||
-        this.activeTargetEntityId.startsWith('wild_');
-      const isNpc = targetMesh.metadata?.isNpc || this.activeTargetEntityId.startsWith('npc_');
-
-      if (isCreature) {
-        // Crimson / Rose for hostile creatures
-        this.selectionRingMaterial.emissiveColor.set(1.0, 0.2, 0.3);
-        this.selectionRingMaterial.diffuseColor.set(1.0, 0.2, 0.3);
-      } else if (isNpc) {
-        // Warm Amber / Gold for NPCs
-        this.selectionRingMaterial.emissiveColor.set(1.0, 0.75, 0.15);
-        this.selectionRingMaterial.diffuseColor.set(1.0, 0.75, 0.15);
-      } else {
-        // Cyan / Electric Blue for Players
-        this.selectionRingMaterial.emissiveColor.set(0.2, 0.85, 1.0);
-        this.selectionRingMaterial.diffuseColor.set(0.2, 0.85, 1.0);
-      }
-    }
   }
 
   public disposeProjectile(sourceId: string) {
@@ -6437,11 +4516,11 @@ export class BabylonEngine {
       chatBubble.dispose();
       this.chatBubbles.delete(id);
     }
-    const nameplate = this.nameplates.get(id);
+    const nameplate = this.entity.nameplates.get(id);
     if (nameplate) {
       this.guiTexture.removeControl(nameplate);
       nameplate.dispose();
-      this.nameplates.delete(id);
+      this.entity.nameplates.delete(id);
     }
     const healthBar = this.healthBars.get(id);
     if (healthBar) {
@@ -6452,9 +4531,9 @@ export class BabylonEngine {
   }
 
   public dispose() {
-    this.setEditorCameraMode(false);
-    window.removeEventListener('resize', this.onResize);
-    this.stopRenderLoop();
+    this.renderer.setEditorCameraMode(false);
+    window.removeEventListener('resize', this.renderer.onResize);
+    this.renderer.stopRenderLoop();
     if (this.weatherParticleSystem) {
       this.weatherParticleSystem.stop();
       this.weatherParticleSystem.dispose();
@@ -6468,14 +4547,14 @@ export class BabylonEngine {
     this.selectionBoxMesh?.dispose();
     this.actionPreviewBoundsMesh?.dispose();
     this.itemBillboards?.dispose();
-    this.voxelCursorMesh?.dispose();
-    this.voxelCursorMaterial?.dispose();
+    this.voxel.voxelCursorMesh?.dispose();
+    this.voxel.voxelCursorMaterial?.dispose();
 
-    if (this.voxelWorld) {
-      for (const chunk of this.voxelWorld.chunks.values()) {
-        this.voxelMesher?.disposeChunkMesh(chunk.key);
+    if (this.voxel.voxelWorld) {
+      for (const chunk of this.voxel.voxelWorld.chunks.values()) {
+        this.voxel.voxelMesher?.disposeChunkMesh(chunk.key);
       }
-      this.voxelWorld = undefined;
+      this.voxel.voxelWorld = undefined;
     }
     
     this.spriteTextureCache.forEach((tex) => tex.dispose());
@@ -6491,6 +4570,11 @@ export class BabylonEngine {
     this.scene.dispose();
     this.engine.dispose();
   }
+
+    public voxel: VoxelController;
+  public input: InputController;
+  public renderer: Renderer;
+  public entity: EntityController;
 }
 
 

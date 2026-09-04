@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useGameStore } from './store';
 import { Sparkles, CheckCircle2, FlaskConical, Shield, Zap, Heart, Sword, X } from 'lucide-react';
-import { getActiveStarterCreatures } from '@/app/actions/creature-defs';
+import { getActiveStarterCreatures } from "@/app/actions/game/creature-defs";
 import { soundSynth } from '@/engine/sound-synth';
 import {
   CreatureDefData,

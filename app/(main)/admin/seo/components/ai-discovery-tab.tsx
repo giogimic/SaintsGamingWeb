@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Button } from "@/shared/ui/button";
-import { Badge } from "@/shared/ui/badge";
+import { Button } from "@/web/components/ui/button";
+import { Badge } from "@/web/components/ui/badge";
 import {
   Sparkles,
   Copy,

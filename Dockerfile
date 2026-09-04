@@ -50,4 +50,4 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Entrypoint handles migration and startup
-CMD ["sh", "entrypoint.sh"]
+CMD ["npx", "tsx", "scripts/entrypoint.ts"]

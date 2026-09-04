@@ -24,25 +24,25 @@ import {
   Loader2,
   Image as ImageIcon,
 } from "lucide-react";
-import { usePostComposerStore } from "@/web/hooks/usePostComposerStore";
+import { useAppStore } from "@/shared/store/useAppStore";
 import { soundSynth } from "@/engine/sound-synth";
 import { createSocialPost } from "@/app/actions/social/posts";
 import { toast } from "sonner";
-import { Sheet, SheetContent, SheetTitle } from "@/shared/ui/sheet";
-import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
+import { Sheet, SheetContent, SheetTitle } from "@/web/components/ui/sheet";
+import { Avatar, AvatarFallback, AvatarImage } from "@/web/components/ui/avatar";
 
 const DEFAULT_HASHTAGS = ["gaming", "saints", "clips", "fivem", "mmo"];
 
 export function GlobalPostComposer() {
   const { data: session } = useSession();
   const {
-    isOpen,
-    isMinimized,
-    isMaximized,
+    isComposerOpen: isOpen,
+    isComposerMinimized: isMinimized,
+    isComposerMaximized: isMaximized,
     closeComposer,
-    setMinimized,
-    setMaximized,
-  } = usePostComposerStore();
+    setComposerMinimized: setMinimized,
+    setComposerMaximized: setMaximized,
+  } = useAppStore();
 
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -108,7 +108,7 @@ export function GlobalPostComposer() {
   // Listen for custom post composer open events
   useEffect(() => {
     const handleCustomOpen = () => {
-      usePostComposerStore.getState().openComposer();
+      useAppStore.getState().openComposer();
     };
     window.addEventListener("saints-open-post-composer", handleCustomOpen);
     return () => window.removeEventListener("saints-open-post-composer", handleCustomOpen);

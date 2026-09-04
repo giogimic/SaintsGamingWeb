@@ -2,8 +2,8 @@
 
 import { Code, Send, Play } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/shared/ui/button";
-import { Textarea } from "@/shared/ui/textarea";
+import { Button } from "@/web/components/ui/button";
+import { Textarea } from "@/web/components/ui/textarea";
 import { DevSubNav } from "../dev-sub-nav";
 
 export default function DevSandboxPage() {

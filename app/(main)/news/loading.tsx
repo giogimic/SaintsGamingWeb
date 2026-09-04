@@ -1,5 +1,5 @@
 import { Newspaper } from "lucide-react";
-import { Card, CardContent } from "@/shared/ui/card";
+import { Card, CardContent } from "@/web/components/ui/card";
 
 export default function NewsLoading() {
   return (

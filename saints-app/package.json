@@ -1,8 +1,8 @@
-﻿{
+{
   "name": "saints-gaming",
-  "version": "2.1.721",
+  "version": "2.1.724",
   "private": true,
-  "description": "Saints Gaming â€” Time To Play",
+  "description": "Saints Gaming - Time To Play",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {

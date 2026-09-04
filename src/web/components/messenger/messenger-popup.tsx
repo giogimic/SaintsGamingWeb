@@ -5,7 +5,7 @@ import { FriendsList } from "./friends-list";
 import { ChatWindow } from "./chat-window";
 import { MiniSocialFeed } from "./mini-social-feed";
 import { MessageCircle, X, Coins, Users, Bell } from "lucide-react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/web/components/ui/button";
 import { useSession } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState, useEffect } from "react";

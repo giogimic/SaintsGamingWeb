@@ -1,8 +1,8 @@
 import useSWR from 'swr';
 import { fetcher } from './studio-data';
 import { getUserCharacters } from '@/app/actions/game';
-import { fetchAllGameQuests } from '@/app/actions/game-dev';
-import { getAllCreatureDefs } from '@/app/actions/creature-defs';
+import { fetchAllGameQuests } from "@/app/actions/admin/game-dev";
+import { getAllCreatureDefs } from "@/app/actions/game/creature-defs";
 
 /**
  * Hook for cached player characters with optimistic mutate capability

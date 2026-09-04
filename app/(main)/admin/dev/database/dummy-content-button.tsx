@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Loader2, Database } from "lucide-react";
-import { Button } from "@/shared/ui/button";
-import { seedDummyContentAction } from "@/app/actions/game-dev";
+import { Button } from "@/web/components/ui/button";
+import { seedDummyContentAction } from "@/app/actions/admin/game-dev";
 
 export function DummyContentButton() {
   const [isLoading, setIsLoading] = useState(false);

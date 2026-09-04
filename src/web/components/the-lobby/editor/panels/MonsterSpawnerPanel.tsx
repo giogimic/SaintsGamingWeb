@@ -7,9 +7,9 @@ import {
   placeMapSpawner,
   updateMapSpawner,
   type MapSpawnerData,
-} from '@/app/actions/map-spawners';
+} from '@/app/actions/studio/map-spawners';
 import { Save, Loader2, Trash2, PawPrint, ExternalLink } from 'lucide-react';
-import { getAllCreatureDefs } from '@/app/actions/creature-defs';
+import { getAllCreatureDefs } from '@/app/actions/game/creature-defs';
 
 import {
   defaultFieldValues,

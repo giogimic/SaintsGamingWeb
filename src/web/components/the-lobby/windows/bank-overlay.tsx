@@ -6,8 +6,8 @@ import RpgPanel from '../rpg-panel';
 import { soundSynth } from '@/engine/sound-synth';
 import { Landmark, ArrowDownToLine, ArrowUpFromLine, Loader2, Coins } from 'lucide-react';
 import { getGlobalBankGold, depositToBank, withdrawFromBank } from '@/app/actions/game';
-import { Button } from '@/shared/ui/button';
-import { Input } from '@/shared/ui/input';
+import { Button } from '@/web/components/ui/button';
+import { Input } from '@/web/components/ui/input';
 
 export default function BankOverlay({ characterId }: { characterId: string }) {
   const player = useGameStore(state => state.player);

@@ -6,7 +6,7 @@ import {
 import Link from "next/link";
 import { DevActions } from "./dev-actions";
 import { DevSubNav } from "./dev-sub-nav";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/web/components/ui/card";
 import { ADMIN_CATEGORIES, ADMIN_MODULES } from "@/web/lib/admin-modules";
 
 export const metadata = {

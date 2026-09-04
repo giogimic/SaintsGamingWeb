@@ -8,7 +8,7 @@ import {
   upsertCraftingRecipe,
   deleteCraftingRecipe,
   type CraftingRecipeInput,
-} from '@/app/actions/recipes';
+} from '@/app/actions/game/recipes';
 import type { CraftingRecipe } from '@prisma/client';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';

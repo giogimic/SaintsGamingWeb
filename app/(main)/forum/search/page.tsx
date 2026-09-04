@@ -3,8 +3,8 @@ import { prisma } from "@/web/lib/prisma";
 import Link from "next/link";
 import { format } from "date-fns";
 import { MessageSquare, Search } from "lucide-react";
-import { Input } from "@/shared/ui/input";
-import { Button } from "@/shared/ui/button";
+import { Input } from "@/web/components/ui/input";
+import { Button } from "@/web/components/ui/button";
 
 import { constructPageMetadata } from "@/web/lib/seo";
 

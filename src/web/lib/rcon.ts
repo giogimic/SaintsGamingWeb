@@ -1,3 +1,5 @@
+import "server-only";
+
 export async function sendRconCommand(command: string): Promise<string> {
   console.log(`[RCON] Simulated execution of command: ${command}`);
   

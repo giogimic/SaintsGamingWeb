@@ -4,9 +4,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   getAllStarterHeroes, upsertStarterHero, deleteStarterHero,
   toggleStarterHeroActive, StarterHeroData
-} from '@/app/actions/starter-heroes';
-import { fetchAllMaps } from '@/app/actions/game-admin';
-import { getAllCharacterClasses } from '@/app/actions/character-classes';
+} from '@/app/actions/game/starter-heroes';
+import { fetchAllMaps } from '@/app/actions/admin/game-admin';
+import { getAllCharacterClasses } from '@/app/actions/game/character-classes';
 import { useEditorStore } from '../editor-store';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import {

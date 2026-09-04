@@ -2,16 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/web/components/ui/button";
 import { Edit2, Trash2, X, Check, MoreHorizontal, Flag, CheckCircle, Heart } from "lucide-react";
-import { Textarea } from "@/shared/ui/textarea";
+import { Textarea } from "@/web/components/ui/textarea";
 import ReactMarkdown from "react-markdown";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/shared/ui/dropdown-menu";
+} from "@/web/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
 interface ReplyActionsProps {

@@ -44,7 +44,7 @@ import {
   Play,
   RotateCcw,
 } from "lucide-react";
-import { useUserSettingsStore, type UserSettingsTab } from "@/web/hooks/useUserSettingsStore";
+import { useAppStore, type UserSettingsTab } from "@/shared/store/useAppStore";
 import { soundSynth } from "@/engine/sound-synth";
 import {
   getUserSettingsData,
@@ -52,10 +52,10 @@ import {
   changeUserSettingsPassword,
   getUserManagedPosts,
   deleteUserSocialPost,
-} from "@/app/actions/user-settings";
+} from "@/app/actions/user/user-settings";
 import { toast } from "sonner";
-import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
-import { Button } from "@/shared/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/web/components/ui/avatar";
+import { Button } from "@/web/components/ui/button";
 
 const USER_SETTINGS_CATEGORIES: { id: UserSettingsTab; label: string; icon: any; description: string }[] = [
   {
@@ -90,15 +90,15 @@ export function UserSettingsOverlayShell() {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
   const {
-    isOpen,
-    activeTab,
-    isMinimized,
-    isMaximized,
+    isSettingsOpen: isOpen,
+    activeSettingsTab: activeTab,
+    isSettingsMinimized: isMinimized,
+    isSettingsMaximized: isMaximized,
     closeSettings,
-    setActiveTab,
-    setMinimized,
-    setMaximized,
-  } = useUserSettingsStore();
+    setSettingsActiveTab: setActiveTab,
+    setSettingsMinimized: setMinimized,
+    setSettingsMaximized: setMaximized,
+  } = useAppStore();
 
   const [mounted, setMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);

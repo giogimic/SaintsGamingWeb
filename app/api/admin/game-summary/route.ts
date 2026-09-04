@@ -1,9 +1,9 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/web/lib/prisma';
 import { PERMISSION_LEVELS } from '@/web/lib/permissions';
 import { AuditService } from '@/server/audit/AuditService';
-import { validateWorldForPublish } from '@/app/actions/publishing';
+import { validateWorldForPublish } from '@/app/actions/studio/publishing';
 import { REALM_SETTING_KEYS, DEFAULT_REALM_SETTINGS } from '@/shared/game/realmSettings';
 import os from 'os';
 import fs from 'fs';
@@ -147,7 +147,7 @@ export async function GET() {
         heartbeatMs,
       },
       releaseSummary: {
-        liveVersion: settingsMap['SITE_VERSION'] || process.env.NEXT_PUBLIC_SITE_VERSION || '2.1.721',
+        liveVersion: settingsMap['SITE_VERSION'] || process.env.NEXT_PUBLIC_SITE_VERSION || '2.1.724',
         snapshotCount,
         latestSnapshot: latestSnapshot
           ? {

@@ -33,7 +33,7 @@ import {
   Grid3X3,
   Trees,
 } from 'lucide-react';
-import { savePrefab, listPrefabs } from '@/app/actions/prefabs';
+import { savePrefab, listPrefabs } from '@/app/actions/studio/prefabs';
 import { extractVoxelPrefab } from '@/shared/game/voxel/VoxelPrefab';
 import { packVoxel, VoxelShape, VoxelPhysics, VOXEL_WORD_AIR, VOXEL_MAT_GRASS } from '@/shared/game/voxel/VoxelWord';
 import { Box } from 'lucide-react';

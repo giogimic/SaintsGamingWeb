@@ -1,7 +1,7 @@
 "use client";
 
 import { Shield, MessageSquare, Newspaper, Coins, Zap } from "lucide-react";
-import { Progress } from "@/shared/ui/progress";
+import { Progress } from "@/web/components/ui/progress";
 
 interface ActivityStatsProps {
   profile: {
