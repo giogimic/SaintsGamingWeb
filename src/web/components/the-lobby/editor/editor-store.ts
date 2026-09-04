@@ -638,6 +638,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 620,
     zIndex: 10,
   },
+  tileset: {
+    id: 'tileset',
+    title: 'Tile Selector',
+    isOpen: false,
+    isCollapsed: false,
+    x: 20,
+    y: 20,
+    width: 320,
+    height: 500,
+    zIndex: 10,
+  },
   properties: {
     id: 'properties',
     title: 'Inspector',
