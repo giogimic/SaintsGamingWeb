@@ -62,6 +62,7 @@ export type StudioDockId =
   | 'materials'
   | 'selection'
   | 'transform'
+  | 'tileset'
   | 'procedural';
 
 /** Map stable internal ids → canonical engine-editor labels. */
@@ -312,6 +313,10 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   procedural: {
     label: 'Procedural Authoring',
     blurb: 'Procedural world rules, biomes, seeds, fractal terrain strata, and generation.',
+  },
+  tileset: {
+    label: 'Tile Selector',
+    blurb: 'Dedicated dockable window for the visual Tile Selector.',
   },
 };
 
