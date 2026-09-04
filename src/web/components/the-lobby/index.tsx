@@ -1906,10 +1906,14 @@ export default function TheLobby({
             onClose={() => setIsOptionsOpen(false)}
             isFullscreen={isFullscreen}
             onToggleFullscreen={toggleFullscreen}
-            isAdminUser={enableStudio && canStudio}
+            isAdminUser={canStudio}
             isCreationMode={studioToolsOpen}
             onToggleDevEditor={() => {
-              if (!enableStudio || !canStudio) return;
+              if (!canStudio) return;
+              if (!enableStudio) {
+                window.location.href = '/studio';
+                return;
+              }
               if (!studioToolsOpen) useGameStore.getState().setGameMode('EXPLORING');
               useEditorStore.getState().toggleCreationMode(); 
               setIsOptionsOpen(false);
