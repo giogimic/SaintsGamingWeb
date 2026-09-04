@@ -630,11 +630,11 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
   build: {
     id: 'build',
     title: 'World Builder',
-    isOpen: false,
+    isOpen: true,
     isCollapsed: false,
     x: 20,
     y: 20,
-    width: 340,
+    width: 320,
     height: 620,
     zIndex: 10,
   },

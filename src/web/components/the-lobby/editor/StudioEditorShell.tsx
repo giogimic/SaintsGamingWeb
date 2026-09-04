@@ -40,17 +40,14 @@ import {
   Film,
   Compass,
   Palette,
+  Camera,
   Crosshair,
+  RotateCw,
 } from 'lucide-react';
+import { resolveTilesetTextureUrl } from '@/shared/game/tileBatchHelpers';
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
 import { STUDIO_MAP_CELLS_CHANGED_EVENT, STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
-import { stripEditorOverlaysFromMapPayload } from '@/shared/game/mapLayers';
-import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
-import { invalidateMapCache } from '@/shared/game/mapCache';
-import { normalizeStudioMapVisuals, formatMapWriteError } from '@/shared/game/studioMapCreate';
-import { isGoMmoSocketEnabled } from '@/shared/net/goMmoSocket';
-import { toBaseMapId } from '@/shared/net/mapIds';
 import { soundSynth } from '@/engine/sound-synth';
 import { PasteOptionsToolbar } from './PasteOptionsToolbar';
 import { StudioOmnisearch } from './StudioOmnisearch';
@@ -60,6 +57,8 @@ import { HeroStudioSuite } from './hero-studio/HeroStudioSuite';
 import { StudioContextMenu } from './StudioContextMenu';
 import { GateConnectModal } from './GateConnectModal';
 import { DestinationPlacementHUD } from './DestinationPlacementHUD';
+import { MapPersistenceService } from './services/MapPersistenceService';
+import { StudioKeyboardRouter } from './services/StudioKeyboardRouter';
 
 // Lazy-loaded dock panels for maximum code-splitting & startup performance (Phase 8 Track D2)
 const WorldBuilderPanel = lazy(() => import('./panels/WorldBuilderPanel').then((m) => ({ default: m.WorldBuilderPanel })));
@@ -87,29 +86,29 @@ const MountEditorPanel = lazy(() => import('./panels/MountEditorPanel').then((m)
 const WorldEventPanel = lazy(() => import('./panels/WorldEventPanel').then((m) => ({ default: m.WorldEventPanel })));
 const SimulationPresetPanel = lazy(() => import('./panels/SimulationPresetPanel').then((m) => ({ default: m.SimulationPresetPanel })));
 const PublishManagerPanel = lazy(() => import('./panels/PublishManagerPanel').then((m) => ({ default: m.PublishManagerPanel })));
-const TileSelectorPanel = lazy(() => import('./panels/TileSelectorPanel').then((m) => ({ default: m.TileSelectorPanel })));
 const LogicPainterPanel = lazy(() => import('./panels/LogicPainterPanel').then((m) => ({ default: m.LogicPainterPanel })));
 const AnimationStudioPanel = lazy(() => import('./panels/AnimationStudioPanel').then((m) => ({ default: m.AnimationStudioPanel })));
 const MapTabPanel = lazy(() => import('./panels/MapTabPanel').then((m) => ({ default: m.MapTabPanel })));
 const MapListPanel = lazy(() => import('./panels/MapListPanel').then((m) => ({ default: m.MapListPanel })));
 const InterfaceEditorPanel = lazy(() => import('./panels/InterfaceEditorPanel').then((m) => ({ default: m.InterfaceEditorPanel })));
-
 const CameraSettingsPanel = lazy(() => import('./panels/CameraSettingsPanel').then((m) => ({ default: m.CameraSettingsPanel })));
 const BiomeConfiguratorPanel = lazy(() => import('./panels/BiomeConfiguratorPanel').then((m) => ({ default: m.BiomeConfiguratorPanel })));
-const WorldHierarchyPanel = lazy(() => import('./panels/WorldHierarchyPanel').then((m) => ({ default: m.WorldHierarchyPanel })));
-const LayersPanel = lazy(() => import('./panels/LayersPanel').then((m) => ({ default: m.LayersPanel })));
 const MaterialLibraryPanel = lazy(() => import('./panels/MaterialLibraryPanel').then((m) => ({ default: m.MaterialLibraryPanel })));
+const LayersPanel = lazy(() => import('./panels/LayersPanel').then((m) => ({ default: m.LayersPanel })));
+const WorldHierarchyPanel = lazy(() => import('./panels/WorldHierarchyPanel').then((m) => ({ default: m.WorldHierarchyPanel })));
 const SelectionPanel = lazy(() => import('./panels/SelectionPanel').then((m) => ({ default: m.SelectionPanel })));
 const TransformPanel = lazy(() => import('./panels/TransformPanel').then((m) => ({ default: m.TransformPanel })));
 const ProceduralAuthoringPanel = lazy(() => import('./panels/ProceduralAuthoringPanel').then((m) => ({ default: m.ProceduralAuthoringPanel })));
 
 import { RuleDebuggerOverlay } from './RuleDebuggerOverlay';
 import { DraggablePanel } from './DraggablePanel';
+import { StudioEscapeMenu } from './StudioEscapeMenu';
+import { StudioContextualBar } from './StudioContextualBar';
 
 
 export const StudioEditorShell: React.FC = () => {
   const { data: session } = useSession();
-  const permissionLevel = session?.user?.permissionLevel ?? 0;
+  const permissionLevel = (session?.user as any)?.permissionLevel ?? 0;
   const isCreationMode = useEditorStore((state) => state.isCreationMode);
   const studioMode = useEditorStore((state) => state.studioMode);
   const mapDirty = useEditorStore((state) => state.mapDirty);
@@ -118,8 +117,11 @@ export const StudioEditorShell: React.FC = () => {
   const toggleCreationMode = useEditorStore((state) => state.toggleCreationMode);
   const enterDevelopmentMode = useEditorStore((state) => state.enterDevelopmentMode);
   const setStudioMode = useEditorStore((state) => state.setStudioMode);
+  const isStudioEscapeMenuOpen = useEditorStore((state) => state.isStudioEscapeMenuOpen);
+  const setIsStudioEscapeMenuOpen = useEditorStore((state) => state.setIsStudioEscapeMenuOpen);
   const showToast = useGameStore((state) => state.showToast);
   const gameMode = useGameStore((state) => state.gameMode);
+  const activeMapData = useGameStore((state) => state.activeMapData);
 
   const canDev = canUseStudioDock(permissionLevel, 'dev');
   
@@ -129,9 +131,16 @@ export const StudioEditorShell: React.FC = () => {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tileR: number; tileC: number } | null>(null);
 
   useEffect(() => {
-    // Restore dock geometry, then enter Development Mode (tools on by default).
+    // Restore dock geometry, then enter World Atlas Mode by default.
     useEditorStore.getState().hydratePanelLayouts();
-    useEditorStore.getState().enterDevelopmentMode();
+    useEditorStore.getState().setStudioMode('atlas');
+    
+    // Check if ANY panel is open. If not, apply default workspace!
+    const state = useEditorStore.getState();
+    const anyOpen = Object.values(state.panels).some(p => p.isOpen);
+    if (!anyOpen) {
+      state.applyWorkspacePreset('world-building');
+    }
     
     // Simulate studio initialization and hide loading screen
     const timer = setTimeout(() => setIsStudioReady(true), 800);
@@ -198,52 +207,11 @@ export const StudioEditorShell: React.FC = () => {
   }, []);
 
   const performSave = async () => {
-    const currentMapId = useGameStore.getState().currentMapId;
-    const baseMapId = currentMapId ? toBaseMapId(currentMapId) : null;
-    if (!baseMapId) {
-      showToast('No map loaded to save.');
-      return;
-    }
-    soundSynth?.playActionSound?.();
-    const live = useGameStore.getState().activeMapData;
-    if (!live?.grid) {
-      showToast('Map data not loaded yet — wait for the world to appear, then Save.');
-      return;
-    }
-    const saveDoc = normalizeStudioMapVisuals(ensureMapHasStudioTilesets(live));
-    if (saveDoc !== live) {
-      useGameStore.getState().setActiveMapData(saveDoc);
-    }
-    useEditorStore.getState().setIsSavingMap(true);
-    try {
-      const payload = stripEditorOverlaysFromMapPayload({
-        name: saveDoc.name || baseMapId,
-        gameId: saveDoc.gameId,
-        grid: saveDoc.grid,
-        gates: saveDoc.gates || {},
-        npcs: saveDoc.npcs || [],
-        encounterPool: saveDoc.encounterPool || [],
-        tileLayers: saveDoc.tileLayers || [],
-        tilesets: saveDoc.tilesets || [],
-      });
-      const res = await fetch(`/api/maps/${encodeURIComponent(baseMapId)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        showToast(formatMapWriteError(res.status, err));
-        return;
-      }
-      invalidateMapCache(baseMapId);
-      useEditorStore.getState().clearMapDirty();
-      const backendUsed = isGoMmoSocketEnabled() ? 'Go MMO' : 'TS Server';
-      showToast(`Saved map ${baseMapId} (Synced to ${backendUsed})`);
-    } catch (e: any) {
-      showToast(e?.message || 'Save failed — network error.');
-    } finally {
-      useEditorStore.getState().setIsSavingMap(false);
+    const res = await MapPersistenceService.saveActiveMap();
+    if (res.ok) {
+      showToast(`Saved map ${res.mapId} (Synced to ${res.backendUsed})`);
+    } else {
+      showToast(res.error || 'Save failed');
     }
   };
 
@@ -267,376 +235,37 @@ export const StudioEditorShell: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Global Keyboard Command Router (Phase 8 Architecture Reset)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
-        return;
-      }
-
-      // '?' or 'F1' toggles keyboard shortcuts cheat sheet (Phase 8 Track C1)
-      if ((e.key === '?' || e.key === 'F1') && !e.ctrlKey && !e.altKey && !e.metaKey) {
-        e.preventDefault();
-        window.dispatchEvent(new CustomEvent('studio_open_shortcuts'));
-        return;
-      }
-
-      // Ctrl+Shift+Q Save & Exit to Character Select
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'q') {
-        e.preventDefault();
-        window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
-        setTimeout(() => { window.location.href = '/lobby'; }, 500);
-        return;
-      }
-
-      // Ctrl+E toggles Editor ↔ Playtest
-      if (e.ctrlKey && e.key.toLowerCase() === 'e') {
-        e.preventDefault();
-        const mode = useGameStore.getState().gameMode;
-        if (mode !== 'EXPLORING' && mode !== 'BATTLE') return;
-        const isCreation = useEditorStore.getState().isCreationMode;
-        if (isCreation) {
-          const hasUnsaved = useEditorStore.getState().hasUnsavedChanges || useEditorStore.getState().mapDirty;
-          if (hasUnsaved) {
-            if (confirm('You have unsaved changes. They will be lost if the map reloads during playtesting. Save before playing?')) {
-              void performSave();
-            }
-          }
-        }
-        toggleCreationMode();
-        return;
-      }
-
-      // Bracket keys [ ] cycle brush size
-      if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey && (e.key === '[' || e.key === ']')) {
-        e.preventDefault();
-        const currentSize = useEditorStore.getState().brushRadius;
-        const SIZES = [1, 3, 5, 7];
-        let idx = SIZES.indexOf(currentSize);
-        if (idx === -1) idx = 0;
-        
-        if (e.key === ']') {
-          idx = (idx + 1) % SIZES.length;
-        } else {
-          idx = (idx - 1 + SIZES.length) % SIZES.length;
-        }
-        useEditorStore.getState().setBrushRadius(SIZES[idx]);
-        return;
-      }
-
-      // Ctrl+Shift+M or Ctrl+Shift+P toggles Atlas Studio
-      if (e.ctrlKey && e.shiftKey && (e.key.toLowerCase() === 'm' || e.key.toLowerCase() === 'p')) {
-        e.preventDefault();
-        const curMode = useEditorStore.getState().studioMode;
-        setStudioMode(curMode === 'atlas' ? 'develop' : 'atlas');
-        return;
-      }
-
-      // Ctrl+Shift+A toggles Asset Studio
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') {
-        e.preventDefault();
-        const curMode = useEditorStore.getState().studioMode;
-        setStudioMode(curMode === 'assets' ? 'develop' : 'assets');
-        return;
-      }
-
-      // Ctrl+Shift+H toggles Hero Studio
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'h') {
-        e.preventDefault();
-        const curMode = useEditorStore.getState().studioMode;
-        setStudioMode(curMode === 'hero' ? 'develop' : 'hero');
-        return;
-      }
-
-      // Ctrl+Shift+O opens Problems & Diagnostics
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'o') {
-        e.preventDefault();
-        useEditorStore.getState().openPanel('problems');
-        showToast('Opened Map Diagnostics');
-        return;
-      }
-
-      // Ctrl+Shift+D opens Dev Tools
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
-        e.preventDefault();
-        useEditorStore.getState().openPanel('dev');
-        showToast('Opened Dev Tools');
-        return;
-      }
-
-      // Ctrl+K Omnisearch
-      if (e.ctrlKey && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setOmnisearchOpen((prev) => !prev);
-        return;
-      }
-
-      // Ctrl+S Save
-      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 's') {
-        e.preventDefault();
-        window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
-        return;
-      }
-
-      // Ctrl+Z / Ctrl+Y — map-scope undo/redo (editor runtime only)
-      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'z') {
-        if (!useEditorStore.getState().isCreationMode) return;
-        e.preventDefault();
-        const map = useGameStore.getState().activeMapData;
-        if (!map) return;
-        const result = useEditorStore.getState().triggerUndo(map);
-        if (result.ok) showToast('Undo');
-        return;
-      }
-
-      if (e.ctrlKey && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))) {
-        if (!useEditorStore.getState().isCreationMode) return;
-        e.preventDefault();
-        const map = useGameStore.getState().activeMapData;
-        if (!map) return;
-        const result = useEditorStore.getState().triggerRedo(map);
-        if (result.ok) showToast('Redo');
-        return;
-      }
-
-      // Delete / Backspace — erase selected tiles or hovered tile
-      if (!e.ctrlKey && !e.altKey && !e.metaKey && (e.key === 'Delete' || e.key === 'Backspace')) {
-        if (!useEditorStore.getState().isCreationMode) return;
-        e.preventDefault();
-        const map = useGameStore.getState().activeMapData;
-        if (!map) return;
-        const result = useEditorStore.getState().deleteSelectionTiles(map);
-        if (result.error) {
-          showToast(result.error);
-        } else if (result.count > 0) {
-          const layerName = result.layerIdx === -1 ? 'Logic (−1)' : `Layer ${result.layerIdx}`;
-          showToast(`Deleted ${result.count} tile${result.count === 1 ? '' : 's'} on ${layerName}`);
-        } else {
-          showToast('No tiles to delete.');
-        }
-        return;
-      }
-
-      // Ctrl+A — Select All tiles on active map (Phase 5C)
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'a') {
-        if (!useEditorStore.getState().isCreationMode) return;
-        const map = useGameStore.getState().activeMapData;
-        if (!map) return;
-        const h = map.grid?.length || 0;
-        const w = map.grid?.[0]?.length || 0;
-        if (h > 0 && w > 0) {
-          e.preventDefault();
-          useEditorStore.getState().setSelectionStart({ r: 0, c: 0 });
-          useEditorStore.getState().setSelectionEnd({ r: h - 1, c: w - 1 });
-          const activeEng = (window as any).__babylonEngine;
-          if (activeEng?.setSelectionPreview) {
-            activeEng.setSelectionPreview(0, 0, h - 1, w - 1);
-          }
-          showToast(`Selected entire map (${w}×${h})`);
-          return;
-        }
-      }
-
-      // Ctrl+D or Escape — Deselect / clear selection (Phase 5C & Spec)
-      if (((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'd') || e.key === 'Escape') {
-        if (!useEditorStore.getState().isCreationMode) return;
-        if (e.key !== 'Escape') e.preventDefault();
-        useEditorStore.getState().clearSelectedCells();
-        useEditorStore.getState().setSelectionStart(null);
-        useEditorStore.getState().setSelectionEnd(null);
-        const activeEng = (window as any).__babylonEngine;
-        if (activeEng?.clearSelectionPreview) {
-          activeEng.clearSelectionPreview();
-        }
-        showToast('Deselected');
-        return;
-      }
-
-      // Ctrl+C — Copy selection
-      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'c') {
-        if (!useEditorStore.getState().isCreationMode) return;
-        e.preventDefault();
-        const map = useGameStore.getState().activeMapData;
-        if (!map) return;
-        const res = useEditorStore.getState().copySelection(map);
-        if (res.ok) {
-          showToast(`Copied ${res.width}×${res.height} tiles to clipboard`);
-        } else {
-          showToast(res.error || 'Copy failed');
-        }
-        return;
-      }
-
-      // Ctrl+X — Cut selection
-      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'x') {
-        if (!useEditorStore.getState().isCreationMode) return;
-        e.preventDefault();
-        const map = useGameStore.getState().activeMapData;
-        if (!map) return;
-        const res = useEditorStore.getState().cutSelection(map);
-        if (res.ok) {
-          showToast(`Cut ${res.width}×${res.height} tiles (${res.count} cleared)`);
-        } else {
-          showToast(res.error || 'Cut failed');
-        }
-        return;
-      }
-
-      // Ctrl+Shift+V — Paste in Place
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'v') {
-        if (!useEditorStore.getState().isCreationMode) return;
-        e.preventDefault();
-        const map = useGameStore.getState().activeMapData;
-        const clip = useEditorStore.getState().tileClipboard;
-        if (!map || !clip) {
-          showToast('Clipboard is empty. Copy tiles first (Ctrl+C).');
-          return;
-        }
-        const res = useEditorStore.getState().pasteClipboard(
-          map,
-          null,
-          clip.sourceOrigin.r,
-          clip.sourceOrigin.c
-        );
-        if (res.ok) {
-          showToast(`Pasted in place at [${clip.sourceOrigin.c}, ${clip.sourceOrigin.r}]`);
-        } else {
-          showToast(res.error || 'Paste failed');
-        }
-        return;
-      }
-
-      // Ctrl+V — Initiate Paste Mode
-      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'v') {
-        if (!useEditorStore.getState().isCreationMode) return;
-        e.preventDefault();
-        const clip = useEditorStore.getState().tileClipboard;
-        if (!clip) {
-          showToast('Clipboard is empty. Copy tiles first (Ctrl+C).');
-          return;
-        }
-        useEditorStore.getState().setIsPasting(true);
-        useEditorStore.getState().setBrushMode('paste');
-        showToast(`Paste active (${clip.width}×${clip.height}) — click to place`);
-        return;
-      }
-
-      // Ctrl+0 / Cmd+0 — Reset Zoom to 100% (Phase 2B)
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0')) {
-        e.preventDefault();
-        window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent: 100 } }));
-        showToast('Zoom reset to 100%');
-        return;
-      }
-
-      // Home — Fit entire map in view
-      if (e.key === 'Home' && !e.ctrlKey && !e.altKey && !e.metaKey) {
-        e.preventDefault();
-        window.dispatchEvent(new CustomEvent('studio_fit_map'));
-        showToast('Fit map in view');
-        return;
-      }
-
-      // Stamp Transform Shortcuts (Phase 5A) — X (Flip H), Y (Flip V), Z (Rotate CW), Shift+Z (Rotate CCW)
-      if (!e.ctrlKey && !e.altKey && !e.metaKey && useEditorStore.getState().isCreationMode) {
-        if (e.key.toLowerCase() === 'x') {
-          e.preventDefault();
-          useEditorStore.getState().flipStampH();
-          const t = useEditorStore.getState().stampTransform;
-          showToast(`Stamp Flip H: ${t.flipH ? 'ON' : 'OFF'} (X)`);
-          return;
-        }
-
-        if (e.key.toLowerCase() === 'y') {
-          e.preventDefault();
-          useEditorStore.getState().flipStampV();
-          const t = useEditorStore.getState().stampTransform;
-          showToast(`Stamp Flip V: ${t.flipV ? 'ON' : 'OFF'} (Y)`);
-          return;
-        }
-
-        if (e.key.toLowerCase() === 'z') {
-          e.preventDefault();
-          if (e.shiftKey) {
-            useEditorStore.getState().rotateStampCCW();
-            const t = useEditorStore.getState().stampTransform;
-            showToast(`Stamp Rotate: ${t.rotation}° (Shift+Z)`);
-          } else {
-            useEditorStore.getState().rotateStampCW();
-            const t = useEditorStore.getState().stampTransform;
-            showToast(`Stamp Rotate: ${t.rotation}° (Z)`);
-          }
-          return;
-        }
-      }
-
-      // Single-key Tool Mode Shortcuts (Phase 5B) — B (Brush/Paint), E (Eraser), I (Eyedropper), M (Marquee Select), G (Prefab/Stamp), H (Layer Isolation)
-      if (!e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey && useEditorStore.getState().isCreationMode) {
-        if (!document.querySelector('[role="dialog"]')) {
-          const key = e.key.toLowerCase();
-          if (key === 'b') {
-            e.preventDefault();
-            useEditorStore.getState().setBrushMode('paint');
-            showToast('Paint Brush (B)');
-            return;
-          }
-          if (key === 'e') {
-            e.preventDefault();
-            useEditorStore.getState().setBrushMode('erase');
-            showToast('Eraser (E)');
-            return;
-          }
-          if (key === 'i') {
-            e.preventDefault();
-            useEditorStore.getState().setBrushMode('eyedropper');
-            showToast('Eyedropper (I)');
-            return;
-          }
-          if (key === 'm') {
-            e.preventDefault();
-            useEditorStore.getState().setBrushMode('select');
-            showToast('Marquee Selection (M)');
-            return;
-          }
-          if (key === 'g') {
-            e.preventDefault();
-            useEditorStore.getState().setBrushMode('prefab');
-            showToast('Prefab Stamp (G)');
-            return;
-          }
-          if (key === 'h') {
-            e.preventDefault();
-            window.dispatchEvent(new CustomEvent('studio_toggle_layer_dim'));
-            showToast('Layer Isolation (H)');
-            return;
-          }
-        }
-      }
-
-      // Escape — Cancel paste or selection
-      if (e.key === 'Escape') {
-        const store = useEditorStore.getState();
-        if (store.isPasting || store.brushMode === 'paste') {
-          e.preventDefault();
-          store.cancelPaste();
-          showToast('Paste cancelled.');
-          return;
-        }
-        if (store.selectionStart || store.selectionEnd) {
-          e.preventDefault();
-          store.setSelectionStart(null);
-          store.setSelectionEnd(null);
-          const activeEng = (window as any).__babylonEngine;
-          if (activeEng?.clearSelectionPreview) {
-            activeEng.clearSelectionPreview();
-          }
-          showToast('Selection cleared.');
-        }
-      }
+      StudioKeyboardRouter.handleKeyDown(e, {
+        showToast,
+        onToggleOmnisearch: () => setOmnisearchOpen((prev) => !prev),
+      });
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleCreationMode, showToast]);
+  }, [showToast]);
+
+  // Dynamic Brush Radius: R in [1..16] via Ctrl + Mouse Wheel
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        const store = useEditorStore.getState();
+        if (!store.isCreationMode) return;
+        const delta = e.deltaY < 0 ? 1 : -1;
+        const current = store.brushRadius;
+        const next = Math.max(1, Math.min(16, current + delta));
+        if (next !== current) {
+          store.setBrushRadius(next);
+          showToast(`Brush Radius: ${next} blocks (Ctrl+Scroll)`);
+        }
+      }
+    };
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, [showToast]);
 
   if (gameMode !== 'EXPLORING' && gameMode !== 'BATTLE') {
     return null;
@@ -719,6 +348,11 @@ export const StudioEditorShell: React.FC = () => {
         </div>
       )}
       <div className={`fixed inset-0 pointer-events-none z-[100] flex flex-col pt-10 pb-9 ${!isStudioReady ? 'opacity-0' : 'opacity-100 transition-opacity duration-500'}`}>
+        {typeof window !== 'undefined' && !(window as any).electronAPI && (
+          <div className="pointer-events-auto">
+            <StudioContextualBar />
+          </div>
+        )}
         <PasteOptionsToolbar />
         <StudioFavoritesStrip />
         <StudioOmnisearch open={omnisearchOpen} onClose={() => setOmnisearchOpen(false)} />
@@ -736,16 +370,20 @@ export const StudioEditorShell: React.FC = () => {
 
         {/* MDI Free-Floating Windows Workspace Container */}
         <div className="pointer-events-none absolute inset-0 z-40 overflow-hidden">
-          <div className={`absolute inset-0 pointer-events-none ${studioMode === 'assets' || studioMode === 'atlas' || studioMode === 'hero' ? 'hidden' : ''}`}>
+        
+          {/* DEBUG OVERLAY - ALWAYS VISIBLE */}
+          <div className="pointer-events-auto fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-red-600/90 text-white p-6 rounded-xl z-[99999] shadow-2xl border-4 border-white text-lg font-bold font-mono min-w-[300px]">
+            DEBUG INFO:<br/>
+            permissionLevel: {permissionLevel}<br/>
+            studioMode: {studioMode}<br/>
+            isCreationMode: {String(isCreationMode)}<br/>
+            openPanels: {Object.entries(useEditorStore.getState().panels).filter(([_, p]) => p.isOpen).map(([k]) => k).join(', ')}
+          </div>
+
+          <div className={`absolute inset-0 pointer-events-none ${studioMode === 'assets' || studioMode === 'hero' ? 'hidden' : ''}`}>
           {canUseStudioDock(permissionLevel, 'build') && (
             <DraggablePanel id="build" icon={<Hammer className="w-4 h-4" />} title="World Builder">
               <Suspense fallback={<div>Loading...</div>}><WorldBuilderPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'tileset') && (
-            <DraggablePanel id="tileset" icon={<Grid3X3 className="w-4 h-4" />} title="Tile Selector">
-              <Suspense fallback={<div>Loading...</div>}><TileSelectorPanel /></Suspense>
             </DraggablePanel>
           )}
 
@@ -839,6 +477,12 @@ export const StudioEditorShell: React.FC = () => {
             </DraggablePanel>
           )}
 
+          {canUseStudioDock(permissionLevel, 'atlas') && (
+            <DraggablePanel id="biome" icon={<Sparkles className="w-4 h-4 text-emerald-400" />} title="Biome Configurator">
+              <Suspense fallback={<div>Loading...</div>}><BiomeConfiguratorPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
           {canUseStudioDock(permissionLevel, 'settings') && (
             <DraggablePanel id="settings" icon={<Settings className="w-4 h-4" />} title="Server Settings">
               <Suspense fallback={<div>Loading...</div>}><RealmSettingsPanel /></Suspense>
@@ -911,57 +555,49 @@ export const StudioEditorShell: React.FC = () => {
             </DraggablePanel>
           )}
 
-          {canUseStudioDock(permissionLevel, 'dev') && (
-            <DraggablePanel id="camera" icon={<Settings className="w-4 h-4" />} title="Camera Settings">
-              <Suspense fallback={<div>Loading...</div>}><CameraSettingsPanel /></Suspense>
+          {canUseStudioDock(permissionLevel, 'interface') && (
+            <DraggablePanel id="interface" icon={<Palette className="w-4 h-4 text-amber-400" />} title="Interface Designer">
+              <Suspense fallback={<div>Loading...</div>}><InterfaceEditorPanel /></Suspense>
             </DraggablePanel>
           )}
 
-          {canUseStudioDock(permissionLevel, 'build') && (
-            <DraggablePanel id="biome" icon={<Globe className="w-4 h-4" />} title="Biome Configurator">
-              <Suspense fallback={<div>Loading...</div>}><BiomeConfiguratorPanel /></Suspense>
-            </DraggablePanel>
-          )}
+          <DraggablePanel id="camera" icon={<Camera className="w-4 h-4 text-primary" />} title="Camera & View Settings">
+            <Suspense fallback={<div>Loading...</div>}><CameraSettingsPanel /></Suspense>
+          </DraggablePanel>
 
-          {canUseStudioDock(permissionLevel, 'build') && (
-            <DraggablePanel id="hierarchy" icon={<Layers className="w-4 h-4" />} title="World Hierarchy">
+          {canUseStudioDock(permissionLevel, 'hierarchy') && (
+            <DraggablePanel id="hierarchy" icon={<Layers className="w-4 h-4 text-emerald-400" />} title="World Hierarchy">
               <Suspense fallback={<div>Loading...</div>}><WorldHierarchyPanel /></Suspense>
             </DraggablePanel>
           )}
 
-          {canUseStudioDock(permissionLevel, 'logic') && (
-            <DraggablePanel id="layers" icon={<Layers className="w-4 h-4" />} title="Layers">
+          {canUseStudioDock(permissionLevel, 'layers') && (
+            <DraggablePanel id="layers" icon={<Layers className="w-4 h-4 text-cyan-400" />} title="Layers">
               <Suspense fallback={<div>Loading...</div>}><LayersPanel /></Suspense>
             </DraggablePanel>
           )}
 
-          {canUseStudioDock(permissionLevel, 'build') && (
-            <DraggablePanel id="materials" icon={<Palette className="w-4 h-4" />} title="Material Library">
+          {canUseStudioDock(permissionLevel, 'materials') && (
+            <DraggablePanel id="materials" icon={<Palette className="w-4 h-4 text-amber-400" />} title="Material Library">
               <Suspense fallback={<div>Loading...</div>}><MaterialLibraryPanel /></Suspense>
             </DraggablePanel>
           )}
 
-          {canUseStudioDock(permissionLevel, 'build') && (
-            <DraggablePanel id="selection" icon={<Crosshair className="w-4 h-4" />} title="Selection">
+          {canUseStudioDock(permissionLevel, 'selection') && (
+            <DraggablePanel id="selection" icon={<Crosshair className="w-4 h-4 text-primary" />} title="Selection">
               <Suspense fallback={<div>Loading...</div>}><SelectionPanel /></Suspense>
             </DraggablePanel>
           )}
 
-          {canUseStudioDock(permissionLevel, 'build') && (
-            <DraggablePanel id="transform" icon={<Settings2 className="w-4 h-4" />} title="Transform">
+          {canUseStudioDock(permissionLevel, 'transform') && (
+            <DraggablePanel id="transform" icon={<RotateCw className="w-4 h-4 text-primary" />} title="Transform">
               <Suspense fallback={<div>Loading...</div>}><TransformPanel /></Suspense>
             </DraggablePanel>
           )}
 
-          {canUseStudioDock(permissionLevel, 'build') && (
-            <DraggablePanel id="procedural" icon={<Settings2 className="w-4 h-4" />} title="Procedural Authoring">
+          {canUseStudioDock(permissionLevel, 'procedural') && (
+            <DraggablePanel id="procedural" icon={<Sparkles className="w-4 h-4 text-purple-400" />} title="Procedural Authoring">
               <Suspense fallback={<div>Loading...</div>}><ProceduralAuthoringPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'interface') && (
-            <DraggablePanel id="interface" icon={<Activity className="w-4 h-4" />} title="Interface Editor">
-              <Suspense fallback={<div>Loading...</div>}><InterfaceEditorPanel /></Suspense>
             </DraggablePanel>
           )}
         </div>
@@ -982,6 +618,16 @@ export const StudioEditorShell: React.FC = () => {
       <DestinationPlacementHUD />
       <GateConnectModal />
       <RuleDebuggerOverlay />
+      <StudioEscapeMenu
+        isOpen={isStudioEscapeMenuOpen}
+        onClose={() => setIsStudioEscapeMenuOpen(false)}
+        onSaveMap={() => window.dispatchEvent(new CustomEvent('studio_save_map'))}
+        onExitStudio={() => {
+          setIsStudioEscapeMenuOpen(false);
+          useEditorStore.getState().toggleCreationMode();
+          useGameStore.getState().setGameMode('EXPLORING');
+        }}
+      />
     </>
   );
 };
