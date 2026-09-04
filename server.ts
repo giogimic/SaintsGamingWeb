@@ -1,11 +1,8 @@
 import { createServer } from "http";
 import { parse } from "url";
 import next from "next";
-import { Server } from "socket.io";
-import { bootstrapDemoContent } from "./src/server/DemoBootstrap";
 import { RealtimeService } from "./src/server/realtime/RealtimeService";
-import { attachRedisAdapter } from "./src/server/net/redisAdapter";
-import { LobbySocketHandler } from "./src/server/net/LobbySocketHandler";
+import { bootstrapDemoContent } from "./src/server/DemoBootstrap";
 
 const dev = process.env.NODE_ENV !== "production";
 // Docker sets HOSTNAME=0.0.0.0; default to all interfaces in prod so lobby sockets work.
@@ -128,27 +125,15 @@ app.prepare().then(async () => {
     }
   });
 
-  // Attach Socket.io to the Next.js HTTP server
-  const io = new Server(server, {
-    cors: {
-      origin: (requestOrigin, callback) => {
-        // Dynamically mirror request origin for credentialed requests across subdomains
-        callback(null, requestOrigin || "*");
-      },
-      credentials: true,
-      methods: ["GET", "POST"],
-    },
-  });
-
-  await attachRedisAdapter(io);
-  _realtimeService = new RealtimeService(io);
+  // Initialize RealtimeService to route events to Go MMO server
+  const goMmoUrl = process.env.NEXT_PUBLIC_GO_MMO_URL || "http://127.0.0.1:3001";
+  _realtimeService = new RealtimeService(goMmoUrl);
   (globalThis as any).__sg_realtime_service = _realtimeService;
-  new LobbySocketHandler(io);
 
   // Maps / Studio content seed always (API path), even when Go owns game sockets.
   await bootstrapDemoContent();
 
-  console.log(`> Lobby & Studio Realtime Socket Handler active`);
+  console.log(`> Lobby & Studio Realtime Event Router active (Target: ${goMmoUrl})`);
 
   server.listen(port, hostname, () => {
     console.log(`> Saints Web Server ready on http://${hostname}:${port}`);

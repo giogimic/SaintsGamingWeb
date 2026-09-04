@@ -1,3 +1,5 @@
+import "server-only";
+
 /**
  * Optional S3-compatible object storage (AWS S3, MinIO, Cloudflare R2, etc.).
  * Disabled unless S3_BUCKET + credentials + CDN_BASE_URL are set.

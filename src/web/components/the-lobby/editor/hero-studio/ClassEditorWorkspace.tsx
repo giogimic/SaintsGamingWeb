@@ -9,7 +9,7 @@ import {
   importCharacterClassesJson,
   getGlobalShinyChance,
   setGlobalShinyChance,
-} from '@/app/actions/character-classes';
+} from '@/app/actions/game/character-classes';
 import {
   ClassDefData,
   PLAYABLE_CLASS_IDS,

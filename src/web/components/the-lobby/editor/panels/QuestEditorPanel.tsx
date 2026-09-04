@@ -6,12 +6,12 @@ import {
   upsertQuestTemplate,
   deleteQuestTemplate,
   type QuestObjectiveInput,
-} from '@/app/actions/quest-templates';
+} from '@/app/actions/game/quest-templates';
 import { useEditorStore } from '../editor-store';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { RegistryCombobox } from '../components/RegistryCombobox';
 import { definitionOpValue } from '@/shared/game/definitionOps';
-import { getAllCreatureDefs } from '@/app/actions/creature-defs';
+import { getAllCreatureDefs } from '@/app/actions/game/creature-defs';
 import {
   Plus, Trash2, Save, RefreshCw, CheckCircle2, AlertCircle, LayoutTemplate, Play, ArrowRight
 } from 'lucide-react';

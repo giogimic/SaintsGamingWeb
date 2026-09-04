@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ExternalLink, Link2 } from 'lucide-react';
-import { getReferencesFor } from '@/app/actions/cross-references';
+import { getReferencesFor } from '@/app/actions/studio/cross-references';
 import {
   type DefinitionType,
   type ReferenceReport,

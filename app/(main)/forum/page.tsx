@@ -10,9 +10,9 @@ import {
 import { formatDistanceToNow, format } from "date-fns";
 import { auth } from "@/auth";
 import { canAccessRestrictedBoard } from "@/web/lib/forum-access";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
+import { Button } from "@/web/components/ui/button";
+import { Input } from "@/web/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/web/components/ui/avatar";
 
 import { constructPageMetadata } from "@/web/lib/seo";
 

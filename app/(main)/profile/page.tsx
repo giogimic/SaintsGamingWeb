@@ -1,9 +1,9 @@
 import { auth, signOut } from "@/auth";
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
-import { Button, buttonVariants } from "@/shared/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/web/components/ui/card";
+import { Button, buttonVariants } from "@/web/components/ui/button";
 import { getRoleName, getRoleColor, PERMISSION_LEVELS } from "@/web/lib/permissions";
-import { Badge } from "@/shared/ui/badge";
+import { Badge } from "@/web/components/ui/badge";
 import { User, LogOut, Settings, Gamepad2, Coins, Backpack, Landmark, MessageSquare, BarChart, Bookmark, Clock, Flame } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";

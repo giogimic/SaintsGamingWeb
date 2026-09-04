@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { getGameServers, addGameServer, toggleMaintenance, deleteGameServer } from "./actions";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/ui/card";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { Switch } from "@/shared/ui/switch";
-import { Label } from "@/shared/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/web/components/ui/card";
+import { Button } from "@/web/components/ui/button";
+import { Input } from "@/web/components/ui/input";
+import { Switch } from "@/web/components/ui/switch";
+import { Label } from "@/web/components/ui/label";
 import { Server, Trash2, Plus, Wrench } from "lucide-react";
 
 export default function GameServersAdminPage() {

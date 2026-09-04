@@ -6,9 +6,9 @@ import {
   BookOpen, Rocket, Gamepad2, Sparkles, 
   Wand2, BookText, ArrowUpRight, Clock
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/ui/card";
-import { Badge } from "@/shared/ui/badge";
-import { Button } from "@/shared/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/web/components/ui/card";
+import { Badge } from "@/web/components/ui/badge";
+import { Button } from "@/web/components/ui/button";
 import Link from "next/link";
 import { getWikiCategories, getWikiArticleCount } from "@/shared/wiki/wikiRegistry";
 

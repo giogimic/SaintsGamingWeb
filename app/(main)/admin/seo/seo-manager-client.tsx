@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Button } from "@/shared/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
+import { Button } from "@/web/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/web/components/ui/tabs";
 import {
   Globe,
   Eye,

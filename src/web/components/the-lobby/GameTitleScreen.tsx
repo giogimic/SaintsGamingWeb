@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useGameStore } from './store';
-import { useRealtimeStore } from '@/web/hooks/useRealtimeStore';
+import { useAppStore } from "@/shared/store/useAppStore";
 import { getUserCharacters, getTopLobbyOperatives } from '@/app/actions/game';
 import { soundSynth } from '@/engine/sound-synth';
 import { useTheme } from 'next-themes';
@@ -210,7 +210,7 @@ export default function GameTitleScreen({
   const { data: session, status } = useSession();
   const setGameMode = useGameStore((state) => state.setGameMode);
   const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
-  const mmoPlayerCount = useRealtimeStore((s) => s.mmoPlayerCount);
+  const mmoPlayerCount = useAppStore((s) => s.mmoPlayerCount);
 
   const [characters, setCharacters] = useState<any[]>(initialCharacters || []);
   const [activeIdx, setActiveIdx] = useState(0);

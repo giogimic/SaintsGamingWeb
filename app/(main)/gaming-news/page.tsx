@@ -1,7 +1,7 @@
 import { prisma } from "@/web/lib/prisma";
 import Parser from "rss-parser";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
-import { Badge } from "@/shared/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/web/components/ui/card";
+import { Badge } from "@/web/components/ui/badge";
 import { Newspaper, ExternalLink } from "lucide-react";
 import Image from "next/image";
 

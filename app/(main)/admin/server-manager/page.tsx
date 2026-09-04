@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent } from "@/shared/ui/card";
-import { Button } from "@/shared/ui/button";
-import { Switch } from "@/shared/ui/switch";
-import { Label } from "@/shared/ui/label";
+import { Card, CardContent } from "@/web/components/ui/card";
+import { Button } from "@/web/components/ui/button";
+import { Switch } from "@/web/components/ui/switch";
+import { Label } from "@/web/components/ui/label";
 import { Server, Play, Square, RefreshCw, ExternalLink, AlertTriangle } from "lucide-react";
 import { getServerStatus, startTxAdmin, stopTxAdmin } from "./actions";
 

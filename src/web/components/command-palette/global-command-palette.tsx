@@ -10,7 +10,7 @@ import {
   CommandItem, 
   CommandList, 
   CommandSeparator 
-} from "@/shared/ui/command";
+} from "@/web/components/ui/command";
 import { 
   getVisibleAdminModules, 
   ADMIN_CATEGORIES, 
@@ -21,7 +21,7 @@ import {
   Sparkles, Newspaper, Users, Radio, LifeBuoy, 
   Gamepad2, Home, MessageSquare, Compass, Shield, Flame, Terminal
 } from "lucide-react";
-import { Badge } from "@/shared/ui/badge";
+import { Badge } from "@/web/components/ui/badge";
 
 interface GlobalCommandPaletteProps {
   permissionLevel?: number;

@@ -15,7 +15,7 @@ import {
   Clock,
   HardDrive
 } from 'lucide-react';
-import { Button } from '@/shared/ui/button';
+import { Button } from '@/web/components/ui/button';
 
 interface UploadProgressBarProps {
   uploadState: UploadProgressState | null;

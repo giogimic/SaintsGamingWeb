@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { Ghost, Home, ArrowLeft } from "lucide-react";
-import { Button } from "@/shared/ui/button";
-import { Card, CardContent } from "@/shared/ui/card";
+import { Button } from "@/web/components/ui/button";
+import { Card, CardContent } from "@/web/components/ui/card";
 
 export default function NotFound() {
   return (

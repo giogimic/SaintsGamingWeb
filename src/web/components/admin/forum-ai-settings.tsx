@@ -1,16 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { Label } from "@/shared/ui/label";
+import { Button } from "@/web/components/ui/button";
+import { Input } from "@/web/components/ui/input";
+import { Label } from "@/web/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/shared/ui/select";
+} from "@/web/components/ui/select";
 import { updateForumAiSettings } from "@/app/(main)/admin/actions";
 import { Loader2, Download, CheckCircle2, AlertCircle, HardDrive } from "lucide-react";
 import type { LocalModelOption } from "@/web/lib/forum-ai-catalog";

@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Settings, User, Monitor } from "lucide-react";
-import { buttonVariants } from "@/shared/ui/button";
+import { buttonVariants } from "@/web/components/ui/button";
 
 export default async function SettingsLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();

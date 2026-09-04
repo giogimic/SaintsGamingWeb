@@ -6,9 +6,9 @@ import {
   Share2, Flame, Pin, ShieldAlert, 
   Trash2, Eye, MessageSquare, Heart, Bookmark
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/ui/card";
-import { Badge } from "@/shared/ui/badge";
-import { Button } from "@/shared/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/web/components/ui/card";
+import { Badge } from "@/web/components/ui/badge";
+import { Button } from "@/web/components/ui/button";
 import { togglePinPost, toggleCopyrightStrike, deleteSocialPost } from "./actions";
 
 export const metadata = {

@@ -8,7 +8,7 @@ import {
   upsertProfessionTemplate,
   deleteProfessionTemplate,
   type ProfessionTemplateInput,
-} from '@/app/actions/professions';
+} from '@/app/actions/studio/professions';
 import type { ProfessionTemplate } from '@prisma/client';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';

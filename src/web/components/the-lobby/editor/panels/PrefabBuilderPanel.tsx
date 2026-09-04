@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useEditorStore } from '../editor-store';
 import { useGameStore } from '../../store';
 import { Plus, Trash2, BoxSelect, Droplet, LayoutGrid } from 'lucide-react';
-import { listPrefabs, savePrefab, deletePrefab, seedBasicPrefabs, type PrefabTileData, type PrefabLogicData } from '@/app/actions/prefabs';
+import { listPrefabs, savePrefab, deletePrefab, seedBasicPrefabs, type PrefabTileData, type PrefabLogicData } from '@/app/actions/studio/prefabs';
 import { extractSubgridFromMap, extractSparseCellsFromMap } from '@/shared/game/subgridStamp';
 import type { MapPrefab } from '@prisma/client';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';

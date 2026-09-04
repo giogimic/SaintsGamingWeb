@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useGameStore } from './store';
-import { useRealtimeStore } from '@/web/hooks/useRealtimeStore';
+import { useAppStore } from "@/shared/store/useAppStore";
 import { useVisibilityPolling } from '@/web/hooks/useVisibilityPolling';
 import { Globe, Users, Server, Play, ArrowLeft, Wifi, AlertTriangle, Power } from 'lucide-react';
 import { canUseStudioServerControls } from '@/shared/game/studioPermissions';
@@ -35,7 +35,7 @@ function PingDots({ status }: { status: 'online' | 'offline' }) {
 export default function ServerSelect() {
   const { data: session, status: authStatus } = useSession();
   const setGameMode = useGameStore((state) => state.setGameMode);
-  const mmoPlayerCount = useRealtimeStore((s) => s.mmoPlayerCount);
+  const mmoPlayerCount = useAppStore((s) => s.mmoPlayerCount);
   const [selectedServer, setSelectedServer] = useState<string | null>(null);
   const [servers, setServers] = useState<ServerInfo[]>([
     { id: 'main', name: 'Saints Realm', region: 'Global', players: 0, capacity: 500, status: 'offline' }

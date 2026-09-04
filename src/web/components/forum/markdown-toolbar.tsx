@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/web/components/ui/button";
 import { Bold, Italic, Link as LinkIcon, Image as ImageIcon, List, Quote, Code } from "lucide-react";
 
 interface MarkdownToolbarProps {

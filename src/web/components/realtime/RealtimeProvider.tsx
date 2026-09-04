@@ -7,14 +7,15 @@
  * Handles reconnection, missed-event sync, and event deduplication.
  *
  * ⛔ Do NOT call socket.on() or socket.emit() outside of this file and
- *    useRealtimeStore.ts. All event subscriptions go through the store.
+ *    useAppStore.ts. All event subscriptions go through the store.
  */
 
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { io, Socket } from "socket.io-client";
+import { lobbySocketConnect } from "@/shared/net/goMmoSocket";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { useRealtimeStore, PresenceStatus } from "@/web/hooks/useRealtimeStore";
+import { useAppStore, PresenceStatus } from "@/shared/store/useAppStore";
 import { EventEnvelope } from "@/shared/events/types";
 
 interface RealtimeContextValue {
@@ -49,18 +50,15 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     watchedThreadId,
     processedEventIds,
     addProcessedEventId,
-  } = useRealtimeStore();
+  } = useAppStore();
 
   useEffect(() => {
     // Only connect when user is authenticated
     if (status !== "authenticated" || !session?.user?.id) return;
 
-    // Create singleton connection
-    const nextSocket: Socket = io({
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: Infinity,
-    });
+    // Create singleton connection pointing to Go MMO server
+    const { url, options } = lobbySocketConnect(session.user.id);
+    const nextSocket: Socket = url ? io(url, options) : io(options);
 
     socketRef.current = nextSocket;
     setSocket(nextSocket);
@@ -70,7 +68,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       console.log("[Realtime] Connected:", nextSocket.id);
 
       // Re-join watched thread room after reconnect
-      const threadId = useRealtimeStore.getState().watchedThreadId;
+      const threadId = useAppStore.getState().watchedThreadId;
       if (threadId) {
         nextSocket.emit("join_room", `thread:${threadId}`);
       }
@@ -109,7 +107,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     // ─── Event Handlers ─────────────────────────────────────────────────────
     function handleEvent(type: string, envelope: EventEnvelope) {
       // Deduplicate by event id
-      if (useRealtimeStore.getState().processedEventIds.has(envelope.id)) return;
+      if (useAppStore.getState().processedEventIds.has(envelope.id)) return;
       addProcessedEventId(envelope.id);
 
       lastEventTimestampRef.current = envelope.timestamp;

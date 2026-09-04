@@ -4,10 +4,10 @@ import { redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { User as UserIcon, Heart, MessageSquare, Repeat2, Trash2, Eye, Compass, VolumeX, Search } from "lucide-react";
-import { Card, CardContent } from "@/shared/ui/card";
-import { Button } from "@/shared/ui/button";
-import { Textarea } from "@/shared/ui/textarea";
-import { Input } from "@/shared/ui/input";
+import { Card, CardContent } from "@/web/components/ui/card";
+import { Button } from "@/web/components/ui/button";
+import { Textarea } from "@/web/components/ui/textarea";
+import { Input } from "@/web/components/ui/input";
 import { createSocialPost, toggleReaction, deleteSocialPost } from "./actions";
 import { UiPresetEmbed } from "@/web/components/social/UiPresetEmbed";
 

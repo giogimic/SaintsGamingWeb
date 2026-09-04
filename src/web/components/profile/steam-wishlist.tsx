@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
+import { Button } from "@/web/components/ui/button";
+import { Input } from "@/web/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/web/components/ui/card";
 import { addSteamWishlistItem, removeSteamWishlistItem } from "@/app/actions/steam";
 import { Loader2, Trash2, Plus, AlertCircle, Gamepad2 } from "lucide-react";
 import Image from "next/image";

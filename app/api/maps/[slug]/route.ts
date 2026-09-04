@@ -583,20 +583,17 @@ export async function POST(
       const { getRealtimeService } = await import("../../../../server");
       const realtime = getRealtimeService();
       if (realtime) {
-        const io = realtime.getIo?.() || (realtime as any).io;
-        if (io) {
-          io.emit("content_reload", {
-            type: "map",
-            mapId: worldMap.id,
-            id: worldMap.id,
-            version: worldMap.version,
-            timestamp: Date.now(),
-          });
-          io.emit("admin_save_map", {
-            mapId: worldMap.id,
-            timestamp: Date.now(),
-          });
-        }
+        await realtime.emitGlobal("content_reload", {
+          type: "map",
+          mapId: worldMap.id,
+          id: worldMap.id,
+          version: worldMap.version,
+          timestamp: Date.now(),
+        }, { source: "system" });
+        await realtime.emitGlobal("admin_save_map", {
+          mapId: worldMap.id,
+          timestamp: Date.now(),
+        }, { source: "system" });
       }
     } catch {
       // Non-fatal if running in plain Next.js test/worker mode without custom server

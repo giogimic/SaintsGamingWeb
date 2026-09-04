@@ -8,7 +8,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/shared/ui/dropdown-menu";
+} from "@/web/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
 interface ThreadActionsProps {

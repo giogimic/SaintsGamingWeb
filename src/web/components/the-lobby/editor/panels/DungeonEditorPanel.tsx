@@ -8,7 +8,7 @@ import {
   upsertDungeon,
   deleteDungeon,
   type DungeonTemplateInput,
-} from '@/app/actions/dungeons';
+} from '@/app/actions/game/dungeons';
 import type { DungeonTemplate } from '@prisma/client';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';

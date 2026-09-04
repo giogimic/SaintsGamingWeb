@@ -2,7 +2,7 @@
 
 import { useOptimistic, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/web/components/ui/button";
 import { ThumbsUp } from "lucide-react";
 
 export function ReactionButton({ targetType, targetId, initialCount, hasReacted }: { targetType: "thread" | "reply", targetId: string, initialCount: number, hasReacted: boolean }) {

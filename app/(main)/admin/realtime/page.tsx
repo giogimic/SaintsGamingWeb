@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Activity, Radio, ShieldAlert, Unplug, RefreshCw } from "lucide-react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/web/components/ui/button";
 import { DevSubNav } from "../dev/dev-sub-nav";
 
 type Metrics = {

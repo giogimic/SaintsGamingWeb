@@ -8,7 +8,7 @@ import {
   upsertWorldEvent,
   deleteWorldEvent,
   type WorldEventInput,
-} from '@/app/actions/world-events';
+} from '@/app/actions/game/world-events';
 import type { WorldEventTemplate } from '@prisma/client';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';

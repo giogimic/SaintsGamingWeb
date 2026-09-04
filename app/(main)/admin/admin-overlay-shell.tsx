@@ -19,7 +19,7 @@ import {
   type AdminCategoryId
 } from "@/web/lib/admin-modules";
 import { getRoleName, getRoleColor } from "@/web/lib/permissions";
-import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/web/components/ui/avatar";
 import { soundSynth } from "@/engine/sound-synth";
 
 const STORAGE_KEY_FAVORITES = "sg_admin_favorites";

@@ -10,26 +10,20 @@
  *    2. Check EVENT_REGISTRY in src/shared/events/registry.ts
  */
 
-import { Server } from "socket.io";
 import { prisma } from "@/web/lib/prisma";
 import { EventEnvelope } from "@/shared/events/types";
 import { EVENT_REGISTRY, validateEventPayload } from "@/shared/events/registry";
 
 export class RealtimeService {
-  private io: Server;
+  private goMmoUrl: string;
   private circuitBreakerOpen = false; // true = realtime broadcasts paused
   private metrics = {
     totalEmits: 0,
     failedValidations: 0,
-    connectedUsers: 0,
   };
 
-  constructor(io: Server) {
-    this.io = io;
-  }
-
-  public getIo(): Server {
-    return this.io;
+  constructor(goMmoUrl: string) {
+    this.goMmoUrl = goMmoUrl;
   }
 
   // ─── Circuit Breaker (Admin Control) ─────────────────────────────────────
@@ -46,8 +40,8 @@ export class RealtimeService {
   public getMetrics() {
     return {
       ...this.metrics,
-      connectedUsers: this.io.sockets.sockets.size,
-      rooms: this.io.sockets.adapter.rooms.size,
+      connectedUsers: 0, // Managed by Go
+      rooms: 0, // Managed by Go
     };
   }
 
@@ -116,17 +110,30 @@ export class RealtimeService {
       return;
     }
 
-    // 5. Broadcast
+    // 5. Broadcast via Go MMO server HTTP API
     this.metrics.totalEmits++;
+    
+    // Fallback if no specific target is set but it wasn't explicitly marked global
+    if (!options.global && !options.room && !options.userId) {
+      console.warn(`[Realtime] publishEvent called for "${type}" with no target (userId, room, or global). Coercing to global.`);
+      options.global = true;
+    }
 
-    if (options.global) {
-      this.io.emit(type, envelope);
-    } else if (options.room) {
-      this.io.to(options.room).emit(type, envelope);
-    } else if (options.userId) {
-      this.io.to(`user:${options.userId}`).emit(type, envelope);
-    } else {
-      console.warn(`[Realtime] publishEvent called for "${type}" with no target (userId, room, or global). Skipped.`);
+    try {
+      await fetch(`${this.goMmoUrl}/internal/broadcast`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          envelope,
+          options: {
+            userId: options.userId,
+            room: options.room,
+            global: options.global,
+          }
+        }),
+      });
+    } catch (err) {
+      console.error(`[Realtime] Failed to forward broadcast to Go server (${this.goMmoUrl}):`, err);
     }
   }
 
@@ -174,14 +181,16 @@ export class RealtimeService {
   }
 
   // ─── Force Disconnect User (Admin Control) ────────────────────────────────
-  public disconnectUser(userId: string, reason = "Disconnected by admin") {
-    const sockets = this.io.sockets.sockets;
-    sockets.forEach((socket) => {
-      if ((socket as any).userId === userId) {
-        socket.emit("force_disconnect", { reason });
-        socket.disconnect(true);
-        console.log(`[Realtime] Force-disconnected userId=${userId}: ${reason}`);
-      }
-    });
+  public async disconnectUser(userId: string, reason = "Disconnected by admin") {
+    console.log(`[Realtime] Forwarding force-disconnect for userId=${userId} to Go server`);
+    try {
+      await fetch(`${this.goMmoUrl}/internal/disconnect`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, reason }),
+      });
+    } catch (err) {
+      console.error(`[Realtime] Failed to forward disconnect to Go server:`, err);
+    }
   }
 }

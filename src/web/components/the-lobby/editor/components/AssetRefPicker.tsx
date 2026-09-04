@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ImageIcon, Search, X, Check, Eye } from 'lucide-react';
-import { listUsableAssets } from '@/app/actions/assets';
+import { listUsableAssets } from '@/app/actions/studio/assets';
 import type { UsableAsset } from '@prisma/client';
 
 interface AssetRefPickerProps {

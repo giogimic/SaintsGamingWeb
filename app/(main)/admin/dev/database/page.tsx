@@ -1,7 +1,7 @@
 import { prisma } from "@/web/lib/prisma";
 import { Database, Trash2, CheckCircle2 } from "lucide-react";
 import { clearExpiredSessions, clearAllNotifications, nukeAllThreads, seedDummyThreads } from "./actions";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/web/components/ui/button";
 import { DummyContentButton } from "./dummy-content-button";
 import { DevSubNav } from "../dev-sub-nav";
 

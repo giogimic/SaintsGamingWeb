@@ -11,7 +11,7 @@ import { MidnightStars } from "@/web/components/landing/midnight-stars";
 import { S3Background } from "@/web/components/landing/s3-background";
 import { S3Water } from "@/web/components/landing/s3-water";
 import { S3Palms } from "@/web/components/landing/s3-palms";
-import { ThemeSwitcher } from "@/shared/components/theme-switcher";
+import { ThemeSwitcher } from "@/web/components/shared/theme-switcher";
 import { getDiscordInviteUrl } from "./actions/settings";
 
 // ── Theme color palette for Style #3 (Dreamy Tropical Sunset / Light Theme) ─────

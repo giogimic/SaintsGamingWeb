@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/web/components/ui/button";
 import {
   RefreshCw,
   AlertTriangle,

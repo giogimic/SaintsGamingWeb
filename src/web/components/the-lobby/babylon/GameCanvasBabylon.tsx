@@ -370,7 +370,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             if (engineRef.current && !editorToolsRef.current) {
               const snapX = spawn.x - finalW / 2;
               const snapZ = finalH / 2 - spawn.y;
-              engineRef.current.snapCameraTo(snapX, snapZ);
+              engineRef.current.renderer.snapCameraTo(snapX, snapZ);
             }
 
             const liveStore = useGameStore.getState();
@@ -722,7 +722,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       onCanvasReady(babylonEngine);
     }
 
-      babylonEngine.onEntityClick = (entityId) => {
+      babylonEngine.input.onEntityClick = (entityId) => {
         const state = useGameStore.getState();
         let targetName = 'Unknown Target';
         
@@ -810,7 +810,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     
     lastLoadedMapDataRef.current = mapData;
     lastVisualFingerprintRef.current = mapVisualFingerprint(mapData);
-    babylonEngine.setEditorCameraMode(Boolean(editorToolsRef.current));
+    babylonEngine.renderer.setEditorCameraMode(Boolean(editorToolsRef.current));
     babylonEngine.loadTilemap({
       id: currentMapId,
       width: mapWidth,
@@ -830,7 +830,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     // Editor: frame the whole map (author spawn often sits outside short maps).
     // Playtest/lobby: snap to the player.
     if (editorToolsRef.current) {
-      babylonEngine.fitMapInView();
+      babylonEngine.renderer.fitMapInView();
     } else {
       const liveStore = useGameStore.getState();
       const initPlayer = liveStore.player;
@@ -838,12 +838,12 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         const offset = liveStore.worldOriginOffset;
         const initX = (initPlayer.position.x ?? 6) - mapWidth / 2 + offset.x;
         const initZ = mapHeight / 2 - (initPlayer.position.y ?? 2) - offset.y;
-        babylonEngine.snapCameraTo(initX, initZ);
+        babylonEngine.renderer.snapCameraTo(initX, initZ);
       }
     }
 
     // Start 60FPS Render Loop
-    babylonEngine.startRenderLoop(() => {
+    babylonEngine.renderer.startRenderLoop(() => {
       // Prefer live engine dims — closure mapWidth/Height go stale across hot remesh
       // without a full remount.
       const liveW = babylonEngine.getMapWidth() || mapWidth;
@@ -882,9 +882,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
           const playerMesh = babylonEngine.getEntityMesh('player_main');
           if (playerMesh) {
-            babylonEngine.setCameraPosition(playerMesh.position.x, playerMesh.position.z, 0.35);
+            babylonEngine.renderer.setCameraPosition(playerMesh.position.x, playerMesh.position.z, 0.35);
           } else {
-            babylonEngine.setCameraPosition(worldX, worldZ, 0.35);
+            babylonEngine.renderer.setCameraPosition(worldX, worldZ, 0.35);
           }
         }
       } else {
@@ -1153,7 +1153,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     });
     setMapMeshEpoch((n) => n + 1);
     if (editorToolsRef.current) {
-      engineRef.current.fitMapInView();
+      engineRef.current.renderer.fitMapInView();
     }
   }, [mapData, currentMapId]);
 
@@ -1175,7 +1175,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       const customEv = e as CustomEvent<{ r: number; c: number }>;
       const { r, c } = customEv.detail || {};
       if (typeof r === 'number' && typeof c === 'number' && engineRef.current) {
-        engineRef.current.panEditorCameraToTile(r, c);
+        engineRef.current.input.panEditorCameraToTile(r, c);
       }
     };
     window.addEventListener('studio_center_camera', handleCenterCamera);
@@ -1310,8 +1310,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     engine.setActiveLayerIdx(activeLayerIdx);
     engine.setActiveLayerType(activeLayerType);
     engine.setBrushMode(brushMode);
-    engine.setFreeCam(isStudioFreeCam);
-    engine.setVoxelConstraints({
+    engine.renderer.setFreeCam(isStudioFreeCam);
+    engine.voxel.setVoxelConstraints({
       planeLockEnabled: voxelPlaneLockEnabled,
       targetPlaneY: voxelTargetPlaneY,
       planeMask: voxelPlaneMask,
@@ -1360,8 +1360,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       let cleanupPan = () => {};
 
       if (isDevEditorOpen) {
-        cleanupPan = engine.startEditorKeyboardPan() || (() => {});
-        engine.enableTilePicking((r, c, _, eventType, point, voxelTarget) => {
+        cleanupPan = engine.input.startEditorKeyboardPan() || (() => {});
+        engine.input.enableTilePicking((r, c, _, eventType, point, voxelTarget) => {
           const map = useGameStore.getState().activeMapData || activeMap;
           const store = useEditorStore.getState();
           const { brushMode, setSelectionStart, setSelectionEnd, activePrefabId, activeLayerIdx: curLayerIdx } = store;
@@ -1722,18 +1722,18 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             store.setHoveredTile(null);
             store.setHoveredVoxel(null);
             engine.clearActionPreview();
-            engine.clearVoxelCursor();
+            engine.voxel.clearVoxelCursor();
           },
         });
     } else {
       // Spatial Interaction & Targeting in exploration mode
-      engine.enableTilePicking(
+      engine.input.enableTilePicking(
         (r, c, _layerIdx, eventType, point) => {
           if (eventType && eventType !== 'down') return;
           const currentPos = useGameStore.getState().player?.position;
           if (!currentPos) return;
 
-          const picked = engine.pickWorldTarget();
+          const picked = engine.input.pickWorldTarget();
           const dynamicEntities = useGameStore.getState().mapEntities || [];
           const logicTiles = useGameStore.getState().logicTiles;
 
@@ -1788,21 +1788,21 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           const isWalkable = (x: number, y: number) => {
             const tileId = map.grid[y]?.[x];
             if (logicTiles[tileId]?.isSolid) return false;
-            if (engine.voxelWorld) {
+            if (engine.voxel.voxelWorld) {
               const wz = mapHeight - 1 - y;
               let targetWY = 15;
-              for (let wy = engine.voxelWorld.totalHeightBlocks - 1; wy >= 0; wy--) {
-                const w = engine.voxelWorld.getVoxel(x, wy, wz);
+              for (let wy = engine.voxel.voxelWorld?.totalHeightBlocks - 1; wy >= 0; wy--) {
+                const w = engine.voxel.voxelWorld?.getVoxel(x, wy, wz);
                 if (w && (w & 0xfff) !== 0) {
                   targetWY = wy;
                   break;
                 }
               }
-              const overheadWord = engine.voxelWorld.getVoxel(x, targetWY + 1, wz);
+              const overheadWord = engine.voxel.voxelWorld?.getVoxel(x, targetWY + 1, wz);
               const overheadPhys = (overheadWord >>> 24) & 0xf;
               if (overheadWord && (overheadPhys === 1 || overheadPhys === 5)) return false;
 
-              const groundWord = engine.voxelWorld.getVoxel(x, targetWY, wz);
+              const groundWord = engine.voxel.voxelWorld?.getVoxel(x, targetWY, wz);
               if (!groundWord || (groundWord & 0xfff) === 0) return false;
               const groundPhys = (groundWord >>> 24) & 0xf;
               if (groundPhys === 5) return false; // Hazard
@@ -1841,7 +1841,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             const currentPos = useGameStore.getState().player?.position;
             if (!currentPos) return;
 
-            const picked = engine.pickWorldTarget();
+            const picked = engine.input.pickWorldTarget();
             const dynamicEntities = useGameStore.getState().mapEntities || [];
             const logicTiles = useGameStore.getState().logicTiles;
 
@@ -1914,7 +1914,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     }
 
     return () => {
-      engine.disableTilePicking();
+      engine.input.disableTilePicking();
       cleanupPan();
     };
   }, [isDevEditorOpen, currentMapId]);
@@ -1996,7 +1996,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           engine.refreshBrushPreview();
         }
         if (state.isStudioFreeCam !== prevState.isStudioFreeCam) {
-          engine.setFreeCam(state.isStudioFreeCam);
+          engine.renderer.setFreeCam(state.isStudioFreeCam);
         }
         if (state.brushMode !== prevState.brushMode) {
           engine.setBrushMode(state.brushMode);
@@ -2033,14 +2033,14 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const onVoxelsChanged = (e: Event) => {
       const engine = engineRef.current;
       const map = useGameStore.getState().activeMapData;
-      if (!engine?.voxelWorld || !map) return;
+      if (!engine?.voxel?.voxelWorld || !map) return;
       const detail = (e as CustomEvent<{ voxels: Array<{ wx: number; wy: number; wz: number; word: number }> }>).detail;
       if (!detail?.voxels?.length) return;
       for (const v of detail.voxels) {
-        engine.voxelWorld.setVoxel(v.wx, v.wy, v.wz, v.word);
+        engine.voxel.voxelWorld?.setVoxel(v.wx, v.wy, v.wz, v.word);
       }
-      engine.meshDirtyVoxelChunks?.();
-      const doc = engine.voxelWorld.serializeToDoc();
+      engine.voxel.meshDirtyVoxelChunks?.();
+      const doc = engine.voxel.voxelWorld?.serializeToDoc();
       useGameStore.getState().setActiveMapData({ ...map, voxelDoc: doc });
     };
     window.addEventListener(STUDIO_MAP_CELLS_CHANGED_EVENT, onCellsChanged);
@@ -2128,11 +2128,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   useEffect(() => {
     const engine = engineRef.current;
     if (!engine || !isEngineReady) return;
-    engine.setEditorCameraMode(isDevEditorOpen);
+    engine.renderer.setEditorCameraMode(isDevEditorOpen);
     // Avatar-free authoring: hide local player while tools are open
     engine.setEntityVisible('player_main', !isDevEditorOpen);
     return () => {
-      engine.setEditorCameraMode(false);
+      engine.renderer.setEditorCameraMode(false);
       engine.setEntityVisible('player_main', true);
     };
   }, [isDevEditorOpen, isEngineReady]);
@@ -2362,7 +2362,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           const rect = canvasRef.current.getBoundingClientRect();
           const screenX = e.clientX - rect.left;
           const screenY = e.clientY - rect.top;
-          const picked = engineRef.current.pickTileAtScreenCoord(screenX, screenY);
+          const picked = engineRef.current.input.pickTileAtScreenCoord(screenX, screenY);
           if (!picked) return;
 
           try {

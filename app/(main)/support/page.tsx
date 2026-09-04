@@ -2,12 +2,12 @@ import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { Textarea } from "@/shared/ui/textarea";
-import { Label } from "@/shared/ui/label";
-import { Badge } from "@/shared/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
+import { Button } from "@/web/components/ui/button";
+import { Input } from "@/web/components/ui/input";
+import { Textarea } from "@/web/components/ui/textarea";
+import { Label } from "@/web/components/ui/label";
+import { Badge } from "@/web/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/web/components/ui/card";
 import { createTicket } from "./actions";
 import { LifeBuoy, PlusCircle, MessageSquare } from "lucide-react";
 

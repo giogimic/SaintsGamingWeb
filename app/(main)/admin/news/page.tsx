@@ -1,12 +1,12 @@
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { PERMISSION_LEVELS } from "@/web/lib/permissions";
-import { Button } from "@/shared/ui/button";
-import { Card, CardContent } from "@/shared/ui/card";
+import { Button } from "@/web/components/ui/button";
+import { Card, CardContent } from "@/web/components/ui/card";
 import { Plus, Eye, Edit } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { Badge } from "@/shared/ui/badge";
+import { Badge } from "@/web/components/ui/badge";
 import { DeleteArticleButton } from "@/web/components/admin/delete-article-button";
 
 export default async function AdminNewsPage() {

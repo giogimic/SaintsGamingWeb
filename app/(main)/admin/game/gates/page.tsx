@@ -6,11 +6,11 @@ import {
   Layers, MapPin, RefreshCw, Power, ShieldCheck, 
   Eye, Compass, ArrowRight, ArrowLeftRight
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/ui/card";
-import { Button } from "@/shared/ui/button";
-import { Switch } from "@/shared/ui/switch";
-import { Badge } from "@/shared/ui/badge";
-import { Label } from "@/shared/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/web/components/ui/card";
+import { Button } from "@/web/components/ui/button";
+import { Switch } from "@/web/components/ui/switch";
+import { Badge } from "@/web/components/ui/badge";
+import { Label } from "@/web/components/ui/label";
 import { toast } from "sonner";
 import Link from "next/link";
 

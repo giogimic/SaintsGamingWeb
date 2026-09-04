@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/web/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { deleteNewsArticle } from "@/app/(main)/admin/news/actions";
 

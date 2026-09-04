@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { seedDummyContentAction } from "@/app/actions/game-dev";
+import { seedDummyContentAction } from "@/app/actions/admin/game-dev";
 
 export async function POST(_req: Request) {
   try {

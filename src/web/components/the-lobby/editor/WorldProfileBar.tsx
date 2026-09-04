@@ -8,7 +8,7 @@ import {
   setActiveWorldProfile,
   createBlankWorldProfile,
   cloneTrailWorldProfile,
-} from '@/app/actions/world-profiles';
+} from '@/app/actions/studio/world-profiles';
 import { WORLD_PROFILES } from '@/shared/game/worldProfiles';
 
 export function WorldProfileBar() {

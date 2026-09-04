@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
-import { Button } from '@/shared/ui/button';
-import { Input } from '@/shared/ui/input';
-import { Textarea } from '@/shared/ui/textarea';
-import { Badge } from '@/shared/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/web/components/ui/card';
+import { Button } from '@/web/components/ui/button';
+import { Input } from '@/web/components/ui/input';
+import { Textarea } from '@/web/components/ui/textarea';
+import { Badge } from '@/web/components/ui/badge';
 import { ScrollText, Plus, Trash2, Shield, Gift, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
-import { createGameQuest, deleteGameQuest, fetchAllGameQuests } from '@/app/actions/game-dev';
+import { createGameQuest, deleteGameQuest, fetchAllGameQuests } from '@/app/actions/admin/game-dev';
 
 export default function QuestCreatorPage() {
   const [quests, setQuests] = useState<any[]>([]);

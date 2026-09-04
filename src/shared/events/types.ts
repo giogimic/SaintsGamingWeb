@@ -2,7 +2,7 @@
  * Saints Gaming Realtime Platform — Shared Event Types
  *
  * DO NOT import socket.io here. This file is shared between client and server.
- * All realtime code must go through RealtimeService (server) or useRealtimeStore (client).
+ * All realtime code must go through RealtimeService (server) or useAppStore (client).
  */
 
 // ─── Priority Tiers ──────────────────────────────────────────────────────────

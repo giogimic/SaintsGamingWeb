@@ -9,10 +9,10 @@ import {
   TableHead, 
   TableHeader, 
   TableRow 
-} from "@/shared/ui/table";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { Badge } from "@/shared/ui/badge";
+} from "@/web/components/ui/table";
+import { Button } from "@/web/components/ui/button";
+import { Input } from "@/web/components/ui/input";
+import { Badge } from "@/web/components/ui/badge";
 import {
   DropdownMenu, 
   DropdownMenuContent, 
@@ -21,8 +21,8 @@ import {
   DropdownMenuLabel, 
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
-} from "@/shared/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
+} from "@/web/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/web/components/ui/avatar";
 import { MoreHorizontal, Shield, ShieldAlert, ShieldCheck, UserX, UserCheck, Search, Loader2, Trash2 } from "lucide-react";
 import { getRoleName, getRoleColor, canManageUser, canBan, canMute, canPurge, PERMISSION_LEVELS } from "@/web/lib/permissions";
 

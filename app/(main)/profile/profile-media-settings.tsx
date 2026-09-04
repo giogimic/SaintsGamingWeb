@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { updateProfileMedia, uploadProfileImage, deleteProfileImage } from "@/app/actions/profile";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/shared/ui/card";
-import { Input } from "@/shared/ui/input";
-import { Button } from "@/shared/ui/button";
+import { updateProfileMedia, uploadProfileImage, deleteProfileImage } from "@/app/actions/user/profile";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/web/components/ui/card";
+import { Input } from "@/web/components/ui/input";
+import { Button } from "@/web/components/ui/button";
 import { Loader2, Video, Music, Image as ImageIcon, Trash2 } from "lucide-react";
 import Image from "next/image";
 

@@ -8,7 +8,7 @@ import {
   upsertSimulationPreset,
   deleteSimulationPreset,
   type SimulationPresetInput,
-} from '@/app/actions/simulation-presets';
+} from '@/app/actions/studio/simulation-presets';
 import type { SimulationPreset } from '@prisma/client';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';

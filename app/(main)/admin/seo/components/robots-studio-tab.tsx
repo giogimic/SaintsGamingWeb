@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { Label } from "@/shared/ui/label";
-import { Badge } from "@/shared/ui/badge";
-import { Switch } from "@/shared/ui/switch";
-import { Textarea } from "@/shared/ui/textarea";
+import { Button } from "@/web/components/ui/button";
+import { Input } from "@/web/components/ui/input";
+import { Label } from "@/web/components/ui/label";
+import { Badge } from "@/web/components/ui/badge";
+import { Switch } from "@/web/components/ui/switch";
+import { Textarea } from "@/web/components/ui/textarea";
 import {
   Bot,
   ShieldCheck,

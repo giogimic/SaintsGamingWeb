@@ -92,7 +92,7 @@ import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
 import { soundSynth } from '@/engine/sound-synth';
 import { loadMap } from '../data/maps';
 import { WORLD_PROFILES } from '@/shared/game/worldProfiles';
-import { ensureWorldProfiles, setActiveWorldProfile } from '@/app/actions/world-profiles';
+import { ensureWorldProfiles, setActiveWorldProfile } from '@/app/actions/studio/world-profiles';
 import { creatorRecents } from '@/shared/game/creatorRecents';
 
 type MenuState = string | null;

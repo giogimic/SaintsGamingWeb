@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
-import { Button } from '@/shared/ui/button';
-import { Badge } from '@/shared/ui/badge';
-import { Input } from '@/shared/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/web/components/ui/card';
+import { Button } from '@/web/components/ui/button';
+import { Badge } from '@/web/components/ui/badge';
+import { Input } from '@/web/components/ui/input';
 import { 
   Image as ImageIcon, 
   Upload, 
@@ -18,7 +18,7 @@ import {
   FileQuestion
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { createGameAsset, deleteGameAsset, fetchAllGameAssets } from '@/app/actions/game-dev';
+import { createGameAsset, deleteGameAsset, fetchAllGameAssets } from '@/app/actions/admin/game-dev';
 
 const CATEGORIES = ['Terrain', 'Monsters/Beasts', 'NPCs', 'Items', 'Environment'];
 const ITEMS_PER_PAGE = 48;

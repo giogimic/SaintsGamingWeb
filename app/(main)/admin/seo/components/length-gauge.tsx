@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { Badge } from "@/shared/ui/badge";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
+import { Badge } from "@/web/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/web/components/ui/tooltip";
 import { Info, AlertCircle, CheckCircle2 } from "lucide-react";
 
 interface LengthGaugeProps {

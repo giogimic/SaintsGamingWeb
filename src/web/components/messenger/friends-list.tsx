@@ -3,18 +3,18 @@
 import { useState, useEffect } from "react";
 import { getFriendsList, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend } from "@/app/actions/messenger";
 import { useMessenger } from "./messenger-provider";
-import { useRealtimeStore } from "@/web/hooks/useRealtimeStore";
+import { useAppStore } from "@/shared/store/useAppStore";
 import { useVisibilityPolling } from "@/web/hooks/useVisibilityPolling";
 import { useGameStore } from "@/web/components/the-lobby/store";
-import { Input } from "@/shared/ui/input";
-import { Button } from "@/shared/ui/button";
-import { ScrollArea } from "@/shared/ui/scroll-area";
+import { Input } from "@/web/components/ui/input";
+import { Button } from "@/web/components/ui/button";
+import { ScrollArea } from "@/web/components/ui/scroll-area";
 import { UserPlus, Check, X, Search, User as UserIcon } from "lucide-react";
 import Image from "next/image";
 
 export function FriendsList() {
   const { setActiveChat } = useMessenger();
-  const presenceByUserId = useRealtimeStore((s) => s.presenceByUserId);
+  const presenceByUserId = useAppStore((s) => s.presenceByUserId);
   const emitSocketEvent = useGameStore((s) => s.emitSocketEvent);
   const [friends, setFriends] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);

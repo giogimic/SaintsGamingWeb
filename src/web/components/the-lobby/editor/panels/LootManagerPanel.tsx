@@ -11,7 +11,7 @@ import {
   type LootPoolDef,
   simulateLootPool,
 } from '@/shared/game/lootRefs';
-import { listItemTemplates, type ItemTemplateInput } from '@/app/actions/item-templates';
+import { listItemTemplates, type ItemTemplateInput } from '@/app/actions/game/item-templates';
 import { useLootTables } from '@/web/hooks/studio-data';
 
 type ApiLootTable = {

@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/shared/ui/input";
-import { Button } from "@/shared/ui/button";
-import { Checkbox } from "@/shared/ui/checkbox";
-import { Label } from "@/shared/ui/label";
+import { Input } from "@/web/components/ui/input";
+import { Button } from "@/web/components/ui/button";
+import { Checkbox } from "@/web/components/ui/checkbox";
+import { Label } from "@/web/components/ui/label";
 import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { ImageUploadButton } from "@/web/components/admin/image-upload-button";

@@ -71,8 +71,8 @@ import {
 import { resolveSafePlayerSpawn } from '@/shared/game/worldSpawns';
 
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
-import { fetchAllMaps } from '@/app/actions/game-admin';
-import { fetchAllGameQuests } from '@/app/actions/game-dev';
+import { fetchAllMaps } from '@/app/actions/admin/game-admin';
+import { fetchAllGameQuests } from '@/app/actions/admin/game-dev';
 import { GAME_MAPS, loadMap, patchCachedMapTile, preloadAdjacentMaps, invalidateMapCache } from './data/maps';
 import { invalidateMapCache as invalidateSharedMapCache } from '@/shared/game/mapCache';
 import { QUEST_DB } from './data/quests';

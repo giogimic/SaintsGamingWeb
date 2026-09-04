@@ -1,7 +1,7 @@
 "use client";
 
 import { MessageSquare, Image as ImageIcon, ExternalLink, Share2 } from "lucide-react";
-import { Badge } from "@/shared/ui/badge";
+import { Badge } from "@/web/components/ui/badge";
 
 interface SocialCardsPreviewProps {
   siteName: string;

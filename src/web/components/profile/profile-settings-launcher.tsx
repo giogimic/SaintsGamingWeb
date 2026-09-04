@@ -1,13 +1,13 @@
 "use client";
 
 import React from "react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/web/components/ui/button";
 import { Settings, Paintbrush, Film, User, Shield } from "lucide-react";
-import { useUserSettingsStore, type UserSettingsTab } from "@/web/hooks/useUserSettingsStore";
+import { useAppStore, type UserSettingsTab } from "@/shared/store/useAppStore";
 import { soundSynth } from "@/engine/sound-synth";
 
 export function ProfileSettingsLauncher() {
-  const openSettings = useUserSettingsStore((state) => state.openSettings);
+  const openSettings = useAppStore((state) => state.openSettings);
 
   const handleOpen = (tab: UserSettingsTab) => {
     try { soundSynth?.playUiClick?.(); } catch {}

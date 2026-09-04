@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ChevronLeft, ChevronRight, Copy, Check, Info, Lightbulb, AlertTriangle, ShieldAlert, Clock } from 'lucide-react'
 import { WikiArticleMeta, getAdjacentArticles } from '@/shared/wiki/wikiRegistry'
-import { Button } from '@/shared/ui/button'
+import { Button } from '@/web/components/ui/button'
 
 interface Props {
   content: string

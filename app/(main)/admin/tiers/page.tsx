@@ -1,10 +1,10 @@
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { PERMISSION_LEVELS } from "@/web/lib/permissions";
-import { Button } from "@/shared/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
-import { Input } from "@/shared/ui/input";
-import { Label } from "@/shared/ui/label";
+import { Button } from "@/web/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/web/components/ui/card";
+import { Input } from "@/web/components/ui/input";
+import { Label } from "@/web/components/ui/label";
 import { Plus, Trash2 } from "lucide-react";
 import { saveTier, deleteTier } from "./actions";
 

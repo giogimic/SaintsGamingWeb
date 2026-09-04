@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { 
@@ -7,9 +7,9 @@ import {
   getGroupMessages, sendGroupMessage, leaveGroupChat
 } from "@/app/actions/messenger";
 import { importPrivateKey, importPublicKey, deriveSharedKey, encryptMessage, decryptMessage, getLocalPrivateKey } from "@/web/lib/crypto";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { Textarea } from "@/shared/ui/textarea";
+import { Button } from "@/web/components/ui/button";
+import { Input } from "@/web/components/ui/input";
+import { Textarea } from "@/web/components/ui/textarea";
 import { 
   ArrowLeft, Send, Lock, Loader2, Trash2, Search, Compass, Users, 
   Plus, Check, MessageSquare, ShieldCheck, Sparkles, X, UserCheck,
@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { TheFeed, type FeedTabType } from "./the-feed";
-import { useRealtimeStore } from "@/web/hooks/useRealtimeStore";
+import { useAppStore } from "@/shared/store/useAppStore";
 import { useVisibilityPolling } from "@/web/hooks/useVisibilityPolling";
 
 type ChatType = "FEED" | "MESSAGES" | "DM" | "GROUP";
@@ -33,7 +33,7 @@ const GAME_HUBS = [
 ];
 
 export function InboxClient() {
-  const lastChatMessage = useRealtimeStore((s) => s.lastChatMessage);
+  const lastChatMessage = useAppStore((s) => s.lastChatMessage);
   const [activeChatType, setActiveChatType] = useState<ChatType>("FEED");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);

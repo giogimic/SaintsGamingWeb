@@ -5,9 +5,9 @@ import {
   RefreshCw, CheckCircle2, AlertTriangle, XCircle, Clock, 
   Layers, Database, ArrowRight, Play, Sparkles, ShieldAlert 
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/ui/card";
-import { Button } from "@/shared/ui/button";
-import { Badge } from "@/shared/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/web/components/ui/card";
+import { Button } from "@/web/components/ui/button";
+import { Badge } from "@/web/components/ui/badge";
 import { toast } from "sonner";
 import { DevSubNav } from "../dev-sub-nav";
 

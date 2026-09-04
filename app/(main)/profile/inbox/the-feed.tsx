@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useSession } from "next-auth/react";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
@@ -28,11 +28,11 @@ import {
   votePoll,
   pinSocialPost
 } from "@/app/actions/social";
-import { Card, CardContent } from "@/shared/ui/card";
-import { Button } from "@/shared/ui/button";
-import { Textarea } from "@/shared/ui/textarea";
-import { Input } from "@/shared/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
+import { Card, CardContent } from "@/web/components/ui/card";
+import { Button } from "@/web/components/ui/button";
+import { Textarea } from "@/web/components/ui/textarea";
+import { Input } from "@/web/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/web/components/ui/popover";
 import { 
   Heart, Loader2, MessageSquare, TrendingUp, Hash, Smile, Paperclip, 
   X, Image as ImageIcon, Share, Bookmark, Compass, Search, VolumeX, Volume2,
@@ -57,10 +57,7 @@ import Hls from "hls.js";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
-import { useImmersiveStore } from "@/web/hooks/useImmersiveStore";
-import { useSocialFeedStore } from "@/web/hooks/useSocialFeedStore";
-import { useRealtimeStore } from "@/web/hooks/useRealtimeStore";
-import { usePostComposerStore } from "@/web/hooks/usePostComposerStore";
+import { useAppStore } from "@/shared/store/useAppStore";
 
 // Initialize Giphy Fetch
 const gf = new GiphyFetch(process.env.NEXT_PUBLIC_GIPHY_API_KEY || "sXpGFDGZs0Dv1mmz014D8zDvwYkE7a7A");
@@ -381,9 +378,9 @@ function MobileReelSlide({
       if (Math.abs(deltaX) > 35 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
         isSwipingRef.current = true;
         if (deltaX > 35) {
-          useImmersiveStore.getState().hideBars(); // Swipe left: hide interface
+          useAppStore.getState().hideBars(); // Swipe left: hide interface
         } else if (deltaX < -35) {
-          useImmersiveStore.getState().showBars(); // Swipe right: bring it back
+          useAppStore.getState().showBars(); // Swipe right: bring it back
         }
       }
     }
@@ -580,7 +577,7 @@ function MobileReelSlide({
               {post.author?.isFounder && <Crown className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />}
               {post.author?.isVIP && <BadgeCheck className="w-3.5 h-3.5 text-blue-500 fill-blue-500" />}
             </Link>
-            <span className="text-[11px] text-white/70">• {formatDistanceToNow(new Date(post.createdAt))} ago</span>
+            <span className="text-[11px] text-white/70">â€¢ {formatDistanceToNow(new Date(post.createdAt))} ago</span>
           </div>
 
           {post.body && (
@@ -726,7 +723,7 @@ export function TheFeed({
 } = {}) {
   const { data: session } = useSession();
   const currentUserPermission = (session?.user as any)?.permissionLevel || 0;
-  const isBarsHidden = useImmersiveStore((s) => s.isBarsHidden);
+  const isBarsHidden = useAppStore((s) => s.isBarsHidden);
 
   const [posts, setPosts] = useState<any[]>([]);
   const [trending, setTrending] = useState<{name: string, usageCount: number}[]>([]);
@@ -761,7 +758,7 @@ export function TheFeed({
   // Global composer trigger listener (from bottom bar or query params)
   useEffect(() => {
     const handleOpenComposer = () => {
-      usePostComposerStore.getState().openComposer();
+      useAppStore.getState().openComposer();
     };
 
     if (typeof window !== "undefined") {
@@ -944,7 +941,7 @@ export function TheFeed({
       setIsFetchingMore(true);
     } else {
       // SWR: Check in-memory store for instant 0ms render
-      const cached = useSocialFeedStore.getState().getFeedCache(cacheKey);
+      const cached = useAppStore.getState().getFeedCache(cacheKey);
       if (cached && cached.posts.length > 0) {
         setPosts(cached.posts);
         setHasMore(cached.hasMore);
@@ -967,7 +964,7 @@ export function TheFeed({
           setHasMore(moreAvailable);
           setPosts(prev => {
             if (!isLoadMore) {
-              useSocialFeedStore.getState().setFeedCache(cacheKey, {
+              useAppStore.getState().setFeedCache(cacheKey, {
                 posts: feed,
                 cursor: feed.length > 0 ? feed[feed.length - 1].id : undefined,
                 hasMore: moreAvailable,
@@ -977,7 +974,7 @@ export function TheFeed({
             const existingIds = new Set(prev.map(p => p.id));
             const newPosts = feed.filter((p: any) => !existingIds.has(p.id));
             const combined = [...prev, ...newPosts];
-            useSocialFeedStore.getState().appendFeedPosts(
+            useAppStore.getState().appendFeedPosts(
               cacheKey,
               newPosts,
               combined.length > 0 ? combined[combined.length - 1].id : undefined,
@@ -996,7 +993,7 @@ export function TheFeed({
 
       getTrendingTags().then(tags => {
         setTrending(tags);
-        useSocialFeedStore.getState().setTrendingTags(tags);
+        useAppStore.getState().setTrendingTags(tags);
       }).catch(() => {});
     } catch (e) {
       console.error(e);
@@ -1030,8 +1027,8 @@ export function TheFeed({
   }, [hasMore, loading, isFetchingMore, searchResults, loadFeed]);
 
   // === Realtime Socket.io Sync for Likes and Replies ===
-  const lastSocialReaction = useRealtimeStore((s) => s.lastSocialReaction);
-  const lastSocialReply = useRealtimeStore((s) => s.lastSocialReply);
+  const lastSocialReaction = useAppStore((s) => s.lastSocialReaction);
+  const lastSocialReply = useAppStore((s) => s.lastSocialReply);
 
   useEffect(() => {
     if (!lastSocialReaction) return;
@@ -1041,7 +1038,7 @@ export function TheFeed({
     if (viewingShortsPost && viewingShortsPost.id === postId) {
       setViewingShortsPost((prev: any) => prev ? { ...prev, likesCount } : null);
     }
-    useSocialFeedStore.getState().patchPostLikes(postId, likesCount);
+    useAppStore.getState().patchPostLikes(postId, likesCount);
   }, [lastSocialReaction]);
 
   useEffect(() => {
@@ -1061,7 +1058,7 @@ export function TheFeed({
           [postId]: [...prev[postId], reply]
         };
       });
-      useSocialFeedStore.getState().appendReply(postId, reply);
+      useAppStore.getState().appendReply(postId, reply);
     }
   }, [lastSocialReply, session?.user?.id]);
 
@@ -1156,7 +1153,7 @@ export function TheFeed({
       await deleteSocialPost(postId);
       toast.success("Post deleted");
       setPosts(prev => prev.filter(p => p.id !== postId));
-      useSocialFeedStore.getState().removePost(postId);
+      useAppStore.getState().removePost(postId);
       setActivePostMenu(null);
     } catch (e: any) {
       toast.error(e.message || "Failed to delete post");
@@ -1171,7 +1168,7 @@ export function TheFeed({
     };
     setPosts(prev => patchPin(prev));
     if (searchResults) setSearchResults(prev => prev ? patchPin(prev) : null);
-    useSocialFeedStore.getState().patchPost(postId, { isPinned: nextStatus });
+    useAppStore.getState().patchPost(postId, { isPinned: nextStatus });
     setActivePostMenu(null);
 
     try {
@@ -1184,7 +1181,7 @@ export function TheFeed({
       };
       setPosts(prev => revertPin(prev));
       if (searchResults) setSearchResults(prev => prev ? revertPin(prev) : null);
-      useSocialFeedStore.getState().patchPost(postId, { isPinned: currentPinStatus });
+      useAppStore.getState().patchPost(postId, { isPinned: currentPinStatus });
       toast.error(e.message || "Failed to pin/unpin post");
     }
   }
@@ -1194,7 +1191,7 @@ export function TheFeed({
     try {
       await updateSocialPost(postId, editBody);
       setPosts(prev => prev.map(p => p.id === postId ? { ...p, body: editBody } : p));
-      useSocialFeedStore.getState().patchPost(postId, { body: editBody });
+      useAppStore.getState().patchPost(postId, { body: editBody });
       setEditingPostId(null);
       toast.success("Post updated");
     } catch (e) {
@@ -1258,7 +1255,7 @@ export function TheFeed({
         });
         setPosts(prev => reconcile(prev));
         if (searchResults) setSearchResults(prev => prev ? reconcile(prev) : null);
-        useSocialFeedStore.getState().patchPoll(pollId, res.poll);
+        useAppStore.getState().patchPoll(pollId, res.poll);
       }
     } catch (e: any) {
       toast.error(e.message || "Failed to vote");
@@ -1319,7 +1316,7 @@ export function TheFeed({
       // Prepend to local feed and global cache immediately without calling loadFeed()
       if (newPost) {
         setPosts(prev => [newPost, ...prev]);
-        useSocialFeedStore.getState().prependPost(newPost);
+        useAppStore.getState().prependPost(newPost);
       }
     } catch (e: any) {
       console.error(e);
@@ -1392,7 +1389,7 @@ export function TheFeed({
           ...prev,
           [parentPostId]: (prev[parentPostId] || []).map(r => r.id === tempReplyId ? realReply : r)
         }));
-        useSocialFeedStore.getState().appendReply(parentPostId, realReply);
+        useAppStore.getState().appendReply(parentPostId, realReply);
       }
     } catch (e: any) {
       console.error(e);
@@ -1877,7 +1874,7 @@ export function TheFeed({
               </span>
             )}
 
-            <span className="text-muted-foreground/40 mx-1">•</span>
+            <span className="text-muted-foreground/40 mx-1">â€¢</span>
             <span className="text-xs text-muted-foreground shrink-0">
               {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
             </span>
@@ -2616,7 +2613,7 @@ export function TheFeed({
 
   return (
     <>
-      {/* ── MOBILE NATIVE FULL-SCREEN REEL STREAM (md:hidden) ── */}
+      {/* â”€â”€ MOBILE NATIVE FULL-SCREEN REEL STREAM (md:hidden) â”€â”€ */}
       <div 
         ref={mobileFeedRef}
         className="md:hidden w-full h-[100dvh] overflow-y-scroll snap-y snap-mandatory select-none no-scrollbar bg-black relative"
@@ -2656,7 +2653,7 @@ export function TheFeed({
         )}
       </div>
 
-      {/* ── INTERACTIVE MOBILE SLIDE-UP COMMENT BOX DRAWER ── */}
+      {/* â”€â”€ INTERACTIVE MOBILE SLIDE-UP COMMENT BOX DRAWER â”€â”€ */}
       {isShortsCommentsOpen && viewingShortsPost && (
         <div 
           className="md:hidden fixed inset-x-0 bottom-0 z-[60] bg-[#050b14]/95 backdrop-blur-2xl border-t border-white/10 rounded-t-3xl h-[72vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-300 select-text"
@@ -2728,7 +2725,7 @@ export function TheFeed({
         </div>
       )}
 
-      {/* ── DESKTOP VIEW: 3-Column Hub & Theater Mode Modal (hidden md:flex) ── */}
+      {/* â”€â”€ DESKTOP VIEW: 3-Column Hub & Theater Mode Modal (hidden md:flex) â”€â”€ */}
       <div className="hidden md:flex w-full max-w-7xl mx-auto flex-col lg:flex-row items-start justify-center gap-4 relative min-h-screen px-2 sm:px-4">
            {/* Full-Screen Immersive Shorts / Reel Swiper Modal with Deterministic Pre-warming & Adaptive Desktop Theater */}
       {mounted && viewingShortsPost && createPortal(
@@ -2753,9 +2750,9 @@ export function TheFeed({
             // Horizontal swipe: deltaX > 35 (swipe left) -> hide interface, deltaX < -35 (swipe right) -> show interface
             if (Math.abs(deltaX) > 35 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
               if (deltaX > 35) {
-                useImmersiveStore.getState().hideBars(); // Swipe left to hide interface
+                useAppStore.getState().hideBars(); // Swipe left to hide interface
               } else if (deltaX < -35) {
-                useImmersiveStore.getState().showBars(); // Swipe right to bring it back
+                useAppStore.getState().showBars(); // Swipe right to bring it back
               }
             } else if (Math.abs(deltaY) > 35) {
               if (deltaY > 35) {
@@ -2896,7 +2893,7 @@ export function TheFeed({
               onClick={() => navigateShorts(-1)}
               disabled={currentShortsIndex === 0}
               className="p-3.5 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md transition-all disabled:opacity-20 disabled:cursor-not-allowed hover:scale-110 shadow-xl"
-              title="Previous (Scroll Up / ↑)"
+              title="Previous (Scroll Up / â†‘)"
             >
               <ChevronUp className="w-6 h-6" />
             </button>
@@ -2907,7 +2904,7 @@ export function TheFeed({
               onClick={() => navigateShorts(1)}
               disabled={currentShortsIndex === displayPosts.length - 1}
               className="p-3.5 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md transition-all disabled:opacity-20 disabled:cursor-not-allowed hover:scale-110 shadow-xl"
-              title="Next (Scroll Down / ↓)"
+              title="Next (Scroll Down / â†“)"
             >
               <ChevronDown className="w-6 h-6" />
             </button>
@@ -3071,7 +3068,7 @@ export function TheFeed({
                     {viewingShortsPost.author?.isFounder && <Crown className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />}
                     {viewingShortsPost.author?.isVIP && <BadgeCheck className="w-3.5 h-3.5 text-blue-500 fill-blue-500" />}
                   </span>
-                  <span className="text-[11px] text-white/70">• {formatDistanceToNow(new Date(viewingShortsPost.createdAt))} ago</span>
+                  <span className="text-[11px] text-white/70">â€¢ {formatDistanceToNow(new Date(viewingShortsPost.createdAt))} ago</span>
                 </div>
 
                 {viewingShortsPost.body && (

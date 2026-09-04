@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { getWatchHistory, clearWatchHistory } from "@/app/actions/social";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
+import { Button } from "@/web/components/ui/button";
+import { Input } from "@/web/components/ui/input";
 import { ArrowLeft, Clock, Search, Trash2, Heart, MessageSquare, Loader2, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";

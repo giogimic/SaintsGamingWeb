@@ -1,5 +1,5 @@
-﻿import { Navbar } from "@/shared/components/navbar";
-import { GlobalBottomBar } from "@/shared/components/global-bottom-bar";
+import { Navbar } from "@/web/components/shared/navbar";
+import { GlobalBottomBar } from "@/web/components/shared/global-bottom-bar";
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { MessengerProvider } from "@/web/components/messenger/messenger-provider";
@@ -8,8 +8,8 @@ import { Toaster } from "sonner";
 import { AuthProvider } from "@/web/components/auth-provider";
 import { RealtimeProvider } from "@/web/components/realtime/RealtimeProvider";
 import { GlobalCommandPalette } from "@/web/components/command-palette/global-command-palette";
-import { TooltipProvider } from "@/shared/ui/tooltip";
-import { MainLayoutShell } from "@/shared/components/main-layout-shell";
+import { TooltipProvider } from "@/web/components/ui/tooltip";
+import { MainLayoutShell } from "@/web/components/shared/main-layout-shell";
 
 export default async function MainLayout({
   children,
@@ -41,9 +41,9 @@ export default async function MainLayout({
   let gameTitle = "The Lobby";
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.721";
+    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.724";
   } catch {
-    siteVersion = process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.721";
+    siteVersion = process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.724";
   }
   try {
     const ucpNavSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_in_nav" } });

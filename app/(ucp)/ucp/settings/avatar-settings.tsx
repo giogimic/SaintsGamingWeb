@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/shared/ui/card";
-import { Button } from "@/shared/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/web/components/ui/card";
+import { Button } from "@/web/components/ui/button";
 import { Loader2, Image as ImageIcon, RefreshCw } from "lucide-react";
 import Image from "next/image";
 

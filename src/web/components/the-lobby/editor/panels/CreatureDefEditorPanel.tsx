@@ -7,7 +7,7 @@ import {
   deleteCreatureDef,
   toggleCreatureDefActive,
   importCreatureDefsJson,
-} from '@/app/actions/creature-defs';
+} from '@/app/actions/game/creature-defs';
 import {
   CREATURE_ELEMENT_TYPES,
   CREATURE_ASSET_OPTIONS,

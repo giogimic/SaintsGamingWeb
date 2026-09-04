@@ -6,8 +6,8 @@ import {
   Sword, Hammer, Sparkles, BookOpen, 
   Shield, Plus, Package, Clock, Zap
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/ui/card";
-import { Badge } from "@/shared/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/web/components/ui/card";
+import { Badge } from "@/web/components/ui/badge";
 
 export const metadata = {
   title: "Item & Crafting Templates | Saints Gaming Admin",

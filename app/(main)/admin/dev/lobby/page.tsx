@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { Server, Users, Activity, Play, StopCircle, RefreshCw } from "lucide-react";
-import { useRealtimeStore } from "@/web/hooks/useRealtimeStore";
+import { useAppStore } from "@/shared/store/useAppStore";
 import { ServerStatusCard } from "@/web/components/realtime/ServerStatusCard";
 
 interface ServerStatus {
@@ -12,7 +12,7 @@ interface ServerStatus {
 }
 
 export default function LobbyManagementPage() {
-  const mmoPlayerCount = useRealtimeStore((s) => s.mmoPlayerCount);
+  const mmoPlayerCount = useAppStore((s) => s.mmoPlayerCount);
   const [status, setStatus] = useState<ServerStatus>({ players: 0, capacity: 500, status: 'offline' });
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
@@ -55,7 +55,7 @@ export default function LobbyManagementPage() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">World &amp; MMO</span>
-            <span className="text-xs text-muted-foreground/40">•</span>
+            <span className="text-xs text-muted-foreground/40">â€¢</span>
             <span className="text-xs text-[#cbb26a] font-mono">Gateway Telemetry</span>
           </div>
           <h1 className="text-3xl font-bold flex items-center gap-2">

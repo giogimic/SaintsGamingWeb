@@ -1,3 +1,17 @@
+## [2.1.724] - 2026-09-04
+### Changed
+- **Architectural Overhaul**: Completed a comprehensive 10-phase audit and structural refactoring of the entire codebase.
+  - Extracted isomorphic logic into `src/shared` and browser-specific logic into `src/web`, resolving component fragmentation.
+  - Consolidated scattered state managers into a unified Zustand slice pattern in `useAppStore.ts`.
+  - Migrated legacy `ts-node` smoke tests into Vitest E2E suites (`npm run test:e2e`).
+  - Purged redundant Prisma debug schemas and established `prepare-prisma.js` as the canonical adapter.
+  - Centralized all React hooks under `src/web/hooks`.
+  - Fully documented the request lifecycle, upload paths, dual realtime backend boundaries, and Electron client in `ARCHITECTURE.md`.
+
+## [2.1.723] - 2026-09-04
+### Changed
+- **Favicon Update**: Updated the web app favicon to use the same 3D logo icon as the Saints desktop executable.
+
 ## [2.1.721] - 2026-09-04
 ### Changed
 - **Studio Window Position Limits**: Constrained the minimum Y-coordinate for draggable Studio floating panels to 56px, preventing windows from sliding permanently underneath the top navigation bar and becoming undraggable.

@@ -20,6 +20,7 @@ type Server struct {
 	Dialogue    *dialogue.Manager
 	Secret      string // AUTH_SECRET / internal bearer for Next → Go sync
 	OnMapSynced func(mapID string)
+	Hub         any // BroadcastHub interface in broadcast.go
 }
 
 func (s *Server) Handler() http.Handler {
@@ -30,6 +31,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/maps/", s.mapByID)
 	mux.HandleFunc("/api/internal/sync-map", s.internalSyncMap)
 	mux.HandleFunc("/api/internal/sync-dialogue", s.internalSyncDialogue)
+	mux.HandleFunc("/internal/broadcast", s.internalBroadcast)
+	mux.HandleFunc("/internal/disconnect", s.internalDisconnect)
 	mux.HandleFunc("/api/gtc/listings", s.gtcListings)
 	mux.HandleFunc("/api/craft/recipes", s.craftRecipes)
 	return withCORS(mux)

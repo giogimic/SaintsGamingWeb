@@ -27,9 +27,9 @@ import {
   LucideIcon,
 } from 'lucide-react';
 import { createGameCharacter } from '@/app/actions/game';
-import { getStarterHeroes } from '@/app/actions/starter-heroes';
-import { getPlayableClasses } from '@/app/actions/character-classes';
-import { ensureWorldProfiles } from '@/app/actions/world-profiles';
+import { getStarterHeroes } from '@/app/actions/game/starter-heroes';
+import { getPlayableClasses } from '@/app/actions/game/character-classes';
+import { ensureWorldProfiles } from '@/app/actions/studio/world-profiles';
 import { toast } from 'sonner';
 import { INITIAL_SKILLS, useGameStore } from './store';
 import { soundSynth } from '@/engine/sound-synth';
