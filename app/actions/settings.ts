@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { prisma } from "@/web/lib/prisma";
 
@@ -16,8 +16,8 @@ export async function getDiscordInviteUrl() {
 export async function getSiteVersion() {
   try {
     const setting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    return setting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "v2.1.720";
+    return setting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "v2.1.721";
   } catch (error) {
-    return process.env.NEXT_PUBLIC_SITE_VERSION || "v2.1.720";
+    return process.env.NEXT_PUBLIC_SITE_VERSION || "v2.1.721";
   }
 }

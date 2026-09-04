@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -46,7 +46,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.720",
+  siteVersion = "v2.1.721",
   gameTitle = "The Lobby",
 }: {
   session: any | null;
@@ -123,31 +123,6 @@ export function Navbar({
           {/* Right: Studio (Dev only in Electron), Notifications, User dropdown, Window Controls */}
           <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end [app-region:no-drag]" style={{ WebkitAppRegion: "no-drag" } as any}>
 
-            {/* Studio Launch Button (Only visible in Electron executable to Developers/Admins) */}
-            {canDevStudio && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2.5 text-[11px] rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition-colors flex items-center gap-1.5 font-bold shadow-sm cursor-pointer"
-                title="Launch Native Studio"
-                onClick={async () => {
-                  try {
-                    const res = await fetch('/api/auth/studio-token', { method: 'POST' });
-                    const data = await res.json();
-                    if (data.success && (window as any).electronAPI) {
-                      (window as any).electronAPI.launchNativeStudio(data.token, data.user);
-                    } else {
-                      console.error("Failed to generate studio token or missing electronAPI", data);
-                    }
-                  } catch (e) {
-                    console.error("Error launching native studio:", e);
-                  }
-                }}
-              >
-                <Paintbrush className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden md:inline">Native Studio</span>
-              </Button>
-            )}
 
             {!user ? (
               <div className="flex items-center p-1 bg-black/40 rounded-xl shadow-inner border border-white/5">
@@ -222,7 +197,7 @@ export function Navbar({
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
 
-                    {/* Game Title → /lobby */}
+                    {/* Game Title â†’ /lobby */}
                     <DropdownMenuItem
                       className="cursor-pointer font-medium"
                       onClick={() => { window.location.href = "/lobby"; }}

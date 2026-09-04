@@ -1,3 +1,12 @@
+## [2.1.721] - 2026-09-04
+### Changed
+- **Studio Window Position Limits**: Constrained the minimum Y-coordinate for draggable Studio floating panels to 56px, preventing windows from sliding permanently underneath the top navigation bar and becoming undraggable.
+- **Mobile Post Composer Ergonomics**: 
+  - Adjusted the mobile `SheetContent` height (`min-h-[75dvh]`) so the composition text area and bottom toolbar remain fully visible above the virtual keyboard when typing.
+  - Adjusted mobile text sizing to prevent iOS Safari input auto-zooming.
+  - Replaced solid background with a dark glassmorphism transparent blur (`bg-[#050b14]/70 backdrop-blur-2xl`) for a premium immersive feel.
+- **Top Navigation Cleanup**: Removed the developer-only 'Native Studio' launch button from the global Navbar.
+
 ## [2.1.720] - 2026-09-04
 ### Added
 - **Desktop WebSocket Implementation**: Engineered a standalone WebSocket layer (`useDesktopMmoSocket`) for the native EXE, successfully bridging real-time binary map sync and multiplayer prediction independent of the monolithic web UI.

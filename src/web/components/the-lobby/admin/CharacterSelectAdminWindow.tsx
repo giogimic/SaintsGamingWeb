@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
@@ -441,7 +441,7 @@ export function CharacterSelectAdminWindow({
           : 'rounded-2xl border border-white/10 shadow-[0_20px_70px_rgba(0,0,0,0.85)]'
       } bg-[#050b14]/98 backdrop-blur-xl overflow-hidden`}
     >
-      {/* ── 1. SHALLOW TITLE BAR (Exact Image 1 Spec) ── */}
+      {/* â”€â”€ 1. SHALLOW TITLE BAR (Exact Image 1 Spec) â”€â”€ */}
       <div
         onPointerDown={handlePointerDownHeader}
         onPointerMove={handlePointerMoveHeader}
@@ -457,7 +457,7 @@ export function CharacterSelectAdminWindow({
           <span className="font-mono font-black text-xs text-primary tracking-wider uppercase">
             ADMIN
           </span>
-          <span className="text-muted-foreground/40 text-xs">·</span>
+          <span className="text-muted-foreground/40 text-xs">Â·</span>
           <span className="font-mono text-xs text-muted-foreground">
             {currentSectionMeta.subtitle}
           </span>
@@ -495,10 +495,10 @@ export function CharacterSelectAdminWindow({
       {/* When minimized, hide body and footer */}
       {!isMinimized && (
         <>
-          {/* ── 2. WORKSPACE AREA (Left Rail + Open Center) ── */}
+          {/* â”€â”€ 2. WORKSPACE AREA (Left Rail + Open Center) â”€â”€ */}
           <div className="flex-1 flex overflow-hidden">
             
-            {/* ── Left Rail (Quiet, text-first, permission-filtered) ── */}
+            {/* â”€â”€ Left Rail (Quiet, text-first, permission-filtered) â”€â”€ */}
             <nav className="w-36 sm:w-40 shrink-0 border-r border-white/5 bg-black/20 p-2 flex flex-col gap-1 overflow-y-auto">
               <div className="px-2 py-1 mb-1">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
@@ -531,14 +531,14 @@ export function CharacterSelectAdminWindow({
               })}
             </nav>
 
-            {/* ── Main Continuous Content Region (Low chrome, body-open) ── */}
+            {/* â”€â”€ Main Continuous Content Region (Low chrome, body-open) â”€â”€ */}
             <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-b from-transparent to-black/20">
               
               {/* Optional Section Top Toolbar Strip */}
               <div className="h-8 px-4 flex items-center justify-between border-b border-white/5 bg-black/10 text-xs font-mono text-muted-foreground shrink-0">
                 <div className="flex items-center gap-3">
                   <span className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">
-                    {activeSection === 'overview' && 'System Telemetry · Overview'}
+                    {activeSection === 'overview' && 'System Telemetry Â· Overview'}
                     {activeSection === 'realm' && 'Live Gateway & Shard Management'}
                     {activeSection === 'camera' && 'Global Viewport Policy Defaults'}
                     {activeSection === 'releases' && 'Release Snapshots & Validation'}
@@ -566,7 +566,7 @@ export function CharacterSelectAdminWindow({
               {/* Main Section Content Workspace */}
               <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 font-mono text-xs">
                 
-                {/* ── OVERVIEW SECTION ── */}
+                {/* â”€â”€ OVERVIEW SECTION â”€â”€ */}
                 {activeSection === 'overview' && (
                   <div className="space-y-4 animate-in fade-in duration-200">
                     {/* Status strip */}
@@ -592,7 +592,7 @@ export function CharacterSelectAdminWindow({
                       <div className="p-3 rounded-xl border border-white/5 bg-black/30">
                         <div className="text-[10px] text-muted-foreground uppercase mb-1">Live Content Version</div>
                         <div className="text-sm font-bold text-primary">
-                          {summaryData?.releaseSummary?.liveVersion || 'v2.1.720'}
+                          {summaryData?.releaseSummary?.liveVersion || 'v2.1.721'}
                         </div>
                       </div>
                     </div>
@@ -685,7 +685,7 @@ export function CharacterSelectAdminWindow({
                   </div>
                 )}
 
-                {/* ── REALM CONTROL SECTION ── */}
+                {/* â”€â”€ REALM CONTROL SECTION â”€â”€ */}
                 {activeSection === 'realm' && (
                   <div className="space-y-4 animate-in fade-in duration-200">
                     <div className="p-4 rounded-xl border border-white/5 bg-black/30 space-y-3">
@@ -768,7 +768,7 @@ export function CharacterSelectAdminWindow({
                   </div>
                 )}
 
-                {/* ── CAMERA POLICY SECTION (Admin 400+) ── */}
+                {/* â”€â”€ CAMERA POLICY SECTION (Admin 400+) â”€â”€ */}
                 {activeSection === 'camera' && (
                   <div className="space-y-4 animate-in fade-in duration-200">
                     <div className="p-4 rounded-xl border border-white/5 bg-black/30 space-y-3">
@@ -798,7 +798,7 @@ export function CharacterSelectAdminWindow({
                             <div className="capitalize text-xs font-mono">{style}</div>
                             <div className="text-[9px] text-muted-foreground/60 mt-0.5">
                               {style === 'isometric' && 'Classic 2.5D'}
-                              {style === 'follow45' && '45° Tilt Follow'}
+                              {style === 'follow45' && '45Â° Tilt Follow'}
                               {style === 'topdown' && 'Direct Overhead'}
                               {style === 'free' && 'Unlocked Orbit'}
                             </div>
@@ -875,7 +875,7 @@ export function CharacterSelectAdminWindow({
                   </div>
                 )}
 
-                {/* ── RELEASES SECTION (Admin 400+) ── */}
+                {/* â”€â”€ RELEASES SECTION (Admin 400+) â”€â”€ */}
                 {activeSection === 'releases' && (
                   <div className="space-y-4 animate-in fade-in duration-200">
                     {/* Live version summary */}
@@ -885,7 +885,7 @@ export function CharacterSelectAdminWindow({
                           World Content State
                         </div>
                         <div className="text-[11px] text-muted-foreground">
-                          Active release version: <span className="text-primary font-bold">{summaryData?.releaseSummary?.liveVersion || 'v2.1.720'}</span>
+                          Active release version: <span className="text-primary font-bold">{summaryData?.releaseSummary?.liveVersion || 'v2.1.721'}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -911,16 +911,16 @@ export function CharacterSelectAdminWindow({
                       <div className={`p-3 rounded-xl border ${validationResult.valid ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'} space-y-1`}>
                         <div className="flex items-center justify-between text-xs font-bold">
                           <span className={validationResult.valid ? 'text-emerald-400' : 'text-red-400'}>
-                            {validationResult.valid ? '✓ Content Integrity Verified' : '⚠ Validation Gate Failures'}
+                            {validationResult.valid ? 'âœ“ Content Integrity Verified' : 'âš  Validation Gate Failures'}
                           </span>
                           <span className="text-muted-foreground text-[10px]">
-                            {validationResult.errorCount} Errors · {validationResult.warningCount} Warnings
+                            {validationResult.errorCount} Errors Â· {validationResult.warningCount} Warnings
                           </span>
                         </div>
                         {validationResult.errors.length > 0 && (
                           <div className="text-[11px] text-red-300 space-y-0.5 pt-1">
                             {validationResult.errors.map((err, i) => (
-                              <div key={i}>• {err}</div>
+                              <div key={i}>â€¢ {err}</div>
                             ))}
                           </div>
                         )}
@@ -943,7 +943,7 @@ export function CharacterSelectAdminWindow({
                               <div>
                                 <div className="font-bold text-foreground">{snap.title}</div>
                                 <div className="text-[10px] text-muted-foreground">
-                                  {snap.version ? `v${snap.version}` : 'unversioned'} · {new Date(snap.createdAt).toLocaleDateString()}
+                                  {snap.version ? `v${snap.version}` : 'unversioned'} Â· {new Date(snap.createdAt).toLocaleDateString()}
                                 </div>
                               </div>
                               <button
@@ -961,7 +961,7 @@ export function CharacterSelectAdminWindow({
                   </div>
                 )}
 
-                {/* ── MAINTENANCE SECTION (Developer 1000+ Only) ── */}
+                {/* â”€â”€ MAINTENANCE SECTION (Developer 1000+ Only) â”€â”€ */}
                 {activeSection === 'maintenance' && (
                   <div className="space-y-4 animate-in fade-in duration-200">
                     <div className="p-4 rounded-xl border border-white/5 bg-black/30 space-y-3">
@@ -1036,7 +1036,7 @@ export function CharacterSelectAdminWindow({
                   </div>
                 )}
 
-                {/* ── DIAGNOSTICS SECTION ── */}
+                {/* â”€â”€ DIAGNOSTICS SECTION â”€â”€ */}
                 {activeSection === 'diagnostics' && (
                   <div className="space-y-4 animate-in fade-in duration-200">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1094,7 +1094,7 @@ export function CharacterSelectAdminWindow({
                   </div>
                 )}
 
-                {/* ── STAFF TOOLS SECTION ── */}
+                {/* â”€â”€ STAFF TOOLS SECTION â”€â”€ */}
                 {activeSection === 'staff' && (
                   <div className="space-y-4 animate-in fade-in duration-200">
                     {/* Announcement Form */}
@@ -1121,7 +1121,7 @@ export function CharacterSelectAdminWindow({
                         </div>
                         {announceSent && (
                           <div className="text-[10px] text-emerald-400">
-                            ✓ Announcement broadcast sent to map instances.
+                            âœ“ Announcement broadcast sent to map instances.
                           </div>
                         )}
                       </form>
@@ -1188,7 +1188,7 @@ export function CharacterSelectAdminWindow({
             </div>
           </div>
 
-          {/* ── 3. THIN BOTTOM DIVIDER & FOOTER (Exact Image 1 Spec) ── */}
+          {/* â”€â”€ 3. THIN BOTTOM DIVIDER & FOOTER (Exact Image 1 Spec) â”€â”€ */}
           <div className="h-11 px-4 border-t border-white/10 bg-black/40 flex items-center justify-between shrink-0">
             {/* Left small rounded utility pills */}
             <div className="flex items-center gap-1.5 overflow-x-auto">
@@ -1227,13 +1227,13 @@ export function CharacterSelectAdminWindow({
             {/* Center compact status text */}
             <div className="hidden md:flex items-center gap-2 text-[11px] font-mono text-muted-foreground/70">
               <span>{summaryData?.diagnostics?.nodeEnv || 'dev'}</span>
-              <span>·</span>
-              <span>{summaryData?.releaseSummary?.liveVersion || 'v2.1.720'}</span>
-              <span>·</span>
+              <span>Â·</span>
+              <span>{summaryData?.releaseSummary?.liveVersion || 'v2.1.721'}</span>
+              <span>Â·</span>
               <span className={serverStatus.status === 'online' ? 'text-emerald-400' : 'text-red-400'}>
                 {serverStatus.status}
               </span>
-              <span>·</span>
+              <span>Â·</span>
               <span>Check: {lastCheckTime}</span>
             </div>
 
@@ -1333,7 +1333,7 @@ export function CharacterSelectAdminWindow({
         </>
       )}
 
-      {/* ── SAFETY CONFIRMATION MODAL ── */}
+      {/* â”€â”€ SAFETY CONFIRMATION MODAL â”€â”€ */}
       {confirmModal && (
         <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className="w-full max-w-sm rounded-2xl border border-destructive/40 bg-[#0a0512] p-6 shadow-2xl font-mono text-center">
@@ -1368,7 +1368,7 @@ export function CharacterSelectAdminWindow({
         </div>
       )}
 
-      {/* ── MAINTENANCE CONFIRMATION MODAL ── */}
+      {/* â”€â”€ MAINTENANCE CONFIRMATION MODAL â”€â”€ */}
       {showMaintenanceConfirm && (
         <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className="w-full max-w-sm rounded-2xl border border-red-500/40 bg-[#0a0512] p-6 shadow-2xl font-mono text-center">
@@ -1387,7 +1387,7 @@ export function CharacterSelectAdminWindow({
             </p>
             {dataRetentionMode === 'wipe' && (
               <div className="p-2.5 rounded-lg bg-red-500/20 border border-red-500/40 text-red-300 text-[11px] mb-4 text-left">
-                ⚠ WARNING: All player inventory items, creatures, and test world maps will be reset.
+                âš  WARNING: All player inventory items, creatures, and test world maps will be reset.
               </div>
             )}
             <div className="flex gap-2">
@@ -1408,7 +1408,7 @@ export function CharacterSelectAdminWindow({
         </div>
       )}
 
-      {/* ── CREATE SNAPSHOT MODAL ── */}
+      {/* â”€â”€ CREATE SNAPSHOT MODAL â”€â”€ */}
       {showPublishModal && (
         <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <form
@@ -1444,7 +1444,7 @@ export function CharacterSelectAdminWindow({
                 type="text"
                 value={publishVersion}
                 onChange={(e) => setPublishVersion(e.target.value)}
-                placeholder="2.1.720"
+                placeholder="2.1.721"
                 className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
               />
             </div>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../store';
@@ -266,7 +266,7 @@ export default function GameOptionsMenu({
             <span className="font-mono text-xs font-bold tracking-wider text-foreground">
               SAINTS GAMING
             </span>
-            <span className="text-muted-foreground font-mono text-xs">•</span>
+            <span className="text-muted-foreground font-mono text-xs">â€¢</span>
             <span className="text-xs text-primary font-mono font-bold">
               System Menu
             </span>
@@ -549,9 +549,9 @@ export default function GameOptionsMenu({
 
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { id: 'isometric', label: 'Isometric (Classic 45°)', desc: 'Diagonal depth' },
-                      { id: 'follow45', label: 'Follow 45°', desc: 'Slight overhead tilt' },
-                      { id: 'topdown', label: 'Top-Down (90°)', desc: 'Direct bird-eye view' },
+                      { id: 'isometric', label: 'Isometric (Classic 45Â°)', desc: 'Diagonal depth' },
+                      { id: 'follow45', label: 'Follow 45Â°', desc: 'Slight overhead tilt' },
+                      { id: 'topdown', label: 'Top-Down (90Â°)', desc: 'Direct bird-eye view' },
                       { id: 'free', label: 'Free Cam', desc: 'Orbital inspection' },
                     ].map((mode) => {
                       const isSelected = (allowCustomCamera ? inGameCameraStyle : authorLockedCameraStyle) === mode.id;
@@ -829,7 +829,7 @@ export default function GameOptionsMenu({
                     {[
                       { key: 'W, A, S, D', action: 'Move Operative' },
                       { key: 'Space / E', action: 'Interact / Talk' },
-                      { key: '1 – 8', action: 'Trigger Hotbar Action' },
+                      { key: '1 â€“ 8', action: 'Trigger Hotbar Action' },
                       { key: 'Tab', action: 'Target Nearest Enemy' },
                       { key: 'Q', action: 'Companion Pie Menu' },
                       { key: 'I', action: 'Inventory Dock' },
@@ -1030,8 +1030,8 @@ export default function GameOptionsMenu({
         {/* OS Window Footer Bar */}
         <div className="px-4 py-2 bg-[#0a1628]/90 border-t border-border/40 flex items-center justify-between text-[10px] font-mono text-muted-foreground select-none">
           <div className="flex items-center gap-3">
-            <span>Saints Gaming v2.1.720</span>
-            <span>•</span>
+            <span>Saints Gaming v2.1.721</span>
+            <span>â€¢</span>
             <span>Time To Play</span>
           </div>
           <button

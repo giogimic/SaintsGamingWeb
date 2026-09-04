@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/web/lib/prisma';
 import { PERMISSION_LEVELS } from '@/web/lib/permissions';
@@ -147,7 +147,7 @@ export async function GET() {
         heartbeatMs,
       },
       releaseSummary: {
-        liveVersion: settingsMap['SITE_VERSION'] || process.env.NEXT_PUBLIC_SITE_VERSION || '2.1.720',
+        liveVersion: settingsMap['SITE_VERSION'] || process.env.NEXT_PUBLIC_SITE_VERSION || '2.1.721',
         snapshotCount,
         latestSnapshot: latestSnapshot
           ? {

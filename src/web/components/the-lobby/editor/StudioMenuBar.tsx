@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useEditorStore } from './editor-store';
@@ -393,7 +393,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
         ref={menuRef}
         className="pointer-events-auto relative w-full h-10 z-[110] bg-[#050b14]/90 border-b border-border/50 flex items-center justify-between px-3 select-none backdrop-blur-xl shadow-lg font-mono [app-region:drag]"
       >
-      {/* ─── ZONE 1: Identity, Project Context & Primary Menus ─── */}
+      {/* â”€â”€â”€ ZONE 1: Identity, Project Context & Primary Menus â”€â”€â”€ */}
       <div className="flex items-center gap-2.5 [app-region:no-drag]">
         {/* Studio Brand & Navigation Links */}
         <div className="flex items-center gap-2 pr-2 border-r border-border/40">
@@ -531,9 +531,9 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           </button>
         </div>
 
-        {/* ── Primary Menus ── */}
+        {/* â”€â”€ Primary Menus â”€â”€ */}
         <div className="flex items-center gap-0.5">
-          {/* ── 1. FILE ── */}
+          {/* â”€â”€ 1. FILE â”€â”€ */}
           <TopLevelMenu id="file" label="File">
             <SubMenu label="New" icon={FolderPlus}>
               <MenuItem label="New Authored Map" icon={Folder} onClick={() => { openPanel('build'); showToast('Opened World Builder'); }} />
@@ -620,7 +620,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem label="Exit to Lobby" icon={LogOut} onClick={() => { const hasUnsaved = useEditorStore.getState().hasUnsavedChanges || useEditorStore.getState().mapDirty; if (hasUnsaved) { if (confirm('You have unsaved changes. Exit without saving?')) { window.location.href = '/lobby'; } } else { window.location.href = '/lobby'; } }} />
           </TopLevelMenu>
 
-          {/* ── 2. EDIT ── */}
+          {/* â”€â”€ 2. EDIT â”€â”€ */}
           <TopLevelMenu id="edit" label="Edit">
             <MenuItem label="Undo" shortcut="Ctrl+Z" icon={Undo2} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().triggerUndo(map); }} />
             <MenuItem label="Redo" shortcut="Ctrl+Y" icon={Redo2} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().triggerRedo(map); }} />
@@ -667,8 +667,8 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               <MenuItem label="Open Selection Window..." icon={Sliders} onClick={() => openPanel('selection')} />
             </SubMenu>
             <SubMenu label="Transform" icon={RotateCw}>
-              <MenuItem label="Rotate CW (+45° / +90°)" shortcut="R" icon={RotateCw} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().rotateSelection(map, null, 90); }} />
-              <MenuItem label="Rotate CCW (-45° / -90°)" icon={RotateCcw} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().rotateSelection(map, null, 270); }} />
+              <MenuItem label="Rotate CW (+45Â° / +90Â°)" shortcut="R" icon={RotateCw} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().rotateSelection(map, null, 90); }} />
+              <MenuItem label="Rotate CCW (-45Â° / -90Â°)" icon={RotateCcw} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().rotateSelection(map, null, 270); }} />
               <MenuItem label="Mirror Horizontal" icon={FlipHorizontal} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().flipSelection(map, null, 'h'); }} />
               <MenuItem label="Mirror Vertical" icon={FlipVertical} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().flipSelection(map, null, 'v'); }} />
               <MenuItem
@@ -684,12 +684,12 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             </SubMenu>
           </TopLevelMenu>
 
-          {/* ── 3. VIEW ── */}
+          {/* â”€â”€ 3. VIEW â”€â”€ */}
           <TopLevelMenu id="view" label="View">
             <SubMenu label="Camera" icon={Camera}>
               <MenuItem label="Perspective View" icon={Camera} onClick={() => { showToast('Camera set to Perspective'); }} />
               <MenuItem label="Orthographic View" icon={Box} onClick={() => { showToast('Camera set to Orthographic'); }} />
-              <MenuItem label="Isometric View" icon={Layers} onClick={() => { showToast('Camera set to Isometric 45°'); }} />
+              <MenuItem label="Isometric View" icon={Layers} onClick={() => { showToast('Camera set to Isometric 45Â°'); }} />
               <MenuItem label="Top View" icon={Maximize2} onClick={() => { showToast('Camera set to Top-Down'); }} />
               <MenuItem label="Camera & View Settings..." icon={Camera} onClick={() => openPanel('camera')} />
             </SubMenu>
@@ -713,7 +713,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             </SubMenu>
           </TopLevelMenu>
 
-          {/* ── 4. WORLD ── */}
+          {/* â”€â”€ 4. WORLD â”€â”€ */}
           <TopLevelMenu id="world" label="World">
             <MenuItem label="World Atlas (Spatial Grid)" shortcut="Ctrl+Shift+M" icon={Globe} onClick={() => openPanel('atlas')} />
             <MenuItem label="Map Browser" icon={Globe} onClick={() => { if (onOpenMapBrowser) onOpenMapBrowser(); else openPanel('maps'); }} />
@@ -727,7 +727,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem label="Realm Settings" icon={Settings} onClick={() => openPanel('settings')} />
           </TopLevelMenu>
 
-          {/* ── 5. CREATE ── */}
+          {/* â”€â”€ 5. CREATE â”€â”€ */}
           <TopLevelMenu id="create" label="Create">
             <SubMenu label="Terrain" icon={Layers}>
               <MenuItem label="Draw Volume" icon={Box} onClick={() => { setActiveWorkflowTool('draw'); useEditorStore.getState().setBrushMode('paint'); showToast('Active Tool: Draw Volume'); }} />
@@ -742,8 +742,8 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <SubMenu label="Shapes" icon={Box}>
               {[
                 { id: 1, label: 'Full Cube (Solid)' },
-                { id: 2, label: 'Slope Ramp (45°)' },
-                { id: 3, label: 'Gentle Slope (22.5°)' },
+                { id: 2, label: 'Slope Ramp (45Â°)' },
+                { id: 3, label: 'Gentle Slope (22.5Â°)' },
                 { id: 5, label: 'Corner Wedge (Outer)' },
                 { id: 6, label: 'Corner Wedge (Inner)' },
                 { id: 7, label: 'Half Slab (Bottom)' },
@@ -777,7 +777,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             </SubMenu>
           </TopLevelMenu>
 
-          {/* ── 6. TOOLS ── */}
+          {/* â”€â”€ 6. TOOLS â”€â”€ */}
           <TopLevelMenu id="tools" label="Tools">
             <MenuItem label="Material Library" icon={Palette} onClick={() => openPanel('materials')} />
             <MenuItem label="Brush Settings / World Builder" icon={LayoutGrid} onClick={() => openPanel('build')} />
@@ -797,7 +797,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem label="Realm Settings" icon={Settings} onClick={() => openPanel('settings')} />
           </TopLevelMenu>
 
-          {/* ── 7. WINDOW ── */}
+          {/* â”€â”€ 7. WINDOW â”€â”€ */}
           <TopLevelMenu id="window" label="Window">
             <SubMenu label="Workspace Presets" icon={LayoutGrid}>
               <MenuItem
@@ -861,7 +861,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem label="Dev Tools & Server Controls" icon={panels.dev?.isOpen ? CheckCircle2 : Terminal} onClick={() => togglePanel('dev')} />
           </TopLevelMenu>
 
-          {/* ── 8. HELP ── */}
+          {/* â”€â”€ 8. HELP â”€â”€ */}
           <TopLevelMenu id="help" label="Help">
             <MenuItem label="Keyboard Shortcuts" shortcut="?" icon={Keyboard} onClick={() => setShortcutsOpen(true)} />
             <MenuItem label="Activity Log" icon={Bell} onClick={() => setNotificationHistoryOpen(true)} />
@@ -873,13 +873,13 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem
               label="About Saints World Studio"
               icon={Sparkles}
-              onClick={() => showToast('Saints Gaming: Time To Play — World Studio v2.1.720')}
+              onClick={() => showToast('Saints Gaming: Time To Play â€” World Studio v2.1.721')}
             />
           </TopLevelMenu>
         </div>
       </div>
 
-      {/* ─── ZONE 2: Command Search & Segmented Mode Switcher ─── */}
+      {/* â”€â”€â”€ ZONE 2: Command Search & Segmented Mode Switcher â”€â”€â”€ */}
       <div className="flex items-center gap-2 [app-region:no-drag]">
         {/* Omnisearch Bar */}
         <button
@@ -1001,7 +1001,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
         </div>
       </div>
 
-      {/* ─── ZONE 3: Problems Badge, PIE Playtest, Theme & Settings ─── */}
+      {/* â”€â”€â”€ ZONE 3: Problems Badge, PIE Playtest, Theme & Settings â”€â”€â”€ */}
       <div className="flex items-center gap-2 [app-region:no-drag]">
         {/* Problems & Validation Counter Badge */}
         <button
@@ -1051,7 +1051,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           <button
             onClick={cycleTheme}
             className="p-1.5 rounded-lg bg-background/50 border border-border/60 hover:border-primary/50 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            title={`Studio Style: ${theme?.toUpperCase()} — click to switch`}
+            title={`Studio Style: ${theme?.toUpperCase()} â€” click to switch`}
           >
             {theme === 'light' ? (
               <Sun className="w-3.5 h-3.5 text-amber-400" />

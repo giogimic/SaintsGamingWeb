@@ -1,4 +1,4 @@
-import { Navbar } from "@/shared/components/navbar";
+﻿import { Navbar } from "@/shared/components/navbar";
 import { GlobalBottomBar } from "@/shared/components/global-bottom-bar";
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
@@ -41,9 +41,9 @@ export default async function MainLayout({
   let gameTitle = "The Lobby";
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.720";
+    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.721";
   } catch {
-    siteVersion = process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.720";
+    siteVersion = process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.721";
   }
   try {
     const ucpNavSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_in_nav" } });

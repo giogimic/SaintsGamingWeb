@@ -1,4 +1,4 @@
-import { prisma } from "@/web/lib/prisma";
+﻿import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
@@ -23,7 +23,7 @@ export default async function AdminSettingsPage() {
     return acc;
   }, {} as Record<string, string>);
 
-  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.720";
+  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.721";
 
 
 
@@ -54,7 +54,7 @@ export default async function AdminSettingsPage() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Game Servers &amp; Infrastructure</span>
-            <span className="text-xs text-muted-foreground/40">â€¢</span>
+            <span className="text-xs text-muted-foreground/40">Ã¢â‚¬Â¢</span>
             <span className="text-xs text-[#cbb26a] font-mono">Environment Configuration</span>
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3 text-foreground">
@@ -78,7 +78,7 @@ export default async function AdminSettingsPage() {
               <Input
                 id="ANNOUNCEMENT_BANNER"
                 name="ANNOUNCEMENT_BANNER"
-                placeholder="e.g. ðŸŒŸ Welcome to the new Saints Gaming update! Check out the lobby."
+                placeholder="e.g. Ã°Å¸Å’Å¸ Welcome to the new Saints Gaming update! Check out the lobby."
                 defaultValue={announcementBanner}
               />
               <p className="text-xs text-muted-foreground">Text displayed in a notification strip across the top of all pages.</p>

@@ -73,7 +73,7 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (isDragging) {
       const newX = Math.max(0, Math.min(window.innerWidth - 100, e.clientX - dragOffset.current.x));
-      const newY = Math.max(40, Math.min(window.innerHeight - 40, e.clientY - dragOffset.current.y));
+      const newY = Math.max(56, Math.min(window.innerHeight - 40, e.clientY - dragOffset.current.y));
       dragPosRef.current = { x: newX, y: newY };
       // GPU-composited transform — no React re-render, no layout reflow
       if (panelRef.current) {
@@ -117,7 +117,7 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
       style={{
         position: 'fixed',
         left: isDragging ? 0 : x,
-        top: isDragging ? 0 : y,
+        top: isDragging ? 0 : Math.max(56, y),
         transform: isDragging ? `translate(${dragPosRef.current.x}px, ${dragPosRef.current.y}px)` : undefined,
         willChange: isDragging ? 'transform' : 'auto',
         width,
