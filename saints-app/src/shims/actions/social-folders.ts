@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/social-folders
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function createBookmarkFolder(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'social-folders', action: 'createBookmarkFolder', args })
@@ -13,7 +15,7 @@ export async function createBookmarkFolder(...args: any[]) {
 }
 
 export async function deleteBookmarkFolder(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'social-folders', action: 'deleteBookmarkFolder', args })
@@ -25,7 +27,7 @@ export async function deleteBookmarkFolder(...args: any[]) {
 }
 
 export async function renameBookmarkFolder(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'social-folders', action: 'renameBookmarkFolder', args })
@@ -37,7 +39,7 @@ export async function renameBookmarkFolder(...args: any[]) {
 }
 
 export async function getBookmarkFolders(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'social-folders', action: 'getBookmarkFolders', args })
@@ -49,7 +51,7 @@ export async function getBookmarkFolders(...args: any[]) {
 }
 
 export async function moveBookmarkToFolder(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'social-folders', action: 'moveBookmarkToFolder', args })
@@ -61,7 +63,7 @@ export async function moveBookmarkToFolder(...args: any[]) {
 }
 
 export async function toggleBookmarkWithFolder(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'social-folders', action: 'toggleBookmarkWithFolder', args })
@@ -73,7 +75,7 @@ export async function toggleBookmarkWithFolder(...args: any[]) {
 }
 
 export async function getBookmarksWithFolders(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'social-folders', action: 'getBookmarksWithFolders', args })

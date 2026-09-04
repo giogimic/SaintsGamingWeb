@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/quest-templates
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function listQuestTemplates(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'quest-templates', action: 'listQuestTemplates', args })
@@ -13,7 +15,7 @@ export async function listQuestTemplates(...args: any[]) {
 }
 
 export async function upsertQuestTemplate(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'quest-templates', action: 'upsertQuestTemplate', args })
@@ -25,7 +27,7 @@ export async function upsertQuestTemplate(...args: any[]) {
 }
 
 export async function deleteQuestTemplate(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'quest-templates', action: 'deleteQuestTemplate', args })

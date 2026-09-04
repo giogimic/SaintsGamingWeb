@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/game-admin
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function checkAdminPermission(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game-admin', action: 'checkAdminPermission', args })
@@ -13,7 +15,7 @@ export async function checkAdminPermission(...args: any[]) {
 }
 
 export async function saveWorldMap(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game-admin', action: 'saveWorldMap', args })
@@ -25,7 +27,7 @@ export async function saveWorldMap(...args: any[]) {
 }
 
 export async function fetchAllMaps(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game-admin', action: 'fetchAllMaps', args })
@@ -37,7 +39,7 @@ export async function fetchAllMaps(...args: any[]) {
 }
 
 export async function fetchMapById(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game-admin', action: 'fetchMapById', args })
@@ -49,7 +51,7 @@ export async function fetchMapById(...args: any[]) {
 }
 
 export async function fetchGamePlayers(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game-admin', action: 'fetchGamePlayers', args })
@@ -61,7 +63,7 @@ export async function fetchGamePlayers(...args: any[]) {
 }
 
 export async function adminGivePlayerItem(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game-admin', action: 'adminGivePlayerItem', args })
@@ -73,7 +75,7 @@ export async function adminGivePlayerItem(...args: any[]) {
 }
 
 export async function adminResetPlayerPosition(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game-admin', action: 'adminResetPlayerPosition', args })
@@ -85,7 +87,7 @@ export async function adminResetPlayerPosition(...args: any[]) {
 }
 
 export async function adminAdjustPlayerGold(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game-admin', action: 'adminAdjustPlayerGold', args })
@@ -97,7 +99,7 @@ export async function adminAdjustPlayerGold(...args: any[]) {
 }
 
 export async function adminDeleteGameCharacter(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game-admin', action: 'adminDeleteGameCharacter', args })
@@ -109,7 +111,7 @@ export async function adminDeleteGameCharacter(...args: any[]) {
 }
 
 export async function fetchWorldMapsDetailed(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game-admin', action: 'fetchWorldMapsDetailed', args })

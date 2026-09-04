@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/prefabs
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function listPrefabs(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'prefabs', action: 'listPrefabs', args })
@@ -13,7 +15,7 @@ export async function listPrefabs(...args: any[]) {
 }
 
 export async function savePrefab(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'prefabs', action: 'savePrefab', args })
@@ -25,7 +27,7 @@ export async function savePrefab(...args: any[]) {
 }
 
 export async function deletePrefab(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'prefabs', action: 'deletePrefab', args })
@@ -37,7 +39,7 @@ export async function deletePrefab(...args: any[]) {
 }
 
 export async function seedBasicPrefabs(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'prefabs', action: 'seedBasicPrefabs', args })

@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/auth
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function resetPasswordAction(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'auth', action: 'resetPasswordAction', args })
@@ -13,7 +15,7 @@ export async function resetPasswordAction(...args: any[]) {
 }
 
 export async function forcePasswordChangeAction(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'auth', action: 'forcePasswordChangeAction', args })

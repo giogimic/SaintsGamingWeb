@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/game
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function createGameCharacter(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game', action: 'createGameCharacter', args })
@@ -13,7 +15,7 @@ export async function createGameCharacter(...args: any[]) {
 }
 
 export async function saveGameState(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game', action: 'saveGameState', args })
@@ -25,7 +27,7 @@ export async function saveGameState(...args: any[]) {
 }
 
 export async function loadGameCharacter(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game', action: 'loadGameCharacter', args })
@@ -37,7 +39,7 @@ export async function loadGameCharacter(...args: any[]) {
 }
 
 export async function getUserCharacters(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game', action: 'getUserCharacters', args })
@@ -49,7 +51,7 @@ export async function getUserCharacters(...args: any[]) {
 }
 
 export async function deleteGameCharacter(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game', action: 'deleteGameCharacter', args })
@@ -61,7 +63,7 @@ export async function deleteGameCharacter(...args: any[]) {
 }
 
 export async function unlockGameAchievement(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game', action: 'unlockGameAchievement', args })
@@ -73,7 +75,7 @@ export async function unlockGameAchievement(...args: any[]) {
 }
 
 export async function pinBeastToProfile(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game', action: 'pinBeastToProfile', args })
@@ -85,7 +87,7 @@ export async function pinBeastToProfile(...args: any[]) {
 }
 
 export async function getTopLobbyOperatives(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game', action: 'getTopLobbyOperatives', args })
@@ -97,7 +99,7 @@ export async function getTopLobbyOperatives(...args: any[]) {
 }
 
 export async function getGlobalBankGold(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game', action: 'getGlobalBankGold', args })
@@ -109,7 +111,7 @@ export async function getGlobalBankGold(...args: any[]) {
 }
 
 export async function depositToBank(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game', action: 'depositToBank', args })
@@ -121,7 +123,7 @@ export async function depositToBank(...args: any[]) {
 }
 
 export async function withdrawFromBank(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game', action: 'withdrawFromBank', args })

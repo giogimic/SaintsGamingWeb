@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/item-templates
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function listItemTemplates(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'item-templates', action: 'listItemTemplates', args })
@@ -13,7 +15,7 @@ export async function listItemTemplates(...args: any[]) {
 }
 
 export async function getItemTemplate(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'item-templates', action: 'getItemTemplate', args })
@@ -25,7 +27,7 @@ export async function getItemTemplate(...args: any[]) {
 }
 
 export async function upsertItemTemplate(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'item-templates', action: 'upsertItemTemplate', args })
@@ -37,7 +39,7 @@ export async function upsertItemTemplate(...args: any[]) {
 }
 
 export async function deleteItemTemplate(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'item-templates', action: 'deleteItemTemplate', args })
@@ -49,7 +51,7 @@ export async function deleteItemTemplate(...args: any[]) {
 }
 
 export async function getItemDependencies(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'item-templates', action: 'getItemDependencies', args })

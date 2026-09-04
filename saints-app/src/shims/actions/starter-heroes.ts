@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/starter-heroes
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function getStarterHeroes(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'starter-heroes', action: 'getStarterHeroes', args })
@@ -13,7 +15,7 @@ export async function getStarterHeroes(...args: any[]) {
 }
 
 export async function getAllStarterHeroes(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'starter-heroes', action: 'getAllStarterHeroes', args })
@@ -25,7 +27,7 @@ export async function getAllStarterHeroes(...args: any[]) {
 }
 
 export async function upsertStarterHero(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'starter-heroes', action: 'upsertStarterHero', args })
@@ -37,7 +39,7 @@ export async function upsertStarterHero(...args: any[]) {
 }
 
 export async function importStarterHeroesJson(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'starter-heroes', action: 'importStarterHeroesJson', args })
@@ -49,7 +51,7 @@ export async function importStarterHeroesJson(...args: any[]) {
 }
 
 export async function deleteStarterHero(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'starter-heroes', action: 'deleteStarterHero', args })
@@ -61,7 +63,7 @@ export async function deleteStarterHero(...args: any[]) {
 }
 
 export async function toggleStarterHeroActive(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'starter-heroes', action: 'toggleStarterHeroActive', args })
@@ -73,7 +75,7 @@ export async function toggleStarterHeroActive(...args: any[]) {
 }
 
 export async function seedDefaultStarterHeroes(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'starter-heroes', action: 'seedDefaultStarterHeroes', args })

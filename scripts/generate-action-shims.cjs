@@ -10,7 +10,7 @@ if (!fs.existsSync(shimsDir)) fs.mkdirSync(shimsDir, { recursive: true });
 
 const files = fs.readdirSync(actionsDir).filter(f => f.endsWith('.ts') && !f.endsWith('.d.ts'));
 
-const API_URL = 'http://localhost:3000/api/rpc'; // TODO: inject via env in future
+const API_URL_CODE = `const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';`;
 
 let registryImports = '';
 let registryExports = 'export const actionRegistry: Record<string, any> = {\n';
@@ -30,11 +30,12 @@ for (const file of files) {
   const exportRegex = /export\s+(?:async\s+)?function\s+([a-zA-Z0-9_]+)/g;
   let match;
   let shimContent = `// AUTO-GENERATED SHIM FOR @/app/actions/${moduleName}\n\n`;
-  
+  shimContent += API_URL_CODE + '\n\n';
+
   while ((match = exportRegex.exec(content)) !== null) {
     const funcName = match[1];
     shimContent += `export async function ${funcName}(...args: any[]) {\n`;
-    shimContent += `  const res = await fetch('${API_URL}', {\n`;
+    shimContent += `  const res = await fetch(API_URL, {\n`;
     shimContent += `    method: 'POST',\n`;
     shimContent += `    headers: { 'Content-Type': 'application/json' },\n`;
     shimContent += `    body: JSON.stringify({ module: '${moduleName}', action: '${funcName}', args })\n`;
@@ -52,7 +53,7 @@ for (const file of files) {
       const funcName = match[1];
       if (!shimContent.includes(`function ${funcName}(`)) {
         shimContent += `export async function ${funcName}(...args: any[]) {\n`;
-        shimContent += `  const res = await fetch('${API_URL}', {\n`;
+        shimContent += `  const res = await fetch(API_URL, {\n`;
         shimContent += `    method: 'POST',\n`;
         shimContent += `    headers: { 'Content-Type': 'application/json' },\n`;
         shimContent += `    body: JSON.stringify({ module: '${moduleName}', action: '${funcName}', args })\n`;
