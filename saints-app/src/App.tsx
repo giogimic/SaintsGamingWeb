@@ -13,88 +13,63 @@ import { loadMap } from '@/web/components/the-lobby/data/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { MidnightTropicalBackground } from '@/web/components/the-lobby/MidnightTropicalBackground';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { CharacterSelector } from '@/web/components/the-lobby/character-selector';
+import { getUserCharacters, loadGameCharacter } from '@/app/actions/game';
+import { useDesktopMmoSocket } from './hooks/useDesktopMmoSocket';
 
-const StudioMainWorkspace: React.FC = () => {
+const GameWorkspace: React.FC = () => {
   const { user } = useDesktopAuth();
   const currentMapId = useGameStore((state) => state.currentMapId);
+  
+  // Initialize Realtime multiplayer & map sync
+  useDesktopMmoSocket(user?.id, currentMapId);
+
   const activeMapData = useGameStore((state) => state.activeMapData);
   const activeBrushTileId = useEditorStore((state) => state.activeBrushTileId);
   const activeLayerIdx = useEditorStore((state) => state.activeLayerIdx);
+  const isCreationMode = useEditorStore((state) => state.isCreationMode);
 
-  const [isLoadingMap, setIsLoadingMap] = useState(true);
+  const [isLoadingMap, setIsLoadingMap] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const initializeWorkspace = async () => {
-    setIsLoadingMap(true);
-    setLoadError(null);
-
-    const store = useGameStore.getState();
-    const editor = useEditorStore.getState();
-
-    // 1. Enter exploring game mode so StudioEditorShell is active (bypasses TITLE_SCREEN guard)
-    store.setGameMode('EXPLORING');
-
-    // 2. Default to DEMO_SANDBOX map
-    const targetMapId = store.currentMapId && store.currentMapId !== 'LOBBY'
-      ? store.currentMapId
-      : 'DEMO_SANDBOX';
-    store.setCurrentMapId(targetMapId);
-
-    // 3. Enable creation mode & start in Paint mode
-    editor.setStudioMode('develop');
-    useEditorStore.setState({ isCreationMode: true });
-
-    // 4. Hydrate player entity so Babylon character hooks and position exist
-    store.hydratePlayer({
-      id: user?.id || 'studio_user',
-      name: user?.displayName || user?.username || 'Studio Creator',
-      assetProfileId: 'adventurer',
-      currentMapId: targetMapId,
-      position: { x: 15, y: 15 },
-      direction: 'down',
-      isMoving: false,
-      hp: 100,
-      maxHp: 100,
-      mp: 50,
-      maxMp: 50,
-      skills: {},
-      inventory: {},
-      equipment: { head: null, chest: null, legs: null, weapon: null },
-    } as any);
-
-    // 5. Authoritatively fetch and set activeMapData to boot Babylon
-    try {
-      const rawMap = await loadMap(targetMapId);
-      const ensured = ensureMapHasStudioTilesets(rawMap);
-      store.setActiveMapData(ensured);
-      setIsLoadingMap(false);
-    } catch (err: any) {
-      console.warn('[StudioMainWorkspace] Failed to fetch remote map, generating sandbox fallback:', err);
-      try {
-        const fallback = ensureMapHasStudioTilesets({
-          id: targetMapId,
-          name: 'Demo Sandbox',
-          width: 32,
-          height: 32,
-          grid: Array(32).fill(0).map(() => Array(32).fill(0)),
-          tileLayers: [],
-          tilesets: [],
-          gates: {},
-          npcs: [],
-          encounters: [],
-        });
-        store.setActiveMapData(fallback);
-        setIsLoadingMap(false);
-      } catch (fallbackErr: any) {
-        setLoadError(fallbackErr?.message || 'Failed to initialize 3D Studio map');
-        setIsLoadingMap(false);
-      }
-    }
-  };
-
   useEffect(() => {
-    initializeWorkspace();
-  }, []);
+    // 5. Authoritatively fetch and set activeMapData to boot Babylon
+    // Only load if it's not already loaded or if the map ID changed.
+    const store = useGameStore.getState();
+    const mapId = store.currentMapId || 'LOBBY';
+    
+    if (!activeMapData || activeMapData.id !== mapId) {
+      setIsLoadingMap(true);
+      loadMap(mapId)
+        .then((rawMap) => {
+          const ensured = ensureMapHasStudioTilesets(rawMap);
+          store.setActiveMapData(ensured);
+          setIsLoadingMap(false);
+        })
+        .catch((err: any) => {
+          console.warn('[GameWorkspace] Failed to fetch remote map, generating sandbox fallback:', err);
+          try {
+            const fallback = ensureMapHasStudioTilesets({
+              id: mapId,
+              name: 'Demo Sandbox',
+              width: 32,
+              height: 32,
+              grid: Array(32).fill(0).map(() => Array(32).fill(0)),
+              tileLayers: [],
+              tilesets: [],
+              gates: {},
+              npcs: [],
+              encounters: [],
+            });
+            store.setActiveMapData(fallback);
+            setIsLoadingMap(false);
+          } catch (fallbackErr: any) {
+            setLoadError(fallbackErr?.message || 'Failed to initialize 3D Studio map');
+            setIsLoadingMap(false);
+          }
+        });
+    }
+  }, [currentMapId]);
 
   return (
     <div className="flex-1 relative overflow-hidden bg-[#050b14] flex flex-col">
@@ -103,10 +78,12 @@ const StudioMainWorkspace: React.FC = () => {
         <MidnightTropicalBackground showPalms={true} showWater={true} />
       </div>
 
-      {/* ── Top Studio Menu Bar ── */}
-      <div className="relative z-50 pointer-events-auto shrink-0 flex flex-col">
-        <StudioMenuBar />
-      </div>
+      {/* ── Top Studio Menu Bar (Only visible in Creation Mode) ── */}
+      {isCreationMode && (
+        <div className="relative z-50 pointer-events-auto shrink-0 flex flex-col">
+          <StudioMenuBar />
+        </div>
+      )}
 
       {/* ── Main 3D Viewport & MDI Panels Container ── */}
       <div className="flex-1 relative overflow-hidden">
@@ -114,7 +91,7 @@ const StudioMainWorkspace: React.FC = () => {
         {isLoadingMap && !activeMapData && (
           <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#050b14]/90 backdrop-blur-md text-primary select-none">
             <Loader2 className="w-10 h-10 animate-spin mb-3 text-primary" />
-            <span className="font-mono text-xs text-slate-300">Loading 3D World Sandbox...</span>
+            <span className="font-mono text-xs text-slate-300">Loading 3D World...</span>
           </div>
         )}
 
@@ -124,13 +101,6 @@ const StudioMainWorkspace: React.FC = () => {
             <AlertCircle className="w-12 h-12 text-destructive mb-3" />
             <h2 className="text-lg font-bold mb-1">Failed to Load World Map</h2>
             <p className="text-xs text-muted-foreground mb-4 max-w-md text-center">{loadError}</p>
-            <button
-              onClick={initializeWorkspace}
-              className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-xl flex items-center gap-2 cursor-pointer transition"
-            >
-              <RefreshCw className="w-4 h-4" />
-              <span>Retry Connection</span>
-            </button>
           </div>
         )}
 
@@ -139,29 +109,72 @@ const StudioMainWorkspace: React.FC = () => {
           <GameCanvasBabylon
             activeBrushTileId={activeBrushTileId}
             activeLayerIdx={activeLayerIdx}
-            isDevEditorOpen={true}
-            suppressGameplay={true}
+            isDevEditorOpen={isCreationMode}
+            suppressGameplay={isCreationMode}
             onMapClick={() => {}}
           />
         </div>
 
         {/* Volumetric Studio Editor Shell (Panels, Hotkeys, Overlays) */}
-        <div className="absolute inset-0 z-10 pointer-events-none">
-          <StudioEditorShell />
-        </div>
+        {isCreationMode && (
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            <StudioEditorShell />
+          </div>
+        )}
       </div>
 
-      {/* ── Bottom Status & Tool Bar (Brush selector, Coordinates, Layer isolation) ── */}
-      <div className="relative z-50 pointer-events-auto h-9 shrink-0">
-        <StudioBottomToolbar />
-      </div>
+      {/* ── Bottom Status & Tool Bar ── */}
+      {isCreationMode && (
+        <div className="relative z-50 pointer-events-auto h-9 shrink-0">
+          <StudioBottomToolbar />
+        </div>
+      )}
     </div>
   );
 };
 
 const StudioDesktopContent: React.FC = () => {
-  const { isAuthenticated, isLoading } = useDesktopAuth();
+  const { isAuthenticated, isLoading, serverUrl } = useDesktopAuth();
   const currentMapId = useGameStore((state) => state.currentMapId);
+  const gameMode = useGameStore((state) => state.gameMode);
+  
+  const [userCharacters, setUserCharacters] = useState<any[]>([]);
+  const [loadingChars, setLoadingChars] = useState(false);
+
+  useEffect(() => {
+    // Default to character select when authenticated
+    if (isAuthenticated && gameMode === 'TITLE_SCREEN') {
+      useGameStore.getState().setGameMode('CHARACTER_SELECT');
+      loadCharacters();
+    }
+  }, [isAuthenticated, gameMode]);
+
+  const loadCharacters = async () => {
+    setLoadingChars(true);
+    try {
+      const charsRes = await getUserCharacters();
+      if (charsRes.success && charsRes.data) {
+        setUserCharacters(charsRes.data);
+      }
+    } catch (e) {
+      console.error('Failed to load characters', e);
+    }
+    setLoadingChars(false);
+  };
+
+  const handleSelectCharacter = async (id: string) => {
+    try {
+      useGameStore.getState().setGameMode('EXPLORING');
+      const res = await loadGameCharacter(id);
+      if (res.success && res.data) {
+        useGameStore.getState().hydratePlayer(res.data);
+        useGameStore.getState().setCurrentMapId(res.data.currentMapId || 'LOBBY');
+      }
+    } catch (err) {
+      console.error('Failed to load character', err);
+      useGameStore.getState().setGameMode('CHARACTER_SELECT');
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden select-none bg-[#050b14]">
@@ -187,7 +200,18 @@ const StudioDesktopContent: React.FC = () => {
               </div>
             }
           >
-            <StudioMainWorkspace />
+            {gameMode === 'CHARACTER_SELECT' ? (
+              <div className="flex-1 relative">
+                <CharacterSelector 
+                  characters={userCharacters}
+                  onSelect={handleSelectCharacter}
+                  onCreateNew={() => {}}
+                  onRefresh={loadCharacters}
+                />
+              </div>
+            ) : (
+              <GameWorkspace />
+            )}
           </Suspense>
         </NextAuthShimProvider>
       )}

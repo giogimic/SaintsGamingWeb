@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './styles/desktop.css';
+import { ThemeProvider } from 'next-themes';
 
 /**
  * Global Client-Side Fetch Interceptor for Standalone Desktop Studio.
@@ -45,6 +46,8 @@ if (typeof window !== 'undefined') {
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    <ThemeProvider attribute="class" defaultTheme="vice" enableSystem={false}>
+      <App />
+    </ThemeProvider>
   </React.StrictMode>
 );
