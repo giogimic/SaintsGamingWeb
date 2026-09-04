@@ -40,6 +40,7 @@ import {
   Film,
   Compass,
   Palette,
+  Crosshair,
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
