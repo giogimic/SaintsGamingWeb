@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/publishing
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function validateWorldForPublish(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'publishing', action: 'validateWorldForPublish', args })
@@ -13,7 +15,7 @@ export async function validateWorldForPublish(...args: any[]) {
 }
 
 export async function createPublishSnapshot(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'publishing', action: 'createPublishSnapshot', args })
@@ -25,7 +27,7 @@ export async function createPublishSnapshot(...args: any[]) {
 }
 
 export async function listPublishSnapshots(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'publishing', action: 'listPublishSnapshots', args })
@@ -37,7 +39,7 @@ export async function listPublishSnapshots(...args: any[]) {
 }
 
 export async function rollbackToSnapshot(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'publishing', action: 'rollbackToSnapshot', args })

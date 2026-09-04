@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/map-npcs
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function placeMapNpc(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'map-npcs', action: 'placeMapNpc', args })
@@ -13,7 +15,7 @@ export async function placeMapNpc(...args: any[]) {
 }
 
 export async function listMapNpcs(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'map-npcs', action: 'listMapNpcs', args })
@@ -25,7 +27,7 @@ export async function listMapNpcs(...args: any[]) {
 }
 
 export async function updateMapNpc(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'map-npcs', action: 'updateMapNpc', args })
@@ -37,7 +39,7 @@ export async function updateMapNpc(...args: any[]) {
 }
 
 export async function deleteMapNpc(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'map-npcs', action: 'deleteMapNpc', args })

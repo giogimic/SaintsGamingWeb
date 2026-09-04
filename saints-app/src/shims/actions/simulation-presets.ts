@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/simulation-presets
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function listSimulationPresets(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'simulation-presets', action: 'listSimulationPresets', args })
@@ -13,7 +15,7 @@ export async function listSimulationPresets(...args: any[]) {
 }
 
 export async function getSimulationPreset(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'simulation-presets', action: 'getSimulationPreset', args })
@@ -25,7 +27,7 @@ export async function getSimulationPreset(...args: any[]) {
 }
 
 export async function upsertSimulationPreset(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'simulation-presets', action: 'upsertSimulationPreset', args })
@@ -37,7 +39,7 @@ export async function upsertSimulationPreset(...args: any[]) {
 }
 
 export async function deleteSimulationPreset(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'simulation-presets', action: 'deleteSimulationPreset', args })
@@ -49,7 +51,7 @@ export async function deleteSimulationPreset(...args: any[]) {
 }
 
 export async function setActiveSimulationPreset(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'simulation-presets', action: 'setActiveSimulationPreset', args })

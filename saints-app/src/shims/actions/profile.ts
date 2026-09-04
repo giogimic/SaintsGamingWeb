@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/profile
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function updateProfileMedia(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'profile', action: 'updateProfileMedia', args })
@@ -13,7 +15,7 @@ export async function updateProfileMedia(...args: any[]) {
 }
 
 export async function uploadProfileImage(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'profile', action: 'uploadProfileImage', args })
@@ -25,7 +27,7 @@ export async function uploadProfileImage(...args: any[]) {
 }
 
 export async function deleteProfileImage(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'profile', action: 'deleteProfileImage', args })

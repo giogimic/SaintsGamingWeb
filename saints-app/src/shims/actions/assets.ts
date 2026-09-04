@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/assets
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function listUsableAssets(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'assets', action: 'listUsableAssets', args })
@@ -13,7 +15,7 @@ export async function listUsableAssets(...args: any[]) {
 }
 
 export async function getUsableAsset(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'assets', action: 'getUsableAsset', args })
@@ -25,7 +27,7 @@ export async function getUsableAsset(...args: any[]) {
 }
 
 export async function captureSelectionAsset(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'assets', action: 'captureSelectionAsset', args })

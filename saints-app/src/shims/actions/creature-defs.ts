@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/creature-defs
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function getActiveCreatureDefs(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'creature-defs', action: 'getActiveCreatureDefs', args })
@@ -13,7 +15,7 @@ export async function getActiveCreatureDefs(...args: any[]) {
 }
 
 export async function getActiveStarterCreatures(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'creature-defs', action: 'getActiveStarterCreatures', args })
@@ -25,7 +27,7 @@ export async function getActiveStarterCreatures(...args: any[]) {
 }
 
 export async function getAllCreatureDefs(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'creature-defs', action: 'getAllCreatureDefs', args })
@@ -37,7 +39,7 @@ export async function getAllCreatureDefs(...args: any[]) {
 }
 
 export async function upsertCreatureDef(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'creature-defs', action: 'upsertCreatureDef', args })
@@ -49,7 +51,7 @@ export async function upsertCreatureDef(...args: any[]) {
 }
 
 export async function deleteCreatureDef(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'creature-defs', action: 'deleteCreatureDef', args })
@@ -61,7 +63,7 @@ export async function deleteCreatureDef(...args: any[]) {
 }
 
 export async function toggleCreatureDefActive(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'creature-defs', action: 'toggleCreatureDefActive', args })
@@ -73,7 +75,7 @@ export async function toggleCreatureDefActive(...args: any[]) {
 }
 
 export async function importCreatureDefsJson(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'creature-defs', action: 'importCreatureDefsJson', args })
@@ -85,7 +87,7 @@ export async function importCreatureDefsJson(...args: any[]) {
 }
 
 export async function resolveCreatureDef(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'creature-defs', action: 'resolveCreatureDef', args })

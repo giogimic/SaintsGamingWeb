@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/game-dev
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function createGameQuest(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game-dev', action: 'createGameQuest', args })
@@ -13,7 +15,7 @@ export async function createGameQuest(...args: any[]) {
 }
 
 export async function deleteGameQuest(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game-dev', action: 'deleteGameQuest', args })
@@ -25,7 +27,7 @@ export async function deleteGameQuest(...args: any[]) {
 }
 
 export async function fetchAllGameQuests(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game-dev', action: 'fetchAllGameQuests', args })
@@ -37,7 +39,7 @@ export async function fetchAllGameQuests(...args: any[]) {
 }
 
 export async function createGameAsset(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game-dev', action: 'createGameAsset', args })
@@ -49,7 +51,7 @@ export async function createGameAsset(...args: any[]) {
 }
 
 export async function deleteGameAsset(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game-dev', action: 'deleteGameAsset', args })
@@ -61,7 +63,7 @@ export async function deleteGameAsset(...args: any[]) {
 }
 
 export async function fetchAllGameAssets(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game-dev', action: 'fetchAllGameAssets', args })
@@ -73,7 +75,7 @@ export async function fetchAllGameAssets(...args: any[]) {
 }
 
 export async function seedDummyContentAction(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'game-dev', action: 'seedDummyContentAction', args })

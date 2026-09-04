@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/world-events
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function listWorldEvents(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'world-events', action: 'listWorldEvents', args })
@@ -13,7 +15,7 @@ export async function listWorldEvents(...args: any[]) {
 }
 
 export async function getWorldEvent(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'world-events', action: 'getWorldEvent', args })
@@ -25,7 +27,7 @@ export async function getWorldEvent(...args: any[]) {
 }
 
 export async function upsertWorldEvent(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'world-events', action: 'upsertWorldEvent', args })
@@ -37,7 +39,7 @@ export async function upsertWorldEvent(...args: any[]) {
 }
 
 export async function deleteWorldEvent(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'world-events', action: 'deleteWorldEvent', args })
@@ -49,7 +51,7 @@ export async function deleteWorldEvent(...args: any[]) {
 }
 
 export async function triggerLiveWorldEvent(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'world-events', action: 'triggerLiveWorldEvent', args })
@@ -61,7 +63,7 @@ export async function triggerLiveWorldEvent(...args: any[]) {
 }
 
 export async function stopLiveWorldEvent(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'world-events', action: 'stopLiveWorldEvent', args })

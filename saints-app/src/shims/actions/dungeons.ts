@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/dungeons
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function listDungeons(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'dungeons', action: 'listDungeons', args })
@@ -13,7 +15,7 @@ export async function listDungeons(...args: any[]) {
 }
 
 export async function getDungeon(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'dungeons', action: 'getDungeon', args })
@@ -25,7 +27,7 @@ export async function getDungeon(...args: any[]) {
 }
 
 export async function upsertDungeon(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'dungeons', action: 'upsertDungeon', args })
@@ -37,7 +39,7 @@ export async function upsertDungeon(...args: any[]) {
 }
 
 export async function deleteDungeon(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'dungeons', action: 'deleteDungeon', args })

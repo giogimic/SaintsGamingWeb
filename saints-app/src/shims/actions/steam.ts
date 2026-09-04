@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/steam
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function addSteamWishlistItem(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'steam', action: 'addSteamWishlistItem', args })
@@ -13,7 +15,7 @@ export async function addSteamWishlistItem(...args: any[]) {
 }
 
 export async function removeSteamWishlistItem(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'steam', action: 'removeSteamWishlistItem', args })

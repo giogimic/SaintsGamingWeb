@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/professions
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function listProfessionTemplates(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'professions', action: 'listProfessionTemplates', args })
@@ -13,7 +15,7 @@ export async function listProfessionTemplates(...args: any[]) {
 }
 
 export async function getProfessionTemplate(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'professions', action: 'getProfessionTemplate', args })
@@ -25,7 +27,7 @@ export async function getProfessionTemplate(...args: any[]) {
 }
 
 export async function upsertProfessionTemplate(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'professions', action: 'upsertProfessionTemplate', args })
@@ -37,7 +39,7 @@ export async function upsertProfessionTemplate(...args: any[]) {
 }
 
 export async function deleteProfessionTemplate(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'professions', action: 'deleteProfessionTemplate', args })

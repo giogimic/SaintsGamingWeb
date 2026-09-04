@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/messenger
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function getMessengerMetadata(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'messenger', action: 'getMessengerMetadata', args })
@@ -13,7 +15,7 @@ export async function getMessengerMetadata(...args: any[]) {
 }
 
 export async function uploadPublicKey(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'messenger', action: 'uploadPublicKey', args })
@@ -25,7 +27,7 @@ export async function uploadPublicKey(...args: any[]) {
 }
 
 export async function getPublicKey(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'messenger', action: 'getPublicKey', args })
@@ -37,7 +39,7 @@ export async function getPublicKey(...args: any[]) {
 }
 
 export async function searchUsers(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'messenger', action: 'searchUsers', args })
@@ -49,7 +51,7 @@ export async function searchUsers(...args: any[]) {
 }
 
 export async function sendFriendRequest(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'messenger', action: 'sendFriendRequest', args })
@@ -61,7 +63,7 @@ export async function sendFriendRequest(...args: any[]) {
 }
 
 export async function acceptFriendRequest(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'messenger', action: 'acceptFriendRequest', args })
@@ -73,7 +75,7 @@ export async function acceptFriendRequest(...args: any[]) {
 }
 
 export async function removeFriend(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'messenger', action: 'removeFriend', args })
@@ -85,7 +87,7 @@ export async function removeFriend(...args: any[]) {
 }
 
 export async function getFriendsList(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'messenger', action: 'getFriendsList', args })
@@ -97,7 +99,7 @@ export async function getFriendsList(...args: any[]) {
 }
 
 export async function sendMessage(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'messenger', action: 'sendMessage', args })
@@ -109,7 +111,7 @@ export async function sendMessage(...args: any[]) {
 }
 
 export async function getMessages(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'messenger', action: 'getMessages', args })
@@ -121,7 +123,7 @@ export async function getMessages(...args: any[]) {
 }
 
 export async function deleteMessage(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'messenger', action: 'deleteMessage', args })
@@ -133,7 +135,7 @@ export async function deleteMessage(...args: any[]) {
 }
 
 export async function clearChatHistory(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'messenger', action: 'clearChatHistory', args })
@@ -145,7 +147,7 @@ export async function clearChatHistory(...args: any[]) {
 }
 
 export async function createGroupChat(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'messenger', action: 'createGroupChat', args })
@@ -157,7 +159,7 @@ export async function createGroupChat(...args: any[]) {
 }
 
 export async function getGroupChats(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'messenger', action: 'getGroupChats', args })
@@ -169,7 +171,7 @@ export async function getGroupChats(...args: any[]) {
 }
 
 export async function getGroupMessages(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'messenger', action: 'getGroupMessages', args })
@@ -181,7 +183,7 @@ export async function getGroupMessages(...args: any[]) {
 }
 
 export async function sendGroupMessage(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'messenger', action: 'sendGroupMessage', args })
@@ -193,7 +195,7 @@ export async function sendGroupMessage(...args: any[]) {
 }
 
 export async function leaveGroupChat(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'messenger', action: 'leaveGroupChat', args })

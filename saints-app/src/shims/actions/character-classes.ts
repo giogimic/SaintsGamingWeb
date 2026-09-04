@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/character-classes
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function getPlayableClasses(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'character-classes', action: 'getPlayableClasses', args })
@@ -13,7 +15,7 @@ export async function getPlayableClasses(...args: any[]) {
 }
 
 export async function getAllCharacterClasses(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'character-classes', action: 'getAllCharacterClasses', args })
@@ -25,7 +27,7 @@ export async function getAllCharacterClasses(...args: any[]) {
 }
 
 export async function upsertCharacterClass(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'character-classes', action: 'upsertCharacterClass', args })
@@ -37,7 +39,7 @@ export async function upsertCharacterClass(...args: any[]) {
 }
 
 export async function deleteCharacterClass(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'character-classes', action: 'deleteCharacterClass', args })
@@ -49,7 +51,7 @@ export async function deleteCharacterClass(...args: any[]) {
 }
 
 export async function toggleCharacterClassPlayable(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'character-classes', action: 'toggleCharacterClassPlayable', args })
@@ -61,7 +63,7 @@ export async function toggleCharacterClassPlayable(...args: any[]) {
 }
 
 export async function importCharacterClassesJson(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'character-classes', action: 'importCharacterClassesJson', args })
@@ -73,7 +75,7 @@ export async function importCharacterClassesJson(...args: any[]) {
 }
 
 export async function getGlobalShinyChance(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'character-classes', action: 'getGlobalShinyChance', args })
@@ -85,7 +87,7 @@ export async function getGlobalShinyChance(...args: any[]) {
 }
 
 export async function setGlobalShinyChance(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'character-classes', action: 'setGlobalShinyChance', args })

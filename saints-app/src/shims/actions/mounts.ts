@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/mounts
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function listMounts(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'mounts', action: 'listMounts', args })
@@ -13,7 +15,7 @@ export async function listMounts(...args: any[]) {
 }
 
 export async function getMount(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'mounts', action: 'getMount', args })
@@ -25,7 +27,7 @@ export async function getMount(...args: any[]) {
 }
 
 export async function upsertMount(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'mounts', action: 'upsertMount', args })
@@ -37,7 +39,7 @@ export async function upsertMount(...args: any[]) {
 }
 
 export async function deleteMount(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'mounts', action: 'deleteMount', args })

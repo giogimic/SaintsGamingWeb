@@ -1,7 +1,9 @@
 // AUTO-GENERATED SHIM FOR @/app/actions/npc-dialogue
 
+const API_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'https://saintsgaming.net/api/rpc';
+
 export async function listNpcDialogueTrees(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'npc-dialogue', action: 'listNpcDialogueTrees', args })
@@ -13,7 +15,7 @@ export async function listNpcDialogueTrees(...args: any[]) {
 }
 
 export async function getNpcDialogueTree(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'npc-dialogue', action: 'getNpcDialogueTree', args })
@@ -25,7 +27,7 @@ export async function getNpcDialogueTree(...args: any[]) {
 }
 
 export async function upsertNpcDialogueTree(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'npc-dialogue', action: 'upsertNpcDialogueTree', args })
@@ -37,7 +39,7 @@ export async function upsertNpcDialogueTree(...args: any[]) {
 }
 
 export async function deleteNpcDialogueTree(...args: any[]) {
-  const res = await fetch('http://localhost:3000/api/rpc', {
+  const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ module: 'npc-dialogue', action: 'deleteNpcDialogueTree', args })
