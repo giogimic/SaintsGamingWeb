@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useEditorStore } from './editor-store';
@@ -111,10 +111,18 @@ interface SubMenuProps {
 const SubMenu: React.FC<SubMenuProps> = ({ label, icon: SubIcon, children }) => {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [flipLeft, setFlipLeft] = useState(false);
   const [shiftUp, setShiftUp] = useState(false);
 
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
   const handleMouseEnter = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (triggerRef.current && typeof window !== 'undefined') {
       const rect = triggerRef.current.getBoundingClientRect();
       setFlipLeft(rect.right + 240 > window.innerWidth);
@@ -123,12 +131,18 @@ const SubMenu: React.FC<SubMenuProps> = ({ label, icon: SubIcon, children }) => 
     setOpen(true);
   };
 
+  const handleMouseLeave = () => {
+    timeoutRef.current = setTimeout(() => {
+      setOpen(false);
+    }, 150);
+  };
+
   return (
     <div
       ref={triggerRef}
       className="relative"
       onMouseEnter={handleMouseEnter}
-      onMouseLeave={() => setOpen(false)}
+      onMouseLeave={handleMouseLeave}
     >
       <div
         className={`w-full text-left px-3 py-1.5 text-[11px] font-mono flex items-center justify-between transition-colors cursor-pointer ${
@@ -425,7 +439,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
         </div>
 
         {/* Project / World Profile Selector */}
-        <div className="relative">
+        <div className="relative hidden xl:block">
           <button
             onClick={() => setWorldDropdownOpen((prev) => !prev)}
             className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-background/50 border border-border/60 hover:border-primary/50 text-[10px] text-foreground transition-all cursor-pointer"
@@ -475,7 +489,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
         </div>
 
         {/* Active Document Breadcrumb & Save Indicator */}
-        <div className="flex items-center gap-1 bg-background/50 border border-border/60 rounded-lg px-2 py-0.5 text-[10px]">
+        <div className="hidden md:flex items-center gap-1 bg-background/50 border border-border/60 rounded-lg px-2 py-0.5 text-[10px]">
           <Globe className="w-3 h-3 text-primary" />
           <span className="font-bold text-foreground truncate max-w-[120px]">
             {currentMapId || 'DEMO_SANDBOX'}
@@ -500,7 +514,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
         </div>
 
         {/* Undo / Redo */}
-        <div className="flex items-center gap-0.5 border-r border-border/40 pr-2">
+        <div className="hidden lg:flex items-center gap-0.5 border-r border-border/40 pr-2">
           <button
             onClick={() => {
               soundSynth?.playUiClick?.();
@@ -891,7 +905,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
         >
           <Search className="w-3.5 h-3.5 text-primary" />
           <span className="hidden sm:inline">Omnisearch...</span>
-          <span className="bg-card px-1 py-0.5 rounded border border-border/60 text-[9px] font-bold">Ctrl+K</span>
+          <span className="hidden md:inline bg-card px-1 py-0.5 rounded border border-border/60 text-[9px] font-bold">Ctrl+K</span>
         </button>
 
         {/* Mode Segmented Switcher */}
@@ -1013,7 +1027,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           title="Validation & Problems Diagnostics (Ctrl+Shift+O)"
         >
           <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-          <span className="font-bold">Diagnostics</span>
+          <span className="font-bold hidden xl:inline">Diagnostics</span>
         </button>
 
         {/* Playtest Toggle (PIE) */}
@@ -1043,7 +1057,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           title="Toggle Playtest Mode (Ctrl+E)"
         >
           <Play className="w-3.5 h-3.5 fill-current" />
-          <span>{isCreationMode ? 'Playtest' : 'Stop Play'}</span>
+          <span className="hidden lg:inline">{isCreationMode ? 'Playtest' : 'Stop Play'}</span>
         </button>
 
         {/* Theme Switcher Toggle (Dark / Sunset / Vice) */}

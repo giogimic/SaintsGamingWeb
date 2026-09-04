@@ -1,3 +1,15 @@
+## [2.1.728] - 2026-09-04
+### Fixed
+- **Studio Nav Scaling**: Added responsive `hidden` utility classes to several non-critical elements in `StudioMenuBar` (such as text labels and the profile selector) to prevent the top navigation from overflowing or hiding critical tools on smaller window sizes.
+
+## [2.1.727] - 2026-09-04
+### Fixed
+- **SubMenu Gap Closing**: Added a `150ms` debounce to the `SubMenu` component's `onMouseLeave` event. This fixes an issue where the user's cursor crossing the 4px gap between the parent menu and the popup would cause the submenu to instantly close.
+
+## [2.1.726] - 2026-09-04
+### Fixed
+- **Studio Window Position Limits**: Increased the minimum Y-coordinate clamp for draggable Studio floating panels from 56px to 80px to accommodate both the top navigation bar and contextual toolbar, preventing windows from sliding underneath them.
+
 ## [2.1.725] - 2026-09-04
 ### Changed
 - **Studio Interface**: Removed the permanent debug overlay panel from the World Studio workspace to reduce visual clutter.
