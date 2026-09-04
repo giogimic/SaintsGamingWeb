@@ -1,3 +1,15 @@
+## [2.1.717] - 2026-09-03
+### Changed
+## [2.1.718] - 2026-09-03
+- **Studio Desktop Architecture Update**: Deployed a dynamic RPC Bridge to decouple Next.js Server Actions from the Vite Desktop Client.
+- **RPC Bridge Implementation**: Automatically generated fetch shims for 35+ Server Actions to run Node.js backend logic securely from the Vite UI.
+- **Bug Fix**: Resolved the white-screen crash on desktop client startup caused by Vite attempting to bundle Next.js server actions.
+
+
+- **Studio UI Restoration**: Reverted the World Studio UI back to its classic layout and design, retaining the beautiful fixed sidebars, golden borders, and glassmorphism styling from the original `SG WEB APP OLD STUDIO`.
+- **Feature Porting**: Successfully extracted the new panels built during the "Window-first" refactor (e.g. Camera Settings, Biome Configurator, World Hierarchy, Procedural Authoring, etc.) and wrapped them in the classic `DraggablePanel` UI so they fit seamlessly with the classic aesthetic.
+- **Desktop Shell Integration**: Cleaned up the generic window components (e.g., `StudioContextualBar`) from the Vite `saints-app` wrapper and verified that it compiles perfectly, maintaining standalone performance gains with the restored classic aesthetic.
+
 ## [2.1.716] - 2026-09-03
 ### Added
 - **One Experience Desktop Client & Studio Bridge**:

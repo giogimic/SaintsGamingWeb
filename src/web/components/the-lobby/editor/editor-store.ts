@@ -7,7 +7,6 @@ import {
   STUDIO_DOCK_META,
   STUDIO_MODE_DEFAULTS,
   STUDIO_MODE_META,
-  STUDIO_WORKSPACE_PRESETS,
   type StudioMode,
   type StudioDockId,
 } from '@/shared/game/studioModes';
@@ -26,21 +25,7 @@ import {
   type EditorOp,
   type EditorOpStack,
   type PaintedCell,
-  type PaintedVoxel,
 } from '@/shared/game/editorOps';
-import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
-import { VoxelTransactionBuilder } from '@/shared/game/voxel/VoxelTransaction';
-import { VoxelPrefabData, rotatePrefab90CW } from '@/shared/game/voxel/VoxelPrefab';
-import {
-  packVoxel,
-  VOXEL_WORD_AIR,
-  VoxelShape,
-  VoxelOrientation,
-  VoxelPhysics,
-  type VoxelShapeType,
-  type VoxelOrientationType,
-  type VoxelPhysicsType,
-} from '@/shared/game/voxel/VoxelWord';
 import {
   eraseTilesInRegion,
   eraseSparseCells,
@@ -59,11 +44,6 @@ import {
   type PasteMode,
 } from '@/shared/game/subgridStamp';
 import {
-  type ContinuousGeometry,
-  rasterizeGeometryToCells,
-  getGeometryBoundingBox,
-} from '@/shared/game/geometry/continuousGeometry';
-import {
   type StampTransform,
   DEFAULT_STAMP_TRANSFORM,
   rotateCW,
@@ -73,7 +53,7 @@ import {
 } from '@/shared/game/stampTransform';
 
 import { studioRuntimeFromCreation, type StudioRuntime } from '@/shared/game/studioSession';
-import { STUDIO_PIE_CHANGED_EVENT, STUDIO_MAP_CELLS_CHANGED_EVENT, STUDIO_MAP_HOT_RELOAD_EVENT } from '@/shared/game/studioEvents';
+import { STUDIO_PIE_CHANGED_EVENT, STUDIO_MAP_CELLS_CHANGED_EVENT } from '@/shared/game/studioEvents';
 import type { StudioPieChangedDetail } from '@/shared/game/studioEvents';
 import {
   clearDefinitionOpsForKey,
@@ -98,39 +78,6 @@ export type SoftLock = {
 };
 
 export type PanelId = StudioDockId;
-
-export interface CustomTerrainSwatch {
-  id: string;
-  name: string;
-  sourceSheet: string;
-  sourceX: number;
-  sourceY: number;
-  sourceWidth: number;
-  sourceHeight: number;
-  uOffset: number;
-  vOffset: number;
-  uScale: number;
-  vScale: number;
-  category?: string;
-}
-
-export interface CustomPropItem {
-  id: string;
-  name: string;
-  category: 'Tree' | 'Rock' | 'Building' | 'Foliage' | 'Decor' | 'Structure';
-  sourceSheet: string;
-  sourceX: number;
-  sourceY: number;
-  sourceWidth: number;
-  sourceHeight: number;
-  uOffset: number;
-  vOffset: number;
-  uScale: number;
-  vScale: number;
-  defaultScale?: number;
-  collision?: 'SOLID' | 'NONE' | 'WATER';
-  elevationOffset?: number;
-}
 
 export type { StudioMode };
 export { STUDIO_MODE_DEFAULTS, STUDIO_MODE_META, STUDIO_DOCK_META };
@@ -158,21 +105,6 @@ function dispatchOpEvents(op: EditorOp, direction: 'undo' | 'redo') {
                 c: c.c,
                 layerIdx: c.layerIdx,
                 value: direction === 'undo' ? c.before : c.after,
-              })),
-            },
-          })
-        );
-        break;
-      }
-      case 'paint_voxels': {
-        window.dispatchEvent(
-          new CustomEvent('studio_voxels_changed', {
-            detail: {
-              voxels: subOp.voxels.map((v) => ({
-                wx: v.wx,
-                wy: v.wy,
-                wz: v.wz,
-                word: direction === 'undo' ? v.before : v.after,
               })),
             },
           })
@@ -213,16 +145,6 @@ function dispatchOpEvents(op: EditorOp, direction: 'undo' | 'redo') {
         }
         break;
       }
-      case 'modify_freeform_layers': {
-        window.dispatchEvent(
-          new CustomEvent(STUDIO_MAP_HOT_RELOAD_EVENT, { detail: {} })
-        );
-        break;
-      }
-      case 'modify_map_props': {
-        window.dispatchEvent(new CustomEvent('studio_map_props_changed', { detail: { op: subOp, direction } }));
-        break;
-      }
       case 'compound': {
         const ops = direction === 'undo' ? [...subOp.ops].reverse() : subOp.ops;
         for (const o of ops) handleOp(o);
@@ -240,8 +162,6 @@ export interface FloatingPanelState {
   title: string;
   isOpen: boolean;
   isCollapsed: boolean;
-  isMaximized?: boolean;
-  preMaximizeBounds?: { x: number; y: number; width: number; height: number };
   x: number;
   y: number;
   width: number;
@@ -257,10 +177,9 @@ type PlaytestRestoreSnapshot = {
   activeBrushPattern: BrushPattern | null;
   activeLogicTileId: number;
   activeLayerIdx: number;
-  activeLayerType: 'grid' | 'paint-splat' | 'free-form' | 'polygon';
   mapDirty: boolean;
   brushRadius: number;
-  brushShape: 'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon';
+  brushShape: 'circle' | 'square';
   stampScale?: number;
 };
 
@@ -268,7 +187,6 @@ export interface BrushPattern {
   w: number;
   h: number;
   gids: number[][];
-  mask?: boolean[][];
 }
 
 export interface TileDefinition {
@@ -325,22 +243,12 @@ interface EditorState {
 
   activeBrushTileId: number;
   activeBrushPattern: BrushPattern | null;
-  activeStampAsset: { assetId?: string; url: string; width?: number; height?: number; uOffset?: number; vOffset?: number; uScale?: number; vScale?: number } | null;
-  setActiveStampAsset: (asset: { assetId?: string; url: string; width?: number; height?: number; uOffset?: number; vOffset?: number; uScale?: number; vScale?: number } | null) => void;
   activeLogicTileId: number;
   activeLayerIdx: number;
-  activeLayerType: 'grid' | 'paint-splat' | 'free-form' | 'polygon';
   brushRadius: number;
-  brushShape: 'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon';
-  brushRotation: number;
-  setBrushRotation: (rot: number) => void;
-  selectionMode: 'box' | 'circle' | 'ellipse' | 'lasso' | 'polygon' | 'magic-wand';
-  setSelectionMode: (mode: 'box' | 'circle' | 'ellipse' | 'lasso' | 'polygon' | 'magic-wand') => void;
-  brushMode: 'paint' | 'erase' | 'eyedropper' | 'fill' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste';
+  brushShape: 'circle' | 'square';
+  brushMode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste';
   activePrefabId: string | null;
-  activeVoxelPrefab: VoxelPrefabData | null;
-  setActiveVoxelPrefab: (prefab: VoxelPrefabData | null) => void;
-  rotateActiveVoxelPrefab: () => void;
   prefabs: any[];
   tileClipboard: TileClipboardData | null;
   tileDefinitions: TileDefinition[];
@@ -355,55 +263,6 @@ interface EditorState {
   setPrefabStampMode: (mode: '1tile' | 'footprint') => void;
   stampScale: number;
   setStampScale: (scale: number) => void;
-  snapToGrid: boolean;
-  setSnapToGrid: (snap: boolean) => void;
-  
-  // Splat Terrain Paint mode controls
-  splatOpacity: number;
-  setSplatOpacity: (opacity: number) => void;
-  splatScatter: number;
-  setSplatScatter: (scatter: number) => void;
-  splatRotationRandomize: boolean;
-  setSplatRotationRandomize: (enabled: boolean) => void;
-  isStudioEscapeMenuOpen: boolean;
-  setIsStudioEscapeMenuOpen: (open: boolean) => void;
-  
-  // Custom Sliced Textures & Prop Library
-  customTerrainSwatches: CustomTerrainSwatch[];
-  addCustomTerrainSwatch: (swatch: CustomTerrainSwatch) => void;
-  removeCustomTerrainSwatch: (id: string) => void;
-  customPropLibrary: CustomPropItem[];
-  addCustomPropItem: (prop: CustomPropItem) => void;
-  removeCustomPropItem: (id: string) => void;
-  activeCustomPropId: string | null;
-  setActiveCustomPropId: (id: string | null) => void;
-
-  // 3D Voxel Core & Unified Editing Language (Option A)
-  voxelBlockSizePx: number;
-  setVoxelBlockSizePx: (size: number) => void;
-  activeVoxelMaterialId: number;
-  setActiveVoxelMaterialId: (id: number) => void;
-  activeVoxelShape: number;
-  setActiveVoxelShape: (shape: number) => void;
-  activeVoxelOrientation: number;
-  setActiveVoxelOrientation: (orient: number) => void;
-  activeVoxelPhysics: number;
-  setActiveVoxelPhysics: (physics: number) => void;
-  activeVoxelBrushAxis: 'xz' | 'xy' | 'yz';
-  setActiveVoxelBrushAxis: (axis: 'xz' | 'xy' | 'yz') => void;
-  voxelToolMode: 'block-pen' | 'box-fill' | 'extrude' | 'slope-ramp' | 'smart-terrain' | 'eraser' | 'eyedropper';
-  setVoxelToolMode: (mode: 'block-pen' | 'box-fill' | 'extrude' | 'slope-ramp' | 'smart-terrain' | 'eraser' | 'eyedropper') => void;
-
-  // Voxel Constraint & Layer Locking
-  voxelPlaneLockEnabled: boolean;
-  setVoxelPlaneLockEnabled: (enabled: boolean) => void;
-  voxelTargetPlaneY: number;
-  setVoxelTargetPlaneY: (y: number) => void;
-  voxelPlaneMask: number[] | null;
-  setVoxelPlaneMask: (planes: number[] | null) => void;
-  toggleVoxelPlaneInMask: (planeY: number) => void;
-  voxelBuildUpMode: boolean;
-  setVoxelBuildUpMode: (enabled: boolean) => void;
   
   // Gate Pairing and Placement Wizard State
   pendingGateConnection: {
@@ -439,8 +298,6 @@ interface EditorState {
 
   pasteMode: PasteMode;
   isPasting: boolean;
-  activeSelectionGeometry: ContinuousGeometry | null;
-  setSelectionGeometry: (geom: ContinuousGeometry | null) => void;
   selectionStart: { r: number; c: number } | null;
   selectionEnd: { r: number; c: number } | null;
   selectedCells: Record<string, boolean>;
@@ -448,20 +305,13 @@ interface EditorState {
   removeSelectedCell: (r: number, c: number) => void;
   toggleSelectedCell: (r: number, c: number) => void;
   setSelectionBox: (minR: number, maxR: number, minC: number, maxC: number) => void;
-  setSelectionCircle: (centerR: number, centerC: number, radius: number) => void;
-  setSelectionEllipse: (centerR: number, centerC: number, radiusX: number, radiusZ: number, rotation?: number) => void;
-  setSelectionRegularPolygon: (centerR: number, centerC: number, radius: number, sides: number, rotation?: number) => void;
-  setSelectionPolygon: (points: Array<{ r: number; c: number }>) => void;
-  setSelectionFreehand: (strokes: Array<{ x: number; z: number }>, strokeWidth?: number) => void;
   addSelectedBox: (minR: number, maxR: number, minC: number, maxC: number) => void;
   removeSelectedBox: (minR: number, maxR: number, minC: number, maxC: number) => void;
   clearSelectedCells: () => void;
-  setSelectedCells: (cells: Record<string, boolean>) => void;
   getSelectedBounds: () => { minR: number; maxR: number; minC: number; maxC: number; width: number; height: number; count: number } | null;
   getSelectedCount: () => number;
   clickedTile: { r: number; c: number } | null;
   hoveredTile: { r: number; c: number } | null;
-  hoveredVoxel: { wx: number; wy: number; wz: number } | null;
   lastPaintedTile: { r: number; c: number } | null;
   /** Soft editor overlay: show tile XY in paint HUD. */
   showEditorCoords: boolean;
@@ -480,13 +330,8 @@ interface EditorState {
   setStudioMode: (mode: StudioMode) => void;
   openPanel: (id: PanelId) => void;
   closePanel: (id: PanelId) => void;
-  resetLayout: () => void;
   togglePanel: (id: PanelId) => void;
   toggleCollapse: (id: PanelId) => void;
-  toggleMaximize: (id: PanelId) => void;
-  applyWorkspacePreset: (presetId: string) => void;
-  activeWorkflowTool: 'select' | 'draw' | 'sculpt' | 'transform' | 'place' | 'procedural';
-  setActiveWorkflowTool: (tool: 'select' | 'draw' | 'sculpt' | 'transform' | 'place' | 'procedural') => void;
   updatePanelPosition: (id: PanelId, x: number, y: number) => void;
   startPaintTransaction: () => void;
   commitPaintTransaction: () => void;
@@ -500,17 +345,15 @@ interface EditorState {
   setActiveBrushPattern: (pattern: BrushPattern | null) => void;
   setActiveLogicTileId: (id: number) => void;
   setActiveLayerIdx: (idx: number) => void;
-  setActiveLayerType: (type: 'grid' | 'paint-splat' | 'free-form' | 'polygon') => void;
   setClickedTile: (tile: { r: number; c: number } | null) => void;
   setHoveredTile: (tile: { r: number; c: number } | null) => void;
-  setHoveredVoxel: (voxel: { wx: number; wy: number; wz: number } | null) => void;
   setLastPaintedTile: (tile: { r: number; c: number } | null) => void;
   setShowEditorCoords: (on: boolean) => void;
   setShowWarpOverlays: (on: boolean) => void;
   setShowSpawnOverlays: (on: boolean) => void;
   setBrushRadius: (radius: number) => void;
-  setBrushShape: (shape: 'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon') => void;
-  setBrushMode: (mode: 'paint' | 'erase' | 'eyedropper' | 'fill' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste') => void;
+  setBrushShape: (shape: 'circle' | 'square') => void;
+  setBrushMode: (mode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste') => void;
   setActivePrefabId: (id: string | null) => void;
   setPrefabs: (prefabs: any[]) => void;
   setPasteMode: (mode: PasteMode) => void;
@@ -522,8 +365,6 @@ interface EditorState {
   setHasUnsavedChanges: (val: boolean) => void;
   setIsSavingMap: (val: boolean) => void;
   pushPaintOp: (cells: PaintedCell[]) => void;
-  pushVoxelOp: (voxels: PaintedVoxel[]) => void;
-  pushFreeformOp: (before: any[], after: any[]) => void;
   undoLastOp: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
   redoLastOp: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
   triggerUndo: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
@@ -924,6 +765,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 500,
     zIndex: 10,
   },
+  tileset: {
+    id: 'tileset',
+    title: 'Tile Selector',
+    isOpen: false,
+    isCollapsed: false,
+    x: 20,
+    y: 350,
+    width: 360,
+    height: 480,
+    zIndex: 10,
+  },
   logic: {
     id: 'logic',
     title: 'Logic Painter',
@@ -979,94 +831,6 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 580,
     zIndex: 10,
   },
-  camera: {
-    id: 'camera',
-    title: 'Camera & View Settings',
-    isOpen: false,
-    isCollapsed: false,
-    x: 350,
-    y: 90,
-    width: 480,
-    height: 560,
-    zIndex: 10,
-  },
-  biome: {
-    id: 'biome',
-    title: 'Biome Configurator',
-    isOpen: false,
-    isCollapsed: false,
-    x: 300,
-    y: 80,
-    width: 640,
-    height: 600,
-    zIndex: 10,
-  },
-  hierarchy: {
-    id: 'hierarchy',
-    title: 'World Hierarchy',
-    isOpen: false,
-    isCollapsed: false,
-    x: 20,
-    y: 80,
-    width: 280,
-    height: 520,
-    zIndex: 10,
-  },
-  layers: {
-    id: 'layers',
-    title: 'Layers',
-    isOpen: false,
-    isCollapsed: false,
-    x: 20,
-    y: 400,
-    width: 300,
-    height: 380,
-    zIndex: 10,
-  },
-  materials: {
-    id: 'materials',
-    title: 'Material Library',
-    isOpen: false,
-    isCollapsed: false,
-    x: 20,
-    y: 80,
-    width: 360,
-    height: 580,
-    zIndex: 10,
-  },
-  selection: {
-    id: 'selection',
-    title: 'Selection',
-    isOpen: false,
-    isCollapsed: false,
-    x: 340,
-    y: 80,
-    width: 340,
-    height: 480,
-    zIndex: 10,
-  },
-  transform: {
-    id: 'transform',
-    title: 'Transform',
-    isOpen: false,
-    isCollapsed: false,
-    x: 340,
-    y: 120,
-    width: 340,
-    height: 500,
-    zIndex: 10,
-  },
-  procedural: {
-    id: 'procedural',
-    title: 'Procedural Authoring',
-    isOpen: false,
-    isCollapsed: false,
-    x: 260,
-    y: 80,
-    width: 760,
-    height: 620,
-    zIndex: 10,
-  },
 };
 
 
@@ -1085,9 +849,9 @@ function openModePanels(
   },
   mode: StudioMode
 ) {
+  closeAllPanels(state);
   const defaults = STUDIO_MODE_DEFAULTS[mode] || [];
   for (const id of defaults) {
-    if (!state.panels[id]) continue;
     state.panels[id].isOpen = true;
     state.highestZIndex += 1;
     state.panels[id].zIndex = state.highestZIndex;
@@ -1102,10 +866,9 @@ function capturePlaytestSnapshot(state: {
   activeBrushPattern: BrushPattern | null;
   activeLogicTileId: number;
   activeLayerIdx: number;
-  activeLayerType: 'grid' | 'paint-splat' | 'free-form' | 'polygon';
   mapDirty: boolean;
   brushRadius: number;
-  brushShape: 'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon';
+  brushShape: 'circle' | 'square';
   stampScale: number;
 }): PlaytestRestoreSnapshot {
   const openPanelIds = (Object.keys(state.panels) as PanelId[]).filter(
@@ -1118,7 +881,6 @@ function capturePlaytestSnapshot(state: {
     activeBrushPattern: state.activeBrushPattern,
     activeLogicTileId: state.activeLogicTileId,
     activeLayerIdx: state.activeLayerIdx,
-    activeLayerType: state.activeLayerType,
     mapDirty: state.mapDirty,
     brushRadius: state.brushRadius,
     brushShape: state.brushShape,
@@ -1136,7 +898,7 @@ export const useEditorStore = create<EditorState>()(
       // Studio-first foundation
       isCreationMode: true,
       activeGameId: 'default',
-      studioMode: 'atlas',
+      studioMode: 'develop',
       panels: DEFAULT_PANELS,
       activePanel: null,
       highestZIndex: 10,
@@ -1160,26 +922,10 @@ export const useEditorStore = create<EditorState>()(
         }),
       activeBrushTileId: DEFAULT_STUDIO_GROUND_GID,
       activeBrushPattern: null,
-      activeStampAsset: null,
-      setActiveStampAsset: (asset) =>
-        set((state) => {
-          state.activeStampAsset = asset;
-        }),
       activeLogicTileId: 1,
       activeLayerIdx: 0,
-      activeLayerType: 'grid',
       brushRadius: 1,
       brushShape: 'circle',
-      brushRotation: 0,
-      setBrushRotation: (rot) =>
-        set((state) => {
-          state.brushRotation = ((rot % 360) + 360) % 360;
-        }),
-      selectionMode: 'box',
-      setSelectionMode: (mode) =>
-        set((state) => {
-          state.selectionMode = mode;
-        }),
       brushMode: 'paint',
       paintMode: 'stamp',
       setPaintMode: (mode: 'stamp' | 'paste') =>
@@ -1200,139 +946,7 @@ export const useEditorStore = create<EditorState>()(
             engine.setStampScale(state.stampScale);
           }
         }),
-      snapToGrid: false,
-      setSnapToGrid: (snap: boolean) =>
-        set((state) => {
-          state.snapToGrid = snap;
-        }),
-      splatOpacity: 1.0,
-      setSplatOpacity: (opacity: number) =>
-        set((state) => {
-          state.splatOpacity = Math.max(0.05, Math.min(1.0, opacity));
-        }),
-      splatScatter: 0.5,
-      setSplatScatter: (scatter: number) =>
-        set((state) => {
-          state.splatScatter = Math.max(0.0, Math.min(1.0, scatter));
-        }),
-      splatRotationRandomize: false,
-      setSplatRotationRandomize: (enabled: boolean) =>
-        set((state) => {
-          state.splatRotationRandomize = enabled;
-        }),
-      isStudioEscapeMenuOpen: false,
-      setIsStudioEscapeMenuOpen: (open: boolean) =>
-        set((state) => {
-          state.isStudioEscapeMenuOpen = open;
-        }),
-
-      // 3D Voxel Core & Unified Editing Language (Option A)
-      voxelBlockSizePx: 64,
-      setVoxelBlockSizePx: (size: number) =>
-        set((state) => {
-          state.voxelBlockSizePx = Math.max(6, Math.min(1024, Number(size) || 64));
-        }),
-      activeVoxelMaterialId: 2,
-      setActiveVoxelMaterialId: (id: number) =>
-        set((state) => {
-          state.activeVoxelMaterialId = id;
-        }),
-      activeVoxelShape: 1,
-      setActiveVoxelShape: (shape: number) =>
-        set((state) => {
-          state.activeVoxelShape = shape;
-        }),
-      activeVoxelOrientation: 0,
-      setActiveVoxelOrientation: (orient: number) =>
-        set((state) => {
-          state.activeVoxelOrientation = orient;
-        }),
-      activeVoxelPhysics: 0,
-      setActiveVoxelPhysics: (physics: number) =>
-        set((state) => {
-          state.activeVoxelPhysics = physics;
-        }),
-      activeVoxelBrushAxis: 'xz',
-      setActiveVoxelBrushAxis: (axis: 'xz' | 'xy' | 'yz') =>
-        set((state) => {
-          state.activeVoxelBrushAxis = axis;
-        }),
-      voxelToolMode: 'block-pen',
-      setVoxelToolMode: (mode) =>
-        set((state) => {
-          state.voxelToolMode = mode;
-        }),
-      voxelPlaneLockEnabled: true,
-      setVoxelPlaneLockEnabled: (enabled: boolean) =>
-        set((state) => {
-          state.voxelPlaneLockEnabled = enabled;
-        }),
-      voxelTargetPlaneY: 0,
-      setVoxelTargetPlaneY: (y: number) =>
-        set((state) => {
-          state.voxelTargetPlaneY = Math.max(0, Math.min(31, Math.floor(y)));
-        }),
-      voxelPlaneMask: null,
-      setVoxelPlaneMask: (planes: number[] | null) =>
-        set((state) => {
-          state.voxelPlaneMask = planes ? [...planes] : null;
-        }),
-      toggleVoxelPlaneInMask: (planeY: number) =>
-        set((state) => {
-          const current = state.voxelPlaneMask || [];
-          if (current.includes(planeY)) {
-            const next = current.filter((p) => p !== planeY);
-            state.voxelPlaneMask = next.length > 0 ? next : null;
-          } else {
-            state.voxelPlaneMask = [...current, planeY].sort((a, b) => a - b);
-          }
-        }),
-      voxelBuildUpMode: false,
-      setVoxelBuildUpMode: (enabled: boolean) =>
-        set((state) => {
-          state.voxelBuildUpMode = enabled;
-        }),
-      customTerrainSwatches: [],
-      addCustomTerrainSwatch: (swatch) =>
-        set((state) => {
-          state.customTerrainSwatches = [
-            ...state.customTerrainSwatches.filter((s) => s.id !== swatch.id),
-            swatch,
-          ];
-        }),
-      removeCustomTerrainSwatch: (id) =>
-        set((state) => {
-          state.customTerrainSwatches = state.customTerrainSwatches.filter((s) => s.id !== id);
-        }),
-      customPropLibrary: [],
-      addCustomPropItem: (prop) =>
-        set((state) => {
-          state.customPropLibrary = [
-            ...state.customPropLibrary.filter((p) => p.id !== prop.id),
-            prop,
-          ];
-        }),
-      removeCustomPropItem: (id) =>
-        set((state) => {
-          state.customPropLibrary = state.customPropLibrary.filter((p) => p.id !== id);
-        }),
-      activeCustomPropId: null,
-      setActiveCustomPropId: (id) =>
-        set((state) => {
-          state.activeCustomPropId = id;
-        }),
       activePrefabId: null,
-      activeVoxelPrefab: null,
-      setActiveVoxelPrefab: (prefab) =>
-        set((state) => {
-          state.activeVoxelPrefab = prefab;
-        }),
-      rotateActiveVoxelPrefab: () =>
-        set((state) => {
-          if (state.activeVoxelPrefab) {
-            state.activeVoxelPrefab = rotatePrefab90CW(state.activeVoxelPrefab);
-          }
-        }),
       prefabs: [],
       tileClipboard: null,
       tileDefinitions: [],
@@ -1380,37 +994,11 @@ export const useEditorStore = create<EditorState>()(
       stampTransform: { ...DEFAULT_STAMP_TRANSFORM },
       pasteMode: 'overlay',
       isPasting: false,
-      activeSelectionGeometry: null,
-      setSelectionGeometry: (geom) =>
-        set((state) => {
-          state.activeSelectionGeometry = geom;
-          if (!geom) {
-            state.selectedCells = {};
-            state.selectionStart = null;
-            state.selectionEnd = null;
-            return;
-          }
-          const bbox = getGeometryBoundingBox(geom);
-          state.selectionStart = { r: Math.floor(bbox.minZ), c: Math.floor(bbox.minX) };
-          state.selectionEnd = { r: Math.ceil(bbox.maxZ), c: Math.ceil(bbox.maxX) };
-          const map = (state as any).activeMapData || { width: 128, height: 128 };
-          const gridBounds = {
-            width: map.grid?.[0]?.length || map.width || 128,
-            height: map.grid?.length || map.height || 128,
-          };
-          const cells = rasterizeGeometryToCells(geom, gridBounds, 1);
-          const next: Record<string, boolean> = {};
-          for (const cell of cells) {
-            next[`${cell.r},${cell.c}`] = true;
-          }
-          state.selectedCells = next;
-        }),
       selectionStart: null,
       selectionEnd: null,
       selectedCells: {},
       clickedTile: null,
       hoveredTile: null,
-      hoveredVoxel: null,
       lastPaintedTile: null,
       showEditorCoords: true,
       showWarpOverlays: true,
@@ -1529,7 +1117,6 @@ export const useEditorStore = create<EditorState>()(
 
       setStudioMode: (mode) =>
         set((state) => {
-          if (state.studioMode === mode) return;
           const wasEditor = state.isCreationMode;
           state.studioMode = mode;
           if (mode === 'test') {
@@ -1597,62 +1184,6 @@ export const useEditorStore = create<EditorState>()(
         });
         persistLayouts(get);
       },
-
-      toggleMaximize: (id) => {
-        set((state) => {
-          const p = state.panels[id];
-          if (!p) return;
-          if (p.isMaximized) {
-            p.isMaximized = false;
-            if (p.preMaximizeBounds) {
-              p.x = p.preMaximizeBounds.x;
-              p.y = p.preMaximizeBounds.y;
-              p.width = p.preMaximizeBounds.width;
-              p.height = p.preMaximizeBounds.height;
-            }
-          } else {
-            p.preMaximizeBounds = { x: p.x, y: p.y, width: p.width, height: p.height };
-            p.isMaximized = true;
-            p.isCollapsed = false;
-            p.x = 8;
-            p.y = 48;
-            p.width = typeof window !== 'undefined' ? Math.max(320, window.innerWidth - 16) : 1264;
-            p.height = typeof window !== 'undefined' ? Math.max(240, window.innerHeight - 96) : 680;
-          }
-          state.highestZIndex += 1;
-          p.zIndex = state.highestZIndex;
-          state.activePanel = id;
-        });
-        persistLayouts(get);
-      },
-
-      applyWorkspacePreset: (presetId) => {
-        set((state) => {
-          const preset = STUDIO_WORKSPACE_PRESETS.find((p) => p.id === presetId);
-          if (!preset) return;
-          (Object.keys(state.panels) as PanelId[]).forEach((id) => {
-            if (!preset.openDocks.includes(id)) {
-              state.panels[id].isOpen = false;
-            }
-          });
-          preset.openDocks.forEach((id) => {
-            if (state.panels[id]) {
-              state.panels[id].isOpen = true;
-              state.panels[id].isCollapsed = false;
-              state.highestZIndex += 1;
-              state.panels[id].zIndex = state.highestZIndex;
-              state.activePanel = id;
-            }
-          });
-        });
-        persistLayouts(get);
-      },
-
-      activeWorkflowTool: 'draw',
-      setActiveWorkflowTool: (tool) =>
-        set((state) => {
-          state.activeWorkflowTool = tool;
-        }),
 
       updatePanelPosition: (id, x, y) => {
         set((state) => {
@@ -1764,6 +1295,9 @@ export const useEditorStore = create<EditorState>()(
               state.panels.logic.zIndex = state.highestZIndex;
               state.activePanel = 'logic';
             }
+            if (state.panels.tileset) {
+              state.panels.tileset.isOpen = false;
+            }
             state.brushMode = 'paint';
           } else {
             // Switching to Visual Paint Mode: open Tile Selector, close Logic Painter
@@ -1771,21 +1305,17 @@ export const useEditorStore = create<EditorState>()(
             if (prev === -1 && state.activeBrushTileId <= 12) {
               state.activeBrushTileId = DEFAULT_STUDIO_GROUND_GID;
             }
-            if (state.panels.build) {
-              state.panels.build.isOpen = true;
+            if (state.panels.tileset) {
+              state.panels.tileset.isOpen = true;
               state.highestZIndex += 1;
-              state.panels.build.zIndex = state.highestZIndex;
-              state.activePanel = 'build';
+              state.panels.tileset.zIndex = state.highestZIndex;
+              state.activePanel = 'tileset';
             }
             if (state.panels.logic) {
               state.panels.logic.isOpen = false;
             }
             state.brushMode = 'paint';
           }
-        }),
-      setActiveLayerType: (type) =>
-        set((state) => {
-          state.activeLayerType = type;
         }),
       setClickedTile: (tile) =>
         set((state) => {
@@ -1800,20 +1330,6 @@ export const useEditorStore = create<EditorState>()(
             return;
           }
           state.hoveredTile = tile;
-        }),
-      setHoveredVoxel: (voxel) =>
-        set((state) => {
-          if (
-            (state.hoveredVoxel === null && voxel === null) ||
-            (state.hoveredVoxel &&
-              voxel &&
-              state.hoveredVoxel.wx === voxel.wx &&
-              state.hoveredVoxel.wy === voxel.wy &&
-              state.hoveredVoxel.wz === voxel.wz)
-          ) {
-            return;
-          }
-          state.hoveredVoxel = voxel;
         }),
       setLastPaintedTile: (tile) =>
         set((state) => {
@@ -1890,102 +1406,15 @@ export const useEditorStore = create<EditorState>()(
           const r1 = Math.max(minR, maxR);
           const c0 = Math.min(minC, maxC);
           const c1 = Math.max(minC, maxC);
-          state.activeSelectionGeometry = {
-            type: 'rectangle',
-            minX: c0,
-            minZ: r0,
-            maxX: c1 + 1,
-            maxZ: r1 + 1,
-          };
+          const next: Record<string, boolean> = {};
+          for (let r = r0; r <= r1; r++) {
+            for (let c = c0; c <= c1; c++) {
+              next[`${r},${c}`] = true;
+            }
+          }
+          state.selectedCells = next;
           state.selectionStart = { r: r0, c: c0 };
           state.selectionEnd = { r: r1, c: c1 };
-        }),
-      setSelectionCircle: (centerR, centerC, radius) =>
-        set((state) => {
-          state.activeSelectionGeometry = {
-            type: 'circle',
-            centerX: centerC,
-            centerZ: centerR,
-            radius,
-          };
-          const r0 = Math.floor(centerR - radius);
-          const r1 = Math.ceil(centerR + radius);
-          const c0 = Math.floor(centerC - radius);
-          const c1 = Math.ceil(centerC + radius);
-          state.selectionStart = { r: r0, c: c0 };
-          state.selectionEnd = { r: r1, c: c1 };
-        }),
-      setSelectionEllipse: (centerR, centerC, radiusX, radiusZ, rotation = 0) =>
-        set((state) => {
-          state.activeSelectionGeometry = {
-            type: 'ellipse',
-            centerX: centerC,
-            centerZ: centerR,
-            radiusX,
-            radiusZ,
-            rotation,
-          };
-          const maxRad = Math.max(radiusX, radiusZ);
-          const r0 = Math.floor(centerR - maxRad);
-          const r1 = Math.ceil(centerR + maxRad);
-          const c0 = Math.floor(centerC - maxRad);
-          const c1 = Math.ceil(centerC + maxRad);
-          state.selectionStart = { r: r0, c: c0 };
-          state.selectionEnd = { r: r1, c: c1 };
-        }),
-      setSelectionRegularPolygon: (centerR, centerC, radius, sides, rotation = 0) =>
-        set((state) => {
-          state.activeSelectionGeometry = {
-            type: 'regularPolygon',
-            centerX: centerC,
-            centerZ: centerR,
-            radius,
-            sides,
-            rotation,
-          };
-          const r0 = Math.floor(centerR - radius);
-          const r1 = Math.ceil(centerR + radius);
-          const c0 = Math.floor(centerC - radius);
-          const c1 = Math.ceil(centerC + radius);
-          state.selectionStart = { r: r0, c: c0 };
-          state.selectionEnd = { r: r1, c: c1 };
-        }),
-      setSelectionPolygon: (points) =>
-        set((state) => {
-          if (!points.length) return;
-          state.activeSelectionGeometry = {
-            type: 'polygon',
-            points: points.map((p) => ({ x: p.c + 0.5, z: p.r + 0.5 })),
-          };
-          let minR = points[0].r, maxR = points[0].r;
-          let minC = points[0].c, maxC = points[0].c;
-          points.forEach((p) => {
-            if (p.r < minR) minR = p.r;
-            if (p.r > maxR) maxR = p.r;
-            if (p.c < minC) minC = p.c;
-            if (p.c > maxC) maxC = p.c;
-          });
-          state.selectionStart = { r: Math.floor(minR), c: Math.floor(minC) };
-          state.selectionEnd = { r: Math.ceil(maxR), c: Math.ceil(maxC) };
-        }),
-      setSelectionFreehand: (strokes, strokeWidth = 0.5) =>
-        set((state) => {
-          if (!strokes.length) return;
-          state.activeSelectionGeometry = {
-            type: 'freehand',
-            strokes,
-            strokeWidth,
-          };
-          let minX = strokes[0].x, maxX = strokes[0].x;
-          let minZ = strokes[0].z, maxZ = strokes[0].z;
-          strokes.forEach((s) => {
-            if (s.x < minX) minX = s.x;
-            if (s.x > maxX) maxX = s.x;
-            if (s.z < minZ) minZ = s.z;
-            if (s.z > maxZ) maxZ = s.z;
-          });
-          state.selectionStart = { r: Math.floor(minZ), c: Math.floor(minX) };
-          state.selectionEnd = { r: Math.ceil(maxZ), c: Math.ceil(maxX) };
         }),
       addSelectedBox: (minR, maxR, minC, maxC) =>
         set((state) => {
@@ -2013,14 +1442,9 @@ export const useEditorStore = create<EditorState>()(
         }),
       clearSelectedCells: () =>
         set((state) => {
-          state.activeSelectionGeometry = null;
           state.selectedCells = {};
           state.selectionStart = null;
           state.selectionEnd = null;
-        }),
-      setSelectedCells: (cells) =>
-        set((state) => {
-          state.selectedCells = cells;
         }),
       getSelectedBounds: () => {
         const cells = get().selectedCells;
@@ -2088,28 +1512,6 @@ export const useEditorStore = create<EditorState>()(
           }
         }),
 
-      pushVoxelOp: (voxels) =>
-        set((state) => {
-          if (voxels.length === 0) return;
-          state.opStack = pushEditorOp(state.opStack, {
-            kind: 'paint_voxels',
-            voxels,
-          });
-          state.mapDirty = true;
-          state.hasUnsavedChanges = true;
-        }),
-
-      pushFreeformOp: (before, after) =>
-        set((state) => {
-          state.opStack = pushEditorOp(state.opStack, {
-            kind: 'modify_freeform_layers',
-            before: JSON.parse(JSON.stringify(before || [])),
-            after: JSON.parse(JSON.stringify(after || [])),
-          });
-          state.mapDirty = true;
-          state.hasUnsavedChanges = true;
-        }),
-
       undoLastOp: (map) => {
         const stack = get().opStack;
         const result = undoEditorOp(map, stack);
@@ -2156,74 +1558,11 @@ export const useEditorStore = create<EditorState>()(
         const start = get().selectionStart;
         const end = get().selectionEnd;
         const hovered = get().hoveredTile;
-        const geom = get().activeSelectionGeometry;
 
-        if (get().studioMode === 'voxel') {
-          const voxelDoc = (map as any)?.voxelDoc;
-          if (!voxelDoc) return { count: 0, layerIdx, error: 'No voxelDoc on map.' };
-          const world = (map as any).__voxelWorldInstance || VoxelWorld.deserializeFromDoc(voxelDoc);
-          const mapHeight = map.grid?.length || (map as any).height || 24;
-          const changedVoxels: PaintedVoxel[] = [];
-
-          const clearColumn = (r: number, c: number) => {
-            const wx = c;
-            const wz = mapHeight - 1 - r;
-            for (let wy = 0; wy < world.totalHeightBlocks; wy++) {
-              const before = world.getVoxel(wx, wy, wz);
-              if (before !== VOXEL_WORD_AIR) {
-                world.setVoxel(wx, wy, wz, VOXEL_WORD_AIR);
-                changedVoxels.push({ wx, wy, wz, before, after: VOXEL_WORD_AIR });
-              }
-            }
-          };
-
-          if (geom && geom.type !== 'rectangle') {
-            const width = map.grid?.[0]?.length || (map as any).width || 24;
-            const height = map.grid?.length || (map as any).height || 24;
-            const cells = rasterizeGeometryToCells(geom, { width, height });
-            for (const key of Object.keys(cells)) {
-              const [r, c] = key.split(',').map(Number);
-              clearColumn(r, c);
-            }
-          } else if (hasSparseSelection) {
-            for (const key of Object.keys(selectedCells)) {
-              const [r, c] = key.split(',').map(Number);
-              clearColumn(r, c);
-            }
-          } else if (start && end) {
-            const minR = Math.min(start.r, end.r);
-            const maxR = Math.max(start.r, end.r);
-            const minC = Math.min(start.c, end.c);
-            const maxC = Math.max(start.c, end.c);
-            for (let r = minR; r <= maxR; r++) {
-              for (let c = minC; c <= maxC; c++) {
-                clearColumn(r, c);
-              }
-            }
-          } else if (hovered) {
-            clearColumn(hovered.r, hovered.c);
-          }
-
-          if (changedVoxels.length > 0) {
-            (map as any).voxelDoc = world.serializeToDoc();
-            get().pushVoxelOp(changedVoxels);
-            get().markMapDirty();
-            if (engine?.meshDirtyVoxelChunks) engine.meshDirtyVoxelChunks();
-          }
-          return { count: changedVoxels.length, layerIdx };
-        }
+        if (!map) return { count: 0, layerIdx, error: 'No active map.' };
 
         let eraseResult;
-        if (geom && geom.type !== 'rectangle') {
-          const width = map.grid?.[0]?.length || (map as any).width || 24;
-          const height = map.grid?.length || (map as any).height || 24;
-          const cells = rasterizeGeometryToCells(geom, { width, height });
-          eraseResult = eraseSparseCells({
-            map,
-            layerIdx,
-            cells,
-          });
-        } else if (hasSparseSelection) {
+        if (hasSparseSelection) {
           eraseResult = eraseSparseCells({
             map,
             layerIdx,
@@ -2306,66 +1645,6 @@ export const useEditorStore = create<EditorState>()(
         const start = get().selectionStart;
         const end = get().selectionEnd;
         const hovered = get().hoveredTile;
-        const geom = get().activeSelectionGeometry;
-
-        if (get().studioMode === 'voxel') {
-          const voxelDoc = (map as any)?.voxelDoc;
-          if (!voxelDoc) return { count: 0, layerIdx, error: 'No voxelDoc on map.' };
-          const world = (map as any).__voxelWorldInstance || VoxelWorld.deserializeFromDoc(voxelDoc);
-          const mapHeight = map.grid?.length || (map as any).height || 24;
-          const matId = get().activeVoxelMaterialId || 1;
-          const shapeId = (get().activeVoxelShape ?? VoxelShape.FULL_CUBE) as VoxelShapeType;
-          const orient = (get().activeVoxelOrientation ?? VoxelOrientation.NORTH) as VoxelOrientationType;
-          const physics = (get().activeVoxelPhysics || (shapeId === VoxelShape.SLOPE_45 ? VoxelPhysics.WALKABLE_SLOPE : VoxelPhysics.SOLID_OBSTACLE)) as VoxelPhysicsType;
-          const voxelWord = packVoxel(matId, shapeId, orient, 0, physics, 0);
-          const changedVoxels: PaintedVoxel[] = [];
-
-          const paintColumn = (r: number, c: number) => {
-            const wx = c;
-            const wz = mapHeight - 1 - r;
-            const wy = get().hoveredVoxel?.wy ?? 16;
-            const before = world.getVoxel(wx, wy, wz);
-            if (before !== voxelWord) {
-              world.setVoxel(wx, wy, wz, voxelWord);
-              changedVoxels.push({ wx, wy, wz, before, after: voxelWord });
-            }
-          };
-
-          if (geom && geom.type !== 'rectangle') {
-            const width = map.grid?.[0]?.length || (map as any).width || 24;
-            const height = map.grid?.length || (map as any).height || 24;
-            const cells = rasterizeGeometryToCells(geom, { width, height });
-            for (const key of Object.keys(cells)) {
-              const [r, c] = key.split(',').map(Number);
-              paintColumn(r, c);
-            }
-          } else if (hasSparseSelection) {
-            for (const key of Object.keys(selectedCells)) {
-              const [r, c] = key.split(',').map(Number);
-              paintColumn(r, c);
-            }
-          } else if (start && end) {
-            const minR = Math.min(start.r, end.r);
-            const maxR = Math.max(start.r, end.r);
-            const minC = Math.min(start.c, end.c);
-            const maxC = Math.max(start.c, end.c);
-            for (let r = minR; r <= maxR; r++) {
-              for (let c = minC; c <= maxC; c++) {
-                paintColumn(r, c);
-              }
-            }
-          } else if (hovered) {
-            paintColumn(hovered.r, hovered.c);
-          }
-
-          if (changedVoxels.length > 0) {
-            (map as any).voxelDoc = world.serializeToDoc();
-            get().pushVoxelOp(changedVoxels);
-            get().markMapDirty();
-            if (engine?.meshDirtyVoxelChunks) engine.meshDirtyVoxelChunks();
-          }
-          return { count: changedVoxels.length, layerIdx };
-        }
 
         const tileId =
           customTileId !== undefined
@@ -2377,17 +1656,7 @@ export const useEditorStore = create<EditorState>()(
         if (!map) return { count: 0, layerIdx, error: 'No active map.' };
 
         let paintResult: { ok: boolean; count?: number; cells?: PaintedCell[]; reason?: string } = { ok: false };
-        if (geom && geom.type !== 'rectangle') {
-          const width = map.grid?.[0]?.length || (map as any).width || 24;
-          const height = map.grid?.length || (map as any).height || 24;
-          const cells = rasterizeGeometryToCells(geom, { width, height });
-          paintResult = paintSparseCells({
-            map,
-            layerIdx,
-            cells,
-            tileId,
-          });
-        } else if (hasSparseSelection) {
+        if (hasSparseSelection) {
           paintResult = paintSparseCells({
             map,
             layerIdx,
@@ -2830,18 +2099,10 @@ export const useEditorStore = create<EditorState>()(
         const end = get().selectionEnd;
         const hovered = get().hoveredTile;
 
+        if (!map) return { ok: false, error: 'No active map.' };
+
         let clipboard: TileClipboardData | null = null;
-        const geom = get().activeSelectionGeometry;
-        if (geom && geom.type !== 'rectangle') {
-          const width = map.grid?.[0]?.length || (map as any).width || 24;
-          const height = map.grid?.length || (map as any).height || 24;
-          const cells = rasterizeGeometryToCells(geom, { width, height });
-          clipboard = extractSparseCellsFromMap({
-            map,
-            cells,
-            activeLayerIdx: layerIdx,
-          });
-        } else if (hasSparseSelection) {
+        if (hasSparseSelection) {
           clipboard = extractSparseCellsFromMap({
             map,
             cells: selectedCells,
@@ -2931,58 +2192,55 @@ export const useEditorStore = create<EditorState>()(
           activeLayerIdx: activeLayer,
         });
 
-        const hasVoxelVolume = !!(activeClip.voxelVolume && activeClip.voxelVolume.length > 0 && (map as any).voxelDoc);
-
-        if (!hasVoxelVolume && (!stampRes.ok || stampRes.cells.length === 0)) {
+        if (!stampRes.ok || stampRes.cells.length === 0) {
           return { ok: false, error: stampRes.error || 'Nothing pasted.' };
         }
 
-        if (stampRes.cells.length > 0) {
-          const op: EditorOp =
-            stampRes.newLayerCreated && stampRes.createdLayer && typeof stampRes.newLayerIdx === 'number'
-              ? {
-                  kind: 'compound',
-                  description: 'Paste onto New Layer',
-                  ops: [
-                    {
-                      kind: 'create_layer',
-                      layerIdx: stampRes.newLayerIdx,
-                      layer: stampRes.createdLayer,
-                    },
-                    {
-                      kind: 'paint_cells',
-                      cells: stampRes.cells,
-                    },
-                  ],
-                }
-              : {
-                  kind: 'paint_cells',
-                  cells: stampRes.cells,
-                };
+        const op: EditorOp =
+          stampRes.newLayerCreated && stampRes.createdLayer && typeof stampRes.newLayerIdx === 'number'
+            ? {
+                kind: 'compound',
+                description: 'Paste onto New Layer',
+                ops: [
+                  {
+                    kind: 'create_layer',
+                    layerIdx: stampRes.newLayerIdx,
+                    layer: stampRes.createdLayer,
+                  },
+                  {
+                    kind: 'paint_cells',
+                    cells: stampRes.cells,
+                  },
+                ],
+              }
+            : {
+                kind: 'paint_cells',
+                cells: stampRes.cells,
+              };
 
-          set((state) => {
-            state.opStack = pushEditorOp(state.opStack, op);
-            state.mapDirty = true;
-            state.hasUnsavedChanges = true;
-            if (stampRes.newLayerCreated && typeof stampRes.newLayerIdx === 'number') {
-              state.activeLayerIdx = stampRes.newLayerIdx;
-            }
-          });
-
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(
-              new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
-                detail: {
-                  cells: stampRes.cells.map((cell) => ({
-                    layerIdx: cell.layerIdx,
-                    r: cell.r,
-                    c: cell.c,
-                    value: cell.after,
-                  })),
-                },
-              })
-            );
+        set((state) => {
+          state.opStack = pushEditorOp(state.opStack, op);
+          state.mapDirty = true;
+          state.hasUnsavedChanges = true;
+          if (stampRes.newLayerCreated && typeof stampRes.newLayerIdx === 'number') {
+            state.activeLayerIdx = stampRes.newLayerIdx;
           }
+        });
+
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
+              detail: {
+                cells: stampRes.cells.map((cell) => ({
+                  layerIdx: cell.layerIdx,
+                  r: cell.r,
+                  c: cell.c,
+                  value: cell.after,
+                })),
+              },
+            })
+          );
         }
 
         const activeEng = engine || (typeof window !== 'undefined' ? (window as any).__babylonEngine : null);
@@ -2990,56 +2248,7 @@ export const useEditorStore = create<EditorState>()(
           activeEng.clearSelectionPreview();
         }
 
-        // 3D Voxel Volume Paste
-        let voxelPastedCount = 0;
-        if (activeClip.voxelVolume && activeClip.voxelVolume.length > 0 && (map as any).voxelDoc) {
-          const world = VoxelWorld.deserializeFromDoc((map as any).voxelDoc);
-          const mapH = map.grid?.length || (map as any).height || 24;
-          const originWZ = mapH - 1 - r;
-          const txBuilder = new VoxelTransactionBuilder('Paste Voxel Volume', map.id || '');
-
-          // Calculate surface height delta: find highest solid voxel at target (c, originWZ)
-          let deltaWY = 0;
-          for (let checkY = world.totalHeightBlocks - 1; checkY >= 0; checkY--) {
-            const word = world.getVoxel(c, checkY, originWZ);
-            if (word && (word & 0xfff) !== 0) {
-              deltaWY = checkY - 15; // Ground foundation is wy=15
-              break;
-            }
-          }
-
-          for (const v of activeClip.voxelVolume) {
-            const wx = c + v.dx;
-            const wy = v.dy + deltaWY;
-            const wz = originWZ - v.dz;
-            if (wx >= 0 && wx < world.totalWidthBlocks && wz >= 0 && wz < world.totalDepthBlocks && wy >= 0 && wy < world.totalHeightBlocks) {
-              txBuilder.record(world, wx, wy, wz, v.word);
-            }
-          }
-
-          const tx = txBuilder.build();
-          if (tx && tx.mutations.length > 0) {
-            const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: number; after: number }> = [];
-            for (const mut of tx.mutations) {
-              world.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel);
-              changedVoxels.push({
-                wx: mut.worldX,
-                wy: mut.worldY,
-                wz: mut.worldZ,
-                before: mut.previousVoxel,
-                after: mut.newVoxel,
-              });
-            }
-            (map as any).voxelDoc = world.serializeToDoc();
-            get().pushVoxelOp(changedVoxels);
-            voxelPastedCount = changedVoxels.length;
-            if (activeEng?.meshDirtyVoxelChunks) {
-              activeEng.meshDirtyVoxelChunks();
-            }
-          }
-        }
-
-        return { ok: true, count: stampRes.cells.length || voxelPastedCount };
+        return { ok: true, count: stampRes.cells.length };
       },
 
       cancelPaste: () => {
@@ -3070,21 +2279,18 @@ export const useEditorStore = create<EditorState>()(
       rotateStampCW: () => {
         set((state) => {
           state.stampTransform.rotation = rotateCW(state.stampTransform.rotation);
-          state.brushRotation = state.stampTransform.rotation;
         });
       },
 
       rotateStampCCW: () => {
         set((state) => {
           state.stampTransform.rotation = rotateCCW(state.stampTransform.rotation);
-          state.brushRotation = state.stampTransform.rotation;
         });
       },
 
       resetStampTransform: () => {
         set((state) => {
           state.stampTransform = { ...DEFAULT_STAMP_TRANSFORM };
-          state.brushRotation = 0;
         });
       },
 
@@ -3146,10 +2352,6 @@ export const useEditorStore = create<EditorState>()(
             delete state.activeLocks[res];
           }
         }
-      }),
-      resetLayout: () => set((state) => {
-        state.panels = JSON.parse(JSON.stringify(DEFAULT_PANELS));
-        persistLayouts(get);
       }),
     }))
   )
