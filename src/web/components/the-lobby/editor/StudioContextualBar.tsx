@@ -82,7 +82,11 @@ export function StudioContextualBar() {
     <div className="h-[38px] w-full bg-[#050b14]/95 border-b border-border/40 backdrop-blur-xl flex items-center justify-between px-3 font-mono text-xs select-none z-30 shrink-0 pointer-events-auto">
       {/* ── Left: Primary Workflow Tools ── */}
       <div className="flex items-center gap-1 border-r border-border/30 pr-3 shrink-0">
-        {WORKFLOW_TOOLS.map((tool) => {
+        {WORKFLOW_TOOLS.filter(tool => {
+          if (tool.id === 'sculpt' && activeMapData?.mapType === 'TILE') return false;
+          if (tool.id === 'draw' && activeMapData?.mapType === 'VOXEL') return false;
+          return true;
+        }).map((tool) => {
           const Icon = tool.icon;
           const isActive = activeWorkflowTool === tool.id;
           return (

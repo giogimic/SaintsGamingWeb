@@ -948,9 +948,9 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 480,
     zIndex: 10,
   },
-  publishing: {
-    id: 'publishing',
-    title: 'Publish & Releases',
+  releases: {
+    id: 'releases',
+    title: 'Release Management',
     isOpen: false,
     isCollapsed: false,
     x: 300,

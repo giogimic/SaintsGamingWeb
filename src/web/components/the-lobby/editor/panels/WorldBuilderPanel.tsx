@@ -475,6 +475,7 @@ export const WorldBuilderPanel: React.FC = () => {
         {openSections.overview && (
           <div className="p-3 space-y-2.5 border-t border-[#806f47]/20 bg-[#050b14]/50">
             {/* 3D Voxel Volume Dimensions */}
+            {currentMapData.mapType !== 'TILE' && (
             <div className="p-2 rounded-lg bg-[#040812] border border-border/40 space-y-2">
               <div className="flex items-center justify-between text-[11px]">
                 <span className="text-primary font-bold flex items-center gap-1.5">
@@ -536,7 +537,9 @@ export const WorldBuilderPanel: React.FC = () => {
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Initialize 3D Voxel Gunmetal Foundation</span>
               </button>
+              </button>
             </div>
+            )}
 
             {/* Neighbor Bleed Toggle */}
             <div className="flex items-center justify-between pt-1 border-t border-[#806f47]/20/60">
@@ -820,6 +823,7 @@ export const WorldBuilderPanel: React.FC = () => {
                 <span className="text-[8px] text-slate-400 font-semibold">Grid Collision</span>
               </button>
 
+              {currentMapData.mapType !== 'VOXEL' && (
               <button
                 type="button"
                 onClick={() => {
@@ -840,6 +844,7 @@ export const WorldBuilderPanel: React.FC = () => {
                 <span className="font-bold text-[10px]">Visual Grid</span>
                 <span className="text-[8px] text-slate-400 font-semibold">Tilemap Paint</span>
               </button>
+              )}
             </div>
 
             {/* Brush Controls for Freeform */}

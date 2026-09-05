@@ -17,7 +17,7 @@ export interface BalanceScenario {
   id: string;
   name: string;
   playerLevel: number;
-  abilityId: string;
+  ability: any; // DB AbilityDictionary object
   targetMaxHp: number;
   targetDef: number;
   iterations: number;
@@ -45,7 +45,7 @@ export function simulateCombatScenario(
   scenario: BalanceScenario,
   tuning: PlayerCombatTuning = DEFAULT_PLAYER_TUNING
 ): BalanceReport {
-  const ability = getAbilityDef(scenario.abilityId);
+  const ability = scenario.ability;
   const warnings: string[] = [];
 
   if (!ability) {
@@ -54,15 +54,14 @@ export function simulateCombatScenario(
       dps: 0,
       timeToKillSec: 0,
       xpPerHourEstimate: 0,
-      warnings: [`Ability with id "${scenario.abilityId}" not found in registry.`],
+      warnings: [`No ability provided for simulation.`],
     };
   }
 
-  const damageEffect = ability.effects.find((e) => e.type === 'damage');
-  const basePower = damageEffect && 'power' in damageEffect ? damageEffect.power : 0;
+  const basePower = ability.power || 0;
 
   if (basePower === 0) {
-    warnings.push('Simulated ability has no direct damage effect.');
+    warnings.push('Simulated ability has no direct damage/power.');
   }
 
   // Level scaling: 2% damage boost per player level
@@ -78,7 +77,7 @@ export function simulateCombatScenario(
   const totalDamage = singleHitDamage * scenario.iterations;
   const avgDamage = totalDamage / Math.max(1, scenario.iterations);
 
-  const cooldownSec = Math.max(0.5, (ability.cooldownMs || 1500) / 1000 * tuning.globalCooldownMul);
+  const cooldownSec = Math.max(0.5, (ability.cooldown || 1500) / 1000 * tuning.globalCooldownMul);
   const dps = Number((avgDamage / cooldownSec).toFixed(1));
 
   const hitsToKill = Math.ceil(scenario.targetMaxHp / Math.max(1, avgDamage));
@@ -86,7 +85,7 @@ export function simulateCombatScenario(
 
   // XP estimation: base hit XP grants multiplied by attacks per hour
   const hitsPerHour = Math.floor(3600 / cooldownSec);
-  const hitXp = ability.grantsSkillXp?.reduce((sum, g) => sum + g.amount, 0) || 12;
+  const hitXp = 12; // Default flat XP per hit for estimation
   const xpPerHourEstimate = hitsPerHour * hitXp;
 
   if (dps <= 0) {

@@ -18,8 +18,10 @@ export interface WorldEntryValidationParams {
   mapId?: string | null;
   mapData?: {
     id: string;
+    mapType?: string;
     grid?: number[][];
     tileLayers?: any[];
+    voxelDoc?: any;
   } | null;
 }
 
@@ -49,7 +51,11 @@ export function validateWorldEntry(params: WorldEntryValidationParams): WorldEnt
   }
 
   if (params.mapData) {
-    if (!params.mapData.grid && (!params.mapData.tileLayers || params.mapData.tileLayers.length === 0)) {
+    const isVoxel = params.mapData.mapType === 'VOXEL';
+    
+    if (isVoxel && !params.mapData.voxelDoc) {
+      errors.push('Target map is VOXEL but contains no 3D volume data.');
+    } else if (!isVoxel && (!params.mapData.tileLayers || params.mapData.tileLayers.length === 0)) {
       errors.push('Target map contains no geometry or tile layers.');
     }
   }

@@ -59,6 +59,7 @@ export interface GameMapData {
   id: string;
   gameId?: string;
   name: string;
+  mapType?: 'TILE' | 'VOXEL' | 'HYBRID' | string;
   grid: number[][]; // 0: safe, 1: wall/boundary, 2: tall grass, 3-4: gates, 5: tree(woodcutting), 6: ore(mining), 7: shop, 8: clinic, 10: fishing spot
   gates: Record<number, MapGate>;
   /** Present on /api/maps payloads; used for Babylon dims when grid is sparse. */
@@ -210,6 +211,17 @@ export async function loadMap(
         throw new Error(`HTTP ${res.status}: Failed to load map ${mapId}`);
       }
       const rawMapData: GameMapData = await res.json();
+
+      // Dynamic Map Type Classification Fallback
+      if (!rawMapData.mapType) {
+        const hasTiles = rawMapData.tileLayers && rawMapData.tileLayers.length > 0;
+        const hasVoxel = rawMapData.voxelDoc && Object.keys(rawMapData.voxelDoc).length > 0;
+        if (hasTiles && hasVoxel) rawMapData.mapType = 'HYBRID';
+        else if (hasVoxel) rawMapData.mapType = 'VOXEL';
+        else if (hasTiles) rawMapData.mapType = 'TILE';
+        else rawMapData.mapType = 'HYBRID'; // Default legacy fallback
+      }
+
       // Clone mapData so different placements with the same base map do not mutate the same object
       const mapData: GameMapData = JSON.parse(JSON.stringify(rawMapData));
       mapCache[cacheKey] = mapData;

@@ -102,7 +102,7 @@ func (s *Server) listMaps(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listDraftMaps(w http.ResponseWriter, r *http.Request) {
-	rows, err := s.DB.Query(`SELECT id, name, gridData, gatesData, npcsData, tileLayersData, tilesetsData, voxelData, version FROM WorldMapDraft ORDER BY name`)
+	rows, err := s.DB.Query(`SELECT id, name, gridData, gatesData, npcsData, tileLayersData, tilesetsData, voxelData, mapType, version FROM WorldMapDraft ORDER BY name`)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -117,13 +117,14 @@ func (s *Server) listDraftMaps(w http.ResponseWriter, r *http.Request) {
 		TileLayersData json.RawMessage `json:"tileLayersData"`
 		TilesetsData   json.RawMessage `json:"tilesetsData"`
 		VoxelData      json.RawMessage `json:"voxelData"`
+		MapType        string          `json:"mapType"`
 		Version        int             `json:"version"`
 	}
 	out := make([]item, 0)
 	for rows.Next() {
 		var it item
-		var grid, gates, npcs, tiles, tilesets, voxel string
-		if err := rows.Scan(&it.ID, &it.Name, &grid, &gates, &npcs, &tiles, &tilesets, &voxel, &it.Version); err != nil {
+		var grid, gates, npcs, tiles, tilesets, voxel, mapType string
+		if err := rows.Scan(&it.ID, &it.Name, &grid, &gates, &npcs, &tiles, &tilesets, &voxel, &mapType, &it.Version); err != nil {
 			continue
 		}
 		it.GridData = json.RawMessage(grid)
@@ -132,6 +133,10 @@ func (s *Server) listDraftMaps(w http.ResponseWriter, r *http.Request) {
 		it.TileLayersData = json.RawMessage(orEmptyArr(tiles))
 		it.TilesetsData = json.RawMessage(orEmptyArr(tilesets))
 		it.VoxelData = json.RawMessage(orEmptyObj(voxel))
+		it.MapType = mapType
+		if it.MapType == "" {
+			it.MapType = "HYBRID"
+		}
 		out = append(out, it)
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -144,15 +149,15 @@ func (s *Server) getMap(w http.ResponseWriter, r *http.Request, id string) {
 	}
 	
 	useDraft := r.URL.Query().Get("draft") == "true"
-	var name, grid, npcs, tiles, tilesets, voxel string
+	var name, grid, npcs, tiles, tilesets, voxel, mapType string
 	var version int
 	
-	queryVoxel := `SELECT name, gridData, npcsData, tileLayersData, tilesetsData, voxelData, version FROM WorldMap WHERE id = ?`
-	queryNoVoxel := `SELECT name, gridData, npcsData, tileLayersData, tilesetsData, version FROM WorldMap WHERE id = ?`
+	queryVoxel := `SELECT name, gridData, npcsData, tileLayersData, tilesetsData, voxelData, mapType, version FROM WorldMap WHERE id = ?`
+	queryNoVoxel := `SELECT name, gridData, npcsData, tileLayersData, tilesetsData, mapType, version FROM WorldMap WHERE id = ?`
 	
 	if useDraft {
-		err := s.DB.QueryRow(`SELECT name, gridData, npcsData, tileLayersData, tilesetsData, voxelData, version FROM WorldMapDraft WHERE id = ?`, id).
-			Scan(&name, &grid, &npcs, &tiles, &tilesets, &voxel, &version)
+		err := s.DB.QueryRow(`SELECT name, gridData, npcsData, tileLayersData, tilesetsData, voxelData, mapType, version FROM WorldMapDraft WHERE id = ?`, id).
+			Scan(&name, &grid, &npcs, &tiles, &tilesets, &voxel, &mapType, &version)
 		if err == nil {
 			// Found in draft, skip the live map query
 			goto Respond
@@ -160,17 +165,17 @@ func (s *Server) getMap(w http.ResponseWriter, r *http.Request, id string) {
 	}
 
 	err := s.DB.QueryRow(queryVoxel, id).
-		Scan(&name, &grid, &npcs, &tiles, &tilesets, &voxel, &version)
+		Scan(&name, &grid, &npcs, &tiles, &tilesets, &voxel, &mapType, &version)
 	if err != nil {
 		// Fallback without voxelData column
 		err = s.DB.QueryRow(queryNoVoxel, id).
-			Scan(&name, &grid, &npcs, &tiles, &tilesets, &version)
+			Scan(&name, &grid, &npcs, &tiles, &tilesets, &mapType, &version)
 	}
 	if err == sql.ErrNoRows {
 		if id == protocol.DemoMapID {
 			_ = bootstrap.EnsureDemo(s.DB, s.World)
 			err = s.DB.QueryRow(queryNoVoxel, id).
-				Scan(&name, &grid, &npcs, &tiles, &tilesets, &version)
+				Scan(&name, &grid, &npcs, &tiles, &tilesets, &mapType, &version)
 		}
 	}
 	if err != nil {
@@ -190,6 +195,7 @@ Respond:
 		"tileLayersData": json.RawMessage(orEmptyArr(tiles)),
 		"tilesetsData":   json.RawMessage(orEmptyArr(tilesets)),
 		"voxelData":      json.RawMessage(orEmptyObj(voxel)),
+		"mapType":        mapType,
 	})
 }
 
@@ -204,6 +210,7 @@ type mapSaveBody struct {
 	TilesetsData     json.RawMessage `json:"tilesetsData"`
 	VoxelData        json.RawMessage `json:"voxelData,omitempty"`
 	VoxelDoc         json.RawMessage `json:"voxelDoc,omitempty"`
+	MapType          string          `json:"mapType,omitempty"`
 	RegionClass      string          `json:"regionClass,omitempty"`
 	ProceduralConfig json.RawMessage `json:"proceduralConfig,omitempty"`
 }
@@ -263,7 +270,12 @@ func (s *Server) saveMap(w http.ResponseWriter, r *http.Request, pathID string) 
 		voxelStr = string(payload.VoxelDoc)
 	}
 
-	if err := PersistMapDraftVoxel(s.DB, id, name, grid, gates, npcs, tiles, tilesets, voxelStr); err != nil {
+	mapType := payload.MapType
+	if mapType == "" {
+		mapType = "HYBRID"
+	}
+
+	if err := PersistMapDraftVoxel(s.DB, id, name, grid, gates, npcs, tiles, tilesets, voxelStr, mapType); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -350,7 +362,7 @@ func (s *Server) authorizeInternal(r *http.Request) bool {
 
 // PersistMap writes WorldMap + refreshes in-memory def.
 func PersistMap(db *sql.DB, wm *world.Manager, id, name, grid, gates, npcs, tiles, tilesets string) error {
-	return PersistMapVoxel(db, wm, id, name, grid, gates, npcs, tiles, tilesets, "")
+	return PersistMapVoxel(db, wm, id, name, grid, gates, npcs, tiles, tilesets, "", "HYBRID")
 }
 
 // ReloadMapInMemory applies voxel and grid data to the live engine memory without DB writes.
@@ -366,7 +378,7 @@ func ReloadMapInMemory(wm *world.Manager, id, name, grid, voxel string) {
 }
 
 // PersistMapVoxel writes WorldMap with 3D voxelDoc + refreshes in-memory def.
-func PersistMapVoxel(db *sql.DB, wm *world.Manager, id, name, grid, gates, npcs, tiles, tilesets, voxel string) error {
+func PersistMapVoxel(db *sql.DB, wm *world.Manager, id, name, grid, gates, npcs, tiles, tilesets, voxel, mapType string) error {
 	if voxel != "" && voxel != "{}" && voxel != "null" {
 		_ = wm.ApplyVoxel(id, name, []byte(voxel))
 	}
@@ -383,26 +395,26 @@ func PersistMapVoxel(db *sql.DB, wm *world.Manager, id, name, grid, gates, npcs,
 	var err error
 	if count > 0 {
 		if voxel != "" {
-			_, err = db.Exec(`UPDATE WorldMap SET name=?, gridData=?, gatesData=?, npcsData=?, tileLayersData=?, tilesetsData=?, voxelData=?, version=version+1, updatedAt=datetime('now') WHERE id=?`,
-				name, grid, gates, npcs, tiles, tilesets, voxel, id)
+			_, err = db.Exec(`UPDATE WorldMap SET name=?, gridData=?, gatesData=?, npcsData=?, tileLayersData=?, tilesetsData=?, voxelData=?, mapType=?, version=version+1, updatedAt=datetime('now') WHERE id=?`,
+				name, grid, gates, npcs, tiles, tilesets, voxel, mapType, id)
 		} else {
-			_, err = db.Exec(`UPDATE WorldMap SET name=?, gridData=?, gatesData=?, npcsData=?, tileLayersData=?, tilesetsData=?, version=version+1, updatedAt=datetime('now') WHERE id=?`,
-				name, grid, gates, npcs, tiles, tilesets, id)
+			_, err = db.Exec(`UPDATE WorldMap SET name=?, gridData=?, gatesData=?, npcsData=?, tileLayersData=?, tilesetsData=?, mapType=?, version=version+1, updatedAt=datetime('now') WHERE id=?`,
+				name, grid, gates, npcs, tiles, tilesets, mapType, id)
 		}
 	} else {
 		if voxel != "" {
-			_, err = db.Exec(`INSERT INTO WorldMap (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, voxelData, version)
-				VALUES (?, 'saints', ?, ?, ?, ?, '[]', ?, ?, ?, 1)`, id, name, grid, gates, npcs, tiles, tilesets, voxel)
+			_, err = db.Exec(`INSERT INTO WorldMap (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, voxelData, mapType, version)
+				VALUES (?, 'saints', ?, ?, ?, ?, '[]', ?, ?, ?, ?, 1)`, id, name, grid, gates, npcs, tiles, tilesets, voxel, mapType)
 		} else {
-			_, err = db.Exec(`INSERT INTO WorldMap (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, version)
-				VALUES (?, 'saints', ?, ?, ?, ?, '[]', ?, ?, 1)`, id, name, grid, gates, npcs, tiles, tilesets)
+			_, err = db.Exec(`INSERT INTO WorldMap (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, mapType, version)
+				VALUES (?, 'saints', ?, ?, ?, ?, '[]', ?, ?, ?, 1)`, id, name, grid, gates, npcs, tiles, tilesets, mapType)
 		}
 	}
 	return err
 }
 
 // PersistMapDraftVoxel writes to WorldMapDraft without touching the live memory or WorldMap.
-func PersistMapDraftVoxel(db *sql.DB, id, name, grid, gates, npcs, tiles, tilesets, voxel string) error {
+func PersistMapDraftVoxel(db *sql.DB, id, name, grid, gates, npcs, tiles, tilesets, voxel, mapType string) error {
 	if gates == "" {
 		gates = "{}"
 	}
@@ -411,19 +423,19 @@ func PersistMapDraftVoxel(db *sql.DB, id, name, grid, gates, npcs, tiles, tilese
 	var err error
 	if count > 0 {
 		if voxel != "" {
-			_, err = db.Exec(`UPDATE WorldMapDraft SET name=?, gridData=?, gatesData=?, npcsData=?, tileLayersData=?, tilesetsData=?, voxelData=?, version=version+1, updatedAt=datetime('now') WHERE id=?`,
-				name, grid, gates, npcs, tiles, tilesets, voxel, id)
+			_, err = db.Exec(`UPDATE WorldMapDraft SET name=?, gridData=?, gatesData=?, npcsData=?, tileLayersData=?, tilesetsData=?, voxelData=?, mapType=?, version=version+1, updatedAt=datetime('now') WHERE id=?`,
+				name, grid, gates, npcs, tiles, tilesets, voxel, mapType, id)
 		} else {
-			_, err = db.Exec(`UPDATE WorldMapDraft SET name=?, gridData=?, gatesData=?, npcsData=?, tileLayersData=?, tilesetsData=?, version=version+1, updatedAt=datetime('now') WHERE id=?`,
-				name, grid, gates, npcs, tiles, tilesets, id)
+			_, err = db.Exec(`UPDATE WorldMapDraft SET name=?, gridData=?, gatesData=?, npcsData=?, tileLayersData=?, tilesetsData=?, mapType=?, version=version+1, updatedAt=datetime('now') WHERE id=?`,
+				name, grid, gates, npcs, tiles, tilesets, mapType, id)
 		}
 	} else {
 		if voxel != "" {
-			_, err = db.Exec(`INSERT INTO WorldMapDraft (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, voxelData, version)
-				VALUES (?, 'saints', ?, ?, ?, ?, '[]', ?, ?, ?, 1)`, id, name, grid, gates, npcs, tiles, tilesets, voxel)
+			_, err = db.Exec(`INSERT INTO WorldMapDraft (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, voxelData, mapType, version)
+				VALUES (?, 'saints', ?, ?, ?, ?, '[]', ?, ?, ?, ?, 1)`, id, name, grid, gates, npcs, tiles, tilesets, voxel, mapType)
 		} else {
-			_, err = db.Exec(`INSERT INTO WorldMapDraft (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, version)
-				VALUES (?, 'saints', ?, ?, ?, ?, '[]', ?, ?, 1)`, id, name, grid, gates, npcs, tiles, tilesets)
+			_, err = db.Exec(`INSERT INTO WorldMapDraft (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, mapType, version)
+				VALUES (?, 'saints', ?, ?, ?, ?, '[]', ?, ?, ?, 1)`, id, name, grid, gates, npcs, tiles, tilesets, mapType)
 		}
 	}
 	return err

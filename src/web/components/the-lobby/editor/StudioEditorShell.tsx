@@ -80,14 +80,13 @@ const MonsterSpawnerPanel = lazy(() => import('./panels/MonsterSpawnerPanel').th
 const PrefabBuilderPanel = lazy(() => import('./panels/PrefabBuilderPanel').then((m) => ({ default: m.PrefabBuilderPanel })));
 const WorldAtlasPanel = lazy(() => import('./panels/WorldAtlasPanel').then((m) => ({ default: m.WorldAtlasPanel })));
 const StudioProblemsPanel = lazy(() => import('./panels/StudioProblemsPanel').then((m) => ({ default: m.StudioProblemsPanel })));
-const GameplayStudioPanels = lazy(() => import('./panels/GameplayStudioPanels'));
 const RealmSettingsPanel = lazy(() => import('./panels/RealmSettingsPanel').then((m) => ({ default: m.RealmSettingsPanel })));
 const DungeonEditorPanel = lazy(() => import('./panels/DungeonEditorPanel').then((m) => ({ default: m.DungeonEditorPanel })));
 const ShopEditorPanel = lazy(() => import('./panels/ShopEditorPanel').then((m) => ({ default: m.ShopEditorPanel })));
 const MountEditorPanel = lazy(() => import('./panels/MountEditorPanel').then((m) => ({ default: m.MountEditorPanel })));
 const WorldEventPanel = lazy(() => import('./panels/WorldEventPanel').then((m) => ({ default: m.WorldEventPanel })));
 const SimulationPresetPanel = lazy(() => import('./panels/SimulationPresetPanel').then((m) => ({ default: m.SimulationPresetPanel })));
-const PublishManagerPanel = lazy(() => import('./panels/PublishManagerPanel').then((m) => ({ default: m.PublishManagerPanel })));
+const ReleaseManagementPanel = lazy(() => import('./panels/ReleaseManagementPanel').then((m) => ({ default: m.ReleaseManagementPanel })));
 const LogicPainterPanel = lazy(() => import('./panels/LogicPainterPanel').then((m) => ({ default: m.LogicPainterPanel })));
 const AnimationStudioPanel = lazy(() => import('./panels/AnimationStudioPanel').then((m) => ({ default: m.AnimationStudioPanel })));
 const MapTabPanel = lazy(() => import('./panels/MapTabPanel').then((m) => ({ default: m.MapTabPanel })));
@@ -477,7 +476,7 @@ export const StudioEditorShell: React.FC = () => {
           )}
 
           {canUseStudioDock(permissionLevel, 'abilities') && (
-            <DraggablePanel id="abilities" icon={<Wand2 className="w-4 h-4" />} title="Abilities">
+            <DraggablePanel id="abilities" icon={<Wand2 className="w-4 h-4" />} title="Gameplay & Systems Studio">
               <Suspense fallback={<div>Loading...</div>}><AbilityEditorPanel /></Suspense>
             </DraggablePanel>
           )}
@@ -548,11 +547,7 @@ export const StudioEditorShell: React.FC = () => {
             </DraggablePanel>
           )}
 
-          {canUseStudioDock(permissionLevel, 'gameplay') && (
-            <DraggablePanel id="gameplay" icon={<Activity className="w-4 h-4 text-rose-400" />} title="Gameplay Hub & Combat Balance">
-              <Suspense fallback={<div>Loading...</div>}><GameplayStudioPanels /></Suspense>
-            </DraggablePanel>
-          )}
+
 
           {canUseStudioDock(permissionLevel, 'mounts') && (
             <DraggablePanel id="mounts" icon={<Sparkles className="w-4 h-4 text-amber-400" />} title="Mount Studio">
@@ -560,9 +555,9 @@ export const StudioEditorShell: React.FC = () => {
             </DraggablePanel>
           )}
 
-          {canUseStudioDock(permissionLevel, 'publishing') && (
-            <DraggablePanel id="publishing" icon={<CloudUpload className="w-4 h-4 text-emerald-400" />} title="Publish & Releases">
-              <Suspense fallback={<div>Loading...</div>}><PublishManagerPanel /></Suspense>
+          {canUseStudioDock(permissionLevel, 'releases') && (
+            <DraggablePanel id="releases" icon={<CloudUpload className="w-4 h-4 text-emerald-400" />} title="Release Management">
+              <Suspense fallback={<div>Loading...</div>}><ReleaseManagementPanel /></Suspense>
             </DraggablePanel>
           )}
 

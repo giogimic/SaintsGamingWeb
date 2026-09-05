@@ -56,6 +56,8 @@ func migrate(db *sql.DB) error {
 			encountersData TEXT NOT NULL DEFAULT '[]',
 			tileLayersData TEXT NOT NULL DEFAULT '[]',
 			tilesetsData TEXT NOT NULL DEFAULT '[]',
+			voxelData TEXT NOT NULL DEFAULT '{}',
+			mapType TEXT NOT NULL DEFAULT 'HYBRID',
 			version INTEGER NOT NULL DEFAULT 1,
 			updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
 		)`,
@@ -69,6 +71,8 @@ func migrate(db *sql.DB) error {
 			encountersData TEXT NOT NULL DEFAULT '[]',
 			tileLayersData TEXT NOT NULL DEFAULT '[]',
 			tilesetsData TEXT NOT NULL DEFAULT '[]',
+			voxelData TEXT NOT NULL DEFAULT '{}',
+			mapType TEXT NOT NULL DEFAULT 'HYBRID',
 			version INTEGER NOT NULL DEFAULT 1,
 			updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
 		)`,
