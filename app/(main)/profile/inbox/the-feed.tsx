@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useSession } from "next-auth/react";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
@@ -577,7 +577,7 @@ function MobileReelSlide({
               {post.author?.isFounder && <Crown className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />}
               {post.author?.isVIP && <BadgeCheck className="w-3.5 h-3.5 text-blue-500 fill-blue-500" />}
             </Link>
-            <span className="text-[11px] text-white/70">â€¢ {formatDistanceToNow(new Date(post.createdAt))} ago</span>
+            <span className="text-[11px] text-white/70">• {formatDistanceToNow(new Date(post.createdAt))} ago</span>
           </div>
 
           {post.body && (
@@ -1874,7 +1874,7 @@ export function TheFeed({
               </span>
             )}
 
-            <span className="text-muted-foreground/40 mx-1">â€¢</span>
+            <span className="text-muted-foreground/40 mx-1">•</span>
             <span className="text-xs text-muted-foreground shrink-0">
               {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
             </span>
@@ -2613,7 +2613,7 @@ export function TheFeed({
 
   return (
     <>
-      {/* â”€â”€ MOBILE NATIVE FULL-SCREEN REEL STREAM (md:hidden) â”€â”€ */}
+      {/* ── MOBILE NATIVE FULL-SCREEN REEL STREAM (md:hidden) ── */}
       <div 
         ref={mobileFeedRef}
         className="md:hidden w-full h-[100dvh] overflow-y-scroll snap-y snap-mandatory select-none no-scrollbar bg-black relative"
@@ -2653,7 +2653,7 @@ export function TheFeed({
         )}
       </div>
 
-      {/* â”€â”€ INTERACTIVE MOBILE SLIDE-UP COMMENT BOX DRAWER â”€â”€ */}
+      {/* ── INTERACTIVE MOBILE SLIDE-UP COMMENT BOX DRAWER ── */}
       {isShortsCommentsOpen && viewingShortsPost && (
         <div 
           className="md:hidden fixed inset-x-0 bottom-0 z-[60] bg-[#050b14]/95 backdrop-blur-2xl border-t border-white/10 rounded-t-3xl h-[72vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-300 select-text"
@@ -2725,7 +2725,7 @@ export function TheFeed({
         </div>
       )}
 
-      {/* â”€â”€ DESKTOP VIEW: 3-Column Hub & Theater Mode Modal (hidden md:flex) â”€â”€ */}
+      {/* ── DESKTOP VIEW: 3-Column Hub & Theater Mode Modal (hidden md:flex) ── */}
       <div className="hidden md:flex w-full max-w-7xl mx-auto flex-col lg:flex-row items-start justify-center gap-4 relative min-h-screen px-2 sm:px-4">
            {/* Full-Screen Immersive Shorts / Reel Swiper Modal with Deterministic Pre-warming & Adaptive Desktop Theater */}
       {mounted && viewingShortsPost && createPortal(
@@ -2893,7 +2893,7 @@ export function TheFeed({
               onClick={() => navigateShorts(-1)}
               disabled={currentShortsIndex === 0}
               className="p-3.5 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md transition-all disabled:opacity-20 disabled:cursor-not-allowed hover:scale-110 shadow-xl"
-              title="Previous (Scroll Up / â†‘)"
+              title="Previous (Scroll Up / ↑)"
             >
               <ChevronUp className="w-6 h-6" />
             </button>
@@ -2904,7 +2904,7 @@ export function TheFeed({
               onClick={() => navigateShorts(1)}
               disabled={currentShortsIndex === displayPosts.length - 1}
               className="p-3.5 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md transition-all disabled:opacity-20 disabled:cursor-not-allowed hover:scale-110 shadow-xl"
-              title="Next (Scroll Down / â†“)"
+              title="Next (Scroll Down / ↓)"
             >
               <ChevronDown className="w-6 h-6" />
             </button>
@@ -3068,7 +3068,7 @@ export function TheFeed({
                     {viewingShortsPost.author?.isFounder && <Crown className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />}
                     {viewingShortsPost.author?.isVIP && <BadgeCheck className="w-3.5 h-3.5 text-blue-500 fill-blue-500" />}
                   </span>
-                  <span className="text-[11px] text-white/70">â€¢ {formatDistanceToNow(new Date(viewingShortsPost.createdAt))} ago</span>
+                  <span className="text-[11px] text-white/70">• {formatDistanceToNow(new Date(viewingShortsPost.createdAt))} ago</span>
                 </div>
 
                 {viewingShortsPost.body && (

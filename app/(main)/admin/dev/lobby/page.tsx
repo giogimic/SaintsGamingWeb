@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { Server, Users, Activity, Play, StopCircle, RefreshCw } from "lucide-react";
@@ -55,7 +55,7 @@ export default function LobbyManagementPage() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">World &amp; MMO</span>
-            <span className="text-xs text-muted-foreground/40">â€¢</span>
+            <span className="text-xs text-muted-foreground/40">•</span>
             <span className="text-xs text-[#cbb26a] font-mono">Gateway Telemetry</span>
           </div>
           <h1 className="text-3xl font-bold flex items-center gap-2">

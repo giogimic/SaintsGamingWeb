@@ -1,3 +1,7 @@
+## [2.1.730] - 2026-09-04
+### Added
+- **Update Script Go MMO Integration**: Integrated the Go MMO backend into `update.sh`. The updater now correctly tracks changes to the `the-lobby/` and `go-mmo/` directories, rebuilding the Go binaries or Docker containers and automatically restarting the service when changes are detected, keeping the Go environment perfectly synced with Next.js updates.
+
 ## [2.1.729] - 2026-09-04
 ### Added
 - **Live-Ops Sync**: Converted the Go MMO server to an industry-standard database registry architecture. Studio content updates (Maps, Classes, Creatures, Items, Recipes, Shops, Quests, NPCs) now automatically ping the Go backend via a unified /api/internal/sync endpoint, reloading the memory seamlessly without server restarts.
