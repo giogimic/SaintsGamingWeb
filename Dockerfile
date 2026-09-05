@@ -43,7 +43,6 @@ RUN mkdir -p public/uploads
 RUN mkdir -p prisma/db
 RUN chmod -R 755 public/uploads
 RUN chmod -R 755 prisma/db
-RUN chmod +x entrypoint.sh
 
 EXPOSE 3000
 ENV PORT=3000
