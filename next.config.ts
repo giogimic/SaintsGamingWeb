@@ -69,7 +69,12 @@ const nextConfig: NextConfig = {
   },
   // Legacy broken sprite prefix → real NPC walk sheets (no client URL change)
   async rewrites() {
+    // If NEXT_PUBLIC_GO_MMO_URL is not set, default to 127.0.0.1:3001 where the Go MMO server runs.
+    // This allows Next.js to seamlessly proxy socket.io connections in local dev without CORS/port issues.
+    const goMmoUrl = process.env.NEXT_PUBLIC_GO_MMO_URL || process.env.GO_MMO_INTERNAL_URL || "http://127.0.0.1:3001";
+    
     return [
+      { source: "/socket.io/:path*", destination: `${goMmoUrl}/socket.io/:path*` },
       { source: "/assets/sprites/:path*", destination: "/game-assets/npc/:path*" },
       { source: "/game-assets/sprites/:path*", destination: "/game-assets/npc/:path*" },
     ];

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -44,7 +44,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "v2.1.746",
+  siteVersion = "v2.1.747",
   gameTitle = "The Lobby",
 }: {
   session: any | null;
