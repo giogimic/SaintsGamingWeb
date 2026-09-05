@@ -1,3 +1,11 @@
+## [2.1.735] - 2026-09-05
+### Changed
+- UX Restructure: Implemented React Portals to fix nested dropdown menu clipping in the Studio top bar.
+- UX Restructure: Added flex min-width protections to prevent the Mode Switcher from breaking window boundaries.
+- UX Restructure: Increased desktop minimum window scaling bounds to 1440x900 for the dense workspace.
+- UX Restructure: Moved Framing (Zoom/Fit) tools to the contextual bottom toolbar for faster access.
+- UX Restructure: Renamed "Interface Designer" to "HUD Studio" in menus.
+
 ## [2.1.734] - 2026-09-05
 ### Changed
 - Locked desktop app minimum window scaling to 1280x800.

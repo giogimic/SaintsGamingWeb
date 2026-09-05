@@ -1,6 +1,6 @@
 {
   "name": "saints-gaming-portal",
-  "version": "2.1.734",
+  "version": "2.1.735",
   "license": "BSL-1.1",
   "private": true,
   "engines": {
@@ -134,3 +134,4 @@
     "seed": "npx tsx prisma/seed.ts"
   }
 }
+

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useEditorStore } from './editor-store';
 import { useGameStore } from '../store';
 import { useTheme } from 'next-themes';
@@ -169,13 +170,14 @@ const SubMenu: React.FC<SubMenuProps> = ({ label, icon: SubIcon, children }) => 
         </div>
         <ChevronRight className={`w-3.5 h-3.5 transition-transform ${open ? 'translate-x-0.5' : ''}`} />
       </div>
-      {open && (
+      {open && typeof document !== 'undefined' && createPortal(
         <div
           style={positionStyle}
           className="min-w-[220px] max-w-[280px] max-h-[70vh] overflow-y-auto custom-scrollbar bg-card/95 border border-border/80 shadow-2xl rounded-xl py-1.5 backdrop-blur-2xl z-[160] flex flex-col font-mono"
         >
           {children}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -415,7 +417,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
         <div className="flex items-center gap-2 pr-2 border-r border-border/40">
           <Link href="/home" className="flex items-center gap-1.5 group text-muted-foreground hover:text-primary transition-colors" title="Saints Gaming Home">
             <div className="transition-transform group-hover:scale-110">
-              <SGMicro3DLogo size={20} />
+              <SGMicro3DLogo size={24} />
             </div>
             <span className="font-mono font-black text-xs tracking-wider text-primary">STUDIO</span>
           </Link>
@@ -650,27 +652,13 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               <MenuItem label={`Spawn Markers: ${showSpawnOverlays ? 'ON' : 'OFF'}`} icon={showSpawnOverlays ? CheckCircle2 : Eye} onClick={() => { setShowSpawnOverlays(!showSpawnOverlays); showToast(`Spawn Overlays: ${!showSpawnOverlays ? 'ON' : 'OFF'}`); }} />
               <MenuItem label={`Free-Cam Mode: ${isStudioFreeCam ? 'ON' : 'OFF'}`} icon={isStudioFreeCam ? CheckCircle2 : Camera} onClick={() => { setStudioFreeCam(!isStudioFreeCam); showToast(isStudioFreeCam ? 'Camera locked to Player' : 'Free-Cam unlocked'); }} />
             </SubMenu>
-            <SubMenu label="Framing" icon={ZoomIn}>
-              <MenuItem label="Zoom In" shortcut="Ctrl++" icon={ZoomIn} onClick={() => { window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent: 125 } })); }} />
-              <MenuItem label="Zoom Out" shortcut="Ctrl+-" icon={ZoomOut} onClick={() => { window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent: 80 } })); }} />
-              <MenuItem label="Reset Zoom (100%)" shortcut="Ctrl+0" icon={Crosshair} onClick={() => { window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent: 100 } })); }} />
-              <MenuItem label="Fit Map to View" shortcut="Home" icon={Maximize2} onClick={() => { window.dispatchEvent(new CustomEvent('studio_fit_map')); }} />
-            </SubMenu>
-            {/* Diagnostics moved to Studio Settings */}
           </TopLevelMenu>
 
-          {/* â”€â”€ 4. WORLD â”€â”€ */}
+          {/* ── 4. WORLD ── */}
           <TopLevelMenu id="world" label="World">
             <MenuItem label="World Atlas (Spatial Grid)" shortcut="Ctrl+Shift+M" icon={Globe} onClick={() => openPanel('atlas')} />
             <MenuItem label="Map Browser" icon={Globe} onClick={() => { if (onOpenMapBrowser) onOpenMapBrowser(); else openPanel('maps'); }} />
-            <MenuItem label="World Hierarchy" icon={Layers} onClick={() => openPanel('hierarchy')} />
-            <MenuItem label="Layers Manager" icon={Layers} onClick={() => openPanel('layers')} />
-            <MenuItem label="Inspector / Properties" icon={Settings} onClick={() => openPanel('properties')} />
-            <MenuItem label="Logic Painter" icon={Shield} onClick={() => openPanel('logic')} />
-            <MenuItem divider />
             <MenuItem label="World Events" icon={Sparkles} onClick={() => openPanel('worldevent')} />
-            <MenuItem label="Procedural Authoring" icon={Sparkles} onClick={() => openPanel('procedural')} />
-            <MenuItem label="Studio Settings..." icon={Settings} onClick={() => openPanel('settings')} />
           </TopLevelMenu>
 
           {/* â”€â”€ 7. WINDOW â”€â”€ */}
@@ -730,7 +718,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuSectionLabel label="Global Workspaces" />
             <MenuItem label="Hero Studio" icon={UserCheck} onClick={() => setStudioMode('hero')} />
             <MenuItem label="Asset Studio" icon={Box} onClick={() => setStudioMode('assets')} />
-            <MenuItem label="Interface Designer (HUD)" icon={panels.interface?.isOpen ? CheckCircle2 : Palette} onClick={() => togglePanel('interface')} />
+            <MenuItem label="HUD Studio" icon={panels.interface?.isOpen ? CheckCircle2 : Palette} onClick={() => togglePanel('interface')} />
             <MenuItem divider />
             <MenuSectionLabel label="Assets & System" />
             <MenuItem label="Asset Browser" icon={panels.assets?.isOpen ? CheckCircle2 : Box} onClick={() => togglePanel('assets')} />
@@ -748,14 +736,14 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem
               label="About Saints World Studio"
               icon={Sparkles}
-              onClick={() => showToast('Saints Gaming: Time To Play â€” World Studio v2.1.721')}
+              onClick={() => showToast('Saints Gaming: Time To Play â€” World Studio v2.1.735')}
             />
           </TopLevelMenu>
         </div>
       </div>
 
-      {/* â”€â”€â”€ ZONE 2: Command Search & Segmented Mode Switcher â”€â”€â”€ */}
-      <div className="flex items-center gap-2 [app-region:no-drag]">
+      {/* ─── ZONE 2: Command Search & Segmented Mode Switcher ─── */}
+      <div className="flex-1 flex items-center justify-center gap-4 [app-region:no-drag] min-w-0 px-2">
         {/* Omnisearch Bar */}
         <button
           onClick={() => {
@@ -769,109 +757,84 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           <span className="hidden md:inline bg-card px-1 py-0.5 rounded border border-border/60 text-[9px] font-bold">Ctrl+K</span>
         </button>
 
-        {/* Mode Segmented Switcher */}
-        <div className="hidden lg:flex items-center bg-background/70 p-0.5 rounded-lg border border-border/60 shadow-inner">
+        {/* Mode Segmented Switcher - Major Studios */}
+        <div className="hidden lg:flex items-center bg-background/70 p-0.5 rounded-lg border border-border/60 shadow-inner overflow-x-auto custom-scrollbar max-w-full">
           <button
-            onClick={() => handleSwitchMode('develop')}
+            onClick={() => { handleSwitchMode('develop'); openPanel('build'); }}
             className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
               studioMode === 'develop'
                 ? 'bg-primary text-primary-foreground shadow'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
-            title="Paint Mode (Tileset & Visual Layers)"
+            title="World Builder (Terrain, Voxel, Logic, Paint)"
           >
-            Paint
-          </button>
-          <button
-            onClick={() => handleSwitchMode('voxel')}
-            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-              studioMode === 'voxel'
-                ? 'bg-amber-500 text-black font-extrabold shadow'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-            title="3D Voxel Mode (Block Chunks, Slopes & Stratigraphy)"
-          >
-            Voxel
-          </button>
-          <button
-            onClick={() => handleSwitchMode('logic')}
-            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-              studioMode === 'logic'
-                ? 'bg-cyan-600 text-white font-extrabold shadow'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-            title="Logic Mode (Collision Tags, Triggers & Rules)"
-          >
-            Logic
-          </button>
-          <button
-            onClick={() => openPanel('maps')}
-            className="px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer text-muted-foreground hover:text-foreground"
-            title="Map Browser (All Maps)"
-          >
-            Maps
-          </button>
-          <button
-            onClick={() => openPanel('atlas')}
-            className="px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer text-muted-foreground hover:text-foreground"
-            title="World Atlas (Ctrl+Shift+M)"
-          >
-            Atlas
-          </button>
-          <button
-            onClick={() => handleSwitchMode('npc')}
-            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-              studioMode === 'npc'
-                ? 'bg-primary text-primary-foreground shadow'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-            title="Populate NPCs & Spawners"
-          >
-            Populate
-          </button>
-          <button
-            onClick={() => handleSwitchMode('quest')}
-            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-              studioMode === 'quest'
-                ? 'bg-primary text-primary-foreground shadow'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-            title="Script Quests & Dialogues"
-          >
-            Script
-          </button>
-          <button
-            onClick={() => handleSwitchMode('creature')}
-            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-              studioMode === 'creature'
-                ? 'bg-primary text-primary-foreground shadow'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-            title="Creatures & Loot Catalog"
-          >
-            Catalog
+            World Builder
           </button>
           <button
             onClick={() => handleSwitchMode('assets')}
             className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
               studioMode === 'assets'
-                ? 'bg-primary text-primary-foreground shadow'
+                ? 'bg-amber-500 text-black font-extrabold shadow'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
-            title="Asset Manager"
+            title="Asset Studio (Blueprints & Assets)"
           >
-            Assets
+            Asset Studio
           </button>
           <button
             onClick={() => handleSwitchMode('hero')}
             className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
               studioMode === 'hero'
-                ? 'bg-primary text-primary-foreground shadow'
+                ? 'bg-purple-500 text-white font-extrabold shadow'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
-            title="Hero Studio"
+            title="Hero Studio (Classes & Characters)"
           >
-            Hero
+            Hero Studio
+          </button>
+          <button
+            onClick={() => { handleSwitchMode('develop'); openPanel('abilities'); }}
+            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+              panels.abilities?.isOpen
+                ? 'bg-cyan-600 text-white font-extrabold shadow'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="Gameplay & Systems (Abilities, Skills, Professions)"
+          >
+            Systems
+          </button>
+          <button
+            onClick={() => { handleSwitchMode('develop'); openPanel('quest'); }}
+            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+              panels.quest?.isOpen
+                ? 'bg-emerald-600 text-white font-extrabold shadow'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="Quest Studio (Quests & Hooks)"
+          >
+            Quest Studio
+          </button>
+          <button
+            onClick={() => { handleSwitchMode('develop'); openPanel('interface'); }}
+            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+              panels.interface?.isOpen
+                ? 'bg-pink-600 text-white font-extrabold shadow'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="HUD Studio (Interface & Overlays)"
+          >
+            HUD Studio
+          </button>
+          <button
+            onClick={() => { handleSwitchMode('npc'); openPanel('npc'); openPanel('creature'); }}
+            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+              studioMode === 'npc' || studioMode === 'creature'
+                ? 'bg-indigo-500 text-white font-extrabold shadow'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="NPC & Creature Studio (Spawners & Catalogs)"
+          >
+            NPC & Creature
           </button>
         </div>
       </div>
@@ -992,3 +955,4 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
   </MenuContext.Provider>
   );
 }
+
