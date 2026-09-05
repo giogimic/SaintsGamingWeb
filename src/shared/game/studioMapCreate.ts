@@ -21,6 +21,7 @@ export type NewStudioMapInput = {
   gameId?: string;
   width?: number;
   height?: number;
+  mapType?: 'TILE' | 'VOXEL' | 'FRACTAL' | string;
 };
 
 export type NewStudioMapData = {
@@ -35,6 +36,7 @@ export type NewStudioMapData = {
   tilesets: StudioTilesetMeta[];
   voxelDoc?: VoxelWorldDocV3;
   blockSizePx?: number;
+  mapType?: 'TILE' | 'VOXEL' | 'FRACTAL' | string;
 };
 
 /** Normalize MAP_ID slug: trim, spaces→_, uppercase. */
@@ -107,6 +109,7 @@ export function buildNewStudioMap(input: NewStudioMapInput):
       tilesets: [...DEFAULT_STUDIO_TILESETS],
       voxelDoc,
       blockSizePx: 64,
+      mapType: input.mapType || "TILE",
     },
   };
 }

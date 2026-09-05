@@ -417,7 +417,7 @@ export const StudioEditorShell: React.FC = () => {
 
 
           <div className="absolute inset-0 pointer-events-none">
-          {canUseStudioDock(permissionLevel, 'build') && (
+          {canUseStudioDock(permissionLevel, 'build') && studioMode === 'tile' && (
             <DraggablePanel id="build" icon={<Hammer className="w-4 h-4" />} title="World Builder">
               <Suspense fallback={<div>Loading...</div>}><WorldBuilderPanel /></Suspense>
             </DraggablePanel>

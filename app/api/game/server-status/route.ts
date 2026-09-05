@@ -4,7 +4,7 @@ import { prisma } from '@/web/lib/prisma';
 import { canUseStudioServerControls } from '@/shared/game/studioPermissions';
 
 // In-memory dev override toggle state (defaults to online in dev mode)
-let devServerStatusOverride: 'online' | 'offline' | null = null;
+let devServerStatusOverride: 'online' | 'offline' | 'maintenance' | null = null;
 
 export async function GET() {
   try {
@@ -89,6 +89,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     if (body.action === 'start' || body.status === 'online') {
       devServerStatusOverride = 'online';
+    } else if (body.action === 'maintenance' || body.status === 'maintenance') {
+      devServerStatusOverride = 'maintenance';
     } else if (body.action === 'stop' || body.status === 'offline') {
       devServerStatusOverride = 'offline';
     } else if (body.action === 'reset') {

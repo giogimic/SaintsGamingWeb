@@ -17,12 +17,20 @@ interface ServerInfo {
   region: string;
   players: number;
   capacity: number;
-  status: 'online' | 'offline';
+  status: 'online' | 'offline' | 'maintenance';
 }
 
-function PingDots({ status }: { status: 'online' | 'offline' }) {
+function PingDots({ status }: { status: 'online' | 'offline' | 'maintenance' }) {
   if (status === 'offline') {
     return <span className="w-2 h-2 rounded-full bg-rose-500/70" />;
+  }
+  if (status === 'maintenance') {
+    return (
+      <span className="relative flex h-2 w-2">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-50" />
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+      </span>
+    );
   }
   return (
     <span className="relative flex h-2 w-2">
@@ -89,14 +97,14 @@ export default function ServerSelect() {
     setSelectedServer('main');
   }, [mmoPlayerCount]);
 
-  const handleStartDevServer = async () => {
+  const handleStartDevServer = async (mode: 'online' | 'maintenance' = 'online') => {
     soundSynth?.playActionSound?.();
     setIsStartingServer(true);
     try {
       await fetch('/api/game/server-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'start' }),
+        body: JSON.stringify({ action: mode }),
       });
       await fetchStatus();
     } catch {
@@ -108,7 +116,9 @@ export default function ServerSelect() {
 
   const handleConnect = () => {
     const s = servers.find(srv => srv.id === selectedServer);
-    if (!selectedServer || s?.status !== 'online') return;
+    if (!selectedServer || s?.status === 'offline') return;
+    if (s?.status === 'maintenance' && !canStartRealm) return; // Block non-admins from maintenance
+
     soundSynth?.playActionSound?.();
     setIsConnecting(true);
     setTimeout(() => {
@@ -118,7 +128,7 @@ export default function ServerSelect() {
   };
 
   const currentServer = servers[0];
-  const isServerOnline = currentServer?.status === 'online';
+  const isServerOnline = currentServer?.status === 'online' || currentServer?.status === 'maintenance';
   const isOnline = isServerOnline;
   const players = currentServer?.players ?? 0;
   const capacity = currentServer?.capacity ?? 500;
@@ -196,14 +206,24 @@ export default function ServerSelect() {
                 </span>
               </div>
               {canStartRealm && (
-                <button
-                  onClick={handleStartDevServer}
-                  disabled={isStartingServer}
-                  className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1 shrink-0 bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60 cursor-pointer"
-                >
-                  <Power size={11} />
-                  {isStartingServer ? 'Starting...' : 'Start Realm (Dev)'}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleStartDevServer('maintenance')}
+                    disabled={isStartingServer}
+                    className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1 shrink-0 bg-amber-950/60 border border-amber-500/40 text-amber-300 hover:bg-amber-900/60 cursor-pointer"
+                  >
+                    <AlertTriangle size={11} />
+                    {isStartingServer ? '...' : 'Maintenance'}
+                  </button>
+                  <button
+                    onClick={() => handleStartDevServer('online')}
+                    disabled={isStartingServer}
+                    className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1 shrink-0 bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60 cursor-pointer"
+                  >
+                    <Power size={11} />
+                    {isStartingServer ? 'Starting...' : 'Start Realm'}
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -213,19 +233,22 @@ export default function ServerSelect() {
             {servers.map(s => {
               const isSelected = selectedServer === s.id;
               const isOnline = s.status === 'online';
+              const isMaintenance = s.status === 'maintenance';
+              const isSelectable = isOnline || (isMaintenance && canStartRealm);
+              
               return (
                 <div
                   key={s.id}
                   onClick={() => {
-                    if (isOnline) {
+                    if (isSelectable) {
                       soundSynth?.playSelectSound?.();
                       setSelectedServer(s.id);
                     }
                   }}
                   className={`relative rounded-xl p-4 transition-all duration-200 border ${
                     isSelected
-                      ? 'bg-pink-950/40 border-pink-500/60 shadow-[0_0_20px_rgba(242,0,137,0.3)]'
-                      : isOnline
+                      ? isMaintenance ? 'bg-amber-950/40 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.3)]' : 'bg-pink-950/40 border-pink-500/60 shadow-[0_0_20px_rgba(242,0,137,0.3)]'
+                      : isSelectable
                       ? 'bg-black/60 border-pink-500/20 hover:border-cyan-400 hover:bg-pink-950/20 cursor-pointer'
                       : 'bg-black/40 border-slate-800 opacity-50 cursor-not-allowed'
                   }`}
@@ -236,6 +259,8 @@ export default function ServerSelect() {
                       className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border ${
                         isOnline
                           ? 'bg-pink-950/60 border-pink-500/40 text-[#00f5d4]'
+                          : isMaintenance
+                          ? 'bg-amber-950/60 border-amber-500/40 text-amber-400'
                           : 'bg-black/40 border-slate-800 text-slate-600'
                       }`}
                     >
@@ -274,6 +299,8 @@ export default function ServerSelect() {
                       className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest shrink-0 border ${
                         isOnline
                           ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
+                          : isMaintenance
+                          ? 'bg-amber-950/60 border-amber-500/40 text-amber-400'
                           : 'bg-rose-950/60 border-rose-500/40 text-rose-300'
                       }`}
                     >
@@ -295,12 +322,22 @@ export default function ServerSelect() {
             </div>
 
             <button
-              disabled={!selectedServer || !isServerOnline || isConnecting}
+              disabled={!selectedServer || !isServerOnline || isConnecting || (currentServer?.status === 'maintenance' && !canStartRealm)}
               onClick={handleConnect}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-xs tracking-wider uppercase transition-all bg-gradient-to-r from-pink-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white shadow-[0_0_20px_rgba(242,0,137,0.4)] disabled:opacity-40 disabled:pointer-events-none cursor-pointer active:scale-98"
             >
               {isConnecting ? (
                 <span className="animate-pulse">Connecting...</span>
+              ) : currentServer?.status === 'maintenance' && canStartRealm ? (
+                <>
+                  <AlertTriangle size={14} fill="currentColor" />
+                  Connect (Admin)
+                </>
+              ) : currentServer?.status === 'maintenance' && !canStartRealm ? (
+                <>
+                  <AlertTriangle size={14} fill="currentColor" />
+                  Under Maintenance
+                </>
               ) : (
                 <>
                   <Play size={14} fill="currentColor" />

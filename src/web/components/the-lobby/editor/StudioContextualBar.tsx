@@ -103,10 +103,12 @@ export function StudioContextualBar() {
   const handleToolClick = (toolId: typeof activeWorkflowTool) => {
     soundSynth?.playSelectSound?.();
     setActiveWorkflowTool(toolId);
-    if (toolId === 'select') {
+    if (toolId === 'select' || toolId === 'transform') {
       useEditorStore.getState().setBrushMode('select');
-    } else if (toolId === 'draw') {
+    } else if (toolId === 'draw' || toolId === 'sculpt') {
       useEditorStore.getState().setBrushMode('paint');
+    } else if (toolId === 'place') {
+      useEditorStore.getState().setBrushMode('prefab');
     }
   };
 
