@@ -9,7 +9,8 @@ export const dynamic = 'force-dynamic';
  * GET /api/maps/[slug]/chunks
  * Retrieves overridden (modified) chunks for a specific map within a radius.
  */
-export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   try {
     const searchParams = req.nextUrl.searchParams;
     const cxStr = searchParams.get('cx');
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 
     const chunks = await prisma.mapChunk.findMany({
       where: {
-        mapId: params.slug,
+        mapId: slug,
         cx: { gte: minCx, lte: maxCx },
         cz: { gte: minCz, lte: maxCz }
       }
@@ -58,7 +59,8 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
  * PATCH /api/maps/[slug]/chunks
  * Saves delta modifications to specific chunks.
  */
-export async function PATCH(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   try {
     // Basic auth check
     // In production, we'd use verifyStudioPermission here
@@ -82,7 +84,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { slug: stri
       await prisma.mapChunk.upsert({
         where: {
           mapId_cx_cy_cz: {
-            mapId: params.slug,
+            mapId: slug,
             cx: chunk.cx,
             cy: cy,
             cz: chunk.cz
@@ -93,7 +95,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { slug: stri
           updatedAt: new Date()
         },
         create: {
-          mapId: params.slug,
+          mapId: slug,
           cx: chunk.cx,
           cy: cy,
           cz: chunk.cz,
