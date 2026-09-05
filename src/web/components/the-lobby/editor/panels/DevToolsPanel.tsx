@@ -16,7 +16,7 @@ import {
 } from '../WindowMenuBar';
 
 /** Dev Tools: server controls. */
-export const DevToolsPanel: React.FC = () => {
+export const DevToolsPanel: React.FC<{ asSubPanel?: boolean }> = ({ asSubPanel }) => {
   const { data: session } = useSession();
   const level = (session?.user as any)?.permissionLevel ?? 0;
   const canServer = canUseStudioServerControls(level);
@@ -36,22 +36,31 @@ export const DevToolsPanel: React.FC = () => {
   return (
     <div className="flex flex-col h-full overflow-hidden font-mono -m-3 mb-0">
       {/* ── WINDOW SUB-MENU APP BAR ── */}
-      <WindowMenuBar>
-        <WindowMenuDropdown
-          label="Server"
-          items={[
-            {
-              label: 'Server Controls & Shards',
-              onClick: () => setActiveTab('server'),
-            },
-          ]}
-        />
-        <WindowMenuDivider />
-        <div className="flex-1" />
-        <span className="flex items-center gap-1 text-[9px] text-amber-400 font-bold px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30">
-          <Shield className="w-2.5 h-2.5" /> Level {level}
-        </span>
-      </WindowMenuBar>
+      {!asSubPanel && (
+        <WindowMenuBar>
+          <WindowMenuDropdown
+            label="Dev Actions"
+            items={[
+              {
+                label: 'Restart Go Backend',
+                shortcut: 'Ctrl+R',
+                onClick: () => window.dispatchEvent(new CustomEvent('studio_restart_backend')),
+              }
+            ]}
+          />
+          <WindowMenuDivider />
+          <WindowMenuButton
+            label="Server"
+            icon={Server}
+            active={activeTab === 'server'}
+            onClick={() => setActiveTab('server')}
+          />
+          <div className="flex-1" />
+          <span className="flex items-center gap-1 text-[9px] text-amber-400 font-bold px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30">
+            <Shield className="w-2.5 h-2.5" /> Level {level}
+          </span>
+        </WindowMenuBar>
+      )}
 
       <div className="flex-1 overflow-y-auto p-3 min-h-[300px]">
         {activeTab === 'server' && canServer && <ServerControl />}

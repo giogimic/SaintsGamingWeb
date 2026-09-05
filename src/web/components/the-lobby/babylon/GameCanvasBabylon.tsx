@@ -817,12 +817,12 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       height: mapHeight,
       tileSize: 1, // 1 BJS world unit per tile
       tiles: mapData.grid || [],
-      tileLayers: mapData.tileLayers,
+      tileLayers: mapData.mapType === 'VOXEL' ? [] : mapData.tileLayers,
       tilesets: mapData.tilesets,
       npcs: [],
       chunks: mapData.chunks,
       freeformLayers: mapData.freeformLayers,
-      voxelDoc: mapData.voxelDoc,
+      voxelDoc: mapData.mapType === 'TILE' ? null : mapData.voxelDoc,
       blockSizePx: mapData.blockSizePx,
     }, useGameStore.getState().worldOriginOffset);
     setMapMeshEpoch((n) => n + 1);
@@ -1142,13 +1142,13 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       height: dims.height,
       tileSize: 1,
       tiles: mapData.grid,
-      tileLayers: mapData.tileLayers,
+      tileLayers: mapData.mapType === 'VOXEL' ? [] : mapData.tileLayers,
       tilesets: mapData.tilesets,
       npcs: [],
       chunks: mapData.chunks,
       connections: mapData.connections,
       freeformLayers: mapData.freeformLayers,
-      voxelDoc: mapData.voxelDoc,
+      voxelDoc: mapData.mapType === 'TILE' ? null : mapData.voxelDoc,
       blockSizePx: mapData.blockSizePx,
     });
     setMapMeshEpoch((n) => n + 1);
@@ -2107,12 +2107,12 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         height,
         tileSize: 1,
         tiles: map.grid,
-        tileLayers: map.tileLayers,
+        tileLayers: map.mapType === 'VOXEL' ? [] : map.tileLayers,
         freeformLayers: map.freeformLayers,
         tilesets: map.tilesets,
         npcs: [],
         chunks: map.chunks,
-        voxelDoc: map.voxelDoc,
+        voxelDoc: map.mapType === 'TILE' ? null : map.voxelDoc,
         blockSizePx: map.blockSizePx,
       });
       // loadTilemap clears author overlays — re-seed pins/sprites.

@@ -537,7 +537,6 @@ export const WorldBuilderPanel: React.FC = () => {
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Initialize 3D Voxel Gunmetal Foundation</span>
               </button>
-              </button>
             </div>
             )}
 

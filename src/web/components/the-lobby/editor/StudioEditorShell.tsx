@@ -64,11 +64,10 @@ import { StudioKeyboardRouter } from './services/StudioKeyboardRouter';
 // Lazy-loaded dock panels for maximum code-splitting & startup performance (Phase 8 Track D2)
 const WorldBuilderPanel = lazy(() => import('./panels/WorldBuilderPanel').then((m) => ({ default: m.WorldBuilderPanel })));
 const PropertiesPanel = lazy(() => import('./panels/PropertiesPanel').then((m) => ({ default: m.PropertiesPanel })));
-const AssetBrowserPanel = lazy(() => import('./panels/AssetBrowserPanel').then((m) => ({ default: m.AssetBrowserPanel })));
+const AssetStudioPanel = lazy(() => import('./panels/AssetStudioPanel').then((m) => ({ default: m.AssetStudioPanel })));
 const EntityEditorPanel = lazy(() => import('./panels/EntityEditorPanel').then((m) => ({ default: m.EntityEditorPanel })));
-const DevToolsPanel = lazy(() => import('./panels/DevToolsPanel').then((m) => ({ default: m.DevToolsPanel })));
-const StreamingInspectorPanel = lazy(() => import('./panels/StreamingInspectorPanel').then((m) => ({ default: m.StreamingInspectorPanel })));
 const CreatureDefEditorPanel = lazy(() => import('./panels/CreatureDefEditorPanel').then((m) => ({ default: m.CreatureDefEditorPanel })));
+const HeroStudioPanel = lazy(() => import('./panels/HeroStudioPanel').then((m) => ({ default: m.HeroStudioPanel })));
 const AbilityEditorPanel = lazy(() => import('./panels/AbilityEditorPanel').then((m) => ({ default: m.AbilityEditorPanel })));
 const QuestEditorPanel = lazy(() => import('./panels/QuestEditorPanel').then((m) => ({ default: m.QuestEditorPanel })));
 const DialogueEditorPanel = lazy(() => import('./panels/DialogueEditorPanel').then((m) => ({ default: m.DialogueEditorPanel })));
@@ -77,15 +76,12 @@ const ItemEditorPanel = lazy(() => import('./panels/ItemEditorPanel').then((m) =
 const ProfessionEditorPanel = lazy(() => import('./panels/ProfessionEditorPanel').then((m) => ({ default: m.ProfessionEditorPanel })));
 const RecipeEditorPanel = lazy(() => import('./panels/RecipeEditorPanel').then((m) => ({ default: m.RecipeEditorPanel })));
 const MonsterSpawnerPanel = lazy(() => import('./panels/MonsterSpawnerPanel').then((m) => ({ default: m.MonsterSpawnerPanel })));
-const PrefabBuilderPanel = lazy(() => import('./panels/PrefabBuilderPanel').then((m) => ({ default: m.PrefabBuilderPanel })));
 const WorldAtlasPanel = lazy(() => import('./panels/WorldAtlasPanel').then((m) => ({ default: m.WorldAtlasPanel })));
-const StudioProblemsPanel = lazy(() => import('./panels/StudioProblemsPanel').then((m) => ({ default: m.StudioProblemsPanel })));
-const RealmSettingsPanel = lazy(() => import('./panels/RealmSettingsPanel').then((m) => ({ default: m.RealmSettingsPanel })));
+const StudioSettingsPanel = lazy(() => import('./panels/StudioSettingsPanel').then((m) => ({ default: m.StudioSettingsPanel })));
 const DungeonEditorPanel = lazy(() => import('./panels/DungeonEditorPanel').then((m) => ({ default: m.DungeonEditorPanel })));
 const ShopEditorPanel = lazy(() => import('./panels/ShopEditorPanel').then((m) => ({ default: m.ShopEditorPanel })));
 const MountEditorPanel = lazy(() => import('./panels/MountEditorPanel').then((m) => ({ default: m.MountEditorPanel })));
 const WorldEventPanel = lazy(() => import('./panels/WorldEventPanel').then((m) => ({ default: m.WorldEventPanel })));
-const SimulationPresetPanel = lazy(() => import('./panels/SimulationPresetPanel').then((m) => ({ default: m.SimulationPresetPanel })));
 const ReleaseManagementPanel = lazy(() => import('./panels/ReleaseManagementPanel').then((m) => ({ default: m.ReleaseManagementPanel })));
 const LogicPainterPanel = lazy(() => import('./panels/LogicPainterPanel').then((m) => ({ default: m.LogicPainterPanel })));
 const AnimationStudioPanel = lazy(() => import('./panels/AnimationStudioPanel').then((m) => ({ default: m.AnimationStudioPanel })));
@@ -441,7 +437,13 @@ export const StudioEditorShell: React.FC = () => {
 
           {canUseStudioDock(permissionLevel, 'assets') && (
             <DraggablePanel id="assets" icon={<ImageIcon className="w-4 h-4" />} title="Asset Browser">
-              <Suspense fallback={<div>Loading...</div>}><AssetBrowserPanel /></Suspense>
+              <Suspense fallback={<div>Loading...</div>}><AssetStudioPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'characters') && (
+            <DraggablePanel id="characters" icon={<Shield className="w-4 h-4" />} title="Hero Studio">
+              <Suspense fallback={<div>Loading...</div>}><HeroStudioPanel /></Suspense>
             </DraggablePanel>
           )}
 
@@ -460,12 +462,6 @@ export const StudioEditorShell: React.FC = () => {
           {canUseStudioDock(permissionLevel, 'dialogue') && (
             <DraggablePanel id="dialogue" icon={<MessageSquare className="w-4 h-4" />} title="Dialogue">
               <Suspense fallback={<div>Loading...</div>}><DialogueEditorPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canDev && (
-            <DraggablePanel id="dev" icon={<TerminalSquare className="w-4 h-4" />} title="Dev Tools">
-              <Suspense fallback={<div>Loading...</div>}><DevToolsPanel /></Suspense>
             </DraggablePanel>
           )}
 
@@ -505,17 +501,7 @@ export const StudioEditorShell: React.FC = () => {
             </DraggablePanel>
           )}
 
-          {canUseStudioDock(permissionLevel, 'prefab') && (
-            <DraggablePanel id="prefab" icon={<Package className="w-4 h-4" />} title="Prefab Builder">
-              <Suspense fallback={<div>Loading...</div>}><PrefabBuilderPanel /></Suspense>
-            </DraggablePanel>
-          )}
 
-          {canUseStudioDock(permissionLevel, 'problems') && (
-            <DraggablePanel id="problems" icon={<AlertCircle className="w-4 h-4" />} title="Diagnostics">
-              <Suspense fallback={<div>Loading...</div>}><StudioProblemsPanel /></Suspense>
-            </DraggablePanel>
-          )}
 
           {canUseStudioDock(permissionLevel, 'atlas') && (
             <DraggablePanel id="atlas" icon={<Globe className="w-4 h-4" />} title="World Atlas">
@@ -530,8 +516,8 @@ export const StudioEditorShell: React.FC = () => {
           )}
 
           {canUseStudioDock(permissionLevel, 'settings') && (
-            <DraggablePanel id="settings" icon={<Settings className="w-4 h-4" />} title="Server Settings">
-              <Suspense fallback={<div>Loading...</div>}><RealmSettingsPanel /></Suspense>
+            <DraggablePanel id="settings" icon={<Settings className="w-4 h-4" />} title="Studio Settings">
+              <Suspense fallback={<div>Loading...</div>}><StudioSettingsPanel /></Suspense>
             </DraggablePanel>
           )}
 
@@ -570,18 +556,6 @@ export const StudioEditorShell: React.FC = () => {
           {canUseStudioDock(permissionLevel, 'shop') && (
             <DraggablePanel id="shop" icon={<Coins className="w-4 h-4 text-yellow-400" />} title="Shop & Merchants">
               <Suspense fallback={<div>Loading...</div>}><ShopEditorPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'simulation') && (
-            <DraggablePanel id="simulation" icon={<Activity className="w-4 h-4 text-cyan-400" />} title="Simulation Presets">
-              <Suspense fallback={<div>Loading...</div>}><SimulationPresetPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'streaming') && (
-            <DraggablePanel id="streaming" icon={<Compass className="w-4 h-4 text-sky-400" />} title="Streaming Inspector">
-              <Suspense fallback={<div>Loading...</div>}><StreamingInspectorPanel /></Suspense>
             </DraggablePanel>
           )}
 

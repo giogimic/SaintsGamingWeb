@@ -304,7 +304,7 @@ export function StudioContextualBar() {
               <span>Pick Prop...</span>
             </button>
             <button
-              onClick={() => openPanel('prefab')}
+              onClick={() => openPanel('assets')}
               className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/40 border border-border/40 text-foreground text-[10px] hover:border-primary/40"
             >
               <Package className="w-3 h-3 text-amber-400" />

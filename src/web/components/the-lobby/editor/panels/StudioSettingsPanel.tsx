@@ -22,6 +22,9 @@ import {
   FileText,
   Palette,
   CloudSun,
+  Terminal,
+  Activity,
+  Compass,
 } from 'lucide-react';
 import {
   DEFAULT_REALM_SETTINGS,
@@ -35,14 +38,30 @@ import {
   WindowMenuDivider,
 } from '../WindowMenuBar';
 import { soundSynth } from '@/engine/sound-synth';
+import { StudioProblemsPanel } from './StudioProblemsPanel';
+import { DevToolsPanel } from './DevToolsPanel';
+import { SimulationPresetPanel } from './SimulationPresetPanel';
+import { StreamingInspectorPanel } from './StreamingInspectorPanel';
 
-export function RealmSettingsPanel() {
+export function StudioSettingsPanel() {
   const [settings, setSettings] = useState<RealmSettingsConfig>(DEFAULT_REALM_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'heroes' | 'comms' | 'capture' | 'visuals' | 'realm'>('visuals');
+  const [activeTab, setActiveTab] = useState<'comms' | 'capture' | 'visuals' | 'realm' | 'diagnostics' | 'devtools' | 'simulation' | 'streaming'>('visuals');
   const { maps: availableMaps } = useMapIndex();
+
+  // Listen for tab switch events
+  useEffect(() => {
+    const handleTabEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail) {
+        setActiveTab(customEvent.detail as any);
+      }
+    };
+    window.addEventListener('studio_settings_tab', handleTabEvent);
+    return () => window.removeEventListener('studio_settings_tab', handleTabEvent);
+  }, []);
 
   // Load existing realm settings from server
   useEffect(() => {
@@ -127,10 +146,14 @@ export function RealmSettingsPanel() {
 
   const tabs = [
     { id: 'visuals', label: '2.5D / 3D Visuals', icon: Sun },
-    { id: 'heroes', label: 'Hero Identity', icon: Shield },
+
     { id: 'comms', label: 'Soul Link Chat', icon: Radio },
     { id: 'capture', label: 'Souls & Cameras', icon: Camera },
     { id: 'realm', label: 'Realm Info', icon: Globe2 },
+    { id: 'diagnostics', label: 'Diagnostics', icon: AlertCircle },
+    { id: 'simulation', label: 'Simulations', icon: Activity },
+    { id: 'streaming', label: 'Streaming', icon: Compass },
+    { id: 'devtools', label: 'Dev Tools', icon: Terminal },
   ];
 
   return (
@@ -1096,64 +1119,7 @@ export function RealmSettingsPanel() {
           </div>
         )}
 
-        {/* ── HERO & PLAYER IDENTITY ── */}
-        {activeTab === 'heroes' && (
-          <div className="space-y-4">
-            <div className="p-3 rounded-xl bg-purple-950/20 border border-purple-500/30">
-              <div className="flex items-center gap-2 text-purple-300 font-bold mb-1">
-                <Shield className="w-3.5 h-3.5 text-purple-400" />
-                <span>Player Hero Title & Class Name</span>
-              </div>
-              <p className="text-[10px] text-muted-foreground leading-relaxed">
-                Configure what players/heroes are named in your world. By default, heroes in Saints Gaming MMO are called <strong className="text-amber-300">Saints</strong>.
-              </p>
-            </div>
 
-            <div className="space-y-3">
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
-                  Singular Hero Title (e.g. Saint, Operative, Hero)
-                </label>
-                <input
-                  type="text"
-                  value={settings.playerClassName}
-                  onChange={(e) => setSettings({ ...settings, playerClassName: e.target.value })}
-                  placeholder="Saint"
-                  className="w-full bg-[#060e1c] border border-border/30 focus:border-primary rounded-lg p-2 text-foreground text-xs outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
-                  Plural Hero Title (e.g. Saints, Operatives, Heroes)
-                </label>
-                <input
-                  type="text"
-                  value={settings.playerClassNamePlural}
-                  onChange={(e) => setSettings({ ...settings, playerClassNamePlural: e.target.value })}
-                  placeholder="Saints"
-                  className="w-full bg-[#060e1c] border border-border/30 focus:border-primary rounded-lg p-2 text-foreground text-xs outline-none"
-                />
-              </div>
-            </div>
-
-            {/* Live Preview Box */}
-            <div className="p-3 rounded-xl bg-black/40 border border-border/20 space-y-1.5">
-              <div className="text-[10px] font-bold text-cyan-300 flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-cyan-400" /> Live In-Game Preview
-              </div>
-              <div className="text-[10px] text-slate-300">
-                Character Creation: <span className="text-amber-300 font-bold">Create New {settings.playerClassName || 'Saint'}</span>
-              </div>
-              <div className="text-[10px] text-slate-300">
-                Roster Header: <span className="text-amber-300 font-bold">{settings.playerClassNamePlural?.toUpperCase() || 'SAINTS'} VAULT</span>
-              </div>
-              <div className="text-[10px] text-slate-300">
-                Leaderboard: <span className="text-amber-300 font-bold">Top {settings.playerClassNamePlural || 'Saints'}</span>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* ── SOUL LINK CHAT & COMMS ── */}
         {activeTab === 'comms' && (
@@ -1369,6 +1335,28 @@ export function RealmSettingsPanel() {
                 />
               </div>
             </div>
+          </div>
+        )}
+
+        {/* New Consolidated Tabs */}
+        {activeTab === 'diagnostics' && (
+          <div className="flex-1 overflow-hidden">
+            <StudioProblemsPanel asSubPanel={true} />
+          </div>
+        )}
+        {activeTab === 'simulation' && (
+          <div className="flex-1 overflow-hidden">
+            <SimulationPresetPanel />
+          </div>
+        )}
+        {activeTab === 'streaming' && (
+          <div className="flex-1 overflow-hidden">
+            <StreamingInspectorPanel asSubPanel={true} />
+          </div>
+        )}
+        {activeTab === 'devtools' && (
+          <div className="flex-1 overflow-hidden">
+            <DevToolsPanel asSubPanel={true} />
           </div>
         )}
       </div>

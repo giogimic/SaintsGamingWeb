@@ -66,7 +66,7 @@ export const InterfaceEditorPanel: React.FC = () => {
       navigator.clipboard.writeText(data);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      showToast('Interface config copied to clipboard!');
+      showToast('HUD config copied to clipboard!');
     } catch {
       showToast('Failed to copy config');
     }
@@ -80,7 +80,7 @@ export const InterfaceEditorPanel: React.FC = () => {
         if (parsed.themeId) {
           setHudTheme(parsed.themeId);
         }
-        showToast('Interface config imported successfully!');
+        showToast('HUD config imported successfully!');
         setImportJson('');
       }
     } catch {
@@ -111,7 +111,7 @@ export const InterfaceEditorPanel: React.FC = () => {
             onClick: () => {
               soundSynth?.playActionSound?.();
               setActiveHudPreset(p.id);
-              showToast(`Applied "${p.name}" interface preset.`);
+              showToast(`Applied "${p.name}" HUD preset.`);
             },
           }))}
         />
@@ -119,7 +119,7 @@ export const InterfaceEditorPanel: React.FC = () => {
           label="Actions"
           items={[
             {
-              label: 'Reset All Interface Defaults',
+              label: 'Reset All HUD Defaults',
               onClick: () => {
                 resetHudConfig();
                 showToast('Reset UI to default style.');
@@ -160,7 +160,7 @@ export const InterfaceEditorPanel: React.FC = () => {
         {activeTab === 'themes' && (
           <div className="space-y-3">
             <div className="text-[11px] text-slate-400">
-              Select one of the 6 premade game engine interface themes to instantly transform HUD styling across the client:
+              Select one of the 6 premade game engine HUD themes to instantly transform styling across the client:
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
@@ -483,7 +483,7 @@ export const InterfaceEditorPanel: React.FC = () => {
             <div className="p-3 rounded-xl bg-card/40 border border-border/40 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-extrabold text-primary uppercase">
-                  Export Interface Configuration
+                  Export HUD Configuration
                 </span>
                 <button
                   type="button"

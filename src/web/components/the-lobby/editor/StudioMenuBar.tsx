@@ -421,14 +421,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           </Link>
 
           <div className="flex items-center gap-1 ml-1">
-            <Link
-              href="/home"
-              className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-all"
-              title="Return to Saints Website Home"
-            >
-              <Home className="w-3 h-3 text-primary" />
-              <span className="hidden xl:inline">Home</span>
-            </Link>
+
             <Link
               href="/lobby"
               className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-all shadow-sm"
@@ -507,7 +500,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               <MenuItem label="New Authored Map" icon={Folder} onClick={() => { openPanel('build'); showToast('Opened World Builder'); }} />
               <MenuItem label="New Procedural Region" icon={Sparkles} onClick={() => { openPanel('procedural'); showToast('Opened Procedural Authoring'); }} />
               <MenuItem label="New Hybrid Region" icon={Globe} onClick={() => { openPanel('atlas'); showToast('Select Atlas Node for Hybrid Generation'); }} />
-              <MenuItem label="New Blueprint Asset" icon={Package} onClick={() => { openPanel('prefab'); showToast('Opened Blueprint / Prefab Builder'); }} />
+              <MenuItem label="New Blueprint Asset" icon={Package} onClick={() => { openPanel('assets'); showToast('Opened Asset Studio'); }} />
             </SubMenu>
             <SubMenu label="Open" icon={Folder}>
               <MenuItem label="Map Browser..." icon={Globe} onClick={() => { if (onOpenMapBrowser) onOpenMapBrowser(); else openPanel('maps'); }} />
@@ -541,7 +534,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
                       onClick={() => {
                         useEditorStore.getState().setActivePrefabId(b.id);
                         useEditorStore.getState().setBrushMode('prefab');
-                        openPanel('prefab');
+                        openPanel('assets');
                         showToast(`Selected blueprint: ${b.title}`);
                       }}
                     />
@@ -557,11 +550,11 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             </SubMenu>
             <SubMenu label="Import" icon={Clipboard}>
               <MenuItem label="World Data..." icon={Folder} onClick={() => { openPanel('build'); showToast('World Data import available in World Builder'); }} />
-              <MenuItem label="Blueprint / Structure..." icon={Package} onClick={() => { openPanel('prefab'); showToast('Structure import available in Prefab Studio'); }} />
+              <MenuItem label="Blueprint / Structure..." icon={Package} onClick={() => { openPanel('assets'); showToast('Structure import available in Asset Studio'); }} />
             </SubMenu>
             <SubMenu label="Export" icon={CloudUpload}>
               <MenuItem label="World Data..." icon={Folder} onClick={() => { openPanel('build'); showToast('World Data export available in World Builder'); }} />
-              <MenuItem label="Blueprint / Structure..." icon={Package} onClick={() => { openPanel('prefab'); showToast('Blueprint export available in Prefab Studio'); }} />
+              <MenuItem label="Blueprint / Structure..." icon={Package} onClick={() => { openPanel('assets'); showToast('Blueprint export available in Asset Studio'); }} />
             </SubMenu>
             <MenuItem label="Publish..." icon={CloudUpload} onClick={() => openPanel('publishing')} />
             <SubMenu label="Release" icon={Package}>
@@ -615,7 +608,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
                 label="Convert to Blueprint..."
                 icon={Package}
                 onClick={() => {
-                  openPanel('prefab');
+                  openPanel('assets');
                   showToast('Save active selection as Blueprint Stamp');
                 }}
               />
@@ -638,33 +631,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               <MenuItem label="Open Transform Window..." icon={Sliders} onClick={() => openPanel('transform')} />
             </SubMenu>
             <MenuItem divider />
-            <SubMenu label="Studio Settings" icon={Settings}>
-              <MenuItem label="Diagnostics & Problems" icon={AlertCircle} onClick={() => openPanel('problems')} />
-              <MenuItem label="Streaming Inspector" icon={Compass} onClick={() => openPanel('streaming')} />
-              <MenuItem label="Rule Debugger" icon={Bug} onClick={() => window.dispatchEvent(new CustomEvent('studio_open_rule_debugger'))} />
-              <MenuItem label="Simulation Presets" icon={Activity} onClick={() => openPanel('simulation')} />
-              <MenuItem label="Dev Tools & Server Controls" icon={Terminal} onClick={() => openPanel('dev')} />
-              <MenuItem label="Realm Settings" icon={Settings} onClick={() => openPanel('settings')} />
-              <MenuItem divider />
-              <MenuItem label="Re-initialize Realm Setup..." icon={Gamepad2} onClick={() => setReinitializeModalOpen(true)} />
-              <MenuItem
-                label="Repair Foundation & Catalogs"
-                icon={Sparkles}
-                onClick={async () => {
-                  showToast('Verifying & repairing realm foundation...');
-                  try {
-                    const res = await fetch('/api/maps');
-                    if (res.ok) {
-                      showToast('Realm foundation verified & catalogs synced.');
-                    } else {
-                      showToast('Foundation check completed.');
-                    }
-                  } catch {
-                    showToast('Foundation check completed.');
-                  }
-                }}
-              />
-            </SubMenu>
+            <MenuItem label="Studio Settings..." icon={Settings} onClick={() => openPanel('settings')} />
           </TopLevelMenu>
 
           {/* â”€â”€ 3. VIEW â”€â”€ */}
@@ -689,7 +656,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               <MenuItem label="Reset Zoom (100%)" shortcut="Ctrl+0" icon={Crosshair} onClick={() => { window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent: 100 } })); }} />
               <MenuItem label="Fit Map to View" shortcut="Home" icon={Maximize2} onClick={() => { window.dispatchEvent(new CustomEvent('studio_fit_map')); }} />
             </SubMenu>
-            {/* Diagnostics moved to Studio Settings */}>
+            {/* Diagnostics moved to Studio Settings */}
           </TopLevelMenu>
 
           {/* â”€â”€ 4. WORLD â”€â”€ */}
@@ -703,7 +670,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem divider />
             <MenuItem label="World Events" icon={Sparkles} onClick={() => openPanel('worldevent')} />
             <MenuItem label="Procedural Authoring" icon={Sparkles} onClick={() => openPanel('procedural')} />
-            <MenuItem label="Realm Settings" icon={Settings} onClick={() => openPanel('settings')} />
+            <MenuItem label="Studio Settings..." icon={Settings} onClick={() => openPanel('settings')} />
           </TopLevelMenu>
 
           {/* â”€â”€ 7. WINDOW â”€â”€ */}
@@ -738,7 +705,6 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem label="Layers" icon={panels.layers?.isOpen ? CheckCircle2 : Layers} onClick={() => togglePanel('layers')} />
             <MenuItem label="Inspector / Properties" icon={panels.properties?.isOpen ? CheckCircle2 : Settings} onClick={() => togglePanel('properties')} />
             <MenuItem label="Logic Painter" icon={panels.logic?.isOpen ? CheckCircle2 : Shield} onClick={() => togglePanel('logic')} />
-            <MenuItem label="Diagnostics & Problems" icon={panels.problems?.isOpen ? CheckCircle2 : AlertCircle} onClick={() => togglePanel('problems')} />
             <MenuItem label="Camera & View" icon={panels.camera?.isOpen ? CheckCircle2 : Camera} onClick={() => togglePanel('camera')} />
             <MenuItem divider />
             <MenuSectionLabel label="Authoring Windows" />
@@ -746,7 +712,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem label="Brush Settings" icon={panels.build?.isOpen ? CheckCircle2 : LayoutGrid} onClick={() => togglePanel('build')} />
             <MenuItem label="Selection" icon={panels.selection?.isOpen ? CheckCircle2 : Crosshair} onClick={() => togglePanel('selection')} />
             <MenuItem label="Transform" icon={panels.transform?.isOpen ? CheckCircle2 : RotateCw} onClick={() => togglePanel('transform')} />
-            <MenuItem label="Prefab / Blueprint Library" icon={panels.prefab?.isOpen ? CheckCircle2 : Package} onClick={() => togglePanel('prefab')} />
+            <MenuItem label="Prefab / Blueprint Library" icon={panels.assets?.isOpen ? CheckCircle2 : Package} onClick={() => togglePanel('assets')} />
             <MenuItem label="Procedural Authoring" icon={panels.procedural?.isOpen ? CheckCircle2 : Sparkles} onClick={() => togglePanel('procedural')} />
             <MenuItem divider />
             <MenuSectionLabel label="Content Windows" />
@@ -916,7 +882,8 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
         <button
           onClick={() => {
             soundSynth?.playSelectSound?.();
-            openPanel('problems');
+            openPanel('settings');
+            window.setTimeout(() => window.dispatchEvent(new CustomEvent('studio_settings_tab', { detail: 'diagnostics' })), 50);
           }}
           className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-background/50 border border-border/60 hover:border-primary/50 text-[10px] text-muted-foreground hover:text-foreground transition-all cursor-pointer"
           title="Validation & Problems Diagnostics (Ctrl+Shift+O)"
