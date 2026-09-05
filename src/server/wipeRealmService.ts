@@ -11,6 +11,7 @@
 
 import { SETUP_SETTING_KEYS } from "@/shared/game/setup/setupDetection";
 import { ensureStudioMapFoundation } from "@/server/DemoBootstrap";
+import { bootstrapDynamicStarterContent } from "@/server/starterContentBootstrap";
 import { invalidateMapCache, invalidateLogicTilesCache } from "@/shared/game/mapCache";
 
 export interface WipeRealmResult {
@@ -45,6 +46,21 @@ export async function wipeNonBundledRealmContent(prisma: any): Promise<WipeRealm
   await prisma.playerSkill.deleteMany({}).catch(() => {});
   await prisma.playerQuestState.deleteMany({}).catch(() => {});
   await prisma.gtcListing.deleteMany({}).catch(() => {});
+
+  // 4.5 Wipe all authored RPG Definitions (Classes, Abilities, Items, etc)
+  await prisma.characterClass.deleteMany({}).catch(() => {});
+  await prisma.abilityDictionary.deleteMany({}).catch(() => {});
+  await prisma.creatureDef.deleteMany({}).catch(() => {});
+  await prisma.itemTemplate.deleteMany({}).catch(() => {});
+  await prisma.mountTemplate.deleteMany({}).catch(() => {});
+  await prisma.dungeonTemplate.deleteMany({}).catch(() => {});
+  await prisma.shopTemplate.deleteMany({}).catch(() => {});
+  await prisma.professionTemplate.deleteMany({}).catch(() => {});
+  await prisma.craftingRecipe.deleteMany({}).catch(() => {});
+  await prisma.worldEventTemplate.deleteMany({}).catch(() => {});
+  await prisma.questTemplate.deleteMany({}).catch(() => {});
+  await prisma.creatureElement.deleteMany({}).catch(() => {});
+  await prisma.elementEffectiveness.deleteMany({}).catch(() => {});
 
   // 5. Wipe non-bundled game assets (preserving any asset tagged 'bundled')
   await prisma.gameAsset.deleteMany({
@@ -82,6 +98,9 @@ export async function wipeNonBundledRealmContent(prisma: any): Promise<WipeRealm
 
   // 7. Re-seed the bundled foundation (DEMO_SANDBOX + 24 logic tiles)
   await ensureStudioMapFoundation();
+
+  // 7.5 Re-seed the dynamic starter RPG content (Abilities, Classes, Elements, Starter Mobs)
+  await bootstrapDynamicStarterContent("saints", "default");
 
   // 8. Invalidate in-memory caches
   invalidateMapCache();
