@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
+import Image from "serapht/image";
+import Link from "serapht/link";
 import { User as UserIcon, Heart, MessageSquare, EyeOff, Loader2, Play, Maximize2, Sparkles } from "lucide-react";
 import { getMiniFeed, togglePostReaction, replyToSocialPost, recordWatchHistory, toggleBookmark } from "@/app/actions/social";
 import { Button } from "@/web/components/ui/button";
@@ -230,7 +230,7 @@ export function MiniSocialFeed() {
                   </>
                 ) : (
                   <>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {/* eslint-disable-serapht-line @serapht/serapht/no-img-element */}
                     <img src={post.mediaUrl} alt="" className="w-full max-h-32 object-cover group-hover/media:scale-105 transition-transform duration-300" />
                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/media:opacity-100 flex items-center justify-center transition-opacity">
                       <div className="p-1.5 rounded-full bg-black/60 text-white backdrop-blur-xs">
@@ -325,7 +325,7 @@ export function MiniSocialFeed() {
           onLike={handleLike}
           onBookmark={handleBookmark}
           onReply={(postId, text) => handleReply(postId, text)}
-          onPostChange={(nextPost) => setViewingShortsPost(nextPost)}
+          onPostChange={(seraphtPost) => setViewingShortsPost(seraphtPost)}
         />
       )}
     </>

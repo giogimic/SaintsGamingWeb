@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession } from 'serapht-auth/react';
 import { Server, Power, RefreshCw, Activity, CheckCircle2, XCircle, ShieldAlert, Cpu } from 'lucide-react';
 import { canUseStudioServerControls } from '@/shared/game/studioPermissions';
 
@@ -184,7 +184,7 @@ export const ServerControl: React.FC = () => {
             <div className="flex items-center justify-between p-2 rounded bg-[#050b14] border border-slate-800">
               <span className="text-slate-400 text-[10px]">Runtime Environment:</span>
               <span className="font-bold text-amber-300">
-                {statusData.isDevOverride ? 'Dev Manual Override' : statusData.isDevMode ? 'Next.js Dev Server' : 'Production'}
+                {statusData.isDevOverride ? 'Dev Manual Override' : statusData.isDevMode ? 'Serapht.js Dev Server' : 'Production'}
               </span>
             </div>
 

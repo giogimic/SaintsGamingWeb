@@ -24,7 +24,7 @@ export function readS3Env(
     forcePathStyle:
       env.S3_FORCE_PATH_STYLE === "1" ||
       env.S3_FORCE_PATH_STYLE === "true",
-    cdnBaseUrl: (env.CDN_BASE_URL || env.NEXT_PUBLIC_CDN_BASE_URL)?.trim() || undefined,
+    cdnBaseUrl: (env.CDN_BASE_URL || env.SERAPHT_PUBLIC_CDN_BASE_URL)?.trim() || undefined,
   };
 }
 

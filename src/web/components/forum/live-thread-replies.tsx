@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "serapht/navigation";
 import { useAppStore } from "@/shared/store/useAppStore";
 import { toast } from "sonner";
 

@@ -1,5 +1,5 @@
 /**
- * Solak: Blight Roots, Nature Blessing & Shield Dome Mechanics Engine (Bible 24 & Bible 27).
+ * World Tree Guardian: Blight Roots, Nature Blessing & Shield Dome Mechanics Engine (Bible 24 & Bible 27).
  *
  * Implements:
  * - Root Cage entrapment and teammate destruction rescue check.

@@ -107,7 +107,7 @@ export default function SkillGuideFull({ skillSlug, onClose }: SkillGuideFullPro
   const currentXp = Math.floor(skillData.xp || 0);
 
   const isCombat = isCombatSkillTyping(guide.slug);
-  const nextLevelXp = isCombat
+  const seraphtLevelXp = isCombat
     ? currentLevel >= 50
       ? currentXp
       : currentLevel * currentLevel * 50
@@ -129,7 +129,7 @@ export default function SkillGuideFull({ skillSlug, onClose }: SkillGuideFullPro
       )
     : 0;
 
-  const xpSpan = Math.max(1, nextLevelXp - prevLevelXp);
+  const xpSpan = Math.max(1, seraphtLevelXp - prevLevelXp);
   const progressPercent = Math.min(100, Math.max(0, ((currentXp - prevLevelXp) / xpSpan) * 100));
 
   const filteredUnlocks = allUnlocks.filter((u) => {
@@ -193,7 +193,7 @@ export default function SkillGuideFull({ skillSlug, onClose }: SkillGuideFullPro
             <div className="flex justify-between items-center text-[9px]">
               <span className="text-slate-400 font-bold">XP PROGRESS</span>
               <span className="text-amber-300 font-black">
-                {currentXp.toLocaleString()} / {Math.floor(nextLevelXp).toLocaleString()}
+                {currentXp.toLocaleString()} / {Math.floor(seraphtLevelXp).toLocaleString()}
               </span>
             </div>
             <div className="w-full h-1.5 bg-black/80 rounded-full overflow-hidden border border-slate-800">

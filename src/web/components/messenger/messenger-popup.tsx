@@ -6,10 +6,10 @@ import { ChatWindow } from "./chat-window";
 import { MiniSocialFeed } from "./mini-social-feed";
 import { MessageCircle, X, Coins, Users, Bell } from "lucide-react";
 import { Button } from "@/web/components/ui/button";
-import { useSession } from "next-auth/react";
+import { useSession } from "serapht-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname } from "serapht/navigation";
 import { getMessengerMetadata } from "@/app/actions/messenger";
 
 export function MessengerPopup() {

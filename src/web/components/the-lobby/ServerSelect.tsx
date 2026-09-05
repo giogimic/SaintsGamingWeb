@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession } from 'serapht-auth/react';
 import { useGameStore } from './store';
 import { useAppStore } from "@/shared/store/useAppStore";
 import { useVisibilityPolling } from '@/web/hooks/useVisibilityPolling';
 import { Globe, Users, Server, Play, ArrowLeft, Wifi, AlertTriangle, Power } from 'lucide-react';
 import { canUseStudioServerControls } from '@/shared/game/studioPermissions';
 import { soundSynth } from '@/engine/sound-synth';
-import { useTheme } from 'next-themes';
+import { useTheme } from 'serapht-themes';
 import { MidnightTropicalBackground } from './MidnightTropicalBackground';
 
 interface ServerInfo {

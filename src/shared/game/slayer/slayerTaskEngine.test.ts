@@ -43,18 +43,18 @@ describe('Slayer Task Assignment & Extension Matrix Engine', () => {
   it('filters blocked monsters and respects slayer level requirements on assignment', () => {
     const profile: SlayerPlayerProfile = {
       combatLevel: 110,
-      slayerLevel: 85, // can kill Void Fiends (85), but not Dark Beasts (90) or Hydras (95)
+      slayerLevel: 85, // can kill Void Fiends (85), but not Nightmare Stalkers (90) or Hydras (95)
       activeTask: null,
       completedTasksStreak: 12,
       slayerPoints: 120,
-      blockedMonsters: ['gargoyle', 'nechryael'],
+      blockedMonsters: ['stone_golem', 'shadow_fiend'],
       extendedMonsters: ['void_fiend'],
     };
 
     const res = assignSlayerTask('grandmaster_broker', profile, 0.1);
     expect(res.ok).toBe(true);
     expect(res.task).toBeDefined();
-    // Gargoyles and Nechryael are blocked, Dark Beasts and Hydras are too high level, so it must assign Void Fiends
+    // Stone Golems and Shadow Fiend are blocked, Nightmare Stalkers and Hydras are too high level, so it must assign Void Fiends
     expect(res.task?.monsterId).toBe('void_fiend');
     expect(res.task?.isExtended).toBe(true);
     expect(res.task?.initialAmount).toBeGreaterThanOrEqual(130);
@@ -65,8 +65,8 @@ describe('Slayer Task Assignment & Extension Matrix Engine', () => {
       combatLevel: 90,
       slayerLevel: 75,
       activeTask: {
-        monsterId: 'gargoyle',
-        monsterName: 'Gargoyle',
+        monsterId: 'stone_golem',
+        monsterName: 'Stone Golem',
         assignedBy: 'master_broker',
         initialAmount: 2,
         remainingAmount: 2,
@@ -74,7 +74,7 @@ describe('Slayer Task Assignment & Extension Matrix Engine', () => {
         slayerLevelReq: 75,
         baseHp: 105,
       },
-      completedTasksStreak: 9, // Next completion is 10th milestone (5x Master Broker 12 base = 60 points)
+      completedTasksStreak: 9, // Serapht completion is 10th milestone (5x Master Broker 12 base = 60 points)
       slayerPoints: 100,
       blockedMonsters: [],
       extendedMonsters: [],
@@ -86,7 +86,7 @@ describe('Slayer Task Assignment & Extension Matrix Engine', () => {
     expect(profile.activeTask?.remainingAmount).toBe(2);
 
     // 1st valid kill
-    const kill1 = recordSlayerKill(profile, 'gargoyle');
+    const kill1 = recordSlayerKill(profile, 'stone_golem');
     expect(kill1.validKill).toBe(true);
     expect(kill1.taskCompleted).toBe(false);
     expect(kill1.xpGranted).toBe(105);
@@ -94,7 +94,7 @@ describe('Slayer Task Assignment & Extension Matrix Engine', () => {
     expect(profile.activeTask?.remainingAmount).toBe(1);
 
     // 2nd kill -> Completes task
-    const kill2 = recordSlayerKill(profile, 'gargoyle');
+    const kill2 = recordSlayerKill(profile, 'stone_golem');
     expect(kill2.validKill).toBe(true);
     expect(kill2.taskCompleted).toBe(true);
     expect(kill2.pointsEarned).toBe(60); // 10th milestone bonus
@@ -109,8 +109,8 @@ describe('Slayer Task Assignment & Extension Matrix Engine', () => {
       combatLevel: 90,
       slayerLevel: 75,
       activeTask: {
-        monsterId: 'bloodveld',
-        monsterName: 'Bloodveld',
+        monsterId: 'gore_hound',
+        monsterName: 'Gore Hound',
         assignedBy: 'expert_broker',
         initialAmount: 120,
         remainingAmount: 110,

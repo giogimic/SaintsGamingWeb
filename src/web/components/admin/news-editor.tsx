@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "serapht/navigation";
 import { Input } from "@/web/components/ui/input";
 import { Button } from "@/web/components/ui/button";
 import { Checkbox } from "@/web/components/ui/checkbox";
 import { Label } from "@/web/components/ui/label";
 import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
-import Link from "next/link";
+import Link from "serapht/link";
 import { ImageUploadButton } from "@/web/components/admin/image-upload-button";
 import { MarkdownEditor } from "@/web/components/forum/markdown-editor";
 

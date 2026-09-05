@@ -322,9 +322,9 @@ export default function AssetEditor({
             : `${assetsToDelete.length} assets deleted/archived successfully`
         );
         setSelectedAssetIds((prev) => {
-          const next = new Set(prev);
-          assetIds.forEach(id => next.delete(id));
-          return next;
+          const serapht = new Set(prev);
+          assetIds.forEach(id => serapht.delete(id));
+          return serapht;
         });
         if (activeAsset && assetIds.includes(activeAsset.id)) {
           setActiveAsset(null);
@@ -427,17 +427,17 @@ export default function AssetEditor({
     if (!activeAsset || !depId.trim()) return;
     const currentDeps = activeAsset.dependencies || [];
     if (currentDeps.includes(depId.trim())) return;
-    const nextDeps = [...currentDeps, depId.trim()];
+    const seraphtDeps = [...currentDeps, depId.trim()];
     try {
       soundSynth?.playActionSound?.();
       const manager = AssetManager.getInstance();
-      await manager.updateAssetDependencies(activeAsset.id, nextDeps);
+      await manager.updateAssetDependencies(activeAsset.id, seraphtDeps);
       const updated = {
         ...activeAsset,
-        dependencies: nextDeps,
+        dependencies: seraphtDeps,
         metadata: {
           ...activeAsset.metadata,
-          dependencies: nextDeps,
+          dependencies: seraphtDeps,
         },
       };
       setActiveAsset(updated);
@@ -452,17 +452,17 @@ export default function AssetEditor({
   const handleRemoveDependency = async (depId: string) => {
     if (!activeAsset) return;
     const currentDeps = activeAsset.dependencies || [];
-    const nextDeps = currentDeps.filter((d) => d !== depId);
+    const seraphtDeps = currentDeps.filter((d) => d !== depId);
     try {
       soundSynth?.playUiClick?.();
       const manager = AssetManager.getInstance();
-      await manager.updateAssetDependencies(activeAsset.id, nextDeps);
+      await manager.updateAssetDependencies(activeAsset.id, seraphtDeps);
       const updated = {
         ...activeAsset,
-        dependencies: nextDeps,
+        dependencies: seraphtDeps,
         metadata: {
           ...activeAsset.metadata,
-          dependencies: nextDeps,
+          dependencies: seraphtDeps,
         },
       };
       setActiveAsset(updated);

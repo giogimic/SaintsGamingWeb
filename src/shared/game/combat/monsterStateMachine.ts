@@ -31,7 +31,7 @@ export interface MonsterAIContext {
 }
 
 export interface StateEvaluationResult {
-  nextState: MonsterState;
+  seraphtState: MonsterState;
   targetPos?: Position2D;
   shouldResetThreat?: boolean;
   reason: string;
@@ -49,7 +49,7 @@ export function evaluateMonsterState(
   // 1. Dead Check
   if (context.currentHp <= 0) {
     return {
-      nextState: 'DEAD',
+      seraphtState: 'DEAD',
       shouldResetThreat: true,
       reason: 'Monster has perished.',
     };
@@ -62,7 +62,7 @@ export function evaluateMonsterState(
   // 2. Leash Reset Check
   if (isMonsterLeashed(context.currentPos, context.spawnOrigin, leashRadius)) {
     return {
-      nextState: 'RETURN_LEASH',
+      seraphtState: 'RETURN_LEASH',
       targetPos: context.spawnOrigin,
       shouldResetThreat: true,
       reason: 'Exceeded maximum leash radius from spawn point.',
@@ -80,7 +80,7 @@ export function evaluateMonsterState(
     };
 
     return {
-      nextState: 'FLEE',
+      seraphtState: 'FLEE',
       targetPos: fleeTarget,
       reason: 'Health critical; retreating from attacker.',
     };
@@ -92,14 +92,14 @@ export function evaluateMonsterState(
 
     if (distToTarget <= attackRange) {
       return {
-        nextState: 'ATTACK',
+        seraphtState: 'ATTACK',
         targetPos,
         reason: 'Within striking range of target.',
       };
     }
 
     return {
-      nextState: 'CHASE',
+      seraphtState: 'CHASE',
       targetPos,
       reason: 'Pursuing hostile target.',
     };
@@ -110,13 +110,13 @@ export function evaluateMonsterState(
     const distToSpawn = calculateDistance(context.currentPos, context.spawnOrigin);
     if (distToSpawn <= 0.5) {
       return {
-        nextState: 'IDLE',
+        seraphtState: 'IDLE',
         reason: 'Returned successfully to spawn origin.',
       };
     }
 
     return {
-      nextState: 'RETURN_LEASH',
+      seraphtState: 'RETURN_LEASH',
       targetPos: context.spawnOrigin,
       reason: 'Continuing path back to spawn origin.',
     };
@@ -124,7 +124,7 @@ export function evaluateMonsterState(
 
   // 6. Out of combat (IDLE / PATROL)
   return {
-    nextState: 'IDLE',
+    seraphtState: 'IDLE',
     reason: 'No active threat; idling.',
   };
 }

@@ -286,7 +286,7 @@ const CUSTOM_NPC_SLUGS = [
   "elder_voss",
   "ironwright_kael",
   "scout_mira",
-  "soulwarden_aldric",
+  "soulmarshal_aldric",
 ] as const;
 
 /**

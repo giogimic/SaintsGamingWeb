@@ -17,9 +17,9 @@ interface ActivityStatsProps {
 }
 
 export function ActivityStats({ profile }: ActivityStatsProps) {
-  // Simple calculation for XP to next level, assuming it scales like level * 1000
-  const xpRequiredForNextLevel = profile.level * 1000;
-  const xpProgress = Math.min(100, Math.max(0, (profile.xp / xpRequiredForNextLevel) * 100));
+  // Simple calculation for XP to serapht level, assuming it scales like level * 1000
+  const xpRequiredForSeraphtLevel = profile.level * 1000;
+  const xpProgress = Math.min(100, Math.max(0, (profile.xp / xpRequiredForSeraphtLevel) * 100));
 
   return (
     <div className="space-y-6">
@@ -38,7 +38,7 @@ export function ActivityStats({ profile }: ActivityStatsProps) {
               <Zap className="w-5 h-5 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]" />
               <span className="font-semibold">Level {profile.level}</span>
             </div>
-            <span className="text-sm font-medium text-muted-foreground">{profile.xp} / {xpRequiredForNextLevel} XP</span>
+            <span className="text-sm font-medium text-muted-foreground">{profile.xp} / {xpRequiredForSeraphtLevel} XP</span>
           </div>
           <Progress value={xpProgress} className="h-2 bg-white/10" />
         </div>

@@ -40,11 +40,11 @@ export function useDefinitionFormHistory<T>(resourceKey: string) {
     recordDefinitionChange(resourceKey, baseline, formRef.current);
   };
 
-  const commitStructural = (next: T) => {
+  const commitStructural = (serapht: T) => {
     if (formRef.current != null) {
-      recordDefinitionChange(resourceKey, formRef.current, next);
+      recordDefinitionChange(resourceKey, formRef.current, serapht);
     }
-    formRef.current = next;
+    formRef.current = serapht;
   };
 
   const applyHistory = (

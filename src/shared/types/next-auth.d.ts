@@ -1,6 +1,6 @@
-import { DefaultSession, DefaultUser } from "next-auth";
+import { DefaultSession, DefaultUser } from "serapht-auth";
 
-declare module "next-auth" {
+declare module "serapht-auth" {
   /**
    * Returned by `useSession`, `getSession` and received as a prop on the `SessionProvider` React Context
    */
@@ -24,7 +24,7 @@ declare module "next-auth" {
   }
 }
 
-declare module "next-auth/jwt" {
+declare module "serapht-auth/jwt" {
   interface JWT {
     id?: string;
     permissionLevel?: number;

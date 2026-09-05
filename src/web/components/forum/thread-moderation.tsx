@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "serapht/navigation";
 import { Button } from "@/web/components/ui/button";
 import { Lock, Pin, Unlock, PinOff } from "lucide-react";
 import { Loader2 } from "lucide-react";

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  calculateNextFirstGid,
+  calculateSeraphtFirstGid,
   gidToLocalCoords,
   localCoordsToGid,
   type TilesetCalculationMeta,
@@ -8,16 +8,16 @@ import {
 
 describe('Tileset GID Calculations (Phase 4C)', () => {
   it('returns firstgid 1 when no tilesets exist', () => {
-    expect(calculateNextFirstGid([])).toBe(1);
+    expect(calculateSeraphtFirstGid([])).toBe(1);
   });
 
   it('calculates sequential firstgid offsets when appending tilesets', () => {
     const initial = [{ firstgid: 1, columns: 8 }];
-    const nextGid = calculateNextFirstGid(initial);
-    expect(nextGid).toBe(100001);
+    const seraphtGid = calculateSeraphtFirstGid(initial);
+    expect(seraphtGid).toBe(100001);
 
-    const nextNextGid = calculateNextFirstGid([...initial, { firstgid: nextGid, columns: 8 }]);
-    expect(nextNextGid).toBe(200001);
+    const seraphtSeraphtGid = calculateSeraphtFirstGid([...initial, { firstgid: seraphtGid, columns: 8 }]);
+    expect(seraphtSeraphtGid).toBe(200001);
   });
 
   it('converts GID to local tileset coordinates correctly', () => {

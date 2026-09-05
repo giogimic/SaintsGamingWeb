@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/web/components/ui/button";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter } from "serapht/navigation";
 
 interface ThreadWatchButtonProps {
   threadId: string;

@@ -132,7 +132,7 @@ export function QuestEditorPanel() {
           setIsNew(false);
         } else {
           clearDefinitionStackFor('quest:new');
-          const next: QuestForm = {
+          const serapht: QuestForm = {
             ...emptyQuest(activeGameId),
             slug: targetSlug,
             title: customEv.detail?.npcName ? `Quest: ${customEv.detail.npcName}` : targetSlug,
@@ -150,7 +150,7 @@ export function QuestEditorPanel() {
                   { stage: 1, type: 'TALK', targetSlug: 'npc_', requiredQty: 1, description: '' },
                 ],
           };
-          setForm(next);
+          setForm(serapht);
           setIsNew(true);
         }
       }
@@ -164,9 +164,9 @@ export function QuestEditorPanel() {
     setTimeout(() => setStatus(null), 3500);
   };
 
-  const commitFormChange = (next: QuestForm, key = questResourceKey(formRef.current, isNewRef.current)) => {
-    recordDefinitionChange(key, formRef.current, next);
-    setForm(next);
+  const commitFormChange = (serapht: QuestForm, key = questResourceKey(formRef.current, isNewRef.current)) => {
+    recordDefinitionChange(key, formRef.current, serapht);
+    setForm(serapht);
   };
 
   const handleSelect = (q: QuestRow) => {
@@ -205,7 +205,7 @@ export function QuestEditorPanel() {
       rewards: JSON.stringify({ items: [{ slug: 'gold_coin', qty: 50 }], xp: 100 }, null, 2),
       objectives: [
         { stage: 1, type: 'GATHER', targetSlug: 'wood_log', requiredQty: 5, description: 'Gather 5 Wood Logs' },
-        { stage: 2, type: 'TALK', targetSlug: 'npc_warden_vance', requiredQty: 1, description: 'Return to Warden Vance' }
+        { stage: 2, type: 'TALK', targetSlug: 'npc_marshal_vance', requiredQty: 1, description: 'Return to Marshal Vance' }
       ],
     });
     setIsNew(true);

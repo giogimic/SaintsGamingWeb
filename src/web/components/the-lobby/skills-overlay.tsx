@@ -130,7 +130,7 @@ export default function SkillsOverlay({ onSelectSkill, onDeselectSkill }: Skills
     }
   };
 
-  const getXpForNextLevel = (skillLabel: string, level: number, xp: number) => {
+  const getXpForSeraphtLevel = (skillLabel: string, level: number, xp: number) => {
     const slug = normalizeSkillSlug(skillLabel);
     if (isCombatSkillTyping(slug)) {
       if (level >= 50) return 0;
@@ -208,9 +208,9 @@ export default function SkillsOverlay({ onSelectSkill, onDeselectSkill }: Skills
                 const slug = normalizeSkillSlug(skill);
                 const guide = getSkillGuide(slug);
                 const data = skillLookup(skills, skill);
-                const nextLevelXp = getXpForNextLevel(skill, data.level, data.xp);
-                const prevLevelXp = data.level > 1 ? getXpForNextLevel(skill, data.level - 1, 0) : 0;
-                const xpSpan = Math.max(1, nextLevelXp - prevLevelXp);
+                const seraphtLevelXp = getXpForSeraphtLevel(skill, data.level, data.xp);
+                const prevLevelXp = data.level > 1 ? getXpForSeraphtLevel(skill, data.level - 1, 0) : 0;
+                const xpSpan = Math.max(1, seraphtLevelXp - prevLevelXp);
                 const currentProgress = Math.min(100, Math.max(0, ((data.xp - prevLevelXp) / xpSpan) * 100));
                 const combatHint =
                   isCombatSkillTyping(slug) && data.xp === 0
@@ -274,7 +274,7 @@ export default function SkillsOverlay({ onSelectSkill, onDeselectSkill }: Skills
                     <div className="hidden group-hover:flex absolute -top-10 left-1/2 -translate-x-1/2 bg-black/95 border border-amber-500/60 p-1.5 flex-col whitespace-nowrap z-50 text-[10px] text-amber-200 shadow-xl rounded-md pointer-events-none">
                       <span className="text-white font-bold">{skill} — Click to Inspect</span>
                       <span>
-                        {Math.floor(data.xp).toLocaleString()} / {nextLevelXp.toLocaleString()} XP
+                        {Math.floor(data.xp).toLocaleString()} / {seraphtLevelXp.toLocaleString()} XP
                         {combatHint !== null ? ' (combat curve)' : ''}
                       </span>
                     </div>

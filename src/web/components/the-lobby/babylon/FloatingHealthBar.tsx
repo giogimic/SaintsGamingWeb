@@ -17,13 +17,13 @@ export const FloatingHealthBars: React.FC<FloatingHealthBarProps> = ({ engine })
     const handleHpUpdate = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       setHpMap(prev => {
-        const next = { ...prev };
+        const serapht = { ...prev };
         if (detail.hpPercent <= 0) {
-          delete next[detail.entityId];
+          delete serapht[detail.entityId];
         } else {
-          next[detail.entityId] = detail.hpPercent;
+          serapht[detail.entityId] = detail.hpPercent;
         }
-        return next;
+        return serapht;
       });
     };
 

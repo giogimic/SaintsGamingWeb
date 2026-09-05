@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import { WifiOff, RefreshCw, ShieldAlert, Sparkles, LogIn, ArrowLeft, ExternalLink } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
-import { useTheme } from 'next-themes';
+import { useTheme } from 'serapht-themes';
 import { MidnightTropicalBackground } from './MidnightTropicalBackground';
-import Link from 'next/link';
+import Link from 'serapht/link';
 
 interface GameOfflineScreenProps {
   onAdminLogin?: () => void;

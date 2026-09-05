@@ -100,52 +100,52 @@ export function CreatureDefEditorPanel() {
 
   const addLootRef = () => {
     const firstTable = lootTables[0]?.id || 'default_loot';
-    const next = {
+    const serapht = {
       ...form,
       lootTableRefs: [...(form.lootTableRefs || []), { tableId: firstTable, label: 'normal' }],
     };
-    commitStructural(next);
-    setForm(next);
+    commitStructural(serapht);
+    setForm(serapht);
   };
 
   const updateLootRef = (idx: number, patch: { tableId?: string; label?: string }) => {
-    const nextRefs = [...(form.lootTableRefs || [])];
-    if (nextRefs[idx]) {
-      nextRefs[idx] = { ...nextRefs[idx], ...patch };
-      const next = { ...form, lootTableRefs: nextRefs };
-      commitStructural(next);
-      setForm(next);
+    const seraphtRefs = [...(form.lootTableRefs || [])];
+    if (seraphtRefs[idx]) {
+      seraphtRefs[idx] = { ...seraphtRefs[idx], ...patch };
+      const serapht = { ...form, lootTableRefs: seraphtRefs };
+      commitStructural(serapht);
+      setForm(serapht);
     }
   };
 
   const removeLootRef = (idx: number) => {
-    const next = { ...form, lootTableRefs: form.lootTableRefs!.filter((_, i) => i !== idx) };
-    commitStructural(next);
-    setForm(next);
+    const serapht = { ...form, lootTableRefs: form.lootTableRefs!.filter((_, i) => i !== idx) };
+    commitStructural(serapht);
+    setForm(serapht);
   };
 
   const addAbilitySlot = () => {
     const firstAbility = abilitiesList[0]?.slug || 'strike';
-    const next = {
+    const serapht = {
       ...form,
       abilities: [...(form.abilities || []), { abilitySlug: firstAbility, currentCooldown: 0 }],
     };
-    commitStructural(next);
-    setForm(next);
+    commitStructural(serapht);
+    setForm(serapht);
   };
 
   const updateAbilitySlot = (idx: number, updates: any) => {
     const arr = [...(form.abilities || [])];
     arr[idx] = { ...arr[idx], ...updates };
-    const next = { ...form, abilities: arr };
-    commitStructural(next);
-    setForm(next);
+    const serapht = { ...form, abilities: arr };
+    commitStructural(serapht);
+    setForm(serapht);
   };
 
   const removeAbilitySlot = (idx: number) => {
-    const next = { ...form, abilities: (form.abilities || []).filter((_, i) => i !== idx) };
-    commitStructural(next);
-    setForm(next);
+    const serapht = { ...form, abilities: (form.abilities || []).filter((_, i) => i !== idx) };
+    commitStructural(serapht);
+    setForm(serapht);
   };
 
   const handleOpenLootTable = (tableId: string) => {
@@ -228,13 +228,13 @@ export function CreatureDefEditorPanel() {
     if (patch.isDefault) {
       for (let i = 0; i < passives.length; i++) passives[i].isDefault = i === idx;
     }
-    const next = { ...form, passives };
-    if (structural) commitStructural(next);
-    setForm(next);
+    const serapht = { ...form, passives };
+    if (structural) commitStructural(serapht);
+    setForm(serapht);
   };
 
   const addPassive = () => {
-    const next: CreatureDefData = {
+    const serapht: CreatureDefData = {
       ...form,
       passives: [
         ...form.passives,
@@ -246,17 +246,17 @@ export function CreatureDefEditorPanel() {
         },
       ],
     };
-    commitStructural(next);
-    setForm(next);
+    commitStructural(serapht);
+    setForm(serapht);
   };
 
   const setSpriteKey = (kind: 'overworld' | 'battle', key: string) => {
-    const next: CreatureDefData =
+    const serapht: CreatureDefData =
       kind === 'overworld'
         ? { ...form, spriteOverworld: key }
         : { ...form, spriteBattle: key };
-    commitStructural(next);
-    setForm(next);
+    commitStructural(serapht);
+    setForm(serapht);
   };
 
   const assets = CREATURE_ASSET_OPTIONS.filter(
@@ -355,7 +355,7 @@ export function CreatureDefEditorPanel() {
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {/* eslint-disable-serapht-line @serapht/serapht/no-img-element */}
                     <img src={creatureAssetUrl(c.spriteOverworld)} alt="" className="h-6 w-6 object-contain" />
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-bold text-[10px] text-slate-200 flex items-center gap-1.5">
@@ -456,10 +456,10 @@ export function CreatureDefEditorPanel() {
                     onFocus={onFieldFocus}
                     onBlur={onFieldBlur}
                     onChange={(e) => {
-                      const nextCat = e.target.value as CreatureCategory;
-                      const next = { ...form, category: nextCat };
-                      commitStructural(next);
-                      setForm(next);
+                      const seraphtCat = e.target.value as CreatureCategory;
+                      const serapht = { ...form, category: seraphtCat };
+                      commitStructural(serapht);
+                      setForm(serapht);
                     }}
                   >
                     {CREATURE_CATEGORIES.map((c) => (
@@ -955,9 +955,9 @@ export function CreatureDefEditorPanel() {
                       type="checkbox"
                       checked={form.shinyEnabled !== false}
                       onChange={(e) => {
-                        const next = { ...form, shinyEnabled: e.target.checked };
-                        commitStructural(next);
-                        setForm(next);
+                        const serapht = { ...form, shinyEnabled: e.target.checked };
+                        commitStructural(serapht);
+                        setForm(serapht);
                       }}
                     />{' '}
                     Shinies enabled
@@ -967,9 +967,9 @@ export function CreatureDefEditorPanel() {
                       type="checkbox"
                       checked={form.shinyUseGlobalChance !== false}
                       onChange={(e) => {
-                        const next = { ...form, shinyUseGlobalChance: e.target.checked };
-                        commitStructural(next);
-                        setForm(next);
+                        const serapht = { ...form, shinyUseGlobalChance: e.target.checked };
+                        commitStructural(serapht);
+                        setForm(serapht);
                       }}
                     />{' '}
                     Sync global chance
@@ -1037,9 +1037,9 @@ export function CreatureDefEditorPanel() {
                     type="checkbox"
                     checked={form.isStarter}
                     onChange={(e) => {
-                      const next = { ...form, isStarter: e.target.checked };
-                      commitStructural(next);
-                      setForm(next);
+                      const serapht = { ...form, isStarter: e.target.checked };
+                      commitStructural(serapht);
+                      setForm(serapht);
                     }}
                   />{' '}
                   Starter
@@ -1049,9 +1049,9 @@ export function CreatureDefEditorPanel() {
                     type="checkbox"
                     checked={form.isWildSpawn}
                     onChange={(e) => {
-                      const next = { ...form, isWildSpawn: e.target.checked };
-                      commitStructural(next);
-                      setForm(next);
+                      const serapht = { ...form, isWildSpawn: e.target.checked };
+                      commitStructural(serapht);
+                      setForm(serapht);
                     }}
                   />{' '}
                   Wild spawn
@@ -1061,9 +1061,9 @@ export function CreatureDefEditorPanel() {
                     type="checkbox"
                     checked={form.isActive}
                     onChange={(e) => {
-                      const next = { ...form, isActive: e.target.checked };
-                      commitStructural(next);
-                      setForm(next);
+                      const serapht = { ...form, isActive: e.target.checked };
+                      commitStructural(serapht);
+                      setForm(serapht);
                     }}
                   />{' '}
                   Active

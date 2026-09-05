@@ -56,7 +56,7 @@ interface EntitySetupStepProps {
   creatures: SetupCreatureData[];
   onUpdateCharacters: (chars: SetupCharacterData[]) => void;
   onUpdateCreatures: (creatures: SetupCreatureData[]) => void;
-  onNext: () => void;
+  onSerapht: () => void;
   onBack: () => void;
 }
 
@@ -76,7 +76,7 @@ export function EntitySetupStep({
   creatures,
   onUpdateCharacters,
   onUpdateCreatures,
-  onNext,
+  onSerapht,
   onBack,
 }: EntitySetupStepProps) {
   const isCreatureGame = gameDefinition.genre === 'CREATURE_MMO';
@@ -506,7 +506,7 @@ export function EntitySetupStep({
 
         <button
           type="button"
-          onClick={onNext}
+          onClick={onSerapht}
           disabled={!hasMinimumRequirements}
           className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded font-bold text-xs bg-primary hover:bg-primary/90 text-primary-foreground transition disabled:opacity-50 cursor-pointer shadow-md shadow-primary/20"
         >

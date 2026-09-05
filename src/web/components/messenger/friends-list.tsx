@@ -10,7 +10,7 @@ import { Input } from "@/web/components/ui/input";
 import { Button } from "@/web/components/ui/button";
 import { ScrollArea } from "@/web/components/ui/scroll-area";
 import { UserPlus, Check, X, Search, User as UserIcon } from "lucide-react";
-import Image from "next/image";
+import Image from "serapht/image";
 
 export function FriendsList() {
   const { setActiveChat } = useMessenger();

@@ -98,7 +98,7 @@ describe("Admin Module Registry (Phase 2)", () => {
     const seoResults = searchAdminModules("serp", PERMISSION_LEVELS.ADMIN);
     expect(seoResults.some((m) => m.id === "infra-seo")).toBe(true);
 
-    const emptyResults = searchAdminModules("nonexistentxyz", PERMISSION_LEVELS.DEVELOPER);
+    const emptyResults = searchAdminModules("noseraphistentxyz", PERMISSION_LEVELS.DEVELOPER);
     expect(emptyResults.length).toBe(0);
   });
 });

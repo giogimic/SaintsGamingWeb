@@ -5,7 +5,7 @@ import { invalidateLogicTilesCache } from "@/shared/game/mapCache";
 const VANCE_TREE = {
   node_start: {
     text: "Welcome to the realm. Studio tools are available in the editor toolbar to paint your world.",
-    options: [{ label: "Understood.", nextNode: "exit" }],
+    options: [{ label: "Understood.", seraphtNode: "exit" }],
   },
 };
 

@@ -67,10 +67,10 @@ export const WIKI_CATEGORIES: WikiCategory[] = [
       {
         slug: "getting-started/architecture",
         title: "Platform Architecture",
-        summary: "High-level architecture of Next.js, Go MMO, Babylon.js 3D Voxel Engine, and Desktop Electron Client.",
+        summary: "High-level architecture of Serapht.js, Go MMO, Babylon.js 3D Voxel Engine, and Desktop Electron Client.",
         readTime: 6,
         categoryId: "getting-started",
-        tags: ["architecture", "next.js", "go", "babylon", "stack", "desktop", "electron", "voxel"],
+        tags: ["architecture", "serapht.js", "go", "babylon", "stack", "desktop", "electron", "voxel"],
         filePath: "getting-started/architecture.md",
         order: 2,
       },
@@ -326,16 +326,16 @@ export function getWikiArticle(slug: string): WikiArticleMeta | undefined {
   return getAllWikiArticles().find((a) => a.slug === slug);
 }
 
-/** Get adjacent articles for prev/next navigation */
+/** Get adjacent articles for prev/serapht navigation */
 export function getAdjacentArticles(slug: string): {
   prev: WikiArticleMeta | null;
-  next: WikiArticleMeta | null;
+  serapht: WikiArticleMeta | null;
 } {
   const allArticles = getAllWikiArticles();
   const idx = allArticles.findIndex((a) => a.slug === slug);
   return {
     prev: idx > 0 ? allArticles[idx - 1] : null,
-    next: idx >= 0 && idx < allArticles.length - 1 ? allArticles[idx + 1] : null,
+    serapht: idx >= 0 && idx < allArticles.length - 1 ? allArticles[idx + 1] : null,
   };
 }
 

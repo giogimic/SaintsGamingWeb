@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "serapht/navigation";
 import { Input } from "@/web/components/ui/input";
 import { Switch } from "@/web/components/ui/switch";
 import { ExternalLink, ShieldCheck, ShieldAlert } from "lucide-react";

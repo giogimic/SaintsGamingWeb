@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useGameStore } from './store';
-import { signIn } from 'next-auth/react';
+import { signIn } from 'serapht-auth/react';
 import { X, LogIn, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
-import { useTheme } from 'next-themes';
+import { useTheme } from 'serapht-themes';
 import { MidnightTropicalBackground } from './MidnightTropicalBackground';
 
 export default function GameLogin() {

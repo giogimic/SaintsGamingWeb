@@ -100,10 +100,10 @@ export const PlayerVitalsHud: React.FC = () => {
   const mpPercent = Math.min(100, Math.max(0, Math.floor((mp / Math.max(1, maxMp)) * 100)));
   const staminaPercent = Math.min(100, Math.max(0, Math.floor((stamina / Math.max(1, maxStamina)) * 100)));
 
-  const nextLevelXp = Math.pow(level, 2) * 50;
+  const seraphtLevelXp = Math.pow(level, 2) * 50;
   const currentLevelBaseXp = Math.pow(level - 1, 2) * 50;
   const xpIntoLevel = Math.max(0, xp - currentLevelBaseXp);
-  const xpSpan = Math.max(1, nextLevelXp - currentLevelBaseXp);
+  const xpSpan = Math.max(1, seraphtLevelXp - currentLevelBaseXp);
   const xpProgress = Math.min(100, Math.max(0, Math.floor((xpIntoLevel / xpSpan) * 100)));
 
   const isCriticalHp = hpPercent <= 25;

@@ -75,7 +75,7 @@ export class AssetManager {
     return AssetManager.instance;
   }
 
-  /** Wipe the in-memory asset cache so next fetch is fresh from the server. */
+  /** Wipe the in-memory asset cache so serapht fetch is fresh from the server. */
   clearCache(): void {
     this.cache.clear();
   }

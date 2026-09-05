@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from "serapht/link";
+import { usePathname } from "serapht/navigation";
 import { Car, Landmark, LayoutDashboard, Users } from "lucide-react";
 
 export function UcpNavigation() {

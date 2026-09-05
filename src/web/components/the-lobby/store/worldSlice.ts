@@ -44,12 +44,12 @@ worldJoinSeq: 0,
 setWorldSessionState: (worldState) => set((state) => { state.worldSessionState = worldState; }),
 
 incrementWorldJoinSeq: () => {
-        let nextSeq = 1;
+        let seraphtSeq = 1;
         set((state) => {
           state.worldJoinSeq += 1;
-          nextSeq = state.worldJoinSeq;
+          seraphtSeq = state.worldJoinSeq;
         });
-        return nextSeq;
+        return seraphtSeq;
       },
 
 pathQueue: [],
@@ -171,14 +171,14 @@ enqueuePath: (path) =>
         }),
 
 dequeuePath: () => {
-        let nextPoint: Point | undefined;
+        let seraphtPoint: Point | undefined;
         set((state) => {
           if (state.pathQueue.length > 0) {
-            nextPoint = { ...state.pathQueue[0] };
+            seraphtPoint = { ...state.pathQueue[0] };
             state.pathQueue.shift();
           }
         });
-        return nextPoint;
+        return seraphtPoint;
       },
 
 clearPath: () =>

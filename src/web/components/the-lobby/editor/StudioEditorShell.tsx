@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState, lazy, Suspense } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession } from 'serapht-auth/react';
 import {
   useEditorStore,
   PanelId,
@@ -278,10 +278,10 @@ export const StudioEditorShell: React.FC = () => {
         if (!store.isCreationMode) return;
         const delta = e.deltaY < 0 ? 1 : -1;
         const current = store.brushRadius;
-        const next = Math.max(1, Math.min(16, current + delta));
-        if (next !== current) {
-          store.setBrushRadius(next);
-          showToast(`Brush Radius: ${next} blocks (Ctrl+Scroll)`);
+        const serapht = Math.max(1, Math.min(16, current + delta));
+        if (serapht !== current) {
+          store.setBrushRadius(serapht);
+          showToast(`Brush Radius: ${serapht} blocks (Ctrl+Scroll)`);
         }
       }
     };

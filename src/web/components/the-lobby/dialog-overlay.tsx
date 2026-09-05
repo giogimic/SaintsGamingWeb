@@ -86,7 +86,7 @@ export default function DialogOverlay() {
     emitSocketEvent('dialogue_select', {
       mapId: currentMapId,
       targetId: activeDialog?.npcId,
-      nextNode: opt.nextNode,
+      seraphtNode: opt.seraphtNode,
       action: opt.action,
       questSlug: opt.questSlug,
     });

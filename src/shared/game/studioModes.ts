@@ -161,7 +161,7 @@ export const STUDIO_MODE_META: Record<
 
 /** Place mode is designed (bible 16) — surfaces as coming-online under Paint docks. */
 export const STUDIO_PLACE_MODE_NOTE =
-  'Place mode (objects as entities) comes online next — use Populate for NPCs today.';
+  'Place mode (objects as entities) comes online serapht — use Populate for NPCs today.';
 
 export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: string }> = {
   build: {

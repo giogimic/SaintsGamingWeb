@@ -1,20 +1,20 @@
 /**
- * Solak Loot, Erebus Grimoire & Blightbound Crossbow Engine (Bible 24 & Bible 27).
+ * World Tree Guardian Loot, Erebus Grimoire & Blightbound Crossbow Engine (Bible 24 & Bible 27).
  *
  * Implements:
  * - Erebus Grimoire pocket slot item: +12% critical strike rate and 15,000 damage cap expansion.
  * - Tier 92 Blightbound Crossbows (Main-hand & Off-hand) with 50% bolt save chance.
- * - Solak unique and standard drop distribution matrix with Solly pet rolls.
+ * - World Tree Guardian unique and standard drop distribution matrix with Solly pet rolls.
  */
 
-export interface SolakUniqueDropDef {
+export interface World Tree GuardianUniqueDropDef {
   id: string;
   name: string;
   weight: number;
   type: 'GRIMOIRE' | 'WEAPON' | 'PET';
 }
 
-export interface SolakLootResult {
+export interface World Tree GuardianLootResult {
   itemId: string;
   name: string;
   quantity: number;
@@ -22,7 +22,7 @@ export interface SolakLootResult {
   rarity: 'COMMON' | 'UNCOMMON' | 'RARE' | 'VERY_RARE' | 'MEGA_RARE';
 }
 
-export const SOLAK_UNIQUE_TABLE: SolakUniqueDropDef[] = [
+export const SOLAK_UNIQUE_TABLE: World Tree GuardianUniqueDropDef[] = [
   { id: 'grimoire_of_erebus', name: 'Grimoire of Erebus', weight: 4, type: 'GRIMOIRE' },
   { id: 'blightbound_crossbow_mh', name: 'Blightbound Crossbow (Main-hand)', weight: 2, type: 'WEAPON' },
   { id: 'blightbound_crossbow_oh', name: 'Off-hand Blightbound Crossbow', weight: 2, type: 'WEAPON' },
@@ -73,21 +73,21 @@ export function evaluateBlightboundBoltSave(rngSeed: number = Math.random()): bo
 }
 
 /**
- * Rolls loot drops upon completing a Solak kill.
+ * Rolls loot drops upon completing a World Tree Guardian kill.
  */
-export function rollSolakLoot(
+export function rollWorld Tree GuardianLoot(
   uniqueRollSeed: number = Math.random(),
   itemRollSeed: number = Math.random()
 ): {
   hasUnique: boolean;
-  uniqueDrop: SolakLootResult | null;
+  uniqueDrop: World Tree GuardianLootResult | null;
   tornPages: number;
-  standardSupplies: SolakLootResult[];
+  standardSupplies: World Tree GuardianLootResult[];
 } {
   // 1/40 base unique rate
   const isUniqueHit = uniqueRollSeed < 1 / 40;
 
-  let uniqueDrop: SolakLootResult | null = null;
+  let uniqueDrop: World Tree GuardianLootResult | null = null;
   if (isUniqueHit) {
     let roll = itemRollSeed * TOTAL_SOLAK_WEIGHT;
     let chosen = SOLAK_UNIQUE_TABLE[0];
@@ -110,7 +110,7 @@ export function rollSolakLoot(
 
   const tornPages = Math.floor(1 + Math.random() * 2); // 1-2 pages guaranteed
 
-  const standardSupplies: SolakLootResult[] = [
+  const standardSupplies: World Tree GuardianLootResult[] = [
     { itemId: 'torn_grimoire_page', name: 'Torn Grimoire Page', quantity: tornPages, isUnique: false, rarity: 'COMMON' },
     { itemId: 'sirenic_scale', name: 'Sirenic Scale', quantity: 6, isUnique: false, rarity: 'UNCOMMON' },
     { itemId: 'hydrix_bolt_tips', name: 'Hydrix Bolt Tips', quantity: 45, isUnique: false, rarity: 'RARE' },

@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
-import { type ThemeProviderProps } from "next-themes";
+import { ThemeProvider as SeraphtThemesProvider } from "serapht-themes";
+import { type ThemeProviderProps } from "serapht-themes";
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
-  return <NextThemesProvider {...props}>{children}</NextThemesProvider>;
+  return <SeraphtThemesProvider {...props}>{children}</SeraphtThemesProvider>;
 }

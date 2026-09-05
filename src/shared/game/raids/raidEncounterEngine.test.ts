@@ -7,7 +7,7 @@ import {
 describe('Master Raid Mechanics & Threat Aggro Engine (Phase 45)', () => {
   const raidBoss: RaidBossDefinition = {
     bossId: 'boss_olm_great',
-    name: 'Great Olm, Stone Dragon',
+    name: 'Great Wyrm, Stone Dragon',
     maxHealth: 100000,
     enrageDurationMs: 600000, // 10 minutes
     phases: [

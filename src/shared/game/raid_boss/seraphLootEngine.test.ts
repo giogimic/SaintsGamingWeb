@@ -2,11 +2,11 @@ import { describe, it, expect } from 'vitest';
 import {
   unlockPraesulCurse,
   getTier99CurseBonus,
-  rollNexLoot,
+  rollSeraphLoot,
   type PlayerCurseState,
-} from './nexLootEngine';
+} from './seraphLootEngine';
 
-describe('Nex: Angel of Death Praesul Codex & Loot Engine', () => {
+describe('Seraph: Angel of Death Praesul Codex & Loot Engine', () => {
   it('enforces Prayer 99 and unlocks Tier 99 curses', () => {
     const player: PlayerCurseState = {
       prayerLevel: 95,
@@ -40,9 +40,9 @@ describe('Nex: Angel of Death Praesul Codex & Loot Engine', () => {
     expect(inactive.accuracyMultiplier).toBe(1.0);
   });
 
-  it('rolls unique and standard loot drops upon Nex defeat', () => {
+  it('rolls unique and standard loot drops upon Seraph defeat', () => {
     // Force unique drop (seed 0.001 < 0.025) and roll Wand of the Praesul
-    const loot = rollNexLoot(0.20, 0.001, 0.35);
+    const loot = rollSeraphLoot(0.20, 0.001, 0.35);
     expect(loot.hasUnique).toBe(true);
     expect(loot.uniqueDrop).not.toBeNull();
     expect(loot.standardDrops.length).toBe(3);

@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @serapht/serapht/no-img-element */
 'use client';
 
 import { useState } from 'react';

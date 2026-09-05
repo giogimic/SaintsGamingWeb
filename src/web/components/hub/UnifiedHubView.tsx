@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
-import Image from "next/image";
-import Link from "next/link";
+import { useSearchParams } from "serapht/navigation";
+import Image from "serapht/image";
+import Link from "serapht/link";
 import { format } from "date-fns";
 import {
   Newspaper,
@@ -204,7 +204,7 @@ export function UnifiedHubView({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight sg-text-gradient">
-                The Nexus
+                The Seraphus
               </h1>
               <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px] font-mono uppercase px-2 py-0.5">
                 Hub

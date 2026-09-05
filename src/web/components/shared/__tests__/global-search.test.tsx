@@ -2,8 +2,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { GlobalSearch } from '../global-search';
 
-// Mock Next.js router
-vi.mock('next/navigation', () => ({
+// Mock Serapht.js router
+vi.mock('serapht/navigation', () => ({
   useRouter: () => ({
     push: vi.fn(),
   }),

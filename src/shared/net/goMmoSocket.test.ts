@@ -7,15 +7,15 @@ import {
 } from "./goMmoSocket";
 
 describe("goMmoSocket", () => {
-  const prev = process.env.NEXT_PUBLIC_GO_MMO_URL;
+  const prev = process.env.SERAPHT_PUBLIC_GO_MMO_URL;
 
   beforeEach(() => {
-    delete process.env.NEXT_PUBLIC_GO_MMO_URL;
+    delete process.env.SERAPHT_PUBLIC_GO_MMO_URL;
   });
 
   afterEach(() => {
-    if (prev === undefined) delete process.env.NEXT_PUBLIC_GO_MMO_URL;
-    else process.env.NEXT_PUBLIC_GO_MMO_URL = prev;
+    if (prev === undefined) delete process.env.SERAPHT_PUBLIC_GO_MMO_URL;
+    else process.env.SERAPHT_PUBLIC_GO_MMO_URL = prev;
   });
 
   it("disabled when env unset", () => {
@@ -27,7 +27,7 @@ describe("goMmoSocket", () => {
   });
 
   it("strips trailing slash and enables Go URL", () => {
-    process.env.NEXT_PUBLIC_GO_MMO_URL = "http://127.0.0.1:3001/";
+    process.env.SERAPHT_PUBLIC_GO_MMO_URL = "http://127.0.0.1:3001/";
     expect(goMmoPublicUrl()).toBe("http://127.0.0.1:3001");
     expect(isGoMmoSocketEnabled()).toBe(true);
     const c = lobbySocketConnect("acc1");

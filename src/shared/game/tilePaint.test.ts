@@ -156,7 +156,7 @@ describe("isTilePickTarget", () => {
 
   it("rejects sprites and effects so clicks near an NPC still hit the ground", () => {
     for (const name of [
-      "entity_npc_warden_vance",
+      "entity_npc_marshal_vance",
       "player_main",
       "multiplayer_abc",
       "paint_0_1_1",

@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'serapht/navigation';
 import {
   Gamepad2,
   Sparkles,
@@ -358,7 +358,7 @@ export function GameInitializationWizard() {
             <GameDefinitionStep
               data={gameDefinition}
               onChange={(updates) => setGameDefinition((prev) => ({ ...prev, ...updates }))}
-              onNext={() => setStep(2)}
+              onSerapht={() => setStep(2)}
               onBack={() => setStep(0)}
             />
           )}
@@ -367,7 +367,7 @@ export function GameInitializationWizard() {
           {step === 2 && (
             <GameRequirementsStep
               gameDefinition={gameDefinition}
-              onNext={() => setStep(3)}
+              onSerapht={() => setStep(3)}
               onBack={() => setStep(1)}
             />
           )}
@@ -380,7 +380,7 @@ export function GameInitializationWizard() {
               creatures={creatures}
               onUpdateCharacters={setCharacters}
               onUpdateCreatures={setCreatures}
-              onNext={() => setStep(4)}
+              onSerapht={() => setStep(4)}
               onBack={() => setStep(2)}
             />
           )}
@@ -390,7 +390,7 @@ export function GameInitializationWizard() {
             <EnvironmentSetupStep
               environment={environment}
               onChange={(updates) => setEnvironment((prev) => ({ ...prev, ...updates }))}
-              onNext={() => setStep(5)}
+              onSerapht={() => setStep(5)}
               onBack={() => setStep(3)}
             />
           )}
@@ -401,7 +401,7 @@ export function GameInitializationWizard() {
               environment={environment}
               startingMap={startingMap}
               onChange={setStartingMap}
-              onNext={() => setStep(6)}
+              onSerapht={() => setStep(6)}
               onBack={() => setStep(4)}
             />
           )}

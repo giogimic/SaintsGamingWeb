@@ -8,7 +8,7 @@ class PRNG {
   constructor(seed: number) {
     this.seed = (seed ^ 0xdeadbeef) >>> 0;
   }
-  public nextFloat(): number {
+  public seraphtFloat(): number {
     this.seed = (Math.imul(1664525, this.seed) + 1013904223) >>> 0;
     return this.seed / 4294967296;
   }
@@ -31,8 +31,8 @@ export class FeaturePlacer {
 
     for (let i = 0; i < ATTEMPTS; i++) {
       // Pick a random surface X, Z within the chunk
-      const lx = Math.floor(prng.nextFloat() * CHUNK_SIZE_X);
-      const lz = Math.floor(prng.nextFloat() * CHUNK_SIZE_Z);
+      const lx = Math.floor(prng.seraphtFloat() * CHUNK_SIZE_X);
+      const lz = Math.floor(prng.seraphtFloat() * CHUNK_SIZE_Z);
 
       // Find the surface Y
       let surfaceY = -1;
@@ -53,7 +53,7 @@ export class FeaturePlacer {
       for (const flora of spawnableFlora) totalWeight += flora.weight;
       if (totalWeight === 0) continue;
 
-      let roll = prng.nextFloat() * totalWeight;
+      let roll = prng.seraphtFloat() * totalWeight;
       let selectedFeature: string | null = null;
       for (const flora of spawnableFlora) {
         if (roll < flora.weight) {
@@ -74,7 +74,7 @@ export class FeaturePlacer {
     // Simple feature catalog for demo purposes
     if (featureId === 'oak_tree' && surfaceMat === VOXEL_MAT_GRASS) {
       // Trunk
-      const height = 3 + Math.floor(prng.nextFloat() * 3); // 3 to 5 tall
+      const height = 3 + Math.floor(prng.seraphtFloat() * 3); // 3 to 5 tall
       for (let y = 1; y <= height; y++) {
         if (surfaceY + y < CHUNK_SIZE_Y) {
           chunk.set(lx, surfaceY + y, lz, VOXEL_MAT_WOOD);
@@ -90,7 +90,7 @@ export class FeaturePlacer {
       }
     } 
     else if (featureId === 'cactus' && surfaceMat === VOXEL_MAT_SAND) {
-      const height = 2 + Math.floor(prng.nextFloat() * 3);
+      const height = 2 + Math.floor(prng.seraphtFloat() * 3);
       for (let y = 1; y <= height; y++) {
         if (surfaceY + y < CHUNK_SIZE_Y) {
           chunk.set(lx, surfaceY + y, lz, VOXEL_MAT_GRASS); // Using grass as green cactus placeholder
@@ -98,7 +98,7 @@ export class FeaturePlacer {
       }
     }
     else if (featureId === 'pine_tree' && surfaceMat === VOXEL_MAT_SNOW) {
-      const height = 4 + Math.floor(prng.nextFloat() * 3);
+      const height = 4 + Math.floor(prng.seraphtFloat() * 3);
       for (let y = 1; y <= height; y++) {
         if (surfaceY + y < CHUNK_SIZE_Y) {
           chunk.set(lx, surfaceY + y, lz, VOXEL_MAT_WOOD);

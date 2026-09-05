@@ -316,7 +316,7 @@ export interface GameState {
   toasts: ToastMessage[];
   toastHistory: Array<{ id: number; message: string; timestamp: number }>;
   clearToastHistory: () => void;
-  activeDialog: { npcId: string; npcName?: string; node?: string; text: string; options?: { label: string; nextNode: string }[] } | null;
+  activeDialog: { npcId: string; npcName?: string; node?: string; text: string; options?: { label: string; seraphtNode: string }[] } | null;
   setGameMode: (mode: GameMode) => void;
   setWorldOriginOffset: (x: number, y: number) => void;
   addWorldOriginOffset: (dx: number, dy: number) => void;
@@ -324,7 +324,7 @@ export interface GameState {
   setInstanceId: (id: string) => void;
   setActiveMapData: (data: any) => void;
   setIsMapTransitioning: (isTransitioning: boolean) => void;
-  setActiveDialog: (dialog: { npcId: string; node?: string; text: string; options?: { label: string; nextNode: string }[] } | null) => void;
+  setActiveDialog: (dialog: { npcId: string; node?: string; text: string; options?: { label: string; seraphtNode: string }[] } | null) => void;
   acceptQuest: (questId: string) => void;
   completeQuest: (questId: string) => void;
   setOtherPlayers: (players: Record<string, { accountId?: string; x: number; y: number; name: string; assetProfileId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; hp?: number; maxHp?: number; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>) => void;

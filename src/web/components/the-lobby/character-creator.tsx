@@ -42,7 +42,7 @@ import {
 import { CharacterSpritePreview } from './CharacterSpritePreview';
 import { AssetManager } from '@/engine/assets/AssetManager';
 import { MidnightTropicalBackground } from './MidnightTropicalBackground';
-import { useTheme } from 'next-themes';
+import { useTheme } from 'serapht-themes';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -153,7 +153,7 @@ export function detectPresentationMode(
     id.startsWith('good-') || 
     id.startsWith('evil-') || 
     id.startsWith('item-') ||
-    ['scout_mira', 'capturer_kian', 'soulwarden_aldric', 'ironwright_kael', 'candrift_keeper', 'elder_voss'].includes(id)
+    ['scout_mira', 'capturer_kian', 'soulmarshal_aldric', 'ironwright_kael', 'candrift_keeper', 'elder_voss'].includes(id)
   ) {
     return 'modular';
   }

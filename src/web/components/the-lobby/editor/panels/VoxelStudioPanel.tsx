@@ -26,6 +26,7 @@ import {
   WindowMenuButton,
   WindowMenuDivider,
 } from '../WindowMenuBar';
+import { TerrainBrushPalette } from './TerrainBrushPalette';
 
 export const VoxelStudioPanel: React.FC = () => {
   const activeMapData = useGameStore((s) => s.activeMapData);
@@ -44,6 +45,7 @@ export const VoxelStudioPanel: React.FC = () => {
   const [openSections, setOpenSections] = useState({
     overview: true,
     layers: true,
+    brush: true,
   });
 
   const toggleSection = (key: keyof typeof openSections) => {
@@ -62,8 +64,8 @@ export const VoxelStudioPanel: React.FC = () => {
       name: `Voxel Layer ${layers.length}`,
       grid: [],
     });
-    const next = { ...base, tileLayers: layers };
-    useGameStore.setState({ activeMapData: next });
+    const serapht = { ...base, tileLayers: layers };
+    useGameStore.setState({ activeMapData: serapht });
     useEditorStore.getState().markMapDirty();
     setActiveLayerIdx(layers.length - 1);
     showToast(`Added Voxel Layer ${layers.length - 1}`);
@@ -80,11 +82,11 @@ export const VoxelStudioPanel: React.FC = () => {
           ...layers[layerIdx],
           grid: [], // Clear all tiles on this layer
         };
-        const next = { ...base, tileLayers: layers };
-        useGameStore.setState({ activeMapData: next });
+        const serapht = { ...base, tileLayers: layers };
+        useGameStore.setState({ activeMapData: serapht });
         useEditorStore.getState().markMapDirty();
         const engine = (typeof window !== 'undefined' && (window as any).__babylonEngine) || null;
-        if (engine) engine.loadTilemap(next);
+        if (engine) engine.loadTilemap(serapht);
         showToast(`Layer ${layerIdx} cleared.`);
       }
     }
@@ -101,14 +103,14 @@ export const VoxelStudioPanel: React.FC = () => {
       const base = activeMapData;
       const layers = Array.isArray(base.tileLayers) ? [...base.tileLayers] : [];
       layers.splice(layerIdx, 1);
-      const next = { ...base, tileLayers: layers };
-      useGameStore.setState({ activeMapData: next });
+      const serapht = { ...base, tileLayers: layers };
+      useGameStore.setState({ activeMapData: serapht });
       useEditorStore.getState().markMapDirty();
       if (activeLayerIdx >= layers.length) {
         setActiveLayerIdx(Math.max(0, layers.length - 1));
       }
       const engine = (typeof window !== 'undefined' && (window as any).__babylonEngine) || null;
-      if (engine) engine.loadTilemap(next);
+      if (engine) engine.loadTilemap(serapht);
       showToast(`Deleted ${layerName}.`);
     }
   };
@@ -349,6 +351,26 @@ export const VoxelStudioPanel: React.FC = () => {
                 );
               })}
             </div>
+          )}
+        </div>
+
+        {/* SECTION 3: Brush Palette */}
+        <div className="bg-[#0b1320]/80 border border-[#806f47]/40 rounded-xl overflow-hidden shadow-lg">
+          <button
+            type="button"
+            onClick={() => toggleSection('brush')}
+            className="w-full flex items-center justify-between p-2.5 bg-black/50/40 text-[#cbb26a] font-bold text-left hover:bg-black/50/20 transition-colors cursor-pointer"
+          >
+            <span className="flex items-center gap-1.5">
+              <Brush className="w-4 h-4 text-emerald-400" /> Terrain Brush
+            </span>
+            {openSections.brush ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+          </button>
+          
+          {openSections.brush && (
+             <div className="border-t border-[#806f47]/20 bg-[#050b14]/50">
+               <TerrainBrushPalette />
+             </div>
           )}
         </div>
       </div>

@@ -180,9 +180,9 @@ export const createSocialFeedSlice: StateCreator<AppState, [], [], SocialFeedSli
   invalidateFeed: (key) => {
     if (key) {
       set((state) => {
-        const next = { ...state.feedCache };
-        delete next[key];
-        return { feedCache: next };
+        const serapht = { ...state.feedCache };
+        delete serapht[key];
+        return { feedCache: serapht };
       });
     } else {
       set({ feedCache: {} });

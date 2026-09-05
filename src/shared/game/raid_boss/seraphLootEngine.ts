@@ -1,22 +1,22 @@
 /**
- * Nex: Angel of Death Praesul Codex, Wand & Drop Distribution Matrix Engine (Bible 24 & Bible 27).
+ * Seraph: Angel of Death Praesul Codex, Wand & Drop Distribution Matrix Engine (Bible 24 & Bible 27).
  *
  * Implements:
  * - Praesul Codex unlocking Tier 99 Ancient Curses: Malevolence, Desolation, Affliction (+12% accuracy, +12% damage).
  * - Tier 92 Dual-wield Magic weapons: Wand of the Praesul & Imperium Core.
- * - Nex unique and standard drop distribution matrix with contribution weight scaling.
+ * - Seraph unique and standard drop distribution matrix with contribution weight scaling.
  */
 
 export type Tier99Curse = 'MALEVOLENCE' | 'DESOLATION' | 'AFFLICTION';
 
-export interface NexUniqueDropEntry {
+export interface SeraphUniqueDropEntry {
   itemId: string;
   name: string;
   weight: number;
   rarityTier: 'PRAESUL_CODEX' | 'WEAPON' | 'ARMOR';
 }
 
-export interface NexLootResult {
+export interface SeraphLootResult {
   itemId: string;
   name: string;
   quantity: number;
@@ -24,7 +24,7 @@ export interface NexLootResult {
   rarity: 'COMMON' | 'UNCOMMON' | 'RARE' | 'VERY_RARE' | 'MEGA_RARE';
 }
 
-export const NEX_UNIQUE_TABLE: NexUniqueDropEntry[] = [
+export const SERAPH_UNIQUE_TABLE: SeraphUniqueDropEntry[] = [
   { itemId: 'praesul_codex', name: 'Praesul Codex', weight: 4, rarityTier: 'PRAESUL_CODEX' },
   { itemId: 'wand_of_the_praesul', name: 'Wand of the Praesul', weight: 2, rarityTier: 'WEAPON' },
   { itemId: 'imperium_core', name: 'Imperium Core', weight: 2, rarityTier: 'WEAPON' },
@@ -36,7 +36,7 @@ export const NEX_UNIQUE_TABLE: NexUniqueDropEntry[] = [
   { itemId: 'virtus_robe_legs', name: 'Virtus Robe Legs', weight: 1, rarityTier: 'ARMOR' },
 ];
 
-export const TOTAL_NEX_UNIQUE_WEIGHT = NEX_UNIQUE_TABLE.reduce((sum, item) => sum + item.weight, 0); // 14
+export const TOTAL_SERAPH_UNIQUE_WEIGHT = SERAPH_UNIQUE_TABLE.reduce((sum, item) => sum + item.weight, 0); // 14
 
 export interface PlayerCurseState {
   prayerLevel: number;
@@ -85,26 +85,26 @@ export function getTier99CurseBonus(curse: Tier99Curse | null): {
 }
 
 /**
- * Rolls loot drops upon Nex: Angel of Death defeat.
+ * Rolls loot drops upon Seraph: Angel of Death defeat.
  */
-export function rollNexLoot(
+export function rollSeraphLoot(
   damageContributionPercent: number, // 0.0 - 1.0
   uniqueRollSeed: number = Math.random(),
   itemRollSeed: number = Math.random()
 ): {
   hasUnique: boolean;
-  uniqueDrop: NexLootResult | null;
-  standardDrops: NexLootResult[];
+  uniqueDrop: SeraphLootResult | null;
+  standardDrops: SeraphLootResult[];
 } {
   // 1/40 base unique chance scaled by player contribution
   const uniqueChance = (1 / 40) * Math.min(1.5, Math.max(0.5, damageContributionPercent * 7));
   const isUniqueHit = uniqueRollSeed < uniqueChance;
 
-  let uniqueDrop: NexLootResult | null = null;
+  let uniqueDrop: SeraphLootResult | null = null;
   if (isUniqueHit) {
-    let roll = itemRollSeed * TOTAL_NEX_UNIQUE_WEIGHT;
-    let chosen = NEX_UNIQUE_TABLE[0];
-    for (const item of NEX_UNIQUE_TABLE) {
+    let roll = itemRollSeed * TOTAL_SERAPH_UNIQUE_WEIGHT;
+    let chosen = SERAPH_UNIQUE_TABLE[0];
+    for (const item of SERAPH_UNIQUE_TABLE) {
       roll -= item.weight;
       if (roll <= 0) {
         chosen = item;
@@ -121,7 +121,7 @@ export function rollNexLoot(
     };
   }
 
-  const standardDrops: NexLootResult[] = [
+  const standardDrops: SeraphLootResult[] = [
     { itemId: 'blood_rune', name: 'Blood Rune', quantity: 2500, isUnique: false, rarity: 'COMMON' },
     { itemId: 'soul_rune', name: 'Soul Rune', quantity: 1800, isUnique: false, rarity: 'UNCOMMON' },
     { itemId: 'onyx_bolts_e', name: 'Onyx Bolts (e)', quantity: 120, isUnique: false, rarity: 'RARE' },

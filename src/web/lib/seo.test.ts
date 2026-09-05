@@ -11,18 +11,18 @@ import {
 } from "./seo";
 
 describe("SEO & Canonical Metadata Engine (WNC-20237597)", () => {
-  const originalSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  const originalSiteUrl = process.env.SERAPHT_PUBLIC_SITE_URL;
 
   beforeEach(() => {
-    process.env.NEXT_PUBLIC_SITE_URL = "https://saintsgaming.net";
+    process.env.SERAPHT_PUBLIC_SITE_URL = "https://saintsgaming.net";
   });
 
   afterEach(() => {
-    process.env.NEXT_PUBLIC_SITE_URL = originalSiteUrl;
+    process.env.SERAPHT_PUBLIC_SITE_URL = originalSiteUrl;
   });
 
   it("normalizes base site URL without trailing slashes", () => {
-    process.env.NEXT_PUBLIC_SITE_URL = "https://saintsgaming.net///";
+    process.env.SERAPHT_PUBLIC_SITE_URL = "https://saintsgaming.net///";
     expect(getSiteBaseUrl()).toBe("https://saintsgaming.net");
   });
 

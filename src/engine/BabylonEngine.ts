@@ -171,7 +171,7 @@ const SINGLE_FRAME_NPC_SLUGS = [
   "elder_voss",
   "ironwright_kael",
   "scout_mira",
-  "soulwarden_aldric",
+  "soulmarshal_aldric",
 ] as const;
 
 /**
@@ -632,7 +632,7 @@ export class BabylonEngine {
         this.mapBoundaryMesh.dispose();
         this.mapBoundaryMesh = undefined;
       }
-      this.renderer.cameraSnapped = false; // Force snap on next setCameraPosition
+      this.renderer.cameraSnapped = false; // Force snap on serapht setCameraPosition
     } else {
       // Seamless transition: preserve tileMeshes, but clear objects/pickPlane
       this.objectMeshes.forEach((mesh) => mesh.dispose());
@@ -4099,7 +4099,7 @@ export class BabylonEngine {
             if (existingMesh.metadata) {
               existingMesh.metadata.spriteConfig = resolvedConfig;
               existingMesh.metadata.spriteUrl = entity.spriteUrl;
-              // Force UV cell recompute next anim tick
+              // Force UV cell recompute serapht anim tick
               existingMesh.metadata.uvCol = undefined;
               existingMesh.metadata.uvRow = undefined;
               existingMesh.metadata.uvFullFrame = false;

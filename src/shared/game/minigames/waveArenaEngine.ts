@@ -44,7 +44,7 @@ export const ARENA_MONSTERS: Record<string, ArenaMonsterDefinition> = {
   },
   monster_tz_boss_jad: {
     id: 'monster_tz_boss_jad',
-    name: 'TzTok-Jad (Arena Overlord)',
+    name: 'Inferno Overlord (Arena Overlord)',
     combatLevel: 702,
     maxHp: 500,
     attackStyle: 'MAGIC',

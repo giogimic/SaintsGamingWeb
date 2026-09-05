@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useTheme } from 'next-themes';
+import { useTheme } from 'serapht-themes';
 import { S3Background } from '@/web/components/landing/s3-background';
 import { MidnightStars } from '@/web/components/landing/midnight-stars';
 import { S3Water } from '@/web/components/landing/s3-water';

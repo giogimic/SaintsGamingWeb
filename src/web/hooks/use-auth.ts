@@ -1,4 +1,4 @@
-import { useSession } from "next-auth/react";
+import { useSession } from "serapht-auth/react";
 import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 
 export function useAuth() {
