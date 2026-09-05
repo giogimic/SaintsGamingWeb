@@ -143,9 +143,9 @@ export const MapListPanel: React.FC = () => {
 
     // Isolate by map type according to active mode
     if (studioMode === 'voxel') {
-      list = list.filter((m) => m.mapType === 'VOXEL');
+      list = list.filter((m) => m.mapType === 'VOXEL' || m.mapType === 'FRACTAL' || m.mapType === 'HYBRID');
     } else if (studioMode === 'tile') {
-      list = list.filter((m) => m.mapType !== 'VOXEL');
+      list = list.filter((m) => m.mapType !== 'VOXEL' && m.mapType !== 'FRACTAL');
     }
 
     return list.sort((a, b) => {
@@ -477,515 +477,103 @@ export const MapListPanel: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#050b14] text-slate-200 font-mono select-none overflow-hidden -m-3 mb-0">
-      {/* ── WINDOW APP BAR ── */}
-      <WindowMenuBar>
-        <WindowMenuDropdown
-          label="Map"
-          icon={Globe}
-          items={[
-            {
-              label: 'Create New Map…',
-              icon: Plus,
-              onClick: () => setShowCreateModal(true),
-              disabled: !canEdit,
-            },
-            {
-              label: 'Reload Map Index',
-              icon: ArrowRight,
-              onClick: () => mutateMaps(),
-            },
-            { divider: true, label: '' },
-            {
-              label: 'Publish Active Draft',
-              icon: UploadCloud,
-              onClick: () => currentMapId && handlePublish(currentMapId),
-              disabled: !canEdit || !currentMapId,
-            },
-          ]}
-        />
-        <WindowMenuDivider />
-        <WindowMenuTabGroup
-          tabs={categories.map((c) => ({ id: c, label: c }))}
-          activeTab={selectedCategory}
-          onChange={setSelectedCategory}
-        />
-        <div className="flex-1" />
-        <span className="text-[10px] text-muted-foreground font-mono">
-          {filtered.length} of {combined.length} maps
-        </span>
-      </WindowMenuBar>
-
-      {/* ── SLEEK CONTROL TOOLBAR ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 border-b border-border/40 bg-[#07111e]/95 backdrop-blur-md shrink-0">
-        <div className="flex items-center gap-2 flex-1 max-w-lg">
-          {/* Search Box */}
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-muted-foreground" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search maps by name or ID…"
-              className="w-full pl-8 pr-3 py-1.5 bg-[#050b14] border border-border/50 rounded-lg text-xs text-slate-200 placeholder:text-muted-foreground focus:outline-none focus:border-primary/60 transition-colors"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-2 text-slate-500 hover:text-white text-xs"
-              >
-                ×
-              </button>
-            )}
-          </div>
-
-          {/* Category Filter Pills */}
-          <div className="hidden sm:flex items-center gap-1">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer ${
-                  selectedCategory === cat
-                    ? 'bg-primary/20 text-primary border border-primary/40'
-                    : 'text-muted-foreground hover:text-slate-200 hover:bg-white/5'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* View Toggle & Actions */}
+    <div className="flex flex-col h-full bg-[#050b14] text-slate-200 font-mono select-none overflow-hidden">
+      {/* ── SIDEBAR HEADER ── */}
+      <div className="flex items-center justify-between px-3 py-2 bg-[#081220] border-b border-border/40 shrink-0">
         <div className="flex items-center gap-2">
-          {/* Sort By Dropdown */}
-          <div className="flex items-center gap-1 bg-[#050b14] border border-border/40 rounded-lg px-2 py-1 text-xs text-muted-foreground">
-            <ArrowUpDown className="w-3 h-3 text-primary/70" />
-            <select
-              value={sortField}
-              onChange={(e) => setSortField(e.target.value as SortField)}
-              className="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer"
-            >
-              <option value="name">Name</option>
-              <option value="id">Map ID</option>
-              <option value="size">Size</option>
-              <option value="category">Category</option>
-            </select>
-            <button
-              onClick={() => setSortAsc(!sortAsc)}
-              className="hover:text-white px-1 font-bold text-xs"
-              title="Toggle sort direction"
-            >
-              {sortAsc ? '↑' : '↓'}
-            </button>
-          </div>
-
-          {/* List vs Grid Mode */}
-          <div className="flex items-center bg-[#050b14] border border-border/40 rounded-lg p-0.5">
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded transition-colors ${
-                viewMode === 'list'
-                  ? 'bg-primary/20 text-primary'
-                  : 'text-muted-foreground hover:text-slate-200'
-              }`}
-              title="List View"
-            >
-              <List className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded transition-colors ${
-                viewMode === 'grid'
-                  ? 'bg-primary/20 text-primary'
-                  : 'text-muted-foreground hover:text-slate-200'
-              }`}
-              title="Grid View"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Create Map Button */}
+          <Globe className="w-4 h-4 text-primary" />
+          <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+            {studioMode === 'voxel' ? 'Voxel Maps' : 'Tile Maps'}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={() => mutateMaps()} className="p-1 rounded text-muted-foreground hover:text-slate-200 hover:bg-white/10" title="Reload">
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
           {canEdit && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary border border-primary/40 font-semibold text-xs transition-all cursor-pointer shadow-sm shadow-amber-950/20"
-            >
+            <button onClick={() => setShowCreateModal(true)} className="p-1 rounded text-primary hover:bg-primary/20" title="New Map">
               <Plus className="w-3.5 h-3.5" />
-              <span>New Map</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* ── BATCH SELECTION ACTION BAR (Appears when >=1 selected) ── */}
-      {selectedMapIds.size > 0 && (
-        <div className="flex items-center justify-between px-4 py-2 bg-amber-950/40 border-b border-primary/40 text-xs shrink-0 animate-in fade-in duration-100">
-          <div className="flex items-center gap-3">
-            <span className="font-semibold text-amber-300 flex items-center gap-1.5">
-              <CheckSquare className="w-3.5 h-3.5" /> {selectedMapIds.size} {selectedMapIds.size === 1 ? 'map' : 'maps'} selected
-            </span>
-            <button
-              onClick={() => setSelectedMapIds(new Set())}
-              className="text-[11px] text-muted-foreground hover:text-white underline cursor-pointer"
-            >
-              Deselect All
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleBatchExport}
-              disabled={isBatchOperating}
-              className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#0b1320] border border-slate-700 hover:border-slate-500 text-slate-200 text-[11px] transition-colors cursor-pointer disabled:opacity-50"
-              title="Export selected maps to JSON"
-            >
-              <Download className="w-3 h-3" />
-              <span>Export</span>
-            </button>
-
-            {canEdit && (
-              <>
-                <button
-                  onClick={handleBatchPublish}
-                  disabled={isBatchOperating}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-950/50 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60 text-[11px] transition-colors cursor-pointer disabled:opacity-50"
-                  title="Publish all selected maps"
-                >
-                  <UploadCloud className="w-3 h-3" />
-                  <span>Publish All</span>
-                </button>
-                <button
-                  onClick={() => setBatchDeleteModalOpen(true)}
-                  disabled={isBatchOperating}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded bg-rose-950/50 border border-rose-500/40 text-rose-300 hover:bg-rose-900/60 text-[11px] transition-colors cursor-pointer disabled:opacity-50"
-                  title="Delete all selected maps"
-                >
-                  <Trash2 className="w-3 h-3" />
-                  <span>Delete Selected</span>
-                </button>
-              </>
-            )}
-          </div>
+      {/* ── SEARCH BAR ── */}
+      <div className="p-2 shrink-0 border-b border-border/20">
+        <div className="relative">
+          <Search className="absolute left-2 top-1.5 w-3.5 h-3.5 text-muted-foreground" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search maps..."
+            className="w-full pl-7 pr-2 py-1 bg-black/40 border border-border/40 rounded text-xs text-slate-200 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+          />
         </div>
-      )}
+      </div>
 
-      {/* ── MAP CONTENT (LIST OR GRID) ── */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
-        {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center text-slate-500 py-16">
-            <Compass className="w-10 h-10 mb-2 text-slate-600 animate-pulse" />
-            <p className="text-xs font-bold text-slate-400">No maps matching &ldquo;{searchQuery}&rdquo;</p>
-            <p className="text-[11px] text-slate-600 mt-1">Try another keyword or create a new realm map.</p>
-          </div>
-        ) : viewMode === 'list' ? (
-          /* ══════════ LIST VIEW (DEFAULT & COMPACT) ══════════ */
-          <div className="border border-border/40 rounded-xl overflow-hidden bg-[#07111e]/60 divide-y divide-border/30 text-xs">
-            {/* Table Header */}
-            <div className="grid grid-cols-[36px_1fr_100px_120px_100px_120px_160px] items-center px-3 py-2 bg-[#0a1628]/90 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-              <div className="flex items-center justify-center">
-                <button
-                  onClick={toggleSelectAll}
-                  className="text-slate-400 hover:text-white cursor-pointer"
-                  title={isAllSelected ? 'Deselect all' : 'Select all'}
-                >
-                  {isAllSelected ? (
-                    <CheckSquare className="w-3.5 h-3.5 text-primary" />
-                  ) : isSomeSelected ? (
-                    <div className="w-3.5 h-3.5 rounded bg-primary/40 border border-primary/60" />
-                  ) : (
-                    <Square className="w-3.5 h-3.5" />
-                  )}
-                </button>
+      {/* ── DIRECTORY TREE ── */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-1">
+        {categories.filter(c => c !== 'ALL').map(cat => {
+          const catMaps = filtered.filter(m => (m.category || 'Town') === cat);
+          if (catMaps.length === 0) return null;
+          return (
+            <div key={cat} className="mb-2">
+              <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <div className="w-3 h-3 flex items-center justify-center"><ArrowRight className="w-2 h-2" /></div>
+                {cat} ({catMaps.length})
               </div>
-              <div>Map Name & ID</div>
-              <div>Category</div>
-              <div>Dimensions</div>
-              <div>Version</div>
-              <div>Status</div>
-              <div className="text-right pr-2">Actions</div>
-            </div>
-
-            {/* Rows */}
-            {filtered.map((map) => {
-              const isCurrent = (currentMapId || '').toUpperCase() === map.id.toUpperCase();
-              const isSpawnHub = map.id.toUpperCase() === spawnMapId;
-              const isSelected = selectedMapIds.has(map.id);
-              const widthChunks = Math.ceil((map.width || 32) / 16);
-              const depthChunks = Math.ceil((map.height || 32) / 16);
-              const pubVersion = (map as any).publishedVersion || (map as any).version || 1;
-
-              return (
-                <div
-                  key={map.id}
-                  onClick={() => toggleSelectMap(map.id)}
-                  className={`grid grid-cols-[36px_1fr_100px_120px_100px_120px_160px] items-center px-3 py-2 transition-colors cursor-pointer ${
-                    isCurrent
-                      ? 'bg-amber-500/10 hover:bg-amber-500/15'
-                      : isSelected
-                      ? 'bg-primary/10 hover:bg-primary/15'
-                      : 'hover:bg-white/[0.03]'
-                  }`}
-                >
-                  {/* Row Checkbox */}
-                  <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={(e) => toggleSelectMap(map.id, e)}
-                      className="text-slate-400 hover:text-white cursor-pointer"
-                    >
-                      {isSelected ? (
-                        <CheckSquare className="w-3.5 h-3.5 text-primary" />
-                      ) : (
-                        <Square className="w-3.5 h-3.5 text-slate-600 hover:text-slate-400" />
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Name & ID */}
-                  <div className="min-w-0 pr-2">
-                    <div className="font-semibold text-slate-200 truncate flex items-center gap-1.5">
-                      <span className={isCurrent ? 'text-amber-300' : ''}>{map.name || map.id}</span>
-                      {isCurrent && (
-                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
-                          Active
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-[10px] text-muted-foreground font-mono truncate">{map.id}</div>
-                  </div>
-
-                  {/* Category */}
-                  <div>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-black/40 border border-border/40 text-slate-300 uppercase">
-                      {map.category || 'Town'}
-                    </span>
-                  </div>
-
-                  {/* Dimensions & Chunks */}
-                  <div className="text-[10px] text-muted-foreground font-mono">
-                    <span className="text-slate-300 font-semibold">{map.width || 32}×{map.height || 32}</span>
-                    <span className="text-slate-500 ml-1">({widthChunks}×{depthChunks} Chk)</span>
-                  </div>
-
-                  {/* Version & Voxel */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30 font-mono font-bold">
-                      v{pubVersion}
-                    </span>
-                    <span className="text-[8px] font-mono text-cyan-400/70">V3</span>
-                  </div>
-
-                  {/* Status Badges */}
-                  <div className="flex items-center gap-1">
-                    {isSpawnHub && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-bold flex items-center gap-1">
-                        <Shield className="w-2.5 h-2.5" /> Spawn
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Action Buttons (Compact, Refined) */}
-                  <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                    {/* Switch / Active Button */}
-                    <button
+              <div className="flex flex-col">
+                {catMaps.map(map => {
+                  const isCurrent = (currentMapId || '').toUpperCase() === map.id.toUpperCase();
+                  const pubVersion = (map as any).publishedVersion || (map as any).version || 1;
+                  return (
+                    <div
+                      key={map.id}
                       onClick={() => handleWarp(map.id)}
-                      className={`h-7 px-2.5 rounded-md text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-1 ${
-                        isCurrent
-                          ? 'bg-primary/20 text-primary border border-primary/40'
-                          : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-border/40'
+                      className={`group flex items-center justify-between px-2 py-1 mx-1 rounded cursor-pointer transition-colors ${
+                        isCurrent ? 'bg-primary/20 border border-primary/30' : 'hover:bg-white/5 border border-transparent'
                       }`}
-                      title={isCurrent ? 'Active map in editor' : 'Switch active editor map'}
                     >
-                      {isCurrent ? (
-                        <>
-                          <Check className="w-3 h-3 text-primary" /> Active
-                        </>
-                      ) : (
-                        <>
-                          <ArrowRight className="w-3 h-3 text-muted-foreground" /> Open
-                        </>
-                      )}
-                    </button>
-
-                    {/* Publish Button */}
-                    {isCurrent && canEdit && (
-                      <button
-                        onClick={() => handlePublish(map.id)}
-                        disabled={isPublishing}
-                        className="h-7 px-2 rounded-md text-[11px] font-semibold text-emerald-400 bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/30 transition-colors cursor-pointer flex items-center gap-1"
-                        title="Publish snapshot & update live shards"
-                      >
-                        <UploadCloud className="w-3 h-3" />
-                        <span>{isPublishing ? '…' : 'Publish'}</span>
-                      </button>
-                    )}
-
-                    {/* Settings Button */}
-                    {canEdit && (
-                      <button
-                        onClick={() => setSettingsModalMapId(map.id)}
-                        className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-white/5 border border-transparent hover:border-border/40 transition-colors cursor-pointer"
-                        title="Map Settings"
-                      >
-                        <Settings className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-
-                    {/* Version History Button */}
-                    <button
-                      onClick={() => handleOpenVersions(map.id)}
-                      className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-amber-300 hover:bg-white/5 border border-transparent hover:border-border/40 transition-colors cursor-pointer"
-                      title="Version history & rollback"
-                    >
-                      <History className="w-3.5 h-3.5" />
-                    </button>
-
-                    {/* Delete Button */}
-                    {canEdit && map.id.toUpperCase() !== spawnMapId && (
-                      <button
-                        onClick={() => setDeleteTargetMapId(map.id)}
-                        className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-rose-400 hover:bg-rose-950/30 border border-transparent hover:border-rose-500/30 transition-colors cursor-pointer"
-                        title="Delete map"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          /* ══════════ GRID VIEW (COMPACT CARD MODE) ══════════ */
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {filtered.map((map) => {
-              const isCurrent = (currentMapId || '').toUpperCase() === map.id.toUpperCase();
-              const isSpawnHub = map.id.toUpperCase() === spawnMapId;
-              const isSelected = selectedMapIds.has(map.id);
-              const widthChunks = Math.ceil((map.width || 32) / 16);
-              const depthChunks = Math.ceil((map.height || 32) / 16);
-              const pubVersion = (map as any).publishedVersion || (map as any).version || 1;
-
-              return (
-                <div
-                  key={map.id}
-                  onClick={() => toggleSelectMap(map.id)}
-                  className={`group relative flex flex-col justify-between rounded-xl border p-3 transition-all cursor-pointer ${
-                    isCurrent
-                      ? 'border-primary/60 bg-amber-500/10 shadow-sm'
-                      : isSelected
-                      ? 'border-primary/50 bg-primary/10'
-                      : 'border-border/40 bg-[#07111e]/70 hover:border-primary/40 hover:bg-[#0b1626]'
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-2 min-w-0">
-                        <button
-                          onClick={(e) => toggleSelectMap(map.id, e)}
-                          className="mt-0.5 text-slate-400 hover:text-white cursor-pointer shrink-0"
-                        >
-                          {isSelected ? (
-                            <CheckSquare className="w-3.5 h-3.5 text-primary" />
-                          ) : (
-                            <Square className="w-3.5 h-3.5 text-slate-600 hover:text-slate-400" />
-                          )}
-                        </button>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Compass className={`w-3.5 h-3.5 shrink-0 ${isCurrent ? 'text-primary' : 'text-slate-500 group-hover:text-slate-300'}`} />
                         <div className="min-w-0">
-                          <h3 className="font-semibold text-xs text-slate-100 group-hover:text-amber-300 truncate">
+                          <div className={`text-xs truncate ${isCurrent ? 'text-amber-300 font-bold' : 'text-slate-300'}`}>
                             {map.name || map.id}
-                          </h3>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="font-mono text-[10px] text-muted-foreground truncate">{map.id}</span>
-                            <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">
-                              v{pubVersion}
-                            </span>
+                          </div>
+                          <div className="text-[9px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                            <span className="truncate">{map.id}</span>
+                            <span className="px-1 rounded bg-black/30 text-amber-500/80">v{pubVersion}</span>
                           </div>
                         </div>
                       </div>
-
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/50 border border-border/40 text-muted-foreground uppercase shrink-0">
-                        {map.category || 'Town'}
-                      </span>
-                    </div>
-
-                    {isSpawnHub && (
-                      <div className="mt-2 flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[9px] font-bold w-fit">
-                        <Shield className="w-2.5 h-2.5" /> Spawn Hub
-                      </div>
-                    )}
-
-                    <div className="mt-3 flex items-center gap-3 text-[10px] text-muted-foreground font-mono bg-black/30 rounded-lg px-2.5 py-1.5 border border-border/30">
-                      <div>
-                        <span className="text-slate-400 font-semibold">{map.width || 32}×{map.height || 32}</span>
-                      </div>
-                      <div>•</div>
-                      <div>
-                        <span className="text-amber-400/90">{widthChunks}×{depthChunks} Chk</span>
-                      </div>
-                      <div>•</div>
-                      <div>
-                        <span>{map.gateCount || 0} Gates</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 pt-2.5 border-t border-border/40 flex items-center justify-between gap-1" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center gap-1">
-                      {canEdit && (
-                        <button
-                          onClick={() => setSettingsModalMapId(map.id)}
-                          className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-white/5 transition-colors cursor-pointer"
-                          title="Map Settings"
-                        >
-                          <Settings className="w-3.5 h-3.5" />
+                      
+                      {/* Hover Actions */}
+                      <div className="hidden group-hover:flex items-center gap-1 shrink-0 bg-[#050b14]/80 px-1 rounded" onClick={e => e.stopPropagation()}>
+                        {canEdit && (
+                          <button onClick={() => setSettingsModalMapId(map.id)} className="p-1 text-slate-400 hover:text-white" title="Settings">
+                            <Settings className="w-3 h-3" />
+                          </button>
+                        )}
+                        <button onClick={() => handleOpenVersions(map.id)} className="p-1 text-slate-400 hover:text-amber-300" title="History">
+                          <History className="w-3 h-3" />
                         </button>
-                      )}
-                      <button
-                        onClick={() => handleOpenVersions(map.id)}
-                        className="p-1 rounded text-muted-foreground hover:text-amber-300 hover:bg-white/5 transition-colors cursor-pointer"
-                        title="Version History"
-                      >
-                        <History className="w-3.5 h-3.5" />
-                      </button>
-                      {canEdit && map.id.toUpperCase() !== spawnMapId && (
-                        <button
-                          onClick={() => setDeleteTargetMapId(map.id)}
-                          className="p-1 rounded text-muted-foreground hover:text-rose-400 hover:bg-rose-950/30 transition-colors cursor-pointer"
-                          title="Delete Map"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                        {canEdit && map.id.toUpperCase() !== spawnMapId && (
+                          <button onClick={() => setDeleteTargetMapId(map.id)} className="p-1 text-slate-400 hover:text-rose-400" title="Delete">
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
                     </div>
-
-                    <div className="flex items-center gap-1.5">
-                      {isCurrent && canEdit && (
-                        <button
-                          onClick={() => handlePublish(map.id)}
-                          disabled={isPublishing}
-                          className="h-6 px-2 rounded text-[10px] font-bold bg-emerald-950/50 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-900/60 transition-colors cursor-pointer"
-                        >
-                          {isPublishing ? '…' : 'Publish'}
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleWarp(map.id)}
-                        className={`h-6 px-2.5 rounded text-[10px] font-bold transition-colors cursor-pointer flex items-center gap-1 ${
-                          isCurrent
-                            ? 'bg-primary/20 text-primary border border-primary/40'
-                            : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-border/40'
-                        }`}
-                      >
-                        {isCurrent ? 'Active' : 'Open'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+        {filtered.length === 0 && (
+          <div className="px-4 py-8 text-center text-xs text-muted-foreground">
+            No maps found.
           </div>
         )}
       </div>

@@ -951,13 +951,13 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
   },
   maps: {
     id: 'maps',
-    title: 'Map Browser',
+    title: 'Map Explorer',
     isOpen: false,
     isCollapsed: false,
-    x: 300,
-    y: 100,
-    width: 700,
-    height: 600,
+    x: 20,
+    y: 20,
+    width: 320,
+    height: 620,
     zIndex: 10,
   },
   animations: {
