@@ -1,3 +1,7 @@
+## [2.1.731] - 2026-09-05
+### Fixed
+- **Next.js 15 Build Error**: Fixed a build error in the dynamic API route `app/api/maps/[slug]/chunks/route.ts` by awaiting the `params` object, adhering to Next.js 15 route handler requirements.
+
 ## [2.1.730] - 2026-09-04
 ### Added
 - **Update Script Go MMO Integration**: Integrated the Go MMO backend into `update.sh`. The updater now correctly tracks changes to the `the-lobby/` and `go-mmo/` directories, rebuilding the Go binaries or Docker containers and automatically restarting the service when changes are detected, keeping the Go environment perfectly synced with Next.js updates.
