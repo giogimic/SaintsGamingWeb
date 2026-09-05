@@ -350,8 +350,8 @@ export const MapListPanel: React.FC = () => {
       return;
     }
 
-    const widthChunks = Math.max(1, Math.ceil(newMapW / 16));
-    const depthChunks = Math.max(1, Math.ceil(newMapH / 16));
+    const widthChunks = Math.max(1, Math.ceil(newMapW / 32));
+    const depthChunks = Math.max(1, Math.ceil(newMapH / 32));
 
     const actualGenMode = mapEngine === 'FRACTAL' ? 'procedural' : mapEngine === 'TILE' ? 'blank' : genMode;
 
@@ -868,7 +868,7 @@ export const MapListPanel: React.FC = () => {
             {/* Window Footer */}
             <div className="flex items-center justify-between px-5 py-3 border-t border-border/40 bg-[#081220]/90">
               <div className="text-[10px] text-muted-foreground">
-                Footprint: <span className="text-slate-300">{newMapW}×{newMapH}</span> blocks ({Math.ceil(newMapW / 16)}×{Math.ceil(newMapH / 16)} chunks)
+                Footprint: <span className="text-slate-300">{newMapW}×{newMapH}</span> blocks ({Math.ceil(newMapW / 32)}×{Math.ceil(newMapH / 32)} chunks)
               </div>
               <div className="flex items-center gap-2">
                 <button

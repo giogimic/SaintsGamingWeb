@@ -121,10 +121,10 @@ export async function POST(req: Request) {
     const map = body?.startingMap || ({} as any);
     const mapId = map.id?.trim() || 'STARTING_MEADOW';
     const mapName = map.name?.trim() || 'Starting Realm';
-    const widthChunks = Math.max(1, map.widthChunks || Math.ceil((map.width || 32) / 16));
-    const depthChunks = Math.max(1, map.depthChunks || Math.ceil((map.height || 32) / 16));
-    const mapWidth = widthChunks * 16;
-    const mapHeight = depthChunks * 16;
+    const widthChunks = Math.max(1, map.widthChunks || Math.ceil((map.width || 32) / 32));
+    const depthChunks = Math.max(1, map.depthChunks || Math.ceil((map.height || 32) / 32));
+    const mapWidth = widthChunks * 32;
+    const mapHeight = depthChunks * 32;
     const spawnX = typeof map.spawnPoint?.x === 'number' ? map.spawnPoint.x : Math.floor(mapWidth / 2);
     const spawnY = typeof map.spawnPoint?.y === 'number' ? map.spawnPoint.y : Math.floor(mapHeight / 2);
 

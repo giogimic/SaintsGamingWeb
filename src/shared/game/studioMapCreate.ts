@@ -82,12 +82,13 @@ export function buildNewStudioMap(input: NewStudioMapInput):
 
   const w = clampMapDimension(input.width ?? 24);
   const h = clampMapDimension(input.height ?? 24);
-  const grid = buildBorderedLogicGrid(w, h);
-  const ground = buildDefaultGroundLayer(grid);
+  const isVoxel = input.mapType === 'VOXEL' || input.mapType === 'FRACTAL';
+  const grid = isVoxel ? [] : buildBorderedLogicGrid(w, h);
+  const ground = isVoxel ? { name: 'Ground', grid: [] } : buildDefaultGroundLayer(grid);
 
   const voxelDoc = generateDefaultWorldDoc(
-    Math.max(1, Math.ceil(w / 16)),
-    Math.max(1, Math.ceil(h / 16)),
+    Math.max(1, Math.ceil(w / 32)),
+    Math.max(1, Math.ceil(h / 32)),
     64,
     w,
     h
