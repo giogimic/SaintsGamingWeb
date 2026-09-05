@@ -122,7 +122,10 @@ export class RealtimeService {
     try {
       await fetch(`${this.goMmoUrl}/internal/broadcast`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.AUTH_SECRET || "dev-secret-change-me"}`
+        },
         body: JSON.stringify({
           envelope,
           options: {
@@ -186,7 +189,10 @@ export class RealtimeService {
     try {
       await fetch(`${this.goMmoUrl}/internal/disconnect`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.AUTH_SECRET || "dev-secret-change-me"}`
+        },
         body: JSON.stringify({ userId, reason }),
       });
     } catch (err) {
