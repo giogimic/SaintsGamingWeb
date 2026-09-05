@@ -903,7 +903,7 @@ public resetCameraSnap() {
 
 public zoomCamera(factor: number) {
     const currentOrtho = this.camera.orthoTop || 10;
-    const maxZoom = this.engine.editorCameraMode ? 120 : 11.0;
+    const maxZoom = this.engine.editorCameraMode ? 500 : 11.0;
     const newOrtho = Math.max(2.5, Math.min(maxZoom, currentOrtho * factor));
     this.updateCameraAspect(newOrtho);
     const zoomPercent = Math.round((10 / newOrtho) * 100);
@@ -913,7 +913,7 @@ public zoomCamera(factor: number) {
   }
 
 public setZoomPercent(percent: number) {
-    const maxZoom = this.engine.editorCameraMode ? 120 : 11.0;
+    const maxZoom = this.engine.editorCameraMode ? 500 : 11.0;
     const newOrtho = Math.max(2.5, Math.min(maxZoom, 10 / (Math.max(5, percent) / 100)));
     this.updateCameraAspect(newOrtho);
     const zoomPercent = Math.round((10 / newOrtho) * 100);
@@ -932,7 +932,7 @@ public fitMapInView() {
     const orthoH = (h * s) / 2 + 2;
     const orthoW = (w * s) / (2 * Math.max(0.1, aspect)) + 2;
     // Always allow large zooms when trying to fit a map in view
-    const maxZoom = 120;
+    const maxZoom = 500;
     const ortho = Math.max(orthoH, orthoW);
     const clamped = Math.max(2.5, Math.min(maxZoom, ortho));
     this.updateCameraAspect(clamped);

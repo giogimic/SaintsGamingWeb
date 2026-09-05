@@ -1334,6 +1334,26 @@ export function StudioSettingsPanel() {
                   className="w-4 h-4 accent-primary rounded cursor-pointer"
                 />
               </div>
+
+              <div className="p-3 rounded-xl bg-rose-950/20 border border-rose-500/30 space-y-2 mt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-[11px] font-bold text-rose-300 flex items-center gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5" /> Danger Zone
+                    </div>
+                    <div className="text-[9px] text-muted-foreground mt-1">
+                      Reset core engine assets (default tilesets, map index). Only use if the editor is broken.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => window.dispatchEvent(new CustomEvent('studio_open_reinitialize'))}
+                    className="px-3 py-1.5 bg-rose-900/40 hover:bg-rose-900/80 text-rose-200 border border-rose-700/50 rounded font-bold transition-colors shadow-sm"
+                  >
+                    Reinitialize Studio
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
