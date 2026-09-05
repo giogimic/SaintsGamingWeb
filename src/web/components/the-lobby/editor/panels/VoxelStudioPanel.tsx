@@ -193,7 +193,7 @@ export const VoxelStudioPanel: React.FC = () => {
                     <span>3D Voxel Volume:</span>
                   </span>
                   <span className="text-white font-mono font-bold bg-black/60 px-2 py-0.5 rounded border border-primary/30">
-                    {Math.max(1, Math.ceil((currentMapData.grid?.[0]?.length || 32) / 16))} × {Math.max(1, Math.ceil((currentMapData.grid?.length || 32) / 16))} × 1 Chunks
+                    {Math.max(1, Math.ceil((currentMapData.grid?.[0]?.length || 32) / 32))} × {Math.max(1, Math.ceil((currentMapData.grid?.length || 32) / 32))} × 1 Chunks
                   </span>
                 </div>
 

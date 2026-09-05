@@ -189,8 +189,8 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
       tileLayers: [],
       tilesets: [],
       voxelDoc: generateDefaultWorldDoc(
-        Math.max(1, Math.ceil(gameMap.width / 16)),
-        Math.max(1, Math.ceil(gameMap.height / 16)),
+        Math.max(1, Math.ceil(gameMap.width / 32)),
+        Math.max(1, Math.ceil(gameMap.height / 32)),
         64
       ),
       mapType: "TILE",
