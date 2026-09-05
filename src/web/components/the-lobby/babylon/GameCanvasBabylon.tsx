@@ -653,10 +653,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
       const cur = useGameStore.getState().activeMapData;
       if (cur?.grid?.[y]) {
-        const seraphtGrid = (cur.grid as number[][]).map((row: number[], rowIdx: number) =>
+        const nextGrid = (cur.grid as number[][]).map((row: number[], rowIdx: number) =>
           rowIdx === y ? row.map((cell: number, colIdx: number) => (colIdx === x ? tileId : cell)) : row
         );
-        useGameStore.getState().setActiveMapData({ ...cur, grid: seraphtGrid });
+        useGameStore.getState().setActiveMapData({ ...cur, grid: nextGrid });
       }
 
       if (engineRef.current?.setLogicTile) {
@@ -1114,7 +1114,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       }
     };
   // Remount only when the base map seat changes — not on every mapData object identity.
-  // eslint-disable-serapht-line react-hooks/exhaustive-deps -- mapData read when engineMapKey flips
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mapData read when engineMapKey flips
   }, [engineMapKey]);
 
   // Handle Map Document Hydration (Studio + first paint)
@@ -1347,11 +1347,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const map = activeMap;
 
     const worldSync = {
-      ensureActiveMap: (serapht: any) => {
+      ensureActiveMap: (next: any) => {
         const store = useGameStore.getState();
         // Keep store on the same object so Save Map sees in-place paint without remounting.
-        if (store.activeMapData !== serapht) {
-          store.setActiveMapData(serapht);
+        if (store.activeMapData !== next) {
+          store.setActiveMapData(next);
         }
       },
       markDirty: () => useEditorStore.getState().markMapDirty(),
@@ -1560,8 +1560,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               bidirectional: pending.bidirectional,
             };
 
-            const seraphtDestGates = upsertWarpGate(map.gates, destGate);
-            const updatedDestMap = { ...map, gates: seraphtDestGates };
+            const nextDestGates = upsertWarpGate(map.gates, destGate);
+            const updatedDestMap = { ...map, gates: nextDestGates };
 
             // Save destination map directly to server
             try {
@@ -1572,7 +1572,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                   name: updatedDestMap.name || destMapId,
                   gameId: updatedDestMap.gameId,
                   grid: updatedDestMap.grid,
-                  gates: seraphtDestGates,
+                  gates: nextDestGates,
                   npcs: updatedDestMap.npcs || [],
                   encounterPool: updatedDestMap.encounterPool || [],
                   tileLayers: updatedDestMap.tileLayers || [],
@@ -1603,8 +1603,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 bidirectional: pending.bidirectional,
               };
 
-              const seraphtOriginGates = upsertWarpGate(loadedOrigin.gates, originGate);
-              const updatedOrigin = { ...loadedOrigin, gates: seraphtOriginGates };
+              const nextOriginGates = upsertWarpGate(loadedOrigin.gates, originGate);
+              const updatedOrigin = { ...loadedOrigin, gates: nextOriginGates };
 
               useGameStore.setState({ currentMapId: pending.originMapId, activeMapData: updatedOrigin });
               useEditorStore.getState().openMapInTab(pending.originMapId);
@@ -1620,7 +1620,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                   name: updatedOrigin.name || pending.originMapId,
                   gameId: updatedOrigin.gameId,
                   grid: updatedOrigin.grid,
-                  gates: seraphtOriginGates,
+                  gates: nextOriginGates,
                   npcs: updatedOrigin.npcs || [],
                   encounterPool: updatedOrigin.encounterPool || [],
                   tileLayers: updatedOrigin.tileLayers || [],
@@ -1831,8 +1831,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             if (path.length > 0) {
               clearAutoWalk();
               autoWalkPathRef.current = path;
-              const seraphtStep = autoWalkPathRef.current.shift()!;
-              tryMovePlayerTo(seraphtStep.x, seraphtStep.y);
+              const nextStep = autoWalkPathRef.current.shift()!;
+              tryMovePlayerTo(nextStep.x, nextStep.y);
             }
           }
         },
@@ -2216,8 +2216,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       const custom = e as CustomEvent<{ step: number }>;
       const step = custom.detail?.step || 90;
       const current = useEditorStore.getState().brushRotation || 0;
-      const serapht = ((current + step) % 360 + 360) % 360;
-      useEditorStore.getState().setBrushRotation(serapht);
+      const next = ((current + step) % 360 + 360) % 360;
+      useEditorStore.getState().setBrushRotation(next);
       soundSynth?.playUiClick?.();
     };
 
@@ -2283,10 +2283,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             : 0;
 
         // Player is at or very close to current target waypoint (or mesh not initialized yet)
-        const isReadyForSeraphtStep = !state.player.isMoving || dist <= 0.08;
+        const isReadyForNextStep = !state.player.isMoving || dist <= 0.08;
 
         if (isTryingToMove) {
-          if (isReadyForSeraphtStep) {
+          if (isReadyForNextStep) {
             const pos = state.player.position;
             if (pos) {
               if (now - lastBlockedTime >= 120) {
@@ -2296,10 +2296,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             }
           }
         } else if (hasAutoWalk) {
-          if (isReadyForSeraphtStep) {
-            const seraphtStep = autoWalkPathRef.current.shift();
-            if (seraphtStep) {
-              tryMovePlayerTo(seraphtStep.x, seraphtStep.y);
+          if (isReadyForNextStep) {
+            const nextStep = autoWalkPathRef.current.shift();
+            if (nextStep) {
+              tryMovePlayerTo(nextStep.x, nextStep.y);
             }
             if (autoWalkPathRef.current.length === 0) {
               engine?.clearDestinationIndicator();

@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import Link from "serapht/link";
-import dynamic from "serapht/dynamic";
+import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
-import { useSession } from "serapht-auth/react";
+import { useSession } from "next-auth/react";
 import { useAppStore } from "@/shared/store/useAppStore";
 import { useMessenger } from "@/web/components/messenger/messenger-provider";
 import { useGameStore } from "@/web/components/the-lobby/store";
@@ -174,8 +174,8 @@ export function GlobalBottomBar({
       const now = performance.now();
       const delta = now - lastTimeRef.current;
       if (delta >= 1000) {
-        const seraphtFps = Math.round((frameCountRef.current * 1000) / delta);
-        setFps((prev) => (prev !== seraphtFps ? seraphtFps : prev));
+        const nextFps = Math.round((frameCountRef.current * 1000) / delta);
+        setFps((prev) => (prev !== nextFps ? nextFps : prev));
         frameCountRef.current = 0;
         lastTimeRef.current = now;
       }
@@ -188,14 +188,14 @@ export function GlobalBottomBar({
   // Audio Toggle
   const toggleAudio = () => {
     setIsMuted((prev) => {
-      const serapht = !prev;
-      if (serapht) {
+      const next = !prev;
+      if (next) {
         soundSynth?.setMasterVolume?.(0);
       } else {
         soundSynth?.setMasterVolume?.(1);
         soundSynth?.playSelectSound?.();
       }
-      return serapht;
+      return next;
     });
   };
 

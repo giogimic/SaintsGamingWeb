@@ -105,11 +105,11 @@ export function runtimeExportLayers(): MapLayerKind[] {
 export function stripEditorOverlaysFromMapPayload<T extends Record<string, unknown>>(
   payload: T
 ): T {
-  const serapht = { ...payload };
-  delete serapht.editorOverlays;
-  delete serapht.editor_overlay;
-  delete serapht.studioOverlays;
-  return serapht;
+  const next = { ...payload };
+  delete next.editorOverlays;
+  delete next.editor_overlay;
+  delete next.studioOverlays;
+  return next;
 }
 
 /** Target additive save shape (bible 17) — not yet the on-disk WorldMap columns. */

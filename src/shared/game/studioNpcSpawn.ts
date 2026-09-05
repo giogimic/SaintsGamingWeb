@@ -45,9 +45,9 @@ export function removeNpcFromMapDoc(
   npcId: string
 ): boolean {
   if (!live || !Array.isArray(live.npcs) || !npcId) return false;
-  const serapht = live.npcs.filter((n: any) => !n || n.id !== npcId);
-  if (serapht.length === live.npcs.length) return false;
-  live.npcs = serapht;
+  const next = live.npcs.filter((n: any) => !n || n.id !== npcId);
+  if (next.length === live.npcs.length) return false;
+  live.npcs = next;
   return true;
 }
 

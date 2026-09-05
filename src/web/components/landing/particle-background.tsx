@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useTheme } from "serapht-themes";
+import { useTheme } from "next-themes";
 
 /**
  * Floating particle background — pure Canvas, no images.

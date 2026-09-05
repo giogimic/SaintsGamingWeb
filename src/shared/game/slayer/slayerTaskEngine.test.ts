@@ -74,7 +74,7 @@ describe('Slayer Task Assignment & Extension Matrix Engine', () => {
         slayerLevelReq: 75,
         baseHp: 105,
       },
-      completedTasksStreak: 9, // Serapht completion is 10th milestone (5x Master Broker 12 base = 60 points)
+      completedTasksStreak: 9, // Next completion is 10th milestone (5x Master Broker 12 base = 60 points)
       slayerPoints: 100,
       blockedMonsters: [],
       extendedMonsters: [],

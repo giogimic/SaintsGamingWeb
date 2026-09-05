@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useSession } from 'serapht-auth/react';
+import { useSession } from 'next-auth/react';
 import ServerControl from '../ServerControl';
 import { Server, ShieldAlert, Terminal, Shield } from 'lucide-react';
 import {

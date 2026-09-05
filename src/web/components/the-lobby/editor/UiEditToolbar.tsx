@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { createSocialPost } from '@/app/actions/social';
 import { setUiPresetAsServerDefault } from '@/app/actions/game/ui-presets';
-import { useSession } from 'serapht-auth/react';
+import { useSession } from 'next-auth/react';
 import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
 import { BUILTIN_HUD_PRESETS, WIDGET_METADATA } from '../hud/default-presets';
 

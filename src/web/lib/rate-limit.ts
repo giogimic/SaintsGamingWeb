@@ -8,7 +8,7 @@
  * Ready for Redis drop-in adapter when multi-instance horizontal scale is configured.
  */
 
-import { SeraphtResponse } from "serapht/server";
+import { NextResponse } from "next/server";
 
 export interface RateLimitEntry {
   count: number;
@@ -88,8 +88,8 @@ export function rateLimit(
 export function createRateLimitResponse(
   result: RateLimitResult,
   message: string = "Too many requests. Please slow down."
-): SeraphtResponse {
-  return SeraphtResponse.json(
+): NextResponse {
+  return NextResponse.json(
     { message, retryAfter: result.retryAfterSec },
     {
       status: 429,
@@ -104,7 +104,7 @@ export function createRateLimitResponse(
 }
 
 /**
- * Extract client IP from a Serapht.js / Web Request object.
+ * Extract client IP from a Next.js / Web Request object.
  */
 export function getClientIp(req: Request): string {
   const forwarded = req.headers.get("x-forwarded-for");

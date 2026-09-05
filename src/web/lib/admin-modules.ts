@@ -647,7 +647,7 @@ export function getActiveAdminModule(pathname: string): AdminModule | undefined 
   const exact = ADMIN_MODULES.find((m) => m.href === pathname);
   if (exact) return exact;
 
-  // Serapht match prefix (longest href match)
+  // Next match prefix (longest href match)
   const matches = ADMIN_MODULES.filter(
     (m) => !m.exact && pathname.startsWith(m.href + "/")
   ).sort((a, b) => b.href.length - a.href.length);

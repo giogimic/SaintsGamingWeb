@@ -1,16 +1,16 @@
 /**
  * Lobby / Studio realtime socket target.
  *
- * When `SERAPHT_PUBLIC_GO_MMO_URL` is set (e.g. http://127.0.0.1:3001), the
+ * When `NEXT_PUBLIC_GO_MMO_URL` is set (e.g. http://127.0.0.1:3001), the
  * lobby game socket connects to the Go MMO backend. Forum RealtimeProvider
- * stays on the Serapht.js origin (unchanged).
+ * stays on the Next.js origin (unchanged).
  *
- * Studio map CRUD still uses Serapht `/api/maps` (Prisma). After save we also
+ * Studio map CRUD still uses Next `/api/maps` (Prisma). After save we also
  * emit `content_reload` so the Go live world stays in sync.
  */
 
 export function goMmoPublicUrl(): string | undefined {
-  const raw = (process.env.SERAPHT_PUBLIC_GO_MMO_URL || "").trim();
+  const raw = (process.env.NEXT_PUBLIC_GO_MMO_URL || "").trim();
   if (!raw) return undefined;
   return raw.replace(/\/+$/, "");
 }
@@ -25,7 +25,7 @@ export function lobbySocketAuth(accountId: string): { token: string } {
 }
 
 export type LobbySocketConnect = {
-  /** Absolute URL for Go, or undefined for same-origin Serapht/TS socket. */
+  /** Absolute URL for Go, or undefined for same-origin Next/TS socket. */
   url: string | undefined;
   options: {
     auth: { token: string };

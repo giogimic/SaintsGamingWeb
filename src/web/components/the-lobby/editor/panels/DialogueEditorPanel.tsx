@@ -40,7 +40,7 @@ function treeToNodes(tree: Record<string, unknown>): DialogueNodeInput[] {
       options: Array.isArray(node.options)
         ? node.options.map((o) => ({
             label: o.label || '',
-            seraphtNode: o.seraphtNode || 'exit',
+            nextNode: o.nextNode || 'exit',
             action: o.action || '',
             questSlug: o.questSlug || '',
           }))
@@ -53,7 +53,7 @@ const emptyNodes = (): DialogueNodeInput[] => [
   {
     id: 'node_start',
     text: 'Hello, traveler.',
-    options: [{ label: 'Goodbye.', seraphtNode: 'exit', action: '', questSlug: '' }],
+    options: [{ label: 'Goodbye.', nextNode: 'exit', action: '', questSlug: '' }],
   },
 ];
 
@@ -91,7 +91,7 @@ function nodesToRawJson(nodes: DialogueNodeInput[]): string {
       options: n.options.map((o) => {
         const opt: Record<string, string> = {
           label: o.label,
-          seraphtNode: o.seraphtNode,
+          nextNode: o.nextNode,
         };
         if (o.action) opt.action = o.action;
         if (o.questSlug) opt.questSlug = o.questSlug;
@@ -216,15 +216,15 @@ export function DialogueEditorPanel() {
         id: 'node_start',
         text: 'Hello there. We are in need of supplies. Would you be willing to help out?',
         options: [
-          { label: 'Yes, what do you need?', seraphtNode: 'node_quest_details', action: '', questSlug: '' },
-          { label: 'Not right now.', seraphtNode: 'exit', action: '', questSlug: '' }
+          { label: 'Yes, what do you need?', nextNode: 'node_quest_details', action: '', questSlug: '' },
+          { label: 'Not right now.', nextNode: 'exit', action: '', questSlug: '' }
         ]
       },
       {
         id: 'node_quest_details',
         text: 'Excellent! We need you to gather 5 Wood Logs. Let me know when you have them.',
         options: [
-          { label: 'I accept.', seraphtNode: 'exit', action: 'ACCEPT_QUEST', questSlug: 'fetch_wood_starter' }
+          { label: 'I accept.', nextNode: 'exit', action: 'ACCEPT_QUEST', questSlug: 'fetch_wood_starter' }
         ]
       }
     ];
@@ -303,9 +303,9 @@ export function DialogueEditorPanel() {
   };
 
   const commitNodes = (nodes: DialogueNodeInput[]) => {
-    const serapht = { ...form, nodes };
-    commitStructural(serapht);
-    setForm(serapht);
+    const next = { ...form, nodes };
+    commitStructural(next);
+    setForm(next);
   };
 
   return (
@@ -440,13 +440,13 @@ export function DialogueEditorPanel() {
               type="button"
               onClick={() => {
                 if (form.rawMode) return;
-                const serapht = {
+                const next = {
                   ...form,
                   rawMode: true,
                   rawJson: nodesToRawJson(form.nodes),
                 };
-                commitStructural(serapht);
-                setForm(serapht);
+                commitStructural(next);
+                setForm(next);
               }}
               className={`text-[9px] font-bold uppercase px-2 py-1 rounded-lg border ${
                 form.rawMode ? 'border-sky-700 text-sky-300' : 'border-[#806f47]/20 text-slate-500'
@@ -518,11 +518,11 @@ export function DialogueEditorPanel() {
                         />
                         <input
                           className={inputCls}
-                          placeholder="seraphtNode"
-                          value={opt.seraphtNode}
+                          placeholder="nextNode"
+                          value={opt.nextNode}
                           onFocus={onFieldFocus}
                           onBlur={onFieldBlur}
-                          onChange={(e) => updateOption(ni, oi, { seraphtNode: e.target.value })}
+                          onChange={(e) => updateOption(ni, oi, { nextNode: e.target.value })}
                         />
                         <select
                           className={inputCls}
@@ -573,7 +573,7 @@ export function DialogueEditorPanel() {
                                   ...n,
                                   options: [
                                     ...n.options,
-                                    { label: '…', seraphtNode: 'exit', action: '', questSlug: '' },
+                                    { label: '…', nextNode: 'exit', action: '', questSlug: '' },
                                   ],
                                 }
                               : n
@@ -595,7 +595,7 @@ export function DialogueEditorPanel() {
                     {
                       id: `node_${form.nodes.length + 1}`,
                       text: '',
-                      options: [{ label: 'Back', seraphtNode: 'node_start', action: '', questSlug: '' }],
+                      options: [{ label: 'Back', nextNode: 'node_start', action: '', questSlug: '' }],
                     },
                   ])
                 }

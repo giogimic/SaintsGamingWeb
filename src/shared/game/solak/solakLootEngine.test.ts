@@ -3,11 +3,11 @@ import {
   calculateGrimoireBonus,
   addGrimoirePages,
   evaluateBlightboundBoltSave,
-  rollWorld Tree GuardianLoot,
+  rollWorldTreeGuardianLoot,
   type GrimoireState,
-} from './world_tree_guardianLootEngine';
+} from './solakLootEngine';
 
-describe('World Tree Guardian Loot, Grimoire & Crossbow Engine', () => {
+describe('WorldTreeGuardian Loot, Grimoire & Crossbow Engine', () => {
   it('calculates Grimoire of Erebus crit rate bonus and damage cap increase', () => {
     const inactive: GrimoireState = { isActive: false, pagesRemaining: 0, minutesRemaining: 0 };
     expect(calculateGrimoireBonus(inactive).critChanceBonus).toBe(0);
@@ -33,7 +33,7 @@ describe('World Tree Guardian Loot, Grimoire & Crossbow Engine', () => {
 
   it('rolls unique drops and guarantees torn pages', () => {
     // Force unique drop (seed 0.001 < 0.025) and roll Grimoire
-    const loot = rollWorld Tree GuardianLoot(0.001, 0.10);
+    const loot = rollWorldTreeGuardianLoot(0.001, 0.10);
     expect(loot.hasUnique).toBe(true);
     expect(loot.uniqueDrop).not.toBeNull();
     expect(loot.uniqueDrop?.itemId).toBe('grimoire_of_erebus');

@@ -376,8 +376,8 @@ export function FeedVideoPlayer({
   const handleCycleSpeed = (e: React.MouseEvent) => {
     e.stopPropagation();
     const currentIndex = PLAYBACK_RATES.indexOf(playbackRate);
-    const seraphtRate = PLAYBACK_RATES[(currentIndex + 1) % PLAYBACK_RATES.length];
-    setPlaybackRate(seraphtRate);
+    const nextRate = PLAYBACK_RATES[(currentIndex + 1) % PLAYBACK_RATES.length];
+    setPlaybackRate(nextRate);
   };
 
   // Toggle Mute
@@ -647,7 +647,7 @@ export function FeedVideoPlayer({
           <div 
             className="absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300 opacity-100"
           >
-            {/* eslint-disable-serapht-line @serapht/serapht/no-img-element */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src={displayPoster} 
               alt="" 

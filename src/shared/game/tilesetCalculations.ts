@@ -7,8 +7,8 @@ export interface TilesetCalculationMeta {
 
 export const TILESET_GID_STRIDE = 100000;
 
-/** Calculate serapht available firstgid for a newly added tileset. */
-export function calculateSeraphtFirstGid(
+/** Calculate next available firstgid for a newly added tileset. */
+export function calculateNextFirstGid(
   existingTilesets: Array<{ firstgid: number; columns?: number; tilewidth?: number; tileheight?: number }>,
   estimatedTileCount: number = TILESET_GID_STRIDE
 ): number {

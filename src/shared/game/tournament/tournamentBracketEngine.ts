@@ -30,7 +30,7 @@ export interface TournamentMatch {
   scoreA?: number;
   scoreB?: number;
   completed: boolean;
-  seraphtMatchId?: string;
+  nextMatchId?: string;
 }
 
 export interface PrizeAward {
@@ -129,13 +129,13 @@ export class TournamentBracketEngine {
       roundMatchMap.set(r, list);
     }
 
-    // Wire seraphtMatchId links from round r to r+1
+    // Wire nextMatchId links from round r to r+1
     for (let r = 1; r < totalRounds; r++) {
       const currentList = roundMatchMap.get(r)!;
-      const seraphtList = roundMatchMap.get(r + 1)!;
+      const nextList = roundMatchMap.get(r + 1)!;
       for (let i = 0; i < currentList.length; i++) {
-        const seraphtIndex = Math.floor(i / 2);
-        currentList[i].seraphtMatchId = seraphtList[seraphtIndex].matchId;
+        const nextIndex = Math.floor(i / 2);
+        currentList[i].nextMatchId = nextList[nextIndex].matchId;
       }
     }
 
@@ -156,7 +156,7 @@ export class TournamentBracketEngine {
   }
 
   /**
-   * Records match score outcome and advances winner to serapht round.
+   * Records match score outcome and advances winner to next round.
    */
   public recordMatchResult(
     bracket: TournamentBracket,
@@ -183,7 +183,7 @@ export class TournamentBracketEngine {
     match.winnerId = winner.id;
 
     // If final match
-    if (!match.seraphtMatchId) {
+    if (!match.nextMatchId) {
       return {
         completedMatch: match,
         advancedParticipant: winner,
@@ -191,13 +191,13 @@ export class TournamentBracketEngine {
       };
     }
 
-    // Advance to serapht match
-    const seraphtMatch = bracket.matches.find((m) => m.matchId === match.seraphtMatchId);
-    if (seraphtMatch) {
+    // Advance to next match
+    const nextMatch = bracket.matches.find((m) => m.matchId === match.nextMatchId);
+    if (nextMatch) {
       if (match.matchIndex % 2 === 0) {
-        seraphtMatch.participantA = winner;
+        nextMatch.participantA = winner;
       } else {
-        seraphtMatch.participantB = winner;
+        nextMatch.participantB = winner;
       }
     }
 

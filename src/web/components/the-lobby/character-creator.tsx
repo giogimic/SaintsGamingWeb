@@ -42,7 +42,7 @@ import {
 import { CharacterSpritePreview } from './CharacterSpritePreview';
 import { AssetManager } from '@/engine/assets/AssetManager';
 import { MidnightTropicalBackground } from './MidnightTropicalBackground';
-import { useTheme } from 'serapht-themes';
+import { useTheme } from 'next-themes';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useTheme } from "serapht-themes";
+import { useTheme } from "next-themes";
 import { Moon, Sun, Palmtree } from "lucide-react";
 import { Button } from "@/web/components/ui/button";
 

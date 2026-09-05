@@ -7,7 +7,7 @@ const resendApiKey = process.env.RESEND_API_KEY;
 const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 const FROM_EMAIL = "Saints Gaming <noreply@saintsgaming.net>"; // Change to verified domain later
-const DEFAULT_URL = process.env.SERAPHT_PUBLIC_SITE_URL || 'http://localhost:3000';
+const DEFAULT_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
 /**
  * Helper to log a warning if Resend is not configured, but still pretend to succeed.
@@ -43,7 +43,7 @@ export async function sendWelcomeEmail(to: string, username: string) {
       <h1 style="color: #0f172a;">Welcome to Saints Gaming, ${username}!</h1>
       <p>We are thrilled to have you join our community.</p>
       <p>You can now participate in the forums, create support tickets, and join us on our game servers.</p>
-      <a href="${process.env.SERAPHT_PUBLIC_DISCORD_INVITE || 'https://discord.gg/saintsgaming'}" style="display: inline-block; padding: 12px 24px; background-color: #5865F2; color: white; text-decoration: none; border-radius: 6px; margin-top: 10px;">
+      <a href="${process.env.NEXT_PUBLIC_DISCORD_INVITE || 'https://discord.gg/saintsgaming'}" style="display: inline-block; padding: 12px 24px; background-color: #5865F2; color: white; text-decoration: none; border-radius: 6px; margin-top: 10px;">
         Join our Discord
       </a>
     </div>

@@ -437,7 +437,7 @@ export function TurnBattleOverlay() {
                 disabled={phase !== 'WAITING_FOR_INPUT'}
                 onClick={() => handleAction('SWITCH')}
                 className="p-3.5 rounded-xl font-mono font-black text-xs uppercase tracking-widest transition-all bg-amber-500/20 hover:bg-amber-500/40 text-amber-200 border border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:shadow-[0_0_20px_rgba(245,158,11,0.4)] disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 cursor-pointer flex items-center justify-center gap-2"
-                title="Switch to serapht healthy party creature"
+                title="Switch to next healthy party creature"
               >
                 <RefreshCw className="w-4 h-4 text-amber-400" />
                 SWITCH [3]

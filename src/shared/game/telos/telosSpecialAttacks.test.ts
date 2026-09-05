@@ -4,9 +4,9 @@ import {
   initializeTendrilCheck,
   applyDamageToTendrils,
   resolveAnimaBomb,
-} from './the_titanSpecialAttacks';
+} from './telosSpecialAttacks';
 
-describe('The Titan Special Attacks & Mechanics Engine', () => {
+describe('Titan Special Attacks & Mechanics Engine', () => {
   it('resolves Hold Still slam with Resonance heal vs unmitigated hit & stun', () => {
     // 100% Enrage raw damage = 5000 * 1.5 = 7500
     // Resonance -> 0 damage, heals 7500

@@ -2,8 +2,8 @@
  * Fire-and-forget helpers for publishing through RealtimeService from
  * API routes and server actions. Never call socket.io directly.
  *
- * getRealtimeService() is null when Serapht.js runs without server.ts
- * (e.g. `serapht start` without the custom server) — that is non-fatal.
+ * getRealtimeService() is null when Next.js runs without server.ts
+ * (e.g. `next start` without the custom server) — that is non-fatal.
  *
  * Server-only: do not import from Client Components (pulls custom server / redis).
  */
@@ -36,7 +36,7 @@ export async function emitNotificationCreated(notification: NotificationRow): Pr
       link: notification.link,
     });
   } catch {
-    // Non-fatal: row is persisted; client sees it on serapht load / sync
+    // Non-fatal: row is persisted; client sees it on next load / sync
   }
 }
 

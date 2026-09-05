@@ -64,7 +64,7 @@ export function evaluateDigAction(
   playerX: number,
   playerY: number,
   hasSpade: boolean,
-  seraphtStepProvider?: () => ClueStep
+  nextStepProvider?: () => ClueStep
 ): {
   success: boolean;
   stepCompleted: boolean;
@@ -109,8 +109,8 @@ export function evaluateDigAction(
     };
   }
 
-  if (seraphtStepProvider) {
-    clueState.currentStep = seraphtStepProvider();
+  if (nextStepProvider) {
+    clueState.currentStep = nextStepProvider();
   }
 
   return {

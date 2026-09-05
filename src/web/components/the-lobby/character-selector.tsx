@@ -35,8 +35,8 @@ import { toast } from 'sonner';
 import { soundSynth } from '@/engine/sound-synth';
 import { useGameStore } from './store';
 import { useAppStore } from "@/shared/store/useAppStore";
-import { useSession } from 'serapht-auth/react';
-import { useTheme } from 'serapht-themes';
+import { useSession } from 'next-auth/react';
+import { useTheme } from 'next-themes';
 import { MidnightTropicalBackground } from './MidnightTropicalBackground';
 import { CharacterSpritePreview } from './CharacterSpritePreview';
 import { CharacterDetailPreview } from './CharacterDetailPreview';
@@ -114,7 +114,7 @@ function CreditsModal({ onClose }: { onClose: () => void }) {
         <div className="space-y-3 text-xs sm:text-sm font-mono text-left">
           {[
             { role: 'Game Director & Concept', name: 'GioGimic & Saints Gaming' },
-            { role: 'Core Engine & Architecture', name: 'BabylonJS · Serapht.js 15 · Go MMO' },
+            { role: 'Core Engine & Architecture', name: 'BabylonJS · Next.js 15 · Go MMO' },
             { role: 'Original Creature Art', name: 'Open Source Community Artists' },
             { role: 'World Tilesets', name: 'Saints Studio Contributors' },
             { role: 'Sound Synthesis & FX', name: 'Saints WebAudio Engine' },

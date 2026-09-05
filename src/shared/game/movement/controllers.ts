@@ -121,16 +121,16 @@ export class FreeMovementController implements IMovementController {
     const normX = intent.dx / length;
     const normY = intent.dy / length;
 
-    const seraphtX = from.x + normX * speed * dt;
-    const seraphtY = from.y + normY * speed * dt;
+    const nextX = from.x + normX * speed * dt;
+    const nextY = from.y + normY * speed * dt;
 
     // Bounds Check
-    if (seraphtX < 0 || seraphtX >= world.mapWidth || seraphtY < 0 || seraphtY >= world.mapHeight) {
+    if (nextX < 0 || nextX >= world.mapWidth || nextY < 0 || nextY >= world.mapHeight) {
       return { success: false, reason: 'BOUNDS' };
     }
 
-    const tileX = Math.floor(seraphtX);
-    const tileY = Math.floor(seraphtY);
+    const tileX = Math.floor(nextX);
+    const tileY = Math.floor(nextY);
     const tileId = world.mapGrid[tileY]?.[tileX];
     const logicTile = world.logicTiles[tileId];
 
@@ -140,8 +140,8 @@ export class FreeMovementController implements IMovementController {
 
     return {
       success: true,
-      targetX: seraphtX,
-      targetY: seraphtY,
+      targetX: nextX,
+      targetY: nextY,
       stepDurationMs: Math.round(dt * 1000),
     };
   }

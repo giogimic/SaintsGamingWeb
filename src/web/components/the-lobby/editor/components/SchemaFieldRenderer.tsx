@@ -89,7 +89,7 @@ export const SchemaFieldRenderer: React.FC<SchemaFieldRendererProps> = ({
           value={value}
           disabled={disabled}
           poolOptions={lootPoolOptions}
-          onChange={(serapht) => onChange(field.key, serapht)}
+          onChange={(next) => onChange(field.key, next)}
         />
       ) : field.type === 'json' ? (
         <textarea
@@ -189,8 +189,8 @@ function LootRefEditor({
           onChange={(e) => {
             try {
               const drops = JSON.parse(e.target.value);
-              const serapht = parseLootRef({ strategy: 'override', drops });
-              if (serapht) onChange(serapht);
+              const next = parseLootRef({ strategy: 'override', drops });
+              if (next) onChange(next);
             } catch {
               /* keep typing */
             }

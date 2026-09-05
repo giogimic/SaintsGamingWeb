@@ -177,13 +177,13 @@ export const IconContainersView: React.FC<IconContainersViewProps> = ({
   const safeValue = Math.max(0, value);
   const isCritical = safeValue <= (maxValue * 0.25) && vitalType === 'heart';
 
-  // Determine base tier and serapht tier based on current value
+  // Determine base tier and next tier based on current value
   const baseTier = Math.floor(safeValue / UNITS_PER_TIER);
-  const seraphtTier = baseTier + 1;
+  const nextTier = baseTier + 1;
   const remainderValue = safeValue % UNITS_PER_TIER;
 
   // We always render exactly MAX_ICONS (e.g. 8) containers on screen.
-  // Those that fall under the remainder get the seraphtTier color.
+  // Those that fall under the remainder get the nextTier color.
   // Those that are above the remainder get the baseTier color.
   
   const containers = Array.from({ length: MAX_ICONS }).map((_, idx) => {
@@ -194,15 +194,15 @@ export const IconContainersView: React.FC<IconContainersViewProps> = ({
     let fillRatio = 1.0;
 
     if (remainderValue > containerFloor) {
-      // This icon has some value from the serapht tier
-      tierToUse = seraphtTier;
+      // This icon has some value from the next tier
+      tierToUse = nextTier;
       if (remainderValue >= containerCeil) {
-        fillRatio = 1.0; // Full serapht tier
+        fillRatio = 1.0; // Full next tier
       } else {
-        // Partial serapht tier
+        // Partial next tier
         const fraction = (remainderValue - containerFloor) / UNITS_PER_ICON;
         fillRatio = fraction >= 0.5 ? 0.5 : 0.0;
-        // If the serapht tier is empty for this icon, it should show the full base tier!
+        // If the next tier is empty for this icon, it should show the full base tier!
         if (fillRatio === 0.0) {
           tierToUse = baseTier;
           fillRatio = 1.0; // Show full underlying tier

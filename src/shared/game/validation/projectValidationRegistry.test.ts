@@ -66,7 +66,7 @@ describe('ProjectValidationRegistry (Phase 1D)', () => {
                 {
                   id: 'opt_1',
                   label: 'Take quest',
-                  seraphtNodeId: 'node_missing_404',
+                  nextNodeId: 'node_missing_404',
                 },
               ],
             },

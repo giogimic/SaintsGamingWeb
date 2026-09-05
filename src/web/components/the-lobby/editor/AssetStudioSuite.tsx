@@ -224,7 +224,7 @@ export function AssetStudioSuite() {
   useEffect(() => {
     const tabs = getSubTabs();
     setActiveSubTab(tabs[0]?.id || 'browse');
-    // eslint-disable-serapht-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeWorkspace]);
 
   // ── Render active sub-tab content ──

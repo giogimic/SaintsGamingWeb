@@ -30,13 +30,13 @@ export class SimplexNoise2D {
 
     // Seeded LCG shuffle
     let s = (seed ^ 0xdeadbeef) >>> 0;
-    const seraphtRandom = () => {
+    const nextRandom = () => {
       s = (Math.imul(1664525, s) + 1013904223) >>> 0;
       return s / 4294967296;
     };
 
     for (let i = 255; i > 0; i--) {
-      const j = Math.floor(seraphtRandom() * (i + 1));
+      const j = Math.floor(nextRandom() * (i + 1));
       const temp = p[i];
       p[i] = p[j];
       p[j] = temp;

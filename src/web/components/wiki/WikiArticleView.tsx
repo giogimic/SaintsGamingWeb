@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react'
-import Link from 'serapht/link'
+import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ChevronLeft, ChevronRight, Copy, Check, Info, Lightbulb, AlertTriangle, ShieldAlert, Clock } from 'lucide-react'
@@ -14,7 +14,7 @@ interface Props {
 }
 
 export default function WikiArticleView({ content, article }: Props) {
-  const { prev, serapht } = getAdjacentArticles(article.slug)
+  const { prev, next } = getAdjacentArticles(article.slug)
 
   const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
@@ -124,10 +124,10 @@ export default function WikiArticleView({ content, article }: Props) {
           </Link>
         ) : <div />}
         
-        {serapht ? (
-          <Link href={`/wiki/${serapht.slug}`} className="flex flex-col items-end text-right p-4 rounded-xl border border-border/50 bg-card/30 hover:bg-card/60 transition-colors group">
-            <span className="text-xs text-muted-foreground mb-1 flex items-center gap-1">Serapht <ChevronRight className="w-3 h-3"/></span>
-            <span className="font-semibold text-foreground group-hover:text-primary transition-colors">{serapht.title}</span>
+        {next ? (
+          <Link href={`/wiki/${next.slug}`} className="flex flex-col items-end text-right p-4 rounded-xl border border-border/50 bg-card/30 hover:bg-card/60 transition-colors group">
+            <span className="text-xs text-muted-foreground mb-1 flex items-center gap-1">Next <ChevronRight className="w-3 h-3"/></span>
+            <span className="font-semibold text-foreground group-hover:text-primary transition-colors">{next.title}</span>
           </Link>
         ) : <div />}
       </div>

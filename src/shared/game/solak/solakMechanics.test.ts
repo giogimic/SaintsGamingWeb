@@ -3,9 +3,9 @@ import {
   spawnRootCage,
   damageRootCage,
   resolveNatureDomeProtection,
-} from './world_tree_guardianMechanics';
+} from './solakMechanics';
 
-describe('World Tree Guardian Mechanics, Root Cages & Nature Dome Engine', () => {
+describe('WorldTreeGuardian Mechanics, Root Cages & Nature Dome Engine', () => {
   it('manages Root Cage trapping and rescue damage', () => {
     const cage = spawnRootCage('player_01', 15000);
     expect(cage.isBroken).toBe(false);

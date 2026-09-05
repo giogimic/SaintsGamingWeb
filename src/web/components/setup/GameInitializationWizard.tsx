@@ -358,7 +358,7 @@ export function GameInitializationWizard() {
             <GameDefinitionStep
               data={gameDefinition}
               onChange={(updates) => setGameDefinition((prev) => ({ ...prev, ...updates }))}
-              onSerapht={() => setStep(2)}
+              onNext={() => setStep(2)}
               onBack={() => setStep(0)}
             />
           )}
@@ -367,7 +367,7 @@ export function GameInitializationWizard() {
           {step === 2 && (
             <GameRequirementsStep
               gameDefinition={gameDefinition}
-              onSerapht={() => setStep(3)}
+              onNext={() => setStep(3)}
               onBack={() => setStep(1)}
             />
           )}
@@ -380,7 +380,7 @@ export function GameInitializationWizard() {
               creatures={creatures}
               onUpdateCharacters={setCharacters}
               onUpdateCreatures={setCreatures}
-              onSerapht={() => setStep(4)}
+              onNext={() => setStep(4)}
               onBack={() => setStep(2)}
             />
           )}
@@ -390,7 +390,7 @@ export function GameInitializationWizard() {
             <EnvironmentSetupStep
               environment={environment}
               onChange={(updates) => setEnvironment((prev) => ({ ...prev, ...updates }))}
-              onSerapht={() => setStep(5)}
+              onNext={() => setStep(5)}
               onBack={() => setStep(3)}
             />
           )}
@@ -401,7 +401,7 @@ export function GameInitializationWizard() {
               environment={environment}
               startingMap={startingMap}
               onChange={setStartingMap}
-              onSerapht={() => setStep(6)}
+              onNext={() => setStep(6)}
               onBack={() => setStep(4)}
             />
           )}

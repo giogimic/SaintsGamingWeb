@@ -171,15 +171,15 @@ export function normalizeStudioMapVisuals<
     tilesets?: StudioTilesetMeta[];
   },
 >(map: T): T {
-  let serapht = ensureMapHasStudioTilesets(map);
-  if (isLogicGridCopiedToVisual(serapht.grid, serapht.tileLayers)) {
-    serapht = {
-      ...serapht,
-      tileLayers: [buildDefaultGroundLayer(serapht.grid)],
-      tilesets: Array.isArray(serapht.tilesets) && serapht.tilesets.length > 0 ? serapht.tilesets : [...DEFAULT_STUDIO_TILESETS],
+  let next = ensureMapHasStudioTilesets(map);
+  if (isLogicGridCopiedToVisual(next.grid, next.tileLayers)) {
+    next = {
+      ...next,
+      tileLayers: [buildDefaultGroundLayer(next.grid)],
+      tilesets: Array.isArray(next.tilesets) && next.tilesets.length > 0 ? next.tilesets : [...DEFAULT_STUDIO_TILESETS],
     };
   }
-  return serapht;
+  return next;
 }
 
 /**

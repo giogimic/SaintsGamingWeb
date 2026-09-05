@@ -30,15 +30,15 @@ export function evaluateBorderStep(
   mapDimensions: { width: number; height: number },
   atlas: AtlasGridData
 ): BorderStepEvaluation {
-  const seraphtX = currentPos.x + (intent.dx > 0 ? 1 : intent.dx < 0 ? -1 : 0);
-  const seraphtY = currentPos.y + (intent.dy > 0 ? 1 : intent.dy < 0 ? -1 : 0);
+  const nextX = currentPos.x + (intent.dx > 0 ? 1 : intent.dx < 0 ? -1 : 0);
+  const nextY = currentPos.y + (intent.dy > 0 ? 1 : intent.dy < 0 ? -1 : 0);
 
   let direction: CardinalDirection | null = null;
 
-  if (seraphtX >= mapDimensions.width) direction = 'east';
-  else if (seraphtX < 0) direction = 'west';
-  else if (seraphtY >= mapDimensions.height) direction = 'south';
-  else if (seraphtY < 0) direction = 'north';
+  if (nextX >= mapDimensions.width) direction = 'east';
+  else if (nextX < 0) direction = 'west';
+  else if (nextY >= mapDimensions.height) direction = 'south';
+  else if (nextY < 0) direction = 'north';
 
   if (!direction) {
     return { shouldWarp: false }; // Within map bounds

@@ -111,12 +111,12 @@ export class QuestJournal {
     let questCompleted = false;
 
     if (allStageDone) {
-      const seraphtStageIndex = active.currentStage; // 1-based index pointing to serapht stage
-      if (seraphtStageIndex < def.stages.length) {
-        // Advance to serapht stage
+      const nextStageIndex = active.currentStage; // 1-based index pointing to next stage
+      if (nextStageIndex < def.stages.length) {
+        // Advance to next stage
         active.currentStage += 1;
-        const seraphtStage = def.stages[active.currentStage - 1];
-        active.objectives = seraphtStage.objectives.map((o) => ({ ...o, currentCount: 0, isComplete: false }));
+        const nextStage = def.stages[active.currentStage - 1];
+        active.objectives = nextStage.objectives.map((o) => ({ ...o, currentCount: 0, isComplete: false }));
         stageAdvanced = true;
       } else {
         // Complete the quest

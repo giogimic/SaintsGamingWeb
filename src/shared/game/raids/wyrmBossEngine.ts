@@ -111,7 +111,7 @@ export function applyDamageToOlm(
     if (state.leftHand.isCrippled && state.rightHand.isCrippled) {
       state.phase = (state.phase + 1) as OlmPhase;
       phaseAdvanced = true;
-      // Reset hands for serapht phase
+      // Reset hands for next phase
       state.leftHand.hp = state.leftHand.maxHp;
       state.leftHand.isCrippled = false;
       state.rightHand.hp = state.rightHand.maxHp;

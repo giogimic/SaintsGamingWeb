@@ -22,7 +22,7 @@ test('store reads and writes without React context', () => {
   useGameStore.getState().enqueuePath([{ x: 1, y: 1 }, { x: 2, y: 2 }]);
   expect(useGameStore.getState().pathQueue).toEqual([{ x: 1, y: 1 }, { x: 2, y: 2 }]);
 
-  const seraphtPoint = useGameStore.getState().dequeuePath();
-  expect(seraphtPoint).toEqual({ x: 1, y: 1 });
+  const nextPoint = useGameStore.getState().dequeuePath();
+  expect(nextPoint).toEqual({ x: 1, y: 1 });
   expect(useGameStore.getState().pathQueue).toEqual([{ x: 2, y: 2 }]);
 });

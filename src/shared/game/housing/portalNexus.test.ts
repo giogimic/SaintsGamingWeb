@@ -4,7 +4,7 @@ import {
   attunePortalFrame,
   unlockSeraphusDestination,
   activatePortalTeleport,
-} from './portalSeraphus';
+} from './portalNexus';
 
 describe('Sanctuary Portal Seraphus & Teleport Attunement Engine (Bible 13)', () => {
   it('creates portal seraphus with default starter dests and first frame attuned', () => {

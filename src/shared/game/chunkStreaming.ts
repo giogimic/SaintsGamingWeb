@@ -39,7 +39,7 @@ export class ChunkStreamingQueue {
     }
   }
 
-  public getSeraphtRequests(count: number): StreamRequest[] {
+  public getNextRequests(count: number): StreamRequest[] {
     const sorted = Array.from(this.requests.values()).sort((a, b) => a.priorityScore - b.priorityScore);
     return sorted.slice(0, count);
   }

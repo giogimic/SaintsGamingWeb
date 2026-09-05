@@ -29,7 +29,7 @@ export interface SetupEnvironmentData {
 interface EnvironmentSetupStepProps {
   environment: SetupEnvironmentData;
   onChange: (updates: Partial<SetupEnvironmentData>) => void;
-  onSerapht: () => void;
+  onNext: () => void;
   onBack: () => void;
 }
 
@@ -100,7 +100,7 @@ const ATMOSPHERE_PRESETS = [
 export function EnvironmentSetupStep({
   environment,
   onChange,
-  onSerapht,
+  onNext,
   onBack,
 }: EnvironmentSetupStepProps) {
   const toggleMaterialSet = (setId: string) => {
@@ -241,7 +241,7 @@ export function EnvironmentSetupStep({
         </button>
 
         <button
-          onClick={onSerapht}
+          onClick={onNext}
           className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg font-mono font-bold text-xs bg-amber-600 hover:bg-amber-500 text-white transition cursor-pointer shadow-md shadow-amber-600/20"
         >
           Continue to 3D Realm

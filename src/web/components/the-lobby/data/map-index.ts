@@ -12,6 +12,7 @@ export interface MapIndexEntry {
   npcCount: number;
   gateCount: number;
   hasEncounters: boolean;
+  mapType?: string;
 }
 
 export function getMapCategory(id: string, name: string): MapCategory {
@@ -49,7 +50,8 @@ export function getMapIndexList(): MapIndexEntry[] {
       height,
       npcCount,
       gateCount,
-      hasEncounters
+      hasEncounters,
+      mapType: map.mapType
     };
   });
 }

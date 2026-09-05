@@ -286,10 +286,10 @@ export const LootManagerPanel: React.FC = () => {
   };
 
   const updateEntry = (idx: number, patch: Partial<LootDropEntry>) => {
-    const serapht = [...draftEntries];
-    if (serapht[idx]) {
-      serapht[idx] = { ...serapht[idx], ...patch };
-      setDraftEntries(serapht);
+    const next = [...draftEntries];
+    if (next[idx]) {
+      next[idx] = { ...next[idx], ...patch };
+      setDraftEntries(next);
     }
   };
 
@@ -303,10 +303,10 @@ export const LootManagerPanel: React.FC = () => {
   };
 
   const updateGuaranteed = (idx: number, patch: Partial<LootDropEntry>) => {
-    const serapht = [...draftGuaranteed];
-    if (serapht[idx]) {
-      serapht[idx] = { ...serapht[idx], ...patch };
-      setDraftGuaranteed(serapht);
+    const next = [...draftGuaranteed];
+    if (next[idx]) {
+      next[idx] = { ...next[idx], ...patch };
+      setDraftGuaranteed(next);
     }
   };
 

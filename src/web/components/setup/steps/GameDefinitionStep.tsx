@@ -27,7 +27,7 @@ export interface GameDefinitionData {
 interface GameDefinitionStepProps {
   data: GameDefinitionData;
   onChange: (updates: Partial<GameDefinitionData>) => void;
-  onSerapht: () => void;
+  onNext: () => void;
   onBack: () => void;
 }
 
@@ -39,7 +39,7 @@ const BLOCK_RESOLUTION_OPTIONS = [
   { size: 256, label: '256px Block', desc: 'Stylized low-poly chunky' },
 ];
 
-export function GameDefinitionStep({ data, onChange, onSerapht, onBack }: GameDefinitionStepProps) {
+export function GameDefinitionStep({ data, onChange, onNext, onBack }: GameDefinitionStepProps) {
   return (
     <div className="space-y-4">
       {/* SECTION HEADER */}
@@ -265,7 +265,7 @@ export function GameDefinitionStep({ data, onChange, onSerapht, onBack }: GameDe
         </button>
 
         <button
-          onClick={onSerapht}
+          onClick={onNext}
           disabled={!data.name.trim()}
           className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg font-mono font-bold text-xs bg-amber-600 hover:bg-amber-500 text-white transition disabled:opacity-50 cursor-pointer shadow-md shadow-amber-600/20"
         >

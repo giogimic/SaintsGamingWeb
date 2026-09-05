@@ -802,7 +802,7 @@ export function AnimationStudioPanel() {
                 setCurrentFrameIdx((prev) => (prev + 1) % (activeAnim.frames.length || 1))
               }
               className="p-2 rounded-xl bg-black/50/20 border border-[#806f47]/30 text-slate-300 hover:text-white hover:bg-white/5 transition cursor-pointer"
-              title="Serapht Frame"
+              title="Next Frame"
             >
               <SkipForward className="w-4 h-4" />
             </button>

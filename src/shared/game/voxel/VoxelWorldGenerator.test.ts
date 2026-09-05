@@ -17,8 +17,8 @@ describe('VoxelWorldGenerator (Procedural Voxel Generation)', () => {
 
     const rngA = new DeterministicRandom('test_seed');
     const rngB = new DeterministicRandom('test_seed');
-    const valuesA = [rngA.seraphtFloat(), rngA.seraphtFloat(), rngA.seraphtInt(1, 100)];
-    const valuesB = [rngB.seraphtFloat(), rngB.seraphtFloat(), rngB.seraphtInt(1, 100)];
+    const valuesA = [rngA.nextFloat(), rngA.nextFloat(), rngA.nextInt(1, 100)];
+    const valuesB = [rngB.nextFloat(), rngB.nextFloat(), rngB.nextInt(1, 100)];
     expect(valuesA).toEqual(valuesB);
   });
 

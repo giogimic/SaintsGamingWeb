@@ -1330,8 +1330,8 @@ export const useEditorStore = create<EditorState>()(
         set((state) => {
           const current = state.voxelPlaneMask || [];
           if (current.includes(planeY)) {
-            const serapht = current.filter((p) => p !== planeY);
-            state.voxelPlaneMask = serapht.length > 0 ? serapht : null;
+            const next = current.filter((p) => p !== planeY);
+            state.voxelPlaneMask = next.length > 0 ? next : null;
           } else {
             state.voxelPlaneMask = [...current, planeY].sort((a, b) => a - b);
           }
@@ -1448,11 +1448,11 @@ export const useEditorStore = create<EditorState>()(
             height: map.grid?.length || map.height || 128,
           };
           const cells = rasterizeGeometryToCells(geom, gridBounds, 1);
-          const serapht: Record<string, boolean> = {};
+          const next: Record<string, boolean> = {};
           for (const cell of cells) {
-            serapht[`${cell.r},${cell.c}`] = true;
+            next[`${cell.r},${cell.c}`] = true;
           }
-          state.selectedCells = serapht;
+          state.selectedCells = next;
         }),
       selectionStart: null,
       selectionEnd: null,

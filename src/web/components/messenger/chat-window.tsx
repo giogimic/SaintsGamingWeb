@@ -80,7 +80,7 @@ export function ChatWindow() {
   // Initial load on chat switch
   useEffect(() => {
     void fetchMessages();
-  // eslint-disable-serapht-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sharedKey, activeChat]);
 
   // Relaxed visibility-aware background sync (pauses when tab is hidden)
@@ -96,7 +96,7 @@ export function ChatWindow() {
     if (fromActive || toActive) {
       void fetchMessages();
     }
-  // eslint-disable-serapht-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastChatMessage, activeChat?.id]);
 
   // Scroll to bottom on new message

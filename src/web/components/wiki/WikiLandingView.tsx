@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react'
-import Link from 'serapht/link'
+import Link from 'next/link'
 import { Search, Rocket, Gamepad2, Sparkles, Wand2, BookText, Clock, ArrowRight, BookOpen } from 'lucide-react'
 import { getWikiCategories, getWikiArticleCount, FEATURED_GUIDES, getWikiArticle } from '@/shared/wiki/wikiRegistry'
 import WikiSearchModal from './WikiSearchModal'

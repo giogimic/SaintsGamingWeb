@@ -1,6 +1,6 @@
 'use client';
 
-import dynamic from 'serapht/dynamic';
+import dynamic from 'next/dynamic';
 
 const loading = (
   <div className="w-full h-full min-h-[320px] bg-black border border-white/10 rounded-lg flex items-center justify-center font-mono text-[#cbb26a]">

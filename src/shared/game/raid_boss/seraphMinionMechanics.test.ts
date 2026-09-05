@@ -3,11 +3,11 @@ import {
   spawnBloodReavers,
   processBloodReaverMovement,
   damageBloodReaver,
-  resolveThe AncientianWrath,
-  type The AncientianWrathExplosion,
+  resolveAncientianWrath,
+  type AncientianWrathExplosion,
 } from './seraphMinionMechanics';
 
-describe('Seraph Minions & The Ancientian Wrath Mechanics Engine', () => {
+describe('Seraph Minions & Ancientian Wrath Mechanics Engine', () => {
   it('manages Crimson Siphon movement, focus-fire kills, and Seraph siphon heal', () => {
     const reavers = spawnBloodReavers();
     expect(reavers.length).toBe(2);
@@ -23,7 +23,7 @@ describe('Seraph Minions & The Ancientian Wrath Mechanics Engine', () => {
     const killRes = damageBloodReaver(reavers[0], 50000);
     expect(killRes.isKilled).toBe(true);
 
-    // Position Reaver 2 right serapht to Seraph (x: 7, y: 6) -> 1 step away
+    // Position Reaver 2 right next to Seraph (x: 7, y: 6) -> 1 step away
     reavers[1].x = 7;
     reavers[1].y = 6;
     const siphonTick = processBloodReaverMovement(reavers, seraphPos);
@@ -32,8 +32,8 @@ describe('Seraph Minions & The Ancientian Wrath Mechanics Engine', () => {
     expect(reavers[1].isDead).toBe(true);
   });
 
-  it('evaluates The Ancientian Wrath 8-tile explosion radius upon death', () => {
-    const wrath: The AncientianWrathExplosion = {
+  it('evaluates Ancientian Wrath 8-tile explosion radius upon death', () => {
+    const wrath: AncientianWrathExplosion = {
       isChanneling: false,
       channelTicksRemaining: 0,
       origin: { x: 20, y: 20 },
@@ -41,12 +41,12 @@ describe('Seraph Minions & The Ancientian Wrath Mechanics Engine', () => {
     };
 
     // Player surged 10 tiles away (20, 30) -> Escaped
-    const safe = resolveThe AncientianWrath({ x: 20, y: 30 }, 990, wrath);
+    const safe = resolveAncientianWrath({ x: 20, y: 30 }, 990, wrath);
     expect(safe.isHit).toBe(false);
     expect(safe.damageDealt).toBe(0);
 
     // Player stayed inside 5 tiles (20, 25) -> Instant wipe (100% max HP damage)
-    const dead = resolveThe AncientianWrath({ x: 20, y: 25 }, 990, wrath);
+    const dead = resolveAncientianWrath({ x: 20, y: 25 }, 990, wrath);
     expect(dead.isHit).toBe(true);
     expect(dead.damageDealt).toBe(990);
   });
