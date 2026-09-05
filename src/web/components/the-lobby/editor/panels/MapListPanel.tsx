@@ -219,7 +219,7 @@ export const MapListPanel: React.FC = () => {
       const cy = Math.max(1, Math.min(mh - 2, Math.floor(mh / 2)));
       useGameStore.setState({ currentMapId: mapId, activeMapData: loaded });
       useGameStore.getState().setPlayerPosition({ x: cx, y: cy }, 'down', false);
-      if (loaded.mapType === 'VOXEL') {
+      if (loaded.mapType === 'VOXEL' || loaded.mapType === 'FRACTAL') {
         useEditorStore.getState().setStudioMode('voxel');
       } else {
         useEditorStore.getState().setStudioMode('tile');

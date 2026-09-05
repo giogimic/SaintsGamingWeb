@@ -400,6 +400,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
     const name = meta ? meta.canonical.charAt(0).toUpperCase() + meta.canonical.slice(1) : mode;
     showToast(`Switched to ${name} Mode`);
     if (mode === 'voxel' || mode === 'tile') {
+      useGameStore.setState({ currentMapId: null, activeMapData: null });
       if (onOpenMapBrowser) onOpenMapBrowser();
       else openPanel('maps');
     }
@@ -567,7 +568,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               <MenuItem label="World Data..." icon={Folder} onClick={() => { openPanel('build'); showToast('World Data export available in World Builder'); }} />
               <MenuItem label="Blueprint / Structure..." icon={Package} onClick={() => { openPanel('assets'); showToast('Blueprint export available in Asset Studio'); }} />
             </SubMenu>
-            <MenuItem label="Publish..." icon={CloudUpload} onClick={() => openPanel('publishing')} />
+            <MenuItem label="Publish / Manage Releases..." icon={CloudUpload} onClick={() => openPanel('releases')} />
             <SubMenu label="Release" icon={Package}>
               <MenuItem label="Create Release..." icon={Plus} onClick={() => { openPanel('releases'); window.dispatchEvent(new CustomEvent('studio_open_release_create')); }} />
               <MenuItem label="Manage Releases..." icon={Settings} onClick={() => openPanel('releases')} />
