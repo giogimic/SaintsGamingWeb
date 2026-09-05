@@ -24,7 +24,7 @@ export const dynamic = 'force-dynamic';
 async function loadMapPayload(slug: string, isDraft?: boolean) {
   let worldMap;
   if (isDraft) {
-    worldMap = await (prisma as any).worldMapDraft.findUnique({ where: { id: slug } });
+    worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
   }
   if (!worldMap) {
     worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
@@ -466,7 +466,7 @@ export async function POST(
 
     let worldMap: any;
     try {
-      worldMap = await (prisma as any).worldMapDraft.upsert({
+      worldMap = await prisma.worldMap.upsert({
         where: { id: slug },
         update: {
           name: body.name || slug,
@@ -488,6 +488,7 @@ export async function POST(
           ...(body.proceduralConfig !== undefined
             ? { proceduralConfig: typeof body.proceduralConfig === 'string' ? body.proceduralConfig : JSON.stringify(body.proceduralConfig) }
             : {}),
+          mapType: body.mapType || "HYBRID",
           version: { increment: 1 },
         },
         create: {
@@ -504,15 +505,16 @@ export async function POST(
           tilesetsData: JSON.stringify(visualsForCreate.tilesets || []),
           voxelData: JSON.stringify(body.voxelDoc),
           regionClass: body.regionClass || "authored",
+          mapType: body.mapType || "HYBRID",
           proceduralConfig: body.proceduralConfig
             ? (typeof body.proceduralConfig === 'string' ? body.proceduralConfig : JSON.stringify(body.proceduralConfig))
             : null,
         },
       });
     } catch (upsertErr: any) {
-      console.warn("[MapRoute] Primary worldMapDraft upsert failed, attempting fallback without voxelData column:", upsertErr?.message);
+      console.warn("[MapRoute] Primary worldMap upsert failed, attempting fallback without voxelData column:", upsertErr?.message);
       // Fallback in case database column voxelData is missing or has a character limit
-      worldMap = await (prisma as any).worldMapDraft.upsert({
+      worldMap = await prisma.worldMap.upsert({
         where: { id: slug },
         update: {
           name: body.name || slug,
@@ -530,6 +532,7 @@ export async function POST(
             : {}),
           ...(body.freeformLayers || body.voxelDoc ? { freeformLayersData: JSON.stringify(freeformLayersForSave) } : {}),
           regionClass: body.regionClass || "authored",
+          mapType: body.mapType || "HYBRID",
           version: { increment: 1 },
         },
         create: {
@@ -545,6 +548,7 @@ export async function POST(
           freeformLayersData: JSON.stringify(freeformLayersForSave),
           tilesetsData: JSON.stringify(visualsForCreate.tilesets || []),
           regionClass: body.regionClass || "authored",
+          mapType: body.mapType || "HYBRID",
         },
       });
     }

@@ -1,3 +1,8 @@
+## [2.1.739] - 2026-09-05
+### Fixed
+- Map Creation: Fixed a fatal 500 API error in POST /api/maps/[slug] caused by an outdated reference to the `worldMapDraft` Prisma model which was completely replaced by `worldMap`.
+- Build: Added missing `Settings` lucide-react import in MapListPanel.
+
 ## [2.1.738] - 2026-09-05
 ### Added
 - Explicit Map Engines: Added Map Engine selection when creating maps (2D Tile Engine, 3D Voxel Engine, Fractal Domains).
