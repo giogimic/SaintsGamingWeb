@@ -349,7 +349,7 @@ export function recordSlayerKill(
 /**
  * Resets the current task using Novice Broker (resets streak to 0).
  */
-export function resetTaskWithNovice Broker(profile: SlayerPlayerProfile): {
+export function resetTaskWithNoviceBroker(profile: SlayerPlayerProfile): {
   ok: boolean;
   newStreak: number;
   message: string;
