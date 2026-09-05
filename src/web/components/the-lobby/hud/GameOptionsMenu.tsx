@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../store';
@@ -266,7 +266,7 @@ export default function GameOptionsMenu({
             <span className="font-mono text-xs font-bold tracking-wider text-foreground">
               SAINTS GAMING
             </span>
-            <span className="text-muted-foreground font-mono text-xs">â€¢</span>
+            <span className="text-muted-foreground font-mono text-xs">&bull;</span>
             <span className="text-xs text-primary font-mono font-bold">
               System Menu
             </span>
@@ -336,7 +336,7 @@ export default function GameOptionsMenu({
               <span>{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen (F11)'}</span>
             </button>
 
-            {isAdminUser && (
+            {isAdminUser && typeof window !== 'undefined' && !!(window as any).electronAPI && (
               <>
                 <WindowMenuDivider />
                 <button

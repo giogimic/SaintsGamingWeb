@@ -354,8 +354,13 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
 
   useEffect(() => {
     const handleOpen = () => setShortcutsOpen(true);
+    const handleReinit = () => setReinitializeModalOpen(true);
     window.addEventListener('studio_open_shortcuts', handleOpen);
-    return () => window.removeEventListener('studio_open_shortcuts', handleOpen);
+    window.addEventListener('studio_open_reinitialize', handleReinit);
+    return () => {
+      window.removeEventListener('studio_open_shortcuts', handleOpen);
+      window.removeEventListener('studio_open_reinitialize', handleReinit);
+    };
   }, []);
 
   // Close menus on outside click
