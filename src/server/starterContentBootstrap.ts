@@ -9,6 +9,7 @@
 import { prisma } from "@/web/lib/prisma";
 import { getAllProfessionDefs } from "@/shared/game/professions/professionRegistry";
 import { getSkillGuide } from "@/shared/game/skillGuideData";
+import { getAllAbilityDefs } from "@/shared/game/combat/abilityRegistry";
 import { seedElements } from "./seedElements";
 
 export async function bootstrapDynamicStarterContent(gameId: string = "saints", profileId: string = "default") {
@@ -820,75 +821,47 @@ export async function bootstrapDynamicStarterContent(gameId: string = "saints", 
       });
     }
 
-    // ── 8. ABILITY DICTIONARY (Dual-Element Examples) ────────────────────────
-    const sampleAbilities = [
-      {
-        slug: "wildfire",
-        name: "Wildfire",
-        type: "skill",
-        domain: "both",
-        style: "MAGIC",
-        power: 35,
-        accuracy: 0.85,
-        cooldown: 8000,
-        manaCost: 20,
-        staminaCost: 0,
-        isCapture: false,
-        target: "aoe_enemies",
-        description: "A spreading fiery gust combining Fire and Wind. Leaves enemies burning and knocks them back.",
-        tags: '["fire", "wind"]',
-        vfxConfigJson: JSON.stringify({ type: "sprite_row", assetPath: "", animationRow: "spellcast", tintColor: "#f59e0b", scale: 1.5 }),
-        conditionsJson: JSON.stringify({ requiresElement: "fire", requiresAbility: "" }),
-      },
-      {
-        slug: "magma_slide",
-        name: "Magma Slide",
-        type: "skill",
-        domain: "both",
-        style: "MAGIC",
-        power: 45,
-        accuracy: 0.9,
-        cooldown: 12000,
-        manaCost: 25,
-        staminaCost: 0,
-        isCapture: false,
-        target: "enemy",
-        description: "A molten spout combining Fire and Earth that creates a lava pool.",
-        tags: '["fire", "earth"]',
-        vfxConfigJson: JSON.stringify({ type: "3d_model", assetPath: "/assets/vfx/magma.glb", animationRow: "spellcast", tintColor: "#d97706", scale: 1.2 }),
-        conditionsJson: JSON.stringify({ requiresElement: "earth", requiresAbility: "" }),
-      },
-      {
-        slug: "plasma_bolt",
-        name: "Plasma Bolt",
-        type: "skill",
-        domain: "both",
-        style: "MAGIC",
-        power: 50,
-        accuracy: 0.95,
-        cooldown: 15000,
-        manaCost: 30,
-        staminaCost: 0,
-        isCapture: false,
-        target: "enemy",
-        description: "An overload strike combining Fire and Lightning. Deals massive burst damage and shocks the target.",
-        tags: '["fire", "lightning"]',
-        vfxConfigJson: JSON.stringify({ type: "2d_billboard", assetPath: "/assets/vfx/plasma_bolt.png", animationRow: "spellcast", tintColor: "#eab308", scale: 1.0 }),
-        conditionsJson: JSON.stringify({ requiresElement: "lightning", requiresAbility: "" }),
-      },
-    ];
+    // ── 8. ABILITY DICTIONARY (Canonical) ────────────────────────────────
+    const allAbilities = getAllAbilityDefs();
 
-    for (const ab of sampleAbilities) {
+    for (const ab of allAbilities) {
       await prisma.abilityDictionary.upsert({
-        where: { slug: ab.slug },
+        where: { slug: ab.id },
         create: {
-          ...ab,
-          consumableItemId: `item_skillbook_${ab.slug}`,
-          effects: "[]"
+          slug: ab.id,
+          name: ab.name,
+          type: "skill",
+          power: ab.effects.find(e => e.type === "damage") ? (ab.effects.find(e => e.type === "damage") as any).power : null,
+          accuracy: (ab.accuracy ?? 100) / 100, // convert percentage to float
+          cooldown: ab.cooldownMs ?? 0,
+          manaCost: ab.manaCost ?? 0,
+          staminaCost: ab.staminaCost ?? 0,
+          isCapture: ab.isCapture ?? false,
+          target: ab.target ?? "enemy",
+          description: ab.description ?? "",
+          domain: ab.domain ?? "both",
+          style: ab.style ?? "MAGIC",
+          tags: JSON.stringify(ab.tags ?? []),
+          consumableItemId: `item_skillbook_${ab.id}`,
+          effects: JSON.stringify(ab.effects ?? []),
+          animation: ab.animationId ?? null,
         },
         update: {
-          ...ab,
-          effects: "[]"
+          name: ab.name,
+          type: "skill",
+          power: ab.effects.find(e => e.type === "damage") ? (ab.effects.find(e => e.type === "damage") as any).power : null,
+          accuracy: (ab.accuracy ?? 100) / 100,
+          cooldown: ab.cooldownMs ?? 0,
+          manaCost: ab.manaCost ?? 0,
+          staminaCost: ab.staminaCost ?? 0,
+          isCapture: ab.isCapture ?? false,
+          target: ab.target ?? "enemy",
+          description: ab.description ?? "",
+          domain: ab.domain ?? "both",
+          style: ab.style ?? "MAGIC",
+          tags: JSON.stringify(ab.tags ?? []),
+          effects: JSON.stringify(ab.effects ?? []),
+          animation: ab.animationId ?? null,
         },
       });
     }

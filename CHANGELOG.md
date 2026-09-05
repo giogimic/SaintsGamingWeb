@@ -1,3 +1,9 @@
+## [2.1.740] - 2026-09-05
+### Added
+- Setup Initialization: Included explicit map engine modes (TILE, VOXEL, FRACTAL) in the initial web setup flow (`StartingMapStep.tsx`, `FinalReviewStep.tsx`).
+- Map Setup: Saved the selected `mapType` during initial map seeding via `initialize-game/route.ts`.
+- Content Seeding: Seeded all canonical abilities from the `abilityRegistry` directly into the `AbilityDictionary` during initialization setup via `bootstrapDynamicStarterContent`.
+
 ## [2.1.739] - 2026-09-05
 ### Fixed
 - Map Creation: Fixed a fatal 500 API error in POST /api/maps/[slug] caused by an outdated reference to the `worldMapDraft` Prisma model which was completely replaced by `worldMap`.

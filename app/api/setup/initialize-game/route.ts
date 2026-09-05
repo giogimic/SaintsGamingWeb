@@ -8,6 +8,7 @@ import { notifyGoMapSynced } from '@/server/goMmoNotify';
 import { DEFAULT_STARTER_HERO_PRESETS } from '@/shared/game/starterHeroCatalog';
 import { DEFAULT_PLAYABLE_CLASSES } from '@/shared/game/classCatalog';
 import { classDataToDb } from '@/shared/game/classDefMap';
+import { bootstrapDynamicStarterContent } from '@/server/starterContentBootstrap';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,6 +62,7 @@ export interface InitializeGamePayload {
     height?: number;
     blockSizePx?: number;
     foundationMaterial?: string;
+    mapType?: 'TILE' | 'VOXEL' | 'FRACTAL';
     spawnPoint: { x: number; y: number; z?: number };
     voxelDoc?: VoxelWorldDocV3;
     grid?: number[][];
@@ -321,6 +323,7 @@ export async function POST(req: Request) {
           ]),
           tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
           version: 1,
+          mapType: map.mapType || 'VOXEL',
         },
         update: {
           name: mapName,
@@ -338,6 +341,7 @@ export async function POST(req: Request) {
           ]),
           tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
           version: { increment: 1 },
+          mapType: map.mapType || 'VOXEL',
         },
       });
 
@@ -389,7 +393,10 @@ export async function POST(req: Request) {
       }
     });
 
-    // 5. Notify Go MMO realtime server of new starting voxel map
+    // 5. Seed Dynamic Starter Content (Abilities, Items, Mounts, Dungeons)
+    await bootstrapDynamicStarterContent('saints', 'default');
+
+    // 6. Notify Go MMO realtime server of new starting voxel map
     void notifyGoMapSynced({
       id: mapId,
       name: mapName,
