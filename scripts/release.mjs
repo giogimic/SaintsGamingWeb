@@ -51,6 +51,7 @@ const EXCLUDE_PATTERNS = [
   '.vercel',
   '.vscode',
   '.tools',
+  '.scripts',
 
   // Temp fix/debug/test scripts (dev-only)
   'fix.mjs',
