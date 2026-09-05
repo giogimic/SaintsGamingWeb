@@ -1,3 +1,8 @@
+## [2.1.734] - 2026-09-05
+### Changed
+- Locked desktop app minimum window scaling to 1280x800.
+- Upgraded desktop app build process to output NSIS installer instead of portable zip.
+
 ## [2.1.733] - 2026-09-05
 ### Changed
 - Phase 6: Asset Studio Consolidation (AssetStudioPanel merging Sprites & Blueprints).

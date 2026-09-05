@@ -1,13 +1,13 @@
 {
   "name": "saints-gaming",
-  "version": "2.1.733",
+  "version": "2.1.734",
   "private": true,
   "description": "Saints Gaming - Time To Play",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "electron .",
-    "build": "electron-builder --win zip && node scripts/copy-dist-exe.cjs"
+    "build": "electron-builder --win && node scripts/copy-dist-exe.cjs"
   },
   "build": {
     "appId": "com.saintsgaming.app",
@@ -19,7 +19,14 @@
       "electron/**/*"
     ],
     "win": {
-      "target": "zip"
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Saints Gaming"
     }
   },
   "devDependencies": {
