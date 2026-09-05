@@ -1397,6 +1397,13 @@ model AbilityDictionary {
   description      String?
   isCapture        Boolean @default(false)
   target           String? // "enemy", "self", "ally", etc.
+  domain           String?
+  style            String?
+  manaCost         Int?
+  staminaCost      Int?
+  tags             String? @default("[]") // JSON array
+  vfxConfigJson    String? // JSON object
+  conditionsJson   String? // JSON object
   consumableItemId String? // Item that teaches this ability
 }
 
