@@ -23,18 +23,18 @@ function cleanDirectoryOfArchives(directoryPath) {
 }
 
 if (fs.existsSync(releaseDir)) {
-  // 1. Find latest zip by mtime in the release directory
+  // 1. Find latest exe installer by mtime in the release directory
   const files = fs.readdirSync(releaseDir);
-  const zipFiles = files
-    .filter((f) => f.endsWith('.zip'))
+  const exeFiles = files
+    .filter((f) => f.endsWith('.exe') && !f.includes('unpacked'))
     .map((f) => ({
       name: f,
       time: fs.statSync(path.join(releaseDir, f)).mtime.getTime(),
     }))
     .sort((a, b) => b.time - a.time);
 
-  if (zipFiles.length > 0) {
-    const latestZip = zipFiles[0].name;
+  if (exeFiles.length > 0) {
+    const latestExe = exeFiles[0].name;
 
     // 2. Setup Client-Archive directory
     if (!fs.existsSync(clientArchiveDir)) {
@@ -50,19 +50,19 @@ if (fs.existsSync(releaseDir)) {
       cleanDirectoryOfArchives(publicDownloadsDir);
     }
 
-    // 3. Move the zipped archive to the clean locations
+    // 3. Move the compiled exe installer to the clean locations
     try {
       fs.copyFileSync(
-        path.join(releaseDir, latestZip),
-        path.join(clientArchiveDir, latestZip)
+        path.join(releaseDir, latestExe),
+        path.join(clientArchiveDir, latestExe)
       );
-      console.log(`[✓] Synced latest archive to Client-Archive/${latestZip}`);
+      console.log(`[✓] Synced latest installer to Client-Archive/${latestExe}`);
 
       fs.copyFileSync(
-        path.join(releaseDir, latestZip),
-        path.join(publicDownloadsDir, latestZip)
+        path.join(releaseDir, latestExe),
+        path.join(publicDownloadsDir, latestExe)
       );
-      console.log(`[✓] Synced archive to public/downloads/${latestZip} for web download endpoints`);
+      console.log(`[✓] Synced installer to public/downloads/${latestExe} for web download endpoints`);
     } catch (err) {
       console.warn(`[!] Error syncing archive:`, err.message);
     }
