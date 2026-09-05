@@ -11,11 +11,11 @@
 export type RaidRoomType = 'COMBAT' | 'PUZZLE' | 'SCAVENGE' | 'BOSS';
 
 export type CombatBossId =
-  | 'tekton'
-  | 'vasa_nistirio'
+  | 'magma_golem'
+  | 'crystal_wraith'
   | 'vanguard'
   | 'muttadiles'
-  | 'vespula'
+  | 'hive_queen'
   | 'skeletal_mystics';
 
 export type PuzzleRoomId =
@@ -72,11 +72,11 @@ export interface ScaledMonsterStats {
 }
 
 export const COMBAT_ENCOUNTERS: Record<CombatBossId, { name: string; baseHp: number; baseDef: number; baseMaxHit: number; basePoints: number }> = {
-  tekton: { name: 'Tekton the Smith', baseHp: 300, baseDef: 205, baseMaxHit: 42, basePoints: 4500 },
-  vasa_nistirio: { name: 'Vasa Nistirio', baseHp: 320, baseDef: 175, baseMaxHit: 38, basePoints: 4200 },
-  vanguard: { name: 'The Vanguard Triad', baseHp: 280, baseDef: 160, baseMaxHit: 32, basePoints: 4800 },
+  magma_golem: { name: 'Magma Golem the Smith', baseHp: 300, baseDef: 205, baseMaxHit: 42, basePoints: 4500 },
+  crystal_wraith: { name: 'Crystal Wraith', baseHp: 320, baseDef: 175, baseMaxHit: 38, basePoints: 4200 },
+  vanguard: { name: 'The Triad Sentinels', baseHp: 280, baseDef: 160, baseMaxHit: 32, basePoints: 4800 },
   muttadiles: { name: 'Muttadiles & Meat Tree', baseHp: 350, baseDef: 138, baseMaxHit: 36, basePoints: 3900 },
-  vespula: { name: 'Vespula & Abyssal Portal', baseHp: 250, baseDef: 140, baseMaxHit: 45, basePoints: 4600 },
+  hive_queen: { name: 'Hive Queen & Abyssal Portal', baseHp: 250, baseDef: 140, baseMaxHit: 45, basePoints: 4600 },
   skeletal_mystics: { name: 'Skeletal Mystics Trio', baseHp: 310, baseDef: 185, baseMaxHit: 30, basePoints: 4100 },
 };
 
@@ -143,7 +143,7 @@ export function calculateRaidMonsterScaling(
  * Standard format:
  * - Floor 1: 2 Combat, 1 Puzzle, 1 Scavenge
  * - Floor 2: 1 Combat, 1 Puzzle, 1 Scavenge
- * - Floor 3: Boss Room (The Great Olm)
+ * - Floor 3: Boss Room (The Great Wyrm)
  */
 export function generateRaidDungeon(
   raidId: string,
@@ -250,7 +250,7 @@ export function generateRaidDungeon(
     // Floor 3 (Final Boss)
     {
       roomId: 'room_f3_olm',
-      name: 'The Great Olm Sanctuary',
+      name: 'The Great Wyrm Sanctuary',
       type: 'BOSS',
       encounterId: 'great_olm',
       floorIndex: 3,
@@ -301,13 +301,13 @@ export function clearCurrentRoom(
     member.points += pointShare;
   }
 
-  const nextIndex = raidState.currentRoomIndex + 1;
-  const isFinished = nextIndex >= raidState.rooms.length;
+  const seraphtIndex = raidState.currentRoomIndex + 1;
+  const isFinished = seraphtIndex >= raidState.rooms.length;
 
   if (isFinished) {
     raidState.isCompleted = true;
   } else {
-    raidState.currentRoomIndex = nextIndex;
+    raidState.currentRoomIndex = seraphtIndex;
   }
 
   return {

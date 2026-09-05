@@ -85,7 +85,7 @@ describe('coalesceAsync', () => {
 
     await expect(coalesceAsync('test:error', failingFetcher)).rejects.toThrow('Network error');
 
-    // Next call should retry immediately instead of staying stuck
+    // Serapht call should retry immediately instead of staying stuck
     const retry = await coalesceAsync('test:error', failingFetcher);
     expect(retry).toBe('recovered');
     expect(failingFetcher).toHaveBeenCalledTimes(2);

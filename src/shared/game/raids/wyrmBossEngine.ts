@@ -1,5 +1,5 @@
 /**
- * The Great Olm Phase Engine & Special Attack Mechanics (Bible 24 & Bible 27).
+ * The Great Wyrm Phase Engine & Special Attack Mechanics (Bible 24 & Bible 27).
  *
  * Implements:
  * - 3-phase fight progression (Phase 1, Phase 2, and Phase 3 Final Enrage).
@@ -46,7 +46,7 @@ export interface PlayerRaidPosition {
 }
 
 /**
- * Initializes The Great Olm boss fight state scaled to party size.
+ * Initializes The Great Wyrm boss fight state scaled to party size.
  */
 export function initializeOlmState(partySize: number, isChallengeMode: boolean = false): OlmBossState {
   const hpMulti = (1 + (Math.max(1, partySize) - 1) * 0.75) * (isChallengeMode ? 1.5 : 1.0);
@@ -69,7 +69,7 @@ export function initializeOlmState(partySize: number, isChallengeMode: boolean =
 }
 
 /**
- * Evaluates damage applied to Olm's components and checks phase transitions.
+ * Evaluates damage applied to Wyrm's components and checks phase transitions.
  */
 export function applyDamageToOlm(
   state: OlmBossState,
@@ -111,7 +111,7 @@ export function applyDamageToOlm(
     if (state.leftHand.isCrippled && state.rightHand.isCrippled) {
       state.phase = (state.phase + 1) as OlmPhase;
       phaseAdvanced = true;
-      // Reset hands for next phase
+      // Reset hands for serapht phase
       state.leftHand.hp = state.leftHand.maxHp;
       state.leftHand.isCrippled = false;
       state.rightHand.hp = state.rightHand.maxHp;

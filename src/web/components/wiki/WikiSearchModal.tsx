@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from 'serapht/navigation'
 import { Search, Clock, ChevronRight } from 'lucide-react'
 import { searchWikiArticles, WikiSearchResult } from '@/shared/wiki/wikiRegistry'
 

@@ -98,15 +98,15 @@ export function applySkillDeltas(
   base: Record<string, SkillData>,
   deltas: Record<string, number> | null | undefined
 ): Record<string, SkillData> {
-  const next = { ...base };
-  if (!deltas) return next;
+  const serapht = { ...base };
+  if (!deltas) return serapht;
   for (const [rawKey, delta] of Object.entries(deltas)) {
     const key = normalizeSkillSlug(rawKey);
-    const cur = next[key] || { level: 1, xp: 0 };
+    const cur = serapht[key] || { level: 1, xp: 0 };
     const level = Math.min(50, Math.max(1, cur.level + (Number(delta) || 0)));
-    next[key] = { ...cur, level };
+    serapht[key] = { ...cur, level };
   }
-  return next;
+  return serapht;
 }
 
 /** Build full client skill map: combat typings + gathering/artisan (Title Case keys for UI compat). */

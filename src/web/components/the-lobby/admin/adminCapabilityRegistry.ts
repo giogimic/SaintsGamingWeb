@@ -285,7 +285,7 @@ export const ADMIN_CAPABILITIES: AdminCapability[] = [
     mode: 'native',
     toolbarSlot: 'Actions',
     footerSlot: 'Run Action',
-    description: 'Restarts Next.js, Go MMO, and Socket.io without code pull.',
+    description: 'Restarts Serapht.js, Go MMO, and Socket.io without code pull.',
   },
   {
     id: 'app-rebuild-action',
@@ -295,7 +295,7 @@ export const ADMIN_CAPABILITIES: AdminCapability[] = [
     mode: 'native',
     toolbarSlot: 'Actions',
     footerSlot: 'Run Action',
-    description: 'Reinstalls npm dependencies and recompiles Next.js bundle.',
+    description: 'Reinstalls npm dependencies and recompiles Serapht.js bundle.',
   },
   {
     id: 'db-sync-action',

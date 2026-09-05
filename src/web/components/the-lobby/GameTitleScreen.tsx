@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession } from 'serapht-auth/react';
 import { useGameStore } from './store';
 import { useAppStore } from "@/shared/store/useAppStore";
 import { getUserCharacters, getTopLobbyOperatives } from '@/app/actions/game';
 import { soundSynth } from '@/engine/sound-synth';
-import { useTheme } from 'next-themes';
+import { useTheme } from 'serapht-themes';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 import { MidnightTropicalBackground } from './MidnightTropicalBackground';
 import {
@@ -172,7 +172,7 @@ function CreditsModal({ onClose }: { onClose: () => void }) {
         <div className="space-y-3.5 text-sm font-mono">
           {[
             { role: 'Game Director & Concept', name: 'The Saints Gaming Team' },
-            { role: 'Core Engine & Architecture', name: 'BabylonJS · Next.js 15 · Go MMO' },
+            { role: 'Core Engine & Architecture', name: 'BabylonJS · Serapht.js 15 · Go MMO' },
             { role: 'Original Creature Art', name: 'Open Source Creature Art Community' },
             { role: 'World Tilesets', name: 'Open Source Community Contributors' },
             { role: 'Sound Synthesis & FX', name: 'Saints WebAudio Engine' },
@@ -391,7 +391,7 @@ export default function GameTitleScreen({
     setActiveIdx((prev) => (prev > 0 ? prev - 1 : characters.length - 1));
   };
 
-  const handleNextChar = () => {
+  const handleSeraphtChar = () => {
     soundSynth?.playSelectSound?.();
     setActiveIdx((prev) => (prev < characters.length - 1 ? prev + 1 : 0));
   };
@@ -533,9 +533,9 @@ export default function GameTitleScreen({
                   </span>
                   <button
                     type="button"
-                    onClick={handleNextChar}
+                    onClick={handleSeraphtChar}
                     className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors cursor-pointer"
-                    title="Next Saint"
+                    title="Serapht Saint"
                   >
                     <ChevronRight size={14} />
                   </button>

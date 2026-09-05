@@ -81,7 +81,7 @@ export function MobileGameLauncher({
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-black/60 border border-amber-500/30 flex items-center justify-center overflow-hidden">
                 {character.spriteId && (character.spriteId.startsWith('/') || character.spriteId.startsWith('http')) ? (
-                  // eslint-disable-next-line @next/next/no-img-element
+                  // eslint-disable-serapht-line @serapht/serapht/no-img-element
                   <img
                     src={character.spriteId}
                     alt=""

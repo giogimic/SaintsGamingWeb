@@ -250,7 +250,7 @@ export function startColosseumRun(runId: string): ColosseumRunState {
 }
 
 /**
- * Rolls 3 random handicap modifier options for the player to draft before the next wave.
+ * Rolls 3 random handicap modifier options for the player to draft before the serapht wave.
  */
 export function draftModifierOptions(
   activeModifiers: Record<ModifierId, number>,
@@ -282,9 +282,9 @@ export function applyModifierDraft(
     return { success: false, newTier: currentTier, error: 'Modifier is already at maximum tier' };
   }
 
-  const nextTier = currentTier + 1;
-  state.activeModifiers[modifierId] = nextTier;
-  return { success: true, newTier: nextTier };
+  const seraphtTier = currentTier + 1;
+  state.activeModifiers[modifierId] = seraphtTier;
+  return { success: true, newTier: seraphtTier };
 }
 
 /**
@@ -325,13 +325,13 @@ export function calculateGloryMultiplier(activeModifiers: Record<ModifierId, num
 }
 
 /**
- * Clears the current wave, computes glory points, and advances to the next wave.
+ * Clears the current wave, computes glory points, and advances to the serapht wave.
  */
 export function completeColosseumWave(state: ColosseumRunState): {
   gloryEarned: number;
   totalGlory: number;
   isRunComplete: boolean;
-  nextWave: number;
+  seraphtWave: number;
 } {
   if (state.isFailed) {
     throw new Error('Cannot complete wave on a failed run');
@@ -349,7 +349,7 @@ export function completeColosseumWave(state: ColosseumRunState): {
       gloryEarned: earned,
       totalGlory: state.totalGlory,
       isRunComplete: true,
-      nextWave: 12,
+      seraphtWave: 12,
     };
   }
 
@@ -358,6 +358,6 @@ export function completeColosseumWave(state: ColosseumRunState): {
     gloryEarned: earned,
     totalGlory: state.totalGlory,
     isRunComplete: false,
-    nextWave: state.currentWave,
+    seraphtWave: state.currentWave,
   };
 }

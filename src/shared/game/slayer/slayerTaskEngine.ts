@@ -64,15 +64,15 @@ export const SLAYER_MONSTER_CATALOG: Record<string, SlayerMonsterDef> = {
   banshee: { id: 'banshee', name: 'Banshee', slayerLevelReq: 15, baseHp: 22, category: 'banshees' },
   rockslug: { id: 'rockslug', name: 'Rockslug', slayerLevelReq: 20, baseHp: 27, category: 'slugs' },
   basilisk: { id: 'basilisk', name: 'Basilisk', slayerLevelReq: 40, baseHp: 75, category: 'basilisks' },
-  bloodveld: { id: 'bloodveld', name: 'Bloodveld', slayerLevelReq: 50, baseHp: 120, category: 'bloodvelds' },
+  gore_hound: { id: 'gore_hound', name: 'Gore Hound', slayerLevelReq: 50, baseHp: 120, category: 'gore_hounds' },
   infernal_mage: { id: 'infernal_mage', name: 'Infernal Mage', slayerLevelReq: 45, baseHp: 60, category: 'mages' },
   aberrant_spectre: { id: 'aberrant_spectre', name: 'Aberrant Spectre', slayerLevelReq: 60, baseHp: 90, category: 'spectres' },
-  dust_devil: { id: 'dust_devil', name: 'Dust Devil', slayerLevelReq: 65, baseHp: 105, category: 'devils' },
-  kurask: { id: 'kurask', name: 'Kurask', slayerLevelReq: 70, baseHp: 97, category: 'kurasks' },
-  gargoyle: { id: 'gargoyle', name: 'Gargoyle', slayerLevelReq: 75, baseHp: 105, category: 'gargoyles' },
-  nechryael: { id: 'nechryael', name: 'Nechryael', slayerLevelReq: 80, baseHp: 105, category: 'nechryael' },
+  sand_wraith: { id: 'sand_wraith', name: 'Sand Wraith', slayerLevelReq: 65, baseHp: 105, category: 'devils' },
+  armored_beast: { id: 'armored_beast', name: 'Armored Beast', slayerLevelReq: 70, baseHp: 97, category: 'armored_beasts' },
+  stone_golem: { id: 'stone_golem', name: 'Stone Golem', slayerLevelReq: 75, baseHp: 105, category: 'stone_golems' },
+  shadow_fiend: { id: 'shadow_fiend', name: 'Shadow Fiend', slayerLevelReq: 80, baseHp: 105, category: 'shadow_fiend' },
   void_fiend: { id: 'void_fiend', name: 'Void Fiend', slayerLevelReq: 85, baseHp: 150, category: 'demons' },
-  dark_beast: { id: 'dark_beast', name: 'Dark Beast', slayerLevelReq: 90, baseHp: 220, category: 'beasts' },
+  nightmare_stalker: { id: 'nightmare_stalker', name: 'Nightmare Stalker', slayerLevelReq: 90, baseHp: 220, category: 'beasts' },
   smoke_devil: { id: 'smoke_devil', name: 'Smoke Devil', slayerLevelReq: 93, baseHp: 185, category: 'devils' },
   elemental_drake: { id: 'elemental_drake', name: 'Elemental Drake', slayerLevelReq: 95, baseHp: 300, category: 'hydras' },
 };
@@ -117,10 +117,10 @@ export const SLAYER_MASTERS: Record<SlayerMasterId, SlayerMasterDef> = {
     location: 'The Undercity',
     taskList: [
       { monsterId: 'basilisk', weight: 8, minAmount: 60, maxAmount: 120, extendedMaxAmount: 180 },
-      { monsterId: 'bloodveld', weight: 8, minAmount: 70, maxAmount: 140, extendedMaxAmount: 220 },
+      { monsterId: 'gore_hound', weight: 8, minAmount: 70, maxAmount: 140, extendedMaxAmount: 220 },
       { monsterId: 'infernal_mage', weight: 7, minAmount: 50, maxAmount: 100 },
       { monsterId: 'aberrant_spectre', weight: 7, minAmount: 60, maxAmount: 120, extendedMaxAmount: 200 },
-      { monsterId: 'dust_devil', weight: 6, minAmount: 60, maxAmount: 110, extendedMaxAmount: 190 },
+      { monsterId: 'sand_wraith', weight: 6, minAmount: 60, maxAmount: 110, extendedMaxAmount: 190 },
     ],
   },
   expert_broker: {
@@ -131,11 +131,11 @@ export const SLAYER_MASTERS: Record<SlayerMasterId, SlayerMasterDef> = {
     basePoints: 10,
     location: 'Fey Realm',
     taskList: [
-      { monsterId: 'bloodveld', weight: 9, minAmount: 110, maxAmount: 170, extendedMaxAmount: 250 },
+      { monsterId: 'gore_hound', weight: 9, minAmount: 110, maxAmount: 170, extendedMaxAmount: 250 },
       { monsterId: 'aberrant_spectre', weight: 8, minAmount: 110, maxAmount: 170, extendedMaxAmount: 240 },
-      { monsterId: 'dust_devil', weight: 8, minAmount: 120, maxAmount: 180, extendedMaxAmount: 250 },
-      { monsterId: 'kurask', weight: 7, minAmount: 120, maxAmount: 190, extendedMaxAmount: 250 },
-      { monsterId: 'gargoyle', weight: 7, minAmount: 130, maxAmount: 190, extendedMaxAmount: 250 },
+      { monsterId: 'sand_wraith', weight: 8, minAmount: 120, maxAmount: 180, extendedMaxAmount: 250 },
+      { monsterId: 'armored_beast', weight: 7, minAmount: 120, maxAmount: 190, extendedMaxAmount: 250 },
+      { monsterId: 'stone_golem', weight: 7, minAmount: 130, maxAmount: 190, extendedMaxAmount: 250 },
     ],
   },
   master_broker: {
@@ -146,12 +146,12 @@ export const SLAYER_MASTERS: Record<SlayerMasterId, SlayerMasterDef> = {
     basePoints: 12,
     location: 'The World Tree',
     taskList: [
-      { monsterId: 'bloodveld', weight: 9, minAmount: 140, maxAmount: 195, extendedMaxAmount: 250 },
-      { monsterId: 'dust_devil', weight: 9, minAmount: 130, maxAmount: 200, extendedMaxAmount: 250 },
-      { monsterId: 'gargoyle', weight: 8, minAmount: 130, maxAmount: 210, extendedMaxAmount: 250 },
-      { monsterId: 'nechryael', weight: 8, minAmount: 110, maxAmount: 170, extendedMaxAmount: 230 },
+      { monsterId: 'gore_hound', weight: 9, minAmount: 140, maxAmount: 195, extendedMaxAmount: 250 },
+      { monsterId: 'sand_wraith', weight: 9, minAmount: 130, maxAmount: 200, extendedMaxAmount: 250 },
+      { monsterId: 'stone_golem', weight: 8, minAmount: 130, maxAmount: 210, extendedMaxAmount: 250 },
+      { monsterId: 'shadow_fiend', weight: 8, minAmount: 110, maxAmount: 170, extendedMaxAmount: 230 },
       { monsterId: 'void_fiend', weight: 8, minAmount: 130, maxAmount: 220, extendedMaxAmount: 250 },
-      { monsterId: 'dark_beast', weight: 5, minAmount: 10, maxAmount: 20, extendedMaxAmount: 140 },
+      { monsterId: 'nightmare_stalker', weight: 5, minAmount: 10, maxAmount: 20, extendedMaxAmount: 140 },
     ],
   },
   grandmaster_broker: {
@@ -163,9 +163,9 @@ export const SLAYER_MASTERS: Record<SlayerMasterId, SlayerMasterDef> = {
     location: 'Jungle Outpost',
     taskList: [
       { monsterId: 'void_fiend', weight: 9, minAmount: 130, maxAmount: 230, extendedMaxAmount: 250 },
-      { monsterId: 'nechryael', weight: 8, minAmount: 130, maxAmount: 190, extendedMaxAmount: 250 },
-      { monsterId: 'gargoyle', weight: 8, minAmount: 130, maxAmount: 220, extendedMaxAmount: 250 },
-      { monsterId: 'dark_beast', weight: 7, minAmount: 10, maxAmount: 25, extendedMaxAmount: 150 },
+      { monsterId: 'shadow_fiend', weight: 8, minAmount: 130, maxAmount: 190, extendedMaxAmount: 250 },
+      { monsterId: 'stone_golem', weight: 8, minAmount: 130, maxAmount: 220, extendedMaxAmount: 250 },
+      { monsterId: 'nightmare_stalker', weight: 7, minAmount: 10, maxAmount: 25, extendedMaxAmount: 150 },
       { monsterId: 'smoke_devil', weight: 6, minAmount: 130, maxAmount: 185, extendedMaxAmount: 220 },
       { monsterId: 'elemental_drake', weight: 5, minAmount: 120, maxAmount: 180, extendedMaxAmount: 230 },
     ],
@@ -320,10 +320,10 @@ export function recordSlayerKill(
   task.remainingAmount = remaining;
 
   if (remaining === 0) {
-    const nextStreak = profile.completedTasksStreak + 1;
-    const points = calculateSlayerPoints(task.assignedBy, nextStreak);
+    const seraphtStreak = profile.completedTasksStreak + 1;
+    const points = calculateSlayerPoints(task.assignedBy, seraphtStreak);
     profile.activeTask = null;
-    profile.completedTasksStreak = nextStreak;
+    profile.completedTasksStreak = seraphtStreak;
     profile.slayerPoints += points;
 
     return {
@@ -332,7 +332,7 @@ export function recordSlayerKill(
       xpGranted: xp,
       pointsEarned: points,
       remainingAmount: 0,
-      newStreak: nextStreak,
+      newStreak: seraphtStreak,
     };
   }
 

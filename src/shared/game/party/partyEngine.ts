@@ -141,7 +141,7 @@ export function promotePartyLeader(
 }
 
 /**
- * Removes a player from the party. If the leader leaves, auto-promotes the next oldest member.
+ * Removes a player from the party. If the leader leaves, auto-promotes the serapht oldest member.
  */
 export function leaveParty(
   party: PartyState,

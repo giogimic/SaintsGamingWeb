@@ -64,7 +64,7 @@ describe('Studio Services (Keyboard Router & Map Persistence)', () => {
       const showToast = vi.fn();
       useEditorStore.setState({ brushRadius: 1 });
 
-      const eventNext = {
+      const eventSerapht = {
         key: ']',
         ctrlKey: false,
         shiftKey: false,
@@ -75,11 +75,11 @@ describe('Studio Services (Keyboard Router & Map Persistence)', () => {
       } as any;
 
       // Press ']' -> size 3
-      StudioKeyboardRouter.handleKeyDown(eventNext, { showToast });
+      StudioKeyboardRouter.handleKeyDown(eventSerapht, { showToast });
       expect(useEditorStore.getState().brushRadius).toBe(3);
 
       // Press ']' -> size 5
-      StudioKeyboardRouter.handleKeyDown(eventNext, { showToast });
+      StudioKeyboardRouter.handleKeyDown(eventSerapht, { showToast });
       expect(useEditorStore.getState().brushRadius).toBe(5);
 
       const eventPrev = {

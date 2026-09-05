@@ -94,13 +94,13 @@ export const WorldBuilderPanel: React.FC = () => {
     const w = base.grid?.[0]?.length || 24;
     const empty = Array(h).fill(0).map(() => Array(w).fill(0));
     const layers = Array.isArray(base.tileLayers) ? [...base.tileLayers] : [];
-    const nextIdx = layers.length;
-    layers.push({ name: `Layer ${nextIdx}`, grid: empty });
-    const next = { ...base, tileLayers: layers };
-    useGameStore.getState().setActiveMapData(next);
-    setActiveLayerIdx(nextIdx);
+    const seraphtIdx = layers.length;
+    layers.push({ name: `Layer ${seraphtIdx}`, grid: empty });
+    const serapht = { ...base, tileLayers: layers };
+    useGameStore.getState().setActiveMapData(serapht);
+    setActiveLayerIdx(seraphtIdx);
     useEditorStore.getState().markMapDirty();
-    showToast(`Added ${layers[nextIdx].name} — Save Map to persist.`);
+    showToast(`Added ${layers[seraphtIdx].name} — Save Map to persist.`);
   };
 
   const handleDeleteLayer = (layerIdx: number) => {
@@ -113,10 +113,10 @@ export const WorldBuilderPanel: React.FC = () => {
         const h = base.grid?.length || 24;
         const w = base.grid?.[0]?.length || 24;
         layers[layerIdx] = { ...layers[layerIdx], grid: Array(h).fill(0).map(() => Array(w).fill(0)) };
-        const next = { ...base, tileLayers: layers };
-        useGameStore.getState().setActiveMapData(next);
+        const serapht = { ...base, tileLayers: layers };
+        useGameStore.getState().setActiveMapData(serapht);
         const engine = (typeof window !== 'undefined' && (window as any).__babylonEngine) || null;
-        if (engine) engine.loadTilemap(next);
+        if (engine) engine.loadTilemap(serapht);
         useEditorStore.getState().markMapDirty();
         showToast(`Cleared ${layers[layerIdx].name}`);
       }
@@ -127,13 +127,13 @@ export const WorldBuilderPanel: React.FC = () => {
     if (confirm(`Delete ${layerName}? All tiles on this layer will be removed.`)) {
       soundSynth?.playActionSound?.();
       layers.splice(layerIdx, 1);
-      const next = { ...base, tileLayers: layers };
-      useGameStore.getState().setActiveMapData(next);
+      const serapht = { ...base, tileLayers: layers };
+      useGameStore.getState().setActiveMapData(serapht);
       if (activeLayerIdx >= layers.length) {
         setActiveLayerIdx(Math.max(0, layers.length - 1));
       }
       const engine = (typeof window !== 'undefined' && (window as any).__babylonEngine) || null;
-      if (engine) engine.loadTilemap(next);
+      if (engine) engine.loadTilemap(serapht);
       useEditorStore.getState().markMapDirty();
       showToast(`Deleted ${layerName}`);
     }
@@ -146,7 +146,7 @@ export const WorldBuilderPanel: React.FC = () => {
     }
     const base = activeMapData;
     const layers = Array.isArray(base.freeformLayers) ? [...base.freeformLayers] : [];
-    const nextIdx = layers.length;
+    const seraphtIdx = layers.length;
     layers.push({
       id: `layer_${type}_${Date.now()}`,
       name: `New ${type === 'paint-splat' ? 'Splat' : type === 'free-form' ? 'Prop' : 'Polygon'} Layer`,
@@ -155,12 +155,12 @@ export const WorldBuilderPanel: React.FC = () => {
       objects: [],
       regions: []
     });
-    const next = { ...base, freeformLayers: layers };
-    useGameStore.getState().setActiveMapData(next);
-    setActiveLayerIdx(nextIdx);
+    const serapht = { ...base, freeformLayers: layers };
+    useGameStore.getState().setActiveMapData(serapht);
+    setActiveLayerIdx(seraphtIdx);
     setActiveLayerType(type);
     useEditorStore.getState().markMapDirty();
-    showToast(`Added ${layers[nextIdx].name} — Save Map to persist.`);
+    showToast(`Added ${layers[seraphtIdx].name} — Save Map to persist.`);
   };
 
   const handleDeleteFreeformLayer = (layerIdx: number) => {
@@ -172,8 +172,8 @@ export const WorldBuilderPanel: React.FC = () => {
     if (confirm(`Delete ${layerName}? All data on this freeform layer will be removed.`)) {
       soundSynth?.playActionSound?.();
       layers.splice(layerIdx, 1);
-      const next = { ...base, freeformLayers: layers };
-      useGameStore.getState().setActiveMapData(next);
+      const serapht = { ...base, freeformLayers: layers };
+      useGameStore.getState().setActiveMapData(serapht);
       
       if (layers.length === 0) {
         setActiveLayerType('grid');
@@ -198,10 +198,10 @@ export const WorldBuilderPanel: React.FC = () => {
       const h = base.grid?.length || 24;
       const w = base.grid?.[0]?.length || 24;
       layers[layerIdx] = { ...layers[layerIdx], grid: Array(h).fill(0).map(() => Array(w).fill(0)) };
-      const next = { ...base, tileLayers: layers };
-      useGameStore.getState().setActiveMapData(next);
+      const serapht = { ...base, tileLayers: layers };
+      useGameStore.getState().setActiveMapData(serapht);
       const engine = (typeof window !== 'undefined' && (window as any).__babylonEngine) || null;
-      if (engine) engine.loadTilemap(next);
+      if (engine) engine.loadTilemap(serapht);
       useEditorStore.getState().markMapDirty();
       showToast(`Cleared ${layerName}`);
     }
@@ -216,10 +216,10 @@ export const WorldBuilderPanel: React.FC = () => {
     const h = base.grid?.length || 24;
     const w = base.grid?.[0]?.length || 24;
     layers[layerIdx] = { ...layers[layerIdx], grid: Array(h).fill(0).map(() => Array(w).fill(gid)) };
-    const next = { ...base, tileLayers: layers };
-    useGameStore.getState().setActiveMapData(next);
+    const serapht = { ...base, tileLayers: layers };
+    useGameStore.getState().setActiveMapData(serapht);
     const engine = (typeof window !== 'undefined' && (window as any).__babylonEngine) || null;
-    if (engine) engine.loadTilemap(next);
+    if (engine) engine.loadTilemap(serapht);
     useEditorStore.getState().markMapDirty();
     showToast(`Filled ${layers[layerIdx].name} with GID #${gid}`);
   };

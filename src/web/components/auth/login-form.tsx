@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { signIn } from "serapht-auth/react";
+import { useRouter, useSearchParams } from "serapht/navigation";
 import { loginSchema } from "@/shared/lib/validators";
 import { ZodError } from "zod";
 import { Button } from "@/web/components/ui/button";
@@ -10,7 +10,7 @@ import { Input } from "@/web/components/ui/input";
 import { Label } from "@/web/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/web/components/ui/card";
 import { AlertCircle } from "lucide-react";
-import Link from "next/link";
+import Link from "serapht/link";
 
 export function LoginForm() {
   const _router = useRouter();
@@ -53,11 +53,11 @@ export function LoginForm() {
         } else if (res.error === "Banned") {
           setError("Your account has been banned. Please contact support.");
         } else {
-          // If NextAuth passes a specific error string, show it. Otherwise use a generic fallback.
+          // If SeraphtAuth passes a specific error string, show it. Otherwise use a generic fallback.
           setError(res.error || "Authentication failed. Please try again later.");
         }
       } else if (res?.url && res.url.includes("error=")) {
-        // NextAuth v5 client fetch follows redirects to error pages silently
+        // SeraphtAuth v5 client fetch follows redirects to error pages silently
         const url = new URL(res.url);
         const errorParam = url.searchParams.get("error");
         
@@ -69,7 +69,7 @@ export function LoginForm() {
         }
       } else if (res?.url) {
         // If there's a URL and no error, navigation was successful.
-        // Force a hard navigation to avoid Next.js caching issues with cookies
+        // Force a hard navigation to avoid Serapht.js caching issues with cookies
         window.location.href = "/home";
       } else {
         window.location.href = "/home";

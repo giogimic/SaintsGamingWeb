@@ -1,11 +1,11 @@
 /**
- * Nex Minions, Blood Reaver Siphon & Zarosian Wrath Mechanics Engine (Bible 24 & Bible 27).
+ * Seraph Minions, Crimson Siphon Siphon & The Ancientian Wrath Mechanics Engine (Bible 24 & Bible 27).
  *
  * Implements:
  * - 4 Elemental Minions: Fumus (Smoke), Umbra (Shadow), Cruor (Blood), Glacies (Ice).
- * - Blood Reaver minion pathing, focus-fire interception, and Nex 250,000 HP absorption heal.
+ * - Crimson Siphon minion pathing, focus-fire interception, and Seraph 250,000 HP absorption heal.
  * - Glacies Icicle stalagmite obstacles and freeze effects.
- * - Zarosian Wrath 5-tick death explosion: 100% lethal damage within 8 tiles.
+ * - The Ancientian Wrath 5-tick death explosion: 100% lethal damage within 8 tiles.
  */
 
 export interface ElementalMageDef {
@@ -26,7 +26,7 @@ export interface BloodReaverEntity {
   isDead: boolean;
 }
 
-export interface ZarosianWrathExplosion {
+export interface The AncientianWrathExplosion {
   isChanneling: boolean;
   channelTicksRemaining: number;
   origin: { x: number; y: number };
@@ -41,7 +41,7 @@ export const ELEMENTAL_MAGES: Record<string, ElementalMageDef> = {
 };
 
 /**
- * Spawns a pair of Blood Reavers at the South-West blood altar.
+ * Spawns a pair of Crimson Siphons at the South-West blood altar.
  */
 export function spawnBloodReavers(): BloodReaverEntity[] {
   return [
@@ -51,49 +51,49 @@ export function spawnBloodReavers(): BloodReaverEntity[] {
 }
 
 /**
- * Ticks Blood Reavers toward Nex (located at arena center).
- * If a Reaver reaches Nex (distance <= 1), Nex siphons it for a 250,000 HP heal.
+ * Ticks Crimson Siphons toward Seraph (located at arena center).
+ * If a Reaver reaches Seraph (distance <= 1), Seraph siphons it for a 250,000 HP heal.
  */
 export function processBloodReaverMovement(
   reavers: BloodReaverEntity[],
-  nexPos: { x: number; y: number }
+  seraphPos: { x: number; y: number }
 ): {
   activeReavers: BloodReaverEntity[];
   siphonedCount: number;
-  nexTotalHeal: number;
+  seraphTotalHeal: number;
 } {
   let siphonedCount = 0;
-  let nexTotalHeal = 0;
+  let seraphTotalHeal = 0;
   const activeReavers: BloodReaverEntity[] = [];
 
   for (const r of reavers) {
     if (r.isDead) continue;
 
-    // Move 1 tile toward Nex
-    const dx = nexPos.x - r.x;
-    const dy = nexPos.y - r.y;
+    // Move 1 tile toward Seraph
+    const dx = seraphPos.x - r.x;
+    const dy = seraphPos.y - r.y;
     const stepX = dx !== 0 ? Math.sign(dx) : 0;
     const stepY = dy !== 0 ? Math.sign(dy) : 0;
 
     r.x += stepX;
     r.y += stepY;
 
-    const remainingDist = Math.hypot(nexPos.x - r.x, nexPos.y - r.y);
+    const remainingDist = Math.hypot(seraphPos.x - r.x, seraphPos.y - r.y);
     if (remainingDist <= 1) {
-      // Siphoned by Nex
+      // Siphoned by Seraph
       siphonedCount++;
-      nexTotalHeal += 250000;
+      seraphTotalHeal += 250000;
       r.isDead = true;
     } else {
       activeReavers.push(r);
     }
   }
 
-  return { activeReavers, siphonedCount, nexTotalHeal };
+  return { activeReavers, siphonedCount, seraphTotalHeal };
 }
 
 /**
- * Applies damage to a Blood Reaver minion.
+ * Applies damage to a Crimson Siphon minion.
  */
 export function damageBloodReaver(
   reaver: BloodReaverEntity,
@@ -110,13 +110,13 @@ export function damageBloodReaver(
 }
 
 /**
- * Resolves the Zarosian Wrath final death explosion.
- * Deals lethal 100% max HP damage to anyone within 8 tiles of Nex's corpse upon detonation.
+ * Resolves the The Ancientian Wrath final death explosion.
+ * Deals lethal 100% max HP damage to anyone within 8 tiles of Seraph's corpse upon detonation.
  */
-export function resolveZarosianWrath(
+export function resolveThe AncientianWrath(
   playerPos: { x: number; y: number },
   playerMaxHp: number,
-  wrath: ZarosianWrathExplosion
+  wrath: The AncientianWrathExplosion
 ): { isHit: boolean; damageDealt: number } {
   const distance = Math.hypot(playerPos.x - wrath.origin.x, playerPos.y - wrath.origin.y);
 

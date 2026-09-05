@@ -10,7 +10,7 @@ export const SPYDER_QUEST_CHAIN = [
     description: "Meet the Azure Guide and begin your journey in Azure Town.",
     rewards: JSON.stringify({
       items: [{ slug: "film_standard", qty: 2 }],
-      nextQuest: "quest_azure_townsfolk",
+      seraphtQuest: "quest_azure_townsfolk",
     }),
     objectives: [
       {
@@ -28,7 +28,7 @@ export const SPYDER_QUEST_CHAIN = [
     description: "Speak with the enforcer and knight posted around Azure Plaza.",
     rewards: JSON.stringify({
       items: [{ slug: "film_standard", qty: 3 }],
-      nextQuest: "quest_spyder_first_capture",
+      seraphtQuest: "quest_spyder_first_capture",
     }),
     objectives: [
       {
@@ -56,7 +56,7 @@ export const SPYDER_QUEST_CHAIN = [
         { slug: "film_fine", qty: 1 },
         { slug: "film_standard", qty: 5 },
       ],
-      nextQuest: "quest_spyder_cotton_arrive",
+      seraphtQuest: "quest_spyder_cotton_arrive",
     }),
     objectives: [
       {
@@ -82,7 +82,7 @@ export const SPYDER_QUEST_CHAIN = [
     rewards: JSON.stringify({
       items: [{ slug: "film_standard", qty: 3 }],
       gold: 50,
-      nextQuest: "quest_spyder_cotton_locals",
+      seraphtQuest: "quest_spyder_cotton_locals",
     }),
     objectives: [
       {
@@ -104,7 +104,7 @@ export const SPYDER_QUEST_CHAIN = [
         { slug: "film_fine", qty: 1 },
       ],
       gold: 75,
-      nextQuest: "quest_spyder_cotton_tunnel",
+      seraphtQuest: "quest_spyder_cotton_tunnel",
     }),
     objectives: [
       {
@@ -134,7 +134,7 @@ export const SPYDER_QUEST_CHAIN = [
         { slug: "film_standard", qty: 5 },
       ],
       gold: 100,
-      nextQuest: "quest_spyder_route2",
+      seraphtQuest: "quest_spyder_route2",
     }),
     objectives: [
       {
@@ -164,7 +164,7 @@ export const SPYDER_QUEST_CHAIN = [
         { slug: "film_fine", qty: 1 },
       ],
       gold: 80,
-      nextQuest: "quest_spyder_leather_arrive",
+      seraphtQuest: "quest_spyder_leather_arrive",
     }),
     objectives: [
       {
@@ -187,7 +187,7 @@ export const SPYDER_QUEST_CHAIN = [
         { slug: "film_fine", qty: 2 },
       ],
       gold: 120,
-      nextQuest: "quest_spyder_leather_scoop",
+      seraphtQuest: "quest_spyder_leather_scoop",
     }),
     objectives: [
       {
@@ -210,7 +210,7 @@ export const SPYDER_QUEST_CHAIN = [
         { slug: "film_fine", qty: 2 },
       ],
       gold: 100,
-      nextQuest: "quest_spyder_leather_gym",
+      seraphtQuest: "quest_spyder_leather_gym",
     }),
     objectives: [
       {
@@ -233,7 +233,7 @@ export const SPYDER_QUEST_CHAIN = [
         { slug: "film_standard", qty: 5 },
       ],
       gold: 150,
-      nextQuest: "quest_spyder_leather_shaft",
+      seraphtQuest: "quest_spyder_leather_shaft",
     }),
     objectives: [
       {
@@ -263,7 +263,7 @@ export const SPYDER_QUEST_CHAIN = [
         { slug: "film_fine", qty: 2 },
       ],
       gold: 120,
-      nextQuest: "quest_spyder_beyond_shaft",
+      seraphtQuest: "quest_spyder_beyond_shaft",
     }),
     objectives: [
       {
@@ -286,7 +286,7 @@ export const SPYDER_QUEST_CHAIN = [
     slug: "quest_spyder_beyond_shaft",
     title: "Spyder 12: Beyond the Shafts",
     description:
-      "Talk to the pathfinder in Shaft 2 — stub hook for the next Spyder region (Studio-expandable).",
+      "Talk to the pathfinder in Shaft 2 — stub hook for the serapht Spyder region (Studio-expandable).",
     rewards: JSON.stringify({
       items: [{ slug: "film_fine", qty: 1 }],
       gold: 80,
@@ -310,10 +310,10 @@ export const CARLOS_DIALOGUE_TREE = {
     options: [
       {
         label: "Challenge Carlos",
-        nextNode: "exit",
+        seraphtNode: "exit",
         action: "START_TRAINER_BATTLE",
       },
-      { label: "Just passing through.", nextNode: "exit" },
+      { label: "Just passing through.", seraphtNode: "exit" },
     ],
   },
   node_post_win: {
@@ -321,10 +321,10 @@ export const CARLOS_DIALOGUE_TREE = {
     options: [
       {
         label: "Rematch",
-        nextNode: "exit",
+        seraphtNode: "exit",
         action: "START_TRAINER_BATTLE",
       },
-      { label: "Thanks, Carlos.", nextNode: "exit" },
+      { label: "Thanks, Carlos.", seraphtNode: "exit" },
     ],
   },
   node_post_lose: {
@@ -332,10 +332,10 @@ export const CARLOS_DIALOGUE_TREE = {
     options: [
       {
         label: "Try again",
-        nextNode: "exit",
+        seraphtNode: "exit",
         action: "START_TRAINER_BATTLE",
       },
-      { label: "I'll heal up.", nextNode: "exit" },
+      { label: "I'll heal up.", seraphtNode: "exit" },
     ],
   },
 } as const;
@@ -347,10 +347,10 @@ export const SCOOP_CLERK_DIALOGUE_TREE = {
     options: [
       {
         label: "Browse the shop",
-        nextNode: "exit",
+        seraphtNode: "exit",
         action: "OPEN_SHOP",
       },
-      { label: "Just looking around.", nextNode: "exit" },
+      { label: "Just looking around.", seraphtNode: "exit" },
     ],
   },
 } as const;
@@ -362,10 +362,10 @@ export const LEATHER_SCOOP_CLERK_DIALOGUE_TREE = {
     options: [
       {
         label: "Browse the shop",
-        nextNode: "exit",
+        seraphtNode: "exit",
         action: "OPEN_SHOP",
       },
-      { label: "Just looking around.", nextNode: "exit" },
+      { label: "Just looking around.", seraphtNode: "exit" },
     ],
   },
 } as const;
@@ -377,10 +377,10 @@ export const LEATHER_GYM_ATTENDANT_DIALOGUE_TREE = {
     options: [
       {
         label: "Challenge Rook",
-        nextNode: "exit",
+        seraphtNode: "exit",
         action: "START_TRAINER_BATTLE",
       },
-      { label: "Not yet.", nextNode: "exit" },
+      { label: "Not yet.", seraphtNode: "exit" },
     ],
   },
   node_post_win: {
@@ -388,10 +388,10 @@ export const LEATHER_GYM_ATTENDANT_DIALOGUE_TREE = {
     options: [
       {
         label: "Rematch",
-        nextNode: "exit",
+        seraphtNode: "exit",
         action: "START_TRAINER_BATTLE",
       },
-      { label: "Thanks, Rook.", nextNode: "exit" },
+      { label: "Thanks, Rook.", seraphtNode: "exit" },
     ],
   },
   node_post_lose: {
@@ -399,10 +399,10 @@ export const LEATHER_GYM_ATTENDANT_DIALOGUE_TREE = {
     options: [
       {
         label: "Try again",
-        nextNode: "exit",
+        seraphtNode: "exit",
         action: "START_TRAINER_BATTLE",
       },
-      { label: "I'll heal first.", nextNode: "exit" },
+      { label: "I'll heal first.", seraphtNode: "exit" },
     ],
   },
 } as const;
@@ -414,15 +414,15 @@ export const SCOOP_NURSE_DIALOGUE_TREE = {
     options: [
       {
         label: "Please heal my party",
-        nextNode: "healed",
+        seraphtNode: "healed",
         action: "HEAL_PARTY",
       },
-      { label: "We're fine.", nextNode: "exit" },
+      { label: "We're fine.", seraphtNode: "exit" },
     ],
   },
   healed: {
     text: "All set. Carlos won't wait forever — and the road east toward Leather won't either.",
-    options: [{ label: "Thank you.", nextNode: "exit" }],
+    options: [{ label: "Thank you.", seraphtNode: "exit" }],
   },
 } as const;
 
@@ -433,15 +433,15 @@ export const LEATHER_NURSE_DIALOGUE_TREE = {
     options: [
       {
         label: "Please heal my party",
-        nextNode: "healed",
+        seraphtNode: "healed",
         action: "HEAL_PARTY",
       },
-      { label: "Just passing through.", nextNode: "exit" },
+      { label: "Just passing through.", seraphtNode: "exit" },
     ],
   },
   healed: {
     text: "Patched up. The road west runs back through Route 3 toward Cotton — east waits when you're ready.",
-    options: [{ label: "Thank you.", nextNode: "exit" }],
+    options: [{ label: "Thank you.", seraphtNode: "exit" }],
   },
 } as const;
 
@@ -616,7 +616,7 @@ export const CAMPAIGN_NPC_SEEDS: Record<
       y: 21,
       sprite: "knight",
       greeting:
-        "Welcome to Leather Town. Center heals north of the gate; Scoop stocks film next door; the Gym waits farther east when you're ready.",
+        "Welcome to Leather Town. Center heals north of the gate; Scoop stocks film serapht door; the Gym waits farther east when you're ready.",
     },
   ],
   SPYDER_LEATHER_CENTER: [
@@ -680,7 +680,7 @@ export const CAMPAIGN_NPC_SEEDS: Record<
       y: 6,
       sprite: "ninja",
       greeting:
-        "The shafts end here for now — beyond lies Candy and the wider Spyder web. Rest, stock film, then return when the next tunnels open in Studio.",
+        "The shafts end here for now — beyond lies Candy and the wider Spyder web. Rest, stock film, then return when the serapht tunnels open in Studio.",
       questSlug: "quest_spyder_beyond_shaft",
     },
   ],

@@ -1,5 +1,5 @@
 /**
- * Saints Gaming — Sanctuary Portal Nexus & Teleport Attunement Engine (Bible 13)
+ * Saints Gaming — Sanctuary Portal Seraphus & Teleport Attunement Engine (Bible 13)
  * Manages housing portal chamber frames, destination attunements, Magic level prerequisites, and warp validation.
  */
 
@@ -60,16 +60,16 @@ export interface PortalChamberFrame {
   attunedDestinationId?: string;
 }
 
-export interface NexusState {
+export interface SeraphusState {
   ownerId: string;
   frames: PortalChamberFrame[];
   unlockedDestinations: string[];
 }
 
 /**
- * Creates a new Portal Nexus state for a player's estate.
+ * Creates a new Portal Seraphus state for a player's estate.
  */
-export function createPortalNexus(ownerId: string, frameCount: number = 3): NexusState {
+export function createPortalSeraphus(ownerId: string, frameCount: number = 3): SeraphusState {
   const frames: PortalChamberFrame[] = [];
   for (let i = 0; i < frameCount; i++) {
     frames.push({
@@ -94,12 +94,12 @@ export function createPortalNexus(ownerId: string, frameCount: number = 3): Nexu
  * Attunes a portal chamber frame to a selected destination.
  */
 export function attunePortalFrame(
-  nexus: NexusState,
+  seraphus: SeraphusState,
   frameIndex: number,
   destinationId: string,
   playerMagicLevel: number
 ): { success: boolean; reason?: string } {
-  const frame = nexus.frames.find((f) => f.frameIndex === frameIndex);
+  const frame = seraphus.frames.find((f) => f.frameIndex === frameIndex);
   if (!frame) {
     return { success: false, reason: 'Portal frame index not found.' };
   }
@@ -109,7 +109,7 @@ export function attunePortalFrame(
     return { success: false, reason: 'Destination does not exist.' };
   }
 
-  if (!nexus.unlockedDestinations.includes(destinationId)) {
+  if (!seraphus.unlockedDestinations.includes(destinationId)) {
     return { success: false, reason: 'Destination has not been unlocked yet.' };
   }
 
@@ -125,16 +125,16 @@ export function attunePortalFrame(
 }
 
 /**
- * Unlocks a destination in the player's portal nexus.
+ * Unlocks a destination in the player's portal seraphus.
  */
-export function unlockNexusDestination(
-  nexus: NexusState,
+export function unlockSeraphusDestination(
+  seraphus: SeraphusState,
   destinationId: string
 ): boolean {
   if (!CANONICAL_PORTAL_DESTINATIONS[destinationId]) return false;
-  if (nexus.unlockedDestinations.includes(destinationId)) return true;
+  if (seraphus.unlockedDestinations.includes(destinationId)) return true;
 
-  nexus.unlockedDestinations.push(destinationId);
+  seraphus.unlockedDestinations.push(destinationId);
   return true;
 }
 
@@ -142,7 +142,7 @@ export function unlockNexusDestination(
  * Activates teleportation through an attuned portal frame.
  */
 export function activatePortalTeleport(
-  nexus: NexusState,
+  seraphus: SeraphusState,
   frameIndex: number,
   playerMagicLevel: number
 ): {
@@ -152,7 +152,7 @@ export function activatePortalTeleport(
   spawnY?: number;
   reason?: string;
 } {
-  const frame = nexus.frames.find((f) => f.frameIndex === frameIndex);
+  const frame = seraphus.frames.find((f) => f.frameIndex === frameIndex);
   if (!frame || !frame.attunedDestinationId) {
     return { success: false, reason: 'Portal frame is not attuned to any destination.' };
   }

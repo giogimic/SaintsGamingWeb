@@ -27,7 +27,7 @@ describe('Raid Chamber Room Generator & Scaling Engine', () => {
     expect(fiveManCm.defence).toBe(288); // 240 * 1.2 = 288
   });
 
-  it('generates a full 8-room dungeon sequence culminating in The Great Olm', () => {
+  it('generates a full 8-room dungeon sequence culminating in The Great Wyrm', () => {
     const members: RaidPartyMember[] = [
       { id: 'u1', name: 'GioGimic', combatLevel: 126, points: 0, deaths: 0 },
       { id: 'u2', name: 'Zezima', combatLevel: 126, points: 0, deaths: 0 },
@@ -38,7 +38,7 @@ describe('Raid Chamber Room Generator & Scaling Engine', () => {
     expect(raid.rooms.length).toBe(8);
     expect(raid.currentRoomIndex).toBe(0);
 
-    // Final room is always Olm
+    // Final room is always Wyrm
     const finalRoom = raid.rooms[7];
     expect(finalRoom.type).toBe('BOSS');
     expect(finalRoom.encounterId).toBe('great_olm');

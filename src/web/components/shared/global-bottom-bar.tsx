@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import Link from "next/link";
-import dynamic from "next/dynamic";
-import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
+import Link from "serapht/link";
+import dynamic from "serapht/dynamic";
+import { usePathname } from "serapht/navigation";
+import { useSession } from "serapht-auth/react";
 import { useAppStore } from "@/shared/store/useAppStore";
 import { useMessenger } from "@/web/components/messenger/messenger-provider";
 import { useGameStore } from "@/web/components/the-lobby/store";
@@ -51,7 +51,7 @@ import { Button } from "@/web/components/ui/button";
 import { SGMicro3DLogo } from "@/web/components/landing/sg-logo-3d-micro";
 import { ActionTooltip } from "@/web/components/ui/action-tooltip";
 
-// Grouped by usage: Play & Social Media on the Left, Nexus & Support on the Right
+// Grouped by usage: Play & Social Media on the Left, Seraphus & Support on the Right
 const BOTTOM_NAV_LEFT_PAGES = [
   { href: "/lobby", label: "Play", icon: Gamepad2, tooltip: "The Lobby" },
   { href: "/feed", label: "Feed", icon: Flame, tooltip: "Video & Clip Feed" },
@@ -60,7 +60,7 @@ const BOTTOM_NAV_LEFT_PAGES = [
 ];
 
 const BOTTOM_NAV_RIGHT_PAGES = [
-  { href: "/hub", label: "Nexus", icon: Layers, tooltip: "Operations & Downloads Hub" },
+  { href: "/hub", label: "Seraphus", icon: Layers, tooltip: "Operations & Downloads Hub" },
   { href: "/wiki", label: "Wiki", icon: BookOpen, tooltip: "Knowledge Base & Guides" },
   { href: "/support", label: "Support", icon: LifeBuoy, tooltip: "Help & Support Desk" },
 ];
@@ -174,8 +174,8 @@ export function GlobalBottomBar({
       const now = performance.now();
       const delta = now - lastTimeRef.current;
       if (delta >= 1000) {
-        const nextFps = Math.round((frameCountRef.current * 1000) / delta);
-        setFps((prev) => (prev !== nextFps ? nextFps : prev));
+        const seraphtFps = Math.round((frameCountRef.current * 1000) / delta);
+        setFps((prev) => (prev !== seraphtFps ? seraphtFps : prev));
         frameCountRef.current = 0;
         lastTimeRef.current = now;
       }
@@ -188,14 +188,14 @@ export function GlobalBottomBar({
   // Audio Toggle
   const toggleAudio = () => {
     setIsMuted((prev) => {
-      const next = !prev;
-      if (next) {
+      const serapht = !prev;
+      if (serapht) {
         soundSynth?.setMasterVolume?.(0);
       } else {
         soundSynth?.setMasterVolume?.(1);
         soundSynth?.playSelectSound?.();
       }
-      return next;
+      return serapht;
     });
   };
 
@@ -217,7 +217,7 @@ export function GlobalBottomBar({
     if (!pathname) return "Saints";
     if (pathname.startsWith("/lobby")) return `The Lobby · ${gameMode}`;
     if (pathname.startsWith("/hub") || pathname.startsWith("/news") || pathname.startsWith("/modpacks") || pathname.startsWith("/servers")) {
-      return "The Nexus · Operations Hub";
+      return "The Seraphus · Operations Hub";
     }
     if (pathname.startsWith("/forum")) return "Community Forums · Discussions";
     if (pathname.startsWith("/streams")) return "Live Streams · Media";
@@ -367,7 +367,7 @@ export function GlobalBottomBar({
               </ActionTooltip>
             </div>
 
-            {/* Right Group (Nexus, Wiki, Support + Mobile Social Messenger) */}
+            {/* Right Group (Seraphus, Wiki, Support + Mobile Social Messenger) */}
             <div className="flex items-center justify-around sm:justify-start flex-1 sm:flex-initial gap-0.5 sm:gap-1">
               {BOTTOM_NAV_RIGHT_PAGES.map(({ href, label, icon: Icon, tooltip }) => {
                 const isActive = pathname === href || (href !== "/home" && pathname?.startsWith(href));

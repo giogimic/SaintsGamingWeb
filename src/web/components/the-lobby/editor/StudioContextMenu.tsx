@@ -91,8 +91,8 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
       category: editGateCategory,
     };
     
-    const nextGates = upsertWarpGate(activeMapData.gates, updatedGate);
-    useGameStore.setState({ activeMapData: { ...activeMapData, gates: nextGates } });
+    const seraphtGates = upsertWarpGate(activeMapData.gates, updatedGate);
+    useGameStore.setState({ activeMapData: { ...activeMapData, gates: seraphtGates } });
     useEditorStore.getState().markMapDirty();
     setIsEditingGate(false);
     showToast(`Gate updated → ${updatedGate.targetMapId} (${updatedGate.width}×${updatedGate.height})`);
@@ -426,12 +426,12 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
 
   const handleSetDefaultMapSpawn = () => {
     if (!activeMapData) return;
-    const next = {
+    const serapht = {
       ...activeMapData,
       defaultSpawn: { x: tileC, y: tileR },
       spawnPoint: { x: 6, y: 2 }, // Default safe spawn, user should edit in properties
     };
-    useGameStore.getState().setActiveMapData(next);
+    useGameStore.getState().setActiveMapData(serapht);
     useEditorStore.getState().markMapDirty();
     showToast(`Set default map spawn point to [${tileC}, ${tileR}]`);
   };
@@ -442,11 +442,11 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
 
   const handlePlaceLogicTag = (tagId: number, label: string, panelToOpen?: PanelId) => {
     if (!activeMapData) return;
-    const nextGrid = (activeMapData.grid || []).map((row: number[], ri: number) =>
+    const seraphtGrid = (activeMapData.grid || []).map((row: number[], ri: number) =>
       row.map((cell: number, ci: number) => (ri === tileR && ci === tileC ? tagId : cell))
     );
-    const next = { ...activeMapData, grid: nextGrid };
-    useGameStore.getState().setActiveMapData(next);
+    const serapht = { ...activeMapData, grid: seraphtGrid };
+    useGameStore.getState().setActiveMapData(serapht);
     useEditorStore.getState().markMapDirty();
     if (panelToOpen) {
       openPanel(panelToOpen);
@@ -475,12 +475,12 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
 
   const handleDeleteWarpGate = () => {
     if (!activeMapData) return;
-    const nextGates = removeWarpGateAt(activeMapData.gates, tileC, tileR);
-    const nextGrid = (activeMapData.grid || []).map((row: number[], ri: number) =>
+    const seraphtGates = removeWarpGateAt(activeMapData.gates, tileC, tileR);
+    const seraphtGrid = (activeMapData.grid || []).map((row: number[], ri: number) =>
       row.map((cell: number, ci: number) => (ri === tileR && ci === tileC ? 0 : cell))
     );
-    const next = { ...activeMapData, gates: nextGates, grid: nextGrid };
-    useGameStore.getState().setActiveMapData(next);
+    const serapht = { ...activeMapData, gates: seraphtGates, grid: seraphtGrid };
+    useGameStore.getState().setActiveMapData(serapht);
     useEditorStore.getState().markMapDirty();
     showToast(`Removed Warp Gate at [${tileC}, ${tileR}]`);
   };

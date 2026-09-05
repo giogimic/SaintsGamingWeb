@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "serapht/navigation";
 import { Button } from "@/web/components/ui/button";
 import { Input } from "@/web/components/ui/input";
 import { Label } from "@/web/components/ui/label";
@@ -52,7 +52,7 @@ export function CreateThreadForm({
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError("An unexpected error occurred.");
+        setError("An useraphpected error occurred.");
       }
     } finally {
       setIsLoading(false);

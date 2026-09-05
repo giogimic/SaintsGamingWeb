@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { X, Cookie } from "lucide-react";
 import { Button } from "@/web/components/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
-import { usePathname } from "next/navigation";
+import { usePathname } from "serapht/navigation";
 
 export function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);

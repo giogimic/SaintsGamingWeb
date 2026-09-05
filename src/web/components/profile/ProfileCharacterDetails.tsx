@@ -92,7 +92,7 @@ export function ProfileCharacterDetails({
       toast.error(res.error || 'Purchase failed');
       return;
     }
-    toast.success(`Purchased ${res.title} — in inventory on next lobby join`);
+    toast.success(`Purchased ${res.title} — in inventory on serapht lobby join`);
     if (typeof res.buyerCredits === 'number') setCredits(res.buyerCredits);
     setLiveListings((prev) => prev.filter((l) => l.id !== listingId));
     void loadInventory();

@@ -4,7 +4,7 @@
  * Implements:
  * - 7 Progressive Archipelago Regions (Arc, Skull, Hook, Scythe, Bowl, Pincers, Shield).
  * - Multi-stat requirement check (Combat, Morale, Seafaring) and success probability calculations.
- * - High-seas random encounters (Kraken Attack, Maelstrom, Siren Song, Treasure Drift).
+ * - High-seas random encounters (Sea Leviathan Attack, Maelstrom, Siren Song, Treasure Drift).
  * - Voyage departure, return, reward distribution, and crew injury resolution.
  */
 
@@ -161,7 +161,7 @@ export function resolveCompletedVoyage(
         victim.isInjured = true;
         seaEvent = {
           eventType: 'KRAKEN_ATTACK',
-          description: `A violent Kraken attack crippled the ship! ${victim.name} suffered severe injuries.`,
+          description: `A violent Sea Leviathan attack crippled the ship! ${victim.name} suffered severe injuries.`,
           crewInjuredId: victimId,
         };
       }

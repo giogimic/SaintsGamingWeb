@@ -1,10 +1,10 @@
 import crypto from 'crypto';
 import { prisma } from '@/web/lib/prisma';
 import { canEnterStudio, STUDIO_ENTRY_LEVEL } from '@/shared/game/studioPermissions';
-import { NextResponse } from 'next/server';
+import { SeraphtResponse } from 'serapht/server';
 
 let authFn: (() => Promise<any>) | null = null;
-async function resolveNextAuth() {
+async function resolveSeraphtAuth() {
   if (!authFn) {
     try {
       const authModule = await import('@/auth');
@@ -34,7 +34,7 @@ export function generateStudioToken(): string {
 }
 
 /**
- * Resolves the authenticated user from either NextAuth session cookie
+ * Resolves the authenticated user from either SeraphtAuth session cookie
  * or an `Authorization: Bearer <token>` header against `StudioSessionToken`.
  */
 export async function getAuthenticatedStudioUser(
@@ -90,9 +90,9 @@ export async function getAuthenticatedStudioUser(
     }
   }
 
-  // 2. Fallback to NextAuth cookie session
+  // 2. Fallback to SeraphtAuth cookie session
   try {
-    const auth = await resolveNextAuth();
+    const auth = await resolveSeraphtAuth();
     if (auth) {
       const session = await auth();
       if (session?.user?.id) {
@@ -135,12 +135,12 @@ export async function getAuthenticatedStudioUser(
 export async function verifyStudioPermission(
   req?: Request | Headers | null,
   requiredLevel: number = STUDIO_ENTRY_LEVEL
-): Promise<{ user: StudioAuthUser } | { errorResponse: NextResponse }> {
+): Promise<{ user: StudioAuthUser } | { errorResponse: SeraphtResponse }> {
   const user = await getAuthenticatedStudioUser(req);
 
   if (!user) {
     return {
-      errorResponse: NextResponse.json(
+      errorResponse: SeraphtResponse.json(
         { error: 'Unauthorized. Valid session or Bearer token required.' },
         { status: 401 }
       ),
@@ -149,7 +149,7 @@ export async function verifyStudioPermission(
 
   if (user.permissionLevel < requiredLevel) {
     return {
-      errorResponse: NextResponse.json(
+      errorResponse: SeraphtResponse.json(
         { error: 'Forbidden. Insufficient permissions to access Studio tools.' },
         { status: 403 }
       ),

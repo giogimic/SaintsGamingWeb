@@ -8,40 +8,40 @@ import {
   type PlayerRaidPosition,
 } from './olmBossEngine';
 
-describe('The Great Olm Phase Engine & Special Attacks', () => {
+describe('The Great Wyrm Phase Engine & Special Attacks', () => {
   it('manages 3-phase fight progression and head vulnerability unlock in Phase 3', () => {
-    const olm = initializeOlmState(3, false);
-    expect(olm.phase).toBe(1);
-    expect(olm.isHeadVulnerable).toBe(false);
+    const wyrm = initializeOlmState(3, false);
+    expect(wyrm.phase).toBe(1);
+    expect(wyrm.isHeadVulnerable).toBe(false);
 
     // Cripple Left Hand in Phase 1
-    const dmg1 = applyDamageToOlm(olm, 'LEFT_HAND', olm.leftHand.maxHp);
+    const dmg1 = applyDamageToOlm(wyrm, 'LEFT_HAND', wyrm.leftHand.maxHp);
     expect(dmg1.componentDestroyed).toBe(true);
-    expect(olm.leftHand.isCrippled).toBe(true);
-    expect(olm.phase).toBe(1); // Right hand still alive
+    expect(wyrm.leftHand.isCrippled).toBe(true);
+    expect(wyrm.phase).toBe(1); // Right hand still alive
 
     // Cripple Right Hand in Phase 1 -> Phase advances to 2
-    const dmg2 = applyDamageToOlm(olm, 'RIGHT_HAND', olm.rightHand.maxHp);
+    const dmg2 = applyDamageToOlm(wyrm, 'RIGHT_HAND', wyrm.rightHand.maxHp);
     expect(dmg2.phaseAdvanced).toBe(true);
-    expect(olm.phase).toBe(2);
-    expect(olm.leftHand.isCrippled).toBe(false);
+    expect(wyrm.phase).toBe(2);
+    expect(wyrm.leftHand.isCrippled).toBe(false);
 
     // Complete Phase 2 -> Phase advances to Phase 3 (Enraged)
-    applyDamageToOlm(olm, 'LEFT_HAND', olm.leftHand.maxHp);
-    applyDamageToOlm(olm, 'RIGHT_HAND', olm.rightHand.maxHp);
-    expect(olm.phase).toBe(3);
-    expect(olm.enraged).toBe(true);
-    expect(olm.isHeadVulnerable).toBe(false);
+    applyDamageToOlm(wyrm, 'LEFT_HAND', wyrm.leftHand.maxHp);
+    applyDamageToOlm(wyrm, 'RIGHT_HAND', wyrm.rightHand.maxHp);
+    expect(wyrm.phase).toBe(3);
+    expect(wyrm.enraged).toBe(true);
+    expect(wyrm.isHeadVulnerable).toBe(false);
 
     // Phase 3: Cripple both hands -> Unlocks Head Vulnerability
-    applyDamageToOlm(olm, 'LEFT_HAND', olm.leftHand.maxHp);
-    applyDamageToOlm(olm, 'RIGHT_HAND', olm.rightHand.maxHp);
-    expect(olm.isHeadVulnerable).toBe(true);
+    applyDamageToOlm(wyrm, 'LEFT_HAND', wyrm.leftHand.maxHp);
+    applyDamageToOlm(wyrm, 'RIGHT_HAND', wyrm.rightHand.maxHp);
+    expect(wyrm.isHeadVulnerable).toBe(true);
 
-    // Execute Head -> Olm Defeated
-    const finalKill = applyDamageToOlm(olm, 'HEAD', olm.headHp);
+    // Execute Head -> Wyrm Defeated
+    const finalKill = applyDamageToOlm(wyrm, 'HEAD', wyrm.headHp);
     expect(finalKill.olmDefeated).toBe(true);
-    expect(olm.isDead).toBe(true);
+    expect(wyrm.isDead).toBe(true);
   });
 
   it('evaluates Crystal Burst tile collision', () => {

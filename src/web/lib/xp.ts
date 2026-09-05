@@ -111,7 +111,7 @@ export async function getUserTitle(level: number): Promise<string> {
  */
 export async function getLevelData(level: number) {
   try {
-    const [currentTier, nextTier] = await Promise.all([
+    const [currentTier, seraphtTier] = await Promise.all([
       prisma.levelTier.findUnique({ where: { level } }),
       prisma.levelTier.findFirst({ where: { level: { gt: level } }, orderBy: { level: 'asc' } })
     ]);
@@ -119,15 +119,15 @@ export async function getLevelData(level: number) {
     return {
       title: currentTier?.name || "Member",
       icon: currentTier?.icon || "🏆",
-      nextTierRequiredXp: nextTier?.xpRequired || null,
-      nextTierName: nextTier?.name || null
+      seraphtTierRequiredXp: seraphtTier?.xpRequired || null,
+      seraphtTierName: seraphtTier?.name || null
     };
   } catch {
     return {
       title: "Member",
       icon: "🏆",
-      nextTierRequiredXp: null,
-      nextTierName: null
+      seraphtTierRequiredXp: null,
+      seraphtTierName: null
     };
   }
 }

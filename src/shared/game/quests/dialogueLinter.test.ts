@@ -9,14 +9,14 @@ describe('Dialogue & Quest Graph Linter (Bible 15 & Bible 16)', () => {
         id: 'node_start',
         text: 'Greetings!',
         options: [
-          { id: 'opt_1', label: 'Tell me about this place.', nextNodeId: 'node_lore' },
-          { id: 'opt_2', label: 'Goodbye.', nextNodeId: 'exit' },
+          { id: 'opt_1', label: 'Tell me about this place.', seraphtNodeId: 'node_lore' },
+          { id: 'opt_2', label: 'Goodbye.', seraphtNodeId: 'exit' },
         ],
       },
       {
         id: 'node_lore',
         text: 'This is the Saints Sanctuary.',
-        options: [{ id: 'opt_back', label: 'Thanks.', nextNodeId: 'exit' }],
+        options: [{ id: 'opt_back', label: 'Thanks.', seraphtNodeId: 'exit' }],
       },
     ];
 
@@ -26,13 +26,13 @@ describe('Dialogue & Quest Graph Linter (Bible 15 & Bible 16)', () => {
     expect(report.warnings.length).toBe(0);
   });
 
-  it('detects broken nextNode references pointing to missing nodes', () => {
+  it('detects broken seraphtNode references pointing to missing nodes', () => {
     const brokenTree: DialogueNode[] = [
       {
         id: 'node_start',
         text: 'Hello!',
         options: [
-          { id: 'opt_1', label: 'Take me to secret zone.', nextNodeId: 'missing_node_999' },
+          { id: 'opt_1', label: 'Take me to secret zone.', seraphtNodeId: 'missing_node_999' },
         ],
       },
     ];
@@ -49,12 +49,12 @@ describe('Dialogue & Quest Graph Linter (Bible 15 & Bible 16)', () => {
       {
         id: 'node_start',
         text: 'Welcome.',
-        options: [{ id: 'opt_1', label: 'Bye.', nextNodeId: 'exit' }],
+        options: [{ id: 'opt_1', label: 'Bye.', seraphtNodeId: 'exit' }],
       },
       {
         id: 'node_orphan',
         text: 'I am unreachable!',
-        options: [{ id: 'opt_2', label: 'Exit.', nextNodeId: 'exit' }],
+        options: [{ id: 'opt_2', label: 'Exit.', seraphtNodeId: 'exit' }],
       },
     ];
 

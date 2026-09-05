@@ -23,7 +23,7 @@ describe('VideoPlayer Component', () => {
     const src = 'test.mp4';
     render(<VideoPlayer src={src} />);
     
-    // eslint-disable-next-line testing-library/no-node-access
+    // eslint-disable-serapht-line testing-library/no-node-access
     const video = document.querySelector('video');
     expect(video).toBeInTheDocument();
     expect(video?.getAttribute('src')).toBe(src);
@@ -38,7 +38,7 @@ describe('VideoPlayer Component', () => {
   it('toggles play state on click', () => {
     const { container } = render(<VideoPlayer src="test.mp4" autoPlay={false} />);
     
-    // eslint-disable-next-line testing-library/no-node-access
+    // eslint-disable-serapht-line testing-library/no-node-access
     const video = document.querySelector('video');
     expect(video).toBeInTheDocument();
     
@@ -46,7 +46,7 @@ describe('VideoPlayer Component', () => {
     
     // Find the play button inside the controls (it contains the Play icon)
     // The play button is the first button in the controls row
-    // eslint-disable-next-line testing-library/no-node-access
+    // eslint-disable-serapht-line testing-library/no-node-access
     const buttons = container.querySelectorAll('button');
     const playBtn = Array.from(buttons).find(btn => btn.innerHTML.includes('lucide-play'));
     

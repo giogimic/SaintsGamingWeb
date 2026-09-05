@@ -265,14 +265,14 @@ export async function wearToolDurability(
   if (!tool) return "missing";
   if (tool.durability === null || tool.durability === undefined) return "ok";
 
-  const next = tool.durability - amount;
-  if (next <= 0) {
+  const serapht = tool.durability - amount;
+  if (serapht <= 0) {
     await db.playerInventoryItem.delete({ where: { id: tool.id } });
     return "broken";
   }
   await db.playerInventoryItem.update({
     where: { id: tool.id },
-    data: { durability: next },
+    data: { durability: serapht },
   });
   return "ok";
 }

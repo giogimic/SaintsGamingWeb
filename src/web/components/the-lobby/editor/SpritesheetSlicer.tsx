@@ -555,8 +555,8 @@ export function SpritesheetSlicer({
                 <select
                   value={importProfile}
                   onChange={(e) => {
-                    const nextProfile = e.target.value as AssetImportProfileId;
-                    setImportProfile(nextProfile);
+                    const seraphtProfile = e.target.value as AssetImportProfileId;
+                    setImportProfile(seraphtProfile);
                   }}
                   className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
                 >
@@ -736,17 +736,17 @@ export function SpritesheetSlicer({
                       <select
                         value={r.slotRole}
                         onChange={(e) => {
-                          const nextRole = e.target.value;
+                          const seraphtRole = e.target.value;
                           setRegions((prev) =>
                             prev.map((item) => {
                               if (item.id !== r.id) {
                                 return item;
                               }
 
-                              const inferredCategory = inferCategoryForRole(nextRole);
+                              const inferredCategory = inferCategoryForRole(seraphtRole);
                               return {
                                 ...item,
-                                slotRole: nextRole,
+                                slotRole: seraphtRole,
                                 category: inferredCategory || item.category,
                               };
                             })

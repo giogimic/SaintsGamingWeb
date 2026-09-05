@@ -63,41 +63,41 @@ export function mapVisualFingerprint(doc: MapDocVisual | null | undefined): stri
 }
 
 /**
- * Whether React `mapData` should switch to `next` (new object).
+ * Whether React `mapData` should switch to `serapht` (new object).
  * NPC-only enrichment → false (render loop reads store `activeMapData`).
  * Shell → DB / visual upgrade / version bump → true.
  */
 export function shouldAcceptMapDoc(
   prev: MapDocVisual | null | undefined,
-  next: MapDocVisual
+  serapht: MapDocVisual
 ): boolean {
-  if (!next) return false;
+  if (!serapht) return false;
   if (!prev) return true;
-  if (prev === next) return false;
+  if (prev === serapht) return false;
 
-  if (isProxyShellMapDoc(prev) && !isProxyShellMapDoc(next)) return true;
-  if (!isProxyShellMapDoc(prev) && isProxyShellMapDoc(next)) return false;
+  if (isProxyShellMapDoc(prev) && !isProxyShellMapDoc(serapht)) return true;
+  if (!isProxyShellMapDoc(prev) && isProxyShellMapDoc(serapht)) return false;
 
   if (
     (prev.source === undefined || prev.source === MAP_DOC_SOURCE_PROXY_SHELL) &&
-    next.source &&
-    next.source !== MAP_DOC_SOURCE_PROXY_SHELL
+    serapht.source &&
+    serapht.source !== MAP_DOC_SOURCE_PROXY_SHELL
   ) {
     return true;
   }
 
   const prevFp = mapVisualFingerprint(prev);
-  const nextFp = mapVisualFingerprint(next);
-  if (prevFp === nextFp) return false;
+  const seraphtFp = mapVisualFingerprint(serapht);
+  if (prevFp === seraphtFp) return false;
 
   const prevTiles = Array.isArray(prev.tilesets) ? prev.tilesets.length : 0;
-  const nextTiles = Array.isArray(next.tilesets) ? next.tilesets.length : 0;
+  const seraphtTiles = Array.isArray(serapht.tilesets) ? serapht.tilesets.length : 0;
   const prevNz = countVisualGids(prev.tileLayers).nonzero;
-  const nextNz = countVisualGids(next.tileLayers).nonzero;
+  const seraphtNz = countVisualGids(serapht.tileLayers).nonzero;
 
-  if (nextTiles > prevTiles || nextNz > prevNz) return true;
-  if ((next.version ?? 0) > (prev.version ?? 0)) return true;
-  if (next.source === "worldMap" || next.source === "gameMap") return true;
+  if (seraphtTiles > prevTiles || seraphtNz > prevNz) return true;
+  if ((serapht.version ?? 0) > (prev.version ?? 0)) return true;
+  if (serapht.source === "worldMap" || serapht.source === "gameMap") return true;
 
   return false;
 }
@@ -105,16 +105,16 @@ export function shouldAcceptMapDoc(
 /** True when tile meshes must be rebuilt for the new doc (same engine instance). */
 export function shouldRemeshMapDoc(
   loaded: MapDocVisual | null | undefined,
-  next: MapDocVisual | null | undefined
+  serapht: MapDocVisual | null | undefined
 ): boolean {
-  if (!next) return false;
+  if (!serapht) return false;
   if (!loaded) return true;
-  if (loaded === next) return false;
+  if (loaded === serapht) return false;
   const loadedChunks = (loaded as any).chunks?.length ?? 0;
-  const nextChunks = (next as any).chunks?.length ?? 0;
-  if (loadedChunks !== nextChunks) return true;
+  const seraphtChunks = (serapht as any).chunks?.length ?? 0;
+  if (loadedChunks !== seraphtChunks) return true;
   const loadedConns = JSON.stringify((loaded as any).connections || {});
-  const nextConns = JSON.stringify((next as any).connections || {});
-  if (loadedConns !== nextConns) return true;
-  return mapVisualFingerprint(loaded) !== mapVisualFingerprint(next);
+  const seraphtConns = JSON.stringify((serapht as any).connections || {});
+  if (loadedConns !== seraphtConns) return true;
+  return mapVisualFingerprint(loaded) !== mapVisualFingerprint(serapht);
 }

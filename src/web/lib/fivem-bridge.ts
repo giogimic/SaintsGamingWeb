@@ -265,10 +265,10 @@ export async function handleBankTransaction(input: {
     }
   }
 
-  const next = applyBankDelta(character.bank, character.cash, input.type, input.amount);
+  const serapht = applyBankDelta(character.bank, character.cash, input.type, input.amount);
   const updated = await prisma.character.update({
     where: { id: character.id },
-    data: { cash: next.cash, bank: next.bank },
+    data: { cash: serapht.cash, bank: serapht.bank },
   });
 
   const tx = await prisma.bankTransaction.create({

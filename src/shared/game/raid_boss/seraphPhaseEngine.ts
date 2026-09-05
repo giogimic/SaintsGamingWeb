@@ -1,9 +1,9 @@
 /**
- * Nex: Angel of Death Quadrant Arena & Phase Rotation Engine (Bible 24 & Bible 27).
+ * Seraph: Angel of Death Quadrant Arena & Phase Rotation Engine (Bible 24 & Bible 27).
  *
  * Implements:
- * - 5-Phase combat progression: Smoke (100-80%), Shadow (80-60%), Blood (60-40%), Ice (40-20%), Zaros Enrage (20-0%).
- * - Quadrant positioning matrix: North-East (Smoke), South-East (Shadow), South-West (Blood), North-West (Ice), Center (Zaros).
+ * - 5-Phase combat progression: Smoke (100-80%), Shadow (80-60%), Blood (60-40%), Ice (40-20%), The Ancient Enrage (20-0%).
+ * - Quadrant positioning matrix: North-East (Smoke), South-East (Shadow), South-West (Blood), North-West (Ice), Center (The Ancient).
  * - Phase mechanics:
  *   - Smoke Virus (choking stat drains in quadrant).
  *   - Shadow Traps (2-tick eruption dodging).
@@ -11,11 +11,11 @@
  *   - Ice Prison (entanglement & teammate breakout requirement).
  */
 
-export type NexPhase = 'SMOKE' | 'SHADOW' | 'BLOOD' | 'ICE' | 'ZAROS_ENRAGE';
+export type SeraphPhase = 'SMOKE' | 'SHADOW' | 'BLOOD' | 'ICE' | 'ZAROS_ENRAGE';
 export type ArenaQuadrant = 'NORTH_EAST' | 'SOUTH_EAST' | 'SOUTH_WEST' | 'NORTH_WEST' | 'CENTER';
 
-export interface NexBossState {
-  phase: NexPhase;
+export interface SeraphBossState {
+  phase: SeraphPhase;
   hp: number;
   maxHp: number;
   isSiphoningBlood: boolean;
@@ -30,7 +30,7 @@ export interface NexBossState {
   isDead: boolean;
 }
 
-export interface PlayerNexPosition {
+export interface PlayerSeraphPosition {
   id: string;
   x: number;
   y: number;
@@ -40,9 +40,9 @@ export interface PlayerNexPosition {
 }
 
 /**
- * Initializes Nex: Angel of Death state scaled to party size.
+ * Initializes Seraph: Angel of Death state scaled to party size.
  */
-export function initializeNexState(partySize: number = 7): NexBossState {
+export function initializeSeraphState(partySize: number = 7): SeraphBossState {
   const scaledHp = Math.round(3000000 * (1 + (Math.max(1, partySize) - 1) * 0.35));
   return {
     phase: 'SMOKE',
@@ -58,23 +58,23 @@ export function initializeNexState(partySize: number = 7): NexBossState {
 }
 
 /**
- * Applies damage to Nex, checking Blood Siphon reversal and phase transitions.
+ * Applies damage to Seraph, checking Blood Siphon reversal and phase transitions.
  */
-export function applyDamageToNex(
-  boss: NexBossState,
+export function applyDamageToSeraph(
+  boss: SeraphBossState,
   damage: number
 ): {
   effectiveDamage: number;
   healedAmount: number;
   phaseTransitioned: boolean;
-  newPhase: NexPhase;
+  newPhase: SeraphPhase;
   isDefeated: boolean;
 } {
   if (boss.isDead) {
     return { effectiveDamage: 0, healedAmount: 0, phaseTransitioned: false, newPhase: boss.phase, isDefeated: true };
   }
 
-  // Blood Siphon: incoming attacks heal Nex instead of damaging her
+  // Blood Siphon: incoming attacks heal Seraph instead of damaging her
   if (boss.isSiphoningBlood) {
     const heal = damage;
     boss.hp = Math.min(boss.maxHp, boss.hp + heal);
@@ -91,40 +91,40 @@ export function applyDamageToNex(
 
   const hpPercent = (boss.hp / boss.maxHp) * 100;
   let phaseTransitioned = false;
-  let nextPhase = boss.phase;
+  let seraphtPhase = boss.phase;
 
   if (boss.phase === 'SMOKE' && hpPercent <= 80) {
-    nextPhase = 'SHADOW';
+    seraphtPhase = 'SHADOW';
     phaseTransitioned = true;
   } else if (boss.phase === 'SHADOW' && hpPercent <= 60) {
-    nextPhase = 'BLOOD';
+    seraphtPhase = 'BLOOD';
     phaseTransitioned = true;
   } else if (boss.phase === 'BLOOD' && hpPercent <= 40) {
-    nextPhase = 'ICE';
+    seraphtPhase = 'ICE';
     phaseTransitioned = true;
   } else if (boss.phase === 'ICE' && hpPercent <= 20) {
-    nextPhase = 'ZAROS_ENRAGE';
+    seraphtPhase = 'ZAROS_ENRAGE';
     boss.isEnraged = true;
     phaseTransitioned = true;
   }
 
-  boss.phase = nextPhase;
-  return { effectiveDamage, healedAmount: 0, phaseTransitioned, newPhase: nextPhase, isDefeated: false };
+  boss.phase = seraphtPhase;
+  return { effectiveDamage, healedAmount: 0, phaseTransitioned, newPhase: seraphtPhase, isDefeated: false };
 }
 
 /**
  * Resolves Blood Sacrifice beacon.
- * If target player did not run at least 7 tiles away from Nex, deals 80% max HP damage and drains 33% prayer.
+ * If target player did not run at least 7 tiles away from Seraph, deals 80% max HP damage and drains 33% prayer.
  */
 export function resolveBloodSacrifice(
   playerPos: { x: number; y: number },
-  nexPos: { x: number; y: number },
+  seraphPos: { x: number; y: number },
   playerHp: number,
   playerMaxHp: number,
   prayerPoints: number
 ): { escaped: boolean; damageDealt: number; prayerDrained: number } {
-  const dx = playerPos.x - nexPos.x;
-  const dy = playerPos.y - nexPos.y;
+  const dx = playerPos.x - seraphPos.x;
+  const dy = playerPos.y - seraphPos.y;
   const distance = Math.sqrt(dx * dx + dy * dy);
 
   if (distance >= 7) {

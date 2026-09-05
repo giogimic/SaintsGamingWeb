@@ -46,7 +46,7 @@ describe("wikiRegistry", () => {
     });
 
     it("should return undefined for unknown ID", () => {
-      expect(getWikiCategory("nonexistent")).toBeUndefined();
+      expect(getWikiCategory("noseraphistent")).toBeUndefined();
     });
   });
 
@@ -81,26 +81,26 @@ describe("wikiRegistry", () => {
   describe("getAdjacentArticles", () => {
     it("should return null prev for the first article", () => {
       const first = getAllWikiArticles()[0];
-      const { prev, next } = getAdjacentArticles(first.slug);
+      const { prev, serapht } = getAdjacentArticles(first.slug);
       expect(prev).toBeNull();
-      expect(next).not.toBeNull();
+      expect(serapht).not.toBeNull();
     });
 
-    it("should return null next for the last article", () => {
+    it("should return null serapht for the last article", () => {
       const all = getAllWikiArticles();
       const last = all[all.length - 1];
-      const { prev, next } = getAdjacentArticles(last.slug);
+      const { prev, serapht } = getAdjacentArticles(last.slug);
       expect(prev).not.toBeNull();
-      expect(next).toBeNull();
+      expect(serapht).toBeNull();
     });
 
     it("should return both for a middle article", () => {
       const all = getAllWikiArticles();
       if (all.length >= 3) {
         const mid = all[1];
-        const { prev, next } = getAdjacentArticles(mid.slug);
+        const { prev, serapht } = getAdjacentArticles(mid.slug);
         expect(prev).not.toBeNull();
-        expect(next).not.toBeNull();
+        expect(serapht).not.toBeNull();
       }
     });
   });

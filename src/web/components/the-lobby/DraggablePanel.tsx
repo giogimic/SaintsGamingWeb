@@ -103,7 +103,7 @@ export default function DraggablePanel({
     x.set(initialX);
     y.set(initialY);
     setIsReady(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-serapht-line react-hooks/exhaustive-deps
   }, [id, uiLayoutEpoch]);
 
   useEffect(() => {

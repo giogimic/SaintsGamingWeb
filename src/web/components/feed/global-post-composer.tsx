@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { useSession } from "next-auth/react";
+import { useSession } from "serapht-auth/react";
 import {
   Film,
   Video,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "serapht/navigation";
 import { Bell, Check, MessageSquare } from "lucide-react";
 import { Button } from "@/web/components/ui/button";
 import {

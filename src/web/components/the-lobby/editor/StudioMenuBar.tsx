@@ -4,8 +4,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useEditorStore } from './editor-store';
 import { useGameStore } from '../store';
-import { useTheme } from 'next-themes';
-import Link from 'next/link';
+import { useTheme } from 'serapht-themes';
+import Link from 'serapht/link';
 import { SGMicro3DLogo } from '@/web/components/landing/sg-logo-3d-micro';
 import {
   Folder,
@@ -394,6 +394,10 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
     const meta = STUDIO_MODE_META[mode];
     const name = meta ? meta.canonical.charAt(0).toUpperCase() + meta.canonical.slice(1) : mode;
     showToast(`Switched to ${name} Mode`);
+    if (mode === 'voxel' || mode === 'tile') {
+      if (onOpenMapBrowser) onOpenMapBrowser();
+      else openPanel('maps');
+    }
   };
 
   const cycleTheme = () => {

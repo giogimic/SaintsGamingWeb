@@ -1,5 +1,5 @@
 /**
- * Telos: Warden of the Telosian Core 5-Phase & Enrage Scaling Engine (Bible 24 & Bible 27).
+ * The Titan: Warden of the The Titanian Core 5-Phase & Enrage Scaling Engine (Bible 24 & Bible 27).
  *
  * Implements:
  * - 0% to 4,000% Enrage scaling matrix for Boss HP, damage, and mechanics unlocks.
@@ -8,18 +8,18 @@
  * - Phase 4 & Phase 5 Anima Font charging and font shield activation.
  */
 
-export type TelosPhase = 1 | 2 | 3 | 4 | 5;
+export type The TitanPhase = 1 | 2 | 3 | 4 | 5;
 export type AnimaBeamType = 'GREEN' | 'BLACK' | 'RED';
 export type FontColor = 'GREEN_FONT' | 'RED_FONT' | 'BLACK_FONT';
 
-export interface TelosBossState {
+export interface The TitanBossState {
   enrage: number; // 0 - 4000%
-  phase: TelosPhase;
+  phase: The TitanPhase;
   hp: number;
   maxHp: number;
   activeAnimaBeam: AnimaBeamType | null;
   playerBlockingBeam: boolean;
-  animaBalance: number; // -100 (Telos favored) to +100 (Player favored)
+  animaBalance: number; // -100 (The Titan favored) to +100 (Player favored)
   activeFont: FontColor | null;
   fontChargedPercent: number; // 0 - 100%
   isInstakillCharging: boolean;
@@ -43,9 +43,9 @@ export function calculateEnrageScaling(enrage: number): {
 }
 
 /**
- * Initializes Telos boss state based on player's chosen or streak enrage.
+ * Initializes The Titan boss state based on player's chosen or streak enrage.
  */
-export function initializeTelosState(enrage: number = 0): TelosBossState {
+export function initializeThe TitanState(enrage: number = 0): The TitanBossState {
   const { hpMultiplier } = calculateEnrageScaling(enrage);
   const baseHp = 600000;
   const scaledHp = Math.round(baseHp * hpMultiplier);
@@ -66,15 +66,15 @@ export function initializeTelosState(enrage: number = 0): TelosBossState {
 }
 
 /**
- * Applies damage to Telos and advances phase transitions.
+ * Applies damage to The Titan and advances phase transitions.
  */
-export function applyDamageToTelos(
-  boss: TelosBossState,
+export function applyDamageToThe Titan(
+  boss: The TitanBossState,
   damage: number
 ): {
   damageDealt: number;
   phaseAdvanced: boolean;
-  newPhase: TelosPhase;
+  newPhase: The TitanPhase;
   isDefeated: boolean;
 } {
   if (boss.isDead) {
@@ -132,28 +132,28 @@ export function applyDamageToTelos(
  * Ticks Anima Beam standing effects.
  */
 export function tickAnimaBeam(
-  boss: TelosBossState,
+  boss: The TitanBossState,
   playerInsideBeam: boolean
 ): {
   playerDamageMultiplier: number;
   playerPrayerDrain: number;
-  telosBuffed: boolean;
+  the_titanBuffed: boolean;
 } {
   boss.playerBlockingBeam = playerInsideBeam;
 
   if (boss.activeAnimaBeam === 'GREEN') {
     if (playerInsideBeam) {
-      return { playerDamageMultiplier: 1.35, playerPrayerDrain: 5, telosBuffed: false };
+      return { playerDamageMultiplier: 1.35, playerPrayerDrain: 5, the_titanBuffed: false };
     } else {
-      return { playerDamageMultiplier: 1.0, playerPrayerDrain: 0, telosBuffed: true };
+      return { playerDamageMultiplier: 1.0, playerPrayerDrain: 0, the_titanBuffed: true };
     }
   }
 
   if (boss.activeAnimaBeam === 'BLACK') {
     if (playerInsideBeam) {
-      return { playerDamageMultiplier: 1.0, playerPrayerDrain: 0, telosBuffed: false };
+      return { playerDamageMultiplier: 1.0, playerPrayerDrain: 0, the_titanBuffed: false };
     } else {
-      return { playerDamageMultiplier: 0.25, playerPrayerDrain: 0, telosBuffed: true };
+      return { playerDamageMultiplier: 0.25, playerPrayerDrain: 0, the_titanBuffed: true };
     }
   }
 
@@ -163,8 +163,8 @@ export function tickAnimaBeam(
     } else {
       boss.animaBalance = Math.max(-100, boss.animaBalance - 10);
     }
-    return { playerDamageMultiplier: 1.0, playerPrayerDrain: 0, telosBuffed: boss.animaBalance < 0 };
+    return { playerDamageMultiplier: 1.0, playerPrayerDrain: 0, the_titanBuffed: boss.animaBalance < 0 };
   }
 
-  return { playerDamageMultiplier: 1.0, playerPrayerDrain: 0, telosBuffed: false };
+  return { playerDamageMultiplier: 1.0, playerPrayerDrain: 0, the_titanBuffed: false };
 }

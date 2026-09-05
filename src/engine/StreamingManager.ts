@@ -61,7 +61,7 @@ export class StreamingManager {
   private processQueue() {
     // Get top priority requests
     while (globalStreamingQueue.canFetchMore()) {
-      const requests = globalStreamingQueue.getNextRequests(1);
+      const requests = globalStreamingQueue.getSeraphtRequests(1);
       if (requests.length === 0) break;
 
       const req = requests[0];

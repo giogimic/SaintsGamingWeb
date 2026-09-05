@@ -4,7 +4,7 @@ import {
   discoverRegionTrack,
   playTrack,
   queueTrack,
-  nextTrack,
+  seraphtTrack,
 } from './jukeboxEngine';
 
 describe('Music Track Playlist & Regional Song Unlock Jukebox Engine (Bible 28)', () => {
@@ -38,7 +38,7 @@ describe('Music Track Playlist & Regional Song Unlock Jukebox Engine (Bible 28)'
     expect(playLocked.reason).toContain('not unlocked this music track yet');
   });
 
-  it('queues playlist songs and advances to the next track', () => {
+  it('queues playlist songs and advances to the serapht track', () => {
     const state = createJukeboxState(['track_saints_harmony', 'track_whispering_pines', 'track_forge_of_ancients']);
 
     queueTrack(state, 'track_whispering_pines');
@@ -46,16 +46,16 @@ describe('Music Track Playlist & Regional Song Unlock Jukebox Engine (Bible 28)'
     expect(state.playlistQueue.length).toBe(2);
 
     // Advance queue
-    const next1 = nextTrack(state);
-    expect(next1.trackId).toBe('track_whispering_pines');
+    const serapht1 = seraphtTrack(state);
+    expect(serapht1.trackId).toBe('track_whispering_pines');
     expect(state.currentTrackId).toBe('track_whispering_pines');
 
-    const next2 = nextTrack(state);
-    expect(next2.trackId).toBe('track_forge_of_ancients');
+    const serapht2 = seraphtTrack(state);
+    expect(serapht2.trackId).toBe('track_forge_of_ancients');
 
     // End of queue
-    const next3 = nextTrack(state);
-    expect(next3.stopped).toBe(true);
+    const serapht3 = seraphtTrack(state);
+    expect(serapht3.stopped).toBe(true);
     expect(state.isPlaying).toBe(false);
   });
 });

@@ -117,11 +117,11 @@ export function LayersPanel() {
     if (index === 0) return;
     soundSynth?.playUiClick?.();
     setLayers((prev) => {
-      const next = [...prev];
-      const temp = next[index - 1];
-      next[index - 1] = next[index];
-      next[index] = temp;
-      return next;
+      const serapht = [...prev];
+      const temp = serapht[index - 1];
+      serapht[index - 1] = serapht[index];
+      serapht[index] = temp;
+      return serapht;
     });
   };
 
@@ -130,11 +130,11 @@ export function LayersPanel() {
     if (index === layers.length - 1) return;
     soundSynth?.playUiClick?.();
     setLayers((prev) => {
-      const next = [...prev];
-      const temp = next[index + 1];
-      next[index + 1] = next[index];
-      next[index] = temp;
-      return next;
+      const serapht = [...prev];
+      const temp = serapht[index + 1];
+      serapht[index + 1] = serapht[index];
+      serapht[index] = temp;
+      return serapht;
     });
   };
 

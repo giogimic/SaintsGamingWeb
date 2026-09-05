@@ -45,26 +45,26 @@ export const SLAYER_SHOP_UNLOCKS: Record<string, SlayerShopUnlock> = {
     pointCost: 300,
     description: 'Allows fletching of Broad Arrows and Broad Bolts for ranged slayer combat.',
   },
-  extend_bloodveld: {
-    id: 'extend_bloodveld',
+  extend_gore_hound: {
+    id: 'extend_gore_hound',
     name: 'Need More Blood',
     category: 'EXTEND',
     pointCost: 100,
-    description: 'Extends Bloodveld slayer assignments from 140 to up to 250 kills.',
+    description: 'Extends Gore Hound slayer assignments from 140 to up to 250 kills.',
   },
-  extend_gargoyle: {
-    id: 'extend_gargoyle',
-    name: 'Gargoyle Extension',
+  extend_stone_golem: {
+    id: 'extend_stone_golem',
+    name: 'Stone Golem Extension',
     category: 'EXTEND',
     pointCost: 100,
-    description: 'Extends Gargoyle slayer assignments up to 250 kills.',
+    description: 'Extends Stone Golem slayer assignments up to 250 kills.',
   },
-  extend_abyssal_demon: {
-    id: 'extend_abyssal_demon',
+  extend_void_fiend: {
+    id: 'extend_void_fiend',
     name: 'Abyssal Extension',
     category: 'EXTEND',
     pointCost: 100,
-    description: 'Extends Abyssal Demon slayer assignments up to 250 kills.',
+    description: 'Extends Void Fiend slayer assignments up to 250 kills.',
   },
 };
 

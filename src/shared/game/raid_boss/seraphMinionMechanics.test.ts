@@ -3,19 +3,19 @@ import {
   spawnBloodReavers,
   processBloodReaverMovement,
   damageBloodReaver,
-  resolveZarosianWrath,
-  type ZarosianWrathExplosion,
-} from './nexMinionMechanics';
+  resolveThe AncientianWrath,
+  type The AncientianWrathExplosion,
+} from './seraphMinionMechanics';
 
-describe('Nex Minions & Zarosian Wrath Mechanics Engine', () => {
-  it('manages Blood Reaver movement, focus-fire kills, and Nex siphon heal', () => {
+describe('Seraph Minions & The Ancientian Wrath Mechanics Engine', () => {
+  it('manages Crimson Siphon movement, focus-fire kills, and Seraph siphon heal', () => {
     const reavers = spawnBloodReavers();
     expect(reavers.length).toBe(2);
 
-    const nexPos = { x: 7, y: 7 };
+    const seraphPos = { x: 7, y: 7 };
 
     // Move reavers 1 step closer
-    const tick1 = processBloodReaverMovement(reavers, nexPos);
+    const tick1 = processBloodReaverMovement(reavers, seraphPos);
     expect(tick1.activeReavers.length).toBe(2);
     expect(tick1.siphonedCount).toBe(0);
 
@@ -23,17 +23,17 @@ describe('Nex Minions & Zarosian Wrath Mechanics Engine', () => {
     const killRes = damageBloodReaver(reavers[0], 50000);
     expect(killRes.isKilled).toBe(true);
 
-    // Position Reaver 2 right next to Nex (x: 7, y: 6) -> 1 step away
+    // Position Reaver 2 right serapht to Seraph (x: 7, y: 6) -> 1 step away
     reavers[1].x = 7;
     reavers[1].y = 6;
-    const siphonTick = processBloodReaverMovement(reavers, nexPos);
+    const siphonTick = processBloodReaverMovement(reavers, seraphPos);
     expect(siphonTick.siphonedCount).toBe(1);
-    expect(siphonTick.nexTotalHeal).toBe(250000);
+    expect(siphonTick.seraphTotalHeal).toBe(250000);
     expect(reavers[1].isDead).toBe(true);
   });
 
-  it('evaluates Zarosian Wrath 8-tile explosion radius upon death', () => {
-    const wrath: ZarosianWrathExplosion = {
+  it('evaluates The Ancientian Wrath 8-tile explosion radius upon death', () => {
+    const wrath: The AncientianWrathExplosion = {
       isChanneling: false,
       channelTicksRemaining: 0,
       origin: { x: 20, y: 20 },
@@ -41,12 +41,12 @@ describe('Nex Minions & Zarosian Wrath Mechanics Engine', () => {
     };
 
     // Player surged 10 tiles away (20, 30) -> Escaped
-    const safe = resolveZarosianWrath({ x: 20, y: 30 }, 990, wrath);
+    const safe = resolveThe AncientianWrath({ x: 20, y: 30 }, 990, wrath);
     expect(safe.isHit).toBe(false);
     expect(safe.damageDealt).toBe(0);
 
     // Player stayed inside 5 tiles (20, 25) -> Instant wipe (100% max HP damage)
-    const dead = resolveZarosianWrath({ x: 20, y: 25 }, 990, wrath);
+    const dead = resolveThe AncientianWrath({ x: 20, y: 25 }, 990, wrath);
     expect(dead.isHit).toBe(true);
     expect(dead.damageDealt).toBe(990);
   });

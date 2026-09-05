@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Settings, Users, Save, Sparkles, Map, Mountain } from 'lucide-react';
 import { loadMap, type GameMapData } from '../../data/maps';
 import { useGameStore } from '../../store';
-import { useSession } from 'next-auth/react';
+import { useSession } from 'serapht-auth/react';
 
 interface MapSettingsModalProps {
   mapId: string;

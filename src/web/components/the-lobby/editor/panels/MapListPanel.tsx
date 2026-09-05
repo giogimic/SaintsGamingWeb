@@ -15,7 +15,7 @@ import { loadMap } from '../../data/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { buildNewStudioMap, formatMapWriteError } from '@/shared/game/studioMapCreate';
 import { soundSynth } from '@/engine/sound-synth';
-import { useSession } from 'next-auth/react';
+import { useSession } from 'serapht-auth/react';
 import { canWriteStudioContent } from '@/shared/game/studioPermissions';
 import { useDebounce } from '@/web/hooks/useDebounce';
 import { useMapIndex, useRealmSettings } from '@/web/hooks/studio-data';
@@ -55,6 +55,7 @@ export const MapListPanel: React.FC = () => {
   const currentMapId = useGameStore((s) => s.currentMapId);
   const showToast = useGameStore((s) => s.showToast);
   const activeGameId = useEditorStore((s) => s.activeGameId);
+  const studioMode = useEditorStore((s) => s.studioMode);
 
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 150);
@@ -104,6 +105,14 @@ export const MapListPanel: React.FC = () => {
   const [settingsModalMapId, setSettingsModalMapId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (studioMode === 'voxel') {
+      setMapEngine('VOXEL');
+    } else if (studioMode === 'tile') {
+      setMapEngine('TILE');
+    }
+  }, [studioMode]);
+
+  useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (showCreateModal) setShowCreateModal(false);
@@ -132,6 +141,13 @@ export const MapListPanel: React.FC = () => {
       ? combined
       : combined.filter((m) => m.category === selectedCategory);
 
+    // Isolate by map type according to active mode
+    if (studioMode === 'voxel') {
+      list = list.filter((m) => m.mapType === 'VOXEL');
+    } else if (studioMode === 'tile') {
+      list = list.filter((m) => m.mapType !== 'VOXEL');
+    }
+
     return list.sort((a, b) => {
       let cmp = 0;
       if (sortField === 'name') {
@@ -147,7 +163,7 @@ export const MapListPanel: React.FC = () => {
       }
       return sortAsc ? cmp : -cmp;
     });
-  }, [combined, selectedCategory, sortField, sortAsc]);
+  }, [combined, selectedCategory, sortField, sortAsc, studioMode]);
 
   // Multi-select helpers
   const isAllSelected = filtered.length > 0 && filtered.every((m) => selectedMapIds.has(m.id));
@@ -164,10 +180,10 @@ export const MapListPanel: React.FC = () => {
   const toggleSelectMap = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     setSelectedMapIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+      const serapht = new Set(prev);
+      if (serapht.has(id)) serapht.delete(id);
+      else serapht.add(id);
+      return serapht;
     });
   };
 
@@ -226,9 +242,9 @@ export const MapListPanel: React.FC = () => {
       }
       showToast(`Deleted map: ${targetId}`);
       setSelectedMapIds((prev) => {
-        const next = new Set(prev);
-        next.delete(targetId);
-        return next;
+        const serapht = new Set(prev);
+        serapht.delete(targetId);
+        return serapht;
       });
       mutateMaps();
       setDeleteTargetMapId(null);

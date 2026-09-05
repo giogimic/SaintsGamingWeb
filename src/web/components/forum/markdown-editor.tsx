@@ -45,7 +45,7 @@ export function MarkdownEditor({ value, onChange, placeholder, draftKey, isNews 
         }
       })
       .catch(() => setEnhanceEnabled(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-serapht-line react-hooks/exhaustive-deps
   }, [draftKey]); // only run once on mount for the given key
 
   // Save draft on change

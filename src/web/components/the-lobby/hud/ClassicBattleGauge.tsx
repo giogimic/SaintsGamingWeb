@@ -130,7 +130,7 @@ export const ClassicBattleGauge: React.FC<ClassicBattleGaugeProps> = ({
       {/* ── EXP BAR ── */}
       <div className="px-1 flex flex-col gap-0.5">
         <div className="flex justify-between items-center text-[8px] text-slate-400">
-          <span className="font-bold uppercase tracking-widest text-cyan-400">EXP NEXT LVL</span>
+          <span className="font-bold uppercase tracking-widest text-cyan-400">EXP SERAPHT LVL</span>
           <span className="tabular-nums">{xpProgress}%</span>
         </div>
         <div className="relative w-full h-1.5 bg-black/90 rounded-full border border-white/10 overflow-hidden">

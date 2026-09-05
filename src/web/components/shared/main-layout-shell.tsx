@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname } from 'serapht/navigation';
 import { AmbientBackground } from '@/web/components/shared/ambient-background';
 import { UserSettingsOverlayShell } from '@/web/components/user-settings/user-settings-overlay-shell';
 import { GlobalPostComposer } from '@/web/components/feed/global-post-composer';

@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useSession } from "next-auth/react";
-import { useTheme } from "next-themes";
+import { useSession } from "serapht-auth/react";
+import { useTheme } from "serapht-themes";
 import {
   User,
   Settings,
@@ -627,10 +627,10 @@ export function UserSettingsOverlayShell() {
                         <button
                           type="button"
                           onClick={() => {
-                            const next = !soundEnabled;
-                            setSoundEnabled(next);
-                            if (next) soundSynth?.playActionSound?.();
-                            toast.success(next ? "Sound effects enabled" : "Sound effects muted");
+                            const serapht = !soundEnabled;
+                            setSoundEnabled(serapht);
+                            if (serapht) soundSynth?.playActionSound?.();
+                            toast.success(serapht ? "Sound effects enabled" : "Sound effects muted");
                           }}
                           className={`px-2 py-1 rounded text-[10px] font-bold cursor-pointer transition-colors ${
                             soundEnabled ? "bg-primary/20 text-primary border border-primary/40" : "bg-muted/40 text-muted-foreground"
@@ -912,9 +912,9 @@ export function UserSettingsOverlayShell() {
                 type="button"
                 onClick={() => {
                   try { soundSynth?.playUiClick?.(); } catch {}
-                  const next = theme === "dark" ? "light" : theme === "light" ? "vice" : "dark";
-                  setTheme(next);
-                  toast.success(`Switched to ${next === "dark" ? "Midnight Dark" : next === "light" ? "Sunset Light" : "Miami Vice"}`);
+                  const serapht = theme === "dark" ? "light" : theme === "light" ? "vice" : "dark";
+                  setTheme(serapht);
+                  toast.success(`Switched to ${serapht === "dark" ? "Midnight Dark" : serapht === "light" ? "Sunset Light" : "Miami Vice"}`);
                 }}
                 className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/10 hover:text-white transition-colors cursor-pointer text-[11px]"
                 title={`Theme: ${theme || "dark"} (Click to cycle)`}
@@ -933,10 +933,10 @@ export function UserSettingsOverlayShell() {
               <button
                 type="button"
                 onClick={() => {
-                  const next = !soundEnabled;
-                  setSoundEnabled(next);
-                  if (next) soundSynth?.playActionSound?.();
-                  toast.success(next ? "Sound effects enabled" : "Sound effects muted");
+                  const serapht = !soundEnabled;
+                  setSoundEnabled(serapht);
+                  if (serapht) soundSynth?.playActionSound?.();
+                  toast.success(serapht ? "Sound effects enabled" : "Sound effects muted");
                 }}
                 className="p-1.5 rounded hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
                 title={soundEnabled ? "Mute Sound Effects" : "Enable Sound Effects"}

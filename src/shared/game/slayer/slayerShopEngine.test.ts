@@ -78,21 +78,21 @@ describe('Slayer Reward Shop & Helmet Imbue Engine', () => {
 
   it('calculates on-task damage bonuses for Black Mask and Imbued Slayer Helmet', () => {
     // Off task -> 1.0 (no bonus)
-    const offTask = calculateSlayerCombatBonus('SLAYER_HELMET_IMBUED', 'gargoyle', 'abyssal_demon');
+    const offTask = calculateSlayerCombatBonus('SLAYER_HELMET_IMBUED', 'stone_golem', 'void_fiend');
     expect(offTask.isActive).toBe(false);
     expect(offTask.meleeMultiplier).toBe(1.0);
     expect(offTask.rangedMultiplier).toBe(1.0);
     expect(offTask.magicMultiplier).toBe(1.0);
 
     // Standard Slayer Helmet on task -> +16.67% Melee, 1.0 Ranged/Magic
-    const standardHelm = calculateSlayerCombatBonus('SLAYER_HELMET', 'gargoyle', 'gargoyle');
+    const standardHelm = calculateSlayerCombatBonus('SLAYER_HELMET', 'stone_golem', 'stone_golem');
     expect(standardHelm.isActive).toBe(true);
     expect(standardHelm.meleeMultiplier).toBeCloseTo(1.1667, 3);
     expect(standardHelm.rangedMultiplier).toBe(1.0);
     expect(standardHelm.magicMultiplier).toBe(1.0);
 
     // Imbued Slayer Helmet on task -> +16.67% Melee, +15% Ranged, +15% Magic
-    const imbuedHelm = calculateSlayerCombatBonus('SLAYER_HELMET_IMBUED', 'gargoyle', 'gargoyle');
+    const imbuedHelm = calculateSlayerCombatBonus('SLAYER_HELMET_IMBUED', 'stone_golem', 'stone_golem');
     expect(imbuedHelm.isActive).toBe(true);
     expect(imbuedHelm.meleeMultiplier).toBeCloseTo(1.1667, 3);
     expect(imbuedHelm.rangedMultiplier).toBe(1.15);

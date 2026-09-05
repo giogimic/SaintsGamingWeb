@@ -329,59 +329,59 @@ export const ProfessionEditorPanel: React.FC = () => {
       type: 'EQUIPMENT',
       iconName: 'Award',
     };
-    const next: ProfessionUnlockMilestone[] = [
+    const serapht: ProfessionUnlockMilestone[] = [
       ...milestonesArray,
       newMilestone,
     ].sort((a, b) => a.level - b.level);
-    const json = JSON.stringify(next);
+    const json = JSON.stringify(serapht);
     commitStructural({ ...formData, milestonesJson: json });
     setFormData({ ...formData, milestonesJson: json });
   };
 
   const handleUpdateMilestone = (index: number, patch: Partial<ProfessionUnlockMilestone>) => {
-    const next = [...milestonesArray];
-    next[index] = { ...next[index], ...patch };
-    next.sort((a, b) => a.level - b.level);
-    const json = JSON.stringify(next);
+    const serapht = [...milestonesArray];
+    serapht[index] = { ...serapht[index], ...patch };
+    serapht.sort((a, b) => a.level - b.level);
+    const json = JSON.stringify(serapht);
     setFormData({ ...formData, milestonesJson: json });
   };
 
   const handleDeleteMilestone = (index: number) => {
-    const next = milestonesArray.filter((_, i) => i !== index);
-    const json = JSON.stringify(next);
+    const serapht = milestonesArray.filter((_, i) => i !== index);
+    const json = JSON.stringify(serapht);
     commitStructural({ ...formData, milestonesJson: json });
     setFormData({ ...formData, milestonesJson: json });
   };
 
   const handleAddBattlepassTier = () => {
-    const nextTierNum = battlepassTiersArray.length + 1;
+    const seraphtTierNum = battlepassTiersArray.length + 1;
     const rarity: ProfessionBattlepassTier['rarity'] =
-      nextTierNum >= 10 ? 'MYTHIC' : nextTierNum >= 7 ? 'LEGENDARY' : 'RARE';
+      seraphtTierNum >= 10 ? 'MYTHIC' : seraphtTierNum >= 7 ? 'LEGENDARY' : 'RARE';
     const newTier: ProfessionBattlepassTier = {
-      tier: nextTierNum,
-      level: Math.min(nextTierNum * 10, Number(formData.maxLevel) || 99),
-      rewardName: `Mastery Reward ${nextTierNum}`,
+      tier: seraphtTierNum,
+      level: Math.min(seraphtTierNum * 10, Number(formData.maxLevel) || 99),
+      rewardName: `Mastery Reward ${seraphtTierNum}`,
       rewardType: 'COSMETIC',
       rarity,
-      description: `Cosmetic reward unlocked upon reaching tier ${nextTierNum}.`,
+      description: `Cosmetic reward unlocked upon reaching tier ${seraphtTierNum}.`,
       iconName: 'Crown',
     };
-    const next: ProfessionBattlepassTier[] = [...battlepassTiersArray, newTier];
-    const json = JSON.stringify(next);
+    const serapht: ProfessionBattlepassTier[] = [...battlepassTiersArray, newTier];
+    const json = JSON.stringify(serapht);
     commitStructural({ ...formData, battlepassTiersJson: json });
     setFormData({ ...formData, battlepassTiersJson: json });
   };
 
   const handleUpdateBattlepassTier = (index: number, patch: Partial<ProfessionBattlepassTier>) => {
-    const next = [...battlepassTiersArray];
-    next[index] = { ...next[index], ...patch };
-    const json = JSON.stringify(next);
+    const serapht = [...battlepassTiersArray];
+    serapht[index] = { ...serapht[index], ...patch };
+    const json = JSON.stringify(serapht);
     setFormData({ ...formData, battlepassTiersJson: json });
   };
 
   const handleDeleteBattlepassTier = (index: number) => {
-    const next = battlepassTiersArray.filter((_, i) => i !== index);
-    const json = JSON.stringify(next);
+    const serapht = battlepassTiersArray.filter((_, i) => i !== index);
+    const json = JSON.stringify(serapht);
     commitStructural({ ...formData, battlepassTiersJson: json });
     setFormData({ ...formData, battlepassTiersJson: json });
   };

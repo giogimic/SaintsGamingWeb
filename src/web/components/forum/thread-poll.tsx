@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "serapht/navigation";
 import { Progress } from "@/web/components/ui/progress";
 import { BarChart2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";

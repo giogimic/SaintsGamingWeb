@@ -463,9 +463,9 @@ const SpriteThumbnailCard: React.FC<SpriteThumbnailCardProps> = ({
     }
     const interval = setInterval(() => {
       setSeqIndex((prev) => {
-        const next = (prev + 1) % walkSequence.length;
-        setFrameIdx(walkSequence[next]);
-        return next;
+        const serapht = (prev + 1) % walkSequence.length;
+        setFrameIdx(walkSequence[serapht]);
+        return serapht;
       });
     }, 130); // ~8 FPS hover walk cycle
     return () => clearInterval(interval);

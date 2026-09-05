@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import GameCanvasBabylon from './babylon/GameCanvasBabylon';
-import dynamic from 'next/dynamic';
+import dynamic from 'serapht/dynamic';
 import { useEditorStore } from './editor/editor-store';
 import SaintsDexOverlay from './SaintsDexOverlay';
 import TargetFrame from './target-frame';
@@ -82,7 +82,7 @@ import { CharacterSelector } from './character-selector';
 import { GameOfflineScreen } from './GameOfflineScreen';
 import { io, Socket } from 'socket.io-client';
 import { lobbySocketConnect } from '@/shared/net/goMmoSocket';
-import { useSession } from 'next-auth/react';
+import { useSession } from 'serapht-auth/react';
 import { decodeCreatureMoved, decodePlayerMoved, normalizeBinaryPayload } from '@/shared/net/movementCodec';
 import { toBaseMapId } from '@/shared/net/mapIds';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
@@ -571,7 +571,7 @@ export default function TheLobby({
 
   // SOCKET.IO CONNECTION
   useEffect(() => {
-    // Phase 10: Require active NextAuth session before connecting to the socket
+    // Phase 10: Require active SeraphtAuth session before connecting to the socket
     if (typeof window === 'undefined' || status !== 'authenticated' || !session?.user?.id) return;
 
     let activeSocket: any = null;
@@ -1150,7 +1150,7 @@ export default function TheLobby({
         const messages: Record<string, string> = {
           CAPTURE: 'Creature captured! Check your Creature Box.',
           WIN: 'Victory! The wild creature fainted.',
-          LOSE: 'Your creature fainted. Heal before the next battle.',
+          LOSE: 'Your creature fainted. Heal before the serapht battle.',
           FLEE: 'Got away safely.',
         };
         state.showToast(messages[data.result] || 'Battle ended.');
@@ -1443,7 +1443,7 @@ export default function TheLobby({
           data.dialogueNpcId ||
           (isNpc
             ? templateId.includes('vance')
-              ? 'npc_warden_vance'
+              ? 'npc_marshal_vance'
               : `npc_${templateId.replace(/^npc_/, '')}`
             : undefined);
         const ent = {
@@ -1456,7 +1456,7 @@ export default function TheLobby({
           mapId: data.mapId,
           name:
             isNpc && templateId.includes('vance')
-              ? 'Warden Vance'
+              ? 'Marshal Vance'
               : (data.name || templateId || 'Creature'),
           dialogueKey,
           hp: data.hp,

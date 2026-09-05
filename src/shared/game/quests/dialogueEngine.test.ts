@@ -22,7 +22,7 @@ describe('Dialogue Tree & Branching Condition Resolver (Bible 15)', () => {
       {
         id: 'opt_quest',
         label: 'I have the copper ore you requested.',
-        nextNodeId: 'node_turn_in',
+        seraphtNodeId: 'node_turn_in',
         condition: {
           reqQuestId: 'quest_starter',
           reqQuestStage: 1,
@@ -37,7 +37,7 @@ describe('Dialogue Tree & Branching Condition Resolver (Bible 15)', () => {
       {
         id: 'opt_master',
         label: 'Teach me master smithing.',
-        nextNodeId: 'node_master',
+        seraphtNodeId: 'node_master',
         condition: {
           reqSkill: 'Mining',
           reqSkillLevel: 50,
@@ -46,7 +46,7 @@ describe('Dialogue Tree & Branching Condition Resolver (Bible 15)', () => {
       {
         id: 'opt_exit',
         label: 'Just looking around, thanks.',
-        nextNodeId: 'exit',
+        seraphtNodeId: 'exit',
       },
     ],
   };
@@ -71,7 +71,7 @@ describe('Dialogue Tree & Branching Condition Resolver (Bible 15)', () => {
     const step = resolveDialogueOptionSelection(sampleNode, 'opt_quest', baseContext);
 
     expect(step.isExit).toBe(false);
-    expect(step.nextNodeId).toBe('node_turn_in');
+    expect(step.seraphtNodeId).toBe('node_turn_in');
     expect(step.actionToExecute?.type).toBe('PROGRESS_QUEST');
   });
 

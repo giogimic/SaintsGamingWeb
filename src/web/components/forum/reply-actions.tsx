@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "serapht/navigation";
 import { Button } from "@/web/components/ui/button";
 import { Edit2, Trash2, X, Check, MoreHorizontal, Flag, CheckCircle, Heart } from "lucide-react";
 import { Textarea } from "@/web/components/ui/textarea";

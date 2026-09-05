@@ -228,18 +228,18 @@ export function ensureMapHasStudioTilesets<
     return normalizeTilesetGids(map);
   }
 
-  let nextLayers = map.tileLayers;
+  let seraphtLayers = map.tileLayers;
   if (missingLayers) {
-    nextLayers = [buildDefaultGroundLayer(map.grid)];
+    seraphtLayers = [buildDefaultGroundLayer(map.grid)];
   } else if (legacyBadFill) {
-    nextLayers = upgradeLegacyGroundGids(nextLayers!);
+    seraphtLayers = upgradeLegacyGroundGids(seraphtLayers!);
   } else if (needsFillZeros) {
-    nextLayers = fillZeroGidsInLayers(nextLayers!);
+    seraphtLayers = fillZeroGidsInLayers(seraphtLayers!);
   }
 
   const rawEnsured = {
     ...map,
-    tileLayers: nextLayers,
+    tileLayers: seraphtLayers,
     tilesets: needsTilesets ? [...DEFAULT_STUDIO_TILESETS] : (map.tilesets || []),
   };
   return normalizeTilesetGids(rawEnsured);

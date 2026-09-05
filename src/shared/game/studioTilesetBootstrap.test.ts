@@ -11,20 +11,20 @@ import {
 describe("ensureMapHasStudioTilesets", () => {
   it("bootstraps empty DEMO-style maps with visible ground GIDs", () => {
     const grid = Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => 0));
-    const next = ensureMapHasStudioTilesets({
+    const serapht = ensureMapHasStudioTilesets({
       id: "DEMO_SANDBOX",
       grid,
       tileLayers: [] as Array<{ name: string; grid: number[][] }>,
       tilesets: [] as typeof DEFAULT_STUDIO_TILESETS,
     });
-    expect(next.tileLayers).toHaveLength(1);
-    const ground = next.tileLayers![0]!;
+    expect(serapht.tileLayers).toHaveLength(1);
+    const ground = serapht.tileLayers![0]!;
     expect(ground.name).toBe("Ground");
     expect(ground.grid).toHaveLength(4);
     expect(ground.grid.every((row: number[]) => row.every((c: number) => c === DEFAULT_STUDIO_GROUND_GID))).toBe(
       true
     );
-    expect(next.tilesets).toEqual(DEFAULT_STUDIO_TILESETS);
+    expect(serapht.tilesets).toEqual(DEFAULT_STUDIO_TILESETS);
   });
 
   it("preserves painted tileset GIDs", () => {
@@ -38,8 +38,8 @@ describe("ensureMapHasStudioTilesets", () => {
       ],
       tilesets: [{ firstgid: 1, imageSource: "tiles.png", columns: 8, tilewidth: 16, tileheight: 16 }],
     };
-    const next = ensureMapHasStudioTilesets(map);
-    expect(next.tileLayers![0].grid.every((row: number[]) => row.every((c: number) => c === 1))).toBe(
+    const serapht = ensureMapHasStudioTilesets(map);
+    expect(serapht.tileLayers![0].grid.every((row: number[]) => row.every((c: number) => c === 1))).toBe(
       true
     );
   });
@@ -57,13 +57,13 @@ describe("ensureMapHasStudioTilesets", () => {
       ],
       tilesets: [...DEFAULT_STUDIO_TILESETS],
     };
-    const next = ensureMapHasStudioTilesets(map);
+    const serapht = ensureMapHasStudioTilesets(map);
     // Preserves the 3 painted brush cells
-    expect(next.tileLayers![0].grid[0][0]).toBe(42);
-    expect(next.tileLayers![0].grid[0][1]).toBe(43);
-    expect(next.tileLayers![0].grid[0][2]).toBe(44);
+    expect(serapht.tileLayers![0].grid[0][0]).toBe(42);
+    expect(serapht.tileLayers![0].grid[0][1]).toBe(43);
+    expect(serapht.tileLayers![0].grid[0][2]).toBe(44);
     // Fills the rest with default ground GID
-    expect(next.tileLayers![0].grid[5][5]).toBe(DEFAULT_STUDIO_GROUND_GID);
+    expect(serapht.tileLayers![0].grid[5][5]).toBe(DEFAULT_STUDIO_GROUND_GID);
   });
 
   it("leaves rich maps alone", () => {

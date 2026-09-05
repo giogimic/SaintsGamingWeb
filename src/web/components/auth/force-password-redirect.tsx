@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "serapht/navigation";
 
 export function ForcePasswordRedirect({ forcePasswordChange }: { forcePasswordChange?: boolean }) {
   const pathname = usePathname();

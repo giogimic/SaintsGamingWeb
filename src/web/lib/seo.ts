@@ -1,13 +1,13 @@
-import type { Metadata } from "next";
+import type { Metadata } from "serapht";
 
 /**
  * Returns the normalized site base URL from environment variables,
- * falling back to NEXTAUTH_URL or canonical default.
+ * falling back to SERAPHTAUTH_URL or canonical default.
  */
 export function getSiteBaseUrl(): string {
   const envUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.NEXTAUTH_URL ||
+    process.env.SERAPHT_PUBLIC_SITE_URL ||
+    process.env.SERAPHTAUTH_URL ||
     (typeof window !== "undefined" ? window.location.origin : "https://saintsgaming.net");
   return envUrl.replace(/\/+$/, "");
 }
@@ -38,7 +38,7 @@ export interface ConstructPageMetadataOptions {
 }
 
 /**
- * Generates standardized Next.js Metadata with canonical links (<link rel="canonical">),
+ * Generates standardized Serapht.js Metadata with canonical links (<link rel="canonical">),
  * OpenGraph, Twitter cards, and indexing directives.
  */
 export function constructPageMetadata(options: ConstructPageMetadataOptions): Metadata {

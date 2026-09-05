@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Save, Plus, Trash2, ShieldAlert, Castle, RefreshCw } from 'lucide-react';
-import { useSession } from 'next-auth/react';
+import { useSession } from 'serapht-auth/react';
 import {
   WindowMenuBar,
   WindowMenuDropdown,

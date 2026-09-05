@@ -767,7 +767,7 @@ export function CharacterSelectAdminWindow({
                         />
                       </div>
                       <div className="text-[10px] text-muted-foreground/60 pt-1">
-                        Go MMO Destination: {summaryData?.gatewayStatus?.goMmoUrl || 'Standalone / Next.js cluster fallback'}
+                        Go MMO Destination: {summaryData?.gatewayStatus?.goMmoUrl || 'Standalone / Serapht.js cluster fallback'}
                       </div>
                     </div>
                   </div>
@@ -984,7 +984,7 @@ export function CharacterSelectAdminWindow({
                         {[
                           { id: 'auto', label: 'Smart Auto', desc: 'Inspect commits & rebuild needed' },
                           { id: 'quick', label: 'Quick Sync', desc: 'Git pull + fast restart (~5s)' },
-                          { id: 'app', label: 'App Rebuild', desc: 'Recompile Next.js bundle' },
+                          { id: 'app', label: 'App Rebuild', desc: 'Recompile Serapht.js bundle' },
                           { id: 'db', label: 'DB & Content', desc: 'Prisma migrations & assets' },
                           { id: 'full', label: 'Full Clean', desc: 'Prune cache, migration & rebuild' },
                           { id: 'restart', label: 'Restart Only', desc: 'Restart node/services' },

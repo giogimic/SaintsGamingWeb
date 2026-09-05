@@ -64,7 +64,7 @@ describe('World Boss Dynamic Scaling, Enrage Timers & Shared Loot Ledger Engine 
 
   it('calculates weighted loot distribution ledger based on damage, healing, and damage absorbed', () => {
     const engine = new WorldBossEngine();
-    const session = engine.createBossSession('boss_kraken', 'Deep Sea Leviathan', 10000);
+    const session = engine.createBossSession('boss_sea_leviathan', 'Deep Sea Leviathan', 10000);
 
     engine.registerParticipant(session, 'p_dps', 'Top DPS');
     engine.registerParticipant(session, 'p_healer', 'Top Healer');

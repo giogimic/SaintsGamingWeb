@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "serapht-auth/react";
 import { generateKeyPair, exportPrivateKey, exportPublicKey, getLocalPrivateKey, setLocalPrivateKey } from "@/web/lib/crypto";
 import { uploadPublicKey } from "@/app/actions/messenger";
 

@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/web/components/ui/button";
 import { Upload, X, ImageIcon, Loader2 } from "lucide-react";
-import Image from "next/image";
+import Image from "serapht/image";
 
 interface ImageUploadProps {
   value: string | null;

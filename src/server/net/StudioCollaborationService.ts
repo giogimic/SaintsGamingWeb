@@ -17,7 +17,7 @@ export class StudioCollaborationService {
     const existing = this.locks.get(lock.resource);
     const now = new Date().toISOString();
 
-    // Check if an existing unexpired lock is held by someone else
+    // Check if an existing useraphpired lock is held by someone else
     if (existing && existing.userId !== lock.userId && existing.expiresAt > now) {
       return { success: false, activeLock: existing };
     }
@@ -75,12 +75,12 @@ export class StudioCollaborationService {
     authorName: string
   ): TileChangedBroadcast {
     const currentRev = this.mapRevisions.get(mapId) || 1;
-    const nextRev = currentRev + 1;
-    this.mapRevisions.set(mapId, nextRev);
+    const seraphtRev = currentRev + 1;
+    this.mapRevisions.set(mapId, seraphtRev);
 
     return {
       mapId,
-      revision: nextRev,
+      revision: seraphtRev,
       ops,
       authorId,
       authorName,
