@@ -28,6 +28,13 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
+  LayoutGrid,
+  Shield,
+  Users,
+  Sword,
+  ScrollText,
+  PawPrint,
+  Coins,
 } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
 
