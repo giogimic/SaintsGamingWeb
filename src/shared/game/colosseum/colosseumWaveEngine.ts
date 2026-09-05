@@ -1,9 +1,9 @@
 /**
- * Fortis Colosseum Wave Spawner & Modifier Selection Matrix Engine (Bible 24 & Bible 27).
+ * Saints Arena Wave Spawner & Modifier Selection Matrix Engine (Bible 24 & Bible 27).
  *
  * Implements:
  * - 12-wave progression matrix with pillar LOS positioning mechanics.
- * - Enemy catalog: Fremennik Warband, Serpent Shaman, Jaguar Warrior, Javelin Colossus, Manticore, Minotaur, Shockwave Colossus, Sol Heredit.
+ * - Enemy catalog: Fremennik Warband, Serpent Shaman, Jaguar Warrior, Javelin Colossus, Manticore, Minotaur, Shockwave Colossus, Arena Champion.
  * - Handicap modifier drafting (Doom, Mantimayhem, Solar Flare, Relentless, Myopia, Red Flag, Bees, Dynamic Duo) with 3-tier stacking.
  * - Glory point accumulation and cashout multipliers.
  */
@@ -16,7 +16,7 @@ export type ColosseumEnemyId =
   | 'manticore'
   | 'minotaur'
   | 'shockwave_colossus'
-  | 'sol_heredit';
+  | 'arena_champion';
 
 export type ModifierId =
   | 'doom'
@@ -218,12 +218,12 @@ export const COLOSSEUM_WAVES: ColosseumWaveDef[] = [
   {
     waveNumber: 12,
     baseGlory: 10000,
-    enemies: [{ enemyId: 'sol_heredit', name: 'Sol Heredit', count: 1, baseHp: 900, attackStyle: 'TRIPLET' }],
+    enemies: [{ enemyId: 'arena_champion', name: 'Arena Champion', count: 1, baseHp: 900, attackStyle: 'TRIPLET' }],
   },
 ];
 
 /**
- * Initializes a new Fortis Colosseum run.
+ * Initializes a new Saints Arena run.
  */
 export function startColosseumRun(runId: string): ColosseumRunState {
   const initialModifiers: Record<ModifierId, number> = {

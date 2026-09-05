@@ -9,10 +9,10 @@ import {
   COLOSSEUM_WAVES,
 } from './colosseumWaveEngine';
 
-describe('Fortis Colosseum Wave Spawner & Modifier Matrix Engine', () => {
-  it('initializes 12 waves leading up to Sol Heredit on wave 12', () => {
+describe('Saints Arena Wave Spawner & Modifier Matrix Engine', () => {
+  it('initializes 12 waves leading up to Arena Champion on wave 12', () => {
     expect(COLOSSEUM_WAVES.length).toBe(12);
-    expect(COLOSSEUM_WAVES[11].enemies[0].enemyId).toBe('sol_heredit');
+    expect(COLOSSEUM_WAVES[11].enemies[0].enemyId).toBe('arena_champion');
     expect(COLOSSEUM_WAVES[11].enemies[0].baseHp).toBe(900);
 
     const run = startColosseumRun('run_01');

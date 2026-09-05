@@ -2,13 +2,13 @@
  * Slayer Task Assignment & Task Extension Matrix Engine (Bible 09 & Bible 21).
  *
  * Implements:
- * - 6 Canonical Slayer Masters (Turael, Mazchna, Vannaka, Chaeldar, Nieve, Duradel).
+ * - 6 Canonical Slayer Masters (Novice Broker, Apprentice Broker, Adept Broker, Expert Broker, Master Broker, Grandmaster Broker).
  * - Weighted monster task rolling based on combat level and slayer level prerequisites.
  * - Task extensions, streak counting, milestone point multipliers (10x, 50x, 100x, 250x, 1000x).
  * - Task kill progression and Slayer XP grant calculation.
  */
 
-export type SlayerMasterId = 'turael' | 'mazchna' | 'vannaka' | 'chaeldar' | 'nieve' | 'duradel';
+export type SlayerMasterId = 'novice_broker' | 'apprentice_broker' | 'adept_broker' | 'expert_broker' | 'master_broker' | 'grandmaster_broker';
 
 export interface SlayerMonsterDef {
   id: string;
@@ -71,20 +71,20 @@ export const SLAYER_MONSTER_CATALOG: Record<string, SlayerMonsterDef> = {
   kurask: { id: 'kurask', name: 'Kurask', slayerLevelReq: 70, baseHp: 97, category: 'kurasks' },
   gargoyle: { id: 'gargoyle', name: 'Gargoyle', slayerLevelReq: 75, baseHp: 105, category: 'gargoyles' },
   nechryael: { id: 'nechryael', name: 'Nechryael', slayerLevelReq: 80, baseHp: 105, category: 'nechryael' },
-  abyssal_demon: { id: 'abyssal_demon', name: 'Abyssal Demon', slayerLevelReq: 85, baseHp: 150, category: 'demons' },
+  void_fiend: { id: 'void_fiend', name: 'Void Fiend', slayerLevelReq: 85, baseHp: 150, category: 'demons' },
   dark_beast: { id: 'dark_beast', name: 'Dark Beast', slayerLevelReq: 90, baseHp: 220, category: 'beasts' },
   smoke_devil: { id: 'smoke_devil', name: 'Smoke Devil', slayerLevelReq: 93, baseHp: 185, category: 'devils' },
-  alchemical_hydra: { id: 'alchemical_hydra', name: 'Alchemical Hydra', slayerLevelReq: 95, baseHp: 300, category: 'hydras' },
+  elemental_drake: { id: 'elemental_drake', name: 'Elemental Drake', slayerLevelReq: 95, baseHp: 300, category: 'hydras' },
 };
 
 export const SLAYER_MASTERS: Record<SlayerMasterId, SlayerMasterDef> = {
-  turael: {
-    id: 'turael',
-    name: 'Turael',
+  novice_broker: {
+    id: 'novice_broker',
+    name: 'Novice Broker',
     combatLevelReq: 1,
     slayerLevelReq: 1,
     basePoints: 0,
-    location: 'Burthorpe',
+    location: 'Sanctuary Outskirts',
     taskList: [
       { monsterId: 'crawling_hand', weight: 10, minAmount: 15, maxAmount: 30 },
       { monsterId: 'cave_bug', weight: 8, minAmount: 10, maxAmount: 25 },
@@ -93,13 +93,13 @@ export const SLAYER_MASTERS: Record<SlayerMasterId, SlayerMasterDef> = {
       { monsterId: 'rockslug', weight: 6, minAmount: 15, maxAmount: 25 },
     ],
   },
-  mazchna: {
-    id: 'mazchna',
-    name: 'Mazchna',
+  apprentice_broker: {
+    id: 'apprentice_broker',
+    name: 'Apprentice Broker',
     combatLevelReq: 20,
     slayerLevelReq: 1,
     basePoints: 2,
-    location: 'Canifis',
+    location: 'The Gloomwoods',
     taskList: [
       { monsterId: 'cave_crawler', weight: 8, minAmount: 30, maxAmount: 60 },
       { monsterId: 'banshee', weight: 8, minAmount: 35, maxAmount: 70 },
@@ -108,13 +108,13 @@ export const SLAYER_MASTERS: Record<SlayerMasterId, SlayerMasterDef> = {
       { monsterId: 'infernal_mage', weight: 6, minAmount: 30, maxAmount: 60 },
     ],
   },
-  vannaka: {
-    id: 'vannaka',
-    name: 'Vannaka',
+  adept_broker: {
+    id: 'adept_broker',
+    name: 'Adept Broker',
     combatLevelReq: 40,
     slayerLevelReq: 1,
     basePoints: 4,
-    location: 'Edgeville Dungeon',
+    location: 'The Undercity',
     taskList: [
       { monsterId: 'basilisk', weight: 8, minAmount: 60, maxAmount: 120, extendedMaxAmount: 180 },
       { monsterId: 'bloodveld', weight: 8, minAmount: 70, maxAmount: 140, extendedMaxAmount: 220 },
@@ -123,13 +123,13 @@ export const SLAYER_MASTERS: Record<SlayerMasterId, SlayerMasterDef> = {
       { monsterId: 'dust_devil', weight: 6, minAmount: 60, maxAmount: 110, extendedMaxAmount: 190 },
     ],
   },
-  chaeldar: {
-    id: 'chaeldar',
-    name: 'Chaeldar',
+  expert_broker: {
+    id: 'expert_broker',
+    name: 'Expert Broker',
     combatLevelReq: 70,
     slayerLevelReq: 1,
     basePoints: 10,
-    location: 'Zanaris',
+    location: 'Fey Realm',
     taskList: [
       { monsterId: 'bloodveld', weight: 9, minAmount: 110, maxAmount: 170, extendedMaxAmount: 250 },
       { monsterId: 'aberrant_spectre', weight: 8, minAmount: 110, maxAmount: 170, extendedMaxAmount: 240 },
@@ -138,36 +138,36 @@ export const SLAYER_MASTERS: Record<SlayerMasterId, SlayerMasterDef> = {
       { monsterId: 'gargoyle', weight: 7, minAmount: 130, maxAmount: 190, extendedMaxAmount: 250 },
     ],
   },
-  nieve: {
-    id: 'nieve',
-    name: 'Nieve',
+  master_broker: {
+    id: 'master_broker',
+    name: 'Master Broker',
     combatLevelReq: 85,
     slayerLevelReq: 1,
     basePoints: 12,
-    location: 'Tree Gnome Stronghold',
+    location: 'The World Tree',
     taskList: [
       { monsterId: 'bloodveld', weight: 9, minAmount: 140, maxAmount: 195, extendedMaxAmount: 250 },
       { monsterId: 'dust_devil', weight: 9, minAmount: 130, maxAmount: 200, extendedMaxAmount: 250 },
       { monsterId: 'gargoyle', weight: 8, minAmount: 130, maxAmount: 210, extendedMaxAmount: 250 },
       { monsterId: 'nechryael', weight: 8, minAmount: 110, maxAmount: 170, extendedMaxAmount: 230 },
-      { monsterId: 'abyssal_demon', weight: 8, minAmount: 130, maxAmount: 220, extendedMaxAmount: 250 },
+      { monsterId: 'void_fiend', weight: 8, minAmount: 130, maxAmount: 220, extendedMaxAmount: 250 },
       { monsterId: 'dark_beast', weight: 5, minAmount: 10, maxAmount: 20, extendedMaxAmount: 140 },
     ],
   },
-  duradel: {
-    id: 'duradel',
-    name: 'Duradel',
+  grandmaster_broker: {
+    id: 'grandmaster_broker',
+    name: 'Grandmaster Broker',
     combatLevelReq: 100,
     slayerLevelReq: 50,
     basePoints: 15,
-    location: 'Shilo Village',
+    location: 'Jungle Outpost',
     taskList: [
-      { monsterId: 'abyssal_demon', weight: 9, minAmount: 130, maxAmount: 230, extendedMaxAmount: 250 },
+      { monsterId: 'void_fiend', weight: 9, minAmount: 130, maxAmount: 230, extendedMaxAmount: 250 },
       { monsterId: 'nechryael', weight: 8, minAmount: 130, maxAmount: 190, extendedMaxAmount: 250 },
       { monsterId: 'gargoyle', weight: 8, minAmount: 130, maxAmount: 220, extendedMaxAmount: 250 },
       { monsterId: 'dark_beast', weight: 7, minAmount: 10, maxAmount: 25, extendedMaxAmount: 150 },
       { monsterId: 'smoke_devil', weight: 6, minAmount: 130, maxAmount: 185, extendedMaxAmount: 220 },
-      { monsterId: 'alchemical_hydra', weight: 5, minAmount: 120, maxAmount: 180, extendedMaxAmount: 230 },
+      { monsterId: 'elemental_drake', weight: 5, minAmount: 120, maxAmount: 180, extendedMaxAmount: 230 },
     ],
   },
 };
@@ -347,9 +347,9 @@ export function recordSlayerKill(
 }
 
 /**
- * Resets the current task using Turael (resets streak to 0).
+ * Resets the current task using Novice Broker (resets streak to 0).
  */
-export function resetTaskWithTurael(profile: SlayerPlayerProfile): {
+export function resetTaskWithNovice Broker(profile: SlayerPlayerProfile): {
   ok: boolean;
   newStreak: number;
   message: string;
@@ -358,8 +358,8 @@ export function resetTaskWithTurael(profile: SlayerPlayerProfile): {
     return { ok: false, newStreak: profile.completedTasksStreak, message: 'No active task to reset.' };
   }
 
-  if (profile.activeTask.assignedBy === 'turael') {
-    return { ok: false, newStreak: profile.completedTasksStreak, message: 'Turael cannot reset his own assignments.' };
+  if (profile.activeTask.assignedBy === 'novice_broker') {
+    return { ok: false, newStreak: profile.completedTasksStreak, message: 'Novice Broker cannot reset his own assignments.' };
   }
 
   profile.activeTask = null;
@@ -368,6 +368,6 @@ export function resetTaskWithTurael(profile: SlayerPlayerProfile): {
   return {
     ok: true,
     newStreak: 0,
-    message: 'Your task was reset by Turael. Your completion streak has been reset to 0.',
+    message: 'Your task was reset by Novice Broker. Your completion streak has been reset to 0.',
   };
 }

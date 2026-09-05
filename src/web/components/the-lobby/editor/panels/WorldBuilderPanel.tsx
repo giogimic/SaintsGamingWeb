@@ -30,9 +30,9 @@ import { useEditorStore } from '../editor-store';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
 import { getAdjacentAtlasNeighbors, type NeighborNodes } from '@/shared/game/atlas/spatialAtlas';
-import { getEdgeStrip } from '@/shared/game/atlas/edgeStrip';
 import { loadMap, getClientAtlas } from '../../data/maps';
 import { soundSynth } from '@/engine/sound-synth';
+import { SheetSlicerPanel } from './SheetSlicerPanel';
 import {
   WindowMenuBar,
   WindowMenuDropdown,
@@ -73,125 +73,15 @@ export const WorldBuilderPanel: React.FC = () => {
   const setBrushPattern = useEditorStore((state) => state.setActiveBrushPattern);
   const voxelBlockSizePx = useEditorStore((state) => state.voxelBlockSizePx);
 
-  const [neighbors, setNeighbors] = useState<NeighborNodes>({});
-  const [neighborBleedPreview, setNeighborBleedPreview] = useState(false);
-
-  const localMapData = activeMapData || { id: currentMapId, encounterPool: [], tileLayers: [], tilesets: [] };
-  const [encounterPool, setEncounterPool] = useState<
-    Array<{ speciesId: string; minLevel: number; maxLevel: number; weight: number; timeOfDay?: 'any'|'day'|'night' }>
-  >(localMapData.encounterPool || []);
-  const [selectedSpecies, setSelectedSpecies] = useState('rockitten');
-  const [minLevel, setMinLevel] = useState(2);
-  const [maxLevel, setMaxLevel] = useState(5);
-  const [weight, setWeight] = useState(30);
-  const [timeOfDay, setTimeOfDay] = useState<'any'|'day'|'night'>('any');
-
-  useEffect(() => {
-    setEncounterPool(activeMapData?.encounterPool || []);
-  }, [activeMapData?.encounterPool]);
-
-  // Legacy DEMO_SANDBOX tileset bootstrap
-  useEffect(() => {
-    if (!activeMapData) return;
-    const ensured = ensureMapHasStudioTilesets(activeMapData);
-    if (ensured === activeMapData) return;
-    useGameStore.getState().setActiveMapData(ensured);
-  }, [activeMapData]);
-
-  const baseMapId = toBaseMapId(String(currentMapId || ''));
-  const currentMapData = ensureMapHasStudioTilesets(
-    activeMapData || {
-      id: baseMapId,
-      name: baseMapId,
-      grid: Array(24).fill(0).map(() => Array(24).fill(0)),
-      gates: {},
-      tileLayers: [],
-      tilesets: [],
-      baseTileSizePx: 32,
-    }
-  );
-
-  const handleUpdateBaseTileSize = (val: number) => {
-    if (!activeMapData) return;
-    const updated = { ...activeMapData, baseTileSizePx: val };
-    useGameStore.getState().setActiveMapData(updated);
-    useEditorStore.getState().markMapDirty();
-  };
-
-  // Fetch adjacent Atlas neighbors and load their edge strips for seamless bleed
-  const refreshNeighbors = useCallback(async () => {
-    if (!baseMapId) return;
-    try {
-      const atlas = await getClientAtlas(true);
-      if (!atlas?.nodes || atlas.nodes.length === 0) return;
-
-      const activeAtlasNodeId = (useGameStore.getState() as any).activeAtlasNodeId;
-      const targetQuery = activeAtlasNodeId || baseMapId;
-      const adj = getAdjacentAtlasNeighbors(atlas, targetQuery);
-      setNeighbors(adj);
-
-      // Load neighbor edge strips into BabylonEngine if present
-      const engine = (typeof window !== 'undefined' && (window as any).__babylonEngine) || null;
-      if (!engine || typeof engine.setNeighborEdgeStrips !== 'function') return;
-
-      const strips: any = {};
-      for (const [dir, node] of Object.entries(adj) as [keyof NeighborNodes, any][]) {
-        if (!node?.mapId) continue;
-        try {
-          const nData = await loadMap(node.mapId);
-          if (nData) {
-            strips[dir] = getEdgeStrip(nData, dir as any, 6);
-          }
-        } catch {
-          // Skip unloadable neighbor
-        }
-      }
-      engine.setNeighborEdgeStrips(strips);
-    } catch {
-      // Atlas fetch failed or offline
-    }
-  }, [baseMapId]);
-
-  useEffect(() => {
-    void refreshNeighbors();
-  }, [refreshNeighbors]);
-
-  const handleWarpAndEditNeighbor = async (targetMapId: string) => {
-    soundSynth?.playActionSound?.();
-    try {
-      const loaded = ensureMapHasStudioTilesets(await loadMap(targetMapId));
-      useGameStore.setState({ currentMapId: targetMapId, activeMapData: loaded });
-      const engine = (typeof window !== 'undefined' && (window as any).__babylonEngine) || null;
-      if (engine) {
-        engine.loadTilemap(loaded);
-        engine.fitMapInView();
-      }
-      showToast(`Loaded ${targetMapId} for editing.`);
-    } catch {
-      useGameStore.setState({ currentMapId: targetMapId });
-      showToast(`Loading ${targetMapId}…`);
-    }
-  };
-
-  const handleAddEncounterSpecies = () => {
-    if (!activeMapData) return;
-    const next = [...encounterPool, { speciesId: selectedSpecies, minLevel, maxLevel, weight, timeOfDay }];
-    setEncounterPool(next);
-    useGameStore.setState({ activeMapData: { ...activeMapData, encounterPool: next } });
-    useEditorStore.getState().markMapDirty();
-    showToast(`Added ${selectedSpecies} to map pool — Save Map to persist`);
-  };
-
-  const handleToggleNeighborBleed = () => {
-    soundSynth?.playUiClick?.();
-    const nextState = !neighborBleedPreview;
-    setNeighborBleedPreview(nextState);
-    const engine = (typeof window !== 'undefined' && (window as any).__babylonEngine) || null;
-    if (engine) {
-      engine.setShowNeighborBleedPreview(nextState);
-      engine.loadTilemap(currentMapData);
-    }
-    showToast(nextState ? 'Neighbor Edge Bleed Preview: ON' : 'Neighbor Edge Bleed Preview: OFF');
+  const baseMapId = typeof currentMapId === 'string' ? currentMapId.replace(/_.*/, '') : '';
+  const currentMapData = activeMapData || {
+    id: baseMapId,
+    name: baseMapId,
+    grid: Array(24).fill(0).map(() => Array(24).fill(0)),
+    gates: {},
+    tileLayers: [],
+    tilesets: [],
+    baseTileSizePx: 32,
   };
 
   const handleAddLayer = () => {
@@ -374,7 +264,6 @@ export const WorldBuilderPanel: React.FC = () => {
     showToast(`Tilesets updated (${newTilesets.length} total) — Save Map to persist.`);
   };
 
-  const hasAnyNeighbor = Boolean(neighbors.north || neighbors.south || neighbors.east || neighbors.west);
 
   return (
     <div className="space-y-3 text-xs font-mono select-none -m-3 mb-0">
@@ -419,14 +308,7 @@ export const WorldBuilderPanel: React.FC = () => {
             { label: 'Clear Current Layer', danger: true, onClick: () => handleClearLayer(activeLayerIdx) },
           ]}
         />
-        <WindowMenuDivider />
-        <WindowMenuButton
-          label={neighborBleedPreview ? 'Bleed ON' : 'Bleed'}
-          icon={neighborBleedPreview ? Eye : EyeOff}
-          active={neighborBleedPreview}
-          onClick={handleToggleNeighborBleed}
-          title="Toggle seamless look-ahead preview of neighboring atlas maps"
-        />
+
         <div className="flex-1" />
         <WindowMenuButton
           label={isSaving ? 'Saving...' : isMapDirty ? 'Save*' : 'Saved'}
@@ -474,92 +356,11 @@ export const WorldBuilderPanel: React.FC = () => {
 
         {openSections.overview && (
           <div className="p-3 space-y-2.5 border-t border-[#806f47]/20 bg-[#050b14]/50">
-            {/* 3D Voxel Volume Dimensions */}
-            {currentMapData.mapType !== 'TILE' && (
-            <div className="p-2 rounded-lg bg-[#040812] border border-border/40 space-y-2">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-primary font-bold flex items-center gap-1.5">
-                  <Box className="w-3.5 h-3.5 text-primary" />
-                  <span>3D Voxel Volume:</span>
-                </span>
-                <span className="text-white font-mono font-bold bg-black/60 px-2 py-0.5 rounded border border-primary/30">
-                  {Math.max(1, Math.ceil((currentMapData.grid?.[0]?.length || 32) / 16))} × {Math.max(1, Math.ceil((currentMapData.grid?.length || 32) / 16))} × 1 Chunks
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                <span>Block Scale Resolution:</span>
-                <div className="flex items-center gap-1">
-                  {[16, 32, 48, 64, 128].map((size) => (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => {
-                        soundSynth?.playUiClick?.();
-                        useEditorStore.getState().setVoxelBlockSizePx(size);
-                        showToast(`Block Scale set to ${size}px`);
-                      }}
-                      className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all ${
-                        voxelBlockSizePx === size
-                          ? 'bg-primary text-primary-foreground font-bold'
-                          : 'bg-black/40 text-muted-foreground hover:text-white'
-                      }`}
-                    >
-                      {size}px
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Generate Gunmetal Base Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  soundSynth?.playActionSound?.();
-                  const world = new (require('@/shared/game/voxel/VoxelWorldDoc').VoxelWorld)(
-                    baseMapId || 'DEMO_SANDBOX',
-                    baseMapId || 'DEMO_SANDBOX',
-                    2,
-                    2,
-                    1,
-                    useEditorStore.getState().voxelBlockSizePx || 64
-                  );
-                  world.generateDefaultWorld();
-                  const doc = world.serializeToDoc();
-                  if (activeMapData) {
-                    useGameStore.setState({ activeMapData: { ...activeMapData, voxelDoc: doc } });
-                  }
-                  useEditorStore.getState().markMapDirty();
-                  showToast('Generated Gunmetal Base 3D Voxel Volume');
-                }}
-                className="w-full py-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary border border-primary/40 font-mono font-bold text-[10px] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Initialize 3D Voxel Gunmetal Foundation</span>
-              </button>
+            {/* Tile Mode Sheet Slicer (Custom Grid Selection) */}
+            <div className="rounded-lg overflow-hidden border border-border/40 bg-black/40">
+              <SheetSlicerPanel />
             </div>
-            )}
 
-            {/* Neighbor Bleed Toggle */}
-            <div className="flex items-center justify-between pt-1 border-t border-[#806f47]/20/60">
-              <span className="text-slate-400 text-[10px] flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-cyan-400" />
-                <span>Edge Look-Ahead:</span>
-              </span>
-              <button
-                type="button"
-                onClick={handleToggleNeighborBleed}
-                className={`px-2 py-0.5 rounded-lg border text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                  neighborBleedPreview
-                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-[0_0_8px_rgba(34,211,238,0.2)]'
-                    : 'bg-black/50/40 text-slate-400 border-[#806f47]/20 hover:text-white'
-                }`}
-                title="Toggle visual look-ahead bleed of connected atlas neighbor maps"
-              >
-                {neighborBleedPreview ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                <span>{neighborBleedPreview ? 'Bleed ON' : 'Bleed OFF'}</span>
-              </button>
-            </div>
 
             <button
               type="button"
@@ -582,205 +383,7 @@ export const WorldBuilderPanel: React.FC = () => {
         )}
       </div>
 
-      {/* SECTION 2: Connected Atlas Neighbors (Fast Switch / Multi-Map Editing) */}
-      <div className="bg-[#0b1320]/80 border border-[#806f47]/40 rounded-xl overflow-hidden shadow-lg">
-        <button
-          type="button"
-          onClick={() => toggleSection('neighbors')}
-          className="w-full flex items-center justify-between p-2.5 bg-black/50/40 text-[#cbb26a] font-bold text-left hover:bg-black/50/20 transition-colors cursor-pointer"
-        >
-          <span className="flex items-center gap-1.5">
-            <Navigation className="w-4 h-4 text-cyan-400" /> Connected Realms (Atlas)
-          </span>
-          {openSections.neighbors ? (
-            <ChevronDown className="w-3.5 h-3.5" />
-          ) : (
-            <ChevronRight className="w-3.5 h-3.5" />
-          )}
-        </button>
-
-        {openSections.neighbors && (
-          <div className="p-3 space-y-2 border-t border-[#806f47]/20 bg-[#050b14]/50">
-            {hasAnyNeighbor ? (
-              <div className="grid grid-cols-2 gap-2">
-                {neighbors.north && (
-                  <button
-                    type="button"
-                    onClick={() => handleWarpAndEditNeighbor(neighbors.north!.mapId)}
-                    className="p-1.5 rounded-lg border border-cyan-500/30 bg-cyan-950/30 hover:bg-cyan-900/50 text-cyan-300 flex flex-col items-start transition-all cursor-pointer"
-                    title={`Switch editor to North neighbor: ${neighbors.north.mapId}`}
-                  >
-                    <span className="text-[9px] text-cyan-400/70 font-bold uppercase">↑ North</span>
-                    <span className="text-[10px] font-bold text-white truncate max-w-full">
-                      {neighbors.north.mapId}
-                    </span>
-                  </button>
-                )}
-                {neighbors.south && (
-                  <button
-                    type="button"
-                    onClick={() => handleWarpAndEditNeighbor(neighbors.south!.mapId)}
-                    className="p-1.5 rounded-lg border border-cyan-500/30 bg-cyan-950/30 hover:bg-cyan-900/50 text-cyan-300 flex flex-col items-start transition-all cursor-pointer"
-                    title={`Switch editor to South neighbor: ${neighbors.south.mapId}`}
-                  >
-                    <span className="text-[9px] text-cyan-400/70 font-bold uppercase">↓ South</span>
-                    <span className="text-[10px] font-bold text-white truncate max-w-full">
-                      {neighbors.south.mapId}
-                    </span>
-                  </button>
-                )}
-                {neighbors.west && (
-                  <button
-                    type="button"
-                    onClick={() => handleWarpAndEditNeighbor(neighbors.west!.mapId)}
-                    className="p-1.5 rounded-lg border border-cyan-500/30 bg-cyan-950/30 hover:bg-cyan-900/50 text-cyan-300 flex flex-col items-start transition-all cursor-pointer"
-                    title={`Switch editor to West neighbor: ${neighbors.west.mapId}`}
-                  >
-                    <span className="text-[9px] text-cyan-400/70 font-bold uppercase">← West</span>
-                    <span className="text-[10px] font-bold text-white truncate max-w-full">
-                      {neighbors.west.mapId}
-                    </span>
-                  </button>
-                )}
-                {neighbors.east && (
-                  <button
-                    type="button"
-                    onClick={() => handleWarpAndEditNeighbor(neighbors.east!.mapId)}
-                    className="p-1.5 rounded-lg border border-cyan-500/30 bg-cyan-950/30 hover:bg-cyan-900/50 text-cyan-300 flex flex-col items-start transition-all cursor-pointer"
-                    title={`Switch editor to East neighbor: ${neighbors.east.mapId}`}
-                  >
-                    <span className="text-[9px] text-cyan-400/70 font-bold uppercase">→ East</span>
-                    <span className="text-[10px] font-bold text-white truncate max-w-full">
-                      {neighbors.east.mapId}
-                    </span>
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-2 text-[10px] text-slate-500">
-                No adjacent realms connected in Atlas.{' '}
-                <button
-                  type="button"
-                  onClick={() => setStudioMode('atlas')}
-                  className="text-amber-400 underline hover:text-amber-300 cursor-pointer"
-                >
-                  Position on Atlas
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* SECTION 2.5: Encounters */}
-      <div className="bg-[#0b1320]/80 border border-[#806f47]/40 rounded-xl overflow-hidden shadow-lg">
-        <button
-          type="button"
-          onClick={() => toggleSection('encounters')}
-          className="w-full flex items-center justify-between p-2.5 bg-black/50/40 text-[#cbb26a] font-bold text-left hover:bg-black/50/20 transition-colors cursor-pointer"
-        >
-          <span className="flex items-center gap-1.5">
-            <Trees className="w-4 h-4 text-emerald-400" /> Map Encounters
-          </span>
-          {openSections.encounters ? (
-            <ChevronDown className="w-3.5 h-3.5" />
-          ) : (
-            <ChevronRight className="w-3.5 h-3.5" />
-          )}
-        </button>
-
-        {openSections.encounters && (
-          <div className="p-3 space-y-2 border-t border-[#806f47]/20 bg-[#050b14]/50">
-            <p className="text-[10px] text-slate-500 leading-relaxed mb-2">
-              Creatures that can appear when a player walks in tall grass on this map.
-            </p>
-            <div className="space-y-1 bg-black/40 border border-[#806f47]/20 rounded p-1.5 min-h-[40px] max-h-32 overflow-y-auto custom-scrollbar">
-              {encounterPool.length === 0 ? (
-                <div className="text-center text-slate-600 py-2">No encounters set.</div>
-              ) : (
-                encounterPool.map((enc, idx) => (
-                  <div key={idx} className="flex items-center justify-between bg-[#0b1320] px-1.5 py-1 rounded border border-slate-800">
-                    <div className="flex flex-col">
-                      <span className="text-amber-400 font-bold">{enc.speciesId}</span>
-                      <span className="text-[9px] text-slate-400">
-                        Lv {enc.minLevel}-{enc.maxLevel} • W: {enc.weight} • {enc.timeOfDay === 'any' ? 'Any Time' : enc.timeOfDay === 'day' ? 'Day' : 'Night'}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        const next = [...encounterPool];
-                        next.splice(idx, 1);
-                        setEncounterPool(next);
-                        if (activeMapData) {
-                          useGameStore.setState({ activeMapData: { ...activeMapData, encounterPool: next } });
-                          useEditorStore.getState().markMapDirty();
-                        }
-                        showToast(`Removed ${enc.speciesId} — Save Map to persist`);
-                      }}
-                      className="text-red-400 hover:text-red-300 p-1 bg-red-400/10 hover:bg-red-400/20 rounded cursor-pointer"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div className="space-y-1.5 pt-2">
-              <div className="grid grid-cols-2 gap-1 pt-1 border-t border-[#806f47]/20">
-                <input
-                  type="text"
-                  value={selectedSpecies}
-                  onChange={(e) => setSelectedSpecies(e.target.value)}
-                  className="bg-black/60 border border-[#806f47]/30 rounded px-1 py-1 text-slate-200"
-                  placeholder="species_slug"
-                />
-                <div className="flex gap-1">
-                  <input
-                    type="number"
-                    value={minLevel}
-                    onChange={(e) => setMinLevel(parseInt(e.target.value))}
-                    className="w-full bg-black/60 border border-[#806f47]/30 rounded px-1 py-1"
-                    placeholder="Min"
-                  />
-                  <input
-                    type="number"
-                    value={maxLevel}
-                    onChange={(e) => setMaxLevel(parseInt(e.target.value))}
-                    className="w-full bg-black/60 border border-[#806f47]/30 rounded px-1 py-1"
-                    placeholder="Max"
-                  />
-                </div>
-                <div className="flex gap-1 col-span-2">
-                  <input
-                    type="number"
-                    value={weight}
-                    onChange={(e) => setWeight(parseInt(e.target.value))}
-                    className="w-1/2 bg-black/60 border border-[#806f47]/30 rounded px-1 py-1"
-                    placeholder="Weight"
-                    title="Spawn Weight (higher = more common)"
-                  />
-                  <select
-                    value={timeOfDay}
-                    onChange={(e) => setTimeOfDay(e.target.value as 'any'|'day'|'night')}
-                    className="w-1/2 bg-black/60 border border-[#806f47]/30 rounded px-1 py-1 text-slate-300"
-                  >
-                    <option value="any">Any Time</option>
-                    <option value="day">Day Only</option>
-                    <option value="night">Night Only</option>
-                  </select>
-                </div>
-              </div>
-              <button
-                onClick={handleAddEncounterSpecies}
-                className="w-full py-1 bg-[#806f47]/20 hover:bg-[#806f47]/40 text-[#e2d5b3] border border-[#806f47]/40 rounded flex items-center justify-center gap-1 cursor-pointer"
-              >
-                <Plus className="w-3 h-3" /> Add Species
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Atlas and Encounters removed from Tile Mode World Builder */}
 
       {/* SECTION 3: Active Painting Layer */}
       <div className="bg-[#0b1320]/80 border border-[#806f47]/40 rounded-xl overflow-hidden shadow-lg">

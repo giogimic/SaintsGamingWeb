@@ -37,7 +37,7 @@ export const SUPERIOR_MONSTER_REGISTRY: Record<string, SuperiorMonsterDef> = {
   kurask: { baseMonsterId: 'kurask', superiorId: 'king_kurask', name: 'King Kurask', slayerLevelReq: 70, hp: 420, combatLevel: 245, xpMultiplier: 10 },
   gargoyle: { baseMonsterId: 'gargoyle', superiorId: 'marble_gargoyle', name: 'Marble Gargoyle', slayerLevelReq: 75, hp: 420, combatLevel: 260, xpMultiplier: 10 },
   nechryael: { baseMonsterId: 'nechryael', superiorId: 'nechryarch', name: 'Nechryarch', slayerLevelReq: 80, hp: 420, combatLevel: 285, xpMultiplier: 10 },
-  abyssal_demon: { baseMonsterId: 'abyssal_demon', superiorId: 'greater_abyssal_demon', name: 'Greater Abyssal Demon', slayerLevelReq: 85, hp: 600, combatLevel: 340, xpMultiplier: 10 },
+  void_fiend: { baseMonsterId: 'void_fiend', superiorId: 'greater_void_fiend', name: 'Greater Void Fiend', slayerLevelReq: 85, hp: 600, combatLevel: 340, xpMultiplier: 10 },
   dark_beast: { baseMonsterId: 'dark_beast', superiorId: 'night_beast', name: 'Night Beast', slayerLevelReq: 90, hp: 880, combatLevel: 382, xpMultiplier: 10 },
   smoke_devil: { baseMonsterId: 'smoke_devil', superiorId: 'nuclear_smoke_devil', name: 'Nuclear Smoke Devil', slayerLevelReq: 93, hp: 740, combatLevel: 350, xpMultiplier: 10 },
 };

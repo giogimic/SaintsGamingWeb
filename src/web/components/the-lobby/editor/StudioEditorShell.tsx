@@ -43,7 +43,10 @@ import {
   Camera,
   Crosshair,
   RotateCw,
-  Wand2
+  Wand2,
+  EyeOff,
+  Eye,
+  Box
 } from 'lucide-react';
 import { resolveTilesetTextureUrl } from '@/shared/game/tileBatchHelpers';
 import { useGameStore } from '../store';
@@ -63,6 +66,7 @@ import { StudioKeyboardRouter } from './services/StudioKeyboardRouter';
 
 // Lazy-loaded dock panels for maximum code-splitting & startup performance (Phase 8 Track D2)
 const WorldBuilderPanel = lazy(() => import('./panels/WorldBuilderPanel').then((m) => ({ default: m.WorldBuilderPanel })));
+const VoxelStudioPanel = lazy(() => import('./panels/VoxelStudioPanel').then((m) => ({ default: m.VoxelStudioPanel })));
 const PropertiesPanel = lazy(() => import('./panels/PropertiesPanel').then((m) => ({ default: m.PropertiesPanel })));
 const AssetStudioPanel = lazy(() => import('./panels/AssetStudioPanel').then((m) => ({ default: m.AssetStudioPanel })));
 const EntityEditorPanel = lazy(() => import('./panels/EntityEditorPanel').then((m) => ({ default: m.EntityEditorPanel })));
@@ -417,9 +421,15 @@ export const StudioEditorShell: React.FC = () => {
 
 
           <div className="absolute inset-0 pointer-events-none">
-          {canUseStudioDock(permissionLevel, 'build') && studioMode === 'tile' && (
+          {canUseStudioDock(permissionLevel, 'build') && studioMode === 'tile' && activeMapData?.mapType !== 'VOXEL' && (
             <DraggablePanel id="build" icon={<Hammer className="w-4 h-4" />} title="World Builder">
               <Suspense fallback={<div>Loading...</div>}><WorldBuilderPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'build') && studioMode === 'tile' && activeMapData?.mapType === 'VOXEL' && (
+            <DraggablePanel id="build" icon={<Box className="w-4 h-4 text-primary" />} title="Voxel Studio">
+              <Suspense fallback={<div>Loading...</div>}><VoxelStudioPanel /></Suspense>
             </DraggablePanel>
           )}
 

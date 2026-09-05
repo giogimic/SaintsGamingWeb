@@ -6,56 +6,56 @@ import {
   canAssignFromMaster,
   assignSlayerTask,
   recordSlayerKill,
-  resetTaskWithTurael,
+  resetTaskWithNovice Broker,
   type SlayerPlayerProfile,
 } from './slayerTaskEngine';
 
 describe('Slayer Task Assignment & Extension Matrix Engine', () => {
   it('enforces combat and slayer level prerequisites for masters', () => {
-    // Duradel requires Combat 100, Slayer 50
-    expect(canAssignFromMaster('duradel', 90, 80).eligible).toBe(false);
-    expect(canAssignFromMaster('duradel', 105, 40).eligible).toBe(false);
-    expect(canAssignFromMaster('duradel', 105, 75).eligible).toBe(true);
+    // Grandmaster Broker requires Combat 100, Slayer 50
+    expect(canAssignFromMaster('grandmaster_broker', 90, 80).eligible).toBe(false);
+    expect(canAssignFromMaster('grandmaster_broker', 105, 40).eligible).toBe(false);
+    expect(canAssignFromMaster('grandmaster_broker', 105, 75).eligible).toBe(true);
 
-    // Turael has no prerequisites
-    expect(canAssignFromMaster('turael', 3, 1).eligible).toBe(true);
+    // Novice Broker has no prerequisites
+    expect(canAssignFromMaster('novice_broker', 3, 1).eligible).toBe(true);
 
-    // Nieve requires Combat 85
-    expect(canAssignFromMaster('nieve', 80, 70).eligible).toBe(false);
-    expect(canAssignFromMaster('nieve', 95, 70).eligible).toBe(true);
+    // Master Broker requires Combat 85
+    expect(canAssignFromMaster('master_broker', 80, 70).eligible).toBe(false);
+    expect(canAssignFromMaster('master_broker', 95, 70).eligible).toBe(true);
   });
 
   it('calculates streak point milestone multipliers accurately', () => {
-    // Duradel base points = 15
-    expect(calculateSlayerPoints('duradel', 1)).toBe(15);
-    expect(calculateSlayerPoints('duradel', 9)).toBe(15);
-    expect(calculateSlayerPoints('duradel', 10)).toBe(75); // 5x
-    expect(calculateSlayerPoints('duradel', 50)).toBe(225); // 15x
-    expect(calculateSlayerPoints('duradel', 100)).toBe(375); // 25x
-    expect(calculateSlayerPoints('duradel', 250)).toBe(525); // 35x
-    expect(calculateSlayerPoints('duradel', 1000)).toBe(750); // 50x
+    // Grandmaster Broker base points = 15
+    expect(calculateSlayerPoints('grandmaster_broker', 1)).toBe(15);
+    expect(calculateSlayerPoints('grandmaster_broker', 9)).toBe(15);
+    expect(calculateSlayerPoints('grandmaster_broker', 10)).toBe(75); // 5x
+    expect(calculateSlayerPoints('grandmaster_broker', 50)).toBe(225); // 15x
+    expect(calculateSlayerPoints('grandmaster_broker', 100)).toBe(375); // 25x
+    expect(calculateSlayerPoints('grandmaster_broker', 250)).toBe(525); // 35x
+    expect(calculateSlayerPoints('grandmaster_broker', 1000)).toBe(750); // 50x
 
-    // Turael awards 0 points always
-    expect(calculateSlayerPoints('turael', 10)).toBe(0);
-    expect(calculateSlayerPoints('turael', 50)).toBe(0);
+    // Novice Broker awards 0 points always
+    expect(calculateSlayerPoints('novice_broker', 10)).toBe(0);
+    expect(calculateSlayerPoints('novice_broker', 50)).toBe(0);
   });
 
   it('filters blocked monsters and respects slayer level requirements on assignment', () => {
     const profile: SlayerPlayerProfile = {
       combatLevel: 110,
-      slayerLevel: 85, // can kill Abyssal Demons (85), but not Dark Beasts (90) or Hydras (95)
+      slayerLevel: 85, // can kill Void Fiends (85), but not Dark Beasts (90) or Hydras (95)
       activeTask: null,
       completedTasksStreak: 12,
       slayerPoints: 120,
       blockedMonsters: ['gargoyle', 'nechryael'],
-      extendedMonsters: ['abyssal_demon'],
+      extendedMonsters: ['void_fiend'],
     };
 
-    const res = assignSlayerTask('duradel', profile, 0.1);
+    const res = assignSlayerTask('grandmaster_broker', profile, 0.1);
     expect(res.ok).toBe(true);
     expect(res.task).toBeDefined();
-    // Gargoyles and Nechryael are blocked, Dark Beasts and Hydras are too high level, so it must assign Abyssal Demons
-    expect(res.task?.monsterId).toBe('abyssal_demon');
+    // Gargoyles and Nechryael are blocked, Dark Beasts and Hydras are too high level, so it must assign Void Fiends
+    expect(res.task?.monsterId).toBe('void_fiend');
     expect(res.task?.isExtended).toBe(true);
     expect(res.task?.initialAmount).toBeGreaterThanOrEqual(130);
   });
@@ -67,14 +67,14 @@ describe('Slayer Task Assignment & Extension Matrix Engine', () => {
       activeTask: {
         monsterId: 'gargoyle',
         monsterName: 'Gargoyle',
-        assignedBy: 'nieve',
+        assignedBy: 'master_broker',
         initialAmount: 2,
         remainingAmount: 2,
         isExtended: false,
         slayerLevelReq: 75,
         baseHp: 105,
       },
-      completedTasksStreak: 9, // Next completion is 10th milestone (5x Nieve 12 base = 60 points)
+      completedTasksStreak: 9, // Next completion is 10th milestone (5x Master Broker 12 base = 60 points)
       slayerPoints: 100,
       blockedMonsters: [],
       extendedMonsters: [],
@@ -104,14 +104,14 @@ describe('Slayer Task Assignment & Extension Matrix Engine', () => {
     expect(profile.slayerPoints).toBe(160);
   });
 
-  it('resets task and streaks when using Turael reset', () => {
+  it('resets task and streaks when using Novice Broker reset', () => {
     const profile: SlayerPlayerProfile = {
       combatLevel: 90,
       slayerLevel: 75,
       activeTask: {
         monsterId: 'bloodveld',
         monsterName: 'Bloodveld',
-        assignedBy: 'chaeldar',
+        assignedBy: 'expert_broker',
         initialAmount: 120,
         remainingAmount: 110,
         isExtended: false,
@@ -124,7 +124,7 @@ describe('Slayer Task Assignment & Extension Matrix Engine', () => {
       extendedMonsters: [],
     };
 
-    const resetRes = resetTaskWithTurael(profile);
+    const resetRes = resetTaskWithNovice Broker(profile);
     expect(resetRes.ok).toBe(true);
     expect(resetRes.newStreak).toBe(0);
     expect(profile.activeTask).toBeNull();

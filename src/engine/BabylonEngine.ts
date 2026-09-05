@@ -3194,16 +3194,20 @@ export class BabylonEngine {
     const centerZ = (minZ + maxZ) / 2 + originOffsetZ;
 
     if (!this.voxel.voxelSelectionBoxMesh || this.voxel.voxelSelectionBoxMesh.isDisposed()) {
-      this.voxel.voxelSelectionBoxMesh = MeshBuilder.CreateBox('voxel_3d_selection_gizmo', { size: 1 }, this.scene);
+      this.voxel.voxelSelectionBoxMesh = MeshBuilder.CreateBox('voxel_3d_selection_gizmo', { size: 1.01 }, this.scene);
       this.voxel.voxelSelectionBoxMesh.parent = this.rootNode;
       this.voxel.voxelSelectionBoxMesh.isPickable = false;
+      this.voxel.voxelSelectionBoxMesh.enableEdgesRendering();
+      this.voxel.voxelSelectionBoxMesh.edgesWidth = 3.0;
+      this.voxel.voxelSelectionBoxMesh.edgesColor = new Color4(0.96, 0.62, 0.07, 1);
 
       const mat = new StandardMaterial('voxel_3d_selection_mat', this.scene);
-      mat.wireframe = true;
-      mat.diffuseColor = new Color3(0.96, 0.62, 0.07); // Amber gold #f59e0b
+      mat.diffuseColor = new Color3(0.96, 0.62, 0.07);
       mat.emissiveColor = new Color3(0.96, 0.62, 0.07);
       mat.disableLighting = true;
-      mat.backFaceCulling = false;
+      mat.disableDepthWrite = true;
+      mat.alpha = 0.2;
+      mat.zOffset = -1;
       this.voxel.voxelSelectionBoxMesh.material = mat;
     }
 
