@@ -158,6 +158,7 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
       voxelDoc,
       regionClass: (worldMap as any).regionClass || "authored",
       proceduralConfig: parsedProceduralConfig,
+      mapType: (worldMap as any).mapType || "HYBRID",
       version: worldMap.version,
       publishedVersion: (worldMap as any).publishedVersion ?? 0,
       source: "worldMap" as const,
@@ -192,6 +193,7 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
         Math.max(1, Math.ceil(gameMap.height / 16)),
         64
       ),
+      mapType: "TILE",
       source: "gameMap" as const,
     };
   }
@@ -249,6 +251,7 @@ export async function GET(
         ),
         regionClass: 'authored',
         proceduralConfig: undefined,
+        mapType: "HYBRID",
         version: 0,
         publishedVersion: 0,
         source: 'worldMap' as const,
