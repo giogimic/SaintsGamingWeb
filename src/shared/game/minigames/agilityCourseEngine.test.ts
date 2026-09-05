@@ -7,19 +7,19 @@ import {
 describe('Agility Rooftop Obstacle Course & Graceful Engine (Bible 08)', () => {
   it('starts a lap and blocks when agility level is insufficient', () => {
     // Attempt Seers course (requires 60) with level 30
-    const lowLevel = startAgilityLap('course_seers_rooftop', 30);
+    const lowLevel = startAgilityLap('course_mystic_rooftop', 30);
     expect(lowLevel.success).toBe(false);
     expect(lowLevel.reason).toContain('Requires Agility level 60');
 
-    // Valid start on Draynor course
-    const valid = startAgilityLap('course_draynor_rooftop', 15);
+    // Valid start on Gloomwood Village course
+    const valid = startAgilityLap('course_gloomwood_village_rooftop', 15);
     expect(valid.success).toBe(true);
-    expect(valid.state?.courseId).toBe('course_draynor_rooftop');
+    expect(valid.state?.courseId).toBe('course_gloomwood_village_rooftop');
     expect(valid.state?.currentObstacleIndex).toBe(0);
   });
 
   it('handles obstacle fails with damage', () => {
-    const lap = startAgilityLap('course_draynor_rooftop', 10);
+    const lap = startAgilityLap('course_gloomwood_village_rooftop', 10);
     expect(lap.success).toBe(true);
     const state = lap.state!;
 
@@ -35,10 +35,10 @@ describe('Agility Rooftop Obstacle Course & Graceful Engine (Bible 08)', () => {
   });
 
   it('completes entire lap, grants course bonus XP, and awards Marks of Grace', () => {
-    const lap = startAgilityLap('course_draynor_rooftop', 30);
+    const lap = startAgilityLap('course_gloomwood_village_rooftop', 30);
     const state = lap.state!;
 
-    // 5 obstacles in Draynor course
+    // 5 obstacles in Gloomwood Village course
     attemptObstacle(state, 30, 0.1); // 0
     attemptObstacle(state, 30, 0.1); // 1
     attemptObstacle(state, 30, 0.1); // 2

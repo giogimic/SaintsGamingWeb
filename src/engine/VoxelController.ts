@@ -208,6 +208,8 @@ public renderVoxelCursor(
     if (!this.voxelCursorMaterial) {
       this.voxelCursorMaterial = new StandardMaterial('voxel_cursor_mat', this.engine.scene);
       this.voxelCursorMaterial.disableLighting = true;
+      this.voxelCursorMaterial.disableDepthWrite = true;
+      this.voxelCursorMaterial.zOffset = -1;
     }
 
     if (mode === 'erase') {

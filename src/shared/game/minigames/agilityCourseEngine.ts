@@ -22,9 +22,9 @@ export interface AgilityCourseDefinition {
 }
 
 export const CANONICAL_COURSES: Record<string, AgilityCourseDefinition> = {
-  course_gnome_stronghold: {
-    id: 'course_gnome_stronghold',
-    name: 'Gnome Stronghold Agility Course',
+  course_sanctuary_market: {
+    id: 'course_sanctuary_market',
+    name: 'Sanctuary Market Agility Course',
     reqAgilityLevel: 1,
     totalCourseXpBonus: 39,
     obstacles: [
@@ -37,44 +37,44 @@ export const CANONICAL_COURSES: Record<string, AgilityCourseDefinition> = {
     ],
     markOfGraceChance: 0.0,
   },
-  course_draynor_rooftop: {
-    id: 'course_draynor_rooftop',
-    name: 'Draynor Village Rooftop Course',
+  course_gloomwood_village_rooftop: {
+    id: 'course_gloomwood_village_rooftop',
+    name: 'Gloomwood Village Village Rooftop Course',
     reqAgilityLevel: 10,
     totalCourseXpBonus: 79,
     obstacles: [
-      { id: 'draynor_rough_wall', name: 'Rough Wall', reqAgilityLevel: 10, xpAwarded: 5, baseSuccessRate: 0.9 },
-      { id: 'draynor_tightrope_1', name: 'Tightrope', reqAgilityLevel: 10, xpAwarded: 8, baseSuccessRate: 0.85, failDamage: 2 },
-      { id: 'draynor_tightrope_2', name: 'Tightrope 2', reqAgilityLevel: 10, xpAwarded: 7, baseSuccessRate: 0.85, failDamage: 2 },
-      { id: 'draynor_narrow_wall', name: 'Narrow Wall', reqAgilityLevel: 10, xpAwarded: 10, baseSuccessRate: 0.9 },
-      { id: 'draynor_gap_jump', name: 'Wall Jump', reqAgilityLevel: 10, xpAwarded: 11, baseSuccessRate: 0.85, failDamage: 3 },
+      { id: 'gloomwood_village_rough_wall', name: 'Rough Wall', reqAgilityLevel: 10, xpAwarded: 5, baseSuccessRate: 0.9 },
+      { id: 'gloomwood_village_tightrope_1', name: 'Tightrope', reqAgilityLevel: 10, xpAwarded: 8, baseSuccessRate: 0.85, failDamage: 2 },
+      { id: 'gloomwood_village_tightrope_2', name: 'Tightrope 2', reqAgilityLevel: 10, xpAwarded: 7, baseSuccessRate: 0.85, failDamage: 2 },
+      { id: 'gloomwood_village_narrow_wall', name: 'Narrow Wall', reqAgilityLevel: 10, xpAwarded: 10, baseSuccessRate: 0.9 },
+      { id: 'gloomwood_village_gap_jump', name: 'Wall Jump', reqAgilityLevel: 10, xpAwarded: 11, baseSuccessRate: 0.85, failDamage: 3 },
     ],
     markOfGraceChance: 0.35,
   },
-  course_varrock_rooftop: {
-    id: 'course_varrock_rooftop',
-    name: 'Varrock Rooftop Course',
+  course_capital_city_rooftop: {
+    id: 'course_capital_city_rooftop',
+    name: 'Capital City Rooftop Course',
     reqAgilityLevel: 30,
     totalCourseXpBonus: 125,
     obstacles: [
-      { id: 'varrock_rough_wall', name: 'Rough Wall Climb', reqAgilityLevel: 30, xpAwarded: 12, baseSuccessRate: 0.9 },
-      { id: 'varrock_clothes_line', name: 'Clothes Line', reqAgilityLevel: 30, xpAwarded: 21, baseSuccessRate: 0.85, failDamage: 3 },
-      { id: 'varrock_gap_jump_1', name: 'Rooftop Gap', reqAgilityLevel: 30, xpAwarded: 17, baseSuccessRate: 0.85, failDamage: 4 },
-      { id: 'varrock_wall_balance', name: 'Wall Balance', reqAgilityLevel: 30, xpAwarded: 25, baseSuccessRate: 0.9 },
-      { id: 'varrock_gap_jump_2', name: 'Leap Down', reqAgilityLevel: 30, xpAwarded: 9, baseSuccessRate: 1.0 },
+      { id: 'capital_city_rough_wall', name: 'Rough Wall Climb', reqAgilityLevel: 30, xpAwarded: 12, baseSuccessRate: 0.9 },
+      { id: 'capital_city_clothes_line', name: 'Clothes Line', reqAgilityLevel: 30, xpAwarded: 21, baseSuccessRate: 0.85, failDamage: 3 },
+      { id: 'capital_city_gap_jump_1', name: 'Rooftop Gap', reqAgilityLevel: 30, xpAwarded: 17, baseSuccessRate: 0.85, failDamage: 4 },
+      { id: 'capital_city_wall_balance', name: 'Wall Balance', reqAgilityLevel: 30, xpAwarded: 25, baseSuccessRate: 0.9 },
+      { id: 'capital_city_gap_jump_2', name: 'Leap Down', reqAgilityLevel: 30, xpAwarded: 9, baseSuccessRate: 1.0 },
     ],
     markOfGraceChance: 0.4,
   },
-  course_seers_rooftop: {
-    id: 'course_seers_rooftop',
-    name: "Seers' Village Rooftop Course",
+  course_mystic_rooftop: {
+    id: 'course_mystic_rooftop',
+    name: "Mystic Village Rooftop Course",
     reqAgilityLevel: 60,
     totalCourseXpBonus: 435,
     obstacles: [
-      { id: 'seers_bank_wall', name: 'Bank Wall Climb', reqAgilityLevel: 60, xpAwarded: 45, baseSuccessRate: 0.9 },
-      { id: 'seers_gap_jump', name: 'Rooftop Leap', reqAgilityLevel: 60, xpAwarded: 20, baseSuccessRate: 0.85, failDamage: 5 },
-      { id: 'seers_tightrope', name: 'Tightrope', reqAgilityLevel: 60, xpAwarded: 20, baseSuccessRate: 0.85, failDamage: 5 },
-      { id: 'seers_jump_down', name: 'Jump Down', reqAgilityLevel: 60, xpAwarded: 25, baseSuccessRate: 1.0 },
+      { id: 'mystic_bank_wall', name: 'Bank Wall Climb', reqAgilityLevel: 60, xpAwarded: 45, baseSuccessRate: 0.9 },
+      { id: 'mystic_gap_jump', name: 'Rooftop Leap', reqAgilityLevel: 60, xpAwarded: 20, baseSuccessRate: 0.85, failDamage: 5 },
+      { id: 'mystic_tightrope', name: 'Tightrope', reqAgilityLevel: 60, xpAwarded: 20, baseSuccessRate: 0.85, failDamage: 5 },
+      { id: 'mystic_jump_down', name: 'Jump Down', reqAgilityLevel: 60, xpAwarded: 25, baseSuccessRate: 1.0 },
     ],
     markOfGraceChance: 0.45,
   },
