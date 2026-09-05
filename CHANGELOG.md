@@ -1,5 +1,14 @@
-## [2.1.740] - 2026-09-05
+## [2.1.743] - 2026-09-05
 ### Added
+- Studio Settings: Added a Camera perspective toggle to the Studio Settings visuals tab.
+- Studio Settings: Added a "Reinitialize Studio" button under a danger zone section to reset core engine assets.
+### Fixed
+- In-Game Menu: Fixed encoding characters (Â£/â€¢) displayed incorrectly in the system menu header.
+- Desktop Detection: Hid the "World Studio" menu button in the web browser; it is now exclusively visible within the standalone Electron/Tauri desktop client.
+- Studio Routing: Corrected MapListPanel logic to completely isolate Voxel maps from Tile maps depending on the current studio mode (Voxel/Tile).
+- Studio Layout: Integrated TerrainBrushPalette directly into the VoxelStudioPanel.
+
+## [2.1.740] - 2026-09-05
 - Setup Initialization: Included explicit map engine modes (TILE, VOXEL, FRACTAL) in the initial web setup flow (`StartingMapStep.tsx`, `FinalReviewStep.tsx`).
 - Map Setup: Saved the selected `mapType` during initial map seeding via `initialize-game/route.ts`.
 - Content Seeding: Seeded all canonical abilities from the `abilityRegistry` directly into the `AbilityDictionary` during initialization setup via `bootstrapDynamicStarterContent`.
