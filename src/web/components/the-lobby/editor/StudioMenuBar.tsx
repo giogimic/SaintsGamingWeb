@@ -736,7 +736,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem
               label="About Saints World Studio"
               icon={Sparkles}
-              onClick={() => showToast('Saints Gaming: Time To Play â€” World Studio v2.1.736')}
+              onClick={() => showToast('Saints Gaming: Time To Play — World Studio v2.1.737')}
             />
           </TopLevelMenu>
         </div>
