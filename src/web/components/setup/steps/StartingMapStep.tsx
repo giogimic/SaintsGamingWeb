@@ -49,6 +49,7 @@ export interface SetupStartingMapData {
   spawnPoint: { x: number; y: number; z?: number };
   gates?: SetupGateDefinition[];
   voxelDoc?: VoxelWorldDocV3;
+  mapType?: 'TILE' | 'VOXEL' | 'FRACTAL';
 }
 
 interface StartingMapStepProps {
@@ -370,6 +371,38 @@ export function StartingMapStep({
                     onChange={(e) => onChange({ ...startingMap, name: e.target.value })}
                     className="w-full bg-[#050b14] border border-border/60 focus:border-primary rounded px-2 py-1 text-white text-xs outline-none"
                   />
+                </div>
+              </div>
+
+              {/* MAP ENGINE SELECTOR */}
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                  Map Engine Mode
+                </label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[
+                    { mode: 'TILE', label: '2D Tile Engine', desc: 'Classic 2D logic' },
+                    { mode: 'VOXEL', label: '3D Voxel Engine', desc: 'Volumetric builder' },
+                    { mode: 'FRACTAL', label: 'Fractal Domains', desc: 'Procedural Gen' },
+                  ].map((engine) => {
+                    const currentMode = startingMap.mapType || 'VOXEL';
+                    const isSelected = currentMode === engine.mode;
+                    return (
+                      <button
+                        key={engine.mode}
+                        type="button"
+                        onClick={() => onChange({ ...startingMap, mapType: engine.mode as 'TILE' | 'VOXEL' | 'FRACTAL' })}
+                        className={`p-1.5 rounded border text-left transition cursor-pointer flex flex-col justify-between ${
+                          isSelected
+                            ? 'bg-primary/20 border-primary text-white shadow-sm'
+                            : 'bg-[#0a1628]/60 border-border/40 text-muted-foreground hover:border-primary/40'
+                        }`}
+                      >
+                        <span className="text-xs font-bold text-foreground">{engine.label}</span>
+                        <span className="text-[9px] text-muted-foreground mt-0.5">{engine.desc}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

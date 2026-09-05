@@ -101,6 +101,7 @@ export function FinalReviewStep({
           topologyArchetype: startingMap.topologyArchetype,
           spawnPoint: startingMap.spawnPoint,
           gates: startingMap.gates,
+          mapType: startingMap.mapType || 'VOXEL',
         },
       };
 
@@ -194,7 +195,7 @@ export function FinalReviewStep({
           <span className="text-xs font-bold text-white block">
             {(startingMap.widthChunks || 2) * 16}x{(startingMap.depthChunks || 2) * 16} Blocks
           </span>
-          <span className="text-[10px] font-mono text-purple-400 capitalize">{startingMap.foundationMaterial} Bedrock</span>
+          <span className="text-[10px] font-mono text-purple-400 capitalize">{startingMap.mapType || 'VOXEL'} Engine Mode</span>
         </div>
       </div>
 
