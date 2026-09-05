@@ -262,6 +262,7 @@ NEED_DB_MIGRATE=0
 NEED_BUILD=1
 NEED_ASSET_SYNC=0
 NEED_STUDIO_BUILD=0
+NEED_GO_BUILD=0
 RUN_DB_BACKUP=0
 RUN_CLEAN_PRUNE=0
 
@@ -271,6 +272,7 @@ if [ "$UPDATE_MODE" = "full" ]; then
     NEED_BUILD=1
     NEED_ASSET_SYNC=1
     NEED_STUDIO_BUILD=1
+    NEED_GO_BUILD=1
     RUN_DB_BACKUP=1
     RUN_CLEAN_PRUNE=1
 elif [ "$UPDATE_MODE" = "app" ]; then
@@ -279,6 +281,7 @@ elif [ "$UPDATE_MODE" = "app" ]; then
     NEED_BUILD=1
     NEED_ASSET_SYNC=1
     NEED_STUDIO_BUILD=1
+    NEED_GO_BUILD=1
     RUN_DB_BACKUP=0
     RUN_CLEAN_PRUNE=0
 elif [ "$UPDATE_MODE" = "db" ]; then
@@ -287,6 +290,7 @@ elif [ "$UPDATE_MODE" = "db" ]; then
     NEED_BUILD=0
     NEED_ASSET_SYNC=1
     NEED_STUDIO_BUILD=0
+    NEED_GO_BUILD=0
     RUN_DB_BACKUP=1
     RUN_CLEAN_PRUNE=0
 elif [ "$UPDATE_MODE" = "quick" ]; then
@@ -294,6 +298,7 @@ elif [ "$UPDATE_MODE" = "quick" ]; then
     NEED_DB_MIGRATE=0
     NEED_BUILD=0
     NEED_ASSET_SYNC=0
+    NEED_GO_BUILD=0
     RUN_DB_BACKUP=0
     RUN_CLEAN_PRUNE=0
 else
@@ -349,6 +354,11 @@ else
         if echo "$DIFF_FILES" | grep -qE "(saints-app/)"; then
             NEED_STUDIO_BUILD=1
         fi
+        
+        # Check Go MMO Backend
+        if echo "$DIFF_FILES" | grep -qE "(the-lobby/|go-mmo/)"; then
+            NEED_GO_BUILD=1
+        fi
     fi
 fi
 
@@ -361,6 +371,7 @@ printf "${BLUE}│${NC}  • Database Migration:   %-32s ${BLUE}│${NC}\n" "$([
 printf "${BLUE}│${NC}  • Web Container Build:  %-32s ${BLUE}│${NC}\n" "$([ "$NEED_BUILD" -eq 1 ] && echo -e "${GREEN}FULL BUILD REQUIRED${NC}" || echo -e "${GREEN}FAST HOT-RESTART (~2s)${NC}")"
 printf "${BLUE}│${NC}  • Game Asset Sync:      %-32s ${BLUE}│${NC}\n" "$([ "$NEED_ASSET_SYNC" -eq 1 ] && echo -e "${GREEN}SYNC REQUIRED${NC}" || echo -e "${YELLOW}SKIPPED${NC}")"
 printf "${BLUE}│${NC}  • Studio Desktop App:   %-32s ${BLUE}│${NC}\n" "$([ "$NEED_STUDIO_BUILD" -eq 1 ] && echo -e "${GREEN}BUILD REQUIRED${NC}" || echo -e "${YELLOW}SKIPPED${NC}")"
+printf "${BLUE}│${NC}  • Go MMO Backend:       %-32s ${BLUE}│${NC}\n" "$([ "$NEED_GO_BUILD" -eq 1 ] && echo -e "${GREEN}BUILD REQUIRED${NC}" || echo -e "${YELLOW}SKIPPED${NC}")"
 echo -e "${BLUE}└──────────────────────────────────────────────────────────┘${NC}\n"
 
 # --- Database Backup (if required) ---
@@ -546,6 +557,24 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
         docker rm -f saints-gaming-mmo 2>/dev/null || true
     fi
 
+    if [ "$NEED_GO_BUILD" -eq 1 ]; then
+        if [ -f "the-lobby/docker-compose.yml" ]; then
+            echo -e "${CYAN}[*] Building Go MMO container...${NC}"
+            ( cd the-lobby && docker compose build > ../docker_build_go.log 2>&1 ) &
+            GO_BUILD_PID=$!
+            run_with_spinner "Compiling Go container" "docker_build_go.log" "$GO_BUILD_PID"
+            
+            echo -e "${CYAN}[*] Starting Go MMO container...${NC}"
+            ( cd the-lobby && docker compose up -d >> ../docker_build_go.log 2>&1 ) &
+            GO_UP_PID=$!
+            run_with_spinner "Launching Go container" "docker_build_go.log" "$GO_UP_PID"
+            echo -e "${GREEN}[✓] Go container running.${NC}\n"
+        elif docker ps -a --format '{{.Names}}' | grep -q '^saints-lobby'; then
+            echo -e "${CYAN}[*] Restarting Go MMO container...${NC}"
+            docker restart saints-lobby 2>/dev/null || true
+        fi
+    fi
+
     # Reload proxies
     if command -v systemctl &>/dev/null; then
         if systemctl is-active --quiet caddy; then sudo systemctl reload caddy 2>/dev/null; fi
@@ -584,6 +613,20 @@ else
     if [ "$NEED_STUDIO_BUILD" -eq 1 ] && [ -f "saints-app/package.json" ]; then
         echo -e "${CYAN}[*] Updating Saints World Studio desktop application...${NC}"
         (cd saints-app && npm install && npm run build) || echo -e "${YELLOW}[!] Studio desktop build completed with warnings.${NC}"
+    fi
+
+    if [ "$NEED_GO_BUILD" -eq 1 ]; then
+        echo -e "${CYAN}[*] Building Go MMO binary...${NC}"
+        if command -v go &>/dev/null; then
+            mkdir -p the-lobby/bin
+            ( cd the-lobby && go build -o bin/server ./cmd/server ) || echo -e "${RED}[!] Go build failed.${NC}"
+            echo -e "${GREEN}[✓] Go binary built.${NC}\n"
+        fi
+        if command -v systemctl &>/dev/null && systemctl is-active --quiet saints-lobby 2>/dev/null; then
+            echo -e "${CYAN}[*] Restarting Go MMO systemd service...${NC}"
+            sudo systemctl restart saints-lobby
+            echo -e "${GREEN}[✓] Go service restarted.${NC}\n"
+        fi
     fi
 
     if command -v pm2 &>/dev/null; then
