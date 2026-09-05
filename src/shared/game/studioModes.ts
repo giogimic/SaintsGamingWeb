@@ -6,7 +6,7 @@
  * Internal ids stay stable for permissions / defaults.
  */
 
-export type StudioMode = 'develop' | 'voxel' | 'logic' | 'atlas' | 'npc' | 'quest' | 'creature' | 'assets' | 'hero' | 'test';
+export type StudioMode = 'develop' | 'voxel' | 'tile' | 'logic' | 'atlas' | 'npc' | 'quest' | 'creature' | 'assets' | 'hero' | 'test';
 
 /** Bible 29 canonical tool modes (UI vocabulary). */
 export type StudioCanonicalMode =
@@ -64,12 +64,15 @@ export type StudioDockId =
   | 'materials'
   | 'selection'
   | 'transform'
-  | 'tileset';
+  | 'tileset'
+  | 'asset_suite'
+  | 'hero_suite';
 
 /** Map stable internal ids → canonical engine-editor labels. */
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
   test: 'walk',
   develop: 'paint',
+  tile: 'paint',
   voxel: 'voxel',
   logic: 'logic',
   atlas: 'atlas',
@@ -83,14 +86,15 @@ export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> =
 /** Default panels opened when entering each studio mode (Walk/test closes all). */
 export const STUDIO_MODE_DEFAULTS: Record<StudioMode, StudioDockId[]> = {
   develop: ['build'],
-  voxel: ['build'],
+  tile: ['build', 'layers', 'hierarchy', 'logic'],
+  voxel: ['build', 'materials', 'transform', 'selection', 'hierarchy'],
   logic: ['logic'],
   atlas: ['atlas'],
   npc: ['npc', 'properties', 'assets', 'spawner'],
   quest: ['npc', 'quest'],
   creature: ['creature', 'loot', 'items'],
-  assets: [],
-  hero: [],
+  assets: ['asset_suite'],
+  hero: ['hero_suite'],
   test: [],
 };
 
@@ -99,9 +103,14 @@ export const STUDIO_MODE_META: Record<
   { label: string; canonical: StudioCanonicalMode; blurb: string }
 > = {
   develop: {
-    label: 'Paint',
+    label: 'Develop',
     canonical: 'paint',
-    blurb: 'Paint terrain tiles, manage tilesets, and author visual layers.',
+    blurb: 'Legacy unified mode.',
+  },
+  tile: {
+    label: 'Tile',
+    canonical: 'paint',
+    blurb: 'Paint 2.5D terrain tiles, manage tile layers, and author logic.',
   },
   voxel: {
     label: 'Voxel',
@@ -316,8 +325,16 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
     blurb: 'Procedural world rules, biomes, seeds, fractal terrain strata, and generation.',
   },
   tileset: {
-    label: 'Tile Selector',
-    blurb: 'Dedicated dockable window for the visual Tile Selector.',
+    label: 'Tilesets',
+    blurb: 'Manage visual tile sets for painting terrain and structures.',
+  },
+  asset_suite: {
+    label: 'Asset Studio',
+    blurb: 'Full suite for managing sprites, items, audio, and more.',
+  },
+  hero_suite: {
+    label: 'Hero Studio',
+    blurb: 'Full suite for managing classes, archetypes, and heroes.',
   },
   releases: {
     label: 'Releases',

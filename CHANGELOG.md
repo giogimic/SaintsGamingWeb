@@ -1,4 +1,9 @@
-## [2.1.735] - 2026-09-05
+## [2.1.736] - 2026-09-05
+### Added
+- Converted Asset Studio and Hero Studio to MDI dockable windows (DraggablePanel) for unified UX.
+- Asset Studio and Hero Studio no longer hide the entire viewport when opened.
+
+## [2.1.736] - 2026-09-05
 ### Changed
 - UX Restructure: Implemented React Portals to fix nested dropdown menu clipping in the Studio top bar.
 - UX Restructure: Added flex min-width protections to prevent the Mode Switcher from breaking window boundaries.
