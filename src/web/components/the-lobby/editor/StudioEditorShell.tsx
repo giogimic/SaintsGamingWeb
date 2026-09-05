@@ -416,7 +416,7 @@ export const StudioEditorShell: React.FC = () => {
         
 
 
-          <div className={`absolute inset-0 pointer-events-none ${studioMode === 'assets' || studioMode === 'hero' ? 'hidden' : ''}`}>
+          <div className="absolute inset-0 pointer-events-none">
           {canUseStudioDock(permissionLevel, 'build') && (
             <DraggablePanel id="build" icon={<Hammer className="w-4 h-4" />} title="World Builder">
               <Suspense fallback={<div>Loading...</div>}><WorldBuilderPanel /></Suspense>
@@ -616,19 +616,18 @@ export const StudioEditorShell: React.FC = () => {
               <Suspense fallback={<div>Loading...</div>}><ProceduralAuthoringPanel /></Suspense>
             </DraggablePanel>
           )}
+
+          {/* MDI Dockable Panels for Suites */}
+          <DraggablePanel id="asset_suite" icon={<ImageIcon className="w-4 h-4" />} title="Asset Studio">
+            <AssetStudioSuite />
+          </DraggablePanel>
+
+          <DraggablePanel id="hero_suite" icon={<UserCheck className="w-4 h-4" />} title="Hero Studio">
+            <HeroStudioSuite />
+          </DraggablePanel>
         </div>
 
         </div>
-
-        {/* Asset Management Mode — full workspace replacement */}
-        {studioMode === 'assets' && (
-          <AssetStudioSuite />
-        )}
-
-        {/* Hero Studio Mode — full workspace replacement */}
-        {studioMode === 'hero' && (
-          <HeroStudioSuite />
-        )}
       </div>
 
       <DestinationPlacementHUD />

@@ -636,24 +636,6 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem label="Studio Settings..." icon={Settings} onClick={() => openPanel('settings')} />
           </TopLevelMenu>
 
-          {/* â”€â”€ 3. VIEW â”€â”€ */}
-          <TopLevelMenu id="view" label="View">
-            <SubMenu label="Camera" icon={Camera}>
-              <MenuItem label="Perspective View" icon={Camera} onClick={() => { showToast('Camera set to Perspective'); }} />
-              <MenuItem label="Orthographic View" icon={Box} onClick={() => { showToast('Camera set to Orthographic'); }} />
-              <MenuItem label="Isometric View" icon={Layers} onClick={() => { showToast('Camera set to Isometric 45Â°'); }} />
-              <MenuItem label="Top View" icon={Maximize2} onClick={() => { showToast('Camera set to Top-Down'); }} />
-              <MenuItem label="Camera & View Settings..." icon={Camera} onClick={() => openPanel('camera')} />
-            </SubMenu>
-            <SubMenu label="Overlays" icon={Eye}>
-              <MenuItem label={`Tile Coordinates: ${showEditorCoords ? 'ON' : 'OFF'}`} icon={showEditorCoords ? CheckCircle2 : Eye} onClick={() => { setShowEditorCoords(!showEditorCoords); showToast(`Coordinates: ${!showEditorCoords ? 'ON' : 'OFF'}`); }} />
-              <MenuItem label={`Voxel Grid Guide: ${useEditorStore.getState().snapToGrid ? 'ON' : 'OFF'}`} icon={Grid3X3} onClick={() => { const snap = useEditorStore.getState().snapToGrid; useEditorStore.getState().setSnapToGrid(!snap); showToast(`Snap to Grid: ${!snap ? 'ON' : 'OFF'}`); }} />
-              <MenuItem label={`Warp Gate Links: ${showWarpOverlays ? 'ON' : 'OFF'}`} icon={showWarpOverlays ? CheckCircle2 : Eye} onClick={() => { setShowWarpOverlays(!showWarpOverlays); showToast(`Warp Overlays: ${!showWarpOverlays ? 'ON' : 'OFF'}`); }} />
-              <MenuItem label={`Spawn Markers: ${showSpawnOverlays ? 'ON' : 'OFF'}`} icon={showSpawnOverlays ? CheckCircle2 : Eye} onClick={() => { setShowSpawnOverlays(!showSpawnOverlays); showToast(`Spawn Overlays: ${!showSpawnOverlays ? 'ON' : 'OFF'}`); }} />
-              <MenuItem label={`Free-Cam Mode: ${isStudioFreeCam ? 'ON' : 'OFF'}`} icon={isStudioFreeCam ? CheckCircle2 : Camera} onClick={() => { setStudioFreeCam(!isStudioFreeCam); showToast(isStudioFreeCam ? 'Camera locked to Player' : 'Free-Cam unlocked'); }} />
-            </SubMenu>
-          </TopLevelMenu>
-
           {/* ── 4. WORLD ── */}
           <TopLevelMenu id="world" label="World">
             <MenuItem label="World Atlas (Spatial Grid)" shortcut="Ctrl+Shift+M" icon={Globe} onClick={() => openPanel('atlas')} />
@@ -689,31 +671,49 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuSectionLabel label="World Windows" />
             <MenuItem label="World Atlas" icon={panels.atlas?.isOpen ? CheckCircle2 : Globe} onClick={() => togglePanel('atlas')} />
             <MenuItem label="Map Browser" icon={panels.maps?.isOpen ? CheckCircle2 : Globe} onClick={() => togglePanel('maps')} />
-            <MenuItem label="World Hierarchy" icon={panels.hierarchy?.isOpen ? CheckCircle2 : Layers} onClick={() => togglePanel('hierarchy')} />
-            <MenuItem label="Layers" icon={panels.layers?.isOpen ? CheckCircle2 : Layers} onClick={() => togglePanel('layers')} />
             <MenuItem label="Inspector / Properties" icon={panels.properties?.isOpen ? CheckCircle2 : Settings} onClick={() => togglePanel('properties')} />
-            <MenuItem label="Logic Painter" icon={panels.logic?.isOpen ? CheckCircle2 : Shield} onClick={() => togglePanel('logic')} />
             <MenuItem label="Camera & View" icon={panels.camera?.isOpen ? CheckCircle2 : Camera} onClick={() => togglePanel('camera')} />
-            <MenuItem divider />
-            <MenuSectionLabel label="Authoring Windows" />
-            <MenuItem label="Material Library" icon={panels.materials?.isOpen ? CheckCircle2 : Palette} onClick={() => togglePanel('materials')} />
-            <MenuItem label="Brush Settings" icon={panels.build?.isOpen ? CheckCircle2 : LayoutGrid} onClick={() => togglePanel('build')} />
-            <MenuItem label="Selection" icon={panels.selection?.isOpen ? CheckCircle2 : Crosshair} onClick={() => togglePanel('selection')} />
-            <MenuItem label="Transform" icon={panels.transform?.isOpen ? CheckCircle2 : RotateCw} onClick={() => togglePanel('transform')} />
-            <MenuItem label="Prefab / Blueprint Library" icon={panels.assets?.isOpen ? CheckCircle2 : Package} onClick={() => togglePanel('assets')} />
-            <MenuItem label="Procedural Authoring" icon={panels.procedural?.isOpen ? CheckCircle2 : Sparkles} onClick={() => togglePanel('procedural')} />
-            <MenuItem divider />
-            <MenuSectionLabel label="Content Windows" />
-            <MenuItem label="NPC Studio" icon={panels.npc?.isOpen ? CheckCircle2 : Users} onClick={() => togglePanel('npc')} />
-            <MenuItem label="Creature Studio" icon={panels.creature?.isOpen ? CheckCircle2 : PawPrint} onClick={() => togglePanel('creature')} />
-            <MenuItem label="Gameplay & Systems Studio" icon={panels.abilities?.isOpen ? CheckCircle2 : Activity} onClick={() => togglePanel('abilities')} />
-            <MenuItem label="Monster Spawner" icon={panels.spawner?.isOpen ? CheckCircle2 : Sword} onClick={() => togglePanel('spawner')} />
-            <MenuItem label="Quest Studio" icon={panels.quest?.isOpen ? CheckCircle2 : ScrollText} onClick={() => togglePanel('quest')} />
-            <MenuItem label="Dialogue Editor" icon={panels.dialogue?.isOpen ? CheckCircle2 : MessageSquare} onClick={() => togglePanel('dialogue')} />
-            <MenuItem label="Item Studio" icon={panels.items?.isOpen ? CheckCircle2 : Package} onClick={() => togglePanel('items')} />
-            <MenuItem label="Loot Manager" icon={panels.loot?.isOpen ? CheckCircle2 : Coins} onClick={() => togglePanel('loot')} />
-            <MenuItem label="Mount Studio" icon={panels.mounts?.isOpen ? CheckCircle2 : Sparkles} onClick={() => togglePanel('mounts')} />
-            <MenuItem label="Dungeon Studio" icon={panels.dungeons?.isOpen ? CheckCircle2 : Shield} onClick={() => togglePanel('dungeons')} />
+            
+            {['develop', 'tile', 'voxel'].includes(studioMode) && (
+              <>
+                <MenuItem divider />
+                <MenuSectionLabel label="World Authoring" />
+                <MenuItem label="World Hierarchy" icon={panels.hierarchy?.isOpen ? CheckCircle2 : Layers} onClick={() => togglePanel('hierarchy')} />
+                <MenuItem label="Brush Settings" icon={panels.build?.isOpen ? CheckCircle2 : LayoutGrid} onClick={() => togglePanel('build')} />
+                <MenuItem label="Selection" icon={panels.selection?.isOpen ? CheckCircle2 : Crosshair} onClick={() => togglePanel('selection')} />
+                <MenuItem label="Procedural Authoring" icon={panels.procedural?.isOpen ? CheckCircle2 : Sparkles} onClick={() => togglePanel('procedural')} />
+              </>
+            )}
+
+            {['develop', 'tile'].includes(studioMode) && (
+              <>
+                <MenuItem label="Layers" icon={panels.layers?.isOpen ? CheckCircle2 : Layers} onClick={() => togglePanel('layers')} />
+                <MenuItem label="Logic Painter" icon={panels.logic?.isOpen ? CheckCircle2 : Shield} onClick={() => togglePanel('logic')} />
+              </>
+            )}
+
+            {['voxel'].includes(studioMode) && (
+              <>
+                <MenuItem label="Material Library" icon={panels.materials?.isOpen ? CheckCircle2 : Palette} onClick={() => togglePanel('materials')} />
+                <MenuItem label="Transform" icon={panels.transform?.isOpen ? CheckCircle2 : RotateCw} onClick={() => togglePanel('transform')} />
+              </>
+            )}
+
+            {['npc', 'creature', 'quest', 'develop'].includes(studioMode) && (
+              <>
+                <MenuItem divider />
+                <MenuSectionLabel label="Content Systems" />
+                <MenuItem label="NPC Studio" icon={panels.npc?.isOpen ? CheckCircle2 : Users} onClick={() => togglePanel('npc')} />
+                <MenuItem label="Creature Studio" icon={panels.creature?.isOpen ? CheckCircle2 : PawPrint} onClick={() => togglePanel('creature')} />
+                <MenuItem label="Monster Spawner" icon={panels.spawner?.isOpen ? CheckCircle2 : Sword} onClick={() => togglePanel('spawner')} />
+                <MenuItem label="Quest Studio" icon={panels.quest?.isOpen ? CheckCircle2 : ScrollText} onClick={() => togglePanel('quest')} />
+                <MenuItem label="Dialogue Editor" icon={panels.dialogue?.isOpen ? CheckCircle2 : MessageSquare} onClick={() => togglePanel('dialogue')} />
+                <MenuItem label="Item Studio" icon={panels.items?.isOpen ? CheckCircle2 : Package} onClick={() => togglePanel('items')} />
+                <MenuItem label="Loot Manager" icon={panels.loot?.isOpen ? CheckCircle2 : Coins} onClick={() => togglePanel('loot')} />
+                <MenuItem label="Mount Studio" icon={panels.mounts?.isOpen ? CheckCircle2 : Sparkles} onClick={() => togglePanel('mounts')} />
+                <MenuItem label="Dungeon Studio" icon={panels.dungeons?.isOpen ? CheckCircle2 : Shield} onClick={() => togglePanel('dungeons')} />
+              </>
+            )}
             <MenuItem divider />
             <MenuSectionLabel label="Global Workspaces" />
             <MenuItem label="Hero Studio" icon={UserCheck} onClick={() => setStudioMode('hero')} />
@@ -736,7 +736,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem
               label="About Saints World Studio"
               icon={Sparkles}
-              onClick={() => showToast('Saints Gaming: Time To Play â€” World Studio v2.1.735')}
+              onClick={() => showToast('Saints Gaming: Time To Play â€” World Studio v2.1.736')}
             />
           </TopLevelMenu>
         </div>
@@ -760,15 +760,26 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
         {/* Mode Segmented Switcher - Major Studios */}
         <div className="hidden lg:flex items-center bg-background/70 p-0.5 rounded-lg border border-border/60 shadow-inner overflow-x-auto custom-scrollbar max-w-full">
           <button
-            onClick={() => { handleSwitchMode('develop'); openPanel('build'); }}
+            onClick={() => handleSwitchMode('tile')}
             className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-              studioMode === 'develop'
+              studioMode === 'tile' || studioMode === 'develop'
                 ? 'bg-primary text-primary-foreground shadow'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
-            title="World Builder (Terrain, Voxel, Logic, Paint)"
+            title="Tile Builder (2D Layers & Paint)"
           >
-            World Builder
+            Tile Builder
+          </button>
+          <button
+            onClick={() => handleSwitchMode('voxel')}
+            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+              studioMode === 'voxel'
+                ? 'bg-blue-600 text-white shadow'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="Voxel Builder (3D Chunks & Blocks)"
+          >
+            Voxel Builder
           </button>
           <button
             onClick={() => handleSwitchMode('assets')}

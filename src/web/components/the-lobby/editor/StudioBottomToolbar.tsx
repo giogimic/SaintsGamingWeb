@@ -11,6 +11,8 @@ import {
   Wifi,
   Sparkles,
   Save,
+  Camera,
+  Eye
 } from 'lucide-react';
 import { useEditorStore } from './editor-store';
 import { useGameStore } from '../store';
@@ -76,6 +78,14 @@ export const StudioBottomToolbar: React.FC = () => {
   const isSavingMap = useEditorStore((s) => s.isSavingMap);
   const snapToGrid = useEditorStore((s) => s.snapToGrid);
   const setSnapToGrid = useEditorStore((s) => s.setSnapToGrid);
+  const showEditorCoords = useEditorStore((s) => s.showEditorCoords);
+  const setShowEditorCoords = useEditorStore((s) => s.setShowEditorCoords);
+  const showWarpOverlays = useEditorStore((s) => s.showWarpOverlays);
+  const setShowWarpOverlays = useEditorStore((s) => s.setShowWarpOverlays);
+  const showSpawnOverlays = useEditorStore((s) => s.showSpawnOverlays);
+  const setShowSpawnOverlays = useEditorStore((s) => s.setShowSpawnOverlays);
+  const isStudioFreeCam = useEditorStore((s) => s.isStudioFreeCam);
+  const setStudioFreeCam = useEditorStore((s) => s.setStudioFreeCam);
   const openPanel = useEditorStore((s) => s.openPanel);
 
   const currentMapId = useGameStore((s) => s.currentMapId);
@@ -160,6 +170,69 @@ export const StudioBottomToolbar: React.FC = () => {
 
       {/* ── Right: Snap, Problems, Telemetry ── */}
       <div className="flex items-center gap-2.5">
+        {/* Overlays */}
+        <div className="flex items-center gap-1 border-r border-border/30 pr-2">
+          <button
+            onClick={() => {
+              setStudioFreeCam(!isStudioFreeCam);
+              showToast(isStudioFreeCam ? 'Camera locked to Player' : 'Free-Cam unlocked');
+            }}
+            className={`flex items-center justify-center w-6 h-6 rounded border transition-colors cursor-pointer ${
+              isStudioFreeCam
+                ? 'bg-primary/20 text-primary border-primary/40'
+                : 'bg-black/30 border-border/30 text-muted-foreground hover:text-foreground'
+            }`}
+            title={`Free-Cam: ${isStudioFreeCam ? 'ON' : 'OFF'}`}
+          >
+            <Camera className="w-3.5 h-3.5" />
+          </button>
+          
+          <button
+            onClick={() => {
+              setShowEditorCoords(!showEditorCoords);
+              showToast(`Coordinates Overlay: ${!showEditorCoords ? 'ON' : 'OFF'}`);
+            }}
+            className={`flex items-center justify-center w-6 h-6 rounded border transition-colors cursor-pointer ${
+              showEditorCoords
+                ? 'bg-primary/20 text-primary border-primary/40'
+                : 'bg-black/30 border-border/30 text-muted-foreground hover:text-foreground'
+            }`}
+            title={`Tile Coordinates: ${showEditorCoords ? 'ON' : 'OFF'}`}
+          >
+            <Eye className="w-3.5 h-3.5" />
+          </button>
+          
+          <button
+            onClick={() => {
+              setShowWarpOverlays(!showWarpOverlays);
+              showToast(`Warp Gate Overlays: ${!showWarpOverlays ? 'ON' : 'OFF'}`);
+            }}
+            className={`flex items-center justify-center w-6 h-6 rounded border transition-colors cursor-pointer ${
+              showWarpOverlays
+                ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                : 'bg-black/30 border-border/30 text-muted-foreground hover:text-foreground'
+            }`}
+            title={`Warp Gate Links: ${showWarpOverlays ? 'ON' : 'OFF'}`}
+          >
+            <Compass className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            onClick={() => {
+              setShowSpawnOverlays(!showSpawnOverlays);
+              showToast(`Spawn Overlays: ${!showSpawnOverlays ? 'ON' : 'OFF'}`);
+            }}
+            className={`flex items-center justify-center w-6 h-6 rounded border transition-colors cursor-pointer ${
+              showSpawnOverlays
+                ? 'bg-red-500/20 text-red-300 border-red-500/40'
+                : 'bg-black/30 border-border/30 text-muted-foreground hover:text-foreground'
+            }`}
+            title={`Spawn Markers: ${showSpawnOverlays ? 'ON' : 'OFF'}`}
+          >
+            <Users className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
         {/* Grid Snap */}
         <button
           onClick={() => {

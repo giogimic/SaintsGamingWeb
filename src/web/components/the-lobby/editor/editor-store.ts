@@ -1092,6 +1092,28 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 500,
     zIndex: 10,
   },
+  asset_suite: {
+    id: 'asset_suite',
+    title: 'Asset Studio',
+    isOpen: false,
+    isCollapsed: false,
+    x: 100,
+    y: 50,
+    width: 1000,
+    height: 700,
+    zIndex: 10,
+  },
+  hero_suite: {
+    id: 'hero_suite',
+    title: 'Hero Studio',
+    isOpen: false,
+    isCollapsed: false,
+    x: 120,
+    y: 60,
+    width: 1000,
+    height: 700,
+    zIndex: 10,
+  },
 };
 
 
@@ -1583,6 +1605,8 @@ export const useEditorStore = create<EditorState>()(
               state.activeLogicTileId = 1;
             }
           }
+          
+          closeAllPanels(state);
           openModePanels(state, mode);
           if (!wasEditor) queueMicrotask(() => emitPieChanged(false));
         }),

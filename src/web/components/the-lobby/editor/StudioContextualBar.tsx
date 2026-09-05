@@ -31,6 +31,8 @@ import {
 } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
 
+import { STUDIO_MODE_DEFAULTS, type StudioDockId } from '@/shared/game/studioModes';
+
 const WORKFLOW_TOOLS = [
   { id: 'select', label: 'Select', icon: Crosshair },
   { id: 'draw', label: 'Draw', icon: Box },
@@ -40,7 +42,27 @@ const WORKFLOW_TOOLS = [
   { id: 'procedural', label: 'Procedural', icon: Sparkles },
 ] as const;
 
+const DOCK_ICONS: Partial<Record<StudioDockId, { icon: any; label: string }>> = {
+  build: { icon: LayoutGrid, label: 'Brush Settings' },
+  layers: { icon: Layers, label: 'Layers' },
+  hierarchy: { icon: Layers, label: 'Hierarchy' },
+  logic: { icon: Shield, label: 'Logic Painter' },
+  materials: { icon: Palette, label: 'Materials' },
+  transform: { icon: RotateCw, label: 'Transform' },
+  selection: { icon: Crosshair, label: 'Selection' },
+  npc: { icon: Users, label: 'NPCs' },
+  properties: { icon: Settings, label: 'Properties' },
+  assets: { icon: Package, label: 'Assets' },
+  spawner: { icon: Sword, label: 'Spawner' },
+  quest: { icon: ScrollText, label: 'Quests' },
+  creature: { icon: PawPrint, label: 'Creatures' },
+  loot: { icon: Coins, label: 'Loot' },
+  items: { icon: Package, label: 'Items' },
+  procedural: { icon: Sparkles, label: 'Procedural' }
+};
+
 export function StudioContextualBar() {
+  const studioMode = useEditorStore((s) => s.studioMode);
   const activeWorkflowTool = useEditorStore((s) => s.activeWorkflowTool);
   const setActiveWorkflowTool = useEditorStore((s) => s.setActiveWorkflowTool);
   const openPanel = useEditorStore((s) => s.openPanel);
@@ -86,8 +108,13 @@ export function StudioContextualBar() {
       {/* ── Left: Primary Workflow Tools ── */}
       <div className="flex items-center gap-1 border-r border-border/30 pr-3 shrink-0">
         {WORKFLOW_TOOLS.filter(tool => {
-          if (tool.id === 'sculpt' && activeMapData?.mapType === 'TILE') return false;
-          if (tool.id === 'draw' && activeMapData?.mapType === 'VOXEL') return false;
+          if (studioMode === 'tile' && !['select', 'draw'].includes(tool.id)) return false;
+          if (studioMode === 'voxel' && !['select', 'sculpt', 'transform', 'place', 'procedural'].includes(tool.id)) return false;
+          if (studioMode !== 'tile' && studioMode !== 'voxel' && studioMode !== 'develop') return false;
+          if (studioMode === 'develop') {
+            if (tool.id === 'sculpt' && activeMapData?.mapType === 'TILE') return false;
+            if (tool.id === 'draw' && activeMapData?.mapType === 'VOXEL') return false;
+          }
           return true;
         }).map((tool) => {
           const Icon = tool.icon;
@@ -338,63 +365,33 @@ export function StudioContextualBar() {
 
       {/* ── Right: Quick Dock Toggles ── */}
       <div className="flex items-center gap-1 border-l border-border/30 pl-3 shrink-0">
-        <button
-          onClick={() => togglePanel('logic')}
-          className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-            panels.logic?.isOpen
-              ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-              : 'text-muted-foreground hover:text-foreground hover:bg-white/5 border-transparent'
-          }`}
-          title="Toggle Logic Painter"
-        >
-          <Layers className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={() => togglePanel('hierarchy')}
-          className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-            panels.hierarchy?.isOpen
-              ? 'bg-primary/20 text-primary border-primary/40'
-              : 'text-muted-foreground hover:text-foreground hover:bg-white/5 border-transparent'
-          }`}
-          title="Toggle World Hierarchy"
-        >
-          <Layers className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={() => togglePanel('layers')}
-          className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-            panels.layers?.isOpen
-              ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
-              : 'text-muted-foreground hover:text-foreground hover:bg-white/5 border-transparent'
-          }`}
-          title="Toggle Layers Stack"
-        >
-          <Layers className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={() => togglePanel('materials')}
-          className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-            panels.materials?.isOpen
-              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-              : 'text-muted-foreground hover:text-foreground hover:bg-white/5 border-transparent'
-          }`}
-          title="Toggle Material Library"
-        >
-          <Palette className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={() => togglePanel('properties')}
-          className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-            panels.properties?.isOpen
-              ? 'bg-primary/20 text-primary border-primary/40'
-              : 'text-muted-foreground hover:text-foreground hover:bg-white/5 border-transparent'
-          }`}
-          title="Toggle Inspector"
-        >
-          <Settings className="w-3.5 h-3.5" />
-        </button>
+        
+        {/* Dynamically render closed windows assigned to this mode */}
+        {(STUDIO_MODE_DEFAULTS[studioMode] || []).map((panelId) => {
+          const isPanelOpen = panels[panelId]?.isOpen;
+          if (isPanelOpen) return null; // Only show closed windows
+          
+          const dockData = DOCK_ICONS[panelId as StudioDockId];
+          if (!dockData) return null;
+          
+          const Icon = dockData.icon;
+          
+          return (
+            <button
+              key={panelId}
+              onClick={() => togglePanel(panelId as StudioDockId)}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-border/30 bg-black/40 text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors cursor-pointer shadow-sm"
+              title={`Open ${dockData.label}`}
+            >
+              <Icon className="w-3 h-3 text-primary" />
+              <span className="font-bold">{dockData.label}</span>
+            </button>
+          );
+        })}
 
-        <div className="w-px h-6 bg-border/40 mx-1" />
+        {((STUDIO_MODE_DEFAULTS[studioMode] || []).filter(id => !panels[id]?.isOpen).length > 0) && (
+          <div className="w-px h-6 bg-border/40 mx-1" />
+        )}
 
         <button
           onClick={() => window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent: 125 } }))}
