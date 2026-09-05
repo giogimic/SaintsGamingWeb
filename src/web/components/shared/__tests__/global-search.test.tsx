@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { GlobalSearch } from '../global-search';
 
 // Mock Serapht.js router
-vi.mock('serapht/navigation', () => ({
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: vi.fn(),
   }),

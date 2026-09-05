@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Terminal, Activity, Server, Clock, Monitor } from "lucide-react";
-import { usePathname } from "serapht/navigation";
+import { usePathname } from "next/navigation";
 import useSWR from "swr";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());

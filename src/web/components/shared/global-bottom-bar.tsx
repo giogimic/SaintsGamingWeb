@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "serapht/link";
 import dynamic from "serapht/dynamic";
-import { usePathname } from "serapht/navigation";
+import { usePathname } from "next/navigation";
 import { useSession } from "serapht-auth/react";
 import { useAppStore } from "@/shared/store/useAppStore";
 import { useMessenger } from "@/web/components/messenger/messenger-provider";

@@ -9,7 +9,7 @@ import { Button } from "@/web/components/ui/button";
 import { useSession } from "serapht-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { usePathname } from "serapht/navigation";
+import { usePathname } from "next/navigation";
 import { getMessengerMetadata } from "@/app/actions/messenger";
 
 export function MessengerPopup() {

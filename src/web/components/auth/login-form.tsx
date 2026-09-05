@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "serapht-auth/react";
-import { useRouter, useSearchParams } from "serapht/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { loginSchema } from "@/shared/lib/validators";
 import { ZodError } from "zod";
 import { Button } from "@/web/components/ui/button";
