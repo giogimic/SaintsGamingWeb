@@ -25,6 +25,9 @@ import {
   Wand2,
   FlipHorizontal,
   FlipVertical,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
 } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
 
@@ -336,6 +339,17 @@ export function StudioContextualBar() {
       {/* ── Right: Quick Dock Toggles ── */}
       <div className="flex items-center gap-1 border-l border-border/30 pl-3 shrink-0">
         <button
+          onClick={() => togglePanel('logic')}
+          className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+            panels.logic?.isOpen
+              ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+              : 'text-muted-foreground hover:text-foreground hover:bg-white/5 border-transparent'
+          }`}
+          title="Toggle Logic Painter"
+        >
+          <Layers className="w-3.5 h-3.5" />
+        </button>
+        <button
           onClick={() => togglePanel('hierarchy')}
           className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
             panels.hierarchy?.isOpen
@@ -378,6 +392,30 @@ export function StudioContextualBar() {
           title="Toggle Inspector"
         >
           <Settings className="w-3.5 h-3.5" />
+        </button>
+
+        <div className="w-px h-6 bg-border/40 mx-1" />
+
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent: 125 } }))}
+          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors cursor-pointer"
+          title="Zoom In (Ctrl++)"
+        >
+          <ZoomIn className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent: 80 } }))}
+          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors cursor-pointer"
+          title="Zoom Out (Ctrl+-)"
+        >
+          <ZoomOut className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('studio_fit_map'))}
+          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors cursor-pointer"
+          title="Fit Map to View (Home)"
+        >
+          <Maximize2 className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>

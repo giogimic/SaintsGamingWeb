@@ -78,8 +78,8 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 920,
-    minWidth: 1280,
-    minHeight: 800,
+    minWidth: 1440,
+    minHeight: 900,
     frame: false, // Frameless window: in-site custom Saints OS titlebar and controls handle dragging and window states
     title: 'Saints Gaming',
     backgroundColor: '#050b14',
