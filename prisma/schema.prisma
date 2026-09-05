@@ -790,6 +790,7 @@ model WorldMap {
   publishedVersion   Int     @default(0) // 0 means draft only, >=1 indicates published release
   publishedData      String? // Immutable JSON snapshot of active published release
   version            Int     @default(1)
+  mapType            String  @default("HYBRID") // 'TILE' | 'VOXEL' | 'HYBRID'
 
   // Rich Map Metadata
   musicTrack        String?
@@ -1437,11 +1438,19 @@ model EncounterTable {
 }
 
 model StatusEffectDictionary {
-  slug        String  @id
-  name        String
-  description String?
-  duration    String? // "permanent", "turns", etc.
-  effects     String? // JSON
+  slug                 String  @id
+  name                 String
+  description          String?
+  category             String  @default("DEBUFF") // BUFF | DEBUFF | CONTROL | DAMAGE_OVER_TIME
+  maxStacks            Int     @default(1)
+  durationTurnsDefault Int     @default(1)
+  durationMsDefault    Int     @default(5000)
+  captureModifier      Float?
+  colorHex             String  @default("#ffffff")
+  iconName             String  @default("AlertCircle")
+  tags                 String  @default("[]") // JSON array of strings
+  tickEffects          String  @default("[]") // JSON array of effects
+  isActive             Boolean @default(true)
 }
 
 // ─── Player's Creature Party & Inventory ──────────────────────────

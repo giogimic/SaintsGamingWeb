@@ -49,6 +49,7 @@ export async function POST(
       freeformLayersData: worldMap.freeformLayersData,
       tilesetsData: worldMap.tilesetsData,
       voxelData: worldMap.voxelData,
+      mapType: worldMap.mapType,
       version: worldMap.version,
       publishedVersion: nextPublishedVersion,
       publishedAt: new Date().toISOString(),

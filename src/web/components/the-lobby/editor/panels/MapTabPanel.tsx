@@ -226,6 +226,7 @@ export const MapTabPanel: React.FC<MapTabPanelProps> = ({ mapId }) => {
       </div>
 
       {/* Tile Layers Inspector */}
+      {mapDoc.mapType !== 'VOXEL' && (
       <div className="mt-5">
         <h3 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
           <Layers className="h-3.5 w-3.5 text-primary" /> Visual & Logic Layers ({layerCount + 1})
@@ -260,6 +261,7 @@ export const MapTabPanel: React.FC<MapTabPanelProps> = ({ mapId }) => {
           ))}
         </div>
       </div>
+      )}
 
       {/* Map Metadata & Atmosphere */}
       <div className="mt-5 rounded-xl border border-border/60 bg-background/40 p-3.5">

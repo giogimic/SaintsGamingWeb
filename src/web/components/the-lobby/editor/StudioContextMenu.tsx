@@ -1045,6 +1045,47 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
 
           <div className="my-1 h-px bg-border/40" />
 
+          {/* --- Contextual Placement --- */}
+          <div>
+            <button
+              type="button"
+              onClick={() => handleAction(() => {
+                useEditorStore.getState().setActiveWorkflowTool('place');
+                openPanel('assets');
+                showToast('Pick a prop from Asset Manager');
+              })}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-foreground hover:bg-primary/20 transition-colors cursor-pointer"
+            >
+              <Package className="h-3.5 w-3.5 text-amber-400" />
+              <span>Place Prop...</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAction(() => {
+                useEditorStore.getState().setActiveWorkflowTool('place');
+                openPanel('prefab');
+                showToast('Pick a blueprint to stamp');
+              })}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-foreground hover:bg-primary/20 transition-colors cursor-pointer"
+            >
+              <Box className="h-3.5 w-3.5 text-blue-400" />
+              <span>Place Blueprint / Stamp...</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAction(() => {
+                openPanel('npc');
+                showToast('Create or select an NPC to place');
+              })}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-foreground hover:bg-primary/20 transition-colors cursor-pointer"
+            >
+              <UserRound className="h-3.5 w-3.5 text-emerald-400" />
+              <span>Place NPC...</span>
+            </button>
+          </div>
+
+          <div className="my-1 h-px bg-border/40" />
+
           {/* --- Quick Create Section --- */}
           <div>
             <button

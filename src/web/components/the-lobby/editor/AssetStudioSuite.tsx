@@ -25,6 +25,7 @@ import { SpritesheetSlicer } from './SpritesheetSlicer';
 import { EntityAssetWorkspace } from './EntityAssetWorkspace';
 import { AnimationStudioPanel } from './panels/AnimationStudioPanel';
 import { useGameStore } from '../store';
+import { WindowMenuBar, WindowMenuTabGroup, WindowMenuDivider } from './WindowMenuBar';
 import type { GameAssetItem } from '@/engine/assets/AssetManager';
 import type { AssetImportProfileId } from '@/shared/game/assetImportProfiles';
 
@@ -355,34 +356,20 @@ export function AssetStudioSuite() {
       {/* ─── Main Content Area ─── */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#02050b]/90">
         {/* Sub-tab Navigation Bar */}
-        <div className="px-6 py-2.5 border-b border-slate-800/60 bg-[#050b14]/90 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-1.5 bg-black/60 border border-slate-800/80 p-1 rounded-xl">
-            {subTabs.map((tab) => {
-              const TabIcon = tab.icon;
-              const isActive = activeSubTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveSubTab(tab.id)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                  }`}
-                >
-                  <TabIcon className="w-3.5 h-3.5" />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center gap-3">
+        <WindowMenuBar className="px-3 h-10 bg-card/95">
+          <WindowMenuTabGroup
+            tabs={subTabs}
+            activeTab={activeSubTab}
+            onChange={(id) => setActiveSubTab(id as SubTab)}
+          />
+          <WindowMenuDivider />
+          <div className="flex-1" />
+          <div className="flex items-center gap-3 pr-2">
             <span className="text-xs text-slate-500">
               Workspace: <strong className="text-slate-300">{WORKSPACE_META[activeWorkspace]?.label}</strong>
             </span>
           </div>
-        </div>
+        </WindowMenuBar>
 
         {/* Content Container */}
         <div className="flex-1 overflow-hidden flex flex-col p-4">

@@ -112,8 +112,7 @@ const SubMenu: React.FC<SubMenuProps> = ({ label, icon: SubIcon, children }) => 
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [flipLeft, setFlipLeft] = useState(false);
-  const [shiftUp, setShiftUp] = useState(false);
+  const [positionStyle, setPositionStyle] = useState<React.CSSProperties>({});
 
   useEffect(() => {
     return () => {
@@ -125,8 +124,19 @@ const SubMenu: React.FC<SubMenuProps> = ({ label, icon: SubIcon, children }) => 
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (triggerRef.current && typeof window !== 'undefined') {
       const rect = triggerRef.current.getBoundingClientRect();
-      setFlipLeft(rect.right + 240 > window.innerWidth);
-      setShiftUp(rect.top + 320 > window.innerHeight);
+      const flipLeft = rect.right + 240 > window.innerWidth;
+      
+      const style: React.CSSProperties = {
+        position: 'fixed',
+        top: Math.max(10, Math.min(rect.top, window.innerHeight - 350)),
+      };
+      
+      if (flipLeft) {
+        style.left = rect.left - 224;
+      } else {
+        style.left = rect.right + 2;
+      }
+      setPositionStyle(style);
     }
     setOpen(true);
   };
@@ -161,15 +171,7 @@ const SubMenu: React.FC<SubMenuProps> = ({ label, icon: SubIcon, children }) => 
       </div>
       {open && (
         <div
-          style={{
-            position: 'absolute',
-            ...(flipLeft
-              ? { right: '100%', left: 'auto', marginRight: '4px' }
-              : { left: '100%', right: 'auto', marginLeft: '4px' }),
-            ...(shiftUp
-              ? { bottom: 0, top: 'auto' }
-              : { top: 0, bottom: 'auto' }),
-          }}
+          style={positionStyle}
           className="min-w-[220px] max-w-[280px] max-h-[70vh] overflow-y-auto custom-scrollbar bg-card/95 border border-border/80 shadow-2xl rounded-xl py-1.5 backdrop-blur-2xl z-[160] flex flex-col font-mono"
         >
           {children}
@@ -438,55 +440,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           </div>
         </div>
 
-        {/* Project / World Profile Selector */}
-        <div className="relative hidden xl:block">
-          <button
-            onClick={() => setWorldDropdownOpen((prev) => !prev)}
-            className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-background/50 border border-border/60 hover:border-primary/50 text-[10px] text-foreground transition-all cursor-pointer"
-            title="Switch World Profile / Project Identity"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span className="font-bold truncate max-w-[110px]">{activeProfile?.name || 'Default Realm'}</span>
-            <ChevronDown className="w-3 h-3 text-muted-foreground" />
-          </button>
-
-          {worldDropdownOpen && (
-            <div className="absolute top-full left-0 mt-1 min-w-[200px] bg-card/95 border border-border shadow-2xl rounded-xl py-1.5 backdrop-blur-2xl z-[160] flex flex-col font-mono text-xs">
-              <div className="px-3 py-1 text-[9px] font-bold text-muted-foreground uppercase border-b border-border/40">
-                World Profiles
-              </div>
-              {profiles.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={async () => {
-                    soundSynth?.playSelectSound?.();
-                    setActiveGameId(p.id);
-                    await setActiveWorldProfile(p.id);
-                    setWorldDropdownOpen(false);
-                    showToast(`Active World: ${p.name}`);
-                  }}
-                  className={`px-3 py-1.5 text-left text-[11px] flex items-center justify-between hover:bg-primary/20 ${
-                    p.id === activeGameId ? 'text-primary font-bold bg-primary/10' : 'text-foreground'
-                  }`}
-                >
-                  <span>{p.name}</span>
-                  {p.id === activeGameId && <CheckCircle2 className="w-3 h-3 text-primary" />}
-                </button>
-              ))}
-              <div className="h-px bg-border/40 my-1" />
-              <button
-                onClick={() => {
-                  setWorldDropdownOpen(false);
-                  openPanel('settings');
-                }}
-                className="px-3 py-1 text-left text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1.5"
-              >
-                <Settings className="w-3 h-3" />
-                <span>Realm Settings...</span>
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Project / World Profile Selector (Removed per UI plan) */}
 
         {/* Active Document Breadcrumb & Save Indicator */}
         <div className="hidden md:flex items-center gap-1 bg-background/50 border border-border/60 rounded-lg px-2 py-0.5 text-[10px]">
@@ -609,26 +563,13 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               <MenuItem label="World Data..." icon={Folder} onClick={() => { openPanel('build'); showToast('World Data export available in World Builder'); }} />
               <MenuItem label="Blueprint / Structure..." icon={Package} onClick={() => { openPanel('prefab'); showToast('Blueprint export available in Prefab Studio'); }} />
             </SubMenu>
-            <MenuItem label="Publish & Releases..." icon={CloudUpload} onClick={() => openPanel('publishing')} />
-            <MenuItem divider />
-            <MenuItem label="Re-initialize Realm Setup..." icon={Gamepad2} onClick={() => setReinitializeModalOpen(true)} />
-            <MenuItem
-              label="Repair Foundation & Catalogs"
-              icon={Sparkles}
-              onClick={async () => {
-                showToast('Verifying & repairing realm foundation...');
-                try {
-                  const res = await fetch('/api/maps');
-                  if (res.ok) {
-                    showToast('Realm foundation verified & catalogs synced.');
-                  } else {
-                    showToast('Foundation check completed.');
-                  }
-                } catch {
-                  showToast('Foundation check completed.');
-                }
-              }}
-            />
+            <MenuItem label="Publish..." icon={CloudUpload} onClick={() => openPanel('publishing')} />
+            <SubMenu label="Release" icon={Package}>
+              <MenuItem label="Create Release..." icon={Plus} onClick={() => { openPanel('releases'); window.dispatchEvent(new CustomEvent('studio_open_release_create')); }} />
+              <MenuItem label="Manage Releases..." icon={Settings} onClick={() => openPanel('releases')} />
+              <MenuItem label="Release History" icon={ScrollText} onClick={() => openPanel('releases')} />
+              <MenuItem label="Release Settings..." icon={Settings} onClick={() => openPanel('releases')} />
+            </SubMenu>
             <MenuItem divider />
             <MenuItem label="Save & Exit to Lobby" shortcut="Ctrl+Shift+Q" icon={LogOut} onClick={() => { window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT)); setTimeout(() => { window.location.href = '/lobby'; }, 500); }} />
             <MenuItem label="Exit to Lobby" icon={LogOut} onClick={() => { const hasUnsaved = useEditorStore.getState().hasUnsavedChanges || useEditorStore.getState().mapDirty; if (hasUnsaved) { if (confirm('You have unsaved changes. Exit without saving?')) { window.location.href = '/lobby'; } } else { window.location.href = '/lobby'; } }} />
@@ -696,6 +637,34 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               />
               <MenuItem label="Open Transform Window..." icon={Sliders} onClick={() => openPanel('transform')} />
             </SubMenu>
+            <MenuItem divider />
+            <SubMenu label="Studio Settings" icon={Settings}>
+              <MenuItem label="Diagnostics & Problems" icon={AlertCircle} onClick={() => openPanel('problems')} />
+              <MenuItem label="Streaming Inspector" icon={Compass} onClick={() => openPanel('streaming')} />
+              <MenuItem label="Rule Debugger" icon={Bug} onClick={() => window.dispatchEvent(new CustomEvent('studio_open_rule_debugger'))} />
+              <MenuItem label="Simulation Presets" icon={Activity} onClick={() => openPanel('simulation')} />
+              <MenuItem label="Dev Tools & Server Controls" icon={Terminal} onClick={() => openPanel('dev')} />
+              <MenuItem label="Realm Settings" icon={Settings} onClick={() => openPanel('settings')} />
+              <MenuItem divider />
+              <MenuItem label="Re-initialize Realm Setup..." icon={Gamepad2} onClick={() => setReinitializeModalOpen(true)} />
+              <MenuItem
+                label="Repair Foundation & Catalogs"
+                icon={Sparkles}
+                onClick={async () => {
+                  showToast('Verifying & repairing realm foundation...');
+                  try {
+                    const res = await fetch('/api/maps');
+                    if (res.ok) {
+                      showToast('Realm foundation verified & catalogs synced.');
+                    } else {
+                      showToast('Foundation check completed.');
+                    }
+                  } catch {
+                    showToast('Foundation check completed.');
+                  }
+                }}
+              />
+            </SubMenu>
           </TopLevelMenu>
 
           {/* â”€â”€ 3. VIEW â”€â”€ */}
@@ -720,11 +689,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               <MenuItem label="Reset Zoom (100%)" shortcut="Ctrl+0" icon={Crosshair} onClick={() => { window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent: 100 } })); }} />
               <MenuItem label="Fit Map to View" shortcut="Home" icon={Maximize2} onClick={() => { window.dispatchEvent(new CustomEvent('studio_fit_map')); }} />
             </SubMenu>
-            <SubMenu label="Diagnostics" icon={AlertCircle}>
-              <MenuItem label="Diagnostics & Problems" icon={AlertCircle} onClick={() => openPanel('problems')} />
-              <MenuItem label="Streaming Inspector" icon={Compass} onClick={() => openPanel('streaming')} />
-              <MenuItem label="Rule Debugger" icon={Bug} onClick={() => window.dispatchEvent(new CustomEvent('studio_open_rule_debugger'))} />
-            </SubMenu>
+            {/* Diagnostics moved to Studio Settings */}>
           </TopLevelMenu>
 
           {/* â”€â”€ 4. WORLD â”€â”€ */}
@@ -738,76 +703,6 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem divider />
             <MenuItem label="World Events" icon={Sparkles} onClick={() => openPanel('worldevent')} />
             <MenuItem label="Procedural Authoring" icon={Sparkles} onClick={() => openPanel('procedural')} />
-            <MenuItem label="Realm Settings" icon={Settings} onClick={() => openPanel('settings')} />
-          </TopLevelMenu>
-
-          {/* â”€â”€ 5. CREATE â”€â”€ */}
-          <TopLevelMenu id="create" label="Create">
-            <SubMenu label="Terrain" icon={Layers}>
-              <MenuItem label="Draw Volume" icon={Box} onClick={() => { setActiveWorkflowTool('draw'); useEditorStore.getState().setBrushMode('paint'); showToast('Active Tool: Draw Volume'); }} />
-              <MenuItem label="Replace Volume" icon={RotateCw} onClick={() => { setActiveWorkflowTool('draw'); showToast('Active Tool: Replace Volume'); }} />
-              <MenuItem label="Erase Volume" icon={Trash2} onClick={() => { setActiveWorkflowTool('draw'); useEditorStore.getState().setBrushMode('erase'); showToast('Active Tool: Erase Volume'); }} />
-              <MenuItem label="Fill Volume" icon={Maximize2} onClick={() => { setActiveWorkflowTool('draw'); useEditorStore.getState().setBrushMode('fill'); showToast('Active Tool: Fill Volume'); }} />
-              <MenuItem label="Sculpt Terrain" icon={Sliders} onClick={() => { setActiveWorkflowTool('sculpt'); showToast('Active Tool: Sculpt Terrain'); }} />
-              <MenuItem label="Flatten Terrain" icon={Minus} onClick={() => { setActiveWorkflowTool('sculpt'); showToast('Active Tool: Flatten Terrain'); }} />
-              <MenuItem label="Smooth Terrain" icon={Sparkles} onClick={() => { setActiveWorkflowTool('sculpt'); showToast('Active Tool: Smooth Terrain'); }} />
-              <MenuItem label="Slope Ramp Terrain" icon={Sliders} onClick={() => { setActiveWorkflowTool('sculpt'); showToast('Active Tool: Slope Ramp'); }} />
-            </SubMenu>
-            <SubMenu label="Shapes" icon={Box}>
-              {[
-                { id: 1, label: 'Full Cube (Solid)' },
-                { id: 2, label: 'Slope Ramp (45Â°)' },
-                { id: 3, label: 'Gentle Slope (22.5Â°)' },
-                { id: 5, label: 'Corner Wedge (Outer)' },
-                { id: 6, label: 'Corner Wedge (Inner)' },
-                { id: 7, label: 'Half Slab (Bottom)' },
-                { id: 8, label: 'Half Slab (Top)' },
-                { id: 9, label: 'Stairs (Straight)' },
-              ].map((s) => (
-                <MenuItem
-                  key={s.id}
-                  label={s.label}
-                  icon={Box}
-                  onClick={() => {
-                    useEditorStore.getState().setActiveVoxelShape(s.id);
-                    showToast(`Shape: ${s.label}`);
-                  }}
-                />
-              ))}
-            </SubMenu>
-            <SubMenu label="Objects" icon={Package}>
-              <MenuItem label="Place Prop..." icon={Package} onClick={() => { setActiveWorkflowTool('place'); openPanel('assets'); showToast('Pick a prop from Asset Manager'); }} />
-              <MenuItem label="Place Blueprint / Stamp..." icon={Package} onClick={() => { setActiveWorkflowTool('place'); openPanel('prefab'); showToast('Pick a blueprint to stamp'); }} />
-            </SubMenu>
-            <SubMenu label="Entities" icon={Users}>
-              <MenuItem label="Place NPC..." icon={Users} onClick={() => { openPanel('npc'); showToast('NPC Studio opened for placement'); }} />
-              <MenuItem label="Place Creature Spawn..." icon={PawPrint} onClick={() => { openPanel('spawner'); showToast('Creature Spawner opened'); }} />
-              <MenuItem label="Connect Warp Gate / Portal..." icon={Globe} onClick={() => { openPanel('logic'); showToast('Click Gate in Logic Painter'); }} />
-            </SubMenu>
-            <SubMenu label="Content Hooks" icon={ScrollText}>
-              <MenuItem label="Quest Hook..." icon={ScrollText} onClick={() => openPanel('quest')} />
-              <MenuItem label="Dialogue Hook..." icon={MessageSquare} onClick={() => openPanel('dialogue')} />
-              <MenuItem label="Encounter Rule..." icon={Sword} onClick={() => openPanel('gameplay')} />
-            </SubMenu>
-          </TopLevelMenu>
-
-          {/* â”€â”€ 6. TOOLS â”€â”€ */}
-          <TopLevelMenu id="tools" label="Tools">
-            <MenuItem label="Material Library" icon={Palette} onClick={() => openPanel('materials')} />
-            <MenuItem label="Brush Settings / World Builder" icon={LayoutGrid} onClick={() => openPanel('build')} />
-            <MenuItem label="Selection Window" icon={Crosshair} onClick={() => openPanel('selection')} />
-            <MenuItem label="Transform Window" icon={RotateCw} onClick={() => openPanel('transform')} />
-            <MenuItem label="Prefab / Blueprint Library" icon={Package} onClick={() => openPanel('prefab')} />
-            <MenuItem label="Asset Browser" icon={Box} onClick={() => openPanel('assets')} />
-            <MenuItem label="Animation Studio" icon={Film} onClick={() => openPanel('animations')} />
-            <MenuItem divider />
-            <MenuItem label="Hero Studio" icon={UserCheck} onClick={() => setStudioMode('hero')} />
-            <MenuItem label="Gameplay & Combat Hub" icon={Activity} onClick={() => openPanel('gameplay')} />
-            <MenuItem label="Simulation Presets" icon={Activity} onClick={() => openPanel('simulation')} />
-            <MenuItem label="Interface Designer" icon={Palette} onClick={() => openPanel('interface')} />
-            <MenuItem divider />
-            <MenuItem label="Dev Tools & Server Controls" icon={Terminal} onClick={() => openPanel('dev')} />
-            <MenuItem label="System Maintenance & Updater" icon={Terminal} onClick={() => { window.location.href = '/admin/dev/system'; }} />
             <MenuItem label="Realm Settings" icon={Settings} onClick={() => openPanel('settings')} />
           </TopLevelMenu>
 
@@ -857,23 +752,22 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuSectionLabel label="Content Windows" />
             <MenuItem label="NPC Studio" icon={panels.npc?.isOpen ? CheckCircle2 : Users} onClick={() => togglePanel('npc')} />
             <MenuItem label="Creature Studio" icon={panels.creature?.isOpen ? CheckCircle2 : PawPrint} onClick={() => togglePanel('creature')} />
-            <MenuItem label="Ability Studio" icon={panels.abilities?.isOpen ? CheckCircle2 : Wand2} onClick={() => togglePanel('abilities')} />
+            <MenuItem label="Gameplay & Systems Studio" icon={panels.abilities?.isOpen ? CheckCircle2 : Activity} onClick={() => togglePanel('abilities')} />
             <MenuItem label="Monster Spawner" icon={panels.spawner?.isOpen ? CheckCircle2 : Sword} onClick={() => togglePanel('spawner')} />
             <MenuItem label="Quest Studio" icon={panels.quest?.isOpen ? CheckCircle2 : ScrollText} onClick={() => togglePanel('quest')} />
             <MenuItem label="Dialogue Editor" icon={panels.dialogue?.isOpen ? CheckCircle2 : MessageSquare} onClick={() => togglePanel('dialogue')} />
             <MenuItem label="Item Studio" icon={panels.items?.isOpen ? CheckCircle2 : Package} onClick={() => togglePanel('items')} />
             <MenuItem label="Loot Manager" icon={panels.loot?.isOpen ? CheckCircle2 : Coins} onClick={() => togglePanel('loot')} />
-            <MenuItem label="Profession Studio" icon={panels.classes?.isOpen ? CheckCircle2 : Wrench} onClick={() => togglePanel('classes')} />
             <MenuItem label="Mount Studio" icon={panels.mounts?.isOpen ? CheckCircle2 : Sparkles} onClick={() => togglePanel('mounts')} />
             <MenuItem label="Dungeon Studio" icon={panels.dungeons?.isOpen ? CheckCircle2 : Shield} onClick={() => togglePanel('dungeons')} />
             <MenuItem divider />
+            <MenuSectionLabel label="Global Workspaces" />
+            <MenuItem label="Hero Studio" icon={UserCheck} onClick={() => setStudioMode('hero')} />
+            <MenuItem label="Asset Studio" icon={Box} onClick={() => setStudioMode('assets')} />
+            <MenuItem label="Interface Designer (HUD)" icon={panels.interface?.isOpen ? CheckCircle2 : Palette} onClick={() => togglePanel('interface')} />
+            <MenuItem divider />
             <MenuSectionLabel label="Assets & System" />
             <MenuItem label="Asset Browser" icon={panels.assets?.isOpen ? CheckCircle2 : Box} onClick={() => togglePanel('assets')} />
-            <MenuItem label="Animation Studio" icon={panels.animations?.isOpen ? CheckCircle2 : Film} onClick={() => togglePanel('animations')} />
-            <MenuItem label="Interface Designer" icon={panels.interface?.isOpen ? CheckCircle2 : Palette} onClick={() => togglePanel('interface')} />
-            <MenuItem label="Publish & Releases" icon={panels.publishing?.isOpen ? CheckCircle2 : CloudUpload} onClick={() => togglePanel('publishing')} />
-            <MenuItem label="Streaming Inspector" icon={panels.streaming?.isOpen ? CheckCircle2 : Compass} onClick={() => togglePanel('streaming')} />
-            <MenuItem label="Dev Tools & Server Controls" icon={panels.dev?.isOpen ? CheckCircle2 : Terminal} onClick={() => togglePanel('dev')} />
           </TopLevelMenu>
 
           {/* â”€â”€ 8. HELP â”€â”€ */}
