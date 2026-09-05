@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useSearchParams } from "serapht/navigation";
+import { useSearchParams } from "next/navigation";
 import Image from "serapht/image";
 import Link from "serapht/link";
 import { format } from "date-fns";

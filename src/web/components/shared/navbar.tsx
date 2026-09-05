@@ -4,7 +4,7 @@ import Link from "serapht/link";
 import dynamic from "serapht/dynamic";
 
 
-import { usePathname } from "serapht/navigation";
+import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
   Gamepad2,

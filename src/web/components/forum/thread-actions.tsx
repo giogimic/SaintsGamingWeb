@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { MoreHorizontal, Flag, FolderInput, Share2, Trash2, Edit } from "lucide-react";
-import { useRouter } from "serapht/navigation";
+import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,

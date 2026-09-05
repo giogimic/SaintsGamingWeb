@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'serapht/navigation';
+import { useRouter } from 'next/navigation';
 import {
   Gamepad2,
   Sparkles,

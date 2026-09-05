@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "serapht/navigation";
+import { useRouter } from "next/navigation";
 import { Button } from "@/web/components/ui/button";
 import { Input } from "@/web/components/ui/input";
 import { MarkdownEditor } from "./markdown-editor";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useOptimistic, useTransition } from "react";
-import { useRouter } from "serapht/navigation";
+import { useRouter } from "next/navigation";
 import { Button } from "@/web/components/ui/button";
 import { ThumbsUp } from "lucide-react";
 
