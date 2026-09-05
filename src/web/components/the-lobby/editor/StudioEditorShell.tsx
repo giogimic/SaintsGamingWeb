@@ -43,6 +43,7 @@ import {
   Camera,
   Crosshair,
   RotateCw,
+  Wand2
 } from 'lucide-react';
 import { resolveTilesetTextureUrl } from '@/shared/game/tileBatchHelpers';
 import { useGameStore } from '../store';
@@ -68,6 +69,7 @@ const EntityEditorPanel = lazy(() => import('./panels/EntityEditorPanel').then((
 const DevToolsPanel = lazy(() => import('./panels/DevToolsPanel').then((m) => ({ default: m.DevToolsPanel })));
 const StreamingInspectorPanel = lazy(() => import('./panels/StreamingInspectorPanel').then((m) => ({ default: m.StreamingInspectorPanel })));
 const CreatureDefEditorPanel = lazy(() => import('./panels/CreatureDefEditorPanel').then((m) => ({ default: m.CreatureDefEditorPanel })));
+const AbilityEditorPanel = lazy(() => import('./panels/AbilityEditorPanel').then((m) => ({ default: m.AbilityEditorPanel })));
 const QuestEditorPanel = lazy(() => import('./panels/QuestEditorPanel').then((m) => ({ default: m.QuestEditorPanel })));
 const DialogueEditorPanel = lazy(() => import('./panels/DialogueEditorPanel').then((m) => ({ default: m.DialogueEditorPanel })));
 const LootManagerPanel = lazy(() => import('./panels/LootManagerPanel').then((m) => ({ default: m.LootManagerPanel })));
@@ -104,10 +106,17 @@ import { RuleDebuggerOverlay } from './RuleDebuggerOverlay';
 import { DraggablePanel } from './DraggablePanel';
 import { StudioEscapeMenu } from './StudioEscapeMenu';
 import { StudioContextualBar } from './StudioContextualBar';
+import { setStudioMode as setStudioModeGlobal } from '../data/maps';
 
 
 export const StudioEditorShell: React.FC = () => {
   const { data: session } = useSession();
+  
+  useEffect(() => {
+    setStudioModeGlobal(true);
+    return () => setStudioModeGlobal(false);
+  }, []);
+
   const permissionLevel = (session?.user as any)?.permissionLevel ?? 0;
   const isCreationMode = useEditorStore((state) => state.isCreationMode);
   const studioMode = useEditorStore((state) => state.studioMode);
@@ -127,8 +136,22 @@ export const StudioEditorShell: React.FC = () => {
   
   const [omnisearchOpen, setOmnisearchOpen] = useState(false);
   const [isStudioReady, setIsStudioReady] = useState(false);
+  const [isStreamingChunks, setIsStreamingChunks] = useState(false);
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tileR: number; tileC: number } | null>(null);
+
+  useEffect(() => {
+    const handleStart = () => setIsStreamingChunks(true);
+    const handleEnd = () => setIsStreamingChunks(false);
+    
+    window.addEventListener('map-streaming-start', handleStart);
+    window.addEventListener('map-streaming-end', handleEnd);
+    
+    return () => {
+      window.removeEventListener('map-streaming-start', handleStart);
+      window.removeEventListener('map-streaming-end', handleEnd);
+    };
+  }, []);
 
   useEffect(() => {
     // Restore dock geometry, then enter World Atlas Mode by default.
@@ -347,6 +370,31 @@ export const StudioEditorShell: React.FC = () => {
           </div>
         </div>
       )}
+      {useEditorStore((s) => s.isGeneratingRegion) && (
+        <div className="pointer-events-auto fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#050b14]/90 backdrop-blur-xl transition-opacity duration-500">
+          <div className="flex flex-col items-center justify-center animate-pulse">
+            <Loader2 className="h-16 w-16 text-primary animate-spin mb-6" />
+            <h1 className="font-sans font-bold text-3xl sg-text-gradient mb-2 tracking-wide">Generating Region Data</h1>
+            <p className="text-muted-foreground text-sm font-mono tracking-widest uppercase">Streaming Procedural Chunks...</p>
+          </div>
+        </div>
+      )}
+      {useEditorStore((s) => s.isSavingMap) && (
+        <div className="pointer-events-auto fixed inset-0 z-[9998] flex flex-col items-center justify-center bg-[#050b14]/70 backdrop-blur-md transition-opacity duration-300">
+          <div className="flex flex-col items-center justify-center animate-pulse">
+            <Loader2 className="h-10 w-10 text-amber-500 animate-spin mb-4" />
+            <span className="font-mono font-bold text-lg text-amber-500 tracking-widest">SAVING WORLD DATA...</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Subtle HUD indicator for background chunk streaming */}
+      {isStreamingChunks && (
+        <div className="pointer-events-none fixed bottom-12 right-6 z-[9990] flex items-center gap-3 rounded-full border border-primary/20 bg-card/80 backdrop-blur-md px-4 py-2 shadow-lg transition-opacity duration-300">
+          <Loader2 className="h-4 w-4 text-primary animate-spin" />
+          <span className="font-mono text-xs font-bold text-primary tracking-widest uppercase">Streaming Region Data...</span>
+        </div>
+      )}
       <div className={`fixed inset-0 pointer-events-none z-[100] flex flex-col pt-10 pb-9 ${!isStudioReady ? 'opacity-0' : 'opacity-100 transition-opacity duration-500'}`}>
         {typeof window !== 'undefined' && !(window as any).electronAPI && (
           <div className="pointer-events-auto">
@@ -425,6 +473,12 @@ export const StudioEditorShell: React.FC = () => {
           {canUseStudioDock(permissionLevel, 'creature') && (
             <DraggablePanel id="creature" icon={<PawPrint className="w-4 h-4" />} title="Creatures">
               <Suspense fallback={<div>Loading...</div>}><CreatureDefEditorPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'abilities') && (
+            <DraggablePanel id="abilities" icon={<Wand2 className="w-4 h-4" />} title="Abilities">
+              <Suspense fallback={<div>Loading...</div>}><AbilityEditorPanel /></Suspense>
             </DraggablePanel>
           )}
 

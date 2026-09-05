@@ -304,6 +304,7 @@ interface EditorState {
   hasUnsavedChanges: boolean;
   /** True while async map save POST request is in flight. */
   isSavingMap: boolean;
+  isGeneratingRegion: boolean;
   /** Map-scope undo/redo (bible 30). */
   opStack: EditorOpStack;
   /** Definition-form undo/redo (bible 30 — separate from map ops). */
@@ -521,6 +522,7 @@ interface EditorState {
   clearMapDirty: () => void;
   setHasUnsavedChanges: (val: boolean) => void;
   setIsSavingMap: (val: boolean) => void;
+  setIsGeneratingRegion: (val: boolean) => void;
   pushPaintOp: (cells: PaintedCell[]) => void;
   pushVoxelOp: (voxels: PaintedVoxel[]) => void;
   pushFreeformOp: (before: any[], after: any[]) => void;
@@ -1012,6 +1014,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 600,
     zIndex: 10,
   },
+  abilities: {
+    id: 'abilities',
+    title: 'Abilities Editor',
+    isOpen: false,
+    isCollapsed: false,
+    x: 350,
+    y: 80,
+    width: 600,
+    height: 700,
+    zIndex: 10,
+  },
   hierarchy: {
     id: 'hierarchy',
     title: 'World Hierarchy',
@@ -1155,6 +1168,8 @@ export const useEditorStore = create<EditorState>()(
       mapDirty: false,
       hasUnsavedChanges: false,
       isSavingMap: false,
+      isGeneratingRegion: false,
+      viewportFocusToken: 0,
       opStack: emptyEditorOpStack(),
       definitionOpStack: emptyDefinitionOpStack(),
       openPieMenu: false,
@@ -2080,6 +2095,10 @@ export const useEditorStore = create<EditorState>()(
       setIsSavingMap: (val) =>
         set((state) => {
           state.isSavingMap = val;
+        }),
+      setIsGeneratingRegion: (val) =>
+        set((state) => {
+          state.isGeneratingRegion = val;
         }),
 
       pushPaintOp: (cells) =>

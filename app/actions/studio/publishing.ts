@@ -124,6 +124,18 @@ export async function createPublishSnapshot(input: {
       simulationPresetCount: simulations.length,
     };
 
+    // Fetch Draft Maps from Go Server
+    let draftMaps: any[] = [];
+    try {
+      const goMmoBase = process.env.GO_MMO_INTERNAL_URL || process.env.NEXT_PUBLIC_GO_MMO_URL || 'http://localhost:3002';
+      const res = await fetch(`${goMmoBase}/api/maps?action=drafts`);
+      if (res.ok) {
+        draftMaps = await res.json();
+      }
+    } catch (e) {
+      console.warn("Failed to fetch map drafts for publish snapshot", e);
+    }
+
     const payload = {
       gameId,
       profileId,
@@ -133,6 +145,7 @@ export async function createPublishSnapshot(input: {
       mounts,
       events,
       simulations,
+      maps: draftMaps,
     };
 
     const versionTag =
@@ -250,6 +263,49 @@ export async function rollbackToSnapshot(snapshotId: string) {
     return { success: true as const };
   } catch (err: any) {
     console.error("[rollbackToSnapshot]", err);
-    return { success: false as const, error: "Failed to restore snapshot" };
+    return { success: false as const, error: "Failed to rollback" };
+  }
+}
+
+/**
+ * Deploy an immutable publish snapshot to the live Go server.
+ */
+export async function deployRelease(snapshotId: string) {
+  const isAdmin = await checkAdminPermission();
+  if (!isAdmin) return { success: false, error: "Unauthorized" };
+
+  try {
+    const snapshot = await prisma.worldPublishSnapshot.findUnique({
+      where: { id: snapshotId },
+    });
+
+    if (!snapshot) return { success: false, error: "Snapshot not found" };
+
+    const payload = JSON.parse(snapshot.snapshotPayload);
+    const maps = payload.maps || [];
+
+    if (maps.length > 0) {
+      const goMmoBase = process.env.GO_MMO_INTERNAL_URL || process.env.NEXT_PUBLIC_GO_MMO_URL || 'http://localhost:3002';
+      const secret = process.env.AUTH_SECRET || '';
+
+      const res = await fetch(`${goMmoBase}/api/internal/deploy-release`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${secret}`,
+          'X-Saints-Internal-Secret': secret
+        },
+        body: JSON.stringify({ maps })
+      });
+
+      if (!res.ok) {
+        throw new Error(`Go Server returned ${res.status}`);
+      }
+    }
+
+    return { success: true as const };
+  } catch (err: any) {
+    console.error("[deployRelease]", err);
+    return { success: false as const, error: "Failed to deploy release" };
   }
 }

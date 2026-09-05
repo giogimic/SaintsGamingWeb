@@ -6,10 +6,13 @@ import { resolveVoxelTarget, type VoxelTargetResolution } from '../shared/game/v
 import { resolveConstrainedVoxelCoordinates, type VoxelBrushAxis } from '../shared/game/voxel/VoxelWord';
 import { type BrushShape } from '../shared/game/brushGeometry';
 import { isTilePickTarget } from '../shared/game/tilePaint';
+import { ChunkStreamer } from './voxel/ChunkStreamer';
 
 
 export class VoxelController {
-  private engine: BabylonEngine;
+  public engine: BabylonEngine;
+  public chunkStreamer?: ChunkStreamer;
+
   constructor(engine: BabylonEngine) {
     this.engine = engine;
   }
@@ -55,6 +58,9 @@ public loadVoxelWorld(docOrWorld: VoxelWorld | VoxelWorldDocV3) {
     // Register with SpatialVoxelWorldManager
     SpatialVoxelWorldManager.getInstance().registerWorld(this.voxelWorld, 0, 0);
 
+    // Initialize ChunkStreamer
+    this.chunkStreamer = new ChunkStreamer(this.voxelWorld.id, this);
+
     for (const chunk of this.voxelWorld.chunks.values()) {
       const result = this.voxelMesher.meshChunk(this.voxelWorld, chunk);
       if (result) {
@@ -70,6 +76,12 @@ public loadVoxelWorld(docOrWorld: VoxelWorld | VoxelWorldDocV3) {
           this.streamAdjacentVoxelMap(c.mapId, c.voxelDoc, c.offsetX || 0, c.offsetZ || 0);
         }
       }
+    }
+  }
+
+  public forceLoadChunk(cx: number, cz: number) {
+    if (this.chunkStreamer) {
+      this.chunkStreamer.forceLoadChunk(cx, cz);
     }
   }
 
@@ -275,4 +287,15 @@ public clearVoxelCursor(): void {
     }
   }
 
+  public update(): void {
+    if (this.chunkStreamer && this.engine.renderer?.camera) {
+      // Convert camera position to chunk coordinates
+      const camPos = this.engine.renderer.camera.position;
+      const blockSize = this.voxelWorld?.blockSizePx || 64; // Default to 64
+      const cx = Math.floor(camPos.x / (32 * blockSize));
+      const cz = Math.floor(camPos.z / (32 * blockSize));
+      
+      this.chunkStreamer.updateStreaming(cx, cz);
+    }
+  }
 }

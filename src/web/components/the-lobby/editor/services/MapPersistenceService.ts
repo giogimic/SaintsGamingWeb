@@ -71,12 +71,23 @@ export class MapPersistenceService {
 
     // Ensure voxel world is synchronized from live engine instance if present
     let activeVoxelDoc = live.voxelDoc;
-    const spatialWorld = SpatialVoxelWorldManager.getInstance().getWorld(baseMapId);
-    if (spatialWorld) {
-      activeVoxelDoc = spatialWorld.serializeToDoc();
-    } else if (typeof window !== 'undefined' && (window as any).__sg_babylon_engine?.voxelWorld) {
-      activeVoxelDoc = (window as any).__sg_babylon_engine.voxelWorld.serializeToDoc();
+    const engine = typeof window !== 'undefined' ? (window as any).__sg_babylon_engine : null;
+
+    if (engine?.voxel?.chunkStreamer) {
+      await engine.voxel.chunkStreamer.saveDirtyChunks();
+      // If we are streaming, we don't save the chunks in the map document.
+      // But we still serialize the palette, dimensions, etc.
+      activeVoxelDoc = engine.voxel.voxelWorld.serializeToDoc();
+      activeVoxelDoc.chunks = {}; 
+    } else {
+      const spatialWorld = SpatialVoxelWorldManager.getInstance().getWorld(baseMapId);
+      if (spatialWorld) {
+        activeVoxelDoc = spatialWorld.serializeToDoc();
+      } else if (engine?.voxelWorld) {
+        activeVoxelDoc = engine.voxelWorld.serializeToDoc();
+      }
     }
+
     if (activeVoxelDoc) {
       activeVoxelDoc.id = baseMapId;
       if (live.name) activeVoxelDoc.name = live.name;

@@ -81,8 +81,25 @@ export class BrushToolHandler implements IToolHandler {
       if (targetCoords.length === 0) return true;
 
       const txBuilder = new VoxelTransactionBuilder('Brush Paint Voxel', liveMap.id || '');
+      const missingChunks = new Set<string>();
+
       for (const { wx, wy, wz } of targetCoords) {
+        const { cx, cz, cy } = VoxelWorld.worldToChunkCoords(wx, wy, wz);
+        if (!voxelWorld.getChunk(cx, cz, cy, false)) {
+          missingChunks.add(`${cx}_${cz}`);
+          continue; // Discard voxel edit for unloaded chunk
+        }
         txBuilder.record(voxelWorld, wx, wy, wz, voxelWord);
+      }
+
+      if (missingChunks.size > 0 && (context.engine as any).voxelController) {
+        const controller = (context.engine as any).voxelController;
+        for (const key of missingChunks) {
+          const [cx, cz] = key.split('_').map(Number);
+          if (typeof controller.forceLoadChunk === 'function') {
+            controller.forceLoadChunk(cx, cz);
+          }
+        }
       }
 
       const tx = txBuilder.build();

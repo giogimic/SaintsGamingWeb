@@ -9,11 +9,14 @@
 import { prisma } from "@/web/lib/prisma";
 import { getAllProfessionDefs } from "@/shared/game/professions/professionRegistry";
 import { getSkillGuide } from "@/shared/game/skillGuideData";
+import { seedElements } from "./seedElements";
 
 export async function bootstrapDynamicStarterContent(gameId: string = "saints", profileId: string = "default") {
   console.log("[StarterContentBootstrap] Seeding dynamic RPG definitions…");
 
   try {
+    await seedElements();
+    
     // ── 0. ITEM TEMPLATES ──────────────────────────────────────────────────
     const starterItems = [
       {
@@ -813,6 +816,79 @@ export async function bootstrapDynamicStarterContent(gameId: string = "saints", 
             deleteMany: {},
             create: objectives,
           },
+        },
+      });
+    }
+
+    // ── 8. ABILITY DICTIONARY (Dual-Element Examples) ────────────────────────
+    const sampleAbilities = [
+      {
+        slug: "wildfire",
+        name: "Wildfire",
+        type: "skill",
+        domain: "both",
+        style: "MAGIC",
+        power: 35,
+        accuracy: 0.85,
+        cooldown: 8000,
+        manaCost: 20,
+        staminaCost: 0,
+        isCapture: false,
+        target: "aoe_enemies",
+        description: "A spreading fiery gust combining Fire and Wind. Leaves enemies burning and knocks them back.",
+        tags: '["fire", "wind"]',
+        vfxConfigJson: JSON.stringify({ type: "sprite_row", assetPath: "", animationRow: "spellcast", tintColor: "#f59e0b", scale: 1.5 }),
+        conditionsJson: JSON.stringify({ requiresElement: "fire", requiresAbility: "" }),
+      },
+      {
+        slug: "magma_slide",
+        name: "Magma Slide",
+        type: "skill",
+        domain: "both",
+        style: "MAGIC",
+        power: 45,
+        accuracy: 0.9,
+        cooldown: 12000,
+        manaCost: 25,
+        staminaCost: 0,
+        isCapture: false,
+        target: "enemy",
+        description: "A molten spout combining Fire and Earth that creates a lava pool.",
+        tags: '["fire", "earth"]',
+        vfxConfigJson: JSON.stringify({ type: "3d_model", assetPath: "/assets/vfx/magma.glb", animationRow: "spellcast", tintColor: "#d97706", scale: 1.2 }),
+        conditionsJson: JSON.stringify({ requiresElement: "earth", requiresAbility: "" }),
+      },
+      {
+        slug: "plasma_bolt",
+        name: "Plasma Bolt",
+        type: "skill",
+        domain: "both",
+        style: "MAGIC",
+        power: 50,
+        accuracy: 0.95,
+        cooldown: 15000,
+        manaCost: 30,
+        staminaCost: 0,
+        isCapture: false,
+        target: "enemy",
+        description: "An overload strike combining Fire and Lightning. Deals massive burst damage and shocks the target.",
+        tags: '["fire", "lightning"]',
+        vfxConfigJson: JSON.stringify({ type: "2d_billboard", assetPath: "/assets/vfx/plasma_bolt.png", animationRow: "spellcast", tintColor: "#eab308", scale: 1.0 }),
+        conditionsJson: JSON.stringify({ requiresElement: "lightning", requiresAbility: "" }),
+      },
+    ];
+
+    for (const ab of sampleAbilities) {
+      await prisma.abilityDictionary.upsert({
+        where: { slug: ab.slug },
+        create: {
+          ...ab,
+          consumableItemId: `item_skillbook_${ab.slug}`,
+          effects: "[]"
+        },
+        update: {
+          ...ab,
+          effects: "[]"
         },
       });
     }

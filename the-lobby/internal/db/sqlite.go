@@ -59,6 +59,19 @@ func migrate(db *sql.DB) error {
 			version INTEGER NOT NULL DEFAULT 1,
 			updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
 		)`,
+		`CREATE TABLE IF NOT EXISTS WorldMapDraft (
+			id TEXT PRIMARY KEY,
+			gameId TEXT DEFAULT 'saints',
+			name TEXT NOT NULL,
+			gridData TEXT NOT NULL,
+			gatesData TEXT NOT NULL DEFAULT '{}',
+			npcsData TEXT NOT NULL DEFAULT '[]',
+			encountersData TEXT NOT NULL DEFAULT '[]',
+			tileLayersData TEXT NOT NULL DEFAULT '[]',
+			tilesetsData TEXT NOT NULL DEFAULT '[]',
+			version INTEGER NOT NULL DEFAULT 1,
+			updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+		)`,
 		`CREATE TABLE IF NOT EXISTS GameMap (
 			id TEXT PRIMARY KEY,
 			name TEXT NOT NULL,

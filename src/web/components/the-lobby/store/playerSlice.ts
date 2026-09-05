@@ -39,7 +39,10 @@ player: {
         creaturesCaught: [],
         // Party system
         party: [],
-        isPartyLeader: false
+        isPartyLeader: false,
+        // Abilities
+        unlockedAbilities: [],
+        equippedAbilities: []
       },
 
 activeBattle: null,

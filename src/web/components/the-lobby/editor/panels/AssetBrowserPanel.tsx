@@ -70,12 +70,24 @@ export const AssetBrowserPanel: React.FC = () => {
       </WindowMenuBar>
 
       {/* Main Sprite Browser */}
-      <div className="flex-1 min-h-0 overflow-hidden p-2">
-        <SpriteBrowser
-          filterTags={studioMode === 'npc' ? ['npc'] : []}
-          filterType={studioMode === 'npc' ? 'CHARACTER' : undefined}
-          onSelect={handleSpriteSelect}
-        />
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+        <div className="p-3 bg-black/40 border-b border-border/30">
+          <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
+            <FolderOpen className="w-4 h-4" /> 
+            {studioMode === 'npc' ? 'Character Sprite Library' : 'Global Asset Library'}
+          </h3>
+          <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
+            Browse and manage all 2D sprites, VFX, and audio assets here. Need to extract a single animation from a large 2D spritesheet? Use the <strong>Sprite Slicer Tool</strong> in the menu above to automatically cut grids into individual frames.
+          </p>
+        </div>
+
+        <div className="flex-1 overflow-hidden p-2">
+          <SpriteBrowser
+            filterTags={studioMode === 'npc' ? ['npc'] : []}
+            filterType={studioMode === 'npc' ? 'CHARACTER' : undefined}
+            onSelect={handleSpriteSelect}
+          />
+        </div>
       </div>
     </div>
   );

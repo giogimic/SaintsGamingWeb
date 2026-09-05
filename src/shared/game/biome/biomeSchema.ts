@@ -47,14 +47,35 @@ export interface BiomeAnchorThreshold {
   gateCoordinates: Array<{ x: number; y: number; z: number }>;
 }
 
+export interface BiomeClimateConfig {
+  minTemp: number; // 0.0 to 1.0
+  maxTemp: number; // 0.0 to 1.0
+  minMoisture: number; // 0.0 to 1.0
+  maxMoisture: number; // 0.0 to 1.0
+}
+
+export interface BiomeFeaturePool {
+  spawnableFlora: Array<{
+    featureId: string; // e.g. 'oak_tree', 'cactus', 'boulder'
+    weight: number;    // Probability weight (higher = more common)
+  }>;
+  spawnableEntities: Array<{
+    entityId: string; // e.g. 'slime', 'bandit', 'wolf'
+    weight: number;
+    maxGroupSize: number;
+  }>;
+}
+
 export interface BiomeDefinition {
   id: string;
   name: string;
   description: string;
   seed: number;
+  climate: BiomeClimateConfig;
   terrain: BiomeTerrainConfig;
   strata: BiomeStrataConfig;
   environment: BiomeEnvironmentConfig;
+  features: BiomeFeaturePool;
   anchors?: BiomeAnchorThreshold[];
 }
 
@@ -64,6 +85,12 @@ export const CANONICAL_BIOMES: Record<string, BiomeDefinition> = {
     name: 'Emerald Plains',
     description: 'Gentle rolling hills with vibrant flora and lush topsoil.',
     seed: 42,
+    climate: {
+      minTemp: 0.3,
+      maxTemp: 0.7,
+      minMoisture: 0.4,
+      maxMoisture: 0.8,
+    },
     terrain: {
       baseHeight: 16,
       amplitude: 6,
@@ -86,12 +113,27 @@ export const CANONICAL_BIOMES: Record<string, BiomeDefinition> = {
       fogDensity: 0.012,
       gravity: [0, -9.81, 0],
     },
+    features: {
+      spawnableFlora: [
+        { featureId: 'oak_tree', weight: 10 },
+        { featureId: 'tall_grass', weight: 50 },
+      ],
+      spawnableEntities: [
+        { entityId: 'slime', weight: 5, maxGroupSize: 3 },
+      ],
+    },
   },
   golden_dunes: {
     id: 'golden_dunes',
     name: 'Golden Dunes',
     description: 'Sweeping desert dunes with deep sandstone strata.',
     seed: 1337,
+    climate: {
+      minTemp: 0.7,
+      maxTemp: 1.0,
+      minMoisture: 0.0,
+      maxMoisture: 0.3,
+    },
     terrain: {
       baseHeight: 14,
       amplitude: 10,
@@ -114,12 +156,27 @@ export const CANONICAL_BIOMES: Record<string, BiomeDefinition> = {
       fogDensity: 0.02,
       gravity: [0, -9.81, 0],
     },
+    features: {
+      spawnableFlora: [
+        { featureId: 'cactus', weight: 15 },
+        { featureId: 'dead_bush', weight: 30 },
+      ],
+      spawnableEntities: [
+        { entityId: 'scorpion', weight: 8, maxGroupSize: 2 },
+      ],
+    },
   },
   frostpeak_ridge: {
     id: 'frostpeak_ridge',
     name: 'Frostpeak Ridge',
     description: 'Jagged glacial spires and permafrost cliffs.',
     seed: 9999,
+    climate: {
+      minTemp: 0.0,
+      maxTemp: 0.3,
+      minMoisture: 0.2,
+      maxMoisture: 0.9,
+    },
     terrain: {
       baseHeight: 20,
       amplitude: 12,
@@ -141,6 +198,15 @@ export const CANONICAL_BIOMES: Record<string, BiomeDefinition> = {
       fogColorHex: '#09121f',
       fogDensity: 0.025,
       gravity: [0, -9.81, 0],
+    },
+    features: {
+      spawnableFlora: [
+        { featureId: 'pine_tree', weight: 8 },
+        { featureId: 'ice_crystal', weight: 5 },
+      ],
+      spawnableEntities: [
+        { entityId: 'yeti', weight: 2, maxGroupSize: 1 },
+      ],
     },
   },
 };

@@ -312,6 +312,34 @@ export class LobbySocketHandler {
         }
       });
 
+      // --- COMBAT ---
+      socket.on('combat_cast', (data: { abilityId: string, targetId?: string }) => {
+        try {
+          const player = this.shards.getPlayer(socket.id);
+          if (!player || !player.instanceId) return;
+
+          // TODO: Look up ability from DB or memory cache to get base power and MP cost
+          const baseDamage = 25; // Placeholder
+          const isCrit = Math.random() < 0.1;
+          const damage = isCrit ? Math.floor(baseDamage * 1.5) : baseDamage;
+
+          // If targeting an enemy, deduct their HP in the state (if tracked by server)
+          // For now, we just broadcast the visual result so all clients see it
+          
+          this.io.to(player.instanceId).emit('combat_update', {
+            type: 'ATTACK_RESULT',
+            attackerId: socket.id,
+            targetId: data.targetId,
+            abilityId: data.abilityId,
+            damage,
+            isCrit,
+            isMiss: false
+          });
+        } catch (err) {
+          console.error("[LobbySocket] combat_cast error:", err);
+        }
+      });
+
       // --- CHAT: WHISPER ---
       socket.on(RealtimeEvents.WHISPER, (cmd: WhisperCommand) => {
         try {

@@ -5,6 +5,64 @@
 
 import type { CreatureElementType } from "./creatureCatalog";
 
+export const ELEMENTAL_MULTIPLIERS = {
+  EFFECTIVE: 1.6,
+  RESISTED: 0.8,
+  IMMUNE: 0.4 // Serves as double-resist or highly ineffective
+} as const;
+
+export type ElementMatchupGraph = Record<string, { strongAgainst: string[], weakAgainst: string[] }>;
+
+/**
+ * 16-Element Matchup Graph based on Saints Gaming design rules.
+ */
+export const ELEMENT_MATCHUPS: ElementMatchupGraph = {
+  Normal: { strongAgainst: [], weakAgainst: ['Geo'] },
+  Fire: { strongAgainst: ['Nature', 'Ice', 'Bug', 'Steel'], weakAgainst: ['Water', 'Geo', 'Dragon'] },
+  Water: { strongAgainst: ['Fire', 'Geo'], weakAgainst: ['Nature', 'Electric', 'Dragon'] },
+  Nature: { strongAgainst: ['Water', 'Geo'], weakAgainst: ['Fire', 'Ice', 'Bug', 'Poison', 'Dragon'] },
+  Electric: { strongAgainst: ['Water'], weakAgainst: ['Geo', 'Nature', 'Dragon'] },
+  Ice: { strongAgainst: ['Nature', 'Geo', 'Dragon'], weakAgainst: ['Fire', 'Steel', 'Water'] },
+  Geo: { strongAgainst: ['Fire', 'Electric', 'Poison', 'Steel'], weakAgainst: ['Water', 'Nature', 'Ice'] },
+  Wind: { strongAgainst: ['Nature', 'Bug'], weakAgainst: ['Electric', 'Ice', 'Steel'] },
+  Shadow: { strongAgainst: ['Holy', 'Ghost'], weakAgainst: ['Holy'] },
+  Holy: { strongAgainst: ['Shadow', 'Undead'], weakAgainst: ['Shadow'] },
+  Bug: { strongAgainst: ['Nature', 'Shadow', 'Holy'], weakAgainst: ['Fire', 'Wind', 'Steel', 'Poison'] },
+  Poison: { strongAgainst: ['Nature', 'Holy'], weakAgainst: ['Geo', 'Poison', 'Ghost', 'Steel'] },
+  Steel: { strongAgainst: ['Ice', 'Geo'], weakAgainst: ['Fire', 'Water', 'Electric', 'Steel'] },
+  Ghost: { strongAgainst: ['Ghost', 'Holy'], weakAgainst: ['Shadow'] },
+  Dragon: { strongAgainst: ['Dragon'], weakAgainst: ['Steel'] },
+  Undead: { strongAgainst: ['Normal', 'Poison'], weakAgainst: ['Holy', 'Fire'] }
+};
+
+export function getElementalMultiplier(attackElement: string, targetPrimary: string, targetSecondary?: string): number {
+  if (!attackElement || attackElement.toLowerCase() === 'none') return 1.0;
+  
+  const getMult = (atk: string, def: string) => {
+    if (!def || def.toLowerCase() === 'none') return 1.0;
+    
+    const atkDef = ELEMENT_MATCHUPS[atk];
+    if (!atkDef) return 1.0;
+    
+    if (atkDef.strongAgainst.includes(def)) return ELEMENTAL_MULTIPLIERS.EFFECTIVE;
+    if (atkDef.weakAgainst.includes(def)) return ELEMENTAL_MULTIPLIERS.RESISTED;
+    return 1.0;
+  };
+
+  const primaryMult = getMult(attackElement, targetPrimary);
+  const secondaryMult = targetSecondary ? getMult(attackElement, targetSecondary) : 1.0;
+
+  let totalMult = primaryMult * secondaryMult;
+  
+  // Cap at 0.4 for highly resisted (e.g. double resist)
+  if (totalMult < ELEMENTAL_MULTIPLIERS.IMMUNE) {
+    totalMult = ELEMENTAL_MULTIPLIERS.IMMUNE;
+  }
+  
+  return totalMult;
+}
+
+
 export type AbilityCategory = "physical" | "special" | "utility" | "heal" | "buff";
 
 export type CombatAbility = {

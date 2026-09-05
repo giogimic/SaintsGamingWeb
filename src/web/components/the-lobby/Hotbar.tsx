@@ -44,34 +44,47 @@ export default function Hotbar() {
     return () => clearInterval(interval);
   }, [hasActiveCooldown]);
 
-  // RT MMO abilities only — capture tools are turn-based (bible 07 / 11)
+  // RT MMO abilities only
   const abilities = useMemo((): HotbarAbility[] => {
-    let list: HotbarAbility[];
-    const style = String(combatStyle || 'MELEE').toUpperCase();
-    if (style === 'MELEE' || style === 'WARRIOR' || style === 'BRAWLER') {
-      list = [
-        { id: 'strike', name: 'Power Strike', icon: '⚔️', cooldownMs: 1500, type: 'damage', mpCost: 0 },
-        { id: 'cleave', name: 'Cleave', icon: '🌪️', cooldownMs: 4000, type: 'damage', mpCost: 15 },
-        { id: 'dash', name: 'Phantom Dash', icon: '💨', cooldownMs: 8000, type: 'utility', mpCost: 10 },
-        { id: 'shout', name: 'War Cry', icon: '🗣️', cooldownMs: 12000, type: 'buff', mpCost: 20 },
-      ];
-    } else if (style === 'MAGIC' || style === 'MAGE' || style === 'INVOKER') {
-      list = [
-        { id: 'fireball', name: 'Fireball', icon: '🔥', cooldownMs: 2000, type: 'damage', mpCost: 10 },
-        { id: 'frost', name: 'Frost Nova', icon: '❄️', cooldownMs: 6000, type: 'damage', mpCost: 25 },
-        { id: 'blink', name: 'Arcane Blink', icon: '✨', cooldownMs: 8000, type: 'utility', mpCost: 15 },
-        { id: 'shield', name: 'Mana Shield', icon: '🛡️', cooldownMs: 15000, type: 'buff', mpCost: 30 },
-      ];
-    } else {
-      list = [
-        { id: 'shoot', name: 'Precision Shot', icon: '🏹', cooldownMs: 1200, type: 'damage', mpCost: 0 },
-        { id: 'multishot', name: 'Arrow Volley', icon: '🌧️', cooldownMs: 5000, type: 'damage', mpCost: 15 },
-        { id: 'trap', name: 'Static Snare', icon: '🕸️', cooldownMs: 10000, type: 'utility', mpCost: 10 },
-        { id: 'heal', name: 'Emergency Bandage', icon: '🩹', cooldownMs: 20000, type: 'heal', mpCost: 20 },
-      ];
+    const equipped = useGameStore.getState().player.equippedAbilities || [];
+    const registryAbilities = useGameStore.getState().gameRegistry?.abilities || [];
+    
+    // Map equipped ability IDs to full dictionary entries
+    const list: HotbarAbility[] = equipped.map(slug => {
+      const def = registryAbilities.find(a => a.slug === slug);
+      if (!def) {
+        return {
+          id: slug,
+          name: slug,
+          icon: '/assets/icons/skills/default.svg',
+          cooldownMs: 2000,
+          type: 'damage',
+          mpCost: 10
+        };
+      }
+      return {
+        id: def.slug,
+        name: def.name,
+        // Using dynamically generated SVG icons
+        icon: `/assets/icons/skills/${def.slug}.svg`,
+        cooldownMs: def.cooldown || 2000,
+        type: def.type === 'HEAL' ? 'heal' : def.type === 'BUFF' ? 'buff' : def.type === 'UTILITY' ? 'utility' : 'damage',
+        mpCost: 10 // Replace with DB field if MP cost is added to dictionary
+      };
+    });
+
+    // Ensure we always have 4 slots, even if empty
+    while (list.length < 4) {
+      list.push({
+        id: 'empty_' + list.length,
+        name: 'Empty Slot',
+        icon: '',
+        cooldownMs: 0,
+      });
     }
-    return list.filter((a) => !isForbiddenRtCaptureAbility(a.id));
-  }, [combatStyle]);
+
+    return list.slice(0, 4).filter((a) => !a.id.startsWith('empty_') ? !isForbiddenRtCaptureAbility(a.id) : true);
+  }, [useGameStore.getState().player.equippedAbilities, useGameStore.getState().gameRegistry?.abilities]);
 
   // Inventory consumable count
   const potionCount = useMemo(() => {
@@ -101,7 +114,7 @@ export default function Hotbar() {
         key: '5',
         action: 'item',
         count: potionCount,
-        ability: { id: 'potion', name: 'Healing Potion', icon: '🧪', type: 'heal', cooldownMs: 1000 } as HotbarAbility,
+        ability: { id: 'potion', name: 'Healing Potion', icon: '/assets/icons/items/health_potion.svg', type: 'heal', cooldownMs: 1000 } as HotbarAbility,
       },
     ],
     [abilities, potionCount]
@@ -269,9 +282,9 @@ export default function Hotbar() {
 
               {ability ? (
                 <>
-                  <span className="z-10 text-xl sm:text-2xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] transition-transform group-hover:scale-110">
-                    {ability.icon}
-                  </span>
+                  <div className="z-10 w-6 h-6 sm:w-8 sm:h-8 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] transition-transform group-hover:scale-110">
+                    <img src={ability.icon} alt={ability.name} className="w-full h-full object-contain" />
+                  </div>
 
                   {/* Cooldown Radial Sweep Overlay */}
                   {isLocked && (

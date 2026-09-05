@@ -36,24 +36,32 @@ export default function SaintsDexOverlay() {
   const [selectedSpecies, setSelectedSpecies] = useState<CreatureSpeciesData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const gameRegistry = useGameStore((state) => state.gameRegistry);
+
   useEffect(() => {
-    async function loadSpecies() {
-      try {
-        const res = await fetch('/api/creatures');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setDbSpecies(data);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load SaintsDex species:', err);
-      } finally {
-        setIsLoading(false);
-      }
+    if (gameRegistry && gameRegistry.creatures) {
+      // The old /api/creatures endpoint mapped Prisma CreatureDefs to CreatureSpeciesData.
+      // gameRegistry.creatures already returns them, we just map them over.
+      const mapped = gameRegistry.creatures.map((c: any) => ({
+        id: c.slug,
+        slug: c.slug,
+        txmnId: c.dexNumber || 1,
+        species: c.name,
+        types: [c.typePrimary, c.typeSecondary].filter((t) => t && t !== 'None'),
+        spriteFront: c.spriteOverworld || c.spriteBattle,
+        stats: {
+          hp: c.baseHp,
+          meleeAtk: c.physicalPower,
+          meleeDef: c.physicalDefense,
+          rangedAtk: c.abilityPower,
+          rangedDef: c.abilityDefense,
+          speed: c.combatTempo,
+        },
+      }));
+      setDbSpecies(mapped);
+      setIsLoading(false);
     }
-    loadSpecies();
-  }, []);
+  }, [gameRegistry]);
 
   // Merge static SAINTS_DEX fallback with Creature species from DB
   const displayList = dbSpecies.length > 0 ? dbSpecies : SAINTS_DEX.map(d => ({

@@ -115,6 +115,11 @@ const mapInflight = new Map<string, Promise<GameMapData>>();
 const mapFailUntil = new Map<string, number>();
 const MAP_FAIL_COOLDOWN_MS = 8_000;
 
+export let isStudioMode = false;
+export function setStudioMode(val: boolean) {
+  isStudioMode = val;
+}
+
 let cachedAtlas: AtlasGridData | null = null;
 
 export function invalidateClientAtlas() {
@@ -170,14 +175,15 @@ function isValidMapId(mapId: unknown): mapId is string {
 export async function loadMap(
   mapId: string,
   depth: number = 0,
-  atlasNodeId?: string
+  atlasNodeId?: string,
+  draft?: boolean
 ): Promise<GameMapData> {
   if (!isValidMapId(mapId)) {
     return emptyMapFallback('INVALID');
   }
 
   // Derive placement-aware cache key
-  const cacheKey = getPlacementCacheKey(mapId, atlasNodeId, depth);
+  const cacheKey = getPlacementCacheKey(mapId, atlasNodeId, depth) + (draft ? '_draft' : '');
 
   // Use cached map directly if we are just fetching a neighbor (depth > 0)
   // or if it already has the assembled chunks (we assume it was fully loaded)
@@ -197,7 +203,9 @@ export async function loadMap(
 
   const pending = (async (): Promise<GameMapData> => {
     try {
-      const res = await fetch(getStudioApiUrl(`/api/maps/${encodeURIComponent(mapId)}`));
+      const isDraftReq = draft || isStudioMode;
+      const qs = isDraftReq ? '?draft=true' : '';
+      const res = await fetch(getStudioApiUrl(`/api/maps/${encodeURIComponent(mapId)}${qs}`));
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: Failed to load map ${mapId}`);
       }

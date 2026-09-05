@@ -588,6 +588,11 @@ export class BabylonEngine {
     // Generate procedural textures
     this.renderer.createDefaultPlayerTexture();
     this.renderer.createProceduralTextures();
+
+    // Hook voxel controller into render loop for dynamic chunk streaming
+    this.scene.onBeforeRenderObservable.add(() => {
+      this.voxel.update();
+    });
   }
 
   public getCurrentTileSize(): number {

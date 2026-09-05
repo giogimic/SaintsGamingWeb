@@ -480,6 +480,7 @@ export default function TheLobby({
 
       useGameStore.getState().hydrateMobileControlMode();
       await useGameStore.getState().fetchLogicTiles();
+      await useGameStore.getState().fetchGameRegistry();
 
       if (enableStudio) {
         // Studio opens in Editor runtime; Playtest is for play systems only.

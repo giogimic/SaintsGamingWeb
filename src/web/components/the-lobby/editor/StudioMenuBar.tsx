@@ -857,6 +857,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuSectionLabel label="Content Windows" />
             <MenuItem label="NPC Studio" icon={panels.npc?.isOpen ? CheckCircle2 : Users} onClick={() => togglePanel('npc')} />
             <MenuItem label="Creature Studio" icon={panels.creature?.isOpen ? CheckCircle2 : PawPrint} onClick={() => togglePanel('creature')} />
+            <MenuItem label="Ability Studio" icon={panels.abilities?.isOpen ? CheckCircle2 : Wand2} onClick={() => togglePanel('abilities')} />
             <MenuItem label="Monster Spawner" icon={panels.spawner?.isOpen ? CheckCircle2 : Sword} onClick={() => togglePanel('spawner')} />
             <MenuItem label="Quest Studio" icon={panels.quest?.isOpen ? CheckCircle2 : ScrollText} onClick={() => togglePanel('quest')} />
             <MenuItem label="Dialogue Editor" icon={panels.dialogue?.isOpen ? CheckCircle2 : MessageSquare} onClick={() => togglePanel('dialogue')} />

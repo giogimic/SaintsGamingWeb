@@ -700,19 +700,22 @@ export const ProfessionEditorPanel: React.FC = () => {
         {/* ─── TAB 3: MILESTONE UNLOCKS ────────────────────────────────────── */}
         {activeTab === 'MILESTONES' && (
           <div className="space-y-4 sg-glass p-4 rounded-lg">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400">
-                Configure level-by-level equipment, ability, recipe, and gathering node unlocks.
-              </span>
+            <div className="flex items-center justify-between border-b border-[#806f47]/30 pb-3">
+              <div>
+                <h3 className="text-sm font-semibold text-amber-400">Class Milestones</h3>
+                <p className="text-xs text-slate-400 mt-1 max-w-xl">
+                  Use Milestones to grant <strong>functional gameplay unlocks</strong> as players level up (e.g., new Abilities, Crafting Recipes, Equipment slots, or Gathering nodes). This directly impacts their power and utility.
+                </p>
+              </div>
               <button
                 onClick={handleAddMilestone}
-                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" /> Add Milestone
               </button>
             </div>
 
-            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1 mt-2">
               {milestonesArray.map((m, idx) => (
                 <div
                   key={idx}
@@ -783,10 +786,13 @@ export const ProfessionEditorPanel: React.FC = () => {
         {/* ─── TAB 4: BATTLEPASS TRACK ─────────────────────────────────────── */}
         {activeTab === 'BATTLEPASS' && (
           <div className="space-y-4 sg-glass p-4 rounded-lg">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400">
-                Configure 10-tier cosmetic reward tracks (titles, emotes, capes, banners, auras).
-              </span>
+            <div className="flex items-center justify-between border-b border-[#806f47]/30 pb-3">
+              <div>
+                <h3 className="text-sm font-semibold text-amber-400">Cosmetic Battlepass Track</h3>
+                <p className="text-xs text-slate-400 mt-1 max-w-xl">
+                  Use the Battlepass to grant <strong>cosmetic, non-power rewards</strong> across 10 tiers (e.g., Titles, Emotes, Capes, Banners). This gives players visual prestige without affecting game balance.
+                </p>
+              </div>
               <button
                 onClick={handleAddBattlepassTier}
                 className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
