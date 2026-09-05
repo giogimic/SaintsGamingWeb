@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import dynamic from 'serapht/dynamic';
+import dynamic from 'next/dynamic';
 import { useGameStore } from '../store';
 import { DockZone } from './DockZone';
 import { DockableWidget } from './DockableWidget';

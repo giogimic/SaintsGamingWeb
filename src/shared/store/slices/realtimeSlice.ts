@@ -144,24 +144,24 @@ export const createRealtimeSlice: StateCreator<AppState, [], [], RealtimeSlice> 
 
   setMmoPlayerOnline: (userId, characterName, mapId, playerCount) => {
     set((state) => {
-      const serapht = {
+      const next = {
         ...state.mmoOnlineByUserId,
         [userId]: { characterName, mapId },
       };
       return {
-        mmoOnlineByUserId: serapht,
-        mmoPlayerCount: typeof playerCount === "number" ? playerCount : Object.keys(serapht).length,
+        mmoOnlineByUserId: next,
+        mmoPlayerCount: typeof playerCount === "number" ? playerCount : Object.keys(next).length,
       };
     });
   },
 
   setMmoPlayerOffline: (userId, playerCount) => {
     set((state) => {
-      const serapht = { ...state.mmoOnlineByUserId };
-      delete serapht[userId];
+      const next = { ...state.mmoOnlineByUserId };
+      delete next[userId];
       return {
-        mmoOnlineByUserId: serapht,
-        mmoPlayerCount: typeof playerCount === "number" ? playerCount : Object.keys(serapht).length,
+        mmoOnlineByUserId: next,
+        mmoPlayerCount: typeof playerCount === "number" ? playerCount : Object.keys(next).length,
       };
     });
   },
@@ -180,13 +180,13 @@ export const createRealtimeSlice: StateCreator<AppState, [], [], RealtimeSlice> 
 
   addProcessedEventId: (id) => {
     set((state) => {
-      const serapht = new Set(state.processedEventIds);
-      serapht.add(id);
-      if (serapht.size > 500) {
-        const [oldest] = serapht;
-        serapht.delete(oldest);
+      const next = new Set(state.processedEventIds);
+      next.add(id);
+      if (next.size > 500) {
+        const [oldest] = next;
+        next.delete(oldest);
       }
-      return { processedEventIds: serapht };
+      return { processedEventIds: next };
     });
   },
 });

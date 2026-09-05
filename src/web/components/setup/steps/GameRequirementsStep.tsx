@@ -6,11 +6,11 @@ import type { GameDefinitionData } from './GameDefinitionStep';
 
 interface GameRequirementsStepProps {
   gameDefinition: GameDefinitionData;
-  onSerapht: () => void;
+  onNext: () => void;
   onBack: () => void;
 }
 
-export function GameRequirementsStep({ gameDefinition, onSerapht, onBack }: GameRequirementsStepProps) {
+export function GameRequirementsStep({ gameDefinition, onNext, onBack }: GameRequirementsStepProps) {
   const isCreatureGame = gameDefinition.genre === 'CREATURE_MMO';
 
   const requirements = [
@@ -116,7 +116,7 @@ export function GameRequirementsStep({ gameDefinition, onSerapht, onBack }: Game
         </button>
 
         <button
-          onClick={onSerapht}
+          onClick={onNext}
           className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg font-mono font-bold text-xs bg-amber-600 hover:bg-amber-500 text-white transition cursor-pointer shadow-md shadow-amber-600/20"
         >
           Continue to Entities

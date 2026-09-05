@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react'
-import Link from 'serapht/link'
+import Link from 'next/link'
 import { getWikiCategories } from '@/shared/wiki/wikiRegistry'
 import { Rocket, Gamepad2, Sparkles, Wand2, BookText, ChevronDown, ChevronRight, Menu } from 'lucide-react'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/web/components/ui/sheet'

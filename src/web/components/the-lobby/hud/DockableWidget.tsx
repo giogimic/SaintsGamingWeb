@@ -62,9 +62,9 @@ export function DockableWidget({
   const cycleSize = () => {
     soundSynth?.playSelectSound?.();
     const current = config.sizeVariant || 'standard';
-    const serapht: WidgetSize =
+    const next: WidgetSize =
       current === 'standard' ? 'compact' : current === 'compact' ? 'expanded' : 'standard';
-    setWidgetSize(id, serapht);
+    setWidgetSize(id, next);
   };
 
   const toggleVisibility = () => {

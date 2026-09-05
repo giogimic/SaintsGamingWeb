@@ -1,11 +1,11 @@
 /**
- * Server-side notify so Go live shards reload after Serapht `/api/maps` persist.
- * Prefers GO_MMO_INTERNAL_URL (Docker host gateway), else SERAPHT_PUBLIC_GO_MMO_URL.
+ * Server-side notify so Go live shards reload after Next `/api/maps` persist.
+ * Prefers GO_MMO_INTERNAL_URL (Docker host gateway), else NEXT_PUBLIC_GO_MMO_URL.
  */
 export function goMmoInternalBase(): string | undefined {
   const raw = (
     process.env.GO_MMO_INTERNAL_URL ||
-    process.env.SERAPHT_PUBLIC_GO_MMO_URL ||
+    process.env.NEXT_PUBLIC_GO_MMO_URL ||
     ""
   ).trim();
   if (!raw) return undefined;

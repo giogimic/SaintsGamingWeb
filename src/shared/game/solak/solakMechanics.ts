@@ -1,5 +1,5 @@
 /**
- * World Tree Guardian: Blight Roots, Nature Blessing & Shield Dome Mechanics Engine (Bible 24 & Bible 27).
+ * WorldTreeGuardian: Blight Roots, Nature Blessing & Shield Dome Mechanics Engine (Bible 24 & Bible 27).
  *
  * Implements:
  * - Root Cage entrapment and teammate destruction rescue check.

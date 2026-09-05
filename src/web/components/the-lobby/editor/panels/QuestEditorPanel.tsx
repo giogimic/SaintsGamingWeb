@@ -132,7 +132,7 @@ export function QuestEditorPanel() {
           setIsNew(false);
         } else {
           clearDefinitionStackFor('quest:new');
-          const serapht: QuestForm = {
+          const next: QuestForm = {
             ...emptyQuest(activeGameId),
             slug: targetSlug,
             title: customEv.detail?.npcName ? `Quest: ${customEv.detail.npcName}` : targetSlug,
@@ -150,7 +150,7 @@ export function QuestEditorPanel() {
                   { stage: 1, type: 'TALK', targetSlug: 'npc_', requiredQty: 1, description: '' },
                 ],
           };
-          setForm(serapht);
+          setForm(next);
           setIsNew(true);
         }
       }
@@ -164,9 +164,9 @@ export function QuestEditorPanel() {
     setTimeout(() => setStatus(null), 3500);
   };
 
-  const commitFormChange = (serapht: QuestForm, key = questResourceKey(formRef.current, isNewRef.current)) => {
-    recordDefinitionChange(key, formRef.current, serapht);
-    setForm(serapht);
+  const commitFormChange = (next: QuestForm, key = questResourceKey(formRef.current, isNewRef.current)) => {
+    recordDefinitionChange(key, formRef.current, next);
+    setForm(next);
   };
 
   const handleSelect = (q: QuestRow) => {

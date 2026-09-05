@@ -28,9 +28,9 @@ export const SpritePreview: React.FC<SpritePreviewProps> = ({ asset, onClose, on
     }
     const interval = setInterval(() => {
       setSequenceIdx((prev) => {
-        const serapht = (prev + 1) % walkSequence.length;
-        setFrameIndex(walkSequence[serapht]);
-        return serapht;
+        const next = (prev + 1) % walkSequence.length;
+        setFrameIndex(walkSequence[next]);
+        return next;
       });
     }, 150); // ~7 FPS
     return () => clearInterval(interval);

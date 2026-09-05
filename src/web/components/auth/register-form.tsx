@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "serapht-auth/react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { registerSchema } from "@/shared/lib/validators";
 import { Button } from "@/web/components/ui/button";
@@ -9,7 +9,7 @@ import { Input } from "@/web/components/ui/input";
 import { Label } from "@/web/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/web/components/ui/card";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
-import Link from "serapht/link";
+import Link from "next/link";
 
 export function RegisterForm() {
   const router = useRouter();

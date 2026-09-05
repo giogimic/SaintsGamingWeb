@@ -13,7 +13,7 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { io, Socket } from "socket.io-client";
 import { lobbySocketConnect } from "@/shared/net/goMmoSocket";
-import { useSession } from "serapht-auth/react";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { useAppStore, PresenceStatus } from "@/shared/store/useAppStore";
 import { EventEnvelope } from "@/shared/events/types";
@@ -58,19 +58,19 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 
     // Create singleton connection pointing to Go MMO server
     const { url, options } = lobbySocketConnect(session.user.id);
-    const seraphtSocket: Socket = url ? io(url, options) : io(options);
+    const nextSocket: Socket = url ? io(url, options) : io(options);
 
-    socketRef.current = seraphtSocket;
-    setSocket(seraphtSocket);
+    socketRef.current = nextSocket;
+    setSocket(nextSocket);
 
     // ─── Reconnection sync ──────────────────────────────────────────────────
-    seraphtSocket.on("connect", async () => {
-      console.log("[Realtime] Connected:", seraphtSocket.id);
+    nextSocket.on("connect", async () => {
+      console.log("[Realtime] Connected:", nextSocket.id);
 
       // Re-join watched thread room after reconnect
       const threadId = useAppStore.getState().watchedThreadId;
       if (threadId) {
-        seraphtSocket.emit("join_room", `thread:${threadId}`);
+        nextSocket.emit("join_room", `thread:${threadId}`);
       }
 
       // On reconnect, fetch any CRITICAL events we missed while offline
@@ -100,7 +100,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    seraphtSocket.on("disconnect", (reason) => {
+    nextSocket.on("disconnect", (reason) => {
       console.log("[Realtime] Disconnected:", reason);
     });
 
@@ -263,48 +263,48 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    seraphtSocket.on("notification.created", (envelope: EventEnvelope) => {
+    nextSocket.on("notification.created", (envelope: EventEnvelope) => {
       handleEvent("notification.created", envelope);
     });
-    seraphtSocket.on("presence.updated", (envelope: EventEnvelope) => {
+    nextSocket.on("presence.updated", (envelope: EventEnvelope) => {
       handleEvent("presence.updated", envelope);
     });
-    seraphtSocket.on("chat.message.created", (envelope: EventEnvelope) => {
+    nextSocket.on("chat.message.created", (envelope: EventEnvelope) => {
       handleEvent("chat.message.created", envelope);
     });
-    seraphtSocket.on("forum.reply.created", (envelope: EventEnvelope) => {
+    nextSocket.on("forum.reply.created", (envelope: EventEnvelope) => {
       handleEvent("forum.reply.created", envelope);
     });
-    seraphtSocket.on("social.post.reacted", (envelope: EventEnvelope) => {
+    nextSocket.on("social.post.reacted", (envelope: EventEnvelope) => {
       handleEvent("social.post.reacted", envelope);
     });
-    seraphtSocket.on("social.reply.created", (envelope: EventEnvelope) => {
+    nextSocket.on("social.reply.created", (envelope: EventEnvelope) => {
       handleEvent("social.reply.created", envelope);
     });
-    seraphtSocket.on("game.player.online", (envelope: EventEnvelope) => {
+    nextSocket.on("game.player.online", (envelope: EventEnvelope) => {
       handleEvent("game.player.online", envelope);
     });
-    seraphtSocket.on("game.player.offline", (envelope: EventEnvelope) => {
+    nextSocket.on("game.player.offline", (envelope: EventEnvelope) => {
       handleEvent("game.player.offline", envelope);
     });
-    seraphtSocket.on("discord.community.announce", (envelope: EventEnvelope) => {
+    nextSocket.on("discord.community.announce", (envelope: EventEnvelope) => {
       handleEvent("discord.community.announce", envelope);
     });
-    seraphtSocket.on("fivem.character.updated", (envelope: EventEnvelope) => {
+    nextSocket.on("fivem.character.updated", (envelope: EventEnvelope) => {
       handleEvent("fivem.character.updated", envelope);
     });
-    seraphtSocket.on("fivem.bank.updated", (envelope: EventEnvelope) => {
+    nextSocket.on("fivem.bank.updated", (envelope: EventEnvelope) => {
       handleEvent("fivem.bank.updated", envelope);
     });
-    seraphtSocket.on("fivem.player.online", (envelope: EventEnvelope) => {
+    nextSocket.on("fivem.player.online", (envelope: EventEnvelope) => {
       handleEvent("fivem.player.online", envelope);
     });
-    seraphtSocket.on("fivem.player.offline", (envelope: EventEnvelope) => {
+    nextSocket.on("fivem.player.offline", (envelope: EventEnvelope) => {
       handleEvent("fivem.player.offline", envelope);
     });
 
     return () => {
-      seraphtSocket.disconnect();
+      nextSocket.disconnect();
       socketRef.current = null;
       setSocket(null);
     };

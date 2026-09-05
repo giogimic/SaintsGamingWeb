@@ -2,8 +2,8 @@
  * Seraph: Angel of Death Quadrant Arena & Phase Rotation Engine (Bible 24 & Bible 27).
  *
  * Implements:
- * - 5-Phase combat progression: Smoke (100-80%), Shadow (80-60%), Blood (60-40%), Ice (40-20%), The Ancient Enrage (20-0%).
- * - Quadrant positioning matrix: North-East (Smoke), South-East (Shadow), South-West (Blood), North-West (Ice), Center (The Ancient).
+ * - 5-Phase combat progression: Smoke (100-80%), Shadow (80-60%), Blood (60-40%), Ice (40-20%), Ancient Enrage (20-0%).
+ * - Quadrant positioning matrix: North-East (Smoke), South-East (Shadow), South-West (Blood), North-West (Ice), Center (Ancient).
  * - Phase mechanics:
  *   - Smoke Virus (choking stat drains in quadrant).
  *   - Shadow Traps (2-tick eruption dodging).
@@ -91,25 +91,25 @@ export function applyDamageToSeraph(
 
   const hpPercent = (boss.hp / boss.maxHp) * 100;
   let phaseTransitioned = false;
-  let seraphtPhase = boss.phase;
+  let nextPhase = boss.phase;
 
   if (boss.phase === 'SMOKE' && hpPercent <= 80) {
-    seraphtPhase = 'SHADOW';
+    nextPhase = 'SHADOW';
     phaseTransitioned = true;
   } else if (boss.phase === 'SHADOW' && hpPercent <= 60) {
-    seraphtPhase = 'BLOOD';
+    nextPhase = 'BLOOD';
     phaseTransitioned = true;
   } else if (boss.phase === 'BLOOD' && hpPercent <= 40) {
-    seraphtPhase = 'ICE';
+    nextPhase = 'ICE';
     phaseTransitioned = true;
   } else if (boss.phase === 'ICE' && hpPercent <= 20) {
-    seraphtPhase = 'ZAROS_ENRAGE';
+    nextPhase = 'ZAROS_ENRAGE';
     boss.isEnraged = true;
     phaseTransitioned = true;
   }
 
-  boss.phase = seraphtPhase;
-  return { effectiveDamage, healedAmount: 0, phaseTransitioned, newPhase: seraphtPhase, isDefeated: false };
+  boss.phase = nextPhase;
+  return { effectiveDamage, healedAmount: 0, phaseTransitioned, newPhase: nextPhase, isDefeated: false };
 }
 
 /**

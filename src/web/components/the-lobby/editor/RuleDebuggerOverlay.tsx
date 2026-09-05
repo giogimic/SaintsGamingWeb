@@ -18,9 +18,9 @@ export const RuleDebuggerOverlay: React.FC = () => {
   useEffect(() => {
     const handleTrace = (e: CustomEvent<RuleTracePayload>) => {
       setTraces((prev) => {
-        const serapht = [...prev, e.detail];
-        if (serapht.length > 50) return serapht.slice(serapht.length - 50); // Keep last 50
-        return serapht;
+        const next = [...prev, e.detail];
+        if (next.length > 50) return next.slice(next.length - 50); // Keep last 50
+        return next;
       });
     };
     

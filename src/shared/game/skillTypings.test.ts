@@ -56,8 +56,8 @@ describe("combat skill typings", () => {
   });
 
   it("applySkillDeltas clamps", () => {
-    const serapht = applySkillDeltas({ attack: { level: 1, xp: 0 } }, { attack: 100 });
-    expect(serapht.attack.level).toBe(50);
+    const next = applySkillDeltas({ attack: { level: 1, xp: 0 } }, { attack: 100 });
+    expect(next.attack.level).toBe(50);
   });
 
   it("accurately handles ALL_SKILL_SLUGS, Total Level, and Max Cape progress for all 27 skills", () => {

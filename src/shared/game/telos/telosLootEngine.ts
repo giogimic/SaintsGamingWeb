@@ -1,21 +1,21 @@
 /**
- * The Titan: Warden of the The Titanian Core Loot & Weapon Assembly Engine (Bible 24 & Bible 27).
+ * Titan: Warden of the Titanian Core Loot & Weapon Assembly Engine (Bible 24 & Bible 27).
  *
  * Implements:
  * - Enrage & Killstreak unique drop scaling formula.
  * - Unique drop table: Volcanic, Pure & Corrupted Anima Orbs, Dormant Staff of Sliske,
- *   Dormant The Ancient Godsword, Dormant Seren Godbow, and Codex of Lost Knowledge (Reprisal).
+ *   Dormant Ancient Godsword, Dormant Seren Godbow, and Codex of Lost Knowledge (Reprisal).
  * - Tier 92 Weapon Assembly matrix (Dormant Weapon + 3 Anima Orbs -> Finished God Weapon).
  */
 
-export interface The TitanUniqueDropDef {
+export interface TitanUniqueDropDef {
   id: string;
   name: string;
   weight: number;
   type: 'ORB' | 'DORMANT' | 'CODEX';
 }
 
-export interface The TitanLootResult {
+export interface TitanLootResult {
   itemId: string;
   name: string;
   quantity: number;
@@ -23,12 +23,12 @@ export interface The TitanLootResult {
   rarity: 'COMMON' | 'UNCOMMON' | 'RARE' | 'VERY_RARE' | 'MEGA_RARE';
 }
 
-export const TELOS_UNIQUE_TABLE: The TitanUniqueDropDef[] = [
+export const TELOS_UNIQUE_TABLE: TitanUniqueDropDef[] = [
   { id: 'volcanic_anima_orb', name: 'Volcanic Anima Orb', weight: 10, type: 'ORB' },
   { id: 'corrupted_anima_orb', name: 'Corrupted Anima Orb', weight: 10, type: 'ORB' },
   { id: 'pure_anima_orb', name: 'Pure Anima Orb', weight: 10, type: 'ORB' },
   { id: 'dormant_staff_of_sliske', name: 'Dormant Staff of Sliske', weight: 3, type: 'DORMANT' },
-  { id: 'dormant_zaros_godsword', name: 'Dormant The Ancient Godsword', weight: 3, type: 'DORMANT' },
+  { id: 'dormant_zaros_godsword', name: 'Dormant Ancient Godsword', weight: 3, type: 'DORMANT' },
   { id: 'dormant_seren_godbow', name: 'Dormant Seren Godbow', weight: 3, type: 'DORMANT' },
   { id: 'codex_of_lost_knowledge', name: 'Codex of Lost Knowledge (Reprisal)', weight: 3, type: 'CODEX' },
 ];
@@ -39,7 +39,7 @@ export const TOTAL_TELOS_WEIGHT = TELOS_UNIQUE_TABLE.reduce((sum, item) => sum +
  * Calculates unique drop rate denominator based on Enrage (E) and Streak (S).
  * Formula: 10000 / (10 + 0.25*E + 3*S) clamped to minimum 9 (max ~11% chance).
  */
-export function calculateThe TitanUniqueDropRate(enrage: number, streak: number): {
+export function calculateTitanUniqueDropRate(enrage: number, streak: number): {
   denominator: number;
   dropChance: number;
 } {
@@ -55,22 +55,22 @@ export function calculateThe TitanUniqueDropRate(enrage: number, streak: number)
 }
 
 /**
- * Rolls loot drops upon completing a The Titan kill.
+ * Rolls loot drops upon completing a Titan kill.
  */
-export function rollThe TitanLoot(
+export function rollTitanLoot(
   enrage: number,
   streak: number,
   uniqueRollSeed: number = Math.random(),
   itemRollSeed: number = Math.random()
 ): {
   hasUnique: boolean;
-  uniqueItem: The TitanLootResult | null;
-  standardSupplies: The TitanLootResult[];
+  uniqueItem: TitanLootResult | null;
+  standardSupplies: TitanLootResult[];
 } {
-  const { dropChance } = calculateThe TitanUniqueDropRate(enrage, streak);
+  const { dropChance } = calculateTitanUniqueDropRate(enrage, streak);
   const isUniqueHit = uniqueRollSeed < dropChance;
 
-  let uniqueItem: The TitanLootResult | null = null;
+  let uniqueItem: TitanLootResult | null = null;
   if (isUniqueHit) {
     let roll = itemRollSeed * TOTAL_TELOS_WEIGHT;
     let chosen = TELOS_UNIQUE_TABLE[0];
@@ -91,7 +91,7 @@ export function rollThe TitanLoot(
     };
   }
 
-  const standardSupplies: The TitanLootResult[] = [
+  const standardSupplies: TitanLootResult[] = [
     { itemId: 'pure_essence', name: 'Pure Essence', quantity: Math.min(50000, 2000 + streak * 500), isUnique: false, rarity: 'COMMON' },
     { itemId: 'battlestaff', name: 'Battlestaff', quantity: Math.min(500, 25 + streak * 10), isUnique: false, rarity: 'UNCOMMON' },
   ];
@@ -102,7 +102,7 @@ export function rollThe TitanLoot(
 /**
  * Assembles a Tier 92 God Weapon by combining 3 Anima Orbs with a Dormant weapon base.
  */
-export function assembleThe TitanWeapon(
+export function assembleTitanWeapon(
   dormantItemId: 'dormant_staff_of_sliske' | 'dormant_zaros_godsword' | 'dormant_seren_godbow',
   inventory: {
     hasVolcanicOrb: boolean;
@@ -120,7 +120,7 @@ export function assembleThe TitanWeapon(
   if (dormantItemId === 'dormant_staff_of_sliske') {
     return { success: true, finishedWeaponId: 'staff_of_sliske', weaponName: 'Staff of Sliske (Tier 92 Magic)' };
   } else if (dormantItemId === 'dormant_zaros_godsword') {
-    return { success: true, finishedWeaponId: 'zaros_godsword', weaponName: 'The Ancient Godsword (Tier 92 Melee)' };
+    return { success: true, finishedWeaponId: 'zaros_godsword', weaponName: 'Ancient Godsword (Tier 92 Melee)' };
   } else if (dormantItemId === 'dormant_seren_godbow') {
     return { success: true, finishedWeaponId: 'seren_godbow', weaponName: 'Seren Godbow (Tier 92 Ranged)' };
   }

@@ -65,7 +65,7 @@ interface SkillInspectPanelProps {
  * Level 2 — Inspect: Compact skill detail panel.
  *
  * Shows focused contextual information for a single skill:
- * icon, name, level, XP, summary, condensed perks, serapht unlock,
+ * icon, name, level, XP, summary, condensed perks, next unlock,
  * and a VIEW IN GUIDE button to escalate to the full guide (Level 3).
  *
  * This replaces the old full-screen SkillGuideModal for the initial
@@ -92,7 +92,7 @@ export function SkillInspectPanel({ skillSlug, onClose, onOpenGuide }: SkillInsp
   const maxLevel = guide.maxLevel;
   const isMaxed = currentLevel >= maxLevel;
 
-  const seraphtLevelXp = isCombat
+  const nextLevelXp = isCombat
     ? currentLevel >= 50
       ? currentXp
       : currentLevel * currentLevel * 50
@@ -114,11 +114,11 @@ export function SkillInspectPanel({ skillSlug, onClose, onOpenGuide }: SkillInsp
       )
     : 0;
 
-  const xpSpan = Math.max(1, seraphtLevelXp - prevLevelXp);
+  const xpSpan = Math.max(1, nextLevelXp - prevLevelXp);
   const progressPercent = Math.min(100, Math.max(0, ((currentXp - prevLevelXp) / xpSpan) * 100));
 
-  // Find the serapht locked milestone
-  const seraphtUnlock = allUnlocks.find((u) => u.level > currentLevel);
+  // Find the next locked milestone
+  const nextUnlock = allUnlocks.find((u) => u.level > currentLevel);
   // Find the most recently unlocked milestone
   const lastUnlocked = [...allUnlocks].reverse().find((u) => u.level <= currentLevel);
 
@@ -185,7 +185,7 @@ export function SkillInspectPanel({ skillSlug, onClose, onOpenGuide }: SkillInsp
               {isMaxed ? (
                 'MASTERED'
               ) : (
-                <>{currentXp.toLocaleString()} / {Math.floor(seraphtLevelXp).toLocaleString()} XP</>
+                <>{currentXp.toLocaleString()} / {Math.floor(nextLevelXp).toLocaleString()} XP</>
               )}
             </span>
           </div>
@@ -211,20 +211,20 @@ export function SkillInspectPanel({ skillSlug, onClose, onOpenGuide }: SkillInsp
           ))}
         </div>
 
-        {/* Serapht Unlock / Last Unlocked */}
-        {seraphtUnlock ? (
+        {/* Next Unlock / Last Unlocked */}
+        {nextUnlock ? (
           <div className="bg-black/50 p-2 rounded-lg border border-amber-500/20 flex items-center gap-2.5">
             <div className="w-7 h-7 rounded bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0">
               <Lock className="w-3.5 h-3.5 text-amber-400" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-[9px] text-amber-400 font-bold uppercase">SERAPHT UNLOCK — LV {seraphtUnlock.level}</span>
+                <span className="text-[9px] text-amber-400 font-bold uppercase">NEXT UNLOCK — LV {nextUnlock.level}</span>
                 <span className="text-[8px] uppercase px-1 rounded bg-black/40 border border-white/10 text-slate-500">
-                  {seraphtUnlock.type}
+                  {nextUnlock.type}
                 </span>
               </div>
-              <span className="text-[10px] text-slate-200 font-bold truncate block">{seraphtUnlock.title}</span>
+              <span className="text-[10px] text-slate-200 font-bold truncate block">{nextUnlock.title}</span>
             </div>
           </div>
         ) : lastUnlocked ? (

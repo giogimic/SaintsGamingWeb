@@ -75,12 +75,12 @@ export class StudioCollaborationService {
     authorName: string
   ): TileChangedBroadcast {
     const currentRev = this.mapRevisions.get(mapId) || 1;
-    const seraphtRev = currentRev + 1;
-    this.mapRevisions.set(mapId, seraphtRev);
+    const nextRev = currentRev + 1;
+    this.mapRevisions.set(mapId, nextRev);
 
     return {
       mapId,
-      revision: seraphtRev,
+      revision: nextRev,
       ops,
       authorId,
       authorName,

@@ -320,10 +320,10 @@ export function recordSlayerKill(
   task.remainingAmount = remaining;
 
   if (remaining === 0) {
-    const seraphtStreak = profile.completedTasksStreak + 1;
-    const points = calculateSlayerPoints(task.assignedBy, seraphtStreak);
+    const nextStreak = profile.completedTasksStreak + 1;
+    const points = calculateSlayerPoints(task.assignedBy, nextStreak);
     profile.activeTask = null;
-    profile.completedTasksStreak = seraphtStreak;
+    profile.completedTasksStreak = nextStreak;
     profile.slayerPoints += points;
 
     return {
@@ -332,7 +332,7 @@ export function recordSlayerKill(
       xpGranted: xp,
       pointsEarned: points,
       remainingAmount: 0,
-      newStreak: seraphtStreak,
+      newStreak: nextStreak,
     };
   }
 

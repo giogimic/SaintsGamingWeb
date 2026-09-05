@@ -6,7 +6,7 @@ import {
   resolveTeleportPair,
   processBurnTick,
   type PlayerRaidPosition,
-} from './olmBossEngine';
+} from './wyrmBossEngine';
 
 describe('The Great Wyrm Phase Engine & Special Attacks', () => {
   it('manages 3-phase fight progression and head vulnerability unlock in Phase 3', () => {

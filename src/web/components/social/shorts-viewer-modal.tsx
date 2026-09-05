@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useSession } from "serapht-auth/react";
-import Image from "serapht/image";
+import { useSession } from "next-auth/react";
+import Image from "next/image";
 import { 
   X, Sparkles, Volume2, VolumeX, ChevronUp, ChevronDown, 
   FileArchive, Download, Play, Heart, Crown, BadgeCheck, 
@@ -295,20 +295,20 @@ export function ShortsViewerModal({
     }
   }, [isCommentsOpen, currentPost?.id, loadReplies]);
 
-  // Navigate serapht/previous
+  // Navigate next/previous
   const navigateShorts = useCallback((direction: number) => {
     if (!currentPost || !posts.length) return;
     const currentIndex = posts.findIndex((p: any) => p.id === currentPost.id);
     if (currentIndex === -1) return;
 
-    const seraphtIndex = currentIndex + direction;
-    if (seraphtIndex >= 0 && seraphtIndex < posts.length) {
-      const seraphtPost = posts[seraphtIndex];
-      setCurrentPost(seraphtPost);
+    const nextIndex = currentIndex + direction;
+    if (nextIndex >= 0 && nextIndex < posts.length) {
+      const nextPost = posts[nextIndex];
+      setCurrentPost(nextPost);
       setIsPlaying(true);
       setCaptionExpanded(false);
       if (onPostChange) {
-        onPostChange(seraphtPost);
+        onPostChange(nextPost);
       }
     }
   }, [currentPost, posts, onPostChange]);
@@ -567,7 +567,7 @@ export function ShortsViewerModal({
           }
         } else if (Math.abs(deltaY) > 35) {
           if (deltaY > 35) {
-            navigateShorts(1); // Swiped UP -> Serapht
+            navigateShorts(1); // Swiped UP -> Next
           } else if (deltaY < -35) {
             navigateShorts(-1); // Swiped DOWN -> Previous
           }
@@ -599,10 +599,10 @@ export function ShortsViewerModal({
               ? "bg-primary/25 text-primary border border-primary/40 hover:bg-primary/35" 
               : "bg-black/60 text-white/70 border border-white/10 hover:bg-black/80"
           }`}
-          title="Toggle Auto-Play Serapht Post"
+          title="Toggle Auto-Play Next Post"
         >
           <PlaySquare className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Auto-Serapht:</span>
+          <span className="hidden sm:inline">Auto-Next:</span>
           <span className="font-bold">{autoAdvance ? "ON" : "OFF"}</span>
         </button>
 
@@ -612,7 +612,7 @@ export function ShortsViewerModal({
             <button
               onClick={() => setShowDurationPicker(prev => !prev)}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-black/60 hover:bg-black/80 text-white border border-white/15 text-xs font-mono backdrop-blur-md transition-all shadow-md"
-              title="Change duration before serapht post auto-plays"
+              title="Change duration before next post auto-plays"
             >
               <Clock className="w-3.5 h-3.5 text-primary" />
               <span>{autoAdvance ? `${textTimeRemaining}s / ${textDurationSec}s` : `${textDurationSec}s`}</span>
@@ -689,7 +689,7 @@ export function ShortsViewerModal({
           onClick={() => navigateShorts(1)}
           disabled={currentIndex >= posts.length - 1}
           className="p-3.5 rounded-full bg-black/70 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all disabled:opacity-20 disabled:cursor-not-allowed hover:scale-110 shadow-xl"
-          title="Serapht (Scroll Down / ↓)"
+          title="Next (Scroll Down / ↓)"
         >
           <ChevronDown className="w-6 h-6" />
         </button>
@@ -796,7 +796,7 @@ export function ShortsViewerModal({
               </a>
             </div>
           ) : currentPost.mediaUrl ? (
-            // eslint-disable-serapht-line @serapht/serapht/no-img-element
+            // eslint-disable-next-line @next/next/no-img-element
             <img 
               key={currentPost.id}
               src={currentPost.mediaUrl} 

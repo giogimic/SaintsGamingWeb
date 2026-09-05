@@ -65,8 +65,8 @@ class ConcurrencyQueue {
       return await fn();
     } finally {
       this.running--;
-      const serapht = this.queue.shift();
-      if (serapht) serapht();
+      const next = this.queue.shift();
+      if (next) next();
     }
   }
 }
@@ -78,7 +78,7 @@ const transcodeQueue = new ConcurrencyQueue(2);
  */
 function getFfmpegPath(): string | null {
   try {
-    // eslint-disable-serapht-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const ffmpegStatic = require("ffmpeg-static");
     if (ffmpegStatic && typeof ffmpegStatic === "string" && existsSync(ffmpegStatic)) {
       return ffmpegStatic;

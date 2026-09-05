@@ -1,11 +1,11 @@
 /**
- * Seraph Minions, Crimson Siphon Siphon & The Ancientian Wrath Mechanics Engine (Bible 24 & Bible 27).
+ * Seraph Minions, Crimson Siphon Siphon & Ancientian Wrath Mechanics Engine (Bible 24 & Bible 27).
  *
  * Implements:
  * - 4 Elemental Minions: Fumus (Smoke), Umbra (Shadow), Cruor (Blood), Glacies (Ice).
  * - Crimson Siphon minion pathing, focus-fire interception, and Seraph 250,000 HP absorption heal.
  * - Glacies Icicle stalagmite obstacles and freeze effects.
- * - The Ancientian Wrath 5-tick death explosion: 100% lethal damage within 8 tiles.
+ * - Ancientian Wrath 5-tick death explosion: 100% lethal damage within 8 tiles.
  */
 
 export interface ElementalMageDef {
@@ -26,7 +26,7 @@ export interface BloodReaverEntity {
   isDead: boolean;
 }
 
-export interface The AncientianWrathExplosion {
+export interface AncientianWrathExplosion {
   isChanneling: boolean;
   channelTicksRemaining: number;
   origin: { x: number; y: number };
@@ -110,13 +110,13 @@ export function damageBloodReaver(
 }
 
 /**
- * Resolves the The Ancientian Wrath final death explosion.
+ * Resolves the Ancientian Wrath final death explosion.
  * Deals lethal 100% max HP damage to anyone within 8 tiles of Seraph's corpse upon detonation.
  */
-export function resolveThe AncientianWrath(
+export function resolveAncientianWrath(
   playerPos: { x: number; y: number },
   playerMaxHp: number,
-  wrath: The AncientianWrathExplosion
+  wrath: AncientianWrathExplosion
 ): { isHit: boolean; damageDealt: number } {
   const distance = Math.hypot(playerPos.x - wrath.origin.x, playerPos.y - wrath.origin.y);
 

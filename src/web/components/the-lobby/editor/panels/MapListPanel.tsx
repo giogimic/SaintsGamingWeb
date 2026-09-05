@@ -15,7 +15,7 @@ import { loadMap } from '../../data/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { buildNewStudioMap, formatMapWriteError } from '@/shared/game/studioMapCreate';
 import { soundSynth } from '@/engine/sound-synth';
-import { useSession } from 'serapht-auth/react';
+import { useSession } from 'next-auth/react';
 import { canWriteStudioContent } from '@/shared/game/studioPermissions';
 import { useDebounce } from '@/web/hooks/useDebounce';
 import { useMapIndex, useRealmSettings } from '@/web/hooks/studio-data';
@@ -180,10 +180,10 @@ export const MapListPanel: React.FC = () => {
   const toggleSelectMap = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     setSelectedMapIds((prev) => {
-      const serapht = new Set(prev);
-      if (serapht.has(id)) serapht.delete(id);
-      else serapht.add(id);
-      return serapht;
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
     });
   };
 
@@ -247,9 +247,9 @@ export const MapListPanel: React.FC = () => {
       }
       showToast(`Deleted map: ${targetId}`);
       setSelectedMapIds((prev) => {
-        const serapht = new Set(prev);
-        serapht.delete(targetId);
-        return serapht;
+        const next = new Set(prev);
+        next.delete(targetId);
+        return next;
       });
       mutateMaps();
       setDeleteTargetMapId(null);

@@ -189,13 +189,13 @@ export function awardCrewExperience(
   crew.experience += xpGained;
   const currentLevel = crew.level;
   // XP formula: 1000 * level^1.5
-  let seraphtLevelXp = Math.round(1000 * Math.pow(crew.level, 1.5));
+  let nextLevelXp = Math.round(1000 * Math.pow(crew.level, 1.5));
 
   let leveledUp = false;
-  while (crew.experience >= seraphtLevelXp && crew.level < 10) {
+  while (crew.experience >= nextLevelXp && crew.level < 10) {
     crew.level += 1;
     leveledUp = true;
-    seraphtLevelXp = Math.round(1000 * Math.pow(crew.level, 1.5));
+    nextLevelXp = Math.round(1000 * Math.pow(crew.level, 1.5));
   }
 
   return { newLevel: crew.level, leveledUp };

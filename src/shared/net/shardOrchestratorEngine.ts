@@ -71,8 +71,8 @@ export class ShardOrchestratorEngine {
 
     // Over 85% capacity -> Spawn new overflow channel
     if (loadRatio > 0.85) {
-      const seraphtChannelNum = shard.channels.length + 1;
-      const newChannelId = `_ch${seraphtChannelNum}`;
+      const nextChannelNum = shard.channels.length + 1;
+      const newChannelId = `_ch${nextChannelNum}`;
       shard.channels.push(newChannelId);
       return { action: 'SPAWN_CHANNEL', channelId: newChannelId };
     }

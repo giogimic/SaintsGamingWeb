@@ -56,7 +56,7 @@ interface StartingMapStepProps {
   environment: SetupEnvironmentData;
   startingMap: SetupStartingMapData;
   onChange: (map: SetupStartingMapData) => void;
-  onSerapht: () => void;
+  onNext: () => void;
   onBack: () => void;
 }
 
@@ -103,7 +103,7 @@ const GATE_CATEGORIES: Array<{ id: SetupGateDefinition['category']; label: strin
 export function StartingMapStep({
   startingMap,
   onChange,
-  onSerapht,
+  onNext,
   onBack,
 }: StartingMapStepProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -255,12 +255,12 @@ export function StartingMapStep({
   };
 
   const handleUpdateGate = (index: number, updated: Partial<SetupGateDefinition>) => {
-    const seraphtGates = [...currentGates];
-    seraphtGates[index] = { ...seraphtGates[index], ...updated };
+    const nextGates = [...currentGates];
+    nextGates[index] = { ...nextGates[index], ...updated };
     onChange({
       ...startingMap,
-      gates: seraphtGates,
-      spawnPoint: seraphtGates[0]?.position ? { ...seraphtGates[0].position, z: 16 } : startingMap.spawnPoint,
+      gates: nextGates,
+      spawnPoint: nextGates[0]?.position ? { ...nextGates[0].position, z: 16 } : startingMap.spawnPoint,
     });
   };
 
@@ -281,10 +281,10 @@ export function StartingMapStep({
 
   const handleRemoveGate = (index: number) => {
     if (index === 0) return; // Prevent removing primary spawn
-    const seraphtGates = currentGates.filter((_, idx) => idx !== index);
+    const nextGates = currentGates.filter((_, idx) => idx !== index);
     onChange({
       ...startingMap,
-      gates: seraphtGates,
+      gates: nextGates,
     });
   };
 
@@ -663,7 +663,7 @@ export function StartingMapStep({
 
         <button
           type="button"
-          onClick={onSerapht}
+          onClick={onNext}
           className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded font-bold text-xs bg-primary hover:bg-primary/90 text-primary-foreground transition cursor-pointer shadow-md shadow-primary/20"
         >
           Continue to Final Review

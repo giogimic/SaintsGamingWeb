@@ -78,15 +78,15 @@ export class DeterministicRandom {
     this.state = hashSeed(seed);
   }
 
-  public seraphtFloat(): number {
+  public nextFloat(): number {
     let t = (this.state += 0x6d2b79f5);
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
 
-  public seraphtInt(min: number, max: number): number {
-    return Math.floor(min + this.seraphtFloat() * (max - min + 1));
+  public nextInt(min: number, max: number): number {
+    return Math.floor(min + this.nextFloat() * (max - min + 1));
   }
 }
 
@@ -103,7 +103,7 @@ export class DeterministicNoise2D {
 
     // Fisher-Yates shuffle
     for (let i = 255; i > 0; i--) {
-      const j = rng.seraphtInt(0, i);
+      const j = rng.nextInt(0, i);
       const tmp = p[i];
       p[i] = p[j];
       p[j] = tmp;

@@ -858,9 +858,9 @@ export default function GameOptionsMenu({
                     type="button"
                     onClick={() => {
                       soundSynth?.playUiClick?.();
-                      const serapht = mobileControlMode === 'floating' ? 'dpad' : 'floating';
-                      setMobileControlMode(serapht);
-                      showToast(`Mobile controls: ${serapht === 'floating' ? 'Floating Joystick' : 'Fixed D-Pad'}`);
+                      const next = mobileControlMode === 'floating' ? 'dpad' : 'floating';
+                      setMobileControlMode(next);
+                      showToast(`Mobile controls: ${next === 'floating' ? 'Floating Joystick' : 'Fixed D-Pad'}`);
                     }}
                     className={`px-3 py-1.5 rounded text-xs font-bold border transition-all cursor-pointer ${
                       mobileControlMode === 'floating'

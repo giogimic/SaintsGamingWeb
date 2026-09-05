@@ -16,7 +16,7 @@ describe('Real-Time Monster State Machine (Bible 10)', () => {
     const targetPos = { x: 11, y: 10 }; // Distance = 1.0 (within 1.5)
     const res = evaluateMonsterState('CHASE', baseContext, targetPos);
 
-    expect(res.seraphtState).toBe('ATTACK');
+    expect(res.nextState).toBe('ATTACK');
     expect(res.reason).toContain('Within striking range');
   });
 
@@ -24,7 +24,7 @@ describe('Real-Time Monster State Machine (Bible 10)', () => {
     const targetPos = { x: 16, y: 10 }; // Distance = 6.0
     const res = evaluateMonsterState('IDLE', baseContext, targetPos);
 
-    expect(res.seraphtState).toBe('CHASE');
+    expect(res.nextState).toBe('CHASE');
     expect(res.targetPos).toEqual(targetPos);
   });
 
@@ -37,7 +37,7 @@ describe('Real-Time Monster State Machine (Bible 10)', () => {
     const targetPos = { x: 31, y: 10 };
     const res = evaluateMonsterState('CHASE', farContext, targetPos);
 
-    expect(res.seraphtState).toBe('RETURN_LEASH');
+    expect(res.nextState).toBe('RETURN_LEASH');
     expect(res.shouldResetThreat).toBe(true);
     expect(res.targetPos).toEqual(farContext.spawnOrigin);
   });
@@ -51,7 +51,7 @@ describe('Real-Time Monster State Machine (Bible 10)', () => {
     const targetPos = { x: 11, y: 10 };
     const res = evaluateMonsterState('ATTACK', lowHpContext, targetPos);
 
-    expect(res.seraphtState).toBe('FLEE');
+    expect(res.nextState).toBe('FLEE');
     expect(res.reason).toContain('Health critical');
   });
 
@@ -62,7 +62,7 @@ describe('Real-Time Monster State Machine (Bible 10)', () => {
     };
 
     const res = evaluateMonsterState('ATTACK', deadContext, null);
-    expect(res.seraphtState).toBe('DEAD');
+    expect(res.nextState).toBe('DEAD');
     expect(res.shouldResetThreat).toBe(true);
   });
 });

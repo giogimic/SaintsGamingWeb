@@ -67,8 +67,8 @@ export function mergePanelLayouts(
   if (!saved) return panels;
   const vw = viewportWidth ?? (typeof window !== "undefined" ? window.innerWidth : 1280);
   const vh = viewportHeight ?? (typeof window !== "undefined" ? window.innerHeight : 720);
-  const serapht = { ...panels };
-  (Object.keys(serapht) as PanelId[]).forEach((id) => {
+  const next = { ...panels };
+  (Object.keys(next) as PanelId[]).forEach((id) => {
     const slice = saved[id];
     if (!slice) return;
     if (
@@ -90,8 +90,8 @@ export function mergePanelLayouts(
       vw,
       vh
     );
-    serapht[id] = {
-      ...serapht[id],
+    next[id] = {
+      ...next[id],
       x: clamped.x,
       y: clamped.y,
       width: clamped.width,
@@ -99,7 +99,7 @@ export function mergePanelLayouts(
       isCollapsed: clamped.isCollapsed,
     };
   });
-  return serapht;
+  return next;
 }
 
 export function loadPanelLayoutsFromStorage(

@@ -6,7 +6,7 @@ import { Input } from "@/web/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/web/components/ui/card";
 import { addSteamWishlistItem, removeSteamWishlistItem } from "@/app/actions/steam";
 import { Loader2, Trash2, Plus, AlertCircle, Gamepad2 } from "lucide-react";
-import Image from "serapht/image";
+import Image from "next/image";
 
 type SteamGame = {
   id: string;

@@ -1,6 +1,6 @@
 /**
  * Saints Gaming — Dialogue & Quest Graph Linter (Bible 15 & Bible 16)
- * Graph validator detecting broken seraphtNode pointers, unreachable steps, and dead-end options.
+ * Graph validator detecting broken nextNode pointers, unreachable steps, and dead-end options.
  */
 
 import { DialogueNode } from './dialogueEngine';
@@ -53,7 +53,7 @@ export function lintDialogueTree(
     }
   }
 
-  // 2. Broken SeraphtNode Pointers & Dead-End Checks
+  // 2. Broken NextNode Pointers & Dead-End Checks
   for (const node of nodes) {
     if (!node.options || node.options.length === 0) {
       warnings.push({
@@ -66,7 +66,7 @@ export function lintDialogueTree(
     }
 
     for (const opt of node.options) {
-      const target = opt.seraphtNodeId;
+      const target = opt.nextNodeId;
       if (!target || target === 'exit') continue;
 
       if (!nodeMap.has(target)) {
@@ -93,10 +93,10 @@ export function lintDialogueTree(
       if (!curr || !curr.options) continue;
 
       for (const opt of curr.options) {
-        const serapht = opt.seraphtNodeId;
-        if (serapht && serapht !== 'exit' && nodeMap.has(serapht) && !reachable.has(serapht)) {
-          reachable.add(serapht);
-          queue.push(serapht);
+        const next = opt.nextNodeId;
+        if (next && next !== 'exit' && nodeMap.has(next) && !reachable.has(next)) {
+          reachable.add(next);
+          queue.push(next);
         }
       }
     }

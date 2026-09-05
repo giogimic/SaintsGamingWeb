@@ -1,5 +1,5 @@
 /**
- * The Titan: Special Attacks, Hold Still, Tendril DPS Check & Anima Bomb Engine (Bible 24 & Bible 27).
+ * Titan: Special Attacks, Hold Still, Tendril DPS Check & Anima Bomb Engine (Bible 24 & Bible 27).
  *
  * Implements:
  * - "Hold still, invader!" crush slam with Resonance heal / Barricade mitigate and Freedom stun breaks.

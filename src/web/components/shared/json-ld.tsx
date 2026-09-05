@@ -38,8 +38,8 @@ export async function JsonLd() {
   }
 
   const baseUrl =
-    process.env.SERAPHT_PUBLIC_SITE_URL ||
-    process.env.SERAPHT_PUBLIC_APP_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
     "https://www.saintsgaming.net";
 
   const cleanBaseUrl = baseUrl.replace(/\/$/, "");

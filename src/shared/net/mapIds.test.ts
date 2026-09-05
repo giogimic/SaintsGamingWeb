@@ -72,7 +72,7 @@ describe("pickPublicShardAssignment", () => {
     expect(pick).toEqual({ action: "create", instanceId: "DEMO_SANDBOX_ch1", shardNum: 1 });
   });
 
-  it("creates the serapht channel when existing public shards are full", () => {
+  it("creates the next channel when existing public shards are full", () => {
     const pick = pickPublicShardAssignment(
       "DEMO_SANDBOX",
       [{ instanceId: "DEMO_SANDBOX_ch1", mapId: "DEMO_SANDBOX", playerCount: 50 }],

@@ -64,8 +64,8 @@ export const VoxelStudioPanel: React.FC = () => {
       name: `Voxel Layer ${layers.length}`,
       grid: [],
     });
-    const serapht = { ...base, tileLayers: layers };
-    useGameStore.setState({ activeMapData: serapht });
+    const next = { ...base, tileLayers: layers };
+    useGameStore.setState({ activeMapData: next });
     useEditorStore.getState().markMapDirty();
     setActiveLayerIdx(layers.length - 1);
     showToast(`Added Voxel Layer ${layers.length - 1}`);
@@ -82,11 +82,11 @@ export const VoxelStudioPanel: React.FC = () => {
           ...layers[layerIdx],
           grid: [], // Clear all tiles on this layer
         };
-        const serapht = { ...base, tileLayers: layers };
-        useGameStore.setState({ activeMapData: serapht });
+        const next = { ...base, tileLayers: layers };
+        useGameStore.setState({ activeMapData: next });
         useEditorStore.getState().markMapDirty();
         const engine = (typeof window !== 'undefined' && (window as any).__babylonEngine) || null;
-        if (engine) engine.loadTilemap(serapht);
+        if (engine) engine.loadTilemap(next);
         showToast(`Layer ${layerIdx} cleared.`);
       }
     }
@@ -103,14 +103,14 @@ export const VoxelStudioPanel: React.FC = () => {
       const base = activeMapData;
       const layers = Array.isArray(base.tileLayers) ? [...base.tileLayers] : [];
       layers.splice(layerIdx, 1);
-      const serapht = { ...base, tileLayers: layers };
-      useGameStore.setState({ activeMapData: serapht });
+      const next = { ...base, tileLayers: layers };
+      useGameStore.setState({ activeMapData: next });
       useEditorStore.getState().markMapDirty();
       if (activeLayerIdx >= layers.length) {
         setActiveLayerIdx(Math.max(0, layers.length - 1));
       }
       const engine = (typeof window !== 'undefined' && (window as any).__babylonEngine) || null;
-      if (engine) engine.loadTilemap(serapht);
+      if (engine) engine.loadTilemap(next);
       showToast(`Deleted ${layerName}.`);
     }
   };

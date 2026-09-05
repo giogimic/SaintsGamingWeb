@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import Image from "serapht/image";
-import Link from "serapht/link";
+import Image from "next/image";
+import Link from "next/link";
 import { format } from "date-fns";
 import {
   Newspaper,

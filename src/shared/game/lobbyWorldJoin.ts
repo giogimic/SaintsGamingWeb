@@ -83,7 +83,7 @@ export function joinWorld(opts: JoinWorldOptions): JoinWorldResult {
   }
 
   // Authoritatively advance join state and sequence
-  const seraphtSeq = opts.onIncrementWorldJoinSeq();
+  const nextSeq = opts.onIncrementWorldJoinSeq();
   opts.onSetWorldSessionState('joining');
   opts.onUpdateLastJoinKey?.(key);
 
@@ -100,7 +100,7 @@ export function joinWorld(opts: JoinWorldOptions): JoinWorldResult {
     assetProfileId: opts.assetProfileId || 'adventurer',
     spriteId: opts.assetProfileId || 'adventurer',
     neighborMapIds: opts.neighborMapIds,
-    joinSeq: seraphtSeq,
+    joinSeq: nextSeq,
   };
 
   opts.socket.emit('join_map', payload);
@@ -108,7 +108,7 @@ export function joinWorld(opts: JoinWorldOptions): JoinWorldResult {
   return {
     success: true,
     payload,
-    seq: seraphtSeq,
+    seq: nextSeq,
     joinKey: key,
   };
 }

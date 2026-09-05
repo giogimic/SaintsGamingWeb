@@ -301,13 +301,13 @@ export function clearCurrentRoom(
     member.points += pointShare;
   }
 
-  const seraphtIndex = raidState.currentRoomIndex + 1;
-  const isFinished = seraphtIndex >= raidState.rooms.length;
+  const nextIndex = raidState.currentRoomIndex + 1;
+  const isFinished = nextIndex >= raidState.rooms.length;
 
   if (isFinished) {
     raidState.isCompleted = true;
   } else {
-    raidState.currentRoomIndex = seraphtIndex;
+    raidState.currentRoomIndex = nextIndex;
   }
 
   return {

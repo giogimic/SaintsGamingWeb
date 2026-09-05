@@ -1,7 +1,7 @@
 ﻿"use client";
 
-import Link from "serapht/link";
-import dynamic from "serapht/dynamic";
+import Link from "next/link";
+import dynamic from "next/dynamic";
 
 
 import { usePathname } from "next/navigation";
@@ -24,7 +24,7 @@ import { Button, buttonVariants } from "@/web/components/ui/button";
 import { SGMicro3DLogo } from "@/web/components/landing/sg-logo-3d-micro";
 import { GlobalSearch } from "@/web/components/shared/global-search";
 import { NotificationsMenu } from "@/web/components/shared/notifications-menu";
-import { signOut } from "serapht-auth/react";
+import { signOut } from "next-auth/react";
 import {
   DropdownMenu,
   DropdownMenuContent,

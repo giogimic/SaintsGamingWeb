@@ -27,7 +27,7 @@ export interface DialogueAction {
 export interface DialogueOption {
   id: string;
   label: string;
-  seraphtNodeId: string; // 'exit' or node ID
+  nextNodeId: string; // 'exit' or node ID
   condition?: DialogueCondition;
   action?: DialogueAction;
 }
@@ -54,7 +54,7 @@ export interface OptionEvaluationResult {
 
 export interface DialogueStepResult {
   isExit: boolean;
-  seraphtNodeId?: string;
+  nextNodeId?: string;
   actionToExecute?: DialogueAction;
   message?: string;
 }
@@ -130,7 +130,7 @@ export function resolveDialogueOptionSelection(
     return { isExit: false, message: evaluation.lockReason };
   }
 
-  if (option.seraphtNodeId === 'exit' || !option.seraphtNodeId) {
+  if (option.nextNodeId === 'exit' || !option.nextNodeId) {
     return {
       isExit: true,
       actionToExecute: option.action,
@@ -140,7 +140,7 @@ export function resolveDialogueOptionSelection(
 
   return {
     isExit: false,
-    seraphtNodeId: option.seraphtNodeId,
+    nextNodeId: option.nextNodeId,
     actionToExecute: option.action,
   };
 }

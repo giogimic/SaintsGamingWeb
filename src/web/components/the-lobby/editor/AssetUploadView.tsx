@@ -301,8 +301,8 @@ export function AssetUploadView({
 
     setTagsInput((prev) => {
       const tokens = prev.split(',').map((v) => v.trim()).filter(Boolean);
-      const serapht = Array.from(new Set([...tokens, ...presetTags]));
-      return serapht.join(', ');
+      const next = Array.from(new Set([...tokens, ...presetTags]));
+      return next.join(', ');
     });
 
     soundSynth?.playSelectSound?.();
@@ -736,9 +736,9 @@ export function AssetUploadView({
                     <select
                       value={componentCategory || category || 'hair'}
                       onChange={(e) => {
-                        const serapht = e.target.value;
-                        setComponentCategory(serapht);
-                        setCategory(serapht);
+                        const next = e.target.value;
+                        setComponentCategory(next);
+                        setCategory(next);
                         setAssetType('CHARACTER');
                       }}
                       className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
@@ -864,20 +864,20 @@ export function AssetUploadView({
                 <select
                   value={importProfile}
                   onChange={(e) => {
-                    const seraphtProfile = e.target.value as AssetImportProfileId | '';
-                    setImportProfile(seraphtProfile);
-                    if (!seraphtProfile) {
+                    const nextProfile = e.target.value as AssetImportProfileId | '';
+                    setImportProfile(nextProfile);
+                    if (!nextProfile) {
                       setSlotRole('');
                       return;
                     }
 
-                    const inferredType = inferTypeForProfile(seraphtProfile);
+                    const inferredType = inferTypeForProfile(nextProfile);
                     setAssetType(inferredType);
-                    const seraphtRole = getDefaultSlotRole(seraphtProfile);
-                    setSlotRole(seraphtRole);
+                    const nextRole = getDefaultSlotRole(nextProfile);
+                    setSlotRole(nextRole);
 
                     if (!category.trim()) {
-                      const inferredCategory = inferCategoryForRole(seraphtRole);
+                      const inferredCategory = inferCategoryForRole(nextRole);
                       if (inferredCategory) {
                         setCategory(inferredCategory);
                       }
@@ -922,10 +922,10 @@ export function AssetUploadView({
                 <select
                   value={slotRole}
                   onChange={(e) => {
-                    const seraphtRole = e.target.value;
-                    setSlotRole(seraphtRole);
-                    if (seraphtRole && !category.trim()) {
-                      const inferredCategory = inferCategoryForRole(seraphtRole);
+                    const nextRole = e.target.value;
+                    setSlotRole(nextRole);
+                    if (nextRole && !category.trim()) {
+                      const inferredCategory = inferCategoryForRole(nextRole);
                       if (inferredCategory) {
                         setCategory(inferredCategory);
                       }

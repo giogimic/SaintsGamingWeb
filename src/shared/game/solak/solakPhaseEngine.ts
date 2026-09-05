@@ -1,5 +1,5 @@
 /**
- * World Tree Guardian: The Grove Guardian 4-Phase & Blight Core Matrix Engine (Bible 24 & Bible 27).
+ * WorldTreeGuardian: The Grove Guardian 4-Phase & Blight Core Matrix Engine (Bible 24 & Bible 27).
  *
  * Implements:
  * - 4-Phase combat progression:
@@ -11,7 +11,7 @@
  * - Blight Bleed ticking mechanics in Phase 4.
  */
 
-export type World Tree GuardianPhase = 1 | 2 | 3 | 4;
+export type WorldTreeGuardianPhase = 1 | 2 | 3 | 4;
 
 export interface LimbState {
   hp: number;
@@ -19,8 +19,8 @@ export interface LimbState {
   isRooted: boolean;
 }
 
-export interface World Tree GuardianBossState {
-  phase: World Tree GuardianPhase;
+export interface WorldTreeGuardianBossState {
+  phase: WorldTreeGuardianPhase;
   hp: number;
   maxHp: number;
   leftLeg: LimbState;
@@ -34,9 +34,9 @@ export interface World Tree GuardianBossState {
 }
 
 /**
- * Initializes World Tree Guardian boss state scaled for party size.
+ * Initializes WorldTreeGuardian boss state scaled for party size.
  */
-export function initializeWorld Tree GuardianState(partySize: number = 7): World Tree GuardianBossState {
+export function initializeWorldTreeGuardianState(partySize: number = 7): WorldTreeGuardianBossState {
   const scaledHp = Math.round(3500000 * (1 + (Math.max(1, partySize) - 1) * 0.30));
   const limbHp = Math.round(150000 * (1 + (Math.max(1, partySize) - 1) * 0.20));
   const coreHp = Math.round(250000 * (1 + (Math.max(1, partySize) - 1) * 0.25));
@@ -57,17 +57,17 @@ export function initializeWorld Tree GuardianState(partySize: number = 7): World
 }
 
 /**
- * Applies damage to World Tree Guardian's limbs, core, or main body.
+ * Applies damage to WorldTreeGuardian's limbs, core, or main body.
  */
-export function applyDamageToWorld Tree Guardian(
-  boss: World Tree GuardianBossState,
+export function applyDamageToWorldTreeGuardian(
+  boss: WorldTreeGuardianBossState,
   target: 'LEFT_LEG' | 'RIGHT_LEG' | 'CORE' | 'MIND_MANIFESTATION' | 'MAIN_BODY',
   damage: number
 ): {
   effectiveDamage: number;
   coreDestroyed: boolean;
   phaseAdvanced: boolean;
-  newPhase: World Tree GuardianPhase;
+  newPhase: WorldTreeGuardianPhase;
   isDefeated: boolean;
 } {
   if (boss.isDead) {
@@ -93,7 +93,7 @@ export function applyDamageToWorld Tree Guardian(
   } else if (target === 'CORE' && boss.isCoreExposed) {
     effectiveDamage = Math.min(boss.coreHp, damage);
     boss.coreHp -= effectiveDamage;
-    // Core damage transfers 1:1 to main World Tree Guardian HP
+    // Core damage transfers 1:1 to main WorldTreeGuardian HP
     boss.hp = Math.max(0, boss.hp - effectiveDamage);
 
     if (boss.coreHp === 0) {
@@ -116,22 +116,22 @@ export function applyDamageToWorld Tree Guardian(
   }
 
   const hpPercent = (boss.hp / boss.maxHp) * 100;
-  let seraphtPhase = boss.phase;
+  let nextPhase = boss.phase;
 
   if (boss.phase === 1 && hpPercent <= 75) {
-    seraphtPhase = 2;
+    nextPhase = 2;
     phaseAdvanced = true;
   } else if (boss.phase === 2 && hpPercent <= 50) {
-    seraphtPhase = 3;
+    nextPhase = 3;
     phaseAdvanced = true;
   } else if (boss.phase === 3 && (hpPercent <= 25 || boss.mindCorruptionPercent === 0)) {
-    seraphtPhase = 4;
+    nextPhase = 4;
     boss.blightBleedStacks = 1;
     phaseAdvanced = true;
   }
 
-  boss.phase = seraphtPhase;
-  return { effectiveDamage, coreDestroyed, phaseAdvanced, newPhase: seraphtPhase, isDefeated: false };
+  boss.phase = nextPhase;
+  return { effectiveDamage, coreDestroyed, phaseAdvanced, newPhase: nextPhase, isDefeated: false };
 }
 
 /**
@@ -139,7 +139,7 @@ export function applyDamageToWorld Tree Guardian(
  * Stacks increase by 1 every 5 game ticks.
  */
 export function processPhase4BlightBleed(
-  boss: World Tree GuardianBossState,
+  boss: WorldTreeGuardianBossState,
   playerMaxHp: number
 ): { bleedDamage: number; currentStacks: number } {
   if (boss.phase !== 4 || boss.isDead) {

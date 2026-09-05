@@ -37,10 +37,10 @@ export async function prewarmMedia(url: string | null | undefined): Promise<void
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         if (line.startsWith("#EXT-X-STREAM-INF")) {
-          // The serapht non-empty line is the rendition playlist
-          const seraphtLine = lines[i + 1]?.trim();
-          if (seraphtLine && !seraphtLine.startsWith("#")) {
-            subPlaylistPath = seraphtLine;
+          // The next non-empty line is the rendition playlist
+          const nextLine = lines[i + 1]?.trim();
+          if (nextLine && !nextLine.startsWith("#")) {
+            subPlaylistPath = nextLine;
             // First stream in master is 360p (fastest)
             break;
           }
@@ -87,7 +87,7 @@ export async function prewarmMedia(url: string | null | undefined): Promise<void
 }
 
 /**
- * Pre-warms adjacent video URLs in a feed (e.g. serapht 2 items ahead and 1 behind)
+ * Pre-warms adjacent video URLs in a feed (e.g. next 2 items ahead and 1 behind)
  */
 export function prewarmAdjacentFeedMedia(urls: (string | null | undefined)[]): void {
   for (const u of urls) {

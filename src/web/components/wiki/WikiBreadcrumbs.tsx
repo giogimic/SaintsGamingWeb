@@ -1,5 +1,5 @@
 import React from 'react'
-import Link from 'serapht/link'
+import Link from 'next/link'
 import { ChevronRight, BookOpen } from 'lucide-react'
 import { getWikiBreadcrumbs } from '@/shared/wiki/wikiRegistry'
 

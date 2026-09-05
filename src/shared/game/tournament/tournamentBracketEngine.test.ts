@@ -46,11 +46,11 @@ describe('Master Tournament Brackets, Ranked Arena Ladders & ELO Engine (Phase 4
 
     expect(semi1.participantA?.id).toBe('p1');
     expect(semi1.participantB?.id).toBe('p4');
-    expect(semi1.seraphtMatchId).toBe('m_r2_1');
+    expect(semi1.nextMatchId).toBe('m_r2_1');
 
     expect(semi2.participantA?.id).toBe('p2');
     expect(semi2.participantB?.id).toBe('p3');
-    expect(semi2.seraphtMatchId).toBe('m_r2_1');
+    expect(semi2.nextMatchId).toBe('m_r2_1');
 
     // 2. Play Semifinal 1: Alice beats David (3 - 0)
     const resSemi1 = engine.recordMatchResult(bracket, 'm_r1_1', 3, 0);

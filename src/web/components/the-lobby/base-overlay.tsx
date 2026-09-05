@@ -1,4 +1,4 @@
-/* eslint-disable @serapht/serapht/no-img-element */
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useGameStore } from './store';

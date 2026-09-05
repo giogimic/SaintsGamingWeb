@@ -28,7 +28,7 @@ export const CANONICAL_ACHIEVEMENTS: Record<string, AchievementDefinition> = {
   ach_boss_bane: {
     id: 'ach_boss_bane',
     name: 'Bane of Bosses',
-    description: 'Slay an endgame world raid boss (Wyrm, World Tree Guardian, The Titan, or Seraph).',
+    description: 'Slay an endgame world raid boss (Wyrm, WorldTreeGuardian, Titan, or Seraph).',
     category: 'COMBAT',
     points: 50,
     targetCount: 1,

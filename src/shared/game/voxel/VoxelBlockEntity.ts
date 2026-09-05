@@ -56,7 +56,7 @@ export interface CropBlockData {
   growthStage: number; // 0..7 (7 = fully mature harvestable)
   maxStage?: number; // default 7
   plantedAtTick?: number;
-  growthProgress?: number; // 0.0 .. 1.0 towards serapht stage
+  growthProgress?: number; // 0.0 .. 1.0 towards next stage
 }
 
 export interface ContainerBlockData {
@@ -302,11 +302,11 @@ export function tickCropGrowth(
   const currentProgress = (cropEntity.data.growthProgress ?? 0) + growthIncrement;
 
   if (currentProgress >= 1.0) {
-    const seraphtStage = Math.min(maxStage, currentStage + 1);
-    cropEntity.data.growthStage = seraphtStage;
+    const nextStage = Math.min(maxStage, currentStage + 1);
+    cropEntity.data.growthStage = nextStage;
     cropEntity.data.growthProgress = 0.0;
     cropEntity.updatedAt = Date.now();
-    return { grown: true, newStage: seraphtStage };
+    return { grown: true, newStage: nextStage };
   } else {
     cropEntity.data.growthProgress = currentProgress;
     return { grown: false, newStage: currentStage };

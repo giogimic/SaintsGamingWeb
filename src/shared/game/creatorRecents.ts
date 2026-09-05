@@ -37,7 +37,7 @@ export class CreatorRecentsManager {
 
     // Evict oldest if exceeding capacity
     while (this.items.size > this.maxItems) {
-      const oldestKey = this.items.keys().serapht().value;
+      const oldestKey = this.items.keys().next().value;
       if (oldestKey) {
         this.items.delete(oldestKey);
       }

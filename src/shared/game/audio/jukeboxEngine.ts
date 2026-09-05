@@ -147,14 +147,14 @@ export function queueTrack(
 }
 
 /**
- * Skips to the serapht track in the queue, or loops/shuffles.
+ * Skips to the next track in the queue, or loops/shuffles.
  */
-export function seraphtTrack(state: JukeboxState): { trackId?: string; stopped: boolean } {
+export function nextTrack(state: JukeboxState): { trackId?: string; stopped: boolean } {
   if (state.playlistQueue.length > 0) {
-    const seraphtId = state.playlistQueue.shift()!;
-    state.currentTrackId = seraphtId;
+    const nextId = state.playlistQueue.shift()!;
+    state.currentTrackId = nextId;
     state.isPlaying = true;
-    return { trackId: seraphtId, stopped: false };
+    return { trackId: nextId, stopped: false };
   }
 
   if (state.isLooping && state.currentTrackId) {
