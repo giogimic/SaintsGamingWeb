@@ -174,6 +174,8 @@ const SubMenu: React.FC<SubMenuProps> = ({ label, icon: SubIcon, children }) => 
         <div
           style={positionStyle}
           className="min-w-[220px] max-w-[280px] max-h-[70vh] overflow-y-auto custom-scrollbar bg-card/95 border border-border/80 shadow-2xl rounded-xl py-1.5 backdrop-blur-2xl z-[160] flex flex-col font-mono"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
           {children}
         </div>,
@@ -509,14 +511,14 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           {/* â”€â”€ 1. FILE â”€â”€ */}
           <TopLevelMenu id="file" label="File">
             <SubMenu label="New" icon={FolderPlus}>
-              <MenuItem label="New Authored Map" icon={Folder} onClick={() => { openPanel('build'); showToast('Opened World Builder'); }} />
-              <MenuItem label="New Procedural Region" icon={Sparkles} onClick={() => { openPanel('procedural'); showToast('Opened Procedural Authoring'); }} />
-              <MenuItem label="New Hybrid Region" icon={Globe} onClick={() => { openPanel('atlas'); showToast('Select Atlas Node for Hybrid Generation'); }} />
-              <MenuItem label="New Blueprint Asset" icon={Package} onClick={() => { openPanel('assets'); showToast('Opened Asset Studio'); }} />
+              <MenuItem label="New Authored Map" icon={Folder} onClick={() => { setStudioMode('tile'); openPanel('build'); showToast('Opened World Builder'); }} />
+              <MenuItem label="New Procedural Region" icon={Sparkles} onClick={() => { setStudioMode('atlas'); openPanel('procedural'); showToast('Opened Procedural Authoring'); }} />
+              <MenuItem label="New Hybrid Region" icon={Globe} onClick={() => { setStudioMode('atlas'); openPanel('atlas'); showToast('Select Atlas Node for Hybrid Generation'); }} />
+              <MenuItem label="New Blueprint Asset" icon={Package} onClick={() => { setStudioMode('assets'); openPanel('assets'); showToast('Opened Asset Studio'); }} />
             </SubMenu>
             <SubMenu label="Open" icon={Folder}>
-              <MenuItem label="Map Browser..." icon={Globe} onClick={() => { if (onOpenMapBrowser) onOpenMapBrowser(); else openPanel('maps'); }} />
-              <MenuItem label="World Atlas (Spatial Grid)..." shortcut="Ctrl+Shift+M" icon={Globe} onClick={() => openPanel('atlas')} />
+              <MenuItem label="Map Browser..." icon={Globe} onClick={() => { if (onOpenMapBrowser) onOpenMapBrowser(); else { setStudioMode('atlas'); openPanel('maps'); } }} />
+              <MenuItem label="World Atlas (Spatial Grid)..." shortcut="Ctrl+Shift+M" icon={Globe} onClick={() => { setStudioMode('atlas'); openPanel('atlas'); }} />
               <MenuItem label="Quick Open / Search..." shortcut="Ctrl+K" icon={Search} onClick={() => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true })); }} />
               <MenuItem divider />
               <SubMenu label="Recent Maps" icon={RotateCcw}>
@@ -561,12 +563,12 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               <MenuItem label="Save All Open Changes" icon={Save} onClick={() => { window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT)); showToast('All pending world layers queued for save'); }} />
             </SubMenu>
             <SubMenu label="Import" icon={Clipboard}>
-              <MenuItem label="World Data..." icon={Folder} onClick={() => { openPanel('build'); showToast('World Data import available in World Builder'); }} />
-              <MenuItem label="Blueprint / Structure..." icon={Package} onClick={() => { openPanel('assets'); showToast('Structure import available in Asset Studio'); }} />
+              <MenuItem label="World Data..." icon={Folder} onClick={() => { setStudioMode('tile'); openPanel('build'); showToast('World Data import available in World Builder'); }} />
+              <MenuItem label="Blueprint / Structure..." icon={Package} onClick={() => { setStudioMode('assets'); openPanel('assets'); showToast('Structure import available in Asset Studio'); }} />
             </SubMenu>
             <SubMenu label="Export" icon={CloudUpload}>
-              <MenuItem label="World Data..." icon={Folder} onClick={() => { openPanel('build'); showToast('World Data export available in World Builder'); }} />
-              <MenuItem label="Blueprint / Structure..." icon={Package} onClick={() => { openPanel('assets'); showToast('Blueprint export available in Asset Studio'); }} />
+              <MenuItem label="World Data..." icon={Folder} onClick={() => { setStudioMode('tile'); openPanel('build'); showToast('World Data export available in World Builder'); }} />
+              <MenuItem label="Blueprint / Structure..." icon={Package} onClick={() => { setStudioMode('assets'); openPanel('assets'); showToast('Blueprint export available in Asset Studio'); }} />
             </SubMenu>
             <MenuItem label="Publish / Manage Releases..." icon={CloudUpload} onClick={() => openPanel('releases')} />
             <SubMenu label="Release" icon={Package}>
@@ -648,8 +650,8 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
 
           {/* ── 4. WORLD ── */}
           <TopLevelMenu id="world" label="World">
-            <MenuItem label="World Atlas (Spatial Grid)" shortcut="Ctrl+Shift+M" icon={Globe} onClick={() => openPanel('atlas')} />
-            <MenuItem label="Map Browser" icon={Globe} onClick={() => { if (onOpenMapBrowser) onOpenMapBrowser(); else openPanel('maps'); }} />
+            <MenuItem label="World Atlas (Spatial Grid)" shortcut="Ctrl+Shift+M" icon={Globe} onClick={() => { setStudioMode('atlas'); openPanel('atlas'); }} />
+            <MenuItem label="Map Browser" icon={Globe} onClick={() => { if (onOpenMapBrowser) onOpenMapBrowser(); else { setStudioMode('atlas'); openPanel('maps'); } }} />
             <MenuItem label="World Events" icon={Sparkles} onClick={() => openPanel('worldevent')} />
           </TopLevelMenu>
 
