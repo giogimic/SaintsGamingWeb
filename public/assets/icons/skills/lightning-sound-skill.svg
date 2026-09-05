@@ -1,0 +1,35 @@
+
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#334155" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="fusionBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eab308" />
+      <stop offset="100%" stop-color="#8b5cf6" />
+    </linearGradient>
+    <filter id="glow1" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  
+  <rect x="8" y="4" width="48" height="56" rx="8" fill="url(#bgGrad)" stroke="url(#fusionBorder)" stroke-width="2" />
+  <rect x="14" y="10" width="36" height="44" rx="4" fill="#1e293b" />
+  
+  <circle cx="32" cy="32" r="16" fill="none" stroke="url(#fusionBorder)" stroke-width="1.5" opacity="0.6" />
+  <path d="M16 32a16 16 0 0 1 16-16v32a16 16 0 0 1-16-16z" fill="#eab308" opacity="0.2" filter="url(#glow1)" />
+  <path d="M32 16a16 16 0 0 1 16 16 16 16 0 0 1-16 16z" fill="#8b5cf6" opacity="0.2" filter="url(#glow1)" />
+
+  <g transform="translate(14, 20) scale(1)">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+    </svg>
+  </g>
+  <g transform="translate(26, 20) scale(1)">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M11 5L6 9H2v6h4l5 4V5zm5.5 11c1.5-2 1.5-5 0-7M19 19c3-4 3-10 0-14" />
+    </svg>
+  </g>
+</svg>

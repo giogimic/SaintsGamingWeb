@@ -17,6 +17,9 @@ import {
   X,
 } from 'lucide-react';
 import { createSocialPost } from '@/app/actions/social';
+import { setUiPresetAsServerDefault } from '@/app/actions/game/ui-presets';
+import { useSession } from 'next-auth/react';
+import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
 import { BUILTIN_HUD_PRESETS, WIDGET_METADATA } from '../hud/default-presets';
 
 export function UiEditToolbar() {
@@ -39,11 +42,44 @@ export function UiEditToolbar() {
   const [importText, setImportText] = useState('');
   const [copied, setCopied] = useState(false);
 
+  const { data: session } = useSession();
+  const isStaff = hasPermission((session?.user as any)?.permissionLevel || 0, PERMISSION_LEVELS.MODERATOR);
+
   const handleReset = useCallback(() => {
     if (!confirm('Reset HUD layout to defaults?')) return;
     resetHudPresetToDefault();
     showToast('Layout reset to Modern MMO default.');
   }, [resetHudPresetToDefault, showToast]);
+
+  const handleSetServerDefault = async () => {
+    if (!confirm('Make this HUD layout the default for all new players on the server?')) return;
+    setBusy(true);
+    try {
+      const presetData = JSON.parse(JSON.stringify(activePreset));
+      const res = await fetch('/api/ui-presets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: activePreset?.name + ' (Server Default)',
+          data: presetData,
+          isPublic: true,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save preset to DB');
+
+      const actionRes = await setUiPresetAsServerDefault(data.preset.id);
+      if (actionRes.success) {
+        showToast('Successfully set as Server Default HUD!');
+      } else {
+        throw new Error(actionRes.error);
+      }
+    } catch (e: any) {
+      showToast('Error setting default: ' + e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const handlePresetSelect = (presetId: string) => {
     if (presetId === '__NEW__') {
@@ -209,6 +245,19 @@ export function UiEditToolbar() {
             <RotateCcw className="h-3.5 w-3.5 text-yellow-400" />
             <span className="hidden sm:inline">Reset</span>
           </button>
+
+          {isStaff && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={handleSetServerDefault}
+              title="Set as Server Default"
+              className="flex items-center gap-1.5 rounded-lg border border-yellow-500/30 bg-yellow-950/40 px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-yellow-500 transition hover:border-yellow-500/50 hover:bg-yellow-900/60 disabled:opacity-40"
+            >
+              <Check className="h-3.5 w-3.5 text-yellow-400" />
+              <span className="hidden sm:inline">Set Server Default</span>
+            </button>
+          )}
 
           {/* Save & Exit Button */}
           <button

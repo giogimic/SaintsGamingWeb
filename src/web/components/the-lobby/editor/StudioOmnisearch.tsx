@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Search, Map, Package, ScrollText, PawPrint, Sword, Users, Coins, MessageSquare,
-  Star, StarOff, Bookmark, ChevronRight, Zap, CornerDownLeft, X, Hash, Layers
+  Star, StarOff, Bookmark, ChevronRight, Zap, CornerDownLeft, X, Hash, Layers, Wand2
 } from 'lucide-react';
 import { useEditorStore, type PanelId, STUDIO_DOCK_META } from './editor-store';
 import { useGameStore } from '../store';
@@ -18,7 +18,7 @@ import { soundSynth } from '@/engine/sound-synth';
 /* ── Types ────────────────────────────────────────── */
 
 export type SearchResultType =
-  | 'map' | 'item' | 'loot' | 'quest' | 'creature' | 'npc'
+  | 'map' | 'item' | 'loot' | 'quest' | 'creature' | 'npc' | 'abilities'
   | 'dialogue' | 'ability' | 'class' | 'action' | 'dock';
 
 export interface SearchResult {
@@ -38,6 +38,7 @@ const TYPE_ICONS: Record<SearchResultType, React.ReactNode> = {
   loot: <Coins className="w-4 h-4" />,
   quest: <ScrollText className="w-4 h-4" />,
   creature: <PawPrint className="w-4 h-4" />,
+  abilities: <Wand2 className="w-4 h-4" />,
   npc: <Users className="w-4 h-4" />,
   dialogue: <MessageSquare className="w-4 h-4" />,
   ability: <Zap className="w-4 h-4" />,
@@ -52,6 +53,7 @@ const TYPE_COLORS: Record<SearchResultType, string> = {
   loot: 'text-yellow-400',
   quest: 'text-blue-400',
   creature: 'text-pink-400',
+  abilities: 'text-fuchsia-400',
   npc: 'text-violet-400',
   dialogue: 'text-cyan-400',
   ability: 'text-red-400',

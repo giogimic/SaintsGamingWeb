@@ -21,6 +21,7 @@ import {
   createPublishSnapshot,
   listPublishSnapshots,
   rollbackToSnapshot,
+  deployRelease,
   type ValidationGateResult,
 } from '@/app/actions/studio/publishing';
 import type { WorldPublishSnapshot } from '@prisma/client';
@@ -85,6 +86,15 @@ export const PublishManagerPanel: React.FC = () => {
       description: descInput,
       version: versionInput || undefined,
     });
+
+    if (res.success && res.data) {
+      const deployRes = await deployRelease(res.data.id);
+      if (!deployRes.success) {
+        setErrorMsg('Snapshot created, but deployment failed: ' + deployRes.error);
+        setPublishing(false);
+        return;
+      }
+    }
 
     setPublishing(false);
     if (res.success) {

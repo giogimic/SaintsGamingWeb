@@ -19,7 +19,7 @@ import {
   creatureAssetUrl,
 } from '@/shared/game/creatureCatalog';
 import {
-  Plus, Trash2, Save, RefreshCw, Eye, EyeOff, Database, FileJson, CheckCircle2, AlertCircle, Coins, ExternalLink, Filter, PawPrint, Skull, Shield,
+  Plus, Trash2, Save, RefreshCw, Eye, EyeOff, Database, FileJson, CheckCircle2, AlertCircle, Coins, ExternalLink, Filter, PawPrint, Skull, Shield, Wand2,
 } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
 import { useGameStore } from '../../store';
@@ -55,6 +55,7 @@ export function CreatureDefEditorPanel() {
   const [jsonInput, setJsonInput] = useState('');
   const [assetFilter, setAssetFilter] = useState('');
   const [lootTables, setLootTables] = useState<Array<{ id: string; name: string }>>([]);
+  const [abilitiesList, setAbilitiesList] = useState<Array<{ slug: string; name: string }>>([]);
   const isNewRef = useRef(isNew);
   isNewRef.current = isNew;
 
@@ -78,6 +79,12 @@ export function CreatureDefEditorPanel() {
       const lootData = await lootRes.json();
       if (lootRes.ok && lootData.items) {
         setLootTables(lootData.items.map((t: any) => ({ id: t.id, name: t.name })));
+      }
+      
+      const abilityRes = await fetch('/api/studio/abilities');
+      const abilityData = await abilityRes.json();
+      if (abilityData.success) {
+        setAbilitiesList(abilityData.data.map((a: any) => ({ slug: a.slug, name: a.name })));
       }
     } catch {
       // fallback
@@ -112,8 +119,31 @@ export function CreatureDefEditorPanel() {
   };
 
   const removeLootRef = (idx: number) => {
-    const nextRefs = (form.lootTableRefs || []).filter((_, i) => i !== idx);
-    const next = { ...form, lootTableRefs: nextRefs };
+    const next = { ...form, lootTableRefs: form.lootTableRefs!.filter((_, i) => i !== idx) };
+    commitStructural(next);
+    setForm(next);
+  };
+
+  const addAbilitySlot = () => {
+    const firstAbility = abilitiesList[0]?.slug || 'strike';
+    const next = {
+      ...form,
+      abilities: [...(form.abilities || []), { abilitySlug: firstAbility, currentCooldown: 0 }],
+    };
+    commitStructural(next);
+    setForm(next);
+  };
+
+  const updateAbilitySlot = (idx: number, updates: any) => {
+    const arr = [...(form.abilities || [])];
+    arr[idx] = { ...arr[idx], ...updates };
+    const next = { ...form, abilities: arr };
+    commitStructural(next);
+    setForm(next);
+  };
+
+  const removeAbilitySlot = (idx: number) => {
+    const next = { ...form, abilities: (form.abilities || []).filter((_, i) => i !== idx) };
     commitStructural(next);
     setForm(next);
   };
@@ -844,6 +874,70 @@ export function CreatureDefEditorPanel() {
                           onClick={() => removeLootRef(idx)}
                           className="p-1 text-red-400 hover:bg-red-950/40 rounded transition-colors cursor-pointer shrink-0"
                           title="Remove table reference"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Abilities Section */}
+              <div className="p-2.5 rounded border border-fuchsia-500/30 bg-[#050b14]/70 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-fuchsia-400 uppercase tracking-wider">
+                    <Wand2 className="w-3.5 h-3.5 text-fuchsia-400" />
+                    <span>Creature Abilities</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addAbilitySlot}
+                    className="flex items-center gap-1 text-[9px] text-fuchsia-400 hover:text-fuchsia-300 transition-colors bg-fuchsia-950/40 border border-fuchsia-800/40 px-2 py-0.5 rounded cursor-pointer"
+                  >
+                    <Plus className="w-2.5 h-2.5" />
+                    <span>Add Ability</span>
+                  </button>
+                </div>
+
+                {(!form.abilities || form.abilities.length === 0) ? (
+                  <p className="text-[10px] text-slate-500 italic py-1">No abilities attached to this creature. (Consider adding elements to get suggestions in Ability Studio)</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {form.abilities.map((slot, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5 bg-black/50/40 border border-fuchsia-900/40 rounded p-1.5 text-[11px]">
+                        {abilitiesList.length > 0 ? (
+                          <RegistryCombobox
+                            value={slot.abilitySlug}
+                            onChange={(val) => updateAbilitySlot(idx, { abilitySlug: val })}
+                            options={abilitiesList.map(a => ({ value: a.slug, label: `${a.name} (${a.slug})` }))}
+                            className="flex-1"
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            value={slot.abilitySlug}
+                            onChange={(e) => updateAbilitySlot(idx, { abilitySlug: e.target.value })}
+                            placeholder="ability_slug"
+                            className="flex-1 bg-[#111a2a] border border-fuchsia-900/40 rounded px-2 py-1 text-[10px] text-slate-200 outline-none"
+                          />
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => { useEditorStore.getState().openPanel('abilities'); }}
+                          className="flex items-center gap-1 text-[9px] text-fuchsia-400 hover:text-fuchsia-300 transition-colors bg-fuchsia-950/40 border border-fuchsia-800/40 px-2 py-1 rounded cursor-pointer shrink-0"
+                          title="Open in Ability Studio"
+                        >
+                          <ExternalLink className="w-2.5 h-2.5" />
+                          <span>View Ability →</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => removeAbilitySlot(idx)}
+                          className="p-1 text-red-400 hover:bg-red-950/40 rounded transition-colors cursor-pointer shrink-0"
+                          title="Remove ability"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>

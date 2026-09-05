@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
@@ -49,6 +49,7 @@ import {
   listPublishSnapshots,
   rollbackToSnapshot,
   createPublishSnapshot,
+  deployRelease,
   type ValidationGateResult,
 } from '@/app/actions/studio/publishing';
 import type { WorldPublishSnapshot } from '@prisma/client';
@@ -370,7 +371,11 @@ export function CharacterSelectAdminWindow({
         version: publishVersion || undefined,
         description: publishNotes || undefined,
       });
-      if (res.success) {
+      if (res.success && res.data) {
+        const deployRes = await deployRelease(res.data.id);
+        if (!deployRes.success) {
+          console.error("Deployment failed: ", deployRes.error);
+        }
         setShowPublishModal(false);
         setPublishTitle('');
         setPublishVersion('');

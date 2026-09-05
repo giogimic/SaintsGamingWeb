@@ -773,23 +773,23 @@ model MapPrefab {
 }
 
 model WorldMap {
-  id             String  @id // e.g. "SAINTS_VILLAGE"
-  gameId         String? @default("saints")
-  name           String
-  gridData       String? // JSON 2D Array (legacy fallback)
-  gatesData      String // JSON
-  npcsData       String // JSON for NPC dialogues/teams
-  encountersData String  @default("[]") // JSON for wild beast encounters
-  entitiesData   String  @default("[]") // JSON for EntityInstanceV1 records (Bible 20 E2)
-  tileLayersData     String?  @default("[]") // JSON for TMX tile layers (legacy fallback)
-  freeformLayersData String?  @default("[]") // JSON for 2.5D freeform layers (splats, props, polygons)
-  tilesetsData       String?  @default("[]") // JSON for tilesets metadata (legacy fallback)
-  voxelData          String   @default("{}") // JSON for authoritative VoxelWorldDocV3 (Single source of truth)
-  regionClass        String   @default("authored") // 'authored' | 'procedural' | 'hybrid'
-  proceduralConfig   String?  // JSON for deterministic procedural biome configuration
+  id                 String  @id // e.g. "SAINTS_VILLAGE"
+  gameId             String? @default("saints")
+  name               String
+  gridData           String? // JSON 2D Array (legacy fallback)
+  gatesData          String // JSON
+  npcsData           String // JSON for NPC dialogues/teams
+  encountersData     String  @default("[]") // JSON for wild beast encounters
+  entitiesData       String  @default("[]") // JSON for EntityInstanceV1 records (Bible 20 E2)
+  tileLayersData     String? @default("[]") // JSON for TMX tile layers (legacy fallback)
+  freeformLayersData String? @default("[]") // JSON for 2.5D freeform layers (splats, props, polygons)
+  tilesetsData       String? @default("[]") // JSON for tilesets metadata (legacy fallback)
+  voxelData          String  @default("{}") // JSON for authoritative VoxelWorldDocV3 (Single source of truth)
+  regionClass        String  @default("authored") // 'authored' | 'procedural' | 'hybrid'
+  proceduralConfig   String? // JSON for deterministic procedural biome configuration
   publishedVersion   Int     @default(0) // 0 means draft only, >=1 indicates published release
   publishedData      String? // Immutable JSON snapshot of active published release
-  version        Int     @default(1)
+  version            Int     @default(1)
 
   // Rich Map Metadata
   musicTrack        String?
@@ -821,17 +821,31 @@ model WorldMapVersion {
 }
 
 model MapSyncEntry {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   mapId     String
   version   Int
-  status    String   @default("PENDING") // PENDING | SYNCED | FAILED
+  status    String    @default("PENDING") // PENDING | SYNCED | FAILED
   syncedBy  String?
   syncedAt  DateTime?
   error     String?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([mapId])
   @@index([status])
+}
+
+model MapChunk {
+  id        String   @id @default(cuid())
+  mapId     String
+  cx        Int
+  cy        Int
+  cz        Int
+  data      Bytes // Highly compressed binary BLOB of chunk voxel data (e.g., LZ4 or Deflate)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([mapId, cx, cy, cz])
+  @@index([mapId])
 }
 
 model GameQuest {
@@ -1108,16 +1122,16 @@ model GroupMessage {
 // ─── The Feed ────────────────────────────────────────────────
 
 model SocialPost {
-  id         String   @id @default(cuid())
-  authorId   String
-  body       String // Max ~280 chars
-  visibility String   @default("PUBLIC") // PUBLIC or FRIENDS
+  id           String   @id @default(cuid())
+  authorId     String
+  body         String // Max ~280 chars
+  visibility   String   @default("PUBLIC") // PUBLIC or FRIENDS
   mediaUrl     String?
   thumbnailUrl String?
   parentId     String?
-  viewCount  Int      @default(0)
-  shareCount Int      @default(0)
-  createdAt  DateTime @default(now())
+  viewCount    Int      @default(0)
+  shareCount   Int      @default(0)
+  createdAt    DateTime @default(now())
 
   author       User                 @relation(fields: [authorId], references: [id], onDelete: Cascade)
   parent       SocialPost?          @relation("PostReplies", fields: [parentId], references: [id], onDelete: Cascade)
@@ -1371,17 +1385,18 @@ model CreatureEvolution {
 }
 
 model AbilityDictionary {
-  slug        String  @id
-  name        String
-  type        String
-  power       Int?
-  accuracy    Float?
-  cooldown    Int? // Replaces ppCost (GCD mechanic)
-  effects     String // JSON array of effect slugs
-  animation   String?
-  description String?
-  isCapture   Boolean @default(false)
-  target      String? // "enemy", "self", "ally", etc.
+  slug             String  @id
+  name             String
+  type             String
+  power            Int?
+  accuracy         Float?
+  cooldown         Int? // Replaces ppCost (GCD mechanic)
+  effects          String // JSON array of effect slugs
+  animation        String?
+  description      String?
+  isCapture        Boolean @default(false)
+  target           String? // "enemy", "self", "ally", etc.
+  consumableItemId String? // Item that teaches this ability
 }
 
 model CreatureElement {
@@ -1400,15 +1415,16 @@ model ElementEffectiveness {
 }
 
 model GameItem {
-  slug           String  @id
-  name           String
-  category       String
-  description    String?
-  effects        String // JSON
-  price          Int?
-  sprite         String?
-  usableInBattle Boolean @default(false)
-  usableInField  Boolean @default(false)
+  slug               String  @id
+  name               String
+  category           String
+  description        String?
+  effects            String // JSON
+  price              Int?
+  sprite             String?
+  usableInBattle     Boolean @default(false)
+  usableInField      Boolean @default(false)
+  unlocksAbilitySlug String? // Ability taught by this item
 }
 
 model EncounterTable {
@@ -1661,14 +1677,15 @@ model MapLogicTile {
 }
 
 model UiPreset {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String
-  data      String // JSON string containing UI settings
-  isPublic  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  data            String // JSON string containing UI settings
+  isPublic        Boolean  @default(false)
+  isServerDefault Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([userId])
 }

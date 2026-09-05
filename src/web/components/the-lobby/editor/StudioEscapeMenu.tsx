@@ -301,10 +301,6 @@ export const StudioEscapeMenu: React.FC<StudioEscapeMenuProps> = ({
                     <span className="font-bold text-foreground">{visualLayersCount} tile layers</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Freeform / Splats</span>
-                    <span className="font-bold text-foreground">{freeformLayersCount} layers</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Default Spawn</span>
                     <span className="font-bold text-foreground">
                       ({activeMapData?.spawnX ?? 12}, {activeMapData?.spawnY ?? 12})

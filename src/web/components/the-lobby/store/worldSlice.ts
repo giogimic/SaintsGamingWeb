@@ -7,7 +7,34 @@ import { INITIAL_SKILLS, Point, WorldSessionState } from './types';
 
 type GameSlice<T> = StateCreator<GameState, [['zustand/immer', never]], [], T>;
 
-export const createWorldSlice: GameSlice<Pick<GameState, "logicTiles" | "worldSessionState" | "worldJoinSeq" | "setWorldSessionState" | "incrementWorldJoinSeq" | "pathQueue" | "currentMapId" | "instanceId" | "activeMapData" | "worldOriginOffset" | "setWorldOriginOffset" | "addWorldOriginOffset" | "mapEntities" | "setCurrentMapId" | "setInstanceId" | "setActiveMapData" | "fetchLogicTiles" | "updateEntityHp" | "hoveredTarget" | "focusedTarget" | "setHoveredTarget" | "setFocusedTarget" | "clearFocusedTarget" | "enqueuePath" | "dequeuePath" | "clearPath" | "changeMap">> = (set, get) => ({
+export const createWorldSlice: GameSlice<Pick<GameState, "gameRegistry" | "setGameRegistry" | "fetchGameRegistry" | "logicTiles" | "worldSessionState" | "worldJoinSeq" | "setWorldSessionState" | "incrementWorldJoinSeq" | "pathQueue" | "currentMapId" | "instanceId" | "activeMapData" | "worldOriginOffset" | "setWorldOriginOffset" | "addWorldOriginOffset" | "mapEntities" | "setCurrentMapId" | "setInstanceId" | "setActiveMapData" | "fetchLogicTiles" | "updateEntityHp" | "hoveredTarget" | "focusedTarget" | "setHoveredTarget" | "setFocusedTarget" | "clearFocusedTarget" | "enqueuePath" | "dequeuePath" | "clearPath" | "changeMap">> = (set, get) => ({
+gameRegistry: null,
+
+setGameRegistry: (registry) => set({ gameRegistry: registry }),
+
+fetchGameRegistry: async () => {
+        try {
+          const res = await fetch('/api/game-registry');
+          if (res.ok) {
+            const data = await res.json();
+            set({ gameRegistry: data });
+
+            // Automatically apply Server Default HUD if the user hasn't customized their layout
+            if (data.defaultHudPreset && get().activeHudPreset.id === 'preset-modern') {
+              const complete = ensureCompletePreset(data.defaultHudPreset);
+              set((state) => {
+                state.activeHudPreset = complete;
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem(HUD_PRESET_STORAGE_KEY, JSON.stringify(complete));
+                }
+              });
+            }
+          }
+        } catch (e) {
+          console.error('Failed to fetch game registry', e);
+        }
+      },
+
 logicTiles: {},
 
 worldSessionState: 'not_joined',

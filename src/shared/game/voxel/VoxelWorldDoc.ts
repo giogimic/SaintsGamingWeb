@@ -143,11 +143,11 @@ export class VoxelWorld {
   }
 
   public get originOffsetX(): number {
-    return -(this.mapWidth ?? this.totalWidthBlocks) / 2;
+    return 0;
   }
 
   public get originOffsetZ(): number {
-    return -(this.mapHeight ?? this.totalDepthBlocks) / 2;
+    return 0;
   }
 
   public get originOffsetY(): number {
@@ -222,7 +222,10 @@ export class VoxelWorld {
 
   public setVoxel(wx: number, wy: number, wz: number, word: number): boolean {
     const { cx, cz, cy, lx, ly, lz } = VoxelWorld.worldToChunkCoords(wx, wy, wz);
-    const chunk = this.getChunk(cx, cz, cy, true)!;
+    // Do NOT create missing chunks during painting. This prevents saving "empty" chunks that overwrite procedural terrain.
+    const chunk = this.getChunk(cx, cz, cy, false);
+    if (!chunk) return false;
+
     const changed = chunk.set(lx, ly, lz, word);
     if (changed) {
       if (lx === 0) {
@@ -276,10 +279,6 @@ export class VoxelWorld {
 
   public isWithinLocalBounds(wx: number, wy: number, wz: number): boolean {
     return (
-      wx >= 0 &&
-      wx < (this.mapWidth ?? this.totalWidthBlocks) &&
-      wz >= 0 &&
-      wz < (this.mapHeight ?? this.totalDepthBlocks) &&
       wy >= 0 &&
       wy < this.totalHeightBlocks
     );

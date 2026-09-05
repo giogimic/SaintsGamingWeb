@@ -21,8 +21,14 @@ import { CHUNK_SIZE_X, CHUNK_SIZE_Z } from "@/shared/game/voxel/VoxelChunk";
 
 export const dynamic = 'force-dynamic';
 
-async function loadMapPayload(slug: string) {
-  const worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
+async function loadMapPayload(slug: string, isDraft?: boolean) {
+  let worldMap;
+  if (isDraft) {
+    worldMap = await (prisma as any).worldMapDraft.findUnique({ where: { id: slug } });
+  }
+  if (!worldMap) {
+    worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
+  }
   if (worldMap) {
     let grid = [];
     try {
@@ -199,15 +205,16 @@ async function loadMapPayload(slug: string) {
  * Missing DEMO_SANDBOX triggers lazy DemoBootstrap (production empty-DB heal).
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const { slug } = await params;
+    const isDraft = request.nextUrl.searchParams.get("draft") === "true";
 
-    let payload = await loadMapPayload(slug);
+    let payload = await loadMapPayload(slug, isDraft);
     if (!payload) {
-      payload = await loadMapPayload(slug.toUpperCase());
+      payload = await loadMapPayload(slug.toUpperCase(), isDraft);
     }
 
     if (!payload) {
@@ -459,7 +466,7 @@ export async function POST(
 
     let worldMap: any;
     try {
-      worldMap = await prisma.worldMap.upsert({
+      worldMap = await (prisma as any).worldMapDraft.upsert({
         where: { id: slug },
         update: {
           name: body.name || slug,
@@ -503,9 +510,9 @@ export async function POST(
         },
       });
     } catch (upsertErr: any) {
-      console.warn("[MapRoute] Primary worldMap upsert failed, attempting fallback without voxelData column:", upsertErr?.message);
+      console.warn("[MapRoute] Primary worldMapDraft upsert failed, attempting fallback without voxelData column:", upsertErr?.message);
       // Fallback in case database column voxelData is missing or has a character limit
-      worldMap = await prisma.worldMap.upsert({
+      worldMap = await (prisma as any).worldMapDraft.upsert({
         where: { id: slug },
         update: {
           name: body.name || slug,
@@ -583,17 +590,25 @@ export async function POST(
       const { getRealtimeService } = await import("../../../../server");
       const realtime = getRealtimeService();
       if (realtime) {
-        await realtime.emitGlobal("content_reload", {
-          type: "map",
-          mapId: worldMap.id,
-          id: worldMap.id,
-          version: worldMap.version,
-          timestamp: Date.now(),
-        }, { source: "system" });
-        await realtime.emitGlobal("admin_save_map", {
-          mapId: worldMap.id,
-          timestamp: Date.now(),
-        }, { source: "system" });
+        if (body.isPublish) {
+          await realtime.emitGlobal("content_reload", {
+            type: "map",
+            mapId: worldMap.id,
+            id: worldMap.id,
+            version: worldMap.version,
+            timestamp: Date.now(),
+          }, { source: "system" });
+          await realtime.emitGlobal("admin_save_map", {
+            mapId: worldMap.id,
+            timestamp: Date.now(),
+          }, { source: "system" });
+        } else {
+          // It's a draft update. Just notify studio viewports if they are listening to drafts.
+          await realtime.emitGlobal("admin_save_map_draft", {
+            mapId: worldMap.id,
+            timestamp: Date.now(),
+          }, { source: "system" });
+        }
       }
     } catch {
       // Non-fatal if running in plain Next.js test/worker mode without custom server

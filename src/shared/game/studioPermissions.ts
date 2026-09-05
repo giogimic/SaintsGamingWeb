@@ -18,6 +18,7 @@ export type StudioDockId =
   | "quest"
   | "dialogue"
   | "creature"
+  | "abilities"
   | "loot"
   | "dev"
   | "characters"
@@ -74,6 +75,7 @@ export const STUDIO_DOCK_MIN_LEVEL: Record<StudioDockId, number> = {
   quest: STUDIO_ENTRY_LEVEL,
   dialogue: STUDIO_ENTRY_LEVEL,
   creature: STUDIO_ENTRY_LEVEL,
+  abilities: STUDIO_ENTRY_LEVEL,
   loot: STUDIO_ENTRY_LEVEL,
   characters: STUDIO_ENTRY_LEVEL,
   classes: STUDIO_ENTRY_LEVEL,

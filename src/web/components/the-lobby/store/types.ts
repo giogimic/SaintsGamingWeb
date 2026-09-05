@@ -280,6 +280,9 @@ export interface PlayerState {
   // Party system (multiplayer)
   party: PartyMember[];
   isPartyLeader: boolean;
+  // Abilities
+  unlockedAbilities: string[];
+  equippedAbilities: string[];
 }
 
 export interface ToastMessage {
@@ -396,6 +399,19 @@ export interface GameState {
   getTopmostWindow: () => string | null;
 
   // Game Data
+  gameRegistry: {
+    registryVersion: string;
+    schemaVersion: string;
+    contentHash: string;
+    lastUpdated: string;
+    creatures: any[];
+    items: any[];
+    classes: any[];
+    abilities: any[];
+    defaultHudPreset?: any;
+  } | null;
+  setGameRegistry: (registry: any) => void;
+  fetchGameRegistry: () => Promise<void>;
   fetchLogicTiles: () => Promise<void>;
   activeBattle: BattleState | null;
   setActiveBattle: (battleData: BattleState | null) => void;

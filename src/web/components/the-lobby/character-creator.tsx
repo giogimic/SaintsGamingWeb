@@ -458,6 +458,8 @@ export function CharacterCreator({
       perk: perkId,
       maxWeight: perkId === 'PACK_MULE' ? 150 : 100,
       maxPartySize: 4,
+      unlockedAbilities: selectedDef?.abilities || [],
+      equippedAbilities: (selectedDef?.abilities || []).slice(0, 5),
     };
 
     const result = await createGameCharacter({

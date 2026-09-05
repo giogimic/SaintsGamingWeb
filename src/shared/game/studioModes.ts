@@ -30,6 +30,7 @@ export type StudioDockId =
   | 'quest'
   | 'dialogue'
   | 'creature'
+  | 'abilities'
   | 'loot'
   | 'dev'
   | 'characters'
@@ -237,6 +238,10 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   gameplay: {
     label: 'Gameplay Hub',
     blurb: 'Abilities, status conditions, 27-skill matrix, professions, and combat balance simulations.',
+  },
+  abilities: {
+    label: 'Abilities & VFX',
+    blurb: 'Design visually stunning combat skills and elemental logic.',
   },
   settings: {
     label: 'Server Settings',

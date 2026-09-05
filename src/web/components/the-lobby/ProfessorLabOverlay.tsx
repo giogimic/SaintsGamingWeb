@@ -22,14 +22,19 @@ export default function ProfessorLabOverlay({ onClose }: { onClose: () => void }
   const showToast = useGameStore((state) => state.showToast);
   const gameMode = useGameStore((state) => state.gameMode);
 
+  const gameRegistry = useGameStore((state) => state.gameRegistry);
+
   useEffect(() => {
-    void getActiveStarterCreatures().then((res) => {
-      if (res.success && res.data.length > 0) {
-        setStarters(res.data);
-        setSelected(res.data[0]);
+    if (gameRegistry && gameRegistry.creatures) {
+      const activeStarters = gameRegistry.creatures.filter(
+        (c: CreatureDefData) => c.isStarter && c.isActive
+      );
+      if (activeStarters.length > 0) {
+        setStarters(activeStarters);
+        setSelected(activeStarters[0]);
       }
-    });
-  }, []);
+    }
+  }, [gameRegistry]);
 
   // Close when server confirms claim (index.tsx sets EXPLORING on starter_claimed)
   useEffect(() => {
