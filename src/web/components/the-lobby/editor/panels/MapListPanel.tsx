@@ -6,7 +6,7 @@ import {
   X, Search, Globe, Plus, Trash2, ArrowRight, Grid3X3, Layers, Compass,
   DoorOpen, Users, Swords, AlertTriangle, Check, Shield, UploadCloud, History,
   RotateCcw, Sparkles, Dices, Box, Mountain, Trees, Waves, List, LayoutGrid,
-  CheckSquare, Square, Download, Copy, ArrowUpDown
+  CheckSquare, Square, Download, Copy, ArrowUpDown, Settings
 } from 'lucide-react';
 import { useGameStore } from '../../store';
 import { useEditorStore } from '../editor-store';
@@ -40,6 +40,8 @@ import {
   WindowMenuTabGroup,
   WindowMenuDivider,
 } from '../WindowMenuBar';
+
+import { MapSettingsModal } from './MapSettingsModal';
 
 type SizePreset = 'tiny' | 'small' | 'standard' | 'large' | 'custom';
 type ViewMode = 'list' | 'grid';
@@ -77,6 +79,7 @@ export const MapListPanel: React.FC = () => {
   const [sizePreset, setSizePreset] = useState<SizePreset>('standard');
   const [newMapW, setNewMapW] = useState(64);
   const [newMapH, setNewMapH] = useState(64);
+  const [mapEngine, setMapEngine] = useState<'TILE' | 'VOXEL' | 'FRACTAL'>('TILE');
   const [genMode, setGenMode] = useState<VoxelGenerationMode>('procedural');
   const [terrainProfile, setTerrainProfile] = useState<VoxelTerrainProfile>('rolling_hills');
   const [seed, setSeed] = useState<string>(() => Math.floor(Math.random() * 1000000).toString());
@@ -97,6 +100,9 @@ export const MapListPanel: React.FC = () => {
   const [deleteTargetMapId, setDeleteTargetMapId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Map Settings Modal State
+  const [settingsModalMapId, setSettingsModalMapId] = useState<string | null>(null);
+
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -104,11 +110,12 @@ export const MapListPanel: React.FC = () => {
         else if (versionModalMapId) setVersionModalMapId(null);
         else if (deleteTargetMapId) setDeleteTargetMapId(null);
         else if (batchDeleteModalOpen) setBatchDeleteModalOpen(false);
+        else if (settingsModalMapId) setSettingsModalMapId(null);
       }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [showCreateModal, versionModalMapId, deleteTargetMapId, batchDeleteModalOpen]);
+  }, [showCreateModal, versionModalMapId, deleteTargetMapId, batchDeleteModalOpen, settingsModalMapId]);
 
   // Combined & Filtered Map list
   const localList = searchMapIndex(debouncedSearchQuery);
@@ -325,6 +332,8 @@ export const MapListPanel: React.FC = () => {
     const widthChunks = Math.max(1, Math.ceil(newMapW / 16));
     const depthChunks = Math.max(1, Math.ceil(newMapH / 16));
 
+    const actualGenMode = mapEngine === 'FRACTAL' ? 'procedural' : mapEngine === 'TILE' ? 'blank' : genMode;
+
     const generatedVoxelDoc = generateVoxelWorldDoc({
       id: slug,
       name: newMapName.trim() || slug,
@@ -332,7 +341,7 @@ export const MapListPanel: React.FC = () => {
       depthChunks,
       heightChunks: 1,
       blockSizePx,
-      mode: genMode,
+      mode: actualGenMode,
       terrainProfile,
       seed,
       baseMaterial,
@@ -346,6 +355,7 @@ export const MapListPanel: React.FC = () => {
       gameId: activeGameId,
       width: newMapW,
       height: newMapH,
+      mapType: mapEngine,
     });
     if (!built.ok) {
       showToast(built.error);
@@ -372,6 +382,7 @@ export const MapListPanel: React.FC = () => {
           gates: newMapData.gates,
           npcs: newMapData.npcs,
           encounterPool: newMapData.encounterPool,
+          mapType: newMapData.mapType,
           tileLayers: newMapData.tileLayers,
           tilesets: newMapData.tilesets,
           voxelDoc: generatedVoxelDoc,
@@ -790,6 +801,17 @@ export const MapListPanel: React.FC = () => {
                       </button>
                     )}
 
+                    {/* Settings Button */}
+                    {canEdit && (
+                      <button
+                        onClick={() => setSettingsModalMapId(map.id)}
+                        className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-white/5 border border-transparent hover:border-border/40 transition-colors cursor-pointer"
+                        title="Map Settings"
+                      >
+                        <Settings className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+
                     {/* Version History Button */}
                     <button
                       onClick={() => handleOpenVersions(map.id)}
@@ -891,6 +913,15 @@ export const MapListPanel: React.FC = () => {
 
                   <div className="mt-3 pt-2.5 border-t border-border/40 flex items-center justify-between gap-1" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-1">
+                      {canEdit && (
+                        <button
+                          onClick={() => setSettingsModalMapId(map.id)}
+                          className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-white/5 transition-colors cursor-pointer"
+                          title="Map Settings"
+                        >
+                          <Settings className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       <button
                         onClick={() => handleOpenVersions(map.id)}
                         className="p-1 rounded text-muted-foreground hover:text-amber-300 hover:bg-white/5 transition-colors cursor-pointer"
@@ -955,7 +986,7 @@ export const MapListPanel: React.FC = () => {
                   <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                     Create Realm Map
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-primary/20 text-amber-300 border border-primary/30">
-                      Voxel Engine
+                      {mapEngine === 'TILE' ? '2D Tile Engine' : mapEngine === 'VOXEL' ? '3D Voxel Engine' : 'Fractal Domains Engine'}
                     </span>
                   </h2>
                   <p className="text-[10px] text-muted-foreground">Procedural generation, size presets & deterministic seeds</p>
@@ -992,6 +1023,32 @@ export const MapListPanel: React.FC = () => {
                     placeholder="e.g. Emerald Valley"
                     className="w-full bg-[#0b1626] border border-border/50 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-primary/60 text-xs"
                   />
+                </div>
+              </div>
+
+              {/* Engine Selection */}
+              <div>
+                <label className="block text-slate-400 text-[11px] mb-1.5 font-semibold">Map Engine:</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'TILE', label: '2D Tile Engine', desc: 'Classic top-down grid' },
+                    { id: 'VOXEL', label: '3D Voxel Engine', desc: 'Fixed-size block world' },
+                    { id: 'FRACTAL', label: 'Fractal Domains', desc: 'Infinite procedural generation' },
+                  ].map((engine) => (
+                    <button
+                      key={engine.id}
+                      type="button"
+                      onClick={() => setMapEngine(engine.id as any)}
+                      className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                        mapEngine === engine.id
+                          ? 'border-primary/70 bg-primary/20 text-amber-300 font-bold shadow-sm'
+                          : 'border-border/40 bg-[#0b1626] text-slate-400 hover:border-slate-600'
+                      }`}
+                    >
+                      <div className="text-xs">{engine.label}</div>
+                      <div className="text-[9px] text-muted-foreground mt-0.5">{engine.desc}</div>
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -1054,33 +1111,34 @@ export const MapListPanel: React.FC = () => {
               )}
 
               {/* Generation Mode */}
-              <div>
-                <label className="block text-slate-400 text-[11px] mb-1.5 font-semibold">Generation Mode:</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { id: 'procedural', label: 'Procedural', desc: 'Multi-octave noise terrain' },
-                    { id: 'foundation', label: 'Solid Flat', desc: 'Flat uniform slab' },
-                    { id: 'blank', label: 'Blank Canvas', desc: 'Empty voxel volume' },
-                  ].map((mode) => (
-                    <button
-                      key={mode.id}
-                      type="button"
-                      onClick={() => setGenMode(mode.id as VoxelGenerationMode)}
-                      className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
-                        genMode === mode.id
-                          ? 'border-primary/70 bg-primary/20 text-amber-300 font-bold'
-                          : 'border-border/40 bg-[#0b1626] text-slate-400 hover:border-slate-600'
-                      }`}
-                    >
-                      <div className="text-xs">{mode.label}</div>
-                      <div className="text-[9px] text-muted-foreground mt-0.5">{mode.desc}</div>
-                    </button>
-                  ))}
+              {mapEngine !== 'TILE' && mapEngine !== 'FRACTAL' && (
+                <div>
+                  <label className="block text-slate-400 text-[11px] mb-1.5 font-semibold">Generation Mode:</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: 'foundation', label: 'Solid Flat', desc: 'Flat uniform slab' },
+                      { id: 'blank', label: 'Blank Canvas', desc: 'Empty voxel volume' },
+                    ].map((mode) => (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        onClick={() => setGenMode(mode.id as VoxelGenerationMode)}
+                        className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                          genMode === mode.id
+                            ? 'border-primary/70 bg-primary/20 text-amber-300 font-bold'
+                            : 'border-border/40 bg-[#0b1626] text-slate-400 hover:border-slate-600'
+                        }`}
+                      >
+                        <div className="text-xs">{mode.label}</div>
+                        <div className="text-[9px] text-muted-foreground mt-0.5">{mode.desc}</div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Procedural Configuration */}
-              {genMode === 'procedural' && (
+              {mapEngine === 'FRACTAL' && (
                 <div className="p-3.5 rounded-xl bg-black/40 border border-border/40 space-y-3">
                   <div>
                     <label className="block text-slate-400 text-[11px] mb-1 font-semibold">Terrain Profile:</label>
@@ -1168,7 +1226,7 @@ export const MapListPanel: React.FC = () => {
               )}
 
               {/* Base Surface Material */}
-              {genMode !== 'blank' && (
+              {mapEngine !== 'TILE' && (mapEngine === 'FRACTAL' || genMode !== 'blank') && (
                 <div>
                   <label className="block text-slate-400 text-[11px] mb-1 font-semibold">Base Surface Material:</label>
                   <div className="flex flex-wrap gap-2">
@@ -1387,6 +1445,13 @@ export const MapListPanel: React.FC = () => {
           </div>
         </div>,
         document.body
+      )}
+      {/* Map Settings Modal */}
+      {settingsModalMapId && (
+        <MapSettingsModal
+          mapId={settingsModalMapId}
+          onClose={() => setSettingsModalMapId(null)}
+        />
       )}
     </div>
   );

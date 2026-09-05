@@ -1,5 +1,12 @@
-## [2.1.736] - 2026-09-05
+## [2.1.738] - 2026-09-05
 ### Added
+- Explicit Map Engines: Added Map Engine selection when creating maps (2D Tile Engine, 3D Voxel Engine, Fractal Domains).
+- Fractal Domains: Renamed infinite generation area to "Fractal Domains Engine".
+- Map Settings Modal: Added settings for managing general map data, encounter pools, and Fractal Domains procedural parameters.
+- Tool Integration: Fixed voxel tool mappings (sculpt, transform, place) to act authoritatively on voxel geometries.
+- Tile Mode Selection: Confirmed legacy tile mode selection workflow capabilities.
+
+## [2.1.737] - 2026-09-05
 - Converted Asset Studio and Hero Studio to MDI dockable windows (DraggablePanel) for unified UX.
 - Asset Studio and Hero Studio no longer hide the entire viewport when opened.
 
