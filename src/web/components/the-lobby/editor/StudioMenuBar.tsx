@@ -400,7 +400,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
     const name = meta ? meta.canonical.charAt(0).toUpperCase() + meta.canonical.slice(1) : mode;
     showToast(`Switched to ${name} Mode`);
     if (mode === 'voxel' || mode === 'tile') {
-      useGameStore.setState({ currentMapId: null, activeMapData: null });
+      useGameStore.setState({ currentMapId: '', activeMapData: null });
       if (onOpenMapBrowser) onOpenMapBrowser();
       else openPanel('maps');
     }
