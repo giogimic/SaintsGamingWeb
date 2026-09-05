@@ -42,7 +42,7 @@ export interface MapProblem {
   entityId?: string;
 }
 
-export function StudioProblemsPanel() {
+export function StudioProblemsPanel({ asSubPanel }: { asSubPanel?: boolean } = {}) {
   const [activeTab, setActiveTab] = React.useState<'map' | 'runtime_assets' | 'references'>('map');
   const [orphanedRefs, setOrphanedRefs] = useState<OrphanedReference[]>([]);
   const dataVersion = useEditorStore((s) => s.dataVersion);
@@ -327,43 +327,46 @@ export function StudioProblemsPanel() {
   return (
     <div className="flex h-full w-full flex-col bg-[#050b14]/95 text-slate-200 font-mono text-xs select-none -m-3 mb-0 overflow-hidden">
       {/* ── WINDOW SUB-MENU APP BAR ── */}
-      <WindowMenuBar>
-        <WindowMenuTabGroup
-          tabs={[
-            { id: 'map', label: `Map (${mapProblems.length})` },
-            { id: 'runtime_assets', label: `Assets (${assetProblems.length})` },
-            { id: 'references', label: `References (${referenceProblems.length})` },
-          ]}
-          activeTab={activeTab}
-          onChange={(t) => setActiveTab(t as any)}
-        />
-        <WindowMenuDivider />
-        <WindowMenuButton
-          label={isScanning ? 'Scanning...' : 'Scan Now'}
-          icon={RefreshCw}
-          onClick={handleScan}
-          disabled={isScanning}
-          title="Scan all world maps, entities, and cross-references"
-        />
-        <div className="flex-1" />
-        <div className="flex items-center gap-1.5 shrink-0 text-[9px]">
-          {errorCount > 0 && (
-            <span className="bg-rose-950/80 text-rose-400 border border-rose-600/40 px-1.5 py-0.5 rounded font-bold">
-              {errorCount} ERR
-            </span>
-          )}
-          {warningCount > 0 && (
-            <span className="bg-amber-950/80 text-amber-400 border border-amber-600/40 px-1.5 py-0.5 rounded font-bold">
-              {warningCount} WARN
-            </span>
-          )}
-          {errorCount === 0 && warningCount === 0 && (
-            <span className="bg-emerald-950/80 text-emerald-400 border border-emerald-600/40 px-1.5 py-0.5 rounded font-bold">
-              All Systems Healthy
-            </span>
-          )}
-        </div>
-      </WindowMenuBar>
+
+      {!asSubPanel && (
+        <WindowMenuBar>
+          <WindowMenuTabGroup
+            tabs={[
+              { id: 'map', label: `Map (${mapProblems.length})` },
+              { id: 'runtime_assets', label: `Assets (${assetProblems.length})` },
+              { id: 'references', label: `References (${referenceProblems.length})` },
+            ]}
+            activeTab={activeTab}
+            onChange={(t) => setActiveTab(t as any)}
+          />
+          <WindowMenuDivider />
+          <WindowMenuButton
+            label={isScanning ? 'Scanning...' : 'Scan Now'}
+            icon={RefreshCw}
+            onClick={handleScan}
+            disabled={isScanning}
+            title="Scan all world maps, entities, and cross-references"
+          />
+          <div className="flex-1" />
+          <div className="flex items-center gap-1.5 shrink-0 text-[9px]">
+            {errorCount > 0 && (
+              <span className="bg-rose-950/80 text-rose-400 border border-rose-600/40 px-1.5 py-0.5 rounded font-bold">
+                {errorCount} ERR
+              </span>
+            )}
+            {warningCount > 0 && (
+              <span className="bg-amber-950/80 text-amber-400 border border-amber-600/40 px-1.5 py-0.5 rounded font-bold">
+                {warningCount} WARN
+              </span>
+            )}
+            {errorCount === 0 && warningCount === 0 && (
+              <span className="bg-emerald-950/80 text-emerald-400 border border-emerald-600/40 px-1.5 py-0.5 rounded font-bold">
+                All Systems Healthy
+              </span>
+            )}
+          </div>
+        </WindowMenuBar>
+      )}
 
       <div className="p-3 flex-1 flex flex-col min-h-0 overflow-hidden space-y-3">
         {/* Active Map Info Strip */}

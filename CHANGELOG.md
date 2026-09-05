@@ -1,3 +1,10 @@
+## [2.1.733] - 2026-09-05
+### Changed
+- Phase 6: Asset Studio Consolidation (AssetStudioPanel merging Sprites & Blueprints).
+- Phase 6: HUD Studio Standardization (Renamed Interface Designer to HUD Studio).
+- Phase 6: Hero Studio Scaffolding (HeroStudioPanel handling Hero Identity).
+- Phase 6: Contextual Bottom Toolbar (Verified StudioBottomToolbar is strictly global state, deferring to StudioContextualBar for tools).
+
 ## [2.1.731] - 2026-09-05
 ### Fixed
 - **Next.js 15 Build Error**: Fixed a build error in the dynamic API route `app/api/maps/[slug]/chunks/route.ts` by awaiting the `params` object, adhering to Next.js 15 route handler requirements.
@@ -5793,6 +5800,7 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 - **Profile Integration**: Displayed active MMO characters on the public profile (`app/(main)/user/[username]/page.tsx`) with a "Play Now" launcher.
 
 ---
+
 
 
 

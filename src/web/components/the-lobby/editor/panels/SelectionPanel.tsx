@@ -258,7 +258,7 @@ export function SelectionPanel() {
       <div className="pt-2 border-t border-border/30">
         <button
           onClick={() => {
-            openPanel('prefab');
+            openPanel('assets');
             showToast('Save active selection as Blueprint Stamp');
           }}
           disabled={selectedCount === 0}

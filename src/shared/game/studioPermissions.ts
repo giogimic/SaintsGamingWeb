@@ -47,12 +47,13 @@ export type StudioDockId =
   | "interface"
   | "camera"
   | "biome"
-  | "hierarchy"
-  | "layers"
-  | "materials"
+  | "releases"
+  | "procedural"
   | "selection"
   | "transform"
-  | "procedural";
+  | "layers"
+  | "hierarchy"
+  | "materials";
 
 /** Minimum level to enter `/studio` and use create docks (= ADMIN). */
 export const STUDIO_ENTRY_LEVEL = 400;
@@ -104,12 +105,13 @@ export const STUDIO_DOCK_MIN_LEVEL: Record<StudioDockId, number> = {
   interface: STUDIO_ENTRY_LEVEL,
   camera: STUDIO_ENTRY_LEVEL,
   biome: STUDIO_ENTRY_LEVEL,
-  hierarchy: STUDIO_ENTRY_LEVEL,
-  layers: STUDIO_ENTRY_LEVEL,
-  materials: STUDIO_ENTRY_LEVEL,
+  releases: STUDIO_ENTRY_LEVEL,
+  procedural: STUDIO_ENTRY_LEVEL,
   selection: STUDIO_ENTRY_LEVEL,
   transform: STUDIO_ENTRY_LEVEL,
-  procedural: STUDIO_ENTRY_LEVEL,
+  layers: STUDIO_ENTRY_LEVEL,
+  hierarchy: STUDIO_ENTRY_LEVEL,
+  materials: STUDIO_ENTRY_LEVEL,
 };
 
 

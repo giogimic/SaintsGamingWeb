@@ -72,6 +72,12 @@ export const ReleaseManagementPanel: React.FC = () => {
     loadSnapshots();
   }, [dataVersion]);
 
+  useEffect(() => {
+    const handleOpenCreate = () => setShowPublishModal(true);
+    window.addEventListener('studio_open_release_create', handleOpenCreate);
+    return () => window.removeEventListener('studio_open_release_create', handleOpenCreate);
+  }, []);
+
   const handlePublish = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!titleInput.trim()) {

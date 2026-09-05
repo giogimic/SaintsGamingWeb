@@ -7,9 +7,10 @@ import {
   WindowMenuDropdown,
   WindowMenuButton,
   WindowMenuDivider,
+  WindowMenuTabGroup,
 } from '../WindowMenuBar';
 
-export const StreamingInspectorPanel: React.FC = () => {
+export const StreamingInspectorPanel: React.FC<{ asSubPanel?: boolean }> = ({ asSubPanel }) => {
   // Mock data for Phase 1 UI setup
   const [stats, setStats] = useState({
     visibleChunks: 9,
@@ -32,34 +33,33 @@ export const StreamingInspectorPanel: React.FC = () => {
   return (
     <div className="flex flex-col h-full overflow-hidden font-mono text-xs text-slate-300 bg-[#050b14] -m-3 mb-0">
       {/* ── WINDOW SUB-MENU APP BAR ── */}
-      <WindowMenuBar>
-        <WindowMenuDropdown
-          label="Telemetry"
-          items={[
-            {
-              label: 'Refresh Chunk Metrics',
-              shortcut: 'F5',
-              onClick: handleRefresh,
-            },
-            { divider: true, label: '' },
-            {
-              label: 'Flush Local Chunk Cache',
-              onClick: () => setStats((p) => ({ ...p, cacheHits: 0 })),
-            },
-          ]}
-        />
-        <WindowMenuDivider />
-        <WindowMenuButton
-          label="Refresh"
-          icon={RefreshCw}
-          onClick={handleRefresh}
-          title="Query live chunk pipeline stats"
-        />
-        <div className="flex-1" />
-        <span className="text-[9px] text-emerald-400 font-mono font-bold">
-          {stats.visibleChunks} chunks live
-        </span>
-      </WindowMenuBar>
+      {!asSubPanel && (
+        <WindowMenuBar>
+          <WindowMenuTabGroup
+            tabs={[
+              { id: 'nodes', label: 'Nodes' },
+              { id: 'workers', label: 'Workers' },
+              { id: 'network', label: 'Network' }
+            ]}
+            activeTab="nodes"
+            onChange={() => {}}
+          />
+          <WindowMenuDivider />
+          <WindowMenuButton
+            label="Force Sync"
+            icon={RefreshCw}
+            onClick={() => window.dispatchEvent(new CustomEvent('studio_force_sync'))}
+            title="Force immediate synchronization of all streaming nodes"
+          />
+          <div className="flex-1" />
+          <div className="flex items-center gap-2 shrink-0 px-2 text-[9px] text-muted-foreground border-l border-border/20">
+            <span className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+              Live
+            </span>
+          </div>
+        </WindowMenuBar>
+      )}
 
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
       <div className="border border-[#806f47]/20 rounded bg-transparent/50 p-2">

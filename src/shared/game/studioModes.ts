@@ -40,7 +40,6 @@ export type StudioDockId =
   | 'recipes'
   | 'dungeons'
   | 'spawner'
-  | 'prefab'
   | 'atlas'
   | 'problems'
   | 'streaming'
@@ -58,13 +57,14 @@ export type StudioDockId =
   | 'interface'
   | 'camera'
   | 'biome'
+  | 'releases'
+  | 'procedural'
   | 'hierarchy'
   | 'layers'
   | 'materials'
   | 'selection'
   | 'transform'
-  | 'tileset'
-  | 'procedural';
+  | 'tileset';
 
 /** Map stable internal ids → canonical engine-editor labels. */
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
@@ -192,8 +192,8 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
     blurb: 'Server controls and engine config (staff).',
   },
   characters: {
-    label: 'Heroes',
-    blurb: 'Starter hero loadouts.',
+    label: 'Hero Studio',
+    blurb: 'Manage player hero identities and starting classes',
   },
   classes: {
     label: 'Classes',
@@ -212,16 +212,12 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
     blurb: 'Manage crafting recipes',
   },
   dungeons: {
-    label: 'Dungeons',
-    blurb: 'Manage dungeon sequences and instances',
+    label: 'Dungeon Studio',
+    blurb: 'Create auto-generating dungeon blueprints and layer setups.',
   },
   spawner: {
     label: 'Spawners',
     blurb: 'Configure enemy spawn points',
-  },
-  prefab: {
-    label: 'Prefabs',
-    blurb: 'Stamp pre-built multi-tile structures.',
   },
   atlas: {
     label: 'World Atlas',
@@ -284,7 +280,7 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
     blurb: 'Sprite animation timeline editor, onion skinning, frame scrubbing, and preview controls.',
   },
   interface: {
-    label: 'Interface Designer',
+    label: 'HUD Studio',
     blurb: 'Game engine UI theme styles, HUD scaling, and in-game widget customizer.',
   },
   camera: {
@@ -322,6 +318,10 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   tileset: {
     label: 'Tile Selector',
     blurb: 'Dedicated dockable window for the visual Tile Selector.',
+  },
+  releases: {
+    label: 'Releases',
+    blurb: 'Manage and create release snapshots.',
   },
 };
 
@@ -379,7 +379,7 @@ export const STUDIO_WORKSPACE_PRESETS: WorkspacePresetDef[] = [
     id: 'city-district-editing',
     name: 'City / District Editing',
     blurb: 'Precision layout: Selection, Transform, Prefab/Blueprint Library, and Outliner.',
-    openDocks: ['selection', 'transform', 'prefab', 'layers', 'properties'],
+    openDocks: ['selection', 'transform', 'layers', 'properties'],
   },
 ];
 

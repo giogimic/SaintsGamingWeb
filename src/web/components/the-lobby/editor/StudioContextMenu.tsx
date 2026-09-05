@@ -1063,7 +1063,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
               type="button"
               onClick={() => handleAction(() => {
                 useEditorStore.getState().setActiveWorkflowTool('place');
-                openPanel('prefab');
+                openPanel('assets');
                 showToast('Pick a blueprint to stamp');
               })}
               className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-foreground hover:bg-primary/20 transition-colors cursor-pointer"
@@ -1154,6 +1154,32 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
                 >
                   <MapPin className="h-3 w-3 text-primary" />
                   <span>Set Default Map Spawn</span>
+                </button>
+
+                {/* Place Prop / Blueprint */}
+                <button
+                  type="button"
+                  onClick={() => handleAction(() => {
+                    openPanel('assets');
+                    showToast('Select a Prop or Blueprint from the Prefab Builder to place here.');
+                  })}
+                  className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-foreground hover:bg-emerald-950/40 transition-colors cursor-pointer"
+                >
+                  <Package className="h-3 w-3 text-emerald-400" />
+                  <span>Place Prop / Blueprint...</span>
+                </button>
+
+                {/* Place Creature / NPC */}
+                <button
+                  type="button"
+                  onClick={() => handleAction(() => {
+                    openPanel('creature');
+                    showToast('Select an NPC or Creature from the catalog to place here.');
+                  })}
+                  className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-foreground hover:bg-orange-950/40 transition-colors cursor-pointer"
+                >
+                  <PawPrint className="h-3 w-3 text-orange-400" />
+                  <span>Place NPC / Creature...</span>
                 </button>
 
                 {/* Teleport Author Avatar */}
