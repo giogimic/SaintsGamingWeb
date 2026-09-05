@@ -6,7 +6,7 @@ import {
   canAssignFromMaster,
   assignSlayerTask,
   recordSlayerKill,
-  resetTaskWithNovice Broker,
+  resetTaskWithNoviceBroker,
   type SlayerPlayerProfile,
 } from './slayerTaskEngine';
 
@@ -124,7 +124,7 @@ describe('Slayer Task Assignment & Extension Matrix Engine', () => {
       extendedMonsters: [],
     };
 
-    const resetRes = resetTaskWithNovice Broker(profile);
+    const resetRes = resetTaskWithNoviceBroker(profile);
     expect(resetRes.ok).toBe(true);
     expect(resetRes.newStreak).toBe(0);
     expect(profile.activeTask).toBeNull();
