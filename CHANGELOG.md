@@ -1,4 +1,4 @@
-## [2.1.754] - 2026-09-06
+## [2.1.756] - 2026-09-06
 ### Changed
 - Divorced Studio Canvas Viewports into 4 isolated panels (Primary/Secondary for Tile/Voxel).
 - Added new Studio Home dashboard panel.
@@ -126,7 +126,7 @@
 ### Changed
 - **Favicon Update**: Updated the web app favicon to use the same 3D logo icon as the Saints desktop executable.
 
-## [2.1.721] - 2026-09-04
+## [2.1.756] - 2026-09-04
 ### Changed
 - **Studio Window Position Limits**: Constrained the minimum Y-coordinate for draggable Studio floating panels to 56px, preventing windows from sliding permanently underneath the top navigation bar and becoming undraggable.
 - **Mobile Post Composer Ergonomics**: 
@@ -5631,7 +5631,7 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 
 # Changelog
 
-## [2.1.755] - 2026-09-06
+## [2.1.756] - 2026-09-06
 ### Added
 - Implemented core Sprint and Jump movement mechanics across Grid and Voxel simulation engines.
 - Added isExhausted logic and Stamina passive regeneration loop.

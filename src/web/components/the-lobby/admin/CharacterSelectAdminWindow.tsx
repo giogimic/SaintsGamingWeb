@@ -597,7 +597,7 @@ export function CharacterSelectAdminWindow({
                       <div className="p-3 rounded-xl border border-white/5 bg-black/30">
                         <div className="text-[10px] text-muted-foreground uppercase mb-1">Live Content Version</div>
                         <div className="text-sm font-bold text-primary">
-                          {summaryData?.releaseSummary?.liveVersion || 'v2.1.721'}
+                          {summaryData?.releaseSummary?.liveVersion || 'v2.1.756'}
                         </div>
                       </div>
                     </div>
@@ -890,7 +890,7 @@ export function CharacterSelectAdminWindow({
                           World Content State
                         </div>
                         <div className="text-[11px] text-muted-foreground">
-                          Active release version: <span className="text-primary font-bold">{summaryData?.releaseSummary?.liveVersion || 'v2.1.721'}</span>
+                          Active release version: <span className="text-primary font-bold">{summaryData?.releaseSummary?.liveVersion || 'v2.1.756'}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1233,7 +1233,7 @@ export function CharacterSelectAdminWindow({
             <div className="hidden md:flex items-center gap-2 text-[11px] font-mono text-muted-foreground/70">
               <span>{summaryData?.diagnostics?.nodeEnv || 'dev'}</span>
               <span>Â·</span>
-              <span>{summaryData?.releaseSummary?.liveVersion || 'v2.1.721'}</span>
+              <span>{summaryData?.releaseSummary?.liveVersion || 'v2.1.756'}</span>
               <span>Â·</span>
               <span className={serverStatus.status === 'online' ? 'text-emerald-400' : 'text-red-400'}>
                 {serverStatus.status}
@@ -1449,7 +1449,7 @@ export function CharacterSelectAdminWindow({
                 type="text"
                 value={publishVersion}
                 onChange={(e) => setPublishVersion(e.target.value)}
-                placeholder="2.1.721"
+                placeholder="2.1.756"
                 className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
               />
             </div>
