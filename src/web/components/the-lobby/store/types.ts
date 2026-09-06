@@ -228,6 +228,7 @@ export interface PlayerState {
   /** Physical endurance (SP) — spent on dodging / sprinting */
   stamina: number;
   maxStamina: number;
+  isExhausted?: boolean;
   credits: number;
   currency: {
     copper: number;
@@ -446,6 +447,7 @@ export interface GameState {
   showToast: (message: string) => void;
   removeToast: (id: number) => void;
   modifyHp: (amount: number) => void;
+  modifyStamina: (amount: number) => void;
   gainXp: (amount: number) => void;
   modifyCredits: (amount: number) => void;
   modifyInventory: (itemId: string, amount: number) => void;

@@ -189,7 +189,8 @@ export class SweptAABBController {
     world: VoxelWorldCollisionQuery,
     startPos: Vector3D,
     velocity: Vector3D,
-    dt: number
+    dt: number,
+    overrideMaxStepHeight?: number
   ): SweptCollisionResult {
     const totalDispX = velocity.x * dt;
     const totalDispY = velocity.y * dt;
@@ -372,7 +373,8 @@ export class SweptAABBController {
 
         // 3. Step-Up Simulation if Blocked While Grounded
         if ((xBlocked || zBlocked) && isGrounded) {
-          const stepLiftY = origStepY + this.stepHeight;
+          const activeStepHeight = overrideMaxStepHeight ?? this.stepHeight;
+          const stepLiftY = origStepY + activeStepHeight;
           const liftBox: AABB = {
             minX: origStepX - this.halfW,
             minY: origStepY,

@@ -131,7 +131,6 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const toolDispatcherRef = useRef<ToolDispatcher>(new ToolDispatcher());
 
   useEffect(() => {
-    if (!isDevEditorOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
@@ -150,6 +149,16 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         setIsShiftHeld(false);
       }
     };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isDevEditorOpen) return;
     const handleToggleLayerDim = () => {
       if (engineRef.current) {
         const store = useEditorStore.getState();
@@ -164,13 +173,9 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         freeformStrokeBeforeRef.current = null;
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
     window.addEventListener('pointerup', handlePointerUp);
     window.addEventListener('studio_toggle_layer_dim', handleToggleLayerDim);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('pointerup', handlePointerUp);
       window.removeEventListener('studio_toggle_layer_dim', handleToggleLayerDim);
     };
@@ -266,7 +271,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const { width: mapWidth, height: mapHeight } = resolveMapDimensions(activeMap || undefined);
 
   // Unified Movement Execution Engine
-  const tryMovePlayerTo = (targetX: number, targetY: number) => {
+  const tryMovePlayerTo = (targetX: number, targetY: number, intentOptions?: { isSprinting?: boolean, isJumping?: boolean }) => {
     // Editor runtime: gameplay input dormant (engine-editor foundation).
     if (isDevEditorOpen) return;
     if (!activeMap) return;
@@ -293,7 +298,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       voxelWorld: (engineRef.current as any)?.voxelWorld,
     };
 
-    const result = WorldSimulation.tryMove(worldState, targetX, targetY);
+    const result = WorldSimulation.tryMove(worldState, targetX, targetY, intentOptions);
 
     if (result.type === 'BLOCKED') {
       if (isDevEditorOpen && result.reason === 'WALL') {
@@ -309,6 +314,13 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       emitSocketEvent?.('input', { type: "MOVE", direction: result.direction, sequence: seq, timestamp: Date.now() });
       emitSocketEvent?.('player_move', { x: currentPos.x, y: currentPos.y, direction: result.direction, moving: false, seq });
       return;
+    }
+
+    // Drain stamina on successful move
+    if (intentOptions?.isJumping) {
+      store.modifyStamina(-10);
+    } else if (intentOptions?.isSprinting) {
+      store.modifyStamina(-5);
     }
 
     if (result.type === 'WARP') {
@@ -492,7 +504,18 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const currentPlayer = state.player;
     const curX = currentPlayer.position?.x ?? 6;
     const curY = currentPlayer.position?.y ?? 2;
-    tryMovePlayerTo(curX + dx, curY + dy);
+
+    const isSprinting = isShiftHeldRef.current && !currentPlayer.isExhausted;
+    const isJumping = isSpaceHeldRef.current && !currentPlayer.isExhausted;
+    
+    let moveDx = dx;
+    let moveDy = dy;
+    if (isSprinting && isJumping) {
+      moveDx *= 2;
+      moveDy *= 2;
+    }
+
+    tryMovePlayerTo(curX + moveDx, curY + moveDy, { isSprinting, isJumping });
   };
   tryMoveDirectionRef.current = tryMoveDirection;
 

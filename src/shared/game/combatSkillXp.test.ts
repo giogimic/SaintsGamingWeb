@@ -8,13 +8,13 @@ import {
 
 describe("combatSkillXp", () => {
   it("maps melee strike to attack + strength", () => {
-    const grants = grantsForAbilityCast({ id: "strike", category: "physical", power: 40 });
+    const grants = grantsForAbilityCast({ id: "meteor_fang", category: "physical", power: 40 });
     expect(grants.some((g) => g.skillSlug === "attack" && g.amount > 0)).toBe(true);
     expect(grants.some((g) => g.skillSlug === "strength")).toBe(true);
   });
 
   it("maps fireball to intelligence", () => {
-    const grants = grantsForAbilityCast({ id: "fireball", category: "special", power: 50 });
+    const grants = grantsForAbilityCast({ id: "firestorm", category: "special", power: 50 });
     expect(grants[0].skillSlug).toBe("intelligence");
   });
 
@@ -24,7 +24,7 @@ describe("combatSkillXp", () => {
   });
 
   it("gives no XP on miss", () => {
-    expect(grantsForAbilityCast({ id: "strike", category: "physical", power: 40 }, { isMiss: true })).toEqual([]);
+    expect(grantsForAbilityCast({ id: "meteor_fang", category: "physical", power: 40 }, { isMiss: true })).toEqual([]);
   });
 
   it("grants defence/hitpoints on damage taken", () => {

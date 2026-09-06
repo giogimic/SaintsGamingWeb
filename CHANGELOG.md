@@ -5631,6 +5631,13 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 
 # Changelog
 
+## [2.1.755] - 2026-09-06
+### Added
+- Implemented core Sprint and Jump movement mechanics across Grid and Voxel simulation engines.
+- Added isExhausted logic and Stamina passive regeneration loop.
+- Added momentum support for 2-tile jumping on grid maps.
+- Enabled step height overrides for SweptAABB to allow stepping onto 1-block cliffs when jumping on voxel maps.
+
 ## [2.1.81] - 2026-07-30
 - Documentation Cleanup: Removed the raw `docs/gameplay-bible` notes and various empty legacy documentation stubs from the public repository to prevent confusion. The official source of truth is now firmly established in `docs/architecture` and `docs/developer-guide`.
 

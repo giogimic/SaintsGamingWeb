@@ -1749,6 +1749,32 @@ export default function TheLobby({
     };
   }, [enableStudio, canStudio]);
 
+  // Passive Stamina Regeneration Loop
+  useEffect(() => {
+    let lastStamina = useGameStore.getState().player.stamina;
+    let lastDrainTime = 0;
+
+    const interval = setInterval(() => {
+      const state = useGameStore.getState();
+      const currentStamina = state.player.stamina;
+      
+      // If stamina decreased, update the last drain time
+      if (currentStamina < lastStamina) {
+        lastDrainTime = Date.now();
+      }
+      
+      lastStamina = currentStamina;
+
+      // Only regenerate if 1.5 seconds have passed since last drain
+      if (Date.now() - lastDrainTime >= 1500 && currentStamina < state.player.maxStamina) {
+        state.modifyStamina(5); // +5 stamina per tick (10 per second since it's 500ms)
+        lastStamina = state.player.stamina + 5; // update local tracker to prevent false drain detection
+      }
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, []);
+
 
   const frameClass = enableStudio
     ? 'fixed inset-0 z-30 touch-none select-none overflow-hidden bg-transparent'

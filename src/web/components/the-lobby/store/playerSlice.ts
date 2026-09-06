@@ -7,7 +7,7 @@ import { INITIAL_SKILLS } from './types';
 
 type GameSlice<T> = StateCreator<GameState, [['zustand/immer', never]], [], T>;
 
-export const createPlayerSlice: GameSlice<Pick<GameState, "player" | "activeBattle" | "activeEnemies" | "combatTarget" | "cooldowns" | "setCombatTarget" | "acceptQuest" | "completeQuest" | "setActiveBattle" | "setActiveEnemies" | "setCooldown" | "refreshQuestsCounter" | "triggerQuestRefresh" | "setPlayerPosition" | "hydratePlayer" | "catchDaemon" | "modifyHp" | "gainXp" | "modifyCredits" | "modifyInventory" | "gainSkillXp" | "equipItem" | "setCombatStyle" | "assignBeast" | "collectBaseResources" | "addCreatureToParty" | "removeCreatureFromParty" | "healCreature" | "addCreatureItem" | "removeCreatureItem" | "recordCreatureCapture" | "deductAbilityCooldown" | "evolveCreature">> = (set, get) => ({
+export const createPlayerSlice: GameSlice<Pick<GameState, "player" | "activeBattle" | "activeEnemies" | "combatTarget" | "cooldowns" | "setCombatTarget" | "acceptQuest" | "completeQuest" | "setActiveBattle" | "setActiveEnemies" | "setCooldown" | "refreshQuestsCounter" | "triggerQuestRefresh" | "setPlayerPosition" | "hydratePlayer" | "catchDaemon" | "modifyHp" | "modifyStamina" | "gainXp" | "modifyCredits" | "modifyInventory" | "gainSkillXp" | "equipItem" | "setCombatStyle" | "assignBeast" | "collectBaseResources" | "addCreatureToParty" | "removeCreatureFromParty" | "healCreature" | "addCreatureItem" | "removeCreatureItem" | "recordCreatureCapture" | "deductAbilityCooldown" | "evolveCreature">> = (set, get) => ({
 player: {
         assetProfileId: 'adventurer',
         position: { x: 30, y: 30 },
@@ -19,6 +19,7 @@ player: {
         maxMp: 100,
         stamina: 100,
         maxStamina: 100,
+        isExhausted: false,
         credits: 500,
         currency: { copper: 50000, silver: 0, gold: 0, platinum: 0 },
         activeQuests: {},
@@ -134,6 +135,17 @@ catchDaemon: (daemonId) =>
 modifyHp: (amount) =>
         set((state) => {
           state.player.hp = Math.max(0, Math.min(state.player.maxHp, state.player.hp + amount));
+        }),
+
+modifyStamina: (amount) =>
+        set((state) => {
+          state.player.stamina = Math.max(0, Math.min(state.player.maxStamina, state.player.stamina + amount));
+          
+          if (state.player.stamina === 0) {
+            state.player.isExhausted = true;
+          } else if (state.player.isExhausted && state.player.stamina >= state.player.maxStamina * 0.25) {
+            state.player.isExhausted = false; // Recovered enough to sprint again
+          }
         }),
 
 gainXp: (amount) =>
