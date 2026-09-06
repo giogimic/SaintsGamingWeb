@@ -1,3 +1,10 @@
+## [2.1.754] - 2026-09-06
+### Changed
+- Divorced Studio Canvas Viewports into 4 isolated panels (Primary/Secondary for Tile/Voxel).
+- Added new Studio Home dashboard panel.
+- Guaranteed Editor Mode constraint (`suppressGameplay=true`) in all decoupled canvas panels.
+- Removed deprecated `StudioCanvasViewport` and `SecondaryCanvasPanel`.
+
 ## [2.1.753] - 2026-09-06
 ### Added
 - Implemented Secondary Canvas Viewport editor panel allowing isolated editing without polluting the primary scene.

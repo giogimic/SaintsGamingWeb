@@ -102,7 +102,11 @@ const WorldHierarchyPanel = lazy(() => import('./panels/WorldHierarchyPanel').th
 const SelectionPanel = lazy(() => import('./panels/SelectionPanel').then((m) => ({ default: m.SelectionPanel })));
 const TransformPanel = lazy(() => import('./panels/TransformPanel').then((m) => ({ default: m.TransformPanel })));
 const ProceduralAuthoringPanel = lazy(() => import('./panels/ProceduralAuthoringPanel').then((m) => ({ default: m.ProceduralAuthoringPanel })));
-const SecondaryCanvasPanel = lazy(() => import('./panels/SecondaryCanvasPanel').then((m) => ({ default: m.SecondaryCanvasPanel })));
+const PrimaryTileCanvasPanel = lazy(() => import('./panels/PrimaryTileCanvasPanel').then((m) => ({ default: m.PrimaryTileCanvasPanel })));
+const PrimaryVoxelCanvasPanel = lazy(() => import('./panels/PrimaryVoxelCanvasPanel').then((m) => ({ default: m.PrimaryVoxelCanvasPanel })));
+const SecondaryTileCanvasPanel = lazy(() => import('./panels/SecondaryTileCanvasPanel').then((m) => ({ default: m.SecondaryTileCanvasPanel })));
+const SecondaryVoxelCanvasPanel = lazy(() => import('./panels/SecondaryVoxelCanvasPanel').then((m) => ({ default: m.SecondaryVoxelCanvasPanel })));
+const StudioHomePanel = lazy(() => import('./panels/StudioHomePanel').then((m) => ({ default: m.StudioHomePanel })));
 
 const StudioBottomBar: React.FC = () => {
   const hoveredTile = useEditorStore((s) => s.hoveredTile);
@@ -679,7 +683,11 @@ export const StudioEditorShell: React.FC = () => {
           )}
 
           <Suspense fallback={null}>
-            <SecondaryCanvasPanel />
+            <PrimaryTileCanvasPanel />
+            <PrimaryVoxelCanvasPanel />
+            <SecondaryTileCanvasPanel />
+            <SecondaryVoxelCanvasPanel />
+            <StudioHomePanel />
           </Suspense>
 
           {/* MDI Dockable Panels for Suites */}

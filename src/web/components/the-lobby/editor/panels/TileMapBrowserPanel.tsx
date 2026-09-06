@@ -411,7 +411,7 @@ export const TileMapBrowserPanel: React.FC = () => {
                         <button 
                           onClick={() => {
                             useEditorStore.getState().setSecondaryMap(map.id, map.mapType as any);
-                            useEditorStore.getState().openPanel('secondaryViewport');
+                            useEditorStore.getState().openPanel('secondaryTileViewport');
                           }} 
                           className="p-1 text-slate-400 hover:text-white" 
                           title="Open in New View"
