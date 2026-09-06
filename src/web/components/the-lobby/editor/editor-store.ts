@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useGameStore } from '../store';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { DEFAULT_WORLD_PROFILE_ID } from '@/shared/game/worldProfiles';
@@ -1737,20 +1738,33 @@ export const useEditorStore = create<EditorState>()(
           closeAllPanels(state);
           openModePanels(state, mode);
           
+          const gameStore = useGameStore.getState();
+          const mapType = gameStore.activeMapData?.mapType;
+          const currentMapId = gameStore.currentMapId;
+          const hasValidMap = currentMapId && currentMapId !== 'STARTING_MEADOW' && currentMapId !== 'GENERIC_FALLBACK_MAP';
+
+          const openDraftPanel = (id: PanelId) => {
+            if (!state.panels[id]) return;
+            state.panels[id].isOpen = true;
+            state.highestZIndex += 1;
+            state.panels[id].zIndex = state.highestZIndex;
+            state.activePanel = id;
+          };
+
           if (mode === 'tile') {
-            // Wait, we need to know if a map is loaded. We can check `useGameStore` if we import it, or just emit an event to the shell.
-            // Since `editor-store` doesn't have `useGameStore`, we'll dispatch an event for the shell to handle the "open map or browser" logic.
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('studio_mode_changed', { detail: { mode: 'tile' } }));
+            if (hasValidMap && (mapType === 'TILE' || mapType === 'FRACTAL')) {
+              openDraftPanel('primaryTileViewport');
+            } else {
+              openDraftPanel('tileBrowser');
             }
           } else if (mode === 'voxel') {
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('studio_mode_changed', { detail: { mode: 'voxel' } }));
+            if (hasValidMap && mapType === 'VOXEL') {
+              openDraftPanel('primaryVoxelViewport');
+            } else {
+              openDraftPanel('voxelBrowser');
             }
           } else if (mode === 'develop') {
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('studio_mode_changed', { detail: { mode: 'develop' } }));
-            }
+            openDraftPanel('studioHome');
           }
           
           if (!wasEditor) queueMicrotask(() => emitPieChanged(false));
