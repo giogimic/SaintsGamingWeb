@@ -1401,6 +1401,13 @@ model AbilityDictionary {
   style            String?
   manaCost         Int?
   staminaCost      Int?
+  
+  // 5-Part Elemental Taxonomy
+  element1         String? @default("none")
+  element2         String? @default("none")
+  skillForm        String? @default("strike")
+  skillRole        String? @default("offense")
+  
   tags             String? @default("[]") // JSON array
   vfxConfigJson    String? // JSON object
   conditionsJson   String? // JSON object

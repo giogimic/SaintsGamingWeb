@@ -65,8 +65,20 @@ export async function POST(request: Request) {
 
     const upserted = await prisma.abilityDictionary.upsert({
       where: { slug: data.slug },
-      create: data,
-      update: data,
+      create: {
+        ...data,
+        element1: data.element1 || "none",
+        element2: data.element2 || "none",
+        skillForm: data.skillForm || "strike",
+        skillRole: data.skillRole || "offense",
+      },
+      update: {
+        ...data,
+        element1: data.element1 || "none",
+        element2: data.element2 || "none",
+        skillForm: data.skillForm || "strike",
+        skillRole: data.skillRole || "offense",
+      },
     });
 
     return NextResponse.json({ success: true, data: upserted });

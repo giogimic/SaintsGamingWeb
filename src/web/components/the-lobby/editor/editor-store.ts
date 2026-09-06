@@ -1606,6 +1606,12 @@ export const useEditorStore = create<EditorState>()(
             }
           }
           
+          if (mode === 'tile' && !['select', 'draw'].includes(state.activeWorkflowTool)) {
+            state.activeWorkflowTool = 'draw';
+          } else if (mode === 'voxel' && !['select', 'sculpt', 'transform', 'place', 'procedural'].includes(state.activeWorkflowTool)) {
+            state.activeWorkflowTool = 'sculpt';
+          }
+          
           closeAllPanels(state);
           openModePanels(state, mode);
           if (!wasEditor) queueMicrotask(() => emitPieChanged(false));

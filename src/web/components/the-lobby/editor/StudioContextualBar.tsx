@@ -118,11 +118,10 @@ export function StudioContextualBar() {
       <div className="flex items-center gap-1 border-r border-border/30 pr-3 shrink-0">
         {WORKFLOW_TOOLS.filter(tool => {
           if (studioMode === 'tile' && !['select', 'draw'].includes(tool.id)) return false;
-          if (studioMode === 'voxel' && !['select', 'sculpt', 'transform', 'place', 'procedural'].includes(tool.id)) return false;
+          if (studioMode === 'voxel' && !['select', 'draw', 'sculpt', 'transform', 'place', 'procedural'].includes(tool.id)) return false;
           if (studioMode !== 'tile' && studioMode !== 'voxel' && studioMode !== 'develop') return false;
           if (studioMode === 'develop') {
             if (tool.id === 'sculpt' && activeMapData?.mapType === 'TILE') return false;
-            if (tool.id === 'draw' && activeMapData?.mapType === 'VOXEL') return false;
           }
           return true;
         }).map((tool) => {
@@ -198,53 +197,68 @@ export function StudioContextualBar() {
 
         {activeWorkflowTool === 'draw' && (
           <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              onClick={() => openPanel('materials')}
-              className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/40 border border-primary/40 text-primary text-[10px] font-bold hover:bg-primary/10"
-              title="Click to open Material Library"
-            >
-              <span className="w-2.5 h-2.5 rounded-full bg-primary" />
-              <span>Material #{activeVoxelMaterialId}</span>
-            </button>
-            <div className="h-3 w-px bg-border/40 mx-1" />
-            <span className="text-[10px] text-muted-foreground uppercase font-bold">Shape:</span>
-            {[
-              { id: 1, label: 'Cube' },
-              { id: 2, label: 'Ramp' },
-              { id: 7, label: 'Slab' },
-              { id: 9, label: 'Stairs' },
-            ].map((s) => (
-              <button
-                key={s.id}
-                onClick={() => {
-                  soundSynth?.playUiClick?.();
-                  setActiveVoxelShape(s.id);
-                  showToast(`Shape: ${s.label}`);
-                }}
-                className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors ${
-                  activeVoxelShape === s.id
-                    ? 'bg-primary/20 text-primary border-primary/40'
-                    : 'bg-black/40 border-border/30 text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
-            <div className="h-3 w-px bg-border/40 mx-1" />
-            <button
-              onClick={() => {
-                setVoxelPlaneLockEnabled(!voxelPlaneLockEnabled);
-                showToast(`Plane Lock Y=${voxelTargetPlaneY}: ${!voxelPlaneLockEnabled ? 'ON' : 'OFF'}`);
-              }}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border transition-colors ${
-                voxelPlaneLockEnabled
-                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                  : 'bg-white/5 border-border/30 text-muted-foreground'
-              }`}
-            >
-              {voxelPlaneLockEnabled ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
-              <span>Lock Y:{voxelTargetPlaneY}</span>
-            </button>
+            {studioMode === 'voxel' || (studioMode === 'develop' && activeMapData?.mapType === 'VOXEL') ? (
+              <>
+                <button
+                  onClick={() => openPanel('materials')}
+                  className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/40 border border-primary/40 text-primary text-[10px] font-bold hover:bg-primary/10"
+                  title="Click to open Material Library"
+                >
+                  <span className="w-2.5 h-2.5 rounded-full bg-primary" />
+                  <span>Material #{activeVoxelMaterialId}</span>
+                </button>
+                <div className="h-3 w-px bg-border/40 mx-1" />
+                <span className="text-[10px] text-muted-foreground uppercase font-bold">Shape:</span>
+                {[
+                  { id: 1, label: 'Cube' },
+                  { id: 2, label: 'Ramp' },
+                  { id: 7, label: 'Slab' },
+                  { id: 9, label: 'Stairs' },
+                ].map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      soundSynth?.playUiClick?.();
+                      setActiveVoxelShape(s.id);
+                      showToast(`Shape: ${s.label}`);
+                    }}
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors ${
+                      activeVoxelShape === s.id
+                        ? 'bg-primary/20 text-primary border-primary/40'
+                        : 'bg-black/40 border-border/30 text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+                <div className="h-3 w-px bg-border/40 mx-1" />
+                <button
+                  onClick={() => {
+                    setVoxelPlaneLockEnabled(!voxelPlaneLockEnabled);
+                    showToast(`Plane Lock Y=${voxelTargetPlaneY}: ${!voxelPlaneLockEnabled ? 'ON' : 'OFF'}`);
+                  }}
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border transition-colors ${
+                    voxelPlaneLockEnabled
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                      : 'bg-white/5 border-border/30 text-muted-foreground'
+                  }`}
+                >
+                  {voxelPlaneLockEnabled ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                  <span>Lock Y:{voxelTargetPlaneY}</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="text-[10px] text-muted-foreground uppercase font-bold">Tile Brush:</span>
+                <button
+                  onClick={() => openPanel('build')}
+                  className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/20 border border-primary/40 text-primary text-[10px] font-bold hover:bg-primary/30"
+                >
+                  <LayoutGrid className="w-3 h-3" />
+                  <span>Open World Builder...</span>
+                </button>
+              </>
+            )}
           </div>
         )}
 

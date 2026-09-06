@@ -72,7 +72,7 @@ const AssetStudioPanel = lazy(() => import('./panels/AssetStudioPanel').then((m)
 const EntityEditorPanel = lazy(() => import('./panels/EntityEditorPanel').then((m) => ({ default: m.EntityEditorPanel })));
 const CreatureDefEditorPanel = lazy(() => import('./panels/CreatureDefEditorPanel').then((m) => ({ default: m.CreatureDefEditorPanel })));
 const HeroStudioPanel = lazy(() => import('./panels/HeroStudioPanel').then((m) => ({ default: m.HeroStudioPanel })));
-const AbilityEditorPanel = lazy(() => import('./panels/AbilityEditorPanel').then((m) => ({ default: m.AbilityEditorPanel })));
+const GameplayStudioSuite = lazy(() => import('./gameplay-studio/GameplayStudioSuite').then((m) => ({ default: m.GameplayStudioSuite })));
 const QuestEditorPanel = lazy(() => import('./panels/QuestEditorPanel').then((m) => ({ default: m.QuestEditorPanel })));
 const DialogueEditorPanel = lazy(() => import('./panels/DialogueEditorPanel').then((m) => ({ default: m.DialogueEditorPanel })));
 const LootManagerPanel = lazy(() => import('./panels/LootManagerPanel').then((m) => ({ default: m.LootManagerPanel })));
@@ -427,7 +427,7 @@ export const StudioEditorShell: React.FC = () => {
             </DraggablePanel>
           )}
 
-          {canUseStudioDock(permissionLevel, 'build') && studioMode === 'tile' && activeMapData?.mapType === 'VOXEL' && (
+          {canUseStudioDock(permissionLevel, 'build') && studioMode === 'voxel' && (
             <DraggablePanel id="build" icon={<Box className="w-4 h-4 text-primary" />} title="Voxel Studio">
               <Suspense fallback={<div>Loading...</div>}><VoxelStudioPanel /></Suspense>
             </DraggablePanel>
@@ -483,7 +483,7 @@ export const StudioEditorShell: React.FC = () => {
 
           {canUseStudioDock(permissionLevel, 'abilities') && (
             <DraggablePanel id="abilities" icon={<Wand2 className="w-4 h-4" />} title="Gameplay & Systems Studio">
-              <Suspense fallback={<div>Loading...</div>}><AbilityEditorPanel /></Suspense>
+              <Suspense fallback={<div>Loading...</div>}><GameplayStudioSuite /></Suspense>
             </DraggablePanel>
           )}
 

@@ -13,7 +13,7 @@ import {
 import { generateDefaultWorldDoc, type VoxelWorldDocV3 } from "./voxel/VoxelWorldDoc";
 
 export const STUDIO_MAP_MIN = 8;
-export const STUDIO_MAP_MAX = 128;
+export const STUDIO_MAP_MAX = 256;
 
 export type NewStudioMapInput = {
   slug: string;

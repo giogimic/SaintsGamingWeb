@@ -139,6 +139,7 @@ export default function TheLobby({
   const [viewportReady, setViewportReady] = useState(false);
   
   const isCreationMode = useEditorStore((state) => state.isCreationMode);
+  const studioMode = useEditorStore((state) => state.studioMode);
   /** Studio editor tools only — never treat /lobby as create-mode (store defaults true). */
   const studioToolsOpen = enableStudio && isCreationMode;
   const pieOptions = useEditorStore((state) => state.pieOptions);
@@ -1826,15 +1827,17 @@ export default function TheLobby({
     >
       {enableStudio && <MidnightTropicalBackground />}
       {enableStudio ? (
-        <StudioCanvasViewport 
-          activeBrushTileId={activeBrushTileId}
-          activeLayerIdx={activeLayerIdx}
-          isDevEditorOpen={studioToolsOpen}
-          suppressGameplay={suppressGameplay}
-          onMapClick={(r: number, c: number) => {
-            if (studioToolsOpen) setClickedTile({r, c});
-          }}
-        />
+        (studioMode === 'tile' || studioMode === 'voxel') ? (
+          <StudioCanvasViewport 
+            activeBrushTileId={activeBrushTileId}
+            activeLayerIdx={activeLayerIdx}
+            isDevEditorOpen={studioToolsOpen}
+            suppressGameplay={suppressGameplay}
+            onMapClick={(r: number, c: number) => {
+              if (studioToolsOpen) setClickedTile({r, c});
+            }}
+          />
+        ) : null
       ) : (
         gameMode !== 'TITLE_SCREEN' && gameMode !== 'LOGIN' && gameMode !== 'SERVER_SELECT' && (
           <GameCanvasBabylon 

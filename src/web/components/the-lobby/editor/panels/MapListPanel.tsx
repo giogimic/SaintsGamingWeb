@@ -598,7 +598,11 @@ export const MapListPanel: React.FC = () => {
                       {mapEngine === 'TILE' ? '2D Tile Engine' : mapEngine === 'VOXEL' ? '3D Voxel Engine' : 'Fractal Domains Engine'}
                     </span>
                   </h2>
-                  <p className="text-[10px] text-muted-foreground">Procedural generation, size presets & deterministic seeds</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {mapEngine === 'TILE' && 'Standard top-down grid for classic 2D worlds. Stores tile sprites and logic properties.'}
+                    {mapEngine === 'VOXEL' && 'Authoritative 3D block environment. Great for complex spatial structures.'}
+                    {mapEngine === 'FRACTAL' && 'Procedurally generated infinite-style terrain (bounded to chunks at creation).'}
+                  </p>
                 </div>
               </div>
               <button
