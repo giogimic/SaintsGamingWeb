@@ -98,7 +98,7 @@ export type SoftLock = {
   expiresAt: string;
 };
 
-export type PanelId = StudioDockId;
+export type PanelId = StudioDockId | 'entityLibrary';
 
 export interface CustomTerrainSwatch {
   id: string;
@@ -430,6 +430,10 @@ interface EditorState {
     targetMapId: string;
     bidirectional: boolean;
   } | null;
+  
+  pendingEntityPlacement: { kind: string, assetProfileId: string } | null;
+  setPendingEntityPlacement: (placement: { kind: string, assetProfileId: string } | null) => void;
+
   setPendingGateConnection: (
     conn: {
       originMapId: string;
@@ -706,6 +710,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     x: 100,
     y: 100,
     width: 400,
+    height: 500,
+    zIndex: 10,
+  },
+  entityLibrary: {
+    id: 'entityLibrary',
+    title: 'Entity Library',
+    isOpen: false,
+    isCollapsed: false,
+    x: 150,
+    y: 150,
+    width: 600,
     height: 500,
     zIndex: 10,
   },
@@ -1216,6 +1231,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 600,
     zIndex: 10,
   },
+  quickUpload: {
+    id: 'quickUpload',
+    title: 'Quick Upload',
+    isOpen: false,
+    isCollapsed: false,
+    x: 400,
+    y: 200,
+    width: 600,
+    height: 400,
+    zIndex: 10,
+  },
 };
 
 
@@ -1534,6 +1560,12 @@ export const useEditorStore = create<EditorState>()(
       setPendingGateConnection: (conn) =>
         set((state) => {
           state.pendingGateConnection = conn;
+        }),
+        
+      pendingEntityPlacement: null,
+      setPendingEntityPlacement: (placement) =>
+        set((state) => {
+          state.pendingEntityPlacement = placement;
         }),
       gateConnectModal: null,
       openGateConnectModal: (originR, originC, initialCategory = 'MAP') =>

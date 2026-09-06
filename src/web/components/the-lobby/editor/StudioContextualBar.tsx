@@ -44,7 +44,9 @@ import {
   Globe,
   MousePointer2,
   ArrowUpFromLine,
-  Droplets
+  Droplets,
+  Monitor,
+  UploadCloud
 } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
 import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
@@ -69,14 +71,18 @@ const DOCK_ICONS: Partial<Record<StudioDockId, { icon: any; label: string }>> = 
   transform: { icon: RotateCw, label: 'Transform' },
   selection: { icon: Crosshair, label: 'Selection' },
   npc: { icon: Users, label: 'NPCs' },
+  entityLibrary: { icon: Package, label: 'Entity Library' },
   properties: { icon: Settings, label: 'Properties' },
   assets: { icon: Package, label: 'Assets' },
+  primaryTileViewport: { icon: Monitor, label: 'Primary Canvas' },
+  primaryVoxelViewport: { icon: Monitor, label: 'Primary Canvas' },
   spawner: { icon: Sword, label: 'Spawner' },
   quest: { icon: ScrollText, label: 'Quests' },
   creature: { icon: PawPrint, label: 'Creatures' },
   loot: { icon: Coins, label: 'Loot' },
   items: { icon: Package, label: 'Items' },
-  procedural: { icon: Sparkles, label: 'Procedural' }
+  procedural: { icon: Sparkles, label: 'Procedural' },
+  quickUpload: { icon: UploadCloud, label: 'Quick Upload' }
 };
 
 export function StudioContextualBar() {

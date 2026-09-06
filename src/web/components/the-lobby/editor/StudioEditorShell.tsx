@@ -70,6 +70,7 @@ const VoxelStudioPanel = lazy(() => import('./panels/VoxelStudioPanel').then((m)
 const PropertiesPanel = lazy(() => import('./panels/PropertiesPanel').then((m) => ({ default: m.PropertiesPanel })));
 const AssetStudioPanel = lazy(() => import('./panels/AssetStudioPanel').then((m) => ({ default: m.AssetStudioPanel })));
 const EntityEditorPanel = lazy(() => import('./panels/EntityEditorPanel').then((m) => ({ default: m.EntityEditorPanel })));
+const EntityLibraryPanel = lazy(() => import('./panels/EntityLibraryPanel').then((m) => ({ default: m.EntityLibraryPanel })));
 const CreatureDefEditorPanel = lazy(() => import('./panels/CreatureDefEditorPanel').then((m) => ({ default: m.CreatureDefEditorPanel })));
 const HeroStudioPanel = lazy(() => import('./panels/HeroStudioPanel').then((m) => ({ default: m.HeroStudioPanel })));
 const GameplayStudioSuite = lazy(() => import('./gameplay-studio/GameplayStudioSuite').then((m) => ({ default: m.GameplayStudioSuite })));
@@ -106,6 +107,7 @@ const PrimaryTileCanvasPanel = lazy(() => import('./panels/PrimaryTileCanvasPane
 const PrimaryVoxelCanvasPanel = lazy(() => import('./panels/PrimaryVoxelCanvasPanel').then((m) => ({ default: m.PrimaryVoxelCanvasPanel })));
 const SecondaryTileCanvasPanel = lazy(() => import('./panels/SecondaryTileCanvasPanel').then((m) => ({ default: m.SecondaryTileCanvasPanel })));
 const SecondaryVoxelCanvasPanel = lazy(() => import('./panels/SecondaryVoxelCanvasPanel').then((m) => ({ default: m.SecondaryVoxelCanvasPanel })));
+const TilesetQuickUploadPanel = lazy(() => import('./panels/TilesetQuickUploadPanel').then((m) => ({ default: m.TilesetQuickUploadPanel })));
 const StudioHomePanel = lazy(() => import('./panels/StudioHomePanel').then((m) => ({ default: m.StudioHomePanel })));
 
 const StudioBottomBar: React.FC = () => {
@@ -502,6 +504,12 @@ export const StudioEditorShell: React.FC = () => {
             </DraggablePanel>
           )}
 
+          {canUseStudioDock(permissionLevel, 'npc') && (
+            <DraggablePanel id="entityLibrary" icon={<Package className="w-4 h-4 text-emerald-400" />} title="Entity Library">
+              <Suspense fallback={<div>Loading...</div>}><EntityLibraryPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
           {canUseStudioDock(permissionLevel, 'quest') && (
             <DraggablePanel id="quest" icon={<ScrollText className="w-4 h-4" />} title="Quests">
               <Suspense fallback={<div>Loading...</div>}><QuestEditorPanel /></Suspense>
@@ -689,6 +697,7 @@ export const StudioEditorShell: React.FC = () => {
             <PrimaryVoxelCanvasPanel />
             <SecondaryTileCanvasPanel />
             <SecondaryVoxelCanvasPanel />
+            <TilesetQuickUploadPanel />
             <StudioHomePanel />
           </Suspense>
 

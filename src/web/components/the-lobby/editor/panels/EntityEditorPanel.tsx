@@ -377,8 +377,9 @@ export const EntityEditorPanel: React.FC = () => {
         </div>
       }
     >
-      <div className="flex-1 overflow-y-auto p-3 custom-scrollbar space-y-4 text-[11px]">
-        <div className="space-y-1.5">
+      <>{selectedId ? (
+        <div className="flex-1 overflow-y-auto p-3 custom-scrollbar space-y-4 text-[11px]">
+          <div className="space-y-1.5">
           <label className="text-slate-400 font-bold uppercase tracking-wider text-[9px]">Entity Kind</label>
           <select 
             value={kind} 
@@ -490,27 +491,6 @@ export const EntityEditorPanel: React.FC = () => {
         )}
 
         <div className="flex gap-2">
-          <div className="flex-1">
-            <label className="mb-1 block text-[10px] text-slate-400">X</label>
-            <input
-              type="number"
-              value={spawnX}
-              onChange={(e) => setSpawnX(parseInt(e.target.value, 10) || 0)}
-              className="w-full rounded-md border border-[#806f47]/30 bg-black/50/40 px-2 py-1.5 font-mono text-[11px]"
-            />
-          </div>
-          <div className="flex-1">
-            <label className="mb-1 block text-[10px] text-slate-400">Y</label>
-            <input
-              type="number"
-              value={spawnY}
-              onChange={(e) => setSpawnY(parseInt(e.target.value, 10) || 0)}
-              className="w-full rounded-md border border-[#806f47]/30 bg-black/50/40 px-2 py-1.5 font-mono text-[11px]"
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-2">
           <button
             type="button"
             onClick={() => void handleSave()}
@@ -518,7 +498,7 @@ export const EntityEditorPanel: React.FC = () => {
             className="flex flex-1 items-center justify-center gap-1 rounded bg-[#806f47]/80 py-1.5 font-bold text-[#050b14] hover:bg-[#806f47] disabled:opacity-50"
           >
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-            {selectedId ? 'Update Entity' : 'Save Entity to Map'}
+            Update Entity
           </button>
           {selectedId && (
             <button
@@ -532,12 +512,17 @@ export const EntityEditorPanel: React.FC = () => {
             </button>
           )}
         </div>
-        <p className="text-[9px] text-slate-600">
-          {selectedId
-            ? `Editing ${selectedId}`
-            : `Internal id preview: ${slugifyNpcId(String(entityProps.displayName || 'villager'))}`}
+        <p className="text-[9px] text-slate-600 mt-2">
+          Editing {selectedId}
         </p>
       </div>
+    ) : (
+      <div className="flex h-full items-center justify-center text-center">
+        <p className="text-slate-500 text-xs px-6">
+          Select an entity from the list to edit its properties, or place a new one from the <strong>Entity Library</strong> in the main toolbar.
+        </p>
+      </div>
+    )}</>
     </CatalogEditorShell>
   );
 };
