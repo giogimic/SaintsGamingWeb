@@ -86,10 +86,13 @@ const DungeonEditorPanel = lazy(() => import('./panels/DungeonEditorPanel').then
 const ShopEditorPanel = lazy(() => import('./panels/ShopEditorPanel').then((m) => ({ default: m.ShopEditorPanel })));
 const MountEditorPanel = lazy(() => import('./panels/MountEditorPanel').then((m) => ({ default: m.MountEditorPanel })));
 const WorldEventPanel = lazy(() => import('./panels/WorldEventPanel').then((m) => ({ default: m.WorldEventPanel })));
-const ReleaseManagementPanel = lazy(() => import('./panels/ReleaseManagementPanel').then((m) => ({ default: m.ReleaseManagementPanel })));
+const VersionManagerPanel = lazy(() => import('./panels/VersionManagerPanel').then((m) => ({ default: m.VersionManagerPanel })));
 const AnimationStudioPanel = lazy(() => import('./panels/AnimationStudioPanel').then((m) => ({ default: m.AnimationStudioPanel })));
 const MapTabPanel = lazy(() => import('./panels/MapTabPanel').then((m) => ({ default: m.MapTabPanel })));
-const MapListPanel = lazy(() => import('./panels/MapListPanel').then((m) => ({ default: m.MapListPanel })));
+const TileMapBrowserPanel = lazy(() => import('./panels/TileMapBrowserPanel').then((m) => ({ default: m.TileMapBrowserPanel })));
+const VoxelMapBrowserPanel = lazy(() => import('./panels/VoxelMapBrowserPanel').then((m) => ({ default: m.VoxelMapBrowserPanel })));
+const NewTileMapPanel = lazy(() => import('./panels/NewTileMapPanel').then((m) => ({ default: m.NewTileMapPanel })));
+const NewVoxelMapPanel = lazy(() => import('./panels/NewVoxelMapPanel').then((m) => ({ default: m.NewVoxelMapPanel })));
 const InterfaceEditorPanel = lazy(() => import('./panels/InterfaceEditorPanel').then((m) => ({ default: m.InterfaceEditorPanel })));
 const CameraSettingsPanel = lazy(() => import('./panels/CameraSettingsPanel').then((m) => ({ default: m.CameraSettingsPanel })));
 const BiomeConfiguratorPanel = lazy(() => import('./panels/BiomeConfiguratorPanel').then((m) => ({ default: m.BiomeConfiguratorPanel })));
@@ -560,9 +563,27 @@ export const StudioEditorShell: React.FC = () => {
             </DraggablePanel>
           )}
 
-          {(canUseStudioDock(permissionLevel, 'maps') || canUseStudioDock(permissionLevel, 'atlas')) && (
-            <DraggablePanel id="maps" icon={<Globe className="w-4 h-4" />} title="Map Browser">
-              <Suspense fallback={<div>Loading...</div>}><MapListPanel /></Suspense>
+          {(canUseStudioDock(permissionLevel, 'tileBrowser') || canUseStudioDock(permissionLevel, 'atlas')) && (
+            <DraggablePanel id="tileBrowser" icon={<Globe className="w-4 h-4" />} title="Tile Map Browser">
+              <Suspense fallback={<div>Loading...</div>}><TileMapBrowserPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {(canUseStudioDock(permissionLevel, 'voxelBrowser') || canUseStudioDock(permissionLevel, 'atlas')) && (
+            <DraggablePanel id="voxelBrowser" icon={<Box className="w-4 h-4 text-blue-400" />} title="Voxel Map Browser">
+              <Suspense fallback={<div>Loading...</div>}><VoxelMapBrowserPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {(canUseStudioDock(permissionLevel, 'newTileMap') || canUseStudioDock(permissionLevel, 'atlas')) && (
+            <DraggablePanel id="newTileMap" icon={<Sparkles className="w-4 h-4 text-primary" />} title="Create Tile Map">
+              <Suspense fallback={<div>Loading...</div>}><NewTileMapPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {(canUseStudioDock(permissionLevel, 'newVoxelMap') || canUseStudioDock(permissionLevel, 'atlas')) && (
+            <DraggablePanel id="newVoxelMap" icon={<Sparkles className="w-4 h-4 text-blue-400" />} title="Create Voxel Map">
+              <Suspense fallback={<div>Loading...</div>}><NewVoxelMapPanel /></Suspense>
             </DraggablePanel>
           )}
 
@@ -580,9 +601,9 @@ export const StudioEditorShell: React.FC = () => {
             </DraggablePanel>
           )}
 
-          {canUseStudioDock(permissionLevel, 'releases') && (
-            <DraggablePanel id="releases" icon={<CloudUpload className="w-4 h-4 text-emerald-400" />} title="Release Management">
-              <Suspense fallback={<div>Loading...</div>}><ReleaseManagementPanel /></Suspense>
+          {canUseStudioDock(permissionLevel, 'versionManager') && (
+            <DraggablePanel id="versionManager" icon={<CloudUpload className="w-4 h-4 text-emerald-400" />} title="Version Manager">
+              <Suspense fallback={<div>Loading...</div>}><VersionManagerPanel /></Suspense>
             </DraggablePanel>
           )}
 

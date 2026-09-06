@@ -2,7 +2,6 @@ import { createServer } from "http";
 import { parse } from "url";
 import next from "next";
 import { RealtimeService } from "./src/server/realtime/RealtimeService";
-import { bootstrapDemoContent } from "./src/server/DemoBootstrap";
 
 const dev = process.env.NODE_ENV !== "production";
 // Docker sets HOSTNAME=0.0.0.0; default to all interfaces in prod so lobby sockets work.
@@ -129,9 +128,6 @@ app.prepare().then(async () => {
   const goMmoUrl = process.env.NEXT_PUBLIC_GO_MMO_URL || "http://127.0.0.1:3001";
   _realtimeService = new RealtimeService(goMmoUrl);
   (globalThis as any).__sg_realtime_service = _realtimeService;
-
-  // Maps / Studio content seed always (API path), even when Go owns game sockets.
-  await bootstrapDemoContent();
 
   console.log(`> Lobby & Studio Realtime Event Router active (Target: ${goMmoUrl})`);
 

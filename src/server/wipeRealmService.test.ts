@@ -1,9 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { wipeNonBundledRealmContent } from './wipeRealmService';
 
-vi.mock('@/server/DemoBootstrap', () => ({
-  ensureStudioMapFoundation: vi.fn().mockResolvedValue({ logicTiles: true, demoMap: true }),
-}));
+
 
 vi.mock('@/shared/game/mapCache', () => ({
   invalidateMapCache: vi.fn(),

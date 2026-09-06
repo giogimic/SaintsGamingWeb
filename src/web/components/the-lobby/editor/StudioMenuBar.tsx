@@ -404,7 +404,8 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
     if (mode === 'voxel' || mode === 'tile') {
       useGameStore.setState({ currentMapId: '', activeMapData: null });
       if (onOpenMapBrowser) onOpenMapBrowser();
-      else openPanel('maps');
+      else if (mode === 'voxel') openPanel('voxelBrowser');
+      else openPanel('tileBrowser');
     }
   };
 
@@ -511,13 +512,14 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           {/* â”€â”€ 1. FILE â”€â”€ */}
           <TopLevelMenu id="file" label="File">
             <SubMenu label="New" icon={FolderPlus}>
-              <MenuItem label="New Authored Map" icon={Folder} onClick={() => { setStudioMode('tile'); openPanel('build'); showToast('Opened World Builder'); }} />
-              <MenuItem label="New Procedural Region" icon={Sparkles} onClick={() => { setStudioMode('atlas'); openPanel('procedural'); showToast('Opened Procedural Authoring'); }} />
+              <MenuItem label="New Authored Map" icon={Folder} onClick={() => { setStudioMode('tile'); openPanel('newTileMap'); showToast('Opened Tile Map Generator'); }} />
+              <MenuItem label="New Procedural Region" icon={Sparkles} onClick={() => { setStudioMode('voxel'); openPanel('newVoxelMap'); showToast('Opened Voxel Map Generator'); }} />
               <MenuItem label="New Hybrid Region" icon={Globe} onClick={() => { setStudioMode('atlas'); openPanel('atlas'); showToast('Select Atlas Node for Hybrid Generation'); }} />
               <MenuItem label="New Blueprint Asset" icon={Package} onClick={() => { setStudioMode('assets'); openPanel('assets'); showToast('Opened Asset Studio'); }} />
             </SubMenu>
             <SubMenu label="Open" icon={Folder}>
-              <MenuItem label="Map Browser..." icon={Globe} onClick={() => { if (onOpenMapBrowser) onOpenMapBrowser(); else { setStudioMode('atlas'); openPanel('maps'); } }} />
+              <MenuItem label="Tile Map Browser..." icon={Globe} onClick={() => { setStudioMode('tile'); openPanel('tileBrowser'); }} />
+              <MenuItem label="Voxel Map Browser..." icon={Box} onClick={() => { setStudioMode('voxel'); openPanel('voxelBrowser'); }} />
               <MenuItem label="World Atlas (Spatial Grid)..." shortcut="Ctrl+Shift+M" icon={Globe} onClick={() => { setStudioMode('atlas'); openPanel('atlas'); }} />
               <MenuItem label="Quick Open / Search..." shortcut="Ctrl+K" icon={Search} onClick={() => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true })); }} />
               <MenuItem divider />
@@ -570,12 +572,12 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               <MenuItem label="World Data..." icon={Folder} onClick={() => { setStudioMode('tile'); openPanel('build'); showToast('World Data export available in World Builder'); }} />
               <MenuItem label="Blueprint / Structure..." icon={Package} onClick={() => { setStudioMode('assets'); openPanel('assets'); showToast('Blueprint export available in Asset Studio'); }} />
             </SubMenu>
-            <MenuItem label="Publish / Manage Releases..." icon={CloudUpload} onClick={() => openPanel('releases')} />
+            <MenuItem label="Version Manager..." icon={CloudUpload} onClick={() => openPanel('versionManager')} />
             <SubMenu label="Release" icon={Package}>
-              <MenuItem label="Create Release..." icon={Plus} onClick={() => { openPanel('releases'); window.dispatchEvent(new CustomEvent('studio_open_release_create')); }} />
-              <MenuItem label="Manage Releases..." icon={Settings} onClick={() => openPanel('releases')} />
-              <MenuItem label="Release History" icon={ScrollText} onClick={() => openPanel('releases')} />
-              <MenuItem label="Release Settings..." icon={Settings} onClick={() => openPanel('releases')} />
+              <MenuItem label="Create Release..." icon={Plus} onClick={() => { openPanel('versionManager'); window.dispatchEvent(new CustomEvent('studio_open_release_create')); }} />
+              <MenuItem label="Manage Releases..." icon={Settings} onClick={() => openPanel('versionManager')} />
+              <MenuItem label="Release History" icon={ScrollText} onClick={() => openPanel('versionManager')} />
+              <MenuItem label="Release Settings..." icon={Settings} onClick={() => openPanel('versionManager')} />
             </SubMenu>
             <MenuItem divider />
             <MenuItem label="Save & Exit to Lobby" shortcut="Ctrl+Shift+Q" icon={LogOut} onClick={() => { window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT)); setTimeout(() => { window.location.href = '/lobby'; }, 500); }} />
@@ -651,7 +653,8 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           {/* ── 4. WORLD ── */}
           <TopLevelMenu id="world" label="World">
             <MenuItem label="World Atlas (Spatial Grid)" shortcut="Ctrl+Shift+M" icon={Globe} onClick={() => { setStudioMode('atlas'); openPanel('atlas'); }} />
-            <MenuItem label="Map Browser" icon={Globe} onClick={() => { if (onOpenMapBrowser) onOpenMapBrowser(); else { setStudioMode('atlas'); openPanel('maps'); } }} />
+            <MenuItem label="Tile Map Browser" icon={Globe} onClick={() => { setStudioMode('tile'); openPanel('tileBrowser'); }} />
+            <MenuItem label="Voxel Map Browser" icon={Box} onClick={() => { setStudioMode('voxel'); openPanel('voxelBrowser'); }} />
             <MenuItem label="World Events" icon={Sparkles} onClick={() => openPanel('worldevent')} />
           </TopLevelMenu>
 
@@ -682,7 +685,8 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem divider />
             <MenuSectionLabel label="World Windows" />
             <MenuItem label="World Atlas" icon={panels.atlas?.isOpen ? CheckCircle2 : Globe} onClick={() => togglePanel('atlas')} />
-            <MenuItem label="Map Browser" icon={panels.maps?.isOpen ? CheckCircle2 : Globe} onClick={() => togglePanel('maps')} />
+            <MenuItem label="Tile Map Browser" icon={panels.tileBrowser?.isOpen ? CheckCircle2 : Globe} onClick={() => togglePanel('tileBrowser')} />
+            <MenuItem label="Voxel Map Browser" icon={panels.voxelBrowser?.isOpen ? CheckCircle2 : Box} onClick={() => togglePanel('voxelBrowser')} />
             <MenuItem label="Inspector / Properties" icon={panels.properties?.isOpen ? CheckCircle2 : Settings} onClick={() => togglePanel('properties')} />
             <MenuItem label="Camera & View" icon={panels.camera?.isOpen ? CheckCircle2 : Camera} onClick={() => togglePanel('camera')} />
             

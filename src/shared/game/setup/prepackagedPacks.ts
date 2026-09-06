@@ -4,7 +4,7 @@
  * and the importer engine for fresh install onboarding.
  */
 
-import { DEMO_LOGIC_TILES } from '../../../server/demoMapSeed';
+import { DEMO_LOGIC_TILES } from './logicTilesSeed';
 import { SETUP_SETTING_KEYS } from './setupDetection';
 
 export interface StarterPackMeta {
