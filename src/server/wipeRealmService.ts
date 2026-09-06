@@ -10,7 +10,6 @@
  */
 
 import { SETUP_SETTING_KEYS } from "@/shared/game/setup/setupDetection";
-import { ensureStudioMapFoundation } from "@/server/DemoBootstrap";
 import { bootstrapDynamicStarterContent } from "@/server/starterContentBootstrap";
 import { invalidateMapCache, invalidateLogicTilesCache } from "@/shared/game/mapCache";
 
@@ -96,8 +95,8 @@ export async function wipeNonBundledRealmContent(prisma: any): Promise<WipeRealm
     },
   }).catch(() => {});
 
-  // 7. Re-seed the bundled foundation (DEMO_SANDBOX + 24 logic tiles)
-  await ensureStudioMapFoundation();
+  // 7. (Removed) We no longer re-seed DEMO_SANDBOX
+  // await ensureStudioMapFoundation();
 
   // 7.5 Re-seed the dynamic starter RPG content (Abilities, Classes, Elements, Starter Mobs)
   await bootstrapDynamicStarterContent("saints", "default");

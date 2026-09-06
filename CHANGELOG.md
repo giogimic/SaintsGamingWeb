@@ -1,3 +1,10 @@
+## [2.1.750] - 2026-09-06
+### Changed
+- Studio Maps: Divorced Tile and Voxel map browsers into distinct TileMapBrowserPanel and VoxelMapBrowserPanel components to isolate dependencies.
+- Demo Content: Removed hardcoded demo sandbox fallbacks and deprecated DemoBootstrap.ts to ensure only explicitly created maps exist.
+- Studio Logic: Extracted DEMO_LOGIC_TILES into a dedicated logicTilesSeed.ts file to preserve required Studio brush components after demo removal.
+- Studio UI: Updated StudioFavoritesStrip and StudioMenuBar to utilize the new map dock IDs.
+
 ## [2.1.743] - 2026-09-05
 ### Added
 - Studio Settings: Added a Camera perspective toggle to the Studio Settings visuals tab.

@@ -17,3 +17,4 @@ export async function GET(_req: NextRequest) {
     return NextResponse.json({ error: 'Download currently unavailable' }, { status: 500 });
   }
 }
+
