@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { DownloadCloud, UploadCloud, X, Loader2 } from 'lucide-react';
 import { useGameStore } from '../../store';
 import { useEditorStore } from '../editor-store';
-import { ensureMapHasStudioTilesets, DEFAULT_STUDIO_TILESETS } from '@/shared/game/studioTilesetBootstrap';
+import { ensureMapHasStudioTilesets, DEFAULT_STUDIO_TILESETS, StudioTilesetMeta } from '@/shared/game/studioTilesetBootstrap';
+import { AssetUploadView } from '../AssetUploadView';
 
 export const TilePalettePanel: React.FC = () => {
   const activeMapData = useGameStore((s) => s.activeMapData);
@@ -23,6 +25,58 @@ export const TilePalettePanel: React.FC = () => {
   const [dragStart, setDragStart] = useState<{ col: number; row: number } | null>(null);
   const [dragEnd, setDragEnd] = useState<{ col: number; row: number } | null>(null);
   const [zoom, setZoom] = useState(1);
+
+  const [isAssetLibraryOpen, setIsAssetLibraryOpen] = useState(false);
+  const [isQuickUploadOpen, setIsQuickUploadOpen] = useState(false);
+
+  const addTilesetToMap = (asset: any, customTileWidth?: number, customTileHeight?: number) => {
+    if (!activeMapData) return;
+    const currentTilesets = tilesets;
+    const lastTileset = currentTilesets[currentTilesets.length - 1];
+    
+    // Calculate new firstgid safely
+    let tileCount = 256;
+    if (lastTileset.imagewidth && lastTileset.imageheight && lastTileset.tilewidth && lastTileset.tileheight) {
+      const c = Math.floor(lastTileset.imagewidth / lastTileset.tilewidth);
+      const r = Math.floor(lastTileset.imageheight / lastTileset.tileheight);
+      tileCount = Math.max(1, c * r);
+    } else {
+      // Fallback rough estimate based on columns
+      tileCount = (lastTileset.columns || 8) * 32;
+    }
+
+    const tw = customTileWidth || asset.metadata?.tileWidth || asset.metadata?.tilewidth || 32;
+    const th = customTileHeight || asset.metadata?.tileHeight || asset.metadata?.tileheight || 32;
+    
+    // Attempt to parse actual columns from image size if known
+    let columns = asset.metadata?.columns || 8;
+    if (asset.metadata?.imagewidth || asset.metadata?.width) {
+      const iw = asset.metadata?.imagewidth || asset.metadata?.width;
+      columns = Math.floor(iw / tw);
+    }
+
+    const newTileset: StudioTilesetMeta = {
+      firstgid: lastTileset.firstgid + tileCount,
+      imageSource: asset.source,
+      columns,
+      tilewidth: tw,
+      tileheight: th,
+      imagewidth: asset.metadata?.imagewidth || asset.metadata?.width,
+      imageheight: asset.metadata?.imageheight || asset.metadata?.height
+    };
+
+    const updatedMapData = {
+      ...activeMapData,
+      tilesets: [...currentTilesets, newTileset]
+    };
+
+    useGameStore.setState({ activeMapData: updatedMapData });
+    useEditorStore.getState().markMapDirty();
+    
+    // Select the new tileset
+    setSelectedTilesetIdx(currentTilesets.length);
+    showToast(`Added new tileset: ${asset.source.split('/').pop()}`);
+  };
 
   const tilesets = useMemo(() => {
     if (!activeMapData) return DEFAULT_STUDIO_TILESETS;
@@ -170,22 +224,40 @@ export const TilePalettePanel: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-[#03070f] text-slate-200">
-      <div className="p-2 border-b border-border/30 bg-[#081222]/80 flex items-center gap-2">
-        <select
-          className="flex-1 bg-[#0a1628] border border-border/40 rounded p-1 text-xs text-primary outline-none"
-          value={selectedTilesetIdx}
-          onChange={(e) => setSelectedTilesetIdx(Number(e.target.value))}
-        >
-          {tilesets.map((ts: any, idx: number) => (
-            <option key={idx} value={idx}>
-              {ts.imageSource.split('/').pop() || `Tileset #${idx + 1}`} ({ts.tilewidth}x{ts.tileheight})
-            </option>
-          ))}
-        </select>
-        <div className="flex items-center gap-1 bg-[#0a1628] rounded border border-border/40 px-1 py-1" title="Zoom">
-          <button onClick={() => setZoom(z => Math.max(0.25, z - 0.25))} className="hover:text-primary px-1">-</button>
-          <span className="text-[10px] w-8 text-center font-mono">{(zoom * 100).toFixed(0)}%</span>
-          <button onClick={() => setZoom(z => Math.min(4, z + 0.25))} className="hover:text-primary px-1">+</button>
+      <div className="p-2 border-b border-border/30 bg-[#081222]/80 flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <select
+            className="flex-1 bg-[#0a1628] border border-border/40 rounded p-1 text-xs text-primary outline-none"
+            value={selectedTilesetIdx}
+            onChange={(e) => setSelectedTilesetIdx(Number(e.target.value))}
+          >
+            {tilesets.map((ts: any, idx: number) => (
+              <option key={idx} value={idx}>
+                {ts.imageSource.split('/').pop() || `Tileset #${idx + 1}`} ({ts.tilewidth}x{ts.tileheight})
+              </option>
+            ))}
+          </select>
+          <div className="flex items-center gap-1 bg-[#0a1628] rounded border border-border/40 px-1 py-1" title="Zoom">
+            <button onClick={() => setZoom(z => Math.max(0.25, z - 0.25))} className="hover:text-primary px-1">-</button>
+            <span className="text-[10px] w-8 text-center font-mono">{(zoom * 100).toFixed(0)}%</span>
+            <button onClick={() => setZoom(z => Math.min(4, z + 0.25))} className="hover:text-primary px-1">+</button>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setIsAssetLibraryOpen(true)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-1 text-[10px] font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded transition-colors"
+          >
+            <DownloadCloud className="w-3 h-3" />
+            Import Existing
+          </button>
+          <button 
+            onClick={() => setIsQuickUploadOpen(true)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded transition-colors"
+          >
+            <UploadCloud className="w-3 h-3" />
+            Quick Upload
+          </button>
         </div>
       </div>
 
@@ -279,6 +351,137 @@ export const TilePalettePanel: React.FC = () => {
           </label>
         </div>
       )}
+
+      {/* Tileset Library Modal */}
+      {isAssetLibraryOpen && (
+        <TilesetLibraryModal 
+          onClose={() => setIsAssetLibraryOpen(false)} 
+          onSelect={(asset) => {
+            addTilesetToMap(asset);
+            setIsAssetLibraryOpen(false);
+          }} 
+        />
+      )}
+
+      {/* Quick Upload Modal */}
+      {isQuickUploadOpen && (
+        <TilesetQuickUploadModal 
+          onClose={() => setIsQuickUploadOpen(false)} 
+          onComplete={(asset, tw, th) => {
+            addTilesetToMap(asset, tw, th);
+            setIsQuickUploadOpen(false);
+          }} 
+        />
+      )}
+    </div>
+  );
+};
+
+const TilesetLibraryModal: React.FC<{ onClose: () => void, onSelect: (asset: any) => void }> = ({ onClose, onSelect }) => {
+  const [assets, setAssets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/assets?type=TILE&limit=50')
+      .then(r => r.json())
+      .then(data => {
+        setAssets(data.assets || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-[#050b14] border border-amber-500/30 rounded-xl w-[600px] max-h-[80vh] flex flex-col shadow-2xl">
+        <div className="flex justify-between items-center p-3 border-b border-border/30 bg-[#081222]/80">
+          <h2 className="text-amber-400 font-bold flex items-center gap-2">
+            <DownloadCloud className="w-4 h-4" /> Import Tileset
+          </h2>
+          <button onClick={onClose} className="p-1 hover:bg-white/10 rounded"><X className="w-4 h-4" /></button>
+        </div>
+        <div className="flex-1 overflow-auto p-4 custom-scrollbar">
+          {loading ? (
+            <div className="flex justify-center items-center py-8 text-amber-500"><Loader2 className="w-6 h-6 animate-spin" /></div>
+          ) : assets.length === 0 ? (
+            <div className="text-center text-slate-400 py-8 text-sm">No uploaded tilesets found. Use Quick Upload first.</div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {assets.map((a: any) => (
+                <button
+                  key={a.id}
+                  onClick={() => onSelect(a)}
+                  className="flex flex-col bg-[#0a1628] border border-border/40 rounded overflow-hidden hover:border-amber-400/50 hover:shadow-[0_0_8px_rgba(251,191,36,0.3)] transition-all group"
+                >
+                  <div className="h-24 w-full bg-[#02050a] flex items-center justify-center p-2 relative overflow-hidden">
+                    <img 
+                      src={a.source.startsWith('/') || a.source.startsWith('http') ? a.source : `/game-assets/tilesets/${a.source}`} 
+                      alt={a.name}
+                      className="max-h-full max-w-full object-contain pointer-events-none group-hover:scale-110 transition-transform"
+                      style={{ imageRendering: 'pixelated' }}
+                    />
+                  </div>
+                  <div className="p-2 bg-[#081222] text-xs font-bold truncate text-left w-full border-t border-border/30 text-slate-300">
+                    {a.name || a.source.split('/').pop()}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TilesetQuickUploadModal: React.FC<{ onClose: () => void, onComplete: (asset: any, tw: number, th: number) => void }> = ({ onClose, onComplete }) => {
+  const [tileWidth, setTileWidth] = useState(32);
+  const [tileHeight, setTileHeight] = useState(32);
+  
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-[#050b14] border border-emerald-500/30 rounded-xl w-[800px] max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+        <div className="flex justify-between items-center p-3 border-b border-border/30 bg-[#081222]/80 shrink-0">
+          <h2 className="text-emerald-400 font-bold flex items-center gap-2">
+            <UploadCloud className="w-4 h-4" /> Quick Upload Tileset
+          </h2>
+          <button onClick={onClose} className="p-1 hover:bg-white/10 rounded"><X className="w-4 h-4" /></button>
+        </div>
+        
+        <div className="p-4 bg-[#0a1628] border-b border-border/30 flex items-center gap-4 shrink-0">
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] text-emerald-400 font-bold uppercase">Tile Width (px)</label>
+            <input 
+              type="number" 
+              value={tileWidth} 
+              onChange={e => setTileWidth(Number(e.target.value) || 1)}
+              className="bg-[#02050a] border border-border/50 rounded px-2 py-1 text-sm outline-none text-slate-200 w-24 focus:border-emerald-500"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] text-emerald-400 font-bold uppercase">Tile Height (px)</label>
+            <input 
+              type="number" 
+              value={tileHeight} 
+              onChange={e => setTileHeight(Number(e.target.value) || 1)}
+              className="bg-[#02050a] border border-border/50 rounded px-2 py-1 text-sm outline-none text-slate-200 w-24 focus:border-emerald-500"
+            />
+          </div>
+          <div className="text-xs text-slate-400 max-w-sm mt-3 border-l-2 border-emerald-500/30 pl-3">
+            Set your target tile size before uploading. The image will automatically be registered as a TILE asset.
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-auto bg-[#02050b]">
+          {/* We wrap AssetUploadView to hide its own headers and just provide the upload area */}
+          <div className="transform scale-[0.95] origin-top">
+            <AssetUploadView 
+              initialAssetType="TILE"
+              onUploadComplete={(asset) => onComplete(asset, tileWidth, tileHeight)}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

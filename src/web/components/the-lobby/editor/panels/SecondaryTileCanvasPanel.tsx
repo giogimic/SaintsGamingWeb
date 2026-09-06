@@ -19,7 +19,6 @@ export const SecondaryTileCanvasPanel: React.FC = () => {
   
   // Performance optimization state
   const [isActive, setIsActive] = useState(true);
-  const [cachedImage, setCachedImage] = useState<string | null>(null);
   
   const engineRef = useRef<BabylonEngine | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -38,33 +37,6 @@ export const SecondaryTileCanvasPanel: React.FC = () => {
     }
   }, [isOpen, secondaryMapId, secondaryMapType]);
 
-  useEffect(() => {
-    if (!engineRef.current || !engineRef.current.engine) return;
-    
-    if (isActive) {
-      engineRef.current.engine.runRenderLoop(() => {
-        if (engineRef.current?.scene?.activeCamera) {
-          engineRef.current.scene.render();
-        }
-      });
-      setCachedImage(null);
-    } else {
-      // Create snapshot before pausing
-      import('@babylonjs/core/Misc/tools').then(({ Tools }) => {
-        if (engineRef.current && engineRef.current.engine) {
-          Tools.CreateScreenshotUsingRenderTarget(
-            engineRef.current.engine,
-            engineRef.current.scene.activeCamera!,
-            { width: 640, height: 480 },
-            (data) => {
-              setCachedImage(data);
-              engineRef.current?.engine?.stopRenderLoop();
-            }
-          );
-        }
-      });
-    }
-  }, [isActive]);
 
   const handleSave = async () => {
     if (!mapData || !secondaryMapId) return;
@@ -88,8 +60,6 @@ export const SecondaryTileCanvasPanel: React.FC = () => {
       <div 
         ref={containerRef}
         className="flex flex-col h-full bg-slate-900 overflow-hidden"
-        onMouseEnter={() => setIsActive(true)}
-        onMouseLeave={() => setIsActive(false)}
       >
         <div className="flex items-center gap-2 p-2 border-b border-white/10 shrink-0">
           <button 
@@ -99,7 +69,7 @@ export const SecondaryTileCanvasPanel: React.FC = () => {
             Save Map Data
           </button>
           <div className="text-[10px] text-slate-400">
-            {isActive ? 'Active (Live)' : 'Paused (Hover to resume)'}
+            Active (Live)
           </div>
         </div>
         
@@ -110,14 +80,6 @@ export const SecondaryTileCanvasPanel: React.FC = () => {
             </div>
           ) : (
             <>
-              {cachedImage && !isActive && (
-                <img 
-                  src={cachedImage} 
-                  alt="Cached render" 
-                  className="absolute inset-0 w-full h-full object-cover z-10 pointer-events-none" 
-                />
-              )}
-              
               <TileCanvasBabylon 
                 isolatedMapId={secondaryMapId}
                 isolatedMapData={mapData}

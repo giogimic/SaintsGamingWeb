@@ -8,6 +8,7 @@ import { notifyGoMapSynced } from '@/server/goMmoNotify';
 import { DEFAULT_STARTER_HERO_PRESETS } from '@/shared/game/starterHeroCatalog';
 import { DEFAULT_PLAYABLE_CLASSES } from '@/shared/game/classCatalog';
 import { classDataToDb } from '@/shared/game/classDefMap';
+import { DEMO_LOGIC_TILES } from '@/shared/game/setup/logicTilesSeed';
 import { bootstrapDynamicStarterContent } from '@/server/starterContentBootstrap';
 
 export const dynamic = 'force-dynamic';
@@ -389,6 +390,34 @@ export async function POST(req: Request) {
           where: { key: item.key },
           create: { key: item.key, value: item.value },
           update: { value: item.value },
+        });
+      }
+
+      // 4f. Seed essential logic tiles for Studio brush palette
+      for (const tile of DEMO_LOGIC_TILES) {
+        await tx.mapLogicTile.upsert({
+          where: { id: tile.id },
+          create: {
+            id: tile.id,
+            name: tile.name,
+            color: tile.color,
+            isSolid: tile.isSolid,
+            interactable: tile.interactable,
+            onInteractAction: tile.onInteractAction,
+            onInteractPayload: tile.onInteractPayload,
+            onStepAction: tile.onStepAction,
+            onStepPayload: tile.onStepPayload,
+          },
+          update: {
+            name: tile.name,
+            color: tile.color,
+            isSolid: tile.isSolid,
+            interactable: tile.interactable,
+            onInteractAction: tile.onInteractAction,
+            onInteractPayload: tile.onInteractPayload,
+            onStepAction: tile.onStepAction,
+            onStepPayload: tile.onStepPayload,
+          },
         });
       }
     });

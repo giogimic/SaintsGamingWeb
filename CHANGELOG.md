@@ -1,3 +1,7 @@
+## [2.1.758] - 2026-09-06
+- feat(studio): Added tileset import from asset manager to Tile Palette.
+- feat(studio): Added quick upload tileset feature to Tile Palette with configurable dimensions.
+
 ## [2.1.757] - 2026-09-06
 ### Fixed
 - Refined Studio Map initialization UI to only show Map Browser when no active map is loaded.
