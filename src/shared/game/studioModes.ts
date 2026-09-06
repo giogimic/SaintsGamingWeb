@@ -70,7 +70,11 @@ export type StudioDockId =
   | 'tileset'
   | 'asset_suite'
   | 'hero_suite'
-  | 'secondaryViewport';
+  | 'primaryTileViewport'
+  | 'primaryVoxelViewport'
+  | 'secondaryTileViewport'
+  | 'secondaryVoxelViewport'
+  | 'studioHome';
 
 /** Map stable internal ids → canonical engine-editor labels. */
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
@@ -352,9 +356,25 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
     label: 'Hero Studio',
     blurb: 'Full suite for managing classes, archetypes, and heroes.',
   },
-  secondaryViewport: {
-    label: 'Secondary Canvas',
-    blurb: 'Isolated editor viewport.',
+  primaryTileViewport: {
+    label: 'Primary Tile Canvas',
+    blurb: 'Main 2D tile canvas viewport connected to the World Atlas.',
+  },
+  primaryVoxelViewport: {
+    label: 'Primary Voxel Canvas',
+    blurb: 'Main 3D voxel canvas viewport connected to the World Atlas.',
+  },
+  secondaryTileViewport: {
+    label: 'Secondary Tile Canvas',
+    blurb: 'Isolated 2D tile canvas viewport.',
+  },
+  secondaryVoxelViewport: {
+    label: 'Secondary Voxel Canvas',
+    blurb: 'Isolated 3D voxel canvas viewport.',
+  },
+  studioHome: {
+    label: 'Studio Dashboard',
+    blurb: 'Welcome to Saints Studio. Access quick tools and assets.',
   },
   versionManager: {
     label: 'Version Manager',

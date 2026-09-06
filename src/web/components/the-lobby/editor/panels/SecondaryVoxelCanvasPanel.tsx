@@ -1,17 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { DraggablePanel } from '../DraggablePanel';
 import { useEditorStore } from '../editor-store';
+import { useGameStore } from '../../store';
 import { GameMapData, loadMap } from '../../data/maps';
-import { TileCanvasBabylon } from '../../babylon/TileCanvasBabylon';
 import { VoxelCanvasBabylon } from '../../babylon/VoxelCanvasBabylon';
 import { BabylonEngine } from '@/engine/BabylonEngine';
 import { MapPersistenceService } from '../services/MapPersistenceService';
 
-export const SecondaryCanvasPanel: React.FC = () => {
-  const isOpen = useEditorStore((s) => s.panels['secondaryViewport']?.isOpen);
+export const SecondaryVoxelCanvasPanel: React.FC = () => {
+  const isOpen = useEditorStore((s) => s.panels['secondaryVoxelViewport']?.isOpen);
   const secondaryMapId = useEditorStore((s) => s.secondaryMapId);
   const secondaryMapType = useEditorStore((s) => s.secondaryMapType);
-  const closePanel = useEditorStore((s) => s.closePanel);
+  const isDevEditorOpen = useEditorStore((s) => s.isCreationMode);
+  const suppressGameplay = true;
 
   const [mapData, setMapData] = useState<GameMapData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +25,7 @@ export const SecondaryCanvasPanel: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isOpen && secondaryMapId) {
+    if (isOpen && secondaryMapId && secondaryMapType === 'VOXEL') {
       setIsLoading(true);
       loadMap(secondaryMapId, 0).then((data) => {
         // Strip chunks so we only edit this map in isolation
@@ -35,7 +36,7 @@ export const SecondaryCanvasPanel: React.FC = () => {
     } else {
       setMapData(null);
     }
-  }, [isOpen, secondaryMapId]);
+  }, [isOpen, secondaryMapId, secondaryMapType]);
 
   useEffect(() => {
     if (!engineRef.current || !engineRef.current.engine) return;
@@ -77,11 +78,11 @@ export const SecondaryCanvasPanel: React.FC = () => {
     }
   };
 
-  if (!isOpen || !secondaryMapId) return null;
+  if (!isOpen || !secondaryMapId || secondaryMapType !== 'VOXEL') return null;
 
   return (
     <DraggablePanel
-      id="secondaryViewport"
+      id="secondaryVoxelViewport"
       title={`Secondary View: ${secondaryMapId}`}
     >
       <div 
@@ -117,20 +118,13 @@ export const SecondaryCanvasPanel: React.FC = () => {
                 />
               )}
               
-              {/* Render Canvas */}
-              {secondaryMapType === 'VOXEL' ? (
-                <VoxelCanvasBabylon 
-                  isolatedMapId={secondaryMapId}
-                  isolatedMapData={mapData}
-                  onCanvasReady={(engine) => { engineRef.current = engine; }}
-                />
-              ) : (
-                <TileCanvasBabylon 
-                  isolatedMapId={secondaryMapId}
-                  isolatedMapData={mapData}
-                  onCanvasReady={(engine) => { engineRef.current = engine; }}
-                />
-              )}
+              <VoxelCanvasBabylon 
+                isolatedMapId={secondaryMapId}
+                isolatedMapData={mapData}
+                isDevEditorOpen={isDevEditorOpen}
+                suppressGameplay={suppressGameplay}
+                onCanvasReady={(engine) => { engineRef.current = engine; }}
+              />
             </>
           )}
         </div>
@@ -139,4 +133,4 @@ export const SecondaryCanvasPanel: React.FC = () => {
   );
 };
 
-export default SecondaryCanvasPanel;
+export default SecondaryVoxelCanvasPanel;

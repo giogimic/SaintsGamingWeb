@@ -1159,15 +1159,59 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 700,
     zIndex: 10,
   },
-  secondaryViewport: {
-    id: 'secondaryViewport',
-    title: 'Secondary Canvas',
+  primaryTileViewport: {
+    id: 'primaryTileViewport',
+    title: 'Primary Tile Canvas',
+    isOpen: false,
+    isCollapsed: false,
+    x: 400,
+    y: 80,
+    width: 800,
+    height: 600,
+    zIndex: 10,
+  },
+  primaryVoxelViewport: {
+    id: 'primaryVoxelViewport',
+    title: 'Primary Voxel Canvas',
+    isOpen: false,
+    isCollapsed: false,
+    x: 400,
+    y: 80,
+    width: 800,
+    height: 600,
+    zIndex: 10,
+  },
+  secondaryTileViewport: {
+    id: 'secondaryTileViewport',
+    title: 'Secondary Tile Canvas',
     isOpen: false,
     isCollapsed: false,
     x: 150,
     y: 100,
     width: 800,
     height: 600,
+    zIndex: 10,
+  },
+  secondaryVoxelViewport: {
+    id: 'secondaryVoxelViewport',
+    title: 'Secondary Voxel Canvas',
+    isOpen: false,
+    isCollapsed: false,
+    x: 150,
+    y: 100,
+    width: 800,
+    height: 600,
+    zIndex: 10,
+  },
+  studioHome: {
+    id: 'studioHome',
+    title: 'Studio Dashboard',
+    isOpen: false,
+    isCollapsed: false,
+    x: 400,
+    y: 200,
+    width: 600,
+    height: 400,
     zIndex: 10,
   },
 };
@@ -1692,6 +1736,23 @@ export const useEditorStore = create<EditorState>()(
           
           closeAllPanels(state);
           openModePanels(state, mode);
+          
+          if (mode === 'tile') {
+            // Wait, we need to know if a map is loaded. We can check `useGameStore` if we import it, or just emit an event to the shell.
+            // Since `editor-store` doesn't have `useGameStore`, we'll dispatch an event for the shell to handle the "open map or browser" logic.
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('studio_mode_changed', { detail: { mode: 'tile' } }));
+            }
+          } else if (mode === 'voxel') {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('studio_mode_changed', { detail: { mode: 'voxel' } }));
+            }
+          } else if (mode === 'develop') {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('studio_mode_changed', { detail: { mode: 'develop' } }));
+            }
+          }
+          
           if (!wasEditor) queueMicrotask(() => emitPieChanged(false));
         }),
 
