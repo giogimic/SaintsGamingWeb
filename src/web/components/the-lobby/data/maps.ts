@@ -293,6 +293,7 @@ export async function loadMap(
         if (!mapData.chunks || mapData.chunks.length === 0) {
           mapData.chunks = [{
             mapId: mapData.id,
+            mapType: mapData.mapType,
             offsetX: 0,
             offsetZ: 0,
             width: mapData.width || 24,
@@ -343,6 +344,7 @@ export async function loadMap(
 
               mapData.chunks!.push({
                 mapId: neighborData.id,
+                mapType: neighborData.mapType,
                 offsetX,
                 offsetZ,
                 width: nW,

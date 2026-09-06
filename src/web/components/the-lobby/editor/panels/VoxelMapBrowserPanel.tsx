@@ -408,6 +408,16 @@ export const VoxelMapBrowserPanel: React.FC = () => {
                       
                       {/* Hover Actions */}
                       <div className="hidden group-hover:flex items-center gap-1 shrink-0 bg-[#050b14]/80 px-1 rounded" onClick={e => e.stopPropagation()}>
+                        <button 
+                          onClick={() => {
+                            useEditorStore.getState().setSecondaryMap(map.id, map.mapType as any);
+                            useEditorStore.getState().openPanel('secondaryViewport');
+                          }} 
+                          className="p-1 text-slate-400 hover:text-white" 
+                          title="Open in New View"
+                        >
+                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                        </button>
                         {canEdit && (
                           <button onClick={() => setSettingsModalMapId(map.id)} className="p-1 text-slate-400 hover:text-white" title="Settings">
                             <Settings className="w-3 h-3" />

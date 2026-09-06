@@ -1,3 +1,9 @@
+## [2.1.753] - 2026-09-06
+### Added
+- Implemented Secondary Canvas Viewport editor panel allowing isolated editing without polluting the primary scene.
+- Added "Open in New View" action to Voxel and Tile map browsers.
+- Added isolated rendering pause/suspend optimization for the Secondary Canvas to conserve WebGL performance.
+- Added explicit mapType tagging to chunk responses to support FRACTAL map zone indicator highlighting in BabylonEngine.
 ## [2.1.752] - 2026-09-06
 ### Fixed
 - Fixed StudioMenuBar submenu clicks instantly closing the menu before executing actions.
@@ -5928,4 +5934,5 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
  i n  
  S t u d i o M e n u B a r . t s x .  
  
+
 

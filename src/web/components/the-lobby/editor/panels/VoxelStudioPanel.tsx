@@ -83,26 +83,7 @@ export const VoxelStudioPanel: React.FC = () => {
 
   return (
     <>
-      {!hasVoxelData && typeof document !== 'undefined' && require('react-dom').createPortal(
-        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-[#050b14]/90 backdrop-blur-md pointer-events-auto" style={{ left: 0, right: '350px' }}>
-          <div className="text-center p-8 bg-[#0b1320] border border-[#cbb26a]/40 rounded-2xl shadow-2xl max-w-md">
-             <Box className="w-16 h-16 text-[#cbb26a] mx-auto mb-4" />
-             <h2 className="text-2xl font-bold text-white mb-2">No Voxel Data Found</h2>
-             <p className="text-slate-400 mb-6 text-sm">
-               This map does not contain 3D voxel data. Generate a Gunmetal Foundation to start building in 3D.
-             </p>
-             <button
-                type="button"
-                onClick={handleGenerateBase}
-                className="w-full py-3 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/40 font-mono font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
-             >
-                <Sparkles className="w-4 h-4" />
-                <span>Initialize 3D Voxel Gunmetal Foundation</span>
-             </button>
-          </div>
-        </div>,
-        document.body
-      )}
+
       <div className="flex flex-col h-full bg-[#050b14] text-slate-200">
       {/* MAC-STYLE MENU BAR */}
       <WindowMenuBar>

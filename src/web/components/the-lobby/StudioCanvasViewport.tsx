@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useEditorStore } from './editor/editor-store';
-import GameCanvasBabylon from './babylon/GameCanvasBabylon';
+import TileCanvasBabylon from './babylon/TileCanvasBabylon';
+import VoxelCanvasBabylon from './babylon/VoxelCanvasBabylon';
 import { Monitor, Maximize2, Minimize2 } from 'lucide-react';
 
 interface StudioCanvasViewportProps {
@@ -20,6 +21,7 @@ export function StudioCanvasViewport({
 }: StudioCanvasViewportProps) {
   const viewport = useEditorStore((state) => state.canvasViewport);
   const setViewport = useEditorStore((state) => state.setCanvasViewport);
+  const studioMode = useEditorStore((state) => state.studioMode);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -167,13 +169,23 @@ export function StudioCanvasViewport({
 
       {/* Viewport content */}
       <div className="relative flex-1 bg-[#050811] overflow-hidden">
-        <GameCanvasBabylon
-          activeBrushTileId={activeBrushTileId}
-          activeLayerIdx={activeLayerIdx}
-          isDevEditorOpen={isDevEditorOpen}
-          suppressGameplay={suppressGameplay}
-          onMapClick={onMapClick}
-        />
+        {studioMode === 'voxel' ? (
+          <VoxelCanvasBabylon
+            activeBrushTileId={activeBrushTileId}
+            activeLayerIdx={activeLayerIdx}
+            isDevEditorOpen={isDevEditorOpen}
+            suppressGameplay={suppressGameplay}
+            onMapClick={onMapClick}
+          />
+        ) : (
+          <TileCanvasBabylon
+            activeBrushTileId={activeBrushTileId}
+            activeLayerIdx={activeLayerIdx}
+            isDevEditorOpen={isDevEditorOpen}
+            suppressGameplay={suppressGameplay}
+            onMapClick={onMapClick}
+          />
+        )}
       </div>
 
       {/* Resize Handle */}

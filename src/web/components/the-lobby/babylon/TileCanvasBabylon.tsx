@@ -73,20 +73,28 @@ interface GameCanvasBabylonProps {
   /** Bible 17 — skip encounters/combat step actions while Studio create tools are open. */
   suppressGameplay?: boolean;
   onMapClick?: (r: number, c: number) => void;
+  isolatedMapId?: string | null;
+  isolatedMapData?: any | null;
 }
 
-export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
+export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   onCanvasReady,
   activeBrushTileId = 17,
   activeLayerIdx = -1,
   isDevEditorOpen = false,
   suppressGameplay = false,
-  onMapClick
+  onMapClick,
+  isolatedMapId,
+  isolatedMapData
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<BabylonEngine | null>(null);
-  const currentMapId = useGameStore((state) => state.currentMapId);
-  const activeMapData = useGameStore((state) => state.activeMapData);
+  const _currentMapId = useGameStore((state) => state.currentMapId);
+  const _activeMapData = useGameStore((state) => state.activeMapData);
+  
+  const currentMapId = isolatedMapId || _currentMapId;
+  const activeMapData = isolatedMapData || _activeMapData;
+  
   const setPlayerPosition = useGameStore((state) => state.setPlayerPosition);
   const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
   const showToast = useGameStore((state) => state.showToast);
@@ -2470,4 +2478,4 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   );
 };
 
-export default GameCanvasBabylon;
+export default TileCanvasBabylon;
