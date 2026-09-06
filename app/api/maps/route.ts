@@ -24,6 +24,7 @@ export async function GET(request: Request) {
         version: true,
         publishedVersion: true,
         updatedAt: true,
+        mapType: true,
       },
       orderBy: { name: "asc" },
     });

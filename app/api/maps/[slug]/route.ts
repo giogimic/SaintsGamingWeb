@@ -668,6 +668,31 @@ export async function DELETE(
     await prisma.worldMap.deleteMany({ where: { id: normalizedSlug } });
     await prisma.gameMap.deleteMany({ where: { id: normalizedSlug } });
 
+    // Remove from WorldAtlas if present
+    try {
+      const atlasRecords = await (prisma as any).worldAtlas?.findMany() || [];
+      for (const record of atlasRecords) {
+        if (!record.atlasData) continue;
+        let changed = false;
+        let data: any;
+        try { data = JSON.parse(record.atlasData); } catch { continue; }
+        
+        if (data.nodes && Array.isArray(data.nodes)) {
+          const originalLen = data.nodes.length;
+          data.nodes = data.nodes.filter((n: any) => n.mapId !== normalizedSlug);
+          if (data.nodes.length < originalLen) changed = true;
+        }
+        
+        if (changed) {
+          await (prisma as any).worldAtlas.update({
+            where: { id: record.id },
+            data: { atlasData: JSON.stringify(data) }
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("[MapRoute] Failed to remove map from atlas:", err);
+    }
 
     return NextResponse.json({ success: true, deleted: normalizedSlug });
   } catch (error) {

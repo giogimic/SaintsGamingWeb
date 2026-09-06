@@ -111,11 +111,9 @@ export const TileMapBrowserPanel: React.FC = () => {
   const SYSTEM_MAPS = ['DEMO_SANDBOX', 'STARTING_MAP', 'GENERIC_FALLBACK_MAP'];
   const combined = [...localList, ...remoteFiltered.filter((m) => !seen.has(m.id))].filter(m => !SYSTEM_MAPS.includes(m.id.toUpperCase()));
 
-  const categories = ['ALL', 'Town', 'Route', 'Cave', 'Dungeon', 'House', 'Special'];
+  const categories = ['ALL', 'Tile Maps'];
   const filtered = useMemo(() => {
-    let list = selectedCategory === 'ALL'
-      ? combined
-      : combined.filter((m) => m.category === selectedCategory);
+    let list = combined;
 
     // Isolate by map type (strictly Tile maps only)
     list = list.filter((m) => m.mapType !== 'VOXEL' && m.mapType !== 'FRACTAL');
@@ -131,7 +129,7 @@ export const TileMapBrowserPanel: React.FC = () => {
         const sizeB = (b.width || 32) * (b.height || 32);
         cmp = sizeA - sizeB;
       } else if (sortField === 'category') {
-        cmp = (a.category || '').localeCompare(b.category || '');
+        cmp = 0;
       }
       return sortAsc ? cmp : -cmp;
     });
@@ -375,7 +373,7 @@ export const TileMapBrowserPanel: React.FC = () => {
       {/* ── DIRECTORY TREE ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-1">
         {categories.filter(c => c !== 'ALL').map(cat => {
-          const catMaps = filtered.filter(m => (m.category || 'Town') === cat);
+          const catMaps = filtered;
           if (catMaps.length === 0) return null;
           return (
             <div key={cat} className="mb-2">

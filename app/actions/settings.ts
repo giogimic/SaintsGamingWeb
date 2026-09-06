@@ -14,13 +14,12 @@ export async function getDiscordInviteUrl() {
 }
 
 export async function getSiteVersion(isStatic = false) {
-  if (isStatic) return process.env.NEXT_PUBLIC_SITE_VERSION || "v2.1.758";
+  if (isStatic) return process.env.NEXT_PUBLIC_SITE_VERSION || "v2.1.763";
   try {
     const setting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    return setting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "v2.1.762";
+    return setting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "v2.1.763";
   } catch (e) {
-    // If DB fails (e.g. during build or disconnect), return env or hardcoded fallback
-    return process.env.NEXT_PUBLIC_SITE_VERSION || "v2.1.762";
+    console.error("Failed to fetch site version", e);
+    return process.env.NEXT_PUBLIC_SITE_VERSION || "v2.1.763";
   }
 }
-

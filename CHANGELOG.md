@@ -1,3 +1,12 @@
+## [2.1.763] - 2026-09-06
+### Fixed
+- Categorized map browsers correctly by map type (Tile Maps vs Voxel Maps) and removed arbitrary/broken RPG categorization.
+- Automatically scrub deleted maps from World Atlas node records to prevent orphaned references.
+- Fixed tileset palette relying on scaled bounding rects, preventing inaccurate tile slice selection on custom uploaded tilesets.
+- Fixed tile engine mistakenly ghosting voxel data by strictly enforcing `mapType` filter during load.
+- Disabled infinite chunk streamer loop on authored finite voxel maps to fix rendering disappearances.
+- Fixed 2D grid translation throwing "No walkable tile" error on maps with dynamic ground Y elevations.
+
 ## [2.1.758] - 2026-09-06
 - feat(studio): Added tileset import from asset manager to Tile Palette.
 - feat(studio): Added quick upload tileset feature to Tile Palette with configurable dimensions.
