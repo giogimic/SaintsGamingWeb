@@ -1214,18 +1214,6 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     width: 800,
     height: 600,
     zIndex: 10,
-  },
-  studioHome: {
-    id: 'studioHome',
-    title: 'Studio Dashboard',
-    isOpen: false,
-    isCollapsed: false,
-    x: 400,
-    y: 200,
-    width: 600,
-    height: 400,
-    zIndex: 10,
-  },
 };
 
 
