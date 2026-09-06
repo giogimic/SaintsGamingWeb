@@ -134,7 +134,13 @@ export function estimateTilesetRows(
   } else if (ts.imageSource.includes("Vegetation")) {
     estimatedRows = 4;
   } else {
-    estimatedRows = Math.max(16, Math.ceil((localGid + 1) / Math.max(1, ts.columns || 1)));
+    const tw = ts.tilewidth || 32;
+    const sizeObj =
+      sizeLookup?.[ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, "")] ||
+      sizeLookup?.[ts.imageSource] ||
+      sizeLookup?.[ts.imageSource.split("/").pop() || ""];
+    const cols = Math.max(1, ts.columns || Math.floor((ts.imagewidth || sizeObj?.w || 1024) / tw));
+    estimatedRows = Math.max(16, Math.ceil((localGid + 1) / cols));
   }
   return estimatedRows;
 }

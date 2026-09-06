@@ -41,9 +41,9 @@ export default async function MainLayout({
   let gameTitle = "The Lobby";
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.761";
+    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.762";
   } catch (error) {
-    siteVersion = process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.761";
+    siteVersion = process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.762";
   }
   try {
     const ucpNavSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_in_nav" } });
