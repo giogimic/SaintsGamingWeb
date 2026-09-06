@@ -1828,15 +1828,26 @@ export default function TheLobby({
       {enableStudio && <MidnightTropicalBackground />}
       {enableStudio ? (
         (studioMode === 'tile' || studioMode === 'voxel') ? (
-          <StudioCanvasViewport 
-            activeBrushTileId={activeBrushTileId}
-            activeLayerIdx={activeLayerIdx}
-            isDevEditorOpen={studioToolsOpen}
-            suppressGameplay={suppressGameplay}
-            onMapClick={(r: number, c: number) => {
-              if (studioToolsOpen) setClickedTile({r, c});
-            }}
-          />
+          currentMapId === GENERIC_FALLBACK_MAP ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center z-[5] select-none pointer-events-none">
+               <div className="text-center p-8 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl pointer-events-auto">
+                 <h2 className="text-2xl font-mono font-bold text-white mb-2">No Map Loaded</h2>
+                 <p className="text-white/60 font-mono text-sm max-w-sm">
+                   Open a map from the browser or create a new one using the <span className="text-primary font-bold">File</span> menu.
+                 </p>
+               </div>
+            </div>
+          ) : (
+            <StudioCanvasViewport 
+              activeBrushTileId={activeBrushTileId}
+              activeLayerIdx={activeLayerIdx}
+              isDevEditorOpen={studioToolsOpen}
+              suppressGameplay={suppressGameplay}
+              onMapClick={(r: number, c: number) => {
+                if (studioToolsOpen) setClickedTile({r, c});
+              }}
+            />
+          )
         ) : null
       ) : (
         gameMode !== 'TITLE_SCREEN' && gameMode !== 'LOGIN' && gameMode !== 'SERVER_SELECT' && (

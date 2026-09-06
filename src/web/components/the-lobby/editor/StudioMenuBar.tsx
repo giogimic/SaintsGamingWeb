@@ -183,7 +183,7 @@ const SubMenu: React.FC<SubMenuProps> = ({ label, icon: SubIcon, children }) => 
       {open && typeof document !== 'undefined' && createPortal(
         <div
           style={positionStyle}
-          className="min-w-[220px] max-w-[280px] max-h-[70vh] overflow-y-auto custom-scrollbar bg-card/95 border border-border/80 shadow-2xl rounded-xl py-1.5 backdrop-blur-2xl z-[160] flex flex-col font-mono"
+          className="studio-submenu-portal min-w-[220px] max-w-[280px] max-h-[70vh] overflow-y-auto custom-scrollbar bg-card/95 border border-border/80 shadow-2xl rounded-xl py-1.5 backdrop-blur-2xl z-[160] flex flex-col font-mono"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
@@ -378,6 +378,9 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
   // Close menus on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
+      if ((e.target as Element)?.closest?.('.studio-submenu-portal')) {
+        return;
+      }
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setActiveMenu(null);
         setWorldDropdownOpen(false);
