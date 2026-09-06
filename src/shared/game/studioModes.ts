@@ -69,7 +69,8 @@ export type StudioDockId =
   | 'transform'
   | 'tileset'
   | 'asset_suite'
-  | 'hero_suite';
+  | 'hero_suite'
+  | 'secondaryViewport';
 
 /** Map stable internal ids → canonical engine-editor labels. */
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
@@ -351,6 +352,10 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
     label: 'Hero Studio',
     blurb: 'Full suite for managing classes, archetypes, and heroes.',
   },
+  secondaryViewport: {
+    label: 'Secondary Canvas',
+    blurb: 'Isolated editor viewport.',
+  },
   versionManager: {
     label: 'Version Manager',
     blurb: 'Atlas-driven version history and map releases.',
@@ -414,4 +419,5 @@ export const STUDIO_WORKSPACE_PRESETS: WorkspacePresetDef[] = [
     openDocks: ['selection', 'transform', 'layers', 'properties'],
   },
 ];
+
 
