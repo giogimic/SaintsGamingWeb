@@ -58,6 +58,16 @@ export type CreatureLootRef = {
   label?: string;
 };
 
+export type CreatureEvolutionData = {
+  targetSlug: string;
+  atLevel?: number;
+  itemRequired?: string;
+  timeOfDay?: string;
+  statRequirement?: string;
+  notes?: string;
+  spriteOverworld?: string;
+};
+
 export type CreatureCategory = 'beast' | 'monster' | 'mercenary';
 
 export const CREATURE_CATEGORIES: { id: CreatureCategory; label: string; blurb: string }[] = [
@@ -65,6 +75,21 @@ export const CREATURE_CATEGORIES: { id: CreatureCategory; label: string; blurb: 
   { id: 'monster', label: 'Monster (Enemy)', blurb: 'Standard hostile world combatants focused on MMO defeat & loot drops.' },
   { id: 'mercenary', label: 'Mercenary (Companion)', blurb: 'Recruitable party operatives and combat companions.' },
 ];
+
+export const CREATURE_MYTHOS_FAMILIES = [
+  "Draconic",
+  "Beastial",
+  "Mythic Humanoids",
+  "Fey",
+  "Spirits/Wraiths",
+  "Constructs",
+  "Titans",
+  "Aquatic",
+  "Avian",
+  "Undead",
+] as const;
+
+export type CreatureMythosType = (typeof CREATURE_MYTHOS_FAMILIES)[number];
 
 /** Full editable creature definition (shared by seed, Studio, gameplay). */
 export type CreatureDefData = {
@@ -75,6 +100,7 @@ export type CreatureDefData = {
   /** Creature taxonomy category: beast (buddy), monster (enemy), or mercenary (companion) */
   category?: CreatureCategory;
   dexNumber: number;
+  mythos: CreatureMythosType | string;
   typePrimary: CreatureElementType | string;
   typeSecondary: CreatureElementType | string;
   spriteOverworld: string;
@@ -116,6 +142,7 @@ export type CreatureDefData = {
   // Mercenary specific attributes (Bible 20)
   hireCost?: number;
   factionId?: string;
+  evolutions?: CreatureEvolutionData[];
 };
 
 const DEFAULT_SHINY_FIELDS = {
@@ -206,14 +233,12 @@ export function emptyCreatureDef(): CreatureDefData {
   return {
     slug: "",
     name: "",
-    category: "beast",
+    category: 'beast',
     dexNumber: 0,
-    typePrimary: "None",
-    typeSecondary: "None",
+    mythos: 'Beastial',
+    typePrimary: 'Normal',
+    typeSecondary: 'None',
     spriteOverworld: "",
-    shinyEnabled: true,
-    shinyUseGlobalChance: true,
-    shinyChancePercent: 0.5,
     baseHp: 100,
     physicalPower: 10,
     physicalDefense: 10,
@@ -223,20 +248,22 @@ export function emptyCreatureDef(): CreatureDefData {
     catchRate: 1,
     starterLevel: 5,
     passives: [],
-    worldSkillName: "",
-    worldSkillDescription: "",
+    worldSkillName: 'Basic Strike',
+    worldSkillDescription: 'A standard physical strike.',
     abilities: [],
-    flavor: "",
-    tag: "Standard",
-    tagColor: "#34d399",
-    stage: "basic",
+    flavor: 'A mysterious new creature discovered in the digital realms.',
+    tag: 'New',
+    tagColor: 'primary',
+    stage: 'Base',
     isStarter: false,
-    isWildSpawn: false,
+    isWildSpawn: true,
     isActive: true,
-    sortOrder: 0,
+    sortOrder: 100,
+    evolutions: [],
     aggroRadius: 5,
     respawnSec: 30,
     hireCost: 100,
+    ...DEFAULT_SHINY_FIELDS
   };
 }
 

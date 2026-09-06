@@ -80,6 +80,16 @@ const DEFAULT_LAYERS: LayerItem[] = [
     opacity: 70,
     description: 'Warp triggers, blockers, and encounter zones.',
   },
+  {
+    id: 'layer_regions',
+    name: 'Regions (Zones)',
+    layerIdx: -2,
+    type: 'grid',
+    visible: true,
+    locked: false,
+    opacity: 50,
+    description: 'Spawn zones, biomes, music tracks, and tags.',
+  },
 ];
 
 export function LayersPanel() {

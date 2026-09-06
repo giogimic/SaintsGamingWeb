@@ -937,8 +937,8 @@ public fitMapInView() {
     const clamped = Math.max(2.5, Math.min(maxZoom, ortho));
     this.updateCameraAspect(clamped);
     // Center camera on true geometric map center in Babylon world coordinates
-    const centerX = -0.5 * s;
-    const centerZ = 0.5 * s;
+    const centerX = (w * s) / 2;
+    const centerZ = (h * s) / 2;
     this.snapCameraTo(centerX, centerZ);
     const zoomPercent = Math.round((10 / clamped) * 100);
     window.dispatchEvent(

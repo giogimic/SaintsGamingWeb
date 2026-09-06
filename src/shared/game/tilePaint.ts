@@ -9,14 +9,18 @@
 
 /** Bible layer −1: collision / authority grid stored on `map.grid`. */
 export const LOGIC_LAYER_IDX = -1;
+/** Bible layer −2: region tagging grid stored on `map.regions`. */
+export const REGION_LAYER_IDX = -2;
 
 export type PaintTarget =
   | { kind: "logic" }
+  | { kind: "region" }
   | { kind: "visual"; layerIdx: number }
   | { kind: "unavailable"; reason: string };
 
 export interface PaintableMap {
   grid?: number[][];
+  regions?: number[][];
   tileLayers?: Array<{ name?: string; grid?: number[][] }>;
   tilesets?: Array<{ firstgid: number }>;
 }
@@ -32,6 +36,17 @@ export function resolvePaintTarget(
       return { kind: "unavailable", reason: "This map has no logic grid to paint." };
     }
     return { kind: "logic" };
+  }
+
+  if (activeLayerIdx === REGION_LAYER_IDX) {
+    const regions = map?.regions;
+    if (!Array.isArray(regions) || regions.length === 0) {
+      // Auto-initialize regions if missing on the fly? Or reject and let caller initialize it.
+      // Usually better to let the map initialization handle it, but for backward compat we can just allow it 
+      // if it exists, or the caller will initialize it before painting.
+      return { kind: "unavailable", reason: "This map has no regions grid initialized to paint." };
+    }
+    return { kind: "region" };
   }
 
   if (!Number.isInteger(activeLayerIdx) || activeLayerIdx < 0) {
@@ -72,8 +87,8 @@ export function paintCell(
 ): PaintResult {
   if (target.kind === "unavailable") return { ok: false, reason: target.reason };
 
-  const label = target.kind === "logic" ? "the logic grid" : `layer ${target.layerIdx}`;
-  const grid = target.kind === "logic" ? map?.grid : map?.tileLayers?.[target.layerIdx]?.grid;
+  const label = target.kind === "logic" ? "the logic grid" : target.kind === "region" ? "the regions grid" : `layer ${target.layerIdx}`;
+  const grid = target.kind === "logic" ? map?.grid : target.kind === "region" ? map?.regions : map?.tileLayers?.[target.layerIdx]?.grid;
   if (!Array.isArray(grid)) return { ok: false, reason: `Cannot paint: ${label} is missing.` };
 
   if (!Number.isInteger(r) || !Number.isInteger(c) || r < 0 || c < 0) {

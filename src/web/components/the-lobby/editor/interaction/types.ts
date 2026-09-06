@@ -25,9 +25,12 @@ export type EditorToolId =
   | 'place'
   | 'portal'
   | 'prefab'
+  | 'shape'
+  | 'extrude'
+  | 'smooth'
   | 'paste';
 
-export type BrushShapeType = 'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon';
+export type BrushShapeType = 'circle' | 'square' | 'diamond' | 'splat-star' | 'polygon' | 'cylinder';
 
 export type SelectionShapeType = 'box' | 'circle' | 'ellipse' | 'lasso' | 'polygon';
 

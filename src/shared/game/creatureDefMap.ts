@@ -13,6 +13,7 @@ export type CreatureDefRowLike = {
   gameId?: string | null;
   name: string;
   dexNumber: number;
+  mythos: string;
   typePrimary: string;
   typeSecondary: string;
   spriteOverworld: string;
@@ -44,6 +45,7 @@ export type CreatureDefRowLike = {
   isWildSpawn: boolean;
   isActive: boolean;
   sortOrder: number;
+  evolutionsJson?: string;
 };
 
 export function creatureRowToData(row: CreatureDefRowLike): CreatureDefData {
@@ -59,11 +61,18 @@ export function creatureRowToData(row: CreatureDefRowLike): CreatureDefData {
   } catch {
     abilities = [];
   }
+  let evolutions: any[] = [];
+  try {
+    if (row.evolutionsJson) evolutions = JSON.parse(row.evolutionsJson);
+  } catch {
+    evolutions = [];
+  }
   return {
     slug: row.slug,
     gameId: row.gameId ?? null,
     name: row.name,
     dexNumber: row.dexNumber,
+    mythos: row.mythos || 'Beastial',
     typePrimary: row.typePrimary,
     typeSecondary: row.typeSecondary,
     spriteOverworld: row.spriteOverworld,
@@ -95,6 +104,7 @@ export function creatureRowToData(row: CreatureDefRowLike): CreatureDefData {
     isWildSpawn: row.isWildSpawn,
     isActive: row.isActive,
     sortOrder: row.sortOrder,
+    evolutions,
   };
 }
 
@@ -103,8 +113,9 @@ export function creatureDataToDb(data: CreatureDefData) {
     slug: data.slug,
     gameId: data.gameId || null,
     name: data.name,
-    dexNumber: data.dexNumber,
-    typePrimary: data.typePrimary,
+    dexNumber: data.dexNumber || 0,
+    mythos: data.mythos || 'Beastial',
+    typePrimary: data.typePrimary || "Normal",
     typeSecondary: data.typeSecondary || "None",
     spriteOverworld: data.spriteOverworld,
     spriteBattle: data.spriteBattle || null,
@@ -135,5 +146,6 @@ export function creatureDataToDb(data: CreatureDefData) {
     isWildSpawn: !!data.isWildSpawn,
     isActive: data.isActive !== false,
     sortOrder: data.sortOrder || 0,
+    evolutionsJson: JSON.stringify(data.evolutions || []),
   };
 }

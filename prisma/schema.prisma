@@ -1336,6 +1336,7 @@ model CreatureTemplate {
   upperCatchResistance Float
   stage                String
   shape                String
+  mythosId             String? // Relation to CreatureMythos
   types                String // JSON array of element slugs
   tags                 String // JSON array of tags
   terrains             String // JSON array
@@ -1347,6 +1348,15 @@ model CreatureTemplate {
   learnedAbilities     CreatureLearnedAbility[]
   evolutions           CreatureEvolution[]
   stats                CreatureBaseStats?
+  mythos               CreatureMythos?          @relation(fields: [mythosId], references: [slug], onDelete: SetNull)
+}
+
+model CreatureMythos {
+  slug        String             @id
+  name        String
+  description String?
+  icon        String?
+  creatures   CreatureTemplate[]
 }
 
 model CreatureBaseStats {
@@ -1380,6 +1390,9 @@ model CreatureEvolution {
   targetSlug      String
   atLevel         Int?
   itemRequired    String?
+  timeOfDay       String? // "DAY", "NIGHT", "DUSK", "DAWN"
+  statRequirement String? // JSON: { "attack": 100 }
+  notes           String?
   spriteOverworld String?
 
   @@index([speciesId])
@@ -1407,6 +1420,7 @@ model AbilityDictionary {
   element2         String? @default("none")
   skillForm        String? @default("strike")
   skillRole        String? @default("offense")
+  requiredMythos   String? // If set, this ability is restricted to a specific Mythos family
   
   tags             String? @default("[]") // JSON array
   vfxConfigJson    String? // JSON object
@@ -1858,6 +1872,8 @@ model CreatureDef {
   // Types (Saints elements). Secondary may be "None".
   typePrimary           String // Solar | Hydro | Bio | Volt | Geo | Cryo | Aero | Cyber
   typeSecondary         String   @default("None")
+  // Biological/fantasy category (e.g., Draconic, Beastial, Fey, etc.)
+  mythos                String   @default("Beastial")
   // Image assets (paths under /game-assets/ or relative keys)
   spriteOverworld       String // e.g. "npc/rockitten" or "monster/battle/agnite-sheet"
   spriteBattle          String? // front / battle sheet
@@ -1894,6 +1910,7 @@ model CreatureDef {
   isWildSpawn           Boolean  @default(false)
   isActive              Boolean  @default(true)
   sortOrder             Int      @default(0)
+  evolutionsJson        String   @default("[]")
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 

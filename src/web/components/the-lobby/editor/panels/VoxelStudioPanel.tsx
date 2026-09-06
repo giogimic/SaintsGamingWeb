@@ -16,6 +16,8 @@ import {
   Plus,
   Brush,
   Trash2,
+  Lock,
+  Unlock,
   ListRestart
 } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
@@ -35,8 +37,6 @@ export const VoxelStudioPanel: React.FC = () => {
   const isSaving = useEditorStore((state) => state.isSavingMap);
   const setStudioMode = useEditorStore((s) => s.setStudioMode);
   const voxelBlockSizePx = useEditorStore((state) => state.voxelBlockSizePx);
-  const activeLayerIdx = useEditorStore((state) => state.activeLayerIdx);
-  const setActiveLayerIdx = useEditorStore((state) => state.setActiveLayerIdx);
   const showToast = useGameStore((s) => s.showToast);
 
   const baseMapId = activeMapData?.baseMapId;
@@ -44,7 +44,6 @@ export const VoxelStudioPanel: React.FC = () => {
 
   const [openSections, setOpenSections] = useState({
     overview: true,
-    layers: true,
     brush: true,
   });
 
@@ -53,67 +52,7 @@ export const VoxelStudioPanel: React.FC = () => {
     soundSynth?.playUiClick?.();
   };
 
-  // --------------------------------------------------------
-  // LAYER MANAGEMENT
-  // --------------------------------------------------------
-  const handleAddLayer = () => {
-    if (!activeMapData) return;
-    const base = activeMapData;
-    const layers = Array.isArray(base.tileLayers) ? [...base.tileLayers] : [];
-    layers.push({
-      name: `Voxel Layer ${layers.length}`,
-      grid: [],
-    });
-    const next = { ...base, tileLayers: layers };
-    useGameStore.setState({ activeMapData: next });
-    useEditorStore.getState().markMapDirty();
-    setActiveLayerIdx(layers.length - 1);
-    showToast(`Added Voxel Layer ${layers.length - 1}`);
-  };
 
-  const handleClearLayer = (layerIdx: number) => {
-    if (!activeMapData) return;
-    const base = activeMapData;
-    const layers = Array.isArray(base.tileLayers) ? [...base.tileLayers] : [];
-    if (layers[layerIdx]) {
-      if (confirm(`Clear all blocks on Layer ${layerIdx} (${layers[layerIdx]?.name || 'Base'})?`)) {
-        soundSynth?.playActionSound?.();
-        layers[layerIdx] = {
-          ...layers[layerIdx],
-          grid: [], // Clear all tiles on this layer
-        };
-        const next = { ...base, tileLayers: layers };
-        useGameStore.setState({ activeMapData: next });
-        useEditorStore.getState().markMapDirty();
-        const engine = (typeof window !== 'undefined' && (window as any).__babylonEngine) || null;
-        if (engine) engine.loadTilemap(next);
-        showToast(`Layer ${layerIdx} cleared.`);
-      }
-    }
-  };
-
-  const handleDeleteLayer = (layerIdx: number, layerName: string) => {
-    if (!activeMapData) return;
-    if (layerIdx === 0) {
-      showToast('Cannot delete the base layer (Layer 0).');
-      return;
-    }
-    if (confirm(`Delete ${layerName}? All blocks on this layer will be removed.`)) {
-      soundSynth?.playActionSound?.();
-      const base = activeMapData;
-      const layers = Array.isArray(base.tileLayers) ? [...base.tileLayers] : [];
-      layers.splice(layerIdx, 1);
-      const next = { ...base, tileLayers: layers };
-      useGameStore.setState({ activeMapData: next });
-      useEditorStore.getState().markMapDirty();
-      if (activeLayerIdx >= layers.length) {
-        setActiveLayerIdx(Math.max(0, layers.length - 1));
-      }
-      const engine = (typeof window !== 'undefined' && (window as any).__babylonEngine) || null;
-      if (engine) engine.loadTilemap(next);
-      showToast(`Deleted ${layerName}.`);
-    }
-  };
 
   if (!activeMapData) {
     return <div className="p-4 text-slate-500 font-bold text-center">No Realm Loaded</div>;
@@ -145,15 +84,7 @@ export const VoxelStudioPanel: React.FC = () => {
             },
           ]}
         />
-        <WindowMenuDropdown
-          label="Layers"
-          items={[
-            { label: 'Ground Layer (0)', active: activeLayerIdx === 0, onClick: () => setActiveLayerIdx(0) },
-            { label: 'Add Voxel Layer', icon: Plus, onClick: handleAddLayer },
-            { divider: true, label: '' },
-            { label: 'Clear Current Layer', danger: true, onClick: () => handleClearLayer(activeLayerIdx) },
-          ]}
-        />
+
         <WindowMenuDivider />
         <div className="flex-1" />
         <WindowMenuButton
@@ -268,90 +199,6 @@ export const VoxelStudioPanel: React.FC = () => {
                 <Save className="w-3.5 h-3.5" />
                 <span>{isSaving ? 'Saving…' : isMapDirty ? 'Save Changes*' : 'Map Saved'}</span>
               </button>
-            </div>
-          )}
-        </div>
-
-        {/* SECTION 2: Active Painting Layer */}
-        <div className="bg-[#0b1320]/80 border border-[#806f47]/40 rounded-xl overflow-hidden shadow-lg">
-          <button
-            type="button"
-            onClick={() => toggleSection('layers')}
-            className="w-full flex items-center justify-between p-2.5 bg-black/50/40 text-[#cbb26a] font-bold text-left hover:bg-black/50/20 transition-colors cursor-pointer"
-          >
-            <span className="flex items-center gap-1.5">
-              <Layers className="w-4 h-4 text-purple-400" /> Active Configuration Layer
-            </span>
-            {openSections.layers ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-          </button>
-
-          {openSections.layers && (
-            <div className="p-2 space-y-1.5 border-t border-[#806f47]/20 bg-[#050b14]/50">
-              <div className="grid grid-cols-2 gap-1.5 mb-2">
-                <button
-                  type="button"
-                  onClick={handleAddLayer}
-                  className="flex items-center justify-center gap-1 p-1 bg-black/40 border border-[#806f47]/30 rounded text-[#e2d5b3] text-[10px] font-bold hover:bg-[#806f47]/20 transition-all cursor-pointer"
-                >
-                  <Plus className="w-3 h-3" /> Add Layer
-                </button>
-              </div>
-
-              {(currentMapData.tileLayers || [{ name: 'Ground', grid: [] }]).map((layer: any, idx: number) => {
-                const isActive = activeLayerIdx === idx;
-                return (
-                  <div
-                    key={idx}
-                    className={`flex flex-col rounded-lg border transition-all ${
-                      isActive
-                        ? 'bg-[#150a21] border-purple-500/50 shadow-[0_0_10px_rgba(168,85,247,0.15)]'
-                        : 'bg-black/40 border-[#806f47]/20 hover:border-purple-500/30'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between p-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setActiveLayerIdx(idx)}
-                        className="flex-1 flex items-center gap-2 cursor-pointer text-left"
-                      >
-                        <div
-                          className={`w-3 h-3 rounded-full flex items-center justify-center shrink-0 ${
-                            isActive ? 'bg-purple-500' : 'bg-slate-700'
-                          }`}
-                        >
-                          {isActive && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className={`text-[11px] font-bold ${isActive ? 'text-purple-300' : 'text-slate-300'}`}>
-                            {layer.name || (idx === 0 ? 'Ground' : `Layer ${idx}`)}
-                          </span>
-                        </div>
-                      </button>
-
-                      <div className="flex items-center gap-1 ml-2 shrink-0">
-                        <button
-                          type="button"
-                          title="Clear all blocks on this layer"
-                          onClick={() => handleClearLayer(idx)}
-                          className="p-1 rounded text-orange-400/70 hover:text-orange-300 hover:bg-orange-400/20 cursor-pointer transition-colors"
-                        >
-                          <ListRestart className="w-3.5 h-3.5" />
-                        </button>
-                        {idx !== 0 && (
-                          <button
-                            type="button"
-                            title="Delete this layer entirely"
-                            onClick={() => handleDeleteLayer(idx, layer.name || `Layer ${idx}`)}
-                            className="p-1 rounded text-red-400/70 hover:text-red-300 hover:bg-red-400/20 cursor-pointer transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
             </div>
           )}
         </div>

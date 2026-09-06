@@ -1,12 +1,14 @@
 import { BabylonEngine } from './BabylonEngine';
-import { Mesh, TransformNode, StandardMaterial, Color3, Color4, MeshBuilder, Matrix } from '@babylonjs/core';
+import { Mesh, TransformNode, StandardMaterial, Color3, Color4, MeshBuilder, Matrix, Vector3 } from '@babylonjs/core';
 import { VoxelChunkMesher } from './voxel/VoxelChunkMesher';
 import { VoxelWorld, type VoxelWorldDocV3, SpatialVoxelWorldManager } from '../shared/game/voxel/VoxelWorldDoc';
 import { resolveVoxelTarget, type VoxelTargetResolution } from '../shared/game/voxel/VoxelTargetResolver';
-import { resolveConstrainedVoxelCoordinates, type VoxelBrushAxis } from '../shared/game/voxel/VoxelWord';
+import { resolveConstrainedVoxelCoordinates, type VoxelBrushAxis, getVoxelShape, getVoxelOrientation, VoxelShape, VoxelOrientation, type VoxelShapeType, type VoxelOrientationType } from '../shared/game/voxel/VoxelWord';
 import { type BrushShape } from '../shared/game/brushGeometry';
 import { isTilePickTarget } from '../shared/game/tilePaint';
 import { ChunkStreamer } from './voxel/ChunkStreamer';
+import { VoxelMeshBuilder } from './voxel/VoxelGeometry';
+import { VertexData } from '@babylonjs/core';
 
 
 export class VoxelController {
@@ -30,6 +32,7 @@ private voxelTargetPlaneY: number = 0;
 private voxelPlaneMask: number[] | null = null;
 private voxelBuildUpMode: boolean = false;
 private voxelBrushAxis: VoxelBrushAxis = 'xz';
+private voxelPreviewWord?: number;
 public loadVoxelWorld(docOrWorld: VoxelWorld | VoxelWorldDocV3) {
     if (!this.engine.scene) return;
     if (!this.voxelMesher) {
@@ -65,6 +68,8 @@ public loadVoxelWorld(docOrWorld: VoxelWorld | VoxelWorldDocV3) {
       const result = this.voxelMesher.meshChunk(this.voxelWorld, chunk);
       if (result) {
         result.mesh.parent = this.engine.rootNode;
+        const s = this.engine.currentTileSize || 64;
+        result.mesh.scaling = new Vector3(s, s, s);
       }
     }
 
@@ -121,8 +126,15 @@ public streamAdjacentVoxelMap(mapId: string, voxelDoc: VoxelWorldDocV3, offsetX 
       const result = this.voxelMesher.meshChunk(neighborWorld, chunk);
       if (result) {
         result.mesh.parent = this.engine.rootNode;
+        
+        const s = this.engine.currentTileSize || 64;
+        result.mesh.scaling = new Vector3(s, s, s);
+
+        // Position offset: The chunks within neighborWorld are already relative to (0,0) of neighborWorld.
+        // We need to offset the entire neighborWorld by (offsetX, offsetZ) in tile units.
         result.mesh.position.x += offsetX * tileSize;
         result.mesh.position.z += offsetZ * tileSize;
+        
         meshes.push(result.mesh);
       }
     }
@@ -144,7 +156,8 @@ public meshDirtyVoxelChunks() {
 
 public getVoxelSurfaceY(worldX: number, worldZ: number): number {
     if (!this.voxelWorld) return 0;
-    const voxelCoords = this.voxelWorld.worldMeshToVoxel(worldX, 0, worldZ);
+    const s = this.engine.currentTileSize || 64;
+    const voxelCoords = this.voxelWorld.worldMeshToVoxel(worldX / s, 0, worldZ / s);
     const wx = voxelCoords.wx;
     const wz = voxelCoords.wz;
 
@@ -153,7 +166,7 @@ public getVoxelSurfaceY(worldX: number, worldZ: number): number {
         ? this.voxelWorld.getVoxelWithHalo(wx, wy, wz)
         : this.voxelWorld.getVoxel(wx, wy, wz);
       if (word && (word & 0xfff) !== 0) {
-        return (wy - 15) * 1.0;
+        return (wy - 15) * (this.engine.currentTileSize || 64);
       }
     }
     return 0;
@@ -167,6 +180,7 @@ public setVoxelConstraints(constraints: {
     brushAxis?: VoxelBrushAxis;
     brushRadius?: number;
     brushShape?: BrushShape;
+    previewWord?: number;
   }): void {
     if (constraints.planeLockEnabled !== undefined) this.voxelPlaneLockEnabled = constraints.planeLockEnabled;
     if (constraints.targetPlaneY !== undefined) this.voxelTargetPlaneY = constraints.targetPlaneY;
@@ -175,6 +189,7 @@ public setVoxelConstraints(constraints: {
     if (constraints.brushAxis !== undefined) this.voxelBrushAxis = constraints.brushAxis;
     if (constraints.brushRadius !== undefined) this.engine.brushRadius = Math.max(1, Math.min(10, constraints.brushRadius));
     if (constraints.brushShape !== undefined) this.engine.brushShape = constraints.brushShape;
+    if (constraints.previewWord !== undefined) this.voxelPreviewWord = constraints.previewWord;
   }
 
 public resolveVoxelTargetAtScreenCoord(screenX: number, screenY: number): VoxelTargetResolution | null {
@@ -190,13 +205,18 @@ public resolveVoxelTargetAtScreenCoord(screenX: number, screenY: number): VoxelT
     return resolveVoxelTarget(
       pickResult,
       this.voxelWorld,
-      ray ? { origin: ray.origin, direction: ray.direction } : null
+      ray ? { origin: ray.origin, direction: ray.direction } : null,
+      {
+        planeLockEnabled: this.voxelPlaneLockEnabled,
+        targetPlaneY: this.voxelTargetPlaneY,
+      }
     );
   }
 
-public renderVoxelCursor(
+  public renderVoxelCursor(
     target: VoxelTargetResolution,
-    mode: 'place' | 'erase' | 'inspect' = 'place'
+    mode: 'place' | 'erase' | 'inspect' = 'place',
+    previewWord?: number
   ): void {
     if (!this.engine.scene || !this.voxelWorld) return;
 
@@ -216,14 +236,17 @@ public renderVoxelCursor(
       this.voxelCursorMaterial.diffuseColor = new Color3(0.95, 0.25, 0.25);
       this.voxelCursorMaterial.emissiveColor = new Color3(0.8, 0.1, 0.1);
       this.voxelCursorMaterial.alpha = 0.45;
+      this.voxelCursorMaterial.wireframe = true;
     } else if (mode === 'inspect') {
       this.voxelCursorMaterial.diffuseColor = new Color3(0.2, 0.8, 0.95);
       this.voxelCursorMaterial.emissiveColor = new Color3(0.1, 0.7, 0.9);
       this.voxelCursorMaterial.alpha = 0.35;
+      this.voxelCursorMaterial.wireframe = true;
     } else {
       this.voxelCursorMaterial.diffuseColor = new Color3(0.96, 0.7, 0.1);
       this.voxelCursorMaterial.emissiveColor = new Color3(0.85, 0.55, 0.05);
-      this.voxelCursorMaterial.alpha = 0.4;
+      this.voxelCursorMaterial.alpha = 0.6; // Hologram opacity
+      this.voxelCursorMaterial.wireframe = false;
     }
 
     const edgeColor = mode === 'erase'
@@ -251,30 +274,65 @@ public renderVoxelCursor(
       return;
     }
 
-    // Ensure we have enough boxes in the pool
-    while (this.voxelCursorBoxes.length < targetCoords.length) {
-      const idx = this.voxelCursorBoxes.length;
-      const box = MeshBuilder.CreateBox(`voxel_cursor_box_${idx}`, { size: 1.01 }, this.engine.scene);
-      box.parent = this.voxelCursorRoot;
-      box.isPickable = false;
-      box.material = this.voxelCursorMaterial;
-      box.enableEdgesRendering();
-      box.edgesWidth = 2.5;
-      this.voxelCursorBoxes.push(box);
+    // Determine shape to render
+    let shape: VoxelShapeType = VoxelShape.FULL_CUBE;
+    let orient: VoxelOrientationType = VoxelOrientation.NORTH;
+    if (mode === 'place' && this.voxelPreviewWord !== undefined) {
+      shape = getVoxelShape(this.voxelPreviewWord);
+      orient = getVoxelOrientation(this.voxelPreviewWord);
     }
 
-    for (let i = 0; i < targetCoords.length; i++) {
-      const { wx, wy, wz } = targetCoords[i];
+    // Always rebuild the single ghost mesh
+    if (this.voxelCursorMesh) {
+      this.voxelCursorMesh.dispose();
+    }
+    
+    this.voxelCursorMesh = new Mesh('voxel_cursor_ghost', this.engine.scene);
+    this.voxelCursorMesh.parent = this.voxelCursorRoot;
+    this.voxelCursorMesh.isPickable = false;
+    this.voxelCursorMesh.material = this.voxelCursorMaterial;
+
+    const builder = new VoxelMeshBuilder();
+    const s = this.engine.currentTileSize || 64;
+
+    for (const { wx, wy, wz } of targetCoords) {
       const worldPos = this.voxelWorld.voxelToWorldMesh(wx, wy, wz);
-      const box = this.voxelCursorBoxes[i];
-      box.position.set(worldPos.x + 0.5, worldPos.y + 0.5, worldPos.z + 0.5);
-      box.edgesColor = edgeColor;
-      box.isVisible = true;
+      const x = worldPos.x / s;
+      const y = worldPos.y / s;
+      const z = worldPos.z / s;
+
+      // Add the geometry to the builder
+      if (mode !== 'place' || shape === VoxelShape.FULL_CUBE) {
+        builder.addCube(x, y, z, [0, 0, 1, 1], [0, 0, 1, 1], [0, 0, 1, 1]);
+      } else if (shape === VoxelShape.SLOPE_45) {
+        builder.addSlope45(x, y, z, orient, [0, 0, 1, 1], [1, 1, 1, 1]);
+      } else if (shape === VoxelShape.STAIRS_STRAIGHT) {
+        builder.addStairsStraight(x, y, z, orient, [0, 0, 1, 1], [0, 0, 1, 1], [0, 0, 1, 1]);
+      } else if (shape === VoxelShape.SLAB_BOTTOM) {
+        builder.addHalfSlab(x, y, z, false, [0, 0, 1, 1], [0, 0, 1, 1], [0, 0, 1, 1]);
+      } else if (shape === VoxelShape.SLAB_TOP) {
+        builder.addHalfSlab(x, y, z, true, [0, 0, 1, 1], [0, 0, 1, 1], [0, 0, 1, 1]);
+      } else if (shape === VoxelShape.FARMLAND || shape === VoxelShape.FLUID_SURFACE) {
+        builder.addFarmland(x, y, z, false, [1, 1, 1, 1], [0, 0, 1, 1], [0, 0, 1, 1], [0, 0, 1, 1]);
+      } else {
+        builder.addCube(x, y, z, [0, 0, 1, 1], [0, 0, 1, 1], [0, 0, 1, 1]);
+      }
     }
 
-    // Hide any unused boxes in pool
-    for (let i = targetCoords.length; i < this.voxelCursorBoxes.length; i++) {
-      this.voxelCursorBoxes[i].isVisible = false;
+    const vertexData = new VertexData();
+    vertexData.positions = builder.positions;
+    vertexData.normals = builder.normals;
+    vertexData.uvs = builder.uvs;
+    vertexData.indices = builder.indices;
+    vertexData.colors = builder.colors;
+
+    vertexData.applyToMesh(this.voxelCursorMesh);
+    this.voxelCursorMesh.scaling = new Vector3(s, s, s);
+
+    if (mode === 'erase' || mode === 'inspect') {
+      this.voxelCursorMesh.enableEdgesRendering();
+      this.voxelCursorMesh.edgesWidth = 2.5;
+      this.voxelCursorMesh.edgesColor = edgeColor;
     }
   }
 
@@ -282,6 +340,7 @@ public clearVoxelCursor(): void {
     if (this.voxelCursorMesh && !this.voxelCursorMesh.isDisposed()) {
       this.voxelCursorMesh.isVisible = false;
     }
+    // Kept for backward compatibility if any other system touched voxelCursorBoxes
     for (const box of this.voxelCursorBoxes) {
       if (box && !box.isDisposed()) {
         box.isVisible = false;

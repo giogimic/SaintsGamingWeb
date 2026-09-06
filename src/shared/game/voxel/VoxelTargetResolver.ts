@@ -43,13 +43,55 @@ export interface RawPickTarget {
 export function resolveVoxelTarget(
   pick: RawPickTarget | null | undefined,
   world: VoxelWorld,
-  ray?: VoxelRay | null
+  ray?: VoxelRay | null,
+  options?: { planeLockEnabled?: boolean; targetPlaneY?: number }
 ): VoxelTargetResolution | null {
   if (!world) return null;
 
   const totalW = world.totalWidthBlocks;
   const totalZ = world.totalDepthBlocks;
   const totalH = world.totalHeightBlocks;
+
+  // 0. Horizon Raycasting (Plane Lock Override)
+  if (options?.planeLockEnabled && options.targetPlaneY !== undefined && ray && Math.abs(ray.direction.y) > 1e-6) {
+    const planeY = options.targetPlaneY;
+    const meshPlaneY = planeY + world.originOffsetY; // Convert voxel Y to mesh Y
+    
+    const t = (meshPlaneY - ray.origin.y) / ray.direction.y;
+    if (t >= 0) {
+      const hitX = ray.origin.x + t * ray.direction.x;
+      const hitZ = ray.origin.z + t * ray.direction.z;
+      
+      const targetVoxel = world.worldMeshToVoxel(hitX, meshPlaneY, hitZ);
+      const isInsideWorld =
+        targetVoxel.wx >= 0 &&
+        targetVoxel.wx < totalW &&
+        targetVoxel.wz >= 0 &&
+        targetVoxel.wz < totalZ;
+
+      const existingVoxel = isInsideWorld
+        ? world.getVoxel(targetVoxel.wx, targetVoxel.wy, targetVoxel.wz)
+        : 0;
+
+      const { cx, cz, cy, lx, ly, lz } = VoxelWorld.worldToChunkCoords(
+        targetVoxel.wx,
+        targetVoxel.wy,
+        targetVoxel.wz
+      );
+
+      return {
+        hit: true,
+        hitPoint: { x: hitX, y: meshPlaneY, z: hitZ },
+        hitNormal: { x: 0, y: 1, z: 0 },
+        voxelCoord: targetVoxel,
+        adjacentVoxelCoord: targetVoxel, // For plane lock, target is exactly the clicked cell on the plane
+        chunkCoord: { cx, cz, cy },
+        localCoord: { lx, ly, lz },
+        existingVoxel,
+        isInsideWorld,
+      };
+    }
+  }
 
   // 1. Direct Mesh Hit against a chunk or ground surface
   if (pick?.hit && pick.pickedPoint) {

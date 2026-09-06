@@ -65,7 +65,7 @@ import { MapPersistenceService } from './services/MapPersistenceService';
 import { StudioKeyboardRouter } from './services/StudioKeyboardRouter';
 
 // Lazy-loaded dock panels for maximum code-splitting & startup performance (Phase 8 Track D2)
-const WorldBuilderPanel = lazy(() => import('./panels/WorldBuilderPanel').then((m) => ({ default: m.WorldBuilderPanel })));
+const TileStudioPanel = lazy(() => import('./panels/TileStudioPanel').then((m) => ({ default: m.TileStudioPanel })));
 const VoxelStudioPanel = lazy(() => import('./panels/VoxelStudioPanel').then((m) => ({ default: m.VoxelStudioPanel })));
 const PropertiesPanel = lazy(() => import('./panels/PropertiesPanel').then((m) => ({ default: m.PropertiesPanel })));
 const AssetStudioPanel = lazy(() => import('./panels/AssetStudioPanel').then((m) => ({ default: m.AssetStudioPanel })));
@@ -87,7 +87,6 @@ const ShopEditorPanel = lazy(() => import('./panels/ShopEditorPanel').then((m) =
 const MountEditorPanel = lazy(() => import('./panels/MountEditorPanel').then((m) => ({ default: m.MountEditorPanel })));
 const WorldEventPanel = lazy(() => import('./panels/WorldEventPanel').then((m) => ({ default: m.WorldEventPanel })));
 const ReleaseManagementPanel = lazy(() => import('./panels/ReleaseManagementPanel').then((m) => ({ default: m.ReleaseManagementPanel })));
-const LogicPainterPanel = lazy(() => import('./panels/LogicPainterPanel').then((m) => ({ default: m.LogicPainterPanel })));
 const AnimationStudioPanel = lazy(() => import('./panels/AnimationStudioPanel').then((m) => ({ default: m.AnimationStudioPanel })));
 const MapTabPanel = lazy(() => import('./panels/MapTabPanel').then((m) => ({ default: m.MapTabPanel })));
 const MapListPanel = lazy(() => import('./panels/MapListPanel').then((m) => ({ default: m.MapListPanel })));
@@ -100,6 +99,42 @@ const WorldHierarchyPanel = lazy(() => import('./panels/WorldHierarchyPanel').th
 const SelectionPanel = lazy(() => import('./panels/SelectionPanel').then((m) => ({ default: m.SelectionPanel })));
 const TransformPanel = lazy(() => import('./panels/TransformPanel').then((m) => ({ default: m.TransformPanel })));
 const ProceduralAuthoringPanel = lazy(() => import('./panels/ProceduralAuthoringPanel').then((m) => ({ default: m.ProceduralAuthoringPanel })));
+
+const StudioBottomBar: React.FC = () => {
+  const hoveredTile = useEditorStore((s) => s.hoveredTile);
+  const activeMapData = useGameStore((s) => s.activeMapData);
+  const studioMode = useEditorStore((s) => s.studioMode);
+  const activeBrushTileId = useEditorStore((s) => s.activeBrushTileId);
+  const activeVoxelMaterialId = useEditorStore((s) => s.activeVoxelMaterialId);
+  const activeLayerIdx = useEditorStore((s) => s.activeLayerIdx);
+
+  return (
+    <div className="fixed bottom-0 left-0 right-0 h-6 bg-[#050b14]/95 border-t border-border/40 backdrop-blur-xl flex items-center justify-between px-3 font-mono text-[10px] text-muted-foreground z-[100] pointer-events-auto select-none">
+      <div className="flex items-center gap-4">
+        <span className="font-bold text-primary">Saints Studio</span>
+        <span>Mode: <span className="text-foreground uppercase">{studioMode}</span></span>
+        {activeMapData && (
+          <span>Realm: <span className="text-amber-400">{activeMapData.id}</span></span>
+        )}
+      </div>
+      <div className="flex items-center gap-4">
+        {studioMode === 'tile' && (
+          <>
+            <span>Layer: <span className="text-purple-400">{activeLayerIdx >= 0 ? activeLayerIdx : 'Logic'}</span></span>
+            <span>Tile Brush ID: <span className="text-foreground">{activeBrushTileId}</span></span>
+          </>
+        )}
+        {studioMode === 'voxel' && (
+          <span>Material ID: <span className="text-foreground">{activeVoxelMaterialId}</span></span>
+        )}
+        <div className="w-px h-3 bg-border/40" />
+        <span className="w-24 text-right">
+          {hoveredTile ? `R:${hoveredTile.r} C:${hoveredTile.c}` : 'R:-- C:--'}
+        </span>
+      </div>
+    </div>
+  );
+};
 
 import { RuleDebuggerOverlay } from './RuleDebuggerOverlay';
 import { DraggablePanel } from './DraggablePanel';
@@ -422,20 +457,14 @@ export const StudioEditorShell: React.FC = () => {
 
           <div className="absolute inset-0 pointer-events-none">
           {canUseStudioDock(permissionLevel, 'build') && studioMode === 'tile' && activeMapData?.mapType !== 'VOXEL' && (
-            <DraggablePanel id="build" icon={<Hammer className="w-4 h-4" />} title="World Builder">
-              <Suspense fallback={<div>Loading...</div>}><WorldBuilderPanel /></Suspense>
+            <DraggablePanel id="build" icon={<Hammer className="w-4 h-4 text-purple-400" />} title="Tile Studio (2.5D)">
+              <Suspense fallback={<div>Loading...</div>}><TileStudioPanel /></Suspense>
             </DraggablePanel>
           )}
 
           {canUseStudioDock(permissionLevel, 'build') && studioMode === 'voxel' && (
             <DraggablePanel id="build" icon={<Box className="w-4 h-4 text-primary" />} title="Voxel Studio">
               <Suspense fallback={<div>Loading...</div>}><VoxelStudioPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'logic') && (
-            <DraggablePanel id="logic" icon={<Layers className="w-4 h-4" />} title="Logic Painter">
-              <Suspense fallback={<div>Loading...</div>}><LogicPainterPanel /></Suspense>
             </DraggablePanel>
           )}
 
@@ -639,6 +668,8 @@ export const StudioEditorShell: React.FC = () => {
 
         </div>
       </div>
+
+      <StudioBottomBar />
 
       <DestinationPlacementHUD />
       <GateConnectModal />

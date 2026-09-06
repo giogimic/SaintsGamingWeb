@@ -263,10 +263,10 @@ export const SheetSlicerPanel: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#050b14]/95 text-foreground font-mono select-none text-xs">
+    <div className="flex flex-col h-[500px] max-h-[60vh] bg-[#02050a] text-slate-200 shadow-2xl overflow-hidden font-sans border border-border/20 rounded-lg">
       
       {/* Top Header & Sheet Picker */}
-      <div className="p-3 border-b border-border/40 bg-[#0a1628]/80 flex flex-wrap items-center justify-between gap-2.5">
+      <div className="shrink-0 p-3 border-b border-border/40 bg-[#0a1628]/80 flex flex-wrap items-center justify-between gap-2.5">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-md bg-primary/20 text-primary border border-primary/40">
             <Scissors className="w-4 h-4" />
