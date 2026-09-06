@@ -61,6 +61,7 @@ export interface GameMapData {
   name: string;
   mapType?: 'TILE' | 'VOXEL' | 'HYBRID' | string;
   grid: number[][]; // 0: safe, 1: wall/boundary, 2: tall grass, 3-4: gates, 5: tree(woodcutting), 6: ore(mining), 7: shop, 8: clinic, 10: fishing spot
+  regions?: number[][];
   gates: Record<number, MapGate>;
   /** Present on /api/maps payloads; used for Babylon dims when grid is sparse. */
   width?: number;

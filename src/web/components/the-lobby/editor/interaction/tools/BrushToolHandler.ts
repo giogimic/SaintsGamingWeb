@@ -388,7 +388,7 @@ export class BrushToolHandler implements IToolHandler {
             
             // Auto-Tiling Pass
             if (store.autoTileEnabled !== false) {
-              const autoTileChanges = applyAutoTiling(liveMap, layerIdx, pt.r, pt.c);
+              const autoTileChanges = applyAutoTiling(liveMap as any, layerIdx, pt.r, pt.c);
               for (const atChange of autoTileChanges) {
                 const atPainted = paintWorldCell(liveMap, layerIdx, atChange.r, atChange.c, atChange.gid, worldDocSync);
                 if (!('error' in atPainted)) {
