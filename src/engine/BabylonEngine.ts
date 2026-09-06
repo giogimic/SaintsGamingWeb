@@ -630,10 +630,7 @@ export class BabylonEngine {
       this.tilesetMeshBySource.clear();
 
       if (this.voxel.voxelWorld) {
-        for (const chunk of this.voxel.voxelWorld.chunks.values()) {
-          this.voxel.voxelMesher?.disposeChunkMesh(chunk.key);
-        }
-        this.voxel.voxelWorld = undefined;
+        this.voxel.clearVoxelWorld();
       }
       
       this.disableLogicGridOverlay();
@@ -691,9 +688,9 @@ export class BabylonEngine {
     }
 
     // Determine map rendering types based on mapType (fallback to TILE if unknown)
-    const mapType = mapData.mapType || 'HYBRID';
-    const isVoxelType = mapType === 'VOXEL' || mapType === 'FRACTAL' || mapType === 'HYBRID';
-    const isTileType = mapType === 'TILE' || mapType === 'HYBRID';
+    const mapType = mapData.mapType || 'TILE';
+    const isVoxelType = mapType === 'VOXEL' || mapType === 'FRACTAL';
+    const isTileType = mapType === 'TILE';
 
     // Authoritative 3D Voxel World Rendering
     if (isVoxelType && mapData.voxelDoc && mapData.voxelDoc.chunks && Object.keys(mapData.voxelDoc.chunks).length > 0) {
@@ -1230,23 +1227,25 @@ export class BabylonEngine {
       }
     }
 
-    // Invisible full-map pick plane — batched `tileset_mesh_*` quads skip empty
-    // cells and are non-pickable; this plane is the sole click authority.
-    // Pad by one tile so edge-cell half-extents (centers at ±w/2) stay pickable.
-    const pickW = width * tileSize + tileSize;
-    const pickH = height * tileSize + tileSize;
-    const pickPlane = MeshBuilder.CreateGround(
-      'map_pick_plane',
-      { width: pickW, height: pickH },
-      this.scene
-    );
-    // Slightly above y=0 so the ray hits even when ground quads write depth.
-    pickPlane.position = new Vector3(0, 0.001, 0);
-    pickPlane.parent = this.rootNode;
-    pickPlane.isPickable = true;
-    pickPlane.visibility = 0;
-    this.mapPickPlane = pickPlane;
-    this.tileMeshes.push(pickPlane);
+    if (isTileType) {
+      // Invisible full-map pick plane — batched `tileset_mesh_*` quads skip empty
+      // cells and are non-pickable; this plane is the sole click authority.
+      // Pad by one tile so edge-cell half-extents (centers at ±w/2) stay pickable.
+      const pickW = width * tileSize + tileSize;
+      const pickH = height * tileSize + tileSize;
+      const pickPlane = MeshBuilder.CreateGround(
+        'map_pick_plane',
+        { width: pickW, height: pickH },
+        this.scene
+      );
+      // Slightly above y=0 so the ray hits even when ground quads write depth.
+      pickPlane.position = new Vector3(0, 0.001, 0);
+      pickPlane.parent = this.rootNode;
+      pickPlane.isPickable = true;
+      pickPlane.visibility = 0;
+      this.mapPickPlane = pickPlane;
+      this.tileMeshes.push(pickPlane);
+    }
 
     // Render Freeform Layers
     if (mapData.freeformLayers) {
@@ -1468,19 +1467,21 @@ export class BabylonEngine {
       this.renderer.applyPlayerCameraStyle(this.renderer.cameraSettings.playerCameraStyle);
     }
 
-    // Always ensure 3D Voxel World is loaded and rendered
-    const rawVoxel = mapData.voxelDoc || (this.currentRawMapData as any)?.voxelDoc;
-    const voxelDoc = rawVoxel || generateDefaultWorldDoc(
-      Math.max(1, Math.ceil((width || 32) / 32)),
-      Math.max(1, Math.ceil((height || 32) / 32)),
-      mapData.blockSizePx || (this.currentRawMapData as any)?.blockSizePx || 64,
-      width,
-      height
-    );
-    if (mapId && voxelDoc.id !== mapId) {
-      voxelDoc.id = mapId;
+    if (isVoxelType) {
+      // Ensure 3D Voxel World is loaded and rendered
+      const rawVoxel = mapData.voxelDoc || (this.currentRawMapData as any)?.voxelDoc;
+      const voxelDoc = rawVoxel || generateDefaultWorldDoc(
+        Math.max(1, Math.ceil((width || 32) / 32)),
+        Math.max(1, Math.ceil((height || 32) / 32)),
+        mapData.blockSizePx || (this.currentRawMapData as any)?.blockSizePx || 64,
+        width,
+        height
+      );
+      if (mapId && voxelDoc.id !== mapId) {
+        voxelDoc.id = mapId;
+      }
+      this.voxel.loadVoxelWorld(voxelDoc);
     }
-    this.voxel.loadVoxelWorld(voxelDoc);
   }
 
   private applyTileMaterial(mat: StandardMaterial, tileId: number, r: number = 0, c: number = 0, isBlock: boolean = false) {

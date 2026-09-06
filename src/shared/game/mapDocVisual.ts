@@ -42,9 +42,11 @@ export function resolveMapDimensions(doc: MapDocVisual | null | undefined): {
   const gw =
     Array.isArray(doc.grid) && doc.grid.length > 0 ? doc.grid[0]?.length : undefined;
   const gh = Array.isArray(doc.grid) && doc.grid.length > 0 ? doc.grid.length : undefined;
+  const vw = (doc as any).voxelDoc?.mapWidth;
+  const vh = (doc as any).voxelDoc?.mapHeight;
   return {
-    width: lw || gw || doc.width || 24,
-    height: lh || gh || doc.height || 24,
+    width: lw || gw || vw || doc.width || 24,
+    height: lh || gh || vh || doc.height || 24,
   };
 }
 

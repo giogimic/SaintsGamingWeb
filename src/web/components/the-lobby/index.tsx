@@ -43,6 +43,7 @@ import { TurnBattleOverlay } from './battle/TurnBattleOverlay';
 import { useGameStore } from './store';
 import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
 import { canEnterStudio } from '@/shared/game/studioPermissions';
+import { getSpawnMapId } from '@/app/actions/settings';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import {
   setEditorMode,
@@ -165,7 +166,7 @@ export default function TheLobby({
   useEffect(() => {
     if (!enableStudio) return;
     const currentMapId = useGameStore.getState().currentMapId;
-    if (currentMapId === GENERIC_FALLBACK_MAP) {
+    if (currentMapId === spawnMapId) {
       if (studioMode === 'tile') {
         const hasTileMaps = devMapList.some(m => m.mapType !== 'VOXEL' && m.mapType !== 'FRACTAL');
         if (hasTileMaps) useEditorStore.getState().openPanel('tileBrowser');
@@ -264,8 +265,13 @@ export default function TheLobby({
     return [];
   };
 
+  const [spawnMapId, setSpawnMapId] = useState('DEMO_SANDBOX');
+
+  useEffect(() => {
+    getSpawnMapId().then(setSpawnMapId).catch(console.error);
+  }, []);
+
   const DEFAULT_SPAWN = { x: 32, y: 32 };
-  const GENERIC_FALLBACK_MAP = 'STARTING_MEADOW';
 
   const selectAndLoadCharacter = async (charId: string) => {
     setIsInitializing(true);
@@ -297,7 +303,8 @@ export default function TheLobby({
         availableMapIds,
       });
 
-      validMapId = safeSpawn.mapId || availableMapIds[0] || GENERIC_FALLBACK_MAP;
+      const spawnMapId = await getSpawnMapId();
+      validMapId = safeSpawn.mapId || availableMapIds[0] || spawnMapId;
       validPosition = { x: safeSpawn.x, y: safeSpawn.y };
 
       try {
@@ -311,7 +318,7 @@ export default function TheLobby({
         useGameStore.getState().setActiveMapData(loaded);
         preloadAdjacentMaps(validMapId).catch(console.error);
       } catch {
-        validMapId = availableMapIds[0] || GENERIC_FALLBACK_MAP;
+        validMapId = availableMapIds[0] || spawnMapId;
         validPosition = { ...DEFAULT_SPAWN };
         try {
           const loadedFallback = ensureMapHasStudioTilesets(await loadMap(validMapId));
@@ -387,7 +394,8 @@ export default function TheLobby({
   const enterStudioAuthorSession = async (mapId?: string) => {
     if (!enableStudio) return;
     setIsInitializing(true);
-    let validMapId = mapId === 'SAINTS_VILLAGE' || !mapId ? GENERIC_FALLBACK_MAP : mapId.replace(/_ch\d+$/, '');
+    const spawnMapId = await getSpawnMapId();
+    let validMapId = mapId === 'SAINTS_VILLAGE' || !mapId ? spawnMapId : mapId.replace(/_ch\d+$/, '');
     let validPosition = { ...DEFAULT_SPAWN };
 
     try {
@@ -401,16 +409,16 @@ export default function TheLobby({
       useGameStore.getState().setActiveMapData(loaded);
       preloadAdjacentMaps(validMapId).catch(console.error);
     } catch {
-          validMapId = GENERIC_FALLBACK_MAP;
+      validMapId = spawnMapId;
       validPosition = { x: 15, y: 15 };
       try {
-            const loadedFallback = ensureMapHasStudioTilesets(await loadMap(GENERIC_FALLBACK_MAP));
-            useGameStore.getState().setActiveMapData(loadedFallback);
-            validMapId = GENERIC_FALLBACK_MAP;
+        const loadedFallback = ensureMapHasStudioTilesets(await loadMap(spawnMapId));
+        useGameStore.getState().setActiveMapData(loadedFallback);
+        validMapId = spawnMapId;
       } catch {
         // Pristine realm fallback (0 maps in DB) — provide an interactive blank canvas
         const blankMap = ensureMapHasStudioTilesets({
-          id: GENERIC_FALLBACK_MAP,
+          id: spawnMapId,
           name: 'Starting Realm Map',
           width: 30,
           height: 30,
@@ -668,7 +676,7 @@ export default function TheLobby({
             accountId: effectiveAccountId,
             characterId: activeCharacterId,
             contract: {
-              mapId: state.currentMapId || GENERIC_FALLBACK_MAP,
+              mapId: state.currentMapId || spawnMapId,
               lobby: !enableStudio,
               isPrivate: enableStudio,
               pie: enableStudio && !useEditorStore.getState().isCreationMode,
@@ -689,16 +697,16 @@ export default function TheLobby({
             onUpdateLastJoinKey: (k) => { lastJoinKeyRef.current = k; },
           });
           if (!enableStudio) {
-            const cur = toBaseMapId(state.currentMapId || GENERIC_FALLBACK_MAP);
-            if (cur !== GENERIC_FALLBACK_MAP) {
-              const fallback = cur || GENERIC_FALLBACK_MAP;
+            const cur = toBaseMapId(state.currentMapId || spawnMapId);
+            if (cur !== spawnMapId) {
+              const fallback = cur || spawnMapId;
               state.setCurrentMapId(fallback);
               void loadMap(fallback).then((m) => {
                 useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
                 preloadAdjacentMaps(fallback).catch(console.error);
               }).catch(() => {
-                 state.setCurrentMapId(GENERIC_FALLBACK_MAP);
-                 void loadMap(GENERIC_FALLBACK_MAP).then(m => useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m)));
+                 state.setCurrentMapId(spawnMapId);
+                 void loadMap(spawnMapId).then(m => useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m)));
               });
             }
           }
@@ -1252,7 +1260,7 @@ export default function TheLobby({
       const state = useGameStore.getState();
       state.showToast("You blacked out... Respawning at Safe Zone");
       if (data?.instanceId) state.setInstanceId(data.instanceId);
-      const defeatMap = toBaseMapId(String(data?.mapId || state.currentMapId || GENERIC_FALLBACK_MAP));
+      const defeatMap = toBaseMapId(String(data?.mapId || state.currentMapId || spawnMapId));
       const currentBase = toBaseMapId(String(state.currentMapId || ''));
       if (defeatMap !== currentBase) {
         state.setOtherPlayers({});
@@ -1533,7 +1541,7 @@ export default function TheLobby({
     if (!socket?.connected) return;
     const state = useGameStore.getState();
     if (state.gameMode !== 'EXPLORING') return;
-    const curMap = toBaseMapId(state.currentMapId || GENERIC_FALLBACK_MAP);
+    const curMap = toBaseMapId(state.currentMapId || spawnMapId);
     const mapId = curMap;
     if (!state.activeMapData || state.activeMapData.id !== curMap) {
       void loadMap(curMap).then((m) => {
@@ -1598,7 +1606,7 @@ export default function TheLobby({
         accountId,
         characterId: activeCharacterId,
         contract: {
-          mapId: toBaseMapId(state.currentMapId || GENERIC_FALLBACK_MAP),
+          mapId: toBaseMapId(state.currentMapId || spawnMapId),
           lobby: false,
           isPrivate: !pie,
           pie,
@@ -1853,7 +1861,7 @@ export default function TheLobby({
               ? () => {
                   setShowSelector(false);
                   void enterStudioAuthorSession(
-                    toBaseMapId(useGameStore.getState().currentMapId || GENERIC_FALLBACK_MAP)
+                    toBaseMapId(useGameStore.getState().currentMapId || spawnMapId)
                   );
                 }
               : undefined
