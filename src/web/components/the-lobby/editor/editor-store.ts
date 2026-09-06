@@ -1159,6 +1159,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 700,
     zIndex: 10,
   },
+  secondaryViewport: {
+    id: 'secondaryViewport',
+    title: 'Secondary Canvas',
+    isOpen: false,
+    isCollapsed: false,
+    x: 150,
+    y: 100,
+    width: 800,
+    height: 600,
+    zIndex: 10,
+  },
 };
 
 
