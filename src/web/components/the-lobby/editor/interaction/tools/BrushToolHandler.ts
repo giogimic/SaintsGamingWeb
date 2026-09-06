@@ -261,11 +261,37 @@ export class BrushToolHandler implements IToolHandler {
     }
 
     const isShiftLine = event.isShift && eventType === 'down' && Boolean(store.lastPaintedTile);
-    const coordsToPaint = isShiftLine && store.lastPaintedTile
+    const basePoints = isShiftLine && store.lastPaintedTile
       ? rasterizeLine(store.lastPaintedTile.r, store.lastPaintedTile.c, r, c)
       : [{ r, c }];
 
     store.setLastPaintedTile({ r, c });
+
+    const radius = store.brushRadius || 1;
+    const shape = store.brushShape || 'square';
+    const finalPoints = new Set<string>();
+
+    for (const pt of basePoints) {
+      if (radius <= 1) {
+        finalPoints.add(`${pt.r},${pt.c}`);
+        continue;
+      }
+      // Note: A brush radius of 2 means a 3x3 footprint (center + 1 on each side)
+      // Usually radius is used as the extent. E.g. radius=2 -> extent=1. Let's use (radius - 1)
+      const extent = radius - 1;
+      for (let tr = pt.r - extent; tr <= pt.r + extent; tr++) {
+        for (let tc = pt.c - extent; tc <= pt.c + extent; tc++) {
+          if (isInBrushShape(tr - pt.r, tc - pt.c, radius, shape as any)) {
+            finalPoints.add(`${tr},${tc}`);
+          }
+        }
+      }
+    }
+
+    const coordsToPaint = Array.from(finalPoints).map(str => {
+      const [pr, pc] = str.split(',').map(Number);
+      return { r: pr, c: pc };
+    });
 
     const paintValue = target.kind === 'logic' ? store.activeLogicTileId : store.activeBrushTileId;
 
