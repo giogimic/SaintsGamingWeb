@@ -23,3 +23,15 @@ export async function getSiteVersion(isStatic = false) {
     return process.env.NEXT_PUBLIC_SITE_VERSION || "v2.1.763";
   }
 }
+
+export async function getSpawnMapId() {
+  try {
+    const setting = await prisma.siteSetting.findUnique({
+      where: { key: "SPAWN_MAP_ID" }
+    });
+    return setting?.value || "DEMO_SANDBOX";
+  } catch (e) {
+    console.error("Failed to fetch spawn map ID", e);
+    return "DEMO_SANDBOX";
+  }
+}

@@ -790,7 +790,7 @@ model WorldMap {
   publishedVersion   Int     @default(0) // 0 means draft only, >=1 indicates published release
   publishedData      String? // Immutable JSON snapshot of active published release
   version            Int     @default(1)
-  mapType            String  @default("HYBRID") // 'TILE' | 'VOXEL' | 'HYBRID'
+  mapType            String  @default("TILE") // 'TILE' | 'VOXEL' | 'FRACTAL'
 
   // Rich Map Metadata
   musicTrack        String?

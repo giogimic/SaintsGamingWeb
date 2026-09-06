@@ -20,13 +20,21 @@ import { CHUNK_SIZE_X, CHUNK_SIZE_Z } from "@/shared/game/voxel/VoxelChunk";
 export const dynamic = 'force-dynamic';
 
 async function loadMapPayload(slug: string, isDraft?: boolean) {
-  let worldMap;
-  if (isDraft) {
-    worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
+  let worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
+  if (!worldMap) return null;
+
+  if (!isDraft) {
+    if (!worldMap.publishedData) {
+      return null; // Return null if the game requests a map that has never been deployed
+    }
+    try {
+      worldMap = JSON.parse(worldMap.publishedData);
+    } catch (e) {
+      console.error(`[MapAPI] Failed to parse publishedData for ${slug}:`, e);
+      return null;
+    }
   }
-  if (!worldMap) {
-    worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
-  }
+
   if (worldMap) {
     let grid = [];
     try {
@@ -464,6 +472,8 @@ export async function POST(
 
     let worldMap: any;
     try {
+      const isFirstMap = (await prisma.worldMap.count()) === 0;
+
       worldMap = await prisma.worldMap.upsert({
         where: { id: slug },
         update: {
@@ -486,7 +496,7 @@ export async function POST(
           ...(body.proceduralConfig !== undefined
             ? { proceduralConfig: typeof body.proceduralConfig === 'string' ? body.proceduralConfig : JSON.stringify(body.proceduralConfig) }
             : {}),
-          mapType: body.mapType || "HYBRID",
+          mapType: body.mapType || "TILE",
           version: { increment: 1 },
         },
         create: {
@@ -503,12 +513,21 @@ export async function POST(
           tilesetsData: JSON.stringify(visualsForCreate.tilesets || []),
           voxelData: JSON.stringify(body.voxelDoc),
           regionClass: body.regionClass || "authored",
-          mapType: body.mapType || "HYBRID",
+          mapType: body.mapType || "TILE",
           proceduralConfig: body.proceduralConfig
             ? (typeof body.proceduralConfig === 'string' ? body.proceduralConfig : JSON.stringify(body.proceduralConfig))
             : null,
         },
       });
+
+      if (isFirstMap) {
+        await prisma.siteSetting.upsert({
+          where: { key: 'SPAWN_MAP_ID' },
+          update: { value: slug },
+          create: { key: 'SPAWN_MAP_ID', value: slug },
+        });
+        console.log(`[MapAPI] Auto-configured SPAWN_MAP_ID to ${slug} as it's the first map.`);
+      }
     } catch (upsertErr: any) {
       console.warn("[MapRoute] Primary worldMap upsert failed, attempting fallback without voxelData column:", upsertErr?.message);
       // Fallback in case database column voxelData is missing or has a character limit

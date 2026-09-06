@@ -40,10 +40,7 @@ public loadVoxelWorld(docOrWorld: VoxelWorld | VoxelWorldDocV3) {
     }
 
     if (this.voxelWorld) {
-      for (const chunk of this.voxelWorld.chunks.values()) {
-        this.voxelMesher.disposeChunkMesh(chunk.key);
-      }
-      this.clearAdjacentVoxelMeshes();
+      this.clearVoxelWorld();
     }
 
     if (docOrWorld instanceof VoxelWorld) {
@@ -94,7 +91,25 @@ public loadVoxelWorld(docOrWorld: VoxelWorld | VoxelWorldDocV3) {
     }
   }
 
-public clearAdjacentVoxelMeshes() {
+public clearVoxelWorld() {
+    if (this.voxelWorld && this.voxelMesher) {
+      for (const chunk of this.voxelWorld.chunks.values()) {
+        this.voxelMesher.disposeChunkMesh(chunk.key);
+      }
+    }
+    this.clearAdjacentVoxelMeshes();
+    if (this.voxelCursorMesh) {
+      this.voxelCursorMesh.dispose();
+      this.voxelCursorMesh = undefined;
+    }
+    if (this.voxelCursorRoot) {
+      this.voxelCursorRoot.dispose();
+      this.voxelCursorRoot = undefined;
+    }
+    this.voxelWorld = undefined;
+  }
+
+  public clearAdjacentVoxelMeshes() {
     for (const meshes of this.adjacentVoxelMeshes.values()) {
       for (const m of meshes) {
         m.dispose();
