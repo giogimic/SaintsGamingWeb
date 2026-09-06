@@ -87,8 +87,8 @@ export function paintCell(
 ): PaintResult {
   if (target.kind === "unavailable") return { ok: false, reason: target.reason };
 
-  const label = target.kind === "logic" ? "the logic grid" : target.kind === "region" ? "the regions grid" : `layer ${target.layerIdx}`;
-  const grid = target.kind === "logic" ? map?.grid : target.kind === "region" ? map?.regions : map?.tileLayers?.[target.layerIdx]?.grid;
+  const label = target.kind === "logic" ? "the logic grid" : target.kind === "region" ? "the regions grid" : target.kind === "visual" ? `layer ${target.layerIdx}` : "unknown";
+  const grid = target.kind === "logic" ? map?.grid : target.kind === "region" ? map?.regions : target.kind === "visual" ? map?.tileLayers?.[target.layerIdx]?.grid : undefined;
   if (!Array.isArray(grid)) return { ok: false, reason: `Cannot paint: ${label} is missing.` };
 
   if (!Number.isInteger(r) || !Number.isInteger(c) || r < 0 || c < 0) {
@@ -171,11 +171,11 @@ export function eraseTilesInRegion(params: EraseRegionParams): EraseRegionResult
   const target = resolvePaintTarget(map, layerIdx);
   if (target.kind === "unavailable") return { ok: false, reason: target.reason };
 
-  const grid = target.kind === "logic" ? map.grid : map.tileLayers?.[target.layerIdx]?.grid;
+  const grid = target.kind === "logic" ? map.grid : target.kind === "region" ? map.regions : target.kind === "visual" ? map.tileLayers?.[target.layerIdx]?.grid : undefined;
   if (!Array.isArray(grid)) {
     return {
       ok: false,
-      reason: target.kind === "logic" ? "Logic grid is missing." : `Layer ${target.layerIdx} is missing.`,
+      reason: target.kind === "logic" ? "Logic grid is missing." : target.kind === "region" ? "Regions grid is missing." : target.kind === "visual" ? `Layer ${target.layerIdx} is missing.` : "Layer is missing.",
     };
   }
 
@@ -195,7 +195,7 @@ export function eraseTilesInRegion(params: EraseRegionParams): EraseRegionResult
       if (prev !== 0) {
         row[c] = 0;
         erased.push({
-          layerIdx: target.kind === "logic" ? LOGIC_LAYER_IDX : target.layerIdx,
+          layerIdx: target.kind === "logic" ? LOGIC_LAYER_IDX : target.kind === "region" ? REGION_LAYER_IDX : target.kind === "visual" ? target.layerIdx : 0,
           r,
           c,
           before: prev,
@@ -225,11 +225,11 @@ export function eraseSparseCells(params: EraseSparseCellsParams): EraseRegionRes
   const target = resolvePaintTarget(map, layerIdx);
   if (target.kind === "unavailable") return { ok: false, reason: target.reason };
 
-  const grid = target.kind === "logic" ? map.grid : map.tileLayers?.[target.layerIdx]?.grid;
+  const grid = target.kind === "logic" ? map.grid : target.kind === "region" ? map.regions : target.kind === "visual" ? map.tileLayers?.[target.layerIdx]?.grid : undefined;
   if (!Array.isArray(grid)) {
     return {
       ok: false,
-      reason: target.kind === "logic" ? "Logic grid is missing." : `Layer ${target.layerIdx} is missing.`,
+      reason: target.kind === "logic" ? "Logic grid is missing." : target.kind === "region" ? "Regions grid is missing." : target.kind === "visual" ? `Layer ${target.layerIdx} is missing.` : "Layer is missing.",
     };
   }
 
@@ -258,7 +258,7 @@ export function eraseSparseCells(params: EraseSparseCellsParams): EraseRegionRes
     if (prev !== 0) {
       row[c] = 0;
       erased.push({
-        layerIdx: target.kind === "logic" ? LOGIC_LAYER_IDX : target.layerIdx,
+        layerIdx: target.kind === "logic" ? LOGIC_LAYER_IDX : target.kind === "region" ? REGION_LAYER_IDX : target.kind === "visual" ? target.layerIdx : 0,
         r,
         c,
         before: prev,
@@ -310,11 +310,11 @@ export function paintTilesInRegion(params: PaintRegionParams): BatchPaintResult 
   const target = resolvePaintTarget(map, layerIdx);
   if (target.kind === "unavailable") return { ok: false, reason: target.reason };
 
-  const grid = target.kind === "logic" ? map.grid : map.tileLayers?.[target.layerIdx]?.grid;
+  const grid = target.kind === "logic" ? map.grid : target.kind === "region" ? map.regions : target.kind === "visual" ? map.tileLayers?.[target.layerIdx]?.grid : undefined;
   if (!Array.isArray(grid)) {
     return {
       ok: false,
-      reason: target.kind === "logic" ? "Logic grid is missing." : `Layer ${target.layerIdx} is missing.`,
+      reason: target.kind === "logic" ? "Logic grid is missing." : target.kind === "region" ? "Regions grid is missing." : target.kind === "visual" ? `Layer ${target.layerIdx} is missing.` : "Layer is missing.",
     };
   }
 
@@ -334,7 +334,7 @@ export function paintTilesInRegion(params: PaintRegionParams): BatchPaintResult 
       if (prev !== tileId) {
         row[c] = tileId;
         changed.push({
-          layerIdx: target.kind === "logic" ? LOGIC_LAYER_IDX : target.layerIdx,
+          layerIdx: target.kind === "logic" ? LOGIC_LAYER_IDX : target.kind === "region" ? REGION_LAYER_IDX : target.kind === "visual" ? target.layerIdx : 0,
           r,
           c,
           before: prev,
@@ -358,11 +358,11 @@ export function paintSparseCells(params: PaintSparseCellsParams): BatchPaintResu
   const target = resolvePaintTarget(map, layerIdx);
   if (target.kind === "unavailable") return { ok: false, reason: target.reason };
 
-  const grid = target.kind === "logic" ? map.grid : map.tileLayers?.[target.layerIdx]?.grid;
+  const grid = target.kind === "logic" ? map.grid : target.kind === "region" ? map.regions : target.kind === "visual" ? map.tileLayers?.[target.layerIdx]?.grid : undefined;
   if (!Array.isArray(grid)) {
     return {
       ok: false,
-      reason: target.kind === "logic" ? "Logic grid is missing." : `Layer ${target.layerIdx} is missing.`,
+      reason: target.kind === "logic" ? "Logic grid is missing." : target.kind === "region" ? "Regions grid is missing." : target.kind === "visual" ? `Layer ${target.layerIdx} is missing.` : "Layer is missing.",
     };
   }
 
@@ -391,7 +391,7 @@ export function paintSparseCells(params: PaintSparseCellsParams): BatchPaintResu
     if (prev !== tileId) {
       row[c] = tileId;
       changed.push({
-        layerIdx: target.kind === "logic" ? LOGIC_LAYER_IDX : target.layerIdx,
+        layerIdx: target.kind === "logic" ? LOGIC_LAYER_IDX : target.kind === "region" ? REGION_LAYER_IDX : target.kind === "visual" ? target.layerIdx : 0,
         r,
         c,
         before: prev,

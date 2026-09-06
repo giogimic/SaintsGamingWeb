@@ -135,7 +135,7 @@ export class FillToolHandler implements IToolHandler {
     }
 
     const isLogic = target.kind === 'logic';
-    const layerIdx = target.kind === 'logic' ? LOGIC_LAYER_IDX : target.layerIdx;
+    const layerIdx = target.kind === 'visual' ? (target as any).layerIdx : target.kind === 'region' ? -2 : -1;
     const curGrid = isLogic
       ? liveMap.grid
       : (liveMap.tileLayers?.[layerIdx]?.grid || liveMap.grid);

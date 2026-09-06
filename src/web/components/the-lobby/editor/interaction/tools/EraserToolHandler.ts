@@ -206,7 +206,7 @@ export class EraserToolHandler implements IToolHandler {
       }
     } else {
       const paintedOps: any[] = [];
-      const layerIdx = target.layerIdx;
+      const layerIdx = target.kind === 'visual' ? (target as any).layerIdx : target.kind === 'region' ? -2 : -1;
       for (const pt of coordsToPaint) {
         if (hasSelection && !isCellInsideSelection(pt.r, pt.c)) continue;
         const painted = paintWorldCell(liveMap, layerIdx, pt.r, pt.c, 0, worldDocSync);
