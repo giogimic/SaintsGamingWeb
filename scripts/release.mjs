@@ -3,7 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
+const rootDir = path.resolve(scriptsDir, '..');
 
 // ============================================================
 //  HARD RULE: These patterns are NEVER included in a release.
@@ -151,7 +152,7 @@ if (Test-Path $outZip) { Remove-Item $outZip -Force }
 $tempDir = Join-Path $env:TEMP "saints-release-$([System.IO.Path]::GetRandomFileName())"
 New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
 
-$files = Get-Content $manifest
+$files = Get-Content $manifest -Encoding UTF8
 $copied = 0
 foreach ($f in $files) {
   $f = $f.Trim()
@@ -198,21 +199,21 @@ console.log("=========================================");
 console.log(" Saints Gaming — Release Packager");
 console.log("=========================================\n");
 
-const version = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf-8')).version || '0.0.0';
+const version = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf-8')).version || '0.0.0';
 
 try {
   // Step 1: Validate build
   console.log("[1/4] Verifying database schema formatting...");
-  execSync('npx prisma@6 format', { stdio: 'inherit', cwd: __dirname, env: { ...process.env, DATABASE_URL: 'file:./dev.db' } });
+  execSync('npx prisma@6 format', { stdio: 'inherit', cwd: rootDir, env: { ...process.env, DATABASE_URL: 'file:./dev.db' } });
 
   console.log("\n[2/4] Generating Prisma Client...");
-  const prismaTempDir = path.join(__dirname, '.prisma-release-temp');
+  const prismaTempDir = path.join(rootDir, '.prisma-release-temp');
   if (fs.existsSync(prismaTempDir)) fs.rmSync(prismaTempDir, { recursive: true, force: true });
   fs.mkdirSync(prismaTempDir, { recursive: true });
 
   execSync('npx prisma@6 generate', {
     stdio: 'inherit',
-    cwd: __dirname,
+    cwd: rootDir,
     env: {
       ...process.env,
       DATABASE_URL: 'file:./dev.db',
@@ -231,19 +232,19 @@ try {
   if (fs.existsSync(prismaTempDir)) fs.rmSync(prismaTempDir, { recursive: true, force: true });
 
   console.log("\n[3/4] Pushing Prisma schema to local dev.db (creating tables)...");
-  execSync('npx prisma@6 db push --accept-data-loss', { stdio: 'inherit', cwd: __dirname, env: { ...process.env, DATABASE_URL: 'file:./dev.db' } });
+  execSync('npx prisma@6 db push --accept-data-loss', { stdio: 'inherit', cwd: rootDir, env: { ...process.env, DATABASE_URL: 'file:./dev.db' } });
 
   console.log("\n[4/4] Running Next.js Production Build (checking for errors)...");
-  // execSync('npm run build', { stdio: 'inherit', cwd: __dirname, env: { ...process.env, DATABASE_URL: 'file:./dev.db' } });
+  // execSync('npm run build', { stdio: 'inherit', cwd: rootDir, env: { ...process.env, DATABASE_URL: 'file:./dev.db' } });
 
   // Step 2: Collect clean file list
   console.log("\n[4/4] Packaging clean release (excluding generated files)...");
-  const files = collectFiles(__dirname);
+  const files = collectFiles(rootDir);
 
   console.log(`\n  Source files to include: ${files.length}`);
 
   // Step 3: Create release archive
-  const releaseDir = path.resolve(__dirname, '..', 'release');
+  const releaseDir = path.join(rootDir, 'release');
   if (!fs.existsSync(releaseDir)) fs.mkdirSync(releaseDir, { recursive: true });
   const outputPath = path.join(releaseDir, `release_v${version}.zip`);
 
@@ -253,10 +254,10 @@ try {
   }
 
   console.log(`\n  Creating release archive at ${outputPath}...`);
-  createArchive(files, __dirname, outputPath);
+  createArchive(files, rootDir, outputPath);
 
   // Step 4: Create git archive
-  const gitDir = path.resolve(__dirname, '..', 'git');
+  const gitDir = path.join(rootDir, 'git');
   if (!fs.existsSync(gitDir)) fs.mkdirSync(gitDir, { recursive: true });
   const gitOutputPath = path.join(gitDir, `source_v${version}.zip`);
 
@@ -265,11 +266,11 @@ try {
   }
 
   console.log(`\n  Creating git source archive at ${gitOutputPath}...`);
-  createArchive(files, __dirname, gitOutputPath);
+  createArchive(files, rootDir, gitOutputPath);
 
   // Step 5: Create patch update archive (excludes large static assets)
   const patchFiles = files.filter(f => !f.startsWith('public\\') && !f.startsWith('public/') && !f.startsWith('uploads\\') && !f.startsWith('uploads/'));
-  const patchDir = path.resolve(__dirname, '..', 'patch');
+  const patchDir = path.join(rootDir, 'patch');
   if (!fs.existsSync(patchDir)) fs.mkdirSync(patchDir, { recursive: true });
   const patchOutputPath = path.join(patchDir, `release-patch-update-${version}.zip`);
 
@@ -278,7 +279,7 @@ try {
   }
 
   console.log(`\n  Creating patch update archive at ${patchOutputPath}...`);
-  createArchive(patchFiles, __dirname, patchOutputPath);
+  createArchive(patchFiles, rootDir, patchOutputPath);
 
   const stats = fs.statSync(outputPath);
   const sizeMB = (stats.size / (1024 * 1024)).toFixed(1);
