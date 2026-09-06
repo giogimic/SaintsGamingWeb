@@ -1399,29 +1399,29 @@ model CreatureEvolution {
 }
 
 model AbilityDictionary {
-  slug             String  @id
-  name             String
-  type             String
-  power            Int?
-  accuracy         Float?
-  cooldown         Int? // Replaces ppCost (GCD mechanic)
-  effects          String // JSON array of effect slugs
-  animation        String?
-  description      String?
-  isCapture        Boolean @default(false)
-  target           String? // "enemy", "self", "ally", etc.
-  domain           String?
-  style            String?
-  manaCost         Int?
-  staminaCost      Int?
-  
+  slug        String  @id
+  name        String
+  type        String
+  power       Int?
+  accuracy    Float?
+  cooldown    Int? // Replaces ppCost (GCD mechanic)
+  effects     String // JSON array of effect slugs
+  animation   String?
+  description String?
+  isCapture   Boolean @default(false)
+  target      String? // "enemy", "self", "ally", etc.
+  domain      String?
+  style       String?
+  manaCost    Int?
+  staminaCost Int?
+
   // 5-Part Elemental Taxonomy
-  element1         String? @default("none")
-  element2         String? @default("none")
-  skillForm        String? @default("strike")
-  skillRole        String? @default("offense")
-  requiredMythos   String? // If set, this ability is restricted to a specific Mythos family
-  
+  element1       String? @default("none")
+  element2       String? @default("none")
+  skillForm      String? @default("strike")
+  skillRole      String? @default("offense")
+  requiredMythos String? // If set, this ability is restricted to a specific Mythos family
+
   tags             String? @default("[]") // JSON array
   vfxConfigJson    String? // JSON object
   conditionsJson   String? // JSON object
