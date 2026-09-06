@@ -1618,6 +1618,42 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             return;
           }
 
+          // Handling Entity Placement from Entity Library
+          if (store.pendingEntityPlacement) {
+            const validEventType = eventType || 'down';
+            if (validEventType === 'down') {
+              const pending = store.pendingEntityPlacement;
+              const destX = c;
+              const destY = r;
+              
+              const newId = `${pending.kind}_${Date.now()}`;
+              
+              const newEntity = {
+                id: newId,
+                name: pending.kind === 'npc' ? 'New NPC' : 'New Entity',
+                x: destX,
+                y: destY,
+                kind: pending.kind,
+                assetProfileId: pending.assetProfileId
+              };
+              
+              const updatedMap = { ...map, npcs: [...(map.npcs || []), newEntity] };
+              
+              useGameStore.setState({ activeMapData: updatedMap });
+              store.markMapDirty();
+              store.setPendingEntityPlacement(null);
+              
+              // Select the new entity and open the NPC editor
+              setTimeout(() => {
+                store.openPanel('npc');
+                window.dispatchEvent(new CustomEvent('studio_npc_selected', { detail: { id: newId } }));
+              }, 100);
+              
+              showToast(`Placed ${pending.kind} at [${destX}, ${destY}]. Configure properties in panel.`);
+            }
+            return;
+          }
+
           // Handling Destination Point Placement for Two-Ended Gate Pairing
           if (store.pendingGateConnection) {
             const pending = store.pendingGateConnection;

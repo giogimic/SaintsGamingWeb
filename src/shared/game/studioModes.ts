@@ -27,6 +27,7 @@ export type StudioDockId =
   | 'properties'
   | 'assets'
   | 'npc'
+  | 'entityLibrary'
   | 'quest'
   | 'dialogue'
   | 'creature'
@@ -52,6 +53,7 @@ export type StudioDockId =
   | 'simulation'
   | 'logic'
   | 'publishing'
+  | 'quickUpload'
   | 'tileBrowser'
   | 'voxelBrowser'
   | 'newTileMap'
@@ -94,11 +96,11 @@ export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> =
 /** Default panels opened when entering each studio mode (Walk/test closes all). */
 export const STUDIO_MODE_DEFAULTS: Record<StudioMode, StudioDockId[]> = {
   develop: ['studioHome'],
-  tile: ['build', 'layers', 'hierarchy', 'logic'],
-  voxel: ['build', 'materials', 'transform', 'selection', 'hierarchy'],
+  tile: ['primaryTileViewport', 'build', 'layers', 'hierarchy', 'logic'],
+  voxel: ['primaryVoxelViewport', 'build', 'materials', 'transform', 'selection', 'hierarchy'],
   logic: ['logic'],
   atlas: ['atlas'],
-  npc: ['npc', 'properties', 'assets', 'spawner'],
+  npc: ['entityLibrary', 'npc', 'properties', 'assets', 'spawner'],
   quest: ['npc', 'quest'],
   creature: ['creature', 'loot', 'items'],
   assets: ['asset_suite'],
@@ -187,6 +189,10 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   npc: {
     label: 'NPCs',
     blurb: 'Spawn and edit map NPCs.',
+  },
+  entityLibrary: {
+    label: 'Entity Library',
+    blurb: 'Browse and place entities onto the map.',
   },
   quest: {
     label: 'Quests',
@@ -287,6 +293,10 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   publishing: {
     label: 'Publish & Releases',
     blurb: 'Pre-flight validation gates, release snapshot history, and rollback.',
+  },
+  quickUpload: {
+    label: 'Quick Upload',
+    blurb: 'Quickly upload tilesets to the asset system.',
   },
   tileBrowser: {
     label: 'Tile Maps',

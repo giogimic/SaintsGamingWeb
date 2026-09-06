@@ -27,7 +27,7 @@ export const TilePalettePanel: React.FC = () => {
   const [zoom, setZoom] = useState(1);
 
   const [isAssetLibraryOpen, setIsAssetLibraryOpen] = useState(false);
-  const [isQuickUploadOpen, setIsQuickUploadOpen] = useState(false);
+
 
   const addTilesetToMap = (asset: any, customTileWidth?: number, customTileHeight?: number) => {
     if (!activeMapData) return;
@@ -252,7 +252,7 @@ export const TilePalettePanel: React.FC = () => {
             Import Existing
           </button>
           <button 
-            onClick={() => setIsQuickUploadOpen(true)}
+            onClick={() => useEditorStore.getState().openPanel('quickUpload')}
             className="flex-1 flex items-center justify-center gap-1.5 py-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded transition-colors"
           >
             <UploadCloud className="w-3 h-3" />
@@ -363,16 +363,6 @@ export const TilePalettePanel: React.FC = () => {
         />
       )}
 
-      {/* Quick Upload Modal */}
-      {isQuickUploadOpen && (
-        <TilesetQuickUploadModal 
-          onClose={() => setIsQuickUploadOpen(false)} 
-          onComplete={(asset, tw, th) => {
-            addTilesetToMap(asset, tw, th);
-            setIsQuickUploadOpen(false);
-          }} 
-        />
-      )}
     </div>
   );
 };
@@ -434,54 +424,4 @@ const TilesetLibraryModal: React.FC<{ onClose: () => void, onSelect: (asset: any
   );
 };
 
-const TilesetQuickUploadModal: React.FC<{ onClose: () => void, onComplete: (asset: any, tw: number, th: number) => void }> = ({ onClose, onComplete }) => {
-  const [tileWidth, setTileWidth] = useState(32);
-  const [tileHeight, setTileHeight] = useState(32);
-  
-  return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-[#050b14] border border-emerald-500/30 rounded-xl w-[800px] max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-        <div className="flex justify-between items-center p-3 border-b border-border/30 bg-[#081222]/80 shrink-0">
-          <h2 className="text-emerald-400 font-bold flex items-center gap-2">
-            <UploadCloud className="w-4 h-4" /> Quick Upload Tileset
-          </h2>
-          <button onClick={onClose} className="p-1 hover:bg-white/10 rounded"><X className="w-4 h-4" /></button>
-        </div>
-        
-        <div className="p-4 bg-[#0a1628] border-b border-border/30 flex items-center gap-4 shrink-0">
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-emerald-400 font-bold uppercase">Tile Width (px)</label>
-            <input 
-              type="number" 
-              value={tileWidth} 
-              onChange={e => setTileWidth(Number(e.target.value) || 1)}
-              className="bg-[#02050a] border border-border/50 rounded px-2 py-1 text-sm outline-none text-slate-200 w-24 focus:border-emerald-500"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-emerald-400 font-bold uppercase">Tile Height (px)</label>
-            <input 
-              type="number" 
-              value={tileHeight} 
-              onChange={e => setTileHeight(Number(e.target.value) || 1)}
-              className="bg-[#02050a] border border-border/50 rounded px-2 py-1 text-sm outline-none text-slate-200 w-24 focus:border-emerald-500"
-            />
-          </div>
-          <div className="text-xs text-slate-400 max-w-sm mt-3 border-l-2 border-emerald-500/30 pl-3">
-            Set your target tile size before uploading. The image will automatically be registered as a TILE asset.
-          </div>
-        </div>
 
-        <div className="flex-1 overflow-auto bg-[#02050b]">
-          {/* We wrap AssetUploadView to hide its own headers and just provide the upload area */}
-          <div className="transform scale-[0.95] origin-top">
-            <AssetUploadView 
-              initialAssetType="TILE"
-              onUploadComplete={(asset) => onComplete(asset, tileWidth, tileHeight)}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
