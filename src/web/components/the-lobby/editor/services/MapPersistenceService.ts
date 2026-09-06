@@ -156,6 +156,61 @@ export class MapPersistenceService {
     }
   }
 
+  public static async saveIsolatedMap(mapData: any): Promise<SaveMapResult> {
+    const baseMapId = mapData.id ? toBaseMapId(mapData.id) : null;
+    if (!baseMapId) {
+      return { ok: false, error: 'No map ID provided to save.' };
+    }
+
+    const saveDoc = normalizeStudioMapVisuals(ensureMapHasStudioTilesets(mapData));
+    const width = saveDoc.width || (saveDoc.voxelDoc?.dimensions?.widthChunks ? saveDoc.voxelDoc.dimensions.widthChunks * 16 : 24);
+    const height = saveDoc.height || (saveDoc.voxelDoc?.dimensions?.depthChunks ? saveDoc.voxelDoc.dimensions.depthChunks * 16 : 24);
+    let validGrid = saveDoc.grid;
+    if (!Array.isArray(validGrid) || validGrid.length === 0 || !Array.isArray(validGrid[0]) || validGrid[0].length === 0) {
+      validGrid = buildBorderedLogicGrid(width, height);
+      saveDoc.grid = validGrid;
+    }
+    saveDoc.width = width;
+    saveDoc.height = height;
+
+    try {
+      const payload = stripEditorOverlaysFromMapPayload({
+        name: saveDoc.name || baseMapId,
+        gameId: saveDoc.gameId,
+        width,
+        height,
+        grid: validGrid,
+        gates: saveDoc.gates || {},
+        npcs: saveDoc.npcs || [],
+        encounterPool: saveDoc.encounterPool || [],
+        tileLayers: saveDoc.tileLayers || [],
+        freeformLayers: saveDoc.freeformLayers || [],
+        tilesets: saveDoc.tilesets || [],
+        voxelDoc: saveDoc.voxelDoc,
+        blockSizePx: saveDoc.blockSizePx || 64,
+        cameraStyle: (saveDoc as any).cameraStyle || (saveDoc as any).defaultCameraStyle,
+        allowCustomCamera: (saveDoc as any).allowCustomCamera ?? (saveDoc as any).allowCustomPlayerCamera,
+        allowCustomPlayerCamera: (saveDoc as any).allowCustomCamera ?? (saveDoc as any).allowCustomPlayerCamera,
+      });
+
+      const saveRes = await StudioApiClient.getInstance().saveMap(baseMapId, payload);
+      if (!saveRes.ok) {
+        return { ok: false, error: saveRes.error || 'Save failed' };
+      }
+
+      invalidateMapCache(baseMapId);
+      invalidateLobbyMapCache(baseMapId);
+      const backendUsed = isGoMmoSocketEnabled() ? 'Go MMO' : 'TS Server';
+
+      return {
+        ok: true,
+        backendUsed,
+      };
+    } catch (e: any) {
+      return { ok: false, error: e?.message || 'Save failed - network error.' };
+    }
+  }
+
   /**
    * Promotes the current saved draft to an immutable published release version.
    */

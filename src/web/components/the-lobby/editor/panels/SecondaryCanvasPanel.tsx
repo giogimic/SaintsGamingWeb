@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { DraggablePanel } from '../DraggablePanel';
 import { useEditorStore } from '../editor-store';
-import { GameMapData, loadMap, saveMapData } from '../../data/maps';
+import { GameMapData, loadMap } from '../../data/maps';
 import { TileCanvasBabylon } from '../../babylon/TileCanvasBabylon';
 import { VoxelCanvasBabylon } from '../../babylon/VoxelCanvasBabylon';
 import { BabylonEngine } from '@/engine/BabylonEngine';
+import { MapPersistenceService } from '../services/MapPersistenceService';
 
 export const SecondaryCanvasPanel: React.FC = () => {
   const isOpen = useEditorStore((s) => s.panels['secondaryViewport']?.isOpen);
@@ -67,7 +68,7 @@ export const SecondaryCanvasPanel: React.FC = () => {
   const handleSave = async () => {
     if (!mapData || !secondaryMapId) return;
     try {
-      await saveMapData(mapData);
+      await MapPersistenceService.saveIsolatedMap(mapData);
       // Let the user know
       const event = new CustomEvent('studio_toast', { detail: { message: `Saved isolated map: ${secondaryMapId}` } });
       window.dispatchEvent(event);
