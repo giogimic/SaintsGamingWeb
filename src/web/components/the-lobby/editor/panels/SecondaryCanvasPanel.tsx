@@ -81,9 +81,8 @@ export const SecondaryCanvasPanel: React.FC = () => {
 
   return (
     <DraggablePanel
-      panelId="secondaryViewport"
+      id="secondaryViewport"
       title={`Secondary View: ${secondaryMapId}`}
-      onClose={() => closePanel('secondaryViewport')}
     >
       <div 
         ref={containerRef}
