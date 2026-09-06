@@ -26,6 +26,7 @@ import {
 } from '@/app/actions/studio/publishing';
 import type { WorldPublishSnapshot } from '@prisma/client';
 import { useEditorStore } from '../editor-store';
+import { useGameStore } from '../../store';
 import {
   WindowMenuBar,
   WindowMenuDropdown,
@@ -36,6 +37,7 @@ import {
 export const VersionManagerPanel: React.FC = () => {
   const dataVersion = useEditorStore((s) => s.dataVersion);
   const incrementDataVersion = useEditorStore((s) => s.incrementDataVersion);
+  const showToast = useGameStore((s) => s.showToast);
 
   const [validation, setValidation] = useState<ValidationGateResult | null>(null);
   const [validating, setValidating] = useState(false);
@@ -94,12 +96,7 @@ export const VersionManagerPanel: React.FC = () => {
     });
 
     if (res.success && res.data) {
-      const deployRes = await deployRelease(res.data.id);
-      if (!deployRes.success) {
-        setErrorMsg('Snapshot created, but deployment failed: ' + deployRes.error);
-        setPublishing(false);
-        return;
-      }
+      showToast('Release Snapshot Created successfully!');
     }
 
     setPublishing(false);
@@ -129,8 +126,29 @@ export const VersionManagerPanel: React.FC = () => {
     if (res.success) {
       incrementDataVersion();
       runValidation();
+      showToast('Rollback successful!');
     } else {
       alert(res.error || 'Rollback failed');
+    }
+  };
+
+  const handleDeploy = async (snapshot: WorldPublishSnapshot) => {
+    if (
+      !confirm(
+        `Are you sure you want to deploy release "${snapshot.version} (${snapshot.title})" to the live game server?`
+      )
+    ) {
+      return;
+    }
+    setPublishing(true);
+    const deployRes = await deployRelease(snapshot.id);
+    setPublishing(false);
+    
+    if (deployRes.success) {
+      showToast('Deployed successfully to Live Server!');
+      loadSnapshots();
+    } else {
+      alert(deployRes.error || 'Deployment failed');
     }
   };
 
@@ -334,16 +352,28 @@ export const VersionManagerPanel: React.FC = () => {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleRollback(snap)}
-                    disabled={isRollingBack}
-                    className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded bg-slate-800 hover:bg-rose-950/50 text-slate-300 hover:text-rose-300 border border-[#806f47]/30 hover:border-rose-500/40 text-[10px] font-bold transition-all disabled:opacity-50 cursor-pointer"
-                    title="Restore world templates to this snapshot version"
-                  >
-                    <RotateCcw className={`w-3 h-3 ${isRollingBack ? 'animate-spin' : ''}`} />
-                    <span>{isRollingBack ? 'Restoring...' : 'Rollback to this'}</span>
-                  </button>
+                  <div className="shrink-0 flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleDeploy(snap)}
+                      disabled={isRollingBack || publishing}
+                      className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold transition-all disabled:opacity-50 cursor-pointer"
+                      title="Push this snapshot to the live game server"
+                    >
+                      <UploadCloud className="w-3 h-3" />
+                      <span>Deploy to Server</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRollback(snap)}
+                      disabled={isRollingBack || publishing}
+                      className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded bg-slate-800 hover:bg-rose-950/50 text-slate-300 hover:text-rose-300 border border-[#806f47]/30 hover:border-rose-500/40 text-[10px] font-bold transition-all disabled:opacity-50 cursor-pointer"
+                      title="Restore world templates to this snapshot version"
+                    >
+                      <RotateCcw className={`w-3 h-3 ${isRollingBack ? 'animate-spin' : ''}`} />
+                      <span>{isRollingBack ? 'Restoring...' : 'Rollback'}</span>
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -426,7 +456,7 @@ export const VersionManagerPanel: React.FC = () => {
                 disabled={publishing}
                 className="px-4 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold disabled:opacity-50 cursor-pointer"
               >
-                {publishing ? 'Publishing...' : 'Confirm & Publish'}
+                {publishing ? 'Saving Snapshot...' : 'Confirm & Create Snapshot'}
               </button>
             </div>
           </form>

@@ -19,6 +19,7 @@ type mapDraftBundle struct {
 	TileLayersData json.RawMessage `json:"tileLayersData"`
 	TilesetsData   json.RawMessage `json:"tilesetsData"`
 	VoxelData      json.RawMessage `json:"voxelData"`
+	MapType        string          `json:"mapType"`
 	Version        int             `json:"version"`
 }
 
@@ -64,11 +65,11 @@ func (s *Server) internalDeployRelease(w http.ResponseWriter, r *http.Request) {
 		_ = tx.QueryRow(`SELECT COUNT(1) FROM WorldMap WHERE id = ?`, m.ID).Scan(&count)
 		
 		if count > 0 {
-			_, err = tx.Exec(`UPDATE WorldMap SET name=?, gridData=?, gatesData=?, npcsData=?, tileLayersData=?, tilesetsData=?, voxelData=?, version=?, updatedAt=datetime('now') WHERE id=?`,
-				m.Name, string(m.GridData), gates, string(m.NpcsData), string(m.TileLayersData), string(m.TilesetsData), string(m.VoxelData), m.Version, m.ID)
+			_, err = tx.Exec(`UPDATE WorldMap SET name=?, gridData=?, gatesData=?, npcsData=?, tileLayersData=?, tilesetsData=?, voxelData=?, mapType=?, version=?, updatedAt=datetime('now') WHERE id=?`,
+				m.Name, string(m.GridData), gates, string(m.NpcsData), string(m.TileLayersData), string(m.TilesetsData), string(m.VoxelData), m.MapType, m.Version, m.ID)
 		} else {
-			_, err = tx.Exec(`INSERT INTO WorldMap (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, voxelData, version)
-				VALUES (?, 'saints', ?, ?, ?, ?, '[]', ?, ?, ?, ?)`, m.ID, m.Name, string(m.GridData), gates, string(m.NpcsData), string(m.TileLayersData), string(m.TilesetsData), string(m.VoxelData), m.Version)
+			_, err = tx.Exec(`INSERT INTO WorldMap (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, voxelData, mapType, version)
+				VALUES (?, 'saints', ?, ?, ?, ?, '[]', ?, ?, ?, ?, ?)`, m.ID, m.Name, string(m.GridData), gates, string(m.NpcsData), string(m.TileLayersData), string(m.TilesetsData), string(m.VoxelData), m.MapType, m.Version)
 		}
 		if err != nil {
 			_ = tx.Rollback()

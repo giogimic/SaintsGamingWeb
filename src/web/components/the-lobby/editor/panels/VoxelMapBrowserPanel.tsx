@@ -172,8 +172,10 @@ export const VoxelMapBrowserPanel: React.FC = () => {
       useGameStore.getState().setPlayerPosition({ x: cx, y: cy }, 'down', false);
       if (loaded.mapType === 'VOXEL' || loaded.mapType === 'FRACTAL') {
         useEditorStore.getState().handleMapLoaded(mapId, 'VOXEL');
+        useEditorStore.getState().openPanel('primaryVoxelViewport');
       } else {
         useEditorStore.getState().handleMapLoaded(mapId, 'TILE');
+        useEditorStore.getState().openPanel('primaryTileViewport');
       }
       showToast(`Switched to ${mapId}`);
     } catch {

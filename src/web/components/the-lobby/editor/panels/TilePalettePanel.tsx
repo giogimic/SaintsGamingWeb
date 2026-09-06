@@ -52,7 +52,7 @@ export const TilePalettePanel: React.FC = () => {
     let columns = asset.metadata?.columns || 8;
     if (asset.metadata?.imagewidth || asset.metadata?.width) {
       const iw = asset.metadata?.imagewidth || asset.metadata?.width;
-      columns = Math.floor(iw / tw);
+      columns = Math.max(1, Math.floor(iw / tw));
     }
 
     const newTileset: StudioTilesetMeta = {
@@ -100,9 +100,9 @@ export const TilePalettePanel: React.FC = () => {
     const x = Math.floor((e.clientX - rect.left) / zoom);
     const y = Math.floor((e.clientY - rect.top) / zoom);
     
-    const tw = activeTileset.tilewidth || 16;
-    const th = activeTileset.tileheight || 16;
-    const cols = activeTileset.columns || Math.floor(rect.width / tw);
+    const tw = activeTileset.tilewidth || 32;
+    const th = activeTileset.tileheight || 32;
+    const cols = activeTileset.columns || Math.max(1, Math.floor((activeTileset.imagewidth || rect.width || 1024) / tw));
     
     return {
       col: Math.max(0, Math.floor(x / tw)),
@@ -137,11 +137,10 @@ export const TilePalettePanel: React.FC = () => {
     const minRow = Math.min(dragStart.row, dragEnd.row);
     const maxRow = Math.max(dragStart.row, dragEnd.row);
     
-    const tw = activeTileset.tilewidth || 16;
-    const cols = activeTileset.columns || 1; // It will be recalculated safely below if 1
+    const tw = activeTileset.tilewidth || 32;
     
     // We need real width of image to get cols if it's not defined
-    const realCols = activeTileset.columns || Math.floor(1024 / tw); // fallback
+    const realCols = activeTileset.columns || Math.max(1, Math.floor((activeTileset.imagewidth || 1024) / tw));
     
     const w = maxCol - minCol + 1;
     const h = maxRow - minRow + 1;
@@ -158,7 +157,7 @@ export const TilePalettePanel: React.FC = () => {
     }
     
     setActiveBrushPattern({ w, h, gids });
-    setBrushTileId(gids[0][0]);
+    setBrushTileId(gids[0][0], true);
     
     if (activeLayerIdx === -1) {
       setActiveLayerIdx(0);
@@ -277,9 +276,16 @@ export const TilePalettePanel: React.FC = () => {
             style={{ imageRendering: 'pixelated' }}
             onLoad={(e) => {
               // Ensure we know the correct columns if it's 0 in the tileset definition
-              if (!activeTileset.columns) {
-                const tw = activeTileset.tilewidth || 16;
-                activeTileset.columns = Math.floor(e.currentTarget.naturalWidth / tw);
+              if (!activeTileset.columns && activeMapData) {
+                const tw = activeTileset.tilewidth || 32;
+                const naturalCols = Math.floor(e.currentTarget.naturalWidth / tw);
+                const updatedTilesets = activeMapData.tilesets?.map((ts: any) => {
+                  if (ts.firstgid === activeTileset.firstgid) {
+                    return { ...ts, columns: naturalCols, imagewidth: e.currentTarget.naturalWidth, imageheight: e.currentTarget.naturalHeight };
+                  }
+                  return ts;
+                });
+                useGameStore.setState({ activeMapData: { ...activeMapData, tilesets: updatedTilesets } });
               }
             }}
           />
@@ -287,7 +293,7 @@ export const TilePalettePanel: React.FC = () => {
             className="absolute inset-0 pointer-events-none opacity-20"
             style={{
               backgroundImage: `linear-gradient(to right, #f59e0b 1px, transparent 1px), linear-gradient(to bottom, #f59e0b 1px, transparent 1px)`,
-              backgroundSize: `${activeTileset.tilewidth || 16}px ${activeTileset.tileheight || 16}px`,
+              backgroundSize: `${activeTileset.tilewidth || 32}px ${activeTileset.tileheight || 32}px`,
             }}
           />
           
@@ -296,8 +302,8 @@ export const TilePalettePanel: React.FC = () => {
             <div 
               className="absolute pointer-events-none border-2 border-yellow-400 bg-yellow-400/20 shadow-[0_0_8px_rgba(250,204,21,0.8)] z-10"
               style={(() => {
-                const tw = activeTileset.tilewidth || 16;
-                const th = activeTileset.tileheight || 16;
+                const tw = activeTileset.tilewidth || 32;
+                const th = activeTileset.tileheight || 32;
                 
                 if (isDragging && dragStart && dragEnd) {
                   const minCol = Math.min(dragStart.col, dragEnd.col);
@@ -315,7 +321,7 @@ export const TilePalettePanel: React.FC = () => {
                   // activeBrushPattern stores gids. We need to find the local x/y of the first gid.
                   const firstGid = activeTileset.firstgid || 1;
                   const localId = activeBrushPattern.gids[0][0] - firstGid;
-                  const cols = activeTileset.columns || 1;
+                  const cols = activeTileset.columns || Math.max(1, Math.floor((activeTileset.imagewidth || 1024) / tw));
                   const minCol = localId % cols;
                   const minRow = Math.floor(localId / cols);
                   return {
