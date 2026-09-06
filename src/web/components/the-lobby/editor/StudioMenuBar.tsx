@@ -148,6 +148,15 @@ const SubMenu: React.FC<SubMenuProps> = ({ label, icon: SubIcon, children }) => 
     }, 150);
   };
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (open) {
+      setOpen(false);
+    } else {
+      handleMouseEnter();
+    }
+  };
+
   return (
     <div
       ref={triggerRef}
@@ -156,6 +165,7 @@ const SubMenu: React.FC<SubMenuProps> = ({ label, icon: SubIcon, children }) => 
       onMouseLeave={handleMouseLeave}
     >
       <div
+        onClick={handleClick}
         className={`w-full text-left px-3 py-1.5 text-[11px] font-mono flex items-center justify-between transition-colors cursor-pointer ${
           open ? 'bg-primary/20 text-primary font-semibold' : 'text-foreground/90 hover:bg-primary/15 hover:text-foreground'
         }`}
