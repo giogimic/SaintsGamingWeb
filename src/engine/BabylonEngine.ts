@@ -769,7 +769,7 @@ export class BabylonEngine {
           const cZ = cOffsetZ - (centerH / 2);
           
           const plane = MeshBuilder.CreatePlane(`fractal_indicator_${chunk.mapId}`, { width: centerW, height: centerH }, this.scene);
-          plane.position = new Vector3(cX, SPATIAL_LAYER_ALTITUDES.GROUND - 0.05, cZ);
+          plane.position = new Vector3(cX, SPATIAL_LAYER_ALTITUDES.BASE_MAP_GROUND - 0.05, cZ);
           plane.rotation.x = Math.PI / 2;
           
           const mat = new StandardMaterial(`fractal_mat_${chunk.mapId}`, this.scene);
