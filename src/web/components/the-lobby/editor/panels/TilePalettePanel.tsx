@@ -22,6 +22,7 @@ export const TilePalettePanel: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ col: number; row: number } | null>(null);
   const [dragEnd, setDragEnd] = useState<{ col: number; row: number } | null>(null);
+  const [zoom, setZoom] = useState(1);
 
   const tilesets = useMemo(() => {
     if (!activeMapData) return DEFAULT_STUDIO_TILESETS;
@@ -42,8 +43,8 @@ export const TilePalettePanel: React.FC = () => {
   const getColRow = (e: React.MouseEvent<HTMLImageElement> | React.MouseEvent<HTMLDivElement>) => {
     if (!activeTileset) return { col: 0, row: 0, cols: 1 };
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.floor(e.clientX - rect.left);
-    const y = Math.floor(e.clientY - rect.top);
+    const x = Math.floor((e.clientX - rect.left) / zoom);
+    const y = Math.floor((e.clientY - rect.top) / zoom);
     
     const tw = activeTileset.tilewidth || 16;
     const th = activeTileset.tileheight || 16;
@@ -115,6 +116,15 @@ export const TilePalettePanel: React.FC = () => {
     if (isDragging) handleMouseUp();
   };
 
+  const handleWheel = (e: React.WheelEvent) => {
+    // Only zoom if pressing ctrl/meta, or just allow regular wheel to zoom if you prefer
+    // The user said "add ways to zoom in and out". Standard is often ctrl+wheel.
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      setZoom((prev) => Math.max(0.25, Math.min(4, prev - e.deltaY * 0.002)));
+    }
+  };
+
   if (activeLayerIdx === -1) {
     // Render Logic Palette
     const logicTiles = [
@@ -160,9 +170,9 @@ export const TilePalettePanel: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-[#03070f] text-slate-200">
-      <div className="p-2 border-b border-border/30 bg-[#081222]/80">
+      <div className="p-2 border-b border-border/30 bg-[#081222]/80 flex items-center gap-2">
         <select
-          className="w-full bg-[#0a1628] border border-border/40 rounded p-1 text-xs text-primary outline-none"
+          className="flex-1 bg-[#0a1628] border border-border/40 rounded p-1 text-xs text-primary outline-none"
           value={selectedTilesetIdx}
           onChange={(e) => setSelectedTilesetIdx(Number(e.target.value))}
         >
@@ -172,16 +182,21 @@ export const TilePalettePanel: React.FC = () => {
             </option>
           ))}
         </select>
+        <div className="flex items-center gap-1 bg-[#0a1628] rounded border border-border/40 px-1 py-1" title="Zoom">
+          <button onClick={() => setZoom(z => Math.max(0.25, z - 0.25))} className="hover:text-primary px-1">-</button>
+          <span className="text-[10px] w-8 text-center font-mono">{(zoom * 100).toFixed(0)}%</span>
+          <button onClick={() => setZoom(z => Math.min(4, z + 0.25))} className="hover:text-primary px-1">+</button>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-2 custom-scrollbar bg-[#02050a]">
+      <div className="flex-1 overflow-auto p-2 custom-scrollbar bg-[#02050a]" onWheel={handleWheel}>
         <div 
-          className="relative inline-block border border-border/40 bg-[#091322] select-none"
+          className="relative inline-block border border-border/40 bg-[#091322] select-none origin-top-left"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
-          style={{ cursor: 'crosshair' }}
+          style={{ cursor: 'crosshair', transform: `scale(${zoom})` }}
         >
           <img
             src={fullImageUrl}

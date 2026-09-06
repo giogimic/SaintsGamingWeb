@@ -1662,6 +1662,12 @@ export const useEditorStore = create<EditorState>()(
             state.activeWorkflowTool = 'sculpt';
           }
           
+          if (mode === 'tile') {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('studio_set_view_angle', { detail: { angle: 'topdown' } }));
+            }
+          }
+          
           closeAllPanels(state);
           openModePanels(state, mode);
           if (!wasEditor) queueMicrotask(() => emitPieChanged(false));
