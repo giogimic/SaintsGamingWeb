@@ -47,6 +47,7 @@ export async function wipeNonBundledRealmContent(prisma: any): Promise<WipeRealm
   await prisma.gtcListing.deleteMany({}).catch(() => {});
 
   // 4.5 Wipe all authored RPG Definitions (Classes, Abilities, Items, etc)
+  await prisma.starterHero.deleteMany({}).catch(() => {});
   await prisma.characterClass.deleteMany({}).catch(() => {});
   await prisma.abilityDictionary.deleteMany({}).catch(() => {});
   await prisma.creatureDef.deleteMany({}).catch(() => {});

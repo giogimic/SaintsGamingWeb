@@ -181,7 +181,7 @@ export function FinalReviewStep({
           <span className="text-xs font-bold text-white block">
             {characters.length} Heroes · {creatures.length} Beasts
           </span>
-          <span className="text-[10px] font-mono text-emerald-400">Class & Type Configured</span>
+          <span className="text-[10px] font-mono text-emerald-400">Archetype & Type Configured</span>
         </div>
 
         <div className="p-3 rounded-lg bg-[#070e1b] border border-slate-800/80">

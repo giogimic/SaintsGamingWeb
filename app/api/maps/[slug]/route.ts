@@ -492,11 +492,11 @@ export async function POST(
             : {}),
           ...(body.freeformLayers || body.voxelDoc ? { freeformLayersData: JSON.stringify(freeformLayersForSave) } : {}),
           voxelData: JSON.stringify(body.voxelDoc),
-          regionClass: body.regionClass || "authored",
+          ...(body.regionClass ? { regionClass: body.regionClass } : {}),
           ...(body.proceduralConfig !== undefined
             ? { proceduralConfig: typeof body.proceduralConfig === 'string' ? body.proceduralConfig : JSON.stringify(body.proceduralConfig) }
             : {}),
-          mapType: body.mapType || "TILE",
+          ...(body.mapType ? { mapType: body.mapType } : {}),
           version: { increment: 1 },
         },
         create: {
@@ -548,8 +548,8 @@ export async function POST(
               }
             : {}),
           ...(body.freeformLayers || body.voxelDoc ? { freeformLayersData: JSON.stringify(freeformLayersForSave) } : {}),
-          regionClass: body.regionClass || "authored",
-          mapType: body.mapType || "HYBRID",
+          ...(body.regionClass ? { regionClass: body.regionClass } : {}),
+          ...(body.mapType ? { mapType: body.mapType } : {}),
           version: { increment: 1 },
         },
         create: {

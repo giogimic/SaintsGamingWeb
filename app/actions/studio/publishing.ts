@@ -288,18 +288,22 @@ export async function deployRelease(snapshotId: string) {
       const goMmoBase = process.env.GO_MMO_INTERNAL_URL || process.env.NEXT_PUBLIC_GO_MMO_URL || 'http://localhost:3002';
       const secret = process.env.AUTH_SECRET || '';
 
-      const res = await fetch(`${goMmoBase}/api/internal/deploy-release`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${secret}`,
-          'X-Saints-Internal-Secret': secret
-        },
-        body: JSON.stringify({ maps })
-      });
+      try {
+        const res = await fetch(`${goMmoBase}/api/internal/deploy-release`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${secret}`,
+            'X-Saints-Internal-Secret': secret
+          },
+          body: JSON.stringify({ maps })
+        });
 
-      if (!res.ok) {
-        throw new Error(`Go Server returned ${res.status}`);
+        if (!res.ok) {
+          console.warn(`[deployRelease] Go Server returned ${res.status}`);
+        }
+      } catch (deployErr) {
+        console.warn(`[deployRelease] Go MMO server unreachable, skipping deployment notification.`, deployErr);
       }
     }
 

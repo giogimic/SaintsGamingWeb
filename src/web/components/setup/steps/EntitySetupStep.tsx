@@ -281,7 +281,7 @@ export function EntitySetupStep({
 
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
-                  Class Archetype
+                  Character Archetype
                 </label>
                 <select
                   value={charClass}

@@ -48,7 +48,7 @@ export class FillToolHandler implements IToolHandler {
       const visited = new Set<string>();
       visited.add(`${startCoord.wx}_${startCoord.wy}_${startCoord.wz}`);
       let filledCount = 0;
-      const MAX_VOXEL_FILL = 2048;
+      const MAX_VOXEL_FILL = 65536;
 
       const totalW = voxelWorld.totalWidthBlocks;
       const totalZ = voxelWorld.totalDepthBlocks;
@@ -173,7 +173,7 @@ export class FillToolHandler implements IToolHandler {
     const visited = new Set<string>();
     visited.add(`${r},${c}`);
     const paintedOps: any[] = [];
-    const MAX_FILL_CELLS = 4096;
+    const MAX_FILL_CELLS = 65536;
 
     const worldDocSync = {
       ensureActiveMap: (m: any) => gameStore.setActiveMapData(m),

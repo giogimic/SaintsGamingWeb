@@ -1,3 +1,17 @@
+## [2.1.764] - 2026-09-06
+### Added
+- Setup Wizard: Added "Action Combat" to the combat engine flow options.
+- UI Consolidation: Migrated HUD configuration out of Hero Studio into the unified Interface Designer panel.
+
+### Changed
+- Setup Wizard: Renamed "Class" to "Character Archetype" in setup step texts to match domain language.
+
+### Fixed
+- Wipe Integrity: Ensure `StarterHero` records are wiped on studio reset to prevent stale data conflicts.
+- Editor Bug: Increased flood-fill iterations to properly fill large maps and resolve the "off-angle diamond" cut-off issue.
+- Server API: Map saving no longer forces `TILE` or `HYBRID` mode on every save, fixing the bug where maps would reset types after refresh.
+- Studio Deployment: Fixed publishing panel showing "failed" status if the remote Go MMO server is currently unreachable.
+
 ## [2.1.763] - 2026-09-06
 ### Fixed
 - Categorized map browsers correctly by map type (Tile Maps vs Voxel Maps) and removed arbitrary/broken RPG categorization.

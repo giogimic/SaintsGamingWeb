@@ -4,12 +4,11 @@ import React, { useState } from 'react';
 import { UserCircle, Swords, Users, ArrowLeft, Layers, LayoutTemplate } from 'lucide-react';
 import { ArchetypeEditorWorkspace } from './ArchetypeEditorWorkspace';
 import { ClassEditorWorkspace } from './ClassEditorWorkspace';
-import { HudEditorWorkspace } from './HudEditorWorkspace';
 import { useEditorStore } from '../editor-store';
 import { soundSynth } from '@/engine/sound-synth';
 import { WindowMenuBar, WindowMenuButton, WindowMenuTabGroup, WindowMenuDivider } from '../WindowMenuBar';
 
-export type HeroWorkspaceId = 'archetypes' | 'classes' | 'hud';
+export type HeroWorkspaceId = 'archetypes' | 'classes';
 
 export function HeroStudioSuite() {
   const [activeWorkspace, setActiveWorkspace] = useState<HeroWorkspaceId>('archetypes');
@@ -22,8 +21,6 @@ export function HeroStudioSuite() {
         return <ArchetypeEditorWorkspace />;
       case 'classes':
         return <ClassEditorWorkspace />;
-      case 'hud':
-        return <HudEditorWorkspace />;
       default:
         return null;
     }
@@ -61,7 +58,6 @@ export function HeroStudioSuite() {
           tabs={[
             { id: 'archetypes', label: 'Archetypes', icon: Users },
             { id: 'classes', label: 'Classes', icon: Swords },
-            { id: 'hud', label: 'HUD Layout', icon: LayoutTemplate },
           ]}
           activeTab={activeWorkspace}
           onChange={(id) => setActiveWorkspace(id as HeroWorkspaceId)}

@@ -219,12 +219,17 @@ export function GameDefinitionStep({ data, onChange, onNext, onBack }: GameDefin
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5 font-mono">
               Combat Engine Flow
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {[
                 {
                   id: 'SAINTS_HYBRID',
                   name: 'Real-Time Hybrid',
                   desc: 'Action movement with pacing',
+                },
+                {
+                  id: 'ACTION',
+                  name: 'Action Combat',
+                  desc: 'Fast-paced direct control',
                 },
                 {
                   id: 'TURN_BASED',
