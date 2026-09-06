@@ -58,8 +58,52 @@ export const VoxelStudioPanel: React.FC = () => {
     return <div className="p-4 text-slate-500 font-bold text-center">No Realm Loaded</div>;
   }
 
+  const hasVoxelData = Boolean(activeMapData?.voxelDoc);
+
+  const handleGenerateBase = () => {
+    soundSynth?.playActionSound?.();
+    const wChunks = Math.max(1, Math.ceil((currentMapData.grid?.[0]?.length || 32) / 32));
+    const dChunks = Math.max(1, Math.ceil((currentMapData.grid?.length || 32) / 32));
+    const world = new (require('@/shared/game/voxel/VoxelWorldDoc').VoxelWorld)(
+      baseMapId || 'DEMO_SANDBOX',
+      baseMapId || 'DEMO_SANDBOX',
+      wChunks,
+      dChunks,
+      1,
+      useEditorStore.getState().voxelBlockSizePx || 64
+    );
+    world.generateDefaultWorld();
+    const doc = world.serializeToDoc();
+    if (activeMapData) {
+      useGameStore.setState({ activeMapData: { ...activeMapData, voxelDoc: doc } });
+    }
+    useEditorStore.getState().markMapDirty();
+    showToast('Generated Gunmetal Base 3D Voxel Volume');
+  };
+
   return (
-    <div className="flex flex-col h-full bg-[#050b14] text-slate-200">
+    <>
+      {!hasVoxelData && typeof document !== 'undefined' && require('react-dom').createPortal(
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-[#050b14]/90 backdrop-blur-md pointer-events-auto" style={{ left: 0, right: '350px' }}>
+          <div className="text-center p-8 bg-[#0b1320] border border-[#cbb26a]/40 rounded-2xl shadow-2xl max-w-md">
+             <Box className="w-16 h-16 text-[#cbb26a] mx-auto mb-4" />
+             <h2 className="text-2xl font-bold text-white mb-2">No Voxel Data Found</h2>
+             <p className="text-slate-400 mb-6 text-sm">
+               This map does not contain 3D voxel data. Generate a Gunmetal Foundation to start building in 3D.
+             </p>
+             <button
+                type="button"
+                onClick={handleGenerateBase}
+                className="w-full py-3 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/40 font-mono font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+             >
+                <Sparkles className="w-4 h-4" />
+                <span>Initialize 3D Voxel Gunmetal Foundation</span>
+             </button>
+          </div>
+        </div>,
+        document.body
+      )}
+      <div className="flex flex-col h-full bg-[#050b14] text-slate-200">
       {/* MAC-STYLE MENU BAR */}
       <WindowMenuBar>
         <WindowMenuDropdown
@@ -155,26 +199,7 @@ export const VoxelStudioPanel: React.FC = () => {
                 {/* Generate Gunmetal Base Button */}
                 <button
                   type="button"
-                  onClick={() => {
-                    soundSynth?.playActionSound?.();
-                    const wChunks = Math.max(1, Math.ceil((currentMapData.grid?.[0]?.length || 32) / 32));
-                    const dChunks = Math.max(1, Math.ceil((currentMapData.grid?.length || 32) / 32));
-                    const world = new (require('@/shared/game/voxel/VoxelWorldDoc').VoxelWorld)(
-                      baseMapId || 'DEMO_SANDBOX',
-                      baseMapId || 'DEMO_SANDBOX',
-                      wChunks,
-                      dChunks,
-                      1,
-                      useEditorStore.getState().voxelBlockSizePx || 64
-                    );
-                    world.generateDefaultWorld();
-                    const doc = world.serializeToDoc();
-                    if (activeMapData) {
-                      useGameStore.setState({ activeMapData: { ...activeMapData, voxelDoc: doc } });
-                    }
-                    useEditorStore.getState().markMapDirty();
-                    showToast('Generated Gunmetal Base 3D Voxel Volume');
-                  }}
+                  onClick={handleGenerateBase}
                   className="w-full py-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary border border-primary/40 font-mono font-bold text-[10px] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
@@ -224,5 +249,6 @@ export const VoxelStudioPanel: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };

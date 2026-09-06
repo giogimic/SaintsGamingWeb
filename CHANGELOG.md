@@ -1,3 +1,11 @@
+## [2.1.751] - 2026-09-06
+### Fixed & Improved
+- Added top-down camera auto-switch for Tile Mode in Studio Editor.
+- Added mouse wheel zoom scaling support to the Tile Palette panel.
+- Fixed BrushToolHandler ignoring brush radius and shape for tile painting.
+- Added check and No Voxel Data Found overlay for missing voxel map data in VoxelStudioPanel.
+- Fixed StudioMenuBar SubMenu not opening when explicitly clicked.
+
 ## [2.1.750] - 2026-09-06
 ### Changed
 - Studio Maps: Divorced Tile and Voxel map browsers into distinct TileMapBrowserPanel and VoxelMapBrowserPanel components to isolate dependencies.
@@ -5915,3 +5923,4 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
  i n  
  S t u d i o M e n u B a r . t s x .  
  
+
