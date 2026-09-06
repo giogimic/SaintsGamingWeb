@@ -28,6 +28,7 @@ import { isInBrushShape, generateSplatScatterPoints } from '@/shared/game/brushG
 import { isPointInGeometry } from '@/shared/game/geometry/continuousGeometry';
 import {
   LOGIC_LAYER_IDX,
+  REGION_LAYER_IDX,
   isPaintableLogicId,
   resolvePaintTarget,
 } from '@/shared/game/tilePaint';
@@ -50,6 +51,14 @@ import {
   shouldAcceptMapDoc,
   shouldRemeshMapDoc,
 } from '@/shared/game/mapDocVisual';
+import {
+  packVoxel,
+  VoxelShape,
+  VoxelOrientation,
+  VoxelPhysics,
+  VoxelLogic,
+  VOXEL_MAT_GRASS,
+} from '@/shared/game/voxel/VoxelWord';
 
 /** Lobby multiplayer shard base — keep in sync with server DEMO_MAP_ID. */
 const LOBBY_MULTIPLAYER_MAP = 'DEMO_SANDBOX';
@@ -99,6 +108,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const voxelPlaneMask = useEditorStore((state) => state.voxelPlaneMask);
   const voxelBuildUpMode = useEditorStore((state) => state.voxelBuildUpMode);
   const activeVoxelBrushAxis = useEditorStore((state) => state.activeVoxelBrushAxis);
+  const activeVoxelShape = useEditorStore((state) => state.activeVoxelShape);
+  const activeVoxelOrientation = useEditorStore((state) => state.activeVoxelOrientation);
+  const activeVoxelMaterialId = useEditorStore((state) => state.activeVoxelMaterialId);
+  const showGizmo = useEditorStore((state) => state.showGizmo);
+  
   const [isPanDragging, setIsPanDragging] = useState(false);
   const [isSpaceHeld, setIsSpaceHeld] = useState(false);
   const isSpaceHeldRef = useRef(false);
@@ -1178,8 +1192,22 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         engineRef.current.input.panEditorCameraToTile(r, c);
       }
     };
+    
+    const handleGizmoDragEnd = (e: Event) => {
+      const customEv = e as CustomEvent<{ minWX: number; minWY: number; minWZ: number; maxWX: number; maxWY: number; maxWZ: number }>;
+      const { minWX, minWY, minWZ, maxWX, maxWY, maxWZ } = customEv.detail || {};
+      if (typeof minWX === 'number' && typeof maxWX === 'number') {
+        useEditorStore.getState().setSelectionStart({ r: minWZ, c: minWX });
+        useEditorStore.getState().setSelectionEnd({ r: maxWZ, c: maxWX });
+      }
+    };
+
     window.addEventListener('studio_center_camera', handleCenterCamera);
-    return () => window.removeEventListener('studio_center_camera', handleCenterCamera);
+    window.addEventListener('studio_voxel_selection_gizmo_drag_end', handleGizmoDragEnd);
+    return () => {
+      window.removeEventListener('studio_center_camera', handleCenterCamera);
+      window.removeEventListener('studio_voxel_selection_gizmo_drag_end', handleGizmoDragEnd);
+    };
   }, []);
 
   // Handle Combat Projectile & HP Events
@@ -1294,6 +1322,12 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     } else {
       engine.disableLogicGridOverlay();
     }
+
+    if (activeLayerIdx === REGION_LAYER_IDX) {
+      engine.enableRegionGridOverlay(activeMap?.regions || []);
+    } else {
+      engine.disableRegionGridOverlay();
+    }
   }, [activeLayerIdx, mapData, activeMap]);
 
   // Sync live dev editor brush, voxel constraints, and view settings without tearing down picking listeners
@@ -1319,7 +1353,16 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       brushAxis: activeVoxelBrushAxis,
       brushRadius,
       brushShape,
+      previewWord: packVoxel(
+        activeVoxelMaterialId ?? VOXEL_MAT_GRASS,
+        (activeVoxelShape as any) ?? VoxelShape.FULL_CUBE,
+        (activeVoxelOrientation as any) ?? VoxelOrientation.NORTH,
+        0,
+        VoxelPhysics.SOLID_OBSTACLE,
+        VoxelLogic.NONE
+      ),
     });
+    engine.setSelectionGizmoVisibility(showGizmo);
     engine.refreshBrushPreview();
   }, [
     brushRadius,
@@ -1338,6 +1381,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     voxelPlaneMask,
     voxelBuildUpMode,
     activeVoxelBrushAxis,
+    activeVoxelShape,
+    activeVoxelOrientation,
+    activeVoxelMaterialId,
+    showGizmo,
+    isStudioFreeCam,
   ]);
 
   // Handle Live Dev Editor Tile Picking & Click-to-Move
@@ -1672,8 +1720,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             return;
           }
 
-          if (brushMode === 'paint' || brushMode === 'erase') {
-            const toolId = brushMode === 'erase' ? 'eraser' : 'brush';
+          if (brushMode === 'paint' || brushMode === 'erase' || brushMode === 'shape' || brushMode === 'extrude' || brushMode === 'smooth') {
+            const toolId = brushMode === 'erase' ? 'eraser' : brushMode === 'shape' ? 'shape' : brushMode === 'extrude' ? 'extrude' : brushMode === 'smooth' ? 'smooth' : 'brush';
             toolDispatcherRef.current.setActiveTool(toolId, toolContext);
             if (validEventType === 'down') {
               toolDispatcherRef.current.dispatchPointerDown(toolEvent, toolContext);
@@ -2023,6 +2071,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           if (!engine.updateLogicTile(cell.r, cell.c, cell.value)) {
             engine.enableLogicGridOverlay(map.grid || []);
             engine.updateLogicTile(cell.r, cell.c, cell.value);
+          }
+        } else if (cell.layerIdx === REGION_LAYER_IDX) {
+          if (!engine.updateRegionTile(cell.r, cell.c, cell.value)) {
+            engine.enableRegionGridOverlay(map.regions || []);
+            engine.updateRegionTile(cell.r, cell.c, cell.value);
           }
         } else {
           engine.updateSingleTile(cell.r, cell.c, cell.value, cell.layerIdx, map.tilesets);

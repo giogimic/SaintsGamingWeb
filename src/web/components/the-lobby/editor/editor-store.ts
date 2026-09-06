@@ -326,6 +326,8 @@ interface EditorState {
 
   activeBrushTileId: number;
   activeBrushPattern: BrushPattern | null;
+  autoTileEnabled: boolean;
+  setAutoTileEnabled: (enabled: boolean) => void;
   activeStampAsset: { assetId?: string; url: string; width?: number; height?: number; uOffset?: number; vOffset?: number; uScale?: number; vScale?: number } | null;
   setActiveStampAsset: (asset: { assetId?: string; url: string; width?: number; height?: number; uOffset?: number; vOffset?: number; uScale?: number; vScale?: number } | null) => void;
   activeLogicTileId: number;
@@ -337,7 +339,9 @@ interface EditorState {
   setBrushRotation: (rot: number) => void;
   selectionMode: 'box' | 'circle' | 'ellipse' | 'lasso' | 'polygon' | 'magic-wand';
   setSelectionMode: (mode: 'box' | 'circle' | 'ellipse' | 'lasso' | 'polygon' | 'magic-wand') => void;
-  brushMode: 'paint' | 'erase' | 'eyedropper' | 'fill' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste';
+  brushMode: 'paint' | 'erase' | 'eyedropper' | 'fill' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste' | 'shape' | 'extrude' | 'smooth';
+  showGizmo: boolean;
+  setShowGizmo: (show: boolean) => void;
   activePrefabId: string | null;
   activeVoxelPrefab: VoxelPrefabData | null;
   setActiveVoxelPrefab: (prefab: VoxelPrefabData | null) => void;
@@ -384,6 +388,10 @@ interface EditorState {
   setVoxelBlockSizePx: (size: number) => void;
   activeVoxelMaterialId: number;
   setActiveVoxelMaterialId: (id: number) => void;
+  activeVoxelLogicId: number;
+  setActiveVoxelLogicId: (id: number) => void;
+  activeVoxelLogicOnly: boolean;
+  setActiveVoxelLogicOnly: (only: boolean) => void;
   activeVoxelShape: number;
   setActiveVoxelShape: (shape: number) => void;
   activeVoxelOrientation: number;
@@ -1209,6 +1217,11 @@ export const useEditorStore = create<EditorState>()(
         }),
       activeBrushTileId: DEFAULT_STUDIO_GROUND_GID,
       activeBrushPattern: null,
+      autoTileEnabled: true,
+      setAutoTileEnabled: (enabled) =>
+        set((state) => {
+          state.autoTileEnabled = enabled;
+        }),
       activeStampAsset: null,
       setActiveStampAsset: (asset) =>
         set((state) => {
@@ -1225,11 +1238,10 @@ export const useEditorStore = create<EditorState>()(
           state.brushRotation = ((rot % 360) + 360) % 360;
         }),
       selectionMode: 'box',
-      setSelectionMode: (mode) =>
-        set((state) => {
-          state.selectionMode = mode;
-        }),
+      setSelectionMode: (mode) => set({ selectionMode: mode }),
       brushMode: 'paint',
+      showGizmo: false,
+      setShowGizmo: (showGizmo) => set({ showGizmo }),
       paintMode: 'stamp',
       setPaintMode: (mode: 'stamp' | 'paste') =>
         set((state) => {
@@ -1285,6 +1297,16 @@ export const useEditorStore = create<EditorState>()(
       setActiveVoxelMaterialId: (id: number) =>
         set((state) => {
           state.activeVoxelMaterialId = id;
+        }),
+      activeVoxelLogicId: 0,
+      setActiveVoxelLogicId: (id: number) =>
+        set((state) => {
+          state.activeVoxelLogicId = id;
+        }),
+      activeVoxelLogicOnly: false,
+      setActiveVoxelLogicOnly: (only: boolean) =>
+        set((state) => {
+          state.activeVoxelLogicOnly = only;
         }),
       activeVoxelShape: 1,
       setActiveVoxelShape: (shape: number) =>
@@ -1599,11 +1621,6 @@ export const useEditorStore = create<EditorState>()(
                 state.activeBrushTileId = DEFAULT_STUDIO_GROUND_GID;
               }
             }
-          } else if (mode === 'logic') {
-            state.activeLayerIdx = -1;
-            if (state.activeLogicTileId > 50 || state.activeLogicTileId <= 0) {
-              state.activeLogicTileId = 1;
-            }
           }
           
           if (mode === 'tile' && !['select', 'draw'].includes(state.activeWorkflowTool)) {
@@ -1810,20 +1827,11 @@ export const useEditorStore = create<EditorState>()(
           state.activeLayerIdx = idx;
 
           if (idx === -1) {
-            // Switching to Logic Mode: open Logic Painter, close Tile Selector
+            // Switching to Logic Mode: close Tile Selector
             state.studioMode = 'logic';
-            if (state.activeLogicTileId > 50 || state.activeLogicTileId <= 0) {
-              state.activeLogicTileId = 1;
-            }
-            if (state.panels.logic) {
-              state.panels.logic.isOpen = true;
-              state.highestZIndex += 1;
-              state.panels.logic.zIndex = state.highestZIndex;
-              state.activePanel = 'logic';
-            }
             state.brushMode = 'paint';
           } else {
-            // Switching to Visual Paint Mode: open Tile Selector, close Logic Painter
+            // Switching to Visual Paint Mode: open Tile Selector
             state.studioMode = 'develop';
             if (prev === -1 && state.activeBrushTileId <= 12) {
               state.activeBrushTileId = DEFAULT_STUDIO_GROUND_GID;
@@ -1833,9 +1841,6 @@ export const useEditorStore = create<EditorState>()(
               state.highestZIndex += 1;
               state.panels.build.zIndex = state.highestZIndex;
               state.activePanel = 'build';
-            }
-            if (state.panels.logic) {
-              state.panels.logic.isOpen = false;
             }
             state.brushMode = 'paint';
           }
@@ -2456,7 +2461,7 @@ export const useEditorStore = create<EditorState>()(
             tileId,
           });
         } else if (start && end) {
-          if (get().paintMode === 'paste' && get().activeBrushPattern) {
+          if (get().activeBrushPattern) {
             const pat = get().activeBrushPattern!;
             const r0 = Math.min(start.r, end.r);
             const c0 = Math.min(start.c, end.c);
@@ -2498,7 +2503,7 @@ export const useEditorStore = create<EditorState>()(
             });
           }
         } else if (hovered) {
-          if (get().paintMode === 'paste' && get().activeBrushPattern) {
+          if (get().activeBrushPattern) {
             const pat = get().activeBrushPattern!;
             const changed: any[] = [];
             const targetGrid = layerIdx === -1 ? map.grid : map.tileLayers?.[layerIdx]?.grid;

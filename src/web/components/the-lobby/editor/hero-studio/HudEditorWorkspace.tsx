@@ -6,9 +6,10 @@ import { BUILTIN_HUD_THEMES } from '../../hud/hud-themes';
 import { BUILTIN_HUD_PRESETS } from '../../hud/default-presets';
 import { LobbyHudDockLayout } from '../../hud/LobbyHudDockLayout';
 import {
-  Settings, Monitor, LayoutTemplate, Sparkles, Sliders, ChevronDown, ChevronRight, Save, LayoutGrid, CheckCircle2
+  Settings, Monitor, LayoutTemplate, Sparkles, Sliders, ChevronDown, ChevronRight, Save, LayoutGrid, CheckCircle2, Trees, Droplets
 } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
+import { CharacterSpritePreview } from '../../CharacterSpritePreview';
 
 export function HudEditorWorkspace() {
   const [openSections, setOpenSections] = useState({
@@ -170,18 +171,71 @@ export function HudEditorWorkspace() {
       </div>
 
       {/* ── Preview Viewport ── */}
-      <div className="flex-1 bg-[#020408] relative overflow-hidden flex items-center justify-center p-6 bg-[url('/bg/starnight.jpg')] bg-cover bg-center">
-        <div className="absolute inset-0 bg-black/60 pointer-events-none" />
+      <div className="flex-1 bg-[#020408] relative overflow-hidden flex items-center justify-center p-6">
+        {/* Deep Animated Background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a1128] to-[#040811] z-0" />
         
         {/* Safe Area Container representing the Screen */}
-        <div className="w-[1280px] max-w-full aspect-video border-2 border-[#806f47]/30 rounded-lg relative overflow-hidden shadow-2xl backdrop-blur-sm bg-black/20">
-          {/* Top Banner overlay to give it a "Game" feel */}
-          <div className="absolute top-0 left-0 w-full p-2 bg-gradient-to-b from-black/80 to-transparent pointer-events-none z-0 flex justify-center">
-            <span className="text-[10px] text-amber-500/50 uppercase font-mono tracking-widest font-bold">In-Game HUD Preview (Scale & Layout)</span>
+        <div className="w-[1280px] max-w-full aspect-video border-2 border-[#806f47]/30 rounded-lg relative overflow-hidden shadow-2xl bg-[#0b1b10] z-10">
+          
+          {/* Animated Mock Game Scene (Parallax Grid & World Elements) */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
+            {/* Perspective Grid Floor */}
+            <div 
+              className="absolute inset-0 opacity-20"
+              style={{
+                backgroundImage: `linear-gradient(rgba(34, 197, 94, 0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.4) 1px, transparent 1px)`,
+                backgroundSize: '40px 40px',
+                transform: 'perspective(500px) rotateX(60deg) scale(2.5)',
+                transformOrigin: 'bottom',
+                animation: 'panGrid 10s linear infinite',
+              }}
+            />
+            
+            {/* World Props (Trees / Environment) */}
+            <div className="absolute top-[30%] left-[20%] text-emerald-900/60 drop-shadow-xl transform scale-150">
+              <Trees className="w-24 h-24" />
+            </div>
+            <div className="absolute top-[25%] right-[25%] text-emerald-900/60 drop-shadow-xl transform scale-125">
+              <Trees className="w-20 h-20" />
+            </div>
+            <div className="absolute bottom-[20%] right-[15%] text-blue-900/40 drop-shadow-xl">
+              <Droplets className="w-32 h-32" />
+            </div>
+
+            {/* Central Player Character Sprite */}
+            <div className="relative z-10 flex flex-col items-center">
+              <div className="w-16 h-4 bg-black/40 rounded-full blur-[2px] absolute -bottom-1" />
+              <CharacterSpritePreview 
+                assetProfileId="hero_default" 
+                size={80} 
+                scale={2.5} 
+                className="drop-shadow-2xl brightness-110" 
+              />
+            </div>
+            
+            {/* Lighting Overlay */}
+            <div className="absolute inset-0 bg-radial-gradient from-transparent via-[#0b1b10]/40 to-[#020503]/80 mix-blend-multiply" />
           </div>
 
-          <LobbyHudDockLayout enableStudio={false} />
+          {/* Top Banner overlay to give it a "Game" feel */}
+          <div className="absolute top-0 left-0 w-full p-2 bg-gradient-to-b from-black/80 to-transparent pointer-events-none z-20 flex justify-center">
+            <span className="text-[10px] text-amber-500/50 uppercase font-mono tracking-widest font-bold">In-Game HUD Preview (Live Configuration)</span>
+          </div>
+
+          {/* The actual HUD Overlay */}
+          <div className="absolute inset-0 z-30">
+            <LobbyHudDockLayout enableStudio={true} />
+          </div>
         </div>
+        
+        {/* CSS Animation for the grid */}
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes panGrid {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 40px; }
+          }
+        `}} />
       </div>
     </div>
   );

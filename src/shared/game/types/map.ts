@@ -75,6 +75,17 @@ export interface FreeformLayer {
 }
 
 
+export interface AutoTileRuleset {
+  id: string;
+  name: string;
+  baseGid: number;
+  type: '16-tile' | '47-tile';
+  // A mapping of bitmask to local ID offset from the baseGid,
+  // or a direct mapping of mask to global GID.
+  // Using direct global GIDs allows patching together auto-tiles from anywhere.
+  maskToGid: Record<number, number>;
+}
+
 export interface TilesetMeta {
   firstgid: number;
   imageSource: string;
@@ -83,6 +94,7 @@ export interface TilesetMeta {
   tileheight: number;
   imagewidth?: number;
   imageheight?: number;
+  autoTiles?: AutoTileRuleset[];
 }
 
 export interface MapConnection {
@@ -130,7 +142,8 @@ export interface MapData {
   id: string;
   version?: number;
   name: string;
-  grid: number[][];
+  grid: number[][]; // Logic grid (collisions/interactions)
+  regions?: number[][]; // Region tagging grid (zones, encounters, music)
   gates: Record<number, GateData>;
   npcs: NPCPlacement[];
   encountersData: EncounterEntry[];

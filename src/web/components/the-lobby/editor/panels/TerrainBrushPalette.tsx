@@ -17,10 +17,24 @@ import {
   Plus,
   Lock,
   Unlock,
-  ArrowDown,
   ArrowUp,
+  ArrowUpRight,
+  Eraser,
+  PaintBucket,
+  Shield,
 } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
+import { VoxelLogic } from '@/shared/game/voxel/VoxelWord';
+
+const LOGIC_OPTIONS = [
+  { id: VoxelLogic.NONE, name: 'Clear Logic (None)', color: '#475569', icon: Eraser },
+  { id: VoxelLogic.SPAWN_ANCHOR, name: 'Spawn Anchor', color: '#10b981', icon: Sparkles },
+  { id: VoxelLogic.WARP_GATE, name: 'Warp Gate', color: '#8b5cf6', icon: ArrowUpRight },
+  { id: VoxelLogic.HARVEST_NODE, name: 'Harvest Node', color: '#eab308', icon: Scissors },
+  { id: VoxelLogic.SHOP_COUNTER, name: 'Shop Counter', color: '#f97316', icon: Lock },
+  { id: VoxelLogic.SAFE_ZONE, name: 'Safe Zone', color: '#3b82f6', icon: Shield },
+  { id: VoxelLogic.QUEST_TARGET, name: 'Quest Target', color: '#f43f5e', icon: HelpCircle },
+];
 
 export interface SeamlessMaterial {
   id: string;
@@ -338,8 +352,13 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
   const activeStampAsset = useEditorStore((s) => s.activeStampAsset);
   const setActiveStampAsset = useEditorStore((s) => s.setActiveStampAsset);
   const setActiveLayerType = useEditorStore((s) => s.setActiveLayerType);
+  const brushMode = useEditorStore((s) => s.brushMode);
   const setBrushMode = useEditorStore((s) => s.setBrushMode);
   const setActiveVoxelMaterialId = useEditorStore((s) => s.setActiveVoxelMaterialId);
+  const activeVoxelLogicId = useEditorStore((s) => s.activeVoxelLogicId);
+  const setActiveVoxelLogicId = useEditorStore((s) => s.setActiveVoxelLogicId);
+  const activeVoxelLogicOnly = useEditorStore((s) => s.activeVoxelLogicOnly);
+  const setActiveVoxelLogicOnly = useEditorStore((s) => s.setActiveVoxelLogicOnly);
   const voxelBlockSizePx = useEditorStore((s) => s.voxelBlockSizePx);
   const activeVoxelShape = useEditorStore((s) => s.activeVoxelShape);
   const activeVoxelBrushAxis = useEditorStore((s) => s.activeVoxelBrushAxis);
@@ -352,7 +371,7 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
   const setVoxelBuildUpMode = useEditorStore((s) => s.setVoxelBuildUpMode);
   const showToast = useGameStore((s) => s.showToast);
 
-  const [activeTab, setActiveTab] = useState<'SEAMLESS' | 'CUSTOM'>('SEAMLESS');
+  const [activeTab, setActiveTab] = useState<'SEAMLESS' | 'CUSTOM' | 'LOGIC'>('SEAMLESS');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [isGuideOpen, setIsGuideOpen] = useState<boolean>(true);
 
@@ -364,7 +383,10 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
   const handleSelectSeamless = (mat: SeamlessMaterial) => {
     soundSynth?.playSelectSound?.();
     setActiveLayerType('paint-splat');
-    setBrushMode('paint');
+    if (brushMode !== 'fill' && brushMode !== 'erase') {
+      setBrushMode('paint');
+    }
+    setActiveVoxelLogicOnly(false);
 
     const materialMap: Record<string, number> = {
       GRASS: 2,
@@ -399,7 +421,10 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
   const handleSelectCustomSwatch = (swatch: CustomTerrainSwatch) => {
     soundSynth?.playSelectSound?.();
     setActiveLayerType('paint-splat');
-    setBrushMode('paint');
+    if (brushMode !== 'fill' && brushMode !== 'erase') {
+      setBrushMode('paint');
+    }
+    setActiveVoxelLogicOnly(false);
 
     setActiveStampAsset({
       assetId: swatch.id,
@@ -413,6 +438,16 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
     });
 
     showToast(`Selected custom swatch "${swatch.name}".`);
+  };
+
+  const handleSelectLogic = (logicId: number, name: string) => {
+    soundSynth?.playSelectSound?.();
+    setActiveVoxelLogicId(logicId);
+    if (brushMode !== 'fill' && brushMode !== 'erase') {
+      setBrushMode('paint');
+    }
+    setActiveVoxelLogicOnly(true);
+    showToast(`Selected Logic: ${name}. Will paint logic onto existing blocks.`);
   };
 
   return (
@@ -624,8 +659,58 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
         )}
       </div>
 
+      {/* Quick Brush Tools */}
+      <div className="px-3 pt-2 pb-2 border-b border-border/30 bg-[#060e1c] flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              setBrushMode('paint');
+              soundSynth?.playSelectSound?.();
+            }}
+            className={`p-1.5 rounded transition-colors cursor-pointer border flex items-center gap-1 text-[10px] font-bold ${
+              brushMode === 'paint' ? 'bg-primary text-primary-foreground border-primary/50' : 'bg-[#0a1628] text-muted-foreground border-border/30 hover:border-border hover:bg-primary/20 hover:text-primary'
+            }`}
+            title="Paint Brush (P)"
+          >
+            <Paintbrush className="w-3.5 h-3.5" />
+            <span>Brush</span>
+          </button>
+          
+          <button
+            type="button"
+            onClick={() => {
+              setBrushMode('fill');
+              soundSynth?.playSelectSound?.();
+            }}
+            className={`p-1.5 rounded transition-colors cursor-pointer border flex items-center gap-1 text-[10px] font-bold ${
+              brushMode === 'fill' ? 'bg-amber-500 text-white border-amber-500/50' : 'bg-[#0a1628] text-muted-foreground border-border/30 hover:border-border hover:bg-amber-500/20 hover:text-amber-400'
+            }`}
+            title="Fill Bucket (F)"
+          >
+            <PaintBucket className="w-3.5 h-3.5" />
+            <span>Fill</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setBrushMode('erase');
+              soundSynth?.playSelectSound?.();
+            }}
+            className={`p-1.5 rounded transition-colors cursor-pointer border flex items-center gap-1 text-[10px] font-bold ${
+              brushMode === 'erase' ? 'bg-rose-500 text-white border-rose-500/50' : 'bg-[#0a1628] text-muted-foreground border-border/30 hover:border-border hover:bg-rose-500/20 hover:text-rose-400'
+            }`}
+            title="Eraser (E)"
+          >
+            <Eraser className="w-3.5 h-3.5" />
+            <span>Erase</span>
+          </button>
+        </div>
+      </div>
+
       {/* Mode Tabs: Seamless vs Custom Sliced */}
-      <div className="px-3 pt-2.5 border-b border-border/30 bg-[#081222]/80 flex items-center justify-between">
+      <div className="px-3 pt-2.5 border-b border-border/30 bg-[#081222]/80 flex items-center justify-between overflow-x-auto custom-scrollbar">
         <div className="flex gap-2">
           <button
             type="button"
@@ -642,13 +727,27 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
           <button
             type="button"
             onClick={() => setActiveTab('CUSTOM')}
-            className={`pb-2 px-1 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
+            className={`pb-2 px-1 text-xs font-bold border-b-2 transition-colors cursor-pointer shrink-0 ${
               activeTab === 'CUSTOM'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
-            Custom Sliced Swatches ({customTerrainSwatches.length})
+            Custom Swatches ({customTerrainSwatches.length})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('LOGIC')}
+            className={`pb-2 px-1 text-xs font-bold border-b-2 transition-colors cursor-pointer shrink-0 ${
+              activeTab === 'LOGIC'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <span className="flex items-center gap-1">
+              <Shield className="w-3.5 h-3.5" /> Logic Triggers
+            </span>
           </button>
         </div>
       </div>
@@ -713,7 +812,7 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
               );
             })}
           </div>
-        ) : (
+        ) : activeTab === 'CUSTOM' ? (
           <div>
             {customTerrainSwatches.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
@@ -795,7 +894,46 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
               </div>
             )}
           </div>
-        )}
+        ) : activeTab === 'LOGIC' ? (
+          <div>
+            <div className="p-2 mb-2 bg-[#040912]/50 border border-border/30 rounded text-muted-foreground text-[10px]">
+              Logic Triggers are painted <span className="text-primary font-bold">onto existing blocks</span> without changing their appearance. 
+              Only applies in Voxel Mode when "Logic Layer" toggle is active.
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              {LOGIC_OPTIONS.map((logic) => {
+                const isSelected = activeVoxelLogicId === logic.id && activeVoxelLogicOnly;
+                const Icon = logic.icon;
+                return (
+                  <div
+                    key={logic.id}
+                    onClick={() => handleSelectLogic(logic.id, logic.name)}
+                    className={`p-2.5 rounded-lg border flex flex-col items-center justify-between gap-2 transition-all cursor-pointer relative group ${
+                      isSelected
+                        ? 'bg-primary/15 border-primary shadow-[0_0_12px_rgba(245,158,11,0.25)]'
+                        : 'bg-[#0a1628]/60 border-border/40 hover:border-border hover:bg-[#0a1628]'
+                    }`}
+                  >
+                    <div className="w-full flex items-center justify-end">
+                      {isSelected && <Check className="w-3.5 h-3.5 text-primary" />}
+                    </div>
+
+                    <div
+                      className="w-14 h-14 rounded-lg border border-border/50 shadow-inner flex items-center justify-center bg-[#040812] group-hover:border-primary/50 transition-colors"
+                      style={{ boxShadow: `inset 0 0 12px ${logic.color}40` }}
+                    >
+                      <Icon className="w-8 h-8" style={{ color: logic.color }} />
+                    </div>
+
+                    <div className="text-center font-bold text-foreground text-[11px] truncate w-full" style={{ color: logic.color }}>
+                      {logic.name}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
       </div>
 
     </div>

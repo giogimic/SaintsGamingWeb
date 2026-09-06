@@ -2,18 +2,21 @@ import type { IToolHandler, ToolExecutionContext } from './IToolHandler';
 import type { ToolPointerEvent } from '../types';
 import { useEditorStore } from '../../editor-store';
 import { useGameStore } from '../../../store';
-import { LOGIC_LAYER_IDX, resolvePaintTarget, isPaintableLogicId } from '@/shared/game/tilePaint';
+import { LOGIC_LAYER_IDX, REGION_LAYER_IDX, resolvePaintTarget, isPaintableLogicId } from '@/shared/game/tilePaint';
 import { paintWorldCell } from '@/shared/game/worldDocument';
 import { rasterizeLine } from '@/shared/game/lineRaster';
 import { isPointInGeometry } from '@/shared/game/geometry/continuousGeometry';
 import { STUDIO_MAP_HOT_RELOAD_EVENT } from '@/shared/game/studioEvents';
 import { generateSplatScatterPoints, isInBrushShape } from '@/shared/game/brushGeometry';
 import { resolveMapDimensions } from '@/shared/game/mapDocVisual';
+import { applyAutoTiling } from '@/shared/game/autoTiler';
 import {
   packVoxel,
   VoxelShape,
   VoxelOrientation,
   VoxelPhysics,
+  VoxelLogic,
+  VoxelLogicType,
   VOXEL_MAT_GRASS,
   getVoxelBrushOffsets,
   getVoxelBrushOffsets3D,
@@ -62,7 +65,8 @@ export class BrushToolHandler implements IToolHandler {
       const orient = (store.activeVoxelOrientation ?? VoxelOrientation.NORTH) as any;
       const matId = store.activeVoxelMaterialId || VOXEL_MAT_GRASS;
       const physics = shapeId === VoxelShape.SLOPE_45 ? VoxelPhysics.WALKABLE_SLOPE : VoxelPhysics.SOLID_OBSTACLE;
-      const voxelWord = packVoxel(matId, shapeId, orient, 0, physics, 0);
+      const logicId = (store.activeVoxelLogicId || VoxelLogic.NONE) as VoxelLogicType;
+      const logicOnly = store.activeVoxelLogicOnly;
 
       const targetCoords = resolveConstrainedVoxelCoordinates({
         centerCoord: event.voxelTarget.voxelCoord,
@@ -89,7 +93,18 @@ export class BrushToolHandler implements IToolHandler {
           missingChunks.add(`${cx}_${cz}`);
           continue; // Discard voxel edit for unloaded chunk
         }
-        txBuilder.record(voxelWorld, wx, wy, wz, voxelWord);
+
+        let finalWord = 0;
+        if (logicOnly) {
+          const currentWord = voxelWorld.getVoxel(wx, wy, wz) || 0;
+          if (currentWord === 0) continue; // Can't paint logic on air
+          // Clear old logic (bits 31..28) and apply new
+          finalWord = (currentWord & ~(0xF << 28)) | ((logicId & 0xF) << 28);
+        } else {
+          finalWord = packVoxel(matId, shapeId, orient, 0, physics, logicId);
+        }
+
+        txBuilder.record(voxelWorld, wx, wy, wz, finalWord);
       }
 
       if (missingChunks.size > 0 && (context.engine as any).voxelController) {
@@ -307,6 +322,24 @@ export class BrushToolHandler implements IToolHandler {
         store.pushPaintOp(paintedOps);
         store.markMapDirty();
       }
+    } else if (target.kind === 'region') {
+      const regionId = paintValue;
+      const paintedOps: any[] = [];
+      for (const pt of coordsToPaint) {
+        if (hasSelection && !isCellInsideSelection(pt.r, pt.c)) continue;
+        const painted = paintWorldCell(liveMap, REGION_LAYER_IDX, pt.r, pt.c, regionId, worldDocSync);
+        if (!('error' in painted)) {
+          paintedOps.push(painted.cell);
+          // If the engine has an updateRegionTile function, use it, else default to logic overlay for now or a new one
+          if ((context.engine as any).updateRegionTile) {
+             (context.engine as any).updateRegionTile(pt.r, pt.c, regionId);
+          }
+        }
+      }
+      if (paintedOps.length > 0) {
+        store.pushPaintOp(paintedOps);
+        store.markMapDirty();
+      }
     } else {
       const paintedOps: any[] = [];
       const layerIdx = target.layerIdx;
@@ -352,6 +385,18 @@ export class BrushToolHandler implements IToolHandler {
           if (!('error' in painted)) {
             paintedOps.push(painted.cell);
             context.engine.updateSingleTile(pt.r, pt.c, valToPaint, layerIdx, liveMap.tilesets);
+            
+            // Auto-Tiling Pass
+            if (store.autoTileEnabled !== false) {
+              const autoTileChanges = applyAutoTiling(liveMap, layerIdx, pt.r, pt.c);
+              for (const atChange of autoTileChanges) {
+                const atPainted = paintWorldCell(liveMap, layerIdx, atChange.r, atChange.c, atChange.gid, worldDocSync);
+                if (!('error' in atPainted)) {
+                  paintedOps.push(atPainted.cell);
+                  context.engine.updateSingleTile(atChange.r, atChange.c, atChange.gid, layerIdx, liveMap.tilesets);
+                }
+              }
+            }
           }
         }
       }

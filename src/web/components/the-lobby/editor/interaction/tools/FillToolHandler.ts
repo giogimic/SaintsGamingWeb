@@ -5,7 +5,7 @@ import { useGameStore } from '../../../store';
 import { LOGIC_LAYER_IDX, resolvePaintTarget } from '@/shared/game/tilePaint';
 import { paintWorldCell } from '@/shared/game/worldDocument';
 import { isPointInGeometry } from '@/shared/game/geometry/continuousGeometry';
-import { packVoxel, VoxelShape, VoxelOrientation, VoxelPhysics, VOXEL_MAT_GRASS } from '@/shared/game/voxel/VoxelWord';
+import { packVoxel, VoxelShape, VoxelOrientation, VoxelPhysics, VoxelLogic, VoxelLogicType, VOXEL_MAT_GRASS } from '@/shared/game/voxel/VoxelWord';
 import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
 import { VoxelTransactionBuilder } from '@/shared/game/voxel/VoxelTransaction';
 
@@ -28,9 +28,21 @@ export class FillToolHandler implements IToolHandler {
       const shapeId = (store.activeVoxelShape ?? VoxelShape.FULL_CUBE) as any;
       const orient = (store.activeVoxelOrientation ?? VoxelOrientation.NORTH) as any;
       const matId = store.activeVoxelMaterialId || VOXEL_MAT_GRASS;
-      const fillWord = packVoxel(matId, shapeId, orient, 0, VoxelPhysics.SOLID_OBSTACLE, 0);
+      const physics = shapeId === VoxelShape.SLOPE_45 ? VoxelPhysics.WALKABLE_SLOPE : VoxelPhysics.SOLID_OBSTACLE;
+      const logicId = (store.activeVoxelLogicId || VoxelLogic.NONE) as VoxelLogicType;
+      const logicOnly = store.activeVoxelLogicOnly;
+      
+      let fillWord = 0;
+      if (logicOnly) {
+        fillWord = (targetWord & ~(0xF << 28)) | ((logicId & 0xF) << 28);
+      } else {
+        fillWord = packVoxel(matId, shapeId, orient, 0, physics, logicId);
+      }
 
+      // If we're filling logic, we consider blocks matching the target's logic.
+      // If we're filling materials, we consider blocks matching the entire target word.
       if (targetWord === fillWord) return true;
+      if (targetWord === 0) return true; // Cannot fill air
 
       const queue: Array<[number, number, number]> = [[startCoord.wx, startCoord.wy, startCoord.wz]];
       const visited = new Set<string>();
@@ -46,7 +58,13 @@ export class FillToolHandler implements IToolHandler {
 
       while (queue.length > 0 && filledCount < MAX_VOXEL_FILL) {
         const [wx, wy, wz] = queue.shift()!;
-        txBuilder.record(voxelWorld, wx, wy, wz, fillWord);
+        
+        let writeWord = fillWord;
+        if (logicOnly) {
+          const w = voxelWorld.getVoxel(wx, wy, wz) || 0;
+          writeWord = (w & ~(0xF << 28)) | ((logicId & 0xF) << 28);
+        }
+        txBuilder.record(voxelWorld, wx, wy, wz, writeWord);
         filledCount++;
 
         const neighbors: Array<[number, number, number]> = [
@@ -63,8 +81,16 @@ export class FillToolHandler implements IToolHandler {
             const key = `${nx}_${ny}_${nz}`;
             if (!visited.has(key)) {
               visited.add(key);
-              if (voxelWorld.getVoxel(nx, ny, nz) === targetWord) {
-                queue.push([nx, ny, nz]);
+              const neighborWord = voxelWorld.getVoxel(nx, ny, nz) || 0;
+              if (neighborWord !== 0) {
+                if (logicOnly) {
+                  // Only traverse through matching shapes/materials for logic flood fill
+                  if ((neighborWord & 0x0FFFFFFF) === (targetWord & 0x0FFFFFFF)) {
+                    queue.push([nx, ny, nz]);
+                  }
+                } else if (neighborWord === targetWord) {
+                  queue.push([nx, ny, nz]);
+                }
               }
             }
           }

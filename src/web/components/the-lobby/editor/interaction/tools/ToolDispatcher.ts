@@ -12,6 +12,9 @@ import { EraserToolHandler } from './EraserToolHandler';
 import { EyedropperToolHandler } from './EyedropperToolHandler';
 import { PrefabToolHandler } from './PrefabToolHandler';
 import { PasteToolHandler } from './PasteToolHandler';
+import { ShapeToolHandler } from './ShapeToolHandler';
+import { ExtrudeToolHandler } from './ExtrudeToolHandler';
+import { SmoothToolHandler } from './SmoothToolHandler';
 import type { ToolPointerEvent, EditorToolId } from '../types';
 
 export class ToolDispatcher {
@@ -26,6 +29,9 @@ export class ToolDispatcher {
     this.registerHandler(new EyedropperToolHandler());
     this.registerHandler(new PrefabToolHandler());
     this.registerHandler(new PasteToolHandler());
+    this.registerHandler(new ShapeToolHandler());
+    this.registerHandler(new ExtrudeToolHandler());
+    this.registerHandler(new SmoothToolHandler());
   }
 
   public registerHandler(handler: IToolHandler): void {

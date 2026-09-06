@@ -74,6 +74,25 @@ export class VoxelMeshBuilder {
   /**
    * Generates standard 3D slope ramp geometry (45 deg) inside unit bounding box [x, y, z] to [x+1, y+1, z+1].
    */
+  public addCube(
+    x: number,
+    y: number,
+    z: number,
+    rgba: [number, number, number, number] = [1, 1, 1, 1],
+    topUv: [number, number, number, number] = [0, 0, 1, 1],
+    bottomUv: [number, number, number, number] = [0, 0, 1, 1],
+    sideUv: [number, number, number, number] = [0, 0, 1, 1]
+  ): void {
+    const x0 = x, y0 = y, z0 = z;
+    const x1 = x + 1, y1 = y + 1, z1 = z + 1;
+    this.addQuad([x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1], [0, 1, 0], topUv, [1, 1, 1, 1], rgba);
+    this.addQuad([x0, y0, z1], [x1, y0, z1], [x1, y0, z0], [x0, y0, z0], [0, -1, 0], bottomUv, [1, 1, 1, 1], rgba);
+    this.addQuad([x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0], [0, 0, -1], sideUv, [1, 1, 1, 1], rgba);
+    this.addQuad([x1, y0, z1], [x0, y0, z1], [x0, y1, z1], [x1, y1, z1], [0, 0, 1], sideUv, [1, 1, 1, 1], rgba);
+    this.addQuad([x0, y0, z1], [x0, y0, z0], [x0, y1, z0], [x0, y1, z1], [-1, 0, 0], sideUv, [1, 1, 1, 1], rgba);
+    this.addQuad([x1, y0, z0], [x1, y0, z1], [x1, y1, z1], [x1, y1, z0], [1, 0, 0], sideUv, [1, 1, 1, 1], rgba);
+  }
+
   public addSlope45(
     x: number,
     y: number,

@@ -46,6 +46,15 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ---
 
+## 📝 Changelog
+
+### v2.1.750
+- **Tile Studio UX:** Added a dedicated Logic Palette for collision and game logic tile painting when `activeLayerIdx === -1`.
+- **Brush Patterns:** Improved `activeBrushPattern` to work smoothly alongside the Paint brush tool, stamping multi-tile selections natively without relying on a distinct Paste mode.
+- **Creature Engine:** Extended the `AbilityDictionary` and `CreatureTemplate` Prisma schema models with `Mythos` references to accurately support creature classification as outlined in the game bible taxonomy.
+
+---
+
 ## 📖 Documentation
 
 If you are looking for **deep technical breakdowns**, engine architecture, and creator guides, please check out our interactive **Wiki** directly on the website once you have the app running, or navigate to the `/wiki` page on saintsgaming.net!

@@ -12,6 +12,7 @@ import {
   CREATURE_ELEMENT_TYPES,
   CREATURE_ASSET_OPTIONS,
   CREATURE_CATEGORIES,
+  CREATURE_MYTHOS_FAMILIES,
   CreatureCategory,
   CreatureDefData,
   CreaturePassive,
@@ -144,6 +145,29 @@ export function CreatureDefEditorPanel() {
 
   const removeAbilitySlot = (idx: number) => {
     const next = { ...form, abilities: (form.abilities || []).filter((_, i) => i !== idx) };
+    commitStructural(next);
+    setForm(next);
+  };
+
+  const addEvolution = () => {
+    const next = {
+      ...form,
+      evolutions: [...(form.evolutions || []), { targetSlug: '', atLevel: 10 }],
+    };
+    commitStructural(next);
+    setForm(next);
+  };
+
+  const updateEvolution = (idx: number, updates: any) => {
+    const arr = [...(form.evolutions || [])];
+    arr[idx] = { ...arr[idx], ...updates };
+    const next = { ...form, evolutions: arr };
+    commitStructural(next);
+    setForm(next);
+  };
+
+  const removeEvolution = (idx: number) => {
+    const next = { ...form, evolutions: (form.evolutions || []).filter((_, i) => i !== idx) };
     commitStructural(next);
     setForm(next);
   };
@@ -480,6 +504,24 @@ export function CreatureDefEditorPanel() {
                     placeholder="saints / custom / empty=shared"
                   />
                 </div>
+              </div>
+
+              <div className="p-2.5 rounded-lg border border-border bg-black/20">
+                <label className={labelCls}>Mythos (Family)</label>
+                <select
+                  className={inputCls}
+                  value={form.mythos || 'Beastial'}
+                  onFocus={onFieldFocus}
+                  onBlur={onFieldBlur}
+                  onChange={(e) => f('mythos', e.target.value)}
+                >
+                  <option value="Beastial">Select Mythos (Custom)</option>
+                  {CREATURE_MYTHOS_FAMILIES.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Monster Specific Controls */}
@@ -941,6 +983,99 @@ export function CreatureDefEditorPanel() {
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Evolutions Section */}
+              <div className="p-2.5 rounded border border-blue-500/30 bg-[#050b14]/70 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-blue-400 uppercase tracking-wider">
+                    <PawPrint className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Evolutions</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addEvolution}
+                    className="flex items-center gap-1 text-[9px] text-blue-400 hover:text-blue-300 transition-colors bg-blue-950/40 border border-blue-800/40 px-2 py-0.5 rounded cursor-pointer"
+                  >
+                    <Plus className="w-2.5 h-2.5" />
+                    <span>Add Evolution</span>
+                  </button>
+                </div>
+
+                {(!form.evolutions || form.evolutions.length === 0) ? (
+                  <p className="text-[10px] text-slate-500 italic py-1">No evolutions. This creature does not evolve further.</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {form.evolutions.map((evo, idx) => (
+                      <div key={idx} className="flex flex-col gap-1.5 bg-black/50/40 border border-blue-900/40 rounded p-1.5 text-[11px]">
+                        <div className="flex gap-1.5 items-center">
+                          <RegistryCombobox
+                            value={evo.targetSlug}
+                            onChange={(val) => updateEvolution(idx, { targetSlug: val })}
+                            options={list.map(c => ({ value: c.slug, label: `${c.name} (${c.slug})` }))}
+                            className="flex-1"
+                          />
+                          <input
+                            type="number"
+                            value={evo.atLevel || ''}
+                            onChange={(e) => updateEvolution(idx, { atLevel: Number(e.target.value) || undefined })}
+                            placeholder="Lvl Req"
+                            title="Level Requirement"
+                            className="w-16 bg-[#111a2a] border border-blue-900/40 rounded px-2 py-1 text-[10px] text-slate-200 outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeEvolution(idx)}
+                            className="p-1 text-red-400 hover:bg-red-950/40 rounded transition-colors cursor-pointer shrink-0"
+                            title="Remove evolution"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <div className="flex gap-1.5 items-center">
+                          <input
+                            type="text"
+                            value={evo.itemRequired || ''}
+                            onChange={(e) => updateEvolution(idx, { itemRequired: e.target.value || undefined })}
+                            placeholder="Item Req"
+                            title="Item Requirement"
+                            className="flex-1 bg-[#111a2a] border border-blue-900/40 rounded px-2 py-1 text-[10px] text-slate-200 outline-none"
+                          />
+                          <select
+                            value={evo.timeOfDay || ''}
+                            onChange={(e) => updateEvolution(idx, { timeOfDay: e.target.value || undefined })}
+                            title="Time of Day"
+                            className="flex-1 bg-[#111a2a] border border-blue-900/40 rounded px-1.5 py-1 text-[10px] text-slate-200 outline-none cursor-pointer"
+                          >
+                            <option value="">Any Time</option>
+                            <option value="DAY">Daytime</option>
+                            <option value="NIGHT">Nighttime</option>
+                            <option value="DUSK">Dusk</option>
+                            <option value="DAWN">Dawn</option>
+                          </select>
+                        </div>
+                        <input
+                          type="text"
+                          value={evo.statRequirement || ''}
+                          onChange={(e) => updateEvolution(idx, { statRequirement: e.target.value || undefined })}
+                          placeholder='Stat Req (e.g. {"attack": 100})'
+                          title="Stat Requirement (JSON)"
+                          className="w-full bg-[#111a2a] border border-blue-900/40 rounded px-2 py-1 text-[10px] text-slate-200 outline-none"
+                        />
+                        {/* Visual graph connecting the sprite of form and evo target */}
+                        {evo.targetSlug && (
+                          <div className="flex items-center gap-2 pt-1 pb-1 justify-center relative">
+                            <img src={creatureAssetUrl(form.spriteOverworld)} className="w-8 h-8 object-contain pixelated" alt="current" />
+                            <div className="flex-1 max-w-[60px] h-0 border-t-2 border-dashed border-blue-500/50 relative">
+                               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[8px] font-bold text-blue-400 bg-black/80 px-1 rounded">EVOLVES</div>
+                            </div>
+                            <img src={creatureAssetUrl(list.find(c => c.slug === evo.targetSlug)?.spriteOverworld)} className="w-8 h-8 object-contain pixelated" alt="target" />
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

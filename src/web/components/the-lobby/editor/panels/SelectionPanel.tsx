@@ -48,6 +48,8 @@ export function SelectionPanel() {
   const duplicateSelection = useEditorStore((s) => s.duplicateSelection);
   const activeBrushTileId = useEditorStore((s) => s.activeBrushTileId);
   const openPanel = useEditorStore((s) => s.openPanel);
+  const prefabs = useEditorStore((s) => s.prefabs);
+  const setPrefabs = useEditorStore((s) => s.setPrefabs);
 
   const activeMapData = useGameStore((s) => s.activeMapData);
   const showToast = useGameStore((s) => s.showToast);
@@ -109,6 +111,28 @@ export function SelectionPanel() {
     if (!activeMapData) return;
     const res = duplicateSelection(activeMapData, null, 1, 1);
     if (res.ok) showToast(`Duplicated selection (+1, +1)`);
+  };
+
+  const handleSavePrefab = () => {
+    soundSynth?.playUiClick?.();
+    if (!activeMapData) return;
+    
+    // Call copy selection first to ensure clipboard is loaded
+    const res = copySelection(activeMapData);
+    if (res.ok) {
+      const clipboard = useEditorStore.getState().tileClipboard;
+      if (clipboard) {
+        const newPrefab = {
+          id: `prefab_${Date.now()}`,
+          name: `Prefab ${prefabs.length + 1}`,
+          ...clipboard,
+        };
+        setPrefabs([...prefabs, newPrefab]);
+        showToast(`Saved as ${newPrefab.name}`);
+      }
+    } else {
+      showToast('Nothing to copy for prefab');
+    }
   };
 
   return (
@@ -233,6 +257,14 @@ export function SelectionPanel() {
           >
             <Layers className="w-3.5 h-3.5 text-muted-foreground" />
             <span>Duplicate (+1)</span>
+          </button>
+          <button
+            onClick={handleSavePrefab}
+            disabled={selectedCount === 0}
+            className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-primary/15 hover:bg-primary/25 border border-primary/40 text-primary text-[11px] font-bold disabled:opacity-30 transition-colors cursor-pointer col-span-2"
+          >
+            <Package className="w-3.5 h-3.5" />
+            <span>Save as Prefab</span>
           </button>
         </div>
       </div>

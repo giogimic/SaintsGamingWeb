@@ -35,8 +35,19 @@ import {
   ScrollText,
   PawPrint,
   Coins,
+  Paintbrush,
+  PaintBucket,
+  Pipette,
+  Eraser,
+  Plus,
+  Save,
+  Globe,
+  MousePointer2,
+  ArrowUpFromLine,
+  Droplets
 } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
+import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
 
 import { STUDIO_MODE_DEFAULTS, type StudioDockId } from '@/shared/game/studioModes';
 
@@ -96,6 +107,19 @@ export function StudioContextualBar() {
   const clearSelectedCells = useEditorStore((s) => s.clearSelectedCells);
   const rotateSelection = useEditorStore((s) => s.rotateSelection);
   const flipSelection = useEditorStore((s) => s.flipSelection);
+
+  // Tile layer properties
+  const activeLayerIdx = useEditorStore((s) => s.activeLayerIdx);
+  const setActiveLayerIdx = useEditorStore((s) => s.setActiveLayerIdx);
+  const activeLayerType = useEditorStore((s) => s.activeLayerType);
+  const setActiveLayerType = useEditorStore((s) => s.setActiveLayerType);
+  const brushMode = useEditorStore((s) => s.brushMode);
+  const setBrushMode = useEditorStore((s) => s.setBrushMode);
+  const brushShape = useEditorStore((s) => s.brushShape);
+  const setBrushShape = useEditorStore((s) => s.setBrushShape);
+  const isSavingMap = useEditorStore((s) => s.isSavingMap);
+  const mapDirty = useEditorStore((s) => s.mapDirty);
+  const setStudioMode = useEditorStore((s) => s.setStudioMode);
 
   const activeMapData = useGameStore((s) => s.activeMapData);
   const showToast = useGameStore((s) => s.showToast);
@@ -231,6 +255,69 @@ export function StudioContextualBar() {
                     {s.label}
                   </button>
                 ))}
+                
+                <div className="h-3 w-px bg-border/40 mx-1" />
+                
+                {/* Voxel Brush Modes */}
+                <div className="flex items-center bg-black/40 rounded-lg p-0.5 border border-primary/30 mr-1">
+                  {[
+                    { id: 'paint', icon: Paintbrush, tooltip: 'Paint (B)' },
+                    { id: 'shape', icon: Box, tooltip: 'Primitive Shape Generator' },
+                    { id: 'extrude', icon: ArrowUpFromLine, tooltip: 'Face Extrude (Push/Pull)' },
+                    { id: 'smooth', icon: Droplets, tooltip: 'Organic Melt Brush' },
+                    { id: 'select', icon: MousePointer2, tooltip: 'Select (S)' },
+                    { id: 'erase', icon: Eraser, tooltip: 'Erase (E)' }
+                  ].map((mode) => {
+                    const Icon = mode.icon;
+                    const isActive = brushMode === mode.id;
+                    return (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        onClick={() => {
+                          soundSynth?.playUiClick?.();
+                          setBrushMode(mode.id as any);
+                        }}
+                        className={`p-1.5 rounded transition-colors ${
+                          isActive
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-slate-400 hover:text-white hover:bg-white/10'
+                        }`}
+                        title={mode.tooltip}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                      </button>
+                    );
+                  })}
+                </div>
+                
+                {brushMode === 'shape' && (
+                  <>
+                    <div className="h-3 w-px bg-border/40 mx-1" />
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Primitive:</span>
+                    {[
+                      { id: 'square', label: 'Box' },
+                      { id: 'circle', label: 'Sphere' },
+                      { id: 'cylinder', label: 'Cylinder' },
+                    ].map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => {
+                          soundSynth?.playUiClick?.();
+                          setBrushShape(s.id as any);
+                        }}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors ${
+                          brushShape === s.id
+                            ? 'bg-primary/20 text-primary border-primary/40'
+                            : 'bg-black/40 border-border/30 text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </>
+                )}
+                
                 <div className="h-3 w-px bg-border/40 mx-1" />
                 <button
                   onClick={() => {
@@ -249,13 +336,108 @@ export function StudioContextualBar() {
               </>
             ) : (
               <>
-                <span className="text-[10px] text-muted-foreground uppercase font-bold">Tile Brush:</span>
+                {/* 2.5D Brush Mode Toggles */}
+                <div className="flex items-center bg-black/40 rounded-lg p-0.5 border border-[#806f47]/30">
+                  {[
+                    { id: 'paint', icon: Paintbrush, tooltip: 'Paint (B)' },
+                    { id: 'fill', icon: PaintBucket, tooltip: 'Fill (F)' },
+                    { id: 'eyedropper', icon: Pipette, tooltip: 'Eyedropper (I)' },
+                    { id: 'erase', icon: Eraser, tooltip: 'Erase (E)' }
+                  ].map((mode) => {
+                    const Icon = mode.icon;
+                    const isActive = brushMode === mode.id;
+                    return (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        onClick={() => {
+                          soundSynth?.playUiClick?.();
+                          setBrushMode(mode.id as any);
+                        }}
+                        className={`p-1.5 rounded transition-colors ${
+                          isActive
+                            ? 'bg-amber-600 text-white'
+                            : 'text-slate-400 hover:text-white hover:bg-white/10'
+                        }`}
+                        title={mode.tooltip}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="h-3 w-px bg-border/40 mx-1" />
+                
+                <span className="text-[10px] text-muted-foreground uppercase font-bold">Size:</span>
+                <input 
+                  type="range" 
+                  min="0.5" max="10.0" step="0.5" 
+                  value={brushRadius} 
+                  onChange={(e) => setBrushRadius(parseFloat(e.target.value))} 
+                  className="w-16 accent-amber-500 cursor-pointer" 
+                  title={`Brush Size: ${brushRadius.toFixed(1)}`}
+                />
+
+                <div className="h-3 w-px bg-border/40 mx-1" />
+
+                {/* Layer Stack */}
+                <span className="text-[10px] text-muted-foreground uppercase font-bold">Layer:</span>
+                <select
+                  value={activeLayerType === 'grid' ? activeLayerIdx : activeLayerType}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    soundSynth?.playSelectSound?.();
+                    if (val === 'logic') {
+                      setActiveLayerIdx(-1);
+                      setActiveLayerType('grid');
+                    } else if (val === 'paint-splat' || val === 'free-form' || val === 'polygon') {
+                      setActiveLayerType(val);
+                      // find first freeform layer of this type or just set type
+                      // ideally we should have a list, but this suffices for quick switch
+                    } else {
+                      setActiveLayerIdx(Number(val));
+                      setActiveLayerType('grid');
+                    }
+                  }}
+                  className="bg-black/40 border border-[#806f47]/30 text-slate-300 text-[10px] rounded px-2 py-0.5 outline-none hover:border-amber-500/30"
+                >
+                  <option value="logic">Logic / Collision (-1)</option>
+                  {(activeMapData?.tileLayers || []).map((l: any, i: number) => (
+                    <option key={`grid-${i}`} value={i}>{l.name || `Grid Layer ${i}`}</option>
+                  ))}
+                  {(activeMapData?.freeformLayers || []).map((l: any, i: number) => (
+                    <option key={`freeform-${i}`} value={l.type}>{l.name}</option>
+                  ))}
+                </select>
+
+                <button
+                  onClick={() => {
+                    if (!activeMapData) return;
+                    const layers = Array.isArray(activeMapData.tileLayers) ? [...activeMapData.tileLayers] : [];
+                    const h = activeMapData.grid?.length || 24;
+                    const w = activeMapData.grid?.[0]?.length || 24;
+                    layers.push({ name: `Layer ${layers.length}`, grid: Array(h).fill(0).map(() => Array(w).fill(0)) });
+                    useGameStore.getState().setActiveMapData({ ...activeMapData, tileLayers: layers });
+                    setActiveLayerIdx(layers.length - 1);
+                    useEditorStore.getState().markMapDirty();
+                    showToast(`Added Grid Layer ${layers.length - 1}`);
+                  }}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded bg-purple-500/20 border border-purple-500/30 text-purple-300 text-[10px] hover:bg-purple-500/30"
+                  title="Add New Grid Layer"
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+
+                <div className="h-3 w-px bg-border/40 mx-1" />
+
+                {/* Open Palette Dock */}
                 <button
                   onClick={() => openPanel('build')}
                   className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/20 border border-primary/40 text-primary text-[10px] font-bold hover:bg-primary/30"
                 >
-                  <LayoutGrid className="w-3 h-3" />
-                  <span>Open World Builder...</span>
+                  <Palette className="w-3 h-3" />
+                  <span>Open Palette...</span>
                 </button>
               </>
             )}
@@ -436,6 +618,34 @@ export function StudioContextualBar() {
           title="Fit Map to View (Home)"
         >
           <Maximize2 className="w-3.5 h-3.5" />
+        </button>
+
+        <div className="w-px h-6 bg-border/40 mx-1" />
+
+        <button
+          onClick={() => setStudioMode('atlas')}
+          className="p-1.5 rounded-lg text-amber-400/90 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 transition-colors cursor-pointer"
+          title="Open Atlas Studio"
+        >
+          <Globe className="w-3.5 h-3.5" />
+        </button>
+
+        <button
+          onClick={() => {
+            if (!isSavingMap && activeMapData) {
+              window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
+            }
+          }}
+          disabled={isSavingMap || !activeMapData}
+          className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all text-[11px] ${
+            mapDirty
+              ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-lg cursor-pointer'
+              : 'bg-black/40 text-muted-foreground hover:text-foreground cursor-pointer'
+          }`}
+          title={isSavingMap ? 'Saving...' : mapDirty ? 'Save Changes' : 'Saved'}
+        >
+          <Save className="w-3.5 h-3.5" />
+          <span>Save</span>
         </button>
       </div>
     </div>

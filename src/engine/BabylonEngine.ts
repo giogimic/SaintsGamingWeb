@@ -24,6 +24,7 @@ import {
   ImageProcessingConfiguration,
   Animation,
   ParticleSystem,
+  GizmoManager,
 } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
 import { TILESET_SIZES } from "../web/components/the-lobby/data/tileset-sizes";
@@ -584,6 +585,16 @@ export class BabylonEngine {
 
     // 2D Items rendered in 3D (Minecraft-style item billboards)
     this.itemBillboards = new ItemBillboardRenderer(this.scene);
+
+    // Studio Gizmos (Position/Scale)
+    this.gizmoManager = new GizmoManager(this.scene);
+    this.gizmoManager.positionGizmoEnabled = false;
+    this.gizmoManager.rotationGizmoEnabled = false;
+    this.gizmoManager.scaleGizmoEnabled = false;
+    this.gizmoManager.boundingBoxGizmoEnabled = false;
+    // Don't auto-attach to meshes when clicking (we handle selection manually via SelectToolHandler)
+    this.gizmoManager.usePointerToAttachGizmos = false;
+    this.gizmoManager.clearGizmoOnEmptyPointerEvent = true;
 
     // Generate procedural textures
     this.renderer.createDefaultPlayerTexture();
@@ -2147,8 +2158,75 @@ export class BabylonEngine {
       // Stable hash so custom tags stay visually distinct.
       const hue = ((logicId * 47) % 360) / 360;
       mat.emissiveColor = Color3.FromHSV(hue * 360, 0.65, 0.9);
-      mat.alpha = 0.62;
+      mat.alpha = 0.85;
     }
+  }
+
+  // --- REGION GRID OVERLAY SYSTEM ---
+
+  private regionOverlayMeshes: Mesh[] = [];
+  private regionMaterialCache: Map<number, StandardMaterial> = new Map();
+
+  public enableRegionGridOverlay(regionGrid: number[][]) {
+    if (this.regionOverlayMeshes.length > 0) {
+      this.regionOverlayMeshes.forEach(m => m.dispose());
+      this.regionOverlayMeshes = [];
+    }
+
+    const height = regionGrid.length;
+    const width = regionGrid[0]?.length || 0;
+    const yOffset = 0.55; // Slightly above logic layer
+
+    for (let r = 0; r < height; r++) {
+      for (let c = 0; c < width; c++) {
+        const regionId = regionGrid[r]?.[c] || 0;
+
+        const plane = MeshBuilder.CreatePlane(`region_${r}_${c}`, { size: this.currentTileSize }, this.scene);
+        plane.rotation.x = Math.PI / 2;
+        const posX = (c - width / 2) * this.currentTileSize;
+        const posZ = (height / 2 - r) * this.currentTileSize;
+        plane.position = new Vector3(posX, yOffset, posZ);
+        plane.parent = this.rootNode;
+        plane.isPickable = true; 
+        plane.material = this.getRegionMaterial(regionId);
+
+        this.regionOverlayMeshes.push(plane);
+      }
+    }
+  }
+
+  public disableRegionGridOverlay() {
+    this.regionOverlayMeshes.forEach(m => m.dispose());
+    this.regionOverlayMeshes = [];
+  }
+
+  public hasRegionGridOverlay(): boolean {
+    return this.regionOverlayMeshes.length > 0;
+  }
+
+  public updateRegionTile(r: number, c: number, regionId: number): boolean {
+    const plane = this.scene.getMeshByName(`region_${r}_${c}`) as Mesh | null;
+    if (!plane) return false;
+    plane.material = this.getRegionMaterial(regionId);
+    return true;
+  }
+
+  private getRegionMaterial(regionId: number): StandardMaterial {
+    const cached = this.regionMaterialCache.get(regionId);
+    if (cached) return cached;
+    const mat = new StandardMaterial(`regionMat_${regionId}`, this.scene);
+    mat.disableLighting = true;
+    if (regionId === 0) {
+      mat.emissiveColor = Color3.FromHexString("#000000");
+      mat.alpha = 0.0;
+    } else {
+      // Create distinct hue per region ID matching Palette (id * 25)
+      const hue = ((regionId * 25) % 360) / 360;
+      mat.emissiveColor = Color3.FromHSV(hue * 360, 0.7, 0.5);
+      mat.alpha = 0.75;
+    }
+    this.regionMaterialCache.set(regionId, mat);
+    return mat;
   }
 
   /** Set brush radius for multi-tile painting. */
@@ -3219,6 +3297,53 @@ export class BabylonEngine {
   public clear3DBoxSelectionPreview() {
     if (this.voxel.voxelSelectionBoxMesh) {
       this.voxel.voxelSelectionBoxMesh.isVisible = false;
+      if (this.gizmoManager) {
+        this.gizmoManager.attachToMesh(null);
+      }
+    }
+  }
+
+  public setSelectionGizmoVisibility(visible: boolean) {
+    if (!this.gizmoManager) return;
+    if (visible && this.voxel.voxelSelectionBoxMesh && this.voxel.voxelSelectionBoxMesh.isVisible) {
+      this.gizmoManager.positionGizmoEnabled = true;
+      this.gizmoManager.boundingBoxGizmoEnabled = true;
+      this.gizmoManager.attachToMesh(this.voxel.voxelSelectionBoxMesh);
+
+      // Add observers once to sync back to the editor store
+      if (this.gizmoManager.gizmos.boundingBoxGizmo && !this.gizmoManager.gizmos.boundingBoxGizmo.onScaleBoxDragEndObservable.hasObservers()) {
+        const handleDragEnd = () => {
+          const mesh = this.voxel.voxelSelectionBoxMesh;
+          if (!mesh) return;
+          const dX = mesh.scaling.x;
+          const dY = mesh.scaling.y;
+          const dZ = mesh.scaling.z;
+          const cx = mesh.position.x;
+          const cy = mesh.position.y;
+          const cz = mesh.position.z;
+
+          // Invert the formula from set3DBoxSelectionPreview
+          const minWX = Math.round(cx - dX / 2);
+          const maxWX = Math.round(cx + dX / 2) - 1;
+          const minWY = Math.round(cy - dY / 2);
+          const maxWY = Math.round(cy + dY / 2) - 1;
+          const minWZ = Math.round(cz - dZ / 2);
+          const maxWZ = Math.round(cz + dZ / 2) - 1;
+
+          window.dispatchEvent(new CustomEvent('studio_voxel_selection_gizmo_drag_end', {
+            detail: { minWX, minWY, minWZ, maxWX, maxWY, maxWZ }
+          }));
+        };
+
+        this.gizmoManager.gizmos.boundingBoxGizmo.onScaleBoxDragEndObservable.add(handleDragEnd);
+        if (this.gizmoManager.gizmos.positionGizmo) {
+          this.gizmoManager.gizmos.positionGizmo.onDragEndObservable.add(handleDragEnd);
+        }
+      }
+    } else {
+      this.gizmoManager.positionGizmoEnabled = false;
+      this.gizmoManager.boundingBoxGizmoEnabled = false;
+      this.gizmoManager.attachToMesh(null);
     }
   }
 
@@ -3425,7 +3550,8 @@ export class BabylonEngine {
       { width: w * s, height: h * s },
       this.scene
     );
-    backdropGround.position = new Vector3(centerX, -0.01, centerZ);
+    const hasVoxel = Boolean((this.currentRawMapData as any)?.voxelDoc || this.voxel.voxelWorld);
+    backdropGround.position = new Vector3(centerX, hasVoxel ? -2000 : -0.5, centerZ);
     const backdropMat = new StandardMaterial('editor_artboard_backdrop_mat', this.scene);
     backdropMat.diffuseColor = new Color3(0.04, 0.06, 0.12);
     backdropMat.emissiveColor = new Color3(0.02, 0.03, 0.07);
@@ -3696,9 +3822,9 @@ export class BabylonEngine {
 
   private applyLayerIsolation() {
     const dimAlpha = 0.35;
-    this.tileMeshes.forEach((mesh) => {
-      mesh.visibility = this.layerIsolationActive ? dimAlpha : 1.0;
-    });
+    // We cannot dim tileMeshes because all layers are currently batched into single chunked meshes.
+    // Setting visibility < alphaCutOff (0.5) causes the entire tilemap to disappear.
+    // In the future, this requires a custom shader uniform per vertex to isolate layers visually.
 
     this.logicOverlayMeshes.forEach((mesh) => {
       mesh.visibility = this.layerIsolationActive && this.isolatedLayerIdx !== -1 ? dimAlpha : 1.0;
@@ -4580,10 +4706,9 @@ export class BabylonEngine {
     this.engine.dispose();
   }
 
-    public voxel: VoxelController;
+  public voxel: VoxelController;
   public input: InputController;
   public renderer: Renderer;
   public entity: EntityController;
+  public gizmoManager?: GizmoManager;
 }
-
-
