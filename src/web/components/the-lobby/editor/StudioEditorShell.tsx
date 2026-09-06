@@ -196,9 +196,9 @@ export const StudioEditorShell: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Restore dock geometry, then enter World Atlas Mode by default.
+    // Restore dock geometry, then enter Develop Mode (Studio Home) by default.
     useEditorStore.getState().hydratePanelLayouts();
-    useEditorStore.getState().setStudioMode('atlas');
+    useEditorStore.getState().setStudioMode('develop');
     
     // Check if ANY panel is open. If not, apply default workspace!
     const state = useEditorStore.getState();
@@ -232,6 +232,44 @@ export const StudioEditorShell: React.FC = () => {
     };
     window.addEventListener('studio_open_map_tab', handleOpenMapTab);
     return () => window.removeEventListener('studio_open_map_tab', handleOpenMapTab);
+  }, []);
+
+  // Handle studio_mode_changed (canvas decoupling logic)
+  useEffect(() => {
+    const handleModeChange = (e: Event) => {
+      const customEv = e as CustomEvent<{ mode: StudioMode }>;
+      const mode = customEv.detail?.mode;
+      if (!mode) return;
+
+      const editorStore = useEditorStore.getState();
+      const gameStore = useGameStore.getState();
+
+      const mapType = gameStore.activeMapData?.mapType;
+      const currentMapId = gameStore.currentMapId;
+      // In Saints Web, GENERIC_FALLBACK_MAP is STARTING_MEADOW.
+      // If it's a fallback or empty, it means no map is truly 'loaded' for editing in an isolated context
+      // (Unless they are literally editing STARTING_MEADOW, but we can rely on activeMapData).
+      const hasValidMap = currentMapId && currentMapId !== 'STARTING_MEADOW' && currentMapId !== 'GENERIC_FALLBACK_MAP';
+
+      if (mode === 'tile') {
+        if (hasValidMap && (mapType === 'TILE' || mapType === 'FRACTAL')) {
+          editorStore.openPanel('primaryTileViewport');
+        } else {
+          editorStore.openPanel('tileBrowser');
+        }
+      } else if (mode === 'voxel') {
+        if (hasValidMap && mapType === 'VOXEL') {
+          editorStore.openPanel('primaryVoxelViewport');
+        } else {
+          editorStore.openPanel('voxelBrowser');
+        }
+      } else if (mode === 'develop') {
+        editorStore.openPanel('studioHome');
+      }
+    };
+
+    window.addEventListener('studio_mode_changed', handleModeChange);
+    return () => window.removeEventListener('studio_mode_changed', handleModeChange);
   }, []);
 
   // Context menu on right click in canvas / viewport area
