@@ -93,7 +93,7 @@ export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> =
 
 /** Default panels opened when entering each studio mode (Walk/test closes all). */
 export const STUDIO_MODE_DEFAULTS: Record<StudioMode, StudioDockId[]> = {
-  develop: ['build'],
+  develop: ['studioHome'],
   tile: ['build', 'layers', 'hierarchy', 'logic'],
   voxel: ['build', 'materials', 'transform', 'selection', 'hierarchy'],
   logic: ['logic'],

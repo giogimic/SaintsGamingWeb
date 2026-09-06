@@ -642,10 +642,21 @@ interface EditorState {
 }
 
 const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
+  studioHome: {
+    id: 'studioHome',
+    title: 'Studio Dashboard',
+    isOpen: true,
+    isCollapsed: false,
+    x: 100,
+    y: 100,
+    width: 800,
+    height: 600,
+    zIndex: 10,
+  },
   build: {
     id: 'build',
     title: 'World Builder',
-    isOpen: true,
+    isOpen: false,
     isCollapsed: false,
     x: 20,
     y: 20,
