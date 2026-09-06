@@ -52,12 +52,15 @@ export type StudioDockId =
   | 'simulation'
   | 'logic'
   | 'publishing'
-  | 'maps'
+  | 'tileBrowser'
+  | 'voxelBrowser'
+  | 'newTileMap'
+  | 'newVoxelMap'
   | 'animations'
   | 'interface'
   | 'camera'
   | 'biome'
-  | 'releases'
+  | 'versionManager'
   | 'procedural'
   | 'hierarchy'
   | 'layers'
@@ -280,9 +283,21 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
     label: 'Publish & Releases',
     blurb: 'Pre-flight validation gates, release snapshot history, and rollback.',
   },
-  maps: {
-    label: 'Map Browser',
-    blurb: 'Manage, search, and switch between available map files.',
+  tileBrowser: {
+    label: 'Tile Maps',
+    blurb: 'Manage, search, and switch between tile maps.',
+  },
+  voxelBrowser: {
+    label: 'Voxel Maps',
+    blurb: 'Manage, search, and switch between 3D voxel/fractal maps.',
+  },
+  newTileMap: {
+    label: 'New Tile Map',
+    blurb: 'Generate a new 2D tile map.',
+  },
+  newVoxelMap: {
+    label: 'New Voxel Map',
+    blurb: 'Generate a new 3D voxel or procedural fractal map.',
   },
   animations: {
     label: 'Animation Studio',
@@ -336,9 +351,9 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
     label: 'Hero Studio',
     blurb: 'Full suite for managing classes, archetypes, and heroes.',
   },
-  releases: {
-    label: 'Releases',
-    blurb: 'Manage and create release snapshots.',
+  versionManager: {
+    label: 'Version Manager',
+    blurb: 'Atlas-driven version history and map releases.',
   },
 };
 
@@ -372,7 +387,7 @@ export const STUDIO_WORKSPACE_PRESETS: WorkspacePresetDef[] = [
     id: 'region-planning',
     name: 'Region Planning',
     blurb: 'World Atlas topology navigation with Map Browser and Region Inspector.',
-    openDocks: ['atlas', 'maps', 'properties'],
+    openDocks: ['atlas', 'tileBrowser', 'voxelBrowser', 'properties'],
   },
   {
     id: 'procedural-authoring',

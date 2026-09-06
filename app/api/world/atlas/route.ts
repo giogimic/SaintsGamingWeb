@@ -9,9 +9,7 @@ import { AuditService } from "@/server/audit/AuditService";
 export const dynamic = 'force-dynamic';
 
 const DEFAULT_ATLAS_DATA = JSON.stringify({
-  nodes: [
-    { id: 'node_lobby', mapId: 'LOBBY', x: 0, y: 0, label: 'Central Hub' }
-  ],
+  nodes: [],
   edges: [],
   bufferPresets: [],
   options: {
