@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { DEMO_LOGIC_TILES } from '../src/shared/game/setup/logicTilesSeed';
 
 const prisma = new PrismaClient();
 
@@ -801,6 +802,35 @@ async function main() {
   });
 
   console.log("Seeded Phase 6 Narrative Data.");
+
+  // Seed essential logic tiles for Studio brush palette
+  for (const tile of DEMO_LOGIC_TILES) {
+    await prisma.mapLogicTile.upsert({
+      where: { id: tile.id },
+      create: {
+        id: tile.id,
+        name: tile.name,
+        color: tile.color,
+        isSolid: tile.isSolid,
+        interactable: tile.interactable,
+        onInteractAction: tile.onInteractAction,
+        onInteractPayload: tile.onInteractPayload,
+        onStepAction: tile.onStepAction,
+        onStepPayload: tile.onStepPayload,
+      },
+      update: {
+        name: tile.name,
+        color: tile.color,
+        isSolid: tile.isSolid,
+        interactable: tile.interactable,
+        onInteractAction: tile.onInteractAction,
+        onInteractPayload: tile.onInteractPayload,
+        onStepAction: tile.onStepAction,
+        onStepPayload: tile.onStepPayload,
+      },
+    }).catch((e: any) => console.warn(`[Setup] Logic tile ${tile.id} skip:`, e.message));
+  }
+  console.log("Seeded Map Logic Tiles.");
 }
 
 main()

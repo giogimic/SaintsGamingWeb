@@ -108,7 +108,8 @@ export const TileMapBrowserPanel: React.FC = () => {
     (m) => !q || m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q)
   );
   const seen = new Set(localList.map((m) => m.id));
-  const combined = [...localList, ...remoteFiltered.filter((m) => !seen.has(m.id))];
+  const SYSTEM_MAPS = ['DEMO_SANDBOX', 'STARTING_MAP', 'GENERIC_FALLBACK_MAP'];
+  const combined = [...localList, ...remoteFiltered.filter((m) => !seen.has(m.id))].filter(m => !SYSTEM_MAPS.includes(m.id.toUpperCase()));
 
   const categories = ['ALL', 'Town', 'Route', 'Cave', 'Dungeon', 'House', 'Special'];
   const filtered = useMemo(() => {
@@ -170,12 +171,11 @@ export const TileMapBrowserPanel: React.FC = () => {
       useGameStore.setState({ currentMapId: mapId, activeMapData: loaded });
       useGameStore.getState().setPlayerPosition({ x: cx, y: cy }, 'down', false);
       if (loaded.mapType === 'VOXEL' || loaded.mapType === 'FRACTAL') {
-        useEditorStore.getState().setStudioMode('voxel');
+        useEditorStore.getState().handleMapLoaded(mapId, 'VOXEL');
       } else {
-        useEditorStore.getState().setStudioMode('tile');
+        useEditorStore.getState().handleMapLoaded(mapId, 'TILE');
       }
       showToast(`Switched to ${mapId}`);
-      useEditorStore.getState().closePanel('tileBrowser');
     } catch {
       useGameStore.setState({ currentMapId: mapId });
       showToast(`Switched to ${mapId} (loading…)`);
