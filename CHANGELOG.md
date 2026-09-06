@@ -1,3 +1,8 @@
+## [2.1.752] - 2026-09-06
+### Fixed
+- Fixed StudioMenuBar submenu clicks instantly closing the menu before executing actions.
+- Prevented Tile and Voxel Mode from automatically mounting the canvas and generating a blank pristine map when no active map is loaded. Added a No Map Loaded HUD overlay instead.
+
 ## [2.1.751] - 2026-09-06
 ### Fixed & Improved
 - Added top-down camera auto-switch for Tile Mode in Studio Editor.
