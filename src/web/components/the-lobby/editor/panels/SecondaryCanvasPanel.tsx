@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import DraggablePanel from './DraggablePanel';
+import { DraggablePanel } from '../DraggablePanel';
 import { useEditorStore } from '../editor-store';
 import { GameMapData, loadMap, saveMapData } from '../../data/maps';
-import TileCanvasBabylon from '../../babylon/TileCanvasBabylon';
-import VoxelCanvasBabylon from '../../babylon/VoxelCanvasBabylon';
+import { TileCanvasBabylon } from '../../babylon/TileCanvasBabylon';
+import { VoxelCanvasBabylon } from '../../babylon/VoxelCanvasBabylon';
 import { BabylonEngine } from '@/engine/BabylonEngine';
 
 export const SecondaryCanvasPanel: React.FC = () => {
