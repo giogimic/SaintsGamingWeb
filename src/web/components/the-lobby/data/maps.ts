@@ -35,6 +35,7 @@ export interface MapConnection {
 
 export interface RenderedChunk {
   mapId: string;
+  mapType?: string;
   chunkX?: number; // Legacy
   chunkY?: number; // Legacy
   offsetX: number;
