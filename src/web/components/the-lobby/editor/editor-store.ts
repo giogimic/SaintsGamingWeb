@@ -1214,6 +1214,7 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     width: 800,
     height: 600,
     zIndex: 10,
+  },
 };
 
 
