@@ -76,6 +76,7 @@ import {
   Trash2,
   FolderPlus,
   Check,
+  Monitor,
 } from 'lucide-react';
 
 
@@ -698,6 +699,18 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             </SubMenu>
             <MenuItem divider />
             <MenuSectionLabel label="World Windows" />
+            {studioMode === 'tile' && (
+              <>
+                <MenuItem label="Primary Canvas" icon={panels.primaryTileViewport?.isOpen ? CheckCircle2 : Monitor} onClick={() => togglePanel('primaryTileViewport')} />
+                <MenuItem label="Secondary Canvas" icon={panels.secondaryTileViewport?.isOpen ? CheckCircle2 : Monitor} onClick={() => togglePanel('secondaryTileViewport')} />
+              </>
+            )}
+            {studioMode === 'voxel' && (
+              <>
+                <MenuItem label="Primary Canvas" icon={panels.primaryVoxelViewport?.isOpen ? CheckCircle2 : Monitor} onClick={() => togglePanel('primaryVoxelViewport')} />
+                <MenuItem label="Secondary Canvas" icon={panels.secondaryVoxelViewport?.isOpen ? CheckCircle2 : Monitor} onClick={() => togglePanel('secondaryVoxelViewport')} />
+              </>
+            )}
             <MenuItem label="World Atlas" icon={panels.atlas?.isOpen ? CheckCircle2 : Globe} onClick={() => togglePanel('atlas')} />
             <MenuItem label="Tile Map Browser" icon={panels.tileBrowser?.isOpen ? CheckCircle2 : Globe} onClick={() => togglePanel('tileBrowser')} />
             <MenuItem label="Voxel Map Browser" icon={panels.voxelBrowser?.isOpen ? CheckCircle2 : Box} onClick={() => togglePanel('voxelBrowser')} />
