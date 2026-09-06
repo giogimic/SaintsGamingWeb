@@ -58,13 +58,15 @@ export class WorldSimulation {
     return 'up';
   }
 
-  public static tryMove(state: WorldState, targetX: number, targetY: number): MoveSimulationResult {
+  public static tryMove(state: WorldState, targetX: number, targetY: number, intentOptions?: { isSprinting?: boolean, isJumping?: boolean }): MoveSimulationResult {
     const { playerPos, mapWidth, mapHeight, mapGrid, logicTiles, isDevEditorOpen, staticNpcs, dynamicEntities, currentMapId } = state;
 
     // Prevent cross-map teleporting (unless in dev editor)
     const dist = Math.abs(targetX - playerPos.x) + Math.abs(targetY - playerPos.y);
     if (!isDevEditorOpen && dist > 1) {
-      return { type: 'BLOCKED', direction: 'down', reason: 'BOUNDS' };
+      if (!(intentOptions?.isJumping && intentOptions?.isSprinting && dist === 2)) {
+        return { type: 'BLOCKED', direction: 'down', reason: 'BOUNDS' };
+      }
     }
 
     const dir = this.calculateDirection(playerPos.x, playerPos.y, targetX, targetY);
@@ -136,7 +138,8 @@ export class WorldSimulation {
         state.voxelWorld,
         { x: fromWX, y: 16, z: fromWZ },
         vel,
-        1.0
+        1.0,
+        intentOptions?.isJumping ? 1.5 : undefined // Increase step height if jumping
       );
 
       if (sweptRes.hitWall && !isConnectedSeam && !sweptRes.steppedUp) {

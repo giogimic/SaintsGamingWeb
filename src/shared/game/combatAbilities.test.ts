@@ -13,11 +13,11 @@ describe("RT combat abilities", () => {
     expect(isForbiddenRtCaptureAbility("soul_camera")).toBe(true);
     expect(isForbiddenRtCaptureAbility("capture_device")).toBe(true);
     expect(isForbiddenRtCaptureAbility("CAPTURE")).toBe(true);
-    expect(isForbiddenRtCaptureAbility("strike")).toBe(false);
+    expect(isForbiddenRtCaptureAbility("meteor_fang")).toBe(false);
   });
 
   it("resolves known abilities and rejects capture ids", () => {
-    expect(getCombatAbility("fireball")?.power).toBe(50);
+    expect(getCombatAbility("firestorm")?.power).toBe(50);
     expect(getCombatAbility("binding_crystal")).toBeNull();
     expect(getCombatAbility("film_standard")).toBeNull();
   });
