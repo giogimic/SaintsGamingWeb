@@ -56,8 +56,8 @@ export function StudioFavoritesStrip() {
           ensureMapHasStudioTilesets(loaded);
           showToast(`Loaded map: ${loaded.id}`);
         } else {
-          openPanel('maps');
-          showToast(`Opening Map Browser for ${b.title}`);
+          openPanel('atlas');
+          showToast(`Opening World Atlas for ${b.title}`);
         }
         break;
       }

@@ -5,9 +5,7 @@ import { canWriteStudioContent, STUDIO_CONTENT_WRITE_LEVEL } from "@/shared/game
 import { verifyStudioPermission } from "@/server/auth/studioApiAuth";
 import { validateMapSave, validateVoxelDocSave } from "@/shared/game/mapSaveValidation";
 import { normalizeStudioMapVisuals, buildBorderedLogicGrid } from "@/shared/game/studioMapCreate";
-import { ensureStudioMapFoundation } from "@/server/DemoBootstrap";
 import { notifyGoMapSynced } from "@/server/goMmoNotify";
-import { DEMO_MAP_ID } from "@/server/demoMapSeed";
 import { resolveMapDimensions } from "@/shared/game/mapDocVisual";
 import { DEFAULT_STUDIO_TILESETS } from "@/shared/game/studioTilesetBootstrap";
 import { npcToEntity } from "@/shared/game/entities";
@@ -325,12 +323,9 @@ export async function POST(
     let logicTiles = await prisma.mapLogicTile.findMany({
       select: { id: true, isSolid: true },
     });
-    // Empty logic catalog → create map always 400; heal from demo seed first.
     if (logicTiles.length === 0) {
-      await ensureStudioMapFoundation();
-      logicTiles = await prisma.mapLogicTile.findMany({
-        select: { id: true, isSolid: true },
-      });
+      // Logic tiles must be created during /setup. If missing, we cannot save properly.
+      return NextResponse.json({ error: "Missing MapLogicTile catalog. Please run the setup initialization." }, { status: 500 });
     }
 
     // Sanitize any unrecognized logic tile IDs (e.g. painted visual GIDs like 17) to prevent fatal save rejection

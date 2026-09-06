@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
-import { ensureStudioMapFoundation } from "@/server/DemoBootstrap";
 import { getSystemSetupStatus } from "@/shared/game/setup/setupDetection";
 
 export const dynamic = 'force-dynamic';
@@ -29,9 +28,8 @@ export async function GET(request: Request) {
       orderBy: { name: "asc" },
     });
 
-    if (maps.length === 0) {
-      await ensureStudioMapFoundation();
-    }
+    // If maps.length === 0, it means the user hasn't run the setup process or wiped the DB.
+    // The Lobby UI handles this by prompting the user to run setup.
 
     return NextResponse.json({ maps, count: maps.length });
   } catch (error) {

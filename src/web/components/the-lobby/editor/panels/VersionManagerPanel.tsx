@@ -33,7 +33,7 @@ import {
   WindowMenuDivider,
 } from '../WindowMenuBar';
 
-export const ReleaseManagementPanel: React.FC = () => {
+export const VersionManagerPanel: React.FC = () => {
   const dataVersion = useEditorStore((s) => s.dataVersion);
   const incrementDataVersion = useEditorStore((s) => s.incrementDataVersion);
 
@@ -194,7 +194,7 @@ export const ReleaseManagementPanel: React.FC = () => {
             <UploadCloud className="w-5 h-5 text-amber-400" />
             <div>
               <h2 className="font-extrabold text-[#cbb26a] tracking-wider uppercase text-sm">
-                Release Management
+                Version Manager
               </h2>
               <p className="text-[10px] text-slate-500 font-sans">
                 Author → Validate → Snapshot → Publish pipeline.

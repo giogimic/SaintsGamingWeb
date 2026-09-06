@@ -17,7 +17,7 @@ export const DEFAULT_CAPTURE_AMMO_NAME = 'Film';
 export const DEFAULT_REALM_NAME = 'The Lobby';
 export const DEFAULT_REALM_DESCRIPTION = 'The Lobby ~ Socialize, Battle, Capture, Explore! ~ Coming Soon ~';
 export const DEFAULT_REALM_MOTD = 'Welcome to Saints MMO — where spirit captures and heroic battles unfold!';
-export const DEFAULT_SPAWN_MAP_ID = 'DEMO_SANDBOX';
+export const DEFAULT_SPAWN_MAP_ID = '';
 
 export interface RealmSettingsConfig {
   playerClassName: string;
