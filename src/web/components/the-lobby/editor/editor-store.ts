@@ -639,6 +639,7 @@ interface EditorState {
   closeMapTab: (mapId: string) => void;
   setActiveMapTab: (mapId: string) => void;
   setStudioFreeCam: (enabled: boolean) => void;
+  handleMapLoaded: (mapId: string, mapType: string) => void;
 }
 
 const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
@@ -978,10 +979,10 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     title: 'Tile Maps',
     isOpen: false,
     isCollapsed: false,
-    x: 20,
-    y: 20,
-    width: 320,
-    height: 620,
+    x: typeof window !== 'undefined' ? Math.max(20, (window.innerWidth - 600) / 2) : 300,
+    y: typeof window !== 'undefined' ? Math.max(20, (window.innerHeight - 500) / 2) : 150,
+    width: 600,
+    height: 500,
     zIndex: 10,
   },
   voxelBrowser: {
@@ -989,10 +990,10 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     title: 'Voxel Maps',
     isOpen: false,
     isCollapsed: false,
-    x: 40,
-    y: 40,
-    width: 320,
-    height: 620,
+    x: typeof window !== 'undefined' ? Math.max(20, (window.innerWidth - 600) / 2) : 300,
+    y: typeof window !== 'undefined' ? Math.max(20, (window.innerHeight - 500) / 2) : 150,
+    width: 600,
+    height: 500,
     zIndex: 10,
   },
   newTileMap: {
@@ -1736,12 +1737,12 @@ export const useEditorStore = create<EditorState>()(
           }
           
           closeAllPanels(state);
-          openModePanels(state, mode);
           
           const gameStore = useGameStore.getState();
           const mapType = gameStore.activeMapData?.mapType;
           const currentMapId = gameStore.currentMapId;
-          const hasValidMap = currentMapId && currentMapId !== 'STARTING_MEADOW' && currentMapId !== 'GENERIC_FALLBACK_MAP';
+          const SYSTEM_MAPS = ['STARTING_MEADOW', 'GENERIC_FALLBACK_MAP', 'DEMO_SANDBOX', 'STARTING_MAP'];
+          const hasValidMap = currentMapId && !SYSTEM_MAPS.includes(currentMapId);
 
           const openDraftPanel = (id: PanelId) => {
             if (!state.panels[id]) return;
@@ -1753,18 +1754,23 @@ export const useEditorStore = create<EditorState>()(
 
           if (mode === 'tile') {
             if (hasValidMap && (mapType === 'TILE' || mapType === 'FRACTAL')) {
+              openModePanels(state, mode);
               openDraftPanel('primaryTileViewport');
             } else {
               openDraftPanel('tileBrowser');
             }
           } else if (mode === 'voxel') {
             if (hasValidMap && mapType === 'VOXEL') {
+              openModePanels(state, mode);
               openDraftPanel('primaryVoxelViewport');
             } else {
               openDraftPanel('voxelBrowser');
             }
           } else if (mode === 'develop') {
+            openModePanels(state, mode);
             openDraftPanel('studioHome');
+          } else {
+            openModePanels(state, mode);
           }
           
           if (!wasEditor) queueMicrotask(() => emitPieChanged(false));
@@ -1777,6 +1783,35 @@ export const useEditorStore = create<EditorState>()(
             state.highestZIndex += 1;
             state.panels[id].zIndex = state.highestZIndex;
             state.activePanel = id;
+          }
+        });
+      },
+
+      handleMapLoaded: (mapId, mapType) => {
+        set((state) => {
+          // If we loaded a valid map, ensure it opens the correct panels
+          const SYSTEM_MAPS = ['STARTING_MEADOW', 'GENERIC_FALLBACK_MAP', 'DEMO_SANDBOX', 'STARTING_MAP'];
+          if (SYSTEM_MAPS.includes(mapId)) return;
+          
+          state.panels['tileBrowser'].isOpen = false;
+          state.panels['voxelBrowser'].isOpen = false;
+          
+          const openDraftPanel = (id: PanelId) => {
+            if (!state.panels[id]) return;
+            state.panels[id].isOpen = true;
+            state.highestZIndex += 1;
+            state.panels[id].zIndex = state.highestZIndex;
+            state.activePanel = id;
+          };
+
+          if (mapType === 'VOXEL') {
+            state.studioMode = 'voxel';
+            openModePanels(state, 'voxel');
+            openDraftPanel('primaryVoxelViewport');
+          } else {
+            state.studioMode = 'tile';
+            openModePanels(state, 'tile');
+            openDraftPanel('primaryTileViewport');
           }
         });
       },
