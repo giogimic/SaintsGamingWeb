@@ -113,7 +113,7 @@ export function estimateTilesetRows(
     sizeLookup?.[ts.imageSource] ||
     sizeLookup?.[baseName];
 
-  const th = ts.tileheight || 16;
+  const th = ts.tileheight || 32;
   const offY = ts.offsetY ?? ts.margin ?? 0;
   const spacing = ts.spacing ?? 0;
 
@@ -134,7 +134,7 @@ export function estimateTilesetRows(
   } else if (ts.imageSource.includes("Vegetation")) {
     estimatedRows = 4;
   } else {
-    estimatedRows = Math.max(16, Math.ceil((localGid + 1) / Math.max(1, ts.columns)));
+    estimatedRows = Math.max(16, Math.ceil((localGid + 1) / Math.max(1, ts.columns || 1)));
   }
   return estimatedRows;
 }
@@ -148,11 +148,6 @@ export function tilesetUvForGid(
   ts: TilesetUvInput,
   sizeLookup?: SizeLookup
 ): number[] {
-  const localGid = stripTiledGidFlags(gid) - ts.firstgid;
-  const col = localGid % ts.columns;
-  const row = Math.floor(localGid / ts.columns);
-  const estimatedRows = estimateTilesetRows(ts, localGid, sizeLookup);
-
   const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, "");
   const baseName = ts.imageSource.split("/").pop() || "";
   const sizeObj =
@@ -163,13 +158,21 @@ export function tilesetUvForGid(
   const offX = ts.offsetX ?? ts.margin ?? 0;
   const offY = ts.offsetY ?? ts.margin ?? 0;
   const spacing = ts.spacing ?? 0;
-  const tw = ts.tilewidth || 16;
-  const th = ts.tileheight || 16;
+  const tw = ts.tilewidth || 32;
+  const th = ts.tileheight || 32;
+
+  // Safely compute columns if missing
+  const cols = Math.max(1, ts.columns || Math.floor((ts.imagewidth || sizeObj?.w || 1024) / tw));
+
+  const localGid = stripTiledGidFlags(gid) - ts.firstgid;
+  const col = localGid % cols;
+  const row = Math.floor(localGid / cols);
+  const estimatedRows = estimateTilesetRows(ts, localGid, sizeLookup);
 
   const imgW =
     (ts as any).imagewidth ||
     sizeObj?.w ||
-    Math.max(1, offX + ts.columns * (tw + spacing));
+    Math.max(1, offX + cols * (tw + spacing));
   const imgH =
     (ts as any).imageheight ||
     sizeObj?.h ||

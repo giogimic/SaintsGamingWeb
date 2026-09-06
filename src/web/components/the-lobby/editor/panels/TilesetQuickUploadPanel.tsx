@@ -43,7 +43,7 @@ export const TilesetQuickUploadPanel: React.FC = () => {
     let columns = asset.metadata?.columns || 8;
     if (asset.metadata?.imagewidth || asset.metadata?.width) {
       const iw = asset.metadata?.imagewidth || asset.metadata?.width;
-      columns = Math.floor(iw / tw);
+      columns = Math.max(1, Math.floor(iw / tw));
     }
 
     const newTileset: StudioTilesetMeta = {

@@ -131,6 +131,7 @@ export class MapPersistenceService {
         cameraStyle: (saveDoc as any).cameraStyle || (saveDoc as any).defaultCameraStyle,
         allowCustomCamera: (saveDoc as any).allowCustomCamera ?? (saveDoc as any).allowCustomPlayerCamera,
         allowCustomPlayerCamera: (saveDoc as any).allowCustomCamera ?? (saveDoc as any).allowCustomPlayerCamera,
+        mapType: saveDoc.mapType,
       });
 
       const saveRes = await StudioApiClient.getInstance().saveMap(baseMapId, payload);
