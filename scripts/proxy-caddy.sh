@@ -324,7 +324,7 @@ add_proxy() {
 
     # Inside managed section:
     # We capture blocks for each domain and decide to keep/update.
-    /^[[:space:]]*[A-Za-z0-9._-]+[[:space:]]*\{$/ {
+    /^[[:space:]]*[A-Za-z0-9._-]+[[:space:]]*\{[[:space:]]*$/ {
       cap=1
       capDomain=""
       capText=""
