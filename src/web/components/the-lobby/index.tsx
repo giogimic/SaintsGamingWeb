@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
-import GameCanvasBabylon from './babylon/GameCanvasBabylon';
+import TileCanvasBabylon from './babylon/TileCanvasBabylon';
+import VoxelCanvasBabylon from './babylon/VoxelCanvasBabylon';
 import dynamic from 'next/dynamic';
 import { useEditorStore } from './editor/editor-store';
 import SaintsDexOverlay from './SaintsDexOverlay';
@@ -132,7 +133,7 @@ export default function TheLobby({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [isRealmOffline, setIsRealmOffline] = useState(false);
-  const [devMapList, setDevMapList] = useState<{id: string, name: string}[]>([]);
+  const [devMapList, setDevMapList] = useState<{id: string, name: string, mapType?: string}[]>([]);
   const [uiScale, setUiScale] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
   const [hasEnteredMobile, setHasEnteredMobile] = useState(false);
@@ -160,6 +161,22 @@ export default function TheLobby({
   });
   const isEditingInterface = useGameStore((s) => s.isEditingInterface || s.isUiEditMode);
 
+  // Automatically prompt for a map when entering a mode without a loaded map
+  useEffect(() => {
+    if (!enableStudio) return;
+    const currentMapId = useGameStore.getState().currentMapId;
+    if (currentMapId === GENERIC_FALLBACK_MAP) {
+      if (studioMode === 'tile') {
+        const hasTileMaps = devMapList.some(m => m.mapType !== 'VOXEL' && m.mapType !== 'FRACTAL');
+        if (hasTileMaps) useEditorStore.getState().openPanel('tileBrowser');
+        else useEditorStore.getState().openPanel('newTileMap');
+      } else if (studioMode === 'voxel') {
+        const hasVoxelMaps = devMapList.some(m => m.mapType === 'VOXEL' || m.mapType === 'FRACTAL' || m.mapType === 'HYBRID');
+        if (hasVoxelMaps) useEditorStore.getState().openPanel('voxelBrowser');
+        else useEditorStore.getState().openPanel('newVoxelMap');
+      }
+    }
+  }, [studioMode, enableStudio, devMapList]);
 
   // Bible 17 — Studio sets global isEditorMode for clean gameplay gating.
   // Lobby must clear create-mode so shared editor-store never blocks walk/avatar.
@@ -1851,15 +1868,27 @@ export default function TheLobby({
         ) : null
       ) : (
         gameMode !== 'TITLE_SCREEN' && gameMode !== 'LOGIN' && gameMode !== 'SERVER_SELECT' && (
-          <GameCanvasBabylon 
-            activeBrushTileId={activeBrushTileId}
-            activeLayerIdx={activeLayerIdx}
-            isDevEditorOpen={studioToolsOpen}
-            suppressGameplay={suppressGameplay}
-            onMapClick={(r, c) => {
-              if (studioToolsOpen) setClickedTile({r, c});
-            }}
-          />
+          useGameStore.getState().activeMapData?.mapType === 'VOXEL' || useGameStore.getState().activeMapData?.mapType === 'FRACTAL' ? (
+            <VoxelCanvasBabylon 
+              activeBrushTileId={activeBrushTileId}
+              activeLayerIdx={activeLayerIdx}
+              isDevEditorOpen={studioToolsOpen}
+              suppressGameplay={suppressGameplay}
+              onMapClick={(r, c) => {
+                if (studioToolsOpen) setClickedTile({r, c});
+              }}
+            />
+          ) : (
+            <TileCanvasBabylon 
+              activeBrushTileId={activeBrushTileId}
+              activeLayerIdx={activeLayerIdx}
+              isDevEditorOpen={studioToolsOpen}
+              suppressGameplay={suppressGameplay}
+              onMapClick={(r, c) => {
+                if (studioToolsOpen) setClickedTile({r, c});
+              }}
+            />
+          )
         )
       )}
 

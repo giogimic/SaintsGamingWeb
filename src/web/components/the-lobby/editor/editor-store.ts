@@ -321,6 +321,10 @@ interface EditorState {
   selectedAtlasNodeId: string | null;
   setSelectedAtlasNodeId: (id: string | null) => void;
 
+  secondaryMapId: string | null;
+  secondaryMapType: 'VOXEL' | 'TILE' | null;
+  setSecondaryMap: (mapId: string | null, mapType: 'VOXEL' | 'TILE' | null) => void;
+
   /** Active paint transaction (for grouping brush strokes). */
   paintTransaction: PaintedCell[] | null;
 
@@ -1247,6 +1251,13 @@ export const useEditorStore = create<EditorState>()(
       setSelectedAtlasNodeId: (id) =>
         set((state) => {
           state.selectedAtlasNodeId = id;
+        }),
+      secondaryMapId: null,
+      secondaryMapType: null,
+      setSecondaryMap: (mapId, mapType) =>
+        set((state) => {
+          state.secondaryMapId = mapId;
+          state.secondaryMapType = mapType;
         }),
       activeBrushTileId: DEFAULT_STUDIO_GROUND_GID,
       activeBrushPattern: null,

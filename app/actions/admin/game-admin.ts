@@ -75,7 +75,8 @@ export async function fetchAllMaps() {
     const maps = await prisma.worldMap.findMany({
       select: {
         id: true,
-        name: true
+        name: true,
+        mapType: true,
       }
     });
     return { success: true, data: maps };

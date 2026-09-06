@@ -102,6 +102,7 @@ const WorldHierarchyPanel = lazy(() => import('./panels/WorldHierarchyPanel').th
 const SelectionPanel = lazy(() => import('./panels/SelectionPanel').then((m) => ({ default: m.SelectionPanel })));
 const TransformPanel = lazy(() => import('./panels/TransformPanel').then((m) => ({ default: m.TransformPanel })));
 const ProceduralAuthoringPanel = lazy(() => import('./panels/ProceduralAuthoringPanel').then((m) => ({ default: m.ProceduralAuthoringPanel })));
+const SecondaryCanvasPanel = lazy(() => import('./panels/SecondaryCanvasPanel').then((m) => ({ default: m.SecondaryCanvasPanel })));
 
 const StudioBottomBar: React.FC = () => {
   const hoveredTile = useEditorStore((s) => s.hoveredTile);
@@ -676,6 +677,10 @@ export const StudioEditorShell: React.FC = () => {
               <Suspense fallback={<div>Loading...</div>}><ProceduralAuthoringPanel /></Suspense>
             </DraggablePanel>
           )}
+
+          <Suspense fallback={null}>
+            <SecondaryCanvasPanel />
+          </Suspense>
 
           {/* MDI Dockable Panels for Suites */}
           <DraggablePanel id="asset_suite" icon={<ImageIcon className="w-4 h-4" />} title="Asset Studio">

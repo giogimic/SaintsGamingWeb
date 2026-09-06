@@ -92,6 +92,7 @@ import { EntityController } from './EntityController';
 
 export interface RenderedChunk {
   mapId?: string;
+  mapType?: string;
   chunkX?: number; // Legacy
   chunkY?: number; // Legacy
   offsetX: number;
@@ -756,6 +757,31 @@ export class BabylonEngine {
       };
 
       chunksToRender.forEach(chunk => {
+        if (chunk.mapType === 'FRACTAL') {
+          // Fractal chunks are infinite generated areas; they don't have static tile meshes.
+          // Render a glowing indicator bounding box for the atlas view.
+          const cOffsetX = (chunk.offsetX !== undefined ? chunk.offsetX * tileSize : (chunk.chunkX || 0) * chunk.width * tileSize) + (seamlessOffset ? seamlessOffset.x * tileSize : 0);
+          const cOffsetZ = (chunk.offsetZ !== undefined ? chunk.offsetZ * tileSize : -((chunk.chunkY || 0) * chunk.height * tileSize)) - (seamlessOffset ? seamlessOffset.y * tileSize : 0);
+          
+          const centerW = chunk.width * tileSize;
+          const centerH = chunk.height * tileSize;
+          const cX = cOffsetX + (centerW / 2);
+          const cZ = cOffsetZ - (centerH / 2);
+          
+          const plane = MeshBuilder.CreatePlane(`fractal_indicator_${chunk.mapId}`, { width: centerW, height: centerH }, this.scene);
+          plane.position = new Vector3(cX, SPATIAL_LAYER_ALTITUDES.GROUND - 0.05, cZ);
+          plane.rotation.x = Math.PI / 2;
+          
+          const mat = new StandardMaterial(`fractal_mat_${chunk.mapId}`, this.scene);
+          mat.diffuseColor = new Color3(0.1, 0.5, 1.0);
+          mat.emissiveColor = new Color3(0.2, 0.4, 0.8);
+          mat.alpha = 0.3;
+          mat.disableLighting = true;
+          mat.backFaceCulling = false;
+          plane.material = mat;
+          return;
+        }
+
         if (!chunk.tileLayers) return;
         
         // Use chunk's own tilesets to resolve GIDs locally, falling back to global tilesets
