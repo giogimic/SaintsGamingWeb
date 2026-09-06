@@ -22,7 +22,7 @@ export const TilePalettePanel: React.FC = () => {
   const showToast = useGameStore((s) => s.showToast);
 
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState<{ col: number; row: number } | null>(null);
+  const [dragStart, setDragStart] = useState<{ col: number; row: number; cols?: number } | null>(null);
   const [dragEnd, setDragEnd] = useState<{ col: number; row: number } | null>(null);
   const [zoom, setZoom] = useState(1);
 
@@ -102,7 +102,8 @@ export const TilePalettePanel: React.FC = () => {
     
     const tw = activeTileset.tilewidth || 32;
     const th = activeTileset.tileheight || 32;
-    const cols = activeTileset.columns || Math.max(1, Math.floor((activeTileset.imagewidth || rect.width || 1024) / tw));
+    const unscaledWidth = rect.width / zoom;
+    const cols = activeTileset.columns || Math.max(1, Math.floor((activeTileset.imagewidth || unscaledWidth || 1024) / tw));
     
     return {
       col: Math.max(0, Math.floor(x / tw)),
@@ -114,7 +115,7 @@ export const TilePalettePanel: React.FC = () => {
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     const pos = getColRow(e);
     setIsDragging(true);
-    setDragStart({ col: pos.col, row: pos.row });
+    setDragStart({ col: pos.col, row: pos.row, cols: pos.cols });
     setDragEnd({ col: pos.col, row: pos.row });
   };
 
@@ -140,7 +141,7 @@ export const TilePalettePanel: React.FC = () => {
     const tw = activeTileset.tilewidth || 32;
     
     // We need real width of image to get cols if it's not defined
-    const realCols = activeTileset.columns || Math.max(1, Math.floor((activeTileset.imagewidth || 1024) / tw));
+    const realCols = dragStart.cols || activeTileset.columns || Math.max(1, Math.floor((activeTileset.imagewidth || 1024) / tw));
     
     const w = maxCol - minCol + 1;
     const h = maxRow - minRow + 1;

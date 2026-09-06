@@ -120,6 +120,7 @@ export interface BabylonTileMapData {
   connections?: any;
   voxelDoc?: VoxelWorldDocV3;
   blockSizePx?: number;
+  mapType?: 'TILE' | 'VOXEL' | 'FRACTAL' | string;
 }
 
 export interface SpriteSheetConfig {
@@ -689,10 +690,17 @@ export class BabylonEngine {
       }
     }
 
+    // Determine map rendering types based on mapType (fallback to TILE if unknown)
+    const mapType = mapData.mapType || 'HYBRID';
+    const isVoxelType = mapType === 'VOXEL' || mapType === 'FRACTAL' || mapType === 'HYBRID';
+    const isTileType = mapType === 'TILE' || mapType === 'HYBRID';
+
     // Authoritative 3D Voxel World Rendering
-    if (mapData.voxelDoc && mapData.voxelDoc.chunks && Object.keys(mapData.voxelDoc.chunks).length > 0) {
+    if (isVoxelType && mapData.voxelDoc && mapData.voxelDoc.chunks && Object.keys(mapData.voxelDoc.chunks).length > 0) {
       this.voxel.loadVoxelWorld(mapData.voxelDoc);
-    } else if (tileLayers && tileLayers.length > 0 && tilesets && tilesets.length > 0) {
+    }
+    
+    if (isTileType && tileLayers && tileLayers.length > 0 && tilesets && tilesets.length > 0) {
       const sortedTilesets = [...tilesets].sort((a, b) => b.firstgid - a.firstgid);
 
       // Group meshes by imageSource AND chunk (32x32)

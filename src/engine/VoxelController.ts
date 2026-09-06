@@ -61,8 +61,12 @@ public loadVoxelWorld(docOrWorld: VoxelWorld | VoxelWorldDocV3) {
     // Register with SpatialVoxelWorldManager
     SpatialVoxelWorldManager.getInstance().registerWorld(this.voxelWorld, 0, 0);
 
-    // Initialize ChunkStreamer
-    this.chunkStreamer = new ChunkStreamer(this.voxelWorld.id, this);
+    // Initialize ChunkStreamer only for procedural/infinite maps
+    if (this.engine.currentRawMapData?.mapType === 'FRACTAL') {
+      this.chunkStreamer = new ChunkStreamer(this.voxelWorld.id, this);
+    } else {
+      this.chunkStreamer = undefined;
+    }
 
     for (const chunk of this.voxelWorld.chunks.values()) {
       const result = this.voxelMesher.meshChunk(this.voxelWorld, chunk);

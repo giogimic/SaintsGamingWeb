@@ -869,6 +869,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       freeformLayers: mapData.freeformLayers,
       voxelDoc: mapData.mapType === 'TILE' ? null : mapData.voxelDoc,
       blockSizePx: mapData.blockSizePx,
+      mapType: mapData.mapType,
     }, useGameStore.getState().worldOriginOffset);
     setMapMeshEpoch((n) => n + 1);
 

@@ -55,9 +55,18 @@ export function generateGridFromVoxelDoc(
         continue;
       }
 
-      // 2. Check 3D volume at player standing level (default Y=16 body, Y=15 ground)
-      const bodyWord = world.getVoxel(wx, 16, wz);
-      const groundWord = world.getVoxel(wx, 15, wz);
+      // 2. Find the highest non-air block in this column to be the ground
+      let groundY = -1;
+      for (let wy = world.totalHeightBlocks - 1; wy >= 0; wy--) {
+        const word = world.getVoxel(wx, wy, wz);
+        if (word && !isVoxelAir(word)) {
+          groundY = wy;
+          break;
+        }
+      }
+
+      const bodyWord = groundY >= 0 ? world.getVoxel(wx, groundY + 1, wz) : 0;
+      const groundWord = groundY >= 0 ? world.getVoxel(wx, groundY, wz) : 0;
 
       const bodyPhys = getVoxelPhysics(bodyWord);
       const bodyShape = getVoxelShape(bodyWord);
