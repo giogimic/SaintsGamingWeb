@@ -93,101 +93,6 @@ docker_build.log
 # Studio Desktop Application Build Artifacts
 /saints-app/node_modules/
 /saints-app/dist/
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files — only ignore real .env files, never the example template
-.env
-.env.local
-.env.*.local
-
-# vercel
-.vercel
-
-# temporary build logs
-*-output.txt
-run-build.bat
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# docker data
-/mysql_data/
-/data/
-/uploads/
-/public/uploads/
-/docker_build.log
-docker-compose.yml
-
-
-# AI / Local Work
-/ai/
-/articles/
-# Runtime + agent logs — local only (write-ups live under .docs/logs/)
-/logs/
-/go-mmo/logs/
-# Internal knowledge base (bibles, CONTINUE, system docs) — use .docs/
-/info/
-# Private developer & agent docs
-/.agents/
-/.tools/
-/.docs/
-/patch/
-/the-game/
-/scratch/
-/tools/
-
-# Server management scripts (local only)
-deploy.py
-fix_seed.py
-scripts/deploy-beta*.py
-# temp
-refactor.js
-docker_build.log
-
-# databases
-*.db
-*.sqlite
-*.sqlite3
-
-# Archived / Offline Game Assets
-/.old-assets/
-/tuxemon-data/
-/tuxemon-db/
-
-# Studio Desktop Application Build Artifacts
-/saints-app/node_modules/
-/saints-app/dist/
 /saints-app/release/
 /saints-app/Client-Archive/
 /saints-app/Client-Unpacked/
@@ -199,5 +104,3 @@ docker_build.log
 *.lnk
 *.zip
 /release/
-/ . s c r i p t s /  
- 
