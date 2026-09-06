@@ -226,11 +226,13 @@ export const VoxelStudioPanel: React.FC = () => {
                   type="button"
                   onClick={() => {
                     soundSynth?.playActionSound?.();
+                    const wChunks = Math.max(1, Math.ceil((currentMapData.grid?.[0]?.length || 32) / 32));
+                    const dChunks = Math.max(1, Math.ceil((currentMapData.grid?.length || 32) / 32));
                     const world = new (require('@/shared/game/voxel/VoxelWorldDoc').VoxelWorld)(
                       baseMapId || 'DEMO_SANDBOX',
                       baseMapId || 'DEMO_SANDBOX',
-                      2,
-                      2,
+                      wChunks,
+                      dChunks,
                       1,
                       useEditorStore.getState().voxelBlockSizePx || 64
                     );

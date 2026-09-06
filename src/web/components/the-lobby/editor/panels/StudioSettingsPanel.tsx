@@ -25,6 +25,8 @@ import {
   Terminal,
   Activity,
   Compass,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import {
   DEFAULT_REALM_SETTINGS,
@@ -49,6 +51,17 @@ export function StudioSettingsPanel() {
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'comms' | 'capture' | 'visuals' | 'realm' | 'diagnostics' | 'devtools' | 'simulation' | 'streaming'>('visuals');
+  const [openVisualSections, setOpenVisualSections] = useState({
+    lighting: true,
+    atmosphere: false,
+    terrain: false,
+    environment: false,
+  });
+
+  const toggleVisualSection = (key: keyof typeof openVisualSections) => {
+    setOpenVisualSections((prev) => ({ ...prev, [key]: !prev[key] }));
+    soundSynth?.playUiClick?.();
+  };
   const { maps: availableMaps } = useMapIndex();
 
   // Listen for tab switch events
@@ -282,11 +295,20 @@ export function StudioSettingsPanel() {
               </p>
             </div>
 
-            {/* Lighting & Shadows */}
-            <div className="p-3 rounded-xl bg-black/40 border border-border/30 space-y-3">
-              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                <Sun className="w-3 h-3 text-amber-400" /> Lighting & Shadow Cascades
-              </div>
+                        {/* Lighting & Shadows */}
+            <div className="bg-[#0b1320]/80 border border-[#806f47]/40 rounded-xl overflow-hidden shadow-lg transition-all">
+              <button
+                type="button"
+                onClick={() => toggleVisualSection('lighting')}
+                className="w-full flex items-center justify-between p-2.5 bg-black/50/40 text-[#cbb26a] font-bold text-left hover:bg-black/50/20 transition-colors cursor-pointer"
+              >
+                <span className="flex items-center gap-1.5 text-[11px]">
+                  <Sun className="w-3.5 h-3.5 text-amber-400" /> Lighting & Shadow Cascades
+                </span>
+                {openVisualSections.lighting ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+              </button>
+              {openVisualSections.lighting && (
+                <div className="p-3 space-y-3 border-t border-[#806f47]/20 bg-[#050b14]/50">
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="flex items-center justify-between p-2.5 rounded-lg bg-[#060e1c] border border-border/20 cursor-pointer">
@@ -411,13 +433,24 @@ export function StudioSettingsPanel() {
                   </div>
                 </div>
               )}
+                            </div>
+              )}
             </div>
 
             {/* Atmosphere & Fog */}
-            <div className="p-3 rounded-xl bg-black/40 border border-border/30 space-y-3">
-              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-cyan-400" /> Atmospheric Fog & Sky Depth
-              </div>
+            <div className="bg-[#0b1320]/80 border border-[#806f47]/40 rounded-xl overflow-hidden shadow-lg transition-all">
+              <button
+                type="button"
+                onClick={() => toggleVisualSection('atmosphere')}
+                className="w-full flex items-center justify-between p-2.5 bg-black/50/40 text-[#cbb26a] font-bold text-left hover:bg-black/50/20 transition-colors cursor-pointer"
+              >
+                <span className="flex items-center gap-1.5 text-[11px]">
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Atmospheric Fog & Sky Depth
+                </span>
+                {openVisualSections.atmosphere ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+              </button>
+              {openVisualSections.atmosphere && (
+                <div className="p-3 space-y-3 border-t border-[#806f47]/20 bg-[#050b14]/50">
 
               <label className="flex items-center justify-between p-2.5 rounded-lg bg-[#060e1c] border border-border/20 cursor-pointer">
                 <div>
@@ -483,13 +516,24 @@ export function StudioSettingsPanel() {
                   </div>
                 </div>
               )}
+                            </div>
+              )}
             </div>
 
             {/* 2.5D Elevation & Water */}
-            <div className="p-3 rounded-xl bg-black/40 border border-border/30 space-y-3">
-              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                <Layers className="w-3 h-3 text-teal-400" /> Terrain Elevation & Water Simulation
-              </div>
+            <div className="bg-[#0b1320]/80 border border-[#806f47]/40 rounded-xl overflow-hidden shadow-lg transition-all">
+              <button
+                type="button"
+                onClick={() => toggleVisualSection('terrain')}
+                className="w-full flex items-center justify-between p-2.5 bg-black/50/40 text-[#cbb26a] font-bold text-left hover:bg-black/50/20 transition-colors cursor-pointer"
+              >
+                <span className="flex items-center gap-1.5 text-[11px]">
+                  <Layers className="w-3.5 h-3.5 text-teal-400" /> Terrain Elevation & Water Simulation
+                </span>
+                {openVisualSections.terrain ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+              </button>
+              {openVisualSections.terrain && (
+                <div className="p-3 space-y-3 border-t border-[#806f47]/20 bg-[#050b14]/50">
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
@@ -534,9 +578,11 @@ export function StudioSettingsPanel() {
                   ))}
                 </div>
               </div>
+                            </div>
+              )}
             </div>
 
-            {/* Environment: Time of Day Atmosphere */}
+{/* Environment: Time of Day Atmosphere */}
             <div className="p-3 rounded-xl bg-black/40 border border-border/30 space-y-3">
               <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
                 <span className="flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-amber-400" /> Time of Day Atmosphere</span>
