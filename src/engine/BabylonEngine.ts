@@ -1488,8 +1488,8 @@ export class BabylonEngine {
     // Always ensure 3D Voxel World is loaded and rendered
     const rawVoxel = mapData.voxelDoc || (this.currentRawMapData as any)?.voxelDoc;
     const voxelDoc = rawVoxel || generateDefaultWorldDoc(
-      Math.max(1, Math.ceil((width || 32) / 16)),
-      Math.max(1, Math.ceil((height || 32) / 16)),
+      Math.max(1, Math.ceil((width || 32) / 32)),
+      Math.max(1, Math.ceil((height || 32) / 32)),
       mapData.blockSizePx || (this.currentRawMapData as any)?.blockSizePx || 64,
       width,
       height
