@@ -48,6 +48,9 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📝 Changelog
 
+### v2.1.774 - Setup Wizard Upload Window Isolation Fix
+- Fixed the Sprite Browser's "Upload" button so that it opens the `AssetUploadPanel` in its own completely separate, resizable DraggablePanel floating window, rather than squashing it inside the fixed 80vh Setup Wizard modal!
+
 ### v2.1.773 - Setup Wizard Upload UI Fix
 - Added an embedded Upload UI directly into the `SpriteBrowser` so that users can actually upload sprites during the setup wizard when clicking "Click to select or upload a creature battler sheet".
 
