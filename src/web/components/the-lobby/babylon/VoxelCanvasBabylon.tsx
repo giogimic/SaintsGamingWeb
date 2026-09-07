@@ -159,32 +159,13 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
   useEffect(() => {
     if (!isDevEditorOpen) return;
-    const handleToggleLayerDim = () => {
-      if (engineRef.current) {
-        const store = useEditorStore.getState();
-        const active = engineRef.current.toggleLayerIsolation(store.activeLayerIdx);
-        showToast(active ? `Layer Isolation Active (Layer ${store.activeLayerIdx})` : 'Layer Isolation Off');
-      }
-    };
-    const handlePointerUp = () => {
-      if (freeformStrokeBeforeRef.current) {
-        const currentFreeform = useGameStore.getState().activeMapData?.freeformLayers || [];
-        useEditorStore.getState().pushFreeformOp(freeformStrokeBeforeRef.current, currentFreeform);
-        freeformStrokeBeforeRef.current = null;
-      }
-    };
-    window.addEventListener('pointerup', handlePointerUp);
-    window.addEventListener('studio_toggle_layer_dim', handleToggleLayerDim);
     return () => {
-      window.removeEventListener('pointerup', handlePointerUp);
-      window.removeEventListener('studio_toggle_layer_dim', handleToggleLayerDim);
     };
   }, [isDevEditorOpen, showToast]);
 
   const interpBufferRef = useRef<Record<string, { fromX: number; fromY: number; toX: number; toY: number; startTime: number; duration: number }>>({});
   const autoWalkPathRef = useRef<{x: number, y: number}[]>([]);
-  const freeformStrokeBeforeRef = useRef<any[] | null>(null);
-  const [isEngineReady, setIsEngineReady] = useState(false);
+    const [isEngineReady, setIsEngineReady] = useState(false);
   const playerAnimationProfileRef = useRef<string | null>(null);
   const lastassetProfileIdRef = useRef<string | null>(null);
   const multiplayerAnimationProfilesRef = useRef<Map<string, string | null>>(new Map());
@@ -862,12 +843,12 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       height: mapHeight,
       tileSize: 1, // 1 BJS world unit per tile
       tiles: mapData.grid || [],
-      tileLayers: mapData.mapType === 'VOXEL' ? [] : mapData.tileLayers,
-      tilesets: mapData.tilesets,
+      tileLayers: [],
+      tilesets: [],
       npcs: [],
       chunks: mapData.chunks,
-      freeformLayers: mapData.freeformLayers,
-      voxelDoc: mapData.mapType === 'TILE' ? null : mapData.voxelDoc,
+      freeformLayers: [],
+      voxelDoc: mapData.voxelDoc,
       blockSizePx: mapData.blockSizePx,
       mapType: mapData.mapType,
     }, useGameStore.getState().worldOriginOffset);
@@ -1188,13 +1169,13 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       height: dims.height,
       tileSize: 1,
       tiles: mapData.grid,
-      tileLayers: mapData.mapType === 'VOXEL' ? [] : mapData.tileLayers,
-      tilesets: mapData.tilesets,
+      tileLayers: [],
+      tilesets: [],
       npcs: [],
       chunks: mapData.chunks,
       connections: mapData.connections,
-      freeformLayers: mapData.freeformLayers,
-      voxelDoc: mapData.mapType === 'TILE' ? null : mapData.voxelDoc,
+      freeformLayers: [],
+      voxelDoc: mapData.voxelDoc,
       blockSizePx: mapData.blockSizePx,
     });
     setMapMeshEpoch((n) => n + 1);
@@ -2228,12 +2209,12 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         height,
         tileSize: 1,
         tiles: map.grid,
-        tileLayers: map.mapType === 'VOXEL' ? [] : map.tileLayers,
-        freeformLayers: map.freeformLayers,
-        tilesets: map.tilesets,
+        tileLayers: [],
+        freeformLayers: [],
+        tilesets: [],
         npcs: [],
         chunks: map.chunks,
-        voxelDoc: map.mapType === 'TILE' ? null : map.voxelDoc,
+        voxelDoc: map.voxelDoc,
         blockSizePx: map.blockSizePx,
       });
       // loadTilemap clears author overlays — re-seed pins/sprites.

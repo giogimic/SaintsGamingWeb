@@ -1042,7 +1042,7 @@ export class BabylonEngine {
 
     // If rich layers were all GID 0 (or failed), fall back to colored logic grid ONLY if no 3D voxel world is present.
     // Otherwise Studio shows only scene clearColor (near-black) — DEMO after PR #20.
-    if (this.tileMeshes.length === 0 && !hasVoxelWorld) {
+    if (this.tileMeshes.length === 0 && !hasVoxelWorld && !isVoxelType) {
       // Fallback: simple colored grid rendering with 2.5D geometry
       const baseGrounds: Record<number, Mesh> = {};
       const baseObjects: Record<number, Mesh[]> = {};

@@ -539,6 +539,7 @@ export async function POST(
               }
             : {}),
           ...(body.freeformLayers || body.voxelDoc ? { freeformLayersData: JSON.stringify(freeformLayersForSave) } : {}),
+          voxelData: JSON.stringify(body.voxelDoc),
           ...(body.regionClass ? { regionClass: body.regionClass } : {}),
           ...(body.mapType ? { mapType: body.mapType } : {}),
           version: { increment: 1 },
@@ -555,8 +556,9 @@ export async function POST(
           tileLayersData: JSON.stringify(visualsForCreate.tileLayers || []),
           freeformLayersData: JSON.stringify(freeformLayersForSave),
           tilesetsData: JSON.stringify(visualsForCreate.tilesets || []),
+          voxelData: JSON.stringify(body.voxelDoc),
           regionClass: body.regionClass || "authored",
-          mapType: body.mapType || "HYBRID",
+          mapType: body.mapType || "VOXEL",
         },
       });
     }
