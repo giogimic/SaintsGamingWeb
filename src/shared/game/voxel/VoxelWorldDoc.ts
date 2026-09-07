@@ -222,8 +222,9 @@ export class VoxelWorld {
 
   public setVoxel(wx: number, wy: number, wz: number, word: number): boolean {
     const { cx, cz, cy, lx, ly, lz } = VoxelWorld.worldToChunkCoords(wx, wy, wz);
-    // Do NOT create missing chunks during painting. This prevents saving "empty" chunks that overwrite procedural terrain.
-    const chunk = this.getChunk(cx, cz, cy, false);
+    // Only create missing chunks if we are actively placing a block (word !== 0). 
+    // This avoids instantiating empty chunks when erasing air.
+    const chunk = this.getChunk(cx, cz, cy, word !== 0);
     if (!chunk) return false;
 
     const changed = chunk.set(lx, ly, lz, word);

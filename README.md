@@ -48,7 +48,11 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📝 Changelog
 
-### v2.1.769
+### v2.1.770 - Voxel Canvas UX & Freezing Fixes
+- **Voxel Canvas Editing Fixed:** Allowed dynamic chunk generation when painting solid blocks on blank procedural/empty maps. Voxel raycasting tests and resolution math has been fixed to align with the non-centered coordinate system mapping.
+- **Async Flood Fill:** Refactored the Voxel Volumetric Fill tool into an asynchronous routine, breaking the 65,000 block fill queue into sub-chunks. This totally resolves the UI thread freezing bugs observed on large empty maps.
+
+### v2.1.770
 - Fixed a bug where voxel maps would lose their `mapType` during canvas hydration, causing them to become uneditable and convert to tile maps when saved.
 ### v2.1.768
 - **Voxel Canvas Decoupling**: Completely stripped legacy 2D Tile logic (freeform layers, 2D brushes, and layer isolation tools) from `VoxelCanvasBabylon.tsx`, ensuring a pure 3D canvas environment.

@@ -48,79 +48,93 @@ export class FillToolHandler implements IToolHandler {
       if (targetWord === fillWord) return true;
       if (targetWord === 0) return true; // Cannot fill air
 
-      const queue: Array<[number, number, number]> = [[startCoord.wx, startCoord.wy, startCoord.wz]];
-      const visited = new Set<string>();
-      visited.add(`${startCoord.wx}_${startCoord.wy}_${startCoord.wz}`);
-      let filledCount = 0;
-      const MAX_VOXEL_FILL = 65536;
+      const runAsyncVoxelFill = async () => {
+        const queue: Array<[number, number, number]> = [[startCoord.wx, startCoord.wy, startCoord.wz]];
+        const visited = new Set<string>();
+        visited.add(`${startCoord.wx}_${startCoord.wy}_${startCoord.wz}`);
+        let filledCount = 0;
+        const MAX_VOXEL_FILL = 65536;
+        const CHUNK_SIZE = 2500;
 
-      const totalW = voxelWorld.totalWidthBlocks;
-      const totalZ = voxelWorld.totalDepthBlocks;
-      const totalH = voxelWorld.totalHeightBlocks;
+        const totalW = voxelWorld.totalWidthBlocks;
+        const totalZ = voxelWorld.totalDepthBlocks;
+        const totalH = voxelWorld.totalHeightBlocks;
 
-      const txBuilder = new VoxelTransactionBuilder('Flood Fill Voxel', liveMap.id || '');
+        const txBuilder = new VoxelTransactionBuilder('Flood Fill Voxel', liveMap.id || '');
 
-      while (queue.length > 0 && filledCount < MAX_VOXEL_FILL) {
-        const [wx, wy, wz] = queue.shift()!;
-        
-        let writeWord = fillWord;
-        if (logicOnly) {
-          const w = voxelWorld.getVoxel(wx, wy, wz) || 0;
-          writeWord = (w & ~(0xF << 28)) | ((logicId & 0xF) << 28);
-        }
-        txBuilder.record(voxelWorld, wx, wy, wz, writeWord);
-        filledCount++;
+        while (queue.length > 0 && filledCount < MAX_VOXEL_FILL) {
+          // Process a chunk of voxels
+          let iterations = 0;
+          while (queue.length > 0 && filledCount < MAX_VOXEL_FILL && iterations < CHUNK_SIZE) {
+            const [wx, wy, wz] = queue.shift()!;
+            
+            let writeWord = fillWord;
+            if (logicOnly) {
+              const w = voxelWorld.getVoxel(wx, wy, wz) || 0;
+              writeWord = (w & ~(0xF << 28)) | ((logicId & 0xF) << 28);
+            }
+            txBuilder.record(voxelWorld, wx, wy, wz, writeWord);
+            filledCount++;
+            iterations++;
 
-        const neighbors: Array<[number, number, number]> = [
-          [wx + 1, wy, wz],
-          [wx - 1, wy, wz],
-          [wx, wy + 1, wz],
-          [wx, wy - 1, wz],
-          [wx, wy, wz + 1],
-          [wx, wy, wz - 1],
-        ];
+            const neighbors: Array<[number, number, number]> = [
+              [wx + 1, wy, wz],
+              [wx - 1, wy, wz],
+              [wx, wy + 1, wz],
+              [wx, wy - 1, wz],
+              [wx, wy, wz + 1],
+              [wx, wy, wz - 1],
+            ];
 
-        for (const [nx, ny, nz] of neighbors) {
-          if (nx >= 0 && nx < totalW && nz >= 0 && nz < totalZ && ny >= 0 && ny < totalH) {
-            const key = `${nx}_${ny}_${nz}`;
-            if (!visited.has(key)) {
-              visited.add(key);
-              const neighborWord = voxelWorld.getVoxel(nx, ny, nz) || 0;
-              if (neighborWord !== 0) {
-                if (logicOnly) {
-                  // Only traverse through matching shapes/materials for logic flood fill
-                  if ((neighborWord & 0x0FFFFFFF) === (targetWord & 0x0FFFFFFF)) {
-                    queue.push([nx, ny, nz]);
+            for (const [nx, ny, nz] of neighbors) {
+              if (nx >= 0 && nx < totalW && nz >= 0 && nz < totalZ && ny >= 0 && ny < totalH) {
+                const key = `${nx}_${ny}_${nz}`;
+                if (!visited.has(key)) {
+                  visited.add(key);
+                  const neighborWord = voxelWorld.getVoxel(nx, ny, nz) || 0;
+                  if (neighborWord !== 0) {
+                    if (logicOnly) {
+                      if ((neighborWord & 0x0FFFFFFF) === (targetWord & 0x0FFFFFFF)) {
+                        queue.push([nx, ny, nz]);
+                      }
+                    } else if (neighborWord === targetWord) {
+                      queue.push([nx, ny, nz]);
+                    }
                   }
-                } else if (neighborWord === targetWord) {
-                  queue.push([nx, ny, nz]);
                 }
               }
             }
           }
-        }
-      }
 
-      const tx = txBuilder.build();
-      if (tx && tx.mutations.length > 0) {
-        const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: number; after: number }> = [];
-        for (const mut of tx.mutations) {
-          voxelWorld.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel);
-          changedVoxels.push({
-            wx: mut.worldX,
-            wy: mut.worldY,
-            wz: mut.worldZ,
-            before: mut.previousVoxel,
-            after: mut.newVoxel,
-          });
+          // Yield to UI thread to prevent freezing
+          if (queue.length > 0) {
+            await new Promise(resolve => setTimeout(resolve, 0));
+          }
         }
-        context.engine.voxel.meshDirtyVoxelChunks?.();
-        const doc = voxelWorld.serializeToDoc();
-        gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });
-        store.pushVoxelOp(changedVoxels);
-        store.markMapDirty();
-        context.showToast?.(`Voxel flood filled ${tx.mutations.length} blocks`);
-      }
+
+        const tx = txBuilder.build();
+        if (tx && tx.mutations.length > 0) {
+          const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: number; after: number }> = [];
+          for (const mut of tx.mutations) {
+            voxelWorld.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel);
+            changedVoxels.push({
+              wx: mut.worldX,
+              wy: mut.worldY,
+              wz: mut.worldZ,
+              before: mut.previousVoxel,
+              after: mut.newVoxel,
+            });
+          }
+          context.engine.voxel.meshDirtyVoxelChunks?.();
+          const doc = voxelWorld.serializeToDoc();
+          gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });
+          store.pushVoxelOp(changedVoxels);
+          store.markMapDirty();
+          context.showToast?.(`Voxel flood filled ${tx.mutations.length} blocks`);
+        }
+      };
+
+      runAsyncVoxelFill().catch(console.error);
       return true;
     }
 
