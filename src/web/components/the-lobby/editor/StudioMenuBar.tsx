@@ -737,7 +737,6 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
 
             {['voxel'].includes(studioMode) && (
               <>
-                <MenuItem label="Material Library" icon={panels.materials?.isOpen ? CheckCircle2 : Palette} onClick={() => togglePanel('materials')} />
                 <MenuItem label="Transform" icon={panels.transform?.isOpen ? CheckCircle2 : RotateCw} onClick={() => togglePanel('transform')} />
               </>
             )}

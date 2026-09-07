@@ -1,3 +1,9 @@
+## [2.1.765] - 2026-09-06
+### Fixed
+- Wipe Integrity: Ensure `WorldAtlas` records are completely erased when resetting/wiping the studio.
+- Player Spawn: Fixed new players defaulting to the hardcoded `DEMO_SANDBOX` map. Spawn positions now dynamically pull from the configured `DEFAULT_MAP_ID` realm setting.
+- API Route: Removed strict dependencies on `DEMO_SANDBOX` falling back and triggering lazy bootstrap logic if absent.
+
 ## [2.1.764] - 2026-09-06
 ### Added
 - Setup Wizard: Added "Action Combat" to the combat engine flow options.

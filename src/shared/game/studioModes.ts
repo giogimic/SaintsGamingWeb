@@ -66,7 +66,6 @@ export type StudioDockId =
   | 'procedural'
   | 'hierarchy'
   | 'layers'
-  | 'materials'
   | 'selection'
   | 'transform'
   | 'tileset'
@@ -97,7 +96,7 @@ export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> =
 export const STUDIO_MODE_DEFAULTS: Record<StudioMode, StudioDockId[]> = {
   develop: ['studioHome'],
   tile: ['primaryTileViewport', 'build', 'layers', 'hierarchy', 'logic', 'entityLibrary'],
-  voxel: ['primaryVoxelViewport', 'build', 'materials', 'transform', 'selection', 'hierarchy', 'entityLibrary'],
+  voxel: ['primaryVoxelViewport', 'build', 'transform', 'selection', 'hierarchy', 'entityLibrary'],
   logic: ['logic'],
   atlas: ['atlas'],
   npc: ['entityLibrary', 'npc', 'properties', 'assets', 'spawner'],
@@ -338,10 +337,7 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
     label: 'Layers',
     blurb: 'Layer manager: scope control, visual/logic layers, visibility, and locking.',
   },
-  materials: {
-    label: 'Material Library',
-    blurb: 'Source selection: voxel materials, terrain textures, and environment palettes.',
-  },
+
   selection: {
     label: 'Selection',
     blurb: '3D volumetric selection tools, booleans, grow/shrink, and selection presets.',
@@ -404,19 +400,19 @@ export const STUDIO_WORKSPACE_PRESETS: WorkspacePresetDef[] = [
     id: 'world-building',
     name: 'World Building',
     blurb: 'Dominant 3D viewport with Material Library, Inspector, and Layers.',
-    openDocks: ['materials', 'properties', 'layers'],
+    openDocks: ['properties', 'layers'],
   },
   {
     id: 'voxel-sculpting',
     name: 'Voxel Sculpting',
     blurb: 'Direct block carving and sculpt brushes with Material Library and Inspector.',
-    openDocks: ['materials', 'properties', 'selection'],
+    openDocks: ['properties', 'selection'],
   },
   {
     id: 'terrain-shaping',
     name: 'Terrain Shaping',
     blurb: 'Macro terrain sculpting, elevation smoothing, and material painting.',
-    openDocks: ['materials', 'properties', 'build'],
+    openDocks: ['properties', 'build'],
   },
   {
     id: 'region-planning',

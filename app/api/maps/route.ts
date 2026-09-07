@@ -7,8 +7,6 @@ export const dynamic = 'force-dynamic';
 /**
  * GET /api/maps?gameId=saints
  * Lists WorldMap index rows for lobby/editor map pickers.
- * On existing servers (not fresh install), empty index triggers lazy DemoBootstrap so production hosts without a
- * successful boot seed still get DEMO_SANDBOX.
  */
 export async function GET(request: Request) {
   try {

@@ -1110,17 +1110,6 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 380,
     zIndex: 10,
   },
-  materials: {
-    id: 'materials',
-    title: 'Material Library',
-    isOpen: false,
-    isCollapsed: false,
-    x: 20,
-    y: 80,
-    width: 360,
-    height: 580,
-    zIndex: 10,
-  },
   selection: {
     id: 'selection',
     title: 'Selection',
@@ -1785,14 +1774,14 @@ export const useEditorStore = create<EditorState>()(
           };
 
           if (mode === 'tile') {
-            if (hasValidMap && (mapType === 'TILE' || mapType === 'FRACTAL')) {
+            if (hasValidMap && mapType === 'TILE') {
               openModePanels(state, mode);
               openDraftPanel('primaryTileViewport');
             } else {
               openDraftPanel('tileBrowser');
             }
           } else if (mode === 'voxel') {
-            if (hasValidMap && mapType === 'VOXEL') {
+            if (hasValidMap && (mapType === 'VOXEL' || mapType === 'FRACTAL')) {
               openModePanels(state, mode);
               openDraftPanel('primaryVoxelViewport');
             } else {
@@ -1836,7 +1825,7 @@ export const useEditorStore = create<EditorState>()(
             state.activePanel = id;
           };
 
-          if (mapType === 'VOXEL') {
+          if (mapType === 'VOXEL' || mapType === 'FRACTAL') {
             state.studioMode = 'voxel';
             openModePanels(state, 'voxel');
             openDraftPanel('primaryVoxelViewport');

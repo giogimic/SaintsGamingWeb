@@ -97,7 +97,7 @@ const NewVoxelMapPanel = lazy(() => import('./panels/NewVoxelMapPanel').then((m)
 const InterfaceEditorPanel = lazy(() => import('./panels/InterfaceEditorPanel').then((m) => ({ default: m.InterfaceEditorPanel })));
 const CameraSettingsPanel = lazy(() => import('./panels/CameraSettingsPanel').then((m) => ({ default: m.CameraSettingsPanel })));
 const BiomeConfiguratorPanel = lazy(() => import('./panels/BiomeConfiguratorPanel').then((m) => ({ default: m.BiomeConfiguratorPanel })));
-const MaterialLibraryPanel = lazy(() => import('./panels/MaterialLibraryPanel').then((m) => ({ default: m.MaterialLibraryPanel })));
+
 const LayersPanel = lazy(() => import('./panels/LayersPanel').then((m) => ({ default: m.LayersPanel })));
 const WorldHierarchyPanel = lazy(() => import('./panels/WorldHierarchyPanel').then((m) => ({ default: m.WorldHierarchyPanel })));
 const SelectionPanel = lazy(() => import('./panels/SelectionPanel').then((m) => ({ default: m.SelectionPanel })));
@@ -668,11 +668,7 @@ export const StudioEditorShell: React.FC = () => {
             </DraggablePanel>
           )}
 
-          {canUseStudioDock(permissionLevel, 'materials') && (
-            <DraggablePanel id="materials" icon={<Palette className="w-4 h-4 text-amber-400" />} title="Material Library">
-              <Suspense fallback={<div>Loading...</div>}><MaterialLibraryPanel /></Suspense>
-            </DraggablePanel>
-          )}
+
 
           {canUseStudioDock(permissionLevel, 'selection') && (
             <DraggablePanel id="selection" icon={<Crosshair className="w-4 h-4 text-primary" />} title="Selection">
