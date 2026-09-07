@@ -54,6 +54,7 @@ export type StudioDockId =
   | 'logic'
   | 'publishing'
   | 'quickUpload'
+  | 'assetUpload'
   | 'tileBrowser'
   | 'voxelBrowser'
   | 'newTileMap'
@@ -296,6 +297,10 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   quickUpload: {
     label: 'Quick Upload',
     blurb: 'Quickly upload tilesets to the asset system.',
+  },
+  assetUpload: {
+    label: 'Asset Upload',
+    blurb: 'Upload character sprites, creature assets, and world objects.',
   },
   tileBrowser: {
     label: 'Tile Maps',

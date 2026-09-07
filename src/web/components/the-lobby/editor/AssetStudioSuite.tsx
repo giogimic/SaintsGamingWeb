@@ -21,6 +21,7 @@ import {
 import AssetEditor from './AssetEditor';
 import SpriteBrowser from './SpriteBrowser';
 import { AssetUploadView } from './AssetUploadView';
+import { useEditorStore } from './editor-store';
 import { SpritesheetSlicer } from './SpritesheetSlicer';
 import { EntityAssetWorkspace } from './EntityAssetWorkspace';
 import { AnimationStudioPanel } from './panels/AnimationStudioPanel';
@@ -365,7 +366,13 @@ export function AssetStudioSuite() {
           <WindowMenuTabGroup
             tabs={subTabs}
             activeTab={activeSubTab}
-            onChange={(id) => setActiveSubTab(id as SubTab)}
+            onChange={(id) => {
+              if (id === 'upload') {
+                useEditorStore.getState().openPanel('assetUpload');
+              } else {
+                setActiveSubTab(id as SubTab);
+              }
+            }}
           />
           <WindowMenuDivider />
           <div className="flex-1" />

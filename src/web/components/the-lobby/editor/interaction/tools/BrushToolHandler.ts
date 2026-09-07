@@ -8,6 +8,7 @@ import { rasterizeLine } from '@/shared/game/lineRaster';
 import { isPointInGeometry } from '@/shared/game/geometry/continuousGeometry';
 import { STUDIO_MAP_HOT_RELOAD_EVENT } from '@/shared/game/studioEvents';
 import { generateSplatScatterPoints, isInBrushShape } from '@/shared/game/brushGeometry';
+import { startTransition } from 'react';
 import { resolveMapDimensions } from '@/shared/game/mapDocVisual';
 import { applyAutoTiling } from '@/shared/game/autoTiler';
 import {
@@ -137,7 +138,9 @@ export class BrushToolHandler implements IToolHandler {
         }
         context.engine.voxel.meshDirtyVoxelChunks?.();
         const doc = voxelWorld.serializeToDoc();
-        gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });
+        startTransition(() => {
+          gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });
+        });
         store.pushVoxelOp(changedVoxels);
         store.markMapDirty();
       }
@@ -252,7 +255,9 @@ export class BrushToolHandler implements IToolHandler {
         });
       }
 
-      gameStore.setActiveMapData(newMap);
+      startTransition(() => {
+        gameStore.setActiveMapData(newMap);
+      });
       store.markMapDirty();
       window.dispatchEvent(new CustomEvent(STUDIO_MAP_HOT_RELOAD_EVENT, { detail: { mapDoc: newMap } }));
       return true;
@@ -326,7 +331,7 @@ export class BrushToolHandler implements IToolHandler {
     };
 
     const worldDocSync = {
-      ensureActiveMap: (m: any) => gameStore.setActiveMapData(m),
+      ensureActiveMap: (m: any) => startTransition(() => { gameStore.setActiveMapData(m) }),
       markDirty: () => store.markMapDirty(),
     };
 

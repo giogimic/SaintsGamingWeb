@@ -112,6 +112,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 
       lastEventTimestampRef.current = envelope.timestamp;
 
+      if (!envelope.payload) return;
+
       switch (type) {
         case "notification.created": {
           const p = envelope.payload as {
