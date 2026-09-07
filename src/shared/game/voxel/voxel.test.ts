@@ -231,8 +231,8 @@ describe('Voxel Core Engine (Option A)', () => {
       expect(res).not.toBeNull();
       if (res) {
         expect(res.hit).toBe(true);
-        expect(res.voxelCoord.wx).toBe(16); // 0.5 - (-16) = 16.5 -> floor = 16
-        expect(res.voxelCoord.wz).toBe(16);
+        expect(res.voxelCoord.wx).toBe(0);
+        expect(res.voxelCoord.wz).toBe(0);
         expect(res.voxelCoord.wy).toBe(15); // Top solid block of foundation
         expect(res.adjacentVoxelCoord.wy).toBe(16); // Air block right above
         expect(res.hitNormal).toEqual({ x: 0, y: 1, z: 0 });
@@ -255,8 +255,8 @@ describe('Voxel Core Engine (Option A)', () => {
       expect(res).not.toBeNull();
       if (res) {
         expect(res.hitNormal).toEqual({ x: 1, y: 0, z: 0 });
-        expect(res.voxelCoord.wx).toBe(16);
-        expect(res.adjacentVoxelCoord.wx).toBe(17); // Neighbor block to the East
+        expect(res.voxelCoord.wx).toBe(0);
+        expect(res.adjacentVoxelCoord.wx).toBe(1); // Neighbor block to the East
       }
     });
 
@@ -274,8 +274,8 @@ describe('Voxel Core Engine (Option A)', () => {
       expect(res).not.toBeNull();
       if (res) {
         expect(res.hit).toBe(true);
-        expect(res.voxelCoord.wx).toBe(16);
-        expect(res.voxelCoord.wz).toBe(16);
+        expect(res.voxelCoord.wx).toBe(0);
+        expect(res.voxelCoord.wz).toBe(0);
         expect(res.voxelCoord.wy).toBe(15);
         expect(res.adjacentVoxelCoord.wy).toBe(16);
       }

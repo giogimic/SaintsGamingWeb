@@ -93,8 +93,9 @@ export class BrushToolHandler implements IToolHandler {
 
       for (const { wx, wy, wz } of targetCoords) {
         const { cx, cz, cy } = VoxelWorld.worldToChunkCoords(wx, wy, wz);
-        if (!voxelWorld.getChunk(cx, cz, cy, false)) {
-          missingChunks.add(`${cx}_${cz}`);
+        // During explicit editor painting, we SHOULD create missing chunks.
+        if (!voxelWorld.getChunk(cx, cz, cy, true)) {
+          missingChunks.add(`${cx}_${cz}_${cy}`);
           continue; // Discard voxel edit for unloaded chunk
         }
 
