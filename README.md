@@ -48,6 +48,9 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📝 Changelog
 
+### v2.1.773 - Setup Wizard Upload UI Fix
+- Added an embedded Upload UI directly into the `SpriteBrowser` so that users can actually upload sprites during the setup wizard when clicking "Click to select or upload a creature battler sheet".
+
 ### v2.1.772 - Studio Asset Upload UX & Voxel React Fixes
 - Added `AssetUploadPanel` to open the Asset Upload tool in its own resizable DraggablePanel window.
 - Fixed `Cannot read properties of undefined (reading 'userId')` crash when connecting to realtime without an event payload.
