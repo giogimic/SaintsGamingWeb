@@ -112,7 +112,8 @@ export const MapSettingsModal: React.FC<MapSettingsModalProps> = ({ mapId, onClo
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-[#0b1626] border border-border/50 rounded-lg px-3 py-1.5 text-slate-200 text-xs focus:outline-none focus:border-primary/60"
+                    className="w-full bg-[#0b1626] border border-border/50 rounded-lg px-3 py-1.5 text-slate-200 text-xs focus:outline-none focus:border-primary/60 select-text"
+                    onKeyDown={(e) => e.stopPropagation()}
                   />
                 </div>
               </section>
@@ -130,7 +131,8 @@ export const MapSettingsModal: React.FC<MapSettingsModalProps> = ({ mapId, onClo
                     value={encounters}
                     onChange={(e) => setEncounters(e.target.value)}
                     placeholder="e.g. slime, goblin"
-                    className="w-full bg-[#0b1626] border border-border/50 rounded-lg px-3 py-1.5 text-slate-200 text-xs focus:outline-none focus:border-primary/60"
+                    className="w-full bg-[#0b1626] border border-border/50 rounded-lg px-3 py-1.5 text-slate-200 text-xs focus:outline-none focus:border-primary/60 select-text"
+                    onKeyDown={(e) => e.stopPropagation()}
                   />
                 </div>
               </section>
@@ -149,7 +151,8 @@ export const MapSettingsModal: React.FC<MapSettingsModalProps> = ({ mapId, onClo
                         type="text"
                         value={seed}
                         onChange={(e) => setSeed(e.target.value)}
-                        className="w-full bg-[#0b1626] border border-border/50 rounded-lg px-3 py-1.5 text-slate-200 text-xs focus:outline-none focus:border-primary/60"
+                        className="w-full bg-[#0b1626] border border-border/50 rounded-lg px-3 py-1.5 text-slate-200 text-xs focus:outline-none focus:border-primary/60 select-text"
+                        onKeyDown={(e) => e.stopPropagation()}
                       />
                     </div>
                     <div>

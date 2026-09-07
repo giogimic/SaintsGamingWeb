@@ -24,6 +24,7 @@ import { AssetUploadView } from './AssetUploadView';
 import { SpritesheetSlicer } from './SpritesheetSlicer';
 import { EntityAssetWorkspace } from './EntityAssetWorkspace';
 import { AnimationStudioPanel } from './panels/AnimationStudioPanel';
+import { ManualCharacterAssembler } from './ManualCharacterAssembler';
 import { useGameStore } from '../store';
 import { WindowMenuBar, WindowMenuTabGroup, WindowMenuDivider } from './WindowMenuBar';
 import type { GameAssetItem } from '@/engine/assets/AssetManager';
@@ -91,7 +92,7 @@ const WORKSPACE_ORDER: AssetWorkspaceId[] = [
 ];
 
 // ─── Sub-tab type per workspace ───────────────────────────────────────────────
-type SubTab = 'browse' | 'builder' | 'upload' | 'slicer' | 'sprites';
+type SubTab = 'browse' | 'builder' | 'upload' | 'assembler' | 'slicer' | 'sprites';
 
 /**
  * AssetStudioSuite — the full-workspace Asset Management Mode view.
@@ -181,6 +182,7 @@ export function AssetStudioSuite() {
           { id: 'browse', label: 'Browse Characters', icon: Layers },
           { id: 'builder', label: 'Slot Builder', icon: LayoutGrid },
           { id: 'upload', label: 'Upload Character', icon: Upload },
+          { id: 'assembler', label: 'Manual Assembler', icon: ImageIcon },
           { id: 'slicer', label: 'Sprite Slicer', icon: Scissors },
         ];
       case 'creatures':
@@ -188,6 +190,7 @@ export function AssetStudioSuite() {
           { id: 'browse', label: 'Browse Creatures', icon: Layers },
           { id: 'builder', label: 'Slot Builder', icon: LayoutGrid },
           { id: 'upload', label: 'Upload Creature', icon: Upload },
+          { id: 'assembler', label: 'Manual Assembler', icon: ImageIcon },
           { id: 'slicer', label: 'Sprite Slicer', icon: Scissors },
         ];
       case 'animations':
@@ -271,6 +274,8 @@ export function AssetStudioSuite() {
             }}
           />
         );
+      case 'assembler':
+        return <ManualCharacterAssembler />;
       case 'slicer':
         return (
           <SpritesheetSlicer

@@ -6,6 +6,7 @@ import { LOGIC_LAYER_IDX, resolvePaintTarget } from '@/shared/game/tilePaint';
 import { paintWorldCell } from '@/shared/game/worldDocument';
 import { isPointInGeometry } from '@/shared/game/geometry/continuousGeometry';
 import { packVoxel, VoxelShape, VoxelOrientation, VoxelPhysics, VoxelLogic, VoxelLogicType, VOXEL_MAT_GRASS } from '@/shared/game/voxel/VoxelWord';
+import { VOXEL_MATERIAL_CATALOG } from '@/shared/game/voxel/VoxelMaterialDefinition';
 import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
 import { VoxelTransactionBuilder } from '@/shared/game/voxel/VoxelTransaction';
 
@@ -28,7 +29,10 @@ export class FillToolHandler implements IToolHandler {
       const shapeId = (store.activeVoxelShape ?? VoxelShape.FULL_CUBE) as any;
       const orient = (store.activeVoxelOrientation ?? VoxelOrientation.NORTH) as any;
       const matId = store.activeVoxelMaterialId || VOXEL_MAT_GRASS;
-      const physics = shapeId === VoxelShape.SLOPE_45 ? VoxelPhysics.WALKABLE_SLOPE : VoxelPhysics.SOLID_OBSTACLE;
+      const basePhysics = VOXEL_MATERIAL_CATALOG[matId]?.physics ?? VoxelPhysics.SOLID_OBSTACLE;
+      const physics = shapeId === VoxelShape.SLOPE_45 && basePhysics !== VoxelPhysics.SWIMMABLE_FLUID 
+        ? VoxelPhysics.WALKABLE_SLOPE 
+        : basePhysics;
       const logicId = (store.activeVoxelLogicId || VoxelLogic.NONE) as VoxelLogicType;
       const logicOnly = store.activeVoxelLogicOnly;
       

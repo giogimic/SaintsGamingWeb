@@ -36,6 +36,9 @@ export async function wipeNonBundledRealmContent(prisma: any): Promise<WipeRealm
   // 2. Wipe map versions and sync entries
   await prisma.worldMapVersion.deleteMany({}).catch(() => {});
   await prisma.mapSyncEntry.deleteMany({}).catch(() => {});
+  if (prisma.worldPublishSnapshot?.deleteMany) await prisma.worldPublishSnapshot.deleteMany({}).catch(() => {});
+  if (prisma.mapChunk?.deleteMany) await prisma.mapChunk.deleteMany({}).catch(() => {});
+  if (prisma.saintsMap?.deleteMany) await prisma.saintsMap.deleteMany({}).catch(() => {});
 
   // 3. Wipe custom map prefabs and quests
   await prisma.mapPrefab.deleteMany({}).catch(() => {});
