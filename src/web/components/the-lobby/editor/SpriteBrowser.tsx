@@ -10,7 +10,10 @@ import {
   RefreshCw,
   UserCheck,
   Sparkles,
+  Upload,
+  ArrowLeft,
 } from 'lucide-react';
+import { AssetUploadView } from './AssetUploadView';
 import { ASSET_PACKS, ASSET_PACK_LABELS, type AssetPackId } from '@/shared/game/assetPacks';
 import {
   classifyCreatureAsset,
@@ -93,6 +96,7 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
   const [gridSize, setGridSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(selectedAssetIds));
   const [previewAsset, setPreviewAsset] = useState<GameAssetItem | null>(null);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
 
   const stableFilterTags = JSON.stringify(filterTags);
   const stableClassDef = JSON.stringify(classDef);
@@ -217,6 +221,21 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
     <div className="flex flex-col h-full bg-[#050b14] border border-amber-500/30 rounded-xl overflow-hidden shadow-2xl font-mono">
       {/* Top Controls Toolbar */}
       <div className="p-3 bg-[#0b1320] border-b border-amber-500/20 flex flex-wrap items-center justify-between gap-2">
+        {isUploading ? (
+          <div className="flex w-full items-center justify-between">
+            <button
+              onClick={() => {
+                soundSynth?.playUiClick?.();
+                setIsUploading(false);
+              }}
+              className="flex items-center gap-2 text-slate-400 hover:text-white bg-[#050b14] border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to Browser
+            </button>
+            <span className="text-amber-400 font-bold text-sm">Upload New Asset</span>
+          </div>
+        ) : (
+          <>
         {/* Search Input */}
         <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 text-amber-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -301,10 +320,37 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
             </button>
           ))}
         </div>
+        
+        {/* Upload Button */}
+        <button
+          onClick={() => {
+            soundSynth?.playUiClick?.();
+            setIsUploading(true);
+          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm hover:bg-emerald-500/30 ml-auto"
+        >
+          <Upload className="w-3.5 h-3.5" />
+          <span>Upload</span>
+        </button>
+        </>
+        )}
       </div>
 
       {/* Main Grid + Side Preview Layout */}
       <div className="flex-1 flex overflow-hidden">
+        {isUploading ? (
+          <div className="flex-1 overflow-y-auto">
+            <AssetUploadView 
+              initialAssetType={filterType === 'CHARACTER' ? 'CHARACTER' : filterType === 'CREATURE' || filterProfile === 'creature' ? 'CREATURE' : 'SPRITE'}
+              onUploadComplete={(asset) => {
+                // Return to browser on success
+                setIsUploading(false);
+                setSearchQuery(asset.source.split('/').pop() || '');
+              }}
+            />
+          </div>
+        ) : (
+          <>
         {/* Sprite Grid */}
         <div className="flex-1 p-3 overflow-y-auto min-h-[300px]">
           {loading ? (
@@ -383,6 +429,8 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
               onSelect={(asset) => onSelect([asset])}
             />
           </div>
+        )}
+        </>
         )}
       </div>
 
