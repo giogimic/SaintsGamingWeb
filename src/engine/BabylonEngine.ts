@@ -238,6 +238,7 @@ export class BabylonEngine {
   public waterFlowSpeed: number = 1.0;
   private cameraSmoothingFactor: number = 0.6;
   public currentMapId: string = '';
+  public mapType: string = 'TILE';
   public currentMapWidth: number = 24;
   public currentMapHeight: number = 24;
 
@@ -689,6 +690,7 @@ export class BabylonEngine {
 
     // Determine map rendering types based on mapType (fallback to TILE if unknown)
     const mapType = mapData.mapType || 'TILE';
+    this.mapType = mapType;
     const isVoxelType = mapType === 'VOXEL' || mapType === 'FRACTAL';
     const isTileType = mapType === 'TILE';
 

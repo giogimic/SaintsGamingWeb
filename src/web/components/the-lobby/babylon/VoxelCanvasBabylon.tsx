@@ -75,6 +75,7 @@ interface GameCanvasBabylonProps {
   onMapClick?: (r: number, c: number) => void;
   isolatedMapId?: string | null;
   isolatedMapData?: any | null;
+  isActive?: boolean;
 }
 
 export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({

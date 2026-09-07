@@ -48,6 +48,12 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📝 Changelog
 
+### v2.1.775 - Studio Canvas Architecture Overhaul
+
+- Unified Tile and Voxel canvases into a clean renderer pattern.
+- Extracted MMO playtest loops to PlaytestRuntime.tsx.
+- Resolved canvas cursor drift and UI isolation bugs.
+
 ### v2.1.774 - Setup Wizard Upload Window Isolation Fix
 - Fixed the Sprite Browser's "Upload" button so that it opens the `AssetUploadPanel` in its own completely separate, resizable DraggablePanel floating window, rather than squashing it inside the fixed 80vh Setup Wizard modal!
 

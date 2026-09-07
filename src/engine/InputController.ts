@@ -436,8 +436,8 @@ public enableTilePicking(
 
     const emitFromScenePick = (eventType?: 'down' | 'move' | 'up') => {
       if (!this.engine.scene) return;
-      const resolved = getResolvedTile(this.engine.scene.pointerX, this.engine.scene.pointerY);
-      const voxelTarget = this.engine.voxel.resolveVoxelTargetAtScreenCoord(this.engine.scene.pointerX, this.engine.scene.pointerY);
+      const resolved = this.engine.mapType !== 'VOXEL' ? getResolvedTile(this.engine.scene.pointerX, this.engine.scene.pointerY) : null;
+      const voxelTarget = this.engine.mapType === 'VOXEL' ? this.engine.voxel.resolveVoxelTargetAtScreenCoord(this.engine.scene.pointerX, this.engine.scene.pointerY) : null;
       const r = resolved?.r ?? (voxelTarget ? Math.max(0, Math.min(this.engine.currentMapHeight - 1, this.engine.currentMapHeight - 1 - voxelTarget.voxelCoord.wz)) : 0);
       const c = resolved?.c ?? (voxelTarget ? Math.max(0, Math.min(this.engine.currentMapWidth - 1, voxelTarget.voxelCoord.wx)) : 0);
       const layerIdx = resolved?.layerIdx ?? -1;
@@ -466,7 +466,7 @@ public enableTilePicking(
       lastKey = key;
 
       // Apply brush radius for grid painting
-      if (this.engine.brushRadius <= 1 || this.engine.activeBrushPattern) {
+      if (this.engine.brushRadius <= 1 || this.engine.activeBrushPattern || this.engine.activeLayerType === 'voxel') {
         onTileClick(r, c, layerIdx, eventType, point, voxelTarget);
       } else {
         const rad = this.engine.brushRadius - 1;
@@ -501,8 +501,8 @@ public enableTilePicking(
         return;
       }
 
-      const voxelTarget = this.engine.voxel.resolveVoxelTargetAtScreenCoord(this.engine.scene.pointerX, this.engine.scene.pointerY);
-      const resolved = getResolvedTile(this.engine.scene.pointerX, this.engine.scene.pointerY);
+      const voxelTarget = this.engine.mapType === 'VOXEL' ? this.engine.voxel.resolveVoxelTargetAtScreenCoord(this.engine.scene.pointerX, this.engine.scene.pointerY) : null;
+      const resolved = this.engine.mapType !== 'VOXEL' ? getResolvedTile(this.engine.scene.pointerX, this.engine.scene.pointerY) : null;
 
       if (!resolved && !voxelTarget) {
         if (this.engine.lastHoveredR !== -1 || this.engine.lastHoveredC !== -1) {

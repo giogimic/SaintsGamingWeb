@@ -27,8 +27,7 @@ export const SecondaryTileCanvasPanel: React.FC = () => {
     if (isOpen && secondaryMapId && secondaryMapType === 'TILE') {
       setIsLoading(true);
       loadMap(secondaryMapId, 0).then((data) => {
-        // Strip chunks so we only edit this map in isolation
-        const isolatedData = { ...data, chunks: [] };
+        const isolatedData = { ...data };
         setMapData(isolatedData);
         setIsLoading(false);
       });

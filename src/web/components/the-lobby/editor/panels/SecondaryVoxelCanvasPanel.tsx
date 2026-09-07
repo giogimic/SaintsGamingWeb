@@ -19,7 +19,6 @@ export const SecondaryVoxelCanvasPanel: React.FC = () => {
   
   // Performance optimization state
   const [isActive, setIsActive] = useState(true);
-  const [cachedImage, setCachedImage] = useState<string | null>(null);
   
   const engineRef = useRef<BabylonEngine | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -28,8 +27,7 @@ export const SecondaryVoxelCanvasPanel: React.FC = () => {
     if (isOpen && secondaryMapId && secondaryMapType === 'VOXEL') {
       setIsLoading(true);
       loadMap(secondaryMapId, 0).then((data) => {
-        // Strip chunks so we only edit this map in isolation
-        const isolatedData = { ...data, chunks: [] };
+        const isolatedData = { ...data };
         setMapData(isolatedData);
         setIsLoading(false);
       });
@@ -38,33 +36,6 @@ export const SecondaryVoxelCanvasPanel: React.FC = () => {
     }
   }, [isOpen, secondaryMapId, secondaryMapType]);
 
-  useEffect(() => {
-    if (!engineRef.current || !engineRef.current.engine) return;
-    
-    if (isActive) {
-      engineRef.current.engine.runRenderLoop(() => {
-        if (engineRef.current?.scene?.activeCamera) {
-          engineRef.current.scene.render();
-        }
-      });
-      setCachedImage(null);
-    } else {
-      // Create snapshot before pausing
-      import('@babylonjs/core/Misc/tools').then(({ Tools }) => {
-        if (engineRef.current && engineRef.current.engine) {
-          Tools.CreateScreenshotUsingRenderTarget(
-            engineRef.current.engine,
-            engineRef.current.scene.activeCamera!,
-            { width: 640, height: 480 },
-            (data) => {
-              setCachedImage(data);
-              engineRef.current?.engine?.stopRenderLoop();
-            }
-          );
-        }
-      });
-    }
-  }, [isActive]);
 
   const handleSave = async () => {
     if (!mapData || !secondaryMapId) return;
@@ -110,19 +81,14 @@ export const SecondaryVoxelCanvasPanel: React.FC = () => {
             </div>
           ) : (
             <>
-              {cachedImage && !isActive && (
-                <img 
-                  src={cachedImage} 
-                  alt="Cached render" 
-                  className="absolute inset-0 w-full h-full object-cover z-10 pointer-events-none" 
-                />
-              )}
+
               
               <VoxelCanvasBabylon 
                 isolatedMapId={secondaryMapId}
                 isolatedMapData={mapData}
                 isDevEditorOpen={isDevEditorOpen}
                 suppressGameplay={suppressGameplay}
+                isActive={isActive}
                 onCanvasReady={(engine) => { engineRef.current = engine; }}
               />
             </>
