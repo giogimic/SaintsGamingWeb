@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { createGameCharacter } from '@/app/actions/game';
 import { getStarterHeroes } from '@/app/actions/game/starter-heroes';
+import { getSpawnMapId } from '@/app/actions/settings';
 import { getPlayableClasses } from '@/app/actions/game/character-classes';
 import { ensureWorldProfiles } from '@/app/actions/studio/world-profiles';
 import { toast } from 'sonner';
@@ -368,32 +369,12 @@ export function CharacterCreator({
     let startX = hero?.startingX;
     let startY = hero?.startingY;
 
-    try {
-      const mapListRes = await fetch('/api/maps');
-      if (mapListRes.ok) {
-        const mapData = await mapListRes.json();
-        const maps = mapData.maps || [];
-        if (maps.length > 0) {
-          if (!startMap) {
-            const hubMap =
-              maps.find(
-                (m: any) =>
-                  m.id === 'SAINTS_HAVEN' ||
-                  m.id === 'LOBBY' ||
-                  m.id?.toLowerCase().includes('haven') ||
-                  m.id?.toLowerCase().includes('lobby') ||
-                  m.id?.toLowerCase().includes('hub')
-              ) || maps[0];
-            startMap = hubMap.id;
-          }
-        }
-      }
-    } catch {
-      /* fallback */
-    }
-
     if (!startMap) {
-      startMap = 'SAINTS_HAVEN';
+      try {
+        startMap = await getSpawnMapId();
+      } catch {
+        startMap = 'STARTING_MEADOW';
+      }
     }
 
     if (startX === undefined || startY === undefined) {

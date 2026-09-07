@@ -460,15 +460,6 @@ export async function POST(
     }
 
     let freeformLayersForSave = Array.isArray(body.freeformLayers) ? [...body.freeformLayers] : [];
-    if (body.voxelDoc) {
-      freeformLayersForSave = freeformLayersForSave.filter((l: any) => l.type !== 'voxel' && l.id !== 'voxel_world_doc');
-      freeformLayersForSave.push({
-        id: 'voxel_world_doc',
-        name: 'Voxel World Model',
-        type: 'voxel',
-        voxelDoc: body.voxelDoc,
-      });
-    }
 
     let worldMap: any;
     try {

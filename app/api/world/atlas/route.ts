@@ -185,6 +185,19 @@ export async function POST(request: Request) {
       console.error("[Atlas] WorldAtlas table upsert failed:", err);
     }
 
+    // 1.5 Mirror to SPAWN_MAP_ID site setting
+    if (lobbyMapId) {
+      try {
+        await prisma.siteSetting.upsert({
+          where: { key: 'SPAWN_MAP_ID' },
+          create: { key: 'SPAWN_MAP_ID', value: lobbyMapId },
+          update: { value: lobbyMapId },
+        });
+      } catch (e) {
+        console.error("Failed to sync lobbyMapId to SPAWN_MAP_ID", e);
+      }
+    }
+
     // 2. Always mirror to SiteSetting as a secondary backup
     try {
       await prisma.siteSetting.upsert({
