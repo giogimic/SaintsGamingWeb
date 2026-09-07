@@ -514,14 +514,6 @@ export function ArchetypeEditorWorkspace() {
                   <span className="text-[9px] font-black text-violet-500/60 uppercase tracking-[0.2em]">
                     Avatar Sprite
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowCatalogBrowser(true)}
-                    className="flex items-center gap-1 text-[9px] font-bold text-cyan-400 hover:text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded transition-all cursor-pointer shadow"
-                  >
-                    <ImageIcon size={10} />
-                    Open Asset Manager
-                  </button>
                 </div>
 
                 {/* Selected sprite preview */}
@@ -551,27 +543,22 @@ export function ArchetypeEditorWorkspace() {
                     )}
                   </div>
                   <div className="flex-1">
-                    <label className={labelCls}>Sprite Key (Source Image)</label>
-                    <input
-                      value={form.assetProfileId}
-                      onChange={e => f('assetProfileId', e.target.value)}
-                      className={inputCls}
-                      placeholder="e.g. warrior, /uploads/modular-hero.png"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCatalogBrowser(true)}
+                      className="w-full flex items-center justify-between p-2.5 bg-[#050b14] border border-border/50 hover:border-cyan-400 rounded-lg transition text-left cursor-pointer"
+                    >
+                      <div className="flex flex-col min-w-0 mr-2">
+                        <span className="text-xs font-bold text-foreground truncate">
+                          {form.assetBundleId || form.assetProfileId || 'Select Character Sprite...'}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                          {form.assetProfileId ? `Key: ${form.assetProfileId}` : 'Click to open Asset Manager'}
+                        </span>
+                      </div>
+                      <ImageIcon className="w-4 h-4 text-cyan-400 shrink-0" />
+                    </button>
                   </div>
-                </div>
-
-                <div className="mb-2">
-                  <label className={labelCls}>Sprite Bundle ID (Dynamic Component Data)</label>
-                  <input
-                    value={form.assetBundleId || ''}
-                    onChange={e => f('assetBundleId', e.target.value)}
-                    className={inputCls}
-                    placeholder="e.g. paladin-male-042 (Generated via Asset Manager)"
-                  />
-                  <p className="text-[8px] text-slate-600 mt-0.5">
-                    If this character uses modular layers from the Asset Manager, this holds the metadata link.
-                  </p>
                 </div>
               </section>
 

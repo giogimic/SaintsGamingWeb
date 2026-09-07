@@ -19,7 +19,7 @@ import {
   FileImage,
 } from 'lucide-react';
 import type { GameDefinitionData } from './GameDefinitionStep';
-import { RoleAwareAssetPicker } from '@/web/components/shared/RoleAwareAssetPicker';
+import SpriteBrowser from '@/web/components/the-lobby/editor/SpriteBrowser';
 import { CanonicalAssetPreview } from '@/web/components/shared/CanonicalAssetPreview';
 import type { GameAssetItem } from '@/engine/assets/AssetManager';
 
@@ -164,19 +164,43 @@ export function EntitySetupStep({
     <div className="space-y-4">
       {/* SETUP ASSET PICKER OVERLAY */}
       {pickerContext && (
-        <RoleAwareAssetPicker
-          entityType={pickerContext.entityType}
-          assetRole={pickerContext.role}
-          onSelectAsset={(asset) => {
-            if (pickerContext.entityType === 'CHARACTER') {
-              setCharSpriteAsset(asset);
-            } else {
-              setCreatureSpriteAsset(asset);
-            }
-            setPickerContext(null);
-          }}
-          onCancel={() => setPickerContext(null)}
-        />
+        <div
+          className="pointer-events-auto fixed inset-0 z-[100] p-4 flex items-center justify-center animate-in fade-in duration-200"
+          style={{ background: 'rgba(5,0,15,0.96)', backdropFilter: 'blur(10px)' }}
+        >
+          <div className="w-full max-w-3xl h-[80vh] bg-[#0a051d] border border-primary/40 rounded-2xl flex flex-col overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-primary/30 bg-[#050b14]/80">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-primary" />
+                <h3 className="font-black text-primary-100 text-sm">
+                  Select {pickerContext.entityType === 'CHARACTER' ? 'Character' : 'Creature'} Sprite
+                </h3>
+              </div>
+              <button
+                onClick={() => setPickerContext(null)}
+                className="text-slate-400 hover:text-white px-2 py-1 rounded bg-white/5 text-xs cursor-pointer"
+              >
+                ✕ Close
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden p-2">
+              <SpriteBrowser
+                filterType={pickerContext.entityType === 'CHARACTER' ? 'CHARACTER' : 'MONSTER'}
+                onSelect={(assets) => {
+                  const asset = assets[0];
+                  if (asset) {
+                    if (pickerContext.entityType === 'CHARACTER') {
+                      setCharSpriteAsset(asset);
+                    } else {
+                      setCreatureSpriteAsset(asset);
+                    }
+                  }
+                  setPickerContext(null);
+                }}
+              />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* SECTION HEADER & TABS */}

@@ -48,6 +48,12 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📝 Changelog
 
+### v2.1.767
+- **Hero Studio UI**: Replaced the raw text inputs for Sprite Key and Sprite Bundle ID with a unified "Select Character Sprite" button.
+- **Web Setup UI**: Updated the `EntitySetupStep` to use the unified `SpriteBrowser` catalog instead of the old `RoleAwareAssetPicker`, bridging the UI consistency between the setup phase and Hero Studio.
+- **Spawn Logic Integration**: Ensured that the Character Creator spawns players properly on the server by relying on the `getSpawnMapId()` Server Action which correctly reads the `SPAWN_MAP_ID` site setting instead of a hardcoded map name fallback.
+- **Atlas Hub Sync**: Setting a map as a Hub from the World Atlas will now properly synchronize with the `SPAWN_MAP_ID` site setting so the changes propagate globally.
+
 ### v2.1.750
 - **Tile Studio UX:** Added a dedicated Logic Palette for collision and game logic tile painting when `activeLayerIdx === -1`.
 - **Brush Patterns:** Improved `activeBrushPattern` to work smoothly alongside the Paint brush tool, stamping multi-tile selections natively without relying on a distinct Paste mode.
