@@ -8,16 +8,7 @@ export async function getDiscordInviteUrl() {
       where: { key: "DISCORD_INVITE_URL" }
     });
     return setting?.value || "https://discord.saintsgaming.net";
-"use server";
 
-import { prisma } from "@/web/lib/prisma";
-
-export async function getDiscordInviteUrl() {
-  try {
-    const setting = await prisma.siteSetting.findUnique({
-      where: { key: "DISCORD_INVITE_URL" }
-    });
-    return setting?.value || "https://discord.saintsgaming.net";
   } catch {
     return "https://discord.saintsgaming.net";
   }
