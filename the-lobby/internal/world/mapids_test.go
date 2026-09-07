@@ -80,7 +80,7 @@ func TestWalkability(t *testing.T) {
 }
 
 func TestResolvePlayableBase(t *testing.T) {
-	if got := world.ResolvePlayableBase("ANY", true, false); got != protocol.DemoMapID {
+	if got := world.ResolvePlayableBase("ANY", false, true); got != protocol.DemoMapID {
 		t.Fatal(got)
 	}
 	if got := world.ResolvePlayableBase(protocol.RetiredVillage, false, false); got != protocol.DemoMapID {

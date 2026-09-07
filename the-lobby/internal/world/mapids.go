@@ -34,7 +34,7 @@ func IsStudioPIE(instanceID string) bool {
 
 func ResolvePlayableBase(mapID string, lobby, forceDemo bool) string {
 	base := ToBaseMapID(mapID)
-	if lobby || forceDemo || base == "" || base == protocol.RetiredVillage {
+	if forceDemo || base == "" || base == protocol.RetiredVillage {
 		return protocol.DemoMapID
 	}
 	return base

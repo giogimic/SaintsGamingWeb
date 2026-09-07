@@ -1177,6 +1177,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       freeformLayers: [],
       voxelDoc: mapData.voxelDoc,
       blockSizePx: mapData.blockSizePx,
+      mapType: mapData.mapType,
     });
     setMapMeshEpoch((n) => n + 1);
     if (editorToolsRef.current) {

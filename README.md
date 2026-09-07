@@ -48,6 +48,8 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📝 Changelog
 
+### v2.1.769
+- Fixed a bug where voxel maps would lose their `mapType` during canvas hydration, causing them to become uneditable and convert to tile maps when saved.
 ### v2.1.768
 - **Voxel Canvas Decoupling**: Completely stripped legacy 2D Tile logic (freeform layers, 2D brushes, and layer isolation tools) from `VoxelCanvasBabylon.tsx`, ensuring a pure 3D canvas environment.
 - **Voxel Map Persistence**: Fixed an issue where the database would drop voxel chunks during fallback saves and revert Voxel maps into Tile/Hybrid maps.

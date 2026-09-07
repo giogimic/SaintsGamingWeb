@@ -296,14 +296,16 @@ export default function TheLobby({
         /* ignore */
       }
 
+      const spawnMapId = await getSpawnMapId();
+
       const safeSpawn = resolveSafePlayerSpawn({
         savedMapId: savedMap,
         savedX: parsedState.position?.x,
         savedY: parsedState.position?.y,
         availableMapIds,
+        worldDefaultSpawn: { mapId: spawnMapId, x: 15, y: 15 }
       });
 
-      const spawnMapId = await getSpawnMapId();
       validMapId = safeSpawn.mapId || availableMapIds[0] || spawnMapId;
       validPosition = { x: safeSpawn.x, y: safeSpawn.y };
 
