@@ -28,6 +28,7 @@ import {
   Eye,
   Lock,
 } from 'lucide-react';
+import { getSpawnMapId } from '@/app/actions/settings';
 import { BUILTIN_HUD_PRESETS } from './default-presets';
 import { HUD_THEME_LIST } from './hud-themes';
 import { soundSynth } from '@/engine/sound-synth';
@@ -124,19 +125,11 @@ export default function GameOptionsMenu({
 
         let targetMapId = 'LOBBY';
         try {
-          const mapListRes = await fetch('/api/maps');
-          if (mapListRes.ok) {
-            const data = await mapListRes.json();
-            const maps = data.maps || [];
-            if (maps.length > 0) {
-              const lobbyMap = maps.find((m: any) => m.id === 'LOBBY' || m.id.toLowerCase().includes('lobby')) || maps[0];
-              targetMapId = lobbyMap.id;
-            }
-          }
+          targetMapId = await getSpawnMapId();
         } catch {}
 
         const store = useGameStore.getState();
-        store.setPlayerPosition({ x: 32, y: 32 }, 'down', false);
+        store.setPlayerPosition({ x: 15, y: 15 }, 'down', false);
         store.setCurrentMapId(targetMapId);
         if (store.emitSocketEvent && store.player.accountId) {
           startMapTransition({

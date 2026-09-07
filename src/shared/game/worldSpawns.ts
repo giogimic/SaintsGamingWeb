@@ -11,7 +11,7 @@ export interface WorldSpawnPoint {
 }
 
 export const DEFAULT_FALLBACK_SPAWN: WorldSpawnPoint = {
-  mapId: 'LOBBY',
+  mapId: 'STARTING_MEADOW',
   x: 32,
   y: 32,
 };
@@ -51,17 +51,17 @@ export function resolveSafePlayerSpawn(params: {
     };
   }
 
-  // 3. If LOBBY exists in available maps, send to LOBBY
-  if (params.availableMapIds.includes('LOBBY')) {
+  // 3. If STARTING_MEADOW exists in available maps, send to STARTING_MEADOW
+  if (params.availableMapIds.includes('STARTING_MEADOW')) {
     return {
-      mapId: 'LOBBY',
+      mapId: 'STARTING_MEADOW',
       x: 32,
       y: 32,
     };
   }
 
   // 4. Fallback to the first available map or fallback constant
-  const firstAvailable = params.availableMapIds[0] || 'LOBBY';
+  const firstAvailable = params.availableMapIds[0] || 'STARTING_MEADOW';
   return {
     mapId: firstAvailable,
     x: 15,
