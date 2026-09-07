@@ -160,6 +160,7 @@ function emptyMapFallback(mapId: string): GameMapData {
     encounterPool: [],
     tileLayers: [],
     tilesets: [],
+    mapType: 'TILE',
   };
 }
 

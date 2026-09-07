@@ -42,30 +42,11 @@ export function resolveSafePlayerSpawn(params: {
     };
   }
 
-  // 2. If the world default spawn map exists, send to world default spawn
-  if (params.availableMapIds.includes(worldSpawn.mapId)) {
-    return {
-      mapId: worldSpawn.mapId,
-      x: worldSpawn.x,
-      y: worldSpawn.y,
-    };
-  }
-
-  // 3. If STARTING_MEADOW exists in available maps, send to STARTING_MEADOW
-  if (params.availableMapIds.includes('STARTING_MEADOW')) {
-    return {
-      mapId: 'STARTING_MEADOW',
-      x: 32,
-      y: 32,
-    };
-  }
-
-  // 4. Fallback to the first available map or fallback constant
-  const firstAvailable = params.availableMapIds[0] || 'STARTING_MEADOW';
+  // 2. The world default spawn map (which will auto-generate a blank canvas if missing)
   return {
-    mapId: firstAvailable,
-    x: 15,
-    y: 15,
+    mapId: worldSpawn.mapId,
+    x: worldSpawn.x,
+    y: worldSpawn.y,
   };
 }
 
