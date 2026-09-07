@@ -141,7 +141,8 @@ export const NewTileMapPanel: React.FC = () => {
               value={newMapSlug}
               onChange={(e) => setNewMapSlug(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))}
               placeholder="e.g. CITY_CENTER"
-              className="w-full px-2.5 py-1.5 bg-black/50 border border-border/50 rounded-lg text-xs font-bold text-slate-200 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 uppercase"
+              className="w-full px-2.5 py-1.5 bg-black/50 border border-border/50 rounded-lg text-xs font-bold text-slate-200 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 uppercase select-text"
+              onKeyDown={(e) => e.stopPropagation()}
             />
           </div>
           <div>
@@ -151,7 +152,8 @@ export const NewTileMapPanel: React.FC = () => {
               value={newMapName}
               onChange={(e) => setNewMapName(e.target.value)}
               placeholder="e.g. Goldenrod City"
-              className="w-full px-2.5 py-1.5 bg-black/50 border border-border/50 rounded-lg text-xs text-slate-200 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+              className="w-full px-2.5 py-1.5 bg-black/50 border border-border/50 rounded-lg text-xs text-slate-200 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 select-text"
+              onKeyDown={(e) => e.stopPropagation()}
             />
           </div>
         </div>

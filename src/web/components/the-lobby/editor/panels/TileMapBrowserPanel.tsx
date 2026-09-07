@@ -365,7 +365,8 @@ export const TileMapBrowserPanel: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search maps..."
-            className="w-full pl-7 pr-2 py-1 bg-black/40 border border-border/40 rounded text-xs text-slate-200 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+            className="w-full pl-7 pr-2 py-1 bg-black/40 border border-border/40 rounded text-xs text-slate-200 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 select-text"
+            onKeyDown={(e) => e.stopPropagation()}
           />
         </div>
       </div>
