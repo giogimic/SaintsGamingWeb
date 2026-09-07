@@ -108,6 +108,7 @@ const PrimaryVoxelCanvasPanel = lazy(() => import('./panels/PrimaryVoxelCanvasPa
 const SecondaryTileCanvasPanel = lazy(() => import('./panels/SecondaryTileCanvasPanel').then((m) => ({ default: m.SecondaryTileCanvasPanel })));
 const SecondaryVoxelCanvasPanel = lazy(() => import('./panels/SecondaryVoxelCanvasPanel').then((m) => ({ default: m.SecondaryVoxelCanvasPanel })));
 const TilesetQuickUploadPanel = lazy(() => import('./panels/TilesetQuickUploadPanel').then((m) => ({ default: m.TilesetQuickUploadPanel })));
+const AssetUploadPanel = lazy(() => import('./panels/AssetUploadPanel').then((m) => ({ default: m.AssetUploadPanel })));
 const StudioHomePanel = lazy(() => import('./panels/StudioHomePanel').then((m) => ({ default: m.StudioHomePanel })));
 
 const StudioBottomBar: React.FC = () => {
@@ -694,6 +695,7 @@ export const StudioEditorShell: React.FC = () => {
             <SecondaryTileCanvasPanel />
             <SecondaryVoxelCanvasPanel />
             <TilesetQuickUploadPanel />
+            <AssetUploadPanel />
             <StudioHomePanel />
           </Suspense>
 

@@ -1231,6 +1231,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 400,
     zIndex: 10,
   },
+  assetUpload: {
+    id: 'assetUpload',
+    title: 'Asset Upload',
+    isOpen: false,
+    isCollapsed: false,
+    x: 350,
+    y: 150,
+    width: 700,
+    height: 600,
+    zIndex: 10,
+  },
 };
 
 

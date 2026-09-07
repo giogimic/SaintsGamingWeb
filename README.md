@@ -48,6 +48,11 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📝 Changelog
 
+### v2.1.772 - Studio Asset Upload UX & Voxel React Fixes
+- Added `AssetUploadPanel` to open the Asset Upload tool in its own resizable DraggablePanel window.
+- Fixed `Cannot read properties of undefined (reading 'userId')` crash when connecting to realtime without an event payload.
+- Fixed `Minified React error #300` when painting Voxel maps by wrapping the state update in `startTransition`.
+
 ### v2.1.771 - Voxel Canvas UX, Spawn Loop & Freezing Fixes
 - **Voxel Canvas Editing Fixed:** Allowed dynamic chunk generation when painting solid blocks on blank procedural/empty maps. Voxel raycasting tests and resolution math has been fixed to align with the non-centered coordinate system mapping.
 - **Async Flood Fill:** Refactored the Voxel Volumetric Fill tool into an asynchronous routine, breaking the 65,000 block fill queue into sub-chunks. This totally resolves the UI thread freezing bugs observed on large empty maps.
