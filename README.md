@@ -48,6 +48,12 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📝 Changelog
 
+### v2.1.768
+- **Voxel Canvas Decoupling**: Completely stripped legacy 2D Tile logic (freeform layers, 2D brushes, and layer isolation tools) from `VoxelCanvasBabylon.tsx`, ensuring a pure 3D canvas environment.
+- **Voxel Map Persistence**: Fixed an issue where the database would drop voxel chunks during fallback saves and revert Voxel maps into Tile/Hybrid maps.
+- **Editor UI Glitches**: Resolved the "Green Box" clipping glitch caused by empty voxel maps triggering the 2.5D logic grid fallback geometry.
+- **Voxel Tool Support**: Voxel painting tools now work properly by disabling the invisible 2D click-intercept plane (`mapPickPlane`) when in Voxel mode, allowing 3D raycasting against chunk meshes.
+
 ### v2.1.767
 - **Hero Studio UI**: Replaced the raw text inputs for Sprite Key and Sprite Bundle ID with a unified "Select Character Sprite" button.
 - **Web Setup UI**: Updated the `EntitySetupStep` to use the unified `SpriteBrowser` catalog instead of the old `RoleAwareAssetPicker`, bridging the UI consistency between the setup phase and Hero Studio.
