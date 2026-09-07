@@ -75,7 +75,7 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "v2.1.776",
+  siteVersion = "2.1.776",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;
@@ -477,7 +477,7 @@ export function GlobalBottomBar({
 
             {/* Version badge */}
             <span className="text-[10px] text-muted-foreground/60 hidden xl:inline ml-1 font-mono">
-              {siteVersion}
+              v{siteVersion.replace(/^v/, '')}
             </span>
           </div>
         </footer>

@@ -76,6 +76,7 @@ interface GameCanvasBabylonProps {
   isolatedMapId?: string | null;
   isolatedMapData?: any | null;
   isActive?: boolean;
+  updateMapData?: (map: any) => void;
 }
 
 export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
@@ -86,7 +87,8 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   suppressGameplay = false,
   onMapClick,
   isolatedMapId,
-  isolatedMapData
+  isolatedMapData,
+  updateMapData
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<BabylonEngine | null>(null);
@@ -748,6 +750,17 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     if (onCanvasReady) {
       onCanvasReady(babylonEngine);
     }
+    
+    // Watch for actual DOM container resize
+    let resizeObserver: ResizeObserver | null = null;
+    if (canvasRef.current && canvasRef.current.parentElement) {
+      resizeObserver = new ResizeObserver(() => {
+        if (engineRef.current && engineRef.current.engine && engineRef.current.renderer) {
+          engineRef.current.renderer.onResize();
+        }
+      });
+      resizeObserver.observe(canvasRef.current.parentElement);
+    }
 
       babylonEngine.input.onEntityClick = (entityId) => {
         const state = useGameStore.getState();
@@ -927,7 +940,12 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           npcs?: Array<{ id: string; name?: string; x: number; y: number; sprite?: string }>;
           chunks?: Array<{ mapId: string; offsetX?: number; offsetZ?: number; width?: number; height?: number; npcs?: any[] }>;
         } | null) || activeMap;
-      const rawChunks = (liveMapDoc as any)?.chunks as Array<{ mapId: string; offsetX?: number; offsetZ?: number; width?: number; height?: number; npcs?: any[] }> | undefined;
+      let rawChunks = (liveMapDoc as any)?.chunks as Array<{ mapId: string; offsetX?: number; offsetZ?: number; width?: number; height?: number; npcs?: any[] }> | undefined;
+      
+      if (isDevEditorOpen || isolatedMapId) {
+        rawChunks = undefined;
+      }
+
       const chunkMap = new Map<string, { offsetX: number; offsetZ: number; width: number; height: number }>();
       if (rawChunks && rawChunks.length > 0) {
         for (const c of rawChunks) {
@@ -1133,6 +1151,9 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     });
 
     return () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       babylonEngine.dispose();
       engineRef.current = null;
       lastLoadedMapDataRef.current = null;
@@ -1436,7 +1457,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           if (brushMode === 'eyedropper') {
             const rawEv = typeof window !== 'undefined' ? ((window.event as MouseEvent) || null) : null;
             const validEventType = eventType || 'down';
-            const toolContext = { engine, mapData: map, showToast };
+            const toolContext = { engine, mapData: map, showToast, updateMapData };
             const toolEvent = {
               eventType: validEventType,
               button: rawEv?.button ?? 0,
@@ -1501,7 +1522,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           if (brushMode === 'paste' || store.isPasting) {
             const rawEv = typeof window !== 'undefined' ? ((window.event as MouseEvent) || null) : null;
             const validEventType = eventType || 'down';
-            const toolContext = { engine, mapData: map, showToast };
+            const toolContext = { engine, mapData: map, showToast, updateMapData };
             const toolEvent = {
               eventType: validEventType,
               button: rawEv?.button ?? 0,
@@ -1524,7 +1545,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           if (brushMode === 'prefab') {
             const rawEv = typeof window !== 'undefined' ? ((window.event as MouseEvent) || null) : null;
             const validEventType = eventType || 'down';
-            const toolContext = { engine, mapData: map, showToast };
+            const toolContext = { engine, mapData: map, showToast, updateMapData };
             const toolEvent = {
               eventType: validEventType,
               button: rawEv?.button ?? 0,
@@ -1691,7 +1712,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
           const rawEv = typeof window !== 'undefined' ? ((window.event as MouseEvent) || null) : null;
           const validEventType = eventType || 'down';
-          const toolContext = { engine, mapData: liveMap, showToast };
+          const toolContext = { engine, mapData: liveMap, showToast, updateMapData };
           const toolEvent = {
             eventType: validEventType,
             button: rawEv?.button ?? 0,
@@ -2452,9 +2473,9 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
 
       {/* Crafting Menu */}
-      <CraftingOverlay />
+      {!isDevEditorOpen && <CraftingOverlay />}
 
-      {isEngineReady && engineRef.current && (
+      {isEngineReady && engineRef.current && !isDevEditorOpen && (
         <FloatingHealthBars engine={engineRef.current} />
       )}
       

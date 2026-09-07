@@ -86,6 +86,7 @@ export const SecondaryVoxelCanvasPanel: React.FC = () => {
               <VoxelCanvasBabylon 
                 isolatedMapId={secondaryMapId}
                 isolatedMapData={mapData}
+                updateMapData={setMapData}
                 isDevEditorOpen={isDevEditorOpen}
                 suppressGameplay={suppressGameplay}
                 isActive={isActive}

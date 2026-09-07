@@ -82,8 +82,10 @@ export const SecondaryTileCanvasPanel: React.FC = () => {
               <TileCanvasBabylon 
                 isolatedMapId={secondaryMapId}
                 isolatedMapData={mapData}
+                updateMapData={setMapData}
                 isDevEditorOpen={isDevEditorOpen}
                 suppressGameplay={suppressGameplay}
+                isActive={isActive}
                 onCanvasReady={(engine) => { engineRef.current = engine; }}
               />
             </>
