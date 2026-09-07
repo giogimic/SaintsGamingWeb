@@ -127,7 +127,7 @@ export class FillToolHandler implements IToolHandler {
           }
           context.engine.voxel.meshDirtyVoxelChunks?.();
           const doc = voxelWorld.serializeToDoc();
-          gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });
+          (context.updateMapData || gameStore.setActiveMapData)({ ...liveMap, voxelDoc: doc });
           store.pushVoxelOp(changedVoxels);
           store.markMapDirty();
           context.showToast?.(`Voxel flood filled ${tx.mutations.length} blocks`);
@@ -194,7 +194,7 @@ export class FillToolHandler implements IToolHandler {
     const MAX_FILL_CELLS = 65536;
 
     const worldDocSync = {
-      ensureActiveMap: (m: any) => gameStore.setActiveMapData(m),
+      ensureActiveMap: (m: any) => (context.updateMapData || gameStore.setActiveMapData)(m),
       markDirty: () => store.markMapDirty(),
     };
 

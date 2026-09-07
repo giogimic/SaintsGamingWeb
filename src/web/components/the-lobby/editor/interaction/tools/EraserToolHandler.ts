@@ -91,7 +91,7 @@ export class EraserToolHandler implements IToolHandler {
         }
         context.engine.voxel.meshDirtyVoxelChunks?.();
         const doc = voxelWorld.serializeToDoc();
-        gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });
+        (context.updateMapData || gameStore.setActiveMapData)({ ...liveMap, voxelDoc: doc });
         store.pushVoxelOp(changedVoxels);
         store.markMapDirty();
       }
@@ -137,7 +137,7 @@ export class EraserToolHandler implements IToolHandler {
         );
       }
 
-      gameStore.setActiveMapData(newMap);
+      (context.updateMapData || gameStore.setActiveMapData)(newMap);
       store.markMapDirty();
       window.dispatchEvent(new CustomEvent(STUDIO_MAP_HOT_RELOAD_EVENT, { detail: { mapDoc: newMap } }));
       return true;
@@ -183,7 +183,7 @@ export class EraserToolHandler implements IToolHandler {
     };
 
     const worldDocSync = {
-      ensureActiveMap: (m: any) => gameStore.setActiveMapData(m),
+      ensureActiveMap: (m: any) => (context.updateMapData || gameStore.setActiveMapData)(m),
       markDirty: () => store.markMapDirty(),
     };
 

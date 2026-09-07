@@ -48,6 +48,11 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📝 Changelog
 
+### v2.1.776 - Canvas Editor Isolation & Cursor Drift Fixes
+- Refactored `TileCanvasBabylon` and `VoxelCanvasBabylon` tools to use `context.updateMapData` to prevent edits in secondary panels from mutating the primary map.
+- Added a `ResizeObserver` to `<canvas>` components to explicitly call `babylonEngine.engine.resize()`, resolving cursor drift when dragging panel splitters.
+- Fixed type errors and syntax errors related to missing prop spreading.
+
 ### v2.1.775 - Studio Canvas Architecture Overhaul
 
 - Unified Tile and Voxel canvases into a clean renderer pattern.

@@ -12,6 +12,7 @@ export interface ToolExecutionContext {
   engine: BabylonEngine;
   mapData: GameMapData;
   showToast: (msg: string) => void;
+  updateMapData?: (newMap: GameMapData) => void;
 }
 
 export interface IToolHandler {

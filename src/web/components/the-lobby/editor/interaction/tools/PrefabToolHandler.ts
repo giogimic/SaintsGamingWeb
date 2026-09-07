@@ -51,7 +51,7 @@ export class PrefabToolHandler implements IToolHandler {
         const doc = voxelWorld.serializeToDoc?.();
         const liveMap = context.mapData || gameStore.activeMapData;
         if (liveMap && doc) {
-          gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });
+          (context.updateMapData || gameStore.setActiveMapData)({ ...liveMap, voxelDoc: doc });
         }
         context.showToast?.(`Stamped ${activeVoxelPrefab.name} (${modifiedCount} voxels).`);
       }
@@ -79,7 +79,7 @@ export class PrefabToolHandler implements IToolHandler {
     const offsetC = Math.floor(((prefab.width || 1) - 1) / 2);
 
     const worldDocSync = {
-      ensureActiveMap: (m: any) => gameStore.setActiveMapData(m),
+      ensureActiveMap: (m: any) => (context.updateMapData || gameStore.setActiveMapData)(m),
       markDirty: () => store.markMapDirty(),
     };
 

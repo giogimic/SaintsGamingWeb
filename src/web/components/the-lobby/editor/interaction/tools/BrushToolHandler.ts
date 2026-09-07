@@ -139,7 +139,7 @@ export class BrushToolHandler implements IToolHandler {
         context.engine.voxel.meshDirtyVoxelChunks?.();
         const doc = voxelWorld.serializeToDoc();
         startTransition(() => {
-          gameStore.setActiveMapData({ ...liveMap, voxelDoc: doc });
+          (context.updateMapData || gameStore.setActiveMapData)({ ...liveMap, voxelDoc: doc });
         });
         store.pushVoxelOp(changedVoxels);
         store.markMapDirty();
@@ -256,7 +256,7 @@ export class BrushToolHandler implements IToolHandler {
       }
 
       startTransition(() => {
-        gameStore.setActiveMapData(newMap);
+        (context.updateMapData || gameStore.setActiveMapData)(newMap);
       });
       store.markMapDirty();
       window.dispatchEvent(new CustomEvent(STUDIO_MAP_HOT_RELOAD_EVENT, { detail: { mapDoc: newMap } }));
@@ -331,7 +331,7 @@ export class BrushToolHandler implements IToolHandler {
     };
 
     const worldDocSync = {
-      ensureActiveMap: (m: any) => startTransition(() => { gameStore.setActiveMapData(m) }),
+      ensureActiveMap: (m: any) => startTransition(() => { (context.updateMapData || gameStore.setActiveMapData)(m) }),
       markDirty: () => store.markMapDirty(),
     };
 
