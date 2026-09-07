@@ -437,7 +437,23 @@ public enableTilePicking(
     const emitFromScenePick = (eventType?: 'down' | 'move' | 'up') => {
       if (!this.engine.scene) return;
       const resolved = this.engine.mapType !== 'VOXEL' ? getResolvedTile(this.engine.scene.pointerX, this.engine.scene.pointerY) : null;
-      const voxelTarget = this.engine.mapType === 'VOXEL' ? this.engine.voxel.resolveVoxelTargetAtScreenCoord(this.engine.scene.pointerX, this.engine.scene.pointerY) : null;
+      let voxelTarget = null;
+      if (this.engine.mapType === 'VOXEL') {
+        voxelTarget = this.engine.voxel.resolveVoxelTargetAtScreenCoord(this.engine.scene.pointerX, this.engine.scene.pointerY);
+        if (eventType === 'down') {
+          (window as any).__voxelClickDiagnostic = {
+            pointer: { x: this.engine.scene.pointerX, y: this.engine.scene.pointerY },
+            canvasRect: this.engine.canvas.getBoundingClientRect(),
+            mapType: this.engine.mapType,
+            voxelWorldExists: !!this.engine.voxel.voxelWorld,
+            voxelWorldIdentity: (this.engine.voxel.voxelWorld as any)?.id,
+            pickResult: (this.engine.voxel as any).__lastPickResult,
+            ray: (this.engine.voxel as any).__lastRay,
+            voxelTarget: voxelTarget
+          };
+          console.log('VOXEL DIAGNOSTIC (STAGE 1 - INPUT):', (window as any).__voxelClickDiagnostic);
+        }
+      }
       const r = resolved?.r ?? ((voxelTarget && voxelTarget.kind !== 'none') ? Math.max(0, Math.min(this.engine.currentMapHeight - 1, this.engine.currentMapHeight - 1 - voxelTarget.voxelCoord.wz)) : 0);
       const c = resolved?.c ?? ((voxelTarget && voxelTarget.kind !== 'none') ? Math.max(0, Math.min(this.engine.currentMapWidth - 1, voxelTarget.voxelCoord.wx)) : 0);
       const layerIdx = resolved?.layerIdx ?? -1;

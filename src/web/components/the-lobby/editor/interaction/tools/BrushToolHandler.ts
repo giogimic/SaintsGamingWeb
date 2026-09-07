@@ -60,6 +60,29 @@ export class BrushToolHandler implements IToolHandler {
     // 0. Authoritative 3D Voxel Placement
     // Voxel 3D Brush Painting
     if (store.studioMode === 'voxel' && (context.engine as any).voxelWorld) {
+      if (eventType === 'down') {
+        const diag = (window as any).__voxelClickDiagnostic || {};
+        diag.studioMode = store.studioMode;
+        diag.tool = 'BrushToolHandler';
+        diag.brushVoxelWorldIdentity = ((context.engine as any).voxelWorld as any)?.id;
+        diag.activeVoxelMaterialId = store.activeVoxelMaterialId;
+        diag.activeVoxelShape = store.activeVoxelShape;
+        diag.activeVoxelOrientation = store.activeVoxelOrientation;
+        diag.activeVoxelLogicOnly = store.activeVoxelLogicOnly;
+        console.log('VOXEL DIAGNOSTIC (STAGE 2 - TOOL RECIEVED):', { ...diag });
+        
+        if (!event.voxelTarget || event.voxelTarget.kind === 'none') {
+          diag.error = 'No voxelTarget or kind is none in tool handler';
+          console.error('VOXEL DIAGNOSTIC (FAILURE):', diag);
+          return true;
+        }
+        
+        diag.targetCoord = event.voxelTarget.kind === 'voxel-hit' ? { ...event.voxelTarget.voxelCoord } : (event.voxelTarget.kind === 'plane-hit' ? { ...event.voxelTarget.voxelCoord } : null);
+        if (event.voxelTarget.kind === 'voxel-hit') {
+           diag.adjacentVoxelCoord = { ...event.voxelTarget.adjacentVoxelCoord };
+        }
+      }
+
       if (!event.voxelTarget || event.voxelTarget.kind === 'none') return true;
       const voxelWorld: VoxelWorld = (context.engine as any).voxelWorld;
       const dims = resolveMapDimensions(liveMap);
@@ -146,6 +169,22 @@ export class BrushToolHandler implements IToolHandler {
         });
         store.pushVoxelOp(changedVoxels);
         store.markMapDirty();
+        
+        if (eventType === 'down') {
+          const diag = (window as any).__voxelClickDiagnostic || {};
+          diag.setVoxelCalled = true;
+          diag.mutations = changedVoxels;
+          diag.meshDirtyCalled = true;
+          diag.mapDataUpdated = true;
+          console.log('VOXEL DIAGNOSTIC (STAGE 3 - SUCCESS):', diag);
+        }
+      } else {
+        if (eventType === 'down') {
+          const diag = (window as any).__voxelClickDiagnostic || {};
+          diag.setVoxelCalled = false;
+          diag.missingChunks = Array.from(missingChunks);
+          console.error('VOXEL DIAGNOSTIC (FAILURE - NO MUTATIONS):', diag);
+        }
       }
       return true;
     }

@@ -211,7 +211,7 @@ public setVoxelConstraints(constraints: {
     if (constraints.previewWord !== undefined) this.voxelPreviewWord = constraints.previewWord;
   }
 
-public resolveVoxelTargetAtScreenCoord(screenX: number, screenY: number): VoxelTargetResolution | null {
+  public resolveVoxelTargetAtScreenCoord(screenX: number, screenY: number): VoxelTargetResolution | null {
     if (!this.engine.scene || !this.voxelWorld) return null;
     const ray = this.engine.renderer.camera
       ? this.engine.scene.createPickingRay(screenX, screenY, Matrix.Identity(), this.engine.renderer.camera)
@@ -221,6 +221,8 @@ public resolveVoxelTargetAtScreenCoord(screenX: number, screenY: number): VoxelT
       screenY,
       (mesh) => mesh.isPickable && isTilePickTarget(mesh.name)
     );
+    (this as any).__lastPickResult = pickResult ? { hit: pickResult.hit, pickedMesh: pickResult.pickedMesh?.name, point: pickResult.pickedPoint } : null;
+    (this as any).__lastRay = ray ? { origin: ray.origin, direction: ray.direction } : null;
     return resolveVoxelTarget(
       pickResult,
       this.voxelWorld,

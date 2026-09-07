@@ -1,3 +1,7 @@
+## [2.1.778] - 2026-09-07
+### Fixed
+- Fixed an infinite global state sync loop causing severe lag in the Secondary Tile Canvas.
+- Added comprehensive click-to-mesh diagnostic logging to InputController.ts, VoxelController.ts, and BrushToolHandler.ts to trace Voxel Painting failures.
 ## [2.1.777] - 2026-09-07\n### Fixed\n- Tile Editor: Removed costly synchronous state updates during map map batch mutation, fixing checkerboard flickering on large brush strokes.\n- Voxel Editor: Converted voxel targeting resolution to a strict discriminated union to safely distinguish between mesh hits and plane locks.\n- Voxel Editor: Updated all Tool Handlers (Extrude, Brush, Shape, etc.) to use type narrowing before extracting coordinate properties.\n\n## [2.1.765] - 2026-09-06
 ### Fixed
 - Wipe Integrity: Ensure `WorldAtlas` records are completely erased when resetting/wiping the studio.
@@ -6029,5 +6033,6 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
  S t u d i o M e n u B a r . t s x . 
  
  
+
 
 

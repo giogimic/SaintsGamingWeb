@@ -232,6 +232,11 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
   // Ensure current map is loaded into store when map ID changes
   useEffect(() => {
+    if (isolatedMapId) {
+      setIsEngineReady(!!isolatedMapData);
+      return;
+    }
+
     const store = useGameStore.getState();
     if (store.activeMapData && shouldKeepActiveMapData(store.activeMapData, currentMapId)) {
       setIsEngineReady(true);
