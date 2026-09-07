@@ -64,6 +64,11 @@ export async function createGameCharacter(data: {
     try {
       const parsedState = JSON.parse(data.initialState);
       
+      const defaultMapSetting = await prisma.siteSetting.findUnique({
+        where: { key: 'DEFAULT_MAP_ID' }
+      });
+      const defaultMapId = defaultMapSetting?.value || 'DEMO_SANDBOX';
+      
       // Server Validation & Sanitization against exploits
       parsedState.level = 1;
       parsedState.xp = 0;
@@ -76,7 +81,7 @@ export async function createGameCharacter(data: {
       if (typeof parsedState.maxHp === 'number') parsedState.maxHp = Math.min(Math.max(parsedState.maxHp, 1), 250);
       
       if (!parsedState.currentMapId || typeof parsedState.currentMapId !== 'string') {
-        parsedState.currentMapId = 'DEMO_SANDBOX';
+        parsedState.currentMapId = defaultMapId;
       }
       if (!parsedState.position || typeof parsedState.position.x !== 'number' || typeof parsedState.position.y !== 'number') {
         parsedState.position = { x: 14, y: 15 };

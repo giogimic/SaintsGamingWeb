@@ -210,7 +210,7 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
 /**
  * GET /api/maps/[slug] — Load a map from WorldMap (primary) or GameMap (fallback).
  * Campaign map payloads are no longer imported from the 12MB static module.
- * Missing DEMO_SANDBOX triggers lazy DemoBootstrap (production empty-DB heal).
+ * Missing spawn map triggers lazy bootstrap.
  */
 export async function GET(
   request: NextRequest,
@@ -669,7 +669,7 @@ export async function DELETE(
 
     // Dynamic spawn hub protection — look up the active spawn map from realm settings
     const spawnSetting = await prisma.siteSetting.findUnique({ where: { key: 'SPAWN_MAP_ID' } });
-    const activeSpawnMapId = (spawnSetting?.value || 'DEMO_SANDBOX').toUpperCase();
+    const activeSpawnMapId = (spawnSetting?.value || 'STARTING_MEADOW').toUpperCase();
     if (normalizedSlug.toUpperCase() === activeSpawnMapId) {
       return NextResponse.json(
         { error: "Cannot delete the active Spawn Hub map. Change the spawn hub in Realm Settings first." },

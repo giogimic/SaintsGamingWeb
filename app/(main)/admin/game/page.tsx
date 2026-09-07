@@ -78,10 +78,10 @@ export default function GameOperationsPage() {
   };
 
   const handleResetPosition = async (charId: string) => {
-    if (!confirm("Reset character spawn position to default DEMO_SANDBOX (8, 8)?")) return;
-    const res = await adminResetPlayerPosition(charId, "DEMO_SANDBOX", 8, 8);
+    if (!confirm("Reset character spawn position to the default spawn map (8, 8)?")) return;
+    const res = await adminResetPlayerPosition(charId, undefined, 8, 8);
     if (res.success) {
-      toast.success("Character unstuck & position reset to DEMO_SANDBOX.");
+      toast.success("Character unstuck & position reset to default spawn.");
       loadData();
     } else {
       toast.error(res.error || "Failed to reset position");

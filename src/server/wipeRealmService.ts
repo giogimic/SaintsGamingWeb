@@ -29,6 +29,9 @@ export async function wipeNonBundledRealmContent(prisma: any): Promise<WipeRealm
   if (prisma.gameMap?.deleteMany) {
     await prisma.gameMap.deleteMany({}).catch(() => {});
   }
+  if (prisma.worldAtlas?.deleteMany) {
+    await prisma.worldAtlas.deleteMany({}).catch(() => {});
+  }
 
   // 2. Wipe map versions and sync entries
   await prisma.worldMapVersion.deleteMany({}).catch(() => {});

@@ -67,7 +67,6 @@ const DOCK_ICONS: Partial<Record<StudioDockId, { icon: any; label: string }>> = 
   layers: { icon: Layers, label: 'Layers' },
   hierarchy: { icon: Layers, label: 'Hierarchy' },
   logic: { icon: Shield, label: 'Logic Painter' },
-  materials: { icon: Palette, label: 'Materials' },
   transform: { icon: RotateCw, label: 'Transform' },
   selection: { icon: Crosshair, label: 'Selection' },
   npc: { icon: Users, label: 'NPCs' },
@@ -229,14 +228,6 @@ export function StudioContextualBar() {
           <div className="flex items-center gap-1.5 shrink-0">
             {studioMode === 'voxel' || (studioMode === 'develop' && activeMapData?.mapType === 'VOXEL') ? (
               <>
-                <button
-                  onClick={() => openPanel('materials')}
-                  className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/40 border border-primary/40 text-primary text-[10px] font-bold hover:bg-primary/10"
-                  title="Click to open Material Library"
-                >
-                  <span className="w-2.5 h-2.5 rounded-full bg-primary" />
-                  <span>Material #{activeVoxelMaterialId}</span>
-                </button>
                 <div className="h-3 w-px bg-border/40 mx-1" />
                 <span className="text-[10px] text-muted-foreground uppercase font-bold">Shape:</span>
                 {[

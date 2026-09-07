@@ -151,10 +151,18 @@ export async function adminGivePlayerItem(characterId: string, itemId: string, a
   }
 }
 
-export async function adminResetPlayerPosition(characterId: string, targetMapId: string = "DEMO_SANDBOX", x: number = 8, y: number = 8) {
+export async function adminResetPlayerPosition(characterId: string, targetMapId?: string, x: number = 8, y: number = 8) {
   try {
     const isAdmin = await verifyAdmin();
     if (!isAdmin) return { success: false, error: 'Unauthorized' };
+
+    let finalMapId = targetMapId;
+    if (!finalMapId) {
+      const defaultMapSetting = await prisma.siteSetting.findUnique({
+        where: { key: 'DEFAULT_MAP_ID' }
+      });
+      finalMapId = defaultMapSetting?.value || 'DEMO_SANDBOX';
+    }
 
     const character = await prisma.gameCharacter.findUnique({
       where: { id: characterId }
@@ -165,9 +173,8 @@ export async function adminResetPlayerPosition(characterId: string, targetMapId:
     }
 
     const state = JSON.parse(character.stateData);
-    state.mapId = targetMapId;
-    state.x = x;
-    state.y = y;
+    state.currentMapId = finalMapId;
+    state.position = { x, y };
 
     await prisma.gameCharacter.update({
       where: { id: characterId },
