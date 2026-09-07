@@ -24,7 +24,7 @@ export class ShapeToolHandler implements IToolHandler {
   public onPointerDown(event: ToolPointerEvent, context: ToolExecutionContext): boolean {
     if (event.button !== 0 && event.rawEvent.buttons !== 1) return false;
     
-    if (event.voxelTarget) {
+    if (event.voxelTarget && event.voxelTarget.kind !== 'none') {
       this.isDragging = true;
       const vT = event.voxelTarget;
       this.anchorVoxel = { 
@@ -48,9 +48,9 @@ export class ShapeToolHandler implements IToolHandler {
     if (!this.isDragging || !this.anchorVoxel) return false;
     
     const vT = event.voxelTarget;
-    const wx = vT ? vT.voxelCoord.wx : Math.floor(event.worldPos.x);
-    const wy = vT ? vT.voxelCoord.wy : 16;
-    const wz = vT ? vT.voxelCoord.wz : Math.floor(event.worldPos.z);
+    const wx = (vT && vT.kind !== 'none') ? vT.voxelCoord.wx : Math.floor(event.worldPos.x);
+    const wy = (vT && vT.kind !== 'none') ? vT.voxelCoord.wy : 16;
+    const wz = (vT && vT.kind !== 'none') ? vT.voxelCoord.wz : Math.floor(event.worldPos.z);
     
     if (context.engine.set3DBoxSelectionPreview) {
       context.engine.set3DBoxSelectionPreview(
@@ -75,9 +75,9 @@ export class ShapeToolHandler implements IToolHandler {
     if (!liveMap) return false;
 
     const vT = event.voxelTarget;
-    const wx = vT ? vT.voxelCoord.wx : Math.floor(event.worldPos.x);
-    const wy = vT ? vT.voxelCoord.wy : 16;
-    const wz = vT ? vT.voxelCoord.wz : Math.floor(event.worldPos.z);
+    const wx = (vT && vT.kind !== 'none') ? vT.voxelCoord.wx : Math.floor(event.worldPos.x);
+    const wy = (vT && vT.kind !== 'none') ? vT.voxelCoord.wy : 16;
+    const wz = (vT && vT.kind !== 'none') ? vT.voxelCoord.wz : Math.floor(event.worldPos.z);
     
     // Build the shape!
     this.executeShapeGeneration(this.anchorVoxel, { x: wx, y: wy, z: wz }, context, liveMap);

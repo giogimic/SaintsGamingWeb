@@ -1837,7 +1837,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           onTileHover: (r, c, voxelTarget) => {
             const store = useEditorStore.getState();
             store.setHoveredTile({ r, c });
-            if (voxelTarget) {
+            if (voxelTarget && voxelTarget.kind !== 'none') {
               store.setHoveredVoxel(voxelTarget.voxelCoord);
             } else {
               store.setHoveredVoxel(null);

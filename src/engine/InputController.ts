@@ -438,10 +438,10 @@ public enableTilePicking(
       if (!this.engine.scene) return;
       const resolved = this.engine.mapType !== 'VOXEL' ? getResolvedTile(this.engine.scene.pointerX, this.engine.scene.pointerY) : null;
       const voxelTarget = this.engine.mapType === 'VOXEL' ? this.engine.voxel.resolveVoxelTargetAtScreenCoord(this.engine.scene.pointerX, this.engine.scene.pointerY) : null;
-      const r = resolved?.r ?? (voxelTarget ? Math.max(0, Math.min(this.engine.currentMapHeight - 1, this.engine.currentMapHeight - 1 - voxelTarget.voxelCoord.wz)) : 0);
-      const c = resolved?.c ?? (voxelTarget ? Math.max(0, Math.min(this.engine.currentMapWidth - 1, voxelTarget.voxelCoord.wx)) : 0);
+      const r = resolved?.r ?? ((voxelTarget && voxelTarget.kind !== 'none') ? Math.max(0, Math.min(this.engine.currentMapHeight - 1, this.engine.currentMapHeight - 1 - voxelTarget.voxelCoord.wz)) : 0);
+      const c = resolved?.c ?? ((voxelTarget && voxelTarget.kind !== 'none') ? Math.max(0, Math.min(this.engine.currentMapWidth - 1, voxelTarget.voxelCoord.wx)) : 0);
       const layerIdx = resolved?.layerIdx ?? -1;
-      const point = resolved?.point ?? (voxelTarget ? { x: voxelTarget.hitPoint.x, z: voxelTarget.hitPoint.z } : undefined);
+      const point = resolved?.point ?? ((voxelTarget && voxelTarget.kind !== 'none') ? { x: voxelTarget.hitPoint.x, z: voxelTarget.hitPoint.z } : undefined);
 
       const isContinuousMode = this.engine.activeLayerType === 'paint-splat' || this.engine.activeLayerType === 'free-form';
 
@@ -461,7 +461,7 @@ public enableTilePicking(
       }
 
       // --- Grid / discrete mode duplicate suppression ---
-      const key = voxelTarget ? `${voxelTarget.voxelCoord.wx}_${voxelTarget.voxelCoord.wy}_${voxelTarget.voxelCoord.wz}` : `${r},${c}`;
+      const key = (voxelTarget && voxelTarget.kind !== 'none') ? `${voxelTarget.voxelCoord.wx}_${voxelTarget.voxelCoord.wy}_${voxelTarget.voxelCoord.wz}` : `${r},${c}`;
       if (key === lastKey && eventType === 'move') return;
       lastKey = key;
 
@@ -528,11 +528,11 @@ public enableTilePicking(
         this.engine.voxel.clearVoxelCursor();
       }
 
-      const r = resolved?.r ?? (voxelTarget ? Math.max(0, Math.min(this.engine.currentMapHeight - 1, this.engine.currentMapHeight - 1 - voxelTarget.voxelCoord.wz)) : 0);
-      const c = resolved?.c ?? (voxelTarget ? Math.max(0, Math.min(this.engine.currentMapWidth - 1, voxelTarget.voxelCoord.wx)) : 0);
+      const r = resolved?.r ?? ((voxelTarget && voxelTarget.kind !== 'none') ? Math.max(0, Math.min(this.engine.currentMapHeight - 1, this.engine.currentMapHeight - 1 - voxelTarget.voxelCoord.wz)) : 0);
+      const c = resolved?.c ?? ((voxelTarget && voxelTarget.kind !== 'none') ? Math.max(0, Math.min(this.engine.currentMapWidth - 1, voxelTarget.voxelCoord.wx)) : 0);
 
       if (this.engine.activeLayerType === 'paint-splat' || this.engine.activeLayerType === 'free-form') {
-        const pt = resolved?.point ?? (voxelTarget ? { x: voxelTarget.hitPoint.x, z: voxelTarget.hitPoint.z } : undefined);
+        const pt = resolved?.point ?? ((voxelTarget && voxelTarget.kind !== 'none') ? { x: voxelTarget.hitPoint.x, z: voxelTarget.hitPoint.z } : undefined);
         if (pt) {
           this.engine.renderContinuousSplatPreview(pt.x, pt.z);
         }

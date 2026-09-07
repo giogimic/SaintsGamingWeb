@@ -21,7 +21,8 @@ export class FillToolHandler implements IToolHandler {
     if (!liveMap) return false;
 
     // 0. Authoritative 3D Voxel Volumetric Flood Fill
-    if (event.voxelTarget && (context.engine as any).voxelWorld) {
+    if (store.studioMode === 'voxel' && (context.engine as any).voxelWorld) {
+      if (!event.voxelTarget || event.voxelTarget.kind === 'none') return true;
       const voxelWorld: VoxelWorld = (context.engine as any).voxelWorld;
       const startCoord = event.voxelTarget.voxelCoord;
       const targetWord = voxelWorld.getVoxel(startCoord.wx, startCoord.wy, startCoord.wz);
@@ -193,16 +194,11 @@ export class FillToolHandler implements IToolHandler {
     const paintedOps: any[] = [];
     const MAX_FILL_CELLS = 65536;
 
-    const worldDocSync = {
-      ensureActiveMap: (m: any) => (context.updateMapData || gameStore.setActiveMapData)(m),
-      markDirty: () => store.markMapDirty(),
-    };
-
     while (queue.length > 0 && paintedOps.length < MAX_FILL_CELLS) {
       const [currR, currC] = queue.shift()!;
       if (hasSelection && !isCellInsideSelection(currR, currC)) continue;
 
-      const painted = paintWorldCell(liveMap, layerIdx, currR, currC, fillVal, worldDocSync);
+      const painted = paintWorldCell(liveMap, layerIdx, currR, currC, fillVal);
       if (!('error' in painted)) {
         paintedOps.push(painted.cell);
         if (isLogic) {
@@ -233,11 +229,12 @@ export class FillToolHandler implements IToolHandler {
       }
     }
 
-    if (paintedOps.length > 0) {
-      store.pushPaintOp(paintedOps);
-      store.markMapDirty();
-      context.showToast?.(`Flood filled ${paintedOps.length} tiles`);
-    }
+      if (paintedOps.length > 0) {
+        store.pushPaintOp(paintedOps);
+        store.markMapDirty();
+        (context.updateMapData || gameStore.setActiveMapData)(liveMap);
+        context.showToast?.(`Flood filled ${paintedOps.length} tiles`);
+      }
 
     return true;
   }

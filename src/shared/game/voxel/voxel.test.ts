@@ -229,13 +229,14 @@ describe('Voxel Core Engine (Option A)', () => {
 
       const res = resolveVoxelTarget(mockPick, world);
       expect(res).not.toBeNull();
-      if (res) {
-        expect(res.hit).toBe(true);
+      if (res && res.kind === 'voxel-hit') {
         expect(res.voxelCoord.wx).toBe(0);
         expect(res.voxelCoord.wz).toBe(0);
         expect(res.voxelCoord.wy).toBe(15); // Top solid block of foundation
         expect(res.adjacentVoxelCoord.wy).toBe(16); // Air block right above
         expect(res.hitNormal).toEqual({ x: 0, y: 1, z: 0 });
+      } else {
+        throw new Error('Expected voxel-hit');
       }
     });
 
@@ -253,10 +254,12 @@ describe('Voxel Core Engine (Option A)', () => {
 
       const res = resolveVoxelTarget(mockPick, world);
       expect(res).not.toBeNull();
-      if (res) {
+      if (res && res.kind === 'voxel-hit') {
         expect(res.hitNormal).toEqual({ x: 1, y: 0, z: 0 });
         expect(res.voxelCoord.wx).toBe(0);
         expect(res.adjacentVoxelCoord.wx).toBe(1); // Neighbor block to the East
+      } else {
+        throw new Error('Expected voxel-hit');
       }
     });
 
@@ -270,14 +273,14 @@ describe('Voxel Core Engine (Option A)', () => {
         direction: { x: 0, y: -1, z: 0 },
       };
 
-      const res = resolveVoxelTarget(null, world, ray);
+      const res = resolveVoxelTarget(null, world, ray as any, { planeLockEnabled: true, targetPlaneY: 15 });
       expect(res).not.toBeNull();
-      if (res) {
-        expect(res.hit).toBe(true);
+      if (res && res.kind === 'plane-hit') {
         expect(res.voxelCoord.wx).toBe(0);
         expect(res.voxelCoord.wz).toBe(0);
         expect(res.voxelCoord.wy).toBe(15);
-        expect(res.adjacentVoxelCoord.wy).toBe(16);
+      } else {
+        throw new Error('Expected plane-hit');
       }
     });
   });

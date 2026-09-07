@@ -29,16 +29,9 @@ export function paintWorldCell(
   layerIdx: number,
   r: number,
   c: number,
-  tileId: number,
-  sync: WorldDocumentSync
+  tileId: number
 ): { cell: PaintedCell } | { error: string } {
-  const result = paintCellWithHistory(map, layerIdx, r, c, tileId);
-  if ("error" in result) return result;
-  sync.ensureActiveMap(map);
-  if (result.cell.before !== result.cell.after) {
-    sync.markDirty();
-  }
-  return result;
+  return paintCellWithHistory(map, layerIdx, r, c, tileId);
 }
 
 export function makePaintCellsOp(cells: PaintedCell[]): PaintCellsOp {

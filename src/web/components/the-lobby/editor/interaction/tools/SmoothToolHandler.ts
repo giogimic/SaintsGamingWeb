@@ -37,7 +37,7 @@ export class SmoothToolHandler implements IToolHandler {
   }
 
   private applySmoothing(event: ToolPointerEvent, context: ToolExecutionContext) {
-    if (!event.voxelTarget) return;
+    if (!event.voxelTarget || event.voxelTarget.kind === 'none') return;
 
     const voxelWorld: VoxelWorld = (context.engine as any).voxelWorld;
     if (!voxelWorld) return;

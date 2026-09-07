@@ -33,9 +33,18 @@ export class PrefabToolHandler implements IToolHandler {
         return false;
       }
 
-      const targetWX = event.voxelTarget?.adjacentVoxelCoord?.wx ?? event.tilePos.c;
-      const targetWY = event.voxelTarget?.adjacentVoxelCoord?.wy ?? 16;
-      const targetWZ = event.voxelTarget?.adjacentVoxelCoord?.wz ?? event.tilePos.r;
+      let targetWX = event.tilePos.c;
+      let targetWY = 16;
+      let targetWZ = event.tilePos.r;
+      if (event.voxelTarget && event.voxelTarget.kind === 'voxel-hit') {
+        targetWX = event.voxelTarget.adjacentVoxelCoord.wx;
+        targetWY = event.voxelTarget.adjacentVoxelCoord.wy;
+        targetWZ = event.voxelTarget.adjacentVoxelCoord.wz;
+      } else if (event.voxelTarget && event.voxelTarget.kind === 'plane-hit') {
+        targetWX = event.voxelTarget.voxelCoord.wx;
+        targetWY = event.voxelTarget.voxelCoord.wy;
+        targetWZ = event.voxelTarget.voxelCoord.wz;
+      }
 
       const { modifiedCount } = stampVoxelPrefab(
         voxelWorld,
@@ -78,10 +87,6 @@ export class PrefabToolHandler implements IToolHandler {
     const offsetR = Math.floor(((prefab.height || 1) - 1) / 2);
     const offsetC = Math.floor(((prefab.width || 1) - 1) / 2);
 
-    const worldDocSync = {
-      ensureActiveMap: (m: any) => (context.updateMapData || gameStore.setActiveMapData)(m),
-      markDirty: () => store.markMapDirty(),
-    };
 
     // 1. Paste Visual Data
     prefab.visualData?.forEach((v: any) => {
@@ -90,7 +95,7 @@ export class PrefabToolHandler implements IToolHandler {
       if (tr < 0 || tr >= mapHeight || tc < 0 || tc >= mapWidth) return;
 
       const targetLayer = Math.min(2, Math.max(0, store.activeLayerIdx + (v.layerOffset || 0)));
-      const painted = paintWorldCell(map, targetLayer, tr, tc, v.tileId, worldDocSync);
+      const painted = paintWorldCell(map, targetLayer, tr, tc, v.tileId);
       if (!('error' in painted)) {
         ops.push(painted.cell);
         context.engine.updateSingleTile(tr, tc, v.tileId, targetLayer, map.tilesets);
@@ -103,7 +108,7 @@ export class PrefabToolHandler implements IToolHandler {
       const tc = c + l.c - offsetC;
       if (tr < 0 || tr >= mapHeight || tc < 0 || tc >= mapWidth) return;
 
-      const painted = paintWorldCell(map, LOGIC_LAYER_IDX, tr, tc, l.tileId, worldDocSync);
+      const painted = paintWorldCell(map, LOGIC_LAYER_IDX, tr, tc, l.tileId);
       if (!('error' in painted)) {
         ops.push(painted.cell);
         if (!context.engine.updateLogicTile(tr, tc, l.tileId)) {
@@ -116,6 +121,7 @@ export class PrefabToolHandler implements IToolHandler {
     if (ops.length > 0) {
       store.pushPaintOp(ops);
       store.markMapDirty();
+      (context.updateMapData || gameStore.setActiveMapData)(map);
     }
 
     return true;

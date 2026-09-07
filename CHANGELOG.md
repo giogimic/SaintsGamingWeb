@@ -1,4 +1,4 @@
-## [2.1.765] - 2026-09-06
+## [2.1.777] - 2026-09-07\n### Fixed\n- Tile Editor: Removed costly synchronous state updates during map map batch mutation, fixing checkerboard flickering on large brush strokes.\n- Voxel Editor: Converted voxel targeting resolution to a strict discriminated union to safely distinguish between mesh hits and plane locks.\n- Voxel Editor: Updated all Tool Handlers (Extrude, Brush, Shape, etc.) to use type narrowing before extracting coordinate properties.\n\n## [2.1.765] - 2026-09-06
 ### Fixed
 - Wipe Integrity: Ensure `WorldAtlas` records are completely erased when resetting/wiping the studio.
 - Player Spawn: Fixed new players defaulting to the hardcoded `DEMO_SANDBOX` map. Spawn positions now dynamically pull from the configured `DEFAULT_MAP_ID` realm setting.

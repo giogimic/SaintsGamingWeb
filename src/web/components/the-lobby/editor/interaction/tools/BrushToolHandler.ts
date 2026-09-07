@@ -7,7 +7,7 @@ import { paintWorldCell } from '@/shared/game/worldDocument';
 import { rasterizeLine } from '@/shared/game/lineRaster';
 import { isPointInGeometry } from '@/shared/game/geometry/continuousGeometry';
 import { STUDIO_MAP_HOT_RELOAD_EVENT } from '@/shared/game/studioEvents';
-import { generateSplatScatterPoints, isInBrushShape } from '@/shared/game/brushGeometry';
+import { generateSplatScatterPoints, isInBrushShape, isInGridFootprint } from '@/shared/game/brushGeometry';
 import { startTransition } from 'react';
 import { resolveMapDimensions } from '@/shared/game/mapDocVisual';
 import { applyAutoTiling } from '@/shared/game/autoTiler';
@@ -26,6 +26,7 @@ import {
 import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
 import { VoxelTransactionBuilder } from '@/shared/game/voxel/VoxelTransaction';
 import { VOXEL_MATERIAL_CATALOG } from '@/shared/game/voxel/VoxelMaterialDefinition';
+import { getTargetVoxelCoord } from '@/shared/game/voxel/VoxelTargetResolver';
 
 export class BrushToolHandler implements IToolHandler {
   public readonly id = 'brush' as const;
@@ -57,7 +58,9 @@ export class BrushToolHandler implements IToolHandler {
     const { x, z } = event.worldPos;
 
     // 0. Authoritative 3D Voxel Placement
-    if (event.voxelTarget && (context.engine as any).voxelWorld) {
+    // Voxel 3D Brush Painting
+    if (store.studioMode === 'voxel' && (context.engine as any).voxelWorld) {
+      if (!event.voxelTarget || event.voxelTarget.kind === 'none') return true;
       const voxelWorld: VoxelWorld = (context.engine as any).voxelWorld;
       const dims = resolveMapDimensions(liveMap);
       const mapWidth = dims.width;
@@ -74,7 +77,7 @@ export class BrushToolHandler implements IToolHandler {
       const logicOnly = store.activeVoxelLogicOnly;
 
       const targetCoords = resolveConstrainedVoxelCoordinates({
-        centerCoord: event.voxelTarget.voxelCoord,
+        centerCoord: getTargetVoxelCoord(store.voxelBuildUpMode ? 'add' : 'replace', event.voxelTarget) || event.voxelTarget.voxelCoord,
         brushRadius: store.brushRadius || 1,
         brushShape: store.brushShape || 'square',
         brushAxis: store.activeVoxelBrushAxis || 'xz',
@@ -147,8 +150,8 @@ export class BrushToolHandler implements IToolHandler {
       return true;
     }
 
-    // 1. Freeform Splat / Props Handling (Suppressed in Voxel Mode)
     if (store.studioMode === 'voxel') return false;
+    // 1. Freeform Splat / Props Handling (Suppressed in Voxel Mode)
     if (store.activeLayerType === 'paint-splat' || store.activeLayerType === 'free-form') {
       const dims = resolveMapDimensions(liveMap);
       const mapWidth = dims.width;
@@ -291,7 +294,7 @@ export class BrushToolHandler implements IToolHandler {
       const extent = radius - 1;
       for (let tr = pt.r - extent; tr <= pt.r + extent; tr++) {
         for (let tc = pt.c - extent; tc <= pt.c + extent; tc++) {
-          if (isInBrushShape(tr - pt.r, tc - pt.c, radius, shape as any)) {
+          if (isInGridFootprint(tr - pt.r, tc - pt.c, extent, shape as any)) {
             finalPoints.add(`${tr},${tc}`);
           }
         }
@@ -330,10 +333,7 @@ export class BrushToolHandler implements IToolHandler {
       return true;
     };
 
-    const worldDocSync = {
-      ensureActiveMap: (m: any) => startTransition(() => { (context.updateMapData || gameStore.setActiveMapData)(m) }),
-      markDirty: () => store.markMapDirty(),
-    };
+
 
     if (target.kind === 'logic') {
       const logicId = paintValue;
@@ -345,7 +345,7 @@ export class BrushToolHandler implements IToolHandler {
       const paintedOps: any[] = [];
       for (const pt of coordsToPaint) {
         if (hasSelection && !isCellInsideSelection(pt.r, pt.c)) continue;
-        const painted = paintWorldCell(liveMap, LOGIC_LAYER_IDX, pt.r, pt.c, logicId, worldDocSync);
+        const painted = paintWorldCell(liveMap, LOGIC_LAYER_IDX, pt.r, pt.c, logicId);
         if (!('error' in painted)) {
           paintedOps.push(painted.cell);
           if (!context.engine.updateLogicTile(pt.r, pt.c, logicId)) {
@@ -363,7 +363,7 @@ export class BrushToolHandler implements IToolHandler {
       const paintedOps: any[] = [];
       for (const pt of coordsToPaint) {
         if (hasSelection && !isCellInsideSelection(pt.r, pt.c)) continue;
-        const painted = paintWorldCell(liveMap, REGION_LAYER_IDX, pt.r, pt.c, regionId, worldDocSync);
+        const painted = paintWorldCell(liveMap, REGION_LAYER_IDX, pt.r, pt.c, regionId);
         if (!('error' in painted)) {
           paintedOps.push(painted.cell);
           // If the engine has an updateRegionTile function, use it, else default to logic overlay for now or a new one
@@ -404,7 +404,7 @@ export class BrushToolHandler implements IToolHandler {
               const patVal = pat.gids[srcR][srcC];
               if (patVal === 0) continue;
 
-              const painted = paintWorldCell(liveMap, layerIdx, tr, tc, patVal, worldDocSync);
+              const painted = paintWorldCell(liveMap, layerIdx, tr, tc, patVal);
               if (!('error' in painted)) {
                 paintedOps.push(painted.cell);
                 context.engine.updateSingleTile(tr, tc, patVal, layerIdx, liveMap.tilesets);
@@ -417,7 +417,7 @@ export class BrushToolHandler implements IToolHandler {
             ? (store.activeBrushPattern.gids[0]?.[0] || paintValue)
             : paintValue;
 
-          const painted = paintWorldCell(liveMap, layerIdx, pt.r, pt.c, valToPaint, worldDocSync);
+          const painted = paintWorldCell(liveMap, layerIdx, pt.r, pt.c, valToPaint);
           if (!('error' in painted)) {
             paintedOps.push(painted.cell);
             context.engine.updateSingleTile(pt.r, pt.c, valToPaint, layerIdx, liveMap.tilesets);
@@ -426,7 +426,7 @@ export class BrushToolHandler implements IToolHandler {
             if (store.autoTileEnabled !== false) {
               const autoTileChanges = applyAutoTiling(liveMap as any, layerIdx, pt.r, pt.c);
               for (const atChange of autoTileChanges) {
-                const atPainted = paintWorldCell(liveMap, layerIdx, atChange.r, atChange.c, atChange.gid, worldDocSync);
+                const atPainted = paintWorldCell(liveMap, layerIdx, atChange.r, atChange.c, atChange.gid);
                 if (!('error' in atPainted)) {
                   paintedOps.push(atPainted.cell);
                   context.engine.updateSingleTile(atChange.r, atChange.c, atChange.gid, layerIdx, liveMap.tilesets);
@@ -440,6 +440,7 @@ export class BrushToolHandler implements IToolHandler {
       if (paintedOps.length > 0) {
         store.pushPaintOp(paintedOps);
         store.markMapDirty();
+        startTransition(() => { (context.updateMapData || gameStore.setActiveMapData)(liveMap) });
       }
     }
 

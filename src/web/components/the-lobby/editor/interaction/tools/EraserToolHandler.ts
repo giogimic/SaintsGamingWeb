@@ -18,6 +18,7 @@ import { VOXEL_WORD_AIR, getVoxelBrushOffsets, getVoxelBrushOffsets3D, resolveCo
 import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
 import { VoxelTransactionBuilder } from '@/shared/game/voxel/VoxelTransaction';
 import { resolveMapDimensions } from '@/shared/game/mapDocVisual';
+import { getTargetVoxelCoord } from '@/shared/game/voxel/VoxelTargetResolver';
 
 export class EraserToolHandler implements IToolHandler {
   public readonly id = 'eraser' as const;
@@ -49,14 +50,15 @@ export class EraserToolHandler implements IToolHandler {
     const { x, z } = event.worldPos;
 
     // 0. Authoritative 3D Voxel Erasure
-    if (event.voxelTarget && (context.engine as any).voxelWorld) {
+    if (store.studioMode === 'voxel' && (context.engine as any).voxelWorld) {
+      if (!event.voxelTarget || event.voxelTarget.kind === 'none') return true;
       const voxelWorld: VoxelWorld = (context.engine as any).voxelWorld;
       const dims = resolveMapDimensions(liveMap);
       const mapWidth = dims.width;
       const mapHeight = dims.height;
 
       const targetCoords = resolveConstrainedVoxelCoordinates({
-        centerCoord: event.voxelTarget.voxelCoord,
+        centerCoord: getTargetVoxelCoord('erase', event.voxelTarget) || event.voxelTarget.voxelCoord,
         brushRadius: store.brushRadius || 1,
         brushShape: store.brushShape || 'square',
         brushAxis: store.activeVoxelBrushAxis || 'xz',
@@ -182,16 +184,12 @@ export class EraserToolHandler implements IToolHandler {
       return true;
     };
 
-    const worldDocSync = {
-      ensureActiveMap: (m: any) => (context.updateMapData || gameStore.setActiveMapData)(m),
-      markDirty: () => store.markMapDirty(),
-    };
 
     if (target.kind === 'logic') {
       const paintedOps: any[] = [];
       for (const pt of coordsToPaint) {
         if (hasSelection && !isCellInsideSelection(pt.r, pt.c)) continue;
-        const painted = paintWorldCell(liveMap, LOGIC_LAYER_IDX, pt.r, pt.c, 0, worldDocSync);
+        const painted = paintWorldCell(liveMap, LOGIC_LAYER_IDX, pt.r, pt.c, 0);
         if (!('error' in painted)) {
           paintedOps.push(painted.cell);
           if (!context.engine.updateLogicTile(pt.r, pt.c, 0)) {
@@ -209,7 +207,7 @@ export class EraserToolHandler implements IToolHandler {
       const layerIdx = target.kind === 'visual' ? (target as any).layerIdx : target.kind === 'region' ? -2 : -1;
       for (const pt of coordsToPaint) {
         if (hasSelection && !isCellInsideSelection(pt.r, pt.c)) continue;
-        const painted = paintWorldCell(liveMap, layerIdx, pt.r, pt.c, 0, worldDocSync);
+        const painted = paintWorldCell(liveMap, layerIdx, pt.r, pt.c, 0);
         if (!('error' in painted)) {
           paintedOps.push(painted.cell);
           context.engine.updateSingleTile(pt.r, pt.c, 0, layerIdx, liveMap.tilesets);
@@ -218,6 +216,7 @@ export class EraserToolHandler implements IToolHandler {
       if (paintedOps.length > 0) {
         store.pushPaintOp(paintedOps);
         store.markMapDirty();
+        (context.updateMapData || gameStore.setActiveMapData)(liveMap);
       }
     }
 

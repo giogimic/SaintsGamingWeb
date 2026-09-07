@@ -17,7 +17,7 @@ export class ExtrudeToolHandler implements IToolHandler {
   public onPointerDown(event: ToolPointerEvent, context: ToolExecutionContext): boolean {
     if (event.button !== 0 && event.rawEvent.buttons !== 1) return false;
     
-    if (event.voxelTarget && event.voxelTarget.hit) {
+    if (event.voxelTarget && event.voxelTarget.kind === 'voxel-hit') {
       const voxelWorld: VoxelWorld = (context.engine as any).voxelWorld;
       if (!voxelWorld) return false;
 
@@ -58,11 +58,12 @@ export class ExtrudeToolHandler implements IToolHandler {
     // We can just use the difference in voxelCoord for simplicity.
 
     const vT = event.voxelTarget;
-    if (vT) {
+    if (vT && vT.kind !== 'none') {
       let delta = 0;
-      if (this.extrudeNormal.x !== 0) delta = (vT.voxelCoord.wx - this.anchorVoxel.x) * this.extrudeNormal.x;
-      if (this.extrudeNormal.y !== 0) delta = (vT.voxelCoord.wy - this.anchorVoxel.y) * this.extrudeNormal.y;
-      if (this.extrudeNormal.z !== 0) delta = (vT.voxelCoord.wz - this.anchorVoxel.z) * this.extrudeNormal.z;
+      const targetCoord = vT.voxelCoord;
+      if (this.extrudeNormal.x !== 0) delta = (targetCoord.wx - this.anchorVoxel.x) * this.extrudeNormal.x;
+      if (this.extrudeNormal.y !== 0) delta = (targetCoord.wy - this.anchorVoxel.y) * this.extrudeNormal.y;
+      if (this.extrudeNormal.z !== 0) delta = (targetCoord.wz - this.anchorVoxel.z) * this.extrudeNormal.z;
       
       // We only allow positive extrusion (pulling out) for now, or push in? 
       // Push could erase. Pull could draw. Let's do both.
@@ -107,11 +108,12 @@ export class ExtrudeToolHandler implements IToolHandler {
     }
     
     const vT = event.voxelTarget;
-    if (vT) {
+    if (vT && vT.kind !== 'none') {
       let delta = 0;
-      if (this.extrudeNormal.x !== 0) delta = (vT.voxelCoord.wx - this.anchorVoxel.x) * this.extrudeNormal.x;
-      if (this.extrudeNormal.y !== 0) delta = (vT.voxelCoord.wy - this.anchorVoxel.y) * this.extrudeNormal.y;
-      if (this.extrudeNormal.z !== 0) delta = (vT.voxelCoord.wz - this.anchorVoxel.z) * this.extrudeNormal.z;
+      const targetCoord = vT.voxelCoord;
+      if (this.extrudeNormal.x !== 0) delta = (targetCoord.wx - this.anchorVoxel.x) * this.extrudeNormal.x;
+      if (this.extrudeNormal.y !== 0) delta = (targetCoord.wy - this.anchorVoxel.y) * this.extrudeNormal.y;
+      if (this.extrudeNormal.z !== 0) delta = (targetCoord.wz - this.anchorVoxel.z) * this.extrudeNormal.z;
       
       this.executeExtrusion(delta, context);
     }

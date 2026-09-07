@@ -18,17 +18,28 @@ export interface VoxelRay {
   direction: VoxelVector3;
 }
 
-export interface VoxelTargetResolution {
-  hit: boolean;
-  hitPoint: VoxelVector3;
-  hitNormal: VoxelVector3;
-  voxelCoord: { wx: number; wy: number; wz: number };
-  adjacentVoxelCoord: { wx: number; wy: number; wz: number };
-  chunkCoord: { cx: number; cz: number; cy: number };
-  localCoord: { lx: number; ly: number; lz: number };
-  existingVoxel: number;
-  isInsideWorld: boolean;
-}
+export type VoxelTargetResolution =
+  | {
+      kind: 'voxel-hit';
+      hitPoint: VoxelVector3;
+      hitNormal: VoxelVector3;
+      voxelCoord: { wx: number; wy: number; wz: number };
+      adjacentVoxelCoord: { wx: number; wy: number; wz: number };
+      chunkCoord: { cx: number; cz: number; cy: number };
+      localCoord: { lx: number; ly: number; lz: number };
+      existingVoxel: number;
+      isInsideWorld: boolean;
+    }
+  | {
+      kind: 'plane-hit';
+      hitPoint: VoxelVector3;
+      voxelCoord: { wx: number; wy: number; wz: number };
+      planeY: number;
+      isInsideWorld: boolean;
+    }
+  | {
+      kind: 'none';
+    };
 
 export interface RawPickTarget {
   hit?: boolean;
@@ -37,61 +48,18 @@ export interface RawPickTarget {
   getNormal?: (useWorldCoordinates?: boolean) => VoxelVector3 | null;
 }
 
-/**
- * Resolves an authoritative 3D voxel target from a 3D raycast / pick result.
- */
+
 export function resolveVoxelTarget(
   pick: RawPickTarget | null | undefined,
   world: VoxelWorld,
   ray?: VoxelRay | null,
   options?: { planeLockEnabled?: boolean; targetPlaneY?: number }
-): VoxelTargetResolution | null {
-  if (!world) return null;
+): VoxelTargetResolution {
+  if (!world) return { kind: 'none' };
 
   const totalW = world.totalWidthBlocks;
   const totalZ = world.totalDepthBlocks;
   const totalH = world.totalHeightBlocks;
-
-  // 0. Horizon Raycasting (Plane Lock Override)
-  if (options?.planeLockEnabled && options.targetPlaneY !== undefined && ray && Math.abs(ray.direction.y) > 1e-6) {
-    const planeY = options.targetPlaneY;
-    const meshPlaneY = planeY + world.originOffsetY; // Convert voxel Y to mesh Y
-    
-    const t = (meshPlaneY - ray.origin.y) / ray.direction.y;
-    if (t >= 0) {
-      const hitX = ray.origin.x + t * ray.direction.x;
-      const hitZ = ray.origin.z + t * ray.direction.z;
-      
-      const targetVoxel = world.worldMeshToVoxel(hitX, meshPlaneY, hitZ);
-      const isInsideWorld =
-        targetVoxel.wx >= 0 &&
-        targetVoxel.wx < totalW &&
-        targetVoxel.wz >= 0 &&
-        targetVoxel.wz < totalZ;
-
-      const existingVoxel = isInsideWorld
-        ? world.getVoxel(targetVoxel.wx, targetVoxel.wy, targetVoxel.wz)
-        : 0;
-
-      const { cx, cz, cy, lx, ly, lz } = VoxelWorld.worldToChunkCoords(
-        targetVoxel.wx,
-        targetVoxel.wy,
-        targetVoxel.wz
-      );
-
-      return {
-        hit: true,
-        hitPoint: { x: hitX, y: meshPlaneY, z: hitZ },
-        hitNormal: { x: 0, y: 1, z: 0 },
-        voxelCoord: targetVoxel,
-        adjacentVoxelCoord: targetVoxel, // For plane lock, target is exactly the clicked cell on the plane
-        chunkCoord: { cx, cz, cy },
-        localCoord: { lx, ly, lz },
-        existingVoxel,
-        isInsideWorld,
-      };
-    }
-  }
 
   // 1. Direct Mesh Hit against a chunk or ground surface
   if (pick?.hit && pick.pickedPoint) {
@@ -153,8 +121,8 @@ export function resolveVoxelTarget(
     );
 
     return {
-      hit: true,
-      hitPoint: { x: pt.x, y: pt.y, z: pt.z },
+      kind: 'voxel-hit',
+      hitPoint: pt,
       hitNormal: { x: nx, y: ny, z: nz },
       voxelCoord: targetVoxel,
       adjacentVoxelCoord: adjacentVoxel,
@@ -165,59 +133,34 @@ export function resolveVoxelTarget(
     };
   }
 
-  // 2. Analytical Raycast against Top Voxel Surface / Ground Plane
-  if (ray && Math.abs(ray.direction.y) > 1e-6) {
-    const t0 = -ray.origin.y / ray.direction.y;
-    if (t0 >= 0) {
-      const approxX = ray.origin.x + t0 * ray.direction.x;
-      const approxZ = ray.origin.z + t0 * ray.direction.z;
-      const approxVoxel = world.worldMeshToVoxel(approxX, 0, approxZ);
-
-      // Derive ground planes directly from the top voxel surface
-      const topWY = typeof world.getTopSolidVoxelY === 'function'
-        ? world.getTopSolidVoxelY(approxVoxel.wx, approxVoxel.wz)
-        : 15;
-      const topSurfaceMeshY = (topWY + 1) + world.originOffsetY;
-
-      const t = (topSurfaceMeshY - ray.origin.y) / ray.direction.y;
+  // 2. Horizon Raycasting (Plane Lock Override on empty space)
+  if (options?.planeLockEnabled && options.targetPlaneY !== undefined && ray && Math.abs(ray.direction.y) > 1e-6) {
+    const planeY = options.targetPlaneY;
+    const meshPlaneY = planeY + world.originOffsetY; // Convert voxel Y to mesh Y
+    
+    const t = (meshPlaneY - ray.origin.y) / ray.direction.y;
+    if (t >= 0) {
       const hitX = ray.origin.x + t * ray.direction.x;
-      const hitY = topSurfaceMeshY;
       const hitZ = ray.origin.z + t * ray.direction.z;
-
-      const targetVoxel = world.worldMeshToVoxel(hitX, hitY - 0.05, hitZ);
-      const adjacentVoxel = world.worldMeshToVoxel(hitX, hitY + 0.05, hitZ);
-
+      
+      const targetVoxel = world.worldMeshToVoxel(hitX, meshPlaneY, hitZ);
       const isInsideWorld =
         targetVoxel.wx >= 0 &&
         targetVoxel.wx < totalW &&
         targetVoxel.wz >= 0 &&
         targetVoxel.wz < totalZ;
 
-      const existingVoxel = isInsideWorld
-        ? world.getVoxel(targetVoxel.wx, targetVoxel.wy, targetVoxel.wz)
-        : 0;
-
-      const { cx, cz, cy, lx, ly, lz } = VoxelWorld.worldToChunkCoords(
-        targetVoxel.wx,
-        targetVoxel.wy,
-        targetVoxel.wz
-      );
-
       return {
-        hit: true,
-        hitPoint: { x: hitX, y: hitY, z: hitZ },
-        hitNormal: { x: 0, y: 1, z: 0 },
+        kind: 'plane-hit',
+        hitPoint: { x: hitX, y: meshPlaneY, z: hitZ },
         voxelCoord: targetVoxel,
-        adjacentVoxelCoord: adjacentVoxel,
-        chunkCoord: { cx, cz, cy },
-        localCoord: { lx, ly, lz },
-        existingVoxel,
+        planeY,
         isInsideWorld,
       };
     }
   }
 
-  return null;
+  return { kind: 'none' };
 }
 
 /**
@@ -228,7 +171,10 @@ export function resolveVoxelTarget(
 export function getTargetVoxelCoord(
   mode: 'add' | 'extrude' | 'carve' | 'paint' | 'erase' | 'replace',
   target: VoxelTargetResolution
-): { wx: number; wy: number; wz: number } {
+): { wx: number; wy: number; wz: number } | null {
+  if (target.kind === 'none') return null;
+  if (target.kind === 'plane-hit') return target.voxelCoord;
+  
   if (mode === 'add' || mode === 'extrude') {
     return target.adjacentVoxelCoord;
   }

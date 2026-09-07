@@ -237,7 +237,10 @@ public resolveVoxelTargetAtScreenCoord(screenX: number, screenY: number): VoxelT
     mode: 'place' | 'erase' | 'inspect' = 'place',
     previewWord?: number
   ): void {
-    if (!this.engine.scene || !this.voxelWorld) return;
+    if (!this.engine.scene || !this.voxelWorld || target.kind === 'none') {
+      this.clearVoxelCursor();
+      return;
+    }
 
     if (!this.voxelCursorRoot || this.voxelCursorRoot.isDisposed()) {
       this.voxelCursorRoot = new TransformNode('voxel_cursor_root', this.engine.scene);
