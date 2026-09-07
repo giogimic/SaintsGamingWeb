@@ -1463,65 +1463,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             const mode = isAlt || isCtrl ? 'subtract' : isShift ? 'add' : 'normal';
 
             if (selMode === 'magic-wand') {
-              if (eventType === 'down') {
-                const layerIdx = store.activeLayerIdx;
-                const targetGrid = layerIdx === -1 ? map?.grid : map?.tileLayers?.[layerIdx]?.grid;
-                if (!targetGrid) return;
-                const gh = targetGrid.length;
-                const gw = targetGrid[0]?.length || 0;
-                if (r < 0 || r >= gh || c < 0 || c >= gw) return;
-                const targetVal = targetGrid[r][c];
-
-                // 4-way BFS flood fill
-                const visited = new Set<string>();
-                const queue: Array<{ r: number; c: number }> = [{ r, c }];
-                visited.add(`${r},${c}`);
-                const selectedList: Array<{ r: number; c: number }> = [];
-
-                while (queue.length > 0) {
-                  const cur = queue.shift()!;
-                  selectedList.push(cur);
-                  const neighbors = [
-                    { r: cur.r - 1, c: cur.c },
-                    { r: cur.r + 1, c: cur.c },
-                    { r: cur.r, c: cur.c - 1 },
-                    { r: cur.r, c: cur.c + 1 },
-                  ];
-                  for (const nb of neighbors) {
-                    if (nb.r >= 0 && nb.r < gh && nb.c >= 0 && nb.c < gw) {
-                      const k = `${nb.r},${nb.c}`;
-                      if (!visited.has(k) && targetGrid[nb.r][nb.c] === targetVal) {
-                        visited.add(k);
-                        queue.push(nb);
-                      }
-                    }
-                  }
-                }
-
-                if (mode === 'subtract') {
-                  const remaining = { ...(store.selectedCells || {}) };
-                  selectedList.forEach((pt) => {
-                    delete remaining[`${pt.r},${pt.c}`];
-                  });
-                  store.setSelectedCells(remaining);
-                  engine.setMultiSelectionPreview(remaining);
-                } else if (mode === 'add') {
-                  const combined = { ...(store.selectedCells || {}) };
-                  selectedList.forEach((pt) => {
-                    combined[`${pt.r},${pt.c}`] = true;
-                  });
-                  store.setSelectedCells(combined);
-                  engine.setMultiSelectionPreview(combined);
-                } else {
-                  const mapCells: Record<string, boolean> = {};
-                  selectedList.forEach((pt) => {
-                    mapCells[`${pt.r},${pt.c}`] = true;
-                  });
-                  store.setSelectedCells(mapCells);
-                  engine.setMultiSelectionPreview(mapCells);
-                }
-                showToast(`Magic Wand selected ${selectedList.length} connected tiles`);
-              }
+              showToast('Magic Wand is not supported in Voxel mode yet.');
               return;
             }
 

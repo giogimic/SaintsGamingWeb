@@ -3570,7 +3570,7 @@ export class BabylonEngine {
     backdropGround.material = backdropMat;
     backdropGround.isPickable = false;
     backdropGround.parent = this.rootNode;
-    backdropGround.isVisible = this.editorCameraMode;
+    backdropGround.isVisible = hasVoxel ? false : this.editorCameraMode;
     backdropGround.alwaysSelectAsActiveMesh = true;
     this.editorMapBorderMeshes.push(backdropGround);
 
@@ -3590,14 +3590,15 @@ export class BabylonEngine {
     outerLines.color = new Color3(0.96, 0.62, 0.04); // #f59e0b amber neon
     outerLines.isPickable = false;
     outerLines.parent = this.rootNode;
-    outerLines.isVisible = this.editorCameraMode;
+    outerLines.isVisible = hasVoxel ? false : this.editorCameraMode;
     outerLines.alwaysSelectAsActiveMesh = true;
     this.editorMapBorderMeshes.push(outerLines);
   }
 
   public setEditorMapBordersVisible(visible: boolean) {
+    const hasVoxel = Boolean((this.currentRawMapData as any)?.voxelDoc || this.voxel.voxelWorld);
     for (const m of this.editorMapBorderMeshes) {
-      m.isVisible = visible;
+      m.isVisible = hasVoxel ? false : visible;
     }
   }
 
