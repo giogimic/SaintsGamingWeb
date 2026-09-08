@@ -21,6 +21,7 @@ import {
   VOXEL_MAT_CROP_CARROT,
   VOXEL_MAT_CROP_HERB,
   VOXEL_MAT_FOLIAGE_FLOWER,
+  VOXEL_MAT_ATLAS_PORTAL,
 } from './VoxelWord';
 
 export { 
@@ -43,6 +44,7 @@ export {
   VOXEL_MAT_CROP_CARROT,
   VOXEL_MAT_CROP_HERB,
   VOXEL_MAT_FOLIAGE_FLOWER,
+  VOXEL_MAT_ATLAS_PORTAL,
 };
 
 export type UvRect = [number, number, number, number]; // [uMin, vMin, uMax, vMax]
