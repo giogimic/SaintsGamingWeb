@@ -776,10 +776,13 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
       <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
         {activeTab === 'SEAMLESS' ? (
           <div className="flex flex-col gap-4">
-            {['Solid Terrain', 'Fluids (Physics-Enabled)'].map(group => {
+            {['Solid Terrain', 'Fluids (Physics-Enabled)', 'Weighted Blocks (Physics-Enabled)'].map(group => {
               const items = filteredSeamless.filter(mat => {
-                const isFluid = mat.material === 'WATER' || mat.material === 'LAVA';
-                return group === 'Fluids (Physics-Enabled)' ? isFluid : !isFluid;
+                const isFluid = mat.material === 'WATER' || mat.material === 'LAVA' || mat.material === 'SWAMP';
+                const isWeighted = mat.material === 'SAND' || mat.material === 'SNOW' || mat.material === 'GRAVEL';
+                if (group === 'Fluids (Physics-Enabled)') return isFluid;
+                if (group === 'Weighted Blocks (Physics-Enabled)') return isWeighted;
+                return !isFluid && !isWeighted;
               });
 
               if (items.length === 0) return null;
@@ -788,10 +791,11 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
                 <div key={group} className="flex flex-col gap-2">
                   <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider pl-1 flex items-center gap-1.5">
                     {group === 'Fluids (Physics-Enabled)' && <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />}
+                    {group === 'Weighted Blocks (Physics-Enabled)' && <div className="w-1.5 h-1.5 rounded-full bg-yellow-600" />}
                     {group}
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
-            {filteredSeamless.map((mat) => {
+            {items.map((mat) => {
               const isSelected = activeStampAsset?.assetId === mat.id;
               return (
                 <div
