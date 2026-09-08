@@ -39,7 +39,7 @@ const LOGIC_OPTIONS = [
 export interface SeamlessMaterial {
   id: string;
   name: string;
-  material: 'GRASS' | 'DIRT' | 'SAND' | 'STONE' | 'WATER' | 'SNOW' | 'WOOD' | 'LAVA' | 'SWAMP' | 'DUNGEON' | 'ICE';
+  material: 'GRASS' | 'DIRT' | 'SAND' | 'STONE' | 'WATER' | 'SNOW' | 'WOOD' | 'LAVA' | 'SWAMP' | 'DUNGEON' | 'ICE' | 'GRAVEL';
   textureUrl: string;
   color: string;
   uOffset?: number;
