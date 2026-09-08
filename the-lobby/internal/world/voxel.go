@@ -36,6 +36,8 @@ const (
 	ShapeSlabTop        = 8
 	ShapeStairsStraight = 9
 	ShapeStairsCorner   = 10
+	ShapeFenceRail      = 13
+	ShapeThinLayer      = 17
 
 	// Voxel Logic Layers (bits 28..31)
 	LogicNone        = 0
@@ -601,20 +603,106 @@ func (w *VoxelWorld) QueryObstacleBoxes(query AABB) []AABB {
 				}
 				if IsVoxelSolid(word) || phys == PhysicsSolidObstacle || phys == PhysicsHazard {
 					shape := VoxelShape(word)
+					orient := VoxelOrientation(word)
+					fx, fy, fz := float64(bx), float64(by), float64(bz)
+
 					if shape == ShapeSlabBottom {
 						boxes = append(boxes, AABB{
-							MinX: float64(bx), MinY: float64(by), MinZ: float64(bz),
-							MaxX: float64(bx + 1), MaxY: float64(by) + 0.5, MaxZ: float64(bz + 1),
+							MinX: fx, MinY: fy, MinZ: fz,
+							MaxX: fx + 1, MaxY: fy + 0.5, MaxZ: fz + 1,
 						})
 					} else if shape == ShapeSlabTop {
 						boxes = append(boxes, AABB{
-							MinX: float64(bx), MinY: float64(by) + 0.5, MinZ: float64(bz),
-							MaxX: float64(bx + 1), MaxY: float64(by + 1), MaxZ: float64(bz + 1),
+							MinX: fx, MinY: fy + 0.5, MinZ: fz,
+							MaxX: fx + 1, MaxY: fy + 1, MaxZ: fz + 1,
 						})
-					} else {
+					} else if shape == ShapeThinLayer || shape == 17 {
 						boxes = append(boxes, AABB{
-							MinX: float64(bx), MinY: float64(by), MinZ: float64(bz),
-							MaxX: float64(bx + 1), MaxY: float64(by + 1), MaxZ: float64(bz + 1),
+							MinX: fx, MinY: fy, MinZ: fz,
+							MaxX: fx + 1, MaxY: fy + 0.0625, MaxZ: fz + 1,
+						})
+					} else if shape == ShapeFenceRail || shape == 13 {
+						boxes = append(boxes, AABB{
+							MinX: fx + 0.25, MinY: fy, MinZ: fz + 0.25,
+							MaxX: fx + 0.75, MaxY: fy + 1, MaxZ: fz + 0.75,
+						})
+					} else if shape == ShapeStairsStraight {
+						// Base half-slab
+						boxes = append(boxes, AABB{
+							MinX: fx, MinY: fy, MinZ: fz,
+							MaxX: fx + 1, MaxY: fy + 0.5, MaxZ: fz + 1,
+						})
+						// Top half
+						var top AABB
+						top.MinY, top.MaxY = fy+0.5, fy+1.0
+						if orient == 2 { // SOUTH
+							top.MinX, top.MaxX = fx, fx+1.0
+							top.MinZ, top.MaxZ = fz, fz+0.5
+						} else if orient == 1 { // EAST
+							top.MinX, top.MaxX = fx+0.5, fx+1.0
+							top.MinZ, top.MaxZ = fz, fz+1.0
+						} else if orient == 3 { // WEST
+							top.MinX, top.MaxX = fx, fx+0.5
+							top.MinZ, top.MaxZ = fz, fz+1.0
+						} else { // NORTH (0)
+							top.MinX, top.MaxX = fx, fx+1.0
+							top.MinZ, top.MaxZ = fz+0.5, fz+1.0
+						}
+						boxes = append(boxes, top)
+					} else if shape == ShapeStairsCorner {
+						// Base half-slab
+						boxes = append(boxes, AABB{
+							MinX: fx, MinY: fy, MinZ: fz,
+							MaxX: fx + 1, MaxY: fy + 0.5, MaxZ: fz + 1,
+						})
+						// Top quarter
+						var top AABB
+						top.MinY, top.MaxY = fy+0.5, fy+1.0
+						if orient == 2 { // SOUTH
+							top.MinX, top.MaxX = fx, fx+0.5
+							top.MinZ, top.MaxZ = fz, fz+0.5
+						} else if orient == 1 { // EAST
+							top.MinX, top.MaxX = fx+0.5, fx+1.0
+							top.MinZ, top.MaxZ = fz, fz+0.5
+						} else if orient == 3 { // WEST
+							top.MinX, top.MaxX = fx, fx+0.5
+							top.MinZ, top.MaxZ = fz+0.5, fz+1.0
+						} else { // NORTH (0)
+							top.MinX, top.MaxX = fx+0.5, fx+1.0
+							top.MinZ, top.MaxZ = fz+0.5, fz+1.0
+						}
+						boxes = append(boxes, top)
+					} else if shape == ShapeSlope45 {
+						// 4 micro-steps
+						for i := 0; i < 4; i++ {
+							stepH := float64(i) * 0.25
+							stepNext := stepH + 0.25
+							frac := float64(4-i) * 0.25 // from 1.0 down to 0.25
+							
+							box := AABB{
+								MinY: fy + stepH,
+								MaxY: fy + stepNext,
+							}
+							if orient == 2 { // SOUTH (rises towards -Z)
+								box.MinX, box.MaxX = fx, fx+1.0
+								box.MinZ, box.MaxZ = fz, fz+frac
+							} else if orient == 1 { // EAST (rises towards -X)
+								box.MinX, box.MaxX = fx+(1.0-frac), fx+1.0
+								box.MinZ, box.MaxZ = fz, fz+1.0
+							} else if orient == 3 { // WEST (rises towards +X)
+								box.MinX, box.MaxX = fx, fx+frac
+								box.MinZ, box.MaxZ = fz, fz+1.0
+							} else { // NORTH (rises towards +Z)
+								box.MinX, box.MaxX = fx, fx+1.0
+								box.MinZ, box.MaxZ = fz+(1.0-frac), fz+1.0
+							}
+							boxes = append(boxes, box)
+						}
+					} else {
+						// Default full block
+						boxes = append(boxes, AABB{
+							MinX: fx, MinY: fy, MinZ: fz,
+							MaxX: fx + 1, MaxY: fy + 1, MaxZ: fz + 1,
 						})
 					}
 				}

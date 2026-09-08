@@ -467,14 +467,10 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             useGameStore.getState().setGameMode('SHOP');
             break;
           case 'CLINIC_HEAL':
-            const state = useGameStore.getState();
-            state.hydratePlayer({ ...state.player, hp: state.player.maxHp || 99 });
-            showToast('Your team has been fully healed!');
+            emitSocketEvent?.('clinic_heal', { mapId: currentMapId, x: targetX, y: targetY });
             break;
           case 'FISHING':
-            soundSynth.playEncounterSound?.();
-            gainSkillXp('fishing', payload.xp || 20);
-            showToast(`Fishing... caught something! (+${payload.xp || 20} Fishing XP)`);
+            emitSocketEvent?.('fish_attempt', { mapId: currentMapId, x: targetX, y: targetY });
             break;
           case 'BANK':
             showToast('Bank Terminal accessed!');
@@ -1003,6 +999,17 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
           const peerSprite = other.assetProfileId || (other as any).spriteId || 'adventurer';
 
+          // Extrapolate position for Dead Reckoning
+          let extrapolatedX = ox;
+          let extrapolatedZ = oz;
+          if (other.vx !== undefined && other.vy !== undefined && other.lastUpdateMs) {
+            const deltaSec = (Date.now() - other.lastUpdateMs) / 1000.0;
+            const clampSec = Math.min(deltaSec, 0.5); // Cap extrapolation at 0.5s
+            // other.vx maps to X axis, other.vy maps to Z axis (inverted visually)
+            extrapolatedX += (other.vx * clampSec);
+            extrapolatedZ += (-(other.vy) * clampSec);
+          }
+
           // Fetch animationProfile if not cached (non-blocking)
           if (!multiplayerAnimationProfilesRef.current.has(socketId) && peerSprite) {
             multiplayerAnimationProfilesRef.current.set(socketId, null);
@@ -1014,8 +1021,8 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           babylonEngine.updateEntity({
             id: `multiplayer_${socketId}`,
             name: other.name || 'Saint',
-            x: ox,
-            y: oz,
+            x: extrapolatedX,
+            y: extrapolatedZ,
             spriteUrl: resolveEntitySpriteUrl(peerSprite, {
               kind: 'player',
               fallback: '/game-assets/npc/adventurer.png',
@@ -1104,16 +1111,25 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
         if (isCurrentMap || isNeighborMap) {
           activeEntities.add(ent.id);
-          const ex = (ent as any).worldX !== undefined
+          let ex = (ent as any).worldX !== undefined
             ? (ent as any).worldX
             : (isNeighborMap && chunkMap.has(String(ent.mapId).toUpperCase())
                 ? (ent.position.x - chunkMap.get(String(ent.mapId).toUpperCase())!.width / 2) + chunkMap.get(String(ent.mapId).toUpperCase())!.offsetX + offset.x
                 : ent.position.x - liveW / 2 + offset.x);
-          const ez = (ent as any).worldZ !== undefined
+          let ez = (ent as any).worldZ !== undefined
             ? (ent as any).worldZ
             : (isNeighborMap && chunkMap.has(String(ent.mapId).toUpperCase())
                 ? (chunkMap.get(String(ent.mapId).toUpperCase())!.height / 2 - ent.position.y) + chunkMap.get(String(ent.mapId).toUpperCase())!.offsetZ - offset.y
                 : liveH / 2 - ent.position.y - offset.y);
+
+          // Extrapolate position for Dead Reckoning
+          if (ent.vx !== undefined && ent.vy !== undefined && ent.lastUpdateMs) {
+            const deltaSec = (Date.now() - ent.lastUpdateMs) / 1000.0;
+            const clampSec = Math.min(deltaSec, 0.5); // Cap extrapolation at 0.5s
+            // ent.vx maps to X axis, ent.vy maps to Z axis (inverted visually)
+            ex += (ent.vx * clampSec);
+            ez += (-(ent.vy) * clampSec);
+          }
 
           const kind =
             ent.type === 'NPC'

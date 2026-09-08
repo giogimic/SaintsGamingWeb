@@ -37,7 +37,7 @@ func TestGoToTSCompatibility(t *testing.T) {
 		},
 	}
 
-	generator := NewProceduralVoxelGenerator(biome)
+	generator := NewProceduralVoxelGenerator(biome.Seed)
 	placer := &FeaturePlacer{}
 
 	// Test chunk (0,0,0)

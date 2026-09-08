@@ -25,10 +25,11 @@ interface ActiveQuest {
 }
 
 export default function QuestTrackerOverlay() {
-  const [quests, setQuests] = useState<ActiveQuest[]>([]);
   const [spyderCampaignComplete, setSpyderCampaignComplete] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
-  const { refreshQuestsCounter, gameMode, currentMapId } = useGameStore();
+  const { gameMode, currentMapId } = useGameStore();
+  const activeQuestsObj = useGameStore((state) => state.player.activeQuests || {});
+  const quests = Object.values(activeQuestsObj) as ActiveQuest[];
 
   const isSpyderMap =
     currentMapId === 'AZURE_TOWN' ||
@@ -47,23 +48,6 @@ export default function QuestTrackerOverlay() {
     currentMapId === 'SPYDER_LEATHER_SHAFT1' ||
     currentMapId === 'SPYDER_LEATHER_SHAFT2' ||
     currentMapId === 'COTTON_UNDERGROUND';
-
-  const fetchQuests = async () => {
-    try {
-      const res = await fetch('/api/quests/active');
-      if (res.ok) {
-        const data = await res.json();
-        setQuests(data.quests || []);
-        setSpyderCampaignComplete(!!data.spyderCampaignComplete);
-      }
-    } catch (e) {
-      console.error('Failed to fetch quests:', e);
-    }
-  };
-
-  useEffect(() => {
-    fetchQuests();
-  }, [refreshQuestsCounter]);
 
   if (!['EXPLORING', 'INVENTORY', 'SKILLS', 'EQUIPMENT', 'QUESTS', 'GTC', 'DIALOG'].includes(gameMode)) return null;
 

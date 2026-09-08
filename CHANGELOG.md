@@ -1,5 +1,9 @@
-## [2.1.789] - 2026-09-08
+## [2.1.792] - 2026-09-08
 ### Added
+- Go Server: Integrated the Atlas Fractal terrain generation system (Fractional Brownian Motion, Domain Warps, and Geographic Biome Resolving). The server is now fully authoritative for all procedural terrain chunk streams.
+- Go Server: Built the `SpiritGateRegistry` and `ProjectileManager`. Moving entities (arrows/projectiles) that intersect mathematically with 3D SpiritGate planes are now seamlessly handed off across MMO instances without client-side intervention.
+
+## [2.1.789] - 2026-09-08
 - Go Server: Added a high-performance thread-safe Chunk Cache using `sync.RWMutex` to the `VoxelWorld` memory store to eliminate redundant math calculations during streaming.
 - Architecture: Converted `DEMO_SANDBOX` into an infinite procedural fractal map and implemented 5x5 chunk pre-generation on Go Server boot, guaranteeing zero-latency initial logins.
 

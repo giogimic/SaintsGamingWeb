@@ -487,14 +487,10 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             useGameStore.getState().setGameMode('SHOP');
             break;
           case 'CLINIC_HEAL':
-            const state = useGameStore.getState();
-            state.hydratePlayer({ ...state.player, hp: state.player.maxHp || 99 });
-            showToast('Your team has been fully healed!');
+            emitSocketEvent?.('clinic_heal', { mapId: currentMapId, x: targetX, y: targetY });
             break;
           case 'FISHING':
-            soundSynth.playEncounterSound?.();
-            gainSkillXp('fishing', payload.xp || 20);
-            showToast(`Fishing... caught something! (+${payload.xp || 20} Fishing XP)`);
+            emitSocketEvent?.('fish_attempt', { mapId: currentMapId, x: targetX, y: targetY });
             break;
           case 'BANK':
             showToast('Bank Terminal accessed!');

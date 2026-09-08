@@ -38,6 +38,12 @@ type State struct {
 	InputQueue  []protocol.PlayerInput
 	Dirty       bool
 	LastSeq     int64
+
+	// Dead Reckoning State
+	LastBroadcastX, LastBroadcastY, LastBroadcastZ    float64
+	LastBroadcastVX, LastBroadcastVY, LastBroadcastVZ float64
+	LastBroadcastDir                                  string
+	LastBroadcastAt                                   time.Time
 }
 
 // Manager tracks connected players keyed by account + socket.
@@ -349,7 +355,8 @@ func (m *Manager) ApplyMove3D(accountID string, nx, ny, nz, vx, vy, vz float64, 
 	p.LastMoveAt = time.Now()
 	p.ZoneX, p.ZoneY = ZoneOf(p.X, p.Z, m.aoiZoneSize) // Using Z as the depth/north-south axis
 	p.LastSeq = seq
-	p.Dirty = true
+	
+	// Dirtiness is evaluated during DrainDirty for Delta Compression
 	return p, true
 }
 
@@ -376,6 +383,44 @@ func (m *Manager) DrainDirty() []*State {
 			p.IsMoving = false
 			p.Dirty = true
 		}
+		
+		// Delta Compression Evaluation
+		needsBroadcast := false
+		
+		// 1. Trajectory Change (Velocity or Direction)
+		if p.VX != p.LastBroadcastVX || p.VY != p.LastBroadcastVY || p.VZ != p.LastBroadcastVZ || p.Direction != p.LastBroadcastDir {
+			needsBroadcast = true
+		}
+		
+		// 2. Divergence (Did we drift more than 0.5m from where the client thinks we are?)
+		if !needsBroadcast {
+			timeSinceBroadcast := now.Sub(p.LastBroadcastAt).Seconds()
+			predX := p.LastBroadcastX + (p.LastBroadcastVX * timeSinceBroadcast)
+			predY := p.LastBroadcastY + (p.LastBroadcastVY * timeSinceBroadcast)
+			predZ := p.LastBroadcastZ + (p.LastBroadcastVZ * timeSinceBroadcast)
+			
+			distSq := (p.X-predX)*(p.X-predX) + (p.Y-predY)*(p.Y-predY) + (p.Z-predZ)*(p.Z-predZ)
+			if distSq > 0.25 { // > 0.5m divergence
+				needsBroadcast = true
+			}
+		}
+		
+		// 3. Heartbeat (Force update every 1 second if dirty wasn't triggered)
+		if !needsBroadcast && now.Sub(p.LastBroadcastAt) > 1*time.Second {
+			// Only broadcast heartbeat if moving or recently stopped to ensure final position sync
+			if p.IsMoving || now.Sub(p.LastMoveAt) < 2*time.Second {
+				needsBroadcast = true
+			}
+		}
+		
+		if needsBroadcast {
+			p.Dirty = true
+			p.LastBroadcastX, p.LastBroadcastY, p.LastBroadcastZ = p.X, p.Y, p.Z
+			p.LastBroadcastVX, p.LastBroadcastVY, p.LastBroadcastVZ = p.VX, p.VY, p.VZ
+			p.LastBroadcastDir = p.Direction
+			p.LastBroadcastAt = now
+		}
+
 		if p.Dirty {
 			cp := *p
 			out = append(out, &cp)

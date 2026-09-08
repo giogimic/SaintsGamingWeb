@@ -2,6 +2,8 @@ package world
 
 import (
 	"math"
+
+	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/world/atlas"
 )
 
 // BiomeTerrainConfig defines noise parameters for the biome.
@@ -45,40 +47,17 @@ type BiomeDefinition struct {
 	Features BiomeFeaturePool
 }
 
-// ProceduralVoxelGenerator evaluates continuous fractal terrain heights and populates chunks.
+// ProceduralVoxelGenerator evaluates continuous fractal terrain heights and populates chunks using Atlas.
 type ProceduralVoxelGenerator struct {
-	noise *SimplexNoise2D
-	biome BiomeDefinition
+	context  *atlas.AtlasWorldContext
+	resolver *atlas.AtlasRegionResolver
 }
 
-func NewProceduralVoxelGenerator(biome BiomeDefinition) *ProceduralVoxelGenerator {
+func NewProceduralVoxelGenerator(seed interface{}) *ProceduralVoxelGenerator {
 	return &ProceduralVoxelGenerator{
-		noise: NewSimplexNoise2D(biome.Seed),
-		biome: biome,
+		context:  atlas.BuildAtlasWorld(seed),
+		resolver: atlas.NewAtlasRegionResolver(nil),
 	}
-}
-
-func (g *ProceduralVoxelGenerator) SetBiome(biome BiomeDefinition) {
-	g.biome = biome
-	g.noise.Reseed(biome.Seed)
-}
-
-// GetSurfaceHeight evaluates the continuous terrain surface elevation at world (wx, wz).
-func (g *ProceduralVoxelGenerator) GetSurfaceHeight(wx, wz float64) float64 {
-	offset := g.noise.FBm(wx, wz,
-		g.biome.Terrain.Octaves,
-		g.biome.Terrain.Frequency,
-		g.biome.Terrain.Persistence,
-		g.biome.Terrain.Lacunarity,
-		g.biome.Terrain.Amplitude)
-
-	height := math.Round(g.biome.Terrain.BaseHeight + offset)
-	if height < 1 {
-		height = 1
-	} else if height > 31 {
-		height = 31
-	}
-	return height
 }
 
 // PopulateChunk generates volumetric voxel data for a 32x32x32 chunk according to biome strata rules.
@@ -89,30 +68,39 @@ func (g *ProceduralVoxelGenerator) PopulateChunk(cx, cy, cz int) *VoxelChunk {
 	startWY := cy * ChunkSizeY
 	startWZ := cz * ChunkSizeZ
 
-	strata := g.biome.Strata
-
-	surfaceWord := PackVoxel(strata.SurfaceMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
-	subsurfaceWord := PackVoxel(strata.SubsurfaceMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
-	mantleWord := PackVoxel(strata.MantleMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
-	bedrockWord := PackVoxel(strata.BedrockMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
-
+	// Pre-calculate atlas properties for this chunk's vertical columns
 	for lz := 0; lz < ChunkSizeZ; lz++ {
 		wz := float64(startWZ + lz)
 		for lx := 0; lx < ChunkSizeX; lx++ {
 			wx := float64(startWX + lx)
-			surfaceH := g.GetSurfaceHeight(wx, wz)
+
+			// 1. Resolve Atlas Region and Terrain Elevation
+			atlasElev, area := atlas.CalculateTerrainElevation(g.context, g.resolver, wx, wz)
+			
+			// Map Atlas Height (0.0 to 1.0) to world voxel coordinates
+			baseElevation := 16.0
+			elevationRange := 8.0
+			mappedElev := baseElevation + (atlasElev-0.5)*elevationRange*2
+			
+			surfaceY := int(math.Max(1, math.Min(31, math.Round(mappedElev))))
+
+			strata := area.Strata
+			surfaceWord := PackVoxel(strata.SurfaceMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
+			subsurfaceWord := PackVoxel(strata.SubsurfaceMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
+			mantleWord := PackVoxel(strata.MantleMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
+			bedrockWord := PackVoxel(strata.BedrockMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
 
 			for ly := 0; ly < ChunkSizeY; ly++ {
-				wy := float64(startWY + ly)
+				wy := startWY + ly
 
-				if wy > surfaceH {
+				if wy > surfaceY {
 					// Air (default for chunk)
 					chunk.Set(lx, ly, lz, VoxelWordAir)
 				} else if wy == 0 {
 					// Bedrock layer
 					chunk.Set(lx, ly, lz, bedrockWord)
 				} else {
-					depth := surfaceH - wy
+					depth := surfaceY - wy
 					if depth == 0 {
 						chunk.Set(lx, ly, lz, surfaceWord)
 					} else if depth <= strata.SubsurfaceDepth {

@@ -886,7 +886,7 @@ export default function TheLobby({
            });
         }
       } else {
-        useGameStore.getState().updateOtherPlayer(data.socketId, data);
+        useGameStore.getState().updateOtherPlayer(data.socketId, { ...data, lastUpdateMs: Date.now() });
       }
     });
 
@@ -1343,16 +1343,41 @@ export default function TheLobby({
       }
     });
 
-    socket.on('inventory_sync', (data) => {
-      if (data?.inventory && typeof data.inventory === 'object') {
+    socket.on('sync_hp', (data) => {
+      if (typeof data?.hp === 'number') {
         useGameStore.setState((state) => {
-          state.player.inventory = data.inventory;
+          state.player.hp = data.hp;
+          if (typeof data.maxHp === 'number') {
+            state.player.maxHp = data.maxHp;
+          }
         });
       }
     });
 
-    socket.on('quest_sync', () => {
-      useGameStore.getState().triggerQuestRefresh();
+    socket.on('inventory_sync', (data) => {
+      if (Array.isArray(data?.items)) {
+        useGameStore.setState((state) => {
+          const newInv: Record<string, number> = {};
+          for (const item of data.items) {
+            if (item.id && typeof item.qty === 'number') {
+              newInv[item.id] = item.qty;
+            }
+          }
+          state.player.inventory = newInv;
+        });
+      }
+    });
+
+    socket.on('quest_update', (data) => {
+      if (Array.isArray(data?.quests)) {
+        useGameStore.setState((state) => {
+          const newQuests: Record<string, any> = {};
+          for (const q of data.quests) {
+            newQuests[q.slug] = q;
+          }
+          state.player.activeQuests = newQuests;
+        });
+      }
     });
 
     socket.on('tile_changed', (data) => {
@@ -1420,6 +1445,10 @@ export default function TheLobby({
           position: { x: data.x, y: data.y },
           isMoving: !!data.isMoving,
           facing: (String(data.direction || ent.facing || 'down').toUpperCase() as 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'),
+          vx: data.vx || 0,
+          vy: data.vy || 0,
+          vz: data.vz || 0,
+          lastUpdateMs: Date.now(),
         };
       });
     });

@@ -109,9 +109,14 @@ const (
 	EvStudioUnlock        = "studio_unlock"
 	EvStudioPresence      = "studio_presence"
 	EvQuestUpdate         = "quest_update"
-	EvSkillXP             = "skill_xp"
+	EvSkillXP             = "skill_xp_gained"
 	EvNPCSpawned          = "npc_spawned"
 	EvNPCDespawned        = "npc_despawned"
+	EvUseItem             = "use_item"
+	EvDropItem            = "drop_item"
+	EvFishAttempt         = "fish_attempt"
+	EvClinicHeal          = "clinic_heal"
+	EvSyncHP              = "sync_hp"
 )
 
 // JoinMapRequest is the client join_map payload.

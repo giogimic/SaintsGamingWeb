@@ -26,6 +26,7 @@ type Engine struct {
 	world    *world.Manager
 	players  *player.Manager
 	creatures *creature.Manager
+	projectiles *ProjectileManager
 	emit     Emitter
 
 	mu      sync.Mutex
@@ -36,12 +37,13 @@ type Engine struct {
 
 func New(cfg config.Config, wm *world.Manager, pm *player.Manager, cm *creature.Manager, emit Emitter) *Engine {
 	return &Engine{
-		cfg:       cfg,
-		world:     wm,
-		players:   pm,
-		creatures: cm,
-		emit:      emit,
-		stopCh:    make(chan struct{}),
+		cfg:         cfg,
+		world:       wm,
+		players:     pm,
+		creatures:   cm,
+		projectiles: NewProjectileManager(wm),
+		emit:        emit,
+		stopCh:      make(chan struct{}),
 	}
 }
 
@@ -109,6 +111,12 @@ func (e *Engine) simTick() {
 	if e.creatures != nil {
 		e.creatures.Tick()
 	}
+
+	dt := 1.0 / float64(e.cfg.SimTPS)
+	if e.cfg.SimTPS == 0 {
+		dt = 1.0 / 20.0
+	}
+	e.projectiles.Tick(dt)
 
 	// Process Active Voxel Queue
 	now := time.Now().UnixMilli()

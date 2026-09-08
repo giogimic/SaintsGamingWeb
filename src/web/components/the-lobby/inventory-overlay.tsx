@@ -94,9 +94,10 @@ export default function InventoryOverlay() {
       }
     } else if (typeUpper === 'FOOD' || typeUpper === 'CONSUMABLE') {
       if (itemInfo.stats?.hp) {
-        useGameStore.getState().modifyHp(itemInfo.stats.hp);
-        useGameStore.getState().modifyInventory(itemId, -1);
-        useGameStore.getState().showToast(`Used ${itemInfo.name} (+${itemInfo.stats.hp} HP)`);
+        const socket = (window as any)._lobbySocket;
+        if (socket) {
+          socket.emit('use_item', { itemId });
+        }
         if (inventory[itemId] === 1) setActiveItem(null);
       }
     }
@@ -104,8 +105,10 @@ export default function InventoryOverlay() {
 
   const handleDrop = (itemId: string, itemInfo: any) => {
     soundSynth?.playUiClick?.();
-    useGameStore.getState().modifyInventory(itemId, -1);
-    useGameStore.getState().showToast(`Dropped ${itemInfo.name}`);
+    const socket = (window as any)._lobbySocket;
+    if (socket) {
+      socket.emit('drop_item', { itemId });
+    }
     if (inventory[itemId] <= 1) setActiveItem(null);
   };
 

@@ -62,6 +62,7 @@ type Manager struct {
 
 	voxelQueue  VoxelQueue
 	maxPerShard int
+	gates       *SpiritGateRegistry
 }
 
 func NewManager(maxPerShard int) *Manager {
@@ -73,6 +74,7 @@ func NewManager(maxPerShard int) *Manager {
 		instances:   make(map[string]*Instance),
 		voxelQueue:  make(VoxelQueue, 0),
 		maxPerShard: maxPerShard,
+		gates:       NewSpiritGateRegistry(),
 	}
 }
 
@@ -80,6 +82,10 @@ func (m *Manager) RegisterDef(def *MapDef) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.defs[def.ID] = def
+}
+
+func (m *Manager) Gates() *SpiritGateRegistry {
+	return m.gates
 }
 
 func (m *Manager) GetDef(baseID string) (*MapDef, bool) {
@@ -278,7 +284,7 @@ func BuildDemoMapDef() *MapDef {
 	}
 
 	biome := GetDefaultBiome()
-	generator := NewProceduralVoxelGenerator(biome)
+	generator := NewProceduralVoxelGenerator(biome.Seed)
 	placer := &FeaturePlacer{}
 
 	// Pregenerate a 5x5 chunk radius around spawn (cx: -2 to 2, cz: -2 to 2)

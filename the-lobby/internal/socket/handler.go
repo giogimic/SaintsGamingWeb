@@ -143,6 +143,7 @@ func (h *Hub) onConnect(client *socket.Socket) {
 	})
 	h.EmitToSocket(sid, protocol.EvInventorySync, map[string]any{"items": h.deps.Inventory.List(accountID)})
 	h.EmitToSocket(sid, protocol.EvSyncCredits, map[string]any{"credits": h.deps.Inventory.Credits(accountID)})
+	h.EmitToSocket(sid, protocol.EvQuestUpdate, map[string]any{"quests": h.deps.Quests.List(accountID)})
 
 	client.On(protocol.EvJoinMap, func(datas ...any) {
 		h.handleJoinMap(client, accountID, decodeJoin(datas))
@@ -983,7 +984,7 @@ func (h *Hub) handleRequestChunk(client *socket.Socket, accountID string, datas 
 	if chunk == nil {
 		// Generate on the fly
 		biome := world.GetDefaultBiome()
-		generator := world.NewProceduralVoxelGenerator(biome)
+		generator := world.NewProceduralVoxelGenerator(biome.Seed)
 		chunk = generator.PopulateChunk(cx, cy, cz)
 
 		placer := &world.FeaturePlacer{}

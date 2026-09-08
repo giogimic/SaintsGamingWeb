@@ -40,7 +40,7 @@ func (wp *WorkerPool) Start() {
 			for {
 				select {
 				case job := <-wp.JobQueue:
-					generator := NewProceduralVoxelGenerator(job.Biome)
+					generator := NewProceduralVoxelGenerator(job.Biome.Seed)
 					chunk := generator.PopulateChunk(job.CX, job.CY, job.CZ)
 
 					placer := &FeaturePlacer{}

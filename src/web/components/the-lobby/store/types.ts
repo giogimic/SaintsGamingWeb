@@ -131,6 +131,12 @@ export interface MapEntity {
   spriteConfig?: import('@/engine/BabylonEngine').SpriteSheetConfig;
   hp?: number;
   maxHp?: number;
+  
+  // Dead Reckoning Delta Compression
+  vx?: number;
+  vy?: number;
+  vz?: number;
+  lastUpdateMs?: number;
 }
 
 export interface SkillData {
@@ -236,7 +242,7 @@ export interface PlayerState {
     gold: number;
     platinum: number;
   };
-  activeQuests: Record<string, { stage: number }>;
+  activeQuests: Record<string, any>;
   completedQuests: string[];
   inventory: Record<string, number>;
   skills: Record<string, SkillData>;
@@ -329,8 +335,8 @@ export interface GameState {
   setActiveDialog: (dialog: { npcId: string; node?: string; text: string; options?: { label: string; nextNode: string }[] } | null) => void;
   acceptQuest: (questId: string) => void;
   completeQuest: (questId: string) => void;
-  setOtherPlayers: (players: Record<string, { accountId?: string; x: number; y: number; name: string; assetProfileId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; hp?: number; maxHp?: number; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>) => void;
-  updateOtherPlayer: (socketId: string, data: { x?: number; y?: number; name?: string; assetProfileId?: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string }; hp?: number; maxHp?: number }) => void;
+  setOtherPlayers: (players: Record<string, { accountId?: string; x: number; y: number; name: string; assetProfileId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; hp?: number; maxHp?: number; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string }; vx?: number; vy?: number; vz?: number; lastUpdateMs?: number }>) => void;
+  updateOtherPlayer: (socketId: string, data: { x?: number; y?: number; name?: string; assetProfileId?: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string }; hp?: number; maxHp?: number; vx?: number; vy?: number; vz?: number; lastUpdateMs?: number }) => void;
   updateEntityHp: (entityId: string, hp: number, maxHp?: number) => void;
   removeOtherPlayer: (socketId: string) => void;
   setPlayerChat: (message: string) => void;

@@ -2,6 +2,7 @@ package socket
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -103,6 +104,18 @@ func (h *Hub) registerGameplay(client *socket.Socket, accountID, sid string) {
 	})
 	client.On(protocol.EvVoxelEdit, func(datas ...any) {
 		h.handleVoxelEdit(accountID, datas)
+	})
+	client.On(protocol.EvUseItem, func(datas ...any) {
+		h.handleUseItem(accountID, datas)
+	})
+	client.On(protocol.EvDropItem, func(datas ...any) {
+		h.handleDropItem(accountID, datas)
+	})
+	client.On(protocol.EvFishAttempt, func(datas ...any) {
+		h.handleFishAttempt(accountID, datas)
+	})
+	client.On(protocol.EvClinicHeal, func(datas ...any) {
+		h.handleClinicHeal(accountID, datas)
 	})
 }
 
@@ -632,4 +645,106 @@ func (h *Hub) handleVoxelEdit(accountID string, datas []any) {
 
 	// Broadcast to room so other clients see the edit
 	h.EmitToRoom(payload.MapID, protocol.EvVoxelEdit, payload)
+}
+func (h *Hub) handleUseItem(accountID string, datas []any) {
+	if len(datas) == 0 {
+		return
+	}
+	b, _ := json.Marshal(datas[0])
+	var payload struct {
+		ItemID string `json:"itemId"`
+	}
+	if json.Unmarshal(b, &payload) != nil || payload.ItemID == "" {
+		return
+	}
+	inv := h.deps.Inventory.List(accountID)
+	hasItem := false
+	for _, it := range inv {
+		if it.ID == payload.ItemID && it.Qty > 0 {
+			hasItem = true
+			break
+		}
+	}
+	if !hasItem {
+		return
+	}
+	// Decrease inventory
+	items := h.deps.Inventory.AddItem(accountID, payload.ItemID, "Used item", -1)
+	sid := h.eng.Players().SocketIDForAccount(accountID)
+	
+	// Apply effects
+	p := h.eng.Players().GetByAccount(accountID)
+	// For now, hardcode health potion/food logic as previously done on client
+	hpGained := 0
+	if payload.ItemID == "potion" || payload.ItemID == "potion_health" { // generic
+		hpGained = 25
+	} else if payload.ItemID == "food" {
+		hpGained = 10 // generic food
+	} else {
+	    // If it's another consumable, we might need an item registry, but for the slice this works.
+	    hpGained = 25
+	}
+	
+	if p != nil && hpGained > 0 {
+		p.HP += hpGained
+		if p.HP > p.MaxHP {
+			p.HP = p.MaxHP
+		}
+		p.Dirty = true
+		h.EmitToSocket(sid, protocol.EvSyncHP, map[string]any{"hp": p.HP, "maxHp": p.MaxHP})
+		h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": fmt.Sprintf("Used item (+%d HP)", hpGained)})
+	}
+	h.EmitToSocket(sid, protocol.EvInventorySync, map[string]any{"items": items})
+}
+
+func (h *Hub) handleDropItem(accountID string, datas []any) {
+	if len(datas) == 0 {
+		return
+	}
+	b, _ := json.Marshal(datas[0])
+	var payload struct {
+		ItemID string `json:"itemId"`
+	}
+	if json.Unmarshal(b, &payload) != nil || payload.ItemID == "" {
+		return
+	}
+	inv := h.deps.Inventory.List(accountID)
+	hasItem := false
+	for _, it := range inv {
+		if it.ID == payload.ItemID && it.Qty > 0 {
+			hasItem = true
+			break
+		}
+	}
+	if !hasItem {
+		return
+	}
+	items := h.deps.Inventory.AddItem(accountID, payload.ItemID, "Dropped item", -1)
+	sid := h.eng.Players().SocketIDForAccount(accountID)
+	h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "Dropped item"})
+	h.EmitToSocket(sid, protocol.EvInventorySync, map[string]any{"items": items})
+}
+
+func (h *Hub) handleFishAttempt(accountID string, datas []any) {
+	sid := h.eng.Players().SocketIDForAccount(accountID)
+	if sid == "" {
+		return
+	}
+	xpGained := 20
+	// You could add logic here for success chance, drops, etc.
+	h.EmitToSocket(sid, protocol.EvSkillXP, map[string]any{"skillSlug": "fishing", "totalXp": xpGained, "level": 1})
+	h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": fmt.Sprintf("Fishing... caught something! (+%d Fishing XP)", xpGained)})
+}
+
+func (h *Hub) handleClinicHeal(accountID string, datas []any) {
+	p := h.eng.Players().GetByAccount(accountID)
+	if p == nil {
+		return
+	}
+	p.HP = p.MaxHP
+	p.Dirty = true
+	
+	sid := h.eng.Players().SocketIDForAccount(accountID)
+	h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "Your team has been fully healed!"})
+	h.EmitToSocket(sid, protocol.EvSyncHP, map[string]any{"hp": p.HP, "maxHp": p.MaxHP})
 }

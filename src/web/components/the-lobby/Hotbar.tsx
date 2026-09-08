@@ -167,9 +167,10 @@ export default function Hotbar() {
       );
       if (potionKey) {
         soundSynth?.playLevelUpSound?.();
-        useGameStore.getState().modifyHp(25);
-        useGameStore.getState().modifyInventory(potionKey, -1);
-        useGameStore.getState().showToast(`Used Consumable (+25 HP)`);
+        const socket = (window as any)._lobbySocket;
+        if (socket) {
+          socket.emit('use_item', { itemId: potionKey });
+        }
         setCooldown(slot.ability.id, timeNow + slot.ability.cooldownMs);
         setGlobalCooldown(timeNow + 1000);
       } else {
