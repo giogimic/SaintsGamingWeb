@@ -74,7 +74,42 @@ async function main() {
       await prisma.gang.deleteMany({});
       await prisma.inventoryItem.deleteMany({});
       
-      console.log('[+] Game Data wiped successfully.');
+      // Setup / Core Game Definition Data
+      console.log('   -> Wiping Maps & Configurations...');
+      await prisma.mapChunk.deleteMany({});
+      await prisma.mapSyncEntry.deleteMany({});
+      await prisma.worldMapVersion.deleteMany({});
+      await prisma.worldMap.deleteMany({});
+      await prisma.saintsMap.deleteMany({});
+      
+      await prisma.gameConfig.deleteMany({});
+      await prisma.creatureTemplate.deleteMany({});
+      await prisma.characterClass.deleteMany({});
+      
+      // Force Setup Wizard to run again by deleting initialization flags
+      console.log('   -> Resetting Setup Flags...');
+      await prisma.siteSetting.deleteMany({
+        where: {
+          key: {
+            in: [
+              'GAME_INITIALIZED',
+              'GAME_INITIALIZED_AT',
+              'GAME_INITIALIZED_VERSION',
+              'SETUP_COMPLETED',
+              'SETUP_COMPLETED_AT',
+              'GAME_NAME',
+              'GAME_DESCRIPTION',
+              'GAME_GENRE',
+              'GAME_STYLE',
+              'GAME_CAMERA',
+              'DEFAULT_MAP_ID',
+              'DEFAULT_GROUND_GID'
+            ]
+          }
+        }
+      });
+      
+      console.log('[+] Game Data wiped successfully. Studio Setup will run on next boot.');
     }
   } catch (error) {
     console.error('[!] Error wiping data:', error);

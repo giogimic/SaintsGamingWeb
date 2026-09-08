@@ -18,12 +18,54 @@ import {
   ImageIcon,
   Layers,
   FileImage,
+  X,
 } from 'lucide-react';
 import type { GameDefinitionData } from './GameDefinitionStep';
 import SpriteBrowser from '@/web/components/the-lobby/editor/SpriteBrowser';
 import { AssetUploadPanel } from '@/web/components/the-lobby/editor/panels/AssetUploadPanel';
 import { CanonicalAssetPreview } from '@/web/components/shared/CanonicalAssetPreview';
 import type { GameAssetItem } from '@/engine/assets/AssetManager';
+
+// A styled window matching the Studio Windows that escapes the Setup container via createPortal
+function SetupWindow({ title, icon, onClose, children }: { title: string, icon?: React.ReactNode, onClose: () => void, children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] pointer-events-none flex items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm pointer-events-auto" onClick={onClose} />
+      
+      {/* Window */}
+      <div className="pointer-events-auto relative bg-[#050b14]/90 backdrop-blur-xl rounded-xl flex flex-col overflow-hidden font-sans border border-primary/40 shadow-[0_0_24px_rgba(203,178,106,0.12),0_8px_32px_rgba(0,0,0,0.5)] w-[800px] h-[600px] max-w-[90vw] max-h-[90vh]">
+        {/* Title Bar */}
+        <div className="flex items-center justify-between px-3 py-2 select-none shrink-0 bg-gradient-to-r from-primary/8 via-[#0a1628] to-primary/4 border-b border-primary/20">
+          <div className="flex items-center gap-2">
+            {icon && <span className="text-primary/80 [&>svg]:w-3.5 [&>svg]:h-3.5 shrink-0">{icon}</span>}
+            <span className="font-semibold text-[11px] tracking-widest uppercase font-mono truncate sg-text-gradient">
+              {title}
+            </span>
+          </div>
+          <div className="flex items-center">
+            <button 
+              onClick={(e) => { e.stopPropagation(); onClose(); }}
+              className="p-1 text-muted-foreground/60 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-all duration-150 cursor-pointer"
+              title="Close"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+        {/* Body */}
+        <div className="flex-1 overflow-hidden relative bg-[#050b14]/50">
+          {children}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
 
 export interface SetupCharacterData {
   slug: string;
@@ -169,30 +211,16 @@ export function EntitySetupStep({
 
   return (
     <>
-      <AssetUploadPanel />
+      {mounted && createPortal(<AssetUploadPanel />, document.body)}
       <div className="space-y-4">
         {/* SETUP ASSET PICKER OVERLAY */}
-        {mounted && pickerContext && createPortal(
-          <div
-            className="pointer-events-auto fixed inset-0 z-[9999] p-4 flex items-center justify-center animate-in fade-in duration-200"
-            style={{ background: 'rgba(5,0,15,0.96)', backdropFilter: 'blur(10px)' }}
+        {mounted && pickerContext && (
+          <SetupWindow 
+            title={`Select ${pickerContext.entityType === 'CHARACTER' ? 'Character' : 'Creature'} Sprite`}
+            icon={<ImageIcon className="w-4 h-4 text-primary" />}
+            onClose={() => setPickerContext(null)}
           >
-            <div className="w-full max-w-3xl h-[80vh] bg-[#0a051d] border border-primary/40 rounded-2xl flex flex-col overflow-hidden shadow-2xl">
-              <div className="flex items-center justify-between p-4 border-b border-primary/30 bg-[#050b14]/80">
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-primary" />
-                  <h3 className="font-black text-primary-100 text-sm">
-                    Select {pickerContext.entityType === 'CHARACTER' ? 'Character' : 'Creature'} Sprite
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setPickerContext(null)}
-                  className="text-slate-400 hover:text-white px-2 py-1 rounded bg-white/5 text-xs cursor-pointer"
-                >
-                  ✕ Close
-                </button>
-              </div>
-              <div className="flex-1 overflow-hidden p-2">
+            <div className="flex-1 overflow-hidden p-2">
                 <SpriteBrowser
                   filterType={pickerContext.entityType === 'CHARACTER' ? 'CHARACTER' : 'MONSTER'}
                   onSelect={(assets) => {
@@ -209,8 +237,7 @@ export function EntitySetupStep({
                 />
               </div>
             </div>
-          </div>,
-          document.body
+          </SetupWindow>
         )}
 
         {/* SECTION HEADER & TABS */}
