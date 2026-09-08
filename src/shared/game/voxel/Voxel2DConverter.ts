@@ -51,8 +51,8 @@ export function convertLegacy2DToVoxelWorld(legacy: LegacyMapInput): VoxelWorld 
   for (let z = 0; z < heightTiles; z++) {
     for (let x = 0; x < widthTiles; x++) {
       for (let y = 0; y < baseSurfaceY; y++) {
-        const word = packVoxel(VOXEL_MAT_GUNMETAL, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
-        world.setVoxel(x, y, z, word);
+        const { low, high } = packVoxel(VOXEL_MAT_GUNMETAL, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
+        world.setVoxel(x, y, z, low, high);
       }
 
       // Read legacy 2D tile code
@@ -64,8 +64,8 @@ export function convertLegacy2DToVoxelWorld(legacy: LegacyMapInput): VoxelWorld 
       if (tileCode === 2) {
         surfaceMat = VOXEL_MAT_STONE;
         // Build 2-block high cliff obstacle
-        const topCliffWord = packVoxel(VOXEL_MAT_STONE, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
-        world.setVoxel(x, baseSurfaceY + 1, z, topCliffWord);
+        const { low, high } = packVoxel(VOXEL_MAT_STONE, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
+        world.setVoxel(x, baseSurfaceY + 1, z, low, high);
       } else if (tileCode === 4) {
         surfaceMat = VOXEL_MAT_WATER;
         phys = VoxelPhysics.SWIMMABLE_FLUID;
@@ -74,8 +74,8 @@ export function convertLegacy2DToVoxelWorld(legacy: LegacyMapInput): VoxelWorld 
         log = VoxelLogic.WARP_GATE;
       }
 
-      const surfaceWord = packVoxel(surfaceMat, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, phys, log);
-      world.setVoxel(x, baseSurfaceY, z, surfaceWord);
+      const { low, high } = packVoxel(surfaceMat, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, phys, log);
+      world.setVoxel(x, baseSurfaceY, z, low, high);
     }
   }
 

@@ -5,8 +5,8 @@ export interface VoxelMutation {
   worldX: number;
   worldY: number;
   worldZ: number;
-  previousVoxel: number;
-  newVoxel: number;
+  previousVoxel: { low: number; high: number; };
+  newVoxel: { low: number; high: number; };
 }
 
 export interface VoxelTransaction {
@@ -28,10 +28,10 @@ export class VoxelTransactionBuilder {
     this.mapId = mapId;
   }
 
-  public record(world: VoxelWorld, wx: number, wy: number, wz: number, newVoxel: number): void {
+  public record(world: VoxelWorld, wx: number, wy: number, wz: number, newVoxel: { low: number; high: number; }): void {
     const key = `${wx}_${wy}_${wz}`;
     const previous = world.getVoxel(wx, wy, wz);
-    if (previous === newVoxel) return;
+    if (previous.low === newVoxel.low && previous.high === newVoxel.high) return;
 
     const existing = this.mutations.get(key);
     if (existing) {
@@ -41,8 +41,8 @@ export class VoxelTransactionBuilder {
         worldX: wx,
         worldY: wy,
         worldZ: wz,
-        previousVoxel: previous,
-        newVoxel,
+        previousVoxel: previous ? { low: previous.low, high: previous.high } : { low: 0, high: 0 },
+        newVoxel: { low: newVoxel.low, high: newVoxel.high },
       });
     }
   }
@@ -110,7 +110,7 @@ export class VoxelHistoryStack {
     // Apply previous voxel state in reverse order
     for (let i = tx.mutations.length - 1; i >= 0; i--) {
       const mut = tx.mutations[i];
-      world.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.previousVoxel);
+      world.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.previousVoxel.low, mut.previousVoxel.high);
     }
 
     for (const key of tx.affectedChunkKeys) {
@@ -129,7 +129,7 @@ export class VoxelHistoryStack {
 
     // Apply new voxel state
     for (const mut of tx.mutations) {
-      world.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel);
+      world.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel.low, mut.newVoxel.high);
     }
 
     for (const key of tx.affectedChunkKeys) {

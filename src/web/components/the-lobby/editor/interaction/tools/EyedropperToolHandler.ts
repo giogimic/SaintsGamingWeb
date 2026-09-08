@@ -19,8 +19,8 @@ export class EyedropperToolHandler implements IToolHandler {
     const curLayerIdx = store.activeLayerIdx;
 
     // 0. Authoritative 3D Voxel Sampling
-    if (event.voxelTarget && event.voxelTarget.kind === 'voxel-hit' && event.voxelTarget.existingVoxel > 0) {
-      const unpacked = unpackVoxel(event.voxelTarget.existingVoxel);
+    if (event.voxelTarget && event.voxelTarget.kind === 'voxel-hit' && event.voxelTarget.existingVoxel && event.voxelTarget.existingVoxel.low !== undefined && (event.voxelTarget.existingVoxel.low > 0 || event.voxelTarget.existingVoxel.high > 0)) {
+      const unpacked = unpackVoxel(event.voxelTarget.existingVoxel.low, event.voxelTarget.existingVoxel.high);
       store.setActiveVoxelMaterialId(unpacked.materialId);
       store.setActiveVoxelShape(unpacked.shapeId);
       store.setActiveVoxelOrientation(unpacked.orientation);

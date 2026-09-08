@@ -3,7 +3,7 @@ import { Mesh, TransformNode, StandardMaterial, Color3, Color4, MeshBuilder, Mat
 import { VoxelChunkMesher } from './voxel/VoxelChunkMesher';
 import { VoxelWorld, type VoxelWorldDocV3, SpatialVoxelWorldManager } from '../shared/game/voxel/VoxelWorldDoc';
 import { resolveVoxelTarget, type VoxelTargetResolution } from '../shared/game/voxel/VoxelTargetResolver';
-import { resolveConstrainedVoxelCoordinates, type VoxelBrushAxis, getVoxelShape, getVoxelOrientation, VoxelShape, VoxelOrientation, type VoxelShapeType, type VoxelOrientationType } from '../shared/game/voxel/VoxelWord';
+import { isVoxelAir, resolveConstrainedVoxelCoordinates, type VoxelBrushAxis, extractShapeId, extractOrientation, VoxelShape, VoxelOrientation, type VoxelShapeType, type VoxelOrientationType } from '../shared/game/voxel/VoxelWord';
 import { type BrushShape } from '../shared/game/brushGeometry';
 import { isTilePickTarget } from '../shared/game/tilePaint';
 import { ChunkStreamer } from './voxel/ChunkStreamer';
@@ -32,7 +32,7 @@ private voxelTargetPlaneY: number = 0;
 private voxelPlaneMask: number[] | null = null;
 private voxelBuildUpMode: boolean = false;
 private voxelBrushAxis: VoxelBrushAxis = 'xz';
-private voxelPreviewWord?: number;
+  private voxelPreviewWord?: { low: number; high: number };
 public loadVoxelWorld(docOrWorld: VoxelWorld | VoxelWorldDocV3) {
     if (!this.engine.scene) return;
     if (!this.voxelMesher) {
@@ -184,7 +184,7 @@ public getVoxelSurfaceY(worldX: number, worldZ: number): number {
       const word = typeof this.voxelWorld.getVoxelWithHalo === 'function'
         ? this.voxelWorld.getVoxelWithHalo(wx, wy, wz)
         : this.voxelWorld.getVoxel(wx, wy, wz);
-      if (word && (word & 0xfff) !== 0) {
+      if (word && !isVoxelAir(word.low)) {
         return (wy - 15) * (this.engine.currentTileSize || 64);
       }
     }
@@ -199,7 +199,7 @@ public setVoxelConstraints(constraints: {
     brushAxis?: VoxelBrushAxis;
     brushRadius?: number;
     brushShape?: BrushShape;
-    previewWord?: number;
+    previewWord?: { low: number; high: number };
   }): void {
     if (constraints.planeLockEnabled !== undefined) this.voxelPlaneLockEnabled = constraints.planeLockEnabled;
     if (constraints.targetPlaneY !== undefined) this.voxelTargetPlaneY = constraints.targetPlaneY;
@@ -237,7 +237,7 @@ public setVoxelConstraints(constraints: {
   public renderVoxelCursor(
     target: VoxelTargetResolution,
     mode: 'place' | 'erase' | 'inspect' = 'place',
-    previewWord?: number
+    previewWord?: { low: number; high: number }
   ): void {
     if (!this.engine.scene || !this.voxelWorld || target.kind === 'none') {
       this.clearVoxelCursor();
@@ -302,8 +302,8 @@ public setVoxelConstraints(constraints: {
     let shape: VoxelShapeType = VoxelShape.FULL_CUBE;
     let orient: VoxelOrientationType = VoxelOrientation.NORTH;
     if (mode === 'place' && this.voxelPreviewWord !== undefined) {
-      shape = getVoxelShape(this.voxelPreviewWord);
-      orient = getVoxelOrientation(this.voxelPreviewWord);
+      shape = extractShapeId(this.voxelPreviewWord.low) as VoxelShapeType;
+      orient = extractOrientation(this.voxelPreviewWord.high) as VoxelOrientationType;
     }
 
     // Always rebuild the single ghost mesh

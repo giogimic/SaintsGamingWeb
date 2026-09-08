@@ -6,7 +6,7 @@
 
 import { VoxelChunk, CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z, CHUNK_TOTAL_CELLS } from './VoxelChunk';
 import type { VoxelWorldDocV3 } from './VoxelWorldDoc';
-import { isVoxelAir } from './VoxelWord';
+import { isVoxelAir, packVoxel, VoxelOrientation, VoxelPhysics } from './VoxelWord';
 
 export const LEGACY_CHUNK_SIZE_X = 16;
 export const LEGACY_CHUNK_SIZE_Z = 16;
@@ -120,7 +120,15 @@ export function migrateLegacyDocTo32Cubic(doc: VoxelWorldDocV3): VoxelWorldDocV3
       const newLy = ((wy % CHUNK_SIZE_Y) + CHUNK_SIZE_Y) % CHUNK_SIZE_Y;
 
       const chunk = getOrCreateNewChunk(newCx, newCy, newCz);
-      chunk.set(newLx, newLy, newLz, word);
+      
+      // Legacy word behaves exactly like `low`. Default `high` to 0 or extract if legacy had anything.
+      // But we just use `packVoxel` defaults for the given material/shape, or just pass 0 for high.
+      // Wait, we can preserve material and shape into low, and use default physics.
+      const legacyMaterial = word & 0xffffff;
+      const legacyShape = (word >>> 24) & 0xff;
+      const { low, high } = packVoxel(legacyMaterial, legacyShape, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
+      
+      chunk.set(newLx, newLy, newLz, low, high);
     }
   }
 

@@ -10,7 +10,7 @@ export class ExtrudeToolHandler implements IToolHandler {
   
   private anchorVoxel: { x: number, y: number, z: number } | null = null;
   private extrudeNormal: { x: number, y: number, z: number } | null = null;
-  private sourceWord: number = 0;
+  private sourceWord: { low: number; high: number; } = { low: 0, high: 0 };
   private isDragging = false;
   private startPoint: { x: number, y: number, z: number } | null = null;
 
@@ -29,8 +29,8 @@ export class ExtrudeToolHandler implements IToolHandler {
       };
 
       const word = voxelWorld.getVoxel(this.anchorVoxel.x, this.anchorVoxel.y, this.anchorVoxel.z);
-      if (!word) return false; // Can't extrude air
-      this.sourceWord = word;
+      if (word.low === undefined || (word.low === 0 && word.high === 0)) return false; // Can't extrude air
+      this.sourceWord = { low: word.low, high: word.high };
 
       this.extrudeNormal = {
         x: Math.round(vT.hitNormal.x),
@@ -153,12 +153,12 @@ export class ExtrudeToolHandler implements IToolHandler {
       const y = this.anchorVoxel.y + this.extrudeNormal.y * i * sign;
       const z = this.anchorVoxel.z + this.extrudeNormal.z * i * sign;
 
-      const currentWord = voxelWorld.getVoxel(x, y, z) || 0;
-      const finalWord = isPull ? this.sourceWord : 0;
+      const currentWord = voxelWorld.getVoxel(x, y, z);
+      const finalWord = isPull ? this.sourceWord : { low: 0, high: 0 };
 
-      if (currentWord !== finalWord) {
-        txBuilder.record(voxelWorld, x, y, z, finalWord);
-        voxelWorld.setVoxel(x, y, z, finalWord);
+      if (currentWord.low !== finalWord.low || currentWord.high !== finalWord.high) {
+        txBuilder.record(voxelWorld, x, y, z, finalWord as any);
+        voxelWorld.setVoxel(x, y, z, finalWord.low, finalWord.high);
       }
     }
 
@@ -168,8 +168,8 @@ export class ExtrudeToolHandler implements IToolHandler {
         wx: mut.worldX,
         wy: mut.worldY,
         wz: mut.worldZ,
-        before: mut.previousVoxel,
-        after: mut.newVoxel,
+        before: mut.previousVoxel as any,
+        after: mut.newVoxel as any,
       }));
       store.pushVoxelOp(changedVoxels);
       store.markMapDirty();

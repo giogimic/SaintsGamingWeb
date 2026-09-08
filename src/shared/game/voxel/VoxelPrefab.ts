@@ -8,11 +8,12 @@
 import { VoxelWorld } from './VoxelWorldDoc';
 import {
   isVoxelAir,
-  getVoxelShape,
-  getVoxelOrientation,
-  withVoxelOrientation,
+  extractShapeId,
+  extractOrientation,
+  withVoxelOrientationHigh,
   VoxelShape,
-  VOXEL_WORD_AIR,
+  VOXEL_WORD_AIR_LOW,
+  VOXEL_WORD_AIR_HIGH,
 } from './VoxelWord';
 
 export interface PrefabEntityMarker {
@@ -46,7 +47,8 @@ export interface VoxelPrefabData {
   category?: string;
   dimensions: [number, number, number]; // [dx, dy, dz]
   anchorOffset: [number, number, number]; // [ax, ay, az]
-  palette: number[]; // Unique 32-bit voxel words
+  paletteLow: number[]; // Unique 32-bit low voxel words
+  paletteHigh: number[]; // Unique 32-bit high voxel words
   voxelData: number[]; // RLE compressed: [count, palIdx, count, palIdx, ...]
   metadata?: {
     entities?: PrefabEntityMarker[];
@@ -65,9 +67,9 @@ export function rotateOrientationCW(orient: number): number {
 /**
  * Rotates directional voxel words (stairs, slopes, fences) 90° CW on Y-axis.
  */
-export function rotateVoxelWordCW(word: number): number {
-  if (isVoxelAir(word)) return word;
-  const shape = getVoxelShape(word);
+export function rotateVoxelWordCW(low: number, high: number): { low: number; high: number } {
+  if (isVoxelAir(low)) return { low, high };
+  const shape = extractShapeId(low);
 
   const hasOrientation =
     shape === VoxelShape.SLOPE_45 ||
@@ -81,60 +83,73 @@ export function rotateVoxelWordCW(word: number): number {
     shape === VoxelShape.FENCE_RAIL;
 
   if (hasOrientation) {
-    const curOrient = getVoxelOrientation(word);
+    const curOrient = extractOrientation(high);
     const newOrient = rotateOrientationCW(curOrient);
-    return withVoxelOrientation(word, newOrient);
+    return { low, high: withVoxelOrientationHigh(high, newOrient) };
   }
 
-  return word;
+  return { low, high };
 }
 
 /**
  * Unpacks a prefab's RLE voxelData into a flat Uint32Array of length (dx * dy * dz).
  */
-export function unpackPrefabVoxels(prefab: VoxelPrefabData): Uint32Array {
+export function unpackPrefabVoxels(prefab: VoxelPrefabData): { low: Uint32Array; high: Uint32Array } {
   const [dx, dy, dz] = prefab.dimensions;
   const total = dx * dy * dz;
-  const data = new Uint32Array(total);
+  const dataLow = new Uint32Array(total);
+  const dataHigh = new Uint32Array(total);
 
   let targetIdx = 0;
-  const rle = prefab.voxelData;
-  for (let i = 0; i + 1 < rle.length && targetIdx < total; i += 2) {
-    const count = rle[i];
-    const palIdx = rle[i + 1];
-    const word = prefab.palette[palIdx] ?? VOXEL_WORD_AIR;
+  for (let i = 0; i < prefab.voxelData.length; i += 2) {
+    const count = prefab.voxelData[i];
+    const palIdx = prefab.voxelData[i + 1];
+
+    let l = VOXEL_WORD_AIR_LOW;
+    let h = VOXEL_WORD_AIR_HIGH;
+    if (prefab.paletteLow && prefab.paletteLow[palIdx] !== undefined) {
+      l = prefab.paletteLow[palIdx];
+      h = prefab.paletteHigh[palIdx];
+    }
+
     for (let c = 0; c < count && targetIdx < total; c++) {
-      data[targetIdx++] = word;
+      dataLow[targetIdx] = l;
+      dataHigh[targetIdx] = h;
+      targetIdx++;
     }
   }
 
-  return data;
+  return { low: dataLow, high: dataHigh };
 }
 
 /**
  * Packs a flat Uint32Array into palette and RLE data.
  */
 export function packPrefabVoxels(
-  voxels: Uint32Array
-): { palette: number[]; voxelData: number[] } {
-  const paletteMap = new Map<number, number>();
-  const palette: number[] = [];
+  voxels: { low: Uint32Array; high: Uint32Array }
+): { paletteLow: number[]; paletteHigh: number[]; voxelData: number[] } {
+  const paletteMap = new Map<string, number>();
+  const paletteLow: number[] = [];
+  const paletteHigh: number[] = [];
 
-  for (let i = 0; i < voxels.length; i++) {
-    const word = voxels[i];
-    if (!paletteMap.has(word)) {
-      paletteMap.set(word, palette.length);
-      palette.push(word);
+  for (let i = 0; i < voxels.low.length; i++) {
+    const l = voxels.low[i];
+    const h = voxels.high[i];
+    const key = `${l}_${h}`;
+    if (!paletteMap.has(key)) {
+      paletteMap.set(key, paletteLow.length);
+      paletteLow.push(l);
+      paletteHigh.push(h);
     }
   }
 
   const voxelData: number[] = [];
-  if (voxels.length > 0) {
-    let curPalIdx = paletteMap.get(voxels[0])!;
+  if (voxels.low.length > 0) {
+    let curPalIdx = paletteMap.get(`${voxels.low[0]}_${voxels.high[0]}`)!;
     let count = 1;
 
-    for (let i = 1; i < voxels.length; i++) {
-      const palIdx = paletteMap.get(voxels[i])!;
+    for (let i = 1; i < voxels.low.length; i++) {
+      const palIdx = paletteMap.get(`${voxels.low[i]}_${voxels.high[i]}`)!;
       if (palIdx === curPalIdx && count < 65535) {
         count++;
       } else {
@@ -146,7 +161,7 @@ export function packPrefabVoxels(
     voxelData.push(count, curPalIdx);
   }
 
-  return { palette, voxelData };
+  return { paletteLow, paletteHigh, voxelData };
 }
 
 /**
@@ -162,13 +177,15 @@ export function rotatePrefab90CW(prefab: VoxelPrefabData): VoxelPrefabData {
   const newDz = dx;
 
   const originalVoxels = unpackPrefabVoxels(prefab);
-  const rotatedVoxels = new Uint32Array(newDx * newDy * newDz);
+  const rotatedVoxelsLow = new Uint32Array(newDx * newDy * newDz);
+  const rotatedVoxelsHigh = new Uint32Array(newDx * newDy * newDz);
 
   for (let y = 0; y < dy; y++) {
     for (let z = 0; z < dz; z++) {
       for (let x = 0; x < dx; x++) {
         const origIdx = x + y * dx + z * dx * dy;
-        const word = originalVoxels[origIdx];
+        const low = originalVoxels.low[origIdx];
+        const high = originalVoxels.high[origIdx];
 
         // 90 deg CW rotation mapping around Y
         const rotX = dz - 1 - z;
@@ -176,12 +193,14 @@ export function rotatePrefab90CW(prefab: VoxelPrefabData): VoxelPrefabData {
         const rotZ = x;
 
         const rotIdx = rotX + rotY * newDx + rotZ * newDx * newDy;
-        rotatedVoxels[rotIdx] = rotateVoxelWordCW(word);
+        const rotated = rotateVoxelWordCW(low, high);
+        rotatedVoxelsLow[rotIdx] = rotated.low;
+        rotatedVoxelsHigh[rotIdx] = rotated.high;
       }
     }
   }
 
-  const { palette, voxelData } = packPrefabVoxels(rotatedVoxels);
+  const { paletteLow, paletteHigh, voxelData } = packPrefabVoxels({ low: rotatedVoxelsLow, high: rotatedVoxelsHigh });
 
   // Rotate anchor offset
   const [ax, ay, az] = prefab.anchorOffset;
@@ -223,7 +242,8 @@ export function rotatePrefab90CW(prefab: VoxelPrefabData): VoxelPrefabData {
     category: prefab.category,
     dimensions: [newDx, newDy, newDz],
     anchorOffset: newAnchorOffset,
-    palette,
+    paletteLow,
+    paletteHigh,
     voxelData,
     metadata: newMetadata,
   };
@@ -250,7 +270,8 @@ export function extractVoxelPrefab(
   const dz = maxZ - minZ + 1;
 
   const total = dx * dy * dz;
-  const voxels = new Uint32Array(total);
+  const voxelsLow = new Uint32Array(total);
+  const voxelsHigh = new Uint32Array(total);
 
   let idx = 0;
   for (let y = 0; y < dy; y++) {
@@ -259,12 +280,15 @@ export function extractVoxelPrefab(
         const wx = minX + x;
         const wy = minY + y;
         const wz = minZ + z;
-        voxels[idx++] = world.getVoxel(wx, wy, wz);
+        const v = world.getVoxel(wx, wy, wz);
+        voxelsLow[idx] = v.low;
+        voxelsHigh[idx] = v.high;
+        idx++;
       }
     }
   }
 
-  const { palette, voxelData } = packPrefabVoxels(voxels);
+  const { paletteLow, paletteHigh, voxelData } = packPrefabVoxels({ low: voxelsLow, high: voxelsHigh });
 
   return {
     formatVersion: 1,
@@ -272,7 +296,8 @@ export function extractVoxelPrefab(
     category,
     dimensions: [dx, dy, dz],
     anchorOffset: [0, 0, 0],
-    palette,
+    paletteLow,
+    paletteHigh,
     voxelData,
   };
 }
@@ -302,15 +327,16 @@ export function stampVoxelPrefab(
   for (let y = 0; y < dy; y++) {
     for (let z = 0; z < dz; z++) {
       for (let x = 0; x < dx; x++) {
-        const word = voxels[idx++];
-        if (ignoreAir && isVoxelAir(word)) continue;
+        const low = voxels.low[idx];
+        const high = voxels.high[idx++];
+        if (ignoreAir && isVoxelAir(low)) continue;
 
         const wx = originWX + x;
         const wy = originWY + y;
         const wz = originWZ + z;
 
         if (world.canEditVoxel(wx, wy, wz)) {
-          const changed = world.setVoxel(wx, wy, wz, word);
+          const changed = world.setVoxel(wx, wy, wz, low, high);
           if (changed) {
             modifiedCount++;
             const { cx, cz, cy } = VoxelWorld.worldToChunkCoords(wx, wy, wz);

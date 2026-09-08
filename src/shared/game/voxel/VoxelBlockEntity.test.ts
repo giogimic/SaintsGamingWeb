@@ -7,8 +7,8 @@ import {
   packVoxel,
   VoxelShape,
   VoxelPhysics,
-  getVoxelShape,
-  getVoxelMaterial,
+  extractShapeId,
+  extractMaterialId,
   VOXEL_MAT_DIRT,
   VOXEL_MAT_GRASS,
   VOXEL_MAT_STONE,
@@ -31,14 +31,15 @@ describe('Voxel Block Entities & Agricultural Simulation', () => {
   it('tills grass/dirt into farmland with block entity', () => {
     const world = new VoxelWorld('farm_realm', 'Farm Realm', 2, 2);
     // Put dirt at (5, 10, 5)
-    world.setVoxel(5, 10, 5, packVoxel(VOXEL_MAT_DIRT, VoxelShape.FULL_CUBE));
+    const { low, high } = packVoxel(VOXEL_MAT_DIRT, VoxelShape.FULL_CUBE);
+    world.setVoxel(5, 10, 5, low, high);
 
     const tilled = tillSoil(world, 5, 10, 5);
     expect(tilled).toBe(true);
 
     const word = world.getVoxel(5, 10, 5);
-    expect(getVoxelShape(word)).toBe(VoxelShape.FARMLAND);
-    expect(getVoxelMaterial(word)).toBe(VOXEL_MAT_FARMLAND_DRY);
+    expect(extractShapeId(word.low)).toBe(VoxelShape.FARMLAND);
+    expect(extractMaterialId(word.low)).toBe(VOXEL_MAT_FARMLAND_DRY);
 
     const entity = world.getBlockEntity(5, 10, 5);
     expect(entity).toBeDefined();
@@ -48,7 +49,8 @@ describe('Voxel Block Entities & Agricultural Simulation', () => {
 
   it('rejects tilling non-soil blocks like stone', () => {
     const world = new VoxelWorld('farm_realm', 'Farm Realm', 2, 2);
-    world.setVoxel(5, 10, 5, packVoxel(VOXEL_MAT_STONE, VoxelShape.FULL_CUBE));
+    const { low, high } = packVoxel(VOXEL_MAT_STONE, VoxelShape.FULL_CUBE);
+    world.setVoxel(5, 10, 5, low, high);
 
     const tilled = tillSoil(world, 5, 10, 5);
     expect(tilled).toBe(false);
@@ -57,18 +59,20 @@ describe('Voxel Block Entities & Agricultural Simulation', () => {
   it('hydrates farmland when water is within 4 blocks horizontally', () => {
     const world = new VoxelWorld('farm_realm', 'Farm Realm', 2, 2);
     // Farmland at (10, 10, 10)
-    world.setVoxel(10, 10, 10, packVoxel(VOXEL_MAT_FARMLAND_DRY, VoxelShape.FARMLAND));
+    const { low: fLow, high: fHigh } = packVoxel(VOXEL_MAT_FARMLAND_DRY, VoxelShape.FARMLAND);
+    world.setVoxel(10, 10, 10, fLow, fHigh);
     world.setBlockEntity(10, 10, 10, createFarmlandEntity(10, 10, 10, 0));
 
     // Place water 3 blocks away at (13, 10, 10)
-    world.setVoxel(13, 10, 10, packVoxel(VOXEL_MAT_WATER, VoxelShape.FULL_CUBE, 0, 0, VoxelPhysics.SWIMMABLE_FLUID));
+    const { low: wLow, high: wHigh } = packVoxel(VOXEL_MAT_WATER, VoxelShape.FULL_CUBE, 0, 0, VoxelPhysics.SWIMMABLE_FLUID);
+    world.setVoxel(13, 10, 10, wLow, wHigh);
 
     const moisture = updateFarmlandHydration(world, 10, 10, 10);
     expect(moisture).toBe(7);
 
     // Block material should transition to moist
     const word = world.getVoxel(10, 10, 10);
-    expect(getVoxelMaterial(word)).toBe(VOXEL_MAT_FARMLAND_MOIST);
+    expect(extractMaterialId(word.low)).toBe(VOXEL_MAT_FARMLAND_MOIST);
 
     const entity = world.getBlockEntity(10, 10, 10);
     expect(entity?.data.moisture).toBe(7);
@@ -76,15 +80,16 @@ describe('Voxel Block Entities & Agricultural Simulation', () => {
 
   it('plants seeds on farmland and enforces valid placement', () => {
     const world = new VoxelWorld('farm_realm', 'Farm Realm', 2, 2);
-    world.setVoxel(8, 10, 8, packVoxel(VOXEL_MAT_FARMLAND_DRY, VoxelShape.FARMLAND));
+    const { low, high } = packVoxel(VOXEL_MAT_FARMLAND_DRY, VoxelShape.FARMLAND);
+    world.setVoxel(8, 10, 8, low, high);
 
     // Can plant on farmland
     const planted = plantCrop(world, 8, 11, 8, 'wheat');
     expect(planted).toBe(true);
 
     const cropWord = world.getVoxel(8, 11, 8);
-    expect(getVoxelShape(cropWord)).toBe(VoxelShape.CROSS_QUAD);
-    expect(getVoxelMaterial(cropWord)).toBe(VOXEL_MAT_CROP_WHEAT);
+    expect(extractShapeId(cropWord.low)).toBe(VoxelShape.CROSS_QUAD);
+    expect(extractMaterialId(cropWord.low)).toBe(VOXEL_MAT_CROP_WHEAT);
 
     const cropEntity = world.getBlockEntity(8, 11, 8);
     expect(cropEntity).toBeDefined();
@@ -93,14 +98,16 @@ describe('Voxel Block Entities & Agricultural Simulation', () => {
     expect(cropEntity?.data.growthStage).toBe(0);
 
     // Cannot plant on stone
-    world.setVoxel(12, 10, 12, packVoxel(VOXEL_MAT_STONE, VoxelShape.FULL_CUBE));
+    const { low: sLow, high: sHigh } = packVoxel(VOXEL_MAT_STONE, VoxelShape.FULL_CUBE);
+    world.setVoxel(12, 10, 12, sLow, sHigh);
     const plantedStone = plantCrop(world, 12, 11, 12, 'wheat');
     expect(plantedStone).toBe(false);
   });
 
   it('simulates crop growth and harvests mature yield', () => {
     const world = new VoxelWorld('farm_realm', 'Farm Realm', 2, 2);
-    world.setVoxel(8, 10, 8, packVoxel(VOXEL_MAT_FARMLAND_MOIST, VoxelShape.FARMLAND));
+    const { low, high } = packVoxel(VOXEL_MAT_FARMLAND_MOIST, VoxelShape.FARMLAND);
+    world.setVoxel(8, 10, 8, low, high);
     world.setBlockEntity(8, 10, 8, createFarmlandEntity(8, 10, 8, 7)); // fully moist
 
     plantCrop(world, 8, 11, 8, 'wheat');
@@ -126,7 +133,8 @@ describe('Voxel Block Entities & Agricultural Simulation', () => {
 
   it('persists and restores block entities through world serialization', () => {
     const world = new VoxelWorld('farm_save_realm', 'Save Realm', 2, 2);
-    world.setVoxel(2, 5, 2, packVoxel(VOXEL_MAT_FARMLAND_MOIST, VoxelShape.FARMLAND));
+    const { low, high } = packVoxel(VOXEL_MAT_FARMLAND_MOIST, VoxelShape.FARMLAND);
+    world.setVoxel(2, 5, 2, low, high);
     world.setBlockEntity(2, 5, 2, createFarmlandEntity(2, 5, 2, 7));
 
     plantCrop(world, 2, 6, 2, 'carrot');

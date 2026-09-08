@@ -6,7 +6,7 @@
  */
 
 import { VoxelChunk, CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z } from '../voxel/VoxelChunk';
-import { packVoxel, VoxelPhysics, VoxelShape, VOXEL_WORD_AIR } from '../voxel/VoxelWord';
+import { packVoxel, VoxelPhysics, VoxelShape, VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH } from '../voxel/VoxelWord';
 import { BiomeDefinition } from './biomeSchema';
 import { SimplexNoise2D } from './simplexNoise';
 
@@ -58,18 +58,18 @@ export class ProceduralVoxelGenerator {
           const wy = startWY + ly;
 
           if (wy > surfaceH) {
-            chunk.set(lx, ly, lz, VOXEL_WORD_AIR);
+            chunk.set(lx, ly, lz, VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH);
           } else if (wy === 0) {
             // Bedrock layer
-            chunk.set(lx, ly, lz, bedrockWord);
+            chunk.set(lx, ly, lz, bedrockWord.low, bedrockWord.high);
           } else {
             const depth = surfaceH - wy;
             if (depth === 0) {
-              chunk.set(lx, ly, lz, surfaceWord);
+              chunk.set(lx, ly, lz, surfaceWord.low, surfaceWord.high);
             } else if (depth <= strata.subsurfaceDepth) {
-              chunk.set(lx, ly, lz, subsurfaceWord);
+              chunk.set(lx, ly, lz, subsurfaceWord.low, subsurfaceWord.high);
             } else {
-              chunk.set(lx, ly, lz, mantleWord);
+              chunk.set(lx, ly, lz, mantleWord.low, mantleWord.high);
             }
           }
         }

@@ -237,7 +237,7 @@ export function ProceduralAuthoringPanel() {
       }
       
       const txBuilder = new VoxelTransactionBuilder('Procedural Generation', activeMapData.id || '');
-      const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: number; after: number }> = [];
+      const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: any; after: any }> = [];
 
       // Generate a solid column from bedrock (y=0) up to the height limit
       for (let x = 0; x < mapW; x++) {
@@ -276,11 +276,11 @@ export function ProceduralAuthoringPanel() {
               physics = catPhysics;
             }
             
-            const prevVoxel = voxelWorld.getVoxel(x, y, z) || 0;
+            const prevVoxel = voxelWorld.getVoxel(x, y, z);
             const newVoxel = packVoxel(matId, shapeId, orient, 0, physics, 0);
             
-            if (prevVoxel !== newVoxel) {
-              txBuilder.record(voxelWorld, x, y, z, newVoxel);
+            if (prevVoxel.low !== newVoxel.low || prevVoxel.high !== newVoxel.high) {
+              txBuilder.record(voxelWorld, x, y, z, newVoxel as any);
             }
           }
         }
@@ -289,13 +289,13 @@ export function ProceduralAuthoringPanel() {
       const tx = txBuilder.build();
       if (tx && tx.mutations.length > 0) {
         for (const mut of tx.mutations) {
-          voxelWorld.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel);
+          voxelWorld.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel.low, mut.newVoxel.high);
           changedVoxels.push({
             wx: mut.worldX,
             wy: mut.worldY,
             wz: mut.worldZ,
-            before: mut.previousVoxel,
-            after: mut.newVoxel,
+            before: mut.previousVoxel as any,
+            after: mut.newVoxel as any,
           });
         }
         

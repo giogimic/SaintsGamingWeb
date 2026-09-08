@@ -4,10 +4,10 @@ import { normalizeGatesToArray } from '@/shared/game/mapGates';
 import {
   isVoxelSolid,
   isVoxelAir,
-  getVoxelPhysics,
-  getVoxelShape,
-  getVoxelLogic,
-  getVoxelMaterial,
+  extractPhysics,
+  extractShapeId,
+  extractLogic,
+  extractMaterialId,
   VoxelPhysics,
   VoxelShape,
   VoxelLogic,
@@ -202,9 +202,9 @@ export class WorldSimulation {
     if (!stepAction && state.voxelWorld) {
       const wz = mapHeight - 1 - targetY;
       const groundWord = state.voxelWorld.getVoxel(targetX, 15, wz);
-      const groundPhys = getVoxelPhysics(groundWord);
+      const groundPhys = extractPhysics(groundWord.high);
       const bodyWord = state.voxelWorld.getVoxel(targetX, 16, wz);
-      const bodyPhys = getVoxelPhysics(bodyWord);
+      const bodyPhys = extractPhysics(bodyWord.high);
 
       if (groundPhys === VoxelPhysics.SWIMMABLE_FLUID || bodyPhys === VoxelPhysics.SWIMMABLE_FLUID) {
         stepAction = 'SWIM';
@@ -251,9 +251,9 @@ export class WorldSimulation {
       const wz = state.mapHeight - 1 - faceY;
       for (let wy = state.voxelWorld.totalHeightBlocks - 1; wy >= 0; wy--) {
         const word = state.voxelWorld.getVoxel(faceX, wy, wz);
-        if (word && (word & 0xfff) !== 0) {
-          const logic = getVoxelLogic(word);
-          const mat = getVoxelMaterial(word);
+        if (word && !isVoxelAir(word.low)) {
+          const logic = extractLogic(word.high);
+          const mat = extractMaterialId(word.low);
           if (logic === VoxelLogic.HARVEST_NODE) {
             return {
               type: 'LOGIC_INTERACT',

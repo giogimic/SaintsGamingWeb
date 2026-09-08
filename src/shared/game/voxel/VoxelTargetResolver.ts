@@ -27,7 +27,7 @@ export type VoxelTargetResolution =
       adjacentVoxelCoord: { wx: number; wy: number; wz: number };
       chunkCoord: { cx: number; cz: number; cy: number };
       localCoord: { lx: number; ly: number; lz: number };
-      existingVoxel: number;
+      existingVoxel: { low: number; high: number };
       isInsideWorld: boolean;
     }
   | {
@@ -112,7 +112,7 @@ export function resolveVoxelTarget(
 
     const existingVoxel = isInsideWorld
       ? world.getVoxel(targetVoxel.wx, targetVoxel.wy, targetVoxel.wz)
-      : 0;
+      : { low: 0, high: 0 };
 
     const { cx, cz, cy, lx, ly, lz } = VoxelWorld.worldToChunkCoords(
       targetVoxel.wx,

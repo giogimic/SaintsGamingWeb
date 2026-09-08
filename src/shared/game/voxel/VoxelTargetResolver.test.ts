@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { VoxelWorld } from './VoxelWorldDoc';
 import { resolveVoxelTarget, getTargetVoxelCoord, RawPickTarget, VoxelRay } from './VoxelTargetResolver';
-import { VOXEL_WORD_GUNMETAL } from './VoxelWord';
+
 
 describe('VoxelTargetResolver — Raycast, Surface Normal & Elevation Correction', () => {
   it('computes exact intersected face normal and separates Add vs Carve target coordinates', () => {

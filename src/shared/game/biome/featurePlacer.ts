@@ -1,6 +1,6 @@
 import { VoxelChunk, CHUNK_SIZE_X, CHUNK_SIZE_Z, CHUNK_SIZE_Y } from '../voxel/VoxelChunk';
 import { BiomeDefinition } from './biomeSchema';
-import { VOXEL_MAT_WOOD, VOXEL_WORD_AIR, VOXEL_MAT_GRASS, VOXEL_MAT_SAND, VOXEL_MAT_SNOW } from '../voxel/VoxelWord';
+import { VOXEL_MAT_WOOD, VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH, VOXEL_MAT_GRASS, VOXEL_MAT_SAND, VOXEL_MAT_SNOW, packVoxel, VoxelShape, VoxelOrientation, VoxelPhysics } from '../voxel/VoxelWord';
 
 // Simple Linear Congruential Generator (LCG) for deterministic pseudo-random numbers
 class PRNG {
@@ -36,12 +36,13 @@ export class FeaturePlacer {
 
       // Find the surface Y
       let surfaceY = -1;
-      let surfaceMat = VOXEL_WORD_AIR;
+      let surfaceMat = VOXEL_WORD_AIR_LOW;
       for (let y = CHUNK_SIZE_Y - 1; y >= 0; y--) {
-        const mat = chunk.get(lx, y, lz);
-        if (mat !== VOXEL_WORD_AIR) {
+        const matLow = chunk.getLow(lx, y, lz);
+        const matHigh = chunk.getHigh(lx, y, lz);
+        if (matLow !== VOXEL_WORD_AIR_LOW || matHigh !== VOXEL_WORD_AIR_HIGH) {
           surfaceY = y;
-          surfaceMat = mat;
+          surfaceMat = matLow;
           break;
         }
       }
@@ -75,33 +76,37 @@ export class FeaturePlacer {
     if (featureId === 'oak_tree' && surfaceMat === VOXEL_MAT_GRASS) {
       // Trunk
       const height = 3 + Math.floor(prng.nextFloat() * 3); // 3 to 5 tall
+      const trunkWord = packVoxel(VOXEL_MAT_WOOD, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
       for (let y = 1; y <= height; y++) {
         if (surfaceY + y < CHUNK_SIZE_Y) {
-          chunk.set(lx, surfaceY + y, lz, VOXEL_MAT_WOOD);
+          chunk.set(lx, surfaceY + y, lz, trunkWord.low, trunkWord.high);
         }
       }
       // Leaves (mock using grass material for now)
+      const leafWord = packVoxel(VOXEL_MAT_GRASS, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
       if (surfaceY + height + 1 < CHUNK_SIZE_Y) {
-         chunk.set(lx, surfaceY + height + 1, lz, VOXEL_MAT_GRASS);
-         if (lx > 0) chunk.set(lx - 1, surfaceY + height, lz, VOXEL_MAT_GRASS);
-         if (lx < CHUNK_SIZE_X - 1) chunk.set(lx + 1, surfaceY + height, lz, VOXEL_MAT_GRASS);
-         if (lz > 0) chunk.set(lx, surfaceY + height, lz - 1, VOXEL_MAT_GRASS);
-         if (lz < CHUNK_SIZE_Z - 1) chunk.set(lx, surfaceY + height, lz + 1, VOXEL_MAT_GRASS);
+         chunk.set(lx, surfaceY + height + 1, lz, leafWord.low, leafWord.high);
+         if (lx > 0) chunk.set(lx - 1, surfaceY + height, lz, leafWord.low, leafWord.high);
+         if (lx < CHUNK_SIZE_X - 1) chunk.set(lx + 1, surfaceY + height, lz, leafWord.low, leafWord.high);
+         if (lz > 0) chunk.set(lx, surfaceY + height, lz - 1, leafWord.low, leafWord.high);
+         if (lz < CHUNK_SIZE_Z - 1) chunk.set(lx, surfaceY + height, lz + 1, leafWord.low, leafWord.high);
       }
     } 
     else if (featureId === 'cactus' && surfaceMat === VOXEL_MAT_SAND) {
       const height = 2 + Math.floor(prng.nextFloat() * 3);
+      const cactusWord = packVoxel(VOXEL_MAT_GRASS, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
       for (let y = 1; y <= height; y++) {
         if (surfaceY + y < CHUNK_SIZE_Y) {
-          chunk.set(lx, surfaceY + y, lz, VOXEL_MAT_GRASS); // Using grass as green cactus placeholder
+          chunk.set(lx, surfaceY + y, lz, cactusWord.low, cactusWord.high); // Using grass as green cactus placeholder
         }
       }
     }
     else if (featureId === 'pine_tree' && surfaceMat === VOXEL_MAT_SNOW) {
       const height = 4 + Math.floor(prng.nextFloat() * 3);
+      const pineWord = packVoxel(VOXEL_MAT_WOOD, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
       for (let y = 1; y <= height; y++) {
         if (surfaceY + y < CHUNK_SIZE_Y) {
-          chunk.set(lx, surfaceY + y, lz, VOXEL_MAT_WOOD);
+          chunk.set(lx, surfaceY + y, lz, pineWord.low, pineWord.high);
         }
       }
     }

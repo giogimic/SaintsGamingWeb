@@ -35,7 +35,7 @@ import {
 } from 'lucide-react';
 import { savePrefab, listPrefabs } from '@/app/actions/studio/prefabs';
 import { extractVoxelPrefab } from '@/shared/game/voxel/VoxelPrefab';
-import { packVoxel, VoxelShape, VoxelPhysics, VOXEL_WORD_AIR, VOXEL_MAT_GRASS } from '@/shared/game/voxel/VoxelWord';
+import { packVoxel, VoxelShape, VoxelPhysics, VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH, VOXEL_MAT_GRASS } from '@/shared/game/voxel/VoxelWord';
 import { Box } from 'lucide-react';
 
 import { useEditorStore, type PanelId } from './editor-store';
@@ -351,8 +351,8 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
       for (let z = minZ; z <= maxZ; z++) {
         for (let y = 0; y < 32; y++) {
           const currentWord = doc.getVoxel(x, y, z);
-          if (currentWord !== VOXEL_WORD_AIR) {
-            doc.setVoxel(x, y, z, activeWord);
+          if (currentWord.low !== VOXEL_WORD_AIR_LOW || currentWord.high !== VOXEL_WORD_AIR_HIGH) {
+            doc.setVoxel(x, y, z, activeWord.low, activeWord.high);
             filledCount++;
           }
         }
@@ -384,8 +384,8 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
       for (let z = minZ + 1; z < maxZ; z++) {
         for (let y = 2; y < 30; y++) {
           const currentWord = doc.getVoxel(x, y, z);
-          if (currentWord !== VOXEL_WORD_AIR) {
-            doc.setVoxel(x, y, z, VOXEL_WORD_AIR);
+          if (currentWord.low !== VOXEL_WORD_AIR_LOW || currentWord.high !== VOXEL_WORD_AIR_HIGH) {
+            doc.setVoxel(x, y, z, VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH);
             cleared++;
           }
         }

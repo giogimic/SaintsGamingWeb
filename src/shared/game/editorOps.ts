@@ -31,8 +31,8 @@ export type PaintedVoxel = {
   wx: number;
   wy: number;
   wz: number;
-  before: number;
-  after: number;
+  before: { low: number; high: number };
+  after: { low: number; high: number };
 };
 
 export type PaintVoxelsOp = {
@@ -253,7 +253,7 @@ export function applyEditorOp(
       const voxels = direction === "undo" ? [...op.voxels].reverse() : op.voxels;
       for (const v of voxels) {
         const word = direction === "do" ? v.after : v.before;
-        world.setVoxel(v.wx, v.wy, v.wz, word);
+        world.setVoxel(v.wx, v.wy, v.wz, word.low, word.high);
       }
       (map as any).voxelDoc = world.serializeToDoc();
       return { ok: true };

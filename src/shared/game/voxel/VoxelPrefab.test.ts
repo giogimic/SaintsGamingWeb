@@ -7,12 +7,14 @@ import {
   unpackPrefabVoxels,
 } from './VoxelPrefab';
 import {
-  VOXEL_WORD_GUNMETAL,
-  VOXEL_WORD_AIR,
+  VOXEL_WORD_GUNMETAL_LOW,
+  VOXEL_WORD_GUNMETAL_HIGH,
+  VOXEL_WORD_AIR_LOW,
+  VOXEL_WORD_AIR_HIGH,
   VoxelShape,
   VoxelOrientation,
-  withVoxelOrientation,
-  getVoxelOrientation,
+  withVoxelOrientationHigh,
+  extractOrientation,
 } from './VoxelWord';
 
 describe('VoxelPrefab — 3D Blueprint Extraction, Stamping & 90° CW Rotation', () => {
@@ -28,7 +30,7 @@ describe('VoxelPrefab — 3D Blueprint Extraction, Stamping & 90° CW Rotation',
       for (let y = 5; y <= 14; y++) {
         for (let z = 5; z <= 14; z++) {
           if ((x + y + z) % 2 === 0) {
-            world.setVoxel(x, y, z, VOXEL_WORD_GUNMETAL);
+            world.setVoxel(x, y, z, VOXEL_WORD_GUNMETAL_LOW, VOXEL_WORD_GUNMETAL_HIGH);
           }
         }
       }
@@ -54,7 +56,8 @@ describe('VoxelPrefab — 3D Blueprint Extraction, Stamping & 90° CW Rotation',
         for (let z = 0; z < 10; z++) {
           const orig = world.getVoxel(5 + x, 5 + y, 5 + z);
           const stamped = world.getVoxel(35 + x, 5 + y, 35 + z);
-          expect(stamped).toBe(orig);
+          expect(stamped.low).toBe(orig.low);
+          expect(stamped.high).toBe(orig.high);
         }
       }
     }
@@ -69,11 +72,11 @@ describe('VoxelPrefab — 3D Blueprint Extraction, Stamping & 90° CW Rotation',
 
     // Create 3 (dx) x 2 (dy) x 5 (dz) structure:
     // Place a directional stair at local (0, 0, 0) facing NORTH
-    const northStair = withVoxelOrientation(
-      (1 << 24) | (VoxelShape.STAIRS_STRAIGHT << 12) | 1,
+    const northStairHigh = withVoxelOrientationHigh(
+      0,
       VoxelOrientation.NORTH
     );
-    world.setVoxel(0, 0, 0, northStair);
+    world.setVoxel(0, 0, 0, 1 | (VoxelShape.STAIRS_STRAIGHT << 24), northStairHigh);
 
     const prefab = extractVoxelPrefab(
       world,
@@ -91,10 +94,11 @@ describe('VoxelPrefab — 3D Blueprint Extraction, Stamping & 90° CW Rotation',
     // (x=0, y=0, z=0) maps to (rotX = dz - 1 - z = 5 - 1 - 0 = 4, rotY = 0, rotZ = x = 0)
     const rotatedVoxels = unpackPrefabVoxels(rot1);
     // Index in rot1 (5 x 2 x 3): rotX + rotY * 5 + rotZ * 10 = 4 + 0 + 0 = 4
-    const rotatedStair = rotatedVoxels[4];
-    expect(rotatedStair).not.toBe(VOXEL_WORD_AIR);
+    const rotatedStairLow = rotatedVoxels.low[4];
+    const rotatedStairHigh = rotatedVoxels.high[4];
+    expect(rotatedStairLow).not.toBe(VOXEL_WORD_AIR_LOW);
     // Orientation should have rotated from NORTH (0) to EAST (1)
-    expect(getVoxelOrientation(rotatedStair)).toBe(VoxelOrientation.EAST);
+    expect(extractOrientation(rotatedStairHigh)).toBe(VoxelOrientation.EAST);
   });
 
   it('four successive 90° CW rotations restores exact original dimensions and orientation (360° identity)', () => {
@@ -108,8 +112,9 @@ describe('VoxelPrefab — 3D Blueprint Extraction, Stamping & 90° CW Rotation',
       1,
       2,
       3,
-      withVoxelOrientation(
-        (1 << 24) | (VoxelShape.SLOPE_45 << 12) | 2,
+      2 | (VoxelShape.SLOPE_45 << 24),
+      withVoxelOrientationHigh(
+        0,
         VoxelOrientation.WEST
       )
     );
@@ -136,8 +141,9 @@ describe('VoxelPrefab — 3D Blueprint Extraction, Stamping & 90° CW Rotation',
     const origData = unpackPrefabVoxels(original);
     const r360Data = unpackPrefabVoxels(r360);
 
-    for (let i = 0; i < origData.length; i++) {
-      expect(r360Data[i]).toBe(origData[i]);
+    for (let i = 0; i < origData.low.length; i++) {
+      expect(r360Data.low[i]).toBe(origData.low[i]);
+      expect(r360Data.high[i]).toBe(origData.high[i]);
     }
   });
 });

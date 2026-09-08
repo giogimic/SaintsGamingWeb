@@ -5,12 +5,13 @@ import {
   EntityInterpolationBuffer,
 } from './MovementPrediction';
 import { SweptAABBController, VoxelWorldCollisionQuery } from '@/shared/game/voxel/VoxelCollision';
-import { VOXEL_WORD_AIR, VOXEL_WORD_GUNMETAL } from '@/shared/game/voxel/VoxelWord';
+import { VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH, VOXEL_WORD_GUNMETAL_LOW, VOXEL_WORD_GUNMETAL_HIGH } from '@/shared/game/voxel/VoxelWord';
 
 describe('MovementPrediction — Client Prediction & Server Reconciliation', () => {
   const flatWorld: VoxelWorldCollisionQuery = {
-    getVoxel: (wx, wy, wz) => (wy === 0 ? VOXEL_WORD_GUNMETAL : VOXEL_WORD_AIR),
+    getVoxel: (wx, wy, wz) => (wy === 0 ? { low: VOXEL_WORD_GUNMETAL_LOW, high: VOXEL_WORD_GUNMETAL_HIGH } : { low: VOXEL_WORD_AIR_LOW, high: VOXEL_WORD_AIR_HIGH }),
   };
+
   const controller = new SweptAABBController();
   const dt = 1 / 60;
 

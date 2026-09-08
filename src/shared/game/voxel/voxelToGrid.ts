@@ -8,9 +8,9 @@
 
 import { VoxelWorld, type VoxelWorldDocV3 } from './VoxelWorldDoc';
 import {
-  getVoxelPhysics,
-  getVoxelShape,
-  getVoxelLogic,
+  extractPhysics,
+  extractShapeId,
+  extractLogic,
   isVoxelAir,
   VoxelPhysics,
   VoxelShape,
@@ -55,24 +55,23 @@ export function generateGridFromVoxelDoc(
         continue;
       }
 
-      // 2. Find the highest non-air block in this column to be the ground
       let groundY = -1;
       for (let wy = world.totalHeightBlocks - 1; wy >= 0; wy--) {
-        const word = world.getVoxel(wx, wy, wz);
-        if (word && !isVoxelAir(word)) {
+        const { low, high } = world.getVoxel(wx, wy, wz);
+        if (low !== undefined && !isVoxelAir(low)) {
           groundY = wy;
           break;
         }
       }
 
-      const bodyWord = groundY >= 0 ? world.getVoxel(wx, groundY + 1, wz) : 0;
-      const groundWord = groundY >= 0 ? world.getVoxel(wx, groundY, wz) : 0;
+      const bodyWord = groundY >= 0 ? world.getVoxel(wx, groundY + 1, wz) : { low: 0, high: 0 };
+      const groundWord = groundY >= 0 ? world.getVoxel(wx, groundY, wz) : { low: 0, high: 0 };
 
-      const bodyPhys = getVoxelPhysics(bodyWord);
-      const bodyShape = getVoxelShape(bodyWord);
-      const bodyLogic = getVoxelLogic(bodyWord);
+      const bodyPhys = extractPhysics(bodyWord.high);
+      const bodyShape = extractShapeId(bodyWord.low);
+      const bodyLogic = extractLogic(bodyWord.high);
 
-      const groundPhys = getVoxelPhysics(groundWord);
+      const groundPhys = extractPhysics(groundWord.high);
 
       // Traversable elevations (slopes, stairs, bottom slabs) allow stepping up
       const isTraversableElevation =
@@ -92,7 +91,7 @@ export function generateGridFromVoxelDoc(
         row.push(TILE_LOGIC_WATER);
       } else if (groundPhys === VoxelPhysics.HAZARD || bodyPhys === VoxelPhysics.HAZARD) {
         row.push(TILE_LOGIC_HAZARD);
-      } else if ((!groundWord || isVoxelAir(groundWord)) && !isTraversableElevation) {
+      } else if ((!groundWord.low || isVoxelAir(groundWord.low)) && !isTraversableElevation) {
         // Void/Pit: no ground support
         row.push(TILE_LOGIC_WALL);
       } else {

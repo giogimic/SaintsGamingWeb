@@ -6,9 +6,9 @@ import {
   isVoxelSolid, 
   isVoxelAir, 
   isVoxelFaceOccluding,
-  getVoxelMaterial, 
-  getVoxelShape, 
-  getVoxelOrientation,
+  extractMaterialId, 
+  extractShapeId, 
+  extractOrientation,
   VOXEL_MAT_FARMLAND_MOIST 
 } from '@/shared/game/voxel/VoxelWord';
 import { 
@@ -143,7 +143,8 @@ export class VoxelChunkMesher {
       cx: chunk.cx,
       cy: chunk.cy,
       cz: chunk.cz,
-      halo,
+      halo: halo.low,
+      haloHigh: halo.high,
       originOffsetX: world.originOffsetX,
       originOffsetY: world.originOffsetY,
       originOffsetZ: world.originOffsetZ,

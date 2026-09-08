@@ -3,7 +3,7 @@ import { SimplexNoise2D } from './simplexNoise';
 import { CANONICAL_BIOMES } from './biomeSchema';
 import { ProceduralVoxelGenerator } from './proceduralGenerator';
 import { VoxelChunk } from '../voxel/VoxelChunk';
-import { getVoxelMaterial, isVoxelAir } from '../voxel/VoxelWord';
+import { extractMaterialId, isVoxelAir } from '../voxel/VoxelWord';
 
 describe('Biome Procedural Generation & Simplex Noise', () => {
   it('SimplexNoise2D produces deterministic, seed-dependent results', () => {
@@ -35,27 +35,27 @@ describe('Biome Procedural Generation & Simplex Noise', () => {
 
     // 1. Air above surface
     for (let wy = surfaceH + 1; wy < 32; wy++) {
-      const word = chunk.get(10, wy, 10);
-      expect(isVoxelAir(word)).toBe(true);
+      const wordLow = chunk.getLow(10, wy, 10);
+      expect(isVoxelAir(wordLow)).toBe(true);
     }
 
     // 2. Surface layer (Grass)
-    const surfaceWord = chunk.get(10, surfaceH, 10);
-    expect(getVoxelMaterial(surfaceWord)).toBe(biome.strata.surfaceMaterial);
+    const surfaceWordLow = chunk.getLow(10, surfaceH, 10);
+    expect(extractMaterialId(surfaceWordLow)).toBe(biome.strata.surfaceMaterial);
 
     // 3. Subsurface layer (Dirt) for depth 1..3
     for (let d = 1; d <= biome.strata.subsurfaceDepth; d++) {
-      const subWord = chunk.get(10, surfaceH - d, 10);
-      expect(getVoxelMaterial(subWord)).toBe(biome.strata.subsurfaceMaterial);
+      const subWordLow = chunk.getLow(10, surfaceH - d, 10);
+      expect(extractMaterialId(subWordLow)).toBe(biome.strata.subsurfaceMaterial);
     }
 
     // 4. Mantle layer (Stone) below subsurface
-    const mantleWord = chunk.get(10, surfaceH - biome.strata.subsurfaceDepth - 1, 10);
-    expect(getVoxelMaterial(mantleWord)).toBe(biome.strata.mantleMaterial);
+    const mantleWordLow = chunk.getLow(10, surfaceH - biome.strata.subsurfaceDepth - 1, 10);
+    expect(extractMaterialId(mantleWordLow)).toBe(biome.strata.mantleMaterial);
 
     // 5. Bedrock foundation at wy = 0
-    const bedrockWord = chunk.get(10, 0, 10);
-    expect(getVoxelMaterial(bedrockWord)).toBe(biome.strata.bedrockMaterial);
+    const bedrockWordLow = chunk.getLow(10, 0, 10);
+    expect(extractMaterialId(bedrockWordLow)).toBe(biome.strata.bedrockMaterial);
   });
 
   it('switches between distinct canonical biomes cleanly', () => {
@@ -68,10 +68,10 @@ describe('Biome Procedural Generation & Simplex Noise', () => {
     plainsGen.populateChunk(0, 0, 0, plainsChunk);
     dunesGen.populateChunk(0, 0, 0, dunesChunk);
 
-    const plainsSurface = plainsChunk.get(5, plainsGen.getSurfaceHeight(5, 5), 5);
-    const dunesSurface = dunesChunk.get(5, dunesGen.getSurfaceHeight(5, 5), 5);
+    const plainsSurface = plainsChunk.getLow(5, plainsGen.getSurfaceHeight(5, 5), 5);
+    const dunesSurface = dunesChunk.getLow(5, dunesGen.getSurfaceHeight(5, 5), 5);
 
-    expect(getVoxelMaterial(plainsSurface)).toBe(CANONICAL_BIOMES.emerald_plains.strata.surfaceMaterial);
-    expect(getVoxelMaterial(dunesSurface)).toBe(CANONICAL_BIOMES.golden_dunes.strata.surfaceMaterial);
+    expect(extractMaterialId(plainsSurface)).toBe(CANONICAL_BIOMES.emerald_plains.strata.surfaceMaterial);
+    expect(extractMaterialId(dunesSurface)).toBe(CANONICAL_BIOMES.golden_dunes.strata.surfaceMaterial);
   });
 });

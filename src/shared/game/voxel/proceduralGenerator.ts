@@ -10,7 +10,11 @@ import {
   VOXEL_MAT_SNOW,
   VOXEL_MAT_ICE,
   VOXEL_MAT_WOOD,
-  VOXEL_WORD_AIR
+  packVoxel,
+  VoxelOrientation,
+  VoxelPhysics,
+  VoxelShape,
+  VOXEL_WORD_AIR_LOW
 } from '@/shared/game/voxel/VoxelWord';
 import { FeaturePlacer } from '@/shared/game/biome/featurePlacer';
 
@@ -107,7 +111,7 @@ export class ProceduralGenerator {
         for (let y = clampedY; y >= 0; y--) {
           const depth = clampedY - y;
           
-          let materialId = VOXEL_WORD_AIR;
+          let materialId = VOXEL_WORD_AIR_LOW; // fallback
           
           if (y === 0) {
             materialId = strata.bedrockMaterial;
@@ -119,7 +123,8 @@ export class ProceduralGenerator {
             materialId = strata.mantleMaterial;
           }
 
-          chunk.set(x, y, z, materialId);
+          const { low, high } = packVoxel(materialId, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
+          chunk.set(x, y, z, low, high);
         }
       }
     }

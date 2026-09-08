@@ -41,7 +41,7 @@ describe('32³ Isotropic Chunk Migration & Voxel-To-Grid Projection', () => {
         // In legacy 16x16x32: index = 5 + 5 * 16 + 10 * 256 = 5 + 80 + 2560 = 2645
         '1_1_0': [
           2645, 0,
-          1, stoneWord,
+          1, stoneWord.low,
           8192 - 2646, 0,
         ],
       },

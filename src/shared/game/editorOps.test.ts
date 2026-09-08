@@ -318,8 +318,8 @@ describe("editorOps", () => {
       const voxelOp = {
         kind: "paint_voxels" as const,
         voxels: [
-          { wx: 5, wy: 16, wz: 5, before: 0, after: 12345 },
-          { wx: 6, wy: 16, wz: 5, before: 0, after: 67890 },
+          { wx: 5, wy: 16, wz: 5, before: { low: 0, high: 0 }, after: { low: 12345, high: 0 } },
+          { wx: 6, wy: 16, wz: 5, before: { low: 0, high: 0 }, after: { low: 67890, high: 0 } },
         ],
       };
 

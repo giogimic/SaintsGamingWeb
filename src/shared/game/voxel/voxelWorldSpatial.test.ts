@@ -4,7 +4,7 @@ import {
   SpatialVoxelWorldManager,
   generateDefaultWorldDoc,
 } from './VoxelWorldDoc';
-import { packVoxel, VOXEL_WORD_AIR } from './VoxelWord';
+import { packVoxel, VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH } from './VoxelWord';
 import { VOXEL_MAT_STONE, VOXEL_MAT_GRASS } from './VoxelMaterialDefinition';
 
 describe('VoxelWorld Spatial Adjacency & Boundary Halo', () => {
@@ -21,11 +21,11 @@ describe('VoxelWorld Spatial Adjacency & Boundary Halo', () => {
 
     // Set an identifiable stone block on the western edge of World B at (wx=0, wy=16, wz=10)
     const stoneWord = packVoxel(VOXEL_MAT_STONE, 0, 0, 0, 1);
-    worldB.setVoxel(0, 16, 10, stoneWord);
+    worldB.setVoxel(0, 16, 10, stoneWord.low, stoneWord.high);
 
     // Set an identifiable grass block on the eastern edge of World A at (wx=31, wy=16, wz=10)
     const grassWord = packVoxel(VOXEL_MAT_GRASS, 0, 0, 0, 1);
-    worldA.setVoxel(31, 16, 10, grassWord);
+    worldA.setVoxel(31, 16, 10, grassWord.low, grassWord.high);
 
     // Register adjacency: World A's east is World B; World B's west is World A
     worldA.registerAdjacentNeighbor('east', worldB);
@@ -34,12 +34,12 @@ describe('VoxelWorld Spatial Adjacency & Boundary Halo', () => {
     // Querying World A beyond its eastern border (wx = 32, wy = 16, wz = 10)
     // with halo sampling should seamlessly return World B's block!
     const sampleEast = worldA.getVoxelWithHalo(32, 16, 10);
-    expect(sampleEast & 0xfff).toBe(VOXEL_MAT_STONE);
+    expect(sampleEast.low & 0xffffff).toBe(VOXEL_MAT_STONE);
 
     // Querying World B beyond its western border (wx = -1, wy = 16, wz = 10)
     // should seamlessly return World A's perimeter block
     const sampleWest = worldB.getVoxelWithHalo(-1, 16, 10);
-    expect(sampleWest & 0xfff).toBe(VOXEL_MAT_GRASS);
+    expect(sampleWest.low & 0xffffff).toBe(VOXEL_MAT_GRASS);
   });
 
   it('SpatialVoxelWorldManager manages multiple worlds and connects adjacent regions', () => {

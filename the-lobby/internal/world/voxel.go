@@ -49,43 +49,43 @@ const (
 	VoxelWordAir = 0
 )
 
-// PackVoxel builds a 32-bit voxel word.
-func PackVoxel(materialID uint16, shapeID, orientation, aoTint, physics, logic uint8) uint32 {
-	return (uint32(materialID)&0x0FFF) |
-		((uint32(shapeID)&0x1F) << 12) |
-		((uint32(orientation)&0x07) << 17) |
-		((uint32(aoTint)&0x0F) << 20) |
-		((uint32(physics)&0x0F) << 24) |
-		((uint32(logic)&0x0F) << 28)
+// PackVoxel builds a 64-bit voxel word.
+func PackVoxel(materialID uint32, shapeID, orientation, aoTint, physics, logic uint8) uint64 {
+	return (uint64(materialID) & 0xFFFFFF) |
+		((uint64(shapeID) & 0xFF) << 24) |
+		((uint64(orientation) & 0x0F) << 32) |
+		((uint64(aoTint) & 0x0F) << 36) |
+		((uint64(physics) & 0x0F) << 40) |
+		((uint64(logic) & 0x0F) << 44)
 }
 
 // VoxelPhysics extracts the 4-bit physics type.
-func VoxelPhysics(word uint32) uint8 {
-	return uint8((word >> 24) & 0x0F)
+func VoxelPhysics(word uint64) uint8 {
+	return uint8((word >> 40) & 0x0F)
 }
 
-// VoxelShape extracts the 5-bit shape ID.
-func VoxelShape(word uint32) uint8 {
-	return uint8((word >> 12) & 0x1F)
+// VoxelShape extracts the 8-bit shape ID.
+func VoxelShape(word uint64) uint8 {
+	return uint8((word >> 24) & 0xFF)
 }
 
 // VoxelLogic extracts the 4-bit logic action.
-func VoxelLogic(word uint32) uint8 {
-	return uint8((word >> 28) & 0x0F)
+func VoxelLogic(word uint64) uint8 {
+	return uint8((word >> 44) & 0x0F)
 }
 
-// VoxelMaterial extracts the 12-bit material ID.
-func VoxelMaterial(word uint32) uint16 {
-	return uint16(word & 0x0FFF)
+// VoxelMaterial extracts the 24-bit material ID.
+func VoxelMaterial(word uint64) uint32 {
+	return uint32(word & 0xFFFFFF)
 }
 
 // IsVoxelAir checks if cell is empty.
-func IsVoxelAir(word uint32) bool {
-	return (word&0x0FFF) == 0 && VoxelShape(word) == ShapeAir
+func IsVoxelAir(word uint64) bool {
+	return (word&0xFFFFFF) == 0 && VoxelShape(word) == ShapeAir
 }
 
 // IsVoxelSolid checks if cell is a solid obstacle or hazard.
-func IsVoxelSolid(word uint32) bool {
+func IsVoxelSolid(word uint64) bool {
 	p := VoxelPhysics(word)
 	return p == PhysicsSolidObstacle || p == PhysicsHazard
 }
@@ -95,7 +95,7 @@ type VoxelChunk struct {
 	CX   int
 	CZ   int
 	CY   int
-	Data [ChunkTotalCells]uint32
+	Data [ChunkTotalCells]uint64
 }
 
 // ChunkIndex computes the 1D linear array index using bitwise math.
@@ -103,14 +103,14 @@ func ChunkIndex(lx, ly, lz int) int {
 	return (lx & ChunkMask) | ((lz & ChunkMask) << ChunkShiftZ) | ((ly & ChunkMask) << (ChunkShiftX + ChunkShiftZ))
 }
 
-func (c *VoxelChunk) Get(lx, ly, lz int) uint32 {
+func (c *VoxelChunk) Get(lx, ly, lz int) uint64 {
 	if lx < 0 || lx >= ChunkSizeX || ly < 0 || ly >= ChunkSizeY || lz < 0 || lz >= ChunkSizeZ {
 		return VoxelWordAir
 	}
 	return c.Data[ChunkIndex(lx, ly, lz)]
 }
 
-func (c *VoxelChunk) Set(lx, ly, lz int, word uint32) {
+func (c *VoxelChunk) Set(lx, ly, lz int, word uint64) {
 	if lx < 0 || lx >= ChunkSizeX || ly < 0 || ly >= ChunkSizeY || lz < 0 || lz >= ChunkSizeZ {
 		return
 	}
@@ -123,7 +123,7 @@ func DecodeChunkRLE(rle []int, cx, cz, cy int) *VoxelChunk {
 	idx := 0
 	for i := 0; i+1 < len(rle) && idx < ChunkTotalCells; i += 2 {
 		count := rle[i]
-		val := uint32(uint64(rle[i+1]) & 0xFFFFFFFF)
+		val := uint64(rle[i+1])
 		for c := 0; c < count && idx < ChunkTotalCells; c++ {
 			chunk.Data[idx] = val
 			idx++
@@ -134,8 +134,8 @@ func DecodeChunkRLE(rle []int, cx, cz, cy int) *VoxelChunk {
 
 // EncodePaletteRLEBinary serializes the 32³ chunk into a palette-indexed binary RLE byte stream.
 func (c *VoxelChunk) EncodePaletteRLEBinary() []byte {
-	paletteMap := make(map[uint32]uint8)
-	var palette []uint32
+	paletteMap := make(map[uint64]uint8)
+	var palette []uint64
 
 	for _, word := range c.Data {
 		if _, exists := paletteMap[word]; !exists {
@@ -172,7 +172,7 @@ func (c *VoxelChunk) EncodePaletteRLEBinary() []byte {
 		runs = append(runs, run{count: count, palIdx: curPalIdx})
 	}
 
-	headerSize := 1 + 6 + 1 + paletteCount*4
+	headerSize := 1 + 6 + 1 + paletteCount*8
 	bodySize := len(runs) * 3
 	buf := make([]byte, headerSize+bodySize)
 
@@ -189,8 +189,8 @@ func (c *VoxelChunk) EncodePaletteRLEBinary() []byte {
 
 	offset := 8
 	for _, word := range palette {
-		binary.LittleEndian.PutUint32(buf[offset:offset+4], word)
-		offset += 4
+		binary.LittleEndian.PutUint64(buf[offset:offset+8], word)
+		offset += 8
 	}
 
 	for _, r := range runs {
@@ -223,14 +223,14 @@ func DecodePaletteRLEBinary(data []byte) (*VoxelChunk, error) {
 		palCount = 256
 	}
 
-	headerSize := 8 + palCount*4
+	headerSize := 8 + palCount*8
 	if len(data) < headerSize {
 		return nil, errors.New("insufficient data for palette entries")
 	}
 
-	palette := make([]uint32, palCount)
+	palette := make([]uint64, palCount)
 	for p := 0; p < palCount; p++ {
-		palette[p] = binary.LittleEndian.Uint32(data[8+p*4 : 12+p*4])
+		palette[p] = binary.LittleEndian.Uint64(data[8+p*8 : 16+p*8])
 	}
 
 	chunk := &VoxelChunk{CX: cx, CZ: cz, CY: cy}
@@ -243,7 +243,7 @@ func DecodePaletteRLEBinary(data []byte) (*VoxelChunk, error) {
 		palIdx := int(data[offset])
 		offset++
 
-		var word uint32
+		var word uint64
 		if palIdx < len(palette) {
 			word = palette[palIdx]
 		}

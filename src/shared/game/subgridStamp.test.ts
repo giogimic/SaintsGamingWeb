@@ -171,7 +171,7 @@ describe('stampClipboardOntoMap', () => {
     const world = new VoxelWorld('test_clip', 'Test', 1, 1, 1);
     const grassWord = packVoxel(VOXEL_MAT_GRASS, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE, 0);
     // Set voxel at r=0, c=0 (wz = 4 - 1 - 0 = 3, wx = 0)
-    world.setVoxel(0, 16, 3, grassWord);
+    world.setVoxel(0, 16, 3, grassWord.low, grassWord.high);
 
     (map as any).voxelDoc = world.serializeToDoc();
 

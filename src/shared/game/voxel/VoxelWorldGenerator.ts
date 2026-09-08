@@ -5,7 +5,8 @@ import {
   VoxelShape,
   VoxelOrientation,
   VoxelPhysics,
-  VOXEL_WORD_AIR,
+  VOXEL_WORD_AIR_LOW,
+  VOXEL_WORD_AIR_HIGH,
   VOXEL_MAT_AIR,
   VOXEL_MAT_GUNMETAL,
   VOXEL_MAT_GRASS,
@@ -72,14 +73,12 @@ export function resolveVoxelAtElevation(
   area: FractalArea | null,
   fallbackBaseMaterial: number,
   waterLevel = 12
-): number {
+): { low: number; high: number } {
   if (wy > surfaceY) {
-    // If the area is Golden Dunes, maybe no water. If it's islands, water.
-    // We'll just do a global water level for now for simplicity in Phase 3.
     if (wy <= waterLevel) {
       return packVoxel(VOXEL_MAT_WATER, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SWIMMABLE_FLUID);
     }
-    return VOXEL_WORD_AIR;
+    return { low: VOXEL_WORD_AIR_LOW, high: VOXEL_WORD_AIR_HIGH };
   }
 
   // Use Atlas Strata if available
@@ -154,7 +153,8 @@ export function generateChunkVoxels(
       for (let lz = 0; lz < CHUNK_SIZE_Z; lz++) {
         for (let lx = 0; lx < CHUNK_SIZE_X; lx++) {
           const idx = VoxelChunk.getIndex(lx, ly, lz);
-          chunk.data[idx] = word;
+          chunk.dataLow[idx] = word.low;
+          chunk.dataHigh[idx] = word.high;
         }
       }
     }
@@ -191,9 +191,10 @@ export function generateChunkVoxels(
       for (let ly = 0; ly < CHUNK_SIZE_Y; ly++) {
         const wy = startWY + ly;
         const word = resolveVoxelAtElevation(wy, surfaceY, area, baseMaterial, waterLevel);
-        if (word !== VOXEL_WORD_AIR) {
+        if (word.low !== VOXEL_WORD_AIR_LOW) {
           const idx = VoxelChunk.getIndex(lx, ly, lz);
-          chunk.data[idx] = word;
+          chunk.dataLow[idx] = word.low;
+          chunk.dataHigh[idx] = word.high;
         }
       }
     }
@@ -215,12 +216,12 @@ export function generateChunkVoxels(
 
       // Find highest solid block in this column within this chunk
       let topLy = -1;
-      let topWord = VOXEL_WORD_AIR;
+      let topWord = { low: VOXEL_WORD_AIR_LOW, high: VOXEL_WORD_AIR_HIGH };
       for (let ly = CHUNK_SIZE_Y - 1; ly >= 0; ly--) {
         const idx = VoxelChunk.getIndex(lx, ly, lz);
-        if (chunk.data[idx] !== VOXEL_WORD_AIR) {
+        if (chunk.dataLow[idx] !== VOXEL_WORD_AIR_LOW) {
           topLy = ly;
-          topWord = chunk.data[idx];
+          topWord = { low: chunk.dataLow[idx], high: chunk.dataHigh[idx] };
           break;
         }
       }
@@ -229,7 +230,7 @@ export function generateChunkVoxels(
         // Evaluate Surface Flora
         if (area.decorators.surfaceFlora && area.decorators.surfaceFlora.length > 0) {
           // Check if the top block is a valid surface (not water)
-          const topPhys = (topWord >>> 16) & 0xF;
+          const topPhys = (topWord.high >>> 8) & 0x0f; // extractPhysics inline
           if (topPhys !== VoxelPhysics.SWIMMABLE_FLUID) {
             for (const rule of area.decorators.surfaceFlora) {
               if (random() < rule.probability) {
@@ -237,7 +238,9 @@ export function generateChunkVoxels(
                 for (let sy = 0; sy < stack; sy++) {
                   if (topLy + 1 + sy < CHUNK_SIZE_Y) {
                     const idx = VoxelChunk.getIndex(lx, topLy + 1 + sy, lz);
-                    chunk.data[idx] = packVoxel(rule.material, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
+                    const packed = packVoxel(rule.material, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
+                    chunk.dataLow[idx] = packed.low;
+                    chunk.dataHigh[idx] = packed.high;
                   }
                 }
                 break; // Only spawn one surface decorator per column
@@ -254,10 +257,12 @@ export function generateChunkVoxels(
             for (const rule of area.decorators.subsurfaceOres) {
               if (random() < rule.probability) {
                 const idx = VoxelChunk.getIndex(lx, ly, lz);
-                const phys = (chunk.data[idx] >>> 16) & 0xF;
+                const phys = (chunk.dataHigh[idx] >>> 8) & 0x0f; // extractPhysics
                 // Only replace solid rock/dirt, not fluids
                 if (phys === VoxelPhysics.SOLID_OBSTACLE) {
-                  chunk.data[idx] = packVoxel(rule.material, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
+                  const packed = packVoxel(rule.material, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
+                  chunk.dataLow[idx] = packed.low;
+                  chunk.dataHigh[idx] = packed.high;
                   break;
                 }
               }

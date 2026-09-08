@@ -130,19 +130,24 @@ export class BrushToolHandler implements IToolHandler {
           continue; // Discard voxel edit for unloaded chunk
         }
 
-        let finalWord = 0;
+        let finalWordLow = 0;
+        let finalWordHigh = 0;
         if (isErase) {
-          finalWord = 0; // Air
+          finalWordLow = 0; // Air
+          finalWordHigh = 0;
         } else if (logicOnly) {
-          const currentWord = voxelWorld.getVoxel(wx, wy, wz) || 0;
-          if (currentWord === 0) continue; // Can't paint logic on air
-          // Clear old logic (bits 31..28) and apply new
-          finalWord = (currentWord & ~(0xF << 28)) | ((logicId & 0xF) << 28);
+          const currentWord = voxelWorld.getVoxel(wx, wy, wz);
+          if (currentWord.low === undefined || (currentWord.low === 0 && currentWord.high === 0)) continue; // Can't paint logic on air
+          // Logic is stored in bits 12-15 of high word
+          finalWordLow = currentWord.low;
+          finalWordHigh = (currentWord.high & ~(0xF << 12)) | ((logicId & 0xF) << 12);
         } else {
-          finalWord = packVoxel(matId, shapeId, orient, 0, physics, logicId);
+          const packed = packVoxel(matId, shapeId, orient, 0, physics, logicId);
+          finalWordLow = packed.low;
+          finalWordHigh = packed.high;
         }
 
-        txBuilder.record(voxelWorld, wx, wy, wz, finalWord);
+        txBuilder.record(voxelWorld, wx, wy, wz, { low: finalWordLow, high: finalWordHigh } as any);
       }
 
       if (missingChunks.size > 0 && (context.engine as any).voxelController) {
@@ -157,15 +162,15 @@ export class BrushToolHandler implements IToolHandler {
 
       const tx = txBuilder.build();
       if (tx && tx.mutations.length > 0) {
-        const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: number; after: number }> = [];
+        const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: any; after: any }> = [];
         for (const mut of tx.mutations) {
-          voxelWorld.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel);
+          voxelWorld.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel.low, mut.newVoxel.high);
           changedVoxels.push({
             wx: mut.worldX,
             wy: mut.worldY,
             wz: mut.worldZ,
-            before: mut.previousVoxel,
-            after: mut.newVoxel,
+            before: mut.previousVoxel as any,
+            after: mut.newVoxel as any,
           });
         }
         context.engine.voxel.meshDirtyVoxelChunks?.();

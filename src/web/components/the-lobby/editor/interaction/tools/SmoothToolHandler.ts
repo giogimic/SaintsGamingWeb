@@ -51,7 +51,7 @@ export class SmoothToolHandler implements IToolHandler {
     const txBuilder = new VoxelTransactionBuilder('Melt Brush', liveMap.id || '');
 
     // 3x3x3 or radius-based Cellular Automata smoothing
-    const toRemove: {x:number, y:number, z:number, old:number}[] = [];
+    const toRemove: {x:number, y:number, z:number, old:{low:number, high:number}}[] = [];
     const toAdd: {x:number, y:number, z:number}[] = [];
 
     const matId = store.activeVoxelMaterialId || VOXEL_MAT_GRASS;
@@ -70,16 +70,17 @@ export class SmoothToolHandler implements IToolHandler {
             for (let ny = -1; ny <= 1; ny++) {
               for (let nz = -1; nz <= 1; nz++) {
                 if (nx === 0 && ny === 0 && nz === 0) continue;
-                if (voxelWorld.getVoxel(wx + nx, wy + ny, wz + nz)) neighbors++;
+                const nb = voxelWorld.getVoxel(wx + nx, wy + ny, wz + nz);
+                if (nb.low !== undefined && (nb.low !== 0 || nb.high !== 0)) neighbors++;
               }
             }
           }
 
           const currentWord = voxelWorld.getVoxel(wx, wy, wz);
-          if (currentWord !== 0) {
+          if (currentWord.low !== undefined && (currentWord.low !== 0 || currentWord.high !== 0)) {
             // Melt isolated blocks or sharp protrusions
             if (neighbors <= 10) {
-              toRemove.push({x: wx, y: wy, z: wz, old: currentWord});
+              toRemove.push({x: wx, y: wy, z: wz, old: { low: currentWord.low, high: currentWord.high }});
             }
           } else {
             // Fill in deep holes
@@ -93,8 +94,8 @@ export class SmoothToolHandler implements IToolHandler {
 
     // Apply the melt/fill
     for (const r of toRemove) {
-      txBuilder.record(voxelWorld, r.x, r.y, r.z, 0);
-      voxelWorld.setVoxel(r.x, r.y, r.z, 0);
+      txBuilder.record(voxelWorld, r.x, r.y, r.z, { low: 0, high: 0 } as any);
+      voxelWorld.setVoxel(r.x, r.y, r.z, 0, 0);
     }
     for (const a of toAdd) {
       // Create a default full cube
@@ -106,8 +107,8 @@ export class SmoothToolHandler implements IToolHandler {
         VoxelPhysics.SOLID_OBSTACLE,
         VoxelLogic.NONE
       );
-      txBuilder.record(voxelWorld, a.x, a.y, a.z, packed);
-      voxelWorld.setVoxel(a.x, a.y, a.z, packed);
+      txBuilder.record(voxelWorld, a.x, a.y, a.z, packed as any);
+      voxelWorld.setVoxel(a.x, a.y, a.z, packed.low, packed.high);
     }
 
     const tx = txBuilder.build();
@@ -116,8 +117,8 @@ export class SmoothToolHandler implements IToolHandler {
         wx: mut.worldX,
         wy: mut.worldY,
         wz: mut.worldZ,
-        before: mut.previousVoxel,
-        after: mut.newVoxel,
+        before: mut.previousVoxel as any,
+        after: mut.newVoxel as any,
       }));
       store.pushVoxelOp(changedVoxels);
       store.markMapDirty();

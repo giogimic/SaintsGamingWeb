@@ -9,8 +9,8 @@ import {
   VoxelShape,
   packVoxel,
   unpackVoxel,
-  getVoxelMaterial,
-  getVoxelShape,
+  extractMaterialId,
+  extractShapeId,
   VOXEL_MAT_DIRT,
   VOXEL_MAT_GRASS,
   VOXEL_MAT_WATER,
@@ -19,7 +19,8 @@ import {
   VOXEL_MAT_CROP_WHEAT,
   VOXEL_MAT_CROP_CARROT,
   VOXEL_MAT_CROP_HERB,
-  VOXEL_WORD_AIR,
+  VOXEL_WORD_AIR_LOW,
+  VOXEL_WORD_AIR_HIGH,
   VoxelPhysics,
 } from './VoxelWord';
 import type { VoxelWorld } from './VoxelWorldDoc';
@@ -171,7 +172,7 @@ export function updateFarmlandHydration(
         const ny = wy + dy;
         const nz = wz + dz;
         const word = world.getVoxelWithHalo(nx, ny, nz);
-        const mat = getVoxelMaterial(word);
+        const mat = extractMaterialId(word.low);
         if (mat === VOXEL_MAT_WATER) {
           hasNearbyWater = true;
           break searchLoop;
@@ -193,10 +194,11 @@ export function updateFarmlandHydration(
 
   // Update voxel material tint between dry and moist farmland
   const currentWord = world.getVoxel(wx, wy, wz);
-  const currentShape = getVoxelShape(currentWord);
+  const currentShape = extractShapeId(currentWord.low);
   if (currentShape === VoxelShape.FARMLAND) {
     const newMat = newMoisture > 0 ? VOXEL_MAT_FARMLAND_MOIST : VOXEL_MAT_FARMLAND_DRY;
-    world.setVoxel(wx, wy, wz, packVoxel(newMat, VoxelShape.FARMLAND, 0, 0, VoxelPhysics.SOLID_OBSTACLE));
+    const { low, high } = packVoxel(newMat, VoxelShape.FARMLAND, 0, 0, VoxelPhysics.SOLID_OBSTACLE);
+    world.setVoxel(wx, wy, wz, low, high);
   }
 
   // Persist updated block entity
@@ -218,7 +220,7 @@ export function tillSoil(world: VoxelWorld, wx: number, wy: number, wz: number):
   if (!world.canEditVoxel(wx, wy, wz)) return false;
 
   const currentWord = world.getVoxel(wx, wy, wz);
-  const currentMat = getVoxelMaterial(currentWord);
+  const currentMat = extractMaterialId(currentWord.low);
 
   // Must be soil/dirt/grass
   if (currentMat !== VOXEL_MAT_DIRT && currentMat !== VOXEL_MAT_GRASS) {
@@ -227,16 +229,16 @@ export function tillSoil(world: VoxelWorld, wx: number, wy: number, wz: number):
 
   // Block directly above must be transparent/air
   const aboveWord = world.getVoxel(wx, wy + 1, wz);
-  if (aboveWord !== VOXEL_WORD_AIR && getVoxelShape(aboveWord) !== VoxelShape.AIR) {
+  if ((aboveWord.low !== VOXEL_WORD_AIR_LOW || aboveWord.high !== VOXEL_WORD_AIR_HIGH) && extractShapeId(aboveWord.low) !== VoxelShape.AIR) {
     return false;
   }
 
   // Check initial hydration
   const initialMoisture = updateFarmlandHydration(world, wx, wy, wz);
   const mat = initialMoisture > 0 ? VOXEL_MAT_FARMLAND_MOIST : VOXEL_MAT_FARMLAND_DRY;
-  const farmlandWord = packVoxel(mat, VoxelShape.FARMLAND, 0, 0, VoxelPhysics.SOLID_OBSTACLE);
+  const { low, high } = packVoxel(mat, VoxelShape.FARMLAND, 0, 0, VoxelPhysics.SOLID_OBSTACLE);
 
-  world.setVoxel(wx, wy, wz, farmlandWord);
+  world.setVoxel(wx, wy, wz, low, high);
   world.setBlockEntity(wx, wy, wz, createFarmlandEntity(wx, wy, wz, initialMoisture));
   return true;
 }
@@ -252,14 +254,14 @@ export function plantCrop(
   cropType: 'wheat' | 'carrot' | 'potato' | 'herb' | 'berry' = 'wheat'
 ): boolean {
   const belowWord = world.getVoxel(wx, wy - 1, wz);
-  const belowShape = getVoxelShape(belowWord);
+  const belowShape = extractShapeId(belowWord.low);
 
   if (belowShape !== VoxelShape.FARMLAND) {
     return false; // Can only plant on farmland
   }
 
   const currentWord = world.getVoxel(wx, wy, wz);
-  if (currentWord !== VOXEL_WORD_AIR && getVoxelShape(currentWord) !== VoxelShape.AIR) {
+  if ((currentWord.low !== VOXEL_WORD_AIR_LOW || currentWord.high !== VOXEL_WORD_AIR_HIGH) && extractShapeId(currentWord.low) !== VoxelShape.AIR) {
     return false; // Spot must be open air
   }
 
@@ -267,8 +269,8 @@ export function plantCrop(
   if (cropType === 'carrot') cropMat = VOXEL_MAT_CROP_CARROT;
   else if (cropType === 'herb') cropMat = VOXEL_MAT_CROP_HERB;
 
-  const cropWord = packVoxel(cropMat, VoxelShape.CROSS_QUAD, 0, 0, VoxelPhysics.PASS_THROUGH);
-  world.setVoxel(wx, wy, wz, cropWord);
+  const { low, high } = packVoxel(cropMat, VoxelShape.CROSS_QUAD, 0, 0, VoxelPhysics.PASS_THROUGH);
+  world.setVoxel(wx, wy, wz, low, high);
   world.setBlockEntity(wx, wy, wz, createCropEntity(wx, wy, wz, cropType, 0));
   return true;
 }

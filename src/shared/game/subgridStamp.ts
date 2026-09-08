@@ -36,7 +36,7 @@ export interface ClipboardVoxelBlock {
   dx: number;
   dy: number;
   dz: number;
-  word: number;
+  word: { low: number; high: number };
 }
 
 export interface TileClipboardData {
@@ -131,7 +131,7 @@ export function extractSubgridFromMap(params: ExtractSubgridParams): TileClipboa
         const wx = c;
         for (let wy = 0; wy < world.totalHeightBlocks; wy++) {
           const word = world.getVoxel(wx, wy, wz);
-          if (word !== 0 && !isVoxelAir(word)) {
+          if ((word.low !== 0 || word.high !== 0) && !isVoxelAir(word.low)) {
             voxelVolume.push({
               dx: c - c0,
               dy: wy,

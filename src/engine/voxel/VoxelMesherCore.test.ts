@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
 import { meshChunkWithHalo34, computeVertexAO, aoToFactor } from './VoxelMesherCore';
-import { VOXEL_WORD_GUNMETAL, VOXEL_WORD_AIR } from '@/shared/game/voxel/VoxelWord';
+import { VOXEL_WORD_GUNMETAL_LOW, VOXEL_WORD_GUNMETAL_HIGH, VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH } from '@/shared/game/voxel/VoxelWord';
 
 describe('VoxelMesherCore — 34³ Halo Ingestion & Ambient Occlusion', () => {
   it('extracts a 34x34x34 halo buffer with exactly 39,304 elements', () => {
@@ -13,8 +13,8 @@ describe('VoxelMesherCore — 34³ Halo Ingestion & Ambient Occlusion', () => {
     world.generateDefaultWorld();
 
     const halo = world.extractChunkHalo34(0, 0, 0);
-    expect(halo.length).toBe(34 * 34 * 34);
-    expect(halo.length).toBe(39304);
+    expect(halo.low.length).toBe(34 * 34 * 34);
+    expect(halo.low.length).toBe(39304);
   });
 
   it('culls boundary faces between two touching solid chunks with zero phantom faces', () => {
@@ -26,7 +26,7 @@ describe('VoxelMesherCore — 34³ Halo Ingestion & Ambient Occlusion', () => {
 
     // Solid wall spanning across chunk 0 (x: 0..31) and chunk 1 (x: 32..63) at y=5, z=5
     for (let x = 0; x < 64; x++) {
-      world.setVoxel(x, 5, 5, VOXEL_WORD_GUNMETAL);
+      world.setVoxel(x, 5, 5, VOXEL_WORD_GUNMETAL_LOW, VOXEL_WORD_GUNMETAL_HIGH);
     }
 
     const halo0 = world.extractChunkHalo34(0, 0, 0);
@@ -35,7 +35,8 @@ describe('VoxelMesherCore — 34³ Halo Ingestion & Ambient Occlusion', () => {
       cx: 0,
       cy: 0,
       cz: 0,
-      halo: halo0,
+      halo: halo0.low,
+      haloHigh: halo0.high,
       originOffsetX: 0,
       originOffsetY: 0,
       originOffsetZ: 0,
@@ -47,7 +48,8 @@ describe('VoxelMesherCore — 34³ Halo Ingestion & Ambient Occlusion', () => {
       cx: 1,
       cy: 0,
       cz: 0,
-      halo: halo1,
+      halo: halo1.low,
+      haloHigh: halo1.high,
       originOffsetX: 0,
       originOffsetY: 0,
       originOffsetZ: 0,
@@ -77,17 +79,17 @@ describe('VoxelMesherCore — 34³ Halo Ingestion & Ambient Occlusion', () => {
 
   it('computes concave vertex ambient occlusion to naturally darken corners', () => {
     // Flat exposed block: 0 side neighbors, 0 corner neighbors -> AO = 3 (1.0 factor)
-    const flatAO = computeVertexAO(VOXEL_WORD_AIR, VOXEL_WORD_AIR, VOXEL_WORD_AIR);
+    const flatAO = computeVertexAO(VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_LOW);
     expect(flatAO).toBe(3);
     expect(aoToFactor(flatAO)).toBe(1.0);
 
     // Concave inner corner: both adjacent side blocks solid -> AO = 0 (0.5 factor)
-    const concaveCornerAO = computeVertexAO(VOXEL_WORD_GUNMETAL, VOXEL_WORD_GUNMETAL, VOXEL_WORD_GUNMETAL);
+    const concaveCornerAO = computeVertexAO(VOXEL_WORD_GUNMETAL_LOW, VOXEL_WORD_GUNMETAL_LOW, VOXEL_WORD_GUNMETAL_LOW);
     expect(concaveCornerAO).toBe(0);
     expect(aoToFactor(concaveCornerAO)).toBe(0.5);
 
     // Single step obstacle: 1 side solid, 0 corner -> AO = 2 (0.84 factor)
-    const stepAO = computeVertexAO(VOXEL_WORD_GUNMETAL, VOXEL_WORD_AIR, VOXEL_WORD_AIR);
+    const stepAO = computeVertexAO(VOXEL_WORD_GUNMETAL_LOW, VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_LOW);
     expect(stepAO).toBe(2);
     expect(aoToFactor(stepAO)).toBe(0.84);
   });
@@ -105,7 +107,7 @@ describe('VoxelMesherCore — 34³ Halo Ingestion & Ambient Occlusion', () => {
     c1.isDirty = false;
 
     // Mutate boundary voxel at x=31 in chunk 0 (touching chunk 1 at x=32)
-    world.setVoxel(31, 10, 5, VOXEL_WORD_GUNMETAL);
+    world.setVoxel(31, 10, 5, VOXEL_WORD_GUNMETAL_LOW, VOXEL_WORD_GUNMETAL_HIGH);
 
     expect(c0.isDirty).toBe(true);
     expect(c1.isDirty).toBe(true); // Neighbor chunk automatically flagged dirty!

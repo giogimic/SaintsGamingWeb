@@ -14,7 +14,7 @@ import { rasterizeLine } from '@/shared/game/lineRaster';
 import { isPointInGeometry } from '@/shared/game/geometry/continuousGeometry';
 import { STUDIO_MAP_HOT_RELOAD_EVENT } from '@/shared/game/studioEvents';
 import { isInBrushShape } from '@/shared/game/brushGeometry';
-import { VOXEL_WORD_AIR, getVoxelBrushOffsets, getVoxelBrushOffsets3D, resolveConstrainedVoxelCoordinates } from '@/shared/game/voxel/VoxelWord';
+import { VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH, getVoxelBrushOffsets, getVoxelBrushOffsets3D, resolveConstrainedVoxelCoordinates } from '@/shared/game/voxel/VoxelWord';
 import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
 import { VoxelTransactionBuilder } from '@/shared/game/voxel/VoxelTransaction';
 import { resolveMapDimensions } from '@/shared/game/mapDocVisual';
@@ -75,20 +75,20 @@ export class EraserToolHandler implements IToolHandler {
 
       const txBuilder = new VoxelTransactionBuilder('Eraser Clear Voxel', liveMap.id || '');
       for (const { wx, wy, wz } of targetCoords) {
-        txBuilder.record(voxelWorld, wx, wy, wz, VOXEL_WORD_AIR);
+        txBuilder.record(voxelWorld, wx, wy, wz, { low: VOXEL_WORD_AIR_LOW, high: VOXEL_WORD_AIR_HIGH } as any);
       }
 
       const tx = txBuilder.build();
       if (tx && tx.mutations.length > 0) {
-        const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: number; after: number }> = [];
+        const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: any; after: any }> = [];
         for (const mut of tx.mutations) {
-          voxelWorld.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel);
+          voxelWorld.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel.low, mut.newVoxel.high);
           changedVoxels.push({
             wx: mut.worldX,
             wy: mut.worldY,
             wz: mut.worldZ,
-            before: mut.previousVoxel,
-            after: mut.newVoxel,
+            before: mut.previousVoxel as any,
+            after: mut.newVoxel as any,
           });
         }
         context.engine.voxel.meshDirtyVoxelChunks?.();

@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { prisma } from "@/web/lib/prisma";
 
@@ -15,13 +15,13 @@ export async function getDiscordInviteUrl() {
 }
 
 export async function getSiteVersion(isStatic = false) {
-  if (isStatic) return process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.785";
+  if (isStatic) return process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.786";
   try {
     const setting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    return setting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.785";
+    return setting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.786";
   } catch (e) {
     console.error("Failed to fetch site version", e);
-    return process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.785";
+    return process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.786";
   }
 }
 

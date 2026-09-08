@@ -1,5 +1,5 @@
 import { VoxelChunk, CHUNK_SIZE_X, CHUNK_SIZE_Z, CHUNK_SIZE_Y } from './VoxelChunk';
-import { VOXEL_WORD_AIR, isVoxelAir, isVoxelSolid } from './VoxelWord';
+import { VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH, isVoxelAir, isVoxelSolid } from './VoxelWord';
 import { VoxelBlockEntity, getBlockEntityKey } from './VoxelBlockEntity';
 import { migrateLegacyDocTo32Cubic } from './chunkMigration';
 
@@ -199,11 +199,14 @@ export class VoxelWorld {
     return chunk || null;
   }
 
-  public getVoxel(wx: number, wy: number, wz: number): number {
+  public getVoxel(wx: number, wy: number, wz: number): { low: number; high: number } {
     const { cx, cz, cy, lx, ly, lz } = VoxelWorld.worldToChunkCoords(wx, wy, wz);
     const chunk = this.getChunk(cx, cz, cy, false);
-    if (!chunk) return VOXEL_WORD_AIR;
-    return chunk.get(lx, ly, lz);
+    if (!chunk) return { low: VOXEL_WORD_AIR_LOW, high: VOXEL_WORD_AIR_HIGH };
+    return {
+      low: chunk.getLow(lx, ly, lz),
+      high: chunk.getHigh(lx, ly, lz),
+    };
   }
 
   /**
@@ -212,22 +215,21 @@ export class VoxelWorld {
    */
   public getTopSolidVoxelY(wx: number, wz: number): number {
     for (let wy = this.totalHeightBlocks - 1; wy >= 0; wy--) {
-      const word = this.getVoxel(wx, wy, wz);
-      if (word && !isVoxelAir(word) && isVoxelSolid(word)) {
+      const { low, high } = this.getVoxel(wx, wy, wz);
+      if (low !== undefined && !isVoxelAir(low) && isVoxelSolid(high)) {
         return wy;
       }
     }
     return 15;
   }
 
-  public setVoxel(wx: number, wy: number, wz: number, word: number): boolean {
+  public setVoxel(wx: number, wy: number, wz: number, low: number, high: number): boolean {
     const { cx, cz, cy, lx, ly, lz } = VoxelWorld.worldToChunkCoords(wx, wy, wz);
-    // Only create missing chunks if we are actively placing a block (word !== 0). 
-    // This avoids instantiating empty chunks when erasing air.
-    const chunk = this.getChunk(cx, cz, cy, word !== 0);
+    // Only create missing chunks if we are actively placing a block.
+    const chunk = this.getChunk(cx, cz, cy, low !== VOXEL_WORD_AIR_LOW);
     if (!chunk) return false;
 
-    const changed = chunk.set(lx, ly, lz, word);
+    const changed = chunk.set(lx, ly, lz, low, high);
     if (changed) {
       if (lx === 0) {
         const neighbor = this.getChunk(cx - 1, cz, cy, false);
@@ -299,7 +301,7 @@ export class VoxelWorld {
    * If (wx, wy, wz) is outside, queries the connected adjacent neighbor map.
    * Eliminates cracks, seams, and false perimeter air at borders.
    */
-  public getVoxelWithHalo(wx: number, wy: number, wz: number): number {
+  public getVoxelWithHalo(wx: number, wy: number, wz: number): { low: number; high: number } {
     const width = this.mapWidth ?? this.totalWidthBlocks;
     const depth = this.mapHeight ?? this.totalDepthBlocks;
 
@@ -342,7 +344,7 @@ export class VoxelWorld {
       }
     }
 
-    return VOXEL_WORD_AIR;
+    return { low: VOXEL_WORD_AIR_LOW, high: VOXEL_WORD_AIR_HIGH };
   }
 
   /**
@@ -350,8 +352,9 @@ export class VoxelWorld {
    * (X: -1..32, Y: -1..32, Z: -1..32).
    * Used for off-thread greedy meshing with complete neighbor face culling and ambient occlusion.
    */
-  public extractChunkHalo34(cx: number, cz: number, cy: number = 0): Uint32Array {
-    const halo = new Uint32Array(34 * 34 * 34);
+  public extractChunkHalo34(cx: number, cz: number, cy: number = 0): { low: Uint32Array; high: Uint32Array } {
+    const haloLow = new Uint32Array(34 * 34 * 34);
+    const haloHigh = new Uint32Array(34 * 34 * 34);
     const startWX = cx * CHUNK_SIZE_X;
     const startWY = cy * CHUNK_SIZE_Y;
     const startWZ = cz * CHUNK_SIZE_Z;
@@ -366,11 +369,13 @@ export class VoxelWorld {
         for (let rx = -1; rx <= 32; rx++) {
           const hx = rx + 1;
           const wx = startWX + rx;
-          halo[baseIdx + hx] = this.getVoxelWithHalo(wx, wy, wz);
+          const { low, high } = this.getVoxelWithHalo(wx, wy, wz);
+          haloLow[baseIdx + hx] = low;
+          haloHigh[baseIdx + hx] = high;
         }
       }
     }
-    return halo;
+    return { low: haloLow, high: haloHigh };
   }
 
   /**

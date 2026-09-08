@@ -8,9 +8,9 @@
 import {
   isVoxelSolid,
   isVoxelAir,
-  getVoxelShape,
+  extractShapeId,
   VoxelShape,
-  getVoxelPhysics,
+  extractPhysics,
   VoxelPhysics,
 } from './VoxelWord';
 
@@ -48,7 +48,7 @@ export interface SweptCollisionResult {
 }
 
 export interface VoxelWorldCollisionQuery {
-  getVoxel(wx: number, wy: number, wz: number): number;
+  getVoxel(wx: number, wy: number, wz: number): { low: number; high: number; };
 }
 
 export class SweptAABBController {
@@ -121,9 +121,10 @@ export class SweptAABBController {
       for (let bz = minBZ; bz <= maxBZ; bz++) {
         for (let bx = minBX; bx <= maxBX; bx++) {
           const word = world.getVoxel(bx, by, bz);
-          if (!word || isVoxelAir(word)) continue;
+          if (word.low === undefined || (word.low === 0 && word.high === 0)) continue;
+          if (!isVoxelSolid(word.high)) continue;
 
-          const phys = getVoxelPhysics(word);
+          const phys = extractPhysics(word.high);
           if (
             phys === VoxelPhysics.PASS_THROUGH ||
             phys === VoxelPhysics.SWIMMABLE_FLUID ||
@@ -132,7 +133,7 @@ export class SweptAABBController {
             continue;
           }
 
-          const shape = getVoxelShape(word);
+          const shape = extractShapeId(word.low);
           if (
             shape === VoxelShape.SLOPE_45 ||
             shape === VoxelShape.STAIRS_STRAIGHT ||
@@ -143,8 +144,7 @@ export class SweptAABBController {
             continue;
           }
 
-          if (isVoxelSolid(word) || phys === VoxelPhysics.SOLID_OBSTACLE || phys === VoxelPhysics.HAZARD) {
-            const shape = getVoxelShape(word);
+          if (isVoxelSolid(word.high) || phys === VoxelPhysics.SOLID_OBSTACLE || phys === VoxelPhysics.HAZARD) {
             if (shape === VoxelShape.SLAB_BOTTOM) {
               boxes.push({
                 minX: bx,

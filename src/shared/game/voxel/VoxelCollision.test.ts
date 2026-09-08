@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { SweptAABBController, VoxelWorldCollisionQuery } from './VoxelCollision';
-import { VOXEL_WORD_AIR, VOXEL_WORD_GUNMETAL, VoxelPhysics, VoxelShape } from './VoxelWord';
+import { VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH, VOXEL_WORD_GUNMETAL_LOW, VOXEL_WORD_GUNMETAL_HIGH, VoxelPhysics, VoxelShape, withVoxelOrientationHigh } from './VoxelWord';
 
 describe('SweptAABBController — 3D Voxel Collision Resolution', () => {
   it('prevents tunneling when running at 20 m/s toward a 1-block thick voxel wall over 1,000 iterations', () => {
@@ -9,12 +9,12 @@ describe('SweptAABBController — 3D Voxel Collision Resolution', () => {
     const world: VoxelWorldCollisionQuery = {
       getVoxel: (wx, wy, wz) => {
         if (wx === 10 && wy >= 0 && wy <= 10 && wz >= -5 && wz <= 5) {
-          return VOXEL_WORD_GUNMETAL; // solid obstacle
+          return { low: VOXEL_WORD_GUNMETAL_LOW, high: VOXEL_WORD_GUNMETAL_HIGH }; // solid obstacle
         }
         if (wy === 0) {
-          return VOXEL_WORD_GUNMETAL; // floor
+          return { low: VOXEL_WORD_GUNMETAL_LOW, high: VOXEL_WORD_GUNMETAL_HIGH }; // floor
         }
-        return VOXEL_WORD_AIR;
+        return { low: VOXEL_WORD_AIR_LOW, high: VOXEL_WORD_AIR_HIGH };
       },
     };
 
@@ -49,13 +49,15 @@ describe('SweptAABBController — 3D Voxel Collision Resolution', () => {
       getVoxel: (wx, wy, wz) => {
         if (wx === 5 && wy === 1 && wz === 0) {
           // Bottom half slab (height 0.5m)
-          // Word with shape SLAB_BOTTOM (bits 12..16 = 3) and physics SOLID_OBSTACLE (bits 24..27 = 1)
-          return (1 << 24) | (VoxelShape.SLAB_BOTTOM << 12) | 1;
+          // Word with shape SLAB_BOTTOM (bits 24..31 = 7) and physics SOLID_OBSTACLE (bits 8..11 = 1)
+          const high = withVoxelOrientationHigh(1 << 8, 0); // phys=1
+          const low = 1 | (VoxelShape.SLAB_BOTTOM << 24);
+          return { low, high };
         }
         if (wy === 0) {
-          return VOXEL_WORD_GUNMETAL; // Ground floor at y=0, surface at y=1
+          return { low: VOXEL_WORD_GUNMETAL_LOW, high: VOXEL_WORD_GUNMETAL_HIGH }; // Ground floor at y=0, surface at y=1
         }
-        return VOXEL_WORD_AIR;
+        return { low: VOXEL_WORD_AIR_LOW, high: VOXEL_WORD_AIR_HIGH };
       },
     };
 
@@ -84,10 +86,10 @@ describe('SweptAABBController — 3D Voxel Collision Resolution', () => {
     const world: VoxelWorldCollisionQuery = {
       getVoxel: (wx, wy, wz) => {
         if (wx === 5 && wy >= 0 && wy <= 3) {
-          return VOXEL_WORD_GUNMETAL;
+          return { low: VOXEL_WORD_GUNMETAL_LOW, high: VOXEL_WORD_GUNMETAL_HIGH };
         }
-        if (wy === 0) return VOXEL_WORD_GUNMETAL;
-        return VOXEL_WORD_AIR;
+        if (wy === 0) return { low: VOXEL_WORD_GUNMETAL_LOW, high: VOXEL_WORD_GUNMETAL_HIGH };
+        return { low: VOXEL_WORD_AIR_LOW, high: VOXEL_WORD_AIR_HIGH };
       },
     };
 

@@ -2,7 +2,7 @@ import { VoxelWorld } from '../../shared/game/voxel/VoxelWorldDoc';
 import { VoxelChunk, CHUNK_SIZE_X, CHUNK_SIZE_Z } from '../../shared/game/voxel/VoxelChunk';
 import { VoxelController } from '../VoxelController';
 import { ProceduralGenerator } from '../../shared/game/voxel/proceduralGenerator';
-import { VOXEL_MAT_ATLAS_PORTAL, VOXEL_MAT_STONE, packVoxel, VoxelShape, VoxelOrientation, VoxelPhysics } from '../../shared/game/voxel/VoxelWord';
+import { VOXEL_MAT_ATLAS_PORTAL, VOXEL_MAT_STONE, packVoxel, VoxelShape, VoxelOrientation, VoxelPhysics, VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH } from '../../shared/game/voxel/VoxelWord';
 
 export class ChunkStreamer {
   private loadedChunks = new Set<string>();
@@ -153,9 +153,13 @@ export class ChunkStreamer {
 
           // Apply overrides from database if they exist
           const override = overrideChunks.get(key);
-          if (override && override.data) {
-            const dataArray = new Uint32Array(override.data);
-            baseChunk.data.set(dataArray);
+          if (override) {
+            if (override.dataLow) {
+              baseChunk.dataLow.set(new Uint32Array(override.dataLow));
+            }
+            if (override.dataHigh) {
+              baseChunk.dataHigh.set(new Uint32Array(override.dataHigh));
+            }
           }
 
           // Apply physical portal shrines based on gates
@@ -223,9 +227,13 @@ export class ChunkStreamer {
 
       if (json.chunks && json.chunks.length > 0) {
         const override = json.chunks.find((c: any) => c.cx === cx && c.cz === cz);
-        if (override && override.data) {
-           const dataArray = new Uint32Array(override.data);
-           baseChunk.data.set(dataArray);
+        if (override) {
+          if (override.dataLow) {
+            baseChunk.dataLow.set(new Uint32Array(override.dataLow));
+          }
+          if (override.dataHigh) {
+            baseChunk.dataHigh.set(new Uint32Array(override.dataHigh));
+          }
         }
       }
 
@@ -263,16 +271,18 @@ export class ChunkStreamer {
               const lz = localZ + dz;
               if (lx >= 0 && lx < CHUNK_SIZE_X && lz >= 0 && lz < CHUNK_SIZE_Z) {
                 // The platform block
-                chunk.set(lx, gy - 1, lz, packVoxel(VOXEL_MAT_STONE, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE));
+                const stoneWord = packVoxel(VOXEL_MAT_STONE, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
+                chunk.set(lx, gy - 1, lz, stoneWord.low, stoneWord.high);
                 // Clear above
-                chunk.set(lx, gy, lz, 0);
-                chunk.set(lx, gy + 1, lz, 0);
-                chunk.set(lx, gy + 2, lz, 0);
+                chunk.set(lx, gy, lz, VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH);
+                chunk.set(lx, gy + 1, lz, VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH);
+                chunk.set(lx, gy + 2, lz, VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH);
               }
             }
           }
           // The portal block
-          chunk.set(localX, gy, localZ, packVoxel(VOXEL_MAT_ATLAS_PORTAL, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE));
+          const portalWord = packVoxel(VOXEL_MAT_ATLAS_PORTAL, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
+          chunk.set(localX, gy, localZ, portalWord.low, portalWord.high);
         }
       }
     }
@@ -289,7 +299,8 @@ export class ChunkStreamer {
           cx: chunk.cx,
           cy: chunk.cy,
           cz: chunk.cz,
-          data: Array.from(chunk.data)
+          dataLow: Array.from(chunk.dataLow),
+          dataHigh: Array.from(chunk.dataHigh)
         });
       }
     }

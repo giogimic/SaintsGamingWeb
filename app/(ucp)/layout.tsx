@@ -1,4 +1,4 @@
-import { Navbar } from "@/web/components/shared/navbar";
+﻿import { Navbar } from "@/web/components/shared/navbar";
 import { GlobalBottomBar } from "@/web/components/shared/global-bottom-bar";
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
@@ -37,7 +37,7 @@ export default async function UcpLayout({
   let gameTitle = "The Lobby";
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.785";
+    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.786";
     const ucpNavSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_in_nav" } });
     if (ucpNavSetting?.value === "true") showUcpInNav = true;
 
@@ -45,7 +45,7 @@ export default async function UcpLayout({
     if (realmSetting?.value) gameTitle = realmSetting.value;
   } catch (error) {
     console.error("Failed to load SITE_VERSION from db, using fallback", error);
-    siteVersion = process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.785";
+    siteVersion = process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.786";
   }
 
   return (

@@ -1421,7 +1421,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         0,
         VoxelPhysics.SOLID_OBSTACLE,
         VoxelLogic.NONE
-      ),
+      ) as any,
     });
     engine.setSelectionGizmoVisibility(showGizmo);
     engine.refreshBrushPreview();
@@ -1938,18 +1938,18 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               let targetWY = 15;
               for (let wy = engine.voxel.voxelWorld?.totalHeightBlocks - 1; wy >= 0; wy--) {
                 const w = engine.voxel.voxelWorld?.getVoxel(x, wy, wz);
-                if (w && (w & 0xfff) !== 0) {
+                if (w?.low !== undefined && (w.low & 0xffffff) !== 0) {
                   targetWY = wy;
                   break;
                 }
               }
               const overheadWord = engine.voxel.voxelWorld?.getVoxel(x, targetWY + 1, wz);
-              const overheadPhys = (overheadWord >>> 24) & 0xf;
-              if (overheadWord && (overheadPhys === 1 || overheadPhys === 5)) return false;
+              const overheadPhys = overheadWord?.low !== undefined ? ((overheadWord.high >>> 8) & 0xf) : 0;
+              if (overheadWord?.low !== undefined && (overheadPhys === 1 || overheadPhys === 5)) return false;
 
               const groundWord = engine.voxel.voxelWorld?.getVoxel(x, targetWY, wz);
-              if (!groundWord || (groundWord & 0xfff) === 0) return false;
-              const groundPhys = (groundWord >>> 24) & 0xf;
+              if (groundWord?.low === undefined || (groundWord.low & 0xffffff) === 0) return false;
+              const groundPhys = (groundWord.high >>> 8) & 0xf;
               if (groundPhys === 5) return false; // Hazard
             }
             const isStaticNpc = map.npcs?.some((npc: any) => npc.x === x && npc.y === y);
@@ -2184,10 +2184,10 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       const engine = engineRef.current;
       const map = useGameStore.getState().activeMapData;
       if (!engine?.voxel?.voxelWorld || !map) return;
-      const detail = (e as CustomEvent<{ voxels: Array<{ wx: number; wy: number; wz: number; word: number }> }>).detail;
+      const detail = (e as CustomEvent<{ voxels: Array<{ wx: number; wy: number; wz: number; word: { low: number; high: number } }> }>).detail;
       if (!detail?.voxels?.length) return;
       for (const v of detail.voxels) {
-        engine.voxel.voxelWorld?.setVoxel(v.wx, v.wy, v.wz, v.word);
+        engine.voxel.voxelWorld?.setVoxel(v.wx, v.wy, v.wz, v.word.low, v.word.high);
       }
       engine.voxel.meshDirtyVoxelChunks?.();
       const doc = engine.voxel.voxelWorld?.serializeToDoc();

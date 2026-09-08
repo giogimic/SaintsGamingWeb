@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { VoxelChunk, CHUNK_TOTAL_CELLS } from './VoxelChunk';
-import { VOXEL_WORD_AIR, VOXEL_WORD_GUNMETAL } from './VoxelWord';
+import { VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH, VOXEL_WORD_GUNMETAL_LOW, VOXEL_WORD_GUNMETAL_HIGH } from './VoxelWord';
 
 describe('VoxelChunk Palette-Indexed Binary RLE & Delta Packets', () => {
   it('serializes and deserializes an empty air chunk down to tiny byte footprint', () => {
@@ -29,10 +29,12 @@ describe('VoxelChunk Palette-Indexed Binary RLE & Delta Packets', () => {
     expect(restored.cx).toBe(0);
     expect(restored.cy).toBe(0);
     expect(restored.cz).toBe(0);
-    expect(restored.data.length).toBe(CHUNK_TOTAL_CELLS);
+    expect(restored.dataLow.length).toBe(CHUNK_TOTAL_CELLS);
+    expect(restored.dataHigh.length).toBe(CHUNK_TOTAL_CELLS);
 
     for (let i = 0; i < CHUNK_TOTAL_CELLS; i++) {
-      expect(restored.data[i]).toBe(chunk.data[i]);
+      expect(restored.dataLow[i]).toBe(chunk.dataLow[i]);
+      expect(restored.dataHigh[i]).toBe(chunk.dataHigh[i]);
     }
   });
 
@@ -48,13 +50,14 @@ describe('VoxelChunk Palette-Indexed Binary RLE & Delta Packets', () => {
         for (let z = 0; z < 32; z++) {
           const height = 10 + Math.floor(Math.sin((x + c * 32) * 0.2) * 3 + Math.cos(z * 0.2) * 3);
           for (let y = 0; y < 32; y++) {
-            let word = VOXEL_WORD_AIR;
-            if (y === 0) word = 10; // Bedrock
-            else if (y < height - 3) word = 1; // Stone
-            else if (y < height) word = 2; // Dirt
-            else if (y === height) word = 3; // Grass
+            let wordLow = VOXEL_WORD_AIR_LOW;
+            let wordHigh = VOXEL_WORD_AIR_HIGH;
+            if (y === 0) { wordLow = 10; wordHigh = 0; } // Bedrock
+            else if (y < height - 3) { wordLow = 1; wordHigh = 0; } // Stone
+            else if (y < height) { wordLow = 2; wordHigh = 0; } // Dirt
+            else if (y === height) { wordLow = 3; wordHigh = 0; } // Grass
             
-            chunk.set(x, y, z, word);
+            chunk.set(x, y, z, wordLow, wordHigh);
           }
         }
       }
@@ -67,7 +70,8 @@ describe('VoxelChunk Palette-Indexed Binary RLE & Delta Packets', () => {
       expect(restored.cx).toBe(chunk.cx);
       expect(restored.cy).toBe(chunk.cy);
       expect(restored.cz).toBe(chunk.cz);
-      expect(restored.data.length).toBe(chunk.data.length);
+      expect(restored.dataLow.length).toBe(chunk.dataLow.length);
+      expect(restored.dataHigh.length).toBe(chunk.dataHigh.length);
     }
 
     const avgBytes = totalBytes / count;
@@ -75,15 +79,16 @@ describe('VoxelChunk Palette-Indexed Binary RLE & Delta Packets', () => {
     expect(avgBytes).toBeLessThan(4096);
   });
 
-  it('round-trips single-voxel delta mutation packets in 13 bytes', () => {
-    const delta = VoxelChunk.serializeVoxelDelta(5, 2, -3, 1024, VOXEL_WORD_GUNMETAL);
-    expect(delta.byteLength).toBe(13);
+  it('round-trips single-voxel delta mutation packets in 17 bytes', () => {
+    const delta = VoxelChunk.serializeVoxelDelta(5, 2, -3, 1024, VOXEL_WORD_GUNMETAL_LOW, VOXEL_WORD_GUNMETAL_HIGH);
+    expect(delta.byteLength).toBe(17);
 
     const unpacked = VoxelChunk.deserializeVoxelDelta(delta);
     expect(unpacked.cx).toBe(5);
     expect(unpacked.cy).toBe(2);
     expect(unpacked.cz).toBe(-3);
     expect(unpacked.localIndex).toBe(1024);
-    expect(unpacked.word).toBe(VOXEL_WORD_GUNMETAL);
+    expect(unpacked.low).toBe(VOXEL_WORD_GUNMETAL_LOW);
+    expect(unpacked.high).toBe(VOXEL_WORD_GUNMETAL_HIGH);
   });
 });

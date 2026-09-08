@@ -21,8 +21,12 @@ import {
   resolveVoxelTarget,
   VOXEL_MAT_GRASS,
   VOXEL_MAT_GUNMETAL,
-  VOXEL_WORD_GUNMETAL,
-  VOXEL_WORD_GRASS,
+  VOXEL_WORD_GUNMETAL_LOW,
+  VOXEL_WORD_GUNMETAL_HIGH,
+  VOXEL_WORD_GRASS_LOW,
+  VOXEL_WORD_GRASS_HIGH,
+  VOXEL_WORD_AIR_LOW,
+  VOXEL_WORD_AIR_HIGH,
   getVoxelBrushOffsets,
   getVoxelBrushOffsets3D,
   getVoxelMaterialDef,
@@ -41,7 +45,7 @@ describe('Voxel Core Engine (Option A)', () => {
         VoxelLogic.WARP_GATE // logic
       );
 
-      const unpacked = unpackVoxel(packed);
+      const unpacked = unpackVoxel(packed.low, packed.high);
       expect(unpacked.materialId).toBe(255);
       expect(unpacked.shapeId).toBe(VoxelShape.SLOPE_45);
       expect(unpacked.orientation).toBe(VoxelOrientation.EAST);
@@ -55,12 +59,12 @@ describe('Voxel Core Engine (Option A)', () => {
       const solid = packVoxel(1, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
       const slope = packVoxel(2, VoxelShape.SLOPE_45, VoxelOrientation.NORTH, 0, VoxelPhysics.WALKABLE_SLOPE);
 
-      expect(isVoxelAir(air)).toBe(true);
-      expect(isVoxelAir(solid)).toBe(false);
+      expect(isVoxelAir(air.low)).toBe(true);
+      expect(isVoxelAir(solid.low)).toBe(false);
 
-      expect(isVoxelSolid(solid)).toBe(true);
-      expect(isVoxelSolid(slope)).toBe(true);
-      expect(isVoxelSolid(air)).toBe(false);
+      expect(isVoxelSolid(solid.high)).toBe(true);
+      expect(isVoxelSolid(slope.high)).toBe(true);
+      expect(isVoxelSolid(air.high)).toBe(false);
     });
   });
 
@@ -86,18 +90,22 @@ describe('Voxel Core Engine (Option A)', () => {
       // Write test voxels
       const testWord1 = packVoxel(50, VoxelShape.FULL_CUBE);
       const testWord2 = packVoxel(99, VoxelShape.SLOPE_45, VoxelOrientation.WEST);
-      chunk.set(3, 20, 5, testWord1);
-      chunk.set(4, 20, 5, testWord2);
+      chunk.set(3, 20, 5, testWord1.low, testWord1.high);
+      chunk.set(4, 20, 5, testWord2.low, testWord2.high);
 
-      const rle = chunk.serializeRLE();
+      const rle = chunk.serializePaletteRLEBinary();
       expect(rle.length).toBeGreaterThan(0);
       expect(rle.length).toBeLessThan(CHUNK_TOTAL_CELLS); // Confirms compression
 
-      const restored = VoxelChunk.deserializeRLE(rle, 0, 0, 0);
-      expect(restored.get(3, 20, 5)).toBe(testWord1);
-      expect(restored.get(4, 20, 5)).toBe(testWord2);
-      expect(restored.get(0, 0, 0)).toBe(VOXEL_WORD_GUNMETAL); // bottom base preserved
-      expect(restored.get(0, 31, 0)).toBe(0); // top air preserved
+      const restored = VoxelChunk.deserializePaletteRLEBinary(rle);
+      expect(restored.getLow(3, 20, 5)).toBe(testWord1.low);
+      expect(restored.getHigh(3, 20, 5)).toBe(testWord1.high);
+      expect(restored.getLow(4, 20, 5)).toBe(testWord2.low);
+      expect(restored.getHigh(4, 20, 5)).toBe(testWord2.high);
+      expect(restored.getLow(0, 0, 0)).toBe(VOXEL_WORD_GUNMETAL_LOW); // bottom base preserved
+      expect(restored.getHigh(0, 0, 0)).toBe(VOXEL_WORD_GUNMETAL_HIGH); // bottom base preserved
+      expect(restored.getLow(0, 31, 0)).toBe(VOXEL_WORD_AIR_LOW); // top air preserved
+      expect(restored.getHigh(0, 31, 0)).toBe(VOXEL_WORD_AIR_HIGH); // top air preserved
     });
   });
 
@@ -112,12 +120,15 @@ describe('Voxel Core Engine (Option A)', () => {
       const wy = 12;
 
       const word = packVoxel(77, VoxelShape.STAIRS_STRAIGHT);
-      world.setVoxel(wx, wy, wz, word);
+      world.setVoxel(wx, wy, wz, word.low, word.high);
 
-      expect(world.getVoxel(wx, wy, wz)).toBe(word);
+      const worldVoxel = world.getVoxel(wx, wy, wz);
+      expect(worldVoxel.low).toBe(word.low);
+      expect(worldVoxel.high).toBe(word.high);
       const chunk = world.getChunk(1, 2, 0);
       expect(chunk).toBeDefined();
-      expect(chunk?.get(5, 12, 9)).toBe(word);
+      expect(chunk?.getLow(5, 12, 9)).toBe(word.low);
+      expect(chunk?.getHigh(5, 12, 9)).toBe(word.high);
     });
   });
 
@@ -136,22 +147,33 @@ describe('Voxel Core Engine (Option A)', () => {
 
       if (tx) {
         // Apply transaction
-        world.setVoxel(5, 16, 5, grassWord);
-        world.setVoxel(6, 16, 5, grassWord);
+        world.setVoxel(5, 16, 5, grassWord.low, grassWord.high);
+        world.setVoxel(6, 16, 5, grassWord.low, grassWord.high);
         history.push(tx);
 
-        expect(world.getVoxel(5, 16, 5)).toBe(grassWord);
-        expect(world.getVoxel(6, 16, 5)).toBe(grassWord);
+        let w = world.getVoxel(5, 16, 5);
+        expect(w.low).toBe(grassWord.low);
+        expect(w.high).toBe(grassWord.high);
+
+        w = world.getVoxel(6, 16, 5);
+        expect(w.low).toBe(grassWord.low);
+        expect(w.high).toBe(grassWord.high);
 
         // Undo
         history.undo(world);
-        expect(world.getVoxel(5, 16, 5)).toBe(0); // Air
+        w = world.getVoxel(5, 16, 5);
+        expect(w.low).toBe(VOXEL_WORD_AIR_LOW); // Air
+        expect(w.high).toBe(VOXEL_WORD_AIR_HIGH); // Air
         expect(world.getVoxel(6, 16, 5)).toBe(0);
 
         // Redo
         history.redo(world);
-        expect(world.getVoxel(5, 16, 5)).toBe(grassWord);
-        expect(world.getVoxel(6, 16, 5)).toBe(grassWord);
+        w = world.getVoxel(5, 16, 5);
+        expect(w.low).toBe(grassWord.low);
+        expect(w.high).toBe(grassWord.high);
+        w = world.getVoxel(6, 16, 5);
+        expect(w.low).toBe(grassWord.low);
+        expect(w.high).toBe(grassWord.high);
       }
     });
   });
@@ -162,11 +184,11 @@ describe('Voxel Core Engine (Option A)', () => {
       const solid = packVoxel(1, VoxelShape.FULL_CUBE);
 
       // Create higher step at y=1 (x:5, z:5) with solid back (x:5, z:6)
-      world.setVoxel(5, 1, 5, solid);
-      world.setVoxel(5, 1, 6, solid); // solid north neighbor
+      world.setVoxel(5, 1, 5, solid.low, solid.high);
+      world.setVoxel(5, 1, 6, solid.low, solid.high); // solid north neighbor
 
       // Lower step at y=0
-      world.setVoxel(5, 0, 4, solid);
+      world.setVoxel(5, 0, 4, solid.low, solid.high);
 
       const res = resolveSlopeShape(world, 5, 1, 5);
       expect(res.shapeId).toBe(VoxelShape.SLOPE_45);
@@ -194,20 +216,20 @@ describe('Voxel Core Engine (Option A)', () => {
       // Surface elevation is at y = 15
       const surfaceY = 15;
       const walkVoxel = world.getVoxel(0, surfaceY, 0);
-      expect(isVoxelSolid(walkVoxel)).toBe(true);
+      expect(isVoxelSolid(walkVoxel.high)).toBe(true);
 
       // (2, 0) was solid wall (2) -> cliff extruded at y = 16
       const cliffVoxel = world.getVoxel(2, surfaceY + 1, 0);
-      expect(isVoxelSolid(cliffVoxel)).toBe(true);
+      expect(isVoxelSolid(cliffVoxel.high)).toBe(true);
 
       // (1, 1) was water (4) -> fluid physics
       const waterVoxel = world.getVoxel(1, surfaceY, 1);
-      const unpackedWater = unpackVoxel(waterVoxel);
+      const unpackedWater = unpackVoxel(waterVoxel.low, waterVoxel.high);
       expect(unpackedWater.physics).toBe(VoxelPhysics.SWIMMABLE_FLUID);
 
       // (0, 2) was warp (3) -> warp logic
       const warpVoxel = world.getVoxel(0, surfaceY, 2);
-      const unpackedWarp = unpackVoxel(warpVoxel);
+      const unpackedWarp = unpackVoxel(warpVoxel.low, warpVoxel.high);
       expect(unpackedWarp.logic).toBe(VoxelLogic.WARP_GATE);
     });
   });
@@ -349,7 +371,7 @@ describe('Voxel Core Engine (Option A)', () => {
       chunk1.isDirty = false;
 
       // Set voxel at boundary lx = CHUNK_SIZE_X - 1 of chunk 0 (wx = CHUNK_SIZE_X - 1)
-      world.setVoxel(CHUNK_SIZE_X - 1, 16, 5, VOXEL_WORD_GRASS);
+      world.setVoxel(CHUNK_SIZE_X - 1, 16, 5, VOXEL_WORD_GRASS_LOW, VOXEL_WORD_GRASS_HIGH);
 
       expect(chunk0.isDirty).toBe(true);
       expect(chunk1.isDirty).toBe(true); // Neighbor chunk 1 was dirtied!

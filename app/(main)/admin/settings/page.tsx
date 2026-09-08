@@ -1,4 +1,4 @@
-import { prisma } from "@/web/lib/prisma";
+﻿import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
 import { Button } from "@/web/components/ui/button";
 import { Input } from "@/web/components/ui/input";
@@ -23,7 +23,7 @@ export default async function AdminSettingsPage() {
     return acc;
   }, {} as Record<string, string>);
 
-  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.785";
+  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.786";
 
 
 

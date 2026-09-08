@@ -10,9 +10,10 @@ import {
   VoxelShape,
   isVoxelAir,
   isVoxelFaceOccluding,
-  getVoxelMaterial,
-  getVoxelShape,
-  getVoxelOrientation,
+  extractMaterialId,
+  extractShapeId,
+  extractOrientation,
+  type VoxelOrientationType,
   VOXEL_MAT_FARMLAND_MOIST,
 } from '@/shared/game/voxel/VoxelWord';
 import {
@@ -40,6 +41,7 @@ export interface HaloMeshInput {
   cy: number;
   cz: number;
   halo: Uint32Array; // 34x34x34 = 39,304 uint32 words
+  haloHigh: Uint32Array;
   originOffsetX: number;
   originOffsetY: number;
   originOffsetZ: number;
@@ -75,7 +77,12 @@ export function meshChunkWithHalo34(input: HaloMeshInput): TransferableVoxelMesh
   // Inline halo index calculation: hx + hy * 34 + hz * 1156 (hz * 34 * 34)
   const sample = (hx: number, hy: number, hz: number): number => {
     if (hx < 0 || hx > 33 || hy < 0 || hy > 33 || hz < 0 || hz > 33) return 0;
-    return halo[hx + hy * 34 + hz * 1156];
+    return input.halo[hx + hy * 34 + hz * 1156];
+  };
+
+  const sampleHigh = (hx: number, hy: number, hz: number): number => {
+    if (hx < 0 || hx > 33 || hy < 0 || hy > 33 || hz < 0 || hz > 33) return 0;
+    return input.haloHigh[hx + hy * 34 + hz * 1156];
   };
 
   let quadCount = 0;
@@ -92,12 +99,13 @@ export function meshChunkWithHalo34(input: HaloMeshInput): TransferableVoxelMesh
         const hx = lx + 1;
         const wx = startWX + lx + originOffsetX;
 
-        const word = sample(hx, hy, hz);
-        if (isVoxelAir(word)) continue;
+        const wordLow = sample(hx, hy, hz);
+        const wordHigh = sampleHigh(hx, hy, hz);
+        if (isVoxelAir(wordLow)) continue;
 
-        const shape = getVoxelShape(word);
-        const orientation = getVoxelOrientation(word);
-        const materialId = getVoxelMaterial(word);
+        const shape = extractShapeId(wordLow);
+        const orientation = extractOrientation(wordHigh) as VoxelOrientationType;
+        const materialId = extractMaterialId(wordLow);
         const matDef = getVoxelMaterialDef(materialId);
         const baseRgba = matDef.tintRgba;
 

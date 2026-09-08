@@ -37,17 +37,21 @@ export class FillToolHandler implements IToolHandler {
       const logicId = (store.activeVoxelLogicId || VoxelLogic.NONE) as VoxelLogicType;
       const logicOnly = store.activeVoxelLogicOnly;
       
-      let fillWord = 0;
+      let fillWordLow = 0;
+      let fillWordHigh = 0;
       if (logicOnly) {
-        fillWord = (targetWord & ~(0xF << 28)) | ((logicId & 0xF) << 28);
+        fillWordLow = targetWord.low;
+        fillWordHigh = (targetWord.high & ~(0xF << 12)) | ((logicId & 0xF) << 12);
       } else {
-        fillWord = packVoxel(matId, shapeId, orient, 0, physics, logicId);
+        const packed = packVoxel(matId, shapeId, orient, 0, physics, logicId);
+        fillWordLow = packed.low;
+        fillWordHigh = packed.high;
       }
 
       // If we're filling logic, we consider blocks matching the target's logic.
       // If we're filling materials, we consider blocks matching the entire target word.
-      if (targetWord === fillWord) return true;
-      if (targetWord === 0) return true; // Cannot fill air
+      if (targetWord.low === fillWordLow && targetWord.high === fillWordHigh) return true;
+      if (targetWord.low === 0 && targetWord.high === 0) return true; // Cannot fill air
 
       const runAsyncVoxelFill = async () => {
         const queue: Array<[number, number, number]> = [[startCoord.wx, startCoord.wy, startCoord.wz]];
@@ -69,12 +73,14 @@ export class FillToolHandler implements IToolHandler {
           while (queue.length > 0 && filledCount < MAX_VOXEL_FILL && iterations < CHUNK_SIZE) {
             const [wx, wy, wz] = queue.shift()!;
             
-            let writeWord = fillWord;
+            let writeWordLow = fillWordLow;
+            let writeWordHigh = fillWordHigh;
             if (logicOnly) {
-              const w = voxelWorld.getVoxel(wx, wy, wz) || 0;
-              writeWord = (w & ~(0xF << 28)) | ((logicId & 0xF) << 28);
+              const w = voxelWorld.getVoxel(wx, wy, wz);
+              writeWordLow = w.low;
+              writeWordHigh = (w.high & ~(0xF << 12)) | ((logicId & 0xF) << 12);
             }
-            txBuilder.record(voxelWorld, wx, wy, wz, writeWord);
+            txBuilder.record(voxelWorld, wx, wy, wz, { low: writeWordLow, high: writeWordHigh } as any);
             filledCount++;
             iterations++;
 
@@ -92,13 +98,14 @@ export class FillToolHandler implements IToolHandler {
                 const key = `${nx}_${ny}_${nz}`;
                 if (!visited.has(key)) {
                   visited.add(key);
-                  const neighborWord = voxelWorld.getVoxel(nx, ny, nz) || 0;
-                  if (neighborWord !== 0) {
+                  const neighborWord = voxelWorld.getVoxel(nx, ny, nz);
+                  if (neighborWord.low !== undefined && (neighborWord.low !== 0 || neighborWord.high !== 0)) {
                     if (logicOnly) {
-                      if ((neighborWord & 0x0FFFFFFF) === (targetWord & 0x0FFFFFFF)) {
+                      // Match on everything except logic
+                      if (neighborWord.low === targetWord.low && (neighborWord.high & ~(0xF << 12)) === (targetWord.high & ~(0xF << 12))) {
                         queue.push([nx, ny, nz]);
                       }
-                    } else if (neighborWord === targetWord) {
+                    } else if (neighborWord.low === targetWord.low && neighborWord.high === targetWord.high) {
                       queue.push([nx, ny, nz]);
                     }
                   }
@@ -115,15 +122,15 @@ export class FillToolHandler implements IToolHandler {
 
         const tx = txBuilder.build();
         if (tx && tx.mutations.length > 0) {
-          const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: number; after: number }> = [];
+          const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: any; after: any }> = [];
           for (const mut of tx.mutations) {
-            voxelWorld.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel);
+            voxelWorld.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel.low, mut.newVoxel.high);
             changedVoxels.push({
               wx: mut.worldX,
               wy: mut.worldY,
               wz: mut.worldZ,
-              before: mut.previousVoxel,
-              after: mut.newVoxel,
+              before: mut.previousVoxel as any,
+              after: mut.newVoxel as any,
             });
           }
           context.engine.voxel.meshDirtyVoxelChunks?.();

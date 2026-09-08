@@ -153,10 +153,10 @@ export class ShapeToolHandler implements IToolHandler {
           }
 
           if (shouldPlace) {
-            const currentWord = voxelWorld.getVoxel(x, y, z) || 0;
-            if (currentWord !== finalWord) {
-              txBuilder.record(voxelWorld, x, y, z, finalWord);
-              voxelWorld.setVoxel(x, y, z, finalWord);
+            const currentWord = voxelWorld.getVoxel(x, y, z);
+            if (currentWord.low !== finalWord.low || currentWord.high !== finalWord.high) {
+              txBuilder.record(voxelWorld, x, y, z, finalWord as any);
+              voxelWorld.setVoxel(x, y, z, finalWord.low, finalWord.high);
             }
           }
         }
@@ -169,8 +169,8 @@ export class ShapeToolHandler implements IToolHandler {
         wx: mut.worldX,
         wy: mut.worldY,
         wz: mut.worldZ,
-        before: mut.previousVoxel,
-        after: mut.newVoxel,
+        before: mut.previousVoxel as any,
+        after: mut.newVoxel as any,
       }));
       store.pushVoxelOp(changedVoxels);
       store.markMapDirty();

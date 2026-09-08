@@ -1,13 +1,15 @@
 /**
- * Saints Gaming — 32-Bit Compact Voxel Word Data Model
+ * Saints Gaming — 64-Bit Split-32 Voxel Word Data Model
  *
- * Bit Layout:
- * [31..28] LOGIC (4 bits: 0..15)
- * [27..24] PHYSICS (4 bits: 0..15)
- * [23..20] AO / TINT (4 bits: 0..15)
- * [19..17] ORIENTATION (3 bits: 0..7)
- * [16..12] SHAPE_ID (5 bits: 0..31)
- * [11..0]  MATERIAL_ID (12 bits: 0..4095)
+ * Bit Layout (dataLow):
+ * [31..24] SHAPE_ID (8 bits: 0..255)
+ * [23..0]  MATERIAL_ID (24 bits: 0..16.7M)
+ *
+ * Bit Layout (dataHigh):
+ * [15..12] LOGIC (4 bits: 0..15)
+ * [11..8]  PHYSICS (4 bits: 0..15)
+ * [7..4]   AO / TINT (4 bits: 0..15)
+ * [3..0]   ORIENTATION (4 bits: 0..15)
  */
 
 export const VoxelShape = {
@@ -103,73 +105,61 @@ export interface VoxelDecoded {
   logic: VoxelLogicType;
 }
 
-/** Pack distinct attributes into a 32-bit uint32 word */
 export function packVoxel(
   materialId: number,
-  shapeId: VoxelShapeType = VoxelShape.FULL_CUBE,
-  orientation: VoxelOrientationType = VoxelOrientation.NORTH,
+  shapeId: number = VoxelShape.FULL_CUBE,
+  orientation: number = VoxelOrientation.NORTH,
   aoTint: number = 0,
-  physics: VoxelPhysicsType = VoxelPhysics.SOLID_OBSTACLE,
-  logic: VoxelLogicType = VoxelLogic.NONE
-): number {
-  const mat = (materialId & 0xfff) >>> 0;
-  const shape = ((shapeId & 0x1f) << 12) >>> 0;
-  const orient = ((orientation & 0x7) << 17) >>> 0;
-  const ao = ((aoTint & 0xf) << 20) >>> 0;
-  const phys = ((physics & 0xf) << 24) >>> 0;
-  const log = ((logic & 0xf) << 28) >>> 0;
-
-  return (mat | shape | orient | ao | phys | log) >>> 0;
+  physics: number = VoxelPhysics.SOLID_OBSTACLE,
+  logic: number = VoxelLogic.NONE
+): { low: number; high: number } {
+  const low = ((materialId & 0xffffff) | ((shapeId & 0xff) << 24)) >>> 0;
+  const high = ((orientation & 0x0f) | ((aoTint & 0x0f) << 4) | ((physics & 0x0f) << 8) | ((logic & 0x0f) << 12)) >>> 0;
+  return { low, high };
 }
 
-/** Extract all fields from a 32-bit uint32 word */
-export function unpackVoxel(word: number): VoxelDecoded {
-  const uWord = word >>> 0;
+export function unpackVoxel(low: number, high: number): VoxelDecoded {
   return {
-    materialId: (uWord & 0xfff) >>> 0,
-    shapeId: ((uWord >>> 12) & 0x1f) as VoxelShapeType,
-    orientation: ((uWord >>> 17) & 0x7) as VoxelOrientationType,
-    aoTint: (uWord >>> 20) & 0xf,
-    physics: ((uWord >>> 24) & 0xf) as VoxelPhysicsType,
-    logic: ((uWord >>> 28) & 0xf) as VoxelLogicType,
+    materialId: low & 0xffffff,
+    shapeId: ((low >>> 24) & 0xff) as VoxelShapeType,
+    orientation: (high & 0x0f) as VoxelOrientationType,
+    aoTint: (high >>> 4) & 0x0f,
+    physics: ((high >>> 8) & 0x0f) as VoxelPhysicsType,
+    logic: ((high >>> 12) & 0x0f) as VoxelLogicType,
   };
 }
 
-/** Fast extraction helpers */
-export function getVoxelMaterial(word: number): number {
-  return (word & 0xfff) >>> 0;
+export function extractMaterialId(low: number): number {
+  return low & 0xffffff;
 }
 
-export function getVoxelShape(word: number): VoxelShapeType {
-  return ((word >>> 12) & 0x1f) as VoxelShapeType;
+export function extractShapeId(low: number): number {
+  return (low >>> 24) & 0xff;
 }
 
-export function getVoxelOrientation(word: number): VoxelOrientationType {
-  return ((word >>> 17) & 0x7) as VoxelOrientationType;
+export function extractOrientation(high: number): number {
+  return high & 0x0f;
 }
 
-export function withVoxelOrientation(word: number, orientation: number): number {
-  return ((word & ~(0x7 << 17)) | ((orientation & 0x7) << 17)) >>> 0;
+export function extractPhysics(high: number): number {
+  return (high >>> 8) & 0x0f;
 }
 
-export function getVoxelPhysics(word: number): VoxelPhysicsType {
-  return ((word >>> 24) & 0xf) as VoxelPhysicsType;
+export function extractLogic(high: number): number {
+  return (high >>> 12) & 0x0f;
 }
 
-export function getVoxelLogic(word: number): VoxelLogicType {
-  return ((word >>> 28) & 0xf) as VoxelLogicType;
+export function withVoxelOrientationHigh(high: number, orientation: number): number {
+  return ((high & ~0x0f) | (orientation & 0x0f)) >>> 0;
 }
 
-export function isVoxelSolid(word: number): boolean {
-  if (word === 0) return false;
-  const shape = getVoxelShape(word);
-  if (shape === VoxelShape.AIR) return false;
-  const phys = getVoxelPhysics(word);
+export function isVoxelAir(low: number): boolean {
+  return (low & 0xffffff) === 0 && extractShapeId(low) === VoxelShape.AIR;
+}
+
+export function isVoxelSolid(high: number): boolean {
+  const phys = extractPhysics(high);
   return phys === VoxelPhysics.SOLID_OBSTACLE || phys === VoxelPhysics.WALKABLE_SLOPE;
-}
-
-export function isVoxelAir(word: number): boolean {
-  return (word & 0xfff) === 0 || getVoxelShape(word) === VoxelShape.AIR;
 }
 
 /**
@@ -177,15 +167,24 @@ export function isVoxelAir(word: number): boolean {
  * Only non-air FULL_CUBE shapes provide full face occlusion.
  * Slopes, stairs, slabs, columns, fences, and transparent voxels do NOT fully occlude.
  */
-export function isVoxelFaceOccluding(word: number): boolean {
-  if (isVoxelAir(word)) return false;
-  const shape = getVoxelShape(word);
+export function isVoxelFaceOccluding(low: number): boolean {
+  if (isVoxelAir(low)) return false;
+  const shape = extractShapeId(low);
   return shape === VoxelShape.FULL_CUBE;
 }
 
-export const VOXEL_WORD_AIR = packVoxel(VOXEL_MAT_AIR, VoxelShape.AIR, VoxelOrientation.NORTH, 0, VoxelPhysics.PASS_THROUGH, VoxelLogic.NONE);
-export const VOXEL_WORD_GUNMETAL = packVoxel(VOXEL_MAT_GUNMETAL, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE, VoxelLogic.NONE);
-export const VOXEL_WORD_GRASS = packVoxel(VOXEL_MAT_GRASS, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE, VoxelLogic.NONE);
+const airPack = packVoxel(VOXEL_MAT_AIR, VoxelShape.AIR, VoxelOrientation.NORTH, 0, VoxelPhysics.PASS_THROUGH, VoxelLogic.NONE);
+const gunmetalPack = packVoxel(VOXEL_MAT_GUNMETAL, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE, VoxelLogic.NONE);
+const grassPack = packVoxel(VOXEL_MAT_GRASS, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE, VoxelLogic.NONE);
+
+export const VOXEL_WORD_AIR_LOW = airPack.low;
+export const VOXEL_WORD_AIR_HIGH = airPack.high;
+
+export const VOXEL_WORD_GUNMETAL_LOW = gunmetalPack.low;
+export const VOXEL_WORD_GUNMETAL_HIGH = gunmetalPack.high;
+
+export const VOXEL_WORD_GRASS_LOW = grassPack.low;
+export const VOXEL_WORD_GRASS_HIGH = grassPack.high;
 
 import { isInGridFootprint, type BrushShape } from '../brushGeometry';
 

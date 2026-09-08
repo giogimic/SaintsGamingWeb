@@ -34,7 +34,8 @@ import { VoxelTransactionBuilder } from '@/shared/game/voxel/VoxelTransaction';
 import { VoxelPrefabData, rotatePrefab90CW } from '@/shared/game/voxel/VoxelPrefab';
 import {
   packVoxel,
-  VOXEL_WORD_AIR,
+  VOXEL_WORD_AIR_LOW,
+  VOXEL_WORD_AIR_HIGH,
   VoxelShape,
   VoxelOrientation,
   VoxelPhysics,
@@ -2439,9 +2440,9 @@ export const useEditorStore = create<EditorState>()(
             const wz = mapHeight - 1 - r;
             for (let wy = 0; wy < world.totalHeightBlocks; wy++) {
               const before = world.getVoxel(wx, wy, wz);
-              if (before !== VOXEL_WORD_AIR) {
-                world.setVoxel(wx, wy, wz, VOXEL_WORD_AIR);
-                changedVoxels.push({ wx, wy, wz, before, after: VOXEL_WORD_AIR });
+              if (before.low !== VOXEL_WORD_AIR_LOW || before.high !== VOXEL_WORD_AIR_HIGH) {
+                world.setVoxel(wx, wy, wz, VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH);
+                changedVoxels.push({ wx, wy, wz, before: before as any, after: { low: VOXEL_WORD_AIR_LOW, high: VOXEL_WORD_AIR_HIGH } as any });
               }
             }
           };
@@ -2594,9 +2595,9 @@ export const useEditorStore = create<EditorState>()(
             const wz = mapHeight - 1 - r;
             const wy = get().hoveredVoxel?.wy ?? 16;
             const before = world.getVoxel(wx, wy, wz);
-            if (before !== voxelWord) {
-              world.setVoxel(wx, wy, wz, voxelWord);
-              changedVoxels.push({ wx, wy, wz, before, after: voxelWord });
+            if (before.low !== voxelWord.low || before.high !== voxelWord.high) {
+              world.setVoxel(wx, wy, wz, voxelWord.low, voxelWord.high);
+              changedVoxels.push({ wx, wy, wz, before: before as any, after: voxelWord as any });
             }
           };
 
@@ -3271,7 +3272,7 @@ export const useEditorStore = create<EditorState>()(
           let deltaWY = 0;
           for (let checkY = world.totalHeightBlocks - 1; checkY >= 0; checkY--) {
             const word = world.getVoxel(c, checkY, originWZ);
-            if (word && (word & 0xfff) !== 0) {
+            if (word.low !== undefined && (word.low & 0xffffff) !== 0) {
               deltaWY = checkY - 15; // Ground foundation is wy=15
               break;
             }
@@ -3282,21 +3283,21 @@ export const useEditorStore = create<EditorState>()(
             const wy = v.dy + deltaWY;
             const wz = originWZ - v.dz;
             if (wx >= 0 && wx < world.totalWidthBlocks && wz >= 0 && wz < world.totalDepthBlocks && wy >= 0 && wy < world.totalHeightBlocks) {
-              txBuilder.record(world, wx, wy, wz, v.word);
+              txBuilder.record(world, wx, wy, wz, v.word as any);
             }
           }
 
           const tx = txBuilder.build();
           if (tx && tx.mutations.length > 0) {
-            const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: number; after: number }> = [];
+            const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: any; after: any }> = [];
             for (const mut of tx.mutations) {
-              world.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel);
+              world.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel.low, mut.newVoxel.high);
               changedVoxels.push({
                 wx: mut.worldX,
                 wy: mut.worldY,
                 wz: mut.worldZ,
-                before: mut.previousVoxel,
-                after: mut.newVoxel,
+                before: mut.previousVoxel as any,
+                after: mut.newVoxel as any,
               });
             }
             (map as any).voxelDoc = world.serializeToDoc();

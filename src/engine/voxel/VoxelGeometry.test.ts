@@ -98,7 +98,7 @@ describe('Voxel 3D Geometry Builders', () => {
       VoxelPhysics, 
       VOXEL_MAT_GRASS, 
       VOXEL_MAT_AIR,
-      VOXEL_WORD_AIR,
+      VOXEL_WORD_AIR_LOW,
       isVoxelFaceOccluding 
     } = await import('@/shared/game/voxel/VoxelWord');
 
@@ -107,13 +107,13 @@ describe('Voxel 3D Geometry Builders', () => {
     const slab = packVoxel(VOXEL_MAT_GRASS, VoxelShape.SLAB_BOTTOM, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
     const stairs = packVoxel(VOXEL_MAT_GRASS, VoxelShape.STAIRS_STRAIGHT, VoxelOrientation.NORTH, 0, VoxelPhysics.WALKABLE_SLOPE);
     const column = packVoxel(VOXEL_MAT_GRASS, VoxelShape.COLUMN_CENTER, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
-    const air = VOXEL_WORD_AIR;
+    const air = VOXEL_WORD_AIR_LOW;
 
-    expect(isVoxelFaceOccluding(fullCube)).toBe(true);
-    expect(isVoxelFaceOccluding(slope)).toBe(false);
-    expect(isVoxelFaceOccluding(slab)).toBe(false);
-    expect(isVoxelFaceOccluding(stairs)).toBe(false);
-    expect(isVoxelFaceOccluding(column)).toBe(false);
+    expect(isVoxelFaceOccluding(fullCube.low)).toBe(true);
+    expect(isVoxelFaceOccluding(slope.low)).toBe(false);
+    expect(isVoxelFaceOccluding(slab.low)).toBe(false);
+    expect(isVoxelFaceOccluding(stairs.low)).toBe(false);
+    expect(isVoxelFaceOccluding(column.low)).toBe(false);
     expect(isVoxelFaceOccluding(air)).toBe(false);
   });
 
