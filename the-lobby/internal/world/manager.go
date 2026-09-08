@@ -288,7 +288,7 @@ func BuildDemoMapDef() *MapDef {
 
 	return &MapDef{
 		ID:          protocol.DemoMapID,
-		Name:        "Demo Sandbox",
+		Name:        "The Firmament",
 		Width:       w,
 		Height:      h,
 		Grid:        [][]int{}, // No logic grid for fractal maps

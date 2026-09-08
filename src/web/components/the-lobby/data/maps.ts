@@ -150,7 +150,7 @@ export async function getClientAtlas(forceRefresh = false): Promise<AtlasGridDat
 function emptyMapFallback(mapId: string): GameMapData {
   return {
     id: mapId,
-    name: mapId,
+    name: mapId === 'DEMO_SANDBOX' ? 'The Firmament' : mapId,
     source: MAP_DOC_SOURCE_PROXY_SHELL,
     width: 20,
     height: 20,

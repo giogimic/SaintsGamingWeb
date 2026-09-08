@@ -161,7 +161,7 @@ func (s *Server) listMaps(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(out) == 0 {
 		_ = bootstrap.EnsureDemo(s.DB, s.World)
-		out = append(out, item{ID: protocol.DemoMapID, Name: "Demo Sandbox", Version: 1})
+		out = append(out, item{ID: protocol.DemoMapID, Name: "The Firmament", Version: 1})
 	}
 	writeJSON(w, http.StatusOK, out)
 }

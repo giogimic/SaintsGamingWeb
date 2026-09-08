@@ -649,7 +649,7 @@ export function ArchetypeEditorWorkspace() {
                       onChange={e => f('startingMap', e.target.value)}
                       className={inputCls}
                     >
-                      {mapList.length === 0 && <option value="DEMO_SANDBOX">DEMO_SANDBOX (Fallback)</option>}
+                      {mapList.length === 0 && <option value="DEMO_SANDBOX">The Firmament (Fallback)</option>}
                       {mapList.map(map => (
                         <option key={map.id} value={map.id}>{map.name} ({map.id})</option>
                       ))}
