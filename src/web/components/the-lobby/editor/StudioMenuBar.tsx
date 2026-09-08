@@ -528,7 +528,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <SubMenu label="New" icon={FolderPlus}>
               <MenuItem label="New Authored Map" icon={Folder} onClick={() => { setStudioMode('tile'); openPanel('newTileMap'); showToast('Opened Tile Map Generator'); }} />
               <MenuItem label="New Voxel Map" icon={Sparkles} onClick={() => { setStudioMode('voxel'); openPanel('newVoxelMap'); showToast('Opened Voxel Map Generator'); }} />
-              <MenuItem label="New Fractal Region" icon={Sparkles} onClick={() => { setStudioMode('voxel'); openPanel('newVoxelMap'); showToast('Opened Fractal Map Generator'); }} />
+              <MenuItem label="New Fractal Region" icon={Sparkles} onClick={() => { setStudioMode('voxel'); openPanel('newFractalMap'); showToast('Opened Fractal Map Generator'); }} />
               <MenuItem label="New Hybrid Region" icon={Globe} onClick={() => { setStudioMode('atlas'); openPanel('atlas'); showToast('Select Atlas Node for Hybrid Generation'); }} />
               <MenuItem label="New Blueprint Asset" icon={Package} onClick={() => { setStudioMode('assets'); openPanel('assets'); showToast('Opened Asset Studio'); }} />
             </SubMenu>

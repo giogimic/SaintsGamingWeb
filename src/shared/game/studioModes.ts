@@ -59,6 +59,7 @@ export type StudioDockId =
   | 'voxelBrowser'
   | 'newTileMap'
   | 'newVoxelMap'
+  | 'newFractalMap'
   | 'animations'
   | 'interface'
   | 'camera'
@@ -315,7 +316,11 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   },
   newVoxelMap: {
     label: 'New Voxel Map',
-    blurb: 'Generate a new 3D voxel or procedural fractal map.',
+    blurb: 'Generate a new 3D voxel chunk map.',
+  },
+  newFractalMap: {
+    label: 'New Fractal Map',
+    blurb: 'Generate a new procedural fractal strata map.',
   },
   animations: {
     label: 'Animation Studio',

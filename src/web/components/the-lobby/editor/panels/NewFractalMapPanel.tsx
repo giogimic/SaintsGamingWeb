@@ -24,7 +24,7 @@ import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap
 
 type SizePreset = 'tiny' | 'small' | 'standard' | 'large' | 'custom';
 
-export const NewVoxelMapPanel: React.FC = () => {
+export const NewFractalMapPanel: React.FC = () => {
   const showToast = useGameStore((s) => s.showToast);
   const activeGameId = useEditorStore((s) => s.activeGameId);
   const { mutateMaps } = useMapIndex();
@@ -37,8 +37,8 @@ export const NewVoxelMapPanel: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
 
   // Voxel Settings
-  const mapEngine = 'VOXEL';
-  const [genMode, setGenMode] = useState<VoxelGenerationMode>('procedural');
+  const mapEngine = 'FRACTAL';
+  const genMode = 'procedural';
   const [seed, setSeed] = useState<string>(() => Math.floor(Math.random() * 1000000).toString());
   const [baseMaterial, setBaseMaterial] = useState<number>(VOXEL_MAT_GRASS);
   const [blockSizePx, setBlockSizePx] = useState<number>(64);
@@ -80,7 +80,7 @@ export const NewVoxelMapPanel: React.FC = () => {
       useGameStore.getState().setPlayerPosition({ x: cx, y: cy }, 'down', false);
       useEditorStore.getState().setStudioMode('voxel');
       showToast(`Switched to ${mapId}`);
-      useEditorStore.getState().closePanel('newVoxelMap');
+      useEditorStore.getState().closePanel('newFractalMap');
       useEditorStore.getState().openPanel('build');
     } catch {
       useGameStore.setState({ currentMapId: mapId });
@@ -98,7 +98,7 @@ export const NewVoxelMapPanel: React.FC = () => {
     const widthChunks = Math.max(1, Math.ceil(newMapW / 32));
     const depthChunks = Math.max(1, Math.ceil(newMapH / 32));
 
-    const actualGenMode = genMode;
+    const actualGenMode = mapEngine === 'FRACTAL' ? 'procedural' : genMode;
 
     const generatedVoxelDoc = generateVoxelWorldDoc({
       id: slug,
@@ -162,7 +162,7 @@ export const NewVoxelMapPanel: React.FC = () => {
         throw new Error(msg);
       }
 
-      showToast(`Created Voxel Map: ${slug}`);
+      showToast(`Created Fractal Map: ${slug}`);
       setNewMapSlug('');
       setNewMapName('');
 
@@ -180,8 +180,8 @@ export const NewVoxelMapPanel: React.FC = () => {
       <div className="flex items-center gap-3 border-b border-border/40 pb-3 mb-4 shrink-0">
         <Box className="w-5 h-5 text-blue-400" />
         <div>
-          <h3 className="font-bold text-sm text-slate-100">Create Voxel Map</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Generate a 3D block chunk map.</p>
+          <h3 className="font-bold text-sm text-slate-100">Create Fractal Map</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Generate a procedural fractal strata.</p>
         </div>
       </div>
 
@@ -265,37 +265,9 @@ export const NewVoxelMapPanel: React.FC = () => {
         )}
 
         <div className="space-y-4 pt-2 border-t border-border/20">
-            <div>
-              <label className="block text-slate-400 text-[11px] mb-1 font-semibold">Generation Mode:</label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setGenMode('blank')}
-                  className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${
-                    genMode === 'blank'
-                      ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
-                      : 'bg-black/40 text-slate-400 border border-border/40 hover:text-white'
-                  }`}
-                >
-                  Flat / Blank
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setGenMode('procedural')}
-                  className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${
-                    genMode === 'procedural'
-                      ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
-                      : 'bg-black/40 text-slate-400 border border-border/40 hover:text-white'
-                  }`}
-                >
-                  <Grid3X3 className="w-3 h-3" />
-                  Procedural
-                </button>
-              </div>
-            </div>
 
-          {genMode === 'procedural' && (
-            <div className="space-y-3 bg-blue-950/10 p-3 rounded-xl border border-blue-900/30">
+
+          <div className="space-y-3 bg-blue-950/10 p-3 rounded-xl border border-blue-900/30">
               <div className="text-xs text-blue-300/70 italic mb-2">
                 Atlas World Generation Engine is active. Terrain and strata will be procedurally generated based on the seed.
               </div>
@@ -360,11 +332,10 @@ export const NewVoxelMapPanel: React.FC = () => {
                 </div>
               </div>
             </div>
-          )}
+
 
           {/* Base Surface Material */}
-          {genMode !== 'blank' && (
-            <div>
+          <div>
               <label className="block text-slate-400 text-[11px] mb-1 font-semibold">Base Surface Material:</label>
               <div className="flex flex-wrap gap-2">
                 {[
@@ -390,7 +361,7 @@ export const NewVoxelMapPanel: React.FC = () => {
                 ))}
               </div>
             </div>
-          )}
+
         </div>
       </div>
 
@@ -406,7 +377,7 @@ export const NewVoxelMapPanel: React.FC = () => {
           className="px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-600/25 hover:bg-blue-600/35 text-blue-300 border border-blue-500/50 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
         >
           <Sparkles className="w-3.5 h-3.5" />
-          <span>{isCreating ? 'Generating…' : 'Generate Voxel Map'}</span>
+          <span>{isCreating ? 'Generating…' : 'Generate Fractal Map'}</span>
         </button>
       </div>
     </div>

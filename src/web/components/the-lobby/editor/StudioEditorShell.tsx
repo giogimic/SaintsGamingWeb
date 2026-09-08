@@ -94,6 +94,7 @@ const TileMapBrowserPanel = lazy(() => import('./panels/TileMapBrowserPanel').th
 const VoxelMapBrowserPanel = lazy(() => import('./panels/VoxelMapBrowserPanel').then((m) => ({ default: m.VoxelMapBrowserPanel })));
 const NewTileMapPanel = lazy(() => import('./panels/NewTileMapPanel').then((m) => ({ default: m.NewTileMapPanel })));
 const NewVoxelMapPanel = lazy(() => import('./panels/NewVoxelMapPanel').then((m) => ({ default: m.NewVoxelMapPanel })));
+const NewFractalMapPanel = lazy(() => import('./panels/NewFractalMapPanel').then((m) => ({ default: m.NewFractalMapPanel })));
 const InterfaceEditorPanel = lazy(() => import('./panels/InterfaceEditorPanel').then((m) => ({ default: m.InterfaceEditorPanel })));
 const CameraSettingsPanel = lazy(() => import('./panels/CameraSettingsPanel').then((m) => ({ default: m.CameraSettingsPanel })));
 const BiomeConfiguratorPanel = lazy(() => import('./panels/BiomeConfiguratorPanel').then((m) => ({ default: m.BiomeConfiguratorPanel })));
@@ -599,6 +600,12 @@ export const StudioEditorShell: React.FC = () => {
           {(canUseStudioDock(permissionLevel, 'newVoxelMap') || canUseStudioDock(permissionLevel, 'atlas')) && (
             <DraggablePanel id="newVoxelMap" icon={<Sparkles className="w-4 h-4 text-blue-400" />} title="Create Voxel Map">
               <Suspense fallback={<div>Loading...</div>}><NewVoxelMapPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {(canUseStudioDock(permissionLevel, 'newVoxelMap') || canUseStudioDock(permissionLevel, 'atlas')) && (
+            <DraggablePanel id="newFractalMap" icon={<Globe className="w-4 h-4 text-emerald-400" />} title="Create Fractal Map">
+              <Suspense fallback={<div>Loading...</div>}><NewFractalMapPanel /></Suspense>
             </DraggablePanel>
           )}
 

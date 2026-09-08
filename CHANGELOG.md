@@ -1,3 +1,9 @@
+## [2.1.783] - 2026-09-08
+### Fixed
+- WebGL Engine: Fixed a critical React Error #300 causing crashes during Studio navigation by preventing the BabylonEngine context from being redundantly destroyed and recreated. Map switching now seamlessly hot-swaps data without tearing down the WebGL canvas.
+### Added
+- Studio UI: Separated Fractal Map Generation into its own dedicated dockable window (`NewFractalMapPanel`), accessible via the Studio Menu, fully isolating it from standard Voxel Map settings.
+
 ## [2.1.780] - 2026-09-07
 ### Added
 - Procedural Generation: Extended `ProceduralAuthoringPanel` to fully support voxel generation. Clicking "Bake to Active Map" while in Voxel Mode now correctly reads `seed` and `seaLevel` to synthesize 3D blocks (Water, Snow, Base Terrain) within the voxel chunk system, filling an important gap in Fractal map authoring.

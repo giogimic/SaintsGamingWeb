@@ -731,17 +731,14 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     : '';
 
   useEffect(() => {
-    // Wait until map data is fully loaded from the API before mounting engine
-    if (!canvasRef.current || !mapData || !engineMapKey) {
+    if (!canvasRef.current) {
       console.log('[GameCanvasBabylon] Effect aborted', {
         hasCanvas: !!canvasRef.current,
-        hasMapData: !!mapData,
-        engineMapKey
       });
       return;
     }
 
-    console.log('[GameCanvasBabylon] Initializing engine for map:', engineMapKey);
+    console.log('[GameCanvasBabylon] Initializing engine');
 
     // Initialize 2.5D Babylon Engine
     const babylonEngine = new BabylonEngine(canvasRef.current);
@@ -844,47 +841,49 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       babylonEngine.updateSelectionRing(entityId);
     };
 
-    // Load map grid only — NPCs/wilds come from socket mapEntities (avoids
-    // duplicate meshes + broken /assets/sprites/ paths inside loadTilemap).
-    console.log('[GameCanvasBabylon] Calling loadTilemap with', {
-      id: currentMapId,
-      width: mapWidth,
-      height: mapHeight,
-      layerCount: mapData.tileLayers?.length
-    });
-    
-    lastLoadedMapDataRef.current = mapData;
-    lastVisualFingerprintRef.current = mapVisualFingerprint(mapData);
-    babylonEngine.renderer.setEditorCameraMode(Boolean(editorToolsRef.current));
-    babylonEngine.loadTilemap({
-      id: currentMapId,
-      width: mapWidth,
-      height: mapHeight,
-      tileSize: 1, // 1 BJS world unit per tile
-      tiles: mapData.grid || [],
-      tileLayers: [],
-      tilesets: [],
-      npcs: [],
-      chunks: mapData.chunks,
-      freeformLayers: [],
-      voxelDoc: mapData.voxelDoc,
-      blockSizePx: mapData.blockSizePx,
-      mapType: mapData.mapType,
-    }, useGameStore.getState().worldOriginOffset);
-    setMapMeshEpoch((n) => n + 1);
+    if (mapData) {
+      // Load map grid only — NPCs/wilds come from socket mapEntities (avoids
+      // duplicate meshes + broken /assets/sprites/ paths inside loadTilemap).
+      console.log('[GameCanvasBabylon] Calling loadTilemap with', {
+        id: currentMapId,
+        width: mapWidth,
+        height: mapHeight,
+        layerCount: mapData.tileLayers?.length
+      });
+      
+      lastLoadedMapDataRef.current = mapData;
+      lastVisualFingerprintRef.current = mapVisualFingerprint(mapData);
+      babylonEngine.renderer.setEditorCameraMode(Boolean(editorToolsRef.current));
+      babylonEngine.loadTilemap({
+        id: currentMapId,
+        width: mapWidth,
+        height: mapHeight,
+        tileSize: 1, // 1 BJS world unit per tile
+        tiles: mapData.grid || [],
+        tileLayers: [],
+        tilesets: [],
+        npcs: [],
+        chunks: mapData.chunks,
+        freeformLayers: [],
+        voxelDoc: mapData.voxelDoc,
+        blockSizePx: mapData.blockSizePx,
+        mapType: mapData.mapType,
+      }, useGameStore.getState().worldOriginOffset);
+      setMapMeshEpoch((n) => n + 1);
 
-    // Editor: frame the whole map (author spawn often sits outside short maps).
-    // Playtest/lobby: snap to the player.
-    if (editorToolsRef.current) {
-      babylonEngine.renderer.fitMapInView();
-    } else {
-      const liveStore = useGameStore.getState();
-      const initPlayer = liveStore.player;
-      if (initPlayer?.position) {
-        const offset = liveStore.worldOriginOffset;
-        const initX = (initPlayer.position.x ?? 6) - mapWidth / 2 + offset.x;
-        const initZ = mapHeight / 2 - (initPlayer.position.y ?? 2) - offset.y;
-        babylonEngine.renderer.snapCameraTo(initX, initZ);
+      // Editor: frame the whole map (author spawn often sits outside short maps).
+      // Playtest/lobby: snap to the player.
+      if (editorToolsRef.current) {
+        babylonEngine.renderer.fitMapInView();
+      } else {
+        const liveStore = useGameStore.getState();
+        const initPlayer = liveStore.player;
+        if (initPlayer?.position) {
+          const offset = liveStore.worldOriginOffset;
+          const initX = (initPlayer.position.x ?? 6) - mapWidth / 2 + offset.x;
+          const initZ = mapHeight / 2 - (initPlayer.position.y ?? 2) - offset.y;
+          babylonEngine.renderer.snapCameraTo(initX, initZ);
+        }
       }
     }
 
@@ -1167,9 +1166,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         (window as any).__babylonEngine = null;
       }
     };
-  // Remount only when the base map seat changes — not on every mapData object identity.
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- mapData read when engineMapKey flips
-  }, [engineMapKey]);
+  }, []);
 
   // Handle Map Document Hydration (Studio + first paint)
   // Engine remounts only on engineMapKey. When a proxy-shell mounts first and the

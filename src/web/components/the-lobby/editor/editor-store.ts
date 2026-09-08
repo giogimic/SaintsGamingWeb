@@ -1033,6 +1033,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 600,
     zIndex: 10,
   },
+  newFractalMap: {
+    id: 'newFractalMap',
+    title: 'New Fractal Map',
+    isOpen: false,
+    isCollapsed: false,
+    x: 80,
+    y: 80,
+    width: 400,
+    height: 600,
+    zIndex: 10,
+  },
   animations: {
     id: 'animations',
     title: 'Animation Studio',
