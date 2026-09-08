@@ -108,8 +108,6 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 If you are looking for **deep technical breakdowns**, engine architecture, and creator guides, please check out our interactive **Wiki** directly on the website once you have the app running, or navigate to the `/wiki` page on saintsgaming.net!
 
-*(Note to developers/AI: All internal engine architecture and game bibles are stored privately inside the `.docs` folder for local development.)*
-
 ---
 
 ## 💬 Community & Links
