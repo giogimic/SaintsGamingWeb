@@ -28,15 +28,20 @@ export function clampCameraFocus(
   let x = targetX;
   let z = targetZ;
 
-  if (halfWidth > margin) {
-    x = Math.max(-halfWidth + margin, Math.min(halfWidth - margin, x));
-  } else {
-    x = 0;
+  if (mapWidth > 0) {
+    if (halfWidth > margin) {
+      x = Math.max(-halfWidth + margin, Math.min(halfWidth - margin, x));
+    } else {
+      x = 0;
+    }
   }
-  if (halfHeight > margin) {
-    z = Math.max(-halfHeight + margin, Math.min(halfHeight - margin, z));
-  } else {
-    z = 0;
+
+  if (mapHeight > 0) {
+    if (halfHeight > margin) {
+      z = Math.max(-halfHeight + margin, Math.min(halfHeight - margin, z));
+    } else {
+      z = 0;
+    }
   }
   return { x, z };
 }

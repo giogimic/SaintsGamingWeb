@@ -1,3 +1,8 @@
+## [2.1.793] - 2026-09-08
+### Fixed
+- Infinite Maps: Fixed an issue where the map width and height (evaluating to 0 for infinite procedurally generated maps) incorrectly constrained camera boundaries and player movement logic, causing the player to be stuck in place. 
+- Chunk Streaming: Updated the `ChunkStreamer` logic to accept server-pushed chunk data dynamically by removing restrictive pending queue checks, resolving the issue where the terrain would render as a black screen upon login. 
+
 ## [2.1.792] - 2026-09-08
 ### Added
 - Go Server: Integrated the Atlas Fractal terrain generation system (Fractional Brownian Motion, Domain Warps, and Geographic Biome Resolving). The server is now fully authoritative for all procedural terrain chunk streams.

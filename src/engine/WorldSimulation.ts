@@ -71,8 +71,11 @@ export class WorldSimulation {
 
     const dir = this.calculateDirection(playerPos.x, playerPos.y, targetX, targetY);
 
-    // Bounds Check
-    if (targetX < 0 || targetX >= mapWidth || targetY < 0 || targetY >= mapHeight) {
+    // Bounds Check (ignore bounds if mapWidth/mapHeight are 0, which means infinite)
+    const outOfBoundsX = mapWidth > 0 && (targetX < 0 || targetX >= mapWidth);
+    const outOfBoundsY = mapHeight > 0 && (targetY < 0 || targetY >= mapHeight);
+
+    if (outOfBoundsX || outOfBoundsY) {
       // Check connections for One-World map transitions
       if (state.connections) {
         const getTarget = (c: any) => typeof c === 'string' ? c : c?.targetMapId;

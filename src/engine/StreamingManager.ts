@@ -41,17 +41,17 @@ export class StreamingManager {
         const cx = centerCX + dx;
         const cz = centerCZ + dz;
         
-        // Out of bounds
-        if (cx < 0 || cz < 0 || cx >= mapWidthChunks || cz >= mapHeightChunks) {
-          continue;
-        }
+        // Out of bounds (only if map is not infinite)
+        if (mapWidthChunks > 0 && (cx < 0 || cx >= mapWidthChunks)) continue;
+        if (mapHeightChunks > 0 && (cz < 0 || cz >= mapHeightChunks)) continue;
 
         const key: ChunkKey = { mapId, mapVersion, chunkX: cx, chunkZ: cz, worldTransform: { x: 0, z: 0 } };
         
         const cacheKey = `${mapId}_v${mapVersion}_${cx}_${cz}`;
         if (!this.activeChunks.has(cacheKey) && !this.pendingBuilds.has(cacheKey)) {
           // Must-Be-Ready transition logic: if the chunk is at the edge of the map, it is a transition chunk
-          const isTransition = (cx === 0 || cx === mapWidthChunks - 1 || cz === 0 || cz === mapHeightChunks - 1); 
+          const isTransition = (mapWidthChunks > 0 && (cx === 0 || cx === mapWidthChunks - 1)) || 
+                               (mapHeightChunks > 0 && (cz === 0 || cz === mapHeightChunks - 1));
           globalStreamingQueue.requestChunk(key, isTransition);
         }
       }

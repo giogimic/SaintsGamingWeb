@@ -11,8 +11,8 @@ export class ChunkStreamer {
   public preloadRadius = 10;
   public evictRadius = 12;
   
-  private currentCx = 0;
-  private currentCz = 0;
+  private currentCx = Infinity;
+  private currentCz = Infinity;
   private mapSlug: string;
   private voxelController: VoxelController;
 
@@ -38,8 +38,6 @@ export class ChunkStreamer {
     const { cx, cy, cz, data: buffer } = data;
     const key = `${cx}_${cz}`;
     const chunkKey = `${cx}_${cy}_${cz}`;
-
-    if (!this.pendingChunks.has(key) && !this.loadedChunks.has(key)) return;
 
     const world = this.voxelController.voxelWorld;
     if (!world) return;
