@@ -2,108 +2,123 @@ package world
 
 import (
 	"math"
-	"math/rand"
-
-	"github.com/aquilax/go-perlin"
 )
 
-// GeneratorConfig holds the parameters for generating a fractal world.
-type GeneratorConfig struct {
-	Seed           int64
-	BaseElevation  int
-	ElevationRange int
-	WaterLevel     int
-	NoiseScale     float64
+// BiomeTerrainConfig defines noise parameters for the biome.
+type BiomeTerrainConfig struct {
+	BaseHeight  float64
+	Amplitude   float64
+	Frequency   float64
+	Octaves     int
+	Persistence float64
+	Lacunarity  float64
 }
 
-// GenerateProceduralChunk creates a 32x32x32 VoxelChunk entirely in Go using Perlin noise.
-func GenerateProceduralChunk(cx, cy, cz int, config GeneratorConfig) *VoxelChunk {
+// BiomeStrataConfig defines the layers of geological material.
+type BiomeStrataConfig struct {
+	SurfaceMaterial    uint32
+	SubsurfaceMaterial uint32
+	SubsurfaceDepth    float64
+	MantleMaterial     uint32
+	BedrockMaterial    uint32
+}
+
+// BiomeFeaturePool defines spawnable entities and flora.
+type BiomeFeaturePool struct {
+	SpawnableFlora []struct {
+		FeatureID string
+		Weight    float64
+	}
+	SpawnableEntities []struct {
+		EntityID     string
+		Weight       float64
+		MaxGroupSize int
+	}
+}
+
+// BiomeDefinition contains all generation info for a single biome.
+type BiomeDefinition struct {
+	ID       string
+	Seed     uint32
+	Terrain  BiomeTerrainConfig
+	Strata   BiomeStrataConfig
+	Features BiomeFeaturePool
+}
+
+// ProceduralVoxelGenerator evaluates continuous fractal terrain heights and populates chunks.
+type ProceduralVoxelGenerator struct {
+	noise *SimplexNoise2D
+	biome BiomeDefinition
+}
+
+func NewProceduralVoxelGenerator(biome BiomeDefinition) *ProceduralVoxelGenerator {
+	return &ProceduralVoxelGenerator{
+		noise: NewSimplexNoise2D(biome.Seed),
+		biome: biome,
+	}
+}
+
+func (g *ProceduralVoxelGenerator) SetBiome(biome BiomeDefinition) {
+	g.biome = biome
+	g.noise.Reseed(biome.Seed)
+}
+
+// GetSurfaceHeight evaluates the continuous terrain surface elevation at world (wx, wz).
+func (g *ProceduralVoxelGenerator) GetSurfaceHeight(wx, wz float64) float64 {
+	offset := g.noise.FBm(wx, wz,
+		g.biome.Terrain.Octaves,
+		g.biome.Terrain.Frequency,
+		g.biome.Terrain.Persistence,
+		g.biome.Terrain.Lacunarity,
+		g.biome.Terrain.Amplitude)
+
+	height := math.Round(g.biome.Terrain.BaseHeight + offset)
+	if height < 1 {
+		height = 1
+	} else if height > 31 {
+		height = 31
+	}
+	return height
+}
+
+// PopulateChunk generates volumetric voxel data for a 32x32x32 chunk according to biome strata rules.
+func (g *ProceduralVoxelGenerator) PopulateChunk(cx, cy, cz int) *VoxelChunk {
 	chunk := &VoxelChunk{CX: cx, CY: cy, CZ: cz}
-
-	// 1. Initialize Perlin Noise (alpha=2, beta=2, n=3 for standard terrain)
-	p := perlin.NewPerlin(2, 2, 3, config.Seed)
-
-	// Material constants mapped to 64-bit VoxelPack format
-	// 0: Air, 1: Gunmetal, 2: Grass, 3: Dirt, 4: Stone, 5: Sand, 6: Water
-	const (
-		MatAir      = 0
-		MatGunmetal = 1
-		MatGrass    = 2
-		MatDirt     = 3
-		MatStone    = 4
-		MatSand     = 5
-		MatWater    = 6
-	)
-
-	// Pre-pack common blocks to save CPU in the tight loop
-	grassWord := PackVoxel(MatGrass, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
-	dirtWord := PackVoxel(MatDirt, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
-	stoneWord := PackVoxel(MatStone, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
-	sandWord := PackVoxel(MatSand, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
-	waterWord := PackVoxel(MatWater, ShapeFullCube, 0, 0, PhysicsSwimmableFluid, LogicNone)
 
 	startWX := cx * ChunkSizeX
 	startWY := cy * ChunkSizeY
 	startWZ := cz * ChunkSizeZ
 
-	for lx := 0; lx < ChunkSizeX; lx++ {
-		for lz := 0; lz < ChunkSizeZ; lz++ {
-			wx := startWX + lx
-			wz := startWZ + lz
+	strata := g.biome.Strata
 
-			// Sample 2D Perlin noise for surface elevation
-			nx := float64(wx) * config.NoiseScale
-			nz := float64(wz) * config.NoiseScale
-			noiseVal := p.Noise2D(nx, nz) // Range approx [-1, 1]
+	surfaceWord := PackVoxel(strata.SurfaceMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
+	subsurfaceWord := PackVoxel(strata.SubsurfaceMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
+	mantleWord := PackVoxel(strata.MantleMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
+	bedrockWord := PackVoxel(strata.BedrockMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
 
-			// Map noise to elevation range
-			surfaceY := float64(config.BaseElevation) + (noiseVal * float64(config.ElevationRange))
-			surfaceYInt := int(math.Round(surfaceY))
+	for lz := 0; lz < ChunkSizeZ; lz++ {
+		wz := float64(startWZ + lz)
+		for lx := 0; lx < ChunkSizeX; lx++ {
+			wx := float64(startWX + lx)
+			surfaceH := g.GetSurfaceHeight(wx, wz)
 
 			for ly := 0; ly < ChunkSizeY; ly++ {
-				wy := startWY + ly
-				var word uint64 = VoxelWordAir
+				wy := float64(startWY + ly)
 
-				if wy < surfaceYInt-3 {
-					word = stoneWord
-				} else if wy < surfaceYInt {
-					word = dirtWord
-				} else if wy == surfaceYInt {
-					if wy <= config.WaterLevel+1 {
-						word = sandWord
+				if wy > surfaceH {
+					// Air (default for chunk)
+					chunk.Set(lx, ly, lz, VoxelWordAir)
+				} else if wy == 0 {
+					// Bedrock layer
+					chunk.Set(lx, ly, lz, bedrockWord)
+				} else {
+					depth := surfaceH - wy
+					if depth == 0 {
+						chunk.Set(lx, ly, lz, surfaceWord)
+					} else if depth <= strata.SubsurfaceDepth {
+						chunk.Set(lx, ly, lz, subsurfaceWord)
 					} else {
-						word = grassWord
-					}
-				} else if wy <= config.WaterLevel {
-					word = waterWord
-				}
-
-				if word != VoxelWordAir {
-					chunk.Set(lx, ly, lz, word)
-				}
-			}
-		}
-	}
-
-	// Simple Flora Decorator (Trees)
-	rng := rand.New(rand.NewSource(config.Seed + int64(cx*73856093) + int64(cz*19349663)))
-	if cy >= 0 && cy <= 1 { // Trees only generate near the ground
-		for lx := 2; lx < ChunkSizeX-2; lx++ {
-			for lz := 2; lz < ChunkSizeZ-2; lz++ {
-				if rng.Float64() < 0.01 { // 1% chance per column
-					// Find surface
-					for ly := ChunkSizeY - 1; ly >= 0; ly-- {
-						idx := ChunkIndex(lx, ly, lz)
-						if chunk.Data[idx] == grassWord {
-							// Build tree trunk (Gunmetal placeholder for wood)
-							woodWord := PackVoxel(MatGunmetal, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
-							for t := 1; t <= 4; t++ {
-								if ly+t < ChunkSizeY {
-									chunk.Set(lx, ly+t, lz, woodWord)
-								}
-							}
-							break
-						}
+						chunk.Set(lx, ly, lz, mantleWord)
 					}
 				}
 			}

@@ -1,3 +1,10 @@
+## [2.1.787] - 2026-09-08
+### Added
+- Voxel Generation: Migrated the core `ProceduralVoxelGenerator` and `FeaturePlacer` (flora/tree generation) algorithms from TypeScript to the Go Server.
+- Server API: Added `/api/chunks/generate` endpoint on the Go MMO server to stream procedurally generated base chunks directly to the client.
+### Fixed
+- Feature Placer: Fixed a long-standing TS bug where the biome feature spawner failed to parse 64-bit voxel materials properly, resulting in barren chunks without trees or grass. Go and TS generation are now mathematically identical.
+
 ## [2.1.784] - 2026-09-08
 ### Fixed
 - WebGL Engine: Fixed a critical React Error #300 causing crashes during Studio navigation by preventing the BabylonEngine context from being redundantly destroyed and recreated. Map switching now seamlessly hot-swaps data without tearing down the WebGL canvas.

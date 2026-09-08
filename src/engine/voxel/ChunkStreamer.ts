@@ -138,6 +138,8 @@ export class ChunkStreamer {
         }
       }
 
+      const chunkPromises: Promise<void>[] = [];
+
       for (let x = minCx; x <= maxCx; x++) {
         for (let z = minCz; z <= maxCz; z++) {
           const key = `${x}_${z}`;
@@ -147,34 +149,45 @@ export class ChunkStreamer {
           const cy = 0;
           const chunkKey = `${x}_${cy}_${z}`;
           
-          // Generate base procedural chunk
-          const baseChunk = this.proceduralGenerator.generateChunk(x, z, cy);
-          world.chunks.set(chunkKey, baseChunk);
-
-          // Apply overrides from database if they exist
-          const override = overrideChunks.get(key);
-          if (override) {
-            if (override.dataLow) {
-              baseChunk.dataLow.set(new Uint32Array(override.dataLow));
+          const p = (async () => {
+            const chunkRes = await fetch(`/api/chunks/generate?cx=${x}&cy=${cy}&cz=${z}`);
+            if (!chunkRes.ok) {
+              console.error(`Failed to generate chunk ${x},${cy},${z}`);
+              return;
             }
-            if (override.dataHigh) {
-              baseChunk.dataHigh.set(new Uint32Array(override.dataHigh));
-            }
-          }
+            const buffer = await chunkRes.arrayBuffer();
+            const baseChunk = VoxelChunk.deserializePaletteRLEBinary(new Uint8Array(buffer));
+            
+            world.chunks.set(chunkKey, baseChunk);
 
-          // Apply physical portal shrines based on gates
-          const gates = (this.voxelController.engine as any).currentRawMapData?.gatesData?.gates || [];
-          this.applyPortalShrines(baseChunk, gates);
-
-          // Tell mesher to mesh this chunk only if within visible radius
-          if (Math.abs(x - cx) <= this.visibleRadius && Math.abs(z - cz) <= this.visibleRadius) {
-            const result = this.voxelController.voxelMesher?.meshChunk(world, baseChunk);
-            if (result && (this.voxelController as any).engine.rootNode) {
-              result.mesh.parent = (this.voxelController as any).engine.rootNode;
+            // Apply overrides from database if they exist
+            const override = overrideChunks.get(key);
+            if (override) {
+              if (override.dataLow) {
+                baseChunk.dataLow.set(new Uint32Array(override.dataLow));
+              }
+              if (override.dataHigh) {
+                baseChunk.dataHigh.set(new Uint32Array(override.dataHigh));
+              }
             }
-          }
+
+            // Apply physical portal shrines based on gates
+            const gates = (this.voxelController.engine as any).currentRawMapData?.gatesData?.gates || [];
+            this.applyPortalShrines(baseChunk, gates);
+
+            // Tell mesher to mesh this chunk only if within visible radius
+            if (Math.abs(x - cx) <= this.visibleRadius && Math.abs(z - cz) <= this.visibleRadius) {
+              const result = this.voxelController.voxelMesher?.meshChunk(world, baseChunk);
+              if (result && (this.voxelController as any).engine.rootNode) {
+                result.mesh.parent = (this.voxelController as any).engine.rootNode;
+              }
+            }
+          })();
+          chunkPromises.push(p);
         }
       }
+
+      await Promise.all(chunkPromises);
     } catch (e) {
       console.error("[ChunkStreamer] fetch error:", e);
     } finally {

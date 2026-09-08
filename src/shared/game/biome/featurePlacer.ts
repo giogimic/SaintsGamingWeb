@@ -36,13 +36,13 @@ export class FeaturePlacer {
 
       // Find the surface Y
       let surfaceY = -1;
-      let surfaceMat = VOXEL_WORD_AIR_LOW;
+      let surfaceMat = 0;
       for (let y = CHUNK_SIZE_Y - 1; y >= 0; y--) {
         const matLow = chunk.getLow(lx, y, lz);
         const matHigh = chunk.getHigh(lx, y, lz);
         if (matLow !== VOXEL_WORD_AIR_LOW || matHigh !== VOXEL_WORD_AIR_HIGH) {
           surfaceY = y;
-          surfaceMat = matLow;
+          surfaceMat = matLow & 0xffffff;
           break;
         }
       }

@@ -74,6 +74,16 @@ func VoxelLogic(word uint64) uint8 {
 	return uint8((word >> 44) & 0x0F)
 }
 
+// VoxelOrientation extracts the 4-bit orientation.
+func VoxelOrientation(word uint64) uint8 {
+	return uint8((word >> 32) & 0x0F)
+}
+
+// VoxelAoTint extracts the 4-bit AO/Tint.
+func VoxelAoTint(word uint64) uint8 {
+	return uint8((word >> 36) & 0x0F)
+}
+
 // VoxelMaterial extracts the 24-bit material ID.
 func VoxelMaterial(word uint64) uint32 {
 	return uint32(word & 0xFFFFFF)
@@ -263,24 +273,24 @@ type VoxelDeltaPacket struct {
 	CY         int
 	CZ         int
 	LocalIndex uint16
-	Word       uint32
+	Word       uint64
 }
 
-// SerializeVoxelDelta encodes a single-voxel mutation into a 13-byte packet.
-func SerializeVoxelDelta(cx, cy, cz int, localIndex uint16, word uint32) []byte {
-	buf := make([]byte, 13)
+// SerializeVoxelDelta encodes a single-voxel mutation into a 17-byte packet.
+func SerializeVoxelDelta(cx, cy, cz int, localIndex uint16, word uint64) []byte {
+	buf := make([]byte, 17)
 	buf[0] = 0x02 // CHUNK_PACKET_DELTA_VOXEL
 	binary.LittleEndian.PutUint16(buf[1:3], uint16(int16(cx)))
 	binary.LittleEndian.PutUint16(buf[3:5], uint16(int16(cy)))
 	binary.LittleEndian.PutUint16(buf[5:7], uint16(int16(cz)))
 	binary.LittleEndian.PutUint16(buf[7:9], localIndex&0x7fff)
-	binary.LittleEndian.PutUint32(buf[9:13], word)
+	binary.LittleEndian.PutUint64(buf[9:17], word)
 	return buf
 }
 
 // DeserializeVoxelDelta decodes a single-voxel mutation packet.
 func DeserializeVoxelDelta(data []byte) (*VoxelDeltaPacket, error) {
-	if len(data) < 13 || data[0] != 0x02 {
+	if len(data) < 17 || data[0] != 0x02 {
 		return nil, errors.New("invalid voxel delta packet")
 	}
 	return &VoxelDeltaPacket{
@@ -288,7 +298,7 @@ func DeserializeVoxelDelta(data []byte) (*VoxelDeltaPacket, error) {
 		CY:         int(int16(binary.LittleEndian.Uint16(data[3:5]))),
 		CZ:         int(int16(binary.LittleEndian.Uint16(data[5:7]))),
 		LocalIndex: binary.LittleEndian.Uint16(data[7:9]),
-		Word:       binary.LittleEndian.Uint32(data[9:13]),
+		Word:       binary.LittleEndian.Uint64(data[9:17]),
 	}, nil
 }
 
@@ -383,8 +393,8 @@ func ParseVoxelDoc(data []byte) (*VoxelWorld, error) {
 	return w, nil
 }
 
-// GetVoxel retrieves the 32-bit voxel word at global coordinates (wx, wy, wz).
-func (w *VoxelWorld) GetVoxel(wx, wy, wz int) uint32 {
+// GetVoxel retrieves the 64-bit voxel word at global coordinates (wx, wy, wz).
+func (w *VoxelWorld) GetVoxel(wx, wy, wz int) uint64 {
 	cx := wx >> ChunkShiftX
 	cz := wz >> ChunkShiftZ
 	cy := wy >> ChunkShiftY
@@ -413,8 +423,8 @@ func (w *VoxelWorld) GetVoxel(wx, wy, wz int) uint32 {
 	return chunk.Get(lx, ly, lz)
 }
 
-// SetVoxel sets the 32-bit voxel word at global coordinates (wx, wy, wz).
-func (w *VoxelWorld) SetVoxel(wx, wy, wz int, word uint32) {
+// SetVoxel sets the 64-bit voxel word at global coordinates (wx, wy, wz).
+func (w *VoxelWorld) SetVoxel(wx, wy, wz int, word uint64) {
 	cx := wx >> ChunkShiftX
 	cz := wz >> ChunkShiftZ
 	cy := wy >> ChunkShiftY

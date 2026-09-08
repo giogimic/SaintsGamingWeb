@@ -43,10 +43,10 @@ export class ProceduralVoxelGenerator {
 
     const strata = this.currentBiome.strata;
 
-    const surfaceWord = packVoxel(strata.surfaceMaterial, VoxelShape.FULL_CUBE, 0, VoxelPhysics.SOLID_OBSTACLE);
-    const subsurfaceWord = packVoxel(strata.subsurfaceMaterial, VoxelShape.FULL_CUBE, 0, VoxelPhysics.SOLID_OBSTACLE);
-    const mantleWord = packVoxel(strata.mantleMaterial, VoxelShape.FULL_CUBE, 0, VoxelPhysics.SOLID_OBSTACLE);
-    const bedrockWord = packVoxel(strata.bedrockMaterial, VoxelShape.FULL_CUBE, 0, VoxelPhysics.SOLID_OBSTACLE);
+    const surfaceWord = packVoxel(strata.surfaceMaterial, VoxelShape.FULL_CUBE, 0, 0, VoxelPhysics.SOLID_OBSTACLE);
+    const subsurfaceWord = packVoxel(strata.subsurfaceMaterial, VoxelShape.FULL_CUBE, 0, 0, VoxelPhysics.SOLID_OBSTACLE);
+    const mantleWord = packVoxel(strata.mantleMaterial, VoxelShape.FULL_CUBE, 0, 0, VoxelPhysics.SOLID_OBSTACLE);
+    const bedrockWord = packVoxel(strata.bedrockMaterial, VoxelShape.FULL_CUBE, 0, 0, VoxelPhysics.SOLID_OBSTACLE);
 
     for (let lz = 0; lz < CHUNK_SIZE_Z; lz++) {
       const wz = startWZ + lz;

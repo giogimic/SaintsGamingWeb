@@ -3,6 +3,7 @@ package httpapi
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -37,7 +38,71 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/internal/disconnect", s.internalDisconnect)
 	mux.HandleFunc("/api/gtc/listings", s.gtcListings)
 	mux.HandleFunc("/api/craft/recipes", s.craftRecipes)
+	mux.HandleFunc("/api/chunks/generate", s.generateChunk)
 	return withCORS(mux)
+}
+
+func (s *Server) generateChunk(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	cxStr := r.URL.Query().Get("cx")
+	cyStr := r.URL.Query().Get("cy")
+	czStr := r.URL.Query().Get("cz")
+
+	if cxStr == "" || czStr == "" {
+		http.Error(w, "missing cx or cz", http.StatusBadRequest)
+		return
+	}
+
+	var cx, cy, cz int
+	fmt.Sscanf(cxStr, "%d", &cx)
+	fmt.Sscanf(cyStr, "%d", &cy)
+	fmt.Sscanf(czStr, "%d", &cz)
+
+	// Hardcode Emerald Plains for now, as that's the only one in the Go code
+	biome := world.BiomeDefinition{
+		ID:   "emerald_plains",
+		Seed: 42,
+		Terrain: world.BiomeTerrainConfig{
+			BaseHeight:  16,
+			Amplitude:   6,
+			Frequency:   0.018,
+			Octaves:     4,
+			Persistence: 0.5,
+			Lacunarity:  2.0,
+		},
+		Strata: world.BiomeStrataConfig{
+			SurfaceMaterial:    2,
+			SubsurfaceMaterial: 3,
+			SubsurfaceDepth:    3,
+			MantleMaterial:     4,
+			BedrockMaterial:    1,
+		},
+		Features: world.BiomeFeaturePool{
+			SpawnableFlora: []struct {
+				FeatureID string
+				Weight    float64
+			}{
+				{FeatureID: "oak_tree", Weight: 10},
+				{FeatureID: "tall_grass", Weight: 50},
+			},
+		},
+	}
+
+	generator := world.NewProceduralVoxelGenerator(biome)
+	chunk := generator.PopulateChunk(cx, cy, cz)
+
+	placer := &world.FeaturePlacer{}
+	placer.PlaceFeatures(chunk, biome.Seed, biome)
+
+	data := chunk.EncodePaletteRLEBinary()
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Write(data)
 }
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {

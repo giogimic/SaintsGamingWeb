@@ -9,7 +9,7 @@ import (
 // ChunkGenerationRequest represents a job for the worker pool.
 type ChunkGenerationRequest struct {
 	CX, CY, CZ int
-	Config     GeneratorConfig
+	Biome      BiomeDefinition
 	Callback   func(*VoxelChunk)
 }
 
@@ -40,7 +40,11 @@ func (wp *WorkerPool) Start() {
 			for {
 				select {
 				case job := <-wp.JobQueue:
-					chunk := GenerateProceduralChunk(job.CX, job.CY, job.CZ, job.Config)
+					generator := NewProceduralVoxelGenerator(job.Biome)
+					chunk := generator.PopulateChunk(job.CX, job.CY, job.CZ)
+
+					placer := &FeaturePlacer{}
+					placer.PlaceFeatures(chunk, job.Biome.Seed, job.Biome)
 					if job.Callback != nil {
 						job.Callback(chunk)
 					}
