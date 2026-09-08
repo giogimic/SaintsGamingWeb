@@ -1,7 +1,6 @@
 import { VoxelWorld } from '../../shared/game/voxel/VoxelWorldDoc';
 import { VoxelChunk, CHUNK_SIZE_X, CHUNK_SIZE_Z } from '../../shared/game/voxel/VoxelChunk';
 import { VoxelController } from '../VoxelController';
-import { ProceduralGenerator } from '../../shared/game/voxel/proceduralGenerator';
 import { VOXEL_MAT_ATLAS_PORTAL, VOXEL_MAT_STONE, packVoxel, VoxelShape, VoxelOrientation, VoxelPhysics, VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH } from '../../shared/game/voxel/VoxelWord';
 
 export class ChunkStreamer {
@@ -16,13 +15,10 @@ export class ChunkStreamer {
   private currentCz = 0;
   private mapSlug: string;
   private voxelController: VoxelController;
-  private proceduralGenerator: ProceduralGenerator;
 
   constructor(mapSlug: string, voxelController: VoxelController) {
     this.mapSlug = mapSlug;
     this.voxelController = voxelController;
-    // We could pass seed from the map data, but using a default seed for now
-    this.proceduralGenerator = new ProceduralGenerator(42); 
 
     if (typeof window !== 'undefined') {
       window.addEventListener('voxel_chunk_data', this.onChunkData);

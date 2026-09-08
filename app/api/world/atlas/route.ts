@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { normalizeAtlasGridData, getAdjacentAtlasNeighbors } from "@/shared/game/atlas/spatialAtlas";
 import { DEFAULT_WORLD_PROFILE_ID } from "@/shared/game/worldProfiles";
 import { AuditService } from "@/server/audit/AuditService";
-import { ProceduralGenerator } from "@/shared/game/voxel/proceduralGenerator";
+
 
 export const dynamic = 'force-dynamic';
 
@@ -260,7 +260,6 @@ export async function POST(request: Request) {
             const spawnPoint = parsedGates.spawnPoint;
 
             if (node.generationScope === 'infinite' && Object.keys(cleanConnections).length > 0) {
-              const gen = new ProceduralGenerator(42);
               const spawnX = typeof spawnPoint?.x === 'number' ? spawnPoint.x : 16;
               const spawnZ = typeof spawnPoint?.y === 'number' ? spawnPoint.y : 16;
               const portalDistance = 128;
@@ -283,7 +282,7 @@ export async function POST(request: Request) {
                 if (targetMapId) {
                   const px = spawnX + dx;
                   const pz = spawnZ + dz;
-                  const py = gen.getSurfaceElevation(px, pz);
+                  const py = 17; // Default to base surface height for procedural maps
 
                   baseGates.push({
                     id: gateId,

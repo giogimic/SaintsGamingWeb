@@ -75,7 +75,7 @@ const nextConfig: NextConfig = {
     
     return [
       { source: "/socket.io/:path*", destination: `${goMmoUrl}/socket.io/:path*` },
-      { source: "/api/chunks/generate", destination: `${goMmoUrl}/api/chunks/generate` },
+
       { source: "/assets/sprites/:path*", destination: "/game-assets/npc/:path*" },
       { source: "/game-assets/sprites/:path*", destination: "/game-assets/npc/:path*" },
     ];
