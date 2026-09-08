@@ -314,7 +314,7 @@ export interface GameState {
   logicTiles: Record<number, MapLogicTile>;
   gameMode: GameMode;
   player: PlayerState;
-  otherPlayers: Record<string, { accountId?: string; x: number; y: number; name: string; assetProfileId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; hp?: number; maxHp?: number; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>;
+  otherPlayers: Record<string, { accountId?: string; x: number; y: number; vx?: number; vy?: number; lastUpdateMs?: number; mapId?: string; name: string; assetProfileId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; hp?: number; maxHp?: number; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>;
   pathQueue: Point[];
   worldOriginOffset: { x: number; y: number };
   currentMapId: string;
