@@ -43,11 +43,11 @@ func EnsureDemo(db *sql.DB, wm *world.Manager) error {
 	tileLayers := `[{"name":"Ground","width":` + itoa(def.Width) + `,"height":` + itoa(def.Height) + `,"data":` + string(groundJSON) + `}]`
 
 	if count > 0 {
-		_, err = db.Exec(`UPDATE WorldMap SET name=?, gridData=?, npcsData=?, tileLayersData=?, tilesetsData=?, mapType='HYBRID', version=version+1, updatedAt=datetime('now') WHERE id=?`,
+		_, err = db.Exec(`UPDATE WorldMap SET name=?, gridData=?, npcsData=?, tileLayersData=?, tilesetsData=?, mapType='FRACTAL', regionClass='fractal', version=version+1, publishedVersion=version+1, publishedData='{}', updatedAt=datetime('now') WHERE id=?`,
 			def.Name, gridJSON, string(npcs), tileLayers, tilesets, protocol.DemoMapID)
 	} else {
-		_, err = db.Exec(`INSERT INTO WorldMap (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, mapType, version)
-			VALUES (?, 'saints', ?, ?, '{}', ?, '[]', ?, ?, 'HYBRID', 1)`,
+		_, err = db.Exec(`INSERT INTO WorldMap (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, mapType, regionClass, version, publishedVersion, publishedData)
+			VALUES (?, 'saints', ?, ?, '{}', ?, '[]', ?, ?, 'FRACTAL', 'fractal', 1, 1, '{}')`,
 			protocol.DemoMapID, def.Name, gridJSON, string(npcs), tileLayers, tilesets)
 	}
 	if err != nil {
@@ -110,13 +110,6 @@ func loadExisting(db *sql.DB, wm *world.Manager) error {
 				h = voxelWorld.MapHeight
 			}
 		}
-		if w == 0 {
-			w = 64
-		}
-		if h == 0 {
-			h = 64
-		}
-
 		var npcs []world.NPCDef
 		if npcsData.Valid && npcsData.String != "" && npcsData.String != "[]" {
 			_ = json.Unmarshal([]byte(npcsData.String), &npcs)
@@ -125,6 +118,19 @@ func loadExisting(db *sql.DB, wm *world.Manager) error {
 		rClass := "authored"
 		if regionClass.Valid && regionClass.String != "" {
 			rClass = regionClass.String
+		}
+
+		if id == protocol.DemoMapID {
+			continue // Skip loading DEMO_SANDBOX, already seeded by BuildDemoMapDef
+		}
+
+		if rClass != "fractal" {
+			if w == 0 {
+				w = 64
+			}
+			if h == 0 {
+				h = 64
+			}
 		}
 
 		wm.RegisterDef(&world.MapDef{

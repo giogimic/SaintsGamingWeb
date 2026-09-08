@@ -24,11 +24,13 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
   if (!worldMap) return null;
 
   if (!isDraft) {
-    if (!worldMap.publishedData) {
+    if (!worldMap.publishedData && worldMap.mapType !== 'FRACTAL') {
       return null; // Return null if the game requests a map that has never been deployed
     }
     try {
-      worldMap = JSON.parse(worldMap.publishedData);
+      if (worldMap.publishedData) {
+        worldMap = JSON.parse(worldMap.publishedData);
+      }
     } catch (e) {
       console.error(`[MapAPI] Failed to parse publishedData for ${slug}:`, e);
       return null;
@@ -88,7 +90,7 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
       tilesets = DEFAULT_STUDIO_TILESETS;
     }
 
-    const dims = resolveMapDimensions({ grid, tileLayers });
+    const dims = resolveMapDimensions({ grid, tileLayers, mapType: worldMap.mapType } as any);
 
     let freeformLayers: any[] = [];
     try {
@@ -109,8 +111,10 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
 
     if (voxelDoc) {
       voxelDoc = migrateLegacyDocTo32Cubic(voxelDoc);
-      voxelDoc.mapWidth = dims.width;
-      voxelDoc.mapHeight = dims.height;
+      if (worldMap.mapType !== 'FRACTAL') {
+        voxelDoc.mapWidth = dims.width;
+        voxelDoc.mapHeight = dims.height;
+      }
     } else {
       voxelDoc = generateDefaultWorldDoc(
         Math.max(1, Math.ceil(dims.width / CHUNK_SIZE_X)),

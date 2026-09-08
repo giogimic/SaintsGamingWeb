@@ -1,3 +1,7 @@
+## [2.1.794] - 2026-09-08
+### Fixed
+- Map Generation: Fixed a 5-stage cascading failure that caused infinite fractal maps to load with finite dimensions (24x24/30x30/64x64). The Go server now correctly persists `mapType='FRACTAL'`, the Next.js API properly bypasses legacy snapshot checks for infinite maps, and the client dimension resolution now natively supports `0` bounds without falling back to defaults.
+
 ## [2.1.793] - 2026-09-08
 ### Fixed
 - Infinite Maps: Fixed an issue where the map width and height (evaluating to 0 for infinite procedurally generated maps) incorrectly constrained camera boundaries and player movement logic, causing the player to be stuck in place. 

@@ -34,6 +34,8 @@ export function resolveMapDimensions(doc: MapDocVisual | null | undefined): {
   height: number;
 } {
   if (!doc) return { width: 24, height: 24 };
+  if ((doc as any).mapType === 'FRACTAL') return { width: 0, height: 0 };
+  
   // Visual tileLayers are authoritative for Babylon remesh. Declared width/height
   // (or an empty logic grid) can lag after Studio paint expands the map — DEMO
   // shipped as meta 24×24 with a 30×30 Ground layer.
@@ -45,8 +47,8 @@ export function resolveMapDimensions(doc: MapDocVisual | null | undefined): {
   const vw = (doc as any).voxelDoc?.mapWidth;
   const vh = (doc as any).voxelDoc?.mapHeight;
   return {
-    width: lw || gw || vw || doc.width || 24,
-    height: lh || gh || vh || doc.height || 24,
+    width: lw ?? gw ?? vw ?? doc.width ?? 24,
+    height: lh ?? gh ?? vh ?? doc.height ?? 24,
   };
 }
 
