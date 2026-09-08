@@ -869,6 +869,7 @@ model GameQuest {
   updatedAt      DateTime @updatedAt
 }
 
+/// @deprecated Use SourceAsset and UsableAsset instead. This will be removed in Phase 3.
 model GameAsset {
   id           String   @id @default(cuid())
   gameId       String? // null = shared across all games
@@ -1893,6 +1894,7 @@ model CreatureDef {
   abilityDefense        Int      @default(10)
   combatTempo           Int      @default(100)
   catchRate             Float    @default(1)
+  isCapturable          Boolean  @default(true)
   starterLevel          Int      @default(5)
   // Passives: default + potential pool (JSON array)
   // [{ "id", "name", "description", "isDefault": bool }]

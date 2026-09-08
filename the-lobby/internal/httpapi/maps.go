@@ -155,8 +155,9 @@ func (s *Server) getMap(w http.ResponseWriter, r *http.Request, id string) {
 	queryVoxel := `SELECT name, gridData, npcsData, tileLayersData, tilesetsData, voxelData, mapType, version FROM WorldMap WHERE id = ?`
 	queryNoVoxel := `SELECT name, gridData, npcsData, tileLayersData, tilesetsData, mapType, version FROM WorldMap WHERE id = ?`
 	
+	var err error
 	if useDraft {
-		err := s.DB.QueryRow(`SELECT name, gridData, npcsData, tileLayersData, tilesetsData, voxelData, mapType, version FROM WorldMapDraft WHERE id = ?`, id).
+		err = s.DB.QueryRow(`SELECT name, gridData, npcsData, tileLayersData, tilesetsData, voxelData, mapType, version FROM WorldMapDraft WHERE id = ?`, id).
 			Scan(&name, &grid, &npcs, &tiles, &tilesets, &voxel, &mapType, &version)
 		if err == nil {
 			// Found in draft, skip the live map query
@@ -164,7 +165,7 @@ func (s *Server) getMap(w http.ResponseWriter, r *http.Request, id string) {
 		}
 	}
 
-	err := s.DB.QueryRow(queryVoxel, id).
+	err = s.DB.QueryRow(queryVoxel, id).
 		Scan(&name, &grid, &npcs, &tiles, &tilesets, &voxel, &mapType, &version)
 	if err != nil {
 		// Fallback without voxelData column

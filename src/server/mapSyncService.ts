@@ -33,7 +33,7 @@ export class MapSyncService {
           const res = await notifyGoMapSynced({
             id: map.id,
             name: map.name,
-            gridData: JSON.parse(map.gridData || "[]"),
+            voxelData: JSON.parse(map.voxelData || "{}"),
             npcsData: JSON.parse(map.npcsData || "[]"),
             tileLayersData: JSON.parse(map.tileLayersData || "[]"),
             tilesetsData: JSON.parse(map.tilesetsData || "[]"),

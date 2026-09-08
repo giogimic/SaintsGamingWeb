@@ -1485,7 +1485,7 @@ export const useEditorStore = create<EditorState>()(
             state.voxelPlaneMask = [...current, planeY].sort((a, b) => a - b);
           }
         }),
-      voxelBuildUpMode: false,
+      voxelBuildUpMode: true,
       setVoxelBuildUpMode: (enabled: boolean) =>
         set((state) => {
           state.voxelBuildUpMode = enabled;

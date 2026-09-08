@@ -65,7 +65,7 @@ export async function notifyGoContentSynced(payload: {
 export async function notifyGoMapSynced(payload: {
   id: string;
   name?: string;
-  gridData?: unknown;
+  voxelData?: unknown;
   npcsData?: unknown;
   tileLayersData?: unknown;
   tilesetsData?: unknown;

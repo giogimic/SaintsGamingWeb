@@ -1,7 +1,6 @@
 package httpapi
 
 import (
-	"database/sql"
 	"encoding/json"
 	"io"
 	"net/http"

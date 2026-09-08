@@ -440,7 +440,7 @@ export async function POST(req: Request) {
     void notifyGoMapSynced({
       id: mapId,
       name: mapName,
-      gridData: voxelDoc,
+      voxelData: voxelDoc,
       npcsData: [],
       tileLayersData: [],
       tilesetsData: [],

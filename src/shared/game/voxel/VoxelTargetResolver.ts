@@ -160,6 +160,35 @@ export function resolveVoxelTarget(
     }
   }
 
+  // 3. Fallback: Infinite mathematical plane at Y=0 for building in empty space
+  // If plane lock is off, but we clicked empty air, we need a baseline to place the first block.
+  if (!pick?.hit && ray && Math.abs(ray.direction.y) > 1e-6) {
+    const meshPlaneY = 0; // Default intersection plane for empty maps
+    const t = (meshPlaneY - ray.origin.y) / ray.direction.y;
+    if (t >= 0) {
+      const hitX = ray.origin.x + t * ray.direction.x;
+      const hitZ = ray.origin.z + t * ray.direction.z;
+      
+      const targetVoxel = world.worldMeshToVoxel(hitX, meshPlaneY, hitZ);
+      // Floor the Y to 0 for the voxel coordinate, so it sits exactly on the plane
+      targetVoxel.wy = Math.max(0, targetVoxel.wy); 
+      
+      const isInsideWorld =
+        targetVoxel.wx >= 0 &&
+        targetVoxel.wx < totalW &&
+        targetVoxel.wz >= 0 &&
+        targetVoxel.wz < totalZ;
+
+      return {
+        kind: 'plane-hit',
+        hitPoint: { x: hitX, y: meshPlaneY, z: hitZ },
+        voxelCoord: targetVoxel,
+        planeY: targetVoxel.wy,
+        isInsideWorld,
+      };
+    }
+  }
+
   return { kind: 'none' };
 }
 

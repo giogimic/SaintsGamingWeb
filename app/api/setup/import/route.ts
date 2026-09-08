@@ -107,11 +107,11 @@ export async function POST(req: Request) {
           await notifyGoMapSynced({
             id: mapId,
             name: mapName,
-            gridData: voxelDoc,
+            voxelData: voxelDoc,
             npcsData: [],
             tileLayersData: [],
             tilesetsData: [],
-          }).catch(() => {});
+          }).catch(err => console.error('[Map Import] Sync err:', err));
           importedMaps++;
         }
       }

@@ -48,7 +48,11 @@ export class BrushToolHandler implements IToolHandler {
   }
 
   private executePaint(event: ToolPointerEvent, context: ToolExecutionContext, eventType: 'down' | 'drag'): boolean {
-    if (event.button !== 0 && event.rawEvent.buttons !== 1) return false;
+    const isLeftClick = event.button === 0 || event.rawEvent.buttons === 1;
+    const isRightClick = event.button === 2 || event.rawEvent.buttons === 2;
+    if (!isLeftClick && !isRightClick) return false;
+    
+    const isErase = isRightClick;
     const store = useEditorStore.getState();
     const gameStore = useGameStore.getState();
     const liveMap = context.mapData || gameStore.activeMapData;
@@ -100,7 +104,7 @@ export class BrushToolHandler implements IToolHandler {
       const logicOnly = store.activeVoxelLogicOnly;
 
       const targetCoords = resolveConstrainedVoxelCoordinates({
-        centerCoord: getTargetVoxelCoord(store.voxelBuildUpMode ? 'add' : 'replace', event.voxelTarget) || event.voxelTarget.voxelCoord,
+        centerCoord: getTargetVoxelCoord((store.voxelBuildUpMode && !isErase) ? 'add' : 'replace', event.voxelTarget) || event.voxelTarget.voxelCoord,
         brushRadius: store.brushRadius || 1,
         brushShape: store.brushShape || 'square',
         brushAxis: store.activeVoxelBrushAxis || 'xz',
@@ -127,7 +131,9 @@ export class BrushToolHandler implements IToolHandler {
         }
 
         let finalWord = 0;
-        if (logicOnly) {
+        if (isErase) {
+          finalWord = 0; // Air
+        } else if (logicOnly) {
           const currentWord = voxelWorld.getVoxel(wx, wy, wz) || 0;
           if (currentWord === 0) continue; // Can't paint logic on air
           // Clear old logic (bits 31..28) and apply new

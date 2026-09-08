@@ -594,6 +594,19 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               <MenuItem label="Release History" icon={ScrollText} onClick={() => openPanel('versionManager')} />
               <MenuItem label="Release Settings..." icon={Settings} onClick={() => openPanel('versionManager')} />
             </SubMenu>
+            <SubMenu label="System" icon={Settings}>
+              <MenuItem label="Graceful Restart (Deploy)" icon={CloudUpload} onClick={() => {
+                if (confirm('Are you sure you want to gracefully restart the server? Connected players will experience a short interruption.')) {
+                  fetch('/api/internal/shutdown', { method: 'POST' })
+                    .then(r => r.json())
+                    .then(data => {
+                      if (data.error) showToast(data.error);
+                      else showToast(data.message || 'Server restarting...');
+                    })
+                    .catch(() => showToast('Failed to trigger restart'));
+                }
+              }} />
+            </SubMenu>
             <MenuItem divider />
             <MenuItem label="Save & Exit to Lobby" shortcut="Ctrl+Shift+Q" icon={LogOut} onClick={() => { window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT)); setTimeout(() => { window.location.href = '/lobby'; }, 500); }} />
             <MenuItem label="Exit to Lobby" icon={LogOut} onClick={() => { const hasUnsaved = useEditorStore.getState().hasUnsavedChanges || useEditorStore.getState().mapDirty; if (hasUnsaved) { if (confirm('You have unsaved changes. Exit without saving?')) { window.location.href = '/lobby'; } } else { window.location.href = '/lobby'; } }} />

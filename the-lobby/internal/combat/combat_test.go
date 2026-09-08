@@ -7,8 +7,8 @@ import (
 )
 
 func TestCombatRound(t *testing.T) {
-	m := combat.NewManager()
-	s := m.Start("p1", "c1", "DEMO_ch1", 100, 20)
+	m := combat.NewManager(nil)
+	s := m.Start("p1", "warrior", "c1", "demomon", "DEMO_ch1", 100, 20, 10, 10)
 	s = m.ApplyPlayerHit("p1", "strike")
 	if s.CreatureHP >= 20 {
 		t.Fatalf("expected creature hp reduced, got %d", s.CreatureHP)
@@ -22,8 +22,8 @@ func TestCombatRound(t *testing.T) {
 }
 
 func TestFleeEnd(t *testing.T) {
-	m := combat.NewManager()
-	m.Start("p1", "c1", "DEMO_ch1", 100, 20)
+	m := combat.NewManager(nil)
+	m.Start("p1", "warrior", "c1", "demomon", "DEMO_ch1", 100, 20, 10, 10)
 	m.End("p1")
 	if m.GetByPlayer("p1") != nil {
 		t.Fatal("expected cleared")
@@ -31,8 +31,8 @@ func TestFleeEnd(t *testing.T) {
 }
 
 func TestTBSubmit(t *testing.T) {
-	m := combat.NewManager()
-	s := m.StartTB("p1", "c1", "DEMO_ch1", 100, 30)
+	m := combat.NewManager(nil)
+	s := m.StartTB("p1", "warrior", "c1", "demomon", "DEMO_ch1", 100, 30, 10, 10)
 	s = m.SubmitTB("p1", "attack", "strike")
 	if s.CreatureHP >= 30 {
 		t.Fatalf("expected damage %+v", s)
@@ -45,7 +45,7 @@ func TestTBSubmit(t *testing.T) {
 }
 
 func TestTBFormulaDamage(t *testing.T) {
-	m := combat.NewManager()
+	m := combat.NewManager(nil)
 	ps := combat.Stats{PhysicalPower: 40, PhysicalDefense: 10, AbilityPower: 10, AbilityDefense: 10, CombatTempo: 120, Level: 10}
 	cs := combat.Stats{PhysicalPower: 5, PhysicalDefense: 5, AbilityPower: 5, AbilityDefense: 5, CombatTempo: 80, Level: 2}
 	s := m.StartTBWithStats("p1", "c1", "DEMO_ch1", 100, 200, ps, cs)
