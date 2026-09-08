@@ -1,4 +1,4 @@
-## [2.1.783] - 2026-09-08
+## [2.1.784] - 2026-09-08
 ### Fixed
 - WebGL Engine: Fixed a critical React Error #300 causing crashes during Studio navigation by preventing the BabylonEngine context from being redundantly destroyed and recreated. Map switching now seamlessly hot-swaps data without tearing down the WebGL canvas.
 ### Added
