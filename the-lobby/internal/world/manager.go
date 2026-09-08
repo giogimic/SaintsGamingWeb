@@ -1,6 +1,7 @@
 package world
 
 import (
+	"container/heap"
 	"encoding/json"
 	"sync"
 
@@ -58,6 +59,8 @@ type Manager struct {
 	mu        sync.RWMutex
 	defs      map[string]*MapDef
 	instances map[string]*Instance
+
+	voxelQueue  VoxelQueue
 	maxPerShard int
 }
 
@@ -68,6 +71,7 @@ func NewManager(maxPerShard int) *Manager {
 	return &Manager{
 		defs:        make(map[string]*MapDef),
 		instances:   make(map[string]*Instance),
+		voxelQueue:  make(VoxelQueue, 0),
 		maxPerShard: maxPerShard,
 	}
 }
@@ -316,4 +320,33 @@ func ParseGridJSON(s string) ([][]int, error) {
 		return nil, err
 	}
 	return grid, nil
+}
+
+// ScheduleVoxel adds a voxel to the dynamic priority queue to be executed at a specific time.
+func (m *Manager) ScheduleVoxel(instanceID string, x, y, z int, executeAt int64) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	heap.Push(&m.voxelQueue, &ScheduledVoxel{
+		InstanceID: instanceID,
+		X:          x,
+		Y:          y,
+		Z:          z,
+		ExecuteAt:  executeAt,
+	})
+}
+
+// PopScheduledVoxels returns all voxels scheduled up to 'now' and removes them from the queue.
+func (m *Manager) PopScheduledVoxels(now int64) []*ScheduledVoxel {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	
+	var ready []*ScheduledVoxel
+	for m.voxelQueue.Len() > 0 {
+		if m.voxelQueue[0].ExecuteAt > now {
+			break
+		}
+		item := heap.Pop(&m.voxelQueue).(*ScheduledVoxel)
+		ready = append(ready, item)
+	}
+	return ready
 }

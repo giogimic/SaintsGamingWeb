@@ -92,10 +92,21 @@ export class SmoothToolHandler implements IToolHandler {
       }
     }
 
+    const socket = useGameStore.getState().socket;
     // Apply the melt/fill
     for (const r of toRemove) {
       txBuilder.record(voxelWorld, r.x, r.y, r.z, { low: 0, high: 0 } as any);
       voxelWorld.setVoxel(r.x, r.y, r.z, 0, 0);
+      if (socket) {
+        socket.emit('voxel_edit', {
+          mapId: liveMap.id,
+          x: r.x,
+          y: r.y,
+          z: r.z,
+          wordLow: 0,
+          wordHigh: 0,
+        });
+      }
     }
     for (const a of toAdd) {
       // Create a default full cube
@@ -109,6 +120,16 @@ export class SmoothToolHandler implements IToolHandler {
       );
       txBuilder.record(voxelWorld, a.x, a.y, a.z, packed as any);
       voxelWorld.setVoxel(a.x, a.y, a.z, packed.low, packed.high);
+      if (socket) {
+        socket.emit('voxel_edit', {
+          mapId: liveMap.id,
+          x: a.x,
+          y: a.y,
+          z: a.z,
+          wordLow: packed.low,
+          wordHigh: packed.high,
+        });
+      }
     }
 
     const tx = txBuilder.build();

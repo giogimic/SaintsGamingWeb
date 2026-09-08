@@ -288,6 +288,7 @@ export function ProceduralAuthoringPanel() {
       
       const tx = txBuilder.build();
       if (tx && tx.mutations.length > 0) {
+        const socket = useGameStore.getState().socket;
         for (const mut of tx.mutations) {
           voxelWorld.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel.low, mut.newVoxel.high);
           changedVoxels.push({
@@ -297,6 +298,16 @@ export function ProceduralAuthoringPanel() {
             before: mut.previousVoxel as any,
             after: mut.newVoxel as any,
           });
+          if (socket) {
+            socket.emit('voxel_edit', {
+              mapId: activeMapData.id,
+              x: mut.worldX,
+              y: mut.worldY,
+              z: mut.worldZ,
+              wordLow: mut.newVoxel.low,
+              wordHigh: mut.newVoxel.high,
+            });
+          }
         }
         
         // Notify Engine to re-mesh chunks

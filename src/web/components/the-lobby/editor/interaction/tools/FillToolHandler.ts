@@ -123,6 +123,7 @@ export class FillToolHandler implements IToolHandler {
         const tx = txBuilder.build();
         if (tx && tx.mutations.length > 0) {
           const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: any; after: any }> = [];
+          const socket = gameStore.socket;
           for (const mut of tx.mutations) {
             voxelWorld.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel.low, mut.newVoxel.high);
             changedVoxels.push({
@@ -132,6 +133,16 @@ export class FillToolHandler implements IToolHandler {
               before: mut.previousVoxel as any,
               after: mut.newVoxel as any,
             });
+            if (socket) {
+              socket.emit('voxel_edit', {
+                mapId: liveMap.id,
+                x: mut.worldX,
+                y: mut.worldY,
+                z: mut.worldZ,
+                wordLow: mut.newVoxel.low,
+                wordHigh: mut.newVoxel.high,
+              });
+            }
           }
           context.engine.voxel.meshDirtyVoxelChunks?.();
           const doc = voxelWorld.serializeToDoc();

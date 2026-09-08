@@ -61,9 +61,9 @@ func getenvBool(key string, fallback bool) bool {
 func Load() Config {
 	port := getenvInt("GO_MMO_PORT", getenvInt("PORT", 3001))
 	host := getenv("GO_MMO_HOST", getenv("HOSTNAME", "0.0.0.0"))
-	aoiSize := getenvInt("GO_MMO_AOI_ZONE_SIZE", getenvInt("MMO_AOI_ZONE_SIZE", 16))
+	aoiSize := getenvInt("GO_MMO_AOI_ZONE_SIZE", getenvInt("MMO_AOI_ZONE_SIZE", 64))
 	if aoiSize <= 0 {
-		aoiSize = 16
+		aoiSize = 64
 	}
 
 	return Config{

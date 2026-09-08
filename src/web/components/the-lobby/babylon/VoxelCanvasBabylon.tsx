@@ -300,7 +300,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       setPlayerPosition(currentPos, result.direction, false);
       const seq = store.incrementMoveSeq();
       store.addPendingMove({ seq, direction: result.direction, predictedPos: currentPos });
-      emitSocketEvent?.('input', { type: "MOVE", direction: result.direction, sequence: seq, timestamp: Date.now() });
+      emitSocketEvent?.('input', { type: "MOVE_3D", direction: result.direction, sequence: seq, timestamp: Date.now(), x: currentPos.x, y: currentPos.y, z: 17, vx: 0, vy: 0, vz: 0 });
       emitSocketEvent?.('player_move', { x: currentPos.x, y: currentPos.y, direction: result.direction, moving: false, seq });
       return;
     }
@@ -446,7 +446,13 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
       const seq = store.incrementMoveSeq();
       store.addPendingMove({ seq, direction: dir, predictedPos: { x: targetX, y: targetY } });
-      emitSocketEvent?.('input', { type: "MOVE", direction: dir, sequence: seq, timestamp: Date.now() });
+      let vx = 0; let vy = 0;
+      if (dir === 'up') vy = -1;
+      else if (dir === 'down') vy = 1;
+      else if (dir === 'left') vx = -1;
+      else if (dir === 'right') vx = 1;
+
+      emitSocketEvent?.('input', { type: "MOVE_3D", direction: dir, sequence: seq, timestamp: Date.now(), x: targetX, y: targetY, z: 17, vx, vy, vz: 0 });
       emitSocketEvent?.('player_move', { x: targetX, y: targetY, direction: dir, moving: true, seq });
 
       // Handle Step Actions (suppressed during Studio create tools — bible 17)
@@ -2107,6 +2113,17 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       if (!detail?.voxels?.length) return;
       for (const v of detail.voxels) {
         engine.voxel.voxelWorld?.setVoxel(v.wx, v.wy, v.wz, v.word.low, v.word.high);
+        const socket = useGameStore.getState().socket;
+        if (socket) {
+          socket.emit('voxel_edit', {
+            mapId: map.id,
+            x: v.wx,
+            y: v.wy,
+            z: v.wz,
+            wordLow: v.word.low,
+            wordHigh: v.word.high,
+          });
+        }
       }
       engine.voxel.meshDirtyVoxelChunks?.();
       const doc = engine.voxel.voxelWorld?.serializeToDoc();

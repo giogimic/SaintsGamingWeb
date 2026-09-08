@@ -26,7 +26,8 @@ type State struct {
 	SpriteID    string
 	MapID       string // live instance id
 	BaseMapID   string
-	X, Y        float64
+	X, Y, Z      float64
+	VX, VY, VZ   float64
 	ZoneX, ZoneY int
 	Direction   string
 	IsMoving    bool
@@ -231,6 +232,10 @@ func (m *Manager) SnapshotPeers(instanceID, excludeAccount string) map[string]pr
 			EntityID:  p.EntityID,
 			X:         p.X,
 			Y:         p.Y,
+			Z:         p.Z,
+			VX:        p.VX,
+			VY:        p.VY,
+			VZ:        p.VZ,
 			Direction: p.Direction,
 			Name:      p.Name,
 			SpriteID:  p.SpriteID,
@@ -319,8 +324,32 @@ func (m *Manager) ApplyMove(accountID string, nx, ny float64, dir string, seq in
 	p.LastMoveAt = time.Now()
 	p.LastSeq = seq
 	p.Dirty = true
-	p.ZoneX, p.ZoneY = ZoneOf(nx, ny, m.aoiZoneSize)
-	m.setOccupiedLocked(p.MapID, ix, iy, accountID)
+	p.ZoneX, p.ZoneY = ZoneOf(p.X, p.Y, m.aoiZoneSize)
+	p.LastSeq = seq
+	p.Dirty = true
+	return p, true
+}
+
+// ApplyMove3D updates the continuous 3D position and velocity without discrete 2D grid occupancy checks.
+func (m *Manager) ApplyMove3D(accountID string, nx, ny, nz, vx, vy, vz float64, seq int64) (*State, bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	p := m.byAccount[accountID]
+	if p == nil {
+		return nil, false
+	}
+	
+	// Optional: clear 2D legacy occupancy so they don't block 2D systems
+	m.clearOccupiedLocked(p.MapID, int(p.X), int(p.Y), accountID)
+	
+	p.X, p.Y, p.Z = nx, ny, nz
+	p.VX, p.VY, p.VZ = vx, vy, vz
+	
+	p.IsMoving = (vx != 0 || vy != 0 || vz != 0)
+	p.LastMoveAt = time.Now()
+	p.ZoneX, p.ZoneY = ZoneOf(p.X, p.Z, m.aoiZoneSize) // Using Z as the depth/north-south axis
+	p.LastSeq = seq
+	p.Dirty = true
 	return p, true
 }
 

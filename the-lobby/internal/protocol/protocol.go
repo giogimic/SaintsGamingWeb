@@ -34,6 +34,7 @@ const (
 	EvCombatCast        = "combat_cast"
 	EvEncounterCheck    = "encounter_check"
 	EvBattleSubmit      = "battle_submit_action"
+	EvVoxelEdit         = "voxel_edit"
 	
 	EvAdminSaveMap      = "admin_save_map"
 	EvAdminReloadMap    = "admin_reload_map"
@@ -132,14 +133,30 @@ type JoinMapRequest struct {
 
 // PlayerInput matches PlayerInput on the TS wire.
 type PlayerInput struct {
-	EntityID  string  `json:"entityId"`
-	Sequence  int64   `json:"sequence"`
-	Type      string  `json:"type"` // MOVE | ATTACK | USE_ITEM | FLEE
-	Direction *string `json:"direction"`
-	TargetID  string  `json:"targetId"`
-	AbilityID string  `json:"abilityId"`
-	ItemID    string  `json:"itemId"`
-	Timestamp int64   `json:"timestamp"`
+	EntityID  string   `json:"entityId"`
+	Sequence  int64    `json:"sequence"`
+	Type      string   `json:"type"` // MOVE | MOVE_3D | ATTACK | USE_ITEM | FLEE
+	Direction *string  `json:"direction,omitempty"`
+	X         *float64 `json:"x,omitempty"`
+	Y         *float64 `json:"y,omitempty"`
+	Z         *float64 `json:"z,omitempty"`
+	VX        *float64 `json:"vx,omitempty"`
+	VY        *float64 `json:"vy,omitempty"`
+	VZ        *float64 `json:"vz,omitempty"`
+	TargetID  string   `json:"targetId,omitempty"`
+	AbilityID string   `json:"abilityId,omitempty"`
+	ItemID    string   `json:"itemId,omitempty"`
+	Timestamp int64    `json:"timestamp"`
+}
+
+// VoxelEditPayload is emitted by the client to modify a voxel.
+type VoxelEditPayload struct {
+	MapID    string `json:"mapId"`
+	X        int    `json:"x"`
+	Y        int    `json:"y"`
+	Z        int    `json:"z"`
+	WordLow  uint32 `json:"wordLow"`
+	WordHigh uint32 `json:"wordHigh"`
 }
 
 // PeerSnapshot is one entry in map_players / player_joined.
@@ -149,6 +166,10 @@ type PeerSnapshot struct {
 	AccountID string  `json:"accountId,omitempty"`
 	X         float64 `json:"x"`
 	Y         float64 `json:"y"`
+	Z         float64 `json:"z"`
+	VX        float64 `json:"vx"`
+	VY        float64 `json:"vy"`
+	VZ        float64 `json:"vz"`
 	Direction string  `json:"direction"`
 	Name      string  `json:"name"`
 	SpriteID  string  `json:"spriteId"`

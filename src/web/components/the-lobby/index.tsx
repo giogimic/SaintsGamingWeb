@@ -1382,6 +1382,24 @@ export default function TheLobby({
       window.dispatchEvent(new CustomEvent('lobby_tile_changed', { detail: { ...data, tileId, mapId: baseId } }));
     });
 
+    socket.on('voxel_edit', (data) => {
+      if (!data || typeof data.x !== 'number') return;
+      const store = useGameStore.getState();
+      const activeMap = store.activeMapData;
+      if (!activeMap || !activeMap.voxelDoc) return;
+      const mapId = data.mapId || store.currentMapId;
+      if (toBaseMapId(String(mapId)) !== toBaseMapId(String(activeMap.id))) return;
+      
+      const world = (activeMap as any).__voxelWorldInstance;
+      if (world) {
+        world.setVoxel(data.x, data.y, data.z, data.wordLow, data.wordHigh);
+        const activeEng = (window as any).__babylonEngine;
+        if (activeEng && typeof activeEng.meshDirtyVoxelChunks === 'function') {
+          activeEng.meshDirtyVoxelChunks();
+        }
+      }
+    });
+
     socket.on('creature_moved', (raw) => {
       let data = raw as any;
       const bin = normalizeBinaryPayload(raw);

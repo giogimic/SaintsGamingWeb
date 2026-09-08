@@ -346,6 +346,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
     const activeMat = store.activeBrushTileId || VOXEL_MAT_GRASS;
     const activeWord = packVoxel(activeMat, VoxelShape.FULL_CUBE, 0, VoxelPhysics.SOLID_OBSTACLE);
 
+    const socket = useGameStore.getState().socket;
     let filledCount = 0;
     for (let x = minX; x <= maxX; x++) {
       for (let z = minZ; z <= maxZ; z++) {
@@ -353,6 +354,16 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
           const currentWord = doc.getVoxel(x, y, z);
           if (currentWord.low !== VOXEL_WORD_AIR_LOW || currentWord.high !== VOXEL_WORD_AIR_HIGH) {
             doc.setVoxel(x, y, z, activeWord.low, activeWord.high);
+            if (socket) {
+              socket.emit('voxel_edit', {
+                mapId: activeMapData.id,
+                x,
+                y,
+                z,
+                wordLow: activeWord.low,
+                wordHigh: activeWord.high,
+              });
+            }
             filledCount++;
           }
         }
@@ -379,6 +390,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
     const minZ = Math.min(r0, r1);
     const maxZ = Math.max(r0, r1);
 
+    const socket = useGameStore.getState().socket;
     let cleared = 0;
     for (let x = minX + 1; x < maxX; x++) {
       for (let z = minZ + 1; z < maxZ; z++) {
@@ -386,6 +398,16 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
           const currentWord = doc.getVoxel(x, y, z);
           if (currentWord.low !== VOXEL_WORD_AIR_LOW || currentWord.high !== VOXEL_WORD_AIR_HIGH) {
             doc.setVoxel(x, y, z, VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH);
+            if (socket) {
+              socket.emit('voxel_edit', {
+                mapId: activeMapData.id,
+                x,
+                y,
+                z,
+                wordLow: VOXEL_WORD_AIR_LOW,
+                wordHigh: VOXEL_WORD_AIR_HIGH,
+              });
+            }
             cleared++;
           }
         }

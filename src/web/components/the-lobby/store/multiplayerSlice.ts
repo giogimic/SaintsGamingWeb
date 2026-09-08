@@ -7,7 +7,8 @@ import { INITIAL_SKILLS } from './types';
 
 type GameSlice<T> = StateCreator<GameState, [['zustand/immer', never]], [], T>;
 
-export const createMultiplayerSlice: GameSlice<Pick<GameState, "otherPlayers" | "localChat" | "setPlayerChat" | "setOtherPlayers" | "updateOtherPlayer" | "removeOtherPlayer" | "connectionStatus" | "setConnectionStatus" | "latencyMs" | "setLatencyMs" | "setEmitSocketEvent" | "inviteToParty" | "acceptPartyInvite" | "leaveParty" | "updatePartyMemberPosition" | "setParty" | "addPartyMember" | "removePartyMember" | "clearParty">> = (set, get) => ({
+export const createMultiplayerSlice: GameSlice<Pick<GameState, "socket" | "otherPlayers" | "localChat" | "setPlayerChat" | "setOtherPlayers" | "updateOtherPlayer" | "removeOtherPlayer" | "connectionStatus" | "setConnectionStatus" | "latencyMs" | "setLatencyMs" | "setEmitSocketEvent" | "inviteToParty" | "acceptPartyInvite" | "leaveParty" | "updatePartyMemberPosition" | "setParty" | "addPartyMember" | "removePartyMember" | "clearParty">> = (set, get) => ({
+socket: null,
 otherPlayers: {},
 
 localChat: null,

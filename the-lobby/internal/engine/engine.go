@@ -109,11 +109,26 @@ func (e *Engine) simTick() {
 	if e.creatures != nil {
 		e.creatures.Tick()
 	}
+
+	// Process Active Voxel Queue
+	now := time.Now().UnixMilli()
+	scheduled := e.world.PopScheduledVoxels(now)
+	if len(scheduled) > 0 {
+		for _, v := range scheduled {
+			// Example placeholder for dynamic voxel logic (e.g. crop growth, flowing water)
+			// A full physics check would run here, and if the voxel mutated, broadcast to AOI.
+			_ = v // prevent unused variable warning
+		}
+	}
 }
 
 func (e *Engine) processInput(accountID string, in protocol.PlayerInput) {
 	p := e.players.GetByAccount(accountID)
 	if p == nil {
+		return
+	}
+	if in.Type == "MOVE_3D" {
+		e.processMove3DInput(accountID, in)
 		return
 	}
 	if in.Type != "MOVE" || in.Direction == nil {
@@ -158,6 +173,59 @@ func (e *Engine) processInput(accountID string, in protocol.PlayerInput) {
 	})
 }
 
+func (e *Engine) processMove3DInput(accountID string, in protocol.PlayerInput) {
+	p := e.players.GetByAccount(accountID)
+	if p == nil {
+		return
+	}
+	if in.X == nil || in.Y == nil || in.Z == nil || in.VX == nil || in.VY == nil || in.VZ == nil {
+		return
+	}
+
+	clientX, clientY, clientZ := *in.X, *in.Y, *in.Z
+	clientVX, clientVY, clientVZ := *in.VX, *in.VY, *in.VZ
+
+	now := time.Now()
+	dt := now.Sub(p.LastMoveAt).Seconds()
+	if dt > 1.0 {
+		dt = 1.0 // cap dt to prevent massive jumps
+	}
+
+	startPos := world.Vector3D{X: p.X, Y: p.Y, Z: p.Z}
+	velocity := world.Vector3D{X: clientVX, Y: clientVY, Z: clientVZ}
+
+	// standard human dimensions
+	width, height, depth := 0.6, 1.8, 0.6
+	stepHeight := 0.5
+
+	mapDef, ok := e.world.GetDef(p.BaseMapID)
+	if !ok || mapDef.Voxel == nil {
+		// Fallback to basic movement if no voxel world
+		e.players.ApplyMove3D(accountID, clientX, clientY, clientZ, clientVX, clientVY, clientVZ, in.Sequence)
+		return
+	}
+
+	result := mapDef.Voxel.ResolveSweptAABB(startPos, velocity, dt, width, height, depth, stepHeight)
+
+	// Calculate divergence
+	distSq := (clientX-result.Position.X)*(clientX-result.Position.X) +
+		(clientY-result.Position.Y)*(clientY-result.Position.Y) +
+		(clientZ-result.Position.Z)*(clientZ-result.Position.Z)
+
+	if distSq > 4.0 {
+		// Egregious divergence, rubber-band to server position
+		updated, ok := e.players.ApplyMove3D(accountID, result.Position.X, result.Position.Y, result.Position.Z, clientVX, clientVY, clientVZ, in.Sequence)
+		if ok && updated != nil {
+			e.emit.EmitToSocket(p.SocketID, protocol.EvPositionCorrection, map[string]any{
+				"seq": in.Sequence, "x": result.Position.X, "y": result.Position.Y, "z": result.Position.Z, "reason": "desync",
+			})
+		}
+	} else {
+		// Trust client for UX
+		e.players.ApplyMove3D(accountID, clientX, clientY, clientZ, clientVX, clientVY, clientVZ, in.Sequence)
+	}
+}
+
 func (e *Engine) netTick() {
 	dirty := e.players.DrainDirty()
 	for _, p := range dirty {
@@ -166,18 +234,23 @@ func (e *Engine) netTick() {
 			"entityId":  p.EntityID,
 			"x":         p.X,
 			"y":         p.Y,
+			"z":         p.Z,
+			"vx":        p.VX,
+			"vy":        p.VY,
+			"vz":        p.VZ,
 			"direction": p.Direction,
 			"isMoving":  p.IsMoving,
 			"name":      p.Name,
 			"spriteId":  p.SpriteID,
 		}
-		// Broadcast strictly to spatial AOI 3x3 neighbor rooms to eliminate redundant global packet overhead
+		// Broadcast strictly to spatial AOI 5x5 neighbor rooms (2-sector radius) to eliminate redundant global packet overhead
 		e.emit.EmitToRoom(aoiBroadcastKey(p.MapID, p.ZoneX, p.ZoneY), protocol.EvPlayerMoved, payload)
 	}
 
 	if e.creatures != nil {
 		for _, c := range e.creatures.DrainDirty() {
-			e.emit.EmitToRoom(c.MapID, protocol.EvCreatureMoved, c)
+			zx, zy := player.ZoneOf(c.X, c.Y, e.cfg.AOIZoneSize)
+			e.emit.EmitToRoom(aoiBroadcastKey(c.MapID, zx, zy), protocol.EvCreatureMoved, c)
 		}
 	}
 }

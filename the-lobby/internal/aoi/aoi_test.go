@@ -8,7 +8,7 @@ import (
 
 func TestNeighborRooms(t *testing.T) {
 	rooms := aoi.NeighborRooms("DEMO_ch1", 2, 3)
-	if len(rooms) != 9 {
+	if len(rooms) != 25 {
 		t.Fatalf("len=%d", len(rooms))
 	}
 	want := aoi.RoomName("DEMO_ch1", 2, 3)

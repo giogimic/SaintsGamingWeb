@@ -2438,11 +2438,22 @@ export const useEditorStore = create<EditorState>()(
           const clearColumn = (r: number, c: number) => {
             const wx = c;
             const wz = mapHeight - 1 - r;
+            const socket = useGameStore.getState().socket;
             for (let wy = 0; wy < world.totalHeightBlocks; wy++) {
               const before = world.getVoxel(wx, wy, wz);
               if (before.low !== VOXEL_WORD_AIR_LOW || before.high !== VOXEL_WORD_AIR_HIGH) {
                 world.setVoxel(wx, wy, wz, VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH);
                 changedVoxels.push({ wx, wy, wz, before: before as any, after: { low: VOXEL_WORD_AIR_LOW, high: VOXEL_WORD_AIR_HIGH } as any });
+                if (socket) {
+                  socket.emit('voxel_edit', {
+                    mapId: map.id,
+                    x: wx,
+                    y: wy,
+                    z: wz,
+                    wordLow: VOXEL_WORD_AIR_LOW,
+                    wordHigh: VOXEL_WORD_AIR_HIGH,
+                  });
+                }
               }
             }
           };
@@ -2594,10 +2605,21 @@ export const useEditorStore = create<EditorState>()(
             const wx = c;
             const wz = mapHeight - 1 - r;
             const wy = get().hoveredVoxel?.wy ?? 16;
+            const socket = useGameStore.getState().socket;
             const before = world.getVoxel(wx, wy, wz);
             if (before.low !== voxelWord.low || before.high !== voxelWord.high) {
               world.setVoxel(wx, wy, wz, voxelWord.low, voxelWord.high);
               changedVoxels.push({ wx, wy, wz, before: before as any, after: voxelWord as any });
+              if (socket) {
+                socket.emit('voxel_edit', {
+                  mapId: map.id,
+                  x: wx,
+                  y: wy,
+                  z: wz,
+                  wordLow: voxelWord.low,
+                  wordHigh: voxelWord.high,
+                });
+              }
             }
           };
 
@@ -3290,6 +3312,7 @@ export const useEditorStore = create<EditorState>()(
           const tx = txBuilder.build();
           if (tx && tx.mutations.length > 0) {
             const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: any; after: any }> = [];
+            const socket = useGameStore.getState().socket;
             for (const mut of tx.mutations) {
               world.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel.low, mut.newVoxel.high);
               changedVoxels.push({
@@ -3299,6 +3322,16 @@ export const useEditorStore = create<EditorState>()(
                 before: mut.previousVoxel as any,
                 after: mut.newVoxel as any,
               });
+              if (socket) {
+                socket.emit('voxel_edit', {
+                  mapId: map.id,
+                  x: mut.worldX,
+                  y: mut.worldY,
+                  z: mut.worldZ,
+                  wordLow: mut.newVoxel.low,
+                  wordHigh: mut.newVoxel.high,
+                });
+              }
             }
             (map as any).voxelDoc = world.serializeToDoc();
             get().pushVoxelOp(changedVoxels);

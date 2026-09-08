@@ -300,6 +300,7 @@ export interface PendingMove {
 export type WorldSessionState = 'not_joined' | 'joining' | 'joined' | 'transitioning' | 'disconnected';
 
 export interface GameState {
+  socket: any | null;
   worldSessionState: WorldSessionState;
   worldJoinSeq: number;
   setWorldSessionState: (state: WorldSessionState) => void;

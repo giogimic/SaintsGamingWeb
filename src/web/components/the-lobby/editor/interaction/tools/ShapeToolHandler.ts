@@ -157,6 +157,17 @@ export class ShapeToolHandler implements IToolHandler {
             if (currentWord.low !== finalWord.low || currentWord.high !== finalWord.high) {
               txBuilder.record(voxelWorld, x, y, z, finalWord as any);
               voxelWorld.setVoxel(x, y, z, finalWord.low, finalWord.high);
+              const socket = useGameStore.getState().socket;
+              if (socket) {
+                socket.emit('voxel_edit', {
+                  mapId: liveMap.id,
+                  x,
+                  y,
+                  z,
+                  wordLow: finalWord.low,
+                  wordHigh: finalWord.high,
+                });
+              }
             }
           }
         }

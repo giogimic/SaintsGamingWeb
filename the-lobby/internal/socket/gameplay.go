@@ -101,6 +101,9 @@ func (h *Hub) registerGameplay(client *socket.Socket, accountID, sid string) {
 		}
 		h.handleAttack(accountID, targetID, abilityID)
 	})
+	client.On(protocol.EvVoxelEdit, func(datas ...any) {
+		h.handleVoxelEdit(accountID, datas)
+	})
 }
 
 func (h *Hub) handleBattleSubmit(accountID string, datas []any) {
@@ -607,4 +610,26 @@ func (h *Hub) handleDialogueSelectFull(accountID string, datas []any) {
 			"id": res.Node.ID, "speaker": res.Node.Speaker, "text": res.Node.Text, "choices": res.Node.Choices,
 		})
 	}
+}
+
+func (h *Hub) handleVoxelEdit(accountID string, datas []any) {
+	if len(datas) == 0 {
+		return
+	}
+	b, _ := json.Marshal(datas[0])
+	var payload protocol.VoxelEditPayload
+	if json.Unmarshal(b, &payload) != nil {
+		return
+	}
+	
+	base := world.ToBaseMapID(payload.MapID)
+	// Apply to world memory
+	word64 := (uint64(payload.WordHigh) << 32) | uint64(payload.WordLow)
+	mapDef, ok := h.eng.World().GetDef(base)
+	if ok && mapDef.Voxel != nil {
+		mapDef.Voxel.SetVoxel(payload.X, payload.Y, payload.Z, word64)
+	}
+
+	// Broadcast to room so other clients see the edit
+	h.EmitToRoom(payload.MapID, protocol.EvVoxelEdit, payload)
 }
