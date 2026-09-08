@@ -67,8 +67,7 @@ export type StudioDockId =
   | 'procedural'
   | 'hierarchy'
   | 'layers'
-  | 'selection'
-  | 'transform'
+  | 'voxelTerrainBrush'
   | 'tileset'
   | 'asset_suite'
   | 'hero_suite'
@@ -97,7 +96,7 @@ export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> =
 export const STUDIO_MODE_DEFAULTS: Record<StudioMode, StudioDockId[]> = {
   develop: ['studioHome'],
   tile: ['primaryTileViewport', 'build', 'layers', 'hierarchy', 'logic', 'entityLibrary'],
-  voxel: ['primaryVoxelViewport', 'build', 'transform', 'selection', 'hierarchy', 'entityLibrary'],
+  voxel: ['primaryVoxelViewport', 'build', 'voxelTerrainBrush', 'hierarchy', 'entityLibrary'],
   logic: ['logic'],
   atlas: ['atlas'],
   npc: ['entityLibrary', 'npc', 'properties', 'assets', 'spawner'],
@@ -342,15 +341,11 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
     label: 'Layers',
     blurb: 'Layer manager: scope control, visual/logic layers, visibility, and locking.',
   },
+  voxelTerrainBrush: {
+    label: 'Voxel Tools',
+    blurb: 'Voxel brush, selection, and transform tools.',
+  },
 
-  selection: {
-    label: 'Selection',
-    blurb: '3D volumetric selection tools, booleans, grow/shrink, and selection presets.',
-  },
-  transform: {
-    label: 'Transform',
-    blurb: 'Numeric precision coordinates, rotation, scaling, pivot alignment, and mirroring.',
-  },
   procedural: {
     label: 'Procedural Authoring',
     blurb: 'Procedural world rules, biomes, seeds, fractal terrain strata, and generation.',
@@ -411,7 +406,7 @@ export const STUDIO_WORKSPACE_PRESETS: WorkspacePresetDef[] = [
     id: 'voxel-sculpting',
     name: 'Voxel Sculpting',
     blurb: 'Direct block carving and sculpt brushes with Material Library and Inspector.',
-    openDocks: ['properties', 'selection'],
+    openDocks: ['properties', 'voxelTerrainBrush'],
   },
   {
     id: 'terrain-shaping',
@@ -447,7 +442,7 @@ export const STUDIO_WORKSPACE_PRESETS: WorkspacePresetDef[] = [
     id: 'city-district-editing',
     name: 'City / District Editing',
     blurb: 'Precision layout: Selection, Transform, Prefab/Blueprint Library, and Outliner.',
-    openDocks: ['selection', 'transform', 'layers', 'properties'],
+    openDocks: ['voxelTerrainBrush', 'layers', 'properties'],
   },
 ];
 

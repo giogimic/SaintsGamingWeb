@@ -775,7 +775,22 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
       {/* Swatch Grid */}
       <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
         {activeTab === 'SEAMLESS' ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+          <div className="flex flex-col gap-4">
+            {['Solid Terrain', 'Fluids (Physics-Enabled)'].map(group => {
+              const items = filteredSeamless.filter(mat => {
+                const isFluid = mat.material === 'WATER' || mat.material === 'LAVA';
+                return group === 'Fluids (Physics-Enabled)' ? isFluid : !isFluid;
+              });
+
+              if (items.length === 0) return null;
+
+              return (
+                <div key={group} className="flex flex-col gap-2">
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider pl-1 flex items-center gap-1.5">
+                    {group === 'Fluids (Physics-Enabled)' && <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />}
+                    {group}
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
             {filteredSeamless.map((mat) => {
               const isSelected = activeStampAsset?.assetId === mat.id;
               return (
@@ -807,6 +822,10 @@ export const TerrainBrushPalette: React.FC<TerrainBrushPaletteProps> = ({ onOpen
 
                   <div className="text-center font-bold text-foreground text-[11px] truncate w-full">
                     {mat.name}
+                  </div>
+                </div>
+              );
+            })}
                   </div>
                 </div>
               );

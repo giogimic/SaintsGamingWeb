@@ -1,3 +1,14 @@
+## [2.1.780] - 2026-09-07
+### Added
+- Procedural Generation: Extended `ProceduralAuthoringPanel` to fully support voxel generation. Clicking "Bake to Active Map" while in Voxel Mode now correctly reads `seed` and `seaLevel` to synthesize 3D blocks (Water, Snow, Base Terrain) within the voxel chunk system, filling an important gap in Fractal map authoring.
+- UI Consolidation: Grouped terrain materials into "Solid Terrain" and "Fluids (Physics-Enabled)" inside `TerrainBrushPalette` so creators can clearly distinguish blocks that have `SWIMMABLE_FLUID` physics applied vs standard geometry.
+
+## [2.1.779] - 2026-09-07
+### Changed
+- UI Consolidation: Created `VoxelTerrainBrushPanel` to centralize all voxel-related tools (Brush, Selection, Transform) into a single tabbed window.
+- UI Consolidation: Embedded `WorldHierarchyPanel` directly into `VoxelStudioPanel` to simplify the workspace layout.
+- Cleanup: Removed duplicate `SelectionPanel` and `TransformPanel` windows.
+
 ## [2.1.778] - 2026-09-07
 ### Fixed
 - Fixed an infinite global state sync loop causing severe lag in the Secondary Tile Canvas.

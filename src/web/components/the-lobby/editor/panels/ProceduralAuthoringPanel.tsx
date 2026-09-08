@@ -18,6 +18,11 @@ import {
   Download,
 } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
+import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
+import { packVoxel, VoxelShape, VoxelOrientation, VoxelPhysics, type VoxelPhysicsType } from '@/shared/game/voxel/VoxelWord';
+import { VoxelTransactionBuilder } from '@/shared/game/voxel/VoxelTransaction';
+import { VOXEL_MATERIAL_CATALOG } from '@/shared/game/voxel/VoxelMaterialDefinition';
+import { startTransition } from 'react';
 
 interface BiomePreset {
   id: string;
@@ -136,7 +141,9 @@ export function ProceduralAuthoringPanel() {
   const activeMapData = useGameStore((s) => s.activeMapData);
   const showToast = useGameStore((s) => s.showToast);
   const pushPaintOp = useEditorStore((s) => s.pushPaintOp);
+  const pushVoxelOp = useEditorStore((s) => s.pushVoxelOp);
   const markMapDirty = useEditorStore((s) => s.markMapDirty);
+  const studioMode = useEditorStore((s) => s.studioMode);
 
   // Render live preview on canvas
   useEffect(() => {
@@ -220,6 +227,96 @@ export function ProceduralAuthoringPanel() {
 
     const mapH = activeMapData.height;
     const mapW = activeMapData.width;
+    
+    // Voxel Mode Generation
+    if (studioMode === 'voxel' || (studioMode === 'develop' && activeMapData.mapType === 'VOXEL')) {
+      const voxelWorld: VoxelWorld | undefined = (window as any).gameEngine?.voxel?.voxelWorld;
+      if (!voxelWorld) {
+        showToast('Voxel engine not initialized or chunk error');
+        return;
+      }
+      
+      const txBuilder = new VoxelTransactionBuilder('Procedural Generation', activeMapData.id || '');
+      const changedVoxels: Array<{ wx: number; wy: number; wz: number; before: number; after: number }> = [];
+
+      // Generate a solid column from bedrock (y=0) up to the height limit
+      for (let x = 0; x < mapW; x++) {
+        for (let z = 0; z < mapH; z++) {
+          const height = sampleNoise(x, z, frequency, octaves, seed);
+          // Scale height from 0 to 31 (max elevation)
+          const targetY = Math.floor(height * 31);
+          
+          for (let y = 0; y <= Math.max(targetY, seaLevel); y++) {
+            let matId: number = 1; // Default GRASS
+            let shapeId = VoxelShape.FULL_CUBE;
+            let orient = VoxelOrientation.NORTH;
+            let physics: VoxelPhysicsType = VoxelPhysics.SOLID_OBSTACLE;
+            
+            if (y > targetY && y <= seaLevel) {
+              // Below sea level but above terrain -> Water
+              matId = 6; // WATER
+              physics = VoxelPhysics.SWIMMABLE_FLUID;
+            } else if (targetY * 31 > mountainPeak && y > targetY - 2) {
+              // Mountain Peak cap
+              matId = 5; // SNOW
+            } else if (y < targetY - 3) {
+              // Deep underground -> Stone / Deep Material
+              matId = selectedBiome.deepMaterialId || 3;
+            } else if (y < targetY) {
+              // Just under surface -> Dirt / Sub Material
+              matId = selectedBiome.subMaterialId || 2;
+            } else {
+              // Surface -> Base Material
+              matId = selectedBiome.baseMaterialId;
+            }
+            
+            // Adjust physics based on catalog (ensure fluid overrides work)
+            const catPhysics = VOXEL_MATERIAL_CATALOG[matId]?.physics;
+            if (catPhysics !== undefined) {
+              physics = catPhysics;
+            }
+            
+            const prevVoxel = voxelWorld.getVoxel(x, y, z) || 0;
+            const newVoxel = packVoxel(matId, shapeId, orient, 0, physics, 0);
+            
+            if (prevVoxel !== newVoxel) {
+              txBuilder.record(voxelWorld, x, y, z, newVoxel);
+            }
+          }
+        }
+      }
+      
+      const tx = txBuilder.build();
+      if (tx && tx.mutations.length > 0) {
+        for (const mut of tx.mutations) {
+          voxelWorld.setVoxel(mut.worldX, mut.worldY, mut.worldZ, mut.newVoxel);
+          changedVoxels.push({
+            wx: mut.worldX,
+            wy: mut.worldY,
+            wz: mut.worldZ,
+            before: mut.previousVoxel,
+            after: mut.newVoxel,
+          });
+        }
+        
+        // Notify Engine to re-mesh chunks
+        (window as any).gameEngine?.voxel?.meshDirtyVoxelChunks?.();
+        
+        const doc = voxelWorld.serializeToDoc();
+        startTransition(() => {
+          useGameStore.getState().setActiveMapData({ ...activeMapData, voxelDoc: doc });
+        });
+        
+        pushVoxelOp(changedVoxels);
+        markMapDirty();
+        showToast(`Synthesized 3D voxel terrain! Placed ${changedVoxels.length} blocks.`);
+      } else {
+        showToast('No blocks changed. Already generated?');
+      }
+      return;
+    }
+
+    // Tile Mode Generation (2D Grid)
     const paintedCells: Array<{ r: number; c: number; before: number; after: number; layerIdx: number }> = [];
 
     // Synthesize tiles across map grid
@@ -249,7 +346,7 @@ export function ProceduralAuthoringPanel() {
 
     pushPaintOp(paintedCells);
     markMapDirty();
-    showToast(`Broke & synthesized procedural terrain across ${mapW}×${mapH} volume!`);
+    showToast(`Broke & synthesized procedural 2D terrain across ${mapW}×${mapH} area!`);
   };
 
   const [isSavingRules, setIsSavingRules] = useState(false);

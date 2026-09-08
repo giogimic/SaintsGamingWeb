@@ -50,9 +50,9 @@ export class EraserToolHandler implements IToolHandler {
     const { x, z } = event.worldPos;
 
     // 0. Authoritative 3D Voxel Erasure
-    if (store.studioMode === 'voxel' && (context.engine as any).voxelWorld) {
+    if (store.studioMode === 'voxel' && (context.engine as any).voxel.voxelWorld) {
       if (!event.voxelTarget || event.voxelTarget.kind === 'none') return true;
-      const voxelWorld: VoxelWorld = (context.engine as any).voxelWorld;
+      const voxelWorld: VoxelWorld = (context.engine as any).voxel.voxelWorld;
       const dims = resolveMapDimensions(liveMap);
       const mapWidth = dims.width;
       const mapHeight = dims.height;
@@ -223,3 +223,4 @@ export class EraserToolHandler implements IToolHandler {
     return true;
   }
 }
+

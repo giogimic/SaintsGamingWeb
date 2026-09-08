@@ -28,7 +28,7 @@ import {
   WindowMenuButton,
   WindowMenuDivider,
 } from '../WindowMenuBar';
-import { TerrainBrushPalette } from './TerrainBrushPalette';
+import { WorldHierarchyPanel } from './WorldHierarchyPanel';
 
 export const VoxelStudioPanel: React.FC = () => {
   const activeMapData = useGameStore((s) => s.activeMapData);
@@ -44,7 +44,7 @@ export const VoxelStudioPanel: React.FC = () => {
 
   const [openSections, setOpenSections] = useState({
     overview: true,
-    brush: true,
+    hierarchy: true,
   });
 
   const toggleSection = (key: keyof typeof openSections) => {
@@ -209,22 +209,22 @@ export const VoxelStudioPanel: React.FC = () => {
           )}
         </div>
 
-        {/* SECTION 3: Brush Palette */}
-        <div className="bg-[#0b1320]/80 border border-[#806f47]/40 rounded-xl overflow-hidden shadow-lg">
+        {/* SECTION 2: World Hierarchy */}
+        <div className="bg-[#0b1320]/80 border border-[#806f47]/40 rounded-xl overflow-hidden shadow-lg flex-1 flex flex-col min-h-[300px]">
           <button
             type="button"
-            onClick={() => toggleSection('brush')}
+            onClick={() => toggleSection('hierarchy')}
             className="w-full flex items-center justify-between p-2.5 bg-black/50/40 text-[#cbb26a] font-bold text-left hover:bg-black/50/20 transition-colors cursor-pointer"
           >
             <span className="flex items-center gap-1.5">
-              <Brush className="w-4 h-4 text-emerald-400" /> Terrain Brush
+              <Layers className="w-4 h-4 text-emerald-400" /> World Hierarchy
             </span>
-            {openSections.brush ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+            {openSections.hierarchy ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
           </button>
           
-          {openSections.brush && (
-             <div className="border-t border-[#806f47]/20 bg-[#050b14]/50">
-               <TerrainBrushPalette />
+          {openSections.hierarchy && (
+             <div className="border-t border-[#806f47]/20 bg-[#050b14]/50 flex-1 flex flex-col p-2 h-full">
+               <WorldHierarchyPanel />
              </div>
           )}
         </div>

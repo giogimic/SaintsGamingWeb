@@ -643,7 +643,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
                   showToast('Save active selection as Blueprint Stamp');
                 }}
               />
-              <MenuItem label="Open Selection Window..." icon={Sliders} onClick={() => openPanel('selection')} />
+              <MenuItem label="Open Selection Window..." icon={Sliders} onClick={() => openPanel('voxelTerrainBrush')} />
             </SubMenu>
             <SubMenu label="Transform" icon={RotateCw}>
               <MenuItem label="Rotate CW (+45Â° / +90Â°)" shortcut="R" icon={RotateCw} onClick={() => { const map = useGameStore.getState().activeMapData; if (!map) return; useEditorStore.getState().rotateSelection(map, null, 90); }} />
@@ -659,7 +659,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
                   showToast('Reset all active transforms');
                 }}
               />
-              <MenuItem label="Open Transform Window..." icon={Sliders} onClick={() => openPanel('transform')} />
+              <MenuItem label="Open Transform Window..." icon={Sliders} onClick={() => openPanel('voxelTerrainBrush')} />
             </SubMenu>
             <MenuItem divider />
             <MenuItem label="Studio Settings..." icon={Settings} onClick={() => openPanel('settings')} />
@@ -723,7 +723,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
                 <MenuSectionLabel label="World Authoring" />
                 <MenuItem label="World Hierarchy" icon={panels.hierarchy?.isOpen ? CheckCircle2 : Layers} onClick={() => togglePanel('hierarchy')} />
                 <MenuItem label="Brush Settings" icon={panels.build?.isOpen ? CheckCircle2 : LayoutGrid} onClick={() => togglePanel('build')} />
-                <MenuItem label="Selection" icon={panels.selection?.isOpen ? CheckCircle2 : Crosshair} onClick={() => togglePanel('selection')} />
+                <MenuItem label="Voxel Tools" icon={panels.voxelTerrainBrush?.isOpen ? CheckCircle2 : Box} onClick={() => togglePanel('voxelTerrainBrush')} />
                 <MenuItem label="Procedural Authoring" icon={panels.procedural?.isOpen ? CheckCircle2 : Sparkles} onClick={() => togglePanel('procedural')} />
               </>
             )}
@@ -735,11 +735,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               </>
             )}
 
-            {['voxel'].includes(studioMode) && (
-              <>
-                <MenuItem label="Transform" icon={panels.transform?.isOpen ? CheckCircle2 : RotateCw} onClick={() => togglePanel('transform')} />
-              </>
-            )}
+
 
             {['npc', 'creature', 'quest', 'develop'].includes(studioMode) && (
               <>

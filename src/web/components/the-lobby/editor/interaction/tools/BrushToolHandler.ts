@@ -59,12 +59,12 @@ export class BrushToolHandler implements IToolHandler {
 
     // 0. Authoritative 3D Voxel Placement
     // Voxel 3D Brush Painting
-    if (store.studioMode === 'voxel' && (context.engine as any).voxelWorld) {
+    if (store.studioMode === 'voxel' && (context.engine as any).voxel.voxelWorld) {
       if (eventType === 'down') {
         const diag = (window as any).__voxelClickDiagnostic || {};
         diag.studioMode = store.studioMode;
         diag.tool = 'BrushToolHandler';
-        diag.brushVoxelWorldIdentity = ((context.engine as any).voxelWorld as any)?.id;
+        diag.brushVoxelWorldIdentity = ((context.engine as any).voxel.voxelWorld as any)?.id;
         diag.activeVoxelMaterialId = store.activeVoxelMaterialId;
         diag.activeVoxelShape = store.activeVoxelShape;
         diag.activeVoxelOrientation = store.activeVoxelOrientation;
@@ -84,7 +84,7 @@ export class BrushToolHandler implements IToolHandler {
       }
 
       if (!event.voxelTarget || event.voxelTarget.kind === 'none') return true;
-      const voxelWorld: VoxelWorld = (context.engine as any).voxelWorld;
+      const voxelWorld: VoxelWorld = (context.engine as any).voxel.voxelWorld;
       const dims = resolveMapDimensions(liveMap);
       const mapWidth = dims.width;
       const mapHeight = dims.height;
@@ -486,3 +486,4 @@ export class BrushToolHandler implements IToolHandler {
     return true;
   }
 }
+

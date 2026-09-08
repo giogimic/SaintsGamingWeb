@@ -100,8 +100,7 @@ const BiomeConfiguratorPanel = lazy(() => import('./panels/BiomeConfiguratorPane
 
 const LayersPanel = lazy(() => import('./panels/LayersPanel').then((m) => ({ default: m.LayersPanel })));
 const WorldHierarchyPanel = lazy(() => import('./panels/WorldHierarchyPanel').then((m) => ({ default: m.WorldHierarchyPanel })));
-const SelectionPanel = lazy(() => import('./panels/SelectionPanel').then((m) => ({ default: m.SelectionPanel })));
-const TransformPanel = lazy(() => import('./panels/TransformPanel').then((m) => ({ default: m.TransformPanel })));
+const VoxelTerrainBrushPanel = lazy(() => import('./panels/VoxelTerrainBrushPanel').then((m) => ({ default: m.VoxelTerrainBrushPanel })));
 const ProceduralAuthoringPanel = lazy(() => import('./panels/ProceduralAuthoringPanel').then((m) => ({ default: m.ProceduralAuthoringPanel })));
 const PrimaryTileCanvasPanel = lazy(() => import('./panels/PrimaryTileCanvasPanel').then((m) => ({ default: m.PrimaryTileCanvasPanel })));
 const PrimaryVoxelCanvasPanel = lazy(() => import('./panels/PrimaryVoxelCanvasPanel').then((m) => ({ default: m.PrimaryVoxelCanvasPanel })));
@@ -671,16 +670,8 @@ export const StudioEditorShell: React.FC = () => {
 
 
 
-          {canUseStudioDock(permissionLevel, 'selection') && (
-            <DraggablePanel id="selection" icon={<Crosshair className="w-4 h-4 text-primary" />} title="Selection">
-              <Suspense fallback={<div>Loading...</div>}><SelectionPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'transform') && (
-            <DraggablePanel id="transform" icon={<RotateCw className="w-4 h-4 text-primary" />} title="Transform">
-              <Suspense fallback={<div>Loading...</div>}><TransformPanel /></Suspense>
-            </DraggablePanel>
+          {canUseStudioDock(permissionLevel, 'voxelTerrainBrush') && (
+            <Suspense fallback={<div>Loading...</div>}><VoxelTerrainBrushPanel /></Suspense>
           )}
 
           {canUseStudioDock(permissionLevel, 'procedural') && (

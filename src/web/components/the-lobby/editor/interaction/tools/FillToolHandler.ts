@@ -21,9 +21,9 @@ export class FillToolHandler implements IToolHandler {
     if (!liveMap) return false;
 
     // 0. Authoritative 3D Voxel Volumetric Flood Fill
-    if (store.studioMode === 'voxel' && (context.engine as any).voxelWorld) {
+    if (store.studioMode === 'voxel' && (context.engine as any).voxel.voxelWorld) {
       if (!event.voxelTarget || event.voxelTarget.kind === 'none') return true;
-      const voxelWorld: VoxelWorld = (context.engine as any).voxelWorld;
+      const voxelWorld: VoxelWorld = (context.engine as any).voxel.voxelWorld;
       const startCoord = event.voxelTarget.voxelCoord;
       const targetWord = voxelWorld.getVoxel(startCoord.wx, startCoord.wy, startCoord.wz);
 
@@ -239,3 +239,4 @@ export class FillToolHandler implements IToolHandler {
     return true;
   }
 }
+

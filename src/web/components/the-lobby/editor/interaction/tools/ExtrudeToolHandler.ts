@@ -18,7 +18,7 @@ export class ExtrudeToolHandler implements IToolHandler {
     if (event.button !== 0 && event.rawEvent.buttons !== 1) return false;
     
     if (event.voxelTarget && event.voxelTarget.kind === 'voxel-hit') {
-      const voxelWorld: VoxelWorld = (context.engine as any).voxelWorld;
+      const voxelWorld: VoxelWorld = (context.engine as any).voxel.voxelWorld;
       if (!voxelWorld) return false;
 
       const vT = event.voxelTarget;
@@ -135,7 +135,7 @@ export class ExtrudeToolHandler implements IToolHandler {
     const liveMap = gameStore.activeMapData;
     if (!liveMap) return;
 
-    const voxelWorld: VoxelWorld = (context.engine as any).voxelWorld;
+    const voxelWorld: VoxelWorld = (context.engine as any).voxel.voxelWorld;
     if (!voxelWorld) return;
 
     const txBuilder = new VoxelTransactionBuilder('Face Extrusion', liveMap.id || '');
@@ -176,3 +176,4 @@ export class ExtrudeToolHandler implements IToolHandler {
     }
   }
 }
+

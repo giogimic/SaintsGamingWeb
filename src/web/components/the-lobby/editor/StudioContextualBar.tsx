@@ -67,8 +67,7 @@ const DOCK_ICONS: Partial<Record<StudioDockId, { icon: any; label: string }>> = 
   layers: { icon: Layers, label: 'Layers' },
   hierarchy: { icon: Layers, label: 'Hierarchy' },
   logic: { icon: Shield, label: 'Logic Painter' },
-  transform: { icon: RotateCw, label: 'Transform' },
-  selection: { icon: Crosshair, label: 'Selection' },
+  voxelTerrainBrush: { icon: Box, label: 'Voxel Tools' },
   npc: { icon: Users, label: 'NPCs' },
   entityLibrary: { icon: Package, label: 'Entity Library' },
   properties: { icon: Settings, label: 'Properties' },
@@ -216,7 +215,7 @@ export function StudioContextualBar() {
               Clear
             </button>
             <button
-              onClick={() => openPanel('selection')}
+              onClick={() => openPanel('voxelTerrainBrush')}
               className="px-2 py-0.5 rounded bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 text-[10px] font-bold ml-1"
             >
               More Options...
@@ -518,7 +517,7 @@ export function StudioContextualBar() {
               <span>Flip V</span>
             </button>
             <button
-              onClick={() => openPanel('transform')}
+              onClick={() => openPanel('voxelTerrainBrush')}
               className="px-2 py-0.5 rounded bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 text-[10px] font-bold ml-1"
             >
               Transform Panel...

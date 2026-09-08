@@ -22,7 +22,7 @@ export class PrefabToolHandler implements IToolHandler {
 
     // 3D Volumetric Voxel Stamping
     if (store.studioMode === 'voxel') {
-      const voxelWorld: any = (context.engine as any)?.voxelWorld;
+      const voxelWorld: any = (context.engine as any).voxel?.voxelWorld;
       const activeVoxelPrefab = store.activeVoxelPrefab;
       if (!activeVoxelPrefab) {
         context.showToast?.('Select a 3D Voxel Prefab first.');
@@ -127,3 +127,4 @@ export class PrefabToolHandler implements IToolHandler {
     return true;
   }
 }
+

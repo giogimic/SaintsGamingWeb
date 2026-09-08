@@ -52,8 +52,7 @@ export type StudioDockId =
   | "biome"
   | "releases"
   | "procedural"
-  | "selection"
-  | "transform"
+  | "voxelTerrainBrush"
   | "layers"
   | "hierarchy"
   | "materials"
@@ -114,8 +113,7 @@ export const STUDIO_DOCK_MIN_LEVEL: Record<StudioDockId, number> = {
   biome: STUDIO_ENTRY_LEVEL,
   releases: STUDIO_ENTRY_LEVEL,
   procedural: STUDIO_ENTRY_LEVEL,
-  selection: STUDIO_ENTRY_LEVEL,
-  transform: STUDIO_ENTRY_LEVEL,
+  voxelTerrainBrush: STUDIO_ENTRY_LEVEL,
   layers: STUDIO_ENTRY_LEVEL,
   hierarchy: STUDIO_ENTRY_LEVEL,
   materials: STUDIO_ENTRY_LEVEL,

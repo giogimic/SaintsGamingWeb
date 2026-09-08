@@ -91,7 +91,7 @@ export class ShapeToolHandler implements IToolHandler {
 
   private executeShapeGeneration(start: {x:number,y:number,z:number}, end: {x:number,y:number,z:number}, context: ToolExecutionContext, liveMap: any) {
     const store = useEditorStore.getState();
-    const voxelWorld: VoxelWorld = (context.engine as any).voxelWorld;
+    const voxelWorld: VoxelWorld = (context.engine as any).voxel.voxelWorld;
     if (!voxelWorld) return;
 
     const shapeType = store.brushShape || 'square'; // We use brushShape for 'box', 'sphere', 'cylinder'
@@ -177,3 +177,4 @@ export class ShapeToolHandler implements IToolHandler {
     }
   }
 }
+

@@ -12,6 +12,8 @@ export const SecondaryTileCanvasPanel: React.FC = () => {
   const secondaryMapId = useEditorStore((s) => s.secondaryMapId);
   const secondaryMapType = useEditorStore((s) => s.secondaryMapType);
   const isDevEditorOpen = useEditorStore((s) => s.isCreationMode);
+  const activeBrushTileId = useEditorStore((s) => s.activeBrushTileId);
+  const activeLayerIdx = useEditorStore((s) => s.activeLayerIdx);
   const suppressGameplay = true;
 
   const [mapData, setMapData] = useState<GameMapData | null>(null);
@@ -86,6 +88,8 @@ export const SecondaryTileCanvasPanel: React.FC = () => {
                 isDevEditorOpen={isDevEditorOpen}
                 suppressGameplay={suppressGameplay}
                 isActive={isActive}
+                activeBrushTileId={activeBrushTileId}
+                activeLayerIdx={activeLayerIdx}
                 onCanvasReady={(engine) => { engineRef.current = engine; }}
               />
             </>
