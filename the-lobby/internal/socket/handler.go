@@ -147,6 +147,9 @@ func (h *Hub) onConnect(client *socket.Socket) {
 	client.On(protocol.EvJoinMap, func(datas ...any) {
 		h.handleJoinMap(client, accountID, decodeJoin(datas))
 	})
+	client.On(protocol.EvRequestChunk, func(datas ...any) {
+		h.handleRequestChunk(client, accountID, datas...)
+	})
 	client.On(protocol.EvInput, func(datas ...any) {
 		in := decodeInput(datas)
 		h.eng.Players().EnqueueInput(accountID, in)
@@ -944,4 +947,66 @@ func (h *Hub) handleDirectMove(accountID string, datas []any) {
 	if h.eng.World().IsWalkable(p.BaseMapID, int(nx), int(ny)) {
 		h.eng.Players().ApplyMove(accountID, nx, ny, dir, int64(req.Seq))
 	}
+}
+
+func (h *Hub) handleRequestChunk(client *socket.Socket, accountID string, datas ...any) {
+	if len(datas) == 0 {
+		return
+	}
+	payload, ok := datas[0].(map[string]any)
+	if !ok {
+		return
+	}
+
+	cxF, ok1 := payload["cx"].(float64)
+	cyF, ok2 := payload["cy"].(float64)
+	czF, ok3 := payload["cz"].(float64)
+	if !ok1 || !ok2 || !ok3 {
+		return
+	}
+
+	cx, cy, cz := int(cxF), int(cyF), int(czF)
+
+	// Hardcode Emerald Plains for voxel maps for now.
+	biome := world.BiomeDefinition{
+		ID:   "emerald_plains",
+		Seed: 42,
+		Terrain: world.BiomeTerrainConfig{
+			BaseHeight:  16,
+			Amplitude:   6,
+			Frequency:   0.018,
+			Octaves:     4,
+			Persistence: 0.5,
+			Lacunarity:  2.0,
+		},
+		Strata: world.BiomeStrataConfig{
+			SurfaceMaterial:    2,
+			SubsurfaceMaterial: 3,
+			SubsurfaceDepth:    3,
+			MantleMaterial:     4,
+			BedrockMaterial:    1,
+		},
+		Features: world.BiomeFeaturePool{
+			SpawnableFlora: []struct {
+				FeatureID string
+				Weight    float64
+			}{
+				{FeatureID: "oak_tree", Weight: 10},
+				{FeatureID: "tall_grass", Weight: 50},
+			},
+		},
+	}
+
+	generator := world.NewProceduralVoxelGenerator(biome)
+	chunk := generator.PopulateChunk(cx, cy, cz)
+
+	placer := &world.FeaturePlacer{}
+	placer.PlaceFeatures(chunk, biome.Seed, biome)
+
+	data := chunk.EncodePaletteRLEBinary()
+
+	// Socket.io supports binary naturally. We can just send the []byte.
+	client.Emit(protocol.EvChunkData, map[string]any{
+		"cx": cx, "cy": cy, "cz": cz, "data": data,
+	})
 }

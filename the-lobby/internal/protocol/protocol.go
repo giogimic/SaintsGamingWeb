@@ -65,6 +65,7 @@ const (
 	EvJoinRoom          = "join_room"
 	EvLeaveRoom         = "leave_room"
 	EvForceDisconnect   = "force_disconnect"
+	EvRequestChunk      = "request_chunk"
 )
 
 // Server → client event names.
@@ -98,6 +99,7 @@ const (
 	EvPartyUpdate         = "party_update"
 	EvPartyInviteEvt      = "party_invite"
 	EvPresenceUpdated     = "presence.updated"
+	EvChunkData           = "chunk_data"
 	EvGTCSuccess          = "gtc_transaction_success"
 	EvGTCError            = "gtc_transaction_error"
 	EvLootSpawned         = "loot_spawned"

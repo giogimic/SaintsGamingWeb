@@ -800,6 +800,10 @@ export default function TheLobby({
       }
     });
 
+    socket.on('chunk_data', (data) => {
+      window.dispatchEvent(new CustomEvent('voxel_chunk_data', { detail: data }));
+    });
+
     socket.on('map_players', (players) => {
       const filtered = { ...(players || {}) };
       if (socket.id) delete filtered[socket.id];

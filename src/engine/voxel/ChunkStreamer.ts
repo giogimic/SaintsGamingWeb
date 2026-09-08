@@ -23,7 +23,50 @@ export class ChunkStreamer {
     this.voxelController = voxelController;
     // We could pass seed from the map data, but using a default seed for now
     this.proceduralGenerator = new ProceduralGenerator(42); 
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('voxel_chunk_data', this.onChunkData);
+    }
   }
+
+  public destroy() {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('voxel_chunk_data', this.onChunkData);
+    }
+  }
+
+  private onChunkData = (e: any) => {
+    const data = e.detail;
+    if (!data || data.cx === undefined || data.cz === undefined || !data.data) return;
+
+    const { cx, cy, cz, data: buffer } = data;
+    const key = `${cx}_${cz}`;
+    const chunkKey = `${cx}_${cy}_${cz}`;
+
+    if (!this.pendingChunks.has(key) && !this.loadedChunks.has(key)) return;
+
+    const world = this.voxelController.voxelWorld;
+    if (!world) return;
+
+    this.pendingChunks.delete(key);
+    this.loadedChunks.add(key);
+
+    const baseChunk = VoxelChunk.deserializePaletteRLEBinary(new Uint8Array(buffer));
+
+    // Apply physical portal shrines based on gates
+    const gates = (this.voxelController.engine as any).currentRawMapData?.gatesData?.gates || [];
+    this.applyPortalShrines(baseChunk, gates);
+
+    world.chunks.set(chunkKey, baseChunk);
+
+    // Tell mesher to mesh this chunk only if within visible radius
+    if (Math.abs(cx - this.currentCx) <= this.visibleRadius && Math.abs(cz - this.currentCz) <= this.visibleRadius) {
+      const result = this.voxelController.voxelMesher?.meshChunk(world, baseChunk);
+      if (result && (this.voxelController as any).engine.rootNode) {
+        result.mesh.parent = (this.voxelController as any).engine.rootNode;
+      }
+    }
+  };
 
   public setRenderRadius(radius: number) {
     this.visibleRadius = radius;
@@ -101,99 +144,39 @@ export class ChunkStreamer {
     world.chunks.delete(chunkKey);
   }
 
-  private async fetchChunks(cx: number, cz: number) {
-    // We fetch a radius around the cx, cz
-    const url = `/api/maps/${this.mapSlug}/chunks?cx=${cx}&cz=${cz}&radius=${this.preloadRadius}`;
-    
-    // Mark them as pending
+  private fetchChunks(cx: number, cz: number) {
+    // We no longer fetch via REST - we emit a websocket event for the chunks we need.
     const minCx = cx - this.preloadRadius;
     const maxCx = cx + this.preloadRadius;
     const minCz = cz - this.preloadRadius;
     const maxCz = cz + this.preloadRadius;
     
+    let requestedAny = false;
+
     for (let x = minCx; x <= maxCx; x++) {
       for (let z = minCz; z <= maxCz; z++) {
-        this.pendingChunks.add(`${x}_${z}`);
+        const key = `${x}_${z}`;
+        if (!this.pendingChunks.has(key) && !this.loadedChunks.has(key)) {
+          this.pendingChunks.add(key);
+          
+          import('../../web/components/the-lobby/store').then(({ useGameStore }) => {
+            const emitSocketEvent = useGameStore.getState().emitSocketEvent;
+            if (emitSocketEvent) {
+              emitSocketEvent('request_chunk', { cx: x, cy: 0, cz: z });
+              requestedAny = true;
+            }
+          });
+        }
       }
     }
 
-    try {
-      // Fire an event for UI to show "Generating..."
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('map-streaming-start'));
-      }
-
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Failed to fetch chunks');
-      
-      const json = await res.json();
-      
-      const world = this.voxelController.voxelWorld;
-      if (!world) return;
-
-      const overrideChunks = new Map<string, any>();
-      if (json.chunks) {
-        for (const c of json.chunks) {
-          overrideChunks.set(`${c.cx}_${c.cz}`, c);
-        }
-      }
-
-      const chunkPromises: Promise<void>[] = [];
-
-      for (let x = minCx; x <= maxCx; x++) {
-        for (let z = minCz; z <= maxCz; z++) {
-          const key = `${x}_${z}`;
-          this.pendingChunks.delete(key);
-          this.loadedChunks.add(key);
-
-          const cy = 0;
-          const chunkKey = `${x}_${cy}_${z}`;
-          
-          const p = (async () => {
-            const chunkRes = await fetch(`/api/chunks/generate?cx=${x}&cy=${cy}&cz=${z}`);
-            if (!chunkRes.ok) {
-              console.error(`Failed to generate chunk ${x},${cy},${z}`);
-              return;
-            }
-            const buffer = await chunkRes.arrayBuffer();
-            const baseChunk = VoxelChunk.deserializePaletteRLEBinary(new Uint8Array(buffer));
-            
-            world.chunks.set(chunkKey, baseChunk);
-
-            // Apply overrides from database if they exist
-            const override = overrideChunks.get(key);
-            if (override) {
-              if (override.dataLow) {
-                baseChunk.dataLow.set(new Uint32Array(override.dataLow));
-              }
-              if (override.dataHigh) {
-                baseChunk.dataHigh.set(new Uint32Array(override.dataHigh));
-              }
-            }
-
-            // Apply physical portal shrines based on gates
-            const gates = (this.voxelController.engine as any).currentRawMapData?.gatesData?.gates || [];
-            this.applyPortalShrines(baseChunk, gates);
-
-            // Tell mesher to mesh this chunk only if within visible radius
-            if (Math.abs(x - cx) <= this.visibleRadius && Math.abs(z - cz) <= this.visibleRadius) {
-              const result = this.voxelController.voxelMesher?.meshChunk(world, baseChunk);
-              if (result && (this.voxelController as any).engine.rootNode) {
-                result.mesh.parent = (this.voxelController as any).engine.rootNode;
-              }
-            }
-          })();
-          chunkPromises.push(p);
-        }
-      }
-
-      await Promise.all(chunkPromises);
-    } catch (e) {
-      console.error("[ChunkStreamer] fetch error:", e);
-    } finally {
-      if (typeof window !== 'undefined') {
+    if (requestedAny && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('map-streaming-start'));
+      // The map-streaming-end event will be handled by the UI or batching if needed, 
+      // but for now socket responses are fast enough to just show it briefly.
+      setTimeout(() => {
         window.dispatchEvent(new CustomEvent('map-streaming-end'));
-      }
+      }, 500);
     }
   }
 
@@ -212,54 +195,25 @@ export class ChunkStreamer {
    * Forces a specific chunk to load immediately, bypassing camera radius.
    * Useful when the brush tool hits an unloaded boundary.
    */
-  public async forceLoadChunk(cx: number, cz: number) {
+  public forceLoadChunk(cx: number, cz: number) {
     const key = `${cx}_${cz}`;
     if (this.loadedChunks.has(key) || this.pendingChunks.has(key)) return;
     
     this.pendingChunks.add(key);
 
-    try {
-      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('map-streaming-start'));
-      const res = await fetch(`/api/maps/${this.mapSlug}/chunks?cx=${cx}&cz=${cz}&radius=0`);
-      if (!res.ok) throw new Error('Failed to fetch chunk');
-      
-      const json = await res.json();
-      const world = this.voxelController.voxelWorld;
-      if (!world) return;
-
-      this.pendingChunks.delete(key);
-      this.loadedChunks.add(key);
-
-      const cy = 0;
-      const chunkKey = `${cx}_${cy}_${cz}`;
-      const baseChunk = this.proceduralGenerator.generateChunk(cx, cz, cy);
-      world.chunks.set(chunkKey, baseChunk);
-
-      const gates = (this.voxelController.engine as any).currentRawMapData?.gatesData?.gates || [];
-      this.applyPortalShrines(baseChunk, gates);
-
-      if (json.chunks && json.chunks.length > 0) {
-        const override = json.chunks.find((c: any) => c.cx === cx && c.cz === cz);
-        if (override) {
-          if (override.dataLow) {
-            baseChunk.dataLow.set(new Uint32Array(override.dataLow));
-          }
-          if (override.dataHigh) {
-            baseChunk.dataHigh.set(new Uint32Array(override.dataHigh));
-          }
-        }
-      }
-
-      const result = this.voxelController.voxelMesher?.meshChunk(world, baseChunk);
-      if (result && (this.voxelController as any).engine.rootNode) {
-        result.mesh.parent = (this.voxelController as any).engine.rootNode;
-      }
-    } catch (e) {
-      this.pendingChunks.delete(key);
-      console.error("[ChunkStreamer] forceLoadChunk error:", e);
-    } finally {
-      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('map-streaming-end'));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('map-streaming-start'));
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('map-streaming-end'));
+      }, 500);
     }
+
+    import('../../web/components/the-lobby/store').then(({ useGameStore }) => {
+      const emitSocketEvent = useGameStore.getState().emitSocketEvent;
+      if (emitSocketEvent) {
+        emitSocketEvent('request_chunk', { cx, cy: 0, cz });
+      }
+    });
   }
 
   private applyPortalShrines(chunk: VoxelChunk, gates: any[]) {

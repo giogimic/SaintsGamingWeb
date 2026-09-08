@@ -1,3 +1,7 @@
+## [2.1.788] - 2026-09-08
+### Added
+- Realtime Voxel Streaming: Completely replaced the REST API chunk fetching with a high-performance Socket.IO binary stream. Procedural chunks now stream directly over the existing multiplayer WebSocket connection, drastically reducing latency and HTTP overhead during infinite map exploration.
+
 ## [2.1.787] - 2026-09-08
 ### Added
 - Voxel Generation: Migrated the core `ProceduralVoxelGenerator` and `FeaturePlacer` (flora/tree generation) algorithms from TypeScript to the Go Server.
