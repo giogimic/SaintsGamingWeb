@@ -967,41 +967,32 @@ func (h *Hub) handleRequestChunk(client *socket.Socket, accountID string, datas 
 
 	cx, cy, cz := int(cxF), int(cyF), int(czF)
 
-	// Hardcode Emerald Plains for voxel maps for now.
-	biome := world.BiomeDefinition{
-		ID:   "emerald_plains",
-		Seed: 42,
-		Terrain: world.BiomeTerrainConfig{
-			BaseHeight:  16,
-			Amplitude:   6,
-			Frequency:   0.018,
-			Octaves:     4,
-			Persistence: 0.5,
-			Lacunarity:  2.0,
-		},
-		Strata: world.BiomeStrataConfig{
-			SurfaceMaterial:    2,
-			SubsurfaceMaterial: 3,
-			SubsurfaceDepth:    3,
-			MantleMaterial:     4,
-			BedrockMaterial:    1,
-		},
-		Features: world.BiomeFeaturePool{
-			SpawnableFlora: []struct {
-				FeatureID string
-				Weight    float64
-			}{
-				{FeatureID: "oak_tree", Weight: 10},
-				{FeatureID: "tall_grass", Weight: 50},
-			},
-		},
+	// Determine player's current map to use its cache
+	var voxelWorld *world.VoxelWorld
+	if p := h.eng.Players().GetByAccount(accountID); p != nil {
+		if def, ok := h.eng.World().GetDef(p.BaseMapID); ok && def.Voxel != nil {
+			voxelWorld = def.Voxel
+		}
 	}
 
-	generator := world.NewProceduralVoxelGenerator(biome)
-	chunk := generator.PopulateChunk(cx, cy, cz)
+	var chunk *world.VoxelChunk
+	if voxelWorld != nil {
+		chunk = voxelWorld.GetChunk(cx, cy, cz)
+	}
 
-	placer := &world.FeaturePlacer{}
-	placer.PlaceFeatures(chunk, biome.Seed, biome)
+	if chunk == nil {
+		// Generate on the fly
+		biome := world.GetDefaultBiome()
+		generator := world.NewProceduralVoxelGenerator(biome)
+		chunk = generator.PopulateChunk(cx, cy, cz)
+
+		placer := &world.FeaturePlacer{}
+		placer.PlaceFeatures(chunk, biome.Seed, biome)
+
+		if voxelWorld != nil {
+			voxelWorld.SetChunk(cx, cy, cz, chunk)
+		}
+	}
 
 	data := chunk.EncodePaletteRLEBinary()
 

@@ -229,41 +229,73 @@ func (m *Manager) IsWalkable3D(baseMapID string, wx, wy, wz int) bool {
 	return def.Voxel.IsTraversableAt(wx, wy, wz)
 }
 
-// BuildDemoMapDef creates an in-memory DEMO_SANDBOX (30x30 grass, border walls) with 32³ voxel geometry.
+// GetDefaultBiome returns the standard emerald_plains biome.
+func GetDefaultBiome() BiomeDefinition {
+	return BiomeDefinition{
+		ID:   "emerald_plains",
+		Seed: 42,
+		Terrain: BiomeTerrainConfig{
+			BaseHeight:  16,
+			Amplitude:   6,
+			Frequency:   0.018,
+			Octaves:     4,
+			Persistence: 0.5,
+			Lacunarity:  2.0,
+		},
+		Strata: BiomeStrataConfig{
+			SurfaceMaterial:    2,
+			SubsurfaceMaterial: 3,
+			SubsurfaceDepth:    3,
+			MantleMaterial:     4,
+			BedrockMaterial:    1,
+		},
+		Features: BiomeFeaturePool{
+			SpawnableFlora: []struct {
+				FeatureID string
+				Weight    float64
+			}{
+				{FeatureID: "oak_tree", Weight: 10},
+				{FeatureID: "tall_grass", Weight: 50},
+			},
+		},
+	}
+}
+
+// BuildDemoMapDef creates an in-memory DEMO_SANDBOX as an infinite fractal map and pregenerates the spawn area.
 func BuildDemoMapDef() *MapDef {
-	w, h := protocol.DemoMapW, protocol.DemoMapH
-	grid := make([][]int, h)
-	for y := 0; y < h; y++ {
-		row := make([]int, w)
-		for x := 0; x < w; x++ {
-			if x == 0 || y == 0 || x == w-1 || y == h-1 {
-				row[x] = protocol.TileWall
-			} else {
-				row[x] = protocol.TileGrass
-			}
-		}
-		grid[y] = row
+	w, h := 0, 0 // 0 signifies infinite bounding box
+
+	voxelWorld := &VoxelWorld{
+		ID:           protocol.DemoMapID,
+		WidthChunks:  1,
+		DepthChunks:  1,
+		HeightChunks: 1,
+		Chunks:       make(map[string]*VoxelChunk),
 	}
-	// Clearing around spawn
-	sx, sy := protocol.DefaultSpawnX, protocol.DefaultSpawnY
-	for dy := -2; dy <= 2; dy++ {
-		for dx := -2; dx <= 2; dx++ {
-			x, y := sx+dx, sy+dy
-			if x > 0 && y > 0 && x < w-1 && y < h-1 {
-				grid[y][x] = protocol.TileWalk
-			}
+
+	biome := GetDefaultBiome()
+	generator := NewProceduralVoxelGenerator(biome)
+	placer := &FeaturePlacer{}
+
+	// Pregenerate a 5x5 chunk radius around spawn (cx: -2 to 2, cz: -2 to 2)
+	for cx := -2; cx <= 2; cx++ {
+		for cz := -2; cz <= 2; cz++ {
+			chunk := generator.PopulateChunk(cx, 0, cz)
+			placer.PlaceFeatures(chunk, biome.Seed, biome)
+			voxelWorld.SetChunk(cx, 0, cz, chunk)
 		}
 	}
+
 	return &MapDef{
 		ID:          protocol.DemoMapID,
 		Name:        "Demo Sandbox",
 		Width:       w,
 		Height:      h,
-		Grid:        grid,
-		SpawnX:      float64(sx),
-		SpawnY:      float64(sy),
-		RegionClass: "authored",
-		Voxel:       BuildDemoVoxelWorld(w, h),
+		Grid:        [][]int{}, // No logic grid for fractal maps
+		SpawnX:      float64(protocol.DefaultSpawnX),
+		SpawnY:      float64(protocol.DefaultSpawnY),
+		RegionClass: "fractal",
+		Voxel:       voxelWorld,
 		NPCs: []NPCDef{
 			{ID: "npc_guide", Name: "Trail Guide", X: 12, Y: 15, SpriteID: "npc_guide", Dialogue: "demo_welcome"},
 			{ID: "npc_shop", Name: "Provisioner", X: 16, Y: 15, SpriteID: "npc_shop", Dialogue: "demo_shop"},

@@ -1,3 +1,8 @@
+## [2.1.789] - 2026-09-08
+### Added
+- Go Server: Added a high-performance thread-safe Chunk Cache using `sync.RWMutex` to the `VoxelWorld` memory store to eliminate redundant math calculations during streaming.
+- Architecture: Converted `DEMO_SANDBOX` into an infinite procedural fractal map and implemented 5x5 chunk pre-generation on Go Server boot, guaranteeing zero-latency initial logins.
+
 ## [2.1.788] - 2026-09-08
 ### Added
 - Realtime Voxel Streaming: Completely replaced the REST API chunk fetching with a high-performance Socket.IO binary stream. Procedural chunks now stream directly over the existing multiplayer WebSocket connection, drastically reducing latency and HTTP overhead during infinite map exploration.

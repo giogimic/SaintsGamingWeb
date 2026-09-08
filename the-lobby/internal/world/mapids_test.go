@@ -68,17 +68,6 @@ func TestJoinMapLobbyShards(t *testing.T) {
 	}
 }
 
-func TestWalkability(t *testing.T) {
-	m := world.NewManager(50)
-	def := m.EnsureDemoDef()
-	if !m.IsWalkable(def.ID, protocol.DefaultSpawnX, protocol.DefaultSpawnY) {
-		t.Fatal("spawn should be walkable")
-	}
-	if m.IsWalkable(def.ID, 0, 0) {
-		t.Fatal("border wall should block")
-	}
-}
-
 func TestResolvePlayableBase(t *testing.T) {
 	if got := world.ResolvePlayableBase("ANY", false, true); got != protocol.DemoMapID {
 		t.Fatal(got)

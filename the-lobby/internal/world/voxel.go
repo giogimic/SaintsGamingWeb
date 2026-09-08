@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sync"
 )
 
 const (
@@ -320,6 +321,7 @@ type VoxelDocJSON struct {
 
 // VoxelWorld manages volumetric chunks for a region in server memory.
 type VoxelWorld struct {
+	mu           sync.RWMutex
 	ID           string
 	WidthChunks  int
 	DepthChunks  int
@@ -393,8 +395,63 @@ func ParseVoxelDoc(data []byte) (*VoxelWorld, error) {
 	return w, nil
 }
 
+// GetChunk retrieves a chunk in a thread-safe manner.
+func (w *VoxelWorld) GetChunk(cx, cy, cz int) *VoxelChunk {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+	chunk, ok := w.Chunks[FormatChunkKey(cx, cy, cz)]
+	if !ok {
+		return nil
+	}
+	return chunk
+}
+
+// SetChunk caches a chunk in a thread-safe manner.
+func (w *VoxelWorld) SetChunk(cx, cy, cz int, chunk *VoxelChunk) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.Chunks == nil {
+		w.Chunks = make(map[string]*VoxelChunk)
+	}
+	w.Chunks[FormatChunkKey(cx, cy, cz)] = chunk
+}
+
+// DeleteVoxel clears the 64-bit voxel word at global coordinates.
+func (w *VoxelWorld) DeleteVoxel(wx, wy, wz int) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	cx := wx >> ChunkShiftX
+	cz := wz >> ChunkShiftZ
+	cy := wy >> ChunkShiftY
+	if wx < 0 && wx%ChunkSizeX != 0 {
+		cx--
+	}
+	if wz < 0 && wz%ChunkSizeZ != 0 {
+		cz--
+	}
+	if wy < 0 && wy%ChunkSizeY != 0 {
+		cy--
+	}
+
+	lx := ((wx % ChunkSizeX) + ChunkSizeX) % ChunkSizeX
+	lz := ((wz % ChunkSizeZ) + ChunkSizeZ) % ChunkSizeZ
+	ly := ((wy % ChunkSizeY) + ChunkSizeY) % ChunkSizeY
+
+	spatialKey := FormatChunkKey(cx, cy, cz)
+	legacyKey := fmt.Sprintf("%d_%d_%d", cx, cz, cy)
+	chunk, ok := w.Chunks[spatialKey]
+	if !ok || chunk == nil {
+		chunk = w.Chunks[legacyKey]
+	}
+	if chunk != nil {
+		chunk.Set(lx, ly, lz, 0)
+	}
+}
+
 // GetVoxel retrieves the 64-bit voxel word at global coordinates (wx, wy, wz).
 func (w *VoxelWorld) GetVoxel(wx, wy, wz int) uint64 {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
 	cx := wx >> ChunkShiftX
 	cz := wz >> ChunkShiftZ
 	cy := wy >> ChunkShiftY
@@ -425,6 +482,8 @@ func (w *VoxelWorld) GetVoxel(wx, wy, wz int) uint64 {
 
 // SetVoxel sets the 64-bit voxel word at global coordinates (wx, wy, wz).
 func (w *VoxelWorld) SetVoxel(wx, wy, wz int, word uint64) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	cx := wx >> ChunkShiftX
 	cz := wz >> ChunkShiftZ
 	cy := wy >> ChunkShiftY
@@ -456,8 +515,10 @@ func (w *VoxelWorld) SetVoxel(wx, wy, wz int, word uint64) {
 	chunk.Set(lx, ly, lz, word)
 }
 
-// IsTraversableAt evaluates 3D AABB traversal for an entity standing at (wx, wy, wz).
+// IsTraversableAt checks if a specific coordinate is walkable.
 func (w *VoxelWorld) IsTraversableAt(wx, wy, wz int) bool {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
 	bodyWord := w.GetVoxel(wx, wy, wz)
 	groundWord := w.GetVoxel(wx, wy-1, wz)
 
@@ -515,14 +576,16 @@ type SweptCollisionResult struct {
 	SteppedUp  bool
 }
 
-// QueryObstacleBoxes returns all solid obstacle boxes intersecting the query AABB.
-func (w *VoxelWorld) QueryObstacleBoxes(queryBox AABB) []AABB {
-	minBX := int(math.Floor(queryBox.MinX))
-	maxBX := int(math.Floor(queryBox.MaxX))
-	minBY := int(math.Floor(queryBox.MinY))
-	maxBY := int(math.Floor(queryBox.MaxY))
-	minBZ := int(math.Floor(queryBox.MinZ))
-	maxBZ := int(math.Floor(queryBox.MaxZ))
+// QueryObstacleBoxes returns all solid AABBs within the given query box.
+func (w *VoxelWorld) QueryObstacleBoxes(query AABB) []AABB {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+	minBX := int(math.Floor(query.MinX))
+	maxBX := int(math.Floor(query.MaxX))
+	minBY := int(math.Floor(query.MinY))
+	maxBY := int(math.Floor(query.MaxY))
+	minBZ := int(math.Floor(query.MinZ))
+	maxBZ := int(math.Floor(query.MaxZ))
 
 	var boxes []AABB
 	for by := minBY; by <= maxBY; by++ {

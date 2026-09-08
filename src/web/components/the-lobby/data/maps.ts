@@ -160,7 +160,7 @@ function emptyMapFallback(mapId: string): GameMapData {
     encounterPool: [],
     tileLayers: [],
     tilesets: [],
-    mapType: 'TILE',
+    mapType: mapId === 'DEMO_SANDBOX' ? 'FRACTAL' : 'TILE',
   };
 }
 

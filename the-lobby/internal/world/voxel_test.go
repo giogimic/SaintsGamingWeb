@@ -5,7 +5,7 @@ import (
 )
 
 func TestVoxelBitpacking(t *testing.T) {
-	matID := uint16(255)
+	matID := uint32(255)
 	shape := uint8(ShapeSlope45)
 	orient := uint8(2)
 	ao := uint8(9)

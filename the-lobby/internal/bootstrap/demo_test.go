@@ -24,7 +24,7 @@ func TestEnsureDemo(t *testing.T) {
 		t.Fatal(err)
 	}
 	def, ok := wm.GetDef(protocol.DemoMapID)
-	if !ok || def.Width != protocol.DemoMapW {
+	if !ok || def.RegionClass != "fractal" {
 		t.Fatalf("def=%v ok=%v", def, ok)
 	}
 	var n int
