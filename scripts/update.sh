@@ -213,6 +213,27 @@ fi
 
 echo -e "${PURPLE}[⚡] Active Update Profile: ${BOLD}${UPDATE_MODE^^}${NC}\n"
 
+# --- Optional Data Wiping ---
+WIPE_GAME_DATA=0
+WIPE_SOCIAL_DATA=0
+
+if [ "$UPDATE_MODE" != "restart" ] && [ "$NON_INTERACTIVE" -eq 0 ]; then
+    echo -e "${BOLD}Optional Data Wipes:${NC}"
+    
+    read -p "Wipe Game/MMO Data? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        WIPE_GAME_DATA=1
+    fi
+    
+    read -p "Wipe Social Data (Feed/Forum/News)? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        WIPE_SOCIAL_DATA=1
+    fi
+    echo ""
+fi
+
 # --- Restart Only Mode Handler ---
 if [ "$UPDATE_MODE" = "restart" ]; then
     echo -e "${CYAN}[*] Restarting platform services...${NC}"
@@ -545,6 +566,17 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
         echo -e "${GREEN}[✓] Database migrations completed.${NC}\n"
     fi
 
+    # --- Execute Optional Data Wipes ---
+    WIPE_ARGS=""
+    if [ "$WIPE_GAME_DATA" -eq 1 ]; then WIPE_ARGS="$WIPE_ARGS --game"; fi
+    if [ "$WIPE_SOCIAL_DATA" -eq 1 ]; then WIPE_ARGS="$WIPE_ARGS --social"; fi
+    
+    if [ -n "$WIPE_ARGS" ]; then
+        echo -e "${CYAN}[*] Executing requested data wipes inside container...${NC}"
+        docker exec saints-gaming-web npx tsx scripts/wipe-data.ts $WIPE_ARGS 2>/dev/null || true
+        echo -e "${GREEN}[✓] Data wipes completed.${NC}\n"
+    fi
+
     # Sync local game assets if required
     if [ "$NEED_ASSET_SYNC" -eq 1 ]; then
         echo -e "${CYAN}[*] Syncing local game assets to database...${NC}"
@@ -599,6 +631,17 @@ else
         echo -e "${CYAN}[*] Pushing database schema...${NC}"
         npx prisma db push --accept-data-loss
         npx prisma generate
+    fi
+
+    # --- Execute Optional Data Wipes ---
+    WIPE_ARGS=""
+    if [ "$WIPE_GAME_DATA" -eq 1 ]; then WIPE_ARGS="$WIPE_ARGS --game"; fi
+    if [ "$WIPE_SOCIAL_DATA" -eq 1 ]; then WIPE_ARGS="$WIPE_ARGS --social"; fi
+    
+    if [ -n "$WIPE_ARGS" ]; then
+        echo -e "${CYAN}[*] Executing requested data wipes...${NC}"
+        npx tsx scripts/wipe-data.ts $WIPE_ARGS
+        echo -e "${GREEN}[✓] Data wipes completed.${NC}\n"
     fi
 
     if [ "$NEED_BUILD" -eq 1 ]; then

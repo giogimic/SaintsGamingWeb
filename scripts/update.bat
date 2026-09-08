@@ -72,6 +72,21 @@ if "%UPDATE_MODE%"=="" (
 echo [*] Active Update Profile: %UPDATE_MODE%
 echo.
 
+:: --- Optional Data Wiping ---
+set "WIPE_GAME_DATA=0"
+set "WIPE_SOCIAL_DATA=0"
+
+if not /i "%UPDATE_MODE%"=="restart" (
+    echo Optional Data Wipes:
+    
+    set /p "WIPE_GAME_CHOICE=Wipe Game/MMO Data? (y/N): "
+    if /i "!WIPE_GAME_CHOICE!"=="y" set "WIPE_GAME_DATA=1"
+    
+    set /p "WIPE_SOCIAL_CHOICE=Wipe Social Data (Feed/Forum/News)? (y/N): "
+    if /i "!WIPE_SOCIAL_CHOICE!"=="y" set "WIPE_SOCIAL_DATA=1"
+    echo.
+)
+
 if /i "%UPDATE_MODE%"=="restart" (
     echo [*] Restarting Saints Gaming platform...
     echo     If running manually, press Ctrl+C in your terminal and run 'npm run dev' or 'npm run start'.
@@ -163,6 +178,15 @@ if "!NEED_DB!"=="1" (
     echo [*] Skipping database migration (no schema changes).
 )
 
+:: --- Execute Data Wipes ---
+set "WIPE_ARGS="
+if "!WIPE_GAME_DATA!"=="1" set "WIPE_ARGS=!WIPE_ARGS! --game"
+if "!WIPE_SOCIAL_DATA!"=="1" set "WIPE_ARGS=!WIPE_ARGS! --social"
+
+if not "!WIPE_ARGS!"=="" (
+    echo [*] Executing requested data wipes...
+    call npx tsx scripts\wipe-data.ts !WIPE_ARGS!
+)
 :: --- Build Next.js (if needed) ---
 if "!NEED_BUILD!"=="1" (
     echo [*] Building Next.js application...
