@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -113,6 +113,7 @@ export function GameInitializationWizard() {
   const [startingMap, setStartingMap] = useState<SetupStartingMapData>(() => ({
     id: 'STARTING_MEADOW',
     name: 'Starting Meadow',
+    mapType: 'FRACTAL',
     widthChunks: 2,
     depthChunks: 2,
     heightChunks: 1,
@@ -129,14 +130,6 @@ export function GameInitializationWizard() {
         category: 'SPAWN',
         position: { x: 16, y: 16, z: 16 },
         interactPrompt: 'Respawn Sanctuary',
-      },
-      {
-        id: 'town_gate',
-        name: 'Capital City Portal',
-        category: 'WARP',
-        position: { x: 4, y: 16, z: 16 },
-        targetMapId: 'SAINTS_VILLAGE',
-        interactPrompt: 'Warp to Capital City',
       },
     ],
   }));

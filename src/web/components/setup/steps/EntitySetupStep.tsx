@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   User,
   Sparkles,
@@ -82,6 +83,11 @@ export function EntitySetupStep({
 }: EntitySetupStepProps) {
   const isCreatureGame = gameDefinition.genre === 'CREATURE_MMO';
   const [activeTab, setActiveTab] = useState<'characters' | 'creatures'>('characters');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Asset Picker State
   const [pickerContext, setPickerContext] = useState<{ entityType: 'CHARACTER' | 'CREATURE'; role: string } | null>(null);
@@ -166,9 +172,9 @@ export function EntitySetupStep({
       <AssetUploadPanel />
       <div className="space-y-4">
         {/* SETUP ASSET PICKER OVERLAY */}
-        {pickerContext && (
+        {mounted && pickerContext && createPortal(
           <div
-            className="pointer-events-auto fixed inset-0 z-[100] p-4 flex items-center justify-center animate-in fade-in duration-200"
+            className="pointer-events-auto fixed inset-0 z-[9999] p-4 flex items-center justify-center animate-in fade-in duration-200"
             style={{ background: 'rgba(5,0,15,0.96)', backdropFilter: 'blur(10px)' }}
           >
             <div className="w-full max-w-3xl h-[80vh] bg-[#0a051d] border border-primary/40 rounded-2xl flex flex-col overflow-hidden shadow-2xl">
@@ -203,7 +209,8 @@ export function EntitySetupStep({
                 />
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* SECTION HEADER & TABS */}

@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { normalizeAtlasGridData, getAdjacentAtlasNeighbors } from "@/shared/game/atlas/spatialAtlas";
 import { DEFAULT_WORLD_PROFILE_ID } from "@/shared/game/worldProfiles";
 import { AuditService } from "@/server/audit/AuditService";
-
+import { ProceduralGenerator } from "@/shared/game/voxel/proceduralGenerator";
 
 export const dynamic = 'force-dynamic';
 
@@ -258,6 +258,44 @@ export async function POST(request: Request) {
               ? parsedGates.gates 
               : (Array.isArray(parsedGates) ? parsedGates : []);
             const spawnPoint = parsedGates.spawnPoint;
+
+            if (node.generationScope === 'infinite' && Object.keys(cleanConnections).length > 0) {
+              const gen = new ProceduralGenerator(42);
+              const spawnX = typeof spawnPoint?.x === 'number' ? spawnPoint.x : 16;
+              const spawnZ = typeof spawnPoint?.y === 'number' ? spawnPoint.y : 16;
+              const portalDistance = 128;
+
+              const directions = [
+                { dir: 'north', dx: 0, dz: -portalDistance },
+                { dir: 'south', dx: 0, dz: portalDistance },
+                { dir: 'east', dx: portalDistance, dz: 0 },
+                { dir: 'west', dx: -portalDistance, dz: 0 },
+              ];
+
+              for (const { dir, dx, dz } of directions) {
+                const targetMapId = cleanConnections[dir];
+                const gateId = `portal_${dir}`;
+                
+                // Remove existing gate for this direction
+                const existingIdx = baseGates.findIndex((g: any) => g.id === gateId);
+                if (existingIdx !== -1) baseGates.splice(existingIdx, 1);
+
+                if (targetMapId) {
+                  const px = spawnX + dx;
+                  const pz = spawnZ + dz;
+                  const py = gen.getSurfaceElevation(px, pz);
+
+                  baseGates.push({
+                    id: gateId,
+                    name: `Portal to ${targetMapId}`,
+                    category: 'PORTAL',
+                    position: { x: px, y: pz, z: py },
+                    targetMapId: targetMapId,
+                    interactPrompt: `Enter ${targetMapId}`,
+                  });
+                }
+              }
+            }
 
             const updatedGatesData = JSON.stringify({
               ...(spawnPoint ? { spawnPoint } : {}),

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { PanelId, useEditorStore, STUDIO_DOCK_META } from './editor-store';
 import { X, Minus, Maximize2, Square, GripVertical } from 'lucide-react';
 
@@ -26,6 +27,10 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
   const panelRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
   // Track drag position in ref for GPU-composited transforms (no React re-renders during drag)
   const dragPosRef = useRef({ x: 0, y: 0 });
   const dragOffset = useRef({ x: 0, y: 0 });
@@ -35,7 +40,7 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
     toggleCollapse(id);
   }, [id, toggleCollapse]);
 
-  if (!panelState?.isOpen) return null;
+  if (!panelState?.isOpen || !mounted) return null;
 
   const { x, y, width, height, title, isCollapsed, isMaximized, zIndex } = panelState;
   const blurb = STUDIO_DOCK_META[id]?.blurb;
@@ -107,7 +112,7 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
 
   const displayTitle = propsTitle || title;
 
-  return (
+  return createPortal(
     <div
       ref={panelRef}
       onPointerMove={handlePointerMove}
@@ -222,7 +227,8 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 };
 

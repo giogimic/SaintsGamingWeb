@@ -511,6 +511,29 @@ export const VOXEL_MATERIAL_CATALOG: Record<number, VoxelMaterialDefinition> = {
     terrainCategory: 'GRASS',
     isTransparent: true,
   },
+
+  [VOXEL_MAT_ATLAS_PORTAL]: {
+    id: VOXEL_MAT_ATLAS_PORTAL,
+    slug: 'atlas_portal',
+    name: 'Atlas Portal Matrix',
+    textureSource: CANONICAL_VOXEL_TEXTURE,
+    colorHex: '#38bdf8',
+    tintRgba: [0.22, 0.74, 0.97, 1.0], // cyan/blue emissive tint
+    faceMapping: {
+      top: UV_OBSIDIAN,
+      bottom: UV_OBSIDIAN,
+      north: UV_OBSIDIAN,
+      south: UV_OBSIDIAN,
+      east: UV_OBSIDIAN,
+      west: UV_OBSIDIAN,
+      side: UV_OBSIDIAN,
+    },
+    physics: VoxelPhysics.SOLID_OBSTACLE,
+    terrainCategory: 'METAL',
+    roughness: 0.1, // Shiny
+    metallic: 0.9,
+    isTransparent: false,
+  },
 };
 
 export function getVoxelMaterialDef(materialId: number): VoxelMaterialDefinition {

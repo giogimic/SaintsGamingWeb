@@ -74,6 +74,16 @@ export class ProceduralGenerator {
   }
 
   /**
+   * Retrieves the exact surface elevation (Y coordinate) for a given global X, Z.
+   */
+  public getSurfaceElevation(wx: number, wz: number): number {
+    const biome = this.getBiomeAt(wx, wz);
+    const offset = this.noiseElevation.fBm(wx, wz, biome.terrain);
+    const surfaceY = Math.round(biome.terrain.baseHeight + offset);
+    return Math.max(1, Math.min(31, surfaceY));
+  }
+
+  /**
    * Generates a fully populated 32x32x32 VoxelChunk.
    */
   public generateChunk(cx: number, cz: number, cy: number = 0): VoxelChunk {
@@ -91,9 +101,7 @@ export class ProceduralGenerator {
         const { terrain, strata } = biome;
 
         // Calculate elevation at this column
-        const offset = this.noiseElevation.fBm(worldX, worldZ, terrain);
-        const surfaceY = Math.round(terrain.baseHeight + offset);
-        const clampedY = Math.max(1, Math.min(31, surfaceY));
+        const clampedY = this.getSurfaceElevation(worldX, worldZ);
 
         // Draw the vertical strata column from surface down to bedrock
         for (let y = clampedY; y >= 0; y--) {

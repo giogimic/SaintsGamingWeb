@@ -3,6 +3,7 @@ import { prisma } from '@/web/lib/prisma';
 import { auth } from '@/auth';
 import { getSystemSetupStatus, SETUP_SETTING_KEYS } from '@/shared/game/setup/setupDetection';
 import { generateDefaultWorldDoc, type VoxelWorldDocV3 } from '@/shared/game/voxel/VoxelWorldDoc';
+import { generateVoxelWorldDoc } from '@/shared/game/voxel/VoxelWorldGenerator';
 import { DEFAULT_STUDIO_TILESETS, DEFAULT_STUDIO_GROUND_GID } from '@/shared/game/studioTilesetBootstrap';
 import { notifyGoMapSynced } from '@/server/goMmoNotify';
 import { DEFAULT_STARTER_HERO_PRESETS } from '@/shared/game/starterHeroCatalog';
@@ -132,6 +133,16 @@ export async function POST(req: Request) {
     let voxelDoc: VoxelWorldDocV3;
     if (map.voxelDoc && map.voxelDoc.formatVersion === 3) {
       voxelDoc = map.voxelDoc;
+    } else if (map.mapType === 'FRACTAL') {
+      voxelDoc = generateVoxelWorldDoc({
+        id: mapId,
+        name: mapName,
+        widthChunks,
+        depthChunks,
+        blockSizePx,
+        mode: 'procedural',
+        seed: Date.now().toString(),
+      });
     } else {
       voxelDoc = generateDefaultWorldDoc(widthChunks, depthChunks, blockSizePx);
       voxelDoc.id = mapId;

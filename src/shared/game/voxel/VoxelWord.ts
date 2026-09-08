@@ -92,6 +92,7 @@ export const VOXEL_MAT_CROP_WHEAT = 15;
 export const VOXEL_MAT_CROP_CARROT = 16;
 export const VOXEL_MAT_CROP_HERB = 17;
 export const VOXEL_MAT_FOLIAGE_FLOWER = 18;
+export const VOXEL_MAT_ATLAS_PORTAL = 19;
 
 export interface VoxelDecoded {
   materialId: number;

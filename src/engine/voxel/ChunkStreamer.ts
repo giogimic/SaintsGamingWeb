@@ -2,12 +2,15 @@ import { VoxelWorld } from '../../shared/game/voxel/VoxelWorldDoc';
 import { VoxelChunk, CHUNK_SIZE_X, CHUNK_SIZE_Z } from '../../shared/game/voxel/VoxelChunk';
 import { VoxelController } from '../VoxelController';
 import { ProceduralGenerator } from '../../shared/game/voxel/proceduralGenerator';
+import { VOXEL_MAT_ATLAS_PORTAL, VOXEL_MAT_STONE, packVoxel, VoxelShape, VoxelOrientation, VoxelPhysics } from '../../shared/game/voxel/VoxelWord';
 
 export class ChunkStreamer {
   private loadedChunks = new Set<string>();
   private pendingChunks = new Set<string>();
   
-  public renderRadius = 3; // Default 3 chunks (radius)
+  public visibleRadius = 8;
+  public preloadRadius = 10;
+  public evictRadius = 12;
   
   private currentCx = 0;
   private currentCz = 0;
@@ -23,7 +26,9 @@ export class ChunkStreamer {
   }
 
   public setRenderRadius(radius: number) {
-    this.renderRadius = radius;
+    this.visibleRadius = radius;
+    this.preloadRadius = radius + 2;
+    this.evictRadius = radius + 4;
     this.updateStreaming(this.currentCx, this.currentCz, true);
   }
 
@@ -36,25 +41,26 @@ export class ChunkStreamer {
     this.currentCx = cx;
     this.currentCz = cz;
 
-    const minCx = cx - this.renderRadius;
-    const maxCx = cx + this.renderRadius;
-    const minCz = cz - this.renderRadius;
-    const maxCz = cz + this.renderRadius;
+    // Use preloadRadius to determine what we need to fetch
+    const minCx = cx - this.preloadRadius;
+    const maxCx = cx + this.preloadRadius;
+    const minCz = cz - this.preloadRadius;
+    const maxCz = cz + this.preloadRadius;
 
     const neededChunks = new Set<string>();
 
     for (let x = minCx; x <= maxCx; x++) {
       for (let z = minCz; z <= maxCz; z++) {
+        // Only load if within circular radius roughly, or square is fine for now
         neededChunks.add(`${x}_${z}`);
       }
     }
 
-    // Unload chunks outside of radius + buffer (e.g., radius + 1)
-    const unloadRadius = this.renderRadius + 1;
-    const unloadMinCx = cx - unloadRadius;
-    const unloadMaxCx = cx + unloadRadius;
-    const unloadMinCz = cz - unloadRadius;
-    const unloadMaxCz = cz + unloadRadius;
+    // Unload chunks outside of evictRadius
+    const unloadMinCx = cx - this.evictRadius;
+    const unloadMaxCx = cx + this.evictRadius;
+    const unloadMinCz = cz - this.evictRadius;
+    const unloadMaxCz = cz + this.evictRadius;
 
     for (const key of this.loadedChunks) {
       const [kx, kz] = key.split('_').map(Number);
@@ -68,7 +74,7 @@ export class ChunkStreamer {
     for (const key of neededChunks) {
       if (!this.loadedChunks.has(key) && !this.pendingChunks.has(key)) {
         needsFetch = true;
-        break; // If any chunk needs fetching, we'll fetch the whole radius via API
+        break; 
       }
     }
 
@@ -97,13 +103,13 @@ export class ChunkStreamer {
 
   private async fetchChunks(cx: number, cz: number) {
     // We fetch a radius around the cx, cz
-    const url = `/api/maps/${this.mapSlug}/chunks?cx=${cx}&cz=${cz}&radius=${this.renderRadius}`;
+    const url = `/api/maps/${this.mapSlug}/chunks?cx=${cx}&cz=${cz}&radius=${this.preloadRadius}`;
     
     // Mark them as pending
-    const minCx = cx - this.renderRadius;
-    const maxCx = cx + this.renderRadius;
-    const minCz = cz - this.renderRadius;
-    const maxCz = cz + this.renderRadius;
+    const minCx = cx - this.preloadRadius;
+    const maxCx = cx + this.preloadRadius;
+    const minCz = cz - this.preloadRadius;
+    const maxCz = cz + this.preloadRadius;
     
     for (let x = minCx; x <= maxCx; x++) {
       for (let z = minCz; z <= maxCz; z++) {
@@ -152,10 +158,16 @@ export class ChunkStreamer {
             baseChunk.data.set(dataArray);
           }
 
-          // Tell mesher to mesh this chunk
-          const result = this.voxelController.voxelMesher?.meshChunk(world, baseChunk);
-          if (result && (this.voxelController as any).engine.rootNode) {
-            result.mesh.parent = (this.voxelController as any).engine.rootNode;
+          // Apply physical portal shrines based on gates
+          const gates = (this.voxelController.engine as any).currentRawMapData?.gatesData?.gates || [];
+          this.applyPortalShrines(baseChunk, gates);
+
+          // Tell mesher to mesh this chunk only if within visible radius
+          if (Math.abs(x - cx) <= this.visibleRadius && Math.abs(z - cz) <= this.visibleRadius) {
+            const result = this.voxelController.voxelMesher?.meshChunk(world, baseChunk);
+            if (result && (this.voxelController as any).engine.rootNode) {
+              result.mesh.parent = (this.voxelController as any).engine.rootNode;
+            }
           }
         }
       }
@@ -206,6 +218,9 @@ export class ChunkStreamer {
       const baseChunk = this.proceduralGenerator.generateChunk(cx, cz, cy);
       world.chunks.set(chunkKey, baseChunk);
 
+      const gates = (this.voxelController.engine as any).currentRawMapData?.gatesData?.gates || [];
+      this.applyPortalShrines(baseChunk, gates);
+
       if (json.chunks && json.chunks.length > 0) {
         const override = json.chunks.find((c: any) => c.cx === cx && c.cz === cz);
         if (override && override.data) {
@@ -223,6 +238,43 @@ export class ChunkStreamer {
       console.error("[ChunkStreamer] forceLoadChunk error:", e);
     } finally {
       if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('map-streaming-end'));
+    }
+  }
+
+  private applyPortalShrines(chunk: VoxelChunk, gates: any[]) {
+    for (const gate of gates) {
+      if (gate.category === 'PORTAL' && gate.position) {
+        const gx = Math.floor(gate.position.x);
+        const gy = Math.floor(gate.position.z);
+        const gz = Math.floor(gate.position.y);
+
+        // Check if gate falls in this chunk
+        const gateCx = Math.floor(gx / CHUNK_SIZE_X);
+        const gateCz = Math.floor(gz / CHUNK_SIZE_Z);
+
+        if (gateCx === chunk.cx && gateCz === chunk.cz) {
+          const localX = gx - (chunk.cx * CHUNK_SIZE_X);
+          const localZ = gz - (chunk.cz * CHUNK_SIZE_Z);
+
+          // Build a small 3x3 platform
+          for (let dx = -1; dx <= 1; dx++) {
+            for (let dz = -1; dz <= 1; dz++) {
+              const lx = localX + dx;
+              const lz = localZ + dz;
+              if (lx >= 0 && lx < CHUNK_SIZE_X && lz >= 0 && lz < CHUNK_SIZE_Z) {
+                // The platform block
+                chunk.set(lx, gy - 1, lz, packVoxel(VOXEL_MAT_STONE, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE));
+                // Clear above
+                chunk.set(lx, gy, lz, 0);
+                chunk.set(lx, gy + 1, lz, 0);
+                chunk.set(lx, gy + 2, lz, 0);
+              }
+            }
+          }
+          // The portal block
+          chunk.set(localX, gy, localZ, packVoxel(VOXEL_MAT_ATLAS_PORTAL, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE));
+        }
+      }
     }
   }
 
