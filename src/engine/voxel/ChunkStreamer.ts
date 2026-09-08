@@ -37,7 +37,7 @@ export class ChunkStreamer {
 
     const { cx, cy, cz, data: buffer } = data;
     const key = `${cx}_${cz}`;
-    const chunkKey = `${cx}_${cy}_${cz}`;
+    const chunkKey = VoxelChunk.getChunkKey(cx, cz, cy);
 
     const world = this.voxelController.voxelWorld;
     if (!world) return;
@@ -130,7 +130,7 @@ export class ChunkStreamer {
 
     // A chunk could have multiple heights (cy), but for now we assume cy=0 or we dispose all matching cx/cz
     const cy = 0; // TODO: handle multiple heights
-    const chunkKey = `${cx}_${cy}_${cz}`;
+    const chunkKey = VoxelChunk.getChunkKey(cx, cz, cy);
     
     // Dispose mesh
     this.voxelController.voxelMesher?.disposeChunkMesh(chunkKey);
