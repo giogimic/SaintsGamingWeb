@@ -48,6 +48,12 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📝 Changelog
 
+### v2.1.781 - Saints Atlas (Procedural World Generation)
+- **Mathematical World Fields:** Implemented Atlas deterministic World Fields and Geographical Fractal Areas (`FractalArea.ts`) to describe climate rules (temperature, moisture) and terrain multipliers.
+- **Atlas Decorators:** Added a deterministic `mulberry32` PRNG to `VoxelWorldGenerator` to scatter flora, trees, dead bushes, and subsurface ores onto chunks dynamically based on the generated `FractalArea` climate.
+- **Voxel Generator Refactor:** Ripped out the legacy `DeterministicNoise2D` logic and completely wired chunk generation to consume Atlas regions, enabling fully geographic and structured terrain generation.
+- **Sea Level UI:** Added a "Sea Level" configuration slider to the Procedural Map generator UI to govern global fluid boundaries.
+
 ### v2.1.776 - Canvas Editor Isolation & Cursor Drift Fixes
 - Refactored `TileCanvasBabylon` and `VoxelCanvasBabylon` tools to use `context.updateMapData` to prevent edits in secondary panels from mutating the primary map.
 - Added a `ResizeObserver` to `<canvas>` components to explicitly call `babylonEngine.engine.resize()`, resolving cursor drift when dragging panel splitters.

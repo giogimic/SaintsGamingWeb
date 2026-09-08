@@ -39,12 +39,12 @@ export const NewVoxelMapPanel: React.FC = () => {
   // Voxel Settings
   const [mapEngine, setMapEngine] = useState<'VOXEL' | 'FRACTAL'>('VOXEL');
   const [genMode, setGenMode] = useState<VoxelGenerationMode>('procedural');
-  const [terrainProfile, setTerrainProfile] = useState<VoxelTerrainProfile>('rolling_hills');
   const [seed, setSeed] = useState<string>(() => Math.floor(Math.random() * 1000000).toString());
   const [baseMaterial, setBaseMaterial] = useState<number>(VOXEL_MAT_GRASS);
   const [blockSizePx, setBlockSizePx] = useState<number>(64);
   const [baseElevation, setBaseElevation] = useState<number>(14);
   const [elevationRange, setElevationRange] = useState<number>(8);
+  const [waterLevel, setWaterLevel] = useState<number>(12);
 
   const handleSelectPreset = (preset: SizePreset) => {
     setSizePreset(preset);
@@ -108,11 +108,11 @@ export const NewVoxelMapPanel: React.FC = () => {
       heightChunks: 1,
       blockSizePx,
       mode: actualGenMode,
-      terrainProfile,
       seed,
       baseMaterial,
       baseElevation,
       elevationRange,
+      waterLevel,
     });
 
     const built = buildNewStudioMap({
@@ -326,18 +326,8 @@ export const NewVoxelMapPanel: React.FC = () => {
 
           {(mapEngine === 'FRACTAL' || genMode === 'procedural') && (
             <div className="space-y-3 bg-blue-950/10 p-3 rounded-xl border border-blue-900/30">
-              <div>
-                <label className="block text-slate-400 text-[10px] mb-1 font-semibold">Terrain Profile:</label>
-                <select
-                  value={terrainProfile}
-                  onChange={(e) => setTerrainProfile(e.target.value as any)}
-                  className="w-full px-2 py-1.5 bg-black/50 border border-border/40 rounded-lg text-[11px] text-slate-200 focus:outline-none focus:border-blue-500/50"
-                >
-                  <option value="rolling_hills">Rolling Hills</option>
-                  <option value="rugged_mountains">Rugged Mountains</option>
-                  <option value="archipelago">Archipelago / Islands</option>
-                  <option value="canyon">Canyon / Mesa</option>
-                </select>
+              <div className="text-xs text-blue-300/70 italic mb-2">
+                Atlas World Generation Engine is active. Terrain and strata will be procedurally generated based on the seed.
               </div>
 
               <div>
@@ -355,10 +345,10 @@ export const NewVoxelMapPanel: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="grid grid-cols-3 gap-3 pt-2">
                 <div>
                   <div className="flex justify-between text-[10px] text-slate-400 mb-1">
-                    <span>Base Elevation:</span>
+                    <span>Base Elev:</span>
                     <span className="text-blue-400 font-bold">{baseElevation}</span>
                   </div>
                   <input
@@ -381,6 +371,20 @@ export const NewVoxelMapPanel: React.FC = () => {
                     max={16}
                     value={elevationRange}
                     onChange={(e) => setElevationRange(parseInt(e.target.value, 10))}
+                    className="w-full accent-blue-500 cursor-pointer"
+                  />
+                </div>
+                <div>
+                  <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+                    <span>Sea Level:</span>
+                    <span className="text-blue-400 font-bold">{waterLevel}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={24}
+                    value={waterLevel}
+                    onChange={(e) => setWaterLevel(parseInt(e.target.value, 10))}
                     className="w-full accent-blue-500 cursor-pointer"
                   />
                 </div>

@@ -1,10 +1,3 @@
-/**
- * Saints Gaming Studio — Authoritative Voxel World Generator
- *
- * Deterministic chunk-level and world-level voxel procedural generation engine.
- * Same seed + same settings = 100% identical voxel words.
- */
-
 import { VoxelChunk, CHUNK_SIZE_X, CHUNK_SIZE_Z, CHUNK_SIZE_Y } from './VoxelChunk';
 import { VoxelWorld, VoxelWorldDocV3, DEFAULT_BLOCK_SIZE_PX } from './VoxelWorldDoc';
 import {
@@ -26,6 +19,11 @@ import {
   VOXEL_MAT_DUNGEON,
   VOXEL_MAT_ICE,
 } from './VoxelWord';
+import { buildAtlasWorld } from '../atlas/world/AtlasWorldBuilder';
+import { AtlasRegionResolver } from '../atlas/world/AtlasRegionResolver';
+import { calculateTerrainElevation } from '../atlas/world/TerrainModifiers';
+import { AtlasWorldContext } from '../atlas/core/AtlasWorldContext';
+import { FractalArea } from '../atlas/world/FractalArea';
 
 export type VoxelGenerationMode = 'blank' | 'foundation' | 'procedural';
 
@@ -45,190 +43,23 @@ export interface VoxelWorldGenerationConfig {
   heightChunks?: number; // default 1 (32 blocks)
   blockSizePx?: number; // default 64
   mode: VoxelGenerationMode;
-  terrainProfile?: VoxelTerrainProfile;
+  terrainProfile?: VoxelTerrainProfile; // Deprecated, but kept for UI compatibility for now
   seed?: string | number;
   baseMaterial?: number;
   baseElevation?: number; // default 16
   elevationRange?: number; // default 8
+  waterLevel?: number; // default 12
   mapWidth?: number;
   mapHeight?: number;
 }
 
-/**
- * Deterministic 32-bit hash for seed strings.
- */
-export function hashSeed(seed: string | number): number {
-  if (typeof seed === 'number') return seed >>> 0;
-  const str = String(seed);
-  let hash = 2166136261;
-  for (let i = 0; i < str.length; i++) {
-    hash ^= str.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-/**
- * Mulberry32 PRNG — high-quality 32-bit deterministic PRNG.
- */
-export class DeterministicRandom {
-  private state: number;
-
-  constructor(seed: string | number) {
-    this.state = hashSeed(seed);
-  }
-
-  public nextFloat(): number {
-    let t = (this.state += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  }
-
-  public nextInt(min: number, max: number): number {
-    return Math.floor(min + this.nextFloat() * (max - min + 1));
-  }
-}
-
-/**
- * 2D Gradient Perlin Noise implementation with deterministic seed permutation.
- */
-export class DeterministicNoise2D {
-  private perm: Uint8Array;
-
-  constructor(seed: string | number) {
-    const rng = new DeterministicRandom(seed);
-    const p = new Uint8Array(256);
-    for (let i = 0; i < 256; i++) p[i] = i;
-
-    // Fisher-Yates shuffle
-    for (let i = 255; i > 0; i--) {
-      const j = rng.nextInt(0, i);
-      const tmp = p[i];
-      p[i] = p[j];
-      p[j] = tmp;
-    }
-
-    this.perm = new Uint8Array(512);
-    for (let i = 0; i < 512; i++) {
-      this.perm[i] = p[i & 255];
-    }
-  }
-
-  private fade(t: number): number {
-    return t * t * t * (t * (t * 6 - 15) + 10);
-  }
-
-  private lerp(t: number, a: number, b: number): number {
-    return a + t * (b - a);
-  }
-
-  private grad(hash: number, x: number, y: number): number {
-    const h = hash & 7;
-    const u = h < 4 ? x : y;
-    const v = h < 4 ? y : x;
-    return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
-  }
-
-  public sample(x: number, y: number): number {
-    const X = Math.floor(x) & 255;
-    const Y = Math.floor(y) & 255;
-
-    const xf = x - Math.floor(x);
-    const yf = y - Math.floor(y);
-
-    const u = this.fade(xf);
-    const v = this.fade(yf);
-
-    const aa = this.perm[this.perm[X] + Y];
-    const ab = this.perm[this.perm[X] + Y + 1];
-    const ba = this.perm[this.perm[X + 1] + Y];
-    const bb = this.perm[this.perm[X + 1] + Y + 1];
-
-    const x1 = this.lerp(u, this.grad(aa, xf, yf), this.grad(ba, xf - 1, yf));
-    const x2 = this.lerp(u, this.grad(ab, xf, yf - 1), this.grad(bb, xf - 1, yf - 1));
-
-    return (this.lerp(v, x1, x2) + 1) * 0.5; // Normalized to 0..1
-  }
-
-  /**
-   * Multi-octave fractal noise (fBm).
-   */
-  public sampleOctaves(x: number, y: number, octaves = 3, persistence = 0.5, lacunarity = 2.0): number {
-    let total = 0;
-    let frequency = 1;
-    let amplitude = 1;
-    let maxValue = 0;
-
-    for (let i = 0; i < octaves; i++) {
-      total += this.sample(x * frequency, y * frequency) * amplitude;
-      maxValue += amplitude;
-      amplitude *= persistence;
-      frequency *= lacunarity;
-    }
-
-    return total / maxValue;
-  }
-}
-
-/**
- * Evaluates the terrain height (in voxel blocks 0..totalHeight-1) at global (wx, wz).
- */
-export function calculateTerrainHeight(
-  wx: number,
-  wz: number,
-  profile: VoxelTerrainProfile,
-  noise: DeterministicNoise2D,
-  baseElevation: number,
-  elevationRange: number,
-  maxHeight: number
-): number {
-  const scale = 0.05; // Base frequency
-
-  switch (profile) {
-    case 'flat':
-      return Math.max(1, Math.min(maxHeight - 1, baseElevation));
-
-    case 'rolling_hills': {
-      const n = noise.sampleOctaves(wx * scale, wz * scale, 3, 0.5, 2.0);
-      const h = Math.round(baseElevation + (n - 0.5) * 2 * elevationRange);
-      return Math.max(1, Math.min(maxHeight - 1, h));
-    }
-
-    case 'mountains': {
-      const n1 = noise.sampleOctaves(wx * (scale * 0.7), wz * (scale * 0.7), 4, 0.55, 2.2);
-      // Ridge noise effect
-      const ridge = 1 - Math.abs(n1 * 2 - 1);
-      const h = Math.round(baseElevation + ridge * (elevationRange * 1.5) - (elevationRange * 0.2));
-      return Math.max(1, Math.min(maxHeight - 1, h));
-    }
-
-    case 'islands': {
-      const n = noise.sampleOctaves(wx * scale, wz * scale, 3, 0.5, 2.0);
-      const h = Math.round(baseElevation + (n - 0.5) * 2 * elevationRange);
-      return Math.max(0, Math.min(maxHeight - 1, h));
-    }
-
-    case 'canyon': {
-      const n = noise.sampleOctaves(wx * (scale * 0.8), wz * (scale * 0.8), 3, 0.5, 2.0);
-      // Step quantization for terrace cliffs
-      const steps = 4;
-      const stepped = Math.floor(n * steps) / steps;
-      const h = Math.round(baseElevation + (stepped - 0.5) * 2 * elevationRange);
-      return Math.max(1, Math.min(maxHeight - 1, h));
-    }
-
-    case 'plateau': {
-      const n = noise.sampleOctaves(wx * scale, wz * scale, 2, 0.4, 2.0);
-      const threshold = 0.55;
-      const h = n > threshold
-        ? baseElevation + Math.round(elevationRange * 0.8)
-        : baseElevation - Math.round(elevationRange * 0.4);
-      return Math.max(1, Math.min(maxHeight - 1, h));
-    }
-
-    default:
-      return baseElevation;
+/** Fast deterministic PRNG (mulberry32) */
+function mulberry32(a: number) {
+  return function() {
+    var t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
   }
 }
 
@@ -238,41 +69,49 @@ export function calculateTerrainHeight(
 export function resolveVoxelAtElevation(
   wy: number,
   surfaceY: number,
-  profile: VoxelTerrainProfile,
-  baseMaterial: number,
+  area: FractalArea | null,
+  fallbackBaseMaterial: number,
   waterLevel = 12
 ): number {
   if (wy > surfaceY) {
-    // Check if water basin fills underwater air in islands profile
-    if (profile === 'islands' && wy <= waterLevel) {
+    // If the area is Golden Dunes, maybe no water. If it's islands, water.
+    // We'll just do a global water level for now for simplicity in Phase 3.
+    if (wy <= waterLevel) {
       return packVoxel(VOXEL_MAT_WATER, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SWIMMABLE_FLUID);
     }
     return VOXEL_WORD_AIR;
   }
 
-  // Exact surface block
-  if (wy === surfaceY) {
-    if (profile === 'islands' && surfaceY <= waterLevel + 1) {
-      return packVoxel(VOXEL_MAT_SAND, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
+  // Use Atlas Strata if available
+  if (area && area.strata) {
+    if (wy === surfaceY) {
+      return packVoxel(area.strata.surfaceMaterial, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
     }
-    if (profile === 'mountains' && surfaceY >= 24) {
-      return packVoxel(VOXEL_MAT_SNOW, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
+    
+    const depth = surfaceY - wy;
+    if (depth <= area.strata.subsurfaceDepth) {
+      return packVoxel(area.strata.subsurfaceMaterial, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
     }
-    return packVoxel(baseMaterial, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
+    
+    // Bottom-most block
+    if (wy === 0) {
+      return packVoxel(area.strata.bedrockMaterial, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
+    }
+
+    // Everything else is mantle
+    return packVoxel(area.strata.mantleMaterial, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
   }
 
-  // Subsurface layer (1 to 3 blocks beneath surface)
+  // Fallback to legacy logic
+  if (wy === surfaceY) {
+    return packVoxel(fallbackBaseMaterial, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
+  }
   const depth = surfaceY - wy;
   if (depth <= 2) {
-    if (baseMaterial === VOXEL_MAT_GRASS) {
+    if (fallbackBaseMaterial === VOXEL_MAT_GRASS) {
       return packVoxel(VOXEL_MAT_DIRT, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
     }
-    if (baseMaterial === VOXEL_MAT_SNOW) {
-      return packVoxel(VOXEL_MAT_STONE, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
-    }
   }
-
-  // Deep bedrock / foundation
   return packVoxel(VOXEL_MAT_STONE, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
 }
 
@@ -284,14 +123,15 @@ export function generateChunkVoxels(
   cz: number,
   cy: number,
   config: VoxelWorldGenerationConfig,
-  noise?: DeterministicNoise2D
+  atlasContext?: AtlasWorldContext,
+  atlasResolver?: AtlasRegionResolver
 ): VoxelChunk {
   const chunk = new VoxelChunk(cx, cz, cy);
   const mode = config.mode || 'foundation';
   const baseMaterial = config.baseMaterial ?? VOXEL_MAT_GRASS;
   const baseElevation = config.baseElevation ?? 16;
   const elevationRange = config.elevationRange ?? 8;
-  const profile = config.terrainProfile || 'rolling_hills';
+  const waterLevel = config.waterLevel ?? 12;
   const maxHeight = (config.heightChunks || 1) * CHUNK_SIZE_Y;
 
   // A. Blank Void
@@ -322,8 +162,7 @@ export function generateChunkVoxels(
     return chunk;
   }
 
-  // C. Procedural World Generation
-  const activeNoise = noise || new DeterministicNoise2D(config.seed || 1337);
+  // C. Procedural World Generation via Atlas
   const startWX = cx * CHUNK_SIZE_X;
   const startWZ = cz * CHUNK_SIZE_Z;
   const startWY = cy * CHUNK_SIZE_Y;
@@ -332,14 +171,98 @@ export function generateChunkVoxels(
     for (let lx = 0; lx < CHUNK_SIZE_X; lx++) {
       const wx = startWX + lx;
       const wz = startWZ + lz;
-      const surfaceY = calculateTerrainHeight(wx, wz, profile, activeNoise, baseElevation, elevationRange, maxHeight);
+      
+      let surfaceY = baseElevation;
+      let area: FractalArea | null = null;
+      
+      if (atlasContext && atlasResolver) {
+        // 1. Resolve Atlas Region
+        area = atlasResolver.resolveArea(atlasContext, wx, wz);
+        
+        // 2. Calculate Atlas Terrain Height (0.0 to ~1.0)
+        const atlasElev = calculateTerrainElevation(atlasContext, atlasResolver, wx, wz);
+        
+        // 3. Map Atlas Height (0.0 to 1.0) to world voxel coordinates
+        // We center Atlas 0.5 at baseElevation, scaling by elevationRange.
+        const mappedElev = baseElevation + (atlasElev - 0.5) * elevationRange * 2;
+        surfaceY = Math.max(1, Math.min(maxHeight - 1, Math.round(mappedElev)));
+      }
 
       for (let ly = 0; ly < CHUNK_SIZE_Y; ly++) {
         const wy = startWY + ly;
-        const word = resolveVoxelAtElevation(wy, surfaceY, profile, baseMaterial);
+        const word = resolveVoxelAtElevation(wy, surfaceY, area, baseMaterial, waterLevel);
         if (word !== VOXEL_WORD_AIR) {
           const idx = VoxelChunk.getIndex(lx, ly, lz);
           chunk.data[idx] = word;
+        }
+      }
+    }
+  }
+
+  // Phase 4: Atlas Decorators (Flora and Resources)
+  // Seed deterministic PRNG for this chunk
+  const seedStr = String(config.seed || 1337);
+  const chunkSeed = Array.from(seedStr).reduce((acc, char) => acc + char.charCodeAt(0), 0) ^ (chunk.cx * 73856093 ^ chunk.cz * 19349663);
+  const random = mulberry32(chunkSeed);
+
+  for (let lx = 0; lx < CHUNK_SIZE_X; lx++) {
+    for (let lz = 0; lz < CHUNK_SIZE_Z; lz++) {
+      const wx = chunk.cx * CHUNK_SIZE_X + lx;
+      const wz = chunk.cz * CHUNK_SIZE_Z + lz;
+      
+      const area = atlasContext && atlasResolver ? atlasResolver.resolveArea(atlasContext, wx, wz) : null;
+      if (!area || !area.decorators) continue;
+
+      // Find highest solid block in this column within this chunk
+      let topLy = -1;
+      let topWord = VOXEL_WORD_AIR;
+      for (let ly = CHUNK_SIZE_Y - 1; ly >= 0; ly--) {
+        const idx = VoxelChunk.getIndex(lx, ly, lz);
+        if (chunk.data[idx] !== VOXEL_WORD_AIR) {
+          topLy = ly;
+          topWord = chunk.data[idx];
+          break;
+        }
+      }
+
+      if (topLy >= 0 && topLy < CHUNK_SIZE_Y - 1) {
+        // Evaluate Surface Flora
+        if (area.decorators.surfaceFlora && area.decorators.surfaceFlora.length > 0) {
+          // Check if the top block is a valid surface (not water)
+          const topPhys = (topWord >>> 16) & 0xF;
+          if (topPhys !== VoxelPhysics.SWIMMABLE_FLUID) {
+            for (const rule of area.decorators.surfaceFlora) {
+              if (random() < rule.probability) {
+                const stack = rule.stackHeight || 1;
+                for (let sy = 0; sy < stack; sy++) {
+                  if (topLy + 1 + sy < CHUNK_SIZE_Y) {
+                    const idx = VoxelChunk.getIndex(lx, topLy + 1 + sy, lz);
+                    chunk.data[idx] = packVoxel(rule.material, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
+                  }
+                }
+                break; // Only spawn one surface decorator per column
+              }
+            }
+          }
+        }
+      }
+      
+      // Evaluate Subsurface Ores
+      if (area.decorators.subsurfaceOres && area.decorators.subsurfaceOres.length > 0) {
+        for (let ly = 0; ly <= topLy; ly++) {
+          if (random() < 0.05) { // Evaluate 5% of blocks for ores
+            for (const rule of area.decorators.subsurfaceOres) {
+              if (random() < rule.probability) {
+                const idx = VoxelChunk.getIndex(lx, ly, lz);
+                const phys = (chunk.data[idx] >>> 16) & 0xF;
+                // Only replace solid rock/dirt, not fluids
+                if (phys === VoxelPhysics.SOLID_OBSTACLE) {
+                  chunk.data[idx] = packVoxel(rule.material, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE);
+                  break;
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -362,12 +285,18 @@ export function generateVoxelWorldDoc(config: VoxelWorldGenerationConfig): Voxel
   world.mapWidth = config.mapWidth ?? widthChunks * CHUNK_SIZE_X;
   world.mapHeight = config.mapHeight ?? depthChunks * CHUNK_SIZE_Z;
 
-  const noise = config.mode === 'procedural' ? new DeterministicNoise2D(config.seed || 1337) : undefined;
+  let atlasContext: AtlasWorldContext | undefined;
+  let atlasResolver: AtlasRegionResolver | undefined;
+  
+  if (config.mode === 'procedural') {
+    atlasContext = buildAtlasWorld(config.seed || 1337);
+    atlasResolver = new AtlasRegionResolver();
+  }
 
   for (let cz = 0; cz < depthChunks; cz++) {
     for (let cx = 0; cx < widthChunks; cx++) {
       for (let cy = 0; cy < heightChunks; cy++) {
-        const chunk = generateChunkVoxels(cx, cz, cy, config, noise);
+        const chunk = generateChunkVoxels(cx, cz, cy, config, atlasContext, atlasResolver);
         const key = VoxelChunk.getChunkKey(cx, cz, cy);
         world.chunks.set(key, chunk);
       }
@@ -382,6 +311,7 @@ export function generateVoxelWorldDoc(config: VoxelWorldGenerationConfig): Voxel
     baseMaterial: config.baseMaterial,
     baseElevation: config.baseElevation,
     elevationRange: config.elevationRange,
+    waterLevel: config.waterLevel,
     createdAt: Date.now(),
   };
 
