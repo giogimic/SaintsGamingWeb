@@ -48,6 +48,9 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📝 Changelog
 
+### v2.1.782 - Voxel Terrain UI Fix
+- Fixed a bug where the `VoxelTerrainBrushPanel` was stuck open globally across the entire studio by correctly wrapping it in a dockable `<DraggablePanel>` window and restricting its rendering specifically to Voxel mode.
+
 ### v2.1.781 - Saints Atlas (Procedural World Generation)
 - **Mathematical World Fields:** Implemented Atlas deterministic World Fields and Geographical Fractal Areas (`FractalArea.ts`) to describe climate rules (temperature, moisture) and terrain multipliers.
 - **Atlas Decorators:** Added a deterministic `mulberry32` PRNG to `VoxelWorldGenerator` to scatter flora, trees, dead bushes, and subsurface ores onto chunks dynamically based on the generated `FractalArea` climate.

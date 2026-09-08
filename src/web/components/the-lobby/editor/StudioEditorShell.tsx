@@ -670,8 +670,10 @@ export const StudioEditorShell: React.FC = () => {
 
 
 
-          {canUseStudioDock(permissionLevel, 'voxelTerrainBrush') && (
-            <Suspense fallback={<div>Loading...</div>}><VoxelTerrainBrushPanel /></Suspense>
+          {canUseStudioDock(permissionLevel, 'voxelTerrainBrush') && studioMode === 'voxel' && (
+            <DraggablePanel id="voxelTerrainBrush" icon={<Box className="w-4 h-4 text-orange-400" />} title="Voxel Tools">
+              <Suspense fallback={<div>Loading...</div>}><VoxelTerrainBrushPanel /></Suspense>
+            </DraggablePanel>
           )}
 
           {canUseStudioDock(permissionLevel, 'procedural') && (
