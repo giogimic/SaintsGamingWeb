@@ -136,7 +136,7 @@ export function migrateLegacyDocTo32Cubic(doc: VoxelWorldDocV3): VoxelWorldDocV3
   const serializedChunks: Record<string, number[]> = {};
   for (const [chunkKey, chunk] of newChunks.entries()) {
     if (!chunk.isEmpty()) {
-      serializedChunks[chunkKey] = chunk.serializeRLE();
+      serializedChunks[chunkKey] = Array.from(chunk.serializePaletteRLEBinary());
     }
   }
 
@@ -188,8 +188,8 @@ export function reindexDocToSpatial32Cubic(doc: VoxelWorldDocV3): { doc: VoxelWo
     if (totalCells !== CHUNK_TOTAL_CELLS) {
       modified = true;
       // Re-encode chunk to strict 32,768 cells
-      const chunk = VoxelChunk.deserializeRLE(rleArray, cx, cz, cy);
-      updatedChunks[spatialKey] = chunk.serializeRLE();
+      const chunk = VoxelChunk.deserializePaletteRLEBinary(new Uint8Array(rleArray));
+      updatedChunks[spatialKey] = Array.from(chunk.serializePaletteRLEBinary());
     } else {
       updatedChunks[spatialKey] = rleArray;
     }

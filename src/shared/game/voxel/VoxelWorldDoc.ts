@@ -399,7 +399,7 @@ export class VoxelWorld {
     const chunkPayloads: Record<string, number[]> = {};
     for (const [key, chunk] of this.chunks.entries()) {
       if (!chunk.isEmpty()) {
-        chunkPayloads[key] = chunk.serializeRLE();
+        chunkPayloads[key] = Array.from(chunk.serializePaletteRLEBinary());
       }
     }
 
@@ -452,7 +452,7 @@ export class VoxelWorld {
     if (doc.chunks && typeof doc.chunks === 'object') {
       for (const [key, rleData] of Object.entries(doc.chunks)) {
         const { cx, cz, cy } = VoxelChunk.parseChunkKey(key);
-        const chunk = VoxelChunk.deserializeRLE(rleData, cx, cz, cy);
+        const chunk = VoxelChunk.deserializePaletteRLEBinary(new Uint8Array(rleData));
         world.chunks.set(key, chunk);
       }
     }
