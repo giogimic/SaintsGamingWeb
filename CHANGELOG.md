@@ -1,3 +1,7 @@
+## [2.1.799] - 2026-09-08
+### Fixed
+- Fixed TypeScript compiler errors blocking Next.js build: missing `VoxelChunk` export in `generate/route.ts`, Prisma schema mismatches for `WorldMap` update mutations in `initialize-game/route.ts`, and undefined footprint variables in `NewFractalMapPanel.tsx`.
+
 ## [2.1.798] - 2026-09-08
 ### Fixed
 - Fixed Next.js build error by correctly importing `STUDIO_CONTENT_WRITE_LEVEL` from `@/shared/game/studioPermissions` instead of `studioApiAuth` in the procedural map generation API routes.

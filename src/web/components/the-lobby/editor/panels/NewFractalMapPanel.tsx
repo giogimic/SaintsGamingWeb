@@ -121,8 +121,8 @@ export const NewFractalMapPanel: React.FC = () => {
         body: JSON.stringify({
           name: newMapData.name,
           gameId: newMapData.gameId,
-          width: newMapW,
-          height: newMapH,
+          width: newMapData.width,
+          height: newMapData.height,
           grid: newMapData.grid,
           gates: newMapData.gates,
           npcs: newMapData.npcs,
@@ -322,8 +322,8 @@ export const NewFractalMapPanel: React.FC = () => {
 
       <div className="flex items-center justify-between pt-4 border-t border-border/40 mt-auto shrink-0">
         <div className="text-[10px] text-muted-foreground flex flex-col">
-          <span>Footprint: <span className="text-slate-300">{newMapW}×{newMapH}</span> blocks</span>
-          <span>Chunks: <span className="text-slate-300">{Math.ceil(newMapW / 32)}×{Math.ceil(newMapH / 32)}</span></span>
+          <span>Footprint: <span className="text-slate-300">Infinite (JIT Streaming)</span></span>
+          <span>Starting Area: <span className="text-slate-300">{pregenRadius * 2 + 1}×{pregenRadius * 2 + 1} Chunks</span></span>
         </div>
         <button
           type="button"

@@ -336,8 +336,6 @@ export async function POST(req: Request) {
           tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
           version: 1,
           mapType: map.mapType || 'VOXEL',
-          fractalBorderRadius: map.mapType === 'FRACTAL' ? (map.fractalBorderRadius || 0) : null,
-          fractalPregenRadius: map.mapType === 'FRACTAL' ? (map.fractalPregenRadius || 0) : null,
         },
         update: {
           name: mapName,
@@ -345,8 +343,6 @@ export async function POST(req: Request) {
           gatesData: JSON.stringify(gatesPayload),
           gridData: JSON.stringify(initialLogicGrid),
           tileLayersData: JSON.stringify(initialTileLayers),
-          fractalBorderRadius: map.mapType === 'FRACTAL' ? (map.fractalBorderRadius || 0) : null,
-          fractalPregenRadius: map.mapType === 'FRACTAL' ? (map.fractalPregenRadius || 0) : null,
           freeformLayersData: JSON.stringify([
             {
               id: 'voxel_world_doc',

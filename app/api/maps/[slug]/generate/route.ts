@@ -5,7 +5,7 @@ import { STUDIO_CONTENT_WRITE_LEVEL } from "@/shared/game/studioPermissions";
 import { generateChunkVoxels, type VoxelWorldGenerationConfig } from "@/shared/game/voxel/VoxelWorldGenerator";
 import { buildAtlasWorld } from "@/shared/game/atlas/world/AtlasWorldBuilder";
 import { AtlasRegionResolver } from "@/shared/game/atlas/world/AtlasRegionResolver";
-import { VoxelChunk } from "@/shared/game/voxel/VoxelWord";
+import { VoxelChunk } from "@/shared/game/voxel/VoxelChunk";
 
 /**
  * POST /api/maps/[slug]/generate
