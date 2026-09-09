@@ -37,7 +37,7 @@ public cameraSettings = {
     isometricPitch: Math.PI / 4,
     isometricDistance: 14,
     playerFollowSmoothing: 0.35,
-    playerCameraStyle: 'isometric' as 'isometric' | 'follow45' | 'topdown' | 'free',
+    playerCameraStyle: 'isometric' as 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson',
     borderClamping: true,
     vignetteEnabled: true,
     vignetteWeight: 1.5,
@@ -568,15 +568,23 @@ public stopRenderLoop() {
     const horizDist = dist * Math.cos(pitch);
     const offsetX = -horizDist * Math.sin(yaw);
     const offsetZ = -horizDist * Math.cos(yaw);
-    
+
+    const isFirstPerson = this.cameraSettings.playerCameraStyle === 'firstperson';
+    const targetYWithOffset = isFirstPerson ? y + 1.2 : y;
+
     this.camera.position = new Vector3(x + offsetX, y + camY, z + offsetZ);
-    this.camera.setTarget(new Vector3(x, y, z));
+    this.camera.setTarget(
+      isFirstPerson 
+        ? new Vector3(x + Math.sin(yaw) * 10, targetYWithOffset, z + Math.cos(yaw) * 10)
+        : new Vector3(x, y, z)
+    );
     this.cameraSnapped = true;
   }
 
   public setCameraPosition(targetX: number, targetZ: number, lerpFactor?: number, targetY: number = 0) {
     if (!this.engine || !this.camera) return;
 
+    if (this.engine.editorCameraMode) return;
     if (this.isFreeCam) return;
 
     // Use current snapped value if not provided by caller (caller only provided x, z)
@@ -606,9 +614,9 @@ public stopRenderLoop() {
       return;
     }
 
-    const pitch = this.cameraPitch || Math.PI / 4;
+    const pitch = this.cameraProfile.pitch || Math.PI / 4;
     const yaw = this.cameraYaw || 0;
-    const dist = this.cameraDistance || 14;
+    const dist = this.cameraProfile.distance || 14;
 
     const camY = Math.max(1.5, dist * Math.sin(pitch));
     const horizDist = dist * Math.cos(pitch);
@@ -621,10 +629,15 @@ public stopRenderLoop() {
     const factor = this.cameraSettings.playerFollowSmoothing ?? lerpFactor ?? this.cameraProfile.lerpFactor ?? 0.35;
     const smoothFactor = 1.0 - Math.exp(-factor * 60 * dt);
     
+    const isFirstPerson = this.cameraSettings.playerCameraStyle === 'firstperson';
+    const targetYWithOffset = isFirstPerson ? targetY + 1.2 : targetY;
+
     this.camera.position = Vector3.Lerp(this.camera.position, targetCamPos, smoothFactor);
     this.camera.setTarget(Vector3.Lerp(
       this.camera.getTarget(),
-      new Vector3(targetX, targetY, targetZ),
+      isFirstPerson 
+        ? new Vector3(targetX + Math.sin(yaw) * 10, targetYWithOffset, targetZ + Math.cos(yaw) * 10)
+        : new Vector3(targetX, targetY, targetZ),
       smoothFactor
     ));
   }
@@ -709,7 +722,7 @@ public getCameraSettings() {
     return { ...this.cameraSettings };
   }
 
-public applyPlayerCameraStyle(style: 'isometric' | 'follow45' | 'topdown' | 'free') {
+public applyPlayerCameraStyle(style: 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson') {
     this.cameraSettings.playerCameraStyle = style;
     if (style === 'topdown') {
       this.camera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
@@ -723,6 +736,11 @@ public applyPlayerCameraStyle(style: 'isometric' | 'follow45' | 'topdown' | 'fre
       this.cameraProfile.pitch = Math.PI / 4;
       this.cameraProfile.distance = 16;
       this.cameraYaw = 0;
+    } else if (style === 'firstperson') {
+      this.camera.mode = FreeCamera.PERSPECTIVE_CAMERA;
+      this.camera.fov = this.cameraSettings.fov || 1.0;
+      this.cameraProfile.pitch = 0;
+      this.cameraProfile.distance = 0;
     } else if (style === 'free') {
       this.camera.mode = FreeCamera.PERSPECTIVE_CAMERA;
       this.camera.fov = this.cameraSettings.fov || 0.8;

@@ -1,3 +1,9 @@
+## [2.1.804] - 2026-09-09
+### Fixed
+- Fixed three engine regressions (MapType classification, Camera Authority properties, Editor Camera guard) and added First-Person camera mode.
+- Redesigned Starting Map Setup to properly inform the user about the initial world generation and handoff to Studio for map authoring.
+- Verified `/api/setup/wipe` logic to ensure safe realm reinitialization.
+
 ## [2.1.803] - 2026-09-08
 ### Fixed
 - Fixed 400 Bad Request error when uploading creature/character assets by restoring the `overworld` role to the `character` and `creature` Asset Import Profiles.

@@ -178,7 +178,7 @@ export default function GameOptionsMenu({
   const [combatAutoTarget, setCombatAutoTarget] = useState(true);
 
   // Camera Settings
-  const [inGameCameraStyle, setInGameCameraStyle] = useState<'isometric' | 'follow45' | 'topdown' | 'free'>('isometric');
+  const [inGameCameraStyle, setInGameCameraStyle] = useState<'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson'>('isometric');
   const [inGameFollowSmoothing, setInGameFollowSmoothing] = useState(35);
   const [inGameBorderClamping, setInGameBorderClamping] = useState(true);
   const [inGameVignette, setInGameVignette] = useState(true);
@@ -189,7 +189,7 @@ export default function GameOptionsMenu({
     (activeMapData as any)?.allowCustomPlayerCamera ??
     false
   );
-  const authorLockedCameraStyle = ((activeMapData as any)?.cameraStyle || (activeMapData as any)?.defaultCameraStyle || 'isometric') as 'isometric' | 'follow45' | 'topdown' | 'free';
+  const authorLockedCameraStyle = ((activeMapData as any)?.cameraStyle || (activeMapData as any)?.defaultCameraStyle || 'isometric') as 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson';
 
   useEffect(() => {
     try {
@@ -546,6 +546,7 @@ export default function GameOptionsMenu({
                       { id: 'follow45', label: 'Follow 45Â°', desc: 'Slight overhead tilt' },
                       { id: 'topdown', label: 'Top-Down (90Â°)', desc: 'Direct bird-eye view' },
                       { id: 'free', label: 'Free Cam', desc: 'Orbital inspection' },
+                      { id: 'firstperson', label: 'First Person', desc: 'Immersive POV' },
                     ].map((mode) => {
                       const isSelected = (allowCustomCamera ? inGameCameraStyle : authorLockedCameraStyle) === mode.id;
                       return (

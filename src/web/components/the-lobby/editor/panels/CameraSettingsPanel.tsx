@@ -63,7 +63,7 @@ export const CameraSettingsPanel: React.FC = () => {
   const [allowCustomPlayerCamera, setAllowCustomPlayerCamera] = useState<boolean>(
     Boolean((activeMapData as any)?.allowCustomCamera ?? (activeMapData as any)?.allowCustomPlayerCamera ?? false)
   );
-  const [playerCameraStyle, setPlayerCameraStyle] = useState<'isometric' | 'follow45' | 'topdown' | 'free'>(
+  const [playerCameraStyle, setPlayerCameraStyle] = useState<'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson'>(
     ((activeMapData as any)?.cameraStyle || (activeMapData as any)?.defaultCameraStyle || 'isometric') as any
   );
   const [followSmoothing, setFollowSmoothing] = useState(35); // percent
@@ -559,10 +559,11 @@ export const CameraSettingsPanel: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { id: 'isometric', label: 'Classic 2.5D Isometric', desc: 'Fixed 45° angled down with depth' },
-                  { id: 'follow45', label: 'Smooth Dynamic Follow', desc: 'Easing spring interpolation' },
+                  { id: 'isometric', label: 'Isometric 45°', desc: 'Classic diagonal view' },
+                  { id: 'follow45', label: 'Follow 45°', desc: 'Slanted third-person view' },
                   { id: 'topdown', label: 'Top-Down 90°', desc: 'Overhead planar view' },
-                  { id: 'free', label: 'Free Orbit (Allowed)', desc: 'Allow players to rotate camera' },
+                  { id: 'free', label: 'Free Camera', desc: 'Allow player orbital control' },
+                  { id: 'firstperson', label: 'First Person', desc: 'Immersive POV' },
                 ].map((mode) => (
                   <button
                     key={mode.id}

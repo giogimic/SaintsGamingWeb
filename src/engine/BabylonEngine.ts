@@ -688,11 +688,11 @@ export class BabylonEngine {
       }
     }
 
-    // Determine map rendering types based on mapType (fallback to TILE if unknown)
-    const mapType = mapData.mapType || 'TILE';
+    // Determine map rendering types based on mapType (fallback to HYBRID)
+    const mapType = mapData.mapType || 'HYBRID';
     this.mapType = mapType;
-    const isVoxelType = mapType === 'VOXEL' || mapType === 'FRACTAL';
-    const isTileType = mapType === 'TILE';
+    const isVoxelType = mapType === 'VOXEL' || mapType === 'FRACTAL' || mapType === 'HYBRID';
+    const isTileType = mapType === 'TILE' || mapType === 'HYBRID';
 
     // Authoritative 3D Voxel World Rendering
     if (isVoxelType && mapData.voxelDoc && mapData.voxelDoc.chunks && Object.keys(mapData.voxelDoc.chunks).length > 0) {

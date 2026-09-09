@@ -99,7 +99,7 @@ export function CharacterSelectAdminWindow({
   const [serverActionMsg, setServerActionMsg] = useState<string | null>(null);
 
   // Camera Policy State
-  const [cameraStyle, setCameraStyle] = useState<'isometric' | 'follow45' | 'topdown' | 'free'>('isometric');
+  const [cameraStyle, setCameraStyle] = useState<'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson'>('isometric');
   const [cameraSmoothing, setCameraSmoothing] = useState<number>(35);
   const [borderClamping, setBorderClamping] = useState<boolean>(true);
   const [vignetteEnabled, setVignetteEnabled] = useState<boolean>(true);
@@ -787,7 +787,7 @@ export function CharacterSelectAdminWindow({
                       </div>
 
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                        {(['isometric', 'follow45', 'topdown', 'free'] as const).map((style) => (
+                        {(['isometric', 'follow45', 'topdown', 'free', 'firstperson'] as const).map((style) => (
                           <button
                             key={style}
                             onClick={() => {
@@ -805,7 +805,8 @@ export function CharacterSelectAdminWindow({
                               {style === 'isometric' && 'Classic 2.5D'}
                               {style === 'follow45' && '45Â° Tilt Follow'}
                               {style === 'topdown' && 'Direct Overhead'}
-                              {style === 'free' && 'Unlocked Orbit'}
+                              {style === 'free' && 'Orbital Free Cam'}
+                              {style === 'firstperson' && 'First Person POV'}
                             </div>
                           </button>
                         ))}
