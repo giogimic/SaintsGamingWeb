@@ -1,3 +1,7 @@
+## [2.1.798] - 2026-09-08
+### Fixed
+- Fixed Next.js build error by correctly importing `STUDIO_CONTENT_WRITE_LEVEL` from `@/shared/game/studioPermissions` instead of `studioApiAuth` in the procedural map generation API routes.
+
 ## [2.1.797] - 2026-09-08
 ### Fixed
 - Fixed JIT chunk payload serialization in Next.js API endpoints (`app/api/internal/generate-chunks/route.ts` and `app/api/maps/[slug]/generate/route.ts`) to use PaletteRLEBinary byte arrays.

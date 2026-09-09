@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/web/lib/prisma";
-import { verifyStudioPermission, STUDIO_CONTENT_WRITE_LEVEL } from "@/server/auth/studioApiAuth";
+import { verifyStudioPermission } from "@/server/auth/studioApiAuth";
+import { STUDIO_CONTENT_WRITE_LEVEL } from "@/shared/game/studioPermissions";
 import { generateChunkVoxels, type VoxelWorldGenerationConfig } from "@/shared/game/voxel/VoxelWorldGenerator";
 import { buildAtlasWorld } from "@/shared/game/atlas/world/AtlasWorldBuilder";
 import { AtlasRegionResolver } from "@/shared/game/atlas/world/AtlasRegionResolver";
