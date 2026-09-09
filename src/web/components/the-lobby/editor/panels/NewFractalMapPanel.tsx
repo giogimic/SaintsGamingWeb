@@ -121,8 +121,8 @@ export const NewFractalMapPanel: React.FC = () => {
         body: JSON.stringify({
           name: newMapData.name,
           gameId: newMapData.gameId,
-          width: newMapData.width,
-          height: newMapData.height,
+          width: 8,
+          height: 8,
           grid: newMapData.grid,
           gates: newMapData.gates,
           npcs: newMapData.npcs,

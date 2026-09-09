@@ -1,3 +1,7 @@
+## [2.1.800] - 2026-09-08
+### Fixed
+- Fixed Next.js build error: resolved `width` property type mismatch in `NewFractalMapPanel.tsx` generated map payload by explicitly hardcoding `8x8` width and height dimensions for infinite procedural maps.
+
 ## [2.1.799] - 2026-09-08
 ### Fixed
 - Fixed TypeScript compiler errors blocking Next.js build: missing `VoxelChunk` export in `generate/route.ts`, Prisma schema mismatches for `WorldMap` update mutations in `initialize-game/route.ts`, and undefined footprint variables in `NewFractalMapPanel.tsx`.
