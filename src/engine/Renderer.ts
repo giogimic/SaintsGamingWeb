@@ -545,11 +545,33 @@ public stopRenderLoop() {
   }
 
   public snapCameraTo(x: number, z: number, y: number = 0) {
+    if (this.cameraSettings.borderClamping) {
+      const clamped = clampCameraFocus(
+        x,
+        z,
+        this.engine.currentMapWidth,
+        this.engine.currentMapHeight,
+        this.engine.currentTileSize
+      );
+      x = clamped.x;
+      z = clamped.z;
+    }
+
     this.cameraTargetX = x;
     this.cameraTargetY = y;
     this.cameraTargetZ = z;
-    this.cameraSnapped = false;
-    this.setCameraPosition(x, z, 1.0, y);
+
+    const pitch = this.cameraProfile.pitch || Math.PI / 4;
+    const dist = this.cameraProfile.distance || 14;
+    const yaw = this.cameraYaw || 0;
+    const camY = Math.max(1.5, dist * Math.sin(pitch));
+    const horizDist = dist * Math.cos(pitch);
+    const offsetX = -horizDist * Math.sin(yaw);
+    const offsetZ = -horizDist * Math.cos(yaw);
+    
+    this.camera.position = new Vector3(x + offsetX, y + camY, z + offsetZ);
+    this.camera.setTarget(new Vector3(x, y, z));
+    this.cameraSnapped = true;
   }
 
   public setCameraPosition(targetX: number, targetZ: number, lerpFactor?: number, targetY: number = 0) {
