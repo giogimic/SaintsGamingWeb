@@ -1,3 +1,7 @@
+## [2.1.801] - 2026-09-08
+### Fixed
+- Fixed 502 Bad Gateway and crashing in the Go MMO backend by replacing an invalid `.Mu().RLock()` call in `engine.go` with the thread-safe `.GetChunk()` wrapper on the `VoxelWorld` struct, resolving a compile-time failure.
+
 ## [2.1.800] - 2026-09-08
 ### Fixed
 - Fixed Next.js build error: resolved `width` property type mismatch in `NewFractalMapPanel.tsx` generated map payload by explicitly hardcoding `8x8` width and height dimensions for infinite procedural maps.

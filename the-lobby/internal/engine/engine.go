@@ -251,10 +251,8 @@ func (e *Engine) processMove3DInput(accountID string, in protocol.PlayerInput) {
 				ncx := cx + dx
 				ncz := cz + dz
 				// We only care about base Y level (cy=0) for ground checks
-				ckey := world.FormatChunkKey(ncx, 0, ncz)
-				mapDef.Voxel.Mu().RLock()
-				_, exists := mapDef.Voxel.Chunks[ckey]
-				mapDef.Voxel.Mu().RUnlock()
+				chunk := mapDef.Voxel.GetChunk(ncx, 0, ncz)
+				exists := chunk != nil
 				if !exists {
 					e.world.Jit.RequestChunk(p.BaseMapID, ncx, ncz)
 				}
