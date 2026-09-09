@@ -39,16 +39,12 @@ export default async function UcpLayout({
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
     siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.807";
     const ucpNavSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_in_nav" } });
-    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.807";
-    // Get social notifications
-    if (session?.user?.id) {
-      const result = await getNotifications();
-      if (result.success) {
-        notifications = result.data;
-      }
-    }
+    if (ucpNavSetting?.value === "true") showUcpInNav = true;
+
+    const realmSetting = await prisma.siteSetting.findUnique({ where: { key: "REALM_NAME" } });
+    if (realmSetting?.value) gameTitle = realmSetting.value;
   } catch (error) {
-    console.error("Layout load error:", error);
+    console.error("Failed to load SITE_VERSION from db, using fallback", error);
     siteVersion = process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.807";
   }
 
