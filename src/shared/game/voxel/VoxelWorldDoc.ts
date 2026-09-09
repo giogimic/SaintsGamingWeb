@@ -281,10 +281,13 @@ export class VoxelWorld {
   }
 
   public isWithinLocalBounds(wx: number, wy: number, wz: number): boolean {
-    return (
-      wy >= 0 &&
-      wy < this.totalHeightBlocks
-    );
+    const { cx, cz, cy } = VoxelWorld.worldToChunkCoords(wx, wy, wz);
+    if (this.chunks.has(VoxelChunk.getChunkKey(cx, cz, cy))) {
+      return wy >= 0 && wy < this.totalHeightBlocks;
+    }
+    const width = this.mapWidth ?? this.totalWidthBlocks;
+    const depth = this.mapHeight ?? this.totalDepthBlocks;
+    return wx >= 0 && wx < width && wz >= 0 && wz < depth && wy >= 0 && wy < this.totalHeightBlocks;
   }
 
   /**
@@ -302,6 +305,11 @@ export class VoxelWorld {
    * Eliminates cracks, seams, and false perimeter air at borders.
    */
   public getVoxelWithHalo(wx: number, wy: number, wz: number): { low: number; high: number } {
+    const { cx, cz, cy } = VoxelWorld.worldToChunkCoords(wx, wy, wz);
+    if (this.chunks.has(VoxelChunk.getChunkKey(cx, cz, cy))) {
+      return this.getVoxel(wx, wy, wz);
+    }
+
     const width = this.mapWidth ?? this.totalWidthBlocks;
     const depth = this.mapHeight ?? this.totalDepthBlocks;
 

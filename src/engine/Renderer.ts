@@ -61,6 +61,7 @@ public cameraProfile = { pitch: Math.PI / 4, distance: 14, lerpFactor: 0.15 };
 public editorCameraBookmark: { x: number; z: number; ortho: number } | null = null;
 public camera!: FreeCamera;
 public cameraTargetX: number = 0;
+public cameraTargetY: number = 0;
 public cameraTargetZ: number = 0;
 public cameraSnapped: boolean = false;
 public createProceduralTextures() {
@@ -543,35 +544,23 @@ public stopRenderLoop() {
     this.engine.engine.stopRenderLoop();
   }
 
-public snapCameraTo(worldX: number, worldZ: number) {
-    if (this.cameraSettings.borderClamping) {
-      const clamped = clampCameraFocus(
-        worldX,
-        worldZ,
-        this.engine.currentMapWidth,
-        this.engine.currentMapHeight,
-        this.engine.currentTileSize
-      );
-      worldX = clamped.x;
-      worldZ = clamped.z;
-    }
-
-    this.cameraTargetX = worldX;
-    this.cameraTargetZ = worldZ;
-    const pitch = this.cameraProfile.pitch || Math.PI / 4;
-    const dist = this.cameraProfile.distance || 14;
-    const yaw = this.cameraYaw || 0;
-    const camY = Math.max(1.5, dist * Math.sin(pitch));
-    const horizDist = dist * Math.cos(pitch);
-    const offsetX = -horizDist * Math.sin(yaw);
-    const offsetZ = -horizDist * Math.cos(yaw);
-    this.camera.position = new Vector3(worldX + offsetX, camY, worldZ + offsetZ);
-    this.camera.setTarget(new Vector3(worldX, 0, worldZ));
-    this.cameraSnapped = true;
+  public snapCameraTo(x: number, z: number, y: number = 0) {
+    this.cameraTargetX = x;
+    this.cameraTargetY = y;
+    this.cameraTargetZ = z;
+    this.cameraSnapped = false;
+    this.setCameraPosition(x, z, 1.0, y);
   }
 
-public setCameraPosition(targetX: number, targetZ: number, lerpFactor: number = 0.35) {
-    if (this.engine.editorCameraMode) return;
+  public setCameraPosition(targetX: number, targetZ: number, lerpFactor?: number, targetY: number = 0) {
+    if (!this.engine || !this.camera) return;
+
+    if (this.isFreeCam) return;
+
+    // Use current snapped value if not provided by caller (caller only provided x, z)
+    if (targetY === 0 && this.cameraTargetY !== 0) {
+      targetY = this.cameraTargetY;
+    }
 
     if (this.cameraSettings.borderClamping) {
       const clamped = clampCameraFocus(
@@ -586,22 +575,24 @@ public setCameraPosition(targetX: number, targetZ: number, lerpFactor: number = 
     }
 
     this.cameraTargetX = targetX;
+    this.cameraTargetY = targetY;
     this.cameraTargetZ = targetZ;
 
     if (!this.cameraSnapped) {
       // Snap immediately on first call
-      this.snapCameraTo(targetX, targetZ);
+      this.snapCameraTo(targetX, targetZ, targetY);
       return;
     }
 
-    const pitch = this.cameraProfile.pitch || Math.PI / 4;
-    const dist = this.cameraProfile.distance || 14;
+    const pitch = this.cameraPitch || Math.PI / 4;
     const yaw = this.cameraYaw || 0;
+    const dist = this.cameraDistance || 14;
+
     const camY = Math.max(1.5, dist * Math.sin(pitch));
     const horizDist = dist * Math.cos(pitch);
     const offsetX = -horizDist * Math.sin(yaw);
     const offsetZ = -horizDist * Math.cos(yaw);
-    const targetCamPos = new Vector3(targetX + offsetX, camY, targetZ + offsetZ);
+    const targetCamPos = new Vector3(targetX + offsetX, targetY + camY, targetZ + offsetZ);
     
     // Spring damper / Decoupled Physics with snappy responsive follow
     const dt = this.engine.engine.getDeltaTime() / 1000.0;
@@ -611,7 +602,7 @@ public setCameraPosition(targetX: number, targetZ: number, lerpFactor: number = 
     this.camera.position = Vector3.Lerp(this.camera.position, targetCamPos, smoothFactor);
     this.camera.setTarget(Vector3.Lerp(
       this.camera.getTarget(),
-      new Vector3(targetX, 0, targetZ),
+      new Vector3(targetX, targetY, targetZ),
       smoothFactor
     ));
   }

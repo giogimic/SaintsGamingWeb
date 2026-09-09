@@ -450,10 +450,8 @@ func (w *VoxelWorld) DeleteVoxel(wx, wy, wz int) {
 	}
 }
 
-// GetVoxel retrieves the 64-bit voxel word at global coordinates (wx, wy, wz).
-func (w *VoxelWorld) GetVoxel(wx, wy, wz int) uint64 {
-	w.mu.RLock()
-	defer w.mu.RUnlock()
+// getVoxelLocked retrieves the 64-bit voxel word at global coordinates (wx, wy, wz) without acquiring a lock.
+func (w *VoxelWorld) getVoxelLocked(wx, wy, wz int) uint64 {
 	cx := wx >> ChunkShiftX
 	cz := wz >> ChunkShiftZ
 	cy := wy >> ChunkShiftY
@@ -480,6 +478,13 @@ func (w *VoxelWorld) GetVoxel(wx, wy, wz int) uint64 {
 		return VoxelWordAir
 	}
 	return chunk.Get(lx, ly, lz)
+}
+
+// GetVoxel retrieves the 64-bit voxel word at global coordinates (wx, wy, wz).
+func (w *VoxelWorld) GetVoxel(wx, wy, wz int) uint64 {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+	return w.getVoxelLocked(wx, wy, wz)
 }
 
 // SetVoxel sets the 64-bit voxel word at global coordinates (wx, wy, wz).
@@ -521,8 +526,8 @@ func (w *VoxelWorld) SetVoxel(wx, wy, wz int, word uint64) {
 func (w *VoxelWorld) IsTraversableAt(wx, wy, wz int) bool {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
-	bodyWord := w.GetVoxel(wx, wy, wz)
-	groundWord := w.GetVoxel(wx, wy-1, wz)
+	bodyWord := w.getVoxelLocked(wx, wy, wz)
+	groundWord := w.getVoxelLocked(wx, wy-1, wz)
 
 	bodyPhys := VoxelPhysics(bodyWord)
 	bodyShape := VoxelShape(bodyWord)
@@ -593,7 +598,7 @@ func (w *VoxelWorld) QueryObstacleBoxes(query AABB) []AABB {
 	for by := minBY; by <= maxBY; by++ {
 		for bz := minBZ; bz <= maxBZ; bz++ {
 			for bx := minBX; bx <= maxBX; bx++ {
-				word := w.GetVoxel(bx, by, bz)
+				word := w.getVoxelLocked(bx, by, bz)
 				if word == 0 || IsVoxelAir(word) {
 					continue
 				}

@@ -1,4 +1,9 @@
-## [2.1.794] - 2026-09-08
+## [2.1.795] - 2026-09-08
+- Fixed 502 Bad Gateway by resolving a recursive RWMutex deadlock in the Go voxel backend.
+- Fixed infinite chunk rendering out-of-bounds error on the client.
+- Fixed camera and collision ejection bug by implementing dynamic Y-elevation tracking for FRACTAL worlds.
+
+## [2.1.795] - 2026-09-08
 ### Fixed
 - Map Generation: Fixed a 5-stage cascading failure that caused infinite fractal maps to load with finite dimensions (24x24/30x30/64x64). The Go server now correctly persists `mapType='FRACTAL'`, the Next.js API properly bypasses legacy snapshot checks for infinite maps, and the client dimension resolution now natively supports `0` bounds without falling back to defaults.
 
