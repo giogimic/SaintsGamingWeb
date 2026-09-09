@@ -143,6 +143,7 @@ export const ASSET_IMPORT_PROFILE_META: Record<AssetImportProfileId, AssetImport
     roles: {
       idle: { required: true, categoryHint: "actor", typeHint: "CHARACTER" },
       walk: { required: true, categoryHint: "actor", typeHint: "CHARACTER" },
+      overworld: { required: false, categoryHint: "actor", typeHint: "CHARACTER" },
       run: { required: false, categoryHint: "actor", typeHint: "CHARACTER" },
       attack: { required: false, categoryHint: "actor", typeHint: "CHARACTER" },
       portrait: { required: false, categoryHint: "interface", typeHint: "UI" },
@@ -168,6 +169,7 @@ export const ASSET_IMPORT_PROFILE_META: Record<AssetImportProfileId, AssetImport
     roles: {
       front: { required: true, categoryHint: "creature", typeHint: "CREATURE" },
       back: { required: true, categoryHint: "creature", typeHint: "CREATURE" },
+      overworld: { required: false, categoryHint: "creature", typeHint: "CREATURE" },
       idle: { required: false, categoryHint: "creature", typeHint: "CREATURE" },
       attack: { required: false, categoryHint: "creature", typeHint: "CREATURE" },
       hurt: { required: false, categoryHint: "creature", typeHint: "CREATURE" },

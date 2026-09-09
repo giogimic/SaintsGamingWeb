@@ -1,3 +1,7 @@
+## [2.1.803] - 2026-09-08
+### Fixed
+- Fixed 400 Bad Request error when uploading creature/character assets by restoring the `overworld` role to the `character` and `creature` Asset Import Profiles.
+
 ## [2.1.802] - 2026-09-08
 ### Fixed
 - Forced database migration trigger to ensure `CharacterClass`, `CreatureTemplate`, and `WorldMap.regionClass` columns are properly initialized on the live SQLite database, preventing the Go backend from crashing during startup.
