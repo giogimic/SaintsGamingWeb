@@ -1,5 +1,5 @@
 // Saints Gaming — Prisma Schema
-
+// Trigger DB Migration (2.1.802)
 generator client {
   provider   = "prisma-client-js"
   engineType = "library"

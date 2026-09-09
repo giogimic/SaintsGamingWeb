@@ -1,3 +1,7 @@
+## [2.1.802] - 2026-09-08
+### Fixed
+- Forced database migration trigger to ensure `CharacterClass`, `CreatureTemplate`, and `WorldMap.regionClass` columns are properly initialized on the live SQLite database, preventing the Go backend from crashing during startup.
+
 ## [2.1.801] - 2026-09-08
 ### Fixed
 - Fixed 502 Bad Gateway and crashing in the Go MMO backend by replacing an invalid `.Mu().RLock()` call in `engine.go` with the thread-safe `.GetChunk()` wrapper on the `VoxelWorld` struct, resolving a compile-time failure.
