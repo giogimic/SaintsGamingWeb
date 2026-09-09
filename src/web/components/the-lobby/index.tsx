@@ -1425,6 +1425,11 @@ export default function TheLobby({
       }
     });
 
+    socket.on('chunk_loaded', (data) => {
+      if (!data || !data.chunks) return;
+      window.dispatchEvent(new CustomEvent('chunk_loaded', { detail: data }));
+    });
+
     socket.on('creature_moved', (raw) => {
       let data = raw as any;
       const bin = normalizeBinaryPayload(raw);

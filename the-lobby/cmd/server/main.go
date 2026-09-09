@@ -70,8 +70,10 @@ func main() {
 	}
 
 	hub := mmsocket.NewHub(cfg, nil, deps)
+	wm.InitJit(cfg.NextJsUrl, cfg.InternalRpcSecret, hub.EmitToRoom)
 	eng := engine.New(cfg, wm, pm, cm, hub)
-	hub = mmsocket.NewHub(cfg, eng, deps)
+	hub = mmsocket.NewHub(cfg, eng, deps) // Re-attach because eng needs hub
+	wm.InitJit(cfg.NextJsUrl, cfg.InternalRpcSecret, hub.EmitToRoom)
 	eng = engine.New(cfg, wm, pm, cm, hub)
 
 	var socketOrigin any = cfg.CORSOrigin

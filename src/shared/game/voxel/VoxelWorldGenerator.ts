@@ -52,6 +52,8 @@ export interface VoxelWorldGenerationConfig {
   waterLevel?: number; // default 12
   mapWidth?: number;
   mapHeight?: number;
+  fractalPregenRadius?: number;
+  fractalBorderRadius?: number;
 }
 
 /** Fast deterministic PRNG (mulberry32) */
@@ -298,12 +300,25 @@ export function generateVoxelWorldDoc(config: VoxelWorldGenerationConfig): Voxel
     atlasResolver = new AtlasRegionResolver();
   }
 
-  for (let cz = 0; cz < depthChunks; cz++) {
-    for (let cx = 0; cx < widthChunks; cx++) {
-      for (let cy = 0; cy < heightChunks; cy++) {
-        const chunk = generateChunkVoxels(cx, cz, cy, config, atlasContext, atlasResolver);
-        const key = VoxelChunk.getChunkKey(cx, cz, cy);
-        world.chunks.set(key, chunk);
+  if (config.fractalPregenRadius !== undefined) {
+    const r = config.fractalPregenRadius;
+    for (let cz = -r; cz <= r; cz++) {
+      for (let cx = -r; cx <= r; cx++) {
+        for (let cy = 0; cy < heightChunks; cy++) {
+          const chunk = generateChunkVoxels(cx, cz, cy, config, atlasContext, atlasResolver);
+          const key = VoxelChunk.getChunkKey(cx, cz, cy);
+          world.chunks.set(key, chunk);
+        }
+      }
+    }
+  } else {
+    for (let cz = 0; cz < depthChunks; cz++) {
+      for (let cx = 0; cx < widthChunks; cx++) {
+        for (let cy = 0; cy < heightChunks; cy++) {
+          const chunk = generateChunkVoxels(cx, cz, cy, config, atlasContext, atlasResolver);
+          const key = VoxelChunk.getChunkKey(cx, cz, cy);
+          world.chunks.set(key, chunk);
+        }
       }
     }
   }
@@ -317,6 +332,8 @@ export function generateVoxelWorldDoc(config: VoxelWorldGenerationConfig): Voxel
     baseElevation: config.baseElevation,
     elevationRange: config.elevationRange,
     waterLevel: config.waterLevel,
+    fractalPregenRadius: config.fractalPregenRadius,
+    fractalBorderRadius: config.fractalBorderRadius,
     createdAt: Date.now(),
   };
 

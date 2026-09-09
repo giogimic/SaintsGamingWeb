@@ -122,6 +122,8 @@ export function GameInitializationWizard() {
     blockSizePx: 64,
     foundationMaterial: 'gunmetal',
     topologyArchetype: 'flat_bedrock',
+    fractalBorderRadius: 0,
+    fractalPregenRadius: 0,
     spawnPoint: { x: 16, y: 16, z: 16 },
     gates: [
       {

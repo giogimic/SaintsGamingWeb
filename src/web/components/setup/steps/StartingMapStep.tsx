@@ -50,6 +50,8 @@ export interface SetupStartingMapData {
   gates?: SetupGateDefinition[];
   voxelDoc?: VoxelWorldDocV3;
   mapType?: 'TILE' | 'VOXEL' | 'FRACTAL';
+  fractalBorderRadius?: number;
+  fractalPregenRadius?: number;
 }
 
 interface StartingMapStepProps {
@@ -407,35 +409,64 @@ export function StartingMapStep({
               </div>
 
               {/* CHUNK VOLUME PRESETS */}
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
-                  Volume Dimensions (1 Chunk = 16x16x32 Voxels)
-                </label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {[
-                    { w: 2, d: 2, label: '2x2 Chunks', blocks: '32x32 Blocks', desc: 'Starting Zone' },
-                    { w: 3, d: 3, label: '3x3 Chunks', blocks: '48x48 Blocks', desc: 'Regional Hub' },
-                    { w: 4, d: 4, label: '4x4 Chunks', blocks: '64x64 Blocks', desc: 'Open World' },
-                  ].map((preset) => {
-                    const isSelected = widthChunks === preset.w && depthChunks === preset.d;
-                    return (
-                      <button
-                        key={`${preset.w}x${preset.d}`}
-                        type="button"
-                        onClick={() => handleApplyDimensions(preset.w, preset.d)}
-                        className={`p-1.5 rounded border text-left transition cursor-pointer flex flex-col justify-between ${
-                          isSelected
-                            ? 'bg-primary/20 border-primary text-white shadow-sm'
-                            : 'bg-[#0a1628]/60 border-border/40 text-muted-foreground hover:border-primary/40'
-                        }`}
-                      >
-                        <span className="text-xs font-bold text-foreground">{preset.label}</span>
-                        <span className="text-[10px] text-primary/90 mt-0.5">{preset.blocks}</span>
-                      </button>
-                    );
-                  })}
+              {startingMap.mapType !== 'FRACTAL' ? (
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                    Volume Dimensions (1 Chunk = 16x16x32 Voxels)
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { w: 2, d: 2, label: '2x2 Chunks', blocks: '32x32 Blocks', desc: 'Starting Zone' },
+                      { w: 3, d: 3, label: '3x3 Chunks', blocks: '48x48 Blocks', desc: 'Regional Hub' },
+                      { w: 4, d: 4, label: '4x4 Chunks', blocks: '64x64 Blocks', desc: 'Open World' },
+                    ].map((preset) => {
+                      const isSelected = widthChunks === preset.w && depthChunks === preset.d;
+                      return (
+                        <button
+                          key={`${preset.w}x${preset.d}`}
+                          type="button"
+                          onClick={() => handleApplyDimensions(preset.w, preset.d)}
+                          className={`p-1.5 rounded border text-left transition cursor-pointer flex flex-col justify-between ${
+                            isSelected
+                              ? 'bg-primary/20 border-primary text-white shadow-sm'
+                              : 'bg-[#0a1628]/60 border-border/40 text-muted-foreground hover:border-primary/40'
+                          }`}
+                        >
+                          <span className="text-xs font-bold text-foreground">{preset.label}</span>
+                          <span className="text-[10px] text-primary/90 mt-0.5">{preset.blocks}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                      World Border Radius (Chunks)
+                    </label>
+                    <input
+                      type="number"
+                      value={startingMap.fractalBorderRadius || 0}
+                      onChange={(e) => onChange({ ...startingMap, fractalBorderRadius: Math.max(0, parseInt(e.target.value) || 0) })}
+                      className="w-full bg-[#050b14] border border-border/60 rounded px-2 py-1 text-xs text-foreground outline-none"
+                    />
+                    <p className="text-[9px] text-muted-foreground mt-0.5">0 means infinite.</p>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                      Pre-generate Radius (Chunks)
+                    </label>
+                    <input
+                      type="number"
+                      value={startingMap.fractalPregenRadius || 0}
+                      onChange={(e) => onChange({ ...startingMap, fractalPregenRadius: Math.max(0, parseInt(e.target.value) || 0) })}
+                      className="w-full bg-[#050b14] border border-border/60 rounded px-2 py-1 text-xs text-foreground outline-none"
+                    />
+                    <p className="text-[9px] text-muted-foreground mt-0.5">Loads chunks before first launch.</p>
+                  </div>
+                </div>
+              )}
 
               {/* BEDROCK FOUNDATION MATERIAL */}
               <div>

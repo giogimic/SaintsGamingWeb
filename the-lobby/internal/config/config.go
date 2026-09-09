@@ -20,6 +20,8 @@ type Config struct {
 	LobbyCapacity  int
 	CORSOrigin     string
 	PublicBaseURL  string
+	InternalRpcSecret string
+	NextJsUrl      string
 }
 
 func getenv(key, fallback string) string {
@@ -80,6 +82,8 @@ func Load() Config {
 		LobbyCapacity: getenvInt("GO_MMO_LOBBY_CAPACITY", 50),
 		CORSOrigin:    getenv("GO_MMO_CORS_ORIGIN", "*"),
 		PublicBaseURL: getenv("GO_MMO_PUBLIC_URL", "http://127.0.0.1:3001"),
+		InternalRpcSecret: getenv("INTERNAL_RPC_SECRET", "dev-rpc-secret-123"),
+		NextJsUrl:     getenv("NEXT_JS_URL", "http://127.0.0.1:3000"),
 	}
 }
 

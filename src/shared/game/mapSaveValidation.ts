@@ -49,7 +49,7 @@ export function validateVoxelDocSave(doc: any): MapSaveValidationResult {
 }
 
 const MIN_DIM = 8;
-const MAX_DIM = 128;
+const MAX_DIM = 256;
 
 export function validateMapSave(
   input: MapSaveValidationInput,

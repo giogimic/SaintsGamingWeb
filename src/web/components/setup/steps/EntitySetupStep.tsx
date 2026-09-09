@@ -33,10 +33,7 @@ function SetupWindow({ title, icon, onClose, children }: { title: string, icon?:
   if (!mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] pointer-events-none flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm pointer-events-auto" onClick={onClose} />
-      
+    <div className="fixed inset-0 z-[50] pointer-events-none flex items-center justify-center">
       {/* Window */}
       <div className="pointer-events-auto relative bg-[#050b14]/90 backdrop-blur-xl rounded-xl flex flex-col overflow-hidden font-sans border border-primary/40 shadow-[0_0_24px_rgba(203,178,106,0.12),0_8px_32px_rgba(0,0,0,0.5)] w-[800px] h-[600px] max-w-[90vw] max-h-[90vh]">
         {/* Title Bar */}

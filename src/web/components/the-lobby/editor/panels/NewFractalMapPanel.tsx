@@ -31,9 +31,8 @@ export const NewFractalMapPanel: React.FC = () => {
 
   const [newMapSlug, setNewMapSlug] = useState('');
   const [newMapName, setNewMapName] = useState('');
-  const [sizePreset, setSizePreset] = useState<SizePreset>('standard');
-  const [newMapW, setNewMapW] = useState(64);
-  const [newMapH, setNewMapH] = useState(64);
+  const [borderRadius, setBorderRadius] = useState<number>(0);
+  const [pregenRadius, setPregenRadius] = useState<number>(1);
   const [isCreating, setIsCreating] = useState(false);
 
   // Voxel Settings
@@ -45,23 +44,6 @@ export const NewFractalMapPanel: React.FC = () => {
   const [baseElevation, setBaseElevation] = useState<number>(14);
   const [elevationRange, setElevationRange] = useState<number>(8);
   const [waterLevel, setWaterLevel] = useState<number>(12);
-
-  const handleSelectPreset = (preset: SizePreset) => {
-    setSizePreset(preset);
-    if (preset === 'tiny') {
-      setNewMapW(16);
-      setNewMapH(16);
-    } else if (preset === 'small') {
-      setNewMapW(32);
-      setNewMapH(32);
-    } else if (preset === 'standard') {
-      setNewMapW(64);
-      setNewMapH(64);
-    } else if (preset === 'large') {
-      setNewMapW(128);
-      setNewMapH(128);
-    }
-  };
 
   const handleRandomizeSeed = () => {
     soundSynth?.playActionSound?.();
@@ -95,16 +77,13 @@ export const NewFractalMapPanel: React.FC = () => {
       return;
     }
 
-    const widthChunks = Math.max(1, Math.ceil(newMapW / 32));
-    const depthChunks = Math.max(1, Math.ceil(newMapH / 32));
-
     const actualGenMode = mapEngine === 'FRACTAL' ? 'procedural' : genMode;
 
     const generatedVoxelDoc = generateVoxelWorldDoc({
       id: slug,
       name: newMapName.trim() || slug,
-      widthChunks,
-      depthChunks,
+      widthChunks: 1, // Doesn't matter for infinite procedural fractal maps
+      depthChunks: 1,
       heightChunks: 1,
       blockSizePx,
       mode: actualGenMode,
@@ -119,8 +98,8 @@ export const NewFractalMapPanel: React.FC = () => {
       slug,
       name: newMapName.trim() || slug,
       gameId: activeGameId,
-      width: newMapW,
-      height: newMapH,
+      width: 8,
+      height: 8,
       mapType: mapEngine,
     });
     if (!built.ok) {
@@ -153,6 +132,8 @@ export const NewFractalMapPanel: React.FC = () => {
           tilesets: newMapData.tilesets,
           voxelDoc: generatedVoxelDoc,
           blockSizePx,
+          fractalBorderRadius: borderRadius,
+          fractalPregenRadius: pregenRadius,
         }),
       });
 
@@ -211,58 +192,32 @@ export const NewFractalMapPanel: React.FC = () => {
 
 
 
-        <div>
-          <label className="block text-slate-400 text-[11px] mb-1 font-semibold uppercase tracking-wider">Map Size Preset</label>
-          <div className="grid grid-cols-2 gap-1.5">
-            {[
-              { id: 'tiny', label: 'Tiny (16×16)' },
-              { id: 'small', label: 'Small (32×32)' },
-              { id: 'standard', label: 'Standard (64×64)' },
-              { id: 'large', label: 'Large (128×128)' },
-              { id: 'custom', label: 'Custom' },
-            ].map((preset) => (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => handleSelectPreset(preset.id as SizePreset)}
-                className={`px-2 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  sizePreset === preset.id
-                    ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40'
-                    : 'bg-black/30 text-slate-400 border border-border/30 hover:border-border/60 hover:text-slate-300'
-                }`}
-              >
-                {preset.label}
-              </button>
-            ))}
+        <div className="grid grid-cols-2 gap-3 bg-black/20 p-2.5 rounded-xl border border-border/20">
+          <div>
+            <label className="block text-slate-400 text-[10px] mb-1 font-semibold">World Border Radius (Chunks)</label>
+            <input
+              type="number"
+              min={0}
+              max={64}
+              value={borderRadius}
+              onChange={(e) => setBorderRadius(Math.max(0, parseInt(e.target.value) || 0))}
+              className="w-full px-2 py-1 bg-black/50 border border-border/50 rounded-md text-xs text-slate-200"
+            />
+            <span className="text-[9px] text-muted-foreground mt-0.5 block">0 = Infinite (No Border)</span>
+          </div>
+          <div>
+            <label className="block text-slate-400 text-[10px] mb-1 font-semibold">Pre-Generate Radius (Chunks)</label>
+            <input
+              type="number"
+              min={0}
+              max={16}
+              value={pregenRadius}
+              onChange={(e) => setPregenRadius(Math.max(0, parseInt(e.target.value) || 0))}
+              className="w-full px-2 py-1 bg-black/50 border border-border/50 rounded-md text-xs text-slate-200"
+            />
+            <span className="text-[9px] text-muted-foreground mt-0.5 block">Radius of initial spawn area to build immediately.</span>
           </div>
         </div>
-
-        {sizePreset === 'custom' && (
-          <div className="grid grid-cols-2 gap-3 bg-black/20 p-2.5 rounded-xl border border-border/20">
-            <div>
-              <label className="block text-slate-400 text-[10px] mb-1 font-semibold">Width (Tiles)</label>
-              <input
-                type="number"
-                min={8}
-                max={256}
-                value={newMapW}
-                onChange={(e) => setNewMapW(Math.max(8, Math.min(256, parseInt(e.target.value) || 32)))}
-                className="w-full px-2 py-1 bg-black/50 border border-border/50 rounded-md text-xs text-slate-200"
-              />
-            </div>
-            <div>
-              <label className="block text-slate-400 text-[10px] mb-1 font-semibold">Height (Tiles)</label>
-              <input
-                type="number"
-                min={8}
-                max={256}
-                value={newMapH}
-                onChange={(e) => setNewMapH(Math.max(8, Math.min(256, parseInt(e.target.value) || 32)))}
-                className="w-full px-2 py-1 bg-black/50 border border-border/50 rounded-md text-xs text-slate-200"
-              />
-            </div>
-          </div>
-        )}
 
         <div className="space-y-4 pt-2 border-t border-border/20">
 

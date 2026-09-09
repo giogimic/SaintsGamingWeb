@@ -232,6 +232,35 @@ func (e *Engine) processMove3DInput(accountID string, in protocol.PlayerInput) {
 		// Trust client for UX
 		e.players.ApplyMove3D(accountID, clientX, clientY, clientZ, clientVX, clientVY, clientVZ, in.Sequence)
 	}
+
+	// Just-In-Time Fractal Chunk Generation Check
+	if e.world.Jit != nil {
+		cx := int(clientX / 32)
+		if clientX < 0 && int(clientX)%32 != 0 {
+			cx--
+		}
+		cz := int(clientZ / 32)
+		if clientZ < 0 && int(clientZ)%32 != 0 {
+			cz--
+		}
+		
+		// If player is hitting the boundary or close to it, generate adjacent chunks
+		// Sweep a 3x3 around the player's current chunk
+		for dx := -1; dx <= 1; dx++ {
+			for dz := -1; dz <= 1; dz++ {
+				ncx := cx + dx
+				ncz := cz + dz
+				// We only care about base Y level (cy=0) for ground checks
+				ckey := world.FormatChunkKey(ncx, 0, ncz)
+				mapDef.Voxel.Mu().RLock()
+				_, exists := mapDef.Voxel.Chunks[ckey]
+				mapDef.Voxel.Mu().RUnlock()
+				if !exists {
+					e.world.Jit.RequestChunk(p.BaseMapID, ncx, ncz)
+				}
+			}
+		}
+	}
 }
 
 func (e *Engine) netTick() {

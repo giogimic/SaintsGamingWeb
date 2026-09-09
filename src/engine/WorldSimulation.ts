@@ -136,10 +136,21 @@ export class WorldSimulation {
       const candWX = targetX + 0.5;
       const candWZ = mapHeight - 1 - targetY + 0.5;
 
+      let playerGroundY = 15;
+      if (typeof state.voxelWorld.totalHeightBlocks === 'number') {
+        for (let wy = state.voxelWorld.totalHeightBlocks - 1; wy >= 0; wy--) {
+          const { low } = state.voxelWorld.getVoxel(playerPos.x, wy, mapHeight - 1 - playerPos.y);
+          if (low !== undefined && !isVoxelAir(low)) {
+            playerGroundY = wy;
+            break;
+          }
+        }
+      }
+
       const vel = { x: candWX - fromWX, y: 0, z: candWZ - fromWZ };
       const sweptRes = voxelSweptController.simulateMove(
         state.voxelWorld,
-        { x: fromWX, y: 16, z: fromWZ },
+        { x: fromWX, y: playerGroundY + 1, z: fromWZ },
         vel,
         1.0,
         intentOptions?.isJumping ? 1.5 : undefined // Increase step height if jumping
@@ -149,13 +160,20 @@ export class WorldSimulation {
         return { type: 'BLOCKED', direction: dir, reason: 'WALL' };
       }
 
-      // Check ground support (must not be empty air unless active elevated block or connected seam exists)
-      const groundWord = state.voxelWorld.getVoxel(targetX, 15, mapHeight - 1 - targetY);
-      if ((!groundWord || isVoxelAir(groundWord)) && !isConnectedSeam && !sweptRes.steppedUp) {
-        const bodyWord = state.voxelWorld.getVoxel(targetX, 16, mapHeight - 1 - targetY);
-        if (!bodyWord || isVoxelAir(bodyWord)) {
-          return { type: 'BLOCKED', direction: dir, reason: 'WALL' };
+      // Check ground support (prevent walking into the void/air)
+      let targetGroundY = -1;
+      if (typeof state.voxelWorld.totalHeightBlocks === 'number') {
+        for (let wy = state.voxelWorld.totalHeightBlocks - 1; wy >= 0; wy--) {
+          const { low } = state.voxelWorld.getVoxel(targetX, wy, mapHeight - 1 - targetY);
+          if (low !== undefined && !isVoxelAir(low)) {
+            targetGroundY = wy;
+            break;
+          }
         }
+      }
+
+      if (targetGroundY < 0 && !isConnectedSeam && !sweptRes.steppedUp) {
+        return { type: 'BLOCKED', direction: dir, reason: 'WALL' };
       }
     }
 

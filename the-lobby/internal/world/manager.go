@@ -63,19 +63,26 @@ type Manager struct {
 	voxelQueue  VoxelQueue
 	maxPerShard int
 	gates       *SpiritGateRegistry
+	Jit         *GeneratorClient
 }
 
 func NewManager(maxPerShard int) *Manager {
 	if maxPerShard <= 0 {
 		maxPerShard = 50
 	}
-	return &Manager{
+	m := &Manager{
 		defs:        make(map[string]*MapDef),
 		instances:   make(map[string]*Instance),
 		voxelQueue:  make(VoxelQueue, 0),
 		maxPerShard: maxPerShard,
 		gates:       NewSpiritGateRegistry(),
 	}
+	return m
+}
+
+func (m *Manager) InitJit(nextJsURL, secret string, emitToRoom func(room, event string, payload any)) {
+	m.Jit = NewGeneratorClient(nextJsURL, secret, m)
+	m.Jit.EmitToRoom = emitToRoom
 }
 
 func (m *Manager) RegisterDef(def *MapDef) {

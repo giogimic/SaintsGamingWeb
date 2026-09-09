@@ -59,6 +59,7 @@ import {
   VoxelLogic,
   VOXEL_MAT_GRASS,
 } from '@/shared/game/voxel/VoxelWord';
+import { VoxelChunk } from '@/shared/game/voxel/VoxelChunk';
 
 /** Lobby multiplayer shard base — keep in sync with server DEMO_MAP_ID. */
 const LOBBY_MULTIPLAYER_MAP = 'DEMO_SANDBOX';
@@ -284,7 +285,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       isDevEditorOpen,
       connections: activeMap.connections,
       nodeConnections: activeMap.nodeConnections,
-      voxelWorld: (engineRef.current as any)?.voxelWorld,
+      voxelWorld: (engineRef.current as any)?.voxel?.voxelWorld,
     };
 
     const result = WorldSimulation.tryMove(worldState, targetX, targetY, intentOptions);
@@ -712,17 +713,49 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       }
     };
 
+    const handleChunkLoaded = (e: Event) => {
+      const data = (e as CustomEvent).detail;
+      if (!data || !data.chunks || !Array.isArray(data.chunks)) return;
+      const store = useGameStore.getState();
+      const activeMap = store.activeMapData;
+      if (!activeMap || !activeMap.voxelDoc) return;
+      
+      const world = (activeMap as any).__voxelWorldInstance;
+      if (!world) return;
+
+      let dirty = false;
+      for (const rleArray of data.chunks) {
+        if (!Array.isArray(rleArray)) continue;
+        try {
+          const chunk = VoxelChunk.deserializePaletteRLEBinary(new Uint8Array(rleArray));
+          if (chunk) {
+            const key = VoxelChunk.getChunkKey(chunk.cx, chunk.cz, chunk.cy);
+            world.chunks.set(key, chunk);
+            dirty = true;
+          }
+        } catch (err) {
+          console.error("Failed to deserialize chunk from chunk_loaded event", err);
+        }
+      }
+
+      if (dirty && engineRef.current && typeof (engineRef.current as any).voxel?.meshDirtyVoxelChunks === 'function') {
+        (engineRef.current as any).voxel.meshDirtyVoxelChunks();
+      }
+    };
+
     window.addEventListener('combat_update_event', handleCombatUpdate);
     window.addEventListener('node_depleted_event', handleNodeDepleted);
     window.addEventListener('node_depleted_event', handleNodeDepletedFallback);
     window.addEventListener('node_respawned_event', handleNodeRespawned);
     window.addEventListener('lobby_tile_changed', handleTileChanged);
+    window.addEventListener('chunk_loaded', handleChunkLoaded);
     return () => {
       window.removeEventListener('combat_update_event', handleCombatUpdate);
       window.removeEventListener('node_depleted_event', handleNodeDepleted);
       window.removeEventListener('node_depleted_event', handleNodeDepletedFallback);
       window.removeEventListener('node_respawned_event', handleNodeRespawned);
       window.removeEventListener('lobby_tile_changed', handleTileChanged);
+      window.removeEventListener('chunk_loaded', handleChunkLoaded);
     };
   }, [mapData]); // Added mapData to dependencies since it's used in the new listeners
 

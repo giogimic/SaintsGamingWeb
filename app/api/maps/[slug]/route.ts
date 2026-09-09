@@ -356,15 +356,17 @@ export async function POST(
       }
     }
 
-    const check = validateMapSave(
-      { grid, npcs: Array.isArray(body.npcs) ? body.npcs : [] },
-      logicTiles
-    );
-    if (!check.ok) {
-      return NextResponse.json(
-        { error: check.error, details: check.details },
-        { status: 400 }
+    if (body.mapType !== 'fractal') {
+      const check = validateMapSave(
+        { grid, npcs: Array.isArray(body.npcs) ? body.npcs : [] },
+        logicTiles
       );
+      if (!check.ok) {
+        return NextResponse.json(
+          { error: check.error, details: check.details },
+          { status: 400 }
+        );
+      }
     }
 
     if (body.voxelDoc) {

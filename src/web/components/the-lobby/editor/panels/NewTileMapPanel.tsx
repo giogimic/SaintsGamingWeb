@@ -27,17 +27,17 @@ export const NewTileMapPanel: React.FC = () => {
   const handleSelectPreset = (preset: SizePreset) => {
     setSizePreset(preset);
     if (preset === 'tiny') {
-      setNewMapW(16);
-      setNewMapH(16);
-    } else if (preset === 'small') {
       setNewMapW(32);
       setNewMapH(32);
-    } else if (preset === 'standard') {
+    } else if (preset === 'small') {
       setNewMapW(64);
       setNewMapH(64);
-    } else if (preset === 'large') {
+    } else if (preset === 'standard') {
       setNewMapW(128);
       setNewMapH(128);
+    } else if (preset === 'large') {
+      setNewMapW(256);
+      setNewMapH(256);
     }
   };
 
@@ -162,10 +162,10 @@ export const NewTileMapPanel: React.FC = () => {
           <label className="block text-slate-400 text-[11px] mb-1 font-semibold uppercase tracking-wider">Map Size Preset</label>
           <div className="grid grid-cols-2 gap-1.5">
             {[
-              { id: 'tiny', label: 'Tiny (16×16)' },
-              { id: 'small', label: 'Small (32×32)' },
-              { id: 'standard', label: 'Standard (64×64)' },
-              { id: 'large', label: 'Large (128×128)' },
+              { id: 'tiny', label: 'Tiny (32×32)' },
+              { id: 'small', label: 'Small (64×64)' },
+              { id: 'standard', label: 'Standard (128×128)' },
+              { id: 'large', label: 'Large (256×256)' },
               { id: 'custom', label: 'Custom' },
             ].map((preset) => (
               <button

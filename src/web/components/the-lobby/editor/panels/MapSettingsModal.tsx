@@ -30,6 +30,9 @@ export const MapSettingsModal: React.FC<MapSettingsModalProps> = ({ mapId, onClo
   const [terrainProfile, setTerrainProfile] = useState('rolling_hills');
   const [baseElevation, setBaseElevation] = useState(14);
   const [elevationRange, setElevationRange] = useState(8);
+  const [fractalBorderRadius, setFractalBorderRadius] = useState(0);
+  const [fractalPregenRadius, setFractalPregenRadius] = useState(1);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -57,6 +60,8 @@ export const MapSettingsModal: React.FC<MapSettingsModalProps> = ({ mapId, onClo
         setTerrainProfile(meta.terrainProfile || 'rolling_hills');
         setBaseElevation(meta.baseElevation ?? 14);
         setElevationRange(meta.elevationRange ?? 8);
+        setFractalBorderRadius(meta.fractalBorderRadius ?? 0);
+        setFractalPregenRadius(meta.fractalPregenRadius ?? 1);
       }
       setLoading(false);
     });
@@ -76,6 +81,25 @@ export const MapSettingsModal: React.FC<MapSettingsModalProps> = ({ mapId, onClo
       showToast('Failed to save settings: ' + (e as Error).message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleGenerateRadius = async () => {
+    if (!mapData) return;
+    setIsGenerating(true);
+    try {
+      const res = await fetch(`/api/maps/${mapId}/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ radius: fractalPregenRadius }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to generate chunks');
+      showToast(`Generated ${data.generatedCount} chunks successfully!`);
+    } catch (e: any) {
+      showToast(e.message);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -195,6 +219,44 @@ export const MapSettingsModal: React.FC<MapSettingsModalProps> = ({ mapId, onClo
                         onChange={(e) => setElevationRange(Number(e.target.value))}
                         className="w-full accent-amber-500"
                       />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-[10px] text-slate-400 mb-1 flex justify-between">
+                        <span>Border Radius</span>
+                        <span className="text-primary">{fractalBorderRadius === 0 ? 'Infinite' : `${fractalBorderRadius} Chunks`}</span>
+                      </label>
+                      <input
+                        type="number"
+                        min={0} max={64}
+                        value={fractalBorderRadius}
+                        onChange={(e) => setFractalBorderRadius(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="w-full bg-[#0b1626] border border-border/50 rounded-lg px-3 py-1.5 text-slate-200 text-xs focus:outline-none focus:border-primary/60"
+                      />
+                    </div>
+                    
+                    <div className="flex flex-col">
+                      <label className="block text-[10px] text-slate-400 mb-1 flex justify-between">
+                        <span>Pregen Radius</span>
+                        <span className="text-primary">{fractalPregenRadius} Chunks</span>
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          min={0} max={16}
+                          value={fractalPregenRadius}
+                          onChange={(e) => setFractalPregenRadius(Math.max(0, parseInt(e.target.value) || 0))}
+                          className="w-full bg-[#0b1626] border border-border/50 rounded-lg px-3 py-1 text-slate-200 text-xs focus:outline-none focus:border-primary/60"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleGenerateRadius}
+                          disabled={isGenerating || fractalPregenRadius <= 0}
+                          className="px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {isGenerating ? 'Wait...' : 'Generate Now'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </section>

@@ -49,17 +49,17 @@ export const NewVoxelMapPanel: React.FC = () => {
   const handleSelectPreset = (preset: SizePreset) => {
     setSizePreset(preset);
     if (preset === 'tiny') {
-      setNewMapW(16);
-      setNewMapH(16);
-    } else if (preset === 'small') {
       setNewMapW(32);
       setNewMapH(32);
-    } else if (preset === 'standard') {
+    } else if (preset === 'small') {
       setNewMapW(64);
       setNewMapH(64);
-    } else if (preset === 'large') {
+    } else if (preset === 'standard') {
       setNewMapW(128);
       setNewMapH(128);
+    } else if (preset === 'large') {
+      setNewMapW(256);
+      setNewMapH(256);
     }
   };
 
@@ -215,10 +215,10 @@ export const NewVoxelMapPanel: React.FC = () => {
           <label className="block text-slate-400 text-[11px] mb-1 font-semibold uppercase tracking-wider">Map Size Preset</label>
           <div className="grid grid-cols-2 gap-1.5">
             {[
-              { id: 'tiny', label: 'Tiny (16×16)' },
-              { id: 'small', label: 'Small (32×32)' },
-              { id: 'standard', label: 'Standard (64×64)' },
-              { id: 'large', label: 'Large (128×128)' },
+              { id: 'tiny', label: 'Tiny (1×1 Chunks)' },
+              { id: 'small', label: 'Small (2×2 Chunks)' },
+              { id: 'standard', label: 'Standard (4×4 Chunks)' },
+              { id: 'large', label: 'Large (8×8 Chunks)' },
               { id: 'custom', label: 'Custom' },
             ].map((preset) => (
               <button
@@ -249,6 +249,7 @@ export const NewVoxelMapPanel: React.FC = () => {
                 onChange={(e) => setNewMapW(Math.max(8, Math.min(256, parseInt(e.target.value) || 32)))}
                 className="w-full px-2 py-1 bg-black/50 border border-border/50 rounded-md text-xs text-slate-200"
               />
+              <span className="text-[9px] text-muted-foreground mt-0.5 block">{Math.ceil(newMapW / 32)} Chunks</span>
             </div>
             <div>
               <label className="block text-slate-400 text-[10px] mb-1 font-semibold">Height (Tiles)</label>
@@ -260,6 +261,7 @@ export const NewVoxelMapPanel: React.FC = () => {
                 onChange={(e) => setNewMapH(Math.max(8, Math.min(256, parseInt(e.target.value) || 32)))}
                 className="w-full px-2 py-1 bg-black/50 border border-border/50 rounded-md text-xs text-slate-200"
               />
+              <span className="text-[9px] text-muted-foreground mt-0.5 block">{Math.ceil(newMapH / 32)} Chunks</span>
             </div>
           </div>
         )}

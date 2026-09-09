@@ -1,3 +1,10 @@
+## [2.1.797] - 2026-09-08
+### Fixed
+- Fixed JIT chunk payload serialization in Next.js API endpoints (`app/api/internal/generate-chunks/route.ts` and `app/api/maps/[slug]/generate/route.ts`) to use PaletteRLEBinary byte arrays.
+- Fixed `voxelDoc.chunks` type mismatches; correctly stores chunks using `"cx_cz_cy"` keys instead of pushing arrays to a dictionary.
+- Fixed Go backend `GeneratorClient` payload parsing; correctly unpacks JSON `[][]int` into `[][]byte` before invoking `DecodePaletteRLEBinary`.
+- Finalized client-side fractal map chunk streaming; the Babylon engine now natively catches `chunk_loaded` window events, deserializes Palette RLE data, and instantly invokes `meshDirtyVoxelChunks` for seamless terrain streaming without invisible walls.
+
 ## [2.1.796] - 2026-09-08
 - Fixed 502 Bad Gateway by resolving a recursive RWMutex deadlock in the Go voxel backend.
 - Fixed infinite chunk rendering out-of-bounds error on the client.
