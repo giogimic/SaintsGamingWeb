@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import { GameInitializationWizard } from '@/web/components/setup/GameInitializationWizard';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
+import { prisma } from '@/web/lib/prisma';
+import { getSystemSetupStatus } from '@/shared/game/setup/setupDetection';
 
 export const metadata: Metadata = {
   title: 'Game Setup | Saints Gaming',
@@ -12,6 +14,11 @@ export default async function SetupPage() {
   const session = await auth();
   if (!session?.user?.id) {
     redirect('/login?callbackUrl=/setup');
+  }
+
+  const setupStatus = await getSystemSetupStatus(prisma);
+  if (setupStatus.isSetupCompleted) {
+    redirect('/studio');
   }
 
   return (

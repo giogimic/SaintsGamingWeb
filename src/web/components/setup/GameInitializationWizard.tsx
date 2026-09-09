@@ -165,7 +165,7 @@ export function GameInitializationWizard() {
   }, []);
 
   const handleCompleteSuccess = (defaultMapId: string) => {
-    router.push('/studio');
+    window.location.href = '/studio';
   };
 
   if (loading) {
