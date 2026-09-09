@@ -153,7 +153,7 @@ export class WorldSimulation {
         state.voxelWorld,
         { x: fromWX, y: playerGroundY + 1, z: fromWZ },
         vel,
-        1.0,
+        0.5,
         intentOptions?.isJumping ? 1.5 : undefined // Increase step height if jumping
       );
 

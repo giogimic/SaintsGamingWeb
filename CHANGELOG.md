@@ -1,5 +1,15 @@
-## [2.1.805] - 2026-09-09
+## [2.1.807] - 2026-09-09
 ### Fixed
+- Fixed Keyboard Input clashes where Space Bar overwrote both jumping and interactions.
+- Fixed Sprint logic requiring a simultaneous jump to activate.
+- Fixed First-Person Camera mode snapping back to an isometric 2.5D pitch.
+- Fixed Swept AABB Physics to prevent characters from auto-stepping over full 1.0m blocks (now correctly walls you).
+- Fixed `WorldSimulation` and `VoxelController` to use bottom-up raycasts, allowing characters to properly walk *under* tree canopies rather than teleporting onto leaves.
+- Overhauled `scripts/wipe-data.ts` CLI wipe pipeline to properly mirror the web-based Realm Wipe service, ensuring clean DB state and proper clearing of initialization flags (like Spawn Map).
+- Updated `scripts/seed-starter-content.ts` to automatically re-seed `MapLogicTiles` after a game wipe, fixing "map won't generate" errors caused by missing logic tiles.
+- Fixed z-index layering issues in `DraggablePanel.tsx` for the Studio.
+
+## [2.1.805] - 2026-09-09
 - Fixed deep engine regressions: disabled 8x8 camera clamping on infinite FRACTAL maps, corrected AssetUploadUI z-index stacking issues, implemented dynamic sprite elevation streaming for VOXEL chunks, reordered db wipe operations to prevent `GameCharacter` persistence, and updated setup options to include First Person and Hybrid MMO choices.
 
 ## [2.1.804] - 2026-09-09

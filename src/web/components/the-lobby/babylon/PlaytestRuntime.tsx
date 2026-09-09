@@ -351,7 +351,7 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
 
     let moveDx = dx;
     let moveDy = dy;
-    if (isSprinting && isJumping) {
+    if (isSprinting) {
       moveDx *= 2;
       moveDy *= 2;
     }

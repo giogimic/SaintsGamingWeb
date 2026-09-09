@@ -784,7 +784,7 @@ public setCameraSettings(settings: Partial<typeof this.cameraSettings>) {
     if (settings.playerCameraStyle !== undefined) {
       this.applyPlayerCameraStyle(settings.playerCameraStyle);
     }
-    if (settings.isometricPitch !== undefined && !this.isFreeCam) {
+    if (settings.isometricPitch !== undefined && !this.isFreeCam && this.cameraSettings.playerCameraStyle !== 'firstperson') {
       this.cameraProfile.pitch = settings.isometricPitch;
       this.snapCameraTo(this.cameraTargetX, this.cameraTargetZ);
     }

@@ -145,9 +145,11 @@ export async function GET() {
         capacity: 500,
         goMmoUrl: goMmoBase,
         heartbeatMs,
+        uptime: Math.floor(process.uptime()),
       },
       releaseSummary: {
-        liveVersion: settingsMap['SITE_VERSION'] || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.806",
+        liveVersion: settingsMap['SITE_VERSION'] || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.807",
+        maintenanceMode: settingsMap['MAINTENANCE_MODE'] === 'true',
         snapshotCount,
         latestSnapshot: latestSnapshot
           ? {

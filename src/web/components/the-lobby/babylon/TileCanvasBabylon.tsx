@@ -521,7 +521,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     
     let moveDx = dx;
     let moveDy = dy;
-    if (isSprinting && isJumping) {
+    if (isSprinting) {
       moveDx *= 2;
       moveDy *= 2;
     }
@@ -2404,7 +2404,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       if (key in keys) {
         keys[key as keyof typeof keys] = true;
         clearAutoWalk();
-      } else if (key === 'e' || key === ' ') {
+      } else if (key === 'e') {
         handleInteract();
       }
     };
