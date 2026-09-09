@@ -1,3 +1,7 @@
+## [2.1.805] - 2026-09-09
+### Fixed
+- Fixed deep engine regressions: disabled 8x8 camera clamping on infinite FRACTAL maps, corrected AssetUploadUI z-index stacking issues, implemented dynamic sprite elevation streaming for VOXEL chunks, reordered db wipe operations to prevent `GameCharacter` persistence, and updated setup options to include First Person and Hybrid MMO choices.
+
 ## [2.1.804] - 2026-09-09
 ### Fixed
 - Fixed three engine regressions (MapType classification, Camera Authority properties, Editor Camera guard) and added First-Person camera mode.

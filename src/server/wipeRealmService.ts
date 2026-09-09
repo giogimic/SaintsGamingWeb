@@ -45,12 +45,17 @@ export async function wipeNonBundledRealmContent(prisma: any): Promise<WipeRealm
   await prisma.gameQuest.deleteMany({}).catch(() => {});
 
   // 4. Wipe player gameplay state and characters tied to previous maps
-  const deletedCharacters = await prisma.gameCharacter.deleteMany({}).catch(() => ({ count: 0 }));
+  // Must delete dependent records BEFORE deleting the parent GameCharacter to satisfy foreign key constraints
   await prisma.playerCreature.deleteMany({}).catch(() => {});
   await prisma.playerInventoryItem.deleteMany({}).catch(() => {});
   await prisma.playerSkill.deleteMany({}).catch(() => {});
   await prisma.playerQuestState.deleteMany({}).catch(() => {});
   await prisma.gtcListing.deleteMany({}).catch(() => {});
+
+  const deletedCharacters = await prisma.gameCharacter.deleteMany({}).catch((e: any) => {
+    console.error('[WipeRealmService] Failed to wipe characters:', e?.message);
+    return { count: 0 };
+  });
 
   // 4.5 Wipe all authored RPG Definitions (Classes, Abilities, Items, etc)
   await prisma.starterHero.deleteMany({}).catch(() => {});

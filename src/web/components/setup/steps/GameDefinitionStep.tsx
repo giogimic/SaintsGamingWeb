@@ -18,9 +18,9 @@ import {
 export interface GameDefinitionData {
   name: string;
   description: string;
-  genre: 'CREATURE_MMO' | 'CLASSIC_MMO';
+  genre: 'CREATURE_MMO' | 'CLASSIC_MMO' | 'HYBRID_MMO';
   style: 'SAINTS_HYBRID' | 'REAL_TIME' | 'TURN_BASED';
-  camera: 'ISOMETRIC_25D' | 'TOP_DOWN';
+  camera: 'ISOMETRIC_25D' | 'TOP_DOWN' | 'FIRST_PERSON';
   defaultBlockSizePx: number; // 16, 32, 64, 128, 256
 }
 
@@ -86,6 +86,11 @@ export function GameDefinitionStep({ data, onChange, onNext, onBack }: GameDefin
                   id: 'CLASSIC_MMO',
                   name: 'Classic Hero MMO',
                   icon: Swords,
+                },
+                {
+                  id: 'HYBRID_MMO',
+                  name: 'Hybrid / Custom',
+                  icon: Layers,
                 },
               ].map((g) => {
                 const Icon = g.icon;
@@ -190,6 +195,12 @@ export function GameDefinitionStep({ data, onChange, onNext, onBack }: GameDefin
                   desc: 'Direct overhead view',
                   icon: Eye,
                 },
+                {
+                  id: 'FIRST_PERSON',
+                  name: 'First Person',
+                  desc: 'Immersive eye-level view',
+                  icon: Camera,
+                },
               ].map((c) => {
                 const Icon = c.icon;
                 const isSelected = data.camera === c.id;
@@ -227,7 +238,7 @@ export function GameDefinitionStep({ data, onChange, onNext, onBack }: GameDefin
                   desc: 'Action movement with pacing',
                 },
                 {
-                  id: 'ACTION',
+                  id: 'REAL_TIME',
                   name: 'Action Combat',
                   desc: 'Fast-paced direct control',
                 },

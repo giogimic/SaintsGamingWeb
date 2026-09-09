@@ -428,6 +428,15 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
         const state = mesh.metadata;
         if (!state) return;
 
+        // Dynamic elevation correction for streaming chunks
+        if (this.engine.mapType === 'VOXEL' || this.engine.mapType === 'FRACTAL' || this.engine.mapType === 'HYBRID') {
+          const elevation = this.engine.voxel.getVoxelSurfaceY(state.targetPos.x, state.targetPos.z);
+          // Only update if elevation is non-zero (chunk loaded) or if we are stuck at default 0 elevation
+          if (elevation !== 0 || state.targetPos.y <= 1.05) {
+            state.targetPos.y = elevation + 1.05; // 1.05 is ENTITY_GROUND_CLEARANCE
+          }
+        }
+
         // Viewport culling check (players and on-screen entities receive full animation & interpolation)
         const posX = mesh.position.x;
         const posZ = mesh.position.z;
@@ -545,7 +554,7 @@ public stopRenderLoop() {
   }
 
   public snapCameraTo(x: number, z: number, y: number = 0) {
-    if (this.cameraSettings.borderClamping) {
+    if (this.cameraSettings.borderClamping && this.engine.mapType !== 'FRACTAL') {
       const clamped = clampCameraFocus(
         x,
         z,
@@ -592,7 +601,7 @@ public stopRenderLoop() {
       targetY = this.cameraTargetY;
     }
 
-    if (this.cameraSettings.borderClamping) {
+    if (this.cameraSettings.borderClamping && this.engine.mapType !== 'FRACTAL') {
       const clamped = clampCameraFocus(
         targetX,
         targetZ,
