@@ -173,22 +173,25 @@ public meshDirtyVoxelChunks() {
     }
   }
 
-public getVoxelSurfaceY(worldX: number, worldZ: number): number {
+  public getVoxelSurfaceY(worldX: number, worldZ: number): number {
     if (!this.voxelWorld) return 0;
     const s = this.engine.currentTileSize || 64;
     const voxelCoords = this.voxelWorld.worldMeshToVoxel(worldX / s, 0, worldZ / s);
     const wx = voxelCoords.wx;
     const wz = voxelCoords.wz;
 
-    for (let wy = this.voxelWorld.totalHeightBlocks - 1; wy >= 0; wy--) {
+    let surfaceY = 0;
+    for (let wy = 0; wy < this.voxelWorld.totalHeightBlocks; wy++) {
       const word = typeof this.voxelWorld.getVoxelWithHalo === 'function'
         ? this.voxelWorld.getVoxelWithHalo(wx, wy, wz)
         : this.voxelWorld.getVoxel(wx, wy, wz);
       if (word && !isVoxelAir(word.low)) {
-        return (wy - 15) * (this.engine.currentTileSize || 64);
+        surfaceY = wy;
+      } else {
+        break;
       }
     }
-    return 0;
+    return (surfaceY - 15) * s;
   }
 
 public setVoxelConstraints(constraints: {

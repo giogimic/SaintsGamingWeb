@@ -356,7 +356,7 @@ export async function POST(
       }
     }
 
-    if (body.mapType !== 'fractal') {
+    if (body.mapType?.toUpperCase() !== 'FRACTAL') {
       const check = validateMapSave(
         { grid, npcs: Array.isArray(body.npcs) ? body.npcs : [] },
         logicTiles

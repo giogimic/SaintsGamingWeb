@@ -75,12 +75,17 @@ echo.
 :: --- Optional Data Wiping ---
 set "WIPE_GAME_DATA=0"
 set "WIPE_SOCIAL_DATA=0"
+set "SEED_STARTER_DATA=0"
 
 if not /i "%UPDATE_MODE%"=="restart" (
     echo Optional Data Wipes:
     
     set /p "WIPE_GAME_CHOICE=Wipe Game/MMO Data? (y/N): "
-    if /i "!WIPE_GAME_CHOICE!"=="y" set "WIPE_GAME_DATA=1"
+    if /i "!WIPE_GAME_CHOICE!"=="y" (
+        set "WIPE_GAME_DATA=1"
+        set /p "SEED_STARTER_CHOICE=Run starter content seed to restore logic tiles and setup defaults? (y/N): "
+        if /i "!SEED_STARTER_CHOICE!"=="y" set "SEED_STARTER_DATA=1"
+    )
     
     set /p "WIPE_SOCIAL_CHOICE=Wipe Social Data (Feed/Forum/News)? (y/N): "
     if /i "!WIPE_SOCIAL_CHOICE!"=="y" set "WIPE_SOCIAL_DATA=1"
@@ -186,6 +191,11 @@ if "!WIPE_SOCIAL_DATA!"=="1" set "WIPE_ARGS=!WIPE_ARGS! --social"
 if not "!WIPE_ARGS!"=="" (
     echo [*] Executing requested data wipes...
     call npx tsx scripts\wipe-data.ts !WIPE_ARGS!
+)
+
+if "!SEED_STARTER_DATA!"=="1" (
+    echo [*] Seeding starter content...
+    call npx tsx scripts\seed-starter-content.ts
 )
 :: --- Build Next.js (if needed) ---
 if "!NEED_BUILD!"=="1" (

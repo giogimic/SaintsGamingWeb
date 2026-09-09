@@ -138,10 +138,11 @@ export class WorldSimulation {
 
       let playerGroundY = 15;
       if (typeof state.voxelWorld.totalHeightBlocks === 'number') {
-        for (let wy = state.voxelWorld.totalHeightBlocks - 1; wy >= 0; wy--) {
+        for (let wy = 0; wy < state.voxelWorld.totalHeightBlocks; wy++) {
           const { low } = state.voxelWorld.getVoxel(playerPos.x, wy, mapHeight - 1 - playerPos.y);
           if (low !== undefined && !isVoxelAir(low)) {
             playerGroundY = wy;
+          } else {
             break;
           }
         }
@@ -163,10 +164,11 @@ export class WorldSimulation {
       // Check ground support (prevent walking into the void/air)
       let targetGroundY = -1;
       if (typeof state.voxelWorld.totalHeightBlocks === 'number') {
-        for (let wy = state.voxelWorld.totalHeightBlocks - 1; wy >= 0; wy--) {
+        for (let wy = 0; wy < state.voxelWorld.totalHeightBlocks; wy++) {
           const { low } = state.voxelWorld.getVoxel(targetX, wy, mapHeight - 1 - targetY);
           if (low !== undefined && !isVoxelAir(low)) {
             targetGroundY = wy;
+          } else {
             break;
           }
         }

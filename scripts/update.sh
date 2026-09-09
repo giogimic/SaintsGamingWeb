@@ -216,6 +216,7 @@ echo -e "${PURPLE}[⚡] Active Update Profile: ${BOLD}${UPDATE_MODE^^}${NC}\n"
 # --- Optional Data Wiping ---
 WIPE_GAME_DATA=0
 WIPE_SOCIAL_DATA=0
+SEED_STARTER_DATA=0
 
 if [ "$UPDATE_MODE" != "restart" ] && [ "$NON_INTERACTIVE" -eq 0 ]; then
     echo -e "${BOLD}Optional Data Wipes:${NC}"
@@ -224,6 +225,11 @@ if [ "$UPDATE_MODE" != "restart" ] && [ "$NON_INTERACTIVE" -eq 0 ]; then
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         WIPE_GAME_DATA=1
+        read -p "Run starter content seed to restore logic tiles and setup defaults? (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            SEED_STARTER_DATA=1
+        fi
     fi
     
     read -p "Wipe Social Data (Feed/Forum/News)? (y/N): " -n 1 -r
@@ -577,6 +583,12 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
         echo -e "${GREEN}[✓] Data wipes completed.${NC}\n"
     fi
 
+    if [ "$SEED_STARTER_DATA" -eq 1 ]; then
+        echo -e "${CYAN}[*] Seeding starter content inside container...${NC}"
+        docker exec saints-gaming-web npx tsx scripts/seed-starter-content.ts 2>/dev/null || true
+        echo -e "${GREEN}[✓] Starter content seeded.${NC}\n"
+    fi
+
     # Sync local game assets if required
     if [ "$NEED_ASSET_SYNC" -eq 1 ]; then
         echo -e "${CYAN}[*] Syncing local game assets to database...${NC}"
@@ -642,6 +654,12 @@ else
         echo -e "${CYAN}[*] Executing requested data wipes...${NC}"
         npx tsx scripts/wipe-data.ts $WIPE_ARGS
         echo -e "${GREEN}[✓] Data wipes completed.${NC}\n"
+    fi
+
+    if [ "$SEED_STARTER_DATA" -eq 1 ]; then
+        echo -e "${CYAN}[*] Seeding starter content...${NC}"
+        npx tsx scripts/seed-starter-content.ts
+        echo -e "${GREEN}[✓] Starter content seeded.${NC}\n"
     fi
 
     if [ "$NEED_BUILD" -eq 1 ]; then
