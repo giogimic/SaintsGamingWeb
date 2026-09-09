@@ -565,12 +565,17 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
         echo -e "${GREEN}[✓] Web services hot-reloaded.${NC}\n"
     fi
 
-    # Run Database migrations inside container if schema changed
-    if [ "$NEED_DB_MIGRATE" -eq 1 ]; then
-        echo -e "${CYAN}[*] Applying Prisma database schema migrations inside container...${NC}"
-        docker exec saints-gaming-web npx prisma db push --accept-data-loss 2>/dev/null || true
-        echo -e "${GREEN}[✓] Database migrations completed.${NC}\n"
-    fi
+    echo -e "${CYAN}[*] Waiting for container initialization (Prisma client generation & migration)...${NC}"
+    WAIT_SECS=0
+    until docker exec saints-gaming-web wget -qO- http://127.0.0.1:3000 > /dev/null; do
+        sleep 2
+        WAIT_SECS=$((WAIT_SECS + 2))
+        if [ $WAIT_SECS -gt 90 ]; then
+            echo -e "${YELLOW}[!] Timeout waiting for server to start. Proceeding anyway...${NC}"
+            break
+        fi
+    done
+    echo -e "${GREEN}[✓] Container is ready.${NC}\n"
 
     # --- Execute Optional Data Wipes ---
     WIPE_ARGS=""
