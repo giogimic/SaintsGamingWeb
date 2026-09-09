@@ -63,6 +63,20 @@ describe('wipeNonBundledRealmContent', () => {
           return Promise.resolve({ count: 9 });
         }),
       },
+      starterHero: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      characterClass: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      abilityDictionary: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      creatureDef: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      itemTemplate: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      mountTemplate: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      dungeonTemplate: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      shopTemplate: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      professionTemplate: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      craftingRecipe: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      worldEventTemplate: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      questTemplate: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      creatureElement: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      elementEffectiveness: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
     };
 
     const result = await wipeNonBundledRealmContent(mockPrisma);

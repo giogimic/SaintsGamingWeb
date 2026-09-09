@@ -57,7 +57,7 @@ describe('32³ Isotropic Chunk Migration & Voxel-To-Grid Projection', () => {
     // World coordinate: wx = 1 * 16 + 5 = 21. wz = 1 * 16 + 5 = 21. wy = 0 + 10 = 10.
     // In new 32³: cx = 0, cz = 0, cy = 0. lx = 21, lz = 21, ly = 10.
     const world = VoxelWorld.deserializeFromDoc(migrated);
-    expect(world.getVoxel(21, 10, 21)).toBe(stoneWord);
+    expect(world.getVoxel(21, 10, 21)).toStrictEqual(stoneWord);
   });
 
   it('generates a 2D logic grid accurately from a 3D VoxelWorldDoc', () => {

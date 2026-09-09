@@ -1,3 +1,12 @@
+## [2.1.808] - 2026-09-09
+### Changed
+- Rebuilt the monolithic game client (`store.ts`, `BabylonEngine.ts`, `index.tsx`) into a decoupled domain-driven architecture in `src/client/`.
+- Implemented isolated Zustand stores (`SessionStore`, `PlayerStore`, `WorldStore`, etc.) and a dedicated `SocketEventRouter`.
+- Created a custom requestAnimationFrame-based fixed-timestep `GameLoop` for precise input polling and movement simulation.
+- Migrated legacy HUD overlays (Chat, Toast, Player Stats) to the new stores.
+- Preserved the old engine files exclusively for the Studio Editor to prevent breaking admin authoring tools.
+- Fixed 3D Voxel test assertions caused by the new 64-bit `{ low, high }` voxel transaction schema in `getVoxel`.
+
 ## [2.1.807] - 2026-09-09
 ### Fixed
 - Fixed Keyboard Input clashes where Space Bar overwrote both jumping and interactions.

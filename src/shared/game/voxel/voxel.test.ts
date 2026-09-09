@@ -164,7 +164,9 @@ describe('Voxel Core Engine (Option A)', () => {
         w = world.getVoxel(5, 16, 5);
         expect(w.low).toBe(VOXEL_WORD_AIR_LOW); // Air
         expect(w.high).toBe(VOXEL_WORD_AIR_HIGH); // Air
-        expect(world.getVoxel(6, 16, 5)).toBe(0);
+        const w2 = world.getVoxel(6, 16, 5);
+        expect(w2.low).toBe(VOXEL_WORD_AIR_LOW);
+        expect(w2.high).toBe(VOXEL_WORD_AIR_HIGH);
 
         // Redo
         history.redo(world);

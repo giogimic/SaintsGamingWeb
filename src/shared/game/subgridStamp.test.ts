@@ -188,6 +188,6 @@ describe('stampClipboardOntoMap', () => {
     expect(clip?.voxelVolume?.length).toBeGreaterThan(0);
     const targetBlock = clip?.voxelVolume?.find(v => v.dx === 0 && v.dy === 16);
     expect(targetBlock).toBeDefined();
-    expect(targetBlock?.word).toBe(grassWord);
+    expect(targetBlock?.word).toStrictEqual(grassWord);
   });
 });
