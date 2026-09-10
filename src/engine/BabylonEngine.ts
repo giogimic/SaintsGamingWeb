@@ -695,8 +695,15 @@ export class BabylonEngine {
       }
     }
 
-    // Determine map rendering types based on mapType (fallback to HYBRID)
-    const mapType = mapData.mapType || 'HYBRID';
+    // Determine map rendering types based on mapType
+    let mapType = mapData.mapType;
+    if (!mapType) {
+      if (mapData.voxelDoc) {
+        mapType = 'VOXEL';
+      } else {
+        mapType = 'TILE';
+      }
+    }
     this.mapType = mapType;
     const isVoxelType = mapType === 'VOXEL' || mapType === 'FRACTAL' || mapType === 'HYBRID';
     const isTileType = mapType === 'TILE' || mapType === 'HYBRID';

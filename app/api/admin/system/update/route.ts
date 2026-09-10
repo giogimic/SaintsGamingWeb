@@ -4,6 +4,7 @@ import { prisma } from "@/web/lib/prisma";
 import { exec } from "child_process";
 import path from "path";
 import os from "os";
+import { wipeNonBundledRealmContent } from "@/server/wipeRealmService";
 
 export async function POST(req: Request) {
   try {
@@ -40,16 +41,11 @@ export async function POST(req: Request) {
     }
 
     if (wipeGameData) {
-      console.log("[SystemUpdate] Admin requested game data wipe. Resetting gameplay records...");
+      console.log("[SystemUpdate] Admin requested game data wipe. Executing full realm wipe...");
       try {
-        await prisma.playerCreature.deleteMany({});
-        await prisma.playerInventoryItem.deleteMany({});
-        await prisma.playerSkill.deleteMany({});
-        await prisma.playerStats.deleteMany({});
-        await prisma.worldMap.deleteMany({});
-        await prisma.gameMap.deleteMany({});
+        await wipeNonBundledRealmContent(prisma);
       } catch (wipeErr) {
-        console.warn("[SystemUpdate] Non-fatal error during table wipe:", wipeErr);
+        console.warn("[SystemUpdate] Non-fatal error during realm wipe:", wipeErr);
       }
     }
 
