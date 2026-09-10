@@ -5,6 +5,8 @@
  * requestAnimationFrame. Calls systems in a deterministic order.
  */
 import { inputController } from '../input/InputController';
+import { localMovementSystem } from '../engine/physics/LocalMovementSystem';
+import { remoteMovementSystem } from '../engine/physics/RemoteMovementSystem';
 
 export class GameLoop {
   private isRunning = false;
@@ -66,8 +68,8 @@ export class GameLoop {
     inputController.update(dt);
     
     // 2. Process Physics/Movement Systems (Phase 3)
-    // localMovementSystem.update(dt);
-    // remoteMovementSystem.update(dt);
+    localMovementSystem.update(dt);
+    remoteMovementSystem.update(dt);
 
     // 3. Process Combat/Game Logic Systems
     // combatSystem.update(dt);

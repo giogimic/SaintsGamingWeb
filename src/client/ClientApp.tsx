@@ -10,6 +10,9 @@ import { BattleScene } from './scenes/BattleScene';
 import { OfflineScene } from './scenes/OfflineScene';
 import { inputManager } from './input/InputManager';
 import { gameLoop } from './loop/GameLoop';
+import { socketManager } from './net/SocketManager';
+import { registerAllHandlers } from './net/SocketEventRouter';
+import { useSession } from 'next-auth/react';
 
 /**
  * Root Game Client component.
@@ -17,6 +20,32 @@ import { gameLoop } from './loop/GameLoop';
  */
 export function ClientApp() {
   const activeScene = useSessionStore((s) => s.activeScene);
+  const { data: session, status } = useSession();
+
+  // Network & Socket connection
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.id) {
+      socketManager.connect({
+        accountId: session.user.id,
+        onConnect: () => {
+          registerAllHandlers();
+        },
+        onDisconnect: (reason) => {
+          // Handled internally by socketManager state but can hook UI here
+        },
+        onReconnecting: () => {
+        },
+        onSessionReplaced: () => {
+          // Handled internally
+        }
+      });
+    }
+
+    return () => {
+      // We do NOT disconnect on component unmount to prevent rapid reconnects during HMR.
+      // The SocketManager singleton handles lifecycle itself.
+    };
+  }, [status, session?.user?.id]);
 
   // Mount systems
   useEffect(() => {

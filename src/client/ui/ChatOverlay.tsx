@@ -22,9 +22,9 @@ export function ChatOverlay() {
 
     if (inputText.startsWith('/')) {
       // Command
-      socketManager.emit('player_move' as any, { x: 0, y: 0, direction: 'down' }); // Hack: send command via proper event later
+      socketManager.emit('input', { type: 'MOVE', direction: 'down', sequence: Date.now(), timestamp: Date.now() }); // Hack: fix later
     } else {
-      socketManager.emit('send_chat' as any, { message: inputText });
+      socketManager.emit('chat_message', { message: inputText });
     }
     
     setInputText('');

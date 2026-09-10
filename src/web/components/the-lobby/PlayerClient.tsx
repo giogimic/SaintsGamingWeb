@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
-import TheLobby from './index';
+import React, { useEffect } from 'react';
+import { ClientApp } from '@/client/ClientApp';
+import { useSessionStore } from '@/client/state/useSessionStore';
 
-/** Player-facing lobby client — delegating to monolithic index.tsx for now */
+/** Player-facing lobby client — migrating to new ClientApp runtime */
 export default function PlayerClient({
   characterId,
   forceCreate,
@@ -11,13 +12,20 @@ export default function PlayerClient({
   characterId?: string;
   forceCreate?: boolean;
 }) {
+  useEffect(() => {
+    // If a characterId was explicitly requested via URL, tell the session store.
+    // The TitleScene / CharacterSelectScene will pick it up and handle it.
+    if (characterId) {
+      useSessionStore.getState().setCharacter(characterId);
+    }
+    if (forceCreate) {
+      useSessionStore.getState().setScene('character_create');
+    }
+  }, [characterId, forceCreate]);
+
   return (
     <div className="w-full h-full">
-      <TheLobby
-        characterId={characterId}
-        forceCreate={forceCreate}
-        mode="player"
-      />
+      <ClientApp />
     </div>
   );
 }

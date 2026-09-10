@@ -383,8 +383,25 @@ export interface ForceDisconnectPayload {
 }
 
 export interface ChunkDataPayload {
+  cx: number;
+  cy: number;
+  cz: number;
+  low: Uint32Array | number[];
+  high: Uint32Array | number[];
   [key: string]: any;
 }
+
+export interface VoxelEditPayload {
+  cx: number;
+  cy: number;
+  cz: number;
+  lx: number;
+  ly: number;
+  lz: number;
+  voxel: number;
+  [key: string]: any;
+}
+
 
 // ─── Client → Server Payloads ────────────────────────────────────────────────
 
