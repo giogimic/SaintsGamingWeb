@@ -710,7 +710,7 @@ if [ "$IS_NUCLEAR_MODE" != "1" ]; then
 fi
 
 if [ "$ENABLE_GO_MMO" = "1" ]; then
-    while ss -tuln 2>/dev/null | grep -q ":$GO_MMO_PORT "; do
+    while ss -tuln 2>/dev/null | grep -q ":$GO_MMO_PORT " || [ "$GO_MMO_PORT" -eq "${WEB_PORT:-0}" ]; do
         GO_MMO_PORT=$((GO_MMO_PORT + 1))
     done
     GO_MMO_PUBLIC_URL="http://127.0.0.1:$GO_MMO_PORT"
