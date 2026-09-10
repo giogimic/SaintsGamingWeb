@@ -363,4 +363,5 @@ type AtlasWorldContext struct {
 	Erosion         IWorldField
 	Ruggedness      IWorldField
 	Geology         IWorldField
+	MicroDetail     IWorldField
 }

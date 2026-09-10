@@ -37,7 +37,7 @@ public cameraSettings = {
     isometricPitch: Math.PI / 4,
     isometricDistance: 14,
     playerFollowSmoothing: 0.35,
-    playerCameraStyle: 'isometric' as 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson',
+    playerCameraStyle: 'isometric' as 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson' | 'dynamic',
     borderClamping: true,
     vignetteEnabled: true,
     vignetteWeight: 1.5,

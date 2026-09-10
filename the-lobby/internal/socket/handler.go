@@ -151,6 +151,9 @@ func (h *Hub) onConnect(client *socket.Socket) {
 	client.On(protocol.EvRequestChunk, func(datas ...any) {
 		h.handleRequestChunk(client, accountID, datas...)
 	})
+	client.On(protocol.EvRequestChunks, func(datas ...any) {
+		h.handleRequestChunks(client, accountID, datas...)
+	})
 	client.On(protocol.EvInput, func(datas ...any) {
 		in := decodeInput(datas)
 		h.eng.Players().EnqueueInput(accountID, in)
@@ -997,11 +1000,46 @@ func (h *Hub) handleRequestChunk(client *socket.Socket, accountID string, datas 
 
 	cx, cy, cz := int(cxF), int(cyF), int(czF)
 
+	h.serveChunk(client, accountID, cx, cy, cz)
+}
+
+func (h *Hub) handleRequestChunks(client *socket.Socket, accountID string, datas ...any) {
+	if len(datas) == 0 {
+		return
+	}
+	payloads, ok := datas[0].([]any)
+	if !ok {
+		return
+	}
+
+	for _, p := range payloads {
+		payload, ok := p.(map[string]any)
+		if !ok {
+			continue
+		}
+		cxF, ok1 := payload["cx"].(float64)
+		cyF, ok2 := payload["cy"].(float64)
+		czF, ok3 := payload["cz"].(float64)
+		if !ok1 || !ok2 || !ok3 {
+			continue
+		}
+		h.serveChunk(client, accountID, int(cxF), int(cyF), int(czF))
+	}
+}
+
+func (h *Hub) serveChunk(client *socket.Socket, accountID string, cx, cy, cz int) {
 	// Determine player's current map to use its cache
 	var voxelWorld *world.VoxelWorld
+	var mapBiome *world.BiomeDefinition
+
 	if p := h.eng.Players().GetByAccount(accountID); p != nil {
-		if def, ok := h.eng.World().GetDef(p.BaseMapID); ok && def.Voxel != nil {
-			voxelWorld = def.Voxel
+		if def, ok := h.eng.World().GetDef(p.BaseMapID); ok {
+			if def.Voxel != nil {
+				voxelWorld = def.Voxel
+			}
+			if def.Biome != nil {
+				mapBiome = def.Biome
+			}
 		}
 	}
 
@@ -1013,6 +1051,10 @@ func (h *Hub) handleRequestChunk(client *socket.Socket, accountID string, datas 
 	if chunk == nil {
 		// Generate on the fly
 		biome := world.GetDefaultBiome()
+		if mapBiome != nil {
+			biome = *mapBiome
+		}
+
 		generator := world.NewProceduralVoxelGenerator(biome.Seed)
 		chunk = generator.PopulateChunk(cx, cy, cz)
 

@@ -149,6 +149,13 @@ yesno() {
 write_env() {
   local port="$1" host="$2" public_url="$3" db_url="$4"
   local container_name="$5" image_name="$6" compose_project="$7"
+  local rpc_secret
+  if command -v openssl >/dev/null 2>&1; then
+    rpc_secret="$(openssl rand -hex 16 2>/dev/null || echo "dev-rpc-secret-123")"
+  else
+    rpc_secret="dev-rpc-secret-123"
+  fi
+
   cat > "$ENV_FILE" <<EOF
 # Go MMO parallel to Next on :24001 — Caddy via scripts/dev-proxy.sh only
 GO_MMO_HOST=$host
@@ -164,8 +171,41 @@ GO_MMO_CONTAINER_NAME=$container_name
 GO_MMO_IMAGE_NAME=$image_name
 COMPOSE_PROJECT_NAME=$compose_project
 AUTH_SECRET=\${AUTH_SECRET:-dev-secret-change-me}
+INTERNAL_RPC_SECRET=\${INTERNAL_RPC_SECRET:-$rpc_secret}
 EOF
   log "Wrote $ENV_FILE"
+}
+
+# Ensure Next.js shares the same internal RPC secret
+upsert_root_internal_rpc_secret() {
+  local root_env="$ROOT/.env"
+  # Read from GO_MMO_DIR .env that we just wrote
+  local rpc_secret
+  rpc_secret="$(grep '^INTERNAL_RPC_SECRET=' "$ENV_FILE" 2>/dev/null | cut -d= -f2 || echo "dev-rpc-secret-123")"
+  
+  if [[ -f "$root_env" ]]; then
+    if grep -q '^INTERNAL_RPC_SECRET=' "$root_env" 2>/dev/null; then
+      # Already exists, just leave it as is, or update? Better to leave it so we don't break existing stuff
+      # but if we want them to sync, we should update Go to match root.
+      # For now just make sure it's present.
+      local current_root_secret
+      current_root_secret="$(grep '^INTERNAL_RPC_SECRET=' "$root_env" 2>/dev/null | cut -d= -f2)"
+      
+      # Sync Go env to match Root env if Root already has one
+      if [[ "$current_root_secret" != "$rpc_secret" && -n "$current_root_secret" ]]; then
+        local tmp
+        tmp="$(mktemp)"
+        awk -v v="$current_root_secret" 'BEGIN{done=0} /^INTERNAL_RPC_SECRET=/ { print "INTERNAL_RPC_SECRET=" v; done=1; next } { print } END { if (!done) print "INTERNAL_RPC_SECRET=" v }' "$ENV_FILE" > "$tmp"
+        mv "$tmp" "$ENV_FILE"
+        log "Synced Go INTERNAL_RPC_SECRET to match root .env"
+      fi
+    else
+      printf '\n# Internal JIT Generator Secret\nINTERNAL_RPC_SECRET=%s\n' "$rpc_secret" >> "$root_env"
+      log "Appended INTERNAL_RPC_SECRET to $root_env"
+    fi
+  else
+    printf '\nINTERNAL_RPC_SECRET=%s\n' "$rpc_secret" >> "$root_env"
+  fi
 }
 
 # Point the Next lobby client at this Go instance (safe upsert in root .env).
@@ -423,6 +463,7 @@ main() {
     client_url="http://127.0.0.1:${port}"
   fi
   upsert_root_go_mmo_url "$client_url"
+  upsert_root_internal_rpc_secret
 
   if [[ "$mode" == "proxy" ]]; then
     cat <<EOF

@@ -1,6 +1,9 @@
 package atlas
 
-import "math"
+import (
+	"math"
+	"sort"
+)
 
 type AreaClimateRules struct {
 	MinTemp      float64
@@ -124,6 +127,12 @@ var CanonicalFractalAreas = []FractalArea{
 	},
 }
 
+type BiomeBlend struct {
+	Primary   *FractalArea
+	Secondary *FractalArea
+	Weight    float64 // 0.0 means 100% Primary, 1.0 means 100% Secondary
+}
+
 type AtlasRegionResolver struct {
 	areas []FractalArea
 }
@@ -135,14 +144,18 @@ func NewAtlasRegionResolver(areas []FractalArea) *AtlasRegionResolver {
 	return &AtlasRegionResolver{areas: areas}
 }
 
-func (r *AtlasRegionResolver) ResolveArea(context *AtlasWorldContext, x, z float64) *FractalArea {
+func (r *AtlasRegionResolver) ResolveArea(context *AtlasWorldContext, x, z float64) BiomeBlend {
 	sample := FieldSample{X: x, Y: 0, Z: z}
 	t := context.Temperature.Sample(sample)
 	m := context.Moisture.Sample(sample)
 	e := context.Elevation.Sample(sample)
 
-	var closestArea *FractalArea
-	minDistance := math.MaxFloat64
+	type areaDist struct {
+		area *FractalArea
+		dist float64
+	}
+
+	var distances []areaDist
 
 	for i := range r.areas {
 		area := &r.areas[i]
@@ -156,16 +169,42 @@ func (r *AtlasRegionResolver) ResolveArea(context *AtlasWorldContext, x, z float
 		distM := m - centerM
 		distE := e - centerE
 
-		distanceSq := distT*distT + distM*distM + distE*distE
+		// Euclidean distance in the climate phase-space
+		dist := math.Sqrt(distT*distT + distM*distM + distE*distE)
 
-		if distanceSq < minDistance {
-			minDistance = distanceSq
-			closestArea = area
-		}
+		distances = append(distances, areaDist{area: area, dist: dist})
 	}
 
-	if closestArea != nil {
-		return closestArea
+	// Sort by distance
+	sort.Slice(distances, func(i, j int) bool {
+		return distances[i].dist < distances[j].dist
+	})
+
+	primary := distances[0].area
+	d1 := distances[0].dist
+
+	if len(distances) == 1 {
+		return BiomeBlend{Primary: primary, Secondary: primary, Weight: 0.0}
 	}
-	return &r.areas[0]
+
+	secondary := distances[1].area
+	d2 := distances[1].dist
+
+	var weight float64
+	if d1 == 0 {
+		weight = 0.0
+	} else if d2 == 0 {
+		// Should not happen since it's sorted, but just in case
+		weight = 1.0
+	} else {
+		// Inverse distance weighting factor for the secondary area
+		// Weight = (1/d2) / (1/d1 + 1/d2) = d1 / (d1 + d2)
+		weight = d1 / (d1 + d2)
+	}
+
+	return BiomeBlend{
+		Primary:   primary,
+		Secondary: secondary,
+		Weight:    weight,
+	}
 }

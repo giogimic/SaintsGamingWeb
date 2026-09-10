@@ -701,10 +701,7 @@ export class BabylonEngine {
     const isVoxelType = mapType === 'VOXEL' || mapType === 'FRACTAL' || mapType === 'HYBRID';
     const isTileType = mapType === 'TILE' || mapType === 'HYBRID';
 
-    // Authoritative 3D Voxel World Rendering
-    if (isVoxelType && mapData.voxelDoc && mapData.voxelDoc.chunks && Object.keys(mapData.voxelDoc.chunks).length > 0) {
-      this.voxel.loadVoxelWorld(mapData.voxelDoc);
-    }
+    // 3D Voxel World Rendering will be loaded below (after map objects) to avoid duplication
     
     if (isTileType && tileLayers && tileLayers.length > 0 && tilesets && tilesets.length > 0) {
       const sortedTilesets = [...tilesets].sort((a, b) => b.firstgid - a.firstgid);

@@ -97,6 +97,10 @@ public clearVoxelWorld() {
         this.voxelMesher.disposeChunkMesh(chunk.key);
       }
     }
+    if (this.chunkStreamer) {
+      this.chunkStreamer.destroy();
+      this.chunkStreamer = undefined;
+    }
     this.clearAdjacentVoxelMeshes();
     if (this.voxelCursorMesh) {
       this.voxelCursorMesh.dispose();

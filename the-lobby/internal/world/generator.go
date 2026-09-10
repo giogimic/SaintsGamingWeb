@@ -75,16 +75,22 @@ func (g *ProceduralVoxelGenerator) PopulateChunk(cx, cy, cz int) *VoxelChunk {
 			wx := float64(startWX + lx)
 
 			// 1. Resolve Atlas Region and Terrain Elevation
-			atlasElev, area := atlas.CalculateTerrainElevation(g.context, g.resolver, wx, wz)
+			atlasElev, blend := atlas.CalculateTerrainElevation(g.context, g.resolver, wx, wz)
 			
+			// Sample MicroDetail
+			micro := g.context.MicroDetail.Sample(atlas.FieldSample{X: wx, Y: 0, Z: wz})
+
 			// Map Atlas Height (0.0 to 1.0) to world voxel coordinates
 			baseElevation := 16.0
 			elevationRange := 8.0
 			mappedElev := baseElevation + (atlasElev-0.5)*elevationRange*2
 			
+			// Add micro detail perturbation (e.g., +/- 2 voxels)
+			mappedElev += micro * 2.0
+			
 			surfaceY := int(math.Max(1, math.Min(31, math.Round(mappedElev))))
 
-			strata := area.Strata
+			strata := blend.Primary.Strata
 			surfaceWord := PackVoxel(strata.SurfaceMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
 			subsurfaceWord := PackVoxel(strata.SubsurfaceMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
 			mantleWord := PackVoxel(strata.MantleMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)

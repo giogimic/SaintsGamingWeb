@@ -21,6 +21,7 @@ type MapDef struct {
 	SpawnY      float64
 	RegionClass string
 	Voxel       *VoxelWorld
+	Biome       *BiomeDefinition
 }
 
 // GateDef is a warp gateway definition in the live world.

@@ -10,9 +10,15 @@ export class ChunkStreamer {
   private queuedChunks = new Set<string>();
   private unsubStore: () => void;
   
-  public visibleRadius = 8;
-  public preloadRadius = 10;
-  public evictRadius = 12;
+  public visibleRadius = 3;
+  public preloadRadius = 4;
+  public evictRadius = 6;
+  
+  private maxConcurrent = 8;
+  private chunkTimeouts = new Map<string, number>();
+  private chunkRetries = new Map<string, number>();
+  private maxRetries = 2;
+  private monitorInterval: any;
   
   private currentCx = Infinity;
   private currentCz = Infinity;
@@ -31,17 +37,22 @@ export class ChunkStreamer {
       (state) => state.connectionStatus,
       (status) => {
         if (status === 'connected') {
-          this.flushQueuedChunks();
+          this.pumpQueue();
         } else if (status === 'disconnected') {
           this.reconcilePendingChunks();
         }
       }
     );
+
+    if (typeof window !== 'undefined') {
+      this.monitorInterval = setInterval(() => this.checkTimeouts(), 5000);
+    }
   }
 
   public destroy() {
     if (typeof window !== 'undefined') {
       window.removeEventListener('voxel_chunk_data', this.onChunkData);
+      clearInterval(this.monitorInterval);
     }
     this.unsubStore();
   }
@@ -58,7 +69,11 @@ export class ChunkStreamer {
     if (!world) return;
 
     this.pendingChunks.delete(key);
+    this.chunkTimeouts.delete(key);
+    this.chunkRetries.delete(key);
     this.loadedChunks.add(key);
+
+    this.pumpQueue();
     
     if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
       console.debug(`[Diagnostic] ChunkStreamer received chunk: ${key}`);
@@ -151,6 +166,8 @@ export class ChunkStreamer {
     this.loadedChunks.delete(key);
     this.pendingChunks.delete(key);
     this.queuedChunks.delete(key);
+    this.chunkTimeouts.delete(key);
+    this.chunkRetries.delete(key);
     
     const world = this.voxelController.voxelWorld;
     if (!world) return;
@@ -207,37 +224,71 @@ export class ChunkStreamer {
   }
 
   private queueOrSendChunk(cx: number, cz: number, key: string) {
-    const store = useGameStore.getState();
-    if (store.connectionStatus === 'connected' && store.emitSocketEvent) {
-      this.pendingChunks.add(key);
-      if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
-        console.debug(`[Diagnostic] ChunkStreamer sent request: ${key}`);
-      }
-      store.emitSocketEvent('request_chunk', { cx, cy: 0, cz });
-    } else {
-      this.queuedChunks.add(key);
-      if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
-        console.debug(`[Diagnostic] ChunkStreamer queued request: ${key}`);
-      }
-    }
+    this.queuedChunks.add(key);
+    this.pumpQueue();
   }
 
-  private flushQueuedChunks() {
-    if (this.queuedChunks.size === 0) return;
+  private pumpQueue() {
     const store = useGameStore.getState();
     if (store.connectionStatus !== 'connected' || !store.emitSocketEvent) return;
 
-    if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
-      console.debug(`[Diagnostic] ChunkStreamer flushing ${this.queuedChunks.size} queued chunks`);
+    // Concurrency check
+    if (this.pendingChunks.size >= this.maxConcurrent) return;
+
+    if (this.queuedChunks.size === 0) return;
+
+    // Sort queued chunks by distance to player
+    const queuedList = Array.from(this.queuedChunks);
+    queuedList.sort((a, b) => {
+      const [ax, az] = a.split('_').map(Number);
+      const [bx, bz] = b.split('_').map(Number);
+      const distA = Math.abs(ax - this.currentCx) + Math.abs(az - this.currentCz);
+      const distB = Math.abs(bx - this.currentCx) + Math.abs(bz - this.currentCz);
+      return distA - distB;
+    });
+
+    const batch = [];
+    while (this.pendingChunks.size < this.maxConcurrent && queuedList.length > 0) {
+      const key = queuedList.shift()!;
+      this.queuedChunks.delete(key);
+      this.pendingChunks.add(key);
+      this.chunkTimeouts.set(key, Date.now() + 10000); // 10s timeout
+      
+      const [cx, cz] = key.split('_').map(Number);
+      batch.push({ cx, cy: 0, cz });
     }
 
-    const toRequest = Array.from(this.queuedChunks);
-    this.queuedChunks.clear();
+    if (batch.length > 0) {
+      if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
+        console.debug(`[Diagnostic] ChunkStreamer sent batch of ${batch.length} chunks`);
+      }
+      store.emitSocketEvent('request_chunks', batch);
+    }
+  }
 
-    for (const key of toRequest) {
-      const [cx, cz] = key.split('_').map(Number);
-      this.pendingChunks.add(key);
-      store.emitSocketEvent('request_chunk', { cx, cy: 0, cz });
+  private checkTimeouts() {
+    const now = Date.now();
+    let recovered = 0;
+    
+    for (const [key, timeoutTime] of this.chunkTimeouts.entries()) {
+      if (now > timeoutTime) {
+        // Timeout!
+        this.pendingChunks.delete(key);
+        this.chunkTimeouts.delete(key);
+        
+        const retries = this.chunkRetries.get(key) || 0;
+        if (retries < this.maxRetries) {
+          this.chunkRetries.set(key, retries + 1);
+          this.queuedChunks.add(key);
+          recovered++;
+        } else {
+          console.warn(`[ChunkStreamer] Chunk ${key} timed out after ${this.maxRetries} retries. Abandoning.`);
+        }
+      }
+    }
+    
+    if (recovered > 0) {
+      this.pumpQueue();
     }
   }
 
@@ -250,6 +301,7 @@ export class ChunkStreamer {
 
     for (const key of this.pendingChunks) {
       this.queuedChunks.add(key);
+      this.chunkTimeouts.delete(key);
     }
     this.pendingChunks.clear();
   }

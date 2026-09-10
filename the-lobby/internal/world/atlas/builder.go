@@ -10,6 +10,7 @@ func BuildAtlasWorld(seed interface{}) *AtlasWorldContext {
 	erosionSource := NewNoiseSource(numericSeed + 5)
 	ruggedSource := NewNoiseSource(numericSeed + 6)
 	geoSource := NewNoiseSource(numericSeed + 7)
+	microSource := NewNoiseSource(numericSeed + 8)
 
 	warpXSource := NewNoiseSource(numericSeed + 100)
 	warpYSource := NewNoiseSource(numericSeed + 101)
@@ -42,6 +43,10 @@ func BuildAtlasWorld(seed interface{}) *AtlasWorldContext {
 		ID: "raw_geology", Name: "Raw Geology", Dimensions: 3,
 		Source: geoSource, Octaves: 2, Scale: 0.02,
 	})
+	rawMicro := NewFractalNoiseField(FractalNoiseConfig{
+		ID: "raw_micro", Name: "Raw Micro Detail", Dimensions: 2,
+		Source: microSource, Octaves: 4, Scale: 0.1, // High frequency for local bumps
+	})
 
 	warpX := NewFractalNoiseField(FractalNoiseConfig{
 		ID: "warp_x", Name: "Warp X", Dimensions: 2,
@@ -53,6 +58,8 @@ func BuildAtlasWorld(seed interface{}) *AtlasWorldContext {
 	})
 
 	warpedElev := NewDomainWarpField("warped_elev", rawElev, warpX, warpY, nil, 20.0)
+	warpedTemp := NewDomainWarpField("warped_temp", rawTemp, warpX, warpY, nil, 10.0)
+	warpedMoist := NewDomainWarpField("warped_moist", rawMoist, warpX, warpY, nil, 10.0)
 
 	maxAmp4 := 1.875
 	maxAmp3 := 1.75
@@ -61,11 +68,12 @@ func BuildAtlasWorld(seed interface{}) *AtlasWorldContext {
 	return &AtlasWorldContext{
 		Seed:            seed,
 		Elevation:       NewRemapField("elevation", warpedElev, -maxAmp4, maxAmp4, 0.0, 1.0),
-		Temperature:     NewRemapField("temperature", rawTemp, -maxAmp3, maxAmp3, 0.0, 1.0),
-		Moisture:        NewRemapField("moisture", rawMoist, -maxAmp3, maxAmp3, 0.0, 1.0),
+		Temperature:     NewRemapField("temperature", warpedTemp, -maxAmp3, maxAmp3, 0.0, 1.0),
+		Moisture:        NewRemapField("moisture", warpedMoist, -maxAmp3, maxAmp3, 0.0, 1.0),
 		Continentalness: NewRemapField("continentalness", rawCont, -maxAmp2, maxAmp2, 0.0, 1.0),
 		Erosion:         NewRemapField("erosion", rawErosion, -maxAmp2, maxAmp2, 0.0, 1.0),
 		Ruggedness:      NewRemapField("ruggedness", rawRugged, -maxAmp3, maxAmp3, 0.0, 1.0),
 		Geology:         NewRemapField("geology", rawGeo, -maxAmp2, maxAmp2, 0.0, 1.0),
+		MicroDetail:     rawMicro,
 	}
 }

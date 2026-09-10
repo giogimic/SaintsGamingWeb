@@ -92,8 +92,21 @@ func loadExisting(db *sql.DB, wm *world.Manager) error {
 		}
 
 		var voxelWorld *world.VoxelWorld
+		var mapBiome *world.BiomeDefinition
 		if voxelData.Valid && voxelData.String != "" && voxelData.String != "{}" && voxelData.String != "null" {
 			voxelWorld, _ = world.ParseVoxelDoc([]byte(voxelData.String))
+			
+			// Extract seed from generationMetadata if present
+			var rawDoc struct {
+				GenerationMetadata struct {
+					Seed int `json:"seed"`
+				} `json:"generationMetadata"`
+			}
+			if err := json.Unmarshal([]byte(voxelData.String), &rawDoc); err == nil && rawDoc.GenerationMetadata.Seed != 0 {
+				b := world.GetDefaultBiome()
+				b.Seed = uint32(rawDoc.GenerationMetadata.Seed)
+				mapBiome = &b
+			}
 		}
 
 		grid, _ := world.ParseGridJSON(gridData.String)
@@ -142,6 +155,7 @@ func loadExisting(db *sql.DB, wm *world.Manager) error {
 			NPCs:        npcs,
 			RegionClass: rClass,
 			Voxel:       voxelWorld,
+			Biome:       mapBiome,
 			SpawnX:      float64(protocol.DefaultSpawnX),
 			SpawnY:      float64(protocol.DefaultSpawnY),
 		})

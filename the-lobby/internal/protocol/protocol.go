@@ -67,6 +67,7 @@ const (
 	EvLeaveRoom         = "leave_room"
 	EvForceDisconnect   = "force_disconnect"
 	EvRequestChunk      = "request_chunk"
+	EvRequestChunks     = "request_chunks"
 )
 
 // Server → client event names.
