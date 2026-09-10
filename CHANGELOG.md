@@ -1,3 +1,10 @@
+## [2.1.824] - 2026-09-10
+### Added
+- **Multi-Chunk Structure Anchor System**: Added the ability to seamlessly anchor authored VOXEL structures into infinite FRACTAL domains.
+- Implemented `StructurePlacer` in Next.js and Go to calculate 2-chunk radius deterministic overlaps.
+- Updated the JIT chunk generation endpoint to bulk load structure data ahead of chunk generation to prevent excessive DB queries.
+- Updated `FractalDomainsPanel` to properly persist `proceduralStructures` settings on the `voxelDoc`.
+
 ## [2.1.811] - 2026-09-09
 ### Fixed
 - **HUD Positioning Fix:** Resolved an issue where decoupled HUD UI overlays (`TargetUnitFrame`, `MiniMapRadar`, `Hotbar`, `QuestTracker`) were stacking on top of each other by restoring their absolute positioning containers.

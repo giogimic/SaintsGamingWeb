@@ -107,7 +107,12 @@ export const WorldAtlasPanel: React.FC = () => {
         
         if (mapsRes.ok) {
           const mapsData = await mapsRes.json();
-          setAllMaps(mapsData.maps || []);
+          if (mapsData.maps) {
+            const finiteMaps = mapsData.maps.filter((m: any) => m.mapType !== 'FRACTAL');
+            setAllMaps(finiteMaps);
+          } else {
+            setAllMaps([]);
+          }
         }
       } catch (err) {
         console.error('Failed to load atlas', err);

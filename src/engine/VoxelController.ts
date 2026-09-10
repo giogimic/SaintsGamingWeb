@@ -185,13 +185,12 @@ public meshDirtyVoxelChunks() {
     const wz = voxelCoords.wz;
 
     let surfaceY = -1;
-    for (let wy = 0; wy < this.voxelWorld.totalHeightBlocks; wy++) {
+    for (let wy = this.voxelWorld.totalHeightBlocks - 1; wy >= 0; wy--) {
       const word = typeof this.voxelWorld.getVoxelWithHalo === 'function'
         ? this.voxelWorld.getVoxelWithHalo(wx, wy, wz)
         : this.voxelWorld.getVoxel(wx, wy, wz);
       if (word && !isVoxelAir(word.low)) {
         surfaceY = wy;
-      } else {
         break;
       }
     }

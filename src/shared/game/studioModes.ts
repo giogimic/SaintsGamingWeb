@@ -60,6 +60,7 @@ export type StudioDockId =
   | 'newTileMap'
   | 'newVoxelMap'
   | 'newFractalMap'
+  | 'fractals'
   | 'animations'
   | 'interface'
   | 'camera'
@@ -321,6 +322,10 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   newFractalMap: {
     label: 'New Fractal Map',
     blurb: 'Generate a new procedural fractal strata map.',
+  },
+  fractals: {
+    label: 'Fractal Domains',
+    blurb: 'Manage infinite procedural maps separately from the Atlas.',
   },
   animations: {
     label: 'Animation Studio',

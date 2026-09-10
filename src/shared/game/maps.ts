@@ -72,6 +72,11 @@ export interface GameMapData {
   version?: number;
   tileLayers?: Array<{ name: string; grid: number[][] }>;
   freeformLayers?: any[];
+  proceduralStructures?: Array<{
+    voxelMapId: string;
+    spawnWeight: number;
+    yOffset?: number;
+  }>;
   tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number }>;
   npcs?: Array<{
     id: string;

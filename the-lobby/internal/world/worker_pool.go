@@ -8,6 +8,7 @@ import (
 
 // ChunkGenerationRequest represents a job for the worker pool.
 type ChunkGenerationRequest struct {
+	MapID      string
 	CX, CY, CZ int
 	Biome      BiomeDefinition
 	Callback   func(*VoxelChunk)
@@ -19,14 +20,16 @@ type WorkerPool struct {
 	wg       sync.WaitGroup
 	workers  int
 	quit     chan struct{}
+	mgr      *Manager
 }
 
 // NewWorkerPool creates a new worker pool for terrain generation.
-func NewWorkerPool(numWorkers int, maxQueue int) *WorkerPool {
+func NewWorkerPool(numWorkers int, maxQueue int, mgr *Manager) *WorkerPool {
 	return &WorkerPool{
 		JobQueue: make(chan ChunkGenerationRequest, maxQueue),
 		workers:  numWorkers,
 		quit:     make(chan struct{}),
+		mgr:      mgr,
 	}
 }
 
@@ -45,6 +48,15 @@ func (wp *WorkerPool) Start() {
 
 					placer := &FeaturePlacer{}
 					placer.PlaceFeatures(chunk, job.Biome.Seed, job.Biome)
+
+					// Run StructurePlacer if we have a manager and MapDef
+					if wp.mgr != nil && job.MapID != "" {
+						if def, ok := wp.mgr.GetDef(job.MapID); ok {
+							structPlacer := NewStructurePlacer()
+							structPlacer.PlaceStructures(chunk, def, wp.mgr, job.Biome.Seed)
+						}
+					}
+
 					if job.Callback != nil {
 						job.Callback(chunk)
 					}

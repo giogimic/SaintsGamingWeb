@@ -77,13 +77,13 @@ func (g *ProceduralVoxelGenerator) PopulateChunk(cx, cy, cz int) *VoxelChunk {
 
 				density, blend, mappedElev := atlas.CalculateVoxelDensity(g.context, g.resolver, wx, wy, wz)
 
-				if density <= 0 {
-					chunk.Set(lx, ly, lz, VoxelWordAir)
+				if startWY+ly == 0 {
+					chunk.Set(lx, ly, lz, PackVoxel(blend.Primary.Strata.BedrockMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone))
 					continue
 				}
 
-				if startWY+ly == 0 {
-					chunk.Set(lx, ly, lz, PackVoxel(blend.Primary.Strata.BedrockMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone))
+				if density <= 0 {
+					chunk.Set(lx, ly, lz, VoxelWordAir)
 					continue
 				}
 

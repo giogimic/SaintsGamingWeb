@@ -79,7 +79,28 @@ export class ChunkStreamer {
       console.debug(`[Diagnostic] ChunkStreamer received chunk: ${key}`);
     }
 
-    const baseChunk = VoxelChunk.deserializePaletteRLEBinary(new Uint8Array(buffer));
+    let bytes: Uint8Array;
+    if (buffer instanceof ArrayBuffer) {
+      bytes = new Uint8Array(buffer);
+    } else if (buffer instanceof Uint8Array) {
+      bytes = buffer;
+    } else if (typeof buffer === 'string') {
+      const binString = atob(buffer);
+      bytes = new Uint8Array(binString.length);
+      for (let i = 0; i < binString.length; i++) bytes[i] = binString.charCodeAt(i);
+    } else if (buffer?.type === 'Buffer' && Array.isArray(buffer.data)) {
+      bytes = new Uint8Array(buffer.data);
+    } else {
+      bytes = new Uint8Array(buffer);
+    }
+
+    let baseChunk: VoxelChunk;
+    try {
+      baseChunk = VoxelChunk.deserializePaletteRLEBinary(bytes);
+    } catch (err) {
+      console.error(`[ChunkStreamer] Failed to deserialize chunk ${key}:`, err);
+      return;
+    }
 
     // Apply physical portal shrines based on gates
     const gates = (this.voxelController.engine as any).currentRawMapData?.gatesData?.gates || [];

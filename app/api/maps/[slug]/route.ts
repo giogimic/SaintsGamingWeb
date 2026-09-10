@@ -307,6 +307,9 @@ export async function POST(
       voxelDoc = migrateLegacyDocTo32Cubic(voxelDoc);
       voxelDoc.mapWidth = width;
       voxelDoc.mapHeight = height;
+      if (body.proceduralStructures !== undefined) {
+        voxelDoc.proceduralStructures = body.proceduralStructures;
+      }
       body.voxelDoc = voxelDoc;
       if (!rawGrid || !Array.isArray(rawGrid) || rawGrid.length === 0) {
         grid = generateGridFromVoxelDoc(voxelDoc, width, height);
@@ -322,6 +325,9 @@ export async function POST(
       );
       voxelDoc.id = slug;
       voxelDoc.name = body.name || slug;
+      if (body.proceduralStructures !== undefined) {
+        voxelDoc.proceduralStructures = body.proceduralStructures;
+      }
       body.voxelDoc = voxelDoc;
     }
 

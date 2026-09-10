@@ -681,6 +681,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           {/* ── 4. WORLD ── */}
           <TopLevelMenu id="world" label="World">
             <MenuItem label="World Atlas (Spatial Grid)" shortcut="Ctrl+Shift+M" icon={Globe} onClick={() => { setStudioMode('atlas'); openPanel('atlas'); }} />
+            <MenuItem label="Fractal Domains" icon={Globe} onClick={() => { setStudioMode('atlas'); openPanel('fractals'); }} />
             <MenuItem label="Tile Map Browser" icon={Globe} onClick={() => { setStudioMode('tile'); openPanel('tileBrowser'); }} />
             <MenuItem label="Voxel Map Browser" icon={Box} onClick={() => { setStudioMode('voxel'); openPanel('voxelBrowser'); }} />
             <MenuItem label="World Events" icon={Sparkles} onClick={() => openPanel('worldevent')} />
@@ -725,6 +726,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               </>
             )}
             <MenuItem label="World Atlas" icon={panels.atlas?.isOpen ? CheckCircle2 : Globe} onClick={() => togglePanel('atlas')} />
+            <MenuItem label="Fractal Domains" icon={panels.fractals?.isOpen ? CheckCircle2 : Globe} onClick={() => togglePanel('fractals')} />
             <MenuItem label="Tile Map Browser" icon={panels.tileBrowser?.isOpen ? CheckCircle2 : Globe} onClick={() => togglePanel('tileBrowser')} />
             <MenuItem label="Voxel Map Browser" icon={panels.voxelBrowser?.isOpen ? CheckCircle2 : Box} onClick={() => togglePanel('voxelBrowser')} />
             <MenuItem label="Inspector / Properties" icon={panels.properties?.isOpen ? CheckCircle2 : Settings} onClick={() => togglePanel('properties')} />

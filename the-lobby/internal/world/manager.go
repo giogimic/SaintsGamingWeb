@@ -19,9 +19,17 @@ type MapDef struct {
 	Gates    []GateDef
 	SpawnX      float64
 	SpawnY      float64
-	RegionClass string
-	Voxel       *VoxelWorld
-	Biome       *BiomeDefinition
+	RegionClass          string
+	Voxel                *VoxelWorld
+	Biome                *BiomeDefinition
+	ProceduralStructures []ProceduralStructure
+}
+
+// ProceduralStructure defines an injected VOXEL map for a FRACTAL domain.
+type ProceduralStructure struct {
+	VoxelMapID  string  `json:"voxelMapId"`
+	SpawnWeight float64 `json:"spawnWeight"`
+	YOffset     int     `json:"yOffset"`
 }
 
 // GateDef is a warp gateway definition in the live world.
@@ -65,6 +73,9 @@ type Manager struct {
 	maxPerShard int
 	gates       *SpiritGateRegistry
 	Jit         *GeneratorClient
+
+	// FetchMapDef is an injected callback to lazily load a MapDef from the database
+	FetchMapDef func(id string) (*MapDef, error)
 }
 
 func NewManager(maxPerShard int) *Manager {
@@ -112,6 +123,32 @@ func (m *Manager) EnsureDemoDef() *MapDef {
 	d := BuildDemoMapDef()
 	m.defs[d.ID] = d
 	return d
+}
+
+// GetVoxelMapBlocks retrieves a cached VoxelWorld or attempts to load it lazily
+func (m *Manager) GetVoxelMapBlocks(mapID string) *VoxelWorld {
+	m.mu.Lock()
+	def, ok := m.defs[mapID]
+	m.mu.Unlock()
+
+	if ok && def != nil && def.Voxel != nil {
+		return def.Voxel
+	}
+
+	if m.FetchMapDef != nil {
+		newDef, err := m.FetchMapDef(mapID)
+		if err == nil && newDef != nil && newDef.Voxel != nil {
+			m.mu.Lock()
+			// Only cache it if it wasn't just inserted by another thread
+			if _, exists := m.defs[mapID]; !exists {
+				m.defs[mapID] = newDef
+			}
+			m.mu.Unlock()
+			return newDef.Voxel
+		}
+	}
+
+	return nil
 }
 
 // JoinMap assigns a shard and returns the live instance.
@@ -294,12 +331,17 @@ func BuildDemoMapDef() *MapDef {
 	biome := GetDefaultBiome()
 	generator := NewProceduralVoxelGenerator(biome.Seed)
 	placer := &FeaturePlacer{}
+	structPlacer := NewStructurePlacer()
 
 	// Pregenerate a 5x5 chunk radius around spawn (cx: -2 to 2, cz: -2 to 2)
 	for cx := -2; cx <= 2; cx++ {
 		for cz := -2; cz <= 2; cz++ {
 			chunk := generator.PopulateChunk(cx, 0, cz)
 			placer.PlaceFeatures(chunk, biome.Seed, biome)
+			// Wait, we need MapDef and Manager for StructurePlacer.
+			// But DemoMapDef is currently being built! It doesn't have structures by default.
+			// So we can pass nil for MapDef here, or an empty MapDef.
+			structPlacer.PlaceStructures(chunk, nil, nil, biome.Seed)
 			voxelWorld.SetChunk(cx, 0, cz, chunk)
 		}
 	}

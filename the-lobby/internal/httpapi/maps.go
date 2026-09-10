@@ -443,6 +443,39 @@ func PersistMapDraftVoxel(db *sql.DB, id, name, grid, gates, npcs, tiles, tilese
 	return err
 }
 
+// LoadMapDefFromDB fetches a MapDef from the SQLite database.
+func LoadMapDefFromDB(db *sql.DB, id string) (*world.MapDef, error) {
+	var name, grid, npcs, tiles, tilesets, voxel, mapType string
+	var version int
+
+	queryVoxel := `SELECT name, gridData, npcsData, tileLayersData, tilesetsData, voxelData, mapType, version FROM WorldMap WHERE id = ?`
+	err := db.QueryRow(queryVoxel, id).Scan(&name, &grid, &npcs, &tiles, &tilesets, &voxel, &mapType, &version)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, err
+		}
+		queryNoVoxel := `SELECT name, gridData, npcsData, tileLayersData, tilesetsData, mapType, version FROM WorldMap WHERE id = ?`
+		err = db.QueryRow(queryNoVoxel, id).Scan(&name, &grid, &npcs, &tiles, &tilesets, &mapType, &version)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	def := &world.MapDef{
+		ID:     id,
+		Name:   name,
+		Width:  128,
+		Height: 128,
+	}
+
+	// Just apply Voxel data since FRACTAL injection only needs VOXEL blocks
+	if voxel != "" && voxel != "{}" && voxel != "null" {
+		def.Voxel, _ = world.DecodeVoxelWorld([]byte(voxel))
+	}
+
+	return def, nil
+}
+
 func (s *Server) gtcListings(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"listings": []any{}, "note": "live listings via socket gtc_* events"})
 }

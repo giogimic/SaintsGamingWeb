@@ -76,6 +76,24 @@ export async function POST(req: NextRequest) {
 
     const generatedChunks = [];
 
+    // Fetch structure maps ahead of time to avoid querying per chunk
+    const structureMapDict: Record<string, any> = {};
+    if (voxelDoc.proceduralStructures && voxelDoc.proceduralStructures.length > 0) {
+      const mapIdsToFetch = [...new Set(voxelDoc.proceduralStructures.map((s: any) => s.voxelMapId))];
+      const structureMaps = await prisma.worldMap.findMany({
+        where: { id: { in: mapIdsToFetch as string[] } },
+        select: { id: true, voxelData: true }
+      });
+      for (const sm of structureMaps) {
+        if (sm.voxelData) {
+          try {
+            const doc = typeof sm.voxelData === 'string' ? JSON.parse(sm.voxelData) : sm.voxelData;
+            structureMapDict[sm.id] = doc;
+          } catch (e) { }
+        }
+      }
+    }
+
     // 3. Generate requested chunks
     for (const reqChunk of requestedChunks) {
       const cx = reqChunk.cx;
@@ -88,6 +106,13 @@ export async function POST(req: NextRequest) {
         }
 
         const chunk = generateChunkVoxels(cx, cz, cy, config, atlasContext, atlasResolver);
+
+        // Apply Procedural Structures
+        if (voxelDoc.proceduralStructures && voxelDoc.proceduralStructures.length > 0) {
+          const { applyStructuresToChunk } = require('@/shared/game/voxel/StructurePlacer');
+          applyStructuresToChunk(chunk, voxelDoc.proceduralStructures, structureMapDict, config.seed || 1337);
+        }
+
         const serialized = Array.from(chunk.serializePaletteRLEBinary());
         voxelDoc.chunks[key] = serialized;
         generatedChunks.push(serialized);
