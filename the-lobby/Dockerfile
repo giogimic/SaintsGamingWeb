@@ -1,5 +1,5 @@
-# Go MMO realtime backend — parallel to Next.js web on :3000.
-# Default host publish port is 3001 (see docker-compose / setup-go-mmo.sh).
+# Go MMO realtime backend — parallel to Next.js web on :24001.
+# Default host publish port is 24011 (see docker-compose / setup-the-lobby.sh).
 FROM golang:1.25-bookworm AS build
 
 WORKDIR /src
