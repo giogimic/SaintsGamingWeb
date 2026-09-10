@@ -30,7 +30,7 @@ export function GameUI() {
       <ChatOverlay />
       
       {/* Interactive UI that needs pointer events */}
-      <div className="pointer-events-auto w-full h-full">
+      <div className="pointer-events-none w-full h-full">
         <Hotbar />
         <MobileControls />
         <WindowController />

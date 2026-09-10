@@ -73,7 +73,7 @@ export function Hotbar() {
         return {
           id: slug,
           name: slug,
-          icon: '/assets/icons/skills/default.svg',
+          icon: '/assets/icons/skills/spirit-skill.svg',
           cooldownMs: 2000,
           type: 'damage',
           mpCost: 10
@@ -82,8 +82,8 @@ export function Hotbar() {
       return {
         id: def.slug,
         name: def.name,
-        // Using dynamically generated SVG icons
-        icon: `/assets/icons/skills/${def.slug}.svg`,
+        // The icons in public/assets/icons/skills are named by element (e.g. fire-skill.svg)
+        icon: def.element ? `/assets/icons/skills/${def.element.toLowerCase()}-skill.svg` : '/assets/icons/skills/spirit-skill.svg',
         cooldownMs: def.cooldown || 2000,
         type: def.type === 'HEAL' ? 'heal' : def.type === 'BUFF' ? 'buff' : def.type === 'UTILITY' ? 'utility' : 'damage',
         mpCost: 10 // Replace with DB field if MP cost is added to dictionary

@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useSessionStore } from '../state/useSessionStore';
+import { useWorldStore } from '../state/useWorldStore';
+import { usePlayerStore } from '../state/usePlayerStore';
+import { socketManager } from '../net/SocketManager';
 import { useAppStore } from "@/shared/store/useAppStore";
 import { deleteGameCharacter, getUserCharacters } from '@/app/actions/game';
 import { toast } from 'sonner';
@@ -125,7 +128,21 @@ export function CharacterSelectScene() {
     const char = characters.find(c => c.id === charId);
     if (char) {
       setCharacter(charId, char.name);
-      setScene('exploring');
+      
+      const accountId = useSessionStore.getState().accountId || (session?.user?.id as string) || '';
+      const joinSeq = useWorldStore.getState().incrementWorldJoinSeq();
+      
+      socketManager.emit('join_map', {
+        accountId: accountId,
+        characterId: charId,
+        mapId: 'LOBBY',
+        lobby: true,
+        name: char.name,
+        assetProfileId: char.assetProfileId || usePlayerStore.getState().player.assetProfileId || 'adventurer',
+        joinSeq,
+      });
+
+      useWorldStore.getState().setWorldSessionState('joining');
     }
   };
 

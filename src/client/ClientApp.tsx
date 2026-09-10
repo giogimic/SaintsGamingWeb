@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useSessionStore } from './state/useSessionStore';
+import { useWorldStore } from './state/useWorldStore';
 import { TitleScene } from './scenes/TitleScene';
 import { LoginScene } from './scenes/LoginScene';
 import { ServerSelectScene } from './scenes/ServerSelectScene';
@@ -25,6 +26,11 @@ export function ClientApp() {
   // Network & Socket connection
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.id) {
+      // 1. Fetch Registries
+      useWorldStore.getState().fetchGameRegistry();
+      useWorldStore.getState().fetchLogicTiles();
+
+      // 2. Connect Socket
       socketManager.connect({
         accountId: session.user.id,
         onConnect: () => {
