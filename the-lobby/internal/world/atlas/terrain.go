@@ -42,3 +42,48 @@ func CalculateTerrainElevation(
 
 	return finalHeight, blend
 }
+
+// CalculateVoxelDensity calculates the full 3D volumetric density at a specific point.
+// Returns density ( > 0 means solid ), the biome blend, and the mapped base surface elevation.
+func CalculateVoxelDensity(
+	context *AtlasWorldContext,
+	resolver *AtlasRegionResolver,
+	x, y, z float64,
+) (float64, BiomeBlend, float64) {
+	// 1. Get 2D Elevation
+	atlasElev, blend := CalculateTerrainElevation(context, resolver, x, z)
+
+	// Map Atlas Height (0.0 to 1.0) to world voxel coordinates (BaseElevation)
+	baseElevation := 16.0
+	elevationRange := 8.0
+	mappedElev := baseElevation + (atlasElev-0.5)*elevationRange*2
+
+	// Add micro detail to mappedElev (2D)
+	micro := context.MicroDetail.Sample(FieldSample{X: x, Y: 0, Z: z})
+	mappedElev += micro * 2.0
+
+	// 2. Base Density = Distance from surface
+	// If y is below mappedElev, baseDensity > 0. If above, < 0.
+	baseDensity := mappedElev - y
+
+	// 3. Evaluate 3D Terrain Density
+	sample3D := FieldSample{X: x, Y: y, Z: z}
+	terrainDensity := context.TerrainDensity.Sample(sample3D)
+	
+	// Add 3D Terrain Density (scale up amplitude to form overhangs and islands)
+	density := baseDensity + terrainDensity*10.0 
+
+	// 4. Evaluate Caves
+	caveDensity := context.CaveDensity.Sample(sample3D)
+	
+	// Cave depth fade: only carve caves if we are deep enough below the mapped surface
+	depth := mappedElev - y
+	if depth > 4.0 {
+		// If caveDensity is high enough, we hollow out the voxel by subtracting from total density
+		if caveDensity > 0.2 {
+			density -= 20.0 
+		}
+	}
+
+	return density, blend, mappedElev
+}

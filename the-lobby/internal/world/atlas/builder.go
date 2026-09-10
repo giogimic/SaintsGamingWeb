@@ -11,6 +11,8 @@ func BuildAtlasWorld(seed interface{}) *AtlasWorldContext {
 	ruggedSource := NewNoiseSource(numericSeed + 6)
 	geoSource := NewNoiseSource(numericSeed + 7)
 	microSource := NewNoiseSource(numericSeed + 8)
+	terrainDensitySource := NewNoiseSource(numericSeed + 9)
+	caveDensitySource := NewNoiseSource(numericSeed + 10)
 
 	warpXSource := NewNoiseSource(numericSeed + 100)
 	warpYSource := NewNoiseSource(numericSeed + 101)
@@ -47,6 +49,14 @@ func BuildAtlasWorld(seed interface{}) *AtlasWorldContext {
 		ID: "raw_micro", Name: "Raw Micro Detail", Dimensions: 2,
 		Source: microSource, Octaves: 4, Scale: 0.1, // High frequency for local bumps
 	})
+	rawTerrainDensity := NewFractalNoiseField(FractalNoiseConfig{
+		ID: "raw_terrain_density", Name: "Raw Terrain Density", Dimensions: 3,
+		Source: terrainDensitySource, Octaves: 3, Scale: 0.03, // Low frequency for overhangs
+	})
+	rawCaveDensity := NewFractalNoiseField(FractalNoiseConfig{
+		ID: "raw_cave_density", Name: "Raw Cave Density", Dimensions: 3,
+		Source: caveDensitySource, Octaves: 4, Scale: 0.08, // Med frequency for swiss-cheese caves
+	})
 
 	warpX := NewFractalNoiseField(FractalNoiseConfig{
 		ID: "warp_x", Name: "Warp X", Dimensions: 2,
@@ -75,5 +85,7 @@ func BuildAtlasWorld(seed interface{}) *AtlasWorldContext {
 		Ruggedness:      NewRemapField("ruggedness", rawRugged, -maxAmp3, maxAmp3, 0.0, 1.0),
 		Geology:         NewRemapField("geology", rawGeo, -maxAmp2, maxAmp2, 0.0, 1.0),
 		MicroDetail:     rawMicro,
+		TerrainDensity:  rawTerrainDensity,
+		CaveDensity:     rawCaveDensity,
 	}
 }

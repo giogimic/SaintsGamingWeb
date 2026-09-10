@@ -1,8 +1,6 @@
 package world
 
 import (
-	"math"
-
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/world/atlas"
 )
 
@@ -74,46 +72,32 @@ func (g *ProceduralVoxelGenerator) PopulateChunk(cx, cy, cz int) *VoxelChunk {
 		for lx := 0; lx < ChunkSizeX; lx++ {
 			wx := float64(startWX + lx)
 
-			// 1. Resolve Atlas Region and Terrain Elevation
-			atlasElev, blend := atlas.CalculateTerrainElevation(g.context, g.resolver, wx, wz)
-			
-			// Sample MicroDetail
-			micro := g.context.MicroDetail.Sample(atlas.FieldSample{X: wx, Y: 0, Z: wz})
-
-			// Map Atlas Height (0.0 to 1.0) to world voxel coordinates
-			baseElevation := 16.0
-			elevationRange := 8.0
-			mappedElev := baseElevation + (atlasElev-0.5)*elevationRange*2
-			
-			// Add micro detail perturbation (e.g., +/- 2 voxels)
-			mappedElev += micro * 2.0
-			
-			surfaceY := int(math.Max(1, math.Min(31, math.Round(mappedElev))))
-
-			strata := blend.Primary.Strata
-			surfaceWord := PackVoxel(strata.SurfaceMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
-			subsurfaceWord := PackVoxel(strata.SubsurfaceMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
-			mantleWord := PackVoxel(strata.MantleMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
-			bedrockWord := PackVoxel(strata.BedrockMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone)
-
 			for ly := 0; ly < ChunkSizeY; ly++ {
-				wy := startWY + ly
+				wy := float64(startWY + ly)
 
-				if wy > surfaceY {
-					// Air (default for chunk)
+				density, blend, mappedElev := atlas.CalculateVoxelDensity(g.context, g.resolver, wx, wy, wz)
+
+				if density <= 0 {
 					chunk.Set(lx, ly, lz, VoxelWordAir)
-				} else if wy == 0 {
-					// Bedrock layer
-					chunk.Set(lx, ly, lz, bedrockWord)
+					continue
+				}
+
+				if startWY+ly == 0 {
+					chunk.Set(lx, ly, lz, PackVoxel(blend.Primary.Strata.BedrockMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone))
+					continue
+				}
+
+				depth := mappedElev - wy
+				strata := blend.Primary.Strata
+
+				// Determine material based on density depth from base elevation.
+				// If we are evaluating an overhang or floating island (depth <= 0 but density > 0), treat it as surface.
+				if depth <= 0 {
+					chunk.Set(lx, ly, lz, PackVoxel(strata.SurfaceMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone))
+				} else if depth <= float64(strata.SubsurfaceDepth) {
+					chunk.Set(lx, ly, lz, PackVoxel(strata.SubsurfaceMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone))
 				} else {
-					depth := surfaceY - wy
-					if depth == 0 {
-						chunk.Set(lx, ly, lz, surfaceWord)
-					} else if depth <= strata.SubsurfaceDepth {
-						chunk.Set(lx, ly, lz, subsurfaceWord)
-					} else {
-						chunk.Set(lx, ly, lz, mantleWord)
-					}
+					chunk.Set(lx, ly, lz, PackVoxel(strata.MantleMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone))
 				}
 			}
 		}
