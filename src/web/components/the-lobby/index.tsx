@@ -311,8 +311,8 @@ export default function TheLobby({
 
       try {
         const loaded = ensureMapHasStudioTilesets(await loadMap(validMapId));
-        const mw = loaded.grid?.[0]?.length || 30;
-        const mh = loaded.grid?.length || 30;
+        const mw = loaded.width || loaded.grid?.[0]?.length || 30;
+        const mh = loaded.height || loaded.grid?.length || 30;
         validPosition = {
           x: Math.max(1, Math.min(mw - 2, validPosition.x ?? 15)),
           y: Math.max(1, Math.min(mh - 2, validPosition.y ?? 15)),
@@ -402,8 +402,8 @@ export default function TheLobby({
 
     try {
       const loaded = ensureMapHasStudioTilesets(await loadMap(validMapId));
-      const mw = loaded.grid?.[0]?.length || 30;
-      const mh = loaded.grid?.length || 30;
+      const mw = loaded.width || loaded.grid?.[0]?.length || 30;
+      const mh = loaded.height || loaded.grid?.length || 30;
       validPosition = {
         x: Math.max(1, Math.min(mw - 2, DEFAULT_SPAWN.x)),
         y: Math.max(1, Math.min(mh - 2, DEFAULT_SPAWN.y)),

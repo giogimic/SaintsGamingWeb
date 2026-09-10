@@ -570,8 +570,8 @@ public stopRenderLoop() {
     this.cameraTargetY = y;
     this.cameraTargetZ = z;
 
-    const pitch = this.cameraProfile.pitch || Math.PI / 4;
-    const dist = this.cameraProfile.distance || 14;
+    const pitch = this.cameraProfile.pitch ?? Math.PI / 4;
+    const dist = this.cameraProfile.distance ?? 14;
     const yaw = this.cameraYaw || 0;
     const camY = Math.max(1.5, dist * Math.sin(pitch));
     const horizDist = dist * Math.cos(pitch);
@@ -623,9 +623,9 @@ public stopRenderLoop() {
       return;
     }
 
-    const pitch = this.cameraProfile.pitch || Math.PI / 4;
+    const pitch = this.cameraProfile.pitch ?? Math.PI / 4;
     const yaw = this.cameraYaw || 0;
-    const dist = this.cameraProfile.distance || 14;
+    const dist = this.cameraProfile.distance ?? 14;
 
     const camY = Math.max(1.5, dist * Math.sin(pitch));
     const horizDist = dist * Math.cos(pitch);

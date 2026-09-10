@@ -685,7 +685,7 @@ export class BabylonEngine {
 
       // Apply map-specific camera style restrictions
       const mapCameraStyle = (mapData as any).cameraStyle;
-      const allowCustom = (mapData as any).allowCustomCamera ?? (mapData as any).allowCustomPlayerCamera ?? false;
+      const allowCustom = (mapData as any).allowCustomCamera ?? (mapData as any).allowCustomPlayerCamera ?? true;
       
       if (mapCameraStyle && !allowCustom) {
         this.renderer.applyPlayerCameraStyle(mapCameraStyle as any);
