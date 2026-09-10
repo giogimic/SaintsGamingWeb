@@ -453,6 +453,7 @@ export interface MapIndexEntry {
   gameId: string | null;
   version: number;
   updatedAt?: string;
+  mapType?: string;
   proceduralStructures?: Array<{
     voxelMapId: string;
     spawnWeight: number;
