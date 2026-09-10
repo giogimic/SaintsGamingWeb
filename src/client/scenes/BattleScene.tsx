@@ -18,7 +18,7 @@ export function BattleScene() {
     if (!isPlayerTurn) return;
     
     soundSynth?.playSelectSound?.();
-    socketManager.emit('battle_action', {
+    socketManager.emit('battle_submit_action', {
       battleId: activeBattle.id,
       action: actionType,
       abilityId,
