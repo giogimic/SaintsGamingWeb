@@ -635,8 +635,14 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
             fi
             echo -e "${GREEN}[✓] Go container running.${NC}\n"
         elif docker ps -a --format '{{.Names}}' | grep -q '^saints-lobby'; then
-            echo -e "${CYAN}[*] Restarting Go MMO container...${NC}"
-            docker restart saints-lobby 2>/dev/null || true
+            echo -e "${CYAN}[*] Rebuilding and Restarting Go MMO container...${NC}"
+            ( cd the-lobby && docker build -t saints-lobby-img . )
+            docker rm -f saints-lobby 2>/dev/null || true
+            docker run -d --name saints-lobby \
+                --restart unless-stopped \
+                -p 24011:24011 \
+                -v saints_lobby_data:/app/data \
+                saints-lobby-img
         fi
     fi
 
