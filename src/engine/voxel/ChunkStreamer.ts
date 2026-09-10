@@ -2,10 +2,13 @@ import { VoxelWorld } from '../../shared/game/voxel/VoxelWorldDoc';
 import { VoxelChunk, CHUNK_SIZE_X, CHUNK_SIZE_Z } from '../../shared/game/voxel/VoxelChunk';
 import { VoxelController } from '../VoxelController';
 import { VOXEL_MAT_ATLAS_PORTAL, VOXEL_MAT_STONE, packVoxel, VoxelShape, VoxelOrientation, VoxelPhysics, VOXEL_WORD_AIR_LOW, VOXEL_WORD_AIR_HIGH } from '../../shared/game/voxel/VoxelWord';
+import { useGameStore } from '../../web/components/the-lobby/store';
 
 export class ChunkStreamer {
   private loadedChunks = new Set<string>();
   private pendingChunks = new Set<string>();
+  private queuedChunks = new Set<string>();
+  private unsubStore: () => void;
   
   public visibleRadius = 8;
   public preloadRadius = 10;
@@ -23,12 +26,24 @@ export class ChunkStreamer {
     if (typeof window !== 'undefined') {
       window.addEventListener('voxel_chunk_data', this.onChunkData);
     }
+    
+    this.unsubStore = useGameStore.subscribe(
+      (state) => state.connectionStatus,
+      (status) => {
+        if (status === 'connected') {
+          this.flushQueuedChunks();
+        } else if (status === 'disconnected') {
+          this.reconcilePendingChunks();
+        }
+      }
+    );
   }
 
   public destroy() {
     if (typeof window !== 'undefined') {
       window.removeEventListener('voxel_chunk_data', this.onChunkData);
     }
+    this.unsubStore();
   }
 
   private onChunkData = (e: any) => {
@@ -44,6 +59,10 @@ export class ChunkStreamer {
 
     this.pendingChunks.delete(key);
     this.loadedChunks.add(key);
+    
+    if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
+      console.debug(`[Diagnostic] ChunkStreamer received chunk: ${key}`);
+    }
 
     const baseChunk = VoxelChunk.deserializePaletteRLEBinary(new Uint8Array(buffer));
 
@@ -52,12 +71,19 @@ export class ChunkStreamer {
     this.applyPortalShrines(baseChunk, gates);
 
     world.chunks.set(chunkKey, baseChunk);
+    
+    if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
+      console.debug(`[Diagnostic] ChunkStreamer decoded & inserted chunk: ${key}`);
+    }
 
     // Tell mesher to mesh this chunk only if within visible radius
     if (Math.abs(cx - this.currentCx) <= this.visibleRadius && Math.abs(cz - this.currentCz) <= this.visibleRadius) {
       const result = this.voxelController.voxelMesher?.meshChunk(world, baseChunk);
       if (result && (this.voxelController as any).engine.rootNode) {
         result.mesh.parent = (this.voxelController as any).engine.rootNode;
+        if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
+          console.debug(`[Diagnostic] ChunkStreamer meshed & visible: ${key}`);
+        }
       }
     }
   };
@@ -106,10 +132,10 @@ export class ChunkStreamer {
       }
     }
 
-    // Load needed chunks that are not loaded or pending
+    // Load needed chunks that are not loaded or pending or queued
     let needsFetch = false;
     for (const key of neededChunks) {
-      if (!this.loadedChunks.has(key) && !this.pendingChunks.has(key)) {
+      if (!this.loadedChunks.has(key) && !this.pendingChunks.has(key) && !this.queuedChunks.has(key)) {
         needsFetch = true;
         break; 
       }
@@ -124,6 +150,7 @@ export class ChunkStreamer {
     const key = `${cx}_${cz}`;
     this.loadedChunks.delete(key);
     this.pendingChunks.delete(key);
+    this.queuedChunks.delete(key);
     
     const world = this.voxelController.voxelWorld;
     if (!world) return;
@@ -150,16 +177,9 @@ export class ChunkStreamer {
     for (let x = minCx; x <= maxCx; x++) {
       for (let z = minCz; z <= maxCz; z++) {
         const key = `${x}_${z}`;
-        if (!this.pendingChunks.has(key) && !this.loadedChunks.has(key)) {
-          this.pendingChunks.add(key);
-          
-          import('../../web/components/the-lobby/store').then(({ useGameStore }) => {
-            const emitSocketEvent = useGameStore.getState().emitSocketEvent;
-            if (emitSocketEvent) {
-              emitSocketEvent('request_chunk', { cx: x, cy: 0, cz: z });
-              requestedAny = true;
-            }
-          });
+        if (!this.pendingChunks.has(key) && !this.loadedChunks.has(key) && !this.queuedChunks.has(key)) {
+          this.queueOrSendChunk(x, z, key);
+          requestedAny = true;
         }
       }
     }
@@ -182,7 +202,56 @@ export class ChunkStreamer {
     }
     this.loadedChunks.clear();
     this.pendingChunks.clear();
+    this.queuedChunks.clear();
     this.updateStreaming(this.currentCx, this.currentCz, true);
+  }
+
+  private queueOrSendChunk(cx: number, cz: number, key: string) {
+    const store = useGameStore.getState();
+    if (store.connectionStatus === 'connected' && store.emitSocketEvent) {
+      this.pendingChunks.add(key);
+      if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
+        console.debug(`[Diagnostic] ChunkStreamer sent request: ${key}`);
+      }
+      store.emitSocketEvent('request_chunk', { cx, cy: 0, cz });
+    } else {
+      this.queuedChunks.add(key);
+      if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
+        console.debug(`[Diagnostic] ChunkStreamer queued request: ${key}`);
+      }
+    }
+  }
+
+  private flushQueuedChunks() {
+    if (this.queuedChunks.size === 0) return;
+    const store = useGameStore.getState();
+    if (store.connectionStatus !== 'connected' || !store.emitSocketEvent) return;
+
+    if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
+      console.debug(`[Diagnostic] ChunkStreamer flushing ${this.queuedChunks.size} queued chunks`);
+    }
+
+    const toRequest = Array.from(this.queuedChunks);
+    this.queuedChunks.clear();
+
+    for (const key of toRequest) {
+      const [cx, cz] = key.split('_').map(Number);
+      this.pendingChunks.add(key);
+      store.emitSocketEvent('request_chunk', { cx, cy: 0, cz });
+    }
+  }
+
+  private reconcilePendingChunks() {
+    if (this.pendingChunks.size === 0) return;
+    
+    if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
+      console.debug(`[Diagnostic] ChunkStreamer reconciling ${this.pendingChunks.size} pending chunks to queued due to disconnect`);
+    }
+
+    for (const key of this.pendingChunks) {
+      this.queuedChunks.add(key);
+    }
+    this.pendingChunks.clear();
   }
 
   /**
@@ -191,9 +260,9 @@ export class ChunkStreamer {
    */
   public forceLoadChunk(cx: number, cz: number) {
     const key = `${cx}_${cz}`;
-    if (this.loadedChunks.has(key) || this.pendingChunks.has(key)) return;
+    if (this.loadedChunks.has(key) || this.pendingChunks.has(key) || this.queuedChunks.has(key)) return;
     
-    this.pendingChunks.add(key);
+    this.queueOrSendChunk(cx, cz, key);
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('map-streaming-start'));
@@ -201,13 +270,6 @@ export class ChunkStreamer {
         window.dispatchEvent(new CustomEvent('map-streaming-end'));
       }, 500);
     }
-
-    import('../../web/components/the-lobby/store').then(({ useGameStore }) => {
-      const emitSocketEvent = useGameStore.getState().emitSocketEvent;
-      if (emitSocketEvent) {
-        emitSocketEvent('request_chunk', { cx, cy: 0, cz });
-      }
-    });
   }
 
   private applyPortalShrines(chunk: VoxelChunk, gates: any[]) {

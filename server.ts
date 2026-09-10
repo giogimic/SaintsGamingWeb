@@ -6,7 +6,7 @@ import { RealtimeService } from "./src/server/realtime/RealtimeService";
 const dev = process.env.NODE_ENV !== "production";
 // Docker sets HOSTNAME=0.0.0.0; default to all interfaces in prod so lobby sockets work.
 const hostname = process.env.HOSTNAME || (dev ? "localhost" : "0.0.0.0");
-const port = parseInt(process.env.PORT || "3000", 10);
+const port = parseInt(process.env.PORT || "24001", 10);
 
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
@@ -125,7 +125,7 @@ app.prepare().then(async () => {
   });
 
   // Initialize RealtimeService to route events to Go MMO server
-  const goMmoUrl = process.env.NEXT_PUBLIC_GO_MMO_URL || "http://127.0.0.1:3001";
+  const goMmoUrl = process.env.NEXT_PUBLIC_GO_MMO_URL || "http://127.0.0.1:24011";
   _realtimeService = new RealtimeService(goMmoUrl);
   (globalThis as any).__sg_realtime_service = _realtimeService;
 

@@ -1,7 +1,7 @@
 /**
  * Lobby / Studio realtime socket target.
  *
- * When `NEXT_PUBLIC_GO_MMO_URL` is set (e.g. http://127.0.0.1:3001), the
+ * When `NEXT_PUBLIC_GO_MMO_URL` is set (e.g. http://127.0.0.1:24011), the
  * lobby game socket connects to the Go MMO backend. Forum RealtimeProvider
  * stays on the Next.js origin (unchanged).
  *

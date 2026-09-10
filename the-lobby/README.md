@@ -17,7 +17,7 @@ Inventory / quests / last seat persist in Go SQLite (`GoInventory`, `GoQuestProg
 
 | | |
 |---|---|
-| Listen | `0.0.0.0:3001` |
+| Listen | `0.0.0.0:24011` |
 | Client | `NEXT_PUBLIC_GO_MMO_URL` (required) |
 | Caddy | `./scripts/dev-proxy.sh` (additive) |
 | Auth | `auth.token` = account id when `GO_MMO_DEV_AUTH=true` |

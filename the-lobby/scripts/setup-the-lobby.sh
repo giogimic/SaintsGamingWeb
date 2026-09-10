@@ -33,7 +33,7 @@ ENV_EXAMPLE="$GO_MMO_DIR/.env.example"
 COMPOSE_BASE="$GO_MMO_DIR/docker-compose.base.yml"
 COMPOSE_FILE="$GO_MMO_DIR/docker-compose.yml"
 
-DEFAULT_PORT="${GO_MMO_PORT:-3001}"
+DEFAULT_PORT="${GO_MMO_PORT:-24011}"
 DEFAULT_HOST="${GO_MMO_HOST:-127.0.0.1}"
 CONTAINER_BASE="${GO_MMO_CONTAINER_NAME:-${LOBBY_CONTAINER_NAME:-saints-lobby}}"
 IMAGE_BASE="${GO_MMO_IMAGE_NAME:-${LOBBY_IMAGE_NAME:-saints-lobby}}"
@@ -150,7 +150,7 @@ write_env() {
   local port="$1" host="$2" public_url="$3" db_url="$4"
   local container_name="$5" image_name="$6" compose_project="$7"
   cat > "$ENV_FILE" <<EOF
-# Go MMO parallel to Next on :3000 — Caddy via scripts/dev-proxy.sh only
+# Go MMO parallel to Next on :24001 — Caddy via scripts/dev-proxy.sh only
 GO_MMO_HOST=$host
 GO_MMO_PORT=$port
 GO_MMO_PUBLIC_URL=$public_url
@@ -204,8 +204,8 @@ upsert_root_go_mmo_url() {
 
 ensure_env_example() {
   cat > "$ENV_EXAMPLE" <<EOF
-GO_MMO_PORT=3001
-GO_MMO_PUBLIC_URL=http://127.0.0.1:3001
+GO_MMO_PORT=24011
+GO_MMO_PUBLIC_URL=http://127.0.0.1:24011
 GO_MMO_DATABASE_URL=file:../prisma/db/go-mmo-dev.db
 GO_MMO_DEV_AUTH=true
 GO_MMO_SIM_TPS=20
@@ -224,7 +224,7 @@ write_compose() {
     -e "s/container_name: saints-gaming-go-mmo/container_name: ${container_name}/" \
     -e "s|image: saints-lobby|image: ${image_name}|" \
     -e "s|image: saints-gaming-go-mmo|image: ${image_name}|" \
-    -e "s/\"3001:3001\"/\"${port}:3001\"/" \
+    -e "s/\"24011:24011\"/\"${port}:24011\"/" \
     "$COMPOSE_BASE" > "$COMPOSE_FILE"
   log "Wrote $COMPOSE_FILE (container=$container_name host_port=$port)"
 }
@@ -268,7 +268,7 @@ add_proxy_additive() {
 
 main() {
   log "Root: $ROOT"
-  log "Go MMO parallel runtime — default port $DEFAULT_PORT (Next stays on 3000)."
+  log "Go MMO parallel runtime — default port $DEFAULT_PORT (Next stays on 24001)."
 
   local caddy_mode
   caddy_mode="$(detect_caddy)"
@@ -454,7 +454,7 @@ EOF
   cat <<EOF
 
 ------------------------------------------------------------
- Go MMO ready (beside Next :3000 — no self-conflict)
+ Go MMO ready (beside Next :24011 — no self-conflict)
 ------------------------------------------------------------
   Bind/upstream:  ${host}:${port}
   Public:         ${public_url}

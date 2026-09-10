@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { createHash, randomBytes } from "crypto";
 
 export const prisma = new PrismaClient();
-export const BASE = process.env.BASE_URL || "http://localhost:3000";
+export const BASE = process.env.BASE_URL || "http://localhost:24001";
 
 export async function ensureUser(username: string) {
   const email = `${username}@smoke.local`;

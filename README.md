@@ -48,6 +48,11 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📝 Changelog
 
+### v2.1.811 - ChunkStreamer Transport Readiness & Diagnostics
+- **Transport Readiness Queue:** Fixed a race condition where `ChunkStreamer` permanently swallowed chunk requests if the socket was still connecting. It now accurately subscribes to `useGameStore`'s `connectionStatus` and queues requests.
+- **Go MMO Configuration Diagnostics:** Added a development diagnostic log in `index.tsx` to surface the resolved socket connection URL. This proves whether remote clients are improperly connecting to `127.0.0.1`.
+- **Chunk Lifecycle Debugging:** Added structured lifecycle logs to trace chunk states from queued, sent, received, decoded, to meshed.
+
 ### v2.1.782 - Voxel Terrain UI Fix
 - Fixed a bug where the `VoxelTerrainBrushPanel` was stuck open globally across the entire studio by correctly wrapping it in a dockable `<DraggablePanel>` window and restricting its rendering specifically to Voxel mode.
 

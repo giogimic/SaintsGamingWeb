@@ -7,7 +7,7 @@ services:
     container_name: saints-gaming-web
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "24001:24001"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -32,10 +32,10 @@ services:
       - AUTH_DISCORD_SECRET=${AUTH_DISCORD_SECRET}
 
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:24001/"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
     # Socket.io + GameEngine run inside web via server.ts (npm start).
-    # Legacy separate game-server.js on :3001 was removed — do not resurrect it.
+    # Legacy separate game-server.js on :24011 was removed — do not resurrect it.

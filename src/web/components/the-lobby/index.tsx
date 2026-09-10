@@ -609,6 +609,10 @@ export default function TheLobby({
 
     useGameStore.getState().setConnectionStatus('connecting');
     const { url: configuredGoUrl, options: socketOpts } = lobbySocketConnect(session.user.id);
+    
+    if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
+      console.log('[Diagnostic] Resolved Go MMO Socket Target:', configuredGoUrl || 'SAME ORIGIN (No NEXT_PUBLIC_GO_MMO_URL found)');
+    }
 
     let disconnectTimeout: any = null;
 

@@ -252,24 +252,24 @@ fi
 # --- Port Auto-Discovery ---
 HTTP_PORT=80
 HTTPS_PORT=443
-WEB_PORT=3000
+WEB_PORT=24001
 REVERSE_PROXY_MODE=${REVERSE_PROXY_MODE:-0}
 ALLOW_KILL_PORTS=${ALLOW_KILL_PORTS:-0}
 CONFLICTS=""
 
 if [ "$IS_NUCLEAR_MODE" = "1" ]; then
     ALLOW_KILL_PORTS=1
-    if ss -tuln | grep -qE ":(80|443|3000) "; then
-        echo -e "${CYAN}[*] Nuclear mode: Clearing conflicting ports 80/443/3000 & systemd services...${NC}"
+    if ss -tuln | grep -qE ":(80|443|24001) "; then
+        echo -e "${CYAN}[*] Nuclear mode: Clearing conflicting ports 80/443/24001 & systemd services...${NC}"
         sudo apt-get update -qq && sudo apt-get install -y -qq psmisc 2>/dev/null || true
-        sudo fuser -k 80/tcp 443/tcp 3000/tcp &>/dev/null || true
+        sudo fuser -k 80/tcp 443/tcp 24001/tcp &>/dev/null || true
         bash "${SCRIPT_DIR}/audit-systemd.sh" --clean -y 2>/dev/null || true
         sleep 1
     fi
 else
     if ss -tuln | grep -q ":80 "; then CONFLICTS="$CONFLICTS Port 80\n"; fi
     if ss -tuln | grep -q ":443 "; then CONFLICTS="$CONFLICTS Port 443\n"; fi
-    if ss -tuln | grep -q ":3000 "; then CONFLICTS="$CONFLICTS Port 3000\n"; fi
+    if ss -tuln | grep -q ":24001 "; then CONFLICTS="$CONFLICTS Port 24001\n"; fi
 
     if [ "$EXISTING_CADDY_ADDITIVE" = "1" ]; then
         REVERSE_PROXY_MODE=1
@@ -305,13 +305,13 @@ else
             exit 0
         elif [ "$PORT_OPT" = "4" ]; then
             if [ "$ALLOW_KILL_PORTS" != "1" ]; then
-                if ! whiptail --title "Confirm Kill" --yesno "Really kill processes on 80/443/3000 and conflicting systemd services?" 10 65; then
+                if ! whiptail --title "Confirm Kill" --yesno "Really kill processes on 80/443/24001 and conflicting systemd services?" 10 65; then
                     exit 1
                 fi
             fi
             echo -e "${CYAN}Killing processes and clearing conflicting systemd units...${NC}"
             sudo apt-get update && sudo apt-get install -y psmisc
-            sudo fuser -k 80/tcp 443/tcp 3000/tcp || true
+            sudo fuser -k 80/tcp 443/tcp 24001/tcp || true
             bash "${SCRIPT_DIR}/audit-systemd.sh" --clean -y 2>/dev/null || true
             sleep 2
         else
@@ -426,7 +426,7 @@ chmod -R 777 data uploads
 
 cp docker-compose.base.yml docker-compose.yml
 sed -i '/^\s*args:\s*$/d' docker-compose.yml 2>/dev/null || true
-sed -i "s/- \"3000:3000\"/- \"$WEB_PORT:3000\"/g" docker-compose.yml
+sed -i "s/- \"24001:24001\"/- \"$WEB_PORT:24001\"/g" docker-compose.yml
 sed -i "s/container_name: saints-gaming-web/container_name: ${WEB_CONTAINER_NAME}/g" docker-compose.yml
 # Keep image name stable; only container_name must be unique across parallel installs.
 if [ "$REVERSE_PROXY_MODE" = "1" ]; then
@@ -652,7 +652,7 @@ if [ "$EXISTING_CADDY_ADDITIVE" = "1" ] || [ "$USE_CADDY" = "1" ] || [ "$REVERSE
     while whiptail --title "Subdomain Setup" --yesno "Do you have any subdomains you want to add or reverse proxy on this server?\n\n(Examples: mmo.$DOMAIN, dev.$DOMAIN, panel.$DOMAIN, bot.$DOMAIN)\n\nYES = Add a subdomain proxy\nNO  = Continue setup" 14 74 3>&1 1>&2 2>&3; do
         SUBDOMAIN=$(whiptail --title "Subdomain" --inputbox "Enter the full subdomain (e.g. mmo.$DOMAIN):" 10 60 "mmo.$DOMAIN" 3>&1 1>&2 2>&3)
         if [ $? -ne 0 ] || [ -z "$SUBDOMAIN" ]; then break; fi
-        PROXY_PORT=$(whiptail --title "Local Port" --inputbox "Enter the internal port this subdomain forwards to:" 10 60 "3001" 3>&1 1>&2 2>&3)
+        PROXY_PORT=$(whiptail --title "Local Port" --inputbox "Enter the internal port this subdomain forwards to:" 10 60 "24011" 3>&1 1>&2 2>&3)
         if [ $? -ne 0 ] || [ -z "$PROXY_PORT" ]; then break; fi
         PROXY_IP=$(whiptail --title "Target IP" --inputbox "Enter the internal target IP:" 10 60 "127.0.0.1" 3>&1 1>&2 2>&3)
         if [ $? -ne 0 ] || [ -z "$PROXY_IP" ]; then break; fi
@@ -688,7 +688,7 @@ fi
 # --- Go MMO (destination realtime for lobby / Studio) ---
 # Next keeps site APIs + /api/maps; game sockets move to Go when enabled.
 ENABLE_GO_MMO=1
-GO_MMO_PORT=3001
+GO_MMO_PORT=24011
 GO_MMO_PUBLIC_URL=""
 GO_MMO_SUBDOMAIN_CHOSEN=""
 GO_MMO_SETUP_SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../the-lobby/scripts/setup-the-lobby.sh"
@@ -704,7 +704,7 @@ if [ ! -f "$GO_MMO_SETUP_SCRIPT" ]; then
 fi
 
 if [ "$IS_NUCLEAR_MODE" != "1" ]; then
-    if ! whiptail --title "Go MMO Backend" --yesno "Enable Go MMO for lobby + Studio game sockets?\n\nREQUIRED — this is the sole supported backend for game/Studio realtime.\nNext keeps the site, auth, and /api/maps (Prisma).\n\nYES = Go on :3001 + NEXT_PUBLIC_GO_MMO_URL\nNO  = Emergency TS fallback only" 16 74; then
+    if ! whiptail --title "Go MMO Backend" --yesno "Enable Go MMO for lobby + Studio game sockets?\n\nREQUIRED — this is the sole supported backend for game/Studio realtime.\nNext keeps the site, auth, and /api/maps (Prisma).\n\nYES = Go on :24011 + NEXT_PUBLIC_GO_MMO_URL\nNO  = Emergency TS fallback only" 16 74; then
         ENABLE_GO_MMO=0
     fi
 fi

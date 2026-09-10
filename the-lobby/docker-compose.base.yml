@@ -9,19 +9,19 @@ services:
     container_name: saints-lobby
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "24011:24011"
     env_file:
       - .env
     environment:
       - GO_MMO_HOST=0.0.0.0
-      - GO_MMO_PORT=3001
+      - GO_MMO_PORT=24011
       - GO_MMO_DATABASE_URL=file:/app/data/go-mmo.db
       - GO_MMO_DEV_AUTH=${GO_MMO_DEV_AUTH:-true}
       - AUTH_SECRET=${AUTH_SECRET:-dev-secret-change-me}
     volumes:
       - ./data:/app/data
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3001/healthz"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:24011/healthz"]
       interval: 30s
       timeout: 5s
       retries: 3

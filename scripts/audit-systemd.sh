@@ -194,8 +194,8 @@ for u in "${KNOWN_UNITS[@]}"; do
 done
 
 # Check port collisions
-PORT_3000_PIDS="$(lsof -t -i:3000 2>/dev/null || ss -lptn 'sport = :3000' 2>/dev/null | grep -o 'pid=[0-9]*' | cut -d= -f2 || true)"
-PORT_3001_PIDS="$(lsof -t -i:3001 2>/dev/null || ss -lptn 'sport = :3001' 2>/dev/null | grep -o 'pid=[0-9]*' | cut -d= -f2 || true)"
+PORT_24001_PIDS="$(lsof -t -i:24001 2>/dev/null || ss -lptn 'sport = :24001' 2>/dev/null | grep -o 'pid=[0-9]*' | cut -d= -f2 || true)"
+PORT_24011_PIDS="$(lsof -t -i:24011 2>/dev/null || ss -lptn 'sport = :24011' 2>/dev/null | grep -o 'pid=[0-9]*' | cut -d= -f2 || true)"
 
 # Docker overlaps
 DOCKER_WEB_RUNNING=0

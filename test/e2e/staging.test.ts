@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 24001;
 const BASE_URL = process.env.BASE_URL || `http://127.0.0.1:${PORT}`;
 
 describe('Staging Smoke Tests', () => {
