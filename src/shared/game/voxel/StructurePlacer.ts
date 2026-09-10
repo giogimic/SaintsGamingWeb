@@ -65,7 +65,7 @@ export function applyStructuresToChunk(
           const sCy = parts[2];
 
           // Decode RLE back to VoxelChunk
-          const sChunk = VoxelChunk.deserializePaletteRLEBinary(sCx, sCz, sCy, new Uint8Array(rleData as any));
+          const sChunk = VoxelChunk.deserializePaletteRLEBinary(new Uint8Array(rleData as any));
 
           for (let ly = 0; ly < CHUNK_SIZE_Y; ly++) {
             for (let lz = 0; lz < CHUNK_SIZE_Z; lz++) {
