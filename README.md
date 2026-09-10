@@ -48,6 +48,10 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📝 Changelog
 
+### v2.1.816 - Setup Wizard Re-entry & Base Class Seeding
+- **Admin Re-entry:** Added `?reinit=true` flag to `/setup` route to allow Server Administrators (permissionLevel >= 80) to bypass the "Setup Completed" lock. This restores the ability to edit the Game Identity, configure initial Entities, and tweak Environment variables post-launch without needing a full DB wipe.
+- **Base Class Seeding:** Added `scripts/ensure-base-classes.ts` which is now automatically invoked during `update.sh --db`. This ensures the 5 core base classes (Warrior, Mage, Ranger, Paladin, Priest) are always reliably populated into the `CharacterClass` table for existing installations, fixing the issue where they were missing in the Studio class dropdown.
+
 ### v2.1.815 - Remove Hardcoded Default Archetypes
 - **No More Ghost Archetypes:** Removed `DEFAULT_STARTER_HERO_PRESETS` fallback from `getStarterHeroes()` and the setup wizard. Archetypes now only exist if explicitly created through the Setup Wizard or Hero Studio. If none exist, the character creator shows a clear "No archetypes available" message instead of injecting 5 hardcoded defaults.
 

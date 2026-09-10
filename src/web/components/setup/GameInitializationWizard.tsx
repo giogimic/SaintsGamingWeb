@@ -28,7 +28,7 @@ import { EnvironmentSetupStep, type SetupEnvironmentData } from './steps/Environ
 import { StartingMapStep, type SetupStartingMapData } from './steps/StartingMapStep';
 import { FinalReviewStep } from './steps/FinalReviewStep';
 
-export function GameInitializationWizard() {
+export function GameInitializationWizard({ isReinit = false }: { isReinit?: boolean }) {
   const router = useRouter();
 
   // Wizard Navigation

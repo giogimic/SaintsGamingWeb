@@ -663,6 +663,8 @@ else
         echo -e "${CYAN}[*] Pushing database schema...${NC}"
         npx prisma db push --accept-data-loss
         npx prisma generate
+        echo -e "${CYAN}[*] Ensuring base character classes...${NC}"
+        npx tsx scripts/ensure-base-classes.ts
     fi
 
     # --- Execute Optional Data Wipes ---
