@@ -98,17 +98,6 @@ export function CharacterSelectAdminWindow({
   const [isServerActionLoading, setIsServerActionLoading] = useState(false);
   const [serverActionMsg, setServerActionMsg] = useState<string | null>(null);
 
-  // Camera Policy State
-  const [cameraStyle, setCameraStyle] = useState<'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson'>('isometric');
-  const [cameraSmoothing, setCameraSmoothing] = useState<number>(35);
-  const [borderClamping, setBorderClamping] = useState<boolean>(true);
-  const [vignetteEnabled, setVignetteEnabled] = useState<boolean>(true);
-  const [vignetteIntensity, setVignetteIntensity] = useState<number>(15);
-  const [allowCustomPlayerCamera, setAllowCustomPlayerCamera] = useState<boolean>(false);
-  const [authoredMapAuthority, setAuthoredMapAuthority] = useState<boolean>(true);
-  const [isSavingCamera, setIsSavingCamera] = useState<boolean>(false);
-  const [cameraSavedToast, setCameraSavedToast] = useState<boolean>(false);
-
   // Releases & Snapshots State
   const [snapshots, setSnapshots] = useState<WorldPublishSnapshot[]>([]);
   const [validationResult, setValidationResult] = useState<ValidationGateResult | null>(null);
@@ -158,12 +147,7 @@ export function CharacterSelectAdminWindow({
         setLastCheckTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
 
         if (data.realmSettings) {
-          if (data.realmSettings.defaultCameraStyle) {
-            setCameraStyle(data.realmSettings.defaultCameraStyle);
-          }
-          if (data.realmSettings.allowCustomPlayerCamera !== undefined) {
-            setAllowCustomPlayerCamera(data.realmSettings.allowCustomPlayerCamera);
-          }
+          // Additional realm settings handling here
         }
       }
     } catch {
@@ -305,30 +289,6 @@ export function CharacterSelectAdminWindow({
     setIsServerActionLoading(false);
     setTimeout(() => setServerActionMsg(null), 3000);
   };
-
-  // Save Camera Policy
-  const handleSaveCameraPolicy = async () => {
-    setIsSavingCamera(true);
-    soundSynth?.playActionSound?.();
-    try {
-      const res = await fetch('/api/realm/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          defaultCameraStyle: cameraStyle,
-          cameraSmoothingFactor: cameraSmoothing / 100,
-          allowCustomPlayerCamera,
-        }),
-      });
-      if (res.ok) {
-        setCameraSavedToast(true);
-        setTimeout(() => setCameraSavedToast(false), 2500);
-        mutateSettings?.();
-      }
-    } catch {}
-    setIsSavingCamera(false);
-  };
-
   // Run Content Validation
   const handleRunValidation = async () => {
     setIsValidating(true);
@@ -545,7 +505,6 @@ export function CharacterSelectAdminWindow({
                   <span className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">
                     {activeSection === 'overview' && 'System Telemetry Â· Overview'}
                     {activeSection === 'realm' && 'Live Gateway & Shard Management'}
-                    {activeSection === 'camera' && 'Global Viewport Policy Defaults'}
                     {activeSection === 'releases' && 'Release Snapshots & Validation'}
                     {activeSection === 'maintenance' && 'Root Operation Pipeline'}
                     {activeSection === 'diagnostics' && 'System Heartbeat & Bus Health'}
@@ -770,114 +729,6 @@ export function CharacterSelectAdminWindow({
                         Go MMO Destination: {summaryData?.gatewayStatus?.goMmoUrl || 'Standalone / Next.js cluster fallback'}
                       </div>
                     </div>
-                  </div>
-                )}
-
-                {/* â”€â”€ CAMERA POLICY SECTION (Admin 400+) â”€â”€ */}
-                {activeSection === 'camera' && (
-                  <div className="space-y-4 animate-in fade-in duration-200">
-                    <div className="p-4 rounded-xl border border-white/5 bg-black/30 space-y-3">
-                      <div>
-                        <div className="text-sm font-bold text-foreground uppercase tracking-wide">
-                          Default Game Viewport Style
-                        </div>
-                        <div className="text-[11px] text-muted-foreground">
-                          Authoritative presentation perspective applied to connecting {heroPlural}.
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                        {(['isometric', 'follow45', 'topdown', 'free', 'firstperson'] as const).map((style) => (
-                          <button
-                            key={style}
-                            onClick={() => {
-                              soundSynth?.playSelectSound?.();
-                              setCameraStyle(style);
-                            }}
-                            className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
-                              cameraStyle === style
-                                ? 'bg-primary/20 border-primary text-primary font-bold shadow-sm'
-                                : 'bg-black/40 border-white/5 text-muted-foreground hover:text-foreground'
-                            }`}
-                          >
-                            <div className="capitalize text-xs font-mono">{style}</div>
-                            <div className="text-[9px] text-muted-foreground/60 mt-0.5">
-                              {style === 'isometric' && 'Classic 2.5D'}
-                              {style === 'follow45' && '45Â° Tilt Follow'}
-                              {style === 'topdown' && 'Direct Overhead'}
-                              {style === 'free' && 'Orbital Free Cam'}
-                              {style === 'firstperson' && 'First Person POV'}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Camera fine tuning sliders */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="p-3.5 rounded-xl border border-white/5 bg-black/30 space-y-2">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-muted-foreground">Follow Smoothing</span>
-                          <span className="text-primary font-bold">{cameraSmoothing}%</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="5"
-                          max="95"
-                          value={cameraSmoothing}
-                          onChange={(e) => setCameraSmoothing(Number(e.target.value))}
-                          className="w-full accent-primary cursor-pointer"
-                        />
-                      </div>
-
-                      <div className="p-3.5 rounded-xl border border-white/5 bg-black/30 space-y-2">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-muted-foreground">Vignette Edge Attenuation</span>
-                          <span className="text-primary font-bold">{vignetteIntensity}</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="0"
-                          max="40"
-                          value={vignetteIntensity}
-                          onChange={(e) => setVignetteIntensity(Number(e.target.value))}
-                          className="w-full accent-primary cursor-pointer"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Camera Authority Toggles */}
-                    <div className="p-3.5 rounded-xl border border-white/5 bg-black/30 space-y-2.5">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={allowCustomPlayerCamera}
-                          onChange={(e) => setAllowCustomPlayerCamera(e.target.checked)}
-                          className="rounded accent-primary"
-                        />
-                        <span className="text-xs text-foreground">
-                          Allow individual {heroSingular} to customize camera perspective in local Options
-                        </span>
-                      </label>
-
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={authoredMapAuthority}
-                          onChange={(e) => setAuthoredMapAuthority(e.target.checked)}
-                          className="rounded accent-primary"
-                        />
-                        <span className="text-xs text-foreground">
-                          Authored map camera definitions override global default when joining maps
-                        </span>
-                      </label>
-                    </div>
-
-                    {cameraSavedToast && (
-                      <div className="p-2 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2">
-                        <CheckCircle2 size={13} /> Camera policy saved successfully to realm configuration.
-                      </div>
-                    )}
                   </div>
                 )}
 
@@ -1279,16 +1130,6 @@ export function CharacterSelectAdminWindow({
                 )
               )}
 
-              {activeSection === 'camera' && isAdmin && (
-                <button
-                  onClick={handleSaveCameraPolicy}
-                  disabled={isSavingCamera}
-                  className="px-4 py-1.5 rounded-xl bg-primary text-primary-foreground font-mono text-xs font-bold uppercase tracking-wider hover:brightness-110 shadow-lg active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Check size={12} />
-                  <span>{isSavingCamera ? 'Saving...' : 'Save Policy'}</span>
-                </button>
-              )}
 
               {activeSection === 'releases' && isAdmin && (
                 <button

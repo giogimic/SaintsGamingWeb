@@ -128,9 +128,6 @@ export class MapPersistenceService {
         tilesets: saveDoc.tilesets || [],
         voxelDoc: saveDoc.voxelDoc,
         blockSizePx: saveDoc.blockSizePx || 64,
-        cameraStyle: (saveDoc as any).cameraStyle || (saveDoc as any).defaultCameraStyle,
-        allowCustomCamera: (saveDoc as any).allowCustomCamera ?? (saveDoc as any).allowCustomPlayerCamera,
-        allowCustomPlayerCamera: (saveDoc as any).allowCustomCamera ?? (saveDoc as any).allowCustomPlayerCamera,
         mapType: saveDoc.mapType,
       });
 
@@ -189,9 +186,6 @@ export class MapPersistenceService {
         tilesets: saveDoc.tilesets || [],
         voxelDoc: saveDoc.voxelDoc,
         blockSizePx: saveDoc.blockSizePx || 64,
-        cameraStyle: (saveDoc as any).cameraStyle || (saveDoc as any).defaultCameraStyle,
-        allowCustomCamera: (saveDoc as any).allowCustomCamera ?? (saveDoc as any).allowCustomPlayerCamera,
-        allowCustomPlayerCamera: (saveDoc as any).allowCustomCamera ?? (saveDoc as any).allowCustomPlayerCamera,
         mapType: saveDoc.mapType,
       });
 

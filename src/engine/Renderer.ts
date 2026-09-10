@@ -731,8 +731,30 @@ public getCameraSettings() {
     return { ...this.cameraSettings };
   }
 
-public applyPlayerCameraStyle(style: 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson') {
+public applyPlayerCameraStyle(style: 'dynamic' | 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson') {
     this.cameraSettings.playerCameraStyle = style;
+    if (style === 'dynamic') {
+      this.updateDynamicCamera();
+    } else {
+      this.applyInternalCameraStyle(style);
+    }
+  }
+
+  public updateDynamicCamera() {
+    if (this.cameraSettings.playerCameraStyle !== 'dynamic') return;
+    const ortho = this.camera.orthoTop || 10;
+    
+    let targetMode: 'firstperson' | 'follow45' | 'isometric' = 'isometric';
+    if (ortho < 6.5) {
+      targetMode = 'firstperson';
+    } else if (ortho < 9.0) {
+      targetMode = 'follow45';
+    }
+    
+    this.applyInternalCameraStyle(targetMode);
+  }
+
+  private applyInternalCameraStyle(style: 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson') {
     if (style === 'topdown') {
       this.camera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
       this.cameraProfile.pitch = Math.PI / 2 - 0.01;

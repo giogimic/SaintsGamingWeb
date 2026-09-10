@@ -503,6 +503,8 @@ export class BabylonEngine {
       this.renderer.camera.orthoTop = newOrtho;
       this.renderer.camera.orthoBottom = -newOrtho;
 
+      this.renderer.updateDynamicCamera();
+
       // Notify UI of zoom change
       const zoomPercent = Math.round((10 / newOrtho) * 100);
       window.dispatchEvent(
@@ -523,6 +525,7 @@ export class BabylonEngine {
         newOrtho = Math.max(minOrtho, Math.min(maxZoom, custom.detail.ortho));
       }
       this.renderer.updateCameraAspect(newOrtho);
+      this.renderer.updateDynamicCamera();
       const zoomPercent = Math.round((10 / newOrtho) * 100);
       window.dispatchEvent(
         new CustomEvent('studio_zoom_changed', { detail: { ortho: newOrtho, percent: zoomPercent } })

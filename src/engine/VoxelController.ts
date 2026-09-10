@@ -180,7 +180,7 @@ public meshDirtyVoxelChunks() {
     const wx = voxelCoords.wx;
     const wz = voxelCoords.wz;
 
-    let surfaceY = 0;
+    let surfaceY = -1;
     for (let wy = 0; wy < this.voxelWorld.totalHeightBlocks; wy++) {
       const word = typeof this.voxelWorld.getVoxelWithHalo === 'function'
         ? this.voxelWorld.getVoxelWithHalo(wx, wy, wz)
@@ -191,6 +191,12 @@ public meshDirtyVoxelChunks() {
         break;
       }
     }
+    
+    // If no voxels exist in this column (e.g. Hybrid map with no voxels), fallback to 0
+    if (surfaceY === -1) {
+      return 0;
+    }
+    
     return (surfaceY - 15) * s;
   }
 

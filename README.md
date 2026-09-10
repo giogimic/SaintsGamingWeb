@@ -48,6 +48,10 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📝 Changelog
 
+### v2.1.818 - Dynamic Perspective System
+- **Player-Controlled Camera:** Map authors can no longer lock players into forced camera perspectives (e.g. First Person or Top-Down).
+- **Dynamic Camera Mode:** Players now have complete autonomy to choose their perspective via the Game Options menu. The new "Dynamic (Auto)" default camera style seamlessly transitions from First Person (fully zoomed in), to Third Person Over-Shoulder, to 2.5D Isometric (fully zoomed out) organically as the player scrolls their mouse wheel.
+
 ### v2.1.817 - Full Uninstall Script
 - **Server Cleanup:** Added `scripts/uninstall.sh` to cleanly and safely remove Saints Gaming from a server. It stops PM2 web services, stops and removes systemd Go Lobby services, resets the Prisma database, and self-destructs the project files to leave no trace. Includes a mandatory confirmation safeguard.
 

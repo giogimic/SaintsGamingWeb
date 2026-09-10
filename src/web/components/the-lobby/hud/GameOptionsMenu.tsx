@@ -178,34 +178,23 @@ export default function GameOptionsMenu({
   const [combatAutoTarget, setCombatAutoTarget] = useState(true);
 
   // Camera Settings
-  const [inGameCameraStyle, setInGameCameraStyle] = useState<'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson'>('isometric');
+  const [inGameCameraStyle, setInGameCameraStyle] = useState<'dynamic' | 'isometric' | 'follow45' | 'firstperson'>('dynamic');
   const [inGameFollowSmoothing, setInGameFollowSmoothing] = useState(35);
   const [inGameBorderClamping, setInGameBorderClamping] = useState(true);
   const [inGameVignette, setInGameVignette] = useState(true);
-
-  const activeMapData = useGameStore((s) => s.activeMapData);
-  const allowCustomCamera = Boolean(
-    (activeMapData as any)?.allowCustomCamera ??
-    (activeMapData as any)?.allowCustomPlayerCamera ??
-    false
-  );
-  const authorLockedCameraStyle = ((activeMapData as any)?.cameraStyle || (activeMapData as any)?.defaultCameraStyle || 'isometric') as 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson';
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem('saints_camera_settings');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.playerCameraStyle && allowCustomCamera) setInGameCameraStyle(parsed.playerCameraStyle);
-        else if (!allowCustomCamera) setInGameCameraStyle(authorLockedCameraStyle);
+        if (parsed.playerCameraStyle) setInGameCameraStyle(parsed.playerCameraStyle);
         if (parsed.followSmoothing) setInGameFollowSmoothing(parsed.followSmoothing);
         if (parsed.borderClamping !== undefined) setInGameBorderClamping(parsed.borderClamping);
         if (parsed.vignetteEnabled !== undefined) setInGameVignette(parsed.vignetteEnabled);
-      } else if (!allowCustomCamera) {
-        setInGameCameraStyle(authorLockedCameraStyle);
       }
     } catch {}
-  }, [allowCustomCamera, authorLockedCameraStyle]);
+  }, []);
 
   const saveInGameCamera = (style: any, smooth: number, clamp: boolean, vig: boolean) => {
     try {
@@ -524,49 +513,28 @@ export default function GameOptionsMenu({
                     <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                       Camera Perspective Style
                     </span>
-                    <span className={`text-[9px] font-mono px-2 py-0.5 rounded border uppercase font-bold flex items-center gap-1 ${
-                      allowCustomCamera
-                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                        : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                    }`}>
-                      {!allowCustomCamera && <Lock className="w-3 h-3 text-amber-400" />}
-                      {allowCustomCamera ? 'Custom Permitted' : 'Locked by Studio'}
-                    </span>
                   </div>
-
-                  {!allowCustomCamera && (
-                    <div className="p-2.5 rounded bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-200/80">
-                      This realm map enforces the <span className="font-bold text-amber-300 uppercase">{authorLockedCameraStyle}</span> perspective to preserve author gameplay immersion. Perspective switching is disabled for this region.
-                    </div>
-                  )}
 
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { id: 'isometric', label: 'Isometric (Classic 45Â°)', desc: 'Diagonal depth' },
-                      { id: 'follow45', label: 'Follow 45Â°', desc: 'Slight overhead tilt' },
-                      { id: 'topdown', label: 'Top-Down (90Â°)', desc: 'Direct bird-eye view' },
-                      { id: 'free', label: 'Free Cam', desc: 'Orbital inspection' },
-                      { id: 'firstperson', label: 'First Person', desc: 'Immersive POV' },
+                      { id: 'dynamic', label: 'Dynamic (Auto)', desc: 'Auto-switches on zoom' },
+                      { id: 'firstperson', label: 'First Person', desc: 'Locked immersive POV' },
+                      { id: 'follow45', label: 'Third Person', desc: 'Locked over-shoulder view' },
+                      { id: 'isometric', label: '2.5D Isometric', desc: 'Locked classic diagonal' },
                     ].map((mode) => {
-                      const isSelected = (allowCustomCamera ? inGameCameraStyle : authorLockedCameraStyle) === mode.id;
+                      const isSelected = inGameCameraStyle === mode.id;
                       return (
                         <button
                           key={mode.id}
                           type="button"
-                          disabled={!allowCustomCamera}
                           onClick={() => {
-                            if (!allowCustomCamera) return;
                             soundSynth?.playUiClick?.();
                             setInGameCameraStyle(mode.id as any);
                             saveInGameCamera(mode.id, inGameFollowSmoothing, inGameBorderClamping, inGameVignette);
                             showToast(`Camera style set to ${mode.label}`);
                           }}
                           className={`p-2.5 rounded-lg text-left transition-all border ${
-                            !allowCustomCamera
-                              ? isSelected
-                                ? 'bg-primary/10 border-primary/40 text-primary/80 cursor-not-allowed opacity-90'
-                                : 'bg-[#060e1c]/50 border-border/20 text-muted-foreground/40 cursor-not-allowed opacity-50'
-                              : isSelected
+                            isSelected
                               ? 'bg-primary/20 border-primary/50 text-primary cursor-pointer'
                               : 'bg-[#060e1c] border-border/40 text-muted-foreground hover:text-foreground hover:border-border cursor-pointer'
                           }`}

@@ -60,12 +60,7 @@ export const CameraSettingsPanel: React.FC = () => {
 
   // Player / In-Game Camera State
   const activeMapData = useGameStore((s) => s.activeMapData);
-  const [allowCustomPlayerCamera, setAllowCustomPlayerCamera] = useState<boolean>(
-    Boolean((activeMapData as any)?.allowCustomCamera ?? (activeMapData as any)?.allowCustomPlayerCamera ?? false)
-  );
-  const [playerCameraStyle, setPlayerCameraStyle] = useState<'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson'>(
-    ((activeMapData as any)?.cameraStyle || (activeMapData as any)?.defaultCameraStyle || 'isometric') as any
-  );
+  const [playerCameraStyle, setPlayerCameraStyle] = useState<'dynamic' | 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson'>('dynamic');
   const [followSmoothing, setFollowSmoothing] = useState(35); // percent
   const [borderClamping, setBorderClamping] = useState(true);
   const [vignetteEnabled, setVignetteEnabled] = useState(true);
@@ -74,13 +69,8 @@ export const CameraSettingsPanel: React.FC = () => {
 
   // Synchronize state when activeMapData changes
   useEffect(() => {
-    if (activeMapData) {
-      const mapCamera = (activeMapData as any).cameraStyle || (activeMapData as any).defaultCameraStyle;
-      if (mapCamera) setPlayerCameraStyle(mapCamera);
-      const allowed = Boolean((activeMapData as any).allowCustomCamera ?? (activeMapData as any).allowCustomPlayerCamera ?? false);
-      setAllowCustomPlayerCamera(allowed);
-    }
-  }, [activeMapData?.id, (activeMapData as any)?.cameraStyle, (activeMapData as any)?.allowCustomCamera]);
+    // Left intentionally blank as we removed author-locked camera styles
+  }, [activeMapData?.id]);
 
   // Load from localStorage on mount and listen to engine camera state updates
   useEffect(() => {
@@ -512,99 +502,7 @@ export const CameraSettingsPanel: React.FC = () => {
         {activeTab === 'player' && (
           <div className="space-y-4">
             {/* Player Permission: Allow Custom Perspective */}
-            <div className="p-2.5 rounded-lg bg-[#0a1628]/50 border border-border/30 space-y-2">
-              <label className="flex items-start gap-2.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={allowCustomPlayerCamera}
-                  onChange={(e) => {
-                    soundSynth?.playUiClick?.();
-                    const val = e.target.checked;
-                    setAllowCustomPlayerCamera(val);
-                    if (activeMapData) {
-                      const updated = {
-                        ...activeMapData,
-                        allowCustomCamera: val,
-                        allowCustomPlayerCamera: val,
-                      };
-                      useGameStore.getState().setActiveMapData(updated);
-                      useEditorStore.getState().markMapDirty();
-                    }
-                  }}
-                  className="accent-primary rounded mt-0.5"
-                />
-                <div className="flex-1">
-                  <div className="text-[10px] font-bold text-foreground flex items-center gap-1.5">
-                    <span>Allow Players to Choose Perspective</span>
-                    <span className={`text-[8px] px-1.5 py-0.2 rounded uppercase font-mono font-bold ${
-                      allowCustomPlayerCamera
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                        : 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-                    }`}>
-                      {allowCustomPlayerCamera ? 'Unlocked' : 'Locked by Author'}
-                    </span>
-                  </div>
-                  <div className="text-[8px] text-muted-foreground mt-0.5">
-                    {allowCustomPlayerCamera
-                      ? 'Players in-game can switch between 2.5D Isometric, Follow 45°, Top-Down, or Free Orbit via their ESC menu.'
-                      : 'All players will be strictly locked to the Author Default View Mode chosen below.'}
-                  </div>
-                </div>
-              </label>
-            </div>
-
-            <div className="p-2.5 rounded-lg bg-[#0a1628]/50 border border-border/30 space-y-3">
-              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                Author Default Player View Mode
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { id: 'isometric', label: 'Isometric 45°', desc: 'Classic diagonal view' },
-                  { id: 'follow45', label: 'Follow 45°', desc: 'Slanted third-person view' },
-                  { id: 'topdown', label: 'Top-Down 90°', desc: 'Overhead planar view' },
-                  { id: 'free', label: 'Free Camera', desc: 'Allow player orbital control' },
-                  { id: 'firstperson', label: 'First Person', desc: 'Immersive POV' },
-                ].map((mode) => (
-                  <button
-                    key={mode.id}
-                    type="button"
-                    onClick={() => {
-                      soundSynth?.playUiClick?.();
-                      setPlayerCameraStyle(mode.id as any);
-                      if (activeMapData) {
-                        const updated = {
-                          ...activeMapData,
-                          cameraStyle: mode.id,
-                          defaultCameraStyle: mode.id,
-                        };
-                        useGameStore.getState().setActiveMapData(updated);
-                        useEditorStore.getState().markMapDirty();
-                      }
-                      window.dispatchEvent(
-                        new CustomEvent('studio_update_camera_settings', {
-                          detail: {
-                            settings: {
-                              playerCameraStyle: mode.id,
-                            },
-                          },
-                        })
-                      );
-                    }}
-                    className={`p-2 rounded border text-left transition-colors cursor-pointer ${
-                      playerCameraStyle === mode.id
-                        ? 'border-primary bg-primary/15 text-foreground'
-                        : 'border-border/30 bg-[#060e1c] text-muted-foreground hover:border-border'
-                    }`}
-                  >
-                    <div className="text-[10px] font-bold text-foreground flex items-center justify-between">
-                      <span>{mode.label}</span>
-                      {playerCameraStyle === mode.id && <Check className="w-3 h-3 text-primary" />}
-                    </div>
-                    <div className="text-[8px] text-muted-foreground mt-0.5">{mode.desc}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
+            {/* Map-specific camera locks have been removed. The player now has dynamic control over perspective. */}
 
             {/* Follow Dynamics & Boundaries */}
             <div className="p-2.5 rounded-lg bg-[#0a1628]/50 border border-border/30 space-y-3">
