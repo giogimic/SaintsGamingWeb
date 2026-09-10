@@ -227,11 +227,11 @@ if [ "$IS_NUCLEAR_MODE" != "1" ]; then
     fi
 
     if [ -n "$EXISTING_HINTS" ]; then
-        EXIST_OPT=$(whiptail --title "Existing Server Detected" --menu "Something is already set up on this host:\n\n${EXISTING_HINTS}\nWhat should setup do?" 20 78 4 \
-        "1" "Add subdomain only (keep primary Caddy/site — recommended for reruns)" \
-        "2" "Continue full setup beside it (unique container names + free ports)" \
-        "3" "Abort (use ./update.sh or ./scripts/dev-proxy.sh instead)" \
-        "4" "Continue and allow killing conflicting ports (destructive)" 3>&1 1>&2 2>&3) || exit 1
+        EXIST_OPT=$(whiptail --title "Existing Server Detected" --menu "Something is already running on this machine (Docker, Caddy, or Saints services):\n\n${EXISTING_HINTS}\nWhat would you like setup to do?" 22 85 4 \
+        "1" "Add to Existing (Safe)   -> Just add a new subdomain. Keeps current site." \
+        "2" "Run Beside It (Safe)     -> Install a separate copy on different ports." \
+        "3" "Abort (Safe)             -> Stop and do nothing." \
+        "4" "Nuke & Replace (DANGER)  -> Kill conflicting ports/services and take over." 3>&1 1>&2 2>&3) || exit 1
 
         if [ "$EXIST_OPT" = "1" ]; then
             EXISTING_CADDY_ADDITIVE=1
@@ -278,11 +278,11 @@ else
         while ss -tuln | grep -q ":$WEB_PORT "; do WEB_PORT=$((WEB_PORT+1)); done
         whiptail --title "Behind Existing Proxy" --msgbox "Additive / behind-proxy mode.\n\nApp will listen on: $WEB_PORT\nPrimary Caddy site will NOT be rewritten.\nYou will be asked for a subdomain to add." 12 70
     elif [ -n "$CONFLICTS" ]; then
-        PORT_OPT=$(whiptail --title "Port Conflicts Detected" --menu "The following ports are already in use:\n$CONFLICTS\nHow do you want to resolve this?" 18 75 4 \
-        "1" "Behind existing / reverse proxy (skip 80/443, free app port)" \
-        "2" "Use alternative ports" \
-        "3" "Abort — do not change anything" \
-        "4" "KILL conflicting services (destructive)" 3>&1 1>&2 2>&3) || exit 1
+        PORT_OPT=$(whiptail --title "Port Conflicts Detected" --menu "The following ports (Web Traffic) are already in use:\n$CONFLICTS\nHow do you want to handle this?" 20 85 4 \
+        "1" "Use Reverse Proxy (Recommended) -> Setup uses random port. Point your proxy at it." \
+        "2" "Use Alternative Ports             -> E.g. Run on port 81 and 444 instead." \
+        "3" "Abort                             -> Stop setup safely." \
+        "4" "Kill Conflicting Apps (DANGER)  -> Forcefully kill whatever is using these ports." 3>&1 1>&2 2>&3) || exit 1
 
         if [ "$PORT_OPT" = "1" ]; then
             REVERSE_PROXY_MODE=1
@@ -358,9 +358,9 @@ db_service_exists() {
 }
 
 # --- Database Backend Selection ---
-DB_PROVIDER_OPT=$(whiptail --title "Database Backend" --menu "Select Database Backend:" 16 75 2 \
-"1" "MariaDB (Docker — Integrated, Recommended)" \
-"2" "MySQL/MariaDB (External Host)" 3>&1 1>&2 2>&3)
+DB_PROVIDER_OPT=$(whiptail --title "Database Backend" --menu "Where should the game store its data?" 14 85 2 \
+"1" "Automatic (Recommended) -> Let setup create a private MariaDB inside Docker." \
+"2" "External / Custom       -> Connect to an existing database hosted elsewhere." 3>&1 1>&2 2>&3)
 
 if [ $? -ne 0 ]; then exit 1; fi
 
@@ -571,7 +571,7 @@ else
 
     if [ "$EXISTING_CADDY_ADDITIVE" != "1" ] && [ "$IS_NUCLEAR_MODE" != "1" ]; then
         if command -v nginx &>/dev/null; then
-            if whiptail --title "Web Server Upgrade" --yesno "Nginx is currently installed.\n\nWould you like to REMOVE Nginx and install Caddy instead?\n(Caddy handles SSL automatically — no Certbot needed)" 12 70 3>&1 1>&2 2>&3; then
+            if whiptail --title "Web Server Upgrade" --yesno "Nginx is currently installed on this server.\n\nWe HIGHLY recommend using Caddy instead, because it handles SSL (HTTPS) automatically without needing Certbot.\n\nWould you like setup to automatically REMOVE Nginx and install Caddy?" 14 78 3>&1 1>&2 2>&3; then
                 echo -e "${RED}[!] Stopping and purging Nginx...${NC}"
                 sudo systemctl stop nginx || true
                 sudo apt-get purge -y nginx nginx-common
@@ -704,7 +704,7 @@ if [ ! -f "$GO_MMO_SETUP_SCRIPT" ]; then
 fi
 
 if [ "$IS_NUCLEAR_MODE" != "1" ]; then
-    if ! whiptail --title "Go MMO Backend" --yesno "Enable Go MMO for lobby + Studio game sockets?\n\nREQUIRED — this is the sole supported backend for game/Studio realtime.\nNext keeps the site, auth, and /api/maps (Prisma).\n\nYES = Go on :24011 + NEXT_PUBLIC_GO_MMO_URL\nNO  = Emergency TS fallback only" 16 74; then
+    if ! whiptail --title "Go MMO Backend" --yesno "Do you want to enable the Go MMO Realtime Server?\n\nREQUIRED for Multiplayer and World Studio map editing.\nThe Node.js server handles the website, but the Go server is required for players to actually see each other move around the map.\n\nYES = Install and run the Go MMO multiplayer server.\nNO  = Skip it (the game world will be offline)." 18 78; then
         ENABLE_GO_MMO=0
     fi
 fi
@@ -716,7 +716,7 @@ if [ "$ENABLE_GO_MMO" = "1" ]; then
     GO_MMO_PUBLIC_URL="http://127.0.0.1:$GO_MMO_PORT"
 
     if [ "$USE_CADDY" = "1" ] || [ "$EXISTING_CADDY_ADDITIVE" = "1" ] || command -v caddy &>/dev/null || [ -f /etc/caddy/Caddyfile ]; then
-        if whiptail --title "Go MMO Subdomain" --yesno "Add a Caddy subdomain for Go MMO?\n(additive — primary site untouched)\n\nNeeded so browsers can reach sockets over HTTPS (127.0.0.1 only works on this machine)." 13 72; then
+        if whiptail --title "Go MMO Subdomain" --yesno "In order for remote players to connect to the multiplayer server securely (HTTPS), the Go MMO server needs its own subdomain.\n\nFor example, if your site is 'saintsgaming.net', you should enter 'go.saintsgaming.net' when prompted next.\n\nAdd a Caddy subdomain for Go MMO now?" 15 78; then
             GO_MMO_SUBDOMAIN_CHOSEN=$(whiptail --title "Go MMO Subdomain" --inputbox "Subdomain for Go MMO sockets:" 10 60 "go.$DOMAIN" 3>&1 1>&2 2>&3) || true
             if [ -n "$GO_MMO_SUBDOMAIN_CHOSEN" ]; then
                 GO_MMO_PUBLIC_URL="https://$GO_MMO_SUBDOMAIN_CHOSEN"
@@ -785,19 +785,50 @@ echo -e "${PURPLE}${BOLD}========================================${NC}"
 echo -e "${CYAN}${BOLD}  Starting Cluster Build...${NC}"
 echo -e "${PURPLE}${BOLD}========================================${NC}"
 
+# --- Swap Provisioning for Low-RAM VPS ---
+# Next.js compilation needs ~2-3GB. If the VPS has <3GB RAM and no swap, create temporary swap.
+if [ -f /proc/meminfo ]; then
+    TOTAL_MEM_KB=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
+    TOTAL_SWAP_KB=$(awk '/SwapTotal/ {print $2}' /proc/meminfo)
+    if [ "$TOTAL_MEM_KB" -lt 3000000 ] && [ "$TOTAL_SWAP_KB" -lt 1000000 ]; then
+        echo -e "${YELLOW}[*] Low RAM detected ($(($TOTAL_MEM_KB / 1024))MB). Creating 2GB swap file for build...${NC}"
+        if [ ! -f /swapfile ]; then
+            sudo fallocate -l 2G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048 2>/dev/null
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile >/dev/null 2>&1
+            sudo swapon /swapfile 2>/dev/null
+            echo -e "${GREEN}[✓] 2GB swap created. Build should not OOM.${NC}"
+        else
+            sudo swapon /swapfile 2>/dev/null || true
+            echo -e "${GREEN}[✓] Existing swap file activated.${NC}"
+        fi
+    fi
+fi
+
 # Remove only THIS install's containers (unique names) — never clobber a sibling stack.
 docker rm -f "$WEB_CONTAINER_NAME" "$DB_CONTAINER_NAME" >/dev/null 2>&1 || true
 
-# Build
-docker compose build --no-cache > docker_build.log 2>&1 && docker compose up -d >> docker_build.log 2>&1 &
-BUILD_PID=$!
+# Build — live output so you can see exactly what Docker/Next.js is doing.
+# Using Docker layer cache (no --no-cache) so repeat builds are fast.
+echo -e "${CYAN}[*] Building Docker images (this may take 5-15 minutes on first run)...${NC}"
+echo -e "${YELLOW}    You will see Docker's live output below.${NC}"
+echo -e "${YELLOW}    Look for '[*] Building Next.js application...' — that step takes the longest.${NC}"
+echo ""
 
-echo -e "${YELLOW}Building containers... You can view docker_build.log for live output.${NC}"
-spinner $BUILD_PID
-wait $BUILD_PID
+if ! docker compose build 2>&1 | tee docker_build.log; then
+    echo -e "\n${RED}[!] Build failed! Check the output above or docker_build.log for details.${NC}"
+    echo -e "${YELLOW}    Common causes:${NC}"
+    echo -e "${YELLOW}      - Out of memory (check 'free -h' — you need at least 1.5GB free)${NC}"
+    echo -e "${YELLOW}      - Network issues during 'npm ci' (check your internet connection)${NC}"
+    echo -e "${YELLOW}      - TypeScript errors (check the last few lines above)${NC}"
+    exit 1
+fi
 
-if [ $? -ne 0 ]; then
-    echo -e "\n${RED}[!] Build failed! Please check docker_build.log for details.${NC}"
+echo -e "\n${GREEN}[✓] Docker images built successfully!${NC}"
+echo -e "${CYAN}[*] Starting containers...${NC}"
+
+if ! docker compose up -d 2>&1 | tee -a docker_build.log; then
+    echo -e "\n${RED}[!] Failed to start containers! Check docker_build.log for details.${NC}"
     exit 1
 fi
 echo -e "\n${GREEN}[✓] Containers are up and running!${NC}"

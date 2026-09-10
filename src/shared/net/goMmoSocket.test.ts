@@ -27,11 +27,11 @@ describe("goMmoSocket", () => {
   });
 
   it("strips trailing slash and enables Go URL", () => {
-    process.env.NEXT_PUBLIC_GO_MMO_URL = "http://127.0.0.1:3001/";
-    expect(goMmoPublicUrl()).toBe("http://127.0.0.1:3001");
+    process.env.NEXT_PUBLIC_GO_MMO_URL = "http://127.0.0.1:24011/";
+    expect(goMmoPublicUrl()).toBe("http://127.0.0.1:24011");
     expect(isGoMmoSocketEnabled()).toBe(true);
     const c = lobbySocketConnect("acc1");
-    expect(c.url).toBe("http://127.0.0.1:3001");
+    expect(c.url).toBe("http://127.0.0.1:24011");
     expect(c.options.withCredentials).toBe(true);
     expect(c.options.path).toBe("/socket.io/");
   });

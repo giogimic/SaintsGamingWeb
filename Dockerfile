@@ -44,8 +44,8 @@ RUN mkdir -p prisma/db
 RUN chmod -R 755 public/uploads
 RUN chmod -R 755 prisma/db
 
-EXPOSE 3000
-ENV PORT=3000
+EXPOSE 24001
+ENV PORT=24001
 ENV HOSTNAME="0.0.0.0"
 
 # Entrypoint handles migration and startup

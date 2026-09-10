@@ -23,7 +23,7 @@ export async function GET() {
     if (goMmoBase) {
       urlsToTry.push(`${goMmoBase.replace(/\/$/, '')}/api/health`, `${goMmoBase.replace(/\/$/, '')}/status`);
     } else {
-      urlsToTry.push('http://game-server:3001/status');
+      urlsToTry.push('http://go-mmo:24011/status');
     }
 
     for (const url of urlsToTry) {

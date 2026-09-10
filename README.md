@@ -48,6 +48,13 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📝 Changelog
 
+### v2.1.812 - Setup Script UX & Build Reliability
+- **Clearer Setup Prompts:** Rewrote all `whiptail` menus to use plain-language descriptions explaining what each option does and why you'd pick it.
+- **Live Build Output:** Replaced the silent background spinner with live Docker build output so you can actually see what's happening (npm ci progress, Next.js compilation, errors).
+- **Automatic Swap Provisioning:** If the VPS has less than 3GB RAM and no swap, setup now creates a 2GB swap file before building to prevent OOM kills during Next.js compilation.
+- **Docker Layer Caching:** Removed `--no-cache` so repeat builds use layer caching and finish in minutes instead of 15+.
+- **Build Failure Diagnostics:** Added clear error messages with common causes when the Docker build fails.
+
 ### v2.1.811 - ChunkStreamer Transport Readiness & Diagnostics
 - **Transport Readiness Queue:** Fixed a race condition where `ChunkStreamer` permanently swallowed chunk requests if the socket was still connecting. It now accurately subscribes to `useGameStore`'s `connectionStatus` and queues requests.
 - **Go MMO Configuration Diagnostics:** Added a development diagnostic log in `index.tsx` to surface the resolved socket connection URL. This proves whether remote clients are improperly connecting to `127.0.0.1`.

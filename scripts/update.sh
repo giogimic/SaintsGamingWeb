@@ -471,13 +471,13 @@ else
     fi
     WEB_CN=$(grep "container_name:" docker-compose.yml | head -1 | awk '{print $2}' 2>/dev/null)
     WEB_CN=${WEB_CN:-saints-gaming-web}
-    WEB_PORT_MAP=$(grep -E '^\s+- "[0-9]+:3000"' docker-compose.yml | head -1 | sed 's/.*"\(.*\)".*/\1/' 2>/dev/null)
-    WEB_PORT_MAP=${WEB_PORT_MAP:-3000:3000}
+    WEB_PORT_MAP=$(grep -E '^\s+- "[0-9]+:24001"' docker-compose.yml | head -1 | sed 's/.*"\(.*\)".*/\1/' 2>/dev/null)
+    WEB_PORT_MAP=${WEB_PORT_MAP:-24001:24001}
 
     cp docker-compose.base.yml docker-compose.yml
     sed -i '/^\s*args:\s*$/d' docker-compose.yml 2>/dev/null || true
     sed -i "s/container_name: saints-gaming-web/container_name: ${WEB_CN}/g" docker-compose.yml
-    sed -i "s/- \"3000:3000\"/- \"${WEB_PORT_MAP}\"/g" docker-compose.yml
+    sed -i "s/- \"24001:24001\"/- \"${WEB_PORT_MAP}\"/g" docker-compose.yml
 
     if [ "$HAS_DB_SERVICE" = "1" ]; then
         DB_PASS_ENV=$(grep '^DATABASE_URL=' .env 2>/dev/null | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
@@ -577,7 +577,7 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
 
     echo -e "${CYAN}[*] Waiting for container initialization (Prisma client generation & migration)...${NC}"
     WAIT_SECS=0
-    until docker exec saints-gaming-web wget -qO- http://127.0.0.1:3000 > /dev/null; do
+    until docker exec saints-gaming-web wget -qO- http://127.0.0.1:24001 > /dev/null; do
         sleep 2
         WAIT_SECS=$((WAIT_SECS + 2))
         if [ $WAIT_SECS -gt 90 ]; then
