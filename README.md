@@ -48,6 +48,10 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📝 Changelog
 
+### v2.1.814 - Lobby Layout Fix (White Square / Purple Backdrop)
+- **Root Cause:** The lobby's `MainLayoutShell` branch was rendering `AmbientBackground` (purple tropical backdrop), the site `Navbar`, and `GlobalBottomBar` as siblings of the game canvas. Since `TheLobby` uses `fixed inset-0 z-30`, these elements overlapped — the game HUD went under the navbar and the canvas appeared as a white square on the purple ambient background.
+- **Fix:** Lobby now uses the same full-bleed pattern as Studio — no site chrome (navbar/bottombar/ambient bg). The game owns the entire viewport.
+
 ### v2.1.813 - Game Client & Setup Redirect Fixes
 - **Lobby Architecture:** Delegated `PlayerClient.tsx` back to the battle-tested monolithic `index.tsx` component to restore immediate functionality (movement, chunk loading, Studio-to-Lobby integration) while the new `src/client/` architecture is built in parallel.
 - **Fresh Install Redirects:** Added `getSystemSetupStatus` check to the root page (`/`) and home page (`/home`) so that new installs immediately push admins to the web setup wizard (`/setup`).

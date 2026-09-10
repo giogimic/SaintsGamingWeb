@@ -69,12 +69,12 @@ export function MainLayoutShell({
     );
   }
 
-  // Lobby MMO route: full-bleed viewport with persistent navbar and bottomBar encompassing the entire world
+  // Lobby MMO route: full-bleed viewport — the game canvas owns the entire screen.
+  // TheLobby uses `fixed inset-0 z-30` internally so we must NOT render navbar/bottomBar
+  // as siblings (they'd overlap). Same pattern as Studio.
   if (isLobby) {
     return (
-      <div className="fixed inset-0 w-screen h-screen overflow-hidden selection:bg-primary/30 bg-[#0a0a0f]">
-        <AmbientBackground />
-        {navbar}
+      <div className="fixed inset-0 w-screen h-screen overflow-hidden selection:bg-primary/30 z-[100] bg-[#0a0a0f]">
         <main className="w-full h-full overflow-hidden">
           {children}
         </main>
@@ -82,7 +82,6 @@ export function MainLayoutShell({
           {commandPalette}
           {messengerPopup}
         </div>
-        {bottomBar}
         {toaster}
         <UserSettingsOverlayShell />
         <GlobalPostComposer />
