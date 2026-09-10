@@ -23,9 +23,9 @@ ENV GO_MMO_PORT=3001
 ENV GO_MMO_DATABASE_URL=file:/app/data/go-mmo.db
 ENV GO_MMO_DEV_AUTH=true
 
-EXPOSE 3001
+EXPOSE 24011
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3001/healthz || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:24011/healthz || exit 1
 
 CMD ["/app/go-mmo"]
