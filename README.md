@@ -48,6 +48,9 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📝 Changelog
 
+### v2.1.817 - Full Uninstall Script
+- **Server Cleanup:** Added `scripts/uninstall.sh` to cleanly and safely remove Saints Gaming from a server. It stops PM2 web services, stops and removes systemd Go Lobby services, resets the Prisma database, and self-destructs the project files to leave no trace. Includes a mandatory confirmation safeguard.
+
 ### v2.1.816 - Setup Wizard Re-entry & Base Class Seeding
 - **Admin Re-entry:** Added `?reinit=true` flag to `/setup` route to allow Server Administrators (permissionLevel >= 80) to bypass the "Setup Completed" lock. This restores the ability to edit the Game Identity, configure initial Entities, and tweak Environment variables post-launch without needing a full DB wipe.
 - **Base Class Seeding:** Added `scripts/ensure-base-classes.ts` which is now automatically invoked during `update.sh --db`. This ensures the 5 core base classes (Warrior, Mage, Ranger, Paladin, Priest) are always reliably populated into the `CharacterClass` table for existing installations, fixing the issue where they were missing in the Studio class dropdown.
