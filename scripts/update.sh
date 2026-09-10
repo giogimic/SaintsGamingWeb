@@ -556,12 +556,22 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
         ( docker compose up -d --no-deps web >> docker_build.log 2>&1 ) &
         UP_PID=$!
         run_with_spinner "Launching updated web container" "docker_build.log" "$UP_PID"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}[!] Failed to start web container! (Check for port conflicts)${NC}\n"
+            tail -n 25 docker_build.log
+            exit 1
+        fi
         echo -e "${GREEN}[✓] Web container running.${NC}\n"
     else
         echo -e "${CYAN}[*] Performing fast container reload (~2s)...${NC}"
         ( docker compose restart web >> docker_build.log 2>&1 || docker compose up -d --no-deps web >> docker_build.log 2>&1 ) &
         RESTART_PID=$!
         run_with_spinner "Reloading web services" "docker_build.log" "$RESTART_PID"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}[!] Failed to reload web container! (Check for port conflicts)${NC}\n"
+            tail -n 25 docker_build.log
+            exit 1
+        fi
         echo -e "${GREEN}[✓] Web services hot-reloaded.${NC}\n"
     fi
 
@@ -617,6 +627,11 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
             ( cd the-lobby && docker compose up -d >> ../docker_build_go.log 2>&1 ) &
             GO_UP_PID=$!
             run_with_spinner "Launching Go container" "docker_build_go.log" "$GO_UP_PID"
+            if [ $? -ne 0 ]; then
+                echo -e "${RED}[!] Failed to start Go MMO container! (Check for port conflicts)${NC}\n"
+                tail -n 25 docker_build_go.log
+                exit 1
+            fi
             echo -e "${GREEN}[✓] Go container running.${NC}\n"
         elif docker ps -a --format '{{.Names}}' | grep -q '^saints-lobby'; then
             echo -e "${CYAN}[*] Restarting Go MMO container...${NC}"
