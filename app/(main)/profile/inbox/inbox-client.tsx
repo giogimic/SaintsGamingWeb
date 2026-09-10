@@ -28,7 +28,7 @@ const GAME_HUBS = [
   { id: "trending", label: "Hot & Trending", icon: Flame, color: "text-orange-400", filter: null, tab: "trending" as const },
   { id: "mmo", label: "The Lobby", icon: Gamepad2, color: "text-amber-400", filter: "mmo", tab: "for-you" as const },
   { id: "fivem", label: "FiveM Moments", icon: Flame, color: "text-orange-400", filter: "fivem", tab: "for-you" as const },
-  { id: "Sandbox", label: "Sandbox Modpacks", icon: Layers, color: "text-emerald-400", filter: "Sandbox", tab: "for-you" as const },
+  { id: "Sandbox", label: "Community Modpacks", icon: Layers, color: "text-emerald-400", filter: "Sandbox", tab: "for-you" as const },
   { id: "hangout", label: "Community Hangout", icon: MessageSquare, color: "text-violet-400", filter: "hangout", tab: "for-you" as const },
 ];
 

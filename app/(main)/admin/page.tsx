@@ -213,7 +213,7 @@ export default async function AdminDashboardPage() {
             <span className="text-xs font-mono text-amber-400">{gameServerCount} Live</span>
           </div>
           <div className="text-sm font-bold text-foreground">Multi-Game Fleet</div>
-          <div className="text-[11px] text-muted-foreground">Creature Battler &amp; FiveM txAdmin</div>
+          <div className="text-[11px] text-muted-foreground">Game Server &amp; FiveM txAdmin</div>
         </div>
       </div>
 

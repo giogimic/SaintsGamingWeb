@@ -58,7 +58,7 @@ export default function GameServersAdminPage() {
             Dedicated Game Servers
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Manage your community server fleet (Creature Battler, Dinosaur Survival, FiveM). Toggle maintenance mode banners or register new nodes.
+            Manage your community server fleet (Creature Battler, Sandbox, FiveM). Toggle maintenance mode banners or register new nodes.
           </p>
         </div>
       </div>

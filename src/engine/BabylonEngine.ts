@@ -587,7 +587,7 @@ export class BabylonEngine {
       }
     });
 
-    // 2D Items rendered in 3D (Sandbox-style item billboards)
+    // 2D Items rendered in 3D (Voxel-style item billboards)
     this.itemBillboards = new ItemBillboardRenderer(this.scene);
 
     // Studio Gizmos (Position/Scale)

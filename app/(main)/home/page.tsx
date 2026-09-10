@@ -63,7 +63,7 @@ export default async function HomePage() {
       icon: Package,
       title: "Modpacks",
       description:
-        "Browse our Sandbox modpacks — active and archived. Easy to explore.",
+        "Browse our sandbox modpacks — active and archived. Easy to explore.",
       href: "/modpacks",
       color: "text-green-400",
     },
@@ -109,9 +109,9 @@ export default async function HomePage() {
         </p>
 
         <p className="mt-4 text-base text-muted-foreground max-w-xl mx-auto">
-          We&apos;ve had Sandbox modpack servers, SA-MP servers, survival
-          games — you name it. Whether you&apos;re into competitive play,
-          modded Sandbox, or exploring The Lobby, there&apos;s a spot for you here.
+          We&apos;ve had sandbox modpack servers, SA-MP servers, survival
+          realms, and more. Whether you&apos;re here for hardcore PvP, chill
+          modded sandbox games, or exploring The Lobby, there&apos;s a spot for you here.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">

@@ -188,7 +188,7 @@ New to the community? Welcome to Saints Gaming — we're glad you're here. Drop 
 
 - **What should we call you?** Your username, a nickname, whatever you prefer.
 - **How did you find Saints Gaming?** Word of mouth, Discord, or maybe you remember us from the 2007 SAMP days?
-- **What kind of games do you enjoy?** MMOs, survival (Dinosaur Survival, Sandbox), building, PvP?
+- **What kind of games do you enjoy?** MMOs, survival (Dinosaur Survival, Sandbox Builders), building, PvP?
 - **What are you most excited about here?** The MMO lobby, World Studio, or just hanging out in the Nexus?
 
 There's no template and no pressure. A one-liner is just as welcome as a full autobiography.
@@ -520,7 +520,7 @@ async function main() {
     {
       title: "World Studio: Build Your Own Maps",
       excerpt: "The World Studio is now available to all players. Paint terrain, place objects, script encounters, and share your creations.",
-      body: "# World Studio: Build Your Own Maps\n\nOne of our core beliefs since the survival server days (Sandbox, Dinosaur Survival, Post-Apoc Survival) is that the best experiences are built by the community. That's why we built the **World Studio**.\n\n## What Can You Build?\n\n- **Terrain** — Paint multi-layer tilemaps using our growing tileset library.\n- **NPCs & Encounters** — Place creatures and configure encounter logic.\n- **Scripts & Events** — Trigger dialogues, cutscenes, and quests.\n- **Publish & Share** — Submit your maps for community play.\n\n## How to Access\n\nNavigate to `/studio` from the main menu.\n\nWe can't wait to see what you create."
+      body: "# World Studio: Build Your Own Maps\n\nOne of our core beliefs since the survival server days (Voxel Sandbox, Dinosaur Survival, Post-Apoc Survival) is that the best experiences are built by the community. That's why we built the **World Studio**.\n\n## What Can You Build?\n\n- **Terrain** — Paint multi-layer tilemaps using our growing tileset library.\n- **NPCs & Encounters** — Place creatures and configure encounter logic.\n- **Scripts & Events** — Trigger dialogues, cutscenes, and quests.\n- **Publish & Share** — Submit your maps for community play.\n\n## How to Access\n\nNavigate to `/studio` from the main menu.\n\nWe can't wait to see what you create."
     },
     {
       title: "Community Event: First Saints Tournament",
@@ -599,7 +599,7 @@ async function main() {
       name: "Dimensional Saints Adventure",
       slug: "dimensional-saints",
       game: "Sandbox",
-      description: "The official Dimensional Saints community Sandbox modpack. Relive the glory days of our early survival servers with modern enhancements.",
+      description: "The official Dimensional Saints community sandbox modpack. Relive the glory days of our early survival servers with modern enhancements.",
       version: "1.0",
       downloadUrl: "http://www.technicpack.net/modpack/dimensional-saints",
       order: 2
@@ -725,9 +725,9 @@ async function main() {
 
   // 5. Seed Game Servers
   const servers = [
-    { name: "Saints Gaming - Creature Battler #1", game: "Creature Battler", ip: "192.168.1.100", port: 8211 },
-    { name: "Saints Gaming - Creature Battler #2", game: "Creature Battler", ip: "192.168.1.100", port: 8214 },
-    { name: "Saints Gaming - Creature Battler #3", game: "Creature Battler", ip: "192.168.1.100", port: 8215 },
+    { name: "Saints Gaming - Creature Server #1", game: "Creature Battler", ip: "192.168.1.100", port: 8211 },
+    { name: "Saints Gaming - Creature Server #2", game: "Creature Battler", ip: "192.168.1.100", port: 8214 },
+    { name: "Saints Gaming - Creature Server #3", game: "Creature Battler", ip: "192.168.1.100", port: 8215 },
   ];
 
   for (const s of servers) {

@@ -42,7 +42,7 @@ interface ItemInstance {
 
 /**
  * ItemBillboardRenderer
- * Renders 2D item sprites standing/floating upright in 3D world space (Sandbox-style item drops).
+ * Renders 2D item sprites standing/floating upright in 3D world space (Voxel-style item drops).
  * Features:
  * - Y-Axis billboard (faces camera while staying upright) or 3D spinning item mode.
  * - Smooth sinus floating/bobbing animations.
@@ -177,7 +177,7 @@ export class ItemBillboardRenderer {
         rootNode.position.y = baseY + Math.sin(animTime * bobSpeed) * bobAmp;
       }
 
-      // Spinning around Y axis (Sandbox-style item drops)
+      // Spinning around Y axis (Voxel-style item drops)
       if (config.billboard === 'SPIN') {
         const rotSpeed = config.rotationSpeed ?? 1.8;
         planeMesh.rotation.y += rotSpeed * deltaTime;

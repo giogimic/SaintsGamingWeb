@@ -10,7 +10,7 @@ I'm building this for our community. This is a passion project I build for fun i
 
 ## 🎮 What is Saints Gaming?
 
-Saints Gaming started way back in 2007 as a chill group of friends hanging out on TeamSpeak, playing SA-MP, FiveM, Sandbox, and whatever else sounded fun. Over the years, our motto has always been simple: *Time To Play* — just hang out, game together, and have a good time with zero drama.
+Saints Gaming started way back in 2007 as a chill group of friends hanging out on TeamSpeak, playing SA-MP, FiveM, sandbox builders, and whatever else sounded fun. Over the years, our motto has always been simple: *Time To Play* — just hang out, game together, and have a good time with zero drama.
 
 This project brings our community hub together with an interactive multiplayer game:
 

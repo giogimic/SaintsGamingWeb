@@ -1,6 +1,19 @@
-# Saints Gaming — Master TODO
+# Saints Gaming — Active Agent Handover & TODO
 
-This is a living document tracking the current active development phases, upcoming features, and technical debt cleanup for the Saints Gaming platform.
+**PURPOSE:** This is a living private document within `.docs/` used to track exact agent progress, maintain context across quota/service interruptions, and outline upcoming development phases. 
+**RULE:** Every agent session MUST update the "Current Handover Context" before signing off.
+
+---
+
+## 🔄 Current Handover Context (Updated: 2026-09-10)
+- **Where we left off:** The previous agent session fixed a massive port conflict in `update.sh` and `setup.sh` that was preventing the Go MMO backend from binding to port 3001. The Next.js frontend is now correctly routing to `the-lobby` backend. The UI scale bug (white dot projection) and the `absolute` position styling bugs in the HUD have all been patched.
+- **Immediate Next Step:** The user is ready to begin **Phase 7: Multi-Noise Procedural Generation** inside the Go MMO backend (`the-lobby/`).
+- **Known Quirks / Reminders:** 
+  - Ensure the Go backend uses `github.com/zishang520/socket.io/v2/socket` for all realtime streaming.
+  - Never use `setInterval` for the game loop; rely on Go ticker / requestAnimationFrame for client.
+  - The live production server relies heavily on `update.sh` and `.gitignore` configurations for docker deployments.
+
+---
 
 ## 🚀 Active Phase: Phase 7 — World Generation & MMO Backend
 

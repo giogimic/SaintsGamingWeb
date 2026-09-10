@@ -452,7 +452,7 @@ model Modpack {
 
 model GameServer {
   id        String   @id @default(cuid())
-  name      String // e.g., "Saints Gaming - Creature Battler #1"
+  name      String // e.g., "Saints Gaming - Creature Server #1"
   game      String // e.g., "Creature Battler"
   ip        String // e.g., "192.168.1.100" or domain
   port      Int // e.g., 8211, 8214, 8215

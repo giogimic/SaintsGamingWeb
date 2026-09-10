@@ -1,0 +1,4 @@
+regex:(?i)\bMinecraft(?!\s+Dungeons)==>Sandbox
+regex:(?i)\bPalworld\b==>Creature Battler
+regex:(?i)\bArk\b==>Dinosaur Survival
+regex:(?i)\bHurtworld\b==>Post-Apoc Survival
