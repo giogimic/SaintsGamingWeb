@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useEditorStore } from '../editor-store';
 import { useGameStore } from '../../store';
+import { useSessionStore } from '@/client/state/useSessionStore';
 import { Globe, Plus, Trash2, Settings, HelpCircle, ArrowUpRight, Flame, Mountain, Trees, Waves } from 'lucide-react';
 import { MapIndexEntry } from '@/shared/game/maps';
 import { WindowMenuBar, WindowMenuDropdown, WindowMenuButton } from '../WindowMenuBar';
@@ -64,8 +65,8 @@ export const FractalDomainsPanel: React.FC = () => {
       return;
     }
     useGameStore.getState().emitSocketEvent?.('join_map', {
-      accountId: useGameStore.getState().sessionInfo?.accountId,
-      characterId: useGameStore.getState().sessionInfo?.characterId,
+      accountId: useSessionStore.getState().accountId,
+      characterId: useSessionStore.getState().characterId,
       mapId,
       lobby: false,
       forceDemo: false,
