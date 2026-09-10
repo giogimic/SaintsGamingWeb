@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useGameStore } from '../../store';
 import { useEditorStore } from '../editor-store';
 import { Settings, Trees, Plus, X, Paintbrush, MapPin, MessageSquare, ScrollText } from 'lucide-react';
-import { GAME_MAPS } from '../../data/maps';
+import { GAME_MAPS } from '@/shared/game/maps';
 import {
   LOGIC_COMPONENT_PRESETS,
   buildPayloadsFromFields,

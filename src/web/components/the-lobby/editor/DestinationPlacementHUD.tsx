@@ -4,7 +4,7 @@ import React from 'react';
 import { useEditorStore } from './editor-store';
 import { useGameStore } from '../store';
 import { Crosshair, X, ArrowLeft, Layers, Shield } from 'lucide-react';
-import { loadMap } from '../data/maps';
+import { loadMap } from '@/shared/game/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { STUDIO_MAP_HOT_RELOAD_EVENT } from '@/shared/game/studioEvents';
 

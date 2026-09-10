@@ -30,8 +30,8 @@ import {
   Sparkle,
   Plus,
 } from 'lucide-react';
-import { CharacterSpritePreview } from './CharacterSpritePreview';
-import { ITEM_DB } from './data/items';
+import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
+import { ITEM_DB } from '@/shared/game/items';
 import { soundSynth } from '@/engine/sound-synth';
 
 const SKILL_ICONS: Record<string, React.FC<{ className?: string; style?: React.CSSProperties }>> = {

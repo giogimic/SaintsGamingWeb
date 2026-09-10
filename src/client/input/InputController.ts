@@ -9,10 +9,15 @@ import { KEYBINDS } from './InputConstants';
 import { useSessionStore } from '../state/useSessionStore';
 import { usePlayerStore } from '../state/usePlayerStore';
 import { socketManager } from '../net/SocketManager';
+import { PortalTransitSystem } from '../engine/physics/PortalTransitSystem';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 export class InputController {
   private lastMoveCommandTime = 0;
   private readonly MOVE_THROTTLE_MS = 150; // Throttle socket emits
+  
+  // Spirit Gate Physics Handoff
+  private portalTransit = new PortalTransitSystem();
 
   public update(deltaTime: number) {
     const scene = useSessionStore.getState().activeScene;
@@ -63,12 +68,34 @@ export class InputController {
         true
       );
 
-      // Emit to server
-      socketManager.emit('player_move' as any, {
-        x: currentPos.x + dx,
-        y: currentPos.y + dy,
-        direction: newDirection
-      });
+      // Phase 6.5: Spirit Gate Portal Check (using 3D vector representation for physics)
+      const targetPos3D = new Vector3(currentPos.x + dx, 0, currentPos.y + dy);
+      
+      // We pass a dummy AABB for now, the real physics engine uses bounding boxes.
+      // A point intersection is enough to trigger the handoff logic if inside a portal.
+      const dummyPlayerAABB = {
+         intersectsPoint: (p: Vector3) => p.x === targetPos3D.x && p.z === targetPos3D.z, // Mock
+         intersectsMinMax: () => false
+      };
+      
+      this.portalTransit.checkIntersection(
+        dummyPlayerAABB as any,
+        dummyPlayerAABB as any,
+        'dummy_portal',
+        'nexus',
+        new Vector3(0, 0, 0)
+      );
+
+      // Emit to server (Routing through PortalTransitSystem if in active transit)
+      if (this.portalTransit.activeTransit) {
+        this.portalTransit.broadcastMovement(targetPos3D, newDirection);
+      } else {
+        socketManager.emit('player_move' as any, {
+          x: currentPos.x + dx,
+          y: currentPos.y + dy,
+          direction: newDirection
+        });
+      }
     } else if (!isMoving && playerStore.player.isMoving) {
       // Stopped moving
       playerStore.setPlayerPosition(currentPos, undefined, false);

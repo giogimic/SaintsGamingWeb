@@ -8,11 +8,11 @@ import {
 import { useEditorStore, type PanelId, STUDIO_DOCK_META } from './editor-store';
 import { useGameStore } from '../store';
 import { useStudioBookmarks, type StudioBookmarkEntry } from './hooks/useStudioBookmarks';
-import { GAME_MAPS, loadMap } from '../data/maps';
+import { GAME_MAPS, loadMap } from '@/shared/game/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
-import { ITEM_DB } from '../data/items';
+import { ITEM_DB } from '@/shared/game/items';
 import { SAINTS_DEX } from '../data/saints-dex';
-import { SAINTS_TAMER_QUESTS } from '../data/quests';
+import { SAINTS_TAMER_QUESTS } from '@/shared/game/quests';
 import { soundSynth } from '@/engine/sound-synth';
 
 /* ── Types ────────────────────────────────────────── */

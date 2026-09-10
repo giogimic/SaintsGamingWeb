@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { DraggablePanel } from '../DraggablePanel';
 import { useEditorStore } from '../editor-store';
 import { useGameStore } from '../../store';
-import { GameMapData, loadMap } from '../../data/maps';
+import { GameMapData, loadMap } from '@/shared/game/maps';
 import { VoxelCanvasBabylon } from '../../babylon/VoxelCanvasBabylon';
 import { BabylonEngine } from '@/engine/BabylonEngine';
 import { MapPersistenceService } from '../services/MapPersistenceService';

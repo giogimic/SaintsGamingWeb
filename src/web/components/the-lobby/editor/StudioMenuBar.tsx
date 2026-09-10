@@ -92,7 +92,7 @@ import {
 } from '@/shared/game/studioModes';
 import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
 import { soundSynth } from '@/engine/sound-synth';
-import { loadMap } from '../data/maps';
+import { loadMap } from '@/shared/game/maps';
 import { WORLD_PROFILES } from '@/shared/game/worldProfiles';
 import { ensureWorldProfiles, setActiveWorldProfile } from '@/app/actions/studio/world-profiles';
 import { creatorRecents } from '@/shared/game/creatorRecents';

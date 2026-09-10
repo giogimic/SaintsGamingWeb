@@ -16,7 +16,7 @@ import { useGameStore } from '../store';
 import { soundSynth } from '@/engine/sound-synth';
 
 import { useEditorStore, type PanelId } from './editor-store';
-import { loadMap } from '../data/maps';
+import { loadMap } from '@/shared/game/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {

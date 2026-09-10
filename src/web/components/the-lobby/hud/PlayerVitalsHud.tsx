@@ -3,7 +3,7 @@
 import React from 'react';
 import { useGameStore } from '../store';
 import { Heart, Sparkles, User, Zap, Shield, Swords, Coins } from 'lucide-react';
-import { CharacterSpritePreview } from '../CharacterSpritePreview';
+import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 import { getHudTheme } from './hud-themes';
 import { HeartContainersView } from './HeartContainersView';
 import { IconContainersView } from './IconContainersView';

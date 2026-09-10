@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import RpgPanel from './rpg-panel';
 import { useGameStore } from './store';
-import { getItem } from './data/items';
+import { getItem } from '@/shared/game/items';
 import { soundSynth } from '@/engine/sound-synth';
 import { getLiveGtcListings } from '@/app/actions/gtc';
 import { Search, PlusCircle, Loader2, RefreshCw, ShoppingCart, Tag, Coins, ArrowRightLeft } from 'lucide-react';

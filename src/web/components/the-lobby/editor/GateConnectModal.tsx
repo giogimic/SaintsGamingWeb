@@ -18,7 +18,7 @@ import {
   Compass,
   Sparkle
 } from 'lucide-react';
-import { listMaps, loadMap, type MapIndexEntry } from '../data/maps';
+import { listMaps, loadMap, type MapIndexEntry } from '@/shared/game/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { STUDIO_MAP_HOT_RELOAD_EVENT } from '@/shared/game/studioEvents';
 import { useDebounce } from '@/web/hooks/useDebounce';

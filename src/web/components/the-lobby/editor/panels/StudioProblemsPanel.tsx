@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useGameStore } from '../../store';
 import { useEditorStore } from '../editor-store';
-import { GAME_MAPS } from '../../data/maps';
+import { GAME_MAPS } from '@/shared/game/maps';
 import { toBaseMapId } from '@/shared/net/mapIds';
 import { normalizeGatesToArray } from '@/shared/game/mapGates';
 import { AssetManager } from '@/engine/assets/AssetManager';

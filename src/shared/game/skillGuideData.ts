@@ -3,7 +3,7 @@
  * including Per-Level Perks, Milestone Unlocks, and Battlepass Cosmetic Tier Tracks.
  */
 
-import { ITEM_DB, CRAFTING_RECIPES } from '../../web/components/the-lobby/data/items';
+import { ITEM_DB, CRAFTING_RECIPES } from '@/shared/game/items';
 import { COMBAT_ABILITIES } from './combatAbilities';
 import {
   COMBAT_SKILL_TYPINGS,

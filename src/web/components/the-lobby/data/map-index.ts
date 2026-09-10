@@ -1,4 +1,4 @@
-import { GAME_MAPS, GameMapData } from './maps';
+import { GAME_MAPS, GameMapData } from '@/shared/game/maps';
 
 export type MapCategory = 'Town' | 'House' | 'Route' | 'Cave' | 'Dungeon' | 'Tower' | 'Special';
 

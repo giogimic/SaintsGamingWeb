@@ -6,7 +6,7 @@ import { signIn } from 'next-auth/react';
 import { X, LogIn, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
 import { useTheme } from 'next-themes';
-import { MidnightTropicalBackground } from './MidnightTropicalBackground';
+import { MidnightTropicalBackground } from '@/client/ui/shared/MidnightTropicalBackground';
 
 export default function GameLogin() {
   const setGameMode = useGameStore((state) => state.setGameMode);

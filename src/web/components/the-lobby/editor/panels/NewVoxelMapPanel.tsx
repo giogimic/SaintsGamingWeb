@@ -7,7 +7,7 @@ import { useEditorStore } from '../editor-store';
 import { useMapIndex } from '@/web/hooks/studio-data';
 import { buildNewStudioMap, formatMapWriteError } from '@/shared/game/studioMapCreate';
 import { soundSynth } from '@/engine/sound-synth';
-import { loadMap } from '../../data/maps';
+import { loadMap } from '@/shared/game/maps';
 import {
   generateVoxelWorldDoc,
   type VoxelTerrainProfile,

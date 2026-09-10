@@ -1,5 +1,5 @@
 import { StudioLobby } from '@/web/components/the-lobby/dynamic';
-import { MidnightTropicalBackground } from '@/web/components/the-lobby/MidnightTropicalBackground';
+import { MidnightTropicalBackground } from '@/client/ui/shared/MidnightTropicalBackground';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {

@@ -1,15 +1,15 @@
-import { Point } from '../store';
-import type { ElementType } from '../../../../shared/game/elementMatchups';
-import { listGateTargets } from '../../../../shared/game/mapGates';
-import { MAP_DOC_SOURCE_PROXY_SHELL } from '../../../../shared/game/mapDocVisual';
+import { Point } from '@/web/components/the-lobby/store';
+import type { ElementType } from './elementMatchups';
+import { listGateTargets } from './mapGates';
+import { MAP_DOC_SOURCE_PROXY_SHELL } from './mapDocVisual';
 import {
   type AtlasNode,
   type AtlasGridData,
   normalizeAtlasGridData,
   getAdjacentAtlasNeighbors,
-} from '../../../../shared/game/atlas/spatialAtlas';
-import { RuntimeAssetManager } from '../../../../shared/game/assetRuntimeManager';
-import { recordRecentItem } from '../../../../shared/game/creatorRecents';
+} from './atlas/spatialAtlas';
+import { RuntimeAssetManager } from './assetRuntimeManager';
+import { recordRecentItem } from './creatorRecents';
 
 function getStudioApiUrl(path: string): string {
   const base = typeof window !== 'undefined' ? (window as any).__studioBaseUrl || '' : '';
@@ -248,7 +248,7 @@ export async function loadMap(
 
           // 2. Active node in gameStore if set
           if (!myNode) {
-            const { useGameStore } = await import('../store');
+            const { useGameStore } = await import('@/web/components/the-lobby/store');
             const activeNodeId = (useGameStore.getState() as any).activeAtlasNodeId;
             if (activeNodeId) {
               myNode = atlas.nodes.find((n) => n.id === activeNodeId && n.mapId === mapData.id);

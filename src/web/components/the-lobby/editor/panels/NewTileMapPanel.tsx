@@ -8,7 +8,7 @@ import { useMapIndex } from '@/web/hooks/studio-data';
 import { buildNewStudioMap, formatMapWriteError } from '@/shared/game/studioMapCreate';
 import { soundSynth } from '@/engine/sound-synth';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
-import { loadMap } from '../../data/maps';
+import { loadMap } from '@/shared/game/maps';
 
 type SizePreset = 'tiny' | 'small' | 'standard' | 'large' | 'custom';
 

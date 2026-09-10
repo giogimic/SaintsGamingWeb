@@ -1,0 +1,184 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { ScrollText, Target, CheckCircle2, Compass, X, ChevronRight } from 'lucide-react';
+import { HudPanelShell } from '@/web/components/the-lobby/hud/HudPanelShell';
+import { soundSynth } from '@/engine/sound-synth';
+
+import { useSessionStore } from '../../state/useSessionStore';
+import { useWorldStore } from '../../state/useWorldStore';
+import { usePlayerStore } from '../../state/usePlayerStore';
+
+interface QuestObjective {
+  id: string;
+  type: string;
+  targetSlug: string;
+  requiredQty: number;
+  description: string;
+}
+
+interface ActiveQuest {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  stage: number;
+  progress: number;
+  objective: QuestObjective | null;
+}
+
+export function QuestTracker() {
+  const [spyderCampaignComplete, setSpyderCampaignComplete] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
+  
+  const activeScene = useSessionStore((state) => state.activeScene);
+  const currentMapId = useWorldStore((state) => state.currentMapId);
+  const activeQuestsObj = usePlayerStore((state) => state.player.activeQuests || {});
+  const quests = Object.values(activeQuestsObj) as ActiveQuest[];
+
+  const isSpyderMap =
+    currentMapId === 'AZURE_TOWN' ||
+    currentMapId?.includes('SPYDER') ||
+    currentMapId === 'ROUTE1' ||
+    currentMapId === 'COTTON_TOWN' ||
+    currentMapId === 'COTTON_SCOOP' ||
+    currentMapId === 'COTTON_CAFE' ||
+    currentMapId === 'SPYDER_COTTON_TUNNEL' ||
+    currentMapId === 'SPYDER_ROUTE2' ||
+    currentMapId === 'SPYDER_ROUTE3' ||
+    currentMapId === 'SPYDER_LEATHER_TOWN' ||
+    currentMapId === 'SPYDER_LEATHER_CENTER' ||
+    currentMapId === 'SPYDER_LEATHER_SCOOP' ||
+    currentMapId === 'SPYDER_LEATHER_GYM' ||
+    currentMapId === 'SPYDER_LEATHER_SHAFT1' ||
+    currentMapId === 'SPYDER_LEATHER_SHAFT2' ||
+    currentMapId === 'COTTON_UNDERGROUND';
+
+  if (activeScene !== 'exploring') return null;
+
+  // Minimized / Dismissed state toast pill
+  if (isDismissed) {
+    return (
+      <div className="pointer-events-auto transition-all duration-200 ease-out animate-in fade-in select-none">
+        <HudPanelShell
+          className="cursor-pointer hover:border-amber-400 bg-black/80"
+          noPadding
+        >
+          <button
+            type="button"
+            onClick={() => {
+              soundSynth?.playSelectSound?.();
+              setIsDismissed(false);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1 text-[9px] font-mono font-bold uppercase tracking-wider text-amber-300 hover:text-white cursor-pointer"
+          >
+            <ScrollText className="w-3 h-3 text-amber-400" />
+            <span>Quests ({quests.length})</span>
+            <ChevronRight className="w-3 h-3 text-amber-400/60" />
+          </button>
+        </HudPanelShell>
+      </div>
+    );
+  }
+
+  if (quests.length === 0) {
+    const guideText =
+      isSpyderMap && spyderCampaignComplete ? (
+        <>
+          Leather shafts cleared. Rematch <span className="text-amber-300 font-bold">Rook</span> or{' '}
+          <span className="text-amber-300 font-bold">Carlos</span>, dig deeper, or roam.
+        </>
+      ) : isSpyderMap ? (
+        <>
+          Talk to the <span className="text-amber-300 font-bold">Azure Guide</span> in plaza
+          (press E). Accept your charge to begin.
+        </>
+      ) : (
+        <>
+          Talk to the <span className="text-amber-300 font-bold">Trail Greeter</span> by the plaza
+          (press E) to begin Saints Trail.
+        </>
+      );
+
+    return (
+      <div className="pointer-events-auto w-[min(92vw,220px)] transition-all duration-200 ease-out animate-in fade-in slide-in-from-top-1 select-none">
+        <HudPanelShell
+          title={
+            isSpyderMap
+              ? spyderCampaignComplete
+                ? 'Spyder Clear'
+                : 'Spyder Trail'
+              : 'Saints Trail'
+          }
+          icon={<Compass className="w-3.5 h-3.5 text-amber-400" />}
+          onClose={() => {
+            soundSynth?.playSelectSound?.();
+            setIsDismissed(true);
+          }}
+        >
+          <p className="text-[10px] md:text-[11px] text-slate-300 leading-snug font-medium font-mono">
+            {guideText}
+          </p>
+        </HudPanelShell>
+      </div>
+    );
+  }
+
+  return (
+    <div className="pointer-events-auto w-[min(92vw,230px)] space-y-2 transition-all duration-200 ease-out animate-in fade-in slide-in-from-top-1 select-none">
+      {quests.map((quest) => {
+        const obj = quest.objective;
+        const isComplete = obj && quest.progress >= obj.requiredQty;
+
+        return (
+          <HudPanelShell
+            key={quest.id}
+            title={quest.title}
+            icon={<ScrollText className="w-3.5 h-3.5 text-amber-400" />}
+            onClose={() => {
+              soundSynth?.playSelectSound?.();
+              setIsDismissed(true);
+            }}
+          >
+            {obj ? (
+              <div className="space-y-2 font-mono">
+                <div className="flex items-start gap-2">
+                  {isComplete ? (
+                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                  ) : (
+                    <Target className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
+                  )}
+                  <p
+                    className={`text-[10px] leading-snug font-medium ${
+                      isComplete ? 'text-slate-500 line-through' : 'text-slate-200'
+                    }`}
+                  >
+                    {obj.description}
+                  </p>
+                </div>
+
+                {!isComplete && obj.requiredQty > 1 && (
+                  <div className="space-y-1 pt-0.5">
+                    <div className="w-full bg-black/80 rounded-full h-1.5 border border-amber-500/20 overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-amber-600 to-yellow-400 h-full rounded-full transition-all duration-300 shadow-[0_0_6px_rgba(245,158,11,0.6)]"
+                        style={{
+                          width: `${Math.min(100, Math.max(0, (quest.progress / obj.requiredQty) * 100))}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-end text-[9px] font-bold text-amber-300">
+                      {quest.progress} / {obj.requiredQty}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-[10px] text-slate-400 italic font-mono">No active objectives.</p>
+            )}
+          </HudPanelShell>
+        );
+      })}
+    </div>
+  );
+}

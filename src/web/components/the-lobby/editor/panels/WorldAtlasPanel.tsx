@@ -7,7 +7,7 @@ import {
   Save, Map as MapIcon, Plus, Trash2, Crosshair, HelpCircle, Compass, Radio,
   Castle, Trees, Waves, Mountain, Flame, Navigation, ArrowUpRight, Globe, Sparkles
 } from 'lucide-react';
-import { MapIndexEntry, loadMap, invalidateMapCache, invalidateClientAtlas } from '../../data/maps';
+import { MapIndexEntry, loadMap, invalidateMapCache, invalidateClientAtlas } from '@/shared/game/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { STUDIO_MAP_HOT_RELOAD_EVENT } from '@/shared/game/studioEvents';
 import { soundSynth } from '@/engine/sound-synth';

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { WifiOff, RefreshCw, ShieldAlert, Sparkles, LogIn, ArrowLeft, ExternalLink } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
 import { useTheme } from 'next-themes';
-import { MidnightTropicalBackground } from './MidnightTropicalBackground';
+import { MidnightTropicalBackground } from '@/client/ui/shared/MidnightTropicalBackground';
 import Link from 'next/link';
 
 interface GameOfflineScreenProps {

@@ -127,6 +127,7 @@ export class VoxelWorld {
       { id: 10, name: 'Murky Swamp', colorHex: '#3f6212', roughness: 0.8 },
       { id: 11, name: 'Ancient Dungeon', colorHex: '#475569', roughness: 0.5 },
       { id: 12, name: 'Glacial Ice', colorHex: '#67e8f9', isTransparent: true, roughness: 0.1 },
+      { id: 13, name: 'Spirit Gate Crystal', colorHex: '#e0b0ff', isTransparent: true, roughness: 0.2 },
     ];
   }
 

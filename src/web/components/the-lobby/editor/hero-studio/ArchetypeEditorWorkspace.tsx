@@ -14,7 +14,7 @@ import {
   FileJson, Copy, Check, Users, ImageIcon,
 } from 'lucide-react';
 import SpriteBrowser from '../SpriteBrowser';
-import { CharacterSpritePreview } from '@/web/components/the-lobby/CharacterSpritePreview';
+import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 
 const EMPTY_HERO: StarterHeroData = {
   slug: '',

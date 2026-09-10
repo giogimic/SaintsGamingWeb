@@ -1,11 +1,12 @@
 'use client';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { BabylonEngine, isSingleFrameSpriteUrl, SINGLE_FRAME_SPRITE_CONFIG } from '@/engine/BabylonEngine';
 import { useGameStore } from '../store';
 import { useEditorStore } from '../editor/editor-store';
-import { loadMap } from '../data/maps';
-import type { GameMapData } from '../data/maps';
+import { loadMap } from '@/shared/game/maps';
+import type { GameMapData } from '@/shared/game/maps';
 import { soundSynth } from '@/engine/sound-synth';
 import { findPath } from '@/engine/pathfinding';
 import { WorldSimulation } from '@/engine/WorldSimulation';
@@ -60,6 +61,7 @@ import {
   VOXEL_MAT_GRASS,
 } from '@/shared/game/voxel/VoxelWord';
 import { VoxelChunk } from '@/shared/game/voxel/VoxelChunk';
+import { validatePortalFrame } from '@/client/engine/voxel/PortalValidator';
 
 /** Lobby multiplayer shard base — keep in sync with server DEMO_MAP_ID. */
 const LOBBY_MULTIPLAYER_MAP = 'DEMO_SANDBOX';
@@ -2172,6 +2174,27 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             wordLow: v.word.low,
             wordHigh: v.word.high,
           });
+        }
+        
+        // Phase 6.5: Spirit Gate Portal Validation
+        const matId = v.word.low & 0xFF;
+        if (matId === 13) { // 13 is 'Spirit Gate Crystal'
+          const validation = validatePortalFrame(engine.voxel.voxelWorld, v.wx, v.wy, v.wz, 13);
+          if (validation.isValid && validation.innerBlocks && validation.innerBlocks.length > 0) {
+            console.log('[SpiritGate] Frame complete! Triggering renderer...', validation);
+            
+            // Mock destination for now (we'd get this from the dialer or server)
+            const mockDest = {
+               mapId: 'nexus',
+               worldX: v.wx,
+               worldZ: v.wz
+            };
+            
+            engine.spiritGateRenderer.createPortalMesh(
+              validation.innerBlocks.map((b: {x: number, y: number, z: number}) => new Vector3(b.x, b.y, b.z)),
+              mockDest
+            );
+          }
         }
       }
       engine.voxel.meshDirtyVoxelChunks?.();

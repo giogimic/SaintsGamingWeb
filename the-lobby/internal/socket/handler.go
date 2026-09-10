@@ -236,6 +236,35 @@ func (h *Hub) onConnect(client *socket.Socket) {
 	client.On(protocol.EvForceDisconnect, func(datas ...any) {
 		client.Disconnect(true)
 	})
+	client.On("portal_request_nodes", func(datas ...any) {
+		// Mock response for Phase 6 dialing UI
+		nodes := []map[string]any{
+			{
+				"mapId":        "nexus",
+				"name":         "The Nexus",
+				"description":  "Central hub connecting all Sanctuaries.",
+				"isActive":     true,
+				"publicAccess": true,
+			},
+			{
+				"mapId":        "wilds_01",
+				"name":         "The Wilds",
+				"description":  "Untamed lands filled with hostile encounters.",
+				"isActive":     true,
+				"publicAccess": false,
+			},
+		}
+		h.EmitToSocket(sid, "portal_nodes_response", map[string]any{"nodes": nodes})
+	})
+	client.On("portal_dial", func(datas ...any) {
+		log.Printf("[SpiritGate] User %s dialing portal", accountID)
+	})
+	client.On("portal_transit_complete", func(datas ...any) {
+		log.Printf("[SpiritGate] User %s completed portal transit", accountID)
+	})
+	client.On("join_map", func(datas ...any) {
+		log.Printf("[SpiritGate] User %s joined map as ghost", accountID)
+	})
 	h.registerGameplay(client, accountID, sid)
 	client.On("disconnect", func(datas ...any) {
 		h.onDisconnect(sid, accountID)

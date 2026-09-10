@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useGameStore } from './store';
-import { QUEST_DB, GameQuest } from './data/quests';
+import { QUEST_DB, GameQuest } from '@/shared/game/quests';
 import { BookOpen, CheckCircle, Clock, Award, Compass, Sparkles } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
 

@@ -17,7 +17,7 @@ import {
 import { useEditorStore } from './editor-store';
 import { useGameStore } from '../store';
 import { soundSynth } from '@/engine/sound-synth';
-import { getClientAtlas } from '../data/maps';
+import { getClientAtlas } from '@/shared/game/maps';
 import { type AtlasGridData, getAdjacentAtlasNeighbors } from '@/shared/game/atlas/spatialAtlas';
 import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
 

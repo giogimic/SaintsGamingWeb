@@ -402,6 +402,10 @@ export const ITEM_DB: Record<string, ItemSchema> = {
   'capture_device': { id: 'capture_device', name: 'Capture Device', description: 'Standard device used to capture wild Creature.', type: 'CONSUMABLE', value: 200 },
   'grand_ball': { id: 'grand_ball', name: 'Grand Ball', description: 'An enhanced Capture Device with 1.5x catch rate.', type: 'CONSUMABLE', value: 600 },
   'mega_ball': { id: 'mega_ball', name: 'Mega Ball', description: 'A high-grade Capture Device with 2.0x catch rate.', type: 'CONSUMABLE', value: 1200 },
+
+  // Spirit Gate Construction & Activation
+  'crystal_spirit_gate_frame': { id: 'crystal_spirit_gate_frame', name: 'Crystal Spirit Gate Frame', description: 'Luminous attuned crystal block used to construct Spirit Gate portals. Place in a closed loop to form a dimensional gateway.', type: 'MATERIAL', value: 12000, reqSkill: 'Construction', reqLevel: 65 },
+  'admin_spirit_gate_command': { id: 'admin_spirit_gate_command', name: 'Staff Spirit Gate Wand', description: 'Staff-only command wand that instantly spawns a Spirit Gate entity and opens a destination selector.', type: 'MATERIAL', value: 0 },
 };
 
 export const CRAFTING_RECIPES = [

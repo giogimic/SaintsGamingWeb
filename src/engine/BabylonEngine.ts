@@ -88,6 +88,7 @@ import {
 import { VoxelController } from './VoxelController';
 import { InputController } from './InputController';
 import { Renderer } from './Renderer';
+import { SpiritGateRenderer } from '../client/engine/rendering/SpiritGateRenderer';
 import { EntityController } from './EntityController';
 
 export interface RenderedChunk {
@@ -602,6 +603,9 @@ export class BabylonEngine {
     // Generate procedural textures
     this.renderer.createDefaultPlayerTexture();
     this.renderer.createProceduralTextures();
+
+    // Phase 6.5: Spirit Gate Renderer Hook
+    this.spiritGateRenderer = new SpiritGateRenderer(this.scene, this.renderer.camera);
 
     // Hook voxel controller into render loop for dynamic chunk streaming
     this.scene.onBeforeRenderObservable.add(() => {
@@ -4724,4 +4728,5 @@ export class BabylonEngine {
   public renderer: Renderer;
   public entity: EntityController;
   public gizmoManager?: GizmoManager;
+  public spiritGateRenderer!: SpiritGateRenderer;
 }

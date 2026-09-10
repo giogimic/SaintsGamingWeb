@@ -40,9 +40,9 @@ import {
   resolveClassStats,
   resolveStartingSkills,
 } from '@/shared/game/classCatalog';
-import { CharacterSpritePreview } from './CharacterSpritePreview';
+import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 import { AssetManager } from '@/engine/assets/AssetManager';
-import { MidnightTropicalBackground } from './MidnightTropicalBackground';
+import { MidnightTropicalBackground } from '@/client/ui/shared/MidnightTropicalBackground';
 import { useTheme } from 'next-themes';
 
 // ─── Constants ────────────────────────────────────────────────────────────────

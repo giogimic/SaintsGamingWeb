@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Package, Shield, Scale, Gamepad2, ChevronDown, ChevronUp, ShoppingCart } from 'lucide-react';
-import { ITEM_DB } from '@/web/components/the-lobby/data/items';
+import { ITEM_DB } from '@/shared/game/items';
 import {
   getCharacterGtcListings,
   getLiveGtcListings,

@@ -1,5 +1,5 @@
 import type { PlayerState } from "./store";
-import { getItem } from "./data/items";
+import { getItem } from '@/shared/game/items';
 import { getCreatureById } from "./data/saints-dex";
 import {
   getCombatMultiplier,

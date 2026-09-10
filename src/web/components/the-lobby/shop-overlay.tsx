@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useGameStore } from './store';
 import RpgPanel from './rpg-panel';
 import { SHOP_CATALOG, SHOP_CRAFT_RECIPES, sellPrice } from '@/shared/game/shopCatalog';
-import { ITEM_DB } from './data/items';
+import { ITEM_DB } from '@/shared/game/items';
 import { soundSynth } from '@/engine/sound-synth';
 import { Store, ShoppingCart, ArrowDownToLine, Coins, Hammer, Check, Sparkles } from 'lucide-react';
 

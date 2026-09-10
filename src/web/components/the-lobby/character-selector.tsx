@@ -30,20 +30,21 @@ import {
   Check,
   Radio,
 } from 'lucide-react';
-import { deleteGameCharacter, getTopLobbyOperatives } from '@/app/actions/game';
+import { deleteGameCharacter } from '@/app/actions/game';
 import { toast } from 'sonner';
 import { soundSynth } from '@/engine/sound-synth';
 import { useGameStore } from './store';
 import { useAppStore } from "@/shared/store/useAppStore";
 import { useSession } from 'next-auth/react';
 import { useTheme } from 'next-themes';
-import { MidnightTropicalBackground } from './MidnightTropicalBackground';
-import { CharacterSpritePreview } from './CharacterSpritePreview';
-import { CharacterDetailPreview } from './CharacterDetailPreview';
+import { MidnightTropicalBackground } from '@/client/ui/shared/MidnightTropicalBackground';
+import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
+import { CharacterDetailPreview } from '@/client/ui/shared/CharacterDetailPreview';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 import { useRealmSettings } from '@/web/hooks/studio-data';
 import { useAuth } from '@/web/hooks/use-auth';
 import { CharacterSelectAdminWindow } from './admin/CharacterSelectAdminWindow';
+import { LobbySidePanel } from '@/client/ui/shared/LobbySidePanel';
 
 interface CharacterSelectorProps {
   characters: any[];
@@ -194,92 +195,8 @@ export function CharacterSelector({
     });
   }, [characters]);
 
-  // Social & Comms Deck State (Default to CHAT for active Lobby experience)
-  const [activeSideTab, setActiveSideTab] = useState<'CHAT' | 'LEADERBOARD'>('CHAT');
-  const [topOperatives, setTopOperatives] = useState<any[]>([]);
-  const [loadingLeaderboards, setLoadingLeaderboards] = useState(false);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      id: 'sys-1',
-      sender: 'Saints Gateway',
-      text: 'Welcome to the Saints Gaming MMO Vault. Select your Saint and enter the live realm.',
-      timestamp: Date.now() - 60000,
-      type: 'SYSTEM',
-    },
-  ]);
-  const [chatInput, setChatInput] = useState('');
-  const chatScrollRef = useRef<HTMLDivElement>(null);
-
   // Realtime count
   const mmoPlayerCount = useAppStore((state) => state.mmoPlayerCount);
-  const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
-
-  // Fetch leaderboard data
-  const fetchLeaderboards = async () => {
-    setLoadingLeaderboards(true);
-    try {
-      const res = await getTopLobbyOperatives();
-      if (res.success && res.data) {
-        setTopOperatives(res.data.slice(0, 6));
-      }
-    } catch {
-      /* ignore */
-    } finally {
-      setLoadingLeaderboards(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLeaderboards();
-  }, []);
-
-  // Listen for incoming global chat events
-  useEffect(() => {
-    const handleIncoming = (e: CustomEvent<any>) => {
-      const msg = e.detail;
-      if (!msg?.text) return;
-      setChatMessages((prev) => {
-        const item: ChatMessage = {
-          id: msg.id || `${Date.now()}-${Math.random()}`,
-          sender: msg.sender || 'Saint',
-          text: msg.text,
-          timestamp: msg.timestamp || Date.now(),
-          type: msg.type || 'GLOBAL',
-        };
-        return [...prev, item].slice(-100);
-      });
-    };
-
-    window.addEventListener('game_chat_msg' as any, handleIncoming as any);
-    return () => window.removeEventListener('game_chat_msg' as any, handleIncoming as any);
-  }, []);
-
-  // Auto-scroll chat
-  useEffect(() => {
-    if (chatScrollRef.current) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
-    }
-  }, [chatMessages, activeSideTab]);
-
-  const handleSendChat = (e: React.FormEvent) => {
-    e.preventDefault();
-    const text = chatInput.trim();
-    if (!text) return;
-
-    soundSynth?.playSelectSound?.();
-    const senderName = session?.user?.name || (session?.user as any)?.username || 'Player';
-    const newMsg: ChatMessage = {
-      id: `${Date.now()}-${Math.random()}`,
-      sender: senderName,
-      text,
-      timestamp: Date.now(),
-      type: 'GLOBAL',
-    };
-
-    setChatMessages((prev) => [...prev, newMsg].slice(-100));
-    emitSocketEvent?.('global_chat', text);
-    setChatInput('');
-  };
 
   const confirmDelete = async () => {
     if (!deleteModalChar) return;
@@ -508,171 +425,7 @@ export function CharacterSelector({
         </section>
 
         {/* ── RIGHT SECTION: LOBBY CHAT & HALL OF CHAMPIONS (Cols 9-12) ── */}
-        <section
-          className="lg:col-span-4 flex flex-col justify-between rounded-2xl border border-border/60 p-4 bg-card/60 backdrop-blur-xl shadow-xl relative overflow-hidden"
-        >
-          {/* Side Tabs Header */}
-          <div className="flex items-center gap-2 border-b border-white/10 pb-3 mb-3">
-            <button
-              onClick={() => {
-                soundSynth?.playSelectSound?.();
-                setActiveSideTab('CHAT');
-              }}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeSideTab === 'CHAT'
-                  ? 'bg-primary/20 text-primary border border-primary/40 shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground bg-card/30 border border-transparent'
-              }`}
-            >
-              <MessageSquare size={13} className="text-primary" />
-              Lobby Chat
-            </button>
-
-            <button
-              onClick={() => {
-                soundSynth?.playSelectSound?.();
-                setActiveSideTab('LEADERBOARD');
-              }}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeSideTab === 'LEADERBOARD'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40 shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground bg-card/30 border border-transparent'
-              }`}
-            >
-              <Trophy size={13} className="text-amber-400" />
-              Champions
-            </button>
-          </div>
-
-          {/* TAB 1: LOBBY CHAT CONTENT (DEFAULT) */}
-          {activeSideTab === 'CHAT' && (
-            <div className="flex-1 flex flex-col justify-between min-h-[300px]">
-              {/* Message History List */}
-              <div
-                ref={chatScrollRef}
-                className="space-y-2.5 overflow-y-auto max-h-[320px] pr-1 mb-3 scrollbar-thin font-mono text-xs"
-              >
-                {chatMessages.map((msg) => {
-                  const isSys = msg.type === 'SYSTEM';
-                  const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                  return (
-                    <div
-                      key={msg.id}
-                      className={`p-2.5 rounded-xl border leading-relaxed ${
-                        isSys
-                          ? 'bg-primary/10 border-primary/20 text-primary text-[11px]'
-                          : 'bg-black/50 border-white/5 text-foreground'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-1 mb-1 text-[10px] text-muted-foreground">
-                        <span className="font-bold text-primary">
-                          {msg.sender}
-                        </span>
-                        <span>{time}</span>
-                      </div>
-                      <p className="text-xs break-words">{msg.text}</p>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Chat Input Box */}
-              <form onSubmit={handleSendChat} className="flex gap-2">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Chat with lobby players..."
-                  maxLength={160}
-                  className="flex-1 px-3 py-2 rounded-xl bg-black/60 border border-border text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/60 transition-colors"
-                />
-                <button
-                  type="submit"
-                  disabled={!chatInput.trim()}
-                  className="px-3.5 py-2 rounded-xl bg-primary hover:brightness-110 text-primary-foreground font-mono font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center shadow-sm"
-                >
-                  <Send size={13} />
-                </button>
-              </form>
-            </div>
-          )}
-
-          {/* TAB 2: LEADERBOARD CONTENT */}
-          {activeSideTab === 'LEADERBOARD' && (
-            <div className="flex-1 flex flex-col justify-between min-h-[300px]">
-              <div className="space-y-2 overflow-y-auto max-h-[340px] pr-1">
-                {loadingLeaderboards ? (
-                  <div className="text-center py-10 text-xs font-mono text-muted-foreground animate-pulse">
-                    Scanning realm rankings...
-                  </div>
-                ) : topOperatives.length === 0 ? (
-                  <div className="text-center py-10 text-xs font-mono text-muted-foreground">
-                    No champion rankings recorded yet.
-                  </div>
-                ) : (
-                  topOperatives.map((op, idx) => {
-                    let st: any = { level: 1, credits: 1000 };
-                    try {
-                      if (op.stateData) st = JSON.parse(op.stateData);
-                    } catch {}
-                    const isTop = idx === 0;
-
-                    return (
-                      <div
-                        key={op.id || idx}
-                        className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
-                          isTop
-                            ? 'bg-amber-500/10 border-amber-400/40 shadow-sm'
-                            : 'bg-black/40 border-white/5'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div
-                            className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-mono font-black ${
-                              isTop
-                                ? 'bg-amber-500 text-white font-extrabold'
-                                : idx === 1
-                                ? 'bg-slate-500 text-white'
-                                : idx === 2
-                                ? 'bg-amber-700 text-white'
-                                : 'bg-white/10 text-muted-foreground'
-                            }`}
-                          >
-                            {isTop ? <Crown size={12} /> : idx + 1}
-                          </div>
-                          <div className="truncate">
-                            <div className="text-xs font-bold font-mono text-foreground truncate">
-                              {op.name}
-                            </div>
-                            <div className="text-[10px] font-mono text-primary">
-                              {op.classId || 'WARRIOR'}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="text-right font-mono">
-                          <div className="text-xs font-black text-amber-300">
-                            LVL {st.level || op.level || 1}
-                          </div>
-                          <div className="text-[9px] text-muted-foreground">
-                            {(st.credits || 1000).toLocaleString()} C
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              <div className="p-3 bg-black/40 rounded-xl border border-white/5 mt-3 text-center">
-                <p className="text-[10px] font-mono text-muted-foreground">
-                  Earn EXP & Credits in battle to rank up on the Champions Leaderboard.
-                </p>
-              </div>
-            </div>
-          )}
-        </section>
+        <LobbySidePanel />
       </main>
 
       {/* ── MODALS ── */}

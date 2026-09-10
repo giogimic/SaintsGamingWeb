@@ -1,3 +1,7 @@
+## [2.1.810] - 2026-09-09
+### Added
+- Implemented **Spirit Gates** (Phase 6): Integrated PortalTransitSystem, Socket handlers for map handoffs, Voxel Palette IDs, and seamless 3D rendering clipping hooks in BabylonEngine.
+
 ## [2.1.808] - 2026-09-09
 ### Changed
 - Rebuilt the monolithic game client (`store.ts`, `BabylonEngine.ts`, `index.tsx`) into a decoupled domain-driven architecture in `src/client/`.

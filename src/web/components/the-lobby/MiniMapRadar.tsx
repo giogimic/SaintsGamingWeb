@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useCallback } from 'react';
 import { useGameStore } from './store';
-import { GAME_MAPS } from './data/maps';
+import { GAME_MAPS } from '@/shared/game/maps';
 import { Compass, Map, Settings, Hammer, LogOut, Radio } from 'lucide-react';
 import { useEditorStore } from './editor/editor-store';
 import { soundSynth } from '@/engine/sound-synth';

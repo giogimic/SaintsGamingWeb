@@ -9,7 +9,7 @@ import { Globe, Users, Server, Play, ArrowLeft, Wifi, AlertTriangle, Power } fro
 import { canUseStudioServerControls } from '@/shared/game/studioPermissions';
 import { soundSynth } from '@/engine/sound-synth';
 import { useTheme } from 'next-themes';
-import { MidnightTropicalBackground } from './MidnightTropicalBackground';
+import { MidnightTropicalBackground } from '@/client/ui/shared/MidnightTropicalBackground';
 
 interface ServerInfo {
   id: string;

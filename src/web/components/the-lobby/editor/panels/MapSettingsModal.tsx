@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Settings, Users, Save, Sparkles, Map, Mountain } from 'lucide-react';
-import { loadMap, type GameMapData } from '../../data/maps';
+import { loadMap, type GameMapData } from '@/shared/game/maps';
 import { useGameStore } from '../../store';
 import { useSession } from 'next-auth/react';
 

@@ -12,7 +12,7 @@ import { WorldSimulation } from "@/engine/WorldSimulation";
 import { FloatingHealthBars } from "./FloatingHealthBar";
 import CraftingOverlay from "../crafting-overlay";
 import { isSameBaseMap, toBaseMapId } from "@/shared/net/mapIds";
-import { loadMap } from "../data/maps";
+import { loadMap } from '@/shared/game/maps';
 import { ensureMapHasStudioTilesets } from "@/shared/game/studioTilesetBootstrap";
 import { startMapTransition, joinWorld } from "@/shared/game/lobbyWorldJoin";
 import {
@@ -20,7 +20,7 @@ import {
   getAssetAnimationProfile,
 } from "@/shared/game/creatureCatalog";
 import { normalizeGates } from "@/shared/game/logicComponents";
-import type { GameMapData } from "../data/maps";
+import type { GameMapData } from '@/shared/game/maps';
 import { LOBBY_TOUCH_INTERACT_EVENT, LOBBY_TOUCH_MOVE_EVENT } from "../MobileControls";
 import {
   evaluateEntityTarget,

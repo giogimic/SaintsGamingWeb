@@ -8,7 +8,7 @@ import { getUserCharacters, getTopLobbyOperatives } from '@/app/actions/game';
 import { soundSynth } from '@/engine/sound-synth';
 import { useTheme } from 'next-themes';
 import GameOptionsMenu from './hud/GameOptionsMenu';
-import { MidnightTropicalBackground } from './MidnightTropicalBackground';
+import { MidnightTropicalBackground } from '@/client/ui/shared/MidnightTropicalBackground';
 import {
   Play,
   Volume2,
@@ -41,8 +41,8 @@ import {
   Layers,
 } from 'lucide-react';
 import { canUseStudioServerControls } from '@/shared/game/studioPermissions';
-import { CharacterSpritePreview } from './CharacterSpritePreview';
-import { CharacterDetailPreview } from './CharacterDetailPreview';
+import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
+import { CharacterDetailPreview } from '@/client/ui/shared/CharacterDetailPreview';
 
 // ── Theme Palettes (matching Saints Dynamic Landing Page) ─────
 const THEME_DARK = {

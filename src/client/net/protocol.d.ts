@@ -564,32 +564,36 @@ export interface ClientToServerEvents {
 
   // Combat
   combat_action: (data: any) => void;
-  combat_cast: (data: CombatCastPayload) => void;
+  combat_cast: (data: any) => void;
   encounter_check: (data: any) => void;
-  battle_submit_action: (data: BattleSubmitPayload) => void;
+  battle_invite_send: (data: { targetId: string; targetName: string }) => void;
+  battle_submit_action: (data: any) => void;
   accept_battle: (from: string) => void;
 
   // Chat
-  global_chat: (data: ChatSendPayload) => void;
+  global_chat: (message: string) => void;
   chat_message: (data: any) => void;
   party_chat: (message: string) => void;
 
   // NPC & Dialogue
   npc_interact: (data: { entityId: string }) => void;
-  dialogue_select: (data: { npcId: string; optionIndex: number }) => void;
+  dialogue_select: (data: any) => void;
 
-  // Economy
-  gather_interact: (data: GatherInteractPayload) => void;
+  // Economy & Inventory
+  use_item: (data: { itemId: string }) => void;
+  drop_item: (data: { itemId: string }) => void;
+  gather_interact: (data: any) => void;
   pickup_loot: (data: { lootId: string }) => void;
-  craft_item: (data: CraftItemPayload) => void;
-  shop_buy: (data: ShopBuyPayload) => void;
-  shop_sell: (data: ShopSellPayload) => void;
+  craft_item: (recipeSlug: string) => void;
+  shop_buy: (data: { itemSlug: string; quantity: number }) => void;
+  shop_sell: (data: { itemSlug: string; quantity: number }) => void;
   shop_catalog: (data: any) => void;
-  claim_starter: (data: ClaimStarterPayload) => void;
+  claim_starter: (data: any) => void;
   gtc_create_listing: (data: any) => void;
   gtc_purchase_listing: (data: any) => void;
 
   // Party
+  party_invite_send: (data: { targetName: string }) => void;
   party_invite: (data: any) => void;
   party_invite_accept: () => void;
   party_invite_decline: () => void;

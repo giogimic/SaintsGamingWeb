@@ -9,7 +9,7 @@ import { stripEditorOverlaysFromMapPayload } from '@/shared/game/mapLayers';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { normalizeStudioMapVisuals, formatMapWriteError, buildBorderedLogicGrid } from '@/shared/game/studioMapCreate';
 import { invalidateMapCache } from '@/shared/game/mapCache';
-import { invalidateMapCache as invalidateLobbyMapCache } from '../../data/maps';
+import { invalidateMapCache as invalidateLobbyMapCache, GAME_MAPS } from '@/shared/game/maps';
 import { isGoMmoSocketEnabled } from '@/shared/net/goMmoSocket';
 import { toBaseMapId } from '@/shared/net/mapIds';
 import { useGameStore } from '../../store';
@@ -277,7 +277,7 @@ export class MapPersistenceService {
       invalidateLobbyMapCache(baseMapId);
 
       // Trigger re-load of map data
-      const { loadMap } = await import('../../data/maps');
+      const { loadMap } = await import('@/shared/game/maps');
       const reloaded = await loadMap(baseMapId);
       useGameStore.getState().setActiveMapData(reloaded);
       useEditorStore.getState().clearMapDirty();

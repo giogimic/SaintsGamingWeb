@@ -151,7 +151,7 @@ import { RuleDebuggerOverlay } from './RuleDebuggerOverlay';
 import { DraggablePanel } from './DraggablePanel';
 import { StudioEscapeMenu } from './StudioEscapeMenu';
 import { StudioContextualBar } from './StudioContextualBar';
-import { setStudioMode as setStudioModeGlobal } from '../data/maps';
+import { setStudioMode as setStudioModeGlobal } from '@/shared/game/maps';
 
 
 export const StudioEditorShell: React.FC = () => {

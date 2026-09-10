@@ -11,7 +11,7 @@ import {
 import { useGameStore } from '../../store';
 import { useEditorStore } from '../editor-store';
 import { MapIndexEntry, searchMapIndex, unregisterMap } from '../../data/map-index';
-import { loadMap } from '../../data/maps';
+import { loadMap } from '@/shared/game/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { buildNewStudioMap, formatMapWriteError } from '@/shared/game/studioMapCreate';
 import { soundSynth } from '@/engine/sound-synth';

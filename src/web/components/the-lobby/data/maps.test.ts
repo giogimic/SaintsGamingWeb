@@ -3,8 +3,8 @@ import {
   loadMap,
   getClientAtlas,
   invalidateClientAtlas,
-  invalidateMapCache,
-} from './maps';
+} from '@/shared/game/maps';
+import { invalidateMapCache } from '@/shared/game/mapCache';
 
 describe('Map Loader & Atlas Invalidation Engine', () => {
   beforeEach(() => {

@@ -75,9 +75,9 @@ import { resolveSafePlayerSpawn } from '@/shared/game/worldSpawns';
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
 import { fetchAllMaps } from '@/app/actions/admin/game-admin';
 import { fetchAllGameQuests } from '@/app/actions/admin/game-dev';
-import { GAME_MAPS, loadMap, patchCachedMapTile, preloadAdjacentMaps, invalidateMapCache } from './data/maps';
+import { GAME_MAPS, loadMap, patchCachedMapTile, preloadAdjacentMaps, invalidateMapCache } from '@/shared/game/maps';
 import { invalidateMapCache as invalidateSharedMapCache } from '@/shared/game/mapCache';
-import { QUEST_DB } from './data/quests';
+import { QUEST_DB } from '@/shared/game/quests';
 
 import { CharacterCreator } from './character-creator';
 import { CharacterSelector } from './character-selector';
@@ -91,7 +91,7 @@ import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
 import GameToastStack from './GameToastStack';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 import { ViewfinderOverlay } from './hud/ViewfinderOverlay';
-import { MidnightTropicalBackground } from './MidnightTropicalBackground';
+import { MidnightTropicalBackground } from '@/client/ui/shared/MidnightTropicalBackground';
 
 import { MobileGameLauncher } from './MobileGameLauncher';
 

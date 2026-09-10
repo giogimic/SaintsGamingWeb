@@ -1,7 +1,7 @@
 'use client';
 
 import { useGameStore } from './store';
-import { ITEM_DB } from './data/items';
+import { ITEM_DB } from '@/shared/game/items';
 import { useState, useMemo } from 'react';
 import {
   Package,

@@ -63,6 +63,7 @@ export interface HudEngineConfig {
     achievements: boolean;
     studio: boolean;
   };
+  performanceSpiritGates: boolean;
 }
 
 const DEFAULT_HUD_CONFIG: HudEngineConfig = {
@@ -90,6 +91,7 @@ const DEFAULT_HUD_CONFIG: HudEngineConfig = {
     achievements: true,
     studio: true,
   },
+  performanceSpiritGates: true,
 };
 
 // ─── Store ────────────────────────────────────────────────────────────────────

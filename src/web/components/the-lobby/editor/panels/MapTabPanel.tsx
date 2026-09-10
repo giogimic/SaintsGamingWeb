@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useGameStore } from '../../store';
 import { useEditorStore } from '../editor-store';
-import { GAME_MAPS, loadMap, type GameMapData } from '../../data/maps';
+import { GAME_MAPS, loadMap, type GameMapData } from '@/shared/game/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { soundSynth } from '@/engine/sound-synth';
 import { toBaseMapId } from '@/shared/net/mapIds';

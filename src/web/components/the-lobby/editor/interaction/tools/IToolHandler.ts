@@ -5,7 +5,7 @@
  */
 
 import type { BabylonEngine } from '@/engine/BabylonEngine';
-import type { GameMapData } from '../../../data/maps';
+import type { GameMapData } from '@/shared/game/maps';
 import type { ToolPointerEvent, EditorToolId } from '../types';
 
 export interface ToolExecutionContext {

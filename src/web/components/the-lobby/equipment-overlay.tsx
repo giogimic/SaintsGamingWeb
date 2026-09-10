@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { useGameStore } from './store';
-import { ITEM_DB } from './data/items';
+import { ITEM_DB } from '@/shared/game/items';
 import { calculatePlayerCombatStats } from './combat';
 import { soundSynth } from '@/engine/sound-synth';
 import {
