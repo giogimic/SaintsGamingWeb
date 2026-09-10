@@ -5,7 +5,6 @@ import { revalidatePath } from 'next/cache';
 import { checkAdminPermission } from '../admin/game-admin';
 import {
   StarterHeroData,
-  DEFAULT_STARTER_HERO_PRESETS,
 } from '@/shared/game/starterHeroCatalog';
 
 export type { StarterHeroData };
@@ -21,20 +20,17 @@ export async function getStarterHeroes(gameId?: string) {
       orderBy: { sortOrder: 'asc' },
     });
     // Fallback: if scoped profile has no heroes yet, show all active
-    if (heroes.length === 0) {
+    if (heroes.length === 0 && gameId) {
       heroes = await prisma.starterHero.findMany({
         where: { isActive: true },
         orderBy: { sortOrder: 'asc' },
       });
     }
-    // Ultimate fallback if database is fresh / unseeded
-    if (heroes.length === 0) {
-      return { success: true, data: DEFAULT_STARTER_HERO_PRESETS };
-    }
+    // No hardcoded defaults — archetypes must be created via Setup or Studio
     return { success: true, data: heroes };
   } catch (err) {
     console.error('[getStarterHeroes]', err);
-    return { success: true, data: DEFAULT_STARTER_HERO_PRESETS };
+    return { success: true, data: [] };
   }
 }
 

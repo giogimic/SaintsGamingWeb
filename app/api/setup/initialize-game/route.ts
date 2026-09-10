@@ -6,7 +6,7 @@ import { generateDefaultWorldDoc, type VoxelWorldDocV3 } from '@/shared/game/vox
 import { generateVoxelWorldDoc } from '@/shared/game/voxel/VoxelWorldGenerator';
 import { DEFAULT_STUDIO_TILESETS, DEFAULT_STUDIO_GROUND_GID } from '@/shared/game/studioTilesetBootstrap';
 import { notifyGoMapSynced } from '@/server/goMmoNotify';
-import { DEFAULT_STARTER_HERO_PRESETS } from '@/shared/game/starterHeroCatalog';
+// DEFAULT_STARTER_HERO_PRESETS removed — archetypes only come from user input or Studio
 import { DEFAULT_PLAYABLE_CLASSES } from '@/shared/game/classCatalog';
 import { classDataToDb } from '@/shared/game/classDefMap';
 import { DEMO_LOGIC_TILES } from '@/shared/game/setup/logicTilesSeed';
@@ -209,10 +209,10 @@ export async function POST(req: Request) {
         });
       }
 
-      // 4c. Upsert Starter Heroes
+      // 4c. Upsert Starter Heroes (only if explicitly provided during setup — no hardcoded defaults)
       const charList = (Array.isArray(body.characters) && body.characters.length > 0)
         ? body.characters
-        : DEFAULT_STARTER_HERO_PRESETS;
+        : [];
 
       for (let i = 0; i < charList.length; i++) {
         const char = charList[i];

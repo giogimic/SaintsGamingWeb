@@ -48,6 +48,9 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📝 Changelog
 
+### v2.1.815 - Remove Hardcoded Default Archetypes
+- **No More Ghost Archetypes:** Removed `DEFAULT_STARTER_HERO_PRESETS` fallback from `getStarterHeroes()` and the setup wizard. Archetypes now only exist if explicitly created through the Setup Wizard or Hero Studio. If none exist, the character creator shows a clear "No archetypes available" message instead of injecting 5 hardcoded defaults.
+
 ### v2.1.814 - Lobby Layout Fix (White Square / Purple Backdrop)
 - **Root Cause:** The lobby's `MainLayoutShell` branch was rendering `AmbientBackground` (purple tropical backdrop), the site `Navbar`, and `GlobalBottomBar` as siblings of the game canvas. Since `TheLobby` uses `fixed inset-0 z-30`, these elements overlapped — the game HUD went under the navbar and the canvas appeared as a white square on the purple ambient background.
 - **Fix:** Lobby now uses the same full-bleed pattern as Studio — no site chrome (navbar/bottombar/ambient bg). The game owns the entire viewport.
