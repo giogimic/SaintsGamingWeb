@@ -63,7 +63,7 @@ export const FractalDomainsPanel: React.FC = () => {
       showToast(`Already in Fractal Domain: ${mapId}`);
       return;
     }
-    useGameStore.getState().emitSocketEvent('join_map', {
+    useGameStore.getState().emitSocketEvent?.('join_map', {
       accountId: useGameStore.getState().sessionInfo?.accountId,
       characterId: useGameStore.getState().sessionInfo?.characterId,
       mapId,
