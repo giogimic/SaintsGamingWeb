@@ -1,3 +1,8 @@
+## 2.1.827
+- Fix(Client): Resolve missing 3D map by correctly emitting join_map on boot
+- Fix(Client): Remove full-screen HUD pointer block allowing map interaction
+- Fix(Client): Resolve broken Hotbar ability SVG icons
+
 ## [2.1.824] - 2026-09-10
 ### Added
 - **Multi-Chunk Structure Anchor System**: Added the ability to seamlessly anchor authored VOXEL structures into infinite FRACTAL domains.
