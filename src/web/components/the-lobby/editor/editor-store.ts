@@ -659,6 +659,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 600,
     zIndex: 10,
   },
+  fractals: {
+    id: 'fractals',
+    title: 'Fractal Domains',
+    isOpen: false,
+    isCollapsed: false,
+    x: 150,
+    y: 150,
+    width: 600,
+    height: 500,
+    zIndex: 10,
+  },
   build: {
     id: 'build',
     title: 'World Builder',
