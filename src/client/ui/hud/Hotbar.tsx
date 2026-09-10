@@ -235,7 +235,7 @@ export function Hotbar() {
 
   return (
     <div
-      className="pointer-events-auto select-none font-mono"
+      className="absolute bottom-4 left-1/2 -translate-x-1/2 z-40 pointer-events-auto select-none font-mono"
       style={{
         filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.7))',
         opacity: hudConfig?.opacity ?? 0.95,

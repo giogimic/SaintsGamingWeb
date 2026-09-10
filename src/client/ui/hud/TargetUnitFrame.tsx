@@ -84,7 +84,7 @@ export function TargetUnitFrame() {
   };
 
   return (
-    <div className="pointer-events-none flex flex-col items-center select-none font-mono" data-testid="target-frame">
+    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none font-mono" data-testid="target-frame">
       <div
         className={`pointer-events-auto min-w-[260px] md:min-w-[300px] bg-black/40 border border-white/10 ${radiusClass} p-2.5 backdrop-blur-xl relative overflow-hidden transition-all hover:border-amber-400/30`}
         style={{

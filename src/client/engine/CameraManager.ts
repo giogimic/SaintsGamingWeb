@@ -16,7 +16,7 @@ export class CameraManager {
     this.camera.setTarget(new BABYLON.Vector3(0, 0, 0));
     
     this.camera.mode = BABYLON.Camera.ORTHOGRAPHIC_CAMERA;
-    this.updateOrthoSize(canvas);
+    this.updateOrthoSize();
 
     // Attach control for manual panning (optional/debug)
     // this.camera.attachControl(canvas, true);
@@ -25,11 +25,17 @@ export class CameraManager {
     scene.onBeforeRenderObservable.add(this.update);
   }
 
-  private updateOrthoSize(canvas: HTMLCanvasElement) {
-    if (!this.camera) return;
+  private updateOrthoSize() {
+    if (!this.camera || !this.scene) return;
+    
+    const engine = this.scene.getEngine();
+    const width = engine.getRenderWidth();
+    const height = engine.getRenderHeight();
+    
+    if (width === 0 || height === 0) return;
     
     // Scale viewport based on aspect ratio
-    const aspect = canvas.width / canvas.height;
+    const aspect = width / height;
     const viewSize = 15; // Number of tiles visible vertically
     
     this.camera.orthoTop = viewSize;
@@ -39,6 +45,7 @@ export class CameraManager {
   }
 
   private update = () => {
+    this.updateOrthoSize();
     if (!this.camera) return;
 
     // Follow local player

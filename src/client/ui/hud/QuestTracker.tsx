@@ -59,7 +59,7 @@ export function QuestTracker() {
   // Minimized / Dismissed state toast pill
   if (isDismissed) {
     return (
-      <div className="pointer-events-auto transition-all duration-200 ease-out animate-in fade-in select-none">
+      <div className="absolute top-40 right-4 z-30 pointer-events-auto transition-all duration-200 ease-out animate-in fade-in select-none">
         <HudPanelShell
           className="cursor-pointer hover:border-amber-400 bg-black/80"
           noPadding
@@ -101,7 +101,7 @@ export function QuestTracker() {
       );
 
     return (
-      <div className="pointer-events-auto w-[min(92vw,220px)] transition-all duration-200 ease-out animate-in fade-in slide-in-from-top-1 select-none">
+      <div className="absolute top-40 right-4 z-30 pointer-events-auto w-[min(92vw,220px)] transition-all duration-200 ease-out animate-in fade-in slide-in-from-top-1 select-none">
         <HudPanelShell
           title={
             isSpyderMap
@@ -125,7 +125,7 @@ export function QuestTracker() {
   }
 
   return (
-    <div className="pointer-events-auto w-[min(92vw,230px)] space-y-2 transition-all duration-200 ease-out animate-in fade-in slide-in-from-top-1 select-none">
+    <div className="absolute top-40 right-4 z-30 pointer-events-auto w-[min(92vw,230px)] space-y-2 transition-all duration-200 ease-out animate-in fade-in slide-in-from-top-1 select-none">
       {quests.map((quest) => {
         const obj = quest.objective;
         const isComplete = obj && quest.progress >= obj.requiredQty;

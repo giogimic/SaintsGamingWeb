@@ -1,3 +1,10 @@
+## [2.1.811] - 2026-09-09
+### Fixed
+- **HUD Positioning Fix:** Resolved an issue where decoupled HUD UI overlays (`TargetUnitFrame`, `MiniMapRadar`, `Hotbar`, `QuestTracker`) were stacking on top of each other by restoring their absolute positioning containers.
+- **Camera Aspect Fix:** Fixed a severe zoom/scaling issue caused by `CameraManager` initializing its orthographic size against raw HTML canvas attributes before CSS layout resolution. `updateOrthoSize` now queries the Babylon engine's physical render width/height every frame to perfectly adapt to screen resizing.
+### Added
+- **Documentation:** Added `Section 16: UI & Window Styling Standards` to the Saints Gaming Bible to formalize rules around contextual UI tokens (`.sg-glass`, `.lobby-panel`) and prohibit cyberpunk themes.
+
 ## [2.1.810] - 2026-09-09
 ### Added
 - Implemented **Spirit Gates** (Phase 6): Integrated PortalTransitSystem, Socket handlers for map handoffs, Voxel Palette IDs, and seamless 3D rendering clipping hooks in BabylonEngine.

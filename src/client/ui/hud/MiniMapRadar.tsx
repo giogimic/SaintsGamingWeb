@@ -228,7 +228,7 @@ export function MiniMapRadar({ onOpenOptions, enableStudio = false }: MiniMapRad
 
   return (
     <div
-      className="pointer-events-auto w-[min(92vw,180px)] select-none font-mono"
+      className="absolute top-4 right-4 z-40 pointer-events-auto w-[min(92vw,180px)] select-none font-mono"
       style={{
         filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.7))',
         opacity: hudConfig?.opacity ?? 0.95,
