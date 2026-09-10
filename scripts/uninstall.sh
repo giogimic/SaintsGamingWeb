@@ -54,7 +54,23 @@ if command -v systemctl &> /dev/null; then
     fi
 fi
 
-# 3. Wipe Database
+# 3. Stop and remove Docker containers & volumes
+echo -e "${CYAN}[*] Stopping Docker containers and wiping volumes...${NC}"
+if command -v docker &> /dev/null; then
+    docker rm -f saints-gaming-web saints-gaming-db saints-lobby 2>/dev/null || true
+    docker rmi -f saints-lobby-img saints-gaming-web 2>/dev/null || true
+    if command -v docker-compose &> /dev/null; then
+        docker-compose down -v --rmi all --remove-orphans 2>/dev/null || true
+    elif docker compose version &> /dev/null; then
+        docker compose down -v --rmi all --remove-orphans 2>/dev/null || true
+    fi
+    docker volume rm saints_lobby_data 2>/dev/null || true
+    echo -e "${GREEN}[✓] Docker containers and volumes removed.${NC}"
+else
+    echo -e "${YELLOW}[-] Docker not found, skipping container cleanup.${NC}"
+fi
+
+# 4. Wipe Database
 echo -e "${CYAN}[*] Wiping database...${NC}"
 if [ -d "node_modules" ]; then
     npx prisma db push --force-reset --accept-data-loss || echo -e "${RED}[!] Failed to reset database. You may need to drop the database manually in MySQL.${NC}"

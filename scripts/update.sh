@@ -613,8 +613,8 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
     fi
 
     # MMO socket cleanup
-    if docker ps -a --format '{{.Names}}' | grep -q '^saints-gaming-mmo$'; then
-        docker rm -f saints-gaming-mmo 2>/dev/null || true
+    if docker ps -a --format '{{.Names}}' | grep -q '^saints-lobby$'; then
+        docker rm -f saints-lobby 2>/dev/null || true
     fi
 
     if [ "$NEED_GO_BUILD" -eq 1 ]; then

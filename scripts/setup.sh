@@ -113,7 +113,8 @@ elif [ "$SETUP_ACTION" = "4" ]; then
     IS_NUCLEAR_MODE=1
 
     # Force-stop & purge running containers
-    command -v docker &>/dev/null && docker rm -f saints-gaming-web saints-gaming-db go-mmo 2>/dev/null || true
+    command -v docker &>/dev/null && docker rm -f saints-gaming-web saints-gaming-db saints-lobby 2>/dev/null || true
+    command -v docker &>/dev/null && docker rmi -f saints-lobby-img saints-gaming-web 2>/dev/null || true
     command -v docker-compose &>/dev/null && docker-compose down -v 2>/dev/null || true
 
     # Wipe database volumes & reset environment
