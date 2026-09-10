@@ -453,6 +453,11 @@ export interface MapIndexEntry {
   gameId: string | null;
   version: number;
   updatedAt?: string;
+  proceduralStructures?: Array<{
+    voxelMapId: string;
+    spawnWeight: number;
+    yOffset?: number;
+  }>;
 }
 
 /** List WorldMap index rows from the DB (no grid payload). */
