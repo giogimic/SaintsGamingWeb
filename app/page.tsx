@@ -61,6 +61,16 @@ export default function LandingPage() {
   useEffect(() => {
     setMounted(true);
     getDiscordInviteUrl().then(setDiscordLink);
+    
+    // Check if the game is freshly installed and needs setup
+    fetch('/api/setup/status')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.status && !data.status.isSetupCompleted) {
+          window.location.href = '/setup';
+        }
+      })
+      .catch(err => console.error("Setup check failed:", err));
   }, []);
 
   const isLight = mounted && theme === "light";

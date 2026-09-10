@@ -19,7 +19,9 @@ import {
   DEFAULT_REALM_NAME,
   DEFAULT_REALM_DESCRIPTION,
   SETUP_SETTING_KEYS,
+  getSystemSetupStatus,
 } from "@/shared/game/setup/setupDetection";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Home",
@@ -32,6 +34,11 @@ export default async function HomePage() {
   let realmDescription = DEFAULT_REALM_DESCRIPTION;
 
   try {
+    const setupStatus = await getSystemSetupStatus(prisma);
+    if (!setupStatus.isSetupCompleted) {
+      redirect('/setup');
+    }
+
     const [nameSetting, descSetting] = await Promise.all([
       prisma.siteSetting.findUnique({ where: { key: SETUP_SETTING_KEYS.REALM_NAME } }),
       prisma.siteSetting.findUnique({ where: { key: SETUP_SETTING_KEYS.REALM_DESCRIPTION } }),
@@ -39,6 +46,7 @@ export default async function HomePage() {
     if (nameSetting?.value?.trim()) realmName = nameSetting.value.trim();
     if (descSetting?.value?.trim()) realmDescription = descSetting.value.trim();
   } catch (error) {
+    if ((error as any).message === 'NEXT_REDIRECT') throw error;
     console.error("[HomePage] Failed to fetch realm settings:", error);
   }
 

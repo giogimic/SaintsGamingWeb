@@ -48,6 +48,10 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📝 Changelog
 
+### v2.1.813 - Game Client & Setup Redirect Fixes
+- **Lobby Architecture:** Delegated `PlayerClient.tsx` back to the battle-tested monolithic `index.tsx` component to restore immediate functionality (movement, chunk loading, Studio-to-Lobby integration) while the new `src/client/` architecture is built in parallel.
+- **Fresh Install Redirects:** Added `getSystemSetupStatus` check to the root page (`/`) and home page (`/home`) so that new installs immediately push admins to the web setup wizard (`/setup`).
+
 ### v2.1.812 - Setup Script UX & Build Reliability
 - **Clearer Setup Prompts:** Rewrote all `whiptail` menus to use plain-language descriptions explaining what each option does and why you'd pick it.
 - **Live Build Output:** Replaced the silent background spinner with live Docker build output so you can actually see what's happening (npm ci progress, Next.js compilation, errors).

@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { runBootSequence } from '@/client/boot/BootSequence';
-import { ClientApp } from '@/client/ClientApp';
+import React from 'react';
+import TheLobby from './index';
 
-/** Player-facing lobby client — fully rebuilt in src/client */
+/** Player-facing lobby client — delegating to monolithic index.tsx for now */
 export default function PlayerClient({
   characterId,
   forceCreate,
@@ -12,17 +11,13 @@ export default function PlayerClient({
   characterId?: string;
   forceCreate?: boolean;
 }) {
-  useEffect(() => {
-    // In a real session, we'd fetch the active account ID and permission level.
-    // For now we'll stub it with a test account.
-    runBootSequence({
-      accountId: 'test_account',
-      permissionLevel: 0,
-      characterId,
-      initialMapId: 'LOBBY',
-      isStudio: false,
-    });
-  }, [characterId]);
-
-  return <ClientApp />;
+  return (
+    <div className="w-full h-full">
+      <TheLobby
+        characterId={characterId}
+        forceCreate={forceCreate}
+        mode="player"
+      />
+    </div>
+  );
 }
