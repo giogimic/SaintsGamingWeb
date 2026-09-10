@@ -58,10 +58,9 @@ func getenvBool(key string, fallback bool) bool {
 	}
 }
 
-// Load reads environment. Default listen :3001 so Next can keep :3000
-// (existing Caddy installs reverse_proxy the Go MMO subdomain to :3001).
+// Load reads environment. Default listen :24011.
 func Load() Config {
-	port := getenvInt("GO_MMO_PORT", getenvInt("PORT", 3001))
+	port := getenvInt("GO_MMO_PORT", getenvInt("PORT", 24011))
 	host := getenv("GO_MMO_HOST", getenv("HOSTNAME", "0.0.0.0"))
 	aoiSize := getenvInt("GO_MMO_AOI_ZONE_SIZE", getenvInt("MMO_AOI_ZONE_SIZE", 64))
 	if aoiSize <= 0 {
@@ -81,7 +80,7 @@ func Load() Config {
 		MaxPlayers:    getenvInt("GO_MMO_MAX_PLAYERS", 500),
 		LobbyCapacity: getenvInt("GO_MMO_LOBBY_CAPACITY", 50),
 		CORSOrigin:    getenv("GO_MMO_CORS_ORIGIN", "*"),
-		PublicBaseURL: getenv("GO_MMO_PUBLIC_URL", "http://127.0.0.1:3001"),
+		PublicBaseURL: getenv("GO_MMO_PUBLIC_URL", "http://127.0.0.1:24011"),
 		InternalRpcSecret: getenv("INTERNAL_RPC_SECRET", "dev-rpc-secret-123"),
 		NextJsUrl:     getenv("NEXT_JS_URL", "http://127.0.0.1:3000"),
 	}

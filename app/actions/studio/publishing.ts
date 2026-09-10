@@ -127,7 +127,7 @@ export async function createPublishSnapshot(input: {
     // Fetch Draft Maps from Go Server
     let draftMaps: any[] = [];
     try {
-      const goMmoBase = process.env.GO_MMO_INTERNAL_URL || process.env.NEXT_PUBLIC_GO_MMO_URL || 'http://localhost:3002';
+      const goMmoBase = process.env.GO_MMO_INTERNAL_URL || process.env.NEXT_PUBLIC_GO_MMO_URL || 'http://localhost:24011';
       const res = await fetch(`${goMmoBase}/api/maps?action=drafts`);
       if (res.ok) {
         draftMaps = await res.json();
@@ -285,7 +285,7 @@ export async function deployRelease(snapshotId: string) {
     const maps = payload.maps || [];
 
     if (maps.length > 0) {
-      const goMmoBase = process.env.GO_MMO_INTERNAL_URL || process.env.NEXT_PUBLIC_GO_MMO_URL || 'http://localhost:3002';
+      const goMmoBase = process.env.GO_MMO_INTERNAL_URL || process.env.NEXT_PUBLIC_GO_MMO_URL || 'http://localhost:24011';
       const secret = process.env.AUTH_SECRET || '';
 
       try {
