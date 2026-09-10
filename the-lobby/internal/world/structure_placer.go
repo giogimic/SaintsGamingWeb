@@ -1,7 +1,6 @@
 package world
 
 import (
-	"fmt"
 	"math"
 )
 
