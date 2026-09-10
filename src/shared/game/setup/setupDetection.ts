@@ -89,10 +89,10 @@ export function evaluateSetupStatus(params: {
     params.setupSettingVal === 'true' ||
     params.setupSettingVal === '1';
 
-  // An existing installation is indicated by existing authored maps, active game configs, or existing user accounts.
+  // An existing installation is indicated by existing authored maps or active game configs.
+  // We no longer check userCount > 1, because an admin might wipe the game data (maps) but keep users.
   const hasExistingData =
     params.mapCount > 0 ||
-    params.userCount > 1 ||
     Boolean(params.gameConfigActive);
 
   // If the server is updated with existing data OR setup was explicitly completed, setup is completed
