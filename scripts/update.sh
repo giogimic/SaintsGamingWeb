@@ -254,6 +254,7 @@ if [ "$UPDATE_MODE" = "restart" ]; then
         echo -e "${GREEN}[✓] PM2 services restarted.${NC}"
     fi
     if command -v systemctl &>/dev/null; then
+        if systemctl list-unit-files | grep -q saints-lobby; then sudo systemctl restart saints-lobby 2>/dev/null; fi
         if systemctl is-active --quiet caddy; then sudo systemctl reload caddy 2>/dev/null; fi
         if systemctl is-active --quiet nginx; then sudo systemctl reload nginx 2>/dev/null; fi
     fi
@@ -705,7 +706,7 @@ else
             ( cd the-lobby && go build -o bin/server ./cmd/server ) || echo -e "${RED}[!] Go build failed.${NC}"
             echo -e "${GREEN}[✓] Go binary built.${NC}\n"
         fi
-        if command -v systemctl &>/dev/null && systemctl is-active --quiet saints-lobby 2>/dev/null; then
+        if command -v systemctl &>/dev/null && systemctl list-unit-files | grep -q saints-lobby 2>/dev/null; then
             echo -e "${CYAN}[*] Restarting Go MMO systemd service...${NC}"
             sudo systemctl restart saints-lobby
             echo -e "${GREEN}[✓] Go service restarted.${NC}\n"
