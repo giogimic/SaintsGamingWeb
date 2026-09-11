@@ -83,7 +83,7 @@ export function onJoinRejected(data: JoinRejectedPayload): void {
   console.warn(`[worldHandlers] Join rejected for ${data.mapId}: ${data.message} (${data.reason})`);
   
   // Reset world session state so the UI returns to idle (re-enabling Enter World button)
-  useWorldStore.getState().setWorldSessionState('none');
+  useWorldStore.getState().setWorldSessionState('not_joined');
   
   // Note: we do NOT invoke WorldStreamer, do NOT reconnect socket, and do NOT restart boot FSM.
   // The user remains at character select to try again.

@@ -16,7 +16,7 @@ vi.mock('../../engine/streaming/WorldStreamer', () => ({
 describe('worldHandlers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useWorldStore.setState({ worldJoinSeq: 0, currentMapId: null, instanceId: null, worldSessionState: 'none' });
+    useWorldStore.setState({ worldJoinSeq: 0, currentMapId: null, instanceId: null, worldSessionState: 'not_joined' });
     useSessionStore.setState({ bootState: 'NONE', serverTimeOffset: 0 });
     usePlayerStore.setState({ player: { x: 0, y: 0, z: 0 } as any });
   });
@@ -52,7 +52,7 @@ describe('worldHandlers', () => {
       joinSeq: 1
     });
 
-    expect(useWorldStore.getState().worldSessionState).toBe('none');
+    expect(useWorldStore.getState().worldSessionState).toBe('not_joined');
     expect(worldStreamer.loadManifest).not.toHaveBeenCalled();
   });
 

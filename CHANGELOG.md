@@ -1,3 +1,7 @@
+## [2.1.843] - 2026-09-11
+### Fixed
+- Fixed TypeScript build error in `worldHandlers.ts` by correcting the `WorldSessionState` type from `'none'` to `'not_joined'`.
+
 ## [2.1.842] - 2026-09-11
 ### Fixed
 - Fixed client hanging on "CONNECTING..." indefinitely when the server rejects a map join. The client now gracefully handles the `join_rejected` socket event and returns the UI to an idle state without invoking WorldStreamer.
