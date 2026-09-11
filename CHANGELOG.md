@@ -1,3 +1,9 @@
+## [2.1.842] - 2026-09-11
+### Fixed
+- Fixed client hanging on "CONNECTING..." indefinitely when the server rejects a map join. The client now gracefully handles the `join_rejected` socket event and returns the UI to an idle state without invoking WorldStreamer.
+### Removed
+- Removed the dead `BootSequence.ts` FSM logic which contained an obsolete `LOBBY` fallback. The production runtime now explicitly relies on `CharacterSelectScene` and `ClientApp` for the authoritative world-join lifecycle.
+
 ## [2.1.841] - 2026-09-11
 ### Fixed
 - Fixed Go MMO socket connection rejecting valid joins during boot sequence by gracefully failing back to base WorldMap records when the strict WorldMapVersion INNER JOIN returns no rows for legacy/unsynced maps.

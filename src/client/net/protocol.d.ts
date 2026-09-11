@@ -27,6 +27,13 @@ export interface MapJoinedPayload {
   joinSeq?: number;
 }
 
+export interface JoinRejectedPayload {
+  mapId: string;
+  joinSeq?: number;
+  reason: string;
+  message: string;
+}
+
 export interface PeerSnapshot {
   socketId: string;
   accountId?: string;
@@ -500,6 +507,7 @@ export interface VoxelEditRequest {
 export interface ServerToClientEvents {
   // Shard & Lifecycle
   map_joined: (data: MapJoinedPayload) => void;
+  join_rejected: (data: JoinRejectedPayload) => void;
   map_players: (players: Record<string, PeerSnapshot>) => void;
   player_joined: (data: PeerSnapshot) => void;
   player_left: (data: { socketId: string } | string) => void;

@@ -46,6 +46,7 @@ export function registerAllHandlers(): void {
 
   // World
   socket.on('map_joined', worldHandlers.onMapJoined);
+  socket.on('join_rejected', worldHandlers.onJoinRejected);
   socket.on('content_reload', worldHandlers.onContentReload);
   socket.on('tile_changed', worldHandlers.onTileChanged);
   socket.on('chunk_data', worldHandlers.onChunkData);
@@ -119,6 +120,7 @@ export function unregisterAllHandlers(): void {
   socket.removeAllListeners('player_left');
   socket.removeAllListeners('player_defeated');
   socket.removeAllListeners('map_joined');
+  socket.removeAllListeners('join_rejected');
   socket.removeAllListeners('content_reload');
   socket.removeAllListeners('tile_changed');
   socket.removeAllListeners('chunk_data');

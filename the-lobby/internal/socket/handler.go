@@ -313,6 +313,12 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 	base := world.ResolvePlayableBase(req.MapID, req.Lobby, req.ForceDemo)
 	if _, err := h.eng.World().GetDef(base); err != nil {
 		log.Printf("[socket] JOIN_REJECT account=%s reason=map_not_found mapId=%s err=%v", accountID, base, err)
+		h.EmitToSocket(sid, protocol.EvJoinRejected, protocol.JoinRejectedPayload{
+			MapID:   base,
+			JoinSeq: req.JoinSeq,
+			Reason:  "map_not_found",
+			Message: "Failed to resolve world map.",
+		})
 		h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "Failed to resolve world map."})
 		return
 	}
@@ -321,6 +327,12 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 	if req.CharacterID != "" {
 		if existing := h.eng.Players().GetByCharacter(req.CharacterID); existing != nil && existing.AccountID != accountID {
 			log.Printf("[socket] JOIN_REJECT account=%s char=%s reason=character_owned_by_other targetAccount=%s", accountID, req.CharacterID, existing.AccountID)
+			h.EmitToSocket(sid, protocol.EvJoinRejected, protocol.JoinRejectedPayload{
+				MapID:   base,
+				JoinSeq: req.JoinSeq,
+				Reason:  "character_owned_by_other",
+				Message: "Character is currently active on another account.",
+			})
 			h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "Character is currently active on another account."})
 			return
 		}
@@ -386,6 +398,12 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 	inst, err := h.eng.World().JoinMap(base, accountID, req.IsPrivate, req.PIE)
 	if err != nil {
 		log.Printf("[socket] JOIN_REJECT account=%s reason=%v", accountID, err)
+		h.EmitToSocket(sid, protocol.EvJoinRejected, protocol.JoinRejectedPayload{
+			MapID:   base,
+			JoinSeq: req.JoinSeq,
+			Reason:  "join_failed",
+			Message: "join failed: " + err.Error(),
+		})
 		h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "join failed: " + err.Error()})
 		return
 	}

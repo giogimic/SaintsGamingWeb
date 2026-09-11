@@ -7,6 +7,7 @@
  */
 import type {
   MapJoinedPayload,
+  JoinRejectedPayload,
   ContentReloadPayload,
   TileChangedPayload,
   ChunkDataPayload,
@@ -65,6 +66,27 @@ export function onMapJoined(data: MapJoinedPayload): void {
   });
 
   console.log(`[worldHandlers] Joined map: ${data.mapId} at (${data.x}, ${data.y}, ${data.z})`);
+}
+
+/**
+ * Map join request was rejected by the server.
+ */
+export function onJoinRejected(data: JoinRejectedPayload): void {
+  const { worldJoinSeq } = useWorldStore.getState();
+
+  // Ignore stale rejection responses
+  if (data.joinSeq !== undefined && data.joinSeq < worldJoinSeq) {
+    console.warn(`[worldHandlers] Stale join_rejected (seq mismatch) for ${data.mapId}, ignoring`);
+    return;
+  }
+
+  console.warn(`[worldHandlers] Join rejected for ${data.mapId}: ${data.message} (${data.reason})`);
+  
+  // Reset world session state so the UI returns to idle (re-enabling Enter World button)
+  useWorldStore.getState().setWorldSessionState('none');
+  
+  // Note: we do NOT invoke WorldStreamer, do NOT reconnect socket, and do NOT restart boot FSM.
+  // The user remains at character select to try again.
 }
 
 /**

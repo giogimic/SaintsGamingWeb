@@ -73,6 +73,7 @@ const (
 // Server → client event names.
 const (
 	EvMapJoined           = "map_joined"
+	EvJoinRejected        = "join_rejected"
 	EvMapPlayers          = "map_players"
 	EvPlayerJoined        = "player_joined"
 	EvPlayerLeft          = "player_left"
@@ -193,6 +194,14 @@ type MapJoinedPayload struct {
 	Z          float64 `json:"z"`
 	ServerTime int64   `json:"serverTime"`
 	JoinSeq    uint64  `json:"joinSeq,omitempty"`
+}
+
+// JoinRejectedPayload is emitted when a join request fails.
+type JoinRejectedPayload struct {
+	MapID   string `json:"mapId"`
+	JoinSeq uint64 `json:"joinSeq,omitempty"`
+	Reason  string `json:"reason"`
+	Message string `json:"message"`
 }
 
 // CreatureSpawn is creature_spawned payload.
