@@ -123,7 +123,7 @@ export default function GameOptionsMenu({
           localStorage.setItem('saints.lastUnstuckTimestamp', String(Date.now()));
         } catch {}
 
-        let targetMapId = 'LOBBY';
+        let targetMapId = 'DEMO_SANDBOX';
         try {
           targetMapId = await getSpawnMapId();
         } catch {}

@@ -1,3 +1,7 @@
+## [2.1.846] - 2026-09-11
+### Fixed
+- Fixed `join_rejected` errors occurring after wiping MMO data. The starter hero presets and character creator defaults previously requested the non-existent `LOBBY` map. They now correctly fall back to the dynamically configured realm spawn map (e.g. `STARTING_MEADOW`).
+
 ## [2.1.845] - 2026-09-11
 ### Fixed
 - Fixed Next.js `initialize-game` setup wizard so that it authoritatively generates and serializes an immutable `WorldMapVersion` (with proper `snapshotPayload` data) and updates `WorldMap.publishedVersion`.

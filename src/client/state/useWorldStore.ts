@@ -125,7 +125,7 @@ export interface WorldState {
 export const useWorldStore = create<WorldState>()(
   subscribeWithSelector(
     immer((set, get) => ({
-      currentMapId: 'LOBBY',
+      currentMapId: 'DEMO_SANDBOX',
       instanceId: '',
       activeMapData: null,
       isMapTransitioning: false,

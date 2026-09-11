@@ -54,7 +54,7 @@ incrementWorldJoinSeq: () => {
 
 pathQueue: [],
 
-currentMapId: 'LOBBY',
+currentMapId: 'DEMO_SANDBOX',
 
 instanceId: '',
 

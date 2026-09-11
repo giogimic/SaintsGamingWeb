@@ -82,7 +82,7 @@ export function entityToNpc(entity: EntityInstanceV1): NPCPlacement | null {
  * Converts a legacy GateData record into a modern EntityInstanceV1 warp entity.
  */
 export function gateToEntity(gateIndex: number, gate: GateData, pos: { x: number; y: number }): EntityInstanceV1 {
-  const targetMapId = gate.targetMapId || 'LOBBY';
+  const targetMapId = gate.targetMapId || 'DEMO_SANDBOX';
   const id = `ent_warp_gate_${gateIndex}_${pos.x}_${pos.y}`;
 
   return {

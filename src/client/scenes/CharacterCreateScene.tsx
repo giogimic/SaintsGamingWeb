@@ -399,8 +399,8 @@ export function CharacterCreateScene() {
       }
     }
 
-    if (startX === undefined) startX = startMap === 'SAINTS_HAVEN' ? 20 : startMap === 'LOBBY' ? 32 : 15;
-    if (startY === undefined) startY = startMap === 'SAINTS_HAVEN' ? 20 : startMap === 'LOBBY' ? 32 : 15;
+    if (startX === undefined) startX = startMap === 'SAINTS_HAVEN' ? 20 : startMap === 'STARTING_MEADOW' ? 10 : 15;
+    if (startY === undefined) startY = startMap === 'SAINTS_HAVEN' ? 20 : startMap === 'STARTING_MEADOW' ? 10 : 15;
 
     const isSpyder = selectedHeroSlug === 'spyder_tamer' || startMap === 'AZURE_TOWN';
     const initialState = {
