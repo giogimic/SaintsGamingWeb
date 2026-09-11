@@ -57,7 +57,7 @@ export function FinalReviewStep({
           description: gameDefinition.description,
           genre: gameDefinition.genre,
           style: gameDefinition.style,
-          camera: gameDefinition.camera,
+          defaultCameraMode: gameDefinition.defaultCameraMode,
           defaultBlockSizePx: gameDefinition.defaultBlockSizePx || 64,
         },
         characters: characters.map((c) => ({
@@ -214,7 +214,7 @@ export function FinalReviewStep({
 
           <div className="flex items-center justify-between p-2 rounded bg-[#050b14] border border-slate-800 font-mono text-[11px]">
             <span className="text-slate-400">Camera Vantage:</span>
-            <span className="text-white font-bold">{gameDefinition.camera === 'ISOMETRIC_25D' ? '2.5D Angled' : 'Top-Down Ortho'}</span>
+            <span className="text-white font-bold">{gameDefinition.defaultCameraMode === 'ISOMETRIC_25D' ? '2.5D Angled' : 'Top-Down Ortho'}</span>
           </div>
 
           <div className="flex items-center justify-between p-2 rounded bg-[#050b14] border border-slate-800 font-mono text-[11px]">

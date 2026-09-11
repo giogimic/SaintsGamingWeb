@@ -20,7 +20,7 @@ export interface GameDefinitionData {
   description: string;
   genre: 'CREATURE_MMO' | 'CLASSIC_MMO' | 'HYBRID_MMO';
   style: 'SAINTS_HYBRID' | 'REAL_TIME' | 'TURN_BASED';
-  camera: 'ISOMETRIC_25D' | 'TOP_DOWN' | 'FIRST_PERSON';
+  defaultCameraMode?: 'DYNAMIC' | 'FIRST_PERSON' | 'THIRD_PERSON' | 'ISOMETRIC_25D';
   defaultBlockSizePx: number; // 16, 32, 64, 128, 256
 }
 
@@ -179,36 +179,42 @@ export function GameDefinitionStep({ data, onChange, onNext, onBack }: GameDefin
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5 font-mono">
-              3D Camera Perspective
+              Default Camera Mode
             </label>
             <div className="grid grid-cols-2 gap-2">
               {[
                 {
-                  id: 'ISOMETRIC_25D',
-                  name: '2.5D Angled View',
-                  desc: 'Classic angled perspective',
-                  icon: Compass,
-                },
-                {
-                  id: 'TOP_DOWN',
-                  name: 'Top-Down Ortho',
-                  desc: 'Direct overhead view',
+                  id: 'DYNAMIC',
+                  name: 'Dynamic / Auto',
+                  desc: 'Automatically transitions between perspectives as you zoom.',
                   icon: Eye,
                 },
                 {
                   id: 'FIRST_PERSON',
                   name: 'First Person',
-                  desc: 'Immersive eye-level view',
+                  desc: 'Camera stays at player eye level.',
                   icon: Camera,
+                },
+                {
+                  id: 'THIRD_PERSON',
+                  name: 'Third Person',
+                  desc: 'Camera follows behind the player.',
+                  icon: Compass,
+                },
+                {
+                  id: 'ISOMETRIC_25D',
+                  name: '2.5D Isometric',
+                  desc: 'Classic angled world view.',
+                  icon: Layers,
                 },
               ].map((c) => {
                 const Icon = c.icon;
-                const isSelected = data.camera === c.id;
+                const isSelected = data.defaultCameraMode === c.id;
                 return (
                   <button
                     key={c.id}
                     type="button"
-                    onClick={() => onChange({ camera: c.id as any })}
+                    onClick={() => onChange({ defaultCameraMode: c.id as any })}
                     className={`p-2.5 rounded-lg border text-left transition flex flex-col justify-between cursor-pointer ${
                       isSelected
                         ? 'bg-amber-500/15 border-amber-400 text-white'

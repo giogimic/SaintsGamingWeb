@@ -47,7 +47,7 @@ export function GameInitializationWizard({ isReinit = false }: { isReinit?: bool
     description: 'A 2.5D multiplayer 3D voxel MMO world filled with quests, monsters, and player creation.',
     genre: 'CREATURE_MMO',
     style: 'SAINTS_HYBRID',
-    camera: 'ISOMETRIC_25D',
+    defaultCameraMode: 'DYNAMIC',
     defaultBlockSizePx: 64,
   });
 
@@ -394,6 +394,7 @@ export function GameInitializationWizard({ isReinit = false }: { isReinit?: bool
           {step === 5 && (
             <StartingMapStep
               environment={environment}
+              gameDefinition={gameDefinition}
               startingMap={startingMap}
               onChange={setStartingMap}
               onNext={() => setStep(6)}

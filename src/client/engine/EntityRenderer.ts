@@ -170,6 +170,13 @@ export class EntityRenderer {
         const tex = this.getOrLoadTexture(data.spriteUrl);
         if (tex) {
           tex.hasAlpha = true;
+          // Apply foundational 3x4 sprite formatting abstraction (Idle, Facing Down)
+          // TODO: Read this dynamically from sprite definitions and action state
+          tex.uScale = 1 / 3;
+          tex.vScale = 1 / 4;
+          tex.uOffset = 1 / 3; // Idle frame (col 1)
+          tex.vOffset = 0;     // Facing down (row 0)
+          
           mat.diffuseTexture = tex;
           mat.transparencyMode = BABYLON.Material.MATERIAL_ALPHATEST;
           mat.alphaCutOff = 0.3;

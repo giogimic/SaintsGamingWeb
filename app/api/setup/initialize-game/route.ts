@@ -20,7 +20,7 @@ export interface InitializeGamePayload {
     description?: string;
     genre?: string;
     style?: string;
-    camera?: string;
+    defaultCameraMode?: string;
     defaultBlockSizePx?: number;
   };
   characters: Array<{
@@ -111,7 +111,7 @@ export async function POST(req: Request) {
     const gameDesc = body?.game?.description?.trim() || `${gameName} - Created with Saints Studio`;
     const gameGenre = body?.game?.genre?.trim() || 'CREATURE_MMO';
     const gameStyle = body?.game?.style?.trim() || 'SAINTS_HYBRID';
-    const gameCamera = body?.game?.camera?.trim() || 'ISOMETRIC_25D';
+    const gameCamera = body?.game?.defaultCameraMode?.trim() || 'DYNAMIC';
     const blockSizePx = Number(body?.game?.defaultBlockSizePx || body?.environment?.defaultBlockSizePx || 64);
 
     // 2. Validate Characters (Minimum 1 Required)

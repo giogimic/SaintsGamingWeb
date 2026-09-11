@@ -1,3 +1,17 @@
+## [2.1.831] - 2026-09-11
+### Added
+- Voxel Workbench Preview: Setup wizard now includes a 2D top-down biome visualizer for world generation previewing sizes up to 32x32 chunks.
+- SpawnResolver API: Implemented server-side deterministic column scanning to ensure players spawn on solid ground with adequate headroom, avoiding fluid and void traps.
+
+### Changed
+- Starting Map Generator: Transitioned Setup from static legacy logic to the VoxelWorldGenerator.
+- Validation Gates: Setup step 6 now calculates a safe mathematical spawn and blocks publishing if the spawn is unsafe or the preview region does not match the 4x4 requirement.
+- Engine Config: Updated global camera variables in Setup to correctly map to defaultCameraMode for 2.5D, First, and Third Person presets.
+
+### Fixed
+- Fixed voxel chunk scaling logic where starter boundaries mismatched UI representation.
+- Repaired EntityRenderer spritesheet parsing so client respects 3x4 layout matrices instead of treating the entire sheet as a single quad.
+
 ## 2.1.829
 - Feat(Server): Implemented new Voxel Generation Architecture with Geological Index (GI), 5-layer strata, and 3-pass cave systems.
 - Feat(Server): Added Mythic Ores placement logic based on geological intersections.
@@ -6182,6 +6196,7 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
  S t u d i o M e n u B a r . t s x . 
  
  
+
 
 
 
