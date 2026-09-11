@@ -1,3 +1,10 @@
+## [2.1.845] - 2026-09-11
+### Fixed
+- Fixed Next.js `initialize-game` setup wizard so that it authoritatively generates and serializes an immutable `WorldMapVersion` (with proper `snapshotPayload` data) and updates `WorldMap.publishedVersion`.
+- Ensured setup uses the durable `MapSyncService` to reliably sync the starting map to the Go server instead of a fire-and-forget API call.
+- Made map initialization idempotent to prevent generating orphaned map versions on repeat runs.
+- Removed hardcoded `'STARTING_MEADOW'` fallbacks from `CharacterSelectScene.tsx` and `CharacterCreateScene.tsx` in favor of gracefully failing via error toasts if the realm's starting map is missing.
+
 ## [2.1.844] - 2026-09-11
 ### Fixed
 - Fixed TypeScript build errors in `worldHandlers.test.ts` regarding mock state typing (`BootState` and `string | undefined`).

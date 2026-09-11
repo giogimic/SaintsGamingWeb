@@ -134,7 +134,11 @@ export function CharacterSelectScene() {
       const accountId = useSessionStore.getState().accountId || (session?.user?.id as string) || '';
       const joinSeq = useWorldStore.getState().incrementWorldJoinSeq();
       
-      const targetMapId = realmSettings?.spawnMapId || 'STARTING_MEADOW';
+      const targetMapId = realmSettings?.spawnMapId;
+      if (!targetMapId) {
+        toast.error("Realm configuration error: missing spawn map. Please run the setup wizard.");
+        return;
+      }
 
       socketManager.emit('join_map', {
         accountId: accountId,

@@ -3,7 +3,7 @@ import { prisma } from '@/web/lib/prisma';
 import { auth } from '@/auth';
 import { getSystemSetupStatus, SETUP_SETTING_KEYS } from '@/shared/game/setup/setupDetection';
 import { DEFAULT_STUDIO_TILESETS, DEFAULT_STUDIO_GROUND_GID } from '@/shared/game/studioTilesetBootstrap';
-import { notifyGoMapSynced } from '@/server/goMmoNotify';
+import { MapSyncService } from '@/server/mapSyncService';
 import { DEFAULT_PLAYABLE_CLASSES } from '@/shared/game/classCatalog';
 import { classDataToDb } from '@/shared/game/classDefMap';
 import { DEMO_LOGIC_TILES } from '@/shared/game/setup/logicTilesSeed';
@@ -170,7 +170,7 @@ export async function POST(req: Request) {
     };
 
     // 4. Atomic Transaction Persistence
-    await prisma.$transaction(async (tx) => {
+    const resolvedVersion = await prisma.$transaction(async (tx) => {
       // 4a. Update / Create GameConfig
       const gameConfig = await tx.gameConfig.upsert({
         where: { slug: 'saints' },
@@ -303,7 +303,29 @@ export async function POST(req: Request) {
         },
       ];
 
-      const upsertedWorldMap = await tx.worldMap.upsert({
+      const existingWorld = await tx.worldMap.findUnique({
+        where: { id: mapId }
+      });
+
+      let nextVersion = 1;
+      let isRecovery = false;
+
+      if (existingWorld) {
+        if (existingWorld.publishedVersion) {
+          isRecovery = true;
+          nextVersion = existingWorld.publishedVersion;
+        } else {
+          nextVersion = existingWorld.version + 1;
+        }
+      }
+
+      let upsertedWorldMap;
+      
+      if (isRecovery) {
+        // Recovery path: Just fetch it, do not bump version or wipe data
+        upsertedWorldMap = existingWorld!;
+      } else {
+        upsertedWorldMap = await tx.worldMap.upsert({
         where: { id: mapId },
         create: {
           id: mapId,
@@ -332,8 +354,10 @@ export async function POST(req: Request) {
           mapType: map.mapType || 'VOXEL',
         },
       });
+      }
 
-      await tx.gameMap.upsert({
+      if (!isRecovery) {
+        await tx.gameMap.upsert({
         where: { id: mapId },
         create: {
           id: mapId,
@@ -353,6 +377,7 @@ export async function POST(req: Request) {
           gates: JSON.stringify(gatesPayload),
         },
       });
+      }
 
       // 4e. Upsert Durable Game Settings
       const settingsToUpsert = [
@@ -364,6 +389,9 @@ export async function POST(req: Request) {
         { key: SETUP_SETTING_KEYS.GAME_STYLE, value: gameStyle },
         { key: SETUP_SETTING_KEYS.GAME_CAMERA, value: gameCamera },
         { key: SETUP_SETTING_KEYS.DEFAULT_MAP_ID, value: mapId },
+        { key: 'DEFAULT_SPAWN_X', value: String(spawnX) },
+        { key: 'DEFAULT_SPAWN_Y', value: String(spawnY) },
+        { key: 'DEFAULT_SPAWN_Z', value: String(map.spawnPoint?.z ?? 16) },
         { key: 'DEFAULT_BLOCK_SIZE_PX', value: String(blockSizePx) },
         // Legacy keys for backward compatibility
         { key: SETUP_SETTING_KEYS.SETUP_COMPLETED, value: 'true' },
@@ -409,33 +437,57 @@ export async function POST(req: Request) {
       }
 
       // 4g. Persist WorldMapVersion using exact revision artifacts (WYSIWYG Guarantee)
-      await tx.worldMapVersion.upsert({
-        where: {
-          mapId_version: { mapId, version: upsertedWorldMap.version }
-        },
-        create: {
-          mapId,
-          version: upsertedWorldMap.version,
+      if (!isRecovery) {
+        const snapshotPayload = {
+          id: mapId,
           name: mapName,
-          regions: {
-            create: revision.regions.map(r => ({
-              regionX: r.regionX,
-              regionZ: r.regionZ,
-              artifactChecksum: r.artifactChecksum
-            }))
+          gameId: 'saints',
+          gridData: JSON.stringify(initialLogicGrid),
+          gatesData: JSON.stringify(gatesPayload),
+          npcsData: JSON.stringify([]),
+          encountersData: JSON.stringify([]),
+          entitiesData: JSON.stringify([]),
+          tileLayersData: JSON.stringify(initialTileLayers),
+          freeformLayersData: JSON.stringify([]),
+          tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
+          version: upsertedWorldMap.version,
+          publishedVersion: nextVersion,
+          publishedAt: new Date().toISOString(),
+          publishedBy: 'system-setup',
+          mapType: map.mapType || 'VOXEL',
+        };
+        
+        await tx.worldMapVersion.upsert({
+          where: {
+            mapId_version: { mapId, version: nextVersion }
+          },
+          create: {
+            mapId,
+            version: nextVersion,
+            name: mapName,
+            data: JSON.stringify(snapshotPayload),
+            regions: {
+              create: revision.regions.map(r => ({
+                regionX: r.regionX,
+                regionZ: r.regionZ,
+                artifactChecksum: r.artifactChecksum
+              }))
+            }
+          },
+          update: {
+            data: JSON.stringify(snapshotPayload),
           }
-        },
-        update: {
-          // If it somehow exists, we shouldn't really mutate published versions in practice,
-          // but for safety in the setup script, we will just update it.
-        }
-      });
+        });
+      }
 
       // 4h. Update the publishedVersion pointer on the WorldMap
-      await tx.worldMap.update({
-        where: { id: mapId },
-        data: { publishedVersion: upsertedWorldMap.version }
-      });
+      if (!isRecovery) {
+        await tx.worldMap.update({
+          where: { id: mapId },
+          data: { publishedVersion: nextVersion }
+        });
+      }
+      return nextVersion;
     });
 
     // 5. Seed Dynamic Starter Content (Abilities, Items, Mounts, Dungeons)
@@ -444,14 +496,12 @@ export async function POST(req: Request) {
     // 5b. (Moved inside transaction)
 
     // 6. Notify Go MMO realtime server of new starting voxel map
-    void notifyGoMapSynced({
-      id: mapId,
-      name: mapName,
-      voxelData: {},
-      npcsData: [],
-      tileLayersData: [],
-      tilesetsData: [],
-    }).catch(() => {});
+    await MapSyncService.enqueue({
+      mapId,
+      version: resolvedVersion,
+      userId: 'system',
+      eagerPush: true,
+    });
 
     return NextResponse.json({
       success: true,

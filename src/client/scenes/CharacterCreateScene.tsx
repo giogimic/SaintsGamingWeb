@@ -370,9 +370,15 @@ export function CharacterCreateScene() {
     if (!startMap) {
       try {
         startMap = await getSpawnMapId();
-      } catch {
-        startMap = 'STARTING_MEADOW';
+      } catch (err) {
+        console.warn('Failed to resolve spawn map during character creation', err);
       }
+    }
+
+    if (!startMap) {
+      toast.error('Cannot create character: No spawn map configured. Please run setup wizard.');
+      setIsCreating(false);
+      return;
     }
 
     if (startX === undefined || startY === undefined) {
