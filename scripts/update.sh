@@ -343,6 +343,8 @@ else
             NEED_DB_MIGRATE=1
             NEED_BUILD=1
             NEED_ASSET_SYNC=1
+            NEED_STUDIO_BUILD=1
+            NEED_GO_BUILD=1
         else
             echo -e "${GREEN}[✓] No remote changes detected. Exiting.${NC}"
             exit 0
