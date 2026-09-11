@@ -16,7 +16,7 @@ export async function GET() {
     const settings = await prisma.siteSetting.findMany({
       where: {
         key: {
-          in: Object.values(REALM_SETTING_KEYS),
+          in: [...Object.values(REALM_SETTING_KEYS), 'DEFAULT_MAP_ID'],
         },
       },
     });
@@ -37,7 +37,7 @@ export async function GET() {
       captureToolName: configMap[REALM_SETTING_KEYS.CAPTURE_TOOL_NAME] || DEFAULT_REALM_SETTINGS.captureToolName,
       captureAmmoName: configMap[REALM_SETTING_KEYS.CAPTURE_AMMO_NAME] || DEFAULT_REALM_SETTINGS.captureAmmoName,
       motd: configMap[REALM_SETTING_KEYS.REALM_MOTD] || DEFAULT_REALM_SETTINGS.motd,
-      spawnMapId: configMap[REALM_SETTING_KEYS.SPAWN_MAP_ID] || DEFAULT_REALM_SETTINGS.spawnMapId,
+      spawnMapId: configMap[REALM_SETTING_KEYS.SPAWN_MAP_ID] || configMap['DEFAULT_MAP_ID'] || DEFAULT_REALM_SETTINGS.spawnMapId,
       allowGuestAccess: configMap[REALM_SETTING_KEYS.ALLOW_GUEST_ACCESS] !== 'false',
     };
 

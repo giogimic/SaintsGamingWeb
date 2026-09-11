@@ -66,6 +66,8 @@ export function CharacterSelectScene() {
   const setScene = useSessionStore((state) => state.setScene);
   const setCharacter = useSessionStore((state) => state.setCharacter);
   const mmoPlayerCount = useAppStore((state) => state.mmoPlayerCount);
+  const worldSessionState = useWorldStore((state) => state.worldSessionState);
+  const bootState = useSessionStore((state) => state.bootState);
   const { isModerator } = useAuth();
   const { settings: realmSettings } = useRealmSettings();
   
@@ -132,10 +134,12 @@ export function CharacterSelectScene() {
       const accountId = useSessionStore.getState().accountId || (session?.user?.id as string) || '';
       const joinSeq = useWorldStore.getState().incrementWorldJoinSeq();
       
+      const targetMapId = realmSettings?.spawnMapId || 'STARTING_MEADOW';
+
       socketManager.emit('join_map', {
         accountId: accountId,
         characterId: charId,
-        mapId: 'LOBBY',
+        mapId: targetMapId,
         lobby: true,
         name: char.name,
         assetProfileId: char.assetProfileId || usePlayerStore.getState().player.assetProfileId || 'adventurer',
@@ -238,6 +242,7 @@ export function CharacterSelectScene() {
           <CharacterDetailPreview
             character={characters.find((c) => c.id === selectedCharId) || characters[0] || null}
             onEnterWorld={handleEnterWorld}
+            disabled={worldSessionState === 'joining' || bootState === 'FATAL_ERROR'}
             className="flex-1"
           />
         </section>

@@ -303,7 +303,7 @@ export async function POST(req: Request) {
         },
       ];
 
-      await tx.worldMap.upsert({
+      const upsertedWorldMap = await tx.worldMap.upsert({
         where: { id: mapId },
         create: {
           id: mapId,
@@ -407,33 +407,41 @@ export async function POST(req: Request) {
           },
         });
       }
+
+      // 4g. Persist WorldMapVersion using exact revision artifacts (WYSIWYG Guarantee)
+      await tx.worldMapVersion.upsert({
+        where: {
+          mapId_version: { mapId, version: upsertedWorldMap.version }
+        },
+        create: {
+          mapId,
+          version: upsertedWorldMap.version,
+          name: mapName,
+          regions: {
+            create: revision.regions.map(r => ({
+              regionX: r.regionX,
+              regionZ: r.regionZ,
+              artifactChecksum: r.artifactChecksum
+            }))
+          }
+        },
+        update: {
+          // If it somehow exists, we shouldn't really mutate published versions in practice,
+          // but for safety in the setup script, we will just update it.
+        }
+      });
+
+      // 4h. Update the publishedVersion pointer on the WorldMap
+      await tx.worldMap.update({
+        where: { id: mapId },
+        data: { publishedVersion: upsertedWorldMap.version }
+      });
     });
 
     // 5. Seed Dynamic Starter Content (Abilities, Items, Mounts, Dungeons)
     await bootstrapDynamicStarterContent('saints', 'default');
 
-    // 5b. Persist WorldMapVersion using exact revision artifacts (WYSIWYG Guarantee)
-    const publishedVersion = await prisma.worldMapVersion.upsert({
-      where: {
-        mapId_version: { mapId, version: 1 }
-      },
-      create: {
-        mapId,
-        version: 1,
-        name: mapName,
-        regions: {
-          create: revision.regions.map(r => ({
-            regionX: r.regionX,
-            regionZ: r.regionZ,
-            artifactChecksum: r.artifactChecksum
-          }))
-        }
-      },
-      update: {
-        // If it somehow exists, we shouldn't really mutate published versions in practice,
-        // but for safety in the setup script, we will just update it.
-      }
-    });
+    // 5b. (Moved inside transaction)
 
     // 6. Notify Go MMO realtime server of new starting voxel map
     void notifyGoMapSynced({

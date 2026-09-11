@@ -95,12 +95,14 @@ interface CharacterDetailPreviewProps {
   character: any;
   onEnterWorld?: (characterId: string) => void;
   className?: string;
+  disabled?: boolean;
 }
 
 export function CharacterDetailPreview({
   character,
   onEnterWorld,
   className = '',
+  disabled = false,
 }: CharacterDetailPreviewProps) {
   // Parse state data
   const { state, classKey, palette, charLayers, equipment, inventory, skills, totalLevel, gearScore, totalAtk, totalDef } = useMemo(() => {
@@ -384,14 +386,20 @@ export function CharacterDetailPreview({
             {onEnterWorld && (
               <button
                 type="button"
+                disabled={disabled}
                 onClick={() => {
+                  if (disabled) return;
                   soundSynth?.playActionSound?.();
                   onEnterWorld(character.id);
                 }}
-                className="w-full mt-1.5 py-3 rounded-xl font-mono font-black text-xs sm:text-sm uppercase tracking-widest transition-all bg-primary hover:brightness-110 text-primary-foreground shadow-[0_0_25px_rgba(203,178,106,0.45)] active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                className={`w-full mt-1.5 py-3 rounded-xl font-mono font-black text-xs sm:text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                  disabled 
+                    ? 'bg-muted/20 text-muted-foreground cursor-not-allowed border border-white/5' 
+                    : 'bg-primary hover:brightness-110 text-primary-foreground shadow-[0_0_25px_rgba(203,178,106,0.45)] active:scale-95 cursor-pointer'
+                }`}
               >
                 <Play size={14} fill="currentColor" />
-                <span>ENTER WORLD</span>
+                <span>{disabled ? 'CONNECTING...' : 'ENTER WORLD'}</span>
               </button>
             )}
           </div>
