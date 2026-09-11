@@ -146,6 +146,7 @@ export function CharacterSelectScene() {
         joinSeq,
       });
 
+      useSessionStore.getState().setBootState('CONNECT');
       useWorldStore.getState().setWorldSessionState('joining');
     }
   };
@@ -242,7 +243,8 @@ export function CharacterSelectScene() {
           <CharacterDetailPreview
             character={characters.find((c) => c.id === selectedCharId) || characters[0] || null}
             onEnterWorld={handleEnterWorld}
-            disabled={worldSessionState === 'joining' || bootState === 'FATAL_ERROR'}
+            disabled={worldSessionState === 'joining'}
+            isFatalError={bootState === 'FATAL_ERROR'}
             className="flex-1"
           />
         </section>

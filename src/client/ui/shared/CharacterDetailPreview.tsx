@@ -96,6 +96,7 @@ interface CharacterDetailPreviewProps {
   onEnterWorld?: (characterId: string) => void;
   className?: string;
   disabled?: boolean;
+  isFatalError?: boolean;
 }
 
 export function CharacterDetailPreview({
@@ -103,6 +104,7 @@ export function CharacterDetailPreview({
   onEnterWorld,
   className = '',
   disabled = false,
+  isFatalError = false,
 }: CharacterDetailPreviewProps) {
   // Parse state data
   const { state, classKey, palette, charLayers, equipment, inventory, skills, totalLevel, gearScore, totalAtk, totalDef } = useMemo(() => {
@@ -386,20 +388,22 @@ export function CharacterDetailPreview({
             {onEnterWorld && (
               <button
                 type="button"
-                disabled={disabled}
+                disabled={disabled && !isFatalError}
                 onClick={() => {
-                  if (disabled) return;
+                  if (disabled && !isFatalError) return;
                   soundSynth?.playActionSound?.();
                   onEnterWorld(character.id);
                 }}
                 className={`w-full mt-1.5 py-3 rounded-xl font-mono font-black text-xs sm:text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
-                  disabled 
-                    ? 'bg-muted/20 text-muted-foreground cursor-not-allowed border border-white/5' 
-                    : 'bg-primary hover:brightness-110 text-primary-foreground shadow-[0_0_25px_rgba(203,178,106,0.45)] active:scale-95 cursor-pointer'
+                  isFatalError
+                    ? 'bg-destructive/80 hover:bg-destructive text-destructive-foreground shadow-[0_0_25px_rgba(220,38,38,0.45)] active:scale-95 cursor-pointer'
+                    : disabled 
+                      ? 'bg-muted/20 text-muted-foreground cursor-not-allowed border border-white/5' 
+                      : 'bg-primary hover:brightness-110 text-primary-foreground shadow-[0_0_25px_rgba(203,178,106,0.45)] active:scale-95 cursor-pointer'
                 }`}
               >
                 <Play size={14} fill="currentColor" />
-                <span>{disabled ? 'CONNECTING...' : 'ENTER WORLD'}</span>
+                <span>{isFatalError ? 'RECONNECT' : disabled ? 'CONNECTING...' : 'ENTER WORLD'}</span>
               </button>
             )}
           </div>
