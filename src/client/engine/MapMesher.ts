@@ -64,7 +64,7 @@ export class MapMesher {
 
     const mapType: string = (mapData.mapType || 'TILE').toUpperCase();
 
-    if (mapType === 'VOXEL' || mapType === 'FRACTAL') {
+    if (mapType === 'VOXEL' || mapType === 'FRACTAL' || mapType === 'HYBRID') {
       this.buildVoxelMap(mapData);
     } else {
       this.buildTileMap(mapData);

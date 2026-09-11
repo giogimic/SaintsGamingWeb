@@ -62,6 +62,8 @@ export class CameraManager {
   public yaw: number = 0;
   public pitch: number = Math.PI / 4;
   public distance: number = 14;
+  public currentZoom: number = 10;
+  public currentFov: number = 0.8;
 
   // Smooth-follow target
   public targetX: number = 0;
@@ -95,11 +97,19 @@ export class CameraManager {
 
     // Register before-render to follow player
     scene.onBeforeRenderObservable.add(this.update);
+
+    // Register scroll event
+    if (this.canvas) {
+      this.canvas.addEventListener('wheel', this.onWheel, { passive: false });
+    }
   }
 
   public dispose() {
     if (this.scene) {
       this.scene.onBeforeRenderObservable.removeCallback(this.update);
+    }
+    if (this.canvas) {
+      this.canvas.removeEventListener('wheel', this.onWheel);
     }
     this.camera?.dispose();
     this.camera = null;
@@ -185,12 +195,12 @@ export class CameraManager {
         this.profile.pitch = Math.PI / 2 - 0.01;
         this.profile.distance = 14;
         this.yaw = 0;
-        this.updateOrthoSize();
+        this.updateOrthoSize(this.currentZoom);
         break;
 
       case 'follow45':
         this.camera.mode = BABYLON.Camera.PERSPECTIVE_CAMERA;
-        this.camera.fov = this.settings.fov || 0.8;
+        this.camera.fov = this.currentFov;
         this.profile.pitch = Math.PI / 4;
         this.profile.distance = 16;
         this.yaw = 0;
@@ -198,14 +208,14 @@ export class CameraManager {
 
       case 'firstperson':
         this.camera.mode = BABYLON.Camera.PERSPECTIVE_CAMERA;
-        this.camera.fov = this.settings.fov || 1.0;
+        this.camera.fov = this.currentFov;
         this.profile.pitch = 0;
         this.profile.distance = 0;
         break;
 
       case 'free':
         this.camera.mode = BABYLON.Camera.PERSPECTIVE_CAMERA;
-        this.camera.fov = this.settings.fov || 0.8;
+        this.camera.fov = this.currentFov;
         this.profile.pitch = this.pitch || Math.PI / 4;
         this.profile.distance = this.distance || 18;
         break;
@@ -216,7 +226,7 @@ export class CameraManager {
         this.profile.pitch = this.settings.isometricPitch || Math.PI / 4;
         this.profile.distance = this.settings.isometricDistance || 14;
         this.yaw = 0;
-        this.updateOrthoSize();
+        this.updateOrthoSize(this.currentZoom);
         break;
     }
 
@@ -227,6 +237,8 @@ export class CameraManager {
 
   private updateOrthoSize(orthoSize: number = 10) {
     if (!this.camera || !this.scene) return;
+
+    this.currentZoom = orthoSize;
 
     const engine = this.scene.getEngine();
     const width = engine.getRenderWidth();
@@ -240,6 +252,32 @@ export class CameraManager {
     this.camera.orthoTop = orthoSize;
     this.camera.orthoBottom = -orthoSize;
   }
+
+  // ── Wheel Input ────────────────────────────────────────────────────────────
+
+  private onWheel = (e: WheelEvent) => {
+    // Only intercept if we're focused on game canvas or body
+    const target = e.target as HTMLElement;
+    if (target.tagName !== 'CANVAS' && target !== document.body && target.tagName !== 'DIV') {
+      return; 
+    }
+    
+    e.preventDefault();
+
+    if (this.camera?.mode === BABYLON.Camera.ORTHOGRAPHIC_CAMERA) {
+      // Zoom ortho
+      const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
+      const newZoom = Math.max(3, Math.min(30, this.currentZoom * zoomFactor));
+      this.updateOrthoSize(newZoom);
+    } else {
+      // Zoom FOV for perspective
+      const fovFactor = e.deltaY > 0 ? 1.05 : 0.95;
+      this.currentFov = Math.max(0.2, Math.min(2.0, this.currentFov * fovFactor));
+      if (this.camera) {
+        this.camera.fov = this.currentFov;
+      }
+    }
+  };
 
   // ── Snap / Follow ──────────────────────────────────────────────────────────
 

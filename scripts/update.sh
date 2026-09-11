@@ -624,6 +624,12 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
             GO_BUILD_PID=$!
             run_with_spinner "Compiling Go container" "docker_build_go.log" "$GO_BUILD_PID"
             
+            if [ $? -ne 0 ]; then
+                echo -e "${RED}[!] Failed to build Go MMO container!${NC}\n"
+                tail -n 25 docker_build_go.log
+                exit 1
+            fi
+            
             echo -e "${CYAN}[*] Starting Go MMO container...${NC}"
             ( cd the-lobby && docker compose up -d >> ../docker_build_go.log 2>&1 ) &
             GO_UP_PID=$!
@@ -634,15 +640,32 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
                 exit 1
             fi
             echo -e "${GREEN}[✓] Go container running.${NC}\n"
-        elif docker ps -a --format '{{.Names}}' | grep -q '^saints-lobby'; then
+        elif [ -f "the-lobby/Dockerfile" ]; then
             echo -e "${CYAN}[*] Rebuilding and Restarting Go MMO container...${NC}"
-            ( cd the-lobby && docker build -t saints-lobby-img . )
+            > docker_build_go.log
+            ( cd the-lobby && docker build -t saints-lobby-img . > ../docker_build_go.log 2>&1 ) &
+            GO_BUILD_PID=$!
+            run_with_spinner "Compiling Go container (Dockerfile)" "docker_build_go.log" "$GO_BUILD_PID"
+            
+            if [ $? -ne 0 ]; then
+                echo -e "${RED}[!] Failed to build Go MMO container!${NC}\n"
+                tail -n 25 docker_build_go.log
+                exit 1
+            fi
+            
             docker rm -f saints-lobby 2>/dev/null || true
             docker run -d --name saints-lobby \
                 --restart unless-stopped \
                 -p 24011:24011 \
                 -v saints_lobby_data:/app/data \
-                saints-lobby-img
+                saints-lobby-img >> docker_build_go.log 2>&1
+                
+            if [ $? -ne 0 ]; then
+                echo -e "${RED}[!] Failed to start Go MMO container!${NC}\n"
+                tail -n 25 docker_build_go.log
+                exit 1
+            fi
+            echo -e "${GREEN}[✓] Go container running.${NC}\n"
         fi
     fi
 
@@ -709,7 +732,10 @@ else
         echo -e "${CYAN}[*] Building Go MMO binary...${NC}"
         if command -v go &>/dev/null; then
             mkdir -p the-lobby/bin
-            ( cd the-lobby && go build -o bin/server ./cmd/server ) || echo -e "${RED}[!] Go build failed.${NC}"
+            if ! ( cd the-lobby && go build -o bin/server ./cmd/server ); then
+                echo -e "${RED}[!] Go build failed. Aborting.${NC}"
+                exit 1
+            fi
             echo -e "${GREEN}[✓] Go binary built.${NC}\n"
         fi
         if command -v systemctl &>/dev/null && systemctl list-unit-files | grep -q saints-lobby 2>/dev/null; then

@@ -1,3 +1,9 @@
+## 2.1.828
+- Fix(Client): Ensure HYBRID maps render 3D voxels instead of falling back to flat tiles.
+- Fix(Client): Restore HUD Studio dynamic layouts by mounting LobbyHudDockLayout in GameUI.
+- Fix(Client): Add wheel event listener to CameraManager to fix zooming and clipping issues.
+- Fix(Server): Fix Docker and Go MMO build error handling in update.sh, ensuring failure stops the script.
+
 ## 2.1.827
 - Fix(Client): Resolve missing 3D map by correctly emitting join_map on boot
 - Fix(Client): Remove full-screen HUD pointer block allowing map interaction
