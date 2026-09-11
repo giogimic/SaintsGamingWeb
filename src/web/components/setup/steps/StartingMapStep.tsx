@@ -15,16 +15,11 @@ import {
   Loader2,
   ShieldAlert,
   Layers,
-  Video,
-  Grid3x3,
-  Box,
   Shield,
 } from 'lucide-react';
 import type { SetupEnvironmentData } from './EnvironmentSetupStep';
 import type { GameDefinitionData } from './GameDefinitionStep';
 import { CHUNK_SIZE_X, CHUNK_SIZE_Z } from '@/shared/game/voxel/VoxelChunk';
-import type { VoxelWorldDocV3 } from '@/shared/game/voxel/VoxelWorldDoc';
-import { SetupVoxelViewport, type ViewportCameraMode } from '../SetupVoxelViewport';
 import { useSetupWorldSession } from '../hooks/useSetupWorldSession';
 
 export interface SetupGateDefinition {
@@ -81,17 +76,10 @@ export function StartingMapStep({
   onBack,
 }: StartingMapStepProps) {
   const [previewSizeChunks, setPreviewSizeChunks] = useState<number>(4);
-  const [cameraMode, setCameraMode] = useState<ViewportCameraMode>('orbit');
-  const [autoOrbit, setAutoOrbit] = useState<boolean>(false);
-  const [showChunkBorders, setShowChunkBorders] = useState<boolean>(true);
-  const [showWireframe, setShowWireframe] = useState<boolean>(false);
 
   const {
     status,
     bootstrapRevisionId,
-    voxelDoc,
-    deserializedWorld,
-    spawnResult,
     generationTimeMs,
     generatedChunksCount,
     totalChunksCount,
@@ -106,12 +94,14 @@ export function StartingMapStep({
 
   // Sync to parent when ready
   useEffect(() => {
-    if (status === 'READY' && spawnResult?.isSafe) {
+    if (status === 'READY') {
+      const centerX = Math.floor((previewSizeChunks * CHUNK_SIZE_X) / 2);
+      const centerZ = Math.floor((previewSizeChunks * CHUNK_SIZE_Z) / 2);
       onChange({
         ...startingMap,
         widthChunks: previewSizeChunks,
         depthChunks: previewSizeChunks,
-        spawnPoint: { x: spawnResult.position.x, y: spawnResult.position.z, z: spawnResult.position.y },
+        spawnPoint: { x: centerX, y: centerZ, z: 32 },
         width: previewSizeChunks * CHUNK_SIZE_X,
         height: previewSizeChunks * CHUNK_SIZE_Z,
         gates: [
@@ -119,14 +109,14 @@ export function StartingMapStep({
             id: 'spawn',
             name: 'Genesis Gate',
             category: 'SPAWN',
-            position: { x: spawnResult.position.x, y: spawnResult.position.z, z: spawnResult.position.y },
+            position: { x: centerX, y: centerZ, z: 32 },
             interactPrompt: 'Respawn',
           }
         ],
-        bootstrapRevisionId: bootstrapRevisionId || undefined,
+        bootstrapRevisionId: bootstrapRevisionId || undefined
       });
     }
-  }, [status, spawnResult, previewSizeChunks, bootstrapRevisionId]);
+  }, [status, bootstrapRevisionId, previewSizeChunks]);
 
   const totalBlocks = (previewSizeChunks * CHUNK_SIZE_X) * (previewSizeChunks * CHUNK_SIZE_Z);
 
@@ -230,83 +220,35 @@ export function StartingMapStep({
         {/* RIGHT COLUMN: 3D Viewport & HUD */}
         <div className="w-full lg:w-2/3 flex flex-col gap-3">
           
-          {/* VIEWPORT HEADER & CAMERA CONTROLS */}
-          <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg bg-[#070e1b] border border-slate-800/80">
-            <div className="flex items-center gap-1 bg-[#050b14] rounded-md border border-slate-800 p-0.5">
-              <button
-                onClick={() => setCameraMode('orbit')}
-                className={`px-2 py-1 text-[10px] font-mono font-bold rounded uppercase transition-colors cursor-pointer ${cameraMode === 'orbit' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'}`}
-              >
-                Orbit
-              </button>
-              <button
-                onClick={() => setCameraMode('topdown')}
-                className={`px-2 py-1 text-[10px] font-mono font-bold rounded uppercase transition-colors cursor-pointer ${cameraMode === 'topdown' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'}`}
-              >
-                Top Down
-              </button>
-              <button
-                onClick={() => setCameraMode('free')}
-                className={`px-2 py-1 text-[10px] font-mono font-bold rounded uppercase transition-colors cursor-pointer ${cameraMode === 'free' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'}`}
-              >
-                Free Fly
-              </button>
-              <button
-                onClick={() => setCameraMode('slice')}
-                className={`px-2 py-1 text-[10px] font-mono font-bold rounded uppercase transition-colors cursor-pointer ${cameraMode === 'slice' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'}`}
-              >
-                Slice
-              </button>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setAutoOrbit(!autoOrbit)}
-                disabled={cameraMode !== 'orbit'}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-bold rounded border uppercase transition-colors ${cameraMode !== 'orbit' ? 'opacity-50 cursor-not-allowed border-slate-800 text-slate-500' : autoOrbit ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 cursor-pointer' : 'bg-[#050b14] text-slate-400 border-slate-700 hover:text-slate-200 cursor-pointer'}`}
-              >
-                <Video className="w-3 h-3" />
-                Auto Orbit
-              </button>
-              <button
-                onClick={() => setShowChunkBorders(!showChunkBorders)}
-                className={`flex items-center gap-1.5 px-2 py-1 text-[10px] font-mono font-bold rounded border uppercase transition-colors cursor-pointer ${showChunkBorders ? 'bg-blue-500/20 text-blue-400 border-blue-500/40' : 'bg-[#050b14] text-slate-400 border-slate-700 hover:text-slate-200'}`}
-              >
-                <Grid3x3 className="w-3 h-3" />
-                Chunks
-              </button>
-              <button
-                onClick={() => setShowWireframe(!showWireframe)}
-                className={`flex items-center gap-1.5 px-2 py-1 text-[10px] font-mono font-bold rounded border uppercase transition-colors cursor-pointer ${showWireframe ? 'bg-purple-500/20 text-purple-400 border-purple-500/40' : 'bg-[#050b14] text-slate-400 border-slate-700 hover:text-slate-200'}`}
-              >
-                <Box className="w-3 h-3" />
-                Wire
-              </button>
-            </div>
-          </div>
-          
           {/* VIEWPORT CONTAINER */}
-          <div className="relative w-full aspect-video sm:aspect-[16/10] rounded-xl overflow-hidden border border-slate-700 shadow-inner bg-[#050b14]">
+          <div className="relative w-full aspect-video sm:aspect-[16/10] rounded-xl overflow-hidden border border-slate-700 shadow-inner bg-[#050b14] flex flex-col items-center justify-center">
             
-            <SetupVoxelViewport 
-              world={deserializedWorld}
-              spawnResult={spawnResult}
-              cameraMode={cameraMode}
-              autoOrbit={autoOrbit}
-              showChunkBorders={showChunkBorders}
-              showWireframe={showWireframe}
-            />
+            {/* 
+              NOTE for Studio Architecture:
+              The concept of a 3D WYSIWYG world preview belongs here in the overall Studio design.
+              However, it must NOT download the entire region payloads to construct a browser voxelDoc.
+              It must eventually consume the same draft region artifacts using WorldStreamer & MapMesher 
+              just like the runtime. For now (Phase 5 Unblock), we show a clean generation status screen.
+            */}
 
-            {/* OVERLAY LOADING SPINNER */}
             {status !== 'READY' && status !== 'ERROR' && (
               <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 transition-opacity">
                 <Loader2 className="w-10 h-10 text-sky-400 animate-spin mb-4" />
                 <h3 className="text-sm font-bold text-white tracking-widest font-mono uppercase">
                   {status === 'GENERATING' && `Generating Terrain... (${Math.round((generatedChunksCount / Math.max(1, totalChunksCount)) * 100)}%)`}
-                  {status === 'SERIALIZING' && 'Serializing Document...'}
-                  {status === 'DESERIALIZING' && 'Deserializing Physics...'}
                 </h3>
               </div>
+            )}
+
+            {status === 'READY' && (
+               <div className="flex flex-col items-center justify-center text-center p-6">
+                 <CheckCircle2 className="w-16 h-16 text-emerald-500 mb-4" />
+                 <h2 className="text-xl font-bold text-white mb-2">World Generated Successfully</h2>
+                 <p className="text-sm text-slate-400 max-w-md">
+                   The draft world has been successfully baked to storage artifacts. 
+                   Proceed to Final Review to publish this world version.
+                 </p>
+               </div>
             )}
 
             {/* DIAGNOSTIC HUD (Minecraft Style) */}
@@ -323,35 +265,9 @@ export function StartingMapStep({
                 </div>
                 <div className={`flex items-center gap-1.5 ${status === 'READY' ? 'text-emerald-400' : 'text-slate-500'}`}>
                   {status === 'READY' ? <CheckCircle2 className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-current opacity-50" />}
-                  MESH READY
+                  ARTIFACTS BAKED
                 </div>
               </div>
-            </div>
-
-            {/* SPAWN VALIDATION HUD */}
-            <div className="absolute bottom-2 right-2 p-2 bg-slate-950/60 backdrop-blur-md border border-slate-700/50 rounded pointer-events-none select-none font-mono text-[9px] space-y-1 z-20 min-w-[140px]">
-              <div className="text-white font-bold mb-1 border-b border-slate-700/50 pb-1">SPAWN VALIDATION</div>
-              {spawnResult ? (
-                <>
-                  <div className={`flex items-center gap-1.5 ${spawnResult.isSafe ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {spawnResult.isSafe ? <CheckCircle2 className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
-                    Solid Ground
-                  </div>
-                  <div className={`flex items-center gap-1.5 ${spawnResult.isSafe ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {spawnResult.isSafe ? <CheckCircle2 className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
-                    2+ Blocks Headroom
-                  </div>
-                  <div className={`flex items-center gap-1.5 ${spawnResult.isSafe ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {spawnResult.isSafe ? <CheckCircle2 className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
-                    Not Fluid
-                  </div>
-                  <div className="text-sky-300 mt-1 pt-1 border-t border-slate-700/50">
-                    Pos: X:{spawnResult.position.x} Y:{spawnResult.position.y} Z:{spawnResult.position.z}
-                  </div>
-                </>
-              ) : (
-                <div className="text-slate-500 animate-pulse">Calculating Spawn...</div>
-              )}
             </div>
 
           </div>
@@ -367,7 +283,7 @@ export function StartingMapStep({
             </button>
             <div className="text-[10px] font-mono text-slate-500 flex items-center gap-1.5">
               <Shield className="w-3 h-3 text-emerald-500" />
-              Serialization Integrity Checked
+              Artifact Integrity Checked
             </div>
           </div>
         </div>
@@ -386,7 +302,7 @@ export function StartingMapStep({
 
         <button
           onClick={onNext}
-          disabled={status !== 'READY' || !spawnResult?.isSafe}
+          disabled={status !== 'READY'}
           className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-lg font-mono font-bold text-xs bg-sky-600 hover:bg-sky-500 text-white transition disabled:opacity-50 cursor-pointer shadow-lg shadow-sky-500/20"
         >
           Final Review

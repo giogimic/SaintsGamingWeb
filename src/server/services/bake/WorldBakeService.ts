@@ -1,5 +1,6 @@
 import { Worker } from 'worker_threads';
 import path from 'path';
+import fs from 'fs';
 import { WorldBakeJob, WorldBakeProgress, RegionCoordinate, RegionArtifact, WorldBakeJobStatus } from '@/shared/game/voxel/WorldBakeContracts';
 import { VoxelWorldGenerationConfig } from '@/shared/game/voxel/VoxelWorldGenerator';
 import { BakeWorkerTask, BakeWorkerResult } from './bakeWorker';
@@ -17,6 +18,11 @@ export class WorldBakeService {
   private pendingTasks: BakeWorkerTask[] = [];
   private activeTaskCount = 0;
 
+  // Worker tracking
+  private activeTaskByWorker = new Map<Worker, BakeWorkerTask>();
+  private circuitBreakerTripped = false;
+  private consecutiveWorkerFailures = 0;
+
   constructor() {
     this.initializePool();
   }
@@ -28,31 +34,110 @@ export class WorldBakeService {
   }
 
   private spawnWorker() {
-    // NOTE: For Next.js development with TS, you often need a wrapper or dynamic import.
-    // We'll use a direct path for the prototype and rely on Next/Node to resolve it.
-    const workerPath = path.resolve(__dirname, './bakeWorker.ts');
-    let worker: Worker;
-    if (/\.ts$/.test(workerPath)) {
-      worker = new Worker(workerPath, {
-        execArgv: ['--import', 'tsx']
-      });
+    if (this.circuitBreakerTripped) return;
+
+    const isProd = process.env.NODE_ENV === 'production';
+    let workerPath: string;
+    let execArgv: string[] | undefined = undefined;
+
+    if (isProd) {
+      workerPath = path.join(process.cwd(), '.next', 'server', 'bakeWorker.bundle.js');
+      if (!fs.existsSync(workerPath)) {
+        console.error(`[BakeService] CRITICAL: Production worker bundle not found at ${workerPath}`);
+        // Fallback for development servers that didn't run the bundle step
+        if (fs.existsSync(path.join(process.cwd(), 'src', 'server', 'services', 'bake', 'bakeWorker.bundle.js'))) {
+           workerPath = path.join(process.cwd(), 'src', 'server', 'services', 'bake', 'bakeWorker.bundle.js');
+        }
+      }
     } else {
-      worker = new Worker(workerPath);
+      workerPath = path.join(process.cwd(), 'src', 'server', 'services', 'bake', 'bakeWorker.ts');
+      execArgv = ['--import', 'tsx'];
     }
 
-    worker.on('message', (result: BakeWorkerResult) => this.handleWorkerResult(result));
+    let worker: Worker;
+    try {
+      worker = new Worker(workerPath, { execArgv });
+    } catch (e: any) {
+      console.error(`[BakeService] Failed to instantiate Worker:`, e);
+      this.handleFatalWorkerError(`Worker instantiation failed: ${e.message}. workerPath=${workerPath}`);
+      return;
+    }
+
+    let workerIsBooted = false;
+    worker.once('online', () => {
+       workerIsBooted = true;
+       this.consecutiveWorkerFailures = 0; // Reset circuit breaker
+    });
+
+    worker.on('message', (result: BakeWorkerResult) => {
+       this.activeTaskByWorker.delete(worker);
+       this.handleWorkerResult(result);
+    });
+
     worker.on('error', (err) => {
       console.error('[BakeService] Worker Error:', err);
     });
+
     worker.on('exit', (code) => {
-      if (code !== 0) {
-        console.error(`[BakeService] Worker stopped with exit code ${code}`);
-      }
       this.workerPool = this.workerPool.filter(w => w !== worker);
-      setTimeout(() => this.spawnWorker(), 500); // Wait a bit before respawning to prevent rapid crash loops
+      
+      if (!workerIsBooted) {
+        console.error(`[BakeService] Worker initialization failed with exit code ${code}. Path: ${workerPath}`);
+        this.consecutiveWorkerFailures++;
+        if (this.consecutiveWorkerFailures >= MAX_WORKERS) {
+           this.handleFatalWorkerError(`Circuit breaker tripped: Workers failing to initialize (code ${code}). Path=${workerPath}`);
+           return;
+        }
+      } else if (code !== 0) {
+        console.error(`[BakeService] Worker crashed during execution (exit code ${code})`);
+        
+        // Find if it was processing a task and fail it specifically
+        const activeTask = this.activeTaskByWorker.get(worker);
+        this.activeTaskByWorker.delete(worker);
+        if (activeTask) {
+           this.handleWorkerResult({
+              taskId: activeTask.taskId,
+              regionX: activeTask.regionX,
+              regionZ: activeTask.regionZ,
+              status: 'ERROR',
+              error: `Worker crashed unexpectedly (code ${code})`,
+              chunksGenerated: 0
+           });
+        }
+      }
+      
+      if (!this.circuitBreakerTripped) {
+         setTimeout(() => this.spawnWorker(), 500);
+      }
     });
 
     this.workerPool.push(worker);
+  }
+
+  private handleFatalWorkerError(reason: string) {
+    if (this.circuitBreakerTripped) return;
+    this.circuitBreakerTripped = true;
+    console.error(`[BakeService] FATAL ERROR: ${reason}`);
+
+    // Fail all active jobs
+    for (const [jobId, job] of this.activeJobs.entries()) {
+       if (job.status === 'RUNNING' || job.status === 'QUEUED') {
+          job.status = 'FAILED';
+          const prog = this.progressMap.get(jobId);
+          if (prog) prog.error = reason;
+
+          if (job.revisionId) {
+             prisma.worldBootstrapRevision.update({
+                where: { id: job.revisionId },
+                data: { status: 'FAILED' }
+             }).catch(e => console.error(`Failed to persist fatal job error:`, e));
+          }
+       }
+    }
+    
+    // Clear pending queue so we don't process anything
+    this.pendingTasks = [];
+    this.activeJobs.clear();
   }
 
   private async handleWorkerResult(result: BakeWorkerResult) {
@@ -175,6 +260,7 @@ export class WorldBakeService {
     const worker = this.workerPool[this.activeTaskCount % this.workerPool.length];
     if (worker) {
       this.activeTaskCount++;
+      this.activeTaskByWorker.set(worker, task);
       worker.postMessage(task);
       
       const prog = this.progressMap.get(taskJobId);

@@ -1,6 +1,6 @@
 {
   "name": "saints-gaming-portal",
-  "version": "2.1.834",
+  "version": "2.1.835",
   "license": "BSL-1.1",
   "private": true,
   "engines": {
@@ -13,7 +13,8 @@
     "dev:app": "npm --prefix saints-app run dev",
     "tauri:app": "npm --prefix saints-app run tauri",
     "dev": "npx tsx server.ts",
-    "build": "next build",
+    "build:worker": "esbuild src/server/services/bake/bakeWorker.ts --bundle --platform=node --target=node22 --outfile=.next/server/bakeWorker.bundle.js",
+    "build": "next build && npm run build:worker",
     "start": "npx tsx server.ts",
     "start:next": "next start",
     "lint": "eslint",
@@ -118,6 +119,7 @@
     "@types/xml2js": "^0.4.14",
     "@vitejs/plugin-react": "^6.1.1",
     "cross-env": "^10.1.0",
+    "esbuild": "^0.28.2",
     "eslint": "^8.56.0",
     "eslint-config-next": "^15.1.4",
     "eslint-plugin-unused-imports": "^4.4.1",

@@ -1,3 +1,10 @@
+## [2.1.835] - 2026-09-11
+### Fixed
+- Fixed Next.js production build stripping the `BakeWorker` source by transitioning to a pre-compiled `esbuild` node bundle (`.next/server/bakeWorker.bundle.js`).
+- Fixed a fatal infinite restart loop in `WorldBakeService` where failed worker initializations kept the generation job in a perpetual `RUNNING` state without ever persisting.
+- Fixed `P2003` Foreign Key violation during setup generation by ensuring a draft `WorldMap` record is saved before region artifacts attempt to attach to it.
+- Removed legacy client-side voxel payload mapping from `StartingMapStep.tsx` in favor of trusting the server's region artifacts.
+
 ## [2.1.834] - 2026-09-11
 ### Added
 - Voxel Streaming Pipeline: The client `MapMesher` now strictly renders 3D chunks provided by `WorldStreamer` rather than attempting to decode legacy full-world payloads, cleanly supporting massive environments.

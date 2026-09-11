@@ -37,6 +37,24 @@ export async function POST(req: NextRequest) {
 
     const configHash = crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex');
 
+    // 0. Ensure the draft WorldMap exists (FK requirement for WorldRegion)
+    await prisma.worldMap.upsert({
+      where: { id: mapId },
+      create: {
+        id: mapId,
+        name: body.mapName || 'Genesis Sanctuary',
+        gatesData: '[]',
+        npcsData: '[]',
+        encountersData: '[]',
+        entitiesData: '[]',
+        regionClass: 'procedural',
+        mapType: 'VOXEL',
+      },
+      update: {
+        // Don't overwrite existing map data
+      }
+    });
+
     // 1. Create Revision
     const revision = await prisma.worldBootstrapRevision.create({
       data: {
