@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { auth } from "@/auth";
 
 const prisma = new PrismaClient();
 
@@ -23,9 +24,9 @@ export async function GET(
 ) {
   // Allow internal server-to-server or standard NextAuth clients
   const isInternal = checkAuth(req);
-  const sessionToken = req.cookies.get("next-auth.session-token") || req.cookies.get("__Secure-next-auth.session-token");
+  const session = await auth();
   
-  if (!isInternal && !sessionToken) {
+  if (!isInternal && !session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
