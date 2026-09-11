@@ -102,6 +102,7 @@ export function FinalReviewStep({
           spawnPoint: startingMap.spawnPoint,
           gates: startingMap.gates,
           mapType: startingMap.mapType || 'VOXEL',
+          voxelDoc: startingMap.voxelDoc,
         },
       };
 

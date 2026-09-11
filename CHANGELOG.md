@@ -1,3 +1,9 @@
+## [2.1.833] - 2026-09-11
+### Added
+- World Bootstrap: Introduced true WYSIWYG 3D progressive rendering in the setup wizard utilizing `SetupVoxelViewport`.
+- World Bootstrap: Refactored `useSetupWorldSession` to handle an async yield loop (`generateVoxelWorldDocProgressive`) ensuring the UI stays responsive at 60 FPS while chunks generate.
+- World Bootstrap: Passed the visually approved `voxelDoc` directly to `/api/setup/initialize-game` to prevent server regeneration, guaranteeing the exact world displayed during setup is saved as the starting realm.
+
 ## [2.1.831] - 2026-09-11
 ### Added
 - Voxel Workbench Preview: Setup wizard now includes a 2D top-down biome visualizer for world generation previewing sizes up to 32x32 chunks.

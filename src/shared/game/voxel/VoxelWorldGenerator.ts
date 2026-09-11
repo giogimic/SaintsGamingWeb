@@ -339,3 +339,105 @@ export function generateVoxelWorldDoc(config: VoxelWorldGenerationConfig): Voxel
 
   return doc;
 }
+
+/**
+ * Progress object yielded by the progressive generator.
+ */
+export interface VoxelGenerationProgress {
+  generatedChunks: number;
+  totalChunks: number;
+  currentPhase: 'INITIALIZING' | 'GENERATING' | 'FINISHING';
+  world: VoxelWorld;
+}
+
+/**
+ * A progressive generator that yields execution back to the caller while building the VoxelWorld.
+ * This prevents main-thread blocking and allows for live visual updates.
+ */
+export function* generateVoxelWorldDocProgressive(config: VoxelWorldGenerationConfig): Generator<VoxelGenerationProgress, VoxelWorldDocV3, unknown> {
+  const widthChunks = Math.max(1, config.widthChunks);
+  const depthChunks = Math.max(1, config.depthChunks);
+  const heightChunks = Math.max(1, config.heightChunks || 1);
+  const blockSizePx = config.blockSizePx || DEFAULT_BLOCK_SIZE_PX;
+
+  const world = new VoxelWorld(config.id, config.name, widthChunks, depthChunks, heightChunks, blockSizePx);
+  world.mapWidth = config.mapWidth ?? widthChunks * CHUNK_SIZE_X;
+  world.mapHeight = config.mapHeight ?? depthChunks * CHUNK_SIZE_Z;
+
+  let atlasContext: AtlasWorldContext | undefined;
+  let atlasResolver: AtlasRegionResolver | undefined;
+  
+  if (config.mode === 'procedural') {
+    atlasContext = buildAtlasWorld(config.seed || 1337);
+    atlasResolver = new AtlasRegionResolver();
+  }
+
+  // 1. Determine the list of chunks to generate
+  const coords: { cx: number, cz: number, cy: number }[] = [];
+  
+  if (config.fractalPregenRadius !== undefined) {
+    const r = config.fractalPregenRadius;
+    for (let cz = -r; cz <= r; cz++) {
+      for (let cx = -r; cx <= r; cx++) {
+        for (let cy = 0; cy < heightChunks; cy++) {
+          coords.push({ cx, cz, cy });
+        }
+      }
+    }
+  } else {
+    for (let cz = 0; cz < depthChunks; cz++) {
+      for (let cx = 0; cx < widthChunks; cx++) {
+        for (let cy = 0; cy < heightChunks; cy++) {
+          coords.push({ cx, cz, cy });
+        }
+      }
+    }
+  }
+
+  // 2. Sort chunks from center outwards
+  const centerX = widthChunks / 2;
+  const centerZ = depthChunks / 2;
+  coords.sort((a, b) => {
+    // For fractal, center is 0,0. For normal, center is widthChunks/2, depthChunks/2.
+    const cxA = config.fractalPregenRadius !== undefined ? 0 : centerX;
+    const czA = config.fractalPregenRadius !== undefined ? 0 : centerZ;
+    
+    const distA = Math.pow(a.cx - cxA, 2) + Math.pow(a.cz - czA, 2);
+    const distB = Math.pow(b.cx - cxA, 2) + Math.pow(b.cz - czA, 2);
+    return distA - distB;
+  });
+
+  const totalChunks = coords.length;
+  let generatedChunks = 0;
+
+  yield { generatedChunks, totalChunks, currentPhase: 'INITIALIZING', world };
+
+  // 3. Generate chunks one by one and yield
+  for (const { cx, cz, cy } of coords) {
+    const chunk = generateChunkVoxels(cx, cz, cy, config, atlasContext, atlasResolver);
+    const key = VoxelChunk.getChunkKey(cx, cz, cy);
+    world.chunks.set(key, chunk);
+    
+    generatedChunks++;
+    yield { generatedChunks, totalChunks, currentPhase: 'GENERATING', world };
+  }
+
+  // 4. Finalize
+  yield { generatedChunks, totalChunks, currentPhase: 'FINISHING', world };
+
+  const doc = world.serializeToDoc();
+  (doc as any).generationMetadata = {
+    mode: config.mode,
+    terrainProfile: config.terrainProfile,
+    seed: config.seed,
+    baseMaterial: config.baseMaterial,
+    baseElevation: config.baseElevation,
+    elevationRange: config.elevationRange,
+    waterLevel: config.waterLevel,
+    fractalPregenRadius: config.fractalPregenRadius,
+    fractalBorderRadius: config.fractalBorderRadius,
+    createdAt: Date.now(),
+  };
+
+  return doc;
+}
