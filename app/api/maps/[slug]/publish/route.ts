@@ -35,7 +35,35 @@ export async function POST(
 
     const nextPublishedVersion = (worldMap.publishedVersion ?? 0) + 1;
 
-    // Complete snapshot payload of this map at publication time
+    // Retrieve region metadata for snapshot
+    const { VoxelRegionRepository } = await import('@/server/repositories/VoxelRegionRepository');
+    const regions = await VoxelRegionRepository.getRegionsForMap(slug);
+
+    // 1. Publish Validation
+    // A publish must fail if any required region is missing, still generating, or in an error state.
+    // Also, must have a valid checksum.
+    // We expect the generator metadata to tell us how many regions are expected,
+    // but for now we enforce that ALL retrieved draft regions must be COMPLETED and valid.
+    for (const r of regions) {
+      if (r.status !== 'COMPLETED') {
+        return NextResponse.json({ error: `Region ${r.coordinates.regionX},${r.coordinates.regionZ} is not COMPLETED (status: ${r.status})` }, { status: 400 });
+      }
+      if (!r.checksum) {
+        return NextResponse.json({ error: `Region ${r.coordinates.regionX},${r.coordinates.regionZ} is missing its artifact checksum` }, { status: 400 });
+      }
+      // Note: getRegionsForMap already joins the artifact, so if voxelData is null, the artifact is missing!
+      if (!r.voxelData) {
+        return NextResponse.json({ error: `Region ${r.coordinates.regionX},${r.coordinates.regionZ} points to a nonexistent artifact (checksum: ${r.checksum})` }, { status: 400 });
+      }
+    }
+
+    const regionMetadata = regions.map(r => ({
+      coordinates: r.coordinates,
+      generator: r.generator,
+      status: r.status,
+      checksum: r.checksum
+    }));
+
     const snapshotPayload = {
       id: worldMap.id,
       name: worldMap.name,
@@ -48,7 +76,6 @@ export async function POST(
       tileLayersData: worldMap.tileLayersData,
       freeformLayersData: worldMap.freeformLayersData,
       tilesetsData: worldMap.tilesetsData,
-      voxelData: worldMap.voxelData,
       mapType: worldMap.mapType,
       version: worldMap.version,
       publishedVersion: nextPublishedVersion,
@@ -73,11 +100,17 @@ export async function POST(
         data: serializedSnapshot,
         description,
         publishedBy: user.username || user.email || user.id,
+        regions: {
+          create: regionMetadata.map(r => ({
+            regionX: r.coordinates.regionX,
+            regionZ: r.coordinates.regionZ,
+            artifactChecksum: r.checksum as string
+          }))
+        }
       },
       update: {
         data: serializedSnapshot,
         description,
-        publishedBy: user.username || user.email || user.id,
       },
     });
 

@@ -30,10 +30,13 @@ export class MapSyncService {
           const map = await prisma.worldMap.findUnique({ where: { id: options.mapId } });
           if (!map) return;
 
+          const { VoxelStorageService } = await import('@/server/services/VoxelStorageService');
+          const voxelDoc = await VoxelStorageService.getVoxelDoc(map.id) || {};
+
           const res = await notifyGoMapSynced({
             id: map.id,
             name: map.name,
-            voxelData: JSON.parse(map.voxelData || "{}"),
+            voxelData: voxelDoc,
             npcsData: JSON.parse(map.npcsData || "[]"),
             tileLayersData: JSON.parse(map.tileLayersData || "[]"),
             tilesetsData: JSON.parse(map.tilesetsData || "[]"),

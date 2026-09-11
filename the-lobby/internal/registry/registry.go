@@ -187,19 +187,19 @@ func (m *Manager) AllItemSlugs() []string {
 	return slugs
 }
 
-func (m *Manager) GetRawMapData(mapID string) (grid, npcs, tileLayers, tilesets, voxels string, ok bool) {
+func (m *Manager) GetRawMapData(mapID string) (grid, npcs, tileLayers, tilesets string, ok bool) {
 	if m.db == nil {
-		return "", "", "", "", "", false
+		return "", "", "", "", false
 	}
 	err := m.db.QueryRow(`
-		SELECT COALESCE(gridData, ''), COALESCE(npcsData, ''), COALESCE(tileLayersData, ''), COALESCE(tilesetsData, ''), COALESCE(voxelData, '')
+		SELECT COALESCE(gridData, ''), COALESCE(npcsData, ''), COALESCE(tileLayersData, ''), COALESCE(tilesetsData, '')
 		FROM WorldMap
 		WHERE slug = ? OR id = ?
-	`, mapID, mapID).Scan(&grid, &npcs, &tileLayers, &tilesets, &voxels)
+	`, mapID, mapID).Scan(&grid, &npcs, &tileLayers, &tilesets)
 	
 	if err != nil {
 		log.Printf("[Registry] Failed to get map data for %s: %v", mapID, err)
-		return "", "", "", "", "", false
+		return "", "", "", "", false
 	}
-	return grid, npcs, tileLayers, tilesets, voxels, true
+	return grid, npcs, tileLayers, tilesets, true
 }

@@ -19,6 +19,7 @@ import { useSessionStore } from '../../state/useSessionStore';
 import { useMultiplayerStore } from '../../state/useMultiplayerStore';
 import { useToastStore } from '../../state/useToastStore';
 import { mapMesher } from '../../engine/MapMesher';
+import { worldStreamer } from '../../engine/streaming/WorldStreamer';
 import { loadMap } from '@/shared/game/maps';
 
 /**
@@ -33,12 +34,20 @@ export function onMapJoined(data: MapJoinedPayload): void {
     return;
   }
 
+  // 1. Establish Server Time
+  if (data.serverTime) {
+    const offset = data.serverTime - performance.now();
+    useSessionStore.getState().setServerTimeOffset(offset);
+    console.log(`[worldHandlers] Server clock synced. Offset: ${offset}ms`);
+  }
+
   useWorldStore.getState().setCurrentMapId(data.mapId);
   useWorldStore.getState().setInstanceId(data.instanceId);
   useWorldStore.getState().setWorldSessionState('joined');
 
+  // 2. Set Authoritative Spawn Coordinates (X, Y, Z)
   usePlayerStore.getState().setPlayerPosition(
-    { x: data.x, y: data.y },
+    { x: data.x, y: data.y, z: data.z },
     'down',
     false,
   );
@@ -46,30 +55,15 @@ export function onMapJoined(data: MapJoinedPayload): void {
   // Clear remote players from the previous map
   useMultiplayerStore.getState().setOtherPlayers({});
 
-  // Fetch the actual map document and set activeMapData on the store.
-  // MapMesher subscribes to activeMapData changes and will automatically
-  // rebuild the scene geometry.
-  loadMap(data.mapId)
-    .then((mapData) => {
-      useWorldStore.getState().setActiveMapData(mapData);
+  // 3. Trigger World Streaming
+  // This takes over the rest of the boot FSM (LOAD_MANIFEST -> ... -> READY)
+  worldStreamer.loadManifest(data.mapId).then(() => {
+    return worldStreamer.requestSpawnRegion(data.x, data.y, data.z);
+  }).catch((err) => {
+    console.error(`[worldHandlers] Fatal streaming error:`, err);
+  });
 
-      // Load logic tiles if present in the response (not part of GameMapData type but may be in API response)
-      if ((mapData as any).logicTiles) {
-        useWorldStore.getState().setLogicTiles((mapData as any).logicTiles);
-      }
-
-      console.log(`[worldHandlers] Map data loaded: ${data.mapId} (type: ${mapData.mapType || 'unknown'})`);
-    })
-    .catch((err) => {
-      console.error(`[worldHandlers] Failed to load map ${data.mapId}:`, err);
-      // Set null so MapMesher clears the scene
-      useWorldStore.getState().setActiveMapData(null);
-    });
-
-  // Enter exploring scene
-  useSessionStore.getState().setScene('exploring');
-
-  console.log(`[worldHandlers] Joined map: ${data.mapId} at (${data.x}, ${data.y})`);
+  console.log(`[worldHandlers] Joined map: ${data.mapId} at (${data.x}, ${data.y}, ${data.z})`);
 }
 
 /**
@@ -81,11 +75,11 @@ export function onContentReload(data: ContentReloadPayload): void {
   if (data.type === 'map' && data.mapId === currentMapId) {
     // Re-fetch the map data to pick up Studio changes
     loadMap(data.mapId, 0, undefined, true)
-      .then((mapData) => {
+      .then((mapData: any) => {
         useWorldStore.getState().setActiveMapData(mapData);
         console.log('[worldHandlers] Content reload applied for map:', data.mapId);
       })
-      .catch((err) => {
+      .catch((err: any) => {
         console.error('[worldHandlers] Content reload failed:', err);
       });
   }

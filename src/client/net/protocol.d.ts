@@ -13,7 +13,7 @@
 // ─── Scalar Helpers ───────────────────────────────────────────────────────────
 
 export type Direction = 'up' | 'down' | 'left' | 'right';
-export type Point2D = { x: number; y: number };
+export type Point2D = { x: number; y: number; z?: number };
 
 // ─── Server → Client Payloads ────────────────────────────────────────────────
 
@@ -22,6 +22,8 @@ export interface MapJoinedPayload {
   mapId: string;
   x: number;
   y: number;
+  z: number;
+  serverTime: number;
   joinSeq?: number;
 }
 
@@ -30,6 +32,7 @@ export interface PeerSnapshot {
   accountId?: string;
   x: number;
   y: number;
+  z?: number;
   vx?: number;
   vy?: number;
   vz?: number;
@@ -57,6 +60,7 @@ export interface PlayerMovedPayload {
   socketId: string;
   x: number;
   y: number;
+  z?: number;
   direction?: Direction;
   isMoving?: boolean;
   hp?: number;
@@ -72,6 +76,7 @@ export interface MoveAckPayload {
   seq: number;
   x: number;
   y: number;
+  z?: number;
   direction?: Direction;
 }
 
@@ -79,6 +84,7 @@ export interface PositionCorrectionPayload {
   seq: number;
   x: number;
   y: number;
+  z?: number;
   direction: Direction;
   reason?: string;
 }

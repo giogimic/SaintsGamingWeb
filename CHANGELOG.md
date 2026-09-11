@@ -1,5 +1,14 @@
-## [2.1.833] - 2026-09-11
+## [2.1.834] - 2026-09-11
 ### Added
+- Voxel Streaming Pipeline: The client `MapMesher` now strictly renders 3D chunks provided by `WorldStreamer` rather than attempting to decode legacy full-world payloads, cleanly supporting massive environments.
+- 3D Local Physics: Completely rewrote `LocalMovementSystem` to understand X/Y/Z vector movement instead of hard-mapping 2D directions to Y coordinates.
+- Chunk Residency Constraints: Players are now safely constrained from moving into unloaded boundary chunks via non-blocking physics simulations.
+
+### Changed
+- Legacy Boot Removal: Stripped remaining fallback monolithic loading calls from `worldHandlers` and the FSM pipeline in favor of authoritative streaming paths.
+- Obsolete Data Purge: Successfully ripped out all `voxelData` writes from legacy endpoints (`generate-chunks`, `rollback`, `generate`) following the schema teardown in Phase 4.
+
+## [2.1.833] - 2026-09-11
 - World Bootstrap: Introduced true WYSIWYG 3D progressive rendering in the setup wizard utilizing `SetupVoxelViewport`.
 - World Bootstrap: Refactored `useSetupWorldSession` to handle an async yield loop (`generateVoxelWorldDocProgressive`) ensuring the UI stays responsive at 60 FPS while chunks generate.
 - World Bootstrap: Passed the visually approved `voxelDoc` directly to `/api/setup/initialize-game` to prevent server regeneration, guaranteeing the exact world displayed during setup is saved as the starting realm.

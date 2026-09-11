@@ -329,8 +329,10 @@ type VoxelWorld struct {
 	DepthChunks  int
 	HeightChunks int
 	MapWidth     int
-	MapHeight    int
-	Chunks       map[string]*VoxelChunk
+	MapHeight     int
+	Chunks        map[string]*VoxelChunk
+	RM            *RegionManager
+	ActiveVersion int
 }
 
 // ParseVoxelDoc deserializes a JSON voxelDoc into server memory.
@@ -410,6 +412,22 @@ func ParseVoxelDoc(data []byte) (*VoxelWorld, error) {
 
 // GetChunk retrieves a chunk in a thread-safe manner.
 func (w *VoxelWorld) GetChunk(cx, cy, cz int) *VoxelChunk {
+	if w.RM != nil {
+		rx := cx / 8
+		rz := cz / 8
+		if cx < 0 && cx%8 != 0 {
+			rx--
+		}
+		if cz < 0 && cz%8 != 0 {
+			rz--
+		}
+		region := w.RM.GetRegion(w.ID, w.ActiveVersion, rx, rz)
+		if region != nil {
+			return region.GetChunk(cx, cy, cz)
+		}
+		return nil
+	}
+
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 	chunk, ok := w.Chunks[FormatChunkKey(cx, cy, cz)]
@@ -431,6 +449,11 @@ func (w *VoxelWorld) SetChunk(cx, cy, cz int, chunk *VoxelChunk) {
 
 // DeleteVoxel clears the 64-bit voxel word at global coordinates.
 func (w *VoxelWorld) DeleteVoxel(wx, wy, wz int) {
+	if w.RM != nil {
+		w.SetVoxel(wx, wy, wz, VoxelWordAir)
+		return
+	}
+
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	cx := wx >> ChunkShiftX
@@ -451,10 +474,9 @@ func (w *VoxelWorld) DeleteVoxel(wx, wy, wz int) {
 	ly := ((wy % ChunkSizeY) + ChunkSizeY) % ChunkSizeY
 
 	spatialKey := FormatChunkKey(cx, cy, cz)
-	legacyKey := fmt.Sprintf("%d_%d_%d", cx, cz, cy)
 	chunk, ok := w.Chunks[spatialKey]
 	if !ok || chunk == nil {
-		chunk = w.Chunks[legacyKey]
+		chunk = w.Chunks[fmt.Sprintf("%d_%d_%d", cx, cz, cy)]
 	}
 	if chunk != nil {
 		chunk.Set(lx, ly, lz, 0)
@@ -515,11 +537,29 @@ func (w *VoxelWorld) getVoxelLocked(wx, wy, wz int) uint64 {
 	lz := ((wz % ChunkSizeZ) + ChunkSizeZ) % ChunkSizeZ
 	ly := ((wy % ChunkSizeY) + ChunkSizeY) % ChunkSizeY
 
-	spatialKey := FormatChunkKey(cx, cy, cz)
-	chunk, ok := w.Chunks[spatialKey]
-	if !ok || chunk == nil {
-		chunk = w.Chunks[fmt.Sprintf("%d_%d_%d", cx, cz, cy)]
+	var chunk *VoxelChunk
+	if w.RM != nil {
+		rx := cx / 8
+		rz := cz / 8
+		if cx < 0 && cx%8 != 0 {
+			rx--
+		}
+		if cz < 0 && cz%8 != 0 {
+			rz--
+		}
+		region := w.RM.GetRegion(w.ID, w.ActiveVersion, rx, rz)
+		if region != nil {
+			chunk = region.GetChunk(cx, cy, cz)
+		}
+	} else {
+		spatialKey := FormatChunkKey(cx, cy, cz)
+		var ok bool
+		chunk, ok = w.Chunks[spatialKey]
+		if !ok || chunk == nil {
+			chunk = w.Chunks[fmt.Sprintf("%d_%d_%d", cx, cz, cy)]
+		}
 	}
+
 	if chunk == nil {
 		return VoxelWordAir
 	}
@@ -535,6 +575,30 @@ func (w *VoxelWorld) GetVoxel(wx, wy, wz int) uint64 {
 
 // SetVoxel sets the 64-bit voxel word at global coordinates (wx, wy, wz).
 func (w *VoxelWorld) SetVoxel(wx, wy, wz int, word uint64) {
+	if w.RM != nil {
+		cx := wx >> ChunkShiftX
+		cz := wz >> ChunkShiftZ
+		if wx < 0 && wx%ChunkSizeX != 0 {
+			cx--
+		}
+		if wz < 0 && wz%ChunkSizeZ != 0 {
+			cz--
+		}
+		rx := cx / 8
+		rz := cz / 8
+		if cx < 0 && cx%8 != 0 {
+			rx--
+		}
+		if cz < 0 && cz%8 != 0 {
+			rz--
+		}
+		region := w.RM.GetRegion(w.ID, w.ActiveVersion, rx, rz)
+		if region != nil {
+			region.SetVoxel(wx, wy, wz, word)
+		}
+		return
+	}
+
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	cx := wx >> ChunkShiftX

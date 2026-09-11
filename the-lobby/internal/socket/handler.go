@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/aoi"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/auth"
@@ -363,6 +364,8 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 				MapID:      prev.BaseMapID,
 				X:          prev.X,
 				Y:          prev.Y,
+				Z:          prev.Z,
+				ServerTime: time.Now().UnixMilli(),
 				JoinSeq:    req.JoinSeq,
 			})
 			h.EmitToSocket(sid, protocol.EvMapPlayers, h.eng.Players().SnapshotPeers(prev.MapID, accountID))
@@ -442,6 +445,8 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 		MapID:      base,
 		X:          p.X,
 		Y:          p.Y,
+		Z:          p.Z,
+		ServerTime: time.Now().UnixMilli(),
 		JoinSeq:    req.JoinSeq,
 	})
 	h.EmitToSocket(sid, protocol.EvMapPlayers, h.eng.Players().SnapshotPeers(inst.InstanceID, accountID))

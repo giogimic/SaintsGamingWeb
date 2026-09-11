@@ -51,9 +51,11 @@ export async function POST(
       );
     }
 
-    let snapshot: any;
+    let snapshot: any = {};
     try {
-      snapshot = JSON.parse(versionEntry.data);
+      if (versionEntry.data) {
+        snapshot = JSON.parse(versionEntry.data);
+      }
     } catch {
       return NextResponse.json(
         { error: `Corrupted snapshot data for version ${targetVersion}.` },
@@ -74,7 +76,6 @@ export async function POST(
         tileLayersData: snapshot.tileLayersData || "[]",
         freeformLayersData: snapshot.freeformLayersData || "[]",
         tilesetsData: snapshot.tilesetsData || "[]",
-        voxelData: snapshot.voxelData || null,
         publishedVersion: targetVersion,
         publishedData: versionEntry.data,
         version: { increment: 1 }, // editor draft version increments to track rollback edit

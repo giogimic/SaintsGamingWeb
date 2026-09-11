@@ -50,8 +50,15 @@ export class LocalMovementSystem {
       return true;
     } else if (mapType === 'VOXEL' || mapType === 'FRACTAL') {
       const voxelWorld = mapMesher.getVoxelWorld();
-      if (!voxelWorld) return true;
+      if (!voxelWorld) return false; // Cannot move without world
       
+      const chunkX = Math.floor(x / 32); // CHUNK_SIZE
+      const chunkZ = Math.floor(y / 32); // y parameter is actually targetZ in 3D mode
+      
+      const chunk = voxelWorld.getChunk(chunkX, chunkZ, 0);
+      if (!chunk || chunk.isEmpty()) {
+         return false; // Safely constrain if missing
+      }
       return true;
     }
     
@@ -61,13 +68,17 @@ export class LocalMovementSystem {
   private processMovement() {
     let dx = 0;
     let dy = 0;
+    let dz = 0;
     let newDirection = '';
 
+    const activeMapData = useWorldStore.getState().activeMapData;
+    const is3D = activeMapData && (activeMapData.mapType === 'VOXEL' || activeMapData.mapType === 'FRACTAL' || activeMapData.mapType === 'HYBRID');
+
     if (inputManager.isAnyKeyPressed(KEYBINDS.MOVE_UP)) {
-      dy = -1;
+      if (is3D) dz = 1; else dy = -1;
       newDirection = 'up';
     } else if (inputManager.isAnyKeyPressed(KEYBINDS.MOVE_DOWN)) {
-      dy = 1;
+      if (is3D) dz = -1; else dy = 1;
       newDirection = 'down';
     } else if (inputManager.isAnyKeyPressed(KEYBINDS.MOVE_LEFT)) {
       dx = -1;
@@ -77,7 +88,7 @@ export class LocalMovementSystem {
       newDirection = 'right';
     }
 
-    const isMoving = dx !== 0 || dy !== 0;
+    const isMoving = dx !== 0 || dy !== 0 || dz !== 0;
     const now = Date.now();
     const playerStore = usePlayerStore.getState();
     const currentPos = playerStore.player.position;
@@ -85,29 +96,30 @@ export class LocalMovementSystem {
     if (isMoving && now - this.lastMoveCommandTime > this.MOVE_THROTTLE_MS) {
       
       const targetX = currentPos.x + dx;
-      const targetY = currentPos.y + dy;
+      let targetY = currentPos.y + dy;
+      let targetZ = (currentPos.z || 0) + dz;
 
-      if (!this.isTileWalkable(targetX, targetY)) {
+      if (!this.isTileWalkable(targetX, is3D ? targetZ : targetY)) {
         if (playerStore.player.direction !== newDirection) {
             playerStore.setPlayerPosition(currentPos, newDirection as any, false);
-            socketManager.emit('player_move' as any, { x: currentPos.x, y: currentPos.y, direction: newDirection });
+            socketManager.emit('player_move' as any, { x: currentPos.x, y: currentPos.y, z: currentPos.z, direction: newDirection });
         }
         return;
       }
 
       this.lastMoveCommandTime = now;
       
-      playerStore.setPlayerPosition({ x: targetX, y: targetY }, newDirection as any, true);
+      playerStore.setPlayerPosition({ x: targetX, y: targetY, z: targetZ }, newDirection as any, true);
 
       const multiStore = useMultiplayerStore.getState();
       const seq = multiStore.incrementMoveSeq();
       multiStore.addPendingMove({
           seq,
           direction: newDirection as any,
-          predictedPos: { x: targetX, y: targetY }
+          predictedPos: { x: targetX, y: targetY, z: targetZ }
       });
 
-      const targetPos3D = new Vector3(targetX, 0, targetY);
+      const targetPos3D = new Vector3(targetX, targetY, targetZ);
       const dummyPlayerAABB = {
          intersectsPoint: (p: Vector3) => p.x === targetPos3D.x && p.z === targetPos3D.z,
          intersectsMinMax: () => false
@@ -127,6 +139,7 @@ export class LocalMovementSystem {
         socketManager.emit('player_move' as any, {
           x: targetX,
           y: targetY,
+          z: targetZ,
           direction: newDirection,
           seq
         });
@@ -136,6 +149,7 @@ export class LocalMovementSystem {
       socketManager.emit('player_move' as any, {
         x: currentPos.x,
         y: currentPos.y,
+        z: currentPos.z,
         direction: playerStore.player.direction
       });
     }

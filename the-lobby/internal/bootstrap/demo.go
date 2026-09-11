@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/protocol"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/world"
@@ -21,23 +20,15 @@ func EnsureDemo(db *sql.DB, wm *world.Manager) error {
 		return err
 	}
 
-	var count int
-	var existingVoxelData sql.NullString
-	_ = db.QueryRow(`SELECT voxelData FROM WorldMap WHERE id = ?`, protocol.DemoMapID).Scan(&existingVoxelData)
-	if existingVoxelData.Valid {
+	var existingGridData string
+	_ = db.QueryRow(`SELECT gridData FROM WorldMap WHERE id = ?`, protocol.DemoMapID).Scan(&existingGridData)
+	count := 0
+	if existingGridData != "" {
 		count = 1
 	}
 
-	hasValidVoxels := false
-	if count > 0 && len(existingVoxelData.String) > 20 {
-		// A very basic check to see if chunks were actually populated
-		if strings.Contains(existingVoxelData.String, `"chunks"`) && !strings.Contains(existingVoxelData.String, `"chunks":{}`) {
-			hasValidVoxels = true
-		}
-	}
-
-	if count > 0 && hasValidVoxels && !force {
-		log.Printf("[bootstrap] DEMO_SANDBOX already present and valid (set FORCE_DEMO_MAP=1 to rewrite)")
+	if count > 0 && !force {
+		log.Printf("[bootstrap] DEMO_SANDBOX already present (set FORCE_DEMO_MAP=1 to rewrite)")
 		_ = loadExisting(db, wm)
 		return nil
 	}
@@ -56,22 +47,13 @@ func EnsureDemo(db *sql.DB, wm *world.Manager) error {
 	groundJSON, _ := json.Marshal(ground)
 	tileLayers := `[{"name":"Ground","width":` + itoa(def.Width) + `,"height":` + itoa(def.Height) + `,"data":` + string(groundJSON) + `}]`
 
-	voxelJSON := "{}"
-	if def.Voxel != nil {
-		doc := def.Voxel.SerializeToDoc()
-		vb, err := json.Marshal(doc)
-		if err == nil {
-			voxelJSON = string(vb)
-		}
-	}
-
 	if count > 0 {
-		_, err = db.Exec(`UPDATE WorldMap SET name=?, gridData=?, npcsData=?, tileLayersData=?, tilesetsData=?, voxelData=?, mapType='FRACTAL', regionClass='fractal', version=version+1, publishedVersion=version+1, publishedData='{}', updatedAt=datetime('now') WHERE id=?`,
-			def.Name, gridJSON, string(npcs), tileLayers, tilesets, voxelJSON, protocol.DemoMapID)
+		_, err = db.Exec(`UPDATE WorldMap SET name=?, gridData=?, npcsData=?, tileLayersData=?, tilesetsData=?, mapType='FRACTAL', regionClass='fractal', version=version+1, publishedVersion=version+1, publishedData='{}', updatedAt=datetime('now') WHERE id=?`,
+			def.Name, gridJSON, string(npcs), tileLayers, tilesets, protocol.DemoMapID)
 	} else {
-		_, err = db.Exec(`INSERT INTO WorldMap (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, voxelData, mapType, regionClass, version, publishedVersion, publishedData)
-			VALUES (?, 'saints', ?, ?, '{}', ?, '[]', ?, ?, ?, 'FRACTAL', 'fractal', 1, 1, '{}')`,
-			protocol.DemoMapID, def.Name, gridJSON, string(npcs), tileLayers, tilesets, voxelJSON)
+		_, err = db.Exec(`INSERT INTO WorldMap (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, mapType, regionClass, version, publishedVersion, publishedData)
+			VALUES (?, 'saints', ?, ?, '{}', ?, '[]', ?, ?, 'FRACTAL', 'fractal', 1, 1, '{}')`,
+			protocol.DemoMapID, def.Name, gridJSON, string(npcs), tileLayers, tilesets)
 	}
 	if err != nil {
 		return err
@@ -87,7 +69,7 @@ func EnsureDemo(db *sql.DB, wm *world.Manager) error {
 }
 
 func loadExisting(db *sql.DB, wm *world.Manager) error {
-	rows, err := db.Query(`SELECT id, name, gridData, npcsData, voxelData, regionClass FROM WorldMap`)
+	rows, err := db.Query(`SELECT id, name, gridData, npcsData, regionClass FROM WorldMap`)
 	if err != nil {
 		// Fallback query if columns not present
 		rows, err = db.Query(`SELECT id, name, gridData, npcsData FROM WorldMap`)
@@ -98,14 +80,14 @@ func loadExisting(db *sql.DB, wm *world.Manager) error {
 	defer rows.Close()
 
 	cols, _ := rows.Columns()
-	hasVoxelCols := len(cols) >= 6
+	hasRegionClass := len(cols) >= 5
 
 	for rows.Next() {
 		var id, name string
-		var gridData, npcsData, voxelData, regionClass sql.NullString
+		var gridData, npcsData, regionClass sql.NullString
 
-		if hasVoxelCols {
-			if err := rows.Scan(&id, &name, &gridData, &npcsData, &voxelData, &regionClass); err != nil {
+		if hasRegionClass {
+			if err := rows.Scan(&id, &name, &gridData, &npcsData, &regionClass); err != nil {
 				continue
 			}
 		} else {
@@ -114,37 +96,13 @@ func loadExisting(db *sql.DB, wm *world.Manager) error {
 			}
 		}
 
-		var voxelWorld *world.VoxelWorld
 		var mapBiome *world.BiomeDefinition
-		if voxelData.Valid && voxelData.String != "" && voxelData.String != "{}" && voxelData.String != "null" {
-			voxelWorld, _ = world.ParseVoxelDoc([]byte(voxelData.String))
-			
-			// Extract seed from generationMetadata if present
-			var rawDoc struct {
-				GenerationMetadata struct {
-					Seed int `json:"seed"`
-				} `json:"generationMetadata"`
-			}
-			if err := json.Unmarshal([]byte(voxelData.String), &rawDoc); err == nil && rawDoc.GenerationMetadata.Seed != 0 {
-				b := world.GetDefaultBiome()
-				b.Seed = uint32(rawDoc.GenerationMetadata.Seed)
-				mapBiome = &b
-			}
-		}
 
 		grid, _ := world.ParseGridJSON(gridData.String)
 		h := len(grid)
 		w := 0
 		if h > 0 {
 			w = len(grid[0])
-		}
-		if voxelWorld != nil {
-			if voxelWorld.MapWidth > 0 {
-				w = voxelWorld.MapWidth
-			}
-			if voxelWorld.MapHeight > 0 {
-				h = voxelWorld.MapHeight
-			}
 		}
 		var npcs []world.NPCDef
 		if npcsData.Valid && npcsData.String != "" && npcsData.String != "[]" {
@@ -177,7 +135,6 @@ func loadExisting(db *sql.DB, wm *world.Manager) error {
 			Grid:        grid,
 			NPCs:        npcs,
 			RegionClass: rClass,
-			Voxel:       voxelWorld,
 			Biome:       mapBiome,
 			SpawnX:      float64(protocol.DefaultSpawnX),
 			SpawnY:      float64(protocol.DefaultSpawnY),

@@ -53,7 +53,7 @@ export interface SetupStartingMapData {
   mapType?: 'TILE' | 'VOXEL' | 'FRACTAL';
   fractalBorderRadius?: number;
   fractalPregenRadius?: number;
-  voxelDoc?: VoxelWorldDocV3;
+  bootstrapRevisionId?: string;
 }
 
 interface StartingMapStepProps {
@@ -88,6 +88,7 @@ export function StartingMapStep({
 
   const {
     status,
+    bootstrapRevisionId,
     voxelDoc,
     deserializedWorld,
     spawnResult,
@@ -122,10 +123,10 @@ export function StartingMapStep({
             interactPrompt: 'Respawn',
           }
         ],
-        voxelDoc: voxelDoc || undefined,
+        bootstrapRevisionId: bootstrapRevisionId || undefined,
       });
     }
-  }, [status, spawnResult, previewSizeChunks, voxelDoc]);
+  }, [status, spawnResult, previewSizeChunks, bootstrapRevisionId]);
 
   const totalBlocks = (previewSizeChunks * CHUNK_SIZE_X) * (previewSizeChunks * CHUNK_SIZE_Z);
 

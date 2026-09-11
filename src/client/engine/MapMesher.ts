@@ -233,29 +233,19 @@ export class MapMesher {
   private buildVoxelMap(mapData: any) {
     if (!this.scene || !this.voxelChunkMesher) return;
 
-    const voxelDoc: VoxelWorldDocV3 | undefined = mapData.voxelDoc;
-    if (!voxelDoc) {
-      console.warn('[MapMesher] Voxel map loaded but no voxelDoc found, showing fallback.');
-      this.buildFallbackGround(mapData);
-      return;
-    }
+    // Voxel maps are now strictly streamed. We do NOT load voxelDoc monoliths here.
+    // The Boot FSM and WorldStreamer handle chunk acquisition.
+    // We just wait for startVoxelStreaming() and loadStreamedChunk().
+    console.log(`[MapMesher] buildVoxelMap called for ${mapData.id}. Awaiting WorldStreamer.`);
+  }
 
-    // Build VoxelWorld from the document
-    this.voxelWorld = VoxelWorld.deserializeFromDoc(voxelDoc);
-
-    // Mesh all loaded chunks
-    const chunks = Array.from(this.voxelWorld.chunks.values());
-    let meshCount = 0;
-    for (const chunk of chunks) {
-      if (chunk.isEmpty()) continue;
-      const result = this.voxelChunkMesher.meshChunk(this.voxelWorld, chunk);
-      if (result?.mesh) {
-        result.mesh.parent = this.voxelRoot;
-        meshCount++;
-      }
-    }
-
-    console.log(`[MapMesher] Built voxel map: ${chunks.length} chunks, ${meshCount} meshed`);
+  /**
+   * Initializes the MapMesher for a streaming voxel world, preventing fallback ground generation.
+   */
+  public startVoxelStreaming() {
+    this.clearMap();
+    this.voxelWorld = new VoxelWorld({ id: 'streamed' });
+    console.log(`[MapMesher] Started voxel streaming mode. Waiting for chunks...`);
   }
 
   /**

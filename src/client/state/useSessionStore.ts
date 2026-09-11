@@ -18,6 +18,20 @@ export type ClientScene =
   | 'battle'
   | 'offline';
 
+export type BootState = 
+  | 'TITLE'
+  | 'AUTH'
+  | 'REGISTRY'
+  | 'CONNECT'
+  | 'JOIN_WORLD'
+  | 'LOAD_MANIFEST'
+  | 'REQUEST_SPAWN_REGION'
+  | 'VERIFY_DECODE'
+  | 'EXTRACT_SPAWN'
+  | 'MESH'
+  | 'VALIDATE_SPAWN'
+  | 'READY';
+
 export type ConnectionStatus = 'connected' | 'connecting' | 'reconnecting' | 'disconnected';
 
 export interface SessionState {
@@ -28,15 +42,19 @@ export interface SessionState {
   permissionLevel: number;
   isAuthenticated: boolean;
 
-  // Scene
+  // Scene & Boot
   activeScene: ClientScene;
+  bootState: BootState;
   setScene: (scene: ClientScene) => void;
+  setBootState: (state: BootState) => void;
 
   // Connection
   connectionStatus: ConnectionStatus;
   latencyMs: number;
+  serverTimeOffset: number;
   setConnectionStatus: (status: ConnectionStatus) => void;
   setLatencyMs: (ms: number) => void;
+  setServerTimeOffset: (offset: number) => void;
 
   // Mode
   isStudioMode: boolean;
@@ -68,15 +86,19 @@ export const useSessionStore = create<SessionState>()(
       permissionLevel: 0,
       isAuthenticated: false,
 
-      // Scene
+      // Scene & Boot
       activeScene: 'title' as ClientScene,
+      bootState: 'TITLE' as BootState,
       setScene: (scene) => set((s) => { s.activeScene = scene; }),
+      setBootState: (state) => set((s) => { s.bootState = state; }),
 
       // Connection
       connectionStatus: 'disconnected' as ConnectionStatus,
       latencyMs: 0,
+      serverTimeOffset: 0,
       setConnectionStatus: (status) => set((s) => { s.connectionStatus = status; }),
       setLatencyMs: (ms) => set((s) => { s.latencyMs = ms; }),
+      setServerTimeOffset: (offset) => set((s) => { s.serverTimeOffset = offset; }),
 
       // Mode
       isStudioMode: false,
@@ -108,7 +130,14 @@ export const useSessionStore = create<SessionState>()(
         s.characterName = null;
         s.permissionLevel = 0;
         s.isAuthenticated = false;
+        s.bootState = 'TITLE';
       }),
     }))
   )
 );
+
+/** Helper to get current authoritative server time based on offset */
+export function getServerTime(): number {
+  const state = useSessionStore.getState();
+  return performance.now() + state.serverTimeOffset;
+}

@@ -2,11 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/web/lib/prisma';
 import { auth } from '@/auth';
 import { getSystemSetupStatus, SETUP_SETTING_KEYS } from '@/shared/game/setup/setupDetection';
-import { generateDefaultWorldDoc, type VoxelWorldDocV3 } from '@/shared/game/voxel/VoxelWorldDoc';
-import { generateVoxelWorldDoc } from '@/shared/game/voxel/VoxelWorldGenerator';
 import { DEFAULT_STUDIO_TILESETS, DEFAULT_STUDIO_GROUND_GID } from '@/shared/game/studioTilesetBootstrap';
 import { notifyGoMapSynced } from '@/server/goMmoNotify';
-// DEFAULT_STARTER_HERO_PRESETS removed — archetypes only come from user input or Studio
 import { DEFAULT_PLAYABLE_CLASSES } from '@/shared/game/classCatalog';
 import { classDataToDb } from '@/shared/game/classDefMap';
 import { DEMO_LOGIC_TILES } from '@/shared/game/setup/logicTilesSeed';
@@ -15,6 +12,7 @@ import { bootstrapDynamicStarterContent } from '@/server/starterContentBootstrap
 export const dynamic = 'force-dynamic';
 
 export interface InitializeGamePayload {
+  bootstrapRevisionId?: string;
   game: {
     name: string;
     description?: string;
@@ -66,7 +64,6 @@ export interface InitializeGamePayload {
     foundationMaterial?: string;
     mapType?: 'TILE' | 'VOXEL' | 'FRACTAL';
     spawnPoint: { x: number; y: number; z?: number };
-    voxelDoc?: VoxelWorldDocV3;
     grid?: number[][];
     tileLayers?: Array<{ name: string; grid: number[][] }>;
     tilesetAsset?: any;
@@ -130,26 +127,19 @@ export async function POST(req: Request) {
     const spawnX = typeof map.spawnPoint?.x === 'number' ? map.spawnPoint.x : Math.floor(mapWidth / 2);
     const spawnY = typeof map.spawnPoint?.y === 'number' ? map.spawnPoint.y : Math.floor(mapHeight / 2);
 
-    let voxelDoc: VoxelWorldDocV3;
-    if (map.voxelDoc && map.voxelDoc.formatVersion === 3) {
-      voxelDoc = map.voxelDoc;
-    } else if (map.mapType === 'FRACTAL') {
-      voxelDoc = generateVoxelWorldDoc({
-        id: mapId,
-        name: mapName,
-        widthChunks,
-        depthChunks,
-        blockSizePx,
-        mode: 'procedural',
-        seed: Date.now().toString(),
-      });
-    } else {
-      voxelDoc = generateDefaultWorldDoc(widthChunks, depthChunks, blockSizePx);
-      voxelDoc.id = mapId;
-      voxelDoc.name = mapName;
+    if (!body.bootstrapRevisionId) {
+      return NextResponse.json({ error: 'Missing bootstrapRevisionId' }, { status: 400 });
     }
 
-    const serializedVoxelDoc = JSON.stringify(voxelDoc);
+    // 3. Resolve Bootstrap Revision
+    const revision = await prisma.worldBootstrapRevision.findUnique({
+      where: { id: body.bootstrapRevisionId },
+      include: { regions: true }
+    });
+
+    if (!revision || revision.status !== 'COMPLETED') {
+      return NextResponse.json({ error: 'Invalid or incomplete bootstrap revision' }, { status: 400 });
+    }
 
     const userGates = Array.isArray(map.gates) && map.gates.length > 0
       ? map.gates.map((g: any, idx: number) => ({
@@ -325,16 +315,8 @@ export async function POST(req: Request) {
           encountersData: JSON.stringify([]),
           entitiesData: JSON.stringify([]),
           tileLayersData: JSON.stringify(initialTileLayers),
-          freeformLayersData: JSON.stringify([
-            {
-              id: 'voxel_world_doc',
-              name: 'Voxel World Model',
-              type: 'voxel',
-              voxelDoc: voxelDoc,
-            },
-          ]),
+          freeformLayersData: JSON.stringify([]),
           tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
-          voxelData: serializedVoxelDoc,
           version: 1,
           mapType: map.mapType || 'VOXEL',
         },
@@ -344,16 +326,8 @@ export async function POST(req: Request) {
           gatesData: JSON.stringify(gatesPayload),
           gridData: JSON.stringify(initialLogicGrid),
           tileLayersData: JSON.stringify(initialTileLayers),
-          freeformLayersData: JSON.stringify([
-            {
-              id: 'voxel_world_doc',
-              name: 'Voxel World Model',
-              type: 'voxel',
-              voxelDoc: voxelDoc,
-            },
-          ]),
+          freeformLayersData: JSON.stringify([]),
           tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
-          voxelData: serializedVoxelDoc,
           version: { increment: 1 },
           mapType: map.mapType || 'VOXEL',
         },
@@ -438,11 +412,34 @@ export async function POST(req: Request) {
     // 5. Seed Dynamic Starter Content (Abilities, Items, Mounts, Dungeons)
     await bootstrapDynamicStarterContent('saints', 'default');
 
+    // 5b. Persist WorldMapVersion using exact revision artifacts (WYSIWYG Guarantee)
+    const publishedVersion = await prisma.worldMapVersion.upsert({
+      where: {
+        mapId_version: { mapId, version: 1 }
+      },
+      create: {
+        mapId,
+        version: 1,
+        name: mapName,
+        regions: {
+          create: revision.regions.map(r => ({
+            regionX: r.regionX,
+            regionZ: r.regionZ,
+            artifactChecksum: r.artifactChecksum
+          }))
+        }
+      },
+      update: {
+        // If it somehow exists, we shouldn't really mutate published versions in practice,
+        // but for safety in the setup script, we will just update it.
+      }
+    });
+
     // 6. Notify Go MMO realtime server of new starting voxel map
     void notifyGoMapSynced({
       id: mapId,
       name: mapName,
-      voxelData: voxelDoc,
+      voxelData: {},
       npcsData: [],
       tileLayersData: [],
       tilesetsData: [],

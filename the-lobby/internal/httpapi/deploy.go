@@ -3,7 +3,9 @@ package httpapi
 import (
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
+	"sync"
 
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/protocol"
 )
@@ -84,6 +86,38 @@ func (s *Server) internalDeployRelease(w http.ResponseWriter, r *http.Request) {
 
 	// Hot reload everything safely
 	for _, m := range payload.Maps {
+		if s.World != nil && s.World.RM != nil && m.Version > 0 {
+			manifest, err := s.World.RM.LoadManifest(m.ID, m.Version)
+			if err == nil {
+				var wg sync.WaitGroup
+				workers := 4
+				sem := make(chan struct{}, workers)
+
+				for _, r := range manifest.Regions {
+					wg.Add(1)
+					go func(rx, rz int, checksum string) {
+						defer wg.Done()
+						sem <- struct{}{}
+						defer func() { <-sem }()
+						
+						region, err := s.World.RM.FetchAndDecodeRegion(m.ID, m.Version, rx, rz, checksum)
+						if err == nil {
+							s.World.RM.SetRegion(m.ID, m.Version, rx, rz, region)
+						} else {
+							log.Printf("[deploy] failed to fetch region %d,%d for %s: %v", rx, rz, m.ID, err)
+						}
+					}(r.RegionX, r.RegionZ, r.ArtifactChecksum)
+				}
+				wg.Wait()
+				
+				s.World.RM.ActivateVersion(m.ID, m.Version)
+				s.World.RM.EvictOldVersions(m.ID, m.Version)
+				log.Printf("[deploy] activated %s v%d with %d regions", m.ID, m.Version, len(manifest.Regions))
+			} else {
+				log.Printf("[deploy] failed to load manifest for %s v%d: %v", m.ID, m.Version, err)
+			}
+		}
+
 		voxelStr := string(m.VoxelData)
 		ReloadMapInMemory(s.World, m.ID, m.Name, string(m.GridData), voxelStr)
 		

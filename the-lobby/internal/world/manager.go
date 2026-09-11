@@ -76,6 +76,7 @@ type Manager struct {
 
 	// FetchMapDef is an injected callback to lazily load a MapDef from the database
 	FetchMapDef func(id string) (*MapDef, error)
+	RM          *RegionManager
 }
 
 func NewManager(maxPerShard int) *Manager {
@@ -95,6 +96,7 @@ func NewManager(maxPerShard int) *Manager {
 func (m *Manager) InitJit(nextJsURL, secret string, emitToRoom func(room, event string, payload any)) {
 	m.Jit = NewGeneratorClient(nextJsURL, secret, m)
 	m.Jit.EmitToRoom = emitToRoom
+	m.RM = NewRegionManager(nextJsURL, secret)
 }
 
 func (m *Manager) RegisterDef(def *MapDef) {
@@ -118,6 +120,10 @@ func (m *Manager) EnsureDemoDef() *MapDef {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if d, ok := m.defs[protocol.DemoMapID]; ok {
+		if d.Voxel == nil {
+			demoVoxel := BuildDemoVoxelWorld(d.Width/32, d.Height/32)
+			d.Voxel = demoVoxel
+		}
 		return d
 	}
 	d := BuildDemoMapDef()

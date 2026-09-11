@@ -48,37 +48,37 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
     let tileLayers: any[] = [];
     let voxelDoc: any = undefined;
 
-    // 1. Authoritative native voxelData column
-    if (worldMap.voxelData) {
-      try {
-        const parsedNative = JSON.parse(worldMap.voxelData);
-        if (parsedNative && parsedNative.formatVersion === 3) {
-          voxelDoc = parsedNative;
+    // 1. Authoritative native voxel storage (Phase 2 Migration)
+    try {
+      const { VoxelStorageService } = await import('@/server/services/VoxelStorageService');
+      const snapshotData = worldMap as any;
+      if (!isDraft && snapshotData.regions) {
+        // Phase 2B Snapshot Region Manifest
+        // If this map is a published version, we extract the precise checksums and load ONLY those artifacts.
+        const checksums = snapshotData.regions.map((r: any) => r.artifactChecksum || r.checksum).filter(Boolean);
+        if (checksums.length > 0) {
+          const publishedDoc = await VoxelStorageService.getVoxelDocFromArtifacts(slug, checksums);
+          if (publishedDoc) voxelDoc = publishedDoc;
         }
-      } catch (e) {
-        console.warn(`[MapAPI] Failed to parse native voxelData for ${slug}:`, e);
+      } else {
+        // Draft mode - loads the latest mutable draft pointers from WorldRegion
+        const liveDoc = await VoxelStorageService.getVoxelDoc(slug);
+        if (liveDoc) voxelDoc = liveDoc;
       }
+    } catch (e) {
+      console.warn(`[MapAPI] Failed to fetch voxel doc for ${slug}:`, e);
     }
 
     try {
       const parsed = JSON.parse(worldMap.tileLayersData || "[]");
       if (Array.isArray(parsed)) {
         tileLayers = parsed;
-      } else if (!voxelDoc && parsed && typeof parsed === 'object' && parsed.formatVersion === 3) {
-        voxelDoc = parsed;
       }
     } catch {
       tileLayers = [];
     }
 
-    if (!voxelDoc) {
-      try {
-        const parsedGrid = JSON.parse(worldMap.gridData || "{}");
-        if (parsedGrid && typeof parsedGrid === 'object' && parsedGrid.formatVersion === 3) {
-          voxelDoc = parsedGrid;
-        }
-      } catch {}
-    }
+
 
     let tilesets = [];
     try {
@@ -99,12 +99,6 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
       freeformLayers = [];
     }
 
-    if (!voxelDoc && Array.isArray(freeformLayers)) {
-      const voxelLayer = freeformLayers.find((l: any) => l.type === 'voxel' || l.id === 'voxel_world_doc');
-      if (voxelLayer && voxelLayer.voxelDoc) {
-        voxelDoc = voxelLayer.voxelDoc;
-      }
-    }
     const cleanFreeformLayers = Array.isArray(freeformLayers)
       ? freeformLayers.filter((l: any) => l.type !== 'voxel' && l.id !== 'voxel_world_doc')
       : [];
@@ -494,7 +488,6 @@ export async function POST(
               }
             : {}),
           ...(body.freeformLayers || body.voxelDoc ? { freeformLayersData: JSON.stringify(freeformLayersForSave) } : {}),
-          voxelData: JSON.stringify(body.voxelDoc),
           ...(body.regionClass ? { regionClass: body.regionClass } : {}),
           ...(body.proceduralConfig !== undefined
             ? { proceduralConfig: typeof body.proceduralConfig === 'string' ? body.proceduralConfig : JSON.stringify(body.proceduralConfig) }
@@ -514,7 +507,6 @@ export async function POST(
           tileLayersData: JSON.stringify(visualsForCreate.tileLayers || []),
           freeformLayersData: JSON.stringify(freeformLayersForSave),
           tilesetsData: JSON.stringify(visualsForCreate.tilesets || []),
-          voxelData: JSON.stringify(body.voxelDoc),
           regionClass: body.regionClass || "authored",
           mapType: body.mapType || "TILE",
           proceduralConfig: body.proceduralConfig
@@ -522,6 +514,15 @@ export async function POST(
             : null,
         },
       });
+
+      if (body.voxelDoc) {
+        try {
+          const { VoxelStorageService } = await import('@/server/services/VoxelStorageService');
+          await VoxelStorageService.saveVoxelDoc(body.voxelDoc);
+        } catch (e) {
+          console.error(`[MapAPI] Failed to persist region artifacts for map ${slug}:`, e);
+        }
+      }
 
       if (isFirstMap) {
         await prisma.siteSetting.upsert({
@@ -551,7 +552,6 @@ export async function POST(
               }
             : {}),
           ...(body.freeformLayers || body.voxelDoc ? { freeformLayersData: JSON.stringify(freeformLayersForSave) } : {}),
-          voxelData: JSON.stringify(body.voxelDoc),
           ...(body.regionClass ? { regionClass: body.regionClass } : {}),
           ...(body.mapType ? { mapType: body.mapType } : {}),
           version: { increment: 1 },
@@ -568,7 +568,6 @@ export async function POST(
           tileLayersData: JSON.stringify(visualsForCreate.tileLayers || []),
           freeformLayersData: JSON.stringify(freeformLayersForSave),
           tilesetsData: JSON.stringify(visualsForCreate.tilesets || []),
-          voxelData: JSON.stringify(body.voxelDoc),
           regionClass: body.regionClass || "authored",
           mapType: body.mapType || "VOXEL",
         },

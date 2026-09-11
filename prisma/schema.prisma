@@ -784,7 +784,7 @@ model WorldMap {
   tileLayersData     String? @default("[]") // JSON for TMX tile layers (legacy fallback)
   freeformLayersData String? @default("[]") // JSON for 2.5D freeform layers (splats, props, polygons)
   tilesetsData       String? @default("[]") // JSON for tilesets metadata (legacy fallback)
-  voxelData          String  @default("{}") // JSON for authoritative VoxelWorldDocV3 (Single source of truth)
+
   regionClass        String  @default("authored") // 'authored' | 'procedural' | 'hybrid'
   proceduralConfig   String? // JSON for deterministic procedural biome configuration
   publishedVersion   Int     @default(0) // 0 means draft only, >=1 indicates published release
@@ -804,7 +804,35 @@ model WorldMap {
 
   updatedAt DateTime @updatedAt
 
+  regions WorldRegion[]
+
   @@index([gameId])
+}
+
+model WorldRegionArtifact {
+  checksum    String   @id // SHA-256 of the exact compressed binary payload
+  voxelData   Bytes    // RLE compressed region payload
+  createdAt   DateTime @default(now())
+
+  regions     WorldRegion[]
+}
+
+model WorldRegion {
+  id               String   @id @default(cuid())
+  mapId            String
+  map              WorldMap @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  regionX          Int
+  regionZ          Int
+  version          Int      @default(1)
+  status           String   @default("GENERATING") // PENDING | GENERATING | COMPLETED | ERROR
+  artifactChecksum String?
+  artifact         WorldRegionArtifact? @relation(fields: [artifactChecksum], references: [checksum], onDelete: SetNull)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([mapId, regionX, regionZ])
+  @@index([mapId])
+  @@index([artifactChecksum])
 }
 
 model WorldMapVersion {
@@ -812,13 +840,27 @@ model WorldMapVersion {
   mapId       String
   version     Int
   name        String
-  data        String // Serialized JSON map payload
+  data        String? // Serialized JSON map payload for non-voxel properties
   description String?
   publishedBy String?
   createdAt   DateTime @default(now())
 
+  regions     WorldMapVersionRegion[]
+
   @@unique([mapId, version])
   @@index([mapId])
+}
+
+model WorldMapVersionRegion {
+  id               String   @id @default(cuid())
+  versionId        String
+  regionX          Int
+  regionZ          Int
+  artifactChecksum String
+
+  version          WorldMapVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@unique([versionId, regionX, regionZ])
 }
 
 model MapSyncEntry {
@@ -2167,3 +2209,36 @@ model WorldPublishSnapshot {
   @@index([status])
   @@index([version])
 }
+
+// ─── Phase 3: Bootstrap Revisions ──────────────────────────────────────────────
+
+model WorldBootstrapRevision {
+  id                 String   @id @default(cuid())
+  mapId              String
+  seed               String
+  generatorVersion   String
+  configHash         String
+  dimensions         String   // JSON string
+  spawn              String?  // JSON string
+  status             String   // PENDING, GENERATING, VALIDATING, COMPLETED, FAILED, CANCELLING, CANCELLED
+  jobId              String?
+  createdAt          DateTime @default(now())
+  completedAt        DateTime?
+  regions            WorldBootstrapRevisionRegion[]
+
+  @@index([mapId, status])
+}
+
+model WorldBootstrapRevisionRegion {
+  id               String   @id @default(cuid())
+  revisionId       String
+  regionX          Int
+  regionZ          Int
+  artifactChecksum String
+  
+  revision         WorldBootstrapRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+
+  @@unique([revisionId, regionX, regionZ])
+}
+
+

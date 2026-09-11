@@ -190,6 +190,8 @@ type MapJoinedPayload struct {
 	MapID      string  `json:"mapId"`
 	X          float64 `json:"x"`
 	Y          float64 `json:"y"`
+	Z          float64 `json:"z"`
+	ServerTime int64   `json:"serverTime"`
 	JoinSeq    uint64  `json:"joinSeq,omitempty"`
 }
 

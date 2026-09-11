@@ -52,6 +52,7 @@ export function FinalReviewStep({
       setErrorMessage(null);
 
       const payload = {
+        bootstrapRevisionId: startingMap.bootstrapRevisionId,
         game: {
           name: gameDefinition.name,
           description: gameDefinition.description,
@@ -102,7 +103,6 @@ export function FinalReviewStep({
           spawnPoint: startingMap.spawnPoint,
           gates: startingMap.gates,
           mapType: startingMap.mapType || 'VOXEL',
-          voxelDoc: startingMap.voxelDoc,
         },
       };
 

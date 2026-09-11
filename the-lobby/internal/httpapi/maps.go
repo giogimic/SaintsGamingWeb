@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/bootstrap"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/dialogue"
@@ -323,9 +325,40 @@ func (s *Server) internalSync(w http.ResponseWriter, r *http.Request) {
 			s.Registry.ReloadItems()
 		case "map":
 			if payload.ID != "" {
-				grid, _, _, _, voxels, ok := s.Registry.GetRawMapData(payload.ID)
+				grid, _, _, _, ok := s.Registry.GetRawMapData(payload.ID)
 				if ok {
-					ReloadMapInMemory(s.World, payload.ID, payload.ID, grid, voxels)
+					if s.World != nil && s.World.RM != nil {
+						// Always fetch the "draft" manifest because this endpoint is triggered by Studio saves
+						manifest, err := s.World.RM.LoadManifest(payload.ID, 0)
+						if err == nil {
+							var wg sync.WaitGroup
+							workers := 4
+							sem := make(chan struct{}, workers)
+
+							for _, r := range manifest.Regions {
+								wg.Add(1)
+								go func(rx, rz int, checksum string) {
+									defer wg.Done()
+									sem <- struct{}{}
+									defer func() { <-sem }()
+									
+									region, err := s.World.RM.FetchAndDecodeRegion(payload.ID, 0, rx, rz, checksum)
+									if err == nil {
+										s.World.RM.SetRegion(payload.ID, 0, rx, rz, region)
+									} else {
+										log.Printf("[sync] failed to fetch region %d,%d for %s: %v", rx, rz, payload.ID, err)
+									}
+								}(r.RegionX, r.RegionZ, r.ArtifactChecksum)
+							}
+							wg.Wait()
+							
+							s.World.RM.ActivateVersion(payload.ID, 0)
+							s.World.RM.EvictOldVersions(payload.ID, 0)
+						} else {
+							log.Printf("[sync] failed to load draft manifest for %s: %v", payload.ID, err)
+						}
+					}
+					ReloadMapInMemory(s.World, payload.ID, payload.ID, grid, "{}")
 				}
 			}
 		}
@@ -396,21 +429,11 @@ func PersistMapVoxel(db *sql.DB, wm *world.Manager, id, name, grid, gates, npcs,
 	_ = db.QueryRow(`SELECT COUNT(1) FROM WorldMap WHERE id = ?`, id).Scan(&count)
 	var err error
 	if count > 0 {
-		if voxel != "" {
-			_, err = db.Exec(`UPDATE WorldMap SET name=?, gridData=?, gatesData=?, npcsData=?, tileLayersData=?, tilesetsData=?, voxelData=?, mapType=?, version=version+1, updatedAt=datetime('now') WHERE id=?`,
-				name, grid, gates, npcs, tiles, tilesets, voxel, mapType, id)
-		} else {
-			_, err = db.Exec(`UPDATE WorldMap SET name=?, gridData=?, gatesData=?, npcsData=?, tileLayersData=?, tilesetsData=?, mapType=?, version=version+1, updatedAt=datetime('now') WHERE id=?`,
-				name, grid, gates, npcs, tiles, tilesets, mapType, id)
-		}
+		_, err = db.Exec(`UPDATE WorldMap SET name=?, gridData=?, gatesData=?, npcsData=?, tileLayersData=?, tilesetsData=?, mapType=?, version=version+1, updatedAt=datetime('now') WHERE id=?`,
+			name, grid, gates, npcs, tiles, tilesets, mapType, id)
 	} else {
-		if voxel != "" {
-			_, err = db.Exec(`INSERT INTO WorldMap (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, voxelData, mapType, version)
-				VALUES (?, 'saints', ?, ?, ?, ?, '[]', ?, ?, ?, ?, 1)`, id, name, grid, gates, npcs, tiles, tilesets, voxel, mapType)
-		} else {
-			_, err = db.Exec(`INSERT INTO WorldMap (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, mapType, version)
-				VALUES (?, 'saints', ?, ?, ?, ?, '[]', ?, ?, ?, 1)`, id, name, grid, gates, npcs, tiles, tilesets, mapType)
-		}
+		_, err = db.Exec(`INSERT INTO WorldMap (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, mapType, version)
+			VALUES (?, 'saints', ?, ?, ?, ?, '[]', ?, ?, ?, 1)`, id, name, grid, gates, npcs, tiles, tilesets, mapType)
 	}
 	return err
 }
@@ -424,41 +447,24 @@ func PersistMapDraftVoxel(db *sql.DB, id, name, grid, gates, npcs, tiles, tilese
 	_ = db.QueryRow(`SELECT COUNT(1) FROM WorldMapDraft WHERE id = ?`, id).Scan(&count)
 	var err error
 	if count > 0 {
-		if voxel != "" {
-			_, err = db.Exec(`UPDATE WorldMapDraft SET name=?, gridData=?, gatesData=?, npcsData=?, tileLayersData=?, tilesetsData=?, voxelData=?, mapType=?, version=version+1, updatedAt=datetime('now') WHERE id=?`,
-				name, grid, gates, npcs, tiles, tilesets, voxel, mapType, id)
-		} else {
-			_, err = db.Exec(`UPDATE WorldMapDraft SET name=?, gridData=?, gatesData=?, npcsData=?, tileLayersData=?, tilesetsData=?, mapType=?, version=version+1, updatedAt=datetime('now') WHERE id=?`,
-				name, grid, gates, npcs, tiles, tilesets, mapType, id)
-		}
+		_, err = db.Exec(`UPDATE WorldMapDraft SET name=?, gridData=?, gatesData=?, npcsData=?, tileLayersData=?, tilesetsData=?, mapType=?, version=version+1, updatedAt=datetime('now') WHERE id=?`,
+			name, grid, gates, npcs, tiles, tilesets, mapType, id)
 	} else {
-		if voxel != "" {
-			_, err = db.Exec(`INSERT INTO WorldMapDraft (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, voxelData, mapType, version)
-				VALUES (?, 'saints', ?, ?, ?, ?, '[]', ?, ?, ?, ?, 1)`, id, name, grid, gates, npcs, tiles, tilesets, voxel, mapType)
-		} else {
-			_, err = db.Exec(`INSERT INTO WorldMapDraft (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, mapType, version)
-				VALUES (?, 'saints', ?, ?, ?, ?, '[]', ?, ?, ?, 1)`, id, name, grid, gates, npcs, tiles, tilesets, mapType)
-		}
+		_, err = db.Exec(`INSERT INTO WorldMapDraft (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, mapType, version)
+			VALUES (?, 'saints', ?, ?, ?, ?, '[]', ?, ?, ?, 1)`, id, name, grid, gates, npcs, tiles, tilesets, mapType)
 	}
 	return err
 }
 
-// LoadMapDefFromDB fetches a MapDef from the SQLite database.
-func LoadMapDefFromDB(db *sql.DB, id string) (*world.MapDef, error) {
-	var name, grid, npcs, tiles, tilesets, voxel, mapType string
+// LoadMapDefFromDB reads a map from sqlite and creates a MapDef.
+func LoadMapDefFromDB(db *sql.DB, wm *world.Manager, id string) (*world.MapDef, error) {
+	var name, grid, npcs, tiles, tilesets, mapType string
 	var version int
 
-	queryVoxel := `SELECT name, gridData, npcsData, tileLayersData, tilesetsData, voxelData, mapType, version FROM WorldMap WHERE id = ?`
-	err := db.QueryRow(queryVoxel, id).Scan(&name, &grid, &npcs, &tiles, &tilesets, &voxel, &mapType, &version)
+	queryNoVoxel := `SELECT name, gridData, npcsData, tileLayersData, tilesetsData, mapType, version FROM WorldMap WHERE id = ?`
+	err := db.QueryRow(queryNoVoxel, id).Scan(&name, &grid, &npcs, &tiles, &tilesets, &mapType, &version)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, err
-		}
-		queryNoVoxel := `SELECT name, gridData, npcsData, tileLayersData, tilesetsData, mapType, version FROM WorldMap WHERE id = ?`
-		err = db.QueryRow(queryNoVoxel, id).Scan(&name, &grid, &npcs, &tiles, &tilesets, &mapType, &version)
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 
 	def := &world.MapDef{
@@ -468,9 +474,12 @@ func LoadMapDefFromDB(db *sql.DB, id string) (*world.MapDef, error) {
 		Height: 128,
 	}
 
-	// Just apply Voxel data since FRACTAL injection only needs VOXEL blocks
-	if voxel != "" && voxel != "{}" && voxel != "null" {
-		def.Voxel, _ = world.ParseVoxelDoc([]byte(voxel))
+	if wm != nil && wm.RM != nil {
+		def.Voxel = &world.VoxelWorld{
+			ID:            id,
+			RM:            wm.RM,
+			ActiveVersion: version,
+		}
 	}
 
 	return def, nil

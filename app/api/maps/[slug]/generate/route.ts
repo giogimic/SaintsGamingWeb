@@ -24,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
 
     const map = await prisma.worldMap.findUnique({
       where: { id: slug },
-      select: { voxelData: true, mapType: true }
+      select: { mapType: true }
     });
 
     if (!map) {
@@ -35,7 +35,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
       return NextResponse.json({ error: "Only FRACTAL maps support on-demand generation" }, { status: 400 });
     }
 
-    const voxelDoc = map.voxelData as any;
+    const { VoxelStorageService } = await import('@/server/services/VoxelStorageService');
+    const voxelDoc = await VoxelStorageService.getVoxelDoc(slug) as any;
     if (!voxelDoc || !voxelDoc.chunks || !voxelDoc.generationMetadata) {
       return NextResponse.json({ error: "Map is missing generation metadata or chunks array" }, { status: 400 });
     }
@@ -90,11 +91,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
       await prisma.worldMap.update({
         where: { id: slug },
         data: {
-          voxelData: voxelDoc,
           version: { increment: 1 },
           updatedAt: new Date(),
         }
       });
+      await (await import('@/server/services/VoxelStorageService')).VoxelStorageService.saveVoxelDoc(voxelDoc);
     }
 
     return NextResponse.json({ ok: true, generatedCount });

@@ -70,7 +70,7 @@ export async function POST(req: Request) {
               npcsData: JSON.stringify([]),
               encountersData: JSON.stringify([]),
               entitiesData: JSON.stringify([]),
-              tileLayersData: serializedData,
+              tileLayersData: JSON.stringify([]),
               tilesetsData: JSON.stringify([]),
               version: 1,
             },
@@ -78,10 +78,17 @@ export async function POST(req: Request) {
               name: mapName,
               gameId: 'saints',
               gatesData: JSON.stringify(gatesPayload),
-              tileLayersData: serializedData,
               version: { increment: 1 },
             },
           });
+
+          try {
+            const { VoxelStorageService } = await import('@/server/services/VoxelStorageService');
+            await VoxelStorageService.saveVoxelDoc(voxelDoc);
+          } catch (e) {
+            console.error('[Map Import] Failed to save voxel doc regions:', e);
+          }
+
 
           await prisma.gameMap.upsert({
             where: { id: mapId },
@@ -107,7 +114,6 @@ export async function POST(req: Request) {
           await notifyGoMapSynced({
             id: mapId,
             name: mapName,
-            voxelData: voxelDoc,
             npcsData: [],
             tileLayersData: [],
             tilesetsData: [],

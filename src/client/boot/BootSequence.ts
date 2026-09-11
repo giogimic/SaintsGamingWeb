@@ -40,8 +40,11 @@ export async function runBootSequence(config: BootConfig): Promise<BootResult> {
   const session = useSessionStore.getState();
 
   try {
+    session.setBootState('TITLE');
+    
     // ── Step 1: Auth ─────────────────────────────────────────────────────
     console.log('[Boot] Step 1/5: Setting auth...');
+    session.setBootState('AUTH');
     session.setAuth({
       accountId: config.accountId,
       permissionLevel: config.permissionLevel,
@@ -63,6 +66,7 @@ export async function runBootSequence(config: BootConfig): Promise<BootResult> {
 
     // ── Step 3: Fetch Game Registry ──────────────────────────────────────
     console.log('[Boot] Step 3/5: Fetching game registry...');
+    session.setBootState('REGISTRY');
     await useWorldStore.getState().fetchGameRegistry();
     await useWorldStore.getState().fetchLogicTiles();
 
@@ -82,6 +86,7 @@ export async function runBootSequence(config: BootConfig): Promise<BootResult> {
 
     // ── Step 5: Connect Socket ───────────────────────────────────────────
     console.log('[Boot] Step 5/5: Connecting socket...');
+    session.setBootState('CONNECT');
     socketManager.connect({
       accountId: config.accountId,
       onConnect: () => {
@@ -104,6 +109,7 @@ export async function runBootSequence(config: BootConfig): Promise<BootResult> {
           });
 
           useWorldStore.getState().setWorldSessionState('joining');
+          useSessionStore.getState().setBootState('JOIN_WORLD');
         }
       },
       onDisconnect: (reason) => {

@@ -66,7 +66,7 @@ func main() {
 	}
 
 	wm.FetchMapDef = func(id string) (*world.MapDef, error) {
-		return httpapi.LoadMapDefFromDB(sqlDB, id)
+		return httpapi.LoadMapDefFromDB(sqlDB, wm, id)
 	}
 
 	if err := bootstrap.EnsureDemo(sqlDB, wm); err != nil {

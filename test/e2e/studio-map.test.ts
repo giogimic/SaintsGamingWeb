@@ -109,7 +109,6 @@ describe('Studio Map Editor E2E', () => {
         encountersData: "[]",
         tileLayersData: null,
         tilesetsData: null,
-        voxelData: JSON.stringify(voxelDoc),
         regionClass: "authored",
         proceduralConfig: JSON.stringify({ biome: "temperate_plains", seed: 42 }),
         version: 1,
@@ -118,21 +117,23 @@ describe('Studio Map Editor E2E', () => {
         gridData: JSON.stringify(grid),
         tileLayersData: null,
         tilesetsData: null,
-        voxelData: JSON.stringify(voxelDoc),
         regionClass: "authored",
         proceduralConfig: JSON.stringify({ biome: "temperate_plains", seed: 42 }),
         version: { increment: 1 },
       },
     });
 
+    const { VoxelStorageService } = await import('@/server/services/VoxelStorageService');
+    await VoxelStorageService.saveVoxelDoc(voxelDoc);
+
     const saved = await prisma.worldMap.findUnique({
       where: { id: testMapId },
     });
     expect(saved).toBeDefined();
-    expect(saved?.voxelData).toBeDefined();
 
-    const parsedDoc = JSON.parse(saved!.voxelData!);
-    const world = VoxelWorld.deserializeFromDoc(parsedDoc);
+    const parsedDoc = await VoxelStorageService.getVoxelDoc(testMapId);
+    expect(parsedDoc).toBeDefined();
+    const world = VoxelWorld.deserializeFromDoc(parsedDoc!);
     expect(world.chunks.size).toBeGreaterThan(0);
 
     await prisma.worldMap.delete({ where: { id: testMapId } });
