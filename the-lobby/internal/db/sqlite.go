@@ -58,7 +58,10 @@ func migrate(db *sql.DB) error {
 			tilesetsData TEXT NOT NULL DEFAULT '[]',
 			voxelData TEXT NOT NULL DEFAULT '{}',
 			mapType TEXT NOT NULL DEFAULT 'HYBRID',
+			regionClass TEXT NOT NULL DEFAULT 'authored',
 			version INTEGER NOT NULL DEFAULT 1,
+			publishedVersion INTEGER NOT NULL DEFAULT 0,
+			publishedData TEXT NOT NULL DEFAULT '{}',
 			updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
 		)`,
 		`CREATE TABLE IF NOT EXISTS WorldMapDraft (
@@ -73,7 +76,10 @@ func migrate(db *sql.DB) error {
 			tilesetsData TEXT NOT NULL DEFAULT '[]',
 			voxelData TEXT NOT NULL DEFAULT '{}',
 			mapType TEXT NOT NULL DEFAULT 'HYBRID',
+			regionClass TEXT NOT NULL DEFAULT 'authored',
 			version INTEGER NOT NULL DEFAULT 1,
+			publishedVersion INTEGER NOT NULL DEFAULT 0,
+			publishedData TEXT NOT NULL DEFAULT '{}',
 			updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
 		)`,
 		`CREATE TABLE IF NOT EXISTS GameMap (
@@ -156,5 +162,19 @@ func migrate(db *sql.DB) error {
 			return fmt.Errorf("migrate: %w\nstmt: %s", err, s)
 		}
 	}
+
+	// Non-destructive alters for existing DBs
+	alters := []string{
+		`ALTER TABLE WorldMap ADD COLUMN regionClass TEXT NOT NULL DEFAULT 'authored'`,
+		`ALTER TABLE WorldMap ADD COLUMN publishedVersion INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE WorldMap ADD COLUMN publishedData TEXT NOT NULL DEFAULT '{}'`,
+		`ALTER TABLE WorldMapDraft ADD COLUMN regionClass TEXT NOT NULL DEFAULT 'authored'`,
+		`ALTER TABLE WorldMapDraft ADD COLUMN publishedVersion INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE WorldMapDraft ADD COLUMN publishedData TEXT NOT NULL DEFAULT '{}'`,
+	}
+	for _, a := range alters {
+		_, _ = db.Exec(a) // Ignore errors (column may already exist)
+	}
+
 	return nil
 }
