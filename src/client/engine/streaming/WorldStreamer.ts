@@ -87,7 +87,8 @@ export class WorldStreamer {
     try {
       const res = await fetch(`/api/internal/worlds/${mapId}/${this.currentVersion}/manifest`);
       if (!res.ok) {
-        throw new Error(`Failed to load manifest: ${res.statusText}`);
+        const errorText = await res.text().catch(() => '');
+        throw new Error(`Failed to load manifest: ${res.status} ${res.statusText} - ${errorText}`);
       }
       this.manifest = await res.json();
       console.log(`[WorldStreamer] Manifest loaded: version ${this.manifest.version}`);

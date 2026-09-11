@@ -32,6 +32,7 @@ export async function GET(
 
   const { mapId, version } = await params;
   let manifestRegions: { regionX: number, regionZ: number, artifactChecksum: string }[] = [];
+  let resolvedVersionInt = 0;
 
   if (version === "draft") {
     const activeRegions = await prisma.worldRegion.findMany({
@@ -44,15 +45,26 @@ export async function GET(
       artifactChecksum: r.artifact?.checksum || "",
     })).filter(r => r.artifactChecksum !== "");
   } else {
-    const versionInt = parseInt(version, 10);
-    if (isNaN(versionInt)) {
-      return NextResponse.json({ error: "Invalid version" }, { status: 400 });
+    if (version === "published") {
+      const worldMap = await prisma.worldMap.findUnique({
+        where: { id: mapId },
+        select: { publishedVersion: true }
+      });
+      if (!worldMap || worldMap.publishedVersion <= 0) {
+        return NextResponse.json({ error: "Map has no published version" }, { status: 404 });
+      }
+      resolvedVersionInt = worldMap.publishedVersion;
+    } else {
+      resolvedVersionInt = parseInt(version, 10);
+      if (isNaN(resolvedVersionInt)) {
+        return NextResponse.json({ error: "Invalid version" }, { status: 400 });
+      }
     }
 
     const mapVersion = await prisma.worldMapVersion.findFirst({
       where: {
         mapId,
-        version: versionInt
+        version: resolvedVersionInt
       },
       include: {
         regions: true
@@ -91,7 +103,7 @@ export async function GET(
 
   const manifest = {
     mapId,
-    version: version === "draft" ? 0 : parseInt(version, 10),
+    version: resolvedVersionInt,
     ...generatorIdentity,
     regions: manifestRegions
   };

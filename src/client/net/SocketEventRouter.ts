@@ -29,6 +29,9 @@ export function registerAllHandlers(): void {
   }
 
   console.log('[EventRouter] Registering all domain handlers...');
+  
+  // Ensure we don't stack multiple listeners if called on reconnect
+  unregisterAllHandlers();
 
   // Movement & Prediction
   socket.on('player_moved', movementHandlers.onPlayerMoved);

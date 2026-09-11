@@ -31,12 +31,49 @@ export async function GET(
   }
 
   const { mapId, version, regionX, regionZ } = await params;
-  const versionInt = parseInt(version, 10);
+  
   const rx = parseInt(regionX, 10);
   const rz = parseInt(regionZ, 10);
   
-  if (isNaN(versionInt) || isNaN(rx) || isNaN(rz)) {
-    return NextResponse.json({ error: "Invalid parameters" }, { status: 400 });
+  if (isNaN(rx) || isNaN(rz)) {
+    return NextResponse.json({ error: "Invalid region parameters" }, { status: 400 });
+  }
+
+  if (version === "draft") {
+    const activeRegion = await prisma.worldRegion.findFirst({
+      where: { mapId, regionX: rx, regionZ: rz },
+      include: { artifact: true }
+    });
+    
+    if (!activeRegion || !activeRegion.artifact) {
+      return NextResponse.json({ error: "Draft region artifact missing" }, { status: 404 });
+    }
+    
+    return new NextResponse(activeRegion.artifact.voxelData as any, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "X-Region-Checksum": activeRegion.artifact.checksum
+      }
+    });
+  }
+
+  let resolvedVersionInt = 0;
+  
+  if (version === "published") {
+    const worldMap = await prisma.worldMap.findUnique({
+      where: { id: mapId },
+      select: { publishedVersion: true }
+    });
+    if (!worldMap || worldMap.publishedVersion <= 0) {
+      return NextResponse.json({ error: "Map has no published version" }, { status: 404 });
+    }
+    resolvedVersionInt = worldMap.publishedVersion;
+  } else {
+    resolvedVersionInt = parseInt(version, 10);
+    if (isNaN(resolvedVersionInt)) {
+      return NextResponse.json({ error: "Invalid version parameters" }, { status: 400 });
+    }
   }
 
   // Authoritative path: look up the specific version region to get the checksum
@@ -44,7 +81,7 @@ export async function GET(
     where: {
       version: {
         mapId,
-        version: versionInt
+        version: resolvedVersionInt
       },
       regionX: rx,
       regionZ: rz

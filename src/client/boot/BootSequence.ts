@@ -90,6 +90,11 @@ export async function runBootSequence(config: BootConfig): Promise<BootResult> {
     socketManager.connect({
       accountId: config.accountId,
       onConnect: () => {
+        if (useSessionStore.getState().bootState === 'FATAL_ERROR') {
+          console.warn('[Boot] Aborting socket auto-join because bootState is FATAL_ERROR');
+          return;
+        }
+
         useSessionStore.getState().setConnectionStatus('connected');
         registerAllHandlers();
 
