@@ -1103,7 +1103,7 @@ export default function TheLobby({
           hp: data?.playerHp !== undefined ? data.playerHp : (state.player?.hp || 100),
           maxHp: data?.playerMaxHp !== undefined ? data.playerMaxHp : (state.player?.maxHp || 100),
           level: state.player?.level || 5,
-          spriteKey: state.player?.assetProfileId ? `/assets/sprites/player/${state.player.assetProfileId}.png` : '/assets/sprites/creatures/budaye.png',
+          spriteKey: state.player?.assetProfileId ? (state.player.assetProfileId.startsWith('/') || state.player.assetProfileId.startsWith('http') ? state.player.assetProfileId : `/assets/sprites/player/${state.player.assetProfileId}.png`) : '/assets/sprites/creatures/budaye.png',
         },
         log: data?.log || ['Battle commenced!'],
       };
@@ -1140,7 +1140,7 @@ export default function TheLobby({
               hp: data.playerHp !== undefined ? data.playerHp : (state.player?.hp || 100),
               maxHp: data.playerMaxHp !== undefined ? data.playerMaxHp : (state.player?.maxHp || 100),
               level: state.player?.level || 5,
-              spriteKey: state.player?.assetProfileId ? `/assets/sprites/player/${state.player.assetProfileId}.png` : '/assets/sprites/creatures/budaye.png',
+              spriteKey: state.player?.assetProfileId ? (state.player.assetProfileId.startsWith('/') || state.player.assetProfileId.startsWith('http') ? state.player.assetProfileId : `/assets/sprites/player/${state.player.assetProfileId}.png`) : '/assets/sprites/creatures/budaye.png',
             },
             log: data.log || ['Battle updated.'],
           };

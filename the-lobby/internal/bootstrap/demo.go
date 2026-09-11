@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/protocol"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/world"
@@ -21,9 +22,22 @@ func EnsureDemo(db *sql.DB, wm *world.Manager) error {
 	}
 
 	var count int
-	_ = db.QueryRow(`SELECT COUNT(1) FROM WorldMap WHERE id = ?`, protocol.DemoMapID).Scan(&count)
-	if count > 0 && !force {
-		log.Printf("[bootstrap] DEMO_SANDBOX already present (set FORCE_DEMO_MAP=1 to rewrite)")
+	var existingVoxelData sql.NullString
+	_ = db.QueryRow(`SELECT voxelData FROM WorldMap WHERE id = ?`, protocol.DemoMapID).Scan(&existingVoxelData)
+	if existingVoxelData.Valid {
+		count = 1
+	}
+
+	hasValidVoxels := false
+	if count > 0 && len(existingVoxelData.String) > 20 {
+		// A very basic check to see if chunks were actually populated
+		if strings.Contains(existingVoxelData.String, `"chunks"`) && !strings.Contains(existingVoxelData.String, `"chunks":{}`) {
+			hasValidVoxels = true
+		}
+	}
+
+	if count > 0 && hasValidVoxels && !force {
+		log.Printf("[bootstrap] DEMO_SANDBOX already present and valid (set FORCE_DEMO_MAP=1 to rewrite)")
 		_ = loadExisting(db, wm)
 		return nil
 	}

@@ -65,7 +65,7 @@ export class EntityRenderer {
       y: player.position.y,
       name: player.name || 'You',
       color: new BABYLON.Color3(0.2, 0.6, 1),
-      spriteUrl: player.assetProfileId ? `/sprites/player/${player.assetProfileId}.png` : undefined,
+      spriteUrl: player.assetProfileId ? (player.assetProfileId.startsWith('/') || player.assetProfileId.startsWith('http') ? player.assetProfileId : `/sprites/player/${player.assetProfileId}.png`) : undefined,
     }, now);
 
     // 2. Remote Players
@@ -87,7 +87,7 @@ export class EntityRenderer {
         y: py,
         name: rp.name || 'Player',
         color: new BABYLON.Color3(1, 0.6, 0.2),
-        spriteUrl: rp.assetProfileId ? `/sprites/player/${rp.assetProfileId}.png` : undefined,
+        spriteUrl: rp.assetProfileId ? (rp.assetProfileId.startsWith('/') || rp.assetProfileId.startsWith('http') ? rp.assetProfileId : `/sprites/player/${rp.assetProfileId}.png`) : undefined,
         chatMessage: rp.chatMessage,
       }, now);
     }

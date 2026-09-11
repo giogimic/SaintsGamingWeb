@@ -241,7 +241,7 @@ export class MapMesher {
     }
 
     // Build VoxelWorld from the document
-    this.voxelWorld = new VoxelWorld(voxelDoc);
+    this.voxelWorld = VoxelWorld.deserializeFromDoc(voxelDoc);
 
     // Mesh all loaded chunks
     const chunks = Array.from(this.voxelWorld.chunks.values());
