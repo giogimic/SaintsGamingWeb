@@ -24,6 +24,35 @@ export function ClientApp() {
   const { data: session, status } = useSession();
 
 
+  // Network & Socket connection
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.id) {
+      // 1. Fetch Registries
+      useWorldStore.getState().fetchGameRegistry();
+      useWorldStore.getState().fetchLogicTiles();
+
+      // 2. Connect Socket
+      socketManager.connect({
+        accountId: session.user.id,
+        onConnect: () => {
+          registerAllHandlers();
+        },
+        onDisconnect: (reason) => {
+          // Handled internally by socketManager state but can hook UI here
+        },
+        onReconnecting: () => {
+        },
+        onSessionReplaced: () => {
+          // Handled internally
+        }
+      });
+    }
+
+    return () => {
+      // We do NOT disconnect on component unmount to prevent rapid reconnects during HMR.
+      // The SocketManager singleton handles lifecycle itself.
+    };
+  }, [status, session?.user?.id]);
 
   // Mount systems
   useEffect(() => {
