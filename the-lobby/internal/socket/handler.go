@@ -311,9 +311,10 @@ func isSamePolicy(instanceID, baseMapID, accountID string, isPrivate, pie bool) 
 func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protocol.JoinMapRequest) {
 	sid := string(client.Id())
 	base := world.ResolvePlayableBase(req.MapID, req.Lobby, req.ForceDemo)
-	if _, ok := h.eng.World().GetDef(base); !ok {
-		h.eng.World().EnsureDemoDef()
-		base = protocol.DemoMapID
+	if _, err := h.eng.World().GetDef(base); err != nil {
+		log.Printf("[socket] JOIN_REJECT account=%s reason=map_not_found mapId=%s err=%v", accountID, base, err)
+		h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "Failed to resolve world map."})
+		return
 	}
 
 	// 1. Character ownership validation: Reject if character is actively controlled by another account
@@ -425,8 +426,8 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 	h.joinAOI(sid, p)
 
 	if inst.PlayerCount == 1 && world.IsPublicChannel(inst.InstanceID) {
-		def, ok := h.eng.World().GetDef(base)
-		if ok && def != nil {
+		def, err := h.eng.World().GetDef(base)
+		if err == nil {
 			var spawns []creature.SpawnDef
 			for _, n := range def.NPCs {
 				// If it's defined in the Creature Registry, treat it as a spawn.
@@ -463,7 +464,7 @@ func (h *Hub) handleEncounter(accountID string) {
 		return
 	}
 	tile := protocol.TileGrass
-	if def, ok := h.eng.World().GetDef(p.BaseMapID); ok {
+	if def, err := h.eng.World().GetDef(p.BaseMapID); err == nil {
 		ix, iy := int(p.X), int(p.Y)
 		if iy >= 0 && iy < len(def.Grid) && ix >= 0 && ix < len(def.Grid[iy]) {
 			tile = def.Grid[iy][ix]
@@ -1038,7 +1039,7 @@ func (h *Hub) serveChunk(client *socket.Socket, accountID string, cx, cy, cz int
 	var mapBiome *world.BiomeDefinition
 
 	if p := h.eng.Players().GetByAccount(accountID); p != nil {
-		if def, ok := h.eng.World().GetDef(p.BaseMapID); ok {
+		if def, err := h.eng.World().GetDef(p.BaseMapID); err == nil {
 			if def.Voxel != nil {
 				voxelWorld = def.Voxel
 			}

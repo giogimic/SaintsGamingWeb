@@ -118,8 +118,8 @@ func (gc *GeneratorClient) processRequest(req GenRequest) {
 	
 	if len(result.GeneratedChunks) > 0 {
 		// Inject into VoxelWorld
-		def, ok := gc.worldMgr.GetDef(req.MapID)
-		if ok && def.Voxel != nil {
+		def, err := gc.worldMgr.GetDef(req.MapID)
+		if err == nil && def.Voxel != nil {
 			def.Voxel.mu.Lock()
 			// Append the new chunks
 			var broadcastChunks [][]int

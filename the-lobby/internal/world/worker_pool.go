@@ -51,7 +51,7 @@ func (wp *WorkerPool) Start() {
 
 					// Run StructurePlacer if we have a manager and MapDef
 					if wp.mgr != nil && job.MapID != "" {
-						if def, ok := wp.mgr.GetDef(job.MapID); ok {
+						if def, err := wp.mgr.GetDef(job.MapID); err == nil {
 							structPlacer := NewStructurePlacer()
 							structPlacer.PlaceStructures(chunk, def, wp.mgr, job.Biome.Seed)
 						}

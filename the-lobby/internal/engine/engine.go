@@ -204,8 +204,8 @@ func (e *Engine) processMove3DInput(accountID string, in protocol.PlayerInput) {
 	width, height, depth := 0.6, 1.8, 0.6
 	stepHeight := 0.5
 
-	mapDef, ok := e.world.GetDef(p.BaseMapID)
-	if !ok || mapDef.Voxel == nil {
+	mapDef, err := e.world.GetDef(p.BaseMapID)
+	if err != nil || mapDef == nil || mapDef.Voxel == nil {
 		// Fallback to basic movement if no voxel world
 		e.players.ApplyMove3D(accountID, clientX, clientY, clientZ, clientVX, clientVY, clientVZ, in.Sequence)
 		return

@@ -359,7 +359,7 @@ func (h *Hub) handleGather(accountID string, datas []any) {
 		}
 	}
 	tile := protocol.TileGrass
-	if def, ok := h.eng.World().GetDef(p.BaseMapID); ok {
+	if def, err := h.eng.World().GetDef(p.BaseMapID); err == nil {
 		ix, iy := int(x), int(y)
 		if iy >= 0 && iy < len(def.Grid) && ix >= 0 && ix < len(def.Grid[iy]) {
 			tile = def.Grid[iy][ix]
@@ -638,8 +638,8 @@ func (h *Hub) handleVoxelEdit(accountID string, datas []any) {
 	base := world.ToBaseMapID(payload.MapID)
 	// Apply to world memory
 	word64 := (uint64(payload.WordHigh) << 32) | uint64(payload.WordLow)
-	mapDef, ok := h.eng.World().GetDef(base)
-	if ok && mapDef.Voxel != nil {
+	mapDef, err := h.eng.World().GetDef(base)
+	if err == nil && mapDef.Voxel != nil {
 		mapDef.Voxel.SetVoxel(payload.X, payload.Y, payload.Z, word64)
 	}
 

@@ -23,9 +23,9 @@ func TestEnsureDemo(t *testing.T) {
 	if err := bootstrap.EnsureDemo(sqlDB, wm); err != nil {
 		t.Fatal(err)
 	}
-	def, ok := wm.GetDef(protocol.DemoMapID)
-	if !ok || def.RegionClass != "fractal" {
-		t.Fatalf("def=%v ok=%v", def, ok)
+	def, err := wm.GetDef(protocol.DemoMapID)
+	if err != nil || def.RegionClass != "fractal" {
+		t.Fatalf("def=%v err=%v", def, err)
 	}
 	var n int
 	if err := sqlDB.QueryRow(`SELECT COUNT(1) FROM WorldMap WHERE id=?`, protocol.DemoMapID).Scan(&n); err != nil || n != 1 {

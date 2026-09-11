@@ -458,11 +458,14 @@ func PersistMapDraftVoxel(db *sql.DB, id, name, grid, gates, npcs, tiles, tilese
 
 // LoadMapDefFromDB reads a map from sqlite and creates a MapDef.
 func LoadMapDefFromDB(db *sql.DB, wm *world.Manager, id string) (*world.MapDef, error) {
-	var name, grid, npcs, tiles, tilesets, mapType string
-	var version int
+	var name string
+	var publishedVersion int
 
-	queryNoVoxel := `SELECT name, gridData, npcsData, tileLayersData, tilesetsData, mapType, version FROM WorldMap WHERE id = ?`
-	err := db.QueryRow(queryNoVoxel, id).Scan(&name, &grid, &npcs, &tiles, &tilesets, &mapType, &version)
+	query := `SELECT v.name, w.publishedVersion 
+			  FROM WorldMap w 
+			  JOIN WorldMapVersion v ON w.id = v.mapId AND w.publishedVersion = v.version 
+			  WHERE w.id = ?`
+	err := db.QueryRow(query, id).Scan(&name, &publishedVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -478,7 +481,7 @@ func LoadMapDefFromDB(db *sql.DB, wm *world.Manager, id string) (*world.MapDef, 
 		def.Voxel = &world.VoxelWorld{
 			ID:            id,
 			RM:            wm.RM,
-			ActiveVersion: version,
+			ActiveVersion: publishedVersion,
 		}
 	}
 

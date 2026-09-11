@@ -3,6 +3,7 @@ package world
 import (
 	"container/heap"
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/protocol"
@@ -109,11 +110,33 @@ func (m *Manager) Gates() *SpiritGateRegistry {
 	return m.gates
 }
 
-func (m *Manager) GetDef(baseID string) (*MapDef, bool) {
+func (m *Manager) GetDef(baseID string) (*MapDef, error) {
 	m.mu.RLock()
-	defer m.mu.RUnlock()
 	d, ok := m.defs[baseID]
-	return d, ok
+	m.mu.RUnlock()
+	
+	if ok && d != nil {
+		return d, nil
+	}
+	
+	if m.FetchMapDef != nil {
+		newDef, err := m.FetchMapDef(baseID)
+		if err == nil && newDef != nil {
+			m.mu.Lock()
+			if existing, exists := m.defs[baseID]; exists {
+				m.mu.Unlock()
+				return existing, nil
+			}
+			m.defs[baseID] = newDef
+			m.mu.Unlock()
+			return newDef, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return nil, fmt.Errorf("map definition not found in cache and no FetchMapDef available")
 }
 
 func (m *Manager) EnsureDemoDef() *MapDef {
