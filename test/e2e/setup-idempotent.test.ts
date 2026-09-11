@@ -54,7 +54,7 @@ describe('Setup Wizard Idempotency', () => {
       where: { mapId_version: { mapId: 'STARTING_MEADOW', version: 1 } }
     });
     expect(version).toBeDefined();
-    expect(JSON.parse(version!.data)).toHaveProperty('publishedVersion', 1);
+    expect(JSON.parse(version!.data as string)).toHaveProperty('publishedVersion', 1);
 
     const syncs = await prisma.mapSyncEntry.findMany({ where: { mapId: 'STARTING_MEADOW' } });
     expect(syncs.length).toBeGreaterThan(0);
