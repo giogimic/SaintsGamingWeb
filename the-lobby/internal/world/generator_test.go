@@ -20,11 +20,12 @@ func TestGoToTSCompatibility(t *testing.T) {
 			Lacunarity:  2.0,
 		},
 		Strata: BiomeStrataConfig{
-			SurfaceMaterial:    2, // GRASS
-			SubsurfaceMaterial: 3, // DIRT
-			SubsurfaceDepth:    3,
-			MantleMaterial:     4, // STONE
-			BedrockMaterial:    1, // GUNMETAL
+			RegolithMaterial:    2,
+			SedimentaryMaterial: 3,
+			PlutonicMaterial:    4,
+			MetamorphicMaterial: 5,
+			BasementMaterial:    6,
+			BedrockMaterial:     1,
 		},
 		Features: BiomeFeaturePool{
 			SpawnableFlora: []struct {

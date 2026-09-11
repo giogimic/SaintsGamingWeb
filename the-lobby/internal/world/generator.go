@@ -14,13 +14,14 @@ type BiomeTerrainConfig struct {
 	Lacunarity  float64
 }
 
-// BiomeStrataConfig defines the layers of geological material.
+// BiomeStrataConfig defines the layers of geological material based on GI.
 type BiomeStrataConfig struct {
-	SurfaceMaterial    uint32
-	SubsurfaceMaterial uint32
-	SubsurfaceDepth    float64
-	MantleMaterial     uint32
-	BedrockMaterial    uint32
+	RegolithMaterial    uint32 // GI > 180
+	SedimentaryMaterial uint32 // 120 < GI <= 180
+	PlutonicMaterial    uint32 // 60 < GI <= 120
+	MetamorphicMaterial uint32 // 15 < GI <= 60
+	BasementMaterial    uint32 // GI <= 15
+	BedrockMaterial     uint32
 }
 
 // BiomeFeaturePool defines spawnable entities and flora.
@@ -75,7 +76,7 @@ func (g *ProceduralVoxelGenerator) PopulateChunk(cx, cy, cz int) *VoxelChunk {
 			for ly := 0; ly < ChunkSizeY; ly++ {
 				wy := float64(startWY + ly)
 
-				density, blend, mappedElev := atlas.CalculateVoxelDensity(g.context, g.resolver, wx, wy, wz)
+				density, blend, mappedElev, gi := atlas.CalculateVoxelDensity(g.context, g.resolver, wx, wy, wz)
 
 				if startWY+ly == 0 {
 					chunk.Set(lx, ly, lz, PackVoxel(blend.Primary.Strata.BedrockMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone))
@@ -87,18 +88,25 @@ func (g *ProceduralVoxelGenerator) PopulateChunk(cx, cy, cz int) *VoxelChunk {
 					continue
 				}
 
-				depth := mappedElev - wy
 				strata := blend.Primary.Strata
 
-				// Determine material based on density depth from base elevation.
-				// If we are evaluating an overhang or floating island (depth <= 0 but density > 0), treat it as surface.
-				if depth <= 0 {
-					chunk.Set(lx, ly, lz, PackVoxel(strata.SurfaceMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone))
-				} else if depth <= float64(strata.SubsurfaceDepth) {
-					chunk.Set(lx, ly, lz, PackVoxel(strata.SubsurfaceMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone))
+				// Determine material based on Geological Index (GI)
+				var mat uint32
+				if gi > 180 {
+					mat = strata.RegolithMaterial
+				} else if gi > 120 {
+					mat = strata.SedimentaryMaterial
+				} else if gi > 60 {
+					mat = strata.PlutonicMaterial
+				} else if gi > 15 {
+					mat = strata.MetamorphicMaterial
 				} else {
-					chunk.Set(lx, ly, lz, PackVoxel(strata.MantleMaterial, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone))
+					mat = strata.BasementMaterial
 				}
+				
+				// Evaluate Mythic Ores
+				mat = EvaluateMythicOres(g.context, wx, wy, wz, mat, gi, mappedElev, density)
+				chunk.Set(lx, ly, lz, PackVoxel(mat, ShapeFullCube, 0, 0, PhysicsSolidObstacle, LogicNone))
 			}
 		}
 	}

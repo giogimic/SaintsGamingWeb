@@ -298,11 +298,12 @@ func GetDefaultBiome() BiomeDefinition {
 			Lacunarity:  2.0,
 		},
 		Strata: BiomeStrataConfig{
-			SurfaceMaterial:    2,
-			SubsurfaceMaterial: 3,
-			SubsurfaceDepth:    3,
-			MantleMaterial:     4,
-			BedrockMaterial:    1,
+			RegolithMaterial:    2,
+			SedimentaryMaterial: 3,
+			PlutonicMaterial:    4,
+			MetamorphicMaterial: 5,
+			BasementMaterial:    6,
+			BedrockMaterial:     1,
 		},
 		Features: BiomeFeaturePool{
 			SpawnableFlora: []struct {

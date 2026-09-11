@@ -13,6 +13,12 @@ func BuildAtlasWorld(seed interface{}) *AtlasWorldContext {
 	microSource := NewNoiseSource(numericSeed + 8)
 	terrainDensitySource := NewNoiseSource(numericSeed + 9)
 	caveDensitySource := NewNoiseSource(numericSeed + 10)
+	tiltSource := NewNoiseSource(numericSeed + 11)
+	foldSource := NewNoiseSource(numericSeed + 12)
+	karstSource := NewNoiseSource(numericSeed + 13)
+	wormASource := NewNoiseSource(numericSeed + 14)
+	wormBSource := NewNoiseSource(numericSeed + 15)
+	magmaSource := NewNoiseSource(numericSeed + 16)
 
 	warpXSource := NewNoiseSource(numericSeed + 100)
 	warpYSource := NewNoiseSource(numericSeed + 101)
@@ -58,6 +64,32 @@ func BuildAtlasWorld(seed interface{}) *AtlasWorldContext {
 		Source: caveDensitySource, Octaves: 4, Scale: 0.08, // Med frequency for swiss-cheese caves
 	})
 
+	tiltField := NewFractalNoiseField(FractalNoiseConfig{
+		ID: "tilt", Name: "Bedrock Tilt", Dimensions: 2,
+		Source: tiltSource, Octaves: 1, Scale: 0.001,
+	})
+	foldField := NewFractalNoiseField(FractalNoiseConfig{
+		ID: "fold", Name: "Geological Fold", Dimensions: 2,
+		Source: foldSource, Octaves: 2, Scale: 0.005,
+	})
+
+	caveKarst := NewFractalNoiseField(FractalNoiseConfig{
+		ID: "cave_karst", Name: "Karst Caverns", Dimensions: 3,
+		Source: karstSource, Octaves: 3, Scale: 0.02, // Low freq
+	})
+	caveWormA := NewFractalNoiseField(FractalNoiseConfig{
+		ID: "cave_worm_a", Name: "Fault Worm A", Dimensions: 3,
+		Source: wormASource, Octaves: 3, Scale: 0.05,
+	})
+	caveWormB := NewFractalNoiseField(FractalNoiseConfig{
+		ID: "cave_worm_b", Name: "Fault Worm B", Dimensions: 3,
+		Source: wormBSource, Octaves: 3, Scale: 0.05,
+	})
+	caveMagma := NewFractalNoiseField(FractalNoiseConfig{
+		ID: "cave_magma", Name: "Magma Chambers", Dimensions: 3,
+		Source: magmaSource, Octaves: 2, Scale: 0.03, // Med freq
+	})
+
 	warpX := NewFractalNoiseField(FractalNoiseConfig{
 		ID: "warp_x", Name: "Warp X", Dimensions: 2,
 		Source: warpXSource, Octaves: 2, Scale: 0.01,
@@ -87,5 +119,11 @@ func BuildAtlasWorld(seed interface{}) *AtlasWorldContext {
 		MicroDetail:     rawMicro,
 		TerrainDensity:  rawTerrainDensity,
 		CaveDensity:     rawCaveDensity,
+		Tilt:            tiltField,
+		Fold:            foldField,
+		CaveKarst:       caveKarst,
+		CaveWormA:       caveWormA,
+		CaveWormB:       caveWormB,
+		CaveMagma:       caveMagma,
 	}
 }

@@ -123,9 +123,7 @@ func (e *Engine) simTick() {
 	scheduled := e.world.PopScheduledVoxels(now)
 	if len(scheduled) > 0 {
 		for _, v := range scheduled {
-			// Example placeholder for dynamic voxel logic (e.g. crop growth, flowing water)
-			// A full physics check would run here, and if the voxel mutated, broadcast to AOI.
-			_ = v // prevent unused variable warning
+			world.TickFluid(e.world, v.InstanceID, v.X, v.Y, v.Z, now)
 		}
 	}
 }

@@ -390,9 +390,20 @@ func ParseVoxelDoc(data []byte) (*VoxelWorld, error) {
 			cy = b
 			cz = c
 		}
-		chunk := DecodeChunkRLE(rle, cx, cz, cy)
-		w.Chunks[FormatChunkKey(cx, cy, cz)] = chunk
-		w.Chunks[fmt.Sprintf("%d_%d_%d", cx, cz, cy)] = chunk
+		// rle is actually a byte array of the PaletteRLEBinary format sent as JSON ints
+		bin := make([]byte, len(rle))
+		for i, v := range rle {
+			bin[i] = byte(v)
+		}
+		
+		chunk, err := DecodePaletteRLEBinary(bin)
+		if err == nil {
+			chunk.CX = cx
+			chunk.CY = cy
+			chunk.CZ = cz
+			w.Chunks[FormatChunkKey(cx, cy, cz)] = chunk
+			w.Chunks[fmt.Sprintf("%d_%d_%d", cx, cz, cy)] = chunk
+		}
 	}
 	return w, nil
 }
@@ -448,6 +459,41 @@ func (w *VoxelWorld) DeleteVoxel(wx, wy, wz int) {
 	if chunk != nil {
 		chunk.Set(lx, ly, lz, 0)
 	}
+}
+
+// SerializeToDoc serializes the voxel world to a VoxelDocJSON representation.
+func (w *VoxelWorld) SerializeToDoc() *VoxelDocJSON {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+
+	doc := &VoxelDocJSON{
+		FormatVersion: 3,
+		ID:            w.ID,
+		Name:          "World",
+		MapWidth:      &w.MapWidth,
+		MapHeight:     &w.MapHeight,
+		Dimensions: struct {
+			WidthChunks  int `json:"widthChunks"`
+			DepthChunks  int `json:"depthChunks"`
+			HeightChunks int `json:"heightChunks"`
+		}{
+			WidthChunks:  w.WidthChunks,
+			DepthChunks:  w.DepthChunks,
+			HeightChunks: w.HeightChunks,
+		},
+		Chunks: make(map[string][]int),
+	}
+
+	for key, chunk := range w.Chunks {
+		bin := chunk.EncodePaletteRLEBinary()
+		arr := make([]int, len(bin))
+		for i, b := range bin {
+			arr[i] = int(b)
+		}
+		doc.Chunks[key] = arr
+	}
+
+	return doc
 }
 
 // getVoxelLocked retrieves the 64-bit voxel word at global coordinates (wx, wy, wz) without acquiring a lock.

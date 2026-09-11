@@ -54,6 +54,17 @@ export class InputManager {
     return keys.some(k => this.isKeyPressed(k));
   }
 
+  public consumeKey(keys: string[]): boolean {
+    let pressed = false;
+    for (const key of keys) {
+      if (this.isKeyPressed(key)) {
+        this.keys[key.toLowerCase()] = false;
+        pressed = true;
+      }
+    }
+    return pressed;
+  }
+
   public getMousePosition() {
     return this.mousePos;
   }

@@ -365,5 +365,11 @@ type AtlasWorldContext struct {
 	Geology         IWorldField
 	MicroDetail     IWorldField
 	TerrainDensity  IWorldField
-	CaveDensity     IWorldField
+	CaveDensity     IWorldField // General legacy cave density
+	Tilt            IWorldField // Controls overall bedrock slanting
+	Fold            IWorldField // Controls localized geological folding
+	CaveKarst       IWorldField // Low freq, for wide chambers
+	CaveWormA       IWorldField // High freq, for pipe worms A
+	CaveWormB       IWorldField // High freq, for pipe worms B
+	CaveMagma       IWorldField // Med freq, for magma lakes
 }

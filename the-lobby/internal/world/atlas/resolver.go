@@ -21,11 +21,12 @@ type AreaTerrainModifiers struct {
 }
 
 type AreaStrata struct {
-	SurfaceMaterial    uint32
-	SubsurfaceMaterial uint32
-	SubsurfaceDepth    int
-	MantleMaterial     uint32
-	BedrockMaterial    uint32
+	RegolithMaterial    uint32 // GI > 180
+	SedimentaryMaterial uint32 // 120 < GI <= 180
+	PlutonicMaterial    uint32 // 60 < GI <= 120
+	MetamorphicMaterial uint32 // 15 < GI <= 60
+	BasementMaterial    uint32 // GI <= 15
+	BedrockMaterial     uint32
 }
 
 type DecoratorRule struct {
@@ -63,11 +64,12 @@ var CanonicalFractalAreas = []FractalArea{
 			HeightOffset: 0.0, HeightMultiplier: 1.0, RuggednessMultiplier: 0.2,
 		},
 		Strata: AreaStrata{
-			SurfaceMaterial:    2, // GRASS
-			SubsurfaceMaterial: 3, // DIRT
-			SubsurfaceDepth:    3,
-			MantleMaterial:     4, // STONE
-			BedrockMaterial:    1, // GUNMETAL
+			RegolithMaterial:    2, // GRASS
+			SedimentaryMaterial: 3, // DIRT
+			PlutonicMaterial:    4, // STONE
+			MetamorphicMaterial: 5, // Metamorphic proxy
+			BasementMaterial:    6, // Basement proxy
+			BedrockMaterial:     1, // GUNMETAL
 		},
 		Decorators: &AreaDecorators{
 			SurfaceFlora: []DecoratorRule{
@@ -92,11 +94,12 @@ var CanonicalFractalAreas = []FractalArea{
 			HeightOffset: 0.0, HeightMultiplier: 1.2, RuggednessMultiplier: 0.5,
 		},
 		Strata: AreaStrata{
-			SurfaceMaterial:    5, // SAND
-			SubsurfaceMaterial: 5, // SAND
-			SubsurfaceDepth:    5,
-			MantleMaterial:     4, // STONE
-			BedrockMaterial:    1, // GUNMETAL
+			RegolithMaterial:    5, // SAND
+			SedimentaryMaterial: 5, // SAND
+			PlutonicMaterial:    4, // STONE
+			MetamorphicMaterial: 5, // Metamorphic proxy
+			BasementMaterial:    6, // Basement proxy
+			BedrockMaterial:     1, // GUNMETAL
 		},
 		Decorators: &AreaDecorators{
 			SurfaceFlora: []DecoratorRule{
@@ -117,11 +120,12 @@ var CanonicalFractalAreas = []FractalArea{
 			HeightOffset: 0.2, HeightMultiplier: 2.0, RuggednessMultiplier: 1.0,
 		},
 		Strata: AreaStrata{
-			SurfaceMaterial:    6, // SNOW
-			SubsurfaceMaterial: 4, // STONE
-			SubsurfaceDepth:    2,
-			MantleMaterial:     4, // STONE
-			BedrockMaterial:    1, // GUNMETAL
+			RegolithMaterial:    6, // SNOW
+			SedimentaryMaterial: 4, // STONE
+			PlutonicMaterial:    4, // STONE
+			MetamorphicMaterial: 5, // Metamorphic proxy
+			BasementMaterial:    6, // Basement proxy
+			BedrockMaterial:     1, // GUNMETAL
 		},
 		Decorators: &AreaDecorators{},
 	},

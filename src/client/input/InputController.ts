@@ -7,6 +7,7 @@
 import { inputManager } from './InputManager';
 import { KEYBINDS } from './InputConstants';
 import { useSessionStore } from '../state/useSessionStore';
+import { useHudStore } from '../state/useHudStore';
 
 export class InputController {
   public update(deltaTime: number) {
@@ -15,8 +16,18 @@ export class InputController {
     // Only process player input if we're exploring
     if (scene !== 'exploring') return;
     
-    // In the future, this is where we check for UI toggles like inventory (I),
-    // map (M), or escaping menus. Movement is handled purely by the Physics systems.
+    // Handle Global Menu (ESC)
+    if (inputManager.consumeKey(KEYBINDS.MENU)) {
+      const hud = useHudStore.getState();
+      const openWins = hud.openWindows;
+      if (openWins.length > 0) {
+        // Close the top-most window
+        hud.toggleWindow(openWins[openWins.length - 1]);
+      } else {
+        // If no windows open, open options
+        hud.toggleWindow('options');
+      }
+    }
   }
 }
 

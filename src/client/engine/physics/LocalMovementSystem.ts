@@ -32,6 +32,11 @@ export class LocalMovementSystem {
     const mapType = (activeMapData.mapType || 'TILE').toUpperCase();
     
     if (mapType === 'TILE' && activeMapData.grid) {
+      if (!Array.isArray(activeMapData.grid[0])) {
+        // If grid is 1D array, skip bounds check (server-side collision handles it)
+        return true;
+      }
+      
       // Bounds check
       if (y < 0 || y >= activeMapData.grid.length || x < 0 || x >= activeMapData.grid[0].length) {
         return false;
