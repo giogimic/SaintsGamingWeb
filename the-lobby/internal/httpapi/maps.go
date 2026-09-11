@@ -470,7 +470,7 @@ func LoadMapDefFromDB(db *sql.DB, id string) (*world.MapDef, error) {
 
 	// Just apply Voxel data since FRACTAL injection only needs VOXEL blocks
 	if voxel != "" && voxel != "{}" && voxel != "null" {
-		def.Voxel, _ = world.DecodeVoxelWorld([]byte(voxel))
+		def.Voxel, _ = world.ParseVoxelDoc([]byte(voxel))
 	}
 
 	return def, nil
