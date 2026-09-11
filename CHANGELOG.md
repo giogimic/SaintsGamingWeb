@@ -1,3 +1,7 @@
+## [2.1.841] - 2026-09-11
+### Fixed
+- Fixed Go MMO socket connection rejecting valid joins during boot sequence by gracefully failing back to base WorldMap records when the strict WorldMapVersion INNER JOIN returns no rows for legacy/unsynced maps.
+- Fixed go-mmo server failing to initialize on fresh local dev environments by porting missing Prisma schema tables (CharacterClass, CreatureTemplate, ItemTemplate, WorldMapVersion) into the local SQLite manual migration script (sqlite.go).
 ## [2.1.835] - 2026-09-11
 ### Fixed
 - Fixed Next.js production build stripping the `BakeWorker` source by transitioning to a pre-compiled `esbuild` node bundle (`.next/server/bakeWorker.bundle.js`).
@@ -6218,6 +6222,7 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
  S t u d i o M e n u B a r . t s x . 
  
  
+
 
 
 

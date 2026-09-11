@@ -466,6 +466,11 @@ func LoadMapDefFromDB(db *sql.DB, wm *world.Manager, id string) (*world.MapDef, 
 			  JOIN WorldMapVersion v ON w.id = v.mapId AND w.publishedVersion = v.version 
 			  WHERE w.id = ?`
 	err := db.QueryRow(query, id).Scan(&name, &publishedVersion)
+	if err == sql.ErrNoRows {
+		// Fallback for legacy maps where publishedVersion=0 or WorldMapVersion is not yet synced
+		fallbackQuery := `SELECT name, version FROM WorldMap WHERE id = ?`
+		err = db.QueryRow(fallbackQuery, id).Scan(&name, &publishedVersion)
+	}
 	if err != nil {
 		return nil, err
 	}

@@ -101,6 +101,68 @@ func migrate(db *sql.DB) error {
 			onStepAction TEXT,
 			onStepPayload TEXT
 		)`,
+		`CREATE TABLE IF NOT EXISTS CharacterClass (
+			id TEXT PRIMARY KEY,
+			slug TEXT UNIQUE NOT NULL,
+			name TEXT NOT NULL,
+			baseStats TEXT NOT NULL DEFAULT '{}',
+			statDeltas TEXT NOT NULL DEFAULT '{}',
+			skillDeltas TEXT NOT NULL DEFAULT '{}'
+		)`,
+		`CREATE TABLE IF NOT EXISTS ItemTemplate (
+			id TEXT PRIMARY KEY,
+			slug TEXT UNIQUE NOT NULL,
+			name TEXT NOT NULL,
+			category TEXT NOT NULL,
+			subCategory TEXT,
+			tier INTEGER NOT NULL DEFAULT 1,
+			baseStats TEXT DEFAULT '{}',
+			stackable INTEGER NOT NULL DEFAULT 0
+		)`,
+		`CREATE TABLE IF NOT EXISTS WorldMapVersion (
+			id TEXT PRIMARY KEY,
+			mapId TEXT NOT NULL,
+			version INTEGER NOT NULL,
+			name TEXT NOT NULL,
+			gridData TEXT NOT NULL,
+			gatesData TEXT NOT NULL DEFAULT '{}',
+			npcsData TEXT NOT NULL DEFAULT '[]',
+			encountersData TEXT NOT NULL DEFAULT '[]',
+			tileLayersData TEXT NOT NULL DEFAULT '[]',
+			tilesetsData TEXT NOT NULL DEFAULT '[]',
+			mapType TEXT NOT NULL DEFAULT 'HYBRID',
+			regionClass TEXT NOT NULL DEFAULT 'authored',
+			createdAt TEXT NOT NULL DEFAULT (datetime('now'))
+		)`,
+		`CREATE TABLE IF NOT EXISTS WorldMapVersionRegion (
+			id TEXT PRIMARY KEY,
+			mapId TEXT NOT NULL,
+			version INTEGER NOT NULL,
+			regionX INTEGER NOT NULL,
+			regionZ INTEGER NOT NULL,
+			artifactChecksum TEXT NOT NULL,
+			persistedAt TEXT NOT NULL DEFAULT (datetime('now'))
+		)`,
+		`CREATE TABLE IF NOT EXISTS CreatureTemplate (
+			id TEXT PRIMARY KEY,
+			slug TEXT UNIQUE NOT NULL,
+			speciesName TEXT NOT NULL,
+			stage TEXT NOT NULL,
+			shape TEXT NOT NULL,
+			types TEXT NOT NULL,
+			spriteFront TEXT,
+			spriteOverworld TEXT
+		)`,
+		`CREATE TABLE IF NOT EXISTS CreatureBaseStats (
+			id TEXT PRIMARY KEY,
+			speciesId TEXT UNIQUE NOT NULL,
+			hp INTEGER NOT NULL,
+			physicalPower INTEGER NOT NULL,
+			physicalDefense INTEGER NOT NULL,
+			abilityPower INTEGER NOT NULL,
+			abilityDefense INTEGER NOT NULL,
+			combatTempo INTEGER NOT NULL
+		)`,
 		`CREATE TABLE IF NOT EXISTS CreatureDef (
 			id TEXT PRIMARY KEY,
 			slug TEXT UNIQUE NOT NULL,
