@@ -1,3 +1,12 @@
+## 2.1.829
+- Feat(Server): Implemented new Voxel Generation Architecture with Geological Index (GI), 5-layer strata, and 3-pass cave systems.
+- Feat(Server): Added Mythic Ores placement logic based on geological intersections.
+- Feat(Server): Added Fluid Cellular Automata tick system using scheduled voxel queue.
+- Fix(Server): Implemented VoxelWorld SerializeToDoc to fix "void map" chunks on client load.
+- Fix(Client): Patched 1D grid array check in LocalMovementSystem allowing voxel map movement.
+- Fix(Client): Resolved ClassicPanel HUD store mismatches preventing window toggling.
+- Fix(Client): Implemented ESC menu global keybind handler in InputController.
+
 ## 2.1.828
 - Fix(Client): Ensure HYBRID maps render 3D voxels instead of falling back to flat tiles.
 - Fix(Client): Restore HUD Studio dynamic layouts by mounting LobbyHudDockLayout in GameUI.
