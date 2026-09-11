@@ -15,6 +15,7 @@ import { useWorldStore } from '../state/useWorldStore';
 import { useMultiplayerStore } from '../state/useMultiplayerStore';
 import { usePlayerStore } from '../state/usePlayerStore';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
+import { mapMesher } from './MapMesher';
 
 const ENTITY_GROUND_CLEARANCE = 0.5;
 const SPRITE_SIZE = 1.2;
@@ -228,7 +229,15 @@ export class EntityRenderer {
     // Update target position (interpolation happens in update loop)
     sprite.targetX = data.x;
     sprite.targetZ = -data.y; // Babylon Z is inverted 2D Y
-    sprite.targetY = ENTITY_GROUND_CLEARANCE;
+    
+    // Auto-resolve terrain height so sprites aren't trapped in the geometry floor
+    let terrainY = 0;
+    const world = mapMesher.getVoxelWorld();
+    if (world) {
+      terrainY = world.getTopSolidVoxelY(data.x, -data.y) + world.originOffsetY;
+    }
+    sprite.targetY = terrainY + ENTITY_GROUND_CLEARANCE;
+    
     sprite.lastSeen = now;
   }
 

@@ -14,6 +14,7 @@
  */
 import * as BABYLON from '@babylonjs/core';
 import { usePlayerStore } from '../state/usePlayerStore';
+import { mapMesher } from './MapMesher';
 
 export type CameraStyle = 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson' | 'dynamic';
 
@@ -284,8 +285,14 @@ export class CameraManager {
   public snapCameraTo(x: number, z: number, y: number = 0) {
     if (!this.camera) return;
 
+    let terrainY = y;
+    const world = mapMesher.getVoxelWorld();
+    if (world) {
+      terrainY = world.getTopSolidVoxelY(x, z) + world.originOffsetY;
+    }
+    
     this.targetX = x;
-    this.targetY = y;
+    this.targetY = terrainY;
     this.targetZ = z;
 
     const currentPitch = this.profile.pitch ?? Math.PI / 4;
@@ -330,7 +337,14 @@ export class CameraManager {
       const factor = this.settings.playerFollowSmoothing ?? this.profile.lerpFactor ?? 0.35;
       const smoothFactor = 1.0 - Math.exp(-factor * 60 * dt);
 
+      let terrainY = this.targetY;
+      const world = mapMesher.getVoxelWorld();
+      if (world) {
+        terrainY = world.getTopSolidVoxelY(px, pz) + world.originOffsetY;
+      }
+      
       this.targetX = px;
+      this.targetY = terrainY;
       this.targetZ = pz;
 
       const currentPitch = this.profile.pitch ?? Math.PI / 4;

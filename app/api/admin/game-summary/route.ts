@@ -148,7 +148,7 @@ export async function GET() {
         uptime: Math.floor(process.uptime()),
       },
       releaseSummary: {
-        liveVersion: settingsMap['SITE_VERSION'] || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.831",
+        liveVersion: settingsMap['SITE_VERSION'] || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.832",
         maintenanceMode: settingsMap['MAINTENANCE_MODE'] === 'true',
         snapshotCount,
         latestSnapshot: latestSnapshot

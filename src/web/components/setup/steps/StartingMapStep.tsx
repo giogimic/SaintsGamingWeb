@@ -142,11 +142,13 @@ export function StartingMapStep({
         const t0 = performance.now();
         const seedStr = gameDefinition.name || Date.now().toString();
 
+        // We ONLY ever need to generate the 4x4 starter region for spawn validation!
+        // The visual canvas is just a mockup grid, so generating 1024 chunks synchronously is pointless and freezes the UI.
         const doc = generateVoxelWorldDoc({
           id: 'STARTING_MEADOW',
           name: 'Genesis Sanctuary',
-          widthChunks: previewSizeChunks,
-          depthChunks: previewSizeChunks,
+          widthChunks: STARTER_REGION_CHUNKS,
+          depthChunks: STARTER_REGION_CHUNKS,
           heightChunks: 1, // 32 blocks
           mode: 'procedural',
           seed: seedStr,
@@ -155,8 +157,8 @@ export function StartingMapStep({
         });
 
         // Try to find a safe spawn near the center
-        const centerX = Math.floor((previewSizeChunks * CHUNK_SIZE_X) / 2);
-        const centerZ = Math.floor((previewSizeChunks * CHUNK_SIZE_Z) / 2);
+        const centerX = Math.floor((STARTER_REGION_CHUNKS * CHUNK_SIZE_X) / 2);
+        const centerZ = Math.floor((STARTER_REGION_CHUNKS * CHUNK_SIZE_Z) / 2);
         
         const safeSpawn = resolveSafeVoxelSpawn(doc, centerX, centerZ, 64);
         
