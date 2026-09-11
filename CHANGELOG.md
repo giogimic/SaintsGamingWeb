@@ -1,3 +1,7 @@
+## [2.1.844] - 2026-09-11
+### Fixed
+- Fixed TypeScript build errors in `worldHandlers.test.ts` regarding mock state typing (`BootState` and `string | undefined`).
+
 ## [2.1.843] - 2026-09-11
 ### Fixed
 - Fixed TypeScript build error in `worldHandlers.ts` by correcting the `WorldSessionState` type from `'none'` to `'not_joined'`.
