@@ -30,7 +30,8 @@ export type BootState =
   | 'EXTRACT_SPAWN'
   | 'MESH'
   | 'VALIDATE_SPAWN'
-  | 'READY';
+  | 'READY'
+  | 'FATAL_ERROR';
 
 export type ConnectionStatus = 'connected' | 'connecting' | 'reconnecting' | 'disconnected';
 
