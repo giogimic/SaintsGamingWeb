@@ -19,14 +19,14 @@ export async function GET() {
     if (testMap) {
       await prisma.worldMap.delete({ where: { id: 'TEST_MAP' } });
     }
-    const chars = await prisma.character.findMany();
+    const chars = await prisma.gameCharacter.findMany();
     for (const c of chars) {
       let meta: any = {};
-      try { if (c.metadata) meta = typeof c.metadata === 'string' ? JSON.parse(c.metadata) : c.metadata; } catch(e) {}
+      try { if (c.stateData) meta = typeof c.stateData === 'string' ? JSON.parse(c.stateData) : c.stateData; } catch(e) {}
       meta.lastMapId = 'STARTING_MEADOW';
-      await prisma.character.update({
+      await prisma.gameCharacter.update({
         where: { id: c.id },
-        data: { metadata: JSON.stringify(meta) }
+        data: { stateData: JSON.stringify(meta) }
       });
     }
     return NextResponse.json({ success: true, message: 'DB fixed' });

@@ -4,6 +4,7 @@ import { useSessionStore } from '../state/useSessionStore';
 import { useWorldStore } from '../state/useWorldStore';
 import { usePlayerStore } from '../state/usePlayerStore';
 import { socketManager } from '../net/SocketManager';
+import { registerAllHandlers } from '../net/SocketEventRouter';
 import { useAppStore } from "@/shared/store/useAppStore";
 import { deleteGameCharacter, getUserCharacters } from '@/app/actions/game';
 import { toast } from 'sonner';
@@ -125,7 +126,7 @@ export function CharacterSelectScene() {
     setDeleteModalChar(null);
   };
 
-  const handleEnterWorld = (charId: string) => {
+  const handleEnterWorld = async (charId: string) => {
     soundSynth?.playActionSound?.();
     const char = characters.find(c => c.id === charId);
     if (char) {
@@ -140,18 +141,53 @@ export function CharacterSelectScene() {
         return;
       }
 
-      socketManager.emit('join_map', {
-        accountId: accountId,
-        characterId: charId,
-        mapId: targetMapId,
-        lobby: true,
-        name: char.name,
-        assetProfileId: char.assetProfileId || usePlayerStore.getState().player.assetProfileId || 'adventurer',
-        joinSeq,
-      });
-
       useSessionStore.getState().setBootState('CONNECT');
       useWorldStore.getState().setWorldSessionState('joining');
+
+      try {
+        // Step 1: Query the Routing Gateway for the assigned World Server
+        const res = await fetch('/api/realm/route', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mapId: targetMapId })
+        });
+        
+        const data = await res.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || "Failed to resolve world route");
+        }
+
+        // Step 2: Dynamically reconnect the socket manager to the designated World Server
+        socketManager.connect({
+          accountId,
+          serverUrl: data.serverUrl,
+          joinToken: data.joinToken,
+          onConnect: () => {
+            // Re-register all socket listeners on the newly created socket instance
+            registerAllHandlers();
+            
+            // Once connected securely to the World Server, emit the map join request
+            socketManager.emit('join_map', {
+              accountId: accountId,
+              characterId: charId,
+              mapId: targetMapId,
+              lobby: true,
+              name: char.name,
+              assetProfileId: char.assetProfileId || usePlayerStore.getState().player.assetProfileId || 'adventurer',
+              joinSeq,
+            });
+          },
+          onDisconnect: () => {},
+          onReconnecting: () => {},
+          onSessionReplaced: () => {}
+        });
+      } catch (err: any) {
+        console.error("Routing Error:", err);
+        toast.error(err.message || "Could not connect to world server");
+        useSessionStore.getState().setBootState('IDLE');
+        useWorldStore.getState().setWorldSessionState('offline');
+      }
     }
   };
 

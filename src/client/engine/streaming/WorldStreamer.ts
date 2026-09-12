@@ -151,6 +151,12 @@ export class WorldStreamer {
         const url = `/api/internal/worlds/${this.currentMapId}/${this.currentVersion}/regions/${rx}/${rz}`;
         const res = await fetch(url);
         if (!res.ok) {
+          if (res.status === 404) {
+            console.warn(`[WorldStreamer] Region ${rx},${rz} returned 404 (Empty/Unmapped space).`);
+            const emptyBlob = new ArrayBuffer(0);
+            this.regionBlobCache.set(key, emptyBlob);
+            return emptyBlob;
+          }
           throw new Error(`Region API returned ${res.status}`);
         }
         
@@ -187,6 +193,12 @@ export class WorldStreamer {
 
     useSessionStore.getState().setBootState('MESH');
     
+    if (blob.byteLength === 0) {
+      console.log(`[WorldStreamer] Region blob for ${rKey} is empty, setting chunks to RESIDENT (air).`);
+      this.chunkResidency.set(cKey, 'MESHED');
+      return;
+    }
+    
     try {
       // Decompress the blob (zlib compressed JSON)
       const decompressed = pako.inflate(new Uint8Array(blob));
@@ -195,6 +207,7 @@ export class WorldStreamer {
       
       if (!payload || !payload.chunks) {
         console.warn(`[WorldStreamer] Invalid region payload format for R(${region.rx}, ${region.rz})`);
+        this.chunkResidency.set(cKey, 'FAILED' as any);
         return;
       }
 
@@ -228,6 +241,7 @@ export class WorldStreamer {
       
     } catch (err) {
       console.error(`[WorldStreamer] Failed to decode region R(${region.rx}, ${region.rz}):`, err);
+      this.chunkResidency.set(cKey, 'FAILED' as any);
     }
   }
 

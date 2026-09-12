@@ -17,6 +17,8 @@ export type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 export interface SocketManagerOptions {
   accountId: string;
+  serverUrl?: string; // Optional dynamic URL for Routed Server
+  joinToken?: string; // Optional dynamic JWT token
   onConnect: () => void;
   onDisconnect: (reason: string) => void;
   onReconnecting: () => void;
@@ -44,11 +46,15 @@ export class SocketManager {
    * Connect to the Go MMO server (or same-origin Node fallback).
    */
   connect(opts: SocketManagerOptions): TypedSocket {
+    if (this.socket?.connected) {
+      this.socket.disconnect();
+    }
+    
     this.options = opts;
 
-    // Build connection config
-    const goUrl = goMmoPublicUrl();
-    const auth = lobbySocketAuth(opts.accountId);
+    // Use dynamic serverUrl if provided, otherwise fallback to env
+    const goUrl = opts.serverUrl || goMmoPublicUrl();
+    const auth = opts.joinToken ? { token: opts.joinToken } : lobbySocketAuth(opts.accountId);
 
     const connectOpts: any = {
       auth,

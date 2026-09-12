@@ -1,3 +1,8 @@
+## [2.1.848] - 2026-09-11
+### Fixed
+- Fixed an issue where dynamically generated voxel regions lacking geometry (empty air chunks like (0,0)) would cause the map streamer to throw a fatal network error and crash the loading sequence. Missing map chunks are now gracefully treated as empty space.
+- Fixed a compilation error regarding ChunkResidencyState types during background map meshing.
+- Updated database fix-scripts to correctly target MMO characters instead of legacy GTA character models.
 ## [2.1.846] - 2026-09-11
 ### Fixed
 - Fixed `join_rejected` errors occurring after wiping MMO data. The starter hero presets and character creator defaults previously requested the non-existent `LOBBY` map. They now correctly fall back to the dynamically configured realm spawn map (e.g. `STARTING_MEADOW`).
@@ -6247,6 +6252,7 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
  S t u d i o M e n u B a r . t s x . 
  
  
+
 
 
 
