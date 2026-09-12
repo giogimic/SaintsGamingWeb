@@ -3,6 +3,8 @@ import { generateChunkVoxels, VoxelWorldGenerationConfig } from '@/shared/game/v
 import { VoxelChunk } from '@/shared/game/voxel/VoxelChunk';
 import { packVoxel, VOXEL_MAT_GRASS, VoxelPhysics, VoxelOrientation, VoxelShape } from '@/shared/game/voxel/VoxelWord';
 import zlib from 'zlib';
+import { buildAtlasWorld } from '@/shared/game/atlas/world/AtlasWorldBuilder';
+import { AtlasRegionResolver } from '@/shared/game/atlas/world/AtlasRegionResolver';
 
 export interface BakeWorkerTask {
   taskId: string;
@@ -31,6 +33,11 @@ async function handleTask(task: BakeWorkerTask) {
   const regionData: Record<string, number[]> = {};
   let chunksGenerated = 0;
 
+  // Initialize atlas world context for this worker task to enable 3D terrain features
+  const seedBaseStr = String(config.seed || 1337);
+  const atlasContext = buildAtlasWorld(seedBaseStr);
+  const atlasResolver = new AtlasRegionResolver();
+
   for (let lz = 0; lz < chunksPerRegion; lz++) {
     for (let lx = 0; lx < chunksPerRegion; lx++) {
       const cx = startCx + lx;
@@ -47,7 +54,7 @@ async function handleTask(task: BakeWorkerTask) {
       };
 
       // 1. Generate Chunk
-      const chunk = generateChunkVoxels(cx, cz, 0, chunkConfig);
+      const chunk = generateChunkVoxels(cx, cz, 0, chunkConfig, atlasContext, atlasResolver);
 
       // 2. Validate Chunk (Lightweight)
       if (chunk.dataLow.length !== 32768 || chunk.dataHigh.length !== 32768) {

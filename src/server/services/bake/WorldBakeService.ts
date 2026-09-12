@@ -7,7 +7,7 @@ import { BakeWorkerTask, BakeWorkerResult } from './bakeWorker';
 import { VoxelRegionRepository } from '../../repositories/VoxelRegionRepository';
 import { prisma } from '@/web/lib/prisma';
 
-const MAX_WORKERS = 4; // Bounded concurrency
+const MAX_WORKERS = 1; // Bounded concurrency (temporarily reduced for 502 diagnosis)
 
 export class WorldBakeService {
   private activeJobs = new Map<string, WorldBakeJob>();
