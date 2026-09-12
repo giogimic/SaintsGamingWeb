@@ -49,7 +49,7 @@ func TestSolidVoxelCollisionRejection(t *testing.T) {
 	wm.RegisterDef(def)
 
 	// Add player at (14, 15)
-	p := pm.CreateWithCharacter("acc_1", "char_1", "sock_123", "Hero", "spr", mapID+"_ch1", mapID, 14, 15)
+	p := pm.CreateWithCharacter("acc_1", "char_1", "sock_123", "Hero", "spr", mapID+"_ch1", mapID, 14, 15, 0)
 
 	cfg := config.Config{}
 	eng := New(cfg, wm, pm, nil, emitter)

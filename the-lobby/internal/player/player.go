@@ -87,7 +87,7 @@ func (m *Manager) persistLocked(p *State) {
 	if m.store == nil || p == nil {
 		return
 	}
-	m.store.SavePlayer(p.AccountID, p.BaseMapID, p.X, p.Y, p.Credits)
+	m.store.SavePlayer(p.AccountID, p.BaseMapID, p.X, p.Y, p.Z, p.Credits)
 }
 
 func (m *Manager) ZoneSize() int { return m.aoiZoneSize }
@@ -133,12 +133,12 @@ func (m *Manager) ForEach(fn func(*State)) {
 }
 
 // Create registers a new seat. Caller handles session_replaced for prior socket.
-func (m *Manager) Create(accountID, socketID, name, spriteID, instanceID, baseMapID string, x, y float64) *State {
-	return m.CreateWithCharacter(accountID, "", socketID, name, spriteID, instanceID, baseMapID, x, y)
+func (m *Manager) Create(accountID, socketID, name, spriteID, instanceID, baseMapID string, x, y, z float64) *State {
+	return m.CreateWithCharacter(accountID, "", socketID, name, spriteID, instanceID, baseMapID, x, y, z)
 }
 
 // CreateWithCharacter registers a new seat with explicit character ownership.
-func (m *Manager) CreateWithCharacter(accountID, characterID, socketID, name, spriteID, instanceID, baseMapID string, x, y float64) *State {
+func (m *Manager) CreateWithCharacter(accountID, characterID, socketID, name, spriteID, instanceID, baseMapID string, x, y, z float64) *State {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -159,6 +159,7 @@ func (m *Manager) CreateWithCharacter(accountID, characterID, socketID, name, sp
 		BaseMapID:   baseMapID,
 		X:           x,
 		Y:           y,
+		Z:           z,
 		Direction:   "down",
 		HP:          100,
 		MaxHP:       100,

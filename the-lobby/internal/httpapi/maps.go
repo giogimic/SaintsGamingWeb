@@ -509,6 +509,7 @@ func LoadMapDefFromDB(db *sql.DB, wm *world.Manager, id string) (*world.MapDef, 
 					SpawnPoint *struct {
 						X float64 `json:"x"`
 						Y float64 `json:"y"`
+						Z float64 `json:"z"`
 					} `json:"spawnPoint"`
 					Gates []struct {
 						ID       string `json:"id"`
@@ -516,6 +517,7 @@ func LoadMapDefFromDB(db *sql.DB, wm *world.Manager, id string) (*world.MapDef, 
 						Position struct {
 							X float64 `json:"x"`
 							Y float64 `json:"y"`
+							Z float64 `json:"z"`
 						} `json:"position"`
 					} `json:"gates"`
 				}
@@ -523,12 +525,14 @@ func LoadMapDefFromDB(db *sql.DB, wm *world.Manager, id string) (*world.MapDef, 
 					if gates.SpawnPoint != nil {
 						def.SpawnX = gates.SpawnPoint.X
 						def.SpawnY = gates.SpawnPoint.Y
+						def.SpawnZ = gates.SpawnPoint.Z
 					} else {
 						found := false
 						for _, g := range gates.Gates {
 							if g.ID == "spawn" || g.Category == "SPAWN" {
 								def.SpawnX = g.Position.X
 								def.SpawnY = g.Position.Y
+								def.SpawnZ = g.Position.Z
 								found = true
 								break
 							}
@@ -536,6 +540,7 @@ func LoadMapDefFromDB(db *sql.DB, wm *world.Manager, id string) (*world.MapDef, 
 						if !found {
 							def.SpawnX = float64(def.Width) / 2
 							def.SpawnY = float64(def.Height) / 2
+							def.SpawnZ = 16
 						}
 					}
 				}

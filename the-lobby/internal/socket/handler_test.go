@@ -80,7 +80,7 @@ func TestHubLifecycleAndIdempotentJoin(t *testing.T) {
 		t.Fatalf("join failed: %v", err)
 	}
 
-	p := pm.CreateWithCharacter(accountID, charID, socketID, "Hero", "adventurer", inst.InstanceID, "DEMO_SANDBOX", 14, 15)
+	p := pm.CreateWithCharacter(accountID, charID, socketID, "Hero", "adventurer", inst.InstanceID, "DEMO_SANDBOX", 14, 15, 0)
 	if p == nil || p.CharacterID != charID {
 		t.Fatalf("expected player with character ID %s", charID)
 	}
@@ -105,7 +105,7 @@ func TestHubLifecycleAndIdempotentJoin(t *testing.T) {
 	// 5. Switching character on same account cleanly replaces seat
 	newCharID := "char_hero_2"
 	pm.Remove(socketID)
-	p2 := pm.CreateWithCharacter(accountID, newCharID, socketID, "Mage", "mage_default", inst.InstanceID, "DEMO_SANDBOX", 14, 15)
+	p2 := pm.CreateWithCharacter(accountID, newCharID, socketID, "Mage", "mage_default", inst.InstanceID, "DEMO_SANDBOX", 14, 15, 0)
 	if p2.CharacterID != newCharID {
 		t.Fatalf("expected new character %s", newCharID)
 	}

@@ -132,6 +132,7 @@ type JoinMapRequest struct {
 	PIE         bool     `json:"pie"`
 	X           *float64 `json:"x"`
 	Y           *float64 `json:"y"`
+	Z           *float64 `json:"z"`
 	Name           string   `json:"name"`
 	SpriteID       string   `json:"spriteId"`
 	AssetProfileID string   `json:"assetProfileId"`

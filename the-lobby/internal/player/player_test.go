@@ -9,11 +9,11 @@ import (
 
 func TestCreateMoveAndPeers(t *testing.T) {
 	m := player.NewManager(16, nil)
-	p := m.Create("a1", "s1", "Ada", "spr", "DEMO_SANDBOX_ch1", "DEMO_SANDBOX", 5, 5)
+	p := m.Create("a1", "s1", "Ada", "spr", "DEMO_SANDBOX_ch1", "DEMO_SANDBOX", 5, 5, 0)
 	if p.EntityID == "" {
 		t.Fatal("missing entity id")
 	}
-	_ = m.Create("a2", "s2", "Bob", "spr", "DEMO_SANDBOX_ch1", "DEMO_SANDBOX", 6, 6)
+	_ = m.Create("a2", "s2", "Bob", "spr", "DEMO_SANDBOX_ch1", "DEMO_SANDBOX", 6, 6, 0)
 	peers := m.SnapshotPeers("DEMO_SANDBOX_ch1", "a1")
 	if len(peers) != 1 || peers["s2"].Name != "Bob" {
 		t.Fatalf("peers=%v", peers)
@@ -39,7 +39,7 @@ func TestCreateMoveAndPeers(t *testing.T) {
 
 func TestSessionReplaceTracking(t *testing.T) {
 	m := player.NewManager(16, nil)
-	m.CreateWithCharacter("a1", "c1", "s1", "Ada", "spr", "DEMO_ch1", "DEMO", 1, 1)
+	m.CreateWithCharacter("a1", "c1", "s1", "Ada", "spr", "DEMO_ch1", "DEMO", 1, 1, 0)
 	if m.SocketIDForAccount("a1") != "s1" {
 		t.Fatal("socket map")
 	}

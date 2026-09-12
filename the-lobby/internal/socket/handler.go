@@ -409,12 +409,12 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 	}
 
 	def, _ := h.eng.World().GetDef(base)
-	x, y := def.SpawnX, def.SpawnY
+	x, y, z := def.SpawnX, def.SpawnY, def.SpawnZ
 	hot := h.eng.Players().LoadHot(accountID)
 	if hot.OK && req.X == nil && req.Y == nil {
 		// Prefer saved seat when rejoining the same base map without an explicit spawn.
 		if hot.MapID == "" || hot.MapID == base {
-			x, y = hot.X, hot.Y
+			x, y, z = hot.X, hot.Y, hot.Z
 		}
 	}
 	if req.X != nil {
@@ -422,6 +422,9 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 	}
 	if req.Y != nil {
 		y = *req.Y
+	}
+	if req.Z != nil {
+		z = *req.Z
 	}
 	name := req.Name
 	if name == "" {
@@ -435,7 +438,7 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 		sprite = "player_default"
 	}
 
-	p := h.eng.Players().CreateWithCharacter(accountID, req.CharacterID, sid, name, sprite, inst.InstanceID, base, x, y)
+	p := h.eng.Players().CreateWithCharacter(accountID, req.CharacterID, sid, name, sprite, inst.InstanceID, base, x, y, z)
 	if hot.OK && hot.Credits > 0 {
 		p.Credits = hot.Credits
 	}

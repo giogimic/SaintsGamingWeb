@@ -10,7 +10,7 @@ import (
 // PlayerHot is last known overworld seat for an account.
 type PlayerHot struct {
 	MapID   string
-	X, Y    float64
+	X, Y, Z float64
 	Credits int
 	OK      bool
 }
@@ -42,8 +42,8 @@ func (s *Store) LoadPlayer(accountID string) PlayerHot {
 	}
 	var out PlayerHot
 	err := s.DB.QueryRow(
-		`SELECT mapId, x, y, credits FROM GoPlayerState WHERE accountId = ?`, accountID,
-	).Scan(&out.MapID, &out.X, &out.Y, &out.Credits)
+		`SELECT mapId, x, y, z, credits FROM GoPlayerState WHERE accountId = ?`, accountID,
+	).Scan(&out.MapID, &out.X, &out.Y, &out.Z, &out.Credits)
 	if err != nil {
 		return PlayerHot{}
 	}
@@ -51,17 +51,16 @@ func (s *Store) LoadPlayer(accountID string) PlayerHot {
 	return out
 }
 
-func (s *Store) SavePlayer(accountID, mapID string, x, y float64, credits int) {
+func (s *Store) SavePlayer(accountID, mapID string, x, y, z float64, credits int) {
 	if !s.ok() || accountID == "" {
 		return
 	}
 	base := world.ToBaseMapID(mapID)
 	_, _ = s.DB.Exec(`
-INSERT INTO GoPlayerState (accountId, mapId, x, y, credits, updatedAt)
-VALUES (?, ?, ?, ?, ?, datetime('now'))
-ON CONFLICT(accountId) DO UPDATE SET
-  mapId=excluded.mapId, x=excluded.x, y=excluded.y, credits=excluded.credits, updatedAt=datetime('now')
-`, accountID, base, x, y, credits)
+INSERT INTO GoPlayerState (accountId, mapId, x, y, z, credits, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+ON CONFLICT(accountId) DO UPDATE SET mapId=excluded.mapId, x=excluded.x, y=excluded.y, z=excluded.z, credits=excluded.credits, updatedAt=datetime('now');
+	`, accountID, base, x, y, z, credits)
 }
 
 func (s *Store) LoadInventory(accountID string) (items []Item, credits int, ok bool) {

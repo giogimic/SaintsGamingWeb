@@ -185,6 +185,7 @@ func migrate(db *sql.DB) error {
 			mapId TEXT NOT NULL DEFAULT 'DEMO_SANDBOX',
 			x REAL NOT NULL DEFAULT 5,
 			y REAL NOT NULL DEFAULT 5,
+			z REAL NOT NULL DEFAULT 0,
 			credits INTEGER NOT NULL DEFAULT 100,
 			updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
 		)`,

@@ -20,6 +20,7 @@ type MapDef struct {
 	Gates    []GateDef
 	SpawnX      float64
 	SpawnY      float64
+	SpawnZ      float64
 	RegionClass          string
 	Voxel                *VoxelWorld
 	Biome                *BiomeDefinition
@@ -196,6 +197,7 @@ func (m *Manager) JoinMap(baseMapID, accountID string, isPrivate, pie bool) (*In
 				Height: 128,
 				SpawnX: float64(protocol.DefaultSpawnX),
 				SpawnY: float64(protocol.DefaultSpawnY),
+				SpawnZ: 0,
 			}
 		}
 	}
@@ -384,6 +386,7 @@ func BuildDemoMapDef() *MapDef {
 		Grid:        [][]int{}, // No logic grid for fractal maps
 		SpawnX:      float64(protocol.DefaultSpawnX),
 		SpawnY:      float64(protocol.DefaultSpawnY),
+		SpawnZ:      0,
 		RegionClass: "fractal",
 		Voxel:       voxelWorld,
 		NPCs: []NPCDef{
