@@ -185,7 +185,7 @@ export function CharacterSelectScene() {
       } catch (err: any) {
         console.error("Routing Error:", err);
         toast.error(err.message || "Could not connect to world server");
-        useSessionStore.getState().setBootState('IDLE');
+        useSessionStore.getState().setBootState('FATAL_ERROR');
         useWorldStore.getState().setWorldSessionState('offline');
       }
     }
