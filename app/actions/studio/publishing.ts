@@ -96,6 +96,8 @@ export async function createPublishSnapshot(input: {
   title: string;
   description?: string;
   version?: string;
+  startingMapId?: string;
+  defaultMapId?: string;
 }) {
   const isAdmin = await checkAdminPermission();
   if (!isAdmin) return { success: false, error: "Unauthorized" };
@@ -140,6 +142,8 @@ export async function createPublishSnapshot(input: {
       gameId,
       profileId,
       timestamp: new Date().toISOString(),
+      startingMapId: input.startingMapId,
+      defaultMapId: input.defaultMapId,
       dungeons,
       shops,
       mounts,
@@ -165,10 +169,42 @@ export async function createPublishSnapshot(input: {
         snapshotPayload: JSON.stringify(payload),
       },
     });
+
+    if (saved.status === "PUBLISHED") {
+      // Archive previous snapshots for this profile
+      await prisma.worldPublishSnapshot.updateMany({
+        where: {
+          gameId,
+          profileId,
+          status: "PUBLISHED",
+          id: { not: saved.id },
+        },
+        data: {
+          status: "ARCHIVED",
+        },
+      });
+    }
+
     return { success: true as const, data: saved, validation };
   } catch (err: any) {
     console.error("[createPublishSnapshot]", err);
     return { success: false as const, error: "Failed to create publish snapshot" };
+  }
+}
+
+/**
+ * Fetch draft maps from the internal MMO server.
+ */
+export async function fetchDraftMaps() {
+  try {
+    const goMmoBase = process.env.GO_MMO_INTERNAL_URL || process.env.NEXT_PUBLIC_GO_MMO_URL || 'http://localhost:24011';
+    const res = await fetch(`${goMmoBase}/api/maps?action=drafts`);
+    if (res.ok) {
+      return { success: true, data: await res.json() };
+    }
+    return { success: false, error: "Failed to fetch maps" };
+  } catch (e: any) {
+    return { success: false, error: e.message };
   }
 }
 
@@ -283,8 +319,10 @@ export async function deployRelease(snapshotId: string) {
 
     const payload = JSON.parse(snapshot.snapshotPayload);
     const maps = payload.maps || [];
+    const startingMapId = payload.startingMapId || payload.gameConfig?.startingMapId;
+    const defaultMapId = payload.defaultMapId || payload.gameConfig?.defaultMapId;
 
-    if (maps.length > 0) {
+    if (maps.length > 0 || startingMapId || defaultMapId) {
       const goMmoBase = process.env.GO_MMO_INTERNAL_URL || process.env.NEXT_PUBLIC_GO_MMO_URL || 'http://localhost:24011';
       const secret = process.env.AUTH_SECRET || '';
 
@@ -296,7 +334,7 @@ export async function deployRelease(snapshotId: string) {
             'Authorization': `Bearer ${secret}`,
             'X-Saints-Internal-Secret': secret
           },
-          body: JSON.stringify({ maps })
+          body: JSON.stringify({ maps, startingMapId, defaultMapId })
         });
 
         if (!res.ok) {

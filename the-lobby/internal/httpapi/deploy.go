@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/protocol"
+	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/world"
 )
 
 // mapDraftBundle matches the JSON shape of a map in the deploy payload
@@ -25,7 +26,9 @@ type mapDraftBundle struct {
 }
 
 type deployPayload struct {
-	Maps []mapDraftBundle `json:"maps"`
+	Maps          []mapDraftBundle `json:"maps"`
+	StartingMapId string           `json:"startingMapId,omitempty"`
+	DefaultMapId  string           `json:"defaultMapId,omitempty"`
 }
 
 func (s *Server) internalDeployRelease(w http.ResponseWriter, r *http.Request) {
@@ -76,6 +79,13 @@ func (s *Server) internalDeployRelease(w http.ResponseWriter, r *http.Request) {
 			_ = tx.Rollback()
 			http.Error(w, "failed to update world map", http.StatusInternalServerError)
 			return
+		}
+	}
+
+	if payload.StartingMapId != "" {
+		_, err = tx.Exec(`INSERT INTO ServerSettings (key, value) VALUES ('startingMapId', ?) ON CONFLICT(key) DO UPDATE SET value=?`, payload.StartingMapId, payload.StartingMapId)
+		if err != nil {
+			log.Printf("[deploy] failed to save startingMapId to ServerSettings: %v", err)
 		}
 	}
 
@@ -137,6 +147,11 @@ func (s *Server) internalDeployRelease(w http.ResponseWriter, r *http.Request) {
 			hub.BroadcastAll(protocol.EvMapReloaded, map[string]any{"forceRefresh": true})
 			hub.BroadcastAll(protocol.EvContentReload, map[string]any{"type": "full"})
 		}
+	}
+
+	if payload.StartingMapId != "" {
+		world.ServerSpawnMapID = payload.StartingMapId
+		log.Printf("[deploy] Updated ServerSpawnMapID to %s", world.ServerSpawnMapID)
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "mapsDeployed": len(payload.Maps)})

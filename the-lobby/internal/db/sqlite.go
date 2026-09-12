@@ -217,6 +217,10 @@ func migrate(db *sql.DB) error {
 			createdAt TEXT NOT NULL DEFAULT (datetime('now')),
 			updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
 		)`,
+		`CREATE TABLE IF NOT EXISTS ServerSettings (
+			key TEXT PRIMARY KEY,
+			value TEXT NOT NULL
+		)`,
 	}
 	for _, s := range stmts {
 		if _, err := db.Exec(s); err != nil {

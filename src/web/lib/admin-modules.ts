@@ -47,7 +47,6 @@ import { PERMISSION_LEVELS } from "./permissions";
 
 export type AdminCategoryId =
   | "overview"
-  | "operations"
   | "community"
   | "identity"
   | "infrastructure"
@@ -71,14 +70,7 @@ export const ADMIN_CATEGORIES: Record<AdminCategoryId, AdminCategory> = {
     icon: LayoutDashboard,
     order: 1,
   },
-  operations: {
-    id: "operations",
-    label: "World & Game Operations",
-    shortLabel: "World & Game",
-    description: "Heroes, creature species, quests, crafting items, world events, and pixel assets.",
-    icon: Gamepad2,
-    order: 2,
-  },
+
   community: {
     id: "community",
     label: "Community & Content",
@@ -185,99 +177,6 @@ export const ADMIN_MODULES: AdminModule[] = [
     keywords: ["environment", "env", "system", "version", "cache", "build", "state", "revalidate"],
   },
 
-  // ─── WORLD & GAME OPERATIONS ───────────────────────────────────────────────
-  {
-    id: "game-mmo-sandbox",
-    category: "operations",
-    label: "Game Operations",
-    description: "Active Saint hero roster, inventory item injection, and emergency unstuck tools.",
-    icon: Gamepad2,
-    href: "/admin/game",
-    permission: PERMISSION_LEVELS.DEVELOPER,
-    keywords: ["mmo", "characters", "items", "inventory", "inject", "sandbox", "players", "heroes", "unstuck"],
-  },
-  {
-    id: "game-lobby-mgmt",
-    category: "operations",
-    label: "Lobby & Gateway",
-    description: "Go MMO and TypeScript game engine gateway status, player counts, and shards.",
-    icon: MapPin,
-    href: "/admin/dev/lobby",
-    permission: PERMISSION_LEVELS.DEVELOPER,
-    statusSource: "mmo-gateway",
-    keywords: ["lobby", "gateway", "server status", "shards", "engine", "mmo status", "realtime"],
-  },
-  {
-    id: "game-gates",
-    category: "operations",
-    label: "Gateway Management",
-    description: "Start, stop, and route warp gates across the MMO world and configure travel links.",
-    icon: DoorOpen,
-    href: "/admin/game/gates",
-    permission: PERMISSION_LEVELS.ADMIN,
-    keywords: ["gates", "gateways", "warps", "teleport", "travel", "doors", "maps", "routes"],
-  },
-
-  {
-    id: "game-quests",
-    category: "operations",
-    label: "Quest Creator",
-    description: "Write NPC story dialogues, turn-in requirements, and player XP/credit rewards.",
-    icon: ScrollText,
-    href: "/admin/game-dev/quests",
-    permission: PERMISSION_LEVELS.DEVELOPER,
-    keywords: ["quests", "dialogue", "npcs", "rewards", "missions", "objectives", "story"],
-  },
-  {
-    id: "game-creatures",
-    category: "operations",
-    label: "Beast Catalog",
-    description: "Browse registered creature species, elemental types, combat stats, and abilities.",
-    icon: Gamepad2,
-    href: "/admin/game-dev/creatures",
-    permission: PERMISSION_LEVELS.DEVELOPER,
-    keywords: ["creatures", "beasts", "species", "stats", "moves", "abilities", "monsters", "saints", "dex"],
-  },
-  {
-    id: "game-items",
-    category: "operations",
-    label: "Items & Crafting",
-    description: "Manage weapons, armor, gathering tools, crafting recipes, and professions.",
-    icon: Sword,
-    href: "/admin/game-dev/items",
-    permission: PERMISSION_LEVELS.DEVELOPER,
-    keywords: ["items", "crafting", "recipes", "weapons", "armor", "professions", "smithing", "mining", "tools"],
-  },
-  {
-    id: "game-dungeons-events",
-    category: "operations",
-    label: "Dungeons & Events",
-    description: "Configure world multipliers, scheduled server events, and party dungeon entries.",
-    icon: Flame,
-    href: "/admin/game-dev/events",
-    permission: PERMISSION_LEVELS.DEVELOPER,
-    keywords: ["dungeons", "events", "world events", "multipliers", "double xp", "bosses", "raids"],
-  },
-  {
-    id: "game-shops",
-    category: "operations",
-    label: "Shops & Encounters",
-    description: "Set merchant stock, item prices, restock timers, and map encounter rates.",
-    icon: Store,
-    href: "/admin/game-dev/shops",
-    permission: PERMISSION_LEVELS.DEVELOPER,
-    keywords: ["shops", "merchants", "vendors", "encounters", "spawn rates", "inventory", "prices"],
-  },
-  {
-    id: "game-assets",
-    category: "operations",
-    label: "Pixel Asset Studio",
-    description: "Batch import and categorize 16x16 / 32x32 tiles, sprites, and map decor.",
-    icon: ImageIcon,
-    href: "/admin/game-dev/assets",
-    permission: PERMISSION_LEVELS.DEVELOPER,
-    keywords: ["assets", "sprites", "pixel art", "tiles", "textures", "graphics", "importer"],
-  },
 
   // ─── COMMUNITY & CONTENT ───────────────────────────────────────────────────
   {

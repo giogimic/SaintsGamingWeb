@@ -11,6 +11,10 @@ import (
 
 var (
 	rePublicChannel = regexp.MustCompile(`^(.*)_ch(\d+)$`)
+	
+	// ServerSpawnMapID is the map players will spawn into if none is provided.
+	// It is loaded from ServerSettings on boot.
+	ServerSpawnMapID = protocol.DemoMapID
 )
 
 // ToBaseMapID strips _chN public shard suffixes only.
@@ -35,7 +39,7 @@ func IsStudioPIE(instanceID string) bool {
 func ResolvePlayableBase(mapID string, lobby, forceDemo bool) string {
 	base := ToBaseMapID(mapID)
 	if forceDemo || base == "" || base == protocol.RetiredVillage {
-		return protocol.DemoMapID
+		return ServerSpawnMapID
 	}
 	return base
 }

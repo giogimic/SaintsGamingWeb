@@ -42,6 +42,12 @@ func main() {
 	}
 	defer sqlDB.Close()
 
+	var spawnMapID string
+	if err := sqlDB.QueryRow("SELECT value FROM ServerSettings WHERE key = 'startingMapId'").Scan(&spawnMapID); err == nil && spawnMapID != "" {
+		world.ServerSpawnMapID = spawnMapID
+		log.Printf("[go-mmo] loaded ServerSpawnMapID: %s", spawnMapID)
+	}
+
 	wm := world.NewManager(cfg.LobbyCapacity)
 	pm := player.NewManager(cfg.AOIZoneSize, sqlDB)
 	cm := creature.NewManager()

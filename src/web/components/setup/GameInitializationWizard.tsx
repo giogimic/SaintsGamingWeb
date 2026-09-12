@@ -3,30 +3,21 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Gamepad2,
-  Sparkles,
+  Boxes,
   CheckCircle2,
   Loader2,
   ShieldAlert,
   Info,
-  Boxes,
-  Layers,
-  Settings,
   X,
-  Minus,
-  Maximize2,
-  Terminal,
 } from 'lucide-react';
 import type { SetupStatus } from '@/shared/game/setup/setupDetection';
 
-// Steps
-import { SetupModeSelection } from './steps/SetupModeSelection';
-import { GameDefinitionStep, type GameDefinitionData } from './steps/GameDefinitionStep';
-import { GameRequirementsStep } from './steps/GameRequirementsStep';
-import { EntitySetupStep, type SetupCharacterData, type SetupCreatureData } from './steps/EntitySetupStep';
-import { EnvironmentSetupStep, type SetupEnvironmentData } from './steps/EnvironmentSetupStep';
-import { StartingMapStep, type SetupStartingMapData } from './steps/StartingMapStep';
-import { FinalReviewStep } from './steps/FinalReviewStep';
+// New Steps
+import { GameIdentityStep, type GameDefinitionData } from './steps/GameIdentityStep';
+import { ActorsSetupStep } from './steps/ActorsSetupStep';
+import { WorldGenerationStep } from './steps/WorldGenerationStep';
+import { PublishReviewStep } from './steps/PublishReviewStep';
+import { type SetupStartingMapData } from './steps/StartingMapStep';
 
 export function GameInitializationWizard({ isReinit = false }: { isReinit?: boolean }) {
   const router = useRouter();
@@ -39,8 +30,6 @@ export function GameInitializationWizard({ isReinit = false }: { isReinit?: bool
   const [authenticatedUser, setAuthenticatedUser] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // â”€â”€â”€ WIZARD FORM STATE â”€â”€â”€
-
   // 1. Game Identity
   const [gameDefinition, setGameDefinition] = useState<GameDefinitionData>({
     name: 'Saints Adventure',
@@ -51,92 +40,31 @@ export function GameInitializationWizard({ isReinit = false }: { isReinit?: bool
     defaultBlockSizePx: 64,
   });
 
-  // 2. Characters & Creatures
-  const [characters, setCharacters] = useState<SetupCharacterData[]>([
-    {
-      slug: 'knight_commander',
-      name: 'Knight Commander',
-      classId: 'WARRIOR',
-      spriteKey: 'evil-berserker-bloodaxe-male',
-      flavor: 'Frontline champion with high fortitude and stalwart melee combat prowess.',
-      tag: 'Primary Hero',
-      tagColor: '#f87171',
-      assetType: 'SPRITE_SHEET',
-    },
-    {
-      slug: 'arcane_elementalist',
-      name: 'Arcane Elementalist',
-      classId: 'MAGE',
-      spriteKey: 'good-wizard-archmage-male',
-      flavor: 'Master of elemental forces, burst damage, and tactical zone control.',
-      tag: 'Spellcaster',
-      tagColor: '#a78bfa',
-      assetType: 'SPRITE_SHEET',
-    },
-    {
-      slug: 'shadow_stalker',
-      name: 'Shadow Stalker',
-      classId: 'RANGER',
-      spriteKey: 'good-ranger-grovekeeper-female',
-      flavor: 'Agile wilderness hunter with swift movement and precision strikes.',
-      tag: 'Agile Marksman',
-      tagColor: '#fbbf24',
-      assetType: 'SPRITE_SHEET',
-    },
-  ]);
-
-  const [creatures, setCreatures] = useState<SetupCreatureData[]>([
-    {
-      slug: 'ignis_drake',
-      name: 'Ignis Drake',
-      typePrimary: 'Solar',
-      spriteOverworld: 'monster/battle/agnite-sheet',
-      spriteBattle: 'monster/battle/agnite-sheet',
-      baseHp: 100,
-      physicalPower: 14,
-      physicalDefense: 10,
-      abilityPower: 12,
-      abilityDefense: 10,
-      flavor: 'A fiery starter dragon with high burst damage.',
-    },
-  ]);
-
-  // 3. Environment & Materials
-  const [environment, setEnvironment] = useState<SetupEnvironmentData>({
-    enabledMaterialSets: ['natural_stone', 'nature_foliage', 'architecture', 'fluids_elemental'],
-    foundationMaterial: 'gunmetal',
-    atmospherePreset: 'noon',
-    soundscapeTrack: 'track_peaceful_meadow',
-  });
-
-  // 4. Starting 3D Voxel Realm & Spawn
+  // 3. Starting Map (World Generation)
   const [startingMap, setStartingMap] = useState<SetupStartingMapData>(() => ({
     id: 'STARTING_MEADOW',
     name: 'Starting Meadow',
-    mapType: 'FRACTAL',
-    widthChunks: 2,
-    depthChunks: 2,
+    mapType: 'VOXEL',
+    widthChunks: 4,
+    depthChunks: 4,
     heightChunks: 1,
-    width: 32,
-    height: 32,
+    width: 256,
+    height: 256,
     blockSizePx: 64,
-    foundationMaterial: 'gunmetal',
+    foundationMaterial: 'saints_standard_stone',
     topologyArchetype: 'flat_bedrock',
-    fractalBorderRadius: 0,
-    fractalPregenRadius: 0,
-    spawnPoint: { x: 16, y: 16, z: 16 },
+    spawnPoint: { x: 32, y: 32, z: 32 },
     gates: [
       {
         id: 'spawn',
-        name: 'Sanctuary Spawn Point',
+        name: 'Genesis Gate',
         category: 'SPAWN',
-        position: { x: 16, y: 16, z: 16 },
-        interactPrompt: 'Respawn Sanctuary',
+        position: { x: 32, y: 32, z: 32 },
+        interactPrompt: 'Respawn',
       },
     ],
   }));
 
-  // Fetch initial setup status
   useEffect(() => {
     async function fetchStatus() {
       try {
@@ -214,24 +142,20 @@ export function GameInitializationWizard({ isReinit = false }: { isReinit?: bool
   }
 
   const STEP_LABELS = [
-    { num: 0, label: 'Mode', sub: 'Setup or Import' },
-    { num: 1, label: 'Identity', sub: 'Game Engine' },
-    { num: 2, label: 'Specs', sub: 'Requirements' },
-    { num: 3, label: 'Entities', sub: 'Heroes & Beasts' },
-    { num: 4, label: 'Atmosphere', sub: 'Voxel Palette' },
-    { num: 5, label: '3D Realm', sub: 'Volume & Spawn' },
-    { num: 6, label: 'Review', sub: 'Deploy World' },
+    { num: 0, label: 'Game', sub: 'Identity' },
+    { num: 1, label: 'Actors', sub: 'DRAFT Content' },
+    { num: 2, label: 'World', sub: 'Generation' },
+    { num: 3, label: 'Finish', sub: 'Publish' },
   ];
 
   return (
     <div className="max-w-5xl mx-auto px-3 py-6 md:py-8 font-sans">
-      {/* â”€â”€â”€ SAINTS OS WINDOW FRAME â”€â”€â”€ */}
+      {/* SAINTS OS WINDOW FRAME */}
       <div className="bg-[#050b14]/95 border border-primary/40 rounded-2xl shadow-[0_0_32px_rgba(203,178,106,0.12),0_12px_40px_rgba(0,0,0,0.6)] backdrop-blur-2xl overflow-hidden flex flex-col">
         
         {/* WINDOW TITLE BAR */}
         <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-primary/10 via-[#0a1628] to-[#050b14] border-b border-primary/20 select-none">
           <div className="flex items-center gap-3 min-w-0">
-            {/* Window Traffic Lights */}
             <div className="flex items-center gap-1.5 shrink-0">
               <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80 border border-rose-400/40" />
               <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 border border-amber-400/40" />
@@ -241,14 +165,14 @@ export function GameInitializationWizard({ isReinit = false }: { isReinit?: bool
             <div className="flex items-center gap-2 min-w-0">
               <Boxes className="w-3.5 h-3.5 text-primary shrink-0" />
               <span className="font-mono text-xs font-bold tracking-widest uppercase sg-text-gradient truncate">
-                Saints Game Studio â€” 3D Voxel World Initializer
+                Saints Game Studio — Onboarding
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-primary/20 text-primary border border-primary/40 font-semibold">
-              v2.1.776
+              v2.5.0
             </span>
             <button
               onClick={() => router.push('/')}
@@ -263,7 +187,7 @@ export function GameInitializationWizard({ isReinit = false }: { isReinit?: bool
         {/* STEP PROGRESS MENUBAR */}
         <div className="px-3 py-2 bg-[#08101e]/80 border-b border-border/40 overflow-x-auto flex items-center justify-between gap-1 text-xs font-mono select-none">
           <div className="flex items-center gap-1 min-w-max">
-            {STEP_LABELS.map(({ num, label, sub }) => {
+            {STEP_LABELS.map(({ num, label }) => {
               const isCurrent = step === num;
               const isPast = step > num;
               return (
@@ -338,79 +262,77 @@ export function GameInitializationWizard({ isReinit = false }: { isReinit?: bool
           </div>
         )}
 
-        {/* â”€â”€â”€ WINDOW BODY CONTENT â”€â”€â”€ */}
+        {/* WINDOW BODY CONTENT */}
         <div className="p-4 sm:p-6 text-foreground">
-          {/* STEP 0: MODE SELECTION & MIGRATION EXPORT/IMPORT */}
           {step === 0 && (
-            <SetupModeSelection
-              onSelectFresh={() => setStep(1)}
-              onImportSuccess={handleCompleteSuccess}
-            />
+            <div className="space-y-6">
+              <GameIdentityStep
+                data={gameDefinition}
+                onChange={(updates) => setGameDefinition((prev) => ({ ...prev, ...updates }))}
+              />
+              <div className="flex justify-end pt-6 border-t border-border/40">
+                <button
+                  onClick={() => setStep(1)}
+                  className="px-6 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-sky-950 text-xs font-bold uppercase tracking-wider transition-colors"
+                >
+                  Next: Actors
+                </button>
+              </div>
+            </div>
           )}
 
-          {/* STEP 1: GAME QUESTIONS & 3D VOXEL SPECS */}
           {step === 1 && (
-            <GameDefinitionStep
-              data={gameDefinition}
-              onChange={(updates) => setGameDefinition((prev) => ({ ...prev, ...updates }))}
-              onNext={() => setStep(2)}
-              onBack={() => setStep(0)}
-            />
+            <div className="space-y-6">
+              <ActorsSetupStep />
+              <div className="flex items-center justify-between pt-6 border-t border-border/40">
+                <button
+                  onClick={() => setStep(0)}
+                  className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold uppercase tracking-wider transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => setStep(2)}
+                  className="px-6 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-sky-950 text-xs font-bold uppercase tracking-wider transition-colors"
+                >
+                  Next: World Gen
+                </button>
+              </div>
+            </div>
           )}
 
-          {/* STEP 2: REQUIREMENTS SUMMARY */}
           {step === 2 && (
-            <GameRequirementsStep
-              gameDefinition={gameDefinition}
-              onNext={() => setStep(3)}
-              onBack={() => setStep(1)}
-            />
+            <div className="space-y-6">
+              <WorldGenerationStep
+                gameDefinition={gameDefinition}
+                startingMap={startingMap}
+                onChange={setStartingMap}
+                onNext={() => setStep(3)}
+                onBack={() => setStep(1)}
+              />
+              <div className="flex items-center justify-between pt-6 border-t border-border/40">
+                <button
+                  onClick={() => setStep(1)}
+                  className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold uppercase tracking-wider transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => setStep(3)}
+                  disabled={!startingMap.bootstrapRevisionId}
+                  className="px-6 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-sky-950 text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next: Review
+                </button>
+              </div>
+            </div>
           )}
 
-          {/* STEP 3: CHARACTERS & CREATURES */}
           {step === 3 && (
-            <EntitySetupStep
+            <PublishReviewStep
               gameDefinition={gameDefinition}
-              characters={characters}
-              creatures={creatures}
-              onUpdateCharacters={setCharacters}
-              onUpdateCreatures={setCreatures}
-              onNext={() => setStep(4)}
+              startingMap={startingMap}
               onBack={() => setStep(2)}
-            />
-          )}
-
-          {/* STEP 4: ENVIRONMENT & MATERIAL SETS */}
-          {step === 4 && (
-            <EnvironmentSetupStep
-              environment={environment}
-              onChange={(updates) => setEnvironment((prev) => ({ ...prev, ...updates }))}
-              onNext={() => setStep(5)}
-              onBack={() => setStep(3)}
-            />
-          )}
-
-          {/* STEP 5: STARTING 3D VOXEL REALM */}
-          {step === 5 && (
-            <StartingMapStep
-              environment={environment}
-              gameDefinition={gameDefinition}
-              startingMap={startingMap}
-              onChange={setStartingMap}
-              onNext={() => setStep(6)}
-              onBack={() => setStep(4)}
-            />
-          )}
-
-          {/* STEP 6: FINAL REVIEW & TRANSACTION-SAFE DEPLOY */}
-          {step === 6 && (
-            <FinalReviewStep
-              gameDefinition={gameDefinition}
-              characters={characters}
-              creatures={creatures}
-              environment={environment}
-              startingMap={startingMap}
-              onBack={() => setStep(5)}
               onCompleteSuccess={handleCompleteSuccess}
             />
           )}

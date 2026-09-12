@@ -22,6 +22,7 @@ import {
   listPublishSnapshots,
   rollbackToSnapshot,
   deployRelease,
+  fetchDraftMaps,
   type ValidationGateResult,
 } from '@/app/actions/studio/publishing';
 import type { WorldPublishSnapshot } from '@prisma/client';
@@ -51,6 +52,9 @@ export const VersionManagerPanel: React.FC = () => {
   const [versionInput, setVersionInput] = useState('');
   const [titleInput, setTitleInput] = useState('');
   const [descInput, setDescInput] = useState('');
+  const [startingMapId, setStartingMapId] = useState('');
+  const [defaultMapId, setDefaultMapId] = useState('');
+  const [draftMaps, setDraftMaps] = useState<any[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const runValidation = async () => {
@@ -72,6 +76,9 @@ export const VersionManagerPanel: React.FC = () => {
   useEffect(() => {
     runValidation();
     loadSnapshots();
+    fetchDraftMaps().then(r => {
+      if (r.success && r.data) setDraftMaps(r.data);
+    });
   }, [dataVersion]);
 
   useEffect(() => {
@@ -93,6 +100,8 @@ export const VersionManagerPanel: React.FC = () => {
       title: titleInput,
       description: descInput,
       version: versionInput || undefined,
+      startingMapId: startingMapId || undefined,
+      defaultMapId: defaultMapId || undefined,
     });
 
     if (res.success && res.data) {
@@ -431,6 +440,35 @@ export const VersionManagerPanel: React.FC = () => {
                   className="rounded bg-black/50/50 px-2.5 py-1.5 border border-[#806f47]/30 text-slate-200 text-xs font-mono"
                 />
               </label>
+
+              <div className="flex gap-4">
+                <label className="flex flex-col gap-1 text-[11px] font-bold text-slate-400 w-1/2">
+                  Starting Map (Spawn)
+                  <select
+                    value={startingMapId}
+                    onChange={(e) => setStartingMapId(e.target.value)}
+                    className="rounded bg-black/50/50 px-2.5 py-1.5 border border-[#806f47]/30 text-slate-200 text-xs"
+                  >
+                    <option value="">-- Let Server Decide --</option>
+                    {draftMaps.map(m => (
+                      <option key={m.id} value={m.id}>{m.name || m.id}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 text-[11px] font-bold text-slate-400 w-1/2">
+                  Default Map (Fallback)
+                  <select
+                    value={defaultMapId}
+                    onChange={(e) => setDefaultMapId(e.target.value)}
+                    className="rounded bg-black/50/50 px-2.5 py-1.5 border border-[#806f47]/30 text-slate-200 text-xs"
+                  >
+                    <option value="">-- Let Server Decide --</option>
+                    {draftMaps.map(m => (
+                      <option key={m.id} value={m.id}>{m.name || m.id}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
 
               <label className="flex flex-col gap-1 text-[11px] font-bold text-slate-400">
                 Release Notes / Description

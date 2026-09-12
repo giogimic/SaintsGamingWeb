@@ -765,6 +765,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
                 <MenuItem label="Loot Manager" icon={panels.loot?.isOpen ? CheckCircle2 : Coins} onClick={() => togglePanel('loot')} />
                 <MenuItem label="Mount Studio" icon={panels.mounts?.isOpen ? CheckCircle2 : Sparkles} onClick={() => togglePanel('mounts')} />
                 <MenuItem label="Dungeon Studio" icon={panels.dungeons?.isOpen ? CheckCircle2 : Shield} onClick={() => togglePanel('dungeons')} />
+                <MenuItem label="Shop Studio" icon={panels.shop?.isOpen ? CheckCircle2 : Store} onClick={() => togglePanel('shop')} />
               </>
             )}
             <MenuItem divider />

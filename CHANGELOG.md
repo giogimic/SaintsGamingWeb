@@ -1,3 +1,10 @@
+## [2.1.855] - 2026-09-12
+### Added
+- Overhauled the Game Setup flow into a coordinated 4-step wizard.
+- Added GameIdentityStep.tsx, ActorsSetupStep.tsx, WorldGenerationStep.tsx, and PublishReviewStep.tsx.
+- Integrated full-screen Studio workspaces directly into the onboarding wizard for actors.
+- Setup draft assets are now validated against the generated world via a Coordinated Transaction payload.
+
 ## [2.1.848] - 2026-09-11
 ### Fixed
 - Fixed an issue where dynamically generated voxel regions lacking geometry (empty air chunks like (0,0)) would cause the map streamer to throw a fatal network error and crash the loading sequence. Missing map chunks are now gracefully treated as empty space.
