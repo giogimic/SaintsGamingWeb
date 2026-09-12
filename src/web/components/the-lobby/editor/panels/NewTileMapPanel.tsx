@@ -123,7 +123,7 @@ export const NewTileMapPanel: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#050b14] text-slate-200 font-mono select-none overflow-hidden p-4">
+    <div className="flex flex-col h-full bg-[#050b14] text-slate-200 font-mono  overflow-hidden p-4">
       <div className="flex items-center gap-3 border-b border-border/40 pb-3 mb-4">
         <Globe className="w-5 h-5 text-primary" />
         <div>
