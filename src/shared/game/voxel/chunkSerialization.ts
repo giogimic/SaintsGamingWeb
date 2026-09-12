@@ -1,4 +1,4 @@
-import * as pako from 'pako';
+const pako = require('pako');
 import { CHUNK_TOTAL_CELLS } from './VoxelChunk';
 
 /**

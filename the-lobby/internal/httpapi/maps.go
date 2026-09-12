@@ -3,6 +3,7 @@ package httpapi
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -460,18 +461,17 @@ func PersistMapDraftVoxel(db *sql.DB, id, name, grid, gates, npcs, tiles, tilese
 func LoadMapDefFromDB(db *sql.DB, wm *world.Manager, id string) (*world.MapDef, error) {
 	var name string
 	var publishedVersion int
+	var data sql.NullString
 
-	query := `SELECT v.name, w.publishedVersion 
+	query := `SELECT v.name, w.publishedVersion, v.data 
 			  FROM WorldMap w 
 			  JOIN WorldMapVersion v ON w.id = v.mapId AND w.publishedVersion = v.version 
 			  WHERE w.id = ?`
-	err := db.QueryRow(query, id).Scan(&name, &publishedVersion)
-	if err == sql.ErrNoRows {
-		// Fallback for legacy maps where publishedVersion=0 or WorldMapVersion is not yet synced
-		fallbackQuery := `SELECT name, version FROM WorldMap WHERE id = ?`
-		err = db.QueryRow(fallbackQuery, id).Scan(&name, &publishedVersion)
-	}
+	err := db.QueryRow(query, id).Scan(&name, &publishedVersion, &data)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("published map version not found for %s", id)
+		}
 		return nil, err
 	}
 
@@ -482,11 +482,78 @@ func LoadMapDefFromDB(db *sql.DB, wm *world.Manager, id string) (*world.MapDef, 
 		Height: 128,
 	}
 
-	if wm != nil && wm.RM != nil {
-		def.Voxel = &world.VoxelWorld{
-			ID:            id,
-			RM:            wm.RM,
-			ActiveVersion: publishedVersion,
+	var mapType string
+	if data.Valid && data.String != "" {
+		var snapshot map[string]any
+		if jsonErr := json.Unmarshal([]byte(data.String), &snapshot); jsonErr == nil {
+			if t, ok := snapshot["mapType"].(string); ok {
+				mapType = t
+			}
+
+			// If MapType is not FRACTAL/VOXEL, extract true dimensions
+			if mapType != "FRACTAL" && mapType != "VOXEL" {
+				if gridStr, ok := snapshot["gridData"].(string); ok && gridStr != "" {
+					if grid, err := world.ParseGridJSON(gridStr); err == nil {
+						def.Grid = grid
+						def.Height = len(grid)
+						if def.Height > 0 {
+							def.Width = len(grid[0])
+						}
+					}
+				}
+			}
+
+			// Extract gatesData and spawn point
+			if gatesStr, ok := snapshot["gatesData"].(string); ok && gatesStr != "" {
+				var gates struct {
+					SpawnPoint *struct {
+						X float64 `json:"x"`
+						Y float64 `json:"y"`
+					} `json:"spawnPoint"`
+					Gates []struct {
+						ID       string `json:"id"`
+						Category string `json:"category"`
+						Position struct {
+							X float64 `json:"x"`
+							Y float64 `json:"y"`
+						} `json:"position"`
+					} `json:"gates"`
+				}
+				if err := json.Unmarshal([]byte(gatesStr), &gates); err == nil {
+					if gates.SpawnPoint != nil {
+						def.SpawnX = gates.SpawnPoint.X
+						def.SpawnY = gates.SpawnPoint.Y
+					} else {
+						found := false
+						for _, g := range gates.Gates {
+							if g.ID == "spawn" || g.Category == "SPAWN" {
+								def.SpawnX = g.Position.X
+								def.SpawnY = g.Position.Y
+								found = true
+								break
+							}
+						}
+						if !found {
+							def.SpawnX = float64(def.Width) / 2
+							def.SpawnY = float64(def.Height) / 2
+						}
+					}
+				}
+			}
+		} else {
+			return nil, fmt.Errorf("malformed published snapshot for %s: %v", id, jsonErr)
+		}
+	} else {
+		return nil, fmt.Errorf("missing data in published snapshot for %s", id)
+	}
+
+	if mapType == "FRACTAL" || mapType == "VOXEL" {
+		if wm != nil && wm.RM != nil {
+			def.Voxel = &world.VoxelWorld{
+				ID:            id,
+				RM:            wm.RM,
+				ActiveVersion: publishedVersion,
+			}
 		}
 	}
 

@@ -24,8 +24,19 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
   if (!worldMap) return null;
 
   if (!isDraft) {
-    if (!worldMap.publishedData && worldMap.mapType !== 'FRACTAL') {
-      return null; // Return null if the game requests a map that has never been deployed
+    if (!worldMap.publishedData) {
+      if (worldMap.publishedVersion && worldMap.publishedVersion > 0) {
+        const versionDoc = await prisma.worldMapVersion.findUnique({
+          where: { mapId_version: { mapId: slug, version: worldMap.publishedVersion } }
+        });
+        if (versionDoc && versionDoc.data) {
+          worldMap.publishedData = versionDoc.data;
+        } else if (worldMap.mapType !== 'FRACTAL') {
+          return null;
+        }
+      } else if (worldMap.mapType !== 'FRACTAL') {
+        return null; // Return null if the game requests a map that has never been deployed
+      }
     }
     try {
       if (worldMap.publishedData) {

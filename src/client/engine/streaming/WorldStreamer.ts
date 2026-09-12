@@ -2,7 +2,7 @@ import { useSessionStore } from '../../state/useSessionStore';
 import { useWorldStore } from '../../state/useWorldStore';
 import { mapMesher } from '../MapMesher';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import pako from 'pako';
+const pako = require('pako');
 
 export const CHUNK_SIZE = 32;
 export const CHUNKS_PER_REGION = 16;
