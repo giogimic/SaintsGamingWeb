@@ -2,6 +2,7 @@ import { useSessionStore } from '../../state/useSessionStore';
 import { useWorldStore } from '../../state/useWorldStore';
 import { mapMesher } from '../MapMesher';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { socketManager } from '../../net/SocketManager';
 const pako = require('pako');
 
 export const CHUNK_SIZE = 32;
@@ -113,6 +114,21 @@ export class WorldStreamer {
     const region = this.chunkToRegion(chunk.cx, chunk.cz);
     
     console.log(`[WorldStreamer] Requesting spawn region R(${region.rx}, ${region.rz}) for Chunk(${chunk.cx}, ${chunk.cy}, ${chunk.cz})...`);
+
+    const activeMap = useWorldStore.getState().activeMapData;
+    if (activeMap?.mapType === 'FRACTAL') {
+      console.log(`[WorldStreamer] Fractal map detected. Requesting JIT spawn chunks directly...`);
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dz = -1; dz <= 1; dz++) {
+          socketManager.emit('request_chunk' as any, { cx: chunk.cx + dx, cy: chunk.cy, cz: chunk.cz + dz });
+        }
+      }
+      
+      useSessionStore.getState().setBootState('VALIDATE_SPAWN');
+      useSessionStore.getState().setBootState('READY');
+      useSessionStore.getState().setScene('exploring');
+      return;
+    }
 
     // Fetch the region blob
     await this.fetchRegionArtifact(region.rx, region.rz);
