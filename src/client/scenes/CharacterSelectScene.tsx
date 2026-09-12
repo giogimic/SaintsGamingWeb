@@ -47,7 +47,7 @@ const DEFAULT_COLOR = { glow: 'rgba(203,178,106,0.35)', accent: '#cbb26a', label
 
 function CreditsModal({ onClose }: { onClose: () => void }) {
   return (
-    <div className="pointer-events-auto fixed inset-0 z-[300] flex items-center justify-center p-4 bg-[#050014]/85 backdrop-blur-xl" onClick={onClose}>
+    <div className="pointer-events-auto absolute inset-0 z-[300] flex items-center justify-center p-4 bg-[#050014]/85 backdrop-blur-xl" onClick={onClose}>
       <div className="relative w-full max-w-lg rounded-2xl border border-primary/40 p-6 sm:p-8 text-center bg-[#0a0318]/95 shadow-[0_0_60px_rgba(203,178,106,0.25)]" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-center gap-2 mb-2">
           <Award className="w-5 h-5 text-primary" />
@@ -295,7 +295,7 @@ export function CharacterSelectScene() {
 
       {/* MODALS */}
       {deleteModalChar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className="w-full max-w-sm rounded-2xl border border-destructive/40 bg-card p-6 shadow-2xl font-mono text-center">
             <div className="w-12 h-12 rounded-full bg-destructive/15 border border-destructive/30 flex items-center justify-center mx-auto mb-3 text-destructive"><AlertTriangle size={24} /></div>
             <h3 className="text-lg font-black text-foreground uppercase tracking-wider mb-2">Archive {heroSingular}?</h3>

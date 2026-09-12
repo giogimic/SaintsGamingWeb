@@ -42,7 +42,7 @@ const THEME_VICE = {
 function CreditsModal({ onClose }: { onClose: () => void }) {
   return (
     <div
-      className="pointer-events-auto fixed inset-0 z-[300] flex items-center justify-center p-4"
+      className="pointer-events-auto absolute inset-0 z-[300] flex items-center justify-center p-4"
       style={{ background: 'rgba(5, 0, 15, 0.85)', backdropFilter: 'blur(12px)' }}
       onClick={onClose}
     >

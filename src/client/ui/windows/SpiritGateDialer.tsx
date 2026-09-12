@@ -44,7 +44,7 @@ export function SpiritGateDialer() {
   if (!isDialerOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="w-full max-w-2xl overflow-hidden shadow-2xl rounded-xl bg-[#050b14]/95 border border-primary/40 sg-glass">
         
         {/* Header */}

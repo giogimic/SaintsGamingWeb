@@ -133,7 +133,7 @@ export function DialogOverlay() {
   if (!activeDialog) return null;
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center px-4 pb-6 sm:px-8 sm:pb-10 select-none">
+    <div className="pointer-events-none absolute inset-0 z-50 flex items-end justify-center px-4 pb-6 sm:px-8 sm:pb-10 select-none">
       <div
         className="pointer-events-auto relative w-full max-w-3xl animate-in slide-in-from-bottom-6 fade-in duration-200 p-[1px] bg-gradient-to-r from-cyan-500/60 via-teal-500/40 to-cyan-500/60 shadow-[0_0_25px_rgba(6,182,212,0.25)]"
         style={{

@@ -141,7 +141,7 @@ export function CraftingOverlay() {
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md select-none pointer-events-none">
+    <div className="absolute inset-0 z-40 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md select-none pointer-events-none">
       <div 
         className="pointer-events-auto bg-[#05080d]/95 backdrop-blur-xl border border-cyan-500/40 p-1 flex flex-col shadow-[0_0_30px_rgba(6,182,212,0.15)] w-full max-w-4xl h-[620px] animate-in zoom-in-95 duration-200"
         style={{

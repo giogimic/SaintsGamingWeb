@@ -54,7 +54,7 @@ function StaticDPad() {
 
   return (
     <div
-      className="fixed bottom-6 left-6 z-50 flex flex-col items-center gap-1.5 pointer-events-auto select-none touch-none"
+      className="absolute bottom-6 left-6 z-50 flex flex-col items-center gap-1.5 pointer-events-auto select-none touch-none"
       style={{ filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.8))' }}
     >
       <button
@@ -176,7 +176,7 @@ function FloatingJoystick() {
   return (
     <div
       ref={zoneRef}
-      className="fixed inset-0 z-40 pointer-events-auto touch-none select-none md:hidden"
+      className="absolute inset-0 z-40 pointer-events-auto touch-none select-none md:hidden"
       style={{
         clipPath: 'inset(0 45% 0 0)',
       }}
@@ -208,7 +208,7 @@ function FloatingJoystick() {
       )}
 
       {!active && (
-        <div className="fixed bottom-8 left-8 w-20 h-20 rounded-full border border-cyan-500/30 bg-black/40 backdrop-blur-sm flex items-center justify-center pointer-events-none opacity-70">
+        <div className="absolute bottom-8 left-8 w-20 h-20 rounded-full border border-cyan-500/30 bg-black/40 backdrop-blur-sm flex items-center justify-center pointer-events-none opacity-70">
           <div className="w-8 h-8 rounded-full bg-cyan-500/30 border border-cyan-400/40" />
         </div>
       )}
@@ -237,7 +237,7 @@ function ActionCluster({
 
   return (
     <div
-      className="fixed bottom-6 right-6 z-50 flex items-end gap-3 pointer-events-auto select-none"
+      className="absolute bottom-6 right-6 z-50 flex items-end gap-3 pointer-events-auto select-none"
       style={{ filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.8))' }}
     >
       <div className="grid grid-cols-2 gap-2">
