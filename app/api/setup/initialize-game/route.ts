@@ -295,8 +295,9 @@ export async function POST(req: Request) {
       }
 
       // 4d. Upsert Starting WorldMap & GameMap
-      const initialLogicGrid = Array.from({ length: mapHeight }, () => Array(mapWidth).fill(0));
-      const initialTileLayers = [
+      const is3D = map.mapType === 'VOXEL' || map.mapType === 'FRACTAL';
+      const initialLogicGrid = is3D ? [] : Array.from({ length: mapHeight }, () => Array(mapWidth).fill(0));
+      const initialTileLayers = is3D ? [] : [
         {
           name: 'Ground',
           grid: Array.from({ length: mapHeight }, () => Array(mapWidth).fill(DEFAULT_STUDIO_GROUND_GID || 17)),
