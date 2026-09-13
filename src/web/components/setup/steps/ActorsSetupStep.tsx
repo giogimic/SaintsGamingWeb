@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Users, PawPrint, Skull, Smile, ArrowLeft } from 'lucide-react';
+import { Users, PawPrint, Skull, Smile, ArrowLeft, Maximize2 } from 'lucide-react';
 import { ArchetypeEditorWorkspace } from '@/web/components/the-lobby/editor/hero-studio/ArchetypeEditorWorkspace';
 import { CreatureDefEditorPanel } from '@/web/components/the-lobby/editor/panels/CreatureDefEditorPanel';
+import { FloatingWindow } from '@/web/components/the-lobby/hud/FloatingWindow';
 
 export type ActorCategory = 'ARCHETYPE' | 'CREATURE' | 'MONSTER' | 'NPC' | null;
 
@@ -18,40 +19,35 @@ export function ActorsSetupStep({}: ActorsSetupStepProps) {
     setMounted(true);
   }, []);
 
-  // If a workspace is active, render it full screen via Portal so it escapes the Wizard's stacking contexts
+  // If a workspace is active, render it in a Floating Window via Portal
   if (activeWorkspace) {
     const workspaceContent = (
-      <div className="fixed inset-0 z-[200] bg-[#050b14] flex flex-col pointer-events-auto">
-        {/* Workspace Header */}
-        <div className="h-14 shrink-0 border-b border-border/40 bg-slate-950 flex items-center px-4">
-          <button
-            onClick={() => setActiveWorkspace(null)}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition group"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span className="font-mono text-xs font-bold uppercase tracking-widest">
-              Actors
-            </span>
-          </button>
-          <div className="mx-4 w-px h-6 bg-slate-800" />
-          <h1 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-            {activeWorkspace === 'ARCHETYPE' && 'Archetype Creator'}
-            {activeWorkspace === 'CREATURE' && 'Creature Creator'}
-            {activeWorkspace === 'MONSTER' && 'Monster Creator'}
-            {activeWorkspace === 'NPC' && 'NPC Creator'}
-          </h1>
-          
-          <div className="ml-auto text-xs text-amber-400/80 font-mono flex items-center gap-2 bg-amber-500/10 px-3 py-1.5 rounded-full border border-amber-500/20">
+      <FloatingWindow
+        id={`setup-creator-${activeWorkspace}`}
+        title={`${activeWorkspace === 'ARCHETYPE' ? 'Archetype' : activeWorkspace === 'CREATURE' ? 'Creature' : activeWorkspace === 'MONSTER' ? 'Monster' : 'NPC'} Creator`}
+        icon={
+          activeWorkspace === 'ARCHETYPE' ? <Users className="w-4 h-4" /> :
+          activeWorkspace === 'CREATURE' ? <PawPrint className="w-4 h-4" /> :
+          activeWorkspace === 'MONSTER' ? <Skull className="w-4 h-4" /> : <Smile className="w-4 h-4" />
+        }
+        isOpen={true}
+        onClose={() => setActiveWorkspace(null)}
+        defaultWidth={1100}
+        defaultPosition={{ x: 80, y: 40 }}
+        zIndex={500}
+        className="resize overflow-hidden"
+        bodyClassName="p-0 m-0 overflow-hidden h-[80vh] flex flex-col"
+        headerRight={
+          <div className="text-xs text-amber-400/80 font-mono flex items-center gap-2 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 mr-2">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
             </span>
             DRAFT MODE
           </div>
-        </div>
-
-        {/* Workspace Content */}
-        <div className="flex-1 overflow-hidden relative">
+        }
+      >
+        <div className="flex-1 w-full h-full relative bg-[#050b14]">
           {activeWorkspace === 'ARCHETYPE' && <ArchetypeEditorWorkspace />}
           {activeWorkspace === 'CREATURE' && <CreatureDefEditorPanel />}
           {activeWorkspace === 'MONSTER' && (
@@ -69,7 +65,7 @@ export function ActorsSetupStep({}: ActorsSetupStepProps) {
             </div>
           )}
         </div>
-      </div>
+      </FloatingWindow>
     );
 
     return mounted ? createPortal(workspaceContent, document.body) : null;
