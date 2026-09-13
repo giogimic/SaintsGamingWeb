@@ -81,7 +81,7 @@ export function ClientApp() {
   }, []);
 
   return (
-    <div className="w-full h-full relative overflow-hidden bg-black text-white select-none">
+    <div className="w-full h-full relative overflow-hidden bg-black text-white select-none flex-1 flex flex-col">
       {activeScene === 'title' && <TitleScene />}
       {activeScene === 'login' && <LoginScene />}
       {activeScene === 'server_select' && <ServerSelectScene />}

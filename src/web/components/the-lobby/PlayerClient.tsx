@@ -24,7 +24,7 @@ export default function PlayerClient({
   }, [characterId, forceCreate]);
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full flex-1 flex flex-col min-h-[calc(100vh-160px)]">
       <ClientApp />
     </div>
   );
