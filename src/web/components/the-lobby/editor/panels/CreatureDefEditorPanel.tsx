@@ -29,6 +29,7 @@ import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';
 import { RegistryCombobox } from '../components/RegistryCombobox';
 import { DroppableAssetInput } from '../components/DroppableAssetInput';
 import { useCreatureDefs } from '@/web/hooks/studio-data';
+import SpriteBrowser from '../SpriteBrowser';
 
 const inputCls =
   'w-full bg-input border border-border rounded-lg px-2.5 py-1.5 text-[11px] text-foreground font-mono outline-none focus:border-sg-gold transition-colors';
@@ -57,6 +58,8 @@ export function CreatureDefEditorPanel() {
   const [assetFilter, setAssetFilter] = useState('');
   const [lootTables, setLootTables] = useState<Array<{ id: string; name: string }>>([]);
   const [abilitiesList, setAbilitiesList] = useState<Array<{ slug: string; name: string }>>([]);
+  const [showCatalogBrowser, setShowCatalogBrowser] = useState(false);
+  const [activeLayerPicker, setActiveLayerPicker] = useState<'overworld' | 'battle' | null>(null);
   const isNewRef = useRef(isNew);
   isNewRef.current = isNew;
 
@@ -288,7 +291,8 @@ export function CreatureDefEditorPanel() {
   );
 
   return (
-    <CatalogEditorShell
+    <>
+      <CatalogEditorShell
       title="Creature Catalog"
       blurb={`${list.length} defs · world ${activeGameId} · GameAsset + CreatureDef SoT · definition undo on blur`}
       dirty={isNew || canUndoDefinition}
@@ -663,23 +667,33 @@ export function CreatureDefEditorPanel() {
 
               <div>
                 <label className={labelCls}>Overworld / card sprite</label>
-                <DroppableAssetInput
-                  className={inputCls + ' mb-1'}
-                  value={form.spriteOverworld}
-                  onFocus={onFieldFocus}
-                  onBlur={onFieldBlur}
-                  onChange={(e) => f('spriteOverworld', e.target.value)}
-                  onAssetDropped={(key) => f('spriteOverworld', key)}
-                />
+                <div className="flex items-center gap-2 mb-1">
+                  <DroppableAssetInput
+                    className={inputCls}
+                    value={form.spriteOverworld}
+                    onFocus={onFieldFocus}
+                    onBlur={onFieldBlur}
+                    onChange={(e) => f('spriteOverworld', e.target.value)}
+                    onAssetDropped={(key) => f('spriteOverworld', key)}
+                  />
+                  <button type="button" onClick={() => { setActiveLayerPicker('overworld'); setShowCatalogBrowser(true); }} className="px-2 py-1.5 shrink-0 bg-cyan-900/50 hover:bg-cyan-800 text-cyan-200 text-[10px] font-bold rounded border border-cyan-500/30 transition-colors whitespace-nowrap cursor-pointer">
+                    Browse Library
+                  </button>
+                </div>
                 <label className={labelCls}>Battle sprite</label>
-                <DroppableAssetInput
-                  className={inputCls + ' mb-1'}
-                  value={form.spriteBattle || ''}
-                  onFocus={onFieldFocus}
-                  onBlur={onFieldBlur}
-                  onChange={(e) => f('spriteBattle', e.target.value)}
-                  onAssetDropped={(key) => f('spriteBattle', key)}
-                />
+                <div className="flex items-center gap-2 mb-1">
+                  <DroppableAssetInput
+                    className={inputCls}
+                    value={form.spriteBattle || ''}
+                    onFocus={onFieldFocus}
+                    onBlur={onFieldBlur}
+                    onChange={(e) => f('spriteBattle', e.target.value)}
+                    onAssetDropped={(key) => f('spriteBattle', key)}
+                  />
+                  <button type="button" onClick={() => { setActiveLayerPicker('battle'); setShowCatalogBrowser(true); }} className="px-2 py-1.5 shrink-0 bg-cyan-900/50 hover:bg-cyan-800 text-cyan-200 text-[10px] font-bold rounded border border-cyan-500/30 transition-colors whitespace-nowrap cursor-pointer">
+                    Browse Library
+                  </button>
+                </div>
                 <input
                   className={inputCls + ' mb-1'}
                   placeholder="Filter assets…"
@@ -1217,7 +1231,55 @@ export function CreatureDefEditorPanel() {
           {!isNew && !form.slug && (
             <div className="mt-10 text-center text-slate-500">Select a creature or click New / Seed.</div>
           )}
-      </div>
-    </CatalogEditorShell>
+        </div>
+      </CatalogEditorShell>
+
+      {/* Catalog Sprite Picker Modal */}
+      {(showCatalogBrowser || activeLayerPicker) && (
+        <div
+          className="pointer-events-auto absolute inset-0 z-[1000] p-4 flex items-center justify-center animate-in fade-in duration-200"
+          style={{ background: 'rgba(5,0,15,0.96)', backdropFilter: 'blur(10px)' }}
+        >
+          <div className="w-full max-w-3xl h-[80vh] bg-[#0a051d] border border-cyan-500/40 rounded-2xl flex flex-col overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-cyan-500/30 bg-[#050b14]/80">
+              <div className="flex items-center gap-2">
+                <PawPrint className="w-4 h-4 text-cyan-400" />
+                <h3 className="font-black text-cyan-200 text-sm">
+                  Select Sprite from Catalog
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCatalogBrowser(false);
+                  setActiveLayerPicker(null);
+                }}
+                className="text-slate-400 hover:text-white px-2 py-1 rounded bg-white/5 text-xs cursor-pointer"
+              >
+                ✕ Close
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden p-2">
+              <SpriteBrowser
+                filterType="CREATURE"
+                onSelect={(selectedAssets) => {
+                  const asset = selectedAssets[0];
+                  if (asset) {
+                    if (activeLayerPicker === 'overworld') f('spriteOverworld', asset.source);
+                    else if (activeLayerPicker === 'battle') f('spriteBattle', asset.source);
+                  }
+                  setShowCatalogBrowser(false);
+                  setActiveLayerPicker(null);
+                }}
+                onClose={() => {
+                  setShowCatalogBrowser(false);
+                  setActiveLayerPicker(null);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
