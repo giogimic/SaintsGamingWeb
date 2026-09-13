@@ -1,4 +1,4 @@
-## [2.1.861] - 2026-09-13
+## [2.1.862] - 2026-09-13
 ### Fixed
 - Fixed a critical React Hydration error (#418) that caused the Lobby to hang indefinitely on the "Initializing The Lobby..." screen. The issue was triggered by Next.js 15 hoisting `<meta>` tags rendered inside the `JsonLd` component within the document body, causing a fatal server/client mismatch.
 

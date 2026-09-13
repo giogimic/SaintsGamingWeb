@@ -31,7 +31,7 @@ export function MidnightTropicalBackground({
 
   return (
     <div
-      className={`absolute inset-0 pointer-events-none overflow-hidden select-none z-0 ${className}`}
+      className={`fixed inset-0 pointer-events-none overflow-hidden select-none z-0 ${className}`}
       aria-hidden="true"
     >
       {/* ── Background Sky & Radiant Sun ────── */}
