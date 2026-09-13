@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { PanelId, useEditorStore, STUDIO_DOCK_META } from './editor-store';
 import { X, Minus, Maximize2, Square, GripVertical } from 'lucide-react';
 
@@ -111,7 +112,7 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
 
   const displayTitle = propsTitle || title;
 
-  return (
+  return createPortal(
     <div
       ref={panelRef}
       onPointerMove={handlePointerMove}
@@ -126,7 +127,7 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
         willChange: isDragging ? 'transform' : 'auto',
         width,
         height: isCollapsed ? 'auto' : height,
-        zIndex: (id === 'assetUpload' || id === 'quickUpload' || id === 'versionManager') ? Math.max(zIndex, 60) : zIndex,
+        zIndex: (id === 'assetUpload' || id === 'quickUpload' || id === 'versionManager') ? Math.max(zIndex, 1100) : zIndex,
         touchAction: 'none',
       }}
       className={`
@@ -226,7 +227,8 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 };
 

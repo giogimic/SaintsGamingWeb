@@ -1,3 +1,7 @@
+## [2.1.859] - 2026-09-13
+### Fixed
+- Fixed an issue where the Asset Upload tool (and other DraggablePanels) were rendering behind the SpriteBrowser. DraggablePanels now safely escape window stacking contexts via React Portals and employ elevated Z-indexes (1100).
+
 ## [2.1.858] - 2026-09-13
 ### Added
 - Completely redesigned the Archetype Creator into a visual "Character Select" style Gallery Grid and a Split-Form Editor.
