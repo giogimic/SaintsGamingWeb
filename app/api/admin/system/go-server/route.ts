@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
-import { spawn, ChildProcess } from "child_process";
+import { spawn, ChildProcess, execSync } from "child_process";
 import path from "path";
 
 // Define a global symbol so it persists across Next.js HMR
@@ -29,7 +29,18 @@ export async function GET(req: Request) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
-    const isRunning = g[GO_SERVER_SYMBOL] && !g[GO_SERVER_SYMBOL].killed;
+    let isRunning = false;
+    
+    if (process.platform === "linux") {
+      try {
+        const output = execSync("bash scripts/status-go.sh", { encoding: "utf-8", stdio: ["pipe", "pipe", "ignore"] });
+        isRunning = output.trim() === "running";
+      } catch (err) {
+        isRunning = false;
+      }
+    } else {
+      isRunning = !!(g[GO_SERVER_SYMBOL] && !g[GO_SERVER_SYMBOL].killed);
+    }
     
     return NextResponse.json({ 
       success: true, 
@@ -62,50 +73,65 @@ export async function POST(req: Request) {
     const action = body.action;
 
     if (action === "start") {
-      if (g[GO_SERVER_SYMBOL] && !g[GO_SERVER_SYMBOL].killed) {
-        return NextResponse.json({ success: false, message: "Go server is already running" }, { status: 400 });
-      }
-
       console.log("[GoServer API] Starting Go MMO Server...");
       
-      const serverCwd = path.join(process.cwd(), "the-lobby");
-      
-      const proc = spawn("go", ["run", "cmd/server/main.go"], {
-        cwd: serverCwd,
-        stdio: "inherit",
-        shell: true, // Use shell to ensure 'go' is found in PATH
-      });
-
-      proc.on("error", (err) => {
-        console.error("[GoServer API] Failed to start Go server:", err);
-      });
-
-      proc.on("exit", (code, signal) => {
-        console.log(`[GoServer API] Go server exited with code ${code} (signal ${signal})`);
-        if (g[GO_SERVER_SYMBOL] === proc) {
-          g[GO_SERVER_SYMBOL] = null;
+      if (process.platform === "linux") {
+        // On Debian, rely entirely on the root bash script for Docker/Systemd execution
+        const proc = spawn("bash", ["scripts/start-go.sh"], {
+          cwd: process.cwd(),
+          stdio: "inherit",
+        });
+        
+        proc.on("error", (err) => console.error("[GoServer API] Failed to run start-go.sh:", err));
+        return NextResponse.json({ success: true, message: "Go MMO Server start script triggered" });
+      } else {
+        // Windows fallback: use raw `go run`
+        if (g[GO_SERVER_SYMBOL] && !g[GO_SERVER_SYMBOL].killed) {
+          return NextResponse.json({ success: false, message: "Go server is already running" }, { status: 400 });
         }
-      });
+        
+        const serverCwd = path.join(process.cwd(), "the-lobby");
+        
+        const proc = spawn("go", ["run", "cmd/server/main.go"], {
+          cwd: serverCwd,
+          stdio: "inherit",
+          shell: true, 
+        });
 
-      g[GO_SERVER_SYMBOL] = proc;
+        proc.on("error", (err) => console.error("[GoServer API] Failed to start Go server:", err));
+        proc.on("exit", (code, signal) => {
+          console.log(`[GoServer API] Go server exited with code ${code} (signal ${signal})`);
+          if (g[GO_SERVER_SYMBOL] === proc) {
+            g[GO_SERVER_SYMBOL] = null;
+          }
+        });
 
-      return NextResponse.json({ success: true, message: "Go MMO Server started" });
+        g[GO_SERVER_SYMBOL] = proc;
+        return NextResponse.json({ success: true, message: "Go MMO Server started locally" });
+      }
     } 
     else if (action === "stop") {
-      if (!g[GO_SERVER_SYMBOL] || g[GO_SERVER_SYMBOL].killed) {
-        return NextResponse.json({ success: false, message: "Go server is not running" }, { status: 400 });
-      }
-
       console.log("[GoServer API] Stopping Go MMO Server...");
-      const proc = g[GO_SERVER_SYMBOL];
       
-      // Send termination signal
-      proc.kill("SIGTERM");
-      
-      // Cleanup reference
-      g[GO_SERVER_SYMBOL] = null;
+      if (process.platform === "linux") {
+        const proc = spawn("bash", ["scripts/stop-go.sh"], {
+          cwd: process.cwd(),
+          stdio: "inherit",
+        });
+        
+        proc.on("error", (err) => console.error("[GoServer API] Failed to run stop-go.sh:", err));
+        return NextResponse.json({ success: true, message: "Go MMO Server stop script triggered" });
+      } else {
+        if (!g[GO_SERVER_SYMBOL] || g[GO_SERVER_SYMBOL].killed) {
+          return NextResponse.json({ success: false, message: "Go server is not running" }, { status: 400 });
+        }
 
-      return NextResponse.json({ success: true, message: "Go MMO Server stopped" });
+        const proc = g[GO_SERVER_SYMBOL];
+        proc.kill("SIGTERM");
+        g[GO_SERVER_SYMBOL] = null;
+
+        return NextResponse.json({ success: true, message: "Go MMO Server stopped locally" });
+      }
     }
     else {
       return NextResponse.json({ success: false, message: "Invalid action" }, { status: 400 });
