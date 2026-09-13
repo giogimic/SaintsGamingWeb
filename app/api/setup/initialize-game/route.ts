@@ -112,8 +112,11 @@ export async function POST(req: Request) {
     const blockSizePx = Number(body?.game?.defaultBlockSizePx || body?.environment?.defaultBlockSizePx || 64);
 
     // 2. Validate Characters (Minimum 1 Required)
-    if (!Array.isArray(body?.characters) || body.characters.length === 0) {
-      return NextResponse.json({ error: 'At least one player character is required' }, { status: 400 });
+    const dbHeroesCount = await prisma.starterHero.count({
+      where: { isActive: true }
+    });
+    if ((!Array.isArray(body?.characters) || body.characters.length === 0) && dbHeroesCount === 0) {
+      return NextResponse.json({ error: 'At least one playable character (Archetype) is required' }, { status: 400 });
     }
 
     // 3. Build Starting 3D Voxel World Document

@@ -1,3 +1,12 @@
+## [2.1.858] - 2026-09-13
+### Added
+- Completely redesigned the Archetype Creator into a visual "Character Select" style Gallery Grid and a Split-Form Editor.
+### Fixed
+- Fixed archetype validation in game setup checking database records instead of only the request payload.
+- Fixed UI padding and text clipping issues on rounded edges in `ActorsSetupStep`.
+- Refactored `WorldModelSelector` to use a compact horizontal UI to significantly save vertical screen space.
+- Fixed a bug where the `SpriteBrowser` modal would be trapped beneath the `FloatingWindow` Z-index by wrapping it in a React Portal.
+
 ## [2.1.856] - 2026-09-13
 ### Fixed
 - Fixed GameInitializationWizard window styling to match standard Saints OS window designs, replacing the macOS title bar with the system-standard header.
