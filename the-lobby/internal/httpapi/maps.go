@@ -38,6 +38,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/maps/", s.mapByID)
 	mux.HandleFunc("/api/internal/sync", s.internalSync)
 	mux.HandleFunc("/api/internal/deploy-release", s.internalDeployRelease)
+	mux.HandleFunc("/api/internal/maps/diagnostics", s.mapDiagnostics)
 	mux.HandleFunc("/internal/broadcast", s.internalBroadcast)
 	mux.HandleFunc("/internal/disconnect", s.internalDisconnect)
 	mux.HandleFunc("/api/gtc/listings", s.gtcListings)
@@ -328,123 +329,17 @@ func (s *Server) internalSync(w http.ResponseWriter, r *http.Request) {
 			s.Registry.ReloadItems()
 		case "map":
 			if payload.ID != "" && payload.Version > 0 {
-				log.Printf("[sync] Pulling map release %s v%d from Next.js", payload.ID, payload.Version)
-				nextURL := os.Getenv("NEXT_JS_URL")
-				if nextURL == "" {
-					nextURL = "http://127.0.0.1:3000"
-				}
-				reqUrl := fmt.Sprintf("%s/api/internal/maps/%s?version=%d", nextURL, payload.ID, payload.Version)
-				
-				req, err := http.NewRequest("GET", reqUrl, nil)
-				if err == nil {
-					req.Header.Set("Authorization", "Bearer "+s.Secret)
-					client := &http.Client{Timeout: 15 * time.Second}
-					resp, err := client.Do(req)
-					if err == nil && resp.StatusCode == 200 {
-						var syncResp struct {
-							Ok      bool `json:"ok"`
-							Release struct {
-								MapID       string `json:"mapId"`
-								Version     int    `json:"version"`
-								Name        string `json:"name"`
-								Data        string `json:"data"`
-								Description string `json:"description"`
-								PublishedBy string `json:"publishedBy"`
-								Regions     []struct {
-									RegionX          int    `json:"regionX"`
-									RegionZ          int    `json:"regionZ"`
-									ArtifactChecksum string `json:"artifactChecksum"`
-								} `json:"regions"`
-							} `json:"release"`
-						}
-						body, _ := io.ReadAll(resp.Body)
-						resp.Body.Close()
-						if err := json.Unmarshal(body, &syncResp); err == nil && syncResp.Ok {
-							// Persist to SQLite
-							_, err = s.DB.Exec(`
-								INSERT INTO WorldMapVersion (id, mapId, version, name, data, description, publishedBy)
-								VALUES (?, ?, ?, ?, ?, ?, ?)
-								ON CONFLICT(id) DO UPDATE SET data=excluded.data, description=excluded.description, publishedBy=excluded.publishedBy
-							`, fmt.Sprintf("%s_v%d", payload.ID, payload.Version), syncResp.Release.MapID, syncResp.Release.Version, syncResp.Release.Name, syncResp.Release.Data, syncResp.Release.Description, syncResp.Release.PublishedBy)
-							
-							if err == nil {
-								// Persist regions
-								for _, r := range syncResp.Release.Regions {
-									_, _ = s.DB.Exec(`
-										INSERT INTO WorldMapVersionRegion (id, versionId, regionX, regionZ, artifactChecksum)
-										VALUES (?, ?, ?, ?, ?)
-										ON CONFLICT(id) DO UPDATE SET artifactChecksum=excluded.artifactChecksum
-									`, fmt.Sprintf("%s_v%d_%d_%d", payload.ID, payload.Version, r.RegionX, r.RegionZ), fmt.Sprintf("%s_v%d", payload.ID, payload.Version), r.RegionX, r.RegionZ, r.ArtifactChecksum)
-								}
-
-								// Ensure WorldMap is initialized with correct publishedVersion
-								var count int
-								_ = s.DB.QueryRow(`SELECT COUNT(1) FROM WorldMap WHERE id = ?`, payload.ID).Scan(&count)
-								if count > 0 {
-									_, _ = s.DB.Exec(`UPDATE WorldMap SET name=?, publishedVersion=?, publishedData=? WHERE id=?`, syncResp.Release.Name, payload.Version, syncResp.Release.Data, payload.ID)
-								} else {
-									_, _ = s.DB.Exec(`INSERT INTO WorldMap (id, name, gridData, mapType, publishedVersion, publishedData) VALUES (?, ?, '[]', 'HYBRID', ?, ?)`, payload.ID, syncResp.Release.Name, payload.Version, syncResp.Release.Data)
-								}
-
-								log.Printf("[sync] Persisted map release %s v%d locally", payload.ID, payload.Version)
-
-								// Trigger live engine reload
-								if s.World != nil && s.World.RM != nil {
-									manifest, err := s.World.RM.LoadManifest(payload.ID, payload.Version)
-									if err == nil {
-										var wg sync.WaitGroup
-										workers := 4
-										sem := make(chan struct{}, workers)
-
-										for _, r := range manifest.Regions {
-											wg.Add(1)
-											go func(rx, rz int, checksum string) {
-												defer wg.Done()
-												sem <- struct{}{}
-												defer func() { <-sem }()
-												
-												region, err := s.World.RM.FetchAndDecodeRegion(payload.ID, payload.Version, rx, rz, checksum)
-												if err == nil {
-													s.World.RM.SetRegion(payload.ID, payload.Version, rx, rz, region)
-												} else {
-													log.Printf("[sync] failed to fetch region %d,%d for %s: %v", rx, rz, payload.ID, err)
-												}
-											}(r.RegionX, r.RegionZ, r.ArtifactChecksum)
-										}
-										wg.Wait()
-										
-										s.World.RM.ActivateVersion(payload.ID, payload.Version)
-										s.World.RM.EvictOldVersions(payload.ID, payload.Version)
-									} else {
-										log.Printf("[sync] failed to load published manifest for %s v%d: %v", payload.ID, payload.Version, err)
-									}
-								}
-
-								// Reload map metadata into memory if loaded
-								var snapshot map[string]any
-								if err := json.Unmarshal([]byte(syncResp.Release.Data), &snapshot); err == nil {
-									if gridData, ok := snapshot["gridData"].(string); ok {
-										ReloadMapInMemory(s.World, payload.ID, syncResp.Release.Name, gridData, "{}")
-									}
-								}
-
-							} else {
-								log.Printf("[sync] Failed to insert WorldMapVersion into SQLite: %v", err)
-							}
-						} else {
-							log.Printf("[sync] Failed to parse Next.js response or not OK: %v", err)
-						}
-					} else {
-						if resp != nil {
-							log.Printf("[sync] Next.js HTTP error: status %d", resp.StatusCode)
-							resp.Body.Close()
-						} else {
-							log.Printf("[sync] Next.js HTTP error: %v", err)
-						}
-					}
+				log.Printf("[sync] Request received to pull map release %s v%d", payload.ID, payload.Version)
+				err := deployPublishedMapRelease(s.DB, s.World, payload.ID, payload.Version, s.Secret)
+				if err != nil {
+					log.Printf("[MapReleaseError] map=%s version=%d error=%v", payload.ID, payload.Version, err)
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
 				}
 			} else {
-				log.Printf("[sync] Cannot sync map release, missing ID or version: %s v%d", payload.ID, payload.Version)
+				log.Printf("[MapReleaseError] map=%s version=%d error=missing_id_or_version", payload.ID, payload.Version)
+				http.Error(w, "missing ID or version", http.StatusBadRequest)
+				return
 			}
 		}
 	}
@@ -554,12 +449,24 @@ func LoadMapDefFromDB(db *sql.DB, wm *world.Manager, id string) (*world.MapDef, 
 	err := db.QueryRow(query, id).Scan(&name, &publishedVersion, &data)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			var exists int
-			_ = db.QueryRow("SELECT COUNT(1) FROM WorldMap WHERE id = ?", id).Scan(&exists)
-			log.Printf("[MapDefDebug] baseMapId=%s cacheHit=false fetchEnabled=true dbMapFound=%v publishedVersionFound=false result=error error=not_published", id, exists > 0)
-			return nil, fmt.Errorf("published map version not found for %s", id)
+			var hasMap int
+			var pubVersion int
+			_ = db.QueryRow("SELECT 1, COALESCE(publishedVersion, 0) FROM WorldMap WHERE id = ?", id).Scan(&hasMap, &pubVersion)
+			
+			if hasMap == 0 {
+				log.Printf("[MapDefDebug] baseMapId=%s cacheHit=false dbMapFound=false publishedVersionFound=false result=error error=map_not_found", id)
+				return nil, fmt.Errorf("map_not_found: %s", id)
+			}
+			
+			if pubVersion == 0 {
+				log.Printf("[MapDefDebug] baseMapId=%s cacheHit=false dbMapFound=true publishedVersionFound=false result=error error=map_unpublished", id)
+				return nil, fmt.Errorf("map_unpublished: %s", id)
+			}
+			
+			log.Printf("[MapDefDebug] baseMapId=%s cacheHit=false dbMapFound=true publishedVersionFound=false result=error error=map_release_missing (v%d)", id, pubVersion)
+			return nil, fmt.Errorf("map_release_missing: %s v%d", id, pubVersion)
 		}
-		log.Printf("[MapDefDebug] baseMapId=%s cacheHit=false fetchEnabled=true dbMapFound=unknown publishedVersionFound=unknown result=error error=%v", id, err)
+		log.Printf("[MapDefDebug] baseMapId=%s cacheHit=false dbMapFound=unknown publishedVersionFound=unknown result=error error=%v", id, err)
 		return nil, err
 	}
 
@@ -705,5 +612,271 @@ func withCORS(next http.Handler) http.Handler {
 			return
 		}
 		next.ServeHTTP(w, r)
+	})
+}
+func deployPublishedMapRelease(db *sql.DB, wm *world.Manager, mapID string, version int, secret string) error {
+	log.Printf("[MapRelease] map=%s version=%d stage=fetch", mapID, version)
+	nextURL := os.Getenv("NEXT_JS_URL")
+	if nextURL == "" {
+		nextURL = "http://127.0.0.1:3000"
+	}
+	reqUrl := fmt.Sprintf("%s/api/internal/maps/%s?version=%d", nextURL, mapID, version)
+	
+	req, err := http.NewRequest("GET", reqUrl, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+secret)
+	
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("fetch failed: %w", err)
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("next.js returned status %d", resp.StatusCode)
+	}
+	
+	var syncResp struct {
+		Ok      bool `json:"ok"`
+		Release struct {
+			MapID       string `json:"mapId"`
+			Version     int    `json:"version"`
+			Name        string `json:"name"`
+			Data        string `json:"data"`
+			Description string `json:"description"`
+			PublishedBy string `json:"publishedBy"`
+			Regions     []struct {
+				RegionX          int    `json:"regionX"`
+				RegionZ          int    `json:"regionZ"`
+				ArtifactChecksum string `json:"artifactChecksum"`
+			} `json:"regions"`
+		} `json:"release"`
+	}
+	
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
+	
+	if err := json.Unmarshal(body, &syncResp); err != nil {
+		return fmt.Errorf("failed to decode response JSON: %w", err)
+	}
+	
+	if !syncResp.Ok {
+		return fmt.Errorf("next.js returned ok=false")
+	}
+
+	log.Printf("[MapRelease] map=%s version=%d stage=persist", mapID, version)
+
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	versionID := fmt.Sprintf("%s_v%d", syncResp.Release.MapID, syncResp.Release.Version)
+	_, err = tx.Exec(`
+		INSERT INTO WorldMapVersion (id, mapId, version, name, data, description, publishedBy)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(id) DO UPDATE SET data=excluded.data, description=excluded.description, publishedBy=excluded.publishedBy
+	`, versionID, syncResp.Release.MapID, syncResp.Release.Version, syncResp.Release.Name, syncResp.Release.Data, syncResp.Release.Description, syncResp.Release.PublishedBy)
+	if err != nil {
+		return fmt.Errorf("failed to insert WorldMapVersion: %w", err)
+	}
+
+	for _, r := range syncResp.Release.Regions {
+		regionID := fmt.Sprintf("%s_v%d_%d_%d", syncResp.Release.MapID, syncResp.Release.Version, r.RegionX, r.RegionZ)
+		_, err = tx.Exec(`
+			INSERT INTO WorldMapVersionRegion (id, versionId, regionX, regionZ, artifactChecksum)
+			VALUES (?, ?, ?, ?, ?)
+			ON CONFLICT(id) DO UPDATE SET artifactChecksum=excluded.artifactChecksum
+		`, regionID, versionID, r.RegionX, r.RegionZ, r.ArtifactChecksum)
+		if err != nil {
+			return fmt.Errorf("failed to insert region %s: %w", regionID, err)
+		}
+	}
+
+	var count int
+	err = tx.QueryRow(`SELECT COUNT(1) FROM WorldMap WHERE id = ?`, mapID).Scan(&count)
+	if err != nil {
+		return fmt.Errorf("failed to check WorldMap existence: %w", err)
+	}
+	if count > 0 {
+		_, err = tx.Exec(`UPDATE WorldMap SET name=?, publishedVersion=?, publishedData=? WHERE id=?`, syncResp.Release.Name, syncResp.Release.Version, syncResp.Release.Data, mapID)
+	} else {
+		_, err = tx.Exec(`INSERT INTO WorldMap (id, name, gridData, mapType, publishedVersion, publishedData) VALUES (?, ?, '[]', 'HYBRID', ?, ?)`, mapID, syncResp.Release.Name, syncResp.Release.Version, syncResp.Release.Data)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to update WorldMap: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	log.Printf("[MapRelease] map=%s version=%d stage=regions count=%d", mapID, version, len(syncResp.Release.Regions))
+
+	if wm != nil && wm.RM != nil {
+		manifest, err := wm.RM.LoadManifest(mapID, version)
+		if err != nil {
+			return fmt.Errorf("failed to load manifest: %w", err)
+		}
+
+		var wg sync.WaitGroup
+		var firstErr error
+		var mu sync.Mutex
+		workers := 4
+		sem := make(chan struct{}, workers)
+
+		for _, r := range manifest.Regions {
+			wg.Add(1)
+			go func(rx, rz int, checksum string) {
+				defer wg.Done()
+				sem <- struct{}{}
+				defer func() { <-sem }()
+				
+				region, err := wm.RM.FetchAndDecodeRegion(mapID, version, rx, rz, checksum)
+				if err != nil {
+					mu.Lock()
+					if firstErr == nil {
+						firstErr = fmt.Errorf("failed to fetch region %d,%d: %v", rx, rz, err)
+					}
+					mu.Unlock()
+					return
+				}
+				wm.RM.SetRegion(mapID, version, rx, rz, region)
+			}(r.RegionX, r.RegionZ, r.ArtifactChecksum)
+		}
+		wg.Wait()
+		
+		if firstErr != nil {
+			return fmt.Errorf("region fetch failed: %w", firstErr)
+		}
+		
+		wm.RM.ActivateVersion(mapID, version)
+		wm.RM.EvictOldVersions(mapID, version)
+	}
+
+	// Reload map metadata into memory if loaded
+	var snapshot map[string]any
+	if err := json.Unmarshal([]byte(syncResp.Release.Data), &snapshot); err == nil {
+		if gridData, ok := snapshot["gridData"].(string); ok {
+			ReloadMapInMemory(wm, mapID, syncResp.Release.Name, gridData, "{}")
+		}
+	}
+
+	log.Printf("[MapRelease] map=%s version=%d stage=activate status=success", mapID, version)
+	return nil
+}
+
+func StartSyncPoller(db *sql.DB, wm *world.Manager, secret string) {
+	log.Printf("[sync] Starting MapSync poller")
+	go func() {
+		for {
+			time.Sleep(15 * time.Second)
+			
+			nextURL := os.Getenv("NEXT_JS_URL")
+			if nextURL == "" {
+				nextURL = "http://127.0.0.1:3000"
+			}
+			reqUrl := fmt.Sprintf("%s/api/internal/sync-queue?limit=10", nextURL)
+			
+			req, err := http.NewRequest("GET", reqUrl, nil)
+			if err != nil {
+				continue
+			}
+			req.Header.Set("Authorization", "Bearer "+secret)
+			
+			client := &http.Client{Timeout: 10 * time.Second}
+			resp, err := client.Do(req)
+			if err != nil || resp.StatusCode != 200 {
+				if resp != nil {
+					resp.Body.Close()
+				}
+				continue
+			}
+			
+			var queueResp struct {
+				Ok      bool `json:"ok"`
+				Pending []struct {
+					ID      string `json:"id"`
+					MapID   string `json:"mapId"`
+					Version int    `json:"version"`
+				} `json:"pending"`
+			}
+			
+			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			if json.Unmarshal(body, &queueResp) != nil || !queueResp.Ok || len(queueResp.Pending) == 0 {
+				continue
+			}
+			
+			for _, entry := range queueResp.Pending {
+				err := deployPublishedMapRelease(db, wm, entry.MapID, entry.Version, secret)
+				
+				status := "SYNCED"
+				errMsg := ""
+				if err != nil {
+					log.Printf("[MapReleaseError] map=%s version=%d error=%v", entry.MapID, entry.Version, err)
+					status = "FAILED"
+					errMsg = err.Error()
+				}
+				
+				// Acknowledge back to Next.js
+				ackUrl := fmt.Sprintf("%s/api/internal/sync-queue", nextURL)
+				
+				payload, _ := json.Marshal(map[string]any{
+					"entryIds": []string{entry.ID},
+					"status":   status,
+					"error":    errMsg,
+				})
+				ackReq, err := http.NewRequest("POST", ackUrl, strings.NewReader(string(payload)))
+				if err == nil {
+					ackReq.Header.Set("Authorization", "Bearer "+secret)
+					ackReq.Header.Set("Content-Type", "application/json")
+					if ackResp, err := client.Do(ackReq); err == nil {
+						ackResp.Body.Close()
+					}
+				}
+			}
+		}
+	}()
+}
+func (s *Server) mapDiagnostics(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		http.Error(w, "missing id", http.StatusBadRequest)
+		return
+	}
+	
+	var hasMap int
+	var pubVersion int
+	var runtimeVersion int
+	var regionCount int
+	
+	_ = s.DB.QueryRow("SELECT 1, COALESCE(publishedVersion, 0) FROM WorldMap WHERE id = ?", id).Scan(&hasMap, &pubVersion)
+	
+	if hasMap == 1 {
+		_ = s.DB.QueryRow("SELECT version FROM WorldMapVersion WHERE mapId = ? ORDER BY version DESC LIMIT 1", id).Scan(&runtimeVersion)
+		_ = s.DB.QueryRow("SELECT COUNT(1) FROM WorldMapVersionRegion WHERE versionId = ?", fmt.Sprintf("%s_v%d", id, pubVersion)).Scan(&regionCount)
+	}
+
+	active := false
+	if s.World != nil && s.World.RM != nil {
+		if _, err := s.World.RM.LoadManifest(id, pubVersion); err == nil {
+			active = true
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"id": id,
+		"hasMap": hasMap == 1,
+		"publishedVersion": pubVersion,
+		"runtimeVersion": runtimeVersion,
+		"regions": regionCount,
+		"active": active,
 	})
 }

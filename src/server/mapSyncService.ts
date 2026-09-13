@@ -80,7 +80,7 @@ export class MapSyncService {
    */
   public static async getPending(limit = 50) {
     return await prisma.mapSyncEntry.findMany({
-      where: { status: "PENDING" },
+      where: { status: { in: ["PENDING", "FAILED"] } },
       orderBy: { createdAt: "asc" },
       take: limit,
     });

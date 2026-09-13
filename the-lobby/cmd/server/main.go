@@ -114,6 +114,9 @@ func main() {
 			})
 		},
 	}
+	
+	httpapi.StartSyncPoller(sqlDB, wm, cfg.AuthSecret)
+	
 	root := http.NewServeMux()
 	root.Handle("/", api.Handler())
 	root.Handle("/socket.io/", io.ServeHandler(nil))

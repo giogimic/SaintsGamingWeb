@@ -13,7 +13,7 @@ import { buildJoinKey, shouldSkipRedundantLobbyJoin, type JoinContract } from '.
 import { DEFAULT_SPAWN_MAP_ID } from './realmSettings';
 import type { JoinMapPayload } from '../net/protocol';
 
-export type WorldSessionState = 'not_joined' | 'joining' | 'joined' | 'transitioning' | 'disconnected';
+export type WorldSessionState = 'not_joined' | 'joining' | 'joined' | 'transitioning' | 'disconnected' | 'failed';
 
 export interface JoinWorldOptions {
   socket?: { connected?: boolean; emit: (event: string, data: any) => void } | null;
