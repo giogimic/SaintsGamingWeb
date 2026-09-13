@@ -1,3 +1,9 @@
+## [2.1.866] - 2026-09-13
+### Fixed
+- Fixed an infinite reconnect loop when the world server rejects a map join request (e.g. `map_not_found`).
+- Refactored `CharacterSelectScene` to correctly use the centralized `joinWorld()` pipeline, eliminating duplicate socket connections.
+- Added explicit boundary logging in `joinWorld` to trace payloads sent to the Go server.
+
 ## [2.1.865] - 2026-09-13
 ### Added
 - Added "Start Go MMO Server" and "Stop Go MMO Server" to the Studio System menu, managing the Go process via a new API route `app/api/admin/system/go-server/route.ts`.

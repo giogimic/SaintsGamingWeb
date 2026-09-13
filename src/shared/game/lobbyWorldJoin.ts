@@ -103,6 +103,7 @@ export function joinWorld(opts: JoinWorldOptions): JoinWorldResult {
     joinSeq: nextSeq,
   };
 
+  console.log(`[lobbyWorldJoin] Emitting 'join_map' for account=${opts.accountId} character=${opts.characterId} map=${baseMapId} seq=${nextSeq}`, payload);
   opts.socket.emit('join_map', payload);
 
   return {
