@@ -60,22 +60,22 @@ export function MidnightTropicalBackground({
       {/* ── Dynamic Color Overlays for Atmosphere ──────────────────── */}
       {isLight ? (
         <div
-          className="absolute inset-0 pointer-events-none z-[25] opacity-70 mix-blend-multiply"
+          className="absolute inset-0 pointer-events-none z-10 opacity-70 mix-blend-multiply"
           style={{ background: 'radial-gradient(circle at 50% 50%, transparent 40%, #10002b 100%)' }}
         />
       ) : isVice ? (
         <div
-          className="absolute inset-0 pointer-events-none z-[25] opacity-40 mix-blend-color"
+          className="absolute inset-0 pointer-events-none z-10 opacity-40 mix-blend-color"
           style={{ background: 'linear-gradient(to bottom, #d946ef, #fb923c)' }}
         />
       ) : (
         <>
           <div
-            className="absolute inset-0 pointer-events-none z-[25] opacity-80 mix-blend-color"
+            className="absolute inset-0 pointer-events-none z-10 opacity-80 mix-blend-color"
             style={{ background: 'linear-gradient(to bottom, #03045e, #0077b6)' }}
           />
           <div
-            className="absolute inset-0 pointer-events-none z-[25] opacity-50 mix-blend-multiply"
+            className="absolute inset-0 pointer-events-none z-10 opacity-50 mix-blend-multiply"
             style={{ background: '#050014' }}
           />
         </>
