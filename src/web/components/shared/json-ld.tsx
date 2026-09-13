@@ -144,12 +144,6 @@ export async function JsonLd() {
 
   return (
     <>
-      {googleVerification && (
-        <meta name="google-site-verification" content={googleVerification} />
-      )}
-      {bingVerification && (
-        <meta name="msvalidate.01" content={bingVerification} />
-      )}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}

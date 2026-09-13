@@ -1,5 +1,8 @@
-## [2.1.860] - 2026-09-13
+## [2.1.861] - 2026-09-13
 ### Fixed
+- Fixed a critical React Hydration error (#418) that caused the Lobby to hang indefinitely on the "Initializing The Lobby..." screen. The issue was triggered by Next.js 15 hoisting `<meta>` tags rendered inside the `JsonLd` component within the document body, causing a fatal server/client mismatch.
+
+## [2.1.860] - 2026-09-13
 - Reverted the global React Portal injection for all DraggablePanels to prevent a critical Z-index collision that caused standard studio windows (Map Builder, Voxel Browser) to render underneath the primary Studio Shell. 
 - Portaling to the document body is now strictly opt-in (`portalToBody=true`) and exclusively used by the Asset Upload, Quick Upload, and Version Manager tools to ensure they can escape any container boundaries while leaving core workspace tools intact.
 
