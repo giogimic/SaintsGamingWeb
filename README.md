@@ -46,7 +46,15 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ---
 
-## 📝 Changelog
+## 📜 Changelog
+
+### v2.1.857 - Actor Editor Architecture Standardization
+- **Unified World Model Selector:** Abstracted the World Model visualization logic (2D Sprite, 2D Box Sprite, 3D Model, Other) into a unified `WorldModelSelector` component.
+- **Strict Actor Boundaries:** Segmented the editor UI to reflect strict architectural boundaries:
+  - **Archetype Editor:** Uses World Model.
+  - **Creature Editor:** Uses World Model and introduces an independent Battle Appearance configuration (front/back sprites).
+  - **Monster & NPC Editors:** Created standalone thin UI wrappers utilizing the World Model selector, streamlining the setup flow and enforcing clear scope boundaries without unnecessary backend schema churn.
+- **UI Integrity:** Fixed UI duplication and TS reference issues in the Archetype Editor.
 
 ### v2.1.818 - Dynamic Perspective System
 - **Player-Controlled Camera:** Map authors can no longer lock players into forced camera perspectives (e.g. First Person or Top-Down).

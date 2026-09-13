@@ -13,7 +13,7 @@ import {
   Plus, Trash2, Save, RefreshCw, Eye, EyeOff, CheckCircle2, AlertCircle,
   FileJson, Copy, Check, Users, ImageIcon,
 } from 'lucide-react';
-import SpriteBrowser from '../SpriteBrowser';
+import { WorldModelSelector, WorldModelValue } from '../components/WorldModelSelector';
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 
 const EMPTY_HERO: StarterHeroData = {
@@ -34,13 +34,7 @@ const EMPTY_HERO: StarterHeroData = {
   visualData: '[]',
 };
 
-type VisualLayer = {
-  id: string;
-  category: string;
-  assetProfileId: string;
-  assetBundleId?: string;
-  tint?: string;
-};
+// VisualLayer logic removed - managed by WorldModelSelector
 
 // ─── Hero List Item ────────────────────────────────────────────────────────────
 
@@ -139,8 +133,6 @@ export function ArchetypeEditorWorkspace() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [copied, setCopied] = useState(false);
-  const [showCatalogBrowser, setShowCatalogBrowser] = useState(false);
-  const [activeLayerPicker, setActiveLayerPicker] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const [heroesRes, mapsRes, classesRes] = await Promise.all([
@@ -237,34 +229,30 @@ export function ArchetypeEditorWorkspace() {
     showStatus('success', 'Cloned archetype into new draft. Make your changes and Save.');
   };
 
+  const getWorldModel = (): WorldModelValue => {
+    try {
+      const parsed = JSON.parse(form.visualData || '{}');
+      if (parsed.worldModel) return parsed.worldModel;
+    } catch {}
+    return { type: '2D Sprite', assetId: form.assetProfileId || '' };
+  };
+
+  const handleWorldModelChange = (val: WorldModelValue) => {
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(form.visualData || '{}');
+      if (Array.isArray(parsed)) parsed = {}; // Migrate legacy array
+    } catch {}
+    parsed.worldModel = val;
+    setForm(prev => ({
+      ...prev,
+      visualData: JSON.stringify(parsed),
+      assetProfileId: val.assetId // Sync for legacy compat
+    }));
+  };
+
   const f = (key: keyof StarterHeroData, value: any) =>
     setForm(prev => ({ ...prev, [key]: value }));
-
-  const getVisualLayers = (): VisualLayer[] => {
-    try {
-      return JSON.parse(form.visualData || '[]');
-    } catch {
-      return [];
-    }
-  };
-
-  const updateVisualLayers = (layers: VisualLayer[]) => {
-    f('visualData', JSON.stringify(layers));
-  };
-
-  const addVisualLayer = () => {
-    const layers = getVisualLayers();
-    layers.push({ id: Math.random().toString(36).substring(7), category: 'clothes', assetProfileId: '' });
-    updateVisualLayers(layers);
-  };
-
-  const removeVisualLayer = (id: string) => {
-    updateVisualLayers(getVisualLayers().filter(l => l.id !== id));
-  };
-
-  const updateLayer = (id: string, updates: Partial<VisualLayer>) => {
-    updateVisualLayers(getVisualLayers().map(l => l.id === id ? { ...l, ...updates } : l));
-  };
 
   // Validation state checks
   const isSpriteValid = Boolean(form.assetProfileId || form.assetBundleId);
@@ -505,133 +493,12 @@ export function ArchetypeEditorWorkspace() {
                 </div>
               </section>
 
-              {/* ── Sprite Key ── */}
-              <section>
-                <div
-                  className="flex items-center justify-between pb-1 mb-2"
-                  style={{ borderBottom: '1px solid rgba(139,92,246,0.1)' }}
-                >
-                  <span className="text-[9px] font-black text-violet-500/60 uppercase tracking-[0.2em]">
-                    Avatar Sprite
-                  </span>
-                </div>
-
-                {/* Selected sprite preview */}
-                <div className="flex items-center gap-3 mb-2">
-                  <div
-                    className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
-                    style={{
-                      background: isSpriteValid ? 'rgba(139,92,246,0.1)' : 'rgba(239,68,68,0.1)',
-                      border: isSpriteValid ? '1px solid rgba(139,92,246,0.3)' : '1px solid rgba(239,68,68,0.3)',
-                    }}
-                  >
-                    {form.assetProfileId ? (
-                      <CharacterSpritePreview
-                        assetProfileId={form.assetProfileId}
-                        assetBundleId={form.assetBundleId}
-                        layers={(() => {
-                          try {
-                            const arr = JSON.parse(form.visualData || '[]');
-                            return arr.length > 0 ? [form.assetProfileId, ...arr.map((l: any) => l.assetProfileId)] : undefined;
-                          } catch { return undefined; }
-                        })()}
-                        size={32}
-                        scale={1.8}
-                      />
-                    ) : (
-                      <Users className="w-6 h-6 text-slate-600" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <button
-                      type="button"
-                      onClick={() => setShowCatalogBrowser(true)}
-                      className="w-full flex items-center justify-between p-2.5 bg-[#050b14] border border-border/50 hover:border-cyan-400 rounded-lg transition text-left cursor-pointer"
-                    >
-                      <div className="flex flex-col min-w-0 mr-2">
-                        <span className="text-xs font-bold text-foreground truncate">
-                          {form.assetBundleId || form.assetProfileId || 'Select Character Sprite...'}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground mt-0.5 truncate">
-                          {form.assetProfileId ? `Key: ${form.assetProfileId}` : 'Click to open Asset Manager'}
-                        </span>
-                      </div>
-                      <ImageIcon className="w-4 h-4 text-cyan-400 shrink-0" />
-                    </button>
-                  </div>
-                </div>
-              </section>
-
-              {/* ── Appearance Layers ── */}
-              <section>
-                <div
-                  className="flex items-center justify-between pb-1 mb-2"
-                  style={{ borderBottom: '1px solid rgba(139,92,246,0.1)' }}
-                >
-                  <span className="text-[9px] font-black text-violet-500/60 uppercase tracking-[0.2em]">
-                    Appearance Layers
-                  </span>
-                  <button
-                    type="button"
-                    onClick={addVisualLayer}
-                    className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 hover:text-emerald-300 transition-all cursor-pointer shadow"
-                  >
-                    <Plus size={10} />
-                    Add Layer
-                  </button>
-                </div>
-                
-                <div className="space-y-2">
-                  {getVisualLayers().length === 0 ? (
-                    <p className="text-[10px] text-slate-500 italic">No layers added. Uses default Base Sprite.</p>
-                  ) : (
-                    getVisualLayers().map((layer, i) => (
-                      <div key={layer.id} className="flex flex-col gap-2 p-2 rounded-lg bg-white/5 border border-white/10">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-slate-300">Layer {i + 1}</span>
-                          <button onClick={() => removeVisualLayer(layer.id)} className="text-red-400/60 hover:text-red-400 p-0.5 rounded cursor-pointer">
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                        <div className="flex gap-2">
-                          <div className="flex-1">
-                            <label className={labelCls}>Category</label>
-                            <select
-                              value={layer.category}
-                              onChange={(e) => updateLayer(layer.id, { category: e.target.value })}
-                              className={inputCls}
-                            >
-                              <option value="hair">Hair</option>
-                              <option value="clothes">Clothes</option>
-                              <option value="accessory">Accessory</option>
-                              <option value="weapon">Weapon</option>
-                              <option value="effect">Effect</option>
-                            </select>
-                          </div>
-                          <div className="flex-[2]">
-                            <label className={labelCls}>Asset Profile</label>
-                            <div className="flex gap-1">
-                              <input
-                                value={layer.assetProfileId}
-                                onChange={(e) => updateLayer(layer.id, { assetProfileId: e.target.value })}
-                                className={inputCls}
-                                placeholder="Sprite Key"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setActiveLayerPicker(layer.id)}
-                                className="bg-cyan-900/40 text-cyan-400 px-2 rounded border border-cyan-500/20 flex items-center justify-center shrink-0 cursor-pointer"
-                              >
-                                <ImageIcon size={12} />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </section>
+              {/* ── World Model ── */}
+              <WorldModelSelector
+                value={getWorldModel()}
+                onChange={handleWorldModelChange}
+                label="Archetype World Model"
+              />
 
               {/* ── Spawn Settings ── */}
               <section>
@@ -728,62 +595,8 @@ export function ArchetypeEditorWorkspace() {
             </p>
           </div>
         )}
-      </CatalogEditorShell>
 
-      {/* Catalog Modular Sprite Picker Modal */}
-      {(showCatalogBrowser || activeLayerPicker) && (
-        <div
-          className="pointer-events-auto absolute inset-0 z-40 p-4 flex items-center justify-center animate-in fade-in duration-200"
-          style={{ background: 'rgba(5,0,15,0.96)', backdropFilter: 'blur(10px)' }}
-        >
-          <div className="w-full max-w-3xl h-[80vh] bg-[#0a051d] border border-cyan-500/40 rounded-2xl flex flex-col overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between p-4 border-b border-cyan-500/30 bg-[#050b14]/80">
-              <div className="flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-cyan-400" />
-                <h3 className="font-black text-cyan-200 text-sm">
-                  Select Character / Modular Sprite from Catalog
-                </h3>
-              </div>
-              <button
-                onClick={() => {
-                  setShowCatalogBrowser(false);
-                  setActiveLayerPicker(null);
-                }}
-                className="text-slate-400 hover:text-white px-2 py-1 rounded bg-white/5 text-xs cursor-pointer"
-              >
-                ✕ Close
-              </button>
-            </div>
-            <div className="flex-1 overflow-hidden p-2">
-              <SpriteBrowser
-                filterType="CHARACTER"
-                onSelect={(selectedAssets) => {
-                  const asset = selectedAssets[0];
-                  if (asset) {
-                    if (activeLayerPicker) {
-                      updateLayer(activeLayerPicker, {
-                        assetProfileId: asset.source,
-                        assetBundleId: asset.variantFamily || asset.id,
-                      });
-                    } else {
-                      f('assetProfileId', asset.source);
-                      if (asset.variantFamily || asset.id) {
-                        f('assetBundleId', asset.variantFamily || asset.id);
-                      }
-                    }
-                  }
-                  setShowCatalogBrowser(false);
-                  setActiveLayerPicker(null);
-                }}
-                onClose={() => {
-                  setShowCatalogBrowser(false);
-                  setActiveLayerPicker(null);
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      </CatalogEditorShell>
     </div>
   );
 }

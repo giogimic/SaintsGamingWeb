@@ -28,6 +28,7 @@ import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';
 import { RegistryCombobox } from '../components/RegistryCombobox';
 import { DroppableAssetInput } from '../components/DroppableAssetInput';
+import { WorldModelSelector, WorldModelValue } from '../components/WorldModelSelector';
 import { useCreatureDefs } from '@/web/hooks/studio-data';
 import SpriteBrowser from '../SpriteBrowser';
 
@@ -59,9 +60,27 @@ export function CreatureDefEditorPanel() {
   const [lootTables, setLootTables] = useState<Array<{ id: string; name: string }>>([]);
   const [abilitiesList, setAbilitiesList] = useState<Array<{ slug: string; name: string }>>([]);
   const [showCatalogBrowser, setShowCatalogBrowser] = useState(false);
-  const [activeLayerPicker, setActiveLayerPicker] = useState<'overworld' | 'battle' | null>(null);
+  const [activeLayerPicker, setActiveLayerPicker] = useState<'overworld' | 'battle' | 'back' | null>(null);
   const isNewRef = useRef(isNew);
   isNewRef.current = isNew;
+
+  const getWorldModel = (): WorldModelValue => {
+    try {
+      const parsed = JSON.parse(form.spriteOverworld || '{}');
+      if (parsed.worldModel) return parsed.worldModel;
+    } catch {}
+    return { type: '2D Sprite', assetId: form.spriteOverworld || '' };
+  };
+
+  const handleWorldModelChange = (val: WorldModelValue) => {
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(form.spriteOverworld || '{}');
+      if (typeof parsed !== 'object') parsed = {};
+    } catch {}
+    parsed.worldModel = val;
+    f('spriteOverworld', JSON.stringify(parsed));
+  };
 
   const resourceKey = creatureResourceKey(form, isNew);
   const {
@@ -665,23 +684,23 @@ export function CreatureDefEditorPanel() {
                 </div>
               </div>
 
-              <div>
-                <label className={labelCls}>Overworld / card sprite</label>
-                <div className="flex items-center gap-2 mb-1">
-                  <DroppableAssetInput
-                    className={inputCls}
-                    value={form.spriteOverworld}
-                    onFocus={onFieldFocus}
-                    onBlur={onFieldBlur}
-                    onChange={(e) => f('spriteOverworld', e.target.value)}
-                    onAssetDropped={(key) => f('spriteOverworld', key)}
-                  />
-                  <button type="button" onClick={() => { setActiveLayerPicker('overworld'); setShowCatalogBrowser(true); }} className="px-2 py-1.5 shrink-0 bg-cyan-900/50 hover:bg-cyan-800 text-cyan-200 text-[10px] font-bold rounded border border-cyan-500/30 transition-colors whitespace-nowrap cursor-pointer">
-                    Browse Library
-                  </button>
+              {/* ── World Model ── */}
+              <WorldModelSelector
+                value={getWorldModel()}
+                onChange={handleWorldModelChange}
+                label="Creature World Model"
+              />
+
+              {/* ── Battle Appearance ── */}
+              <section className="mt-4 p-3 bg-black/40 rounded-lg border border-cyan-500/10">
+                <div
+                  className="text-[9px] font-black text-cyan-500/60 uppercase tracking-[0.2em] mb-2 pb-1"
+                  style={{ borderBottom: '1px solid rgba(6,182,212,0.1)' }}
+                >
+                  Battle Appearance
                 </div>
-                <label className={labelCls}>Battle sprite</label>
-                <div className="flex items-center gap-2 mb-1">
+                <label className={labelCls}>Front Battle Sprite (Base / Enemy)</label>
+                <div className="flex items-center gap-2 mb-3">
                   <DroppableAssetInput
                     className={inputCls}
                     value={form.spriteBattle || ''}
@@ -694,30 +713,21 @@ export function CreatureDefEditorPanel() {
                     Browse Library
                   </button>
                 </div>
-                <input
-                  className={inputCls + ' mb-1'}
-                  placeholder="Filter assets…"
-                  value={assetFilter}
-                  onChange={(e) => setAssetFilter(e.target.value)}
-                />
-                <div className="grid grid-cols-4 gap-1 max-h-28 overflow-y-auto">
-                  {assets.map((a) => (
-                    <button
-                      key={a.key}
-                      type="button"
-                      onClick={() => setSpriteKey(a.kind === 'overworld' ? 'overworld' : 'battle', a.key)}
-                      className="border border-[#806f47]/20 rounded p-1 hover:border-emerald-600 bg-black/50/40"
-                      title={a.label}
-                    >
-                      <img src={creatureAssetUrl(a.key)} alt={a.key} className="w-full h-10 object-contain pixelated" />
-                    </button>
-                  ))}
+                <label className={labelCls}>Back Battle Sprite (Player Side)</label>
+                <div className="flex items-center gap-2 mb-2">
+                  <DroppableAssetInput
+                    className={inputCls}
+                    value={form.spriteBack || ''}
+                    onFocus={onFieldFocus}
+                    onBlur={onFieldBlur}
+                    onChange={(e) => f('spriteBack', e.target.value)}
+                    onAssetDropped={(key) => f('spriteBack', key)}
+                  />
+                  <button type="button" onClick={() => { setActiveLayerPicker('back'); setShowCatalogBrowser(true); }} className="px-2 py-1.5 shrink-0 bg-cyan-900/50 hover:bg-cyan-800 text-cyan-200 text-[10px] font-bold rounded border border-cyan-500/30 transition-colors whitespace-nowrap cursor-pointer">
+                    Browse Library
+                  </button>
                 </div>
-                <div className="flex gap-2 mt-2">
-                  <img src={creatureAssetUrl(form.spriteOverworld)} className="w-16 h-16 object-contain bg-black/50/50 rounded border border-[#806f47]/20" alt="ow" />
-                  <img src={creatureAssetUrl(form.spriteBattle || form.spriteOverworld)} className="w-16 h-16 object-contain bg-black/50/50 rounded border border-[#806f47]/20" alt="bt" />
-                </div>
-              </div>
+              </section>
 
               <div>
                 <label className={labelCls}>Stats</label>
@@ -1265,8 +1275,16 @@ export function CreatureDefEditorPanel() {
                 onSelect={(selectedAssets) => {
                   const asset = selectedAssets[0];
                   if (asset) {
-                    if (activeLayerPicker === 'overworld') f('spriteOverworld', asset.source);
-                    else if (activeLayerPicker === 'battle') f('spriteBattle', asset.source);
+                    if (activeLayerPicker === 'overworld') {
+                      f('spriteOverworld', asset.source);
+                    } else if (activeLayerPicker === 'back') {
+                      f('spriteBack', asset.source);
+                    } else if (activeLayerPicker === 'battle') {
+                      f('spriteBattle', asset.source);
+                    } else {
+                      // Support generic overworld fallback picker if needed
+                      f('spriteOverworld', asset.source);
+                    }
                   }
                   setShowCatalogBrowser(false);
                   setActiveLayerPicker(null);

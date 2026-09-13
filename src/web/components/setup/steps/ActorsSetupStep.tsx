@@ -9,6 +9,8 @@ import { CreatureDefEditorPanel } from '@/web/components/the-lobby/editor/panels
 import { FloatingWindow } from '@/web/components/the-lobby/hud/FloatingWindow';
 import { AssetUploadPanel } from '@/web/components/the-lobby/editor/panels/AssetUploadPanel';
 import { TilesetQuickUploadPanel } from '@/web/components/the-lobby/editor/panels/TilesetQuickUploadPanel';
+import { MonsterEditorPanel } from '@/web/components/the-lobby/editor/panels/MonsterEditorPanel';
+import { NpcEditorPanel } from '@/web/components/the-lobby/editor/panels/NpcEditorPanel';
 
 export type ActorCategory = 'ARCHETYPE' | 'CREATURE' | 'MONSTER' | 'NPC' | null;
 
@@ -53,20 +55,8 @@ export function ActorsSetupStep({}: ActorsSetupStepProps) {
         <div className="flex-1 w-full h-full relative bg-[#050b14] rounded-xl overflow-hidden border border-slate-800/50">
           {activeWorkspace === 'ARCHETYPE' && <ArchetypeEditorWorkspace />}
           {activeWorkspace === 'CREATURE' && <CreatureDefEditorPanel />}
-          {activeWorkspace === 'MONSTER' && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
-              <Skull className="w-16 h-16 mb-4 opacity-20" />
-              <p className="font-mono text-sm uppercase tracking-widest">Monster Creator</p>
-              <p className="text-xs mt-2 max-w-md text-center">World-first 3D physical entities. This editor is simplified for the onboarding flow.</p>
-            </div>
-          )}
-          {activeWorkspace === 'NPC' && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
-              <Smile className="w-16 h-16 mb-4 opacity-20" />
-              <p className="font-mono text-sm uppercase tracking-widest">NPC Creator</p>
-              <p className="text-xs mt-2 max-w-md text-center">Define basic dialogue and shopkeepers.</p>
-            </div>
-          )}
+          {activeWorkspace === 'MONSTER' && <MonsterEditorPanel />}
+          {activeWorkspace === 'NPC' && <NpcEditorPanel />}
         </div>
       </FloatingWindow>
     );
