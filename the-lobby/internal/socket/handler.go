@@ -311,6 +311,8 @@ func isSamePolicy(instanceID, baseMapID, accountID string, isPrivate, pie bool) 
 func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protocol.JoinMapRequest) {
 	sid := string(client.Id())
 	base := world.ResolvePlayableBase(req.MapID, req.Lobby, req.ForceDemo)
+	
+	log.Printf("[WorldJoinDebug] account=%s requestedMapId=%s resolvedBaseMapId=%s lobby=%v forceDemo=%v", accountID, req.MapID, base, req.Lobby, req.ForceDemo)
 	if _, err := h.eng.World().GetDef(base); err != nil {
 		log.Printf("[socket] JOIN_REJECT account=%s reason=map_not_found mapId=%s err=%v", accountID, base, err)
 		h.EmitToSocket(sid, protocol.EvJoinRejected, protocol.JoinRejectedPayload{

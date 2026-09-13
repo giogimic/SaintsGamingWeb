@@ -4,6 +4,7 @@ import (
 	"container/heap"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/protocol"
@@ -117,6 +118,7 @@ func (m *Manager) GetDef(baseID string) (*MapDef, error) {
 	m.mu.RUnlock()
 	
 	if ok && d != nil {
+		log.Printf("[MapDefDebug] baseMapId=%s cacheHit=true fetchEnabled=%v dbMapFound=N/A publishedVersionFound=N/A result=ok error=nil", baseID, m.FetchMapDef != nil)
 		return d, nil
 	}
 	
@@ -137,7 +139,8 @@ func (m *Manager) GetDef(baseID string) (*MapDef, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("map definition not found in cache and no FetchMapDef available")
+	log.Printf("[MapDefDebug] baseMapId=%s cacheHit=false fetchEnabled=false dbMapFound=N/A publishedVersionFound=N/A result=error error=no_fetch_configured", baseID)
+	return nil, fmt.Errorf("map %s not found in cache and no fetch configured", baseID)
 }
 
 func (m *Manager) EnsureDemoDef() *MapDef {

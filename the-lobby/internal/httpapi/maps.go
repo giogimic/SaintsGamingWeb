@@ -470,8 +470,12 @@ func LoadMapDefFromDB(db *sql.DB, wm *world.Manager, id string) (*world.MapDef, 
 	err := db.QueryRow(query, id).Scan(&name, &publishedVersion, &data)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			var exists int
+			_ = db.QueryRow("SELECT COUNT(1) FROM WorldMap WHERE id = ?", id).Scan(&exists)
+			log.Printf("[MapDefDebug] baseMapId=%s cacheHit=false fetchEnabled=true dbMapFound=%v publishedVersionFound=false result=error error=not_published", id, exists > 0)
 			return nil, fmt.Errorf("published map version not found for %s", id)
 		}
+		log.Printf("[MapDefDebug] baseMapId=%s cacheHit=false fetchEnabled=true dbMapFound=unknown publishedVersionFound=unknown result=error error=%v", id, err)
 		return nil, err
 	}
 
@@ -546,9 +550,11 @@ func LoadMapDefFromDB(db *sql.DB, wm *world.Manager, id string) (*world.MapDef, 
 				}
 			}
 		} else {
+			log.Printf("[MapDefDebug] baseMapId=%s cacheHit=false fetchEnabled=true dbMapFound=true publishedVersionFound=true result=error error=malformed_json", id)
 			return nil, fmt.Errorf("malformed published snapshot for %s: %v", id, jsonErr)
 		}
 	} else {
+		log.Printf("[MapDefDebug] baseMapId=%s cacheHit=false fetchEnabled=true dbMapFound=true publishedVersionFound=true result=error error=missing_data", id)
 		return nil, fmt.Errorf("missing data in published snapshot for %s", id)
 	}
 
@@ -562,6 +568,7 @@ func LoadMapDefFromDB(db *sql.DB, wm *world.Manager, id string) (*world.MapDef, 
 		}
 	}
 
+	log.Printf("[MapDefDebug] baseMapId=%s cacheHit=false fetchEnabled=true dbMapFound=true publishedVersionFound=true result=ok error=nil", id)
 	return def, nil
 }
 
