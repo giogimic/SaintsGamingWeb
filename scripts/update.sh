@@ -362,7 +362,7 @@ else
         fi
         
         # Check database schema
-        if echo "$DIFF_FILES" | grep -qE "(prisma/|prepare-prisma\.js)"; then
+        if echo "$DIFF_FILES" | grep -qE "(prisma/|prepare-prisma\.js|the-lobby/internal/db/)"; then
             NEED_DB_MIGRATE=1
             RUN_DB_BACKUP=1
         fi

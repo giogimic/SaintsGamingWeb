@@ -266,9 +266,6 @@ func (h *Hub) onConnect(client *socket.Socket) {
 	client.On("portal_transit_complete", func(datas ...any) {
 		log.Printf("[SpiritGate] User %s completed portal transit", accountID)
 	})
-	client.On("join_map", func(datas ...any) {
-		log.Printf("[SpiritGate] User %s joined map as ghost", accountID)
-	})
 	h.registerGameplay(client, accountID, sid)
 	client.On("disconnect", func(datas ...any) {
 		h.onDisconnect(sid, accountID)
@@ -314,11 +311,15 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 	
 	log.Printf("[WorldJoinDebug] account=%s requestedMapId=%s resolvedBaseMapId=%s lobby=%v forceDemo=%v", accountID, req.MapID, base, req.Lobby, req.ForceDemo)
 	if _, err := h.eng.World().GetDef(base); err != nil {
-		log.Printf("[socket] JOIN_REJECT account=%s reason=map_not_found mapId=%s err=%v", accountID, base, err)
+		reason := "map_load_failed"
+		if strings.Contains(err.Error(), "not found") {
+			reason = "map_not_found"
+		}
+		log.Printf("[socket] JOIN_REJECT account=%s reason=%s mapId=%s err=%v", accountID, reason, base, err)
 		h.EmitToSocket(sid, protocol.EvJoinRejected, protocol.JoinRejectedPayload{
 			MapID:   base,
 			JoinSeq: req.JoinSeq,
-			Reason:  "map_not_found",
+			Reason:  reason,
 			Message: "Failed to resolve world map.",
 		})
 		h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "Failed to resolve world map."})

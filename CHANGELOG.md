@@ -1,3 +1,9 @@
+## 2.1.868
+- Implemented formal non-destructive Go SQLite schema migration system.
+- Fixed runtime crash caused by missing data column in WorldMapVersion table during map loads.
+- Prevented a false [SpiritGate] ghost fallback on JOIN_REJECT.
+- Added smart update.sh detection for Go SQLite schema changes.
+
 ## [2.1.867] - 2026-09-13
 
 ### Fixed
@@ -6309,6 +6315,7 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
  S t u d i o M e n u B a r . t s x . 
  
  
+
 
 
 
