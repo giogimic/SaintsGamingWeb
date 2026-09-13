@@ -64,12 +64,24 @@ export async function POST(
       checksum: r.checksum
     }));
 
+    // Ensure spawnPoint has a Z coordinate (preserve 3D map spawning)
+    let processedGatesData = worldMap.gatesData;
+    try {
+      const gates = JSON.parse(worldMap.gatesData || "{}");
+      if (gates.spawnPoint && typeof gates.spawnPoint.z !== 'number') {
+        gates.spawnPoint.z = 16; // DEFAULT_SPAWN_Z
+        processedGatesData = JSON.stringify(gates);
+      }
+    } catch (e) {
+      console.warn("Failed to parse gatesData for Z coordinate preservation:", e);
+    }
+
     const snapshotPayload = {
       id: worldMap.id,
       name: worldMap.name,
       gameId: worldMap.gameId,
       gridData: worldMap.gridData,
-      gatesData: worldMap.gatesData,
+      gatesData: processedGatesData,
       npcsData: worldMap.npcsData,
       encountersData: worldMap.encountersData,
       entitiesData: worldMap.entitiesData,

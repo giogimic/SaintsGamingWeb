@@ -194,8 +194,8 @@ func (m *Manager) GetRawMapData(mapID string) (grid, npcs, tileLayers, tilesets 
 	err := m.db.QueryRow(`
 		SELECT COALESCE(gridData, ''), COALESCE(npcsData, ''), COALESCE(tileLayersData, ''), COALESCE(tilesetsData, '')
 		FROM WorldMap
-		WHERE slug = ? OR id = ?
-	`, mapID, mapID).Scan(&grid, &npcs, &tileLayers, &tilesets)
+		WHERE id = ?
+	`, mapID).Scan(&grid, &npcs, &tileLayers, &tilesets)
 	
 	if err != nil {
 		log.Printf("[Registry] Failed to get map data for %s: %v", mapID, err)

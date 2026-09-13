@@ -2,7 +2,9 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-async function check() {
+async function main() {
+  const s = await prisma.siteSetting?.findUnique({where: {key: 'startingMapId'}}).catch(() => null);
+  console.log('Starting Map from SiteSetting:', s?.value);
   const settings = await prisma.siteSetting.findMany({
     where: { key: { contains: 'SETUP' } }
   });

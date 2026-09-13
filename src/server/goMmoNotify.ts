@@ -64,6 +64,7 @@ export async function notifyGoContentSynced(payload: {
 
 export async function notifyGoMapSynced(payload: {
   id: string;
+  version?: number;
   name?: string;
   voxelData?: unknown;
   npcsData?: unknown;
@@ -74,6 +75,7 @@ export async function notifyGoMapSynced(payload: {
   return notifyGoContentSynced({
     type: "map",
     id: payload.id,
+    version: payload.version,
   });
 }
 

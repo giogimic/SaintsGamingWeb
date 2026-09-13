@@ -1,3 +1,12 @@
+## [2.1.867] - 2026-09-13
+
+### Fixed
+- Fixed map deployment contract between Next.js and Go MMO.
+- Go server now explicitly pulls the published map release from Next.js rather than relying on an empty ping.
+- Fixed Z-coordinate dropping in map spawn points.
+- Eliminated join retry storm when map fails to resolve.
+- Realigned Go SQLite schemas to match Prisma.
+
 ## [2.1.866] - 2026-09-13
 ### Fixed
 - Fixed an infinite reconnect loop when the world server rejects a map join request (e.g. `map_not_found`).
@@ -6300,6 +6309,7 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
  S t u d i o M e n u B a r . t s x . 
  
  
+
 
 
 

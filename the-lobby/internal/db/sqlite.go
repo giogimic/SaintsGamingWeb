@@ -124,24 +124,17 @@ func migrate(db *sql.DB) error {
 			mapId TEXT NOT NULL,
 			version INTEGER NOT NULL,
 			name TEXT NOT NULL,
-			gridData TEXT NOT NULL,
-			gatesData TEXT NOT NULL DEFAULT '{}',
-			npcsData TEXT NOT NULL DEFAULT '[]',
-			encountersData TEXT NOT NULL DEFAULT '[]',
-			tileLayersData TEXT NOT NULL DEFAULT '[]',
-			tilesetsData TEXT NOT NULL DEFAULT '[]',
-			mapType TEXT NOT NULL DEFAULT 'HYBRID',
-			regionClass TEXT NOT NULL DEFAULT 'authored',
+			data TEXT,
+			description TEXT,
+			publishedBy TEXT,
 			createdAt TEXT NOT NULL DEFAULT (datetime('now'))
 		)`,
 		`CREATE TABLE IF NOT EXISTS WorldMapVersionRegion (
 			id TEXT PRIMARY KEY,
-			mapId TEXT NOT NULL,
-			version INTEGER NOT NULL,
+			versionId TEXT NOT NULL,
 			regionX INTEGER NOT NULL,
 			regionZ INTEGER NOT NULL,
-			artifactChecksum TEXT NOT NULL,
-			persistedAt TEXT NOT NULL DEFAULT (datetime('now'))
+			artifactChecksum TEXT NOT NULL
 		)`,
 		`CREATE TABLE IF NOT EXISTS CreatureTemplate (
 			id TEXT PRIMARY KEY,

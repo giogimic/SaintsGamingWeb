@@ -7,8 +7,10 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/bootstrap"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/dialogue"
@@ -325,42 +327,124 @@ func (s *Server) internalSync(w http.ResponseWriter, r *http.Request) {
 		case "item":
 			s.Registry.ReloadItems()
 		case "map":
-			if payload.ID != "" {
-				grid, _, _, _, ok := s.Registry.GetRawMapData(payload.ID)
-				if ok {
-					if s.World != nil && s.World.RM != nil {
-						// Always fetch the "draft" manifest because this endpoint is triggered by Studio saves
-						manifest, err := s.World.RM.LoadManifest(payload.ID, 0)
-						if err == nil {
-							var wg sync.WaitGroup
-							workers := 4
-							sem := make(chan struct{}, workers)
-
-							for _, r := range manifest.Regions {
-								wg.Add(1)
-								go func(rx, rz int, checksum string) {
-									defer wg.Done()
-									sem <- struct{}{}
-									defer func() { <-sem }()
-									
-									region, err := s.World.RM.FetchAndDecodeRegion(payload.ID, 0, rx, rz, checksum)
-									if err == nil {
-										s.World.RM.SetRegion(payload.ID, 0, rx, rz, region)
-									} else {
-										log.Printf("[sync] failed to fetch region %d,%d for %s: %v", rx, rz, payload.ID, err)
-									}
-								}(r.RegionX, r.RegionZ, r.ArtifactChecksum)
-							}
-							wg.Wait()
+			if payload.ID != "" && payload.Version > 0 {
+				log.Printf("[sync] Pulling map release %s v%d from Next.js", payload.ID, payload.Version)
+				nextURL := os.Getenv("NEXT_JS_URL")
+				if nextURL == "" {
+					nextURL = "http://127.0.0.1:3000"
+				}
+				reqUrl := fmt.Sprintf("%s/api/internal/maps/%s?version=%d", nextURL, payload.ID, payload.Version)
+				
+				req, err := http.NewRequest("GET", reqUrl, nil)
+				if err == nil {
+					req.Header.Set("Authorization", "Bearer "+s.Secret)
+					client := &http.Client{Timeout: 15 * time.Second}
+					resp, err := client.Do(req)
+					if err == nil && resp.StatusCode == 200 {
+						var syncResp struct {
+							Ok      bool `json:"ok"`
+							Release struct {
+								MapID       string `json:"mapId"`
+								Version     int    `json:"version"`
+								Name        string `json:"name"`
+								Data        string `json:"data"`
+								Description string `json:"description"`
+								PublishedBy string `json:"publishedBy"`
+								Regions     []struct {
+									RegionX          int    `json:"regionX"`
+									RegionZ          int    `json:"regionZ"`
+									ArtifactChecksum string `json:"artifactChecksum"`
+								} `json:"regions"`
+							} `json:"release"`
+						}
+						body, _ := io.ReadAll(resp.Body)
+						resp.Body.Close()
+						if err := json.Unmarshal(body, &syncResp); err == nil && syncResp.Ok {
+							// Persist to SQLite
+							_, err = s.DB.Exec(`
+								INSERT INTO WorldMapVersion (id, mapId, version, name, data, description, publishedBy)
+								VALUES (?, ?, ?, ?, ?, ?, ?)
+								ON CONFLICT(id) DO UPDATE SET data=excluded.data, description=excluded.description, publishedBy=excluded.publishedBy
+							`, fmt.Sprintf("%s_v%d", payload.ID, payload.Version), syncResp.Release.MapID, syncResp.Release.Version, syncResp.Release.Name, syncResp.Release.Data, syncResp.Release.Description, syncResp.Release.PublishedBy)
 							
-							s.World.RM.ActivateVersion(payload.ID, 0)
-							s.World.RM.EvictOldVersions(payload.ID, 0)
+							if err == nil {
+								// Persist regions
+								for _, r := range syncResp.Release.Regions {
+									_, _ = s.DB.Exec(`
+										INSERT INTO WorldMapVersionRegion (id, versionId, regionX, regionZ, artifactChecksum)
+										VALUES (?, ?, ?, ?, ?)
+										ON CONFLICT(id) DO UPDATE SET artifactChecksum=excluded.artifactChecksum
+									`, fmt.Sprintf("%s_v%d_%d_%d", payload.ID, payload.Version, r.RegionX, r.RegionZ), fmt.Sprintf("%s_v%d", payload.ID, payload.Version), r.RegionX, r.RegionZ, r.ArtifactChecksum)
+								}
+
+								// Ensure WorldMap is initialized with correct publishedVersion
+								var count int
+								_ = s.DB.QueryRow(`SELECT COUNT(1) FROM WorldMap WHERE id = ?`, payload.ID).Scan(&count)
+								if count > 0 {
+									_, _ = s.DB.Exec(`UPDATE WorldMap SET name=?, publishedVersion=?, publishedData=? WHERE id=?`, syncResp.Release.Name, payload.Version, syncResp.Release.Data, payload.ID)
+								} else {
+									_, _ = s.DB.Exec(`INSERT INTO WorldMap (id, name, gridData, mapType, publishedVersion, publishedData) VALUES (?, ?, '[]', 'HYBRID', ?, ?)`, payload.ID, syncResp.Release.Name, payload.Version, syncResp.Release.Data)
+								}
+
+								log.Printf("[sync] Persisted map release %s v%d locally", payload.ID, payload.Version)
+
+								// Trigger live engine reload
+								if s.World != nil && s.World.RM != nil {
+									manifest, err := s.World.RM.LoadManifest(payload.ID, payload.Version)
+									if err == nil {
+										var wg sync.WaitGroup
+										workers := 4
+										sem := make(chan struct{}, workers)
+
+										for _, r := range manifest.Regions {
+											wg.Add(1)
+											go func(rx, rz int, checksum string) {
+												defer wg.Done()
+												sem <- struct{}{}
+												defer func() { <-sem }()
+												
+												region, err := s.World.RM.FetchAndDecodeRegion(payload.ID, payload.Version, rx, rz, checksum)
+												if err == nil {
+													s.World.RM.SetRegion(payload.ID, payload.Version, rx, rz, region)
+												} else {
+													log.Printf("[sync] failed to fetch region %d,%d for %s: %v", rx, rz, payload.ID, err)
+												}
+											}(r.RegionX, r.RegionZ, r.ArtifactChecksum)
+										}
+										wg.Wait()
+										
+										s.World.RM.ActivateVersion(payload.ID, payload.Version)
+										s.World.RM.EvictOldVersions(payload.ID, payload.Version)
+									} else {
+										log.Printf("[sync] failed to load published manifest for %s v%d: %v", payload.ID, payload.Version, err)
+									}
+								}
+
+								// Reload map metadata into memory if loaded
+								var snapshot map[string]any
+								if err := json.Unmarshal([]byte(syncResp.Release.Data), &snapshot); err == nil {
+									if gridData, ok := snapshot["gridData"].(string); ok {
+										ReloadMapInMemory(s.World, payload.ID, syncResp.Release.Name, gridData, "{}")
+									}
+								}
+
+							} else {
+								log.Printf("[sync] Failed to insert WorldMapVersion into SQLite: %v", err)
+							}
 						} else {
-							log.Printf("[sync] failed to load draft manifest for %s: %v", payload.ID, err)
+							log.Printf("[sync] Failed to parse Next.js response or not OK: %v", err)
+						}
+					} else {
+						if resp != nil {
+							log.Printf("[sync] Next.js HTTP error: status %d", resp.StatusCode)
+							resp.Body.Close()
+						} else {
+							log.Printf("[sync] Next.js HTTP error: %v", err)
 						}
 					}
-					ReloadMapInMemory(s.World, payload.ID, payload.ID, grid, "{}")
 				}
+			} else {
+				log.Printf("[sync] Cannot sync map release, missing ID or version: %s v%d", payload.ID, payload.Version)
 			}
 		}
 	}

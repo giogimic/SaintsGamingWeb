@@ -35,6 +35,7 @@ export class MapSyncService {
 
           const res = await notifyGoMapSynced({
             id: map.id,
+            version: options.version,
             name: map.name,
             voxelData: voxelDoc,
             npcsData: JSON.parse(map.npcsData || "[]"),
