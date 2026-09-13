@@ -71,10 +71,16 @@ export class SocketManager {
 
     this.socket = io(goUrl || '/', connectOpts) as TypedSocket;
 
+    console.log('[SocketManager] Attempting to connect to URL:', goUrl || '/');
+
     // Lifecycle events
     this.socket.on('connect', () => {
       console.log('[SocketManager] Connected:', this.socket?.id);
       opts.onConnect();
+    });
+
+    this.socket.on('connect_error', (err: Error) => {
+      console.error('[SocketManager] Connection Error:', err.message, 'URL:', goUrl || '/');
     });
 
     this.socket.on('disconnect', (reason: string) => {
