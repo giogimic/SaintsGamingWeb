@@ -303,7 +303,7 @@ export interface PendingMove {
   predictedPos: Point;
 }
 
-export type WorldSessionState = 'not_joined' | 'joining' | 'joined' | 'transitioning' | 'disconnected';
+export type WorldSessionState = 'not_joined' | 'joining' | 'joined' | 'transitioning' | 'disconnected' | 'failed';
 
 export interface GameState {
   socket: any | null;

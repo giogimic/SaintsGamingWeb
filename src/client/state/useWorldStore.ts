@@ -48,7 +48,7 @@ export interface MapEntity {
   lastUpdateMs?: number;
 }
 
-export type WorldSessionState = 'not_joined' | 'joining' | 'joined' | 'transitioning' | 'disconnected';
+export type WorldSessionState = 'not_joined' | 'joining' | 'joined' | 'transitioning' | 'disconnected' | 'failed';
 
 export interface GameRegistryData {
   registryVersion: string;
