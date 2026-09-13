@@ -68,7 +68,7 @@ export const TilesetQuickUploadPanel: React.FC = () => {
   };
 
   return (
-    <DraggablePanel id="quickUpload" icon={<UploadCloud className="w-4 h-4" />}>
+    <DraggablePanel id="quickUpload" icon={<UploadCloud className="w-4 h-4" />} portalToBody={true}>
       <div className="flex flex-col h-full bg-[#050b14]">
         <div className="p-4 bg-[#0a1628] border-b border-border/30 flex items-center gap-4 shrink-0">
           <div className="flex flex-col gap-1">

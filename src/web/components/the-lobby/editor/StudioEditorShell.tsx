@@ -631,7 +631,7 @@ export const StudioEditorShell: React.FC = () => {
           )}
 
           {canUseStudioDock(permissionLevel, 'versionManager') && (
-            <DraggablePanel id="versionManager" icon={<CloudUpload className="w-4 h-4 text-emerald-400" />} title="Version Manager">
+            <DraggablePanel id="versionManager" icon={<CloudUpload className="w-4 h-4 text-emerald-400" />} title="Version Manager" portalToBody={true}>
               <Suspense fallback={<div>Loading...</div>}><VersionManagerPanel /></Suspense>
             </DraggablePanel>
           )}

@@ -12,9 +12,11 @@ interface DraggablePanelProps {
   title?: string;
   /** Optional secondary toolbar rendered below the title bar (e.g. tabs, sub-nav) */
   menuBar?: React.ReactNode;
+  /** Portals this panel to document.body and breaks it out of window stacking contexts */
+  portalToBody?: boolean;
 }
 
-const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon, title: propsTitle, menuBar }) => {
+const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon, title: propsTitle, menuBar, portalToBody = false }) => {
   const panelState = useEditorStore((state) => state.panels[id]);
   const closePanel = useEditorStore((state) => state.closePanel);
   const toggleCollapse = useEditorStore((state) => state.toggleCollapse);
@@ -112,7 +114,7 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
 
   const displayTitle = propsTitle || title;
 
-  return createPortal(
+  const panelContent = (
     <div
       ref={panelRef}
       onPointerMove={handlePointerMove}
@@ -227,9 +229,10 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
           </div>
         </div>
       )}
-    </div>,
-    document.body
+    </div>
   );
+
+  return portalToBody ? createPortal(panelContent, document.body) : panelContent;
 };
 
 export const DraggablePanel = React.memo(DraggablePanelBase);

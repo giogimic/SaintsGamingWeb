@@ -1,3 +1,8 @@
+## [2.1.860] - 2026-09-13
+### Fixed
+- Reverted the global React Portal injection for all DraggablePanels to prevent a critical Z-index collision that caused standard studio windows (Map Builder, Voxel Browser) to render underneath the primary Studio Shell. 
+- Portaling to the document body is now strictly opt-in (`portalToBody=true`) and exclusively used by the Asset Upload, Quick Upload, and Version Manager tools to ensure they can escape any container boundaries while leaving core workspace tools intact.
+
 ## [2.1.859] - 2026-09-13
 ### Fixed
 - Fixed an issue where the Asset Upload tool (and other DraggablePanels) were rendering behind the SpriteBrowser. DraggablePanels now safely escape window stacking contexts via React Portals and employ elevated Z-indexes (1100).
