@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { worldBakeService } from "@/server/services/bake/WorldBakeService";
 import { WorldBakeJob, WorldManifest } from "@/shared/game/voxel/WorldBakeContracts";
 import { VoxelWorldGenerationConfig } from "@/shared/game/voxel/VoxelWorldGenerator";
+import { CHUNKS_PER_REGION } from "@/shared/game/voxel/WorldStreamingContracts";
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -23,11 +24,10 @@ export async function POST(req: NextRequest) {
     const heightChunks = Number(body.heightChunks) || 1;
     const baseMaterial = Number(body.baseMaterial) || 2;
     const baseElevation = Number(body.baseElevation) || 16;
-    
-    const CHUNKS_PER_REGION = 8;
+
     const regionsX = Math.ceil(widthChunks / CHUNKS_PER_REGION);
     const regionsZ = Math.ceil(depthChunks / CHUNKS_PER_REGION);
-    
+
     const activeRegions = [];
     for (let rz = 0; rz < regionsZ; rz++) {
       for (let rx = 0; rx < regionsX; rx++) {
@@ -37,7 +37,6 @@ export async function POST(req: NextRequest) {
 
     const configHash = crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex');
 
-    // 0. Ensure the draft WorldMap exists (FK requirement for WorldRegion)
     await prisma.worldMap.upsert({
       where: { id: mapId },
       create: {
@@ -50,12 +49,9 @@ export async function POST(req: NextRequest) {
         regionClass: 'procedural',
         mapType: 'VOXEL',
       },
-      update: {
-        // Don't overwrite existing map data
-      }
+      update: {},
     });
 
-    // 1. Create Revision
     const revision = await prisma.worldBootstrapRevision.create({
       data: {
         mapId,
@@ -67,9 +63,7 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    // 2. Submit Bake Job
     const jobId = `bootstrap_${revision.id}`;
-    
     const manifest: WorldManifest = {
       mapId,
       name: 'Bootstrap Draft',
@@ -110,17 +104,11 @@ export async function POST(req: NextRequest) {
       data: { status: 'GENERATING', jobId }
     });
 
-    // Submit asynchronously, do not await it
     worldBakeService.submitJob(job, config).catch(e => {
       console.error(`[GenerateDraft] Failed to submit job ${jobId}`, e);
     });
 
-    // 3. Return IDs immediately
-    return NextResponse.json({
-      bootstrapRevisionId: revision.id,
-      jobId
-    });
-    
+    return NextResponse.json({ bootstrapRevisionId: revision.id, jobId });
   } catch (error: any) {
     console.error('[GenerateDraft] Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
