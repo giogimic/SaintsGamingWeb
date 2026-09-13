@@ -606,6 +606,35 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
                     .catch(() => showToast('Failed to trigger restart'));
                 }
               }} />
+              <MenuItem divider />
+              <MenuItem label="Start Go MMO Server" icon={Play} onClick={() => {
+                fetch('/api/admin/system/go-server', { 
+                  method: 'POST', 
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ action: 'start' }) 
+                })
+                .then(r => r.json())
+                .then(data => {
+                  if (!data.success) showToast(data.message || 'Failed to start server');
+                  else showToast('Go MMO Server started');
+                })
+                .catch(() => showToast('Failed to start server'));
+              }} />
+              <MenuItem label="Stop Go MMO Server" icon={Square} onClick={() => {
+                if (confirm('Are you sure you want to stop the Go MMO server? All players will be disconnected.')) {
+                  fetch('/api/admin/system/go-server', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'stop' }) 
+                  })
+                  .then(r => r.json())
+                  .then(data => {
+                    if (!data.success) showToast(data.message || 'Failed to stop server');
+                    else showToast('Go MMO Server stopped');
+                  })
+                  .catch(() => showToast('Failed to stop server'));
+                }
+              }} />
             </SubMenu>
             <MenuItem divider />
             <MenuItem label="Save & Exit to Lobby" shortcut="Ctrl+Shift+Q" icon={LogOut} onClick={() => { window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT)); setTimeout(() => { window.location.href = '/lobby'; }, 500); }} />

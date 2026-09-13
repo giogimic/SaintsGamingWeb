@@ -46,8 +46,10 @@ export interface SessionState {
   // Scene & Boot
   activeScene: ClientScene;
   bootState: BootState;
+  fatalErrorMsg: string | null;
   setScene: (scene: ClientScene) => void;
   setBootState: (state: BootState) => void;
+  setFatalError: (msg: string | null) => void;
 
   // Connection
   connectionStatus: ConnectionStatus;
@@ -90,8 +92,10 @@ export const useSessionStore = create<SessionState>()(
       // Scene & Boot
       activeScene: 'title' as ClientScene,
       bootState: 'TITLE' as BootState,
+      fatalErrorMsg: null,
       setScene: (scene) => set((s) => { s.activeScene = scene; }),
       setBootState: (state) => set((s) => { s.bootState = state; }),
+      setFatalError: (msg) => set((s) => { s.fatalErrorMsg = msg; s.bootState = 'FATAL_ERROR'; }),
 
       // Connection
       connectionStatus: 'disconnected' as ConnectionStatus,

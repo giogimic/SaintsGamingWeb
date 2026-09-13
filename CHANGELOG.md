@@ -1,5 +1,15 @@
-## [2.1.862] - 2026-09-13
+## [2.1.865] - 2026-09-13
+### Added
+- Added "Start Go MMO Server" and "Stop Go MMO Server" to the Studio System menu, managing the Go process via a new API route `app/api/admin/system/go-server/route.ts`.
 ### Fixed
+- Fixed the boot sequence silently failing when a map is unbaked or the World Server disconnects. 
+- The Character Select Scene will now display "RETRY CONNECTION" with the exact failure reason instead of hanging.
+
+## [2.1.864] - 2026-09-13
+### Fixed
+- Addressed various styling inconsistencies.
+
+## [2.1.862] - 2026-09-13
 - Fixed a critical React Hydration error (#418) that caused the Lobby to hang indefinitely on the "Initializing The Lobby..." screen. The issue was triggered by Next.js 15 hoisting `<meta>` tags rendered inside the `JsonLd` component within the document body, causing a fatal server/client mismatch.
 
 ## [2.1.860] - 2026-09-13

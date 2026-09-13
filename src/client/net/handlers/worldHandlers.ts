@@ -62,7 +62,7 @@ export function onMapJoined(data: MapJoinedPayload): void {
     return worldStreamer.requestSpawnRegion(data.x, data.y, data.z);
   }).catch((err) => {
     console.error(`[worldHandlers] Fatal streaming error:`, err);
-    useSessionStore.getState().setBootState('FATAL_ERROR');
+    useSessionStore.getState().setFatalError(err.message || 'Unknown streaming error');
   });
 
   console.log(`[worldHandlers] Joined map: ${data.mapId} at (${data.x}, ${data.y}, ${data.z})`);

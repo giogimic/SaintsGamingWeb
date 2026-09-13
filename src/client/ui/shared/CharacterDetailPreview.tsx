@@ -97,6 +97,7 @@ interface CharacterDetailPreviewProps {
   className?: string;
   disabled?: boolean;
   isFatalError?: boolean;
+  fatalErrorMsg?: string | null;
 }
 
 export function CharacterDetailPreview({
@@ -105,6 +106,7 @@ export function CharacterDetailPreview({
   className = '',
   disabled = false,
   isFatalError = false,
+  fatalErrorMsg = null,
 }: CharacterDetailPreviewProps) {
   // Parse state data
   const { state, classKey, palette, charLayers, equipment, inventory, skills, totalLevel, gearScore, totalAtk, totalDef } = useMemo(() => {
@@ -398,13 +400,35 @@ export function CharacterDetailPreview({
                   isFatalError
                     ? 'bg-destructive/80 hover:bg-destructive text-destructive-foreground shadow-[0_0_25px_rgba(220,38,38,0.45)] active:scale-95 cursor-pointer'
                     : disabled 
-                      ? 'bg-muted/20 text-muted-foreground cursor-not-allowed border border-white/5' 
-                      : 'bg-primary hover:brightness-110 text-primary-foreground shadow-[0_0_25px_rgba(203,178,106,0.45)] active:scale-95 cursor-pointer'
+                      ? 'bg-primary/20 text-primary/50 cursor-not-allowed border border-primary/20' 
+                      : 'bg-primary text-primary-foreground hover:brightness-110 active:scale-95 shadow-[0_0_20px_rgba(203,178,106,0.3)] cursor-pointer'
                 }`}
               >
-                <Play size={14} fill="currentColor" />
-                <span>{isFatalError ? 'RECONNECT' : disabled ? 'CONNECTING...' : 'ENTER WORLD'}</span>
+                {isFatalError ? (
+                  <span className="flex items-center gap-2">
+                    RETRY CONNECTION
+                  </span>
+                ) : disabled ? (
+                  <span className="flex items-center gap-2 animate-pulse">
+                    <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-primary/50 border-t-primary animate-spin" />
+                    ENTERING WORLD...
+                  </span>
+                ) : (
+                  <>
+                    <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />
+                    ENTER WORLD
+                  </>
+                )}
               </button>
+            )}
+
+            {/* Fatal Error Message Display */}
+            {isFatalError && fatalErrorMsg && (
+              <div className="w-full mt-2 p-2 rounded-lg bg-destructive/10 border border-destructive/40 text-center">
+                <span className="text-[10px] sm:text-xs font-mono text-destructive">
+                  {fatalErrorMsg}
+                </span>
+              </div>
             )}
           </div>
         </div>

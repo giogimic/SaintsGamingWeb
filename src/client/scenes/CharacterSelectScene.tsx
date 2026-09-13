@@ -69,6 +69,7 @@ export function CharacterSelectScene() {
   const mmoPlayerCount = useAppStore((state) => state.mmoPlayerCount);
   const worldSessionState = useWorldStore((state) => state.worldSessionState);
   const bootState = useSessionStore((state) => state.bootState);
+  const fatalErrorMsg = useSessionStore((state) => state.fatalErrorMsg);
   const { isModerator } = useAuth();
   const { settings: realmSettings } = useRealmSettings();
   
@@ -185,7 +186,7 @@ export function CharacterSelectScene() {
       } catch (err: any) {
         console.error("Routing Error:", err);
         toast.error(err.message || "Could not connect to world server");
-        useSessionStore.getState().setBootState('FATAL_ERROR');
+        useSessionStore.getState().setFatalError(err.message || "Could not connect to world server");
         useWorldStore.getState().setWorldSessionState('not_joined');
       }
     }
@@ -285,6 +286,7 @@ export function CharacterSelectScene() {
             onEnterWorld={handleEnterWorld}
             disabled={worldSessionState === 'joining'}
             isFatalError={bootState === 'FATAL_ERROR'}
+            fatalErrorMsg={fatalErrorMsg}
             className="flex-1"
           />
         </section>
