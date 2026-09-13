@@ -2,10 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+
 import { Users, PawPrint, Skull, Smile, ArrowLeft, Maximize2 } from 'lucide-react';
 import { ArchetypeEditorWorkspace } from '@/web/components/the-lobby/editor/hero-studio/ArchetypeEditorWorkspace';
 import { CreatureDefEditorPanel } from '@/web/components/the-lobby/editor/panels/CreatureDefEditorPanel';
 import { FloatingWindow } from '@/web/components/the-lobby/hud/FloatingWindow';
+import { AssetUploadPanel } from '@/web/components/the-lobby/editor/panels/AssetUploadPanel';
+import { TilesetQuickUploadPanel } from '@/web/components/the-lobby/editor/panels/TilesetQuickUploadPanel';
 
 export type ActorCategory = 'ARCHETYPE' | 'CREATURE' | 'MONSTER' | 'NPC' | null;
 
@@ -36,7 +39,7 @@ export function ActorsSetupStep({}: ActorsSetupStepProps) {
         defaultPosition={{ x: 80, y: 40 }}
         zIndex={500}
         className="resize overflow-hidden"
-        bodyClassName="p-0 m-0 overflow-hidden h-[80vh] flex flex-col"
+        bodyClassName="p-3 overflow-hidden h-[80vh] flex flex-col"
         headerRight={
           <div className="text-xs text-amber-400/80 font-mono flex items-center gap-2 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 mr-2">
             <span className="relative flex h-2 w-2">
@@ -47,7 +50,7 @@ export function ActorsSetupStep({}: ActorsSetupStepProps) {
           </div>
         }
       >
-        <div className="flex-1 w-full h-full relative bg-[#050b14]">
+        <div className="flex-1 w-full h-full relative bg-[#050b14] rounded-xl overflow-hidden border border-slate-800/50">
           {activeWorkspace === 'ARCHETYPE' && <ArchetypeEditorWorkspace />}
           {activeWorkspace === 'CREATURE' && <CreatureDefEditorPanel />}
           {activeWorkspace === 'MONSTER' && (
@@ -68,7 +71,15 @@ export function ActorsSetupStep({}: ActorsSetupStepProps) {
       </FloatingWindow>
     );
 
-    return mounted ? createPortal(workspaceContent, document.body) : null;
+    return mounted ? createPortal(
+      <>
+        {workspaceContent}
+        {/* Mount global editor panels that might be triggered from within the tools */}
+        <AssetUploadPanel />
+        <TilesetQuickUploadPanel />
+      </>,
+      document.body
+    ) : null;
   }
 
   return (
