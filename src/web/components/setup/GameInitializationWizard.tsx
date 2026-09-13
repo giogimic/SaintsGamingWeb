@@ -151,35 +151,28 @@ export function GameInitializationWizard({ isReinit = false }: { isReinit?: bool
   return (
     <div className="max-w-5xl mx-auto px-3 py-6 md:py-8 font-sans">
       {/* SAINTS OS WINDOW FRAME */}
-      <div className="bg-[#050b14]/95 border border-primary/40 rounded-2xl shadow-[0_0_32px_rgba(203,178,106,0.12),0_12px_40px_rgba(0,0,0,0.6)] backdrop-blur-2xl overflow-hidden flex flex-col">
+      <div className="pointer-events-auto select-none rounded-2xl border border-border/50 bg-[#050b14]/95 backdrop-blur-xl shadow-[0_12px_45px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden">
         
         {/* WINDOW TITLE BAR */}
-        <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-primary/10 via-[#0a1628] to-[#050b14] border-b border-primary/20 select-none">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80 border border-rose-400/40" />
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 border border-amber-400/40" />
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 border border-emerald-400/40" />
-            </div>
-
-            <div className="flex items-center gap-2 min-w-0">
-              <Boxes className="w-3.5 h-3.5 text-primary shrink-0" />
-              <span className="font-mono text-xs font-bold tracking-widest uppercase sg-text-gradient truncate">
-                Saints Game Studio — Onboarding
-              </span>
-            </div>
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 bg-slate-900/50 select-none">
+          <div className="flex items-center gap-2 min-w-0">
+            <Boxes className="w-4 h-4 text-amber-400 shrink-0" />
+            <h2 className="text-xs font-black uppercase tracking-wider text-slate-100 truncate">
+              Saints Game Studio — Onboarding
+            </h2>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-primary/20 text-primary border border-primary/40 font-semibold">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 font-semibold mr-1">
               v2.5.0
             </span>
             <button
+              type="button"
               onClick={() => router.push('/')}
-              className="p-1 text-slate-400 hover:text-white hover:bg-slate-800/60 rounded-md transition cursor-pointer"
+              className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-all cursor-pointer"
               title="Close Wizard"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Users, PawPrint, Skull, Smile, ArrowLeft } from 'lucide-react';
 import { ArchetypeEditorWorkspace } from '@/web/components/the-lobby/editor/hero-studio/ArchetypeEditorWorkspace';
 import { CreatureDefEditorPanel } from '@/web/components/the-lobby/editor/panels/CreatureDefEditorPanel';
@@ -11,11 +12,16 @@ interface ActorsSetupStepProps {}
 
 export function ActorsSetupStep({}: ActorsSetupStepProps) {
   const [activeWorkspace, setActiveWorkspace] = useState<ActorCategory>(null);
+  const [mounted, setMounted] = useState(false);
 
-  // If a workspace is active, render it full screen
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // If a workspace is active, render it full screen via Portal so it escapes the Wizard's stacking contexts
   if (activeWorkspace) {
-    return (
-      <div className="fixed inset-0 z-50 bg-[#050b14] flex flex-col">
+    const workspaceContent = (
+      <div className="fixed inset-0 z-[200] bg-[#050b14] flex flex-col pointer-events-auto">
         {/* Workspace Header */}
         <div className="h-14 shrink-0 border-b border-border/40 bg-slate-950 flex items-center px-4">
           <button
@@ -65,6 +71,8 @@ export function ActorsSetupStep({}: ActorsSetupStepProps) {
         </div>
       </div>
     );
+
+    return mounted ? createPortal(workspaceContent, document.body) : null;
   }
 
   return (

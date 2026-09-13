@@ -1,3 +1,7 @@
+## [2.1.856] - 2026-09-13
+### Fixed
+- Fixed GameInitializationWizard window styling to match standard Saints OS window designs, replacing the macOS title bar with the system-standard header.
+- Fixed an issue where Creator Tools were squashed within the wizard by using a React Portal to render them outside of the CSS backdrop-blur stacking context, allowing them to fill the screen as intended.
 ## [2.1.855] - 2026-09-12
 ### Added
 - Overhauled the Game Setup flow into a coordinated 4-step wizard.
@@ -6259,6 +6263,7 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
  S t u d i o M e n u B a r . t s x . 
  
  
+
 
 
 
