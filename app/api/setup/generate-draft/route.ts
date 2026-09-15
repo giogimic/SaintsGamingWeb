@@ -37,10 +37,23 @@ export async function POST(req: NextRequest) {
 
     const configHash = crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex');
 
+    // Setup Parity / Foreign Key Fix:
+    // The WorldMap defaults to gameId="saints", which requires the WorldProject to exist.
+    await prisma.worldProject.upsert({
+      where: { slug: 'saints' },
+      create: {
+        slug: 'saints',
+        name: 'Saints Gaming',
+        description: 'Auto-generated project during setup',
+      },
+      update: {},
+    });
+
     await prisma.worldMap.upsert({
       where: { id: mapId },
       create: {
         id: mapId,
+        gameId: 'saints',
         name: body.mapName || 'Genesis Sanctuary',
         gatesData: '{}',
         encountersData: '[]',
