@@ -77,7 +77,10 @@ export type StudioDockId =
   | 'primaryVoxelViewport'
   | 'secondaryTileViewport'
   | 'secondaryVoxelViewport'
-  | 'studioHome';
+  | 'studioHome'
+  | 'worldManager'
+  | 'mapEditor'
+  | 'spawnEditor';
 
 /** Map stable internal ids → canonical engine-editor labels. */
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
@@ -395,6 +398,18 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   versionManager: {
     label: 'Version Manager',
     blurb: 'Atlas-driven version history and map releases.',
+  },
+  worldManager: {
+    label: 'World Releases',
+    blurb: 'Manage deployed releases, publishing, and snapshots.',
+  },
+  mapEditor: {
+    label: 'Map Editor',
+    blurb: 'Create and edit map chunks.',
+  },
+  spawnEditor: {
+    label: 'Spawn Editor',
+    blurb: 'Edit global player spawn coordinates.',
   },
 };
 

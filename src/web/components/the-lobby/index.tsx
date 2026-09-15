@@ -163,6 +163,8 @@ export default function TheLobby({
     isCreationMode: studioToolsOpen,
   });
   const isEditingInterface = useGameStore((s) => s.isEditingInterface || s.isUiEditMode);
+  const showToast = useGameStore((s) => s.showToast);
+  const [spawnMapId, setSpawnMapId] = useState<string>('STARTING_MEADOW');
 
 
 
@@ -312,7 +314,8 @@ export default function TheLobby({
         return;
       }
       const manifest = JSON.parse(activeRelease.manifestData || '{}');
-      const spawnMapId = manifest.gameConfig?.defaultSpawnGateId || availableMapIds[0] || 'STARTING_MEADOW';
+      const loadedSpawn = manifest.gameConfig?.defaultSpawnGateId || availableMapIds[0] || 'STARTING_MEADOW';
+      setSpawnMapId(loadedSpawn);
 
       const safeSpawn = resolveSafePlayerSpawn({
         savedMapId: savedMap,

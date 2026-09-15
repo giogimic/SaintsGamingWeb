@@ -99,7 +99,7 @@ export type SoftLock = {
   expiresAt: string;
 };
 
-export type PanelId = StudioDockId | 'entityLibrary';
+export type PanelId = StudioDockId | 'entityLibrary' | 'worldManager' | 'mapEditor' | 'spawnEditor';
 
 export interface CustomTerrainSwatch {
   id: string;
@@ -647,7 +647,7 @@ interface EditorState {
   handleMapLoaded: (mapId: string, mapType: string) => void;
 }
 
-const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
+const DEFAULT_PANELS = {
   studioHome: {
     id: 'studioHome',
     title: 'Studio Dashboard',
@@ -1254,7 +1254,7 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 600,
     zIndex: 10,
   },
-};
+} as Record<PanelId, FloatingPanelState>;
 
 
 function closeAllPanels(state: { panels: Record<PanelId, FloatingPanelState>; activePanel: PanelId | null }) {

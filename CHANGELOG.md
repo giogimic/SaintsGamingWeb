@@ -1,3 +1,9 @@
+## 2.1.878
+- **Studio Panel Registration:** Updated `PanelId` and `StudioDockId` typings in `editor-store.ts` and `studioModes.ts` to properly register the new `worldManager`, `mapEditor`, and `spawnEditor` panels.
+- **Voxel Browser Fix:** Removed undefined `spawnMapId` fallback check in `VoxelMapBrowserView.tsx` batch operations.
+- **Studio Scope Fixes:** Added `spawnMapId` local state and `showToast` hook back to the main `TheLobby` container scope to resolve missing references.
+- **Build Hardening:** Fixed unbalanced JSX elements and missing `useEffect` hooks in Map Editor views to ensure successful `tsc` builds.
+
 ## 2.1.877
 - **Removed DEMO_SANDBOX Fallback:** System-wide removal of DEMO_SANDBOX constants in TypeScript and Go. Replaced with STARTING_MEADOW to enforce WorldRelease dependency.
 - **Backend Migration:** Replaced hardcoded DEMO_SANDBOX with STARTING_MEADOW in `persist.go`, `migrations.go`, and `voxel.go`.

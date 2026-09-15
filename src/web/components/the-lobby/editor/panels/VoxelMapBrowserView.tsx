@@ -79,6 +79,7 @@ export const VoxelMapBrowserView: React.FC = () => {
   // Map Settings Modal State
   const [settingsModalMapId, setSettingsModalMapId] = useState<string | null>(null);
 
+  useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (deleteTargetMapId) setDeleteTargetMapId(null);
@@ -205,10 +206,6 @@ export const VoxelMapBrowserView: React.FC = () => {
 
   // Batch Operations
   const handleBatchDelete = async () => {
-    const ids = Array.from(selectedMapIds).filter((id) => id.toUpperCase() !== spawnMapId);
-    if (ids.length === 0) return;
-
-    setIsBatchOperating(true);
     if (selectedMapIds.size === 0) return;
     setIsBatchOperating(true);
     let successCount = 0;

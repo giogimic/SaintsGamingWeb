@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Package,
   Layers,
+  Globe,
   Sparkles,
   RefreshCw,
   Clock,
@@ -31,6 +32,7 @@ import {
 export const WorldManagerPanel: React.FC = () => {
   const dataVersion = useEditorStore((s) => s.dataVersion);
   const incrementDataVersion = useEditorStore((s) => s.incrementDataVersion);
+  const openPanel = useEditorStore((s) => s.openPanel);
   const showToast = useGameStore((s) => s.showToast);
 
   const [validation, setValidation] = useState<any>(null);
@@ -498,7 +500,6 @@ export const WorldManagerPanel: React.FC = () => {
           </form>
         </div>
       )}
-      </div>
     </div>
   );
 };

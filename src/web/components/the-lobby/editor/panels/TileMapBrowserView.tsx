@@ -79,6 +79,7 @@ export const TileMapBrowserView: React.FC = () => {
   // Map Settings Modal State
   const [settingsModalMapId, setSettingsModalMapId] = useState<string | null>(null);
 
+  useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (deleteTargetMapId) setDeleteTargetMapId(null);
