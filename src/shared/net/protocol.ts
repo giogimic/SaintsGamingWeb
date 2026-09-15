@@ -115,6 +115,7 @@ export interface JoinMapPayload {
   y?: number;
   direction?: string;
   joinSeq?: number;
+
 }
 
 export interface MapJoinedPayload {

@@ -66,17 +66,34 @@ func main() {
 		Skills:     skill.NewManager(sqlDB),
 		Loot:       world.NewLootManager(),
 		Registry:   reg,
-		SaveMap: func(id, name, grid, npcs, tiles, tilesets string) error {
-			return httpapi.PersistMap(sqlDB, wm, id, name, grid, "{}", npcs, tiles, tilesets)
+		SaveMap: func(id, name, grid string) error {
+			return httpapi.PersistMap(sqlDB, wm, id, name, grid, "{}")
 		},
-	}
-
-	wm.FetchMapDef = func(id string) (*world.MapDef, error) {
-		return httpapi.LoadMapDefFromDB(sqlDB, wm, id)
 	}
 
 	if err := bootstrap.EnsureDemo(sqlDB, wm); err != nil {
 		log.Fatalf("bootstrap: %v", err)
+	}
+
+	// Load latest saints release on boot
+	if version, err := wm.LatestReleaseVersion(sqlDB, "saints"); err == nil && version != "" {
+		if manifest, err := wm.ParseRelease(sqlDB, "saints", version); err == nil {
+			_ = wm.ApplyReleaseMaps(manifest)
+			deps.Registry.LoadFromManifest(manifest.Actors.Creatures, manifest.Items)
+			
+			npcMap := make(map[string]struct{ Name string; Data string })
+			for slug, npc := range wm.NPCRegistry {
+				if len(npc.DialogueTree) > 0 {
+					npcMap[slug] = struct{ Name string; Data string }{
+						Name: npc.Name,
+						Data: string(npc.DialogueTree),
+					}
+				}
+			}
+			deps.Dialogue.LoadFromNPCs(npcMap)
+		} else {
+			log.Printf("[bootstrap] Failed to parse latest release %s: %v", version, err)
+		}
 	}
 
 	hub := mmsocket.NewHub(cfg, nil, deps)
@@ -115,8 +132,7 @@ func main() {
 		},
 	}
 	
-	httpapi.StartSyncPoller(sqlDB, wm, cfg.AuthSecret)
-	
+
 	root := http.NewServeMux()
 	root.Handle("/", api.Handler())
 	root.Handle("/socket.io/", io.ServeHandler(nil))

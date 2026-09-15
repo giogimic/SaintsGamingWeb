@@ -739,16 +739,25 @@ model SteamWishlistItem {
 // ─── Saints Tamer Minigame (MMO Architecture) ─────────────────────────
 
 model GameCharacter {
-  id             String   @id @default(cuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name           String
-  assetProfileId String   @default("adventurer")
-  visualData     String   @default("[]") // JSON array of visual component layers
-  classId        String
-  stateData      String // JSON string of the Zustand store PlayerState
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name               String
+  assetProfileId     String   @default("adventurer")
+  visualData         String   @default("[]") // JSON array of visual component layers
+  classId            String
+  stateData          String // JSON string of the Zustand store PlayerState
+  
+  // Deterministic Release Context
+  worldProjectId     String   @default("saints")
+  lastReleaseVersion String?
+  lastMapId          String?
+  lastX              Float?
+  lastY              Float?
+  lastZ              Float?
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   gtcListings GtcListing[]
 
@@ -772,23 +781,58 @@ model MapPrefab {
   @@index([authorId])
 }
 
+model WorldProject {
+  id          String  @id @default(cuid())
+  slug        String  @unique // e.g. "saints"
+  name        String
+  description String?
+
+  // The version of the current "Working World"
+  activeVersion Int @default(1)
+
+  releases WorldRelease[]
+  maps     WorldMap[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WorldRelease {
+  id          String       @id @default(cuid())
+  projectId   String
+  project     WorldProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  version     String
+  title       String       @default("Release")
+  description String?
+  status      String       @default("PUBLISHED") // DRAFT, VALIDATED, PUBLISHED, ARCHIVED
+
+  validationReport String    @default("{}")
+  contentSummary   String    @default("{}")
+
+  // The Immutable Dependency Manifest
+  // Stores exact actor revisions, asset versions, gameplay configs, and connections
+  manifestData String // JSON
+
+  publishedBy String?
+  createdAt   DateTime @default(now())
+
+  // Links to the exact Map Versions included in this release
+  @@unique([projectId, version])
+}
+
 model WorldMap {
-  id                 String  @id // e.g. "SAINTS_VILLAGE"
-  gameId             String? @default("saints")
+  id                 String        @id // e.g. "SAINTS_VILLAGE"
+  gameId             String?       @default("saints")
+  project            WorldProject? @relation(fields: [gameId], references: [slug])
   name               String
   gridData           String? // JSON 2D Array (legacy fallback)
   gatesData          String // JSON
-  npcsData           String // JSON for NPC dialogues/teams
-  encountersData     String  @default("[]") // JSON for wild beast encounters
-  entitiesData       String  @default("[]") // JSON for EntityInstanceV1 records (Bible 20 E2)
-  tileLayersData     String? @default("[]") // JSON for TMX tile layers (legacy fallback)
-  freeformLayersData String? @default("[]") // JSON for 2.5D freeform layers (splats, props, polygons)
-  tilesetsData       String? @default("[]") // JSON for tilesets metadata (legacy fallback)
+  encountersData     String        @default("[]") // JSON for wild beast encounters
+  entitiesData       String        @default("[]") // JSON for EntityInstanceV1 records (Bible 20 E2)
+  freeformLayersData String?       @default("[]") // JSON for 2.5D freeform layers (splats, props, polygons)
 
   regionClass      String  @default("authored") // 'authored' | 'procedural' | 'hybrid'
   proceduralConfig String? // JSON for deterministic procedural biome configuration
-  publishedVersion Int     @default(0) // 0 means draft only, >=1 indicates published release
-  publishedData    String? // Immutable JSON snapshot of active published release
   version          Int     @default(1)
   mapType          String  @default("TILE") // 'TILE' | 'VOXEL' | 'FRACTAL'
 
@@ -833,34 +877,6 @@ model WorldRegion {
   @@unique([mapId, regionX, regionZ])
   @@index([mapId])
   @@index([artifactChecksum])
-}
-
-model WorldMapVersion {
-  id          String   @id @default(cuid())
-  mapId       String
-  version     Int
-  name        String
-  data        String? // Serialized JSON map payload for non-voxel properties
-  description String?
-  publishedBy String?
-  createdAt   DateTime @default(now())
-
-  regions WorldMapVersionRegion[]
-
-  @@unique([mapId, version])
-  @@index([mapId])
-}
-
-model WorldMapVersionRegion {
-  id               String @id @default(cuid())
-  versionId        String
-  regionX          Int
-  regionZ          Int
-  artifactChecksum String
-
-  version WorldMapVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
-
-  @@unique([versionId, regionX, regionZ])
 }
 
 model MapSyncEntry {
@@ -1367,79 +1383,7 @@ model Report {
 
 // ─── Generic Creature Engine ──────────────────────────────────────
 
-model CreatureTemplate {
-  id                   String                   @id @default(cuid())
-  slug                 String                   @unique
-  dexNumber            Int // Replaces txmnId
-  speciesName          String // Replaces species
-  height               Int
-  weight               Float
-  catchRate            Float
-  lowerCatchResistance Float
-  upperCatchResistance Float
-  stage                String
-  shape                String
-  mythosId             String? // Relation to CreatureMythos
-  types                String // JSON array of element slugs
-  tags                 String // JSON array of tags
-  terrains             String // JSON array
-  genderWeights        String // JSON object
-  sounds               String // JSON object
-  spriteFront          String? // path to front battle sprite
-  spriteBack           String? // path to back battle sprite
-  spriteOverworld      String? // path to overworld sprite
-  learnedAbilities     CreatureLearnedAbility[]
-  evolutions           CreatureEvolution[]
-  stats                CreatureBaseStats?
-  mythos               CreatureMythos?          @relation(fields: [mythosId], references: [slug], onDelete: SetNull)
-}
 
-model CreatureMythos {
-  slug        String             @id
-  name        String
-  description String?
-  icon        String?
-  creatures   CreatureTemplate[]
-}
-
-model CreatureBaseStats {
-  id              String           @id @default(cuid())
-  speciesId       String           @unique
-  species         CreatureTemplate @relation(fields: [speciesId], references: [id], onDelete: Cascade)
-  hp              Int
-  physicalPower   Int // Replaces meleeAtk
-  physicalDefense Int // Replaces meleeDef
-  abilityPower    Int // Replaces rangedAtk
-  abilityDefense  Int // Replaces rangedDef
-  combatTempo     Int // Replaces speed
-}
-
-model CreatureLearnedAbility {
-  id             String           @id @default(cuid())
-  speciesId      String
-  species        CreatureTemplate @relation(fields: [speciesId], references: [id], onDelete: Cascade)
-  abilitySlug    String
-  levelLearned   Int
-  learningMethod String           @default("level_up")
-
-  @@unique([speciesId, abilitySlug])
-  @@index([speciesId])
-}
-
-model CreatureEvolution {
-  id              String           @id @default(cuid())
-  speciesId       String
-  species         CreatureTemplate @relation(fields: [speciesId], references: [id], onDelete: Cascade)
-  targetSlug      String
-  atLevel         Int?
-  itemRequired    String?
-  timeOfDay       String? // "DAY", "NIGHT", "DUSK", "DAWN"
-  statRequirement String? // JSON: { "attack": 100 }
-  notes           String?
-  spriteOverworld String?
-
-  @@index([speciesId])
-}
 
 model AbilityDictionary {
   slug        String  @id
@@ -1774,11 +1718,26 @@ model UiPreset {
 
 model NpcDialogueTree {
   id        String   @id @default(cuid())
-  npcId     String   @unique
+  npcId     String   @unique // Now acts as the NpcDef slug reference
   name      String // Internal reference name
   data      String // JSON containing the node_start branching tree
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model NpcDef {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  gameId         String   @default("saints")
+  name           String
+  description    String?
+  componentsData String // JSON containing BaseEntityDefinition components
+  version        Int      @default(1)
+  isPublished    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([gameId])
 }
 
 model QuestTemplate {
@@ -2240,3 +2199,4 @@ model WorldBootstrapRevisionRegion {
 
   @@unique([revisionId, regionX, regionZ])
 }
+

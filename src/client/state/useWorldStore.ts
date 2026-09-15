@@ -95,14 +95,18 @@ export interface WorldState {
 
   // Game Registry (fetched from API — replaces hardcoded data files)
   gameRegistry: GameRegistryData | null;
+  publishedVersion?: number;
 
   // Actions
   setCurrentMapId: (id: string) => void;
   setInstanceId: (id: string) => void;
+  setPublishedVersion: (version: number) => void;
   setActiveMapData: (data: any) => void;
   setIsMapTransitioning: (transitioning: boolean) => void;
   setWorldSessionState: (state: WorldSessionState) => void;
   incrementWorldJoinSeq: () => number;
+
+  setMapEntities: (entities: MapEntity[]) => void;
   setWorldOriginOffset: (x: number, y: number) => void;
   addWorldOriginOffset: (dx: number, dy: number) => void;
   setActiveDialog: (dialog: WorldState['activeDialog']) => void;
@@ -143,6 +147,8 @@ export const useWorldStore = create<WorldState>()(
 
       setInstanceId: (id) => set((s) => { s.instanceId = id; }),
 
+      setPublishedVersion: (v) => set((s) => { s.publishedVersion = v; }),
+
       setActiveMapData: (data) => set((s) => { s.activeMapData = data; }),
 
       setIsMapTransitioning: (transitioning) => set((s) => { s.isMapTransitioning = transitioning; }),
@@ -157,6 +163,8 @@ export const useWorldStore = create<WorldState>()(
         });
         return nextSeq;
       },
+
+      setMapEntities: (entities) => set((s) => { s.mapEntities = entities; }),
 
       setWorldOriginOffset: (x, y) => set((s) => { s.worldOriginOffset = { x, y }; }),
 

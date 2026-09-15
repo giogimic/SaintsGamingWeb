@@ -254,9 +254,9 @@ export class VoxelMeshBuilder {
     const z0 = z, zH = z + 0.5, z1 = z + 1;
 
     // Orientation determines which direction stairs ascend.
-    // NORTH = ascending toward +Z, SOUTH = ascending toward -Z, etc.
+    // SOUTH = ascending toward +Z, NORTH = ascending toward -Z, EAST = ascending toward -X, WEST = ascending toward +X
     switch (orientation) {
-      case VoxelOrientation.SOUTH: {
+      case VoxelOrientation.NORTH: {
         // Bottom step: z0..z1, y0..yH (full width, full depth, half height)
         this.addQuad([x0, yH, z0], [x1, yH, z0], [x1, yH, z1], [x0, yH, z1], [0, 1, 0], topUv, [1, 1, 1, 1], topLight);
         this.addQuad([x0, y0, z1], [x1, y0, z1], [x1, y0, z0], [x0, y0, z0], [0, -1, 0], bottomUv, [1, 1, 1, 1], botLight);
@@ -273,7 +273,7 @@ export class VoxelMeshBuilder {
         this.addQuad([x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0], [0, 0, -1], sideUv, [1, 1, 1, 1], sideLight);
         break;
       }
-      case VoxelOrientation.EAST: {
+      case VoxelOrientation.WEST: {
         this.addQuad([x0, yH, z0], [x1, yH, z0], [x1, yH, z1], [x0, yH, z1], [0, 1, 0], topUv, [1, 1, 1, 1], topLight);
         this.addQuad([x0, y0, z1], [x1, y0, z1], [x1, y0, z0], [x0, y0, z0], [0, -1, 0], bottomUv, [1, 1, 1, 1], botLight);
         // Top step: xH..x1, yH..y1
@@ -286,7 +286,7 @@ export class VoxelMeshBuilder {
         this.addQuad([x1, y0, z0], [x1, y0, z1], [x1, y1, z1], [x1, y1, z0], [1, 0, 0], sideUv, [1, 1, 1, 1], sideLight);
         break;
       }
-      case VoxelOrientation.WEST: {
+      case VoxelOrientation.EAST: {
         this.addQuad([x0, yH, z0], [x1, yH, z0], [x1, yH, z1], [x0, yH, z1], [0, 1, 0], topUv, [1, 1, 1, 1], topLight);
         this.addQuad([x0, y0, z1], [x1, y0, z1], [x1, y0, z0], [x0, y0, z0], [0, -1, 0], bottomUv, [1, 1, 1, 1], botLight);
         const xH2 = x + 0.5;
@@ -298,7 +298,7 @@ export class VoxelMeshBuilder {
         this.addQuad([x1, y0, z0], [x1, y0, z1], [x1, yH, z1], [x1, yH, z0], [1, 0, 0], sideUv, [1, 1, 1, 1], sideLight);
         break;
       }
-      default: { // NORTH — ascending toward +Z
+      default: { // SOUTH — ascending toward +Z
         this.addQuad([x0, yH, z0], [x1, yH, z0], [x1, yH, z1], [x0, yH, z1], [0, 1, 0], topUv, [1, 1, 1, 1], topLight);
         this.addQuad([x0, y0, z1], [x1, y0, z1], [x1, y0, z0], [x0, y0, z0], [0, -1, 0], bottomUv, [1, 1, 1, 1], botLight);
         this.addQuad([x0, y1, zH], [x1, y1, zH], [x1, y1, z1], [x0, y1, z1], [0, 1, 0], topUv, [1, 1, 1, 1], topLight);
@@ -340,10 +340,10 @@ export class VoxelMeshBuilder {
 
     let qx0: number, qx1: number, qz0: number, qz1: number;
     switch (orientation) {
-      case VoxelOrientation.SOUTH: qx0 = x; qx1 = xH; qz0 = z; qz1 = zH; break;
-      case VoxelOrientation.EAST:  qx0 = xH; qx1 = x + 1; qz0 = z; qz1 = zH; break;
-      case VoxelOrientation.WEST:  qx0 = x; qx1 = xH; qz0 = zH; qz1 = z + 1; break;
-      default:                     qx0 = xH; qx1 = x + 1; qz0 = zH; qz1 = z + 1; break; // NORTH
+      case VoxelOrientation.NORTH: qx0 = x; qx1 = xH; qz0 = z; qz1 = zH; break;
+      case VoxelOrientation.WEST:  qx0 = xH; qx1 = x + 1; qz0 = z; qz1 = zH; break;
+      case VoxelOrientation.EAST:  qx0 = x; qx1 = xH; qz0 = zH; qz1 = z + 1; break;
+      default:                     qx0 = xH; qx1 = x + 1; qz0 = zH; qz1 = z + 1; break; // SOUTH
     }
 
     // Top face

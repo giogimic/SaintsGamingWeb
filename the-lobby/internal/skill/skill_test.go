@@ -61,3 +61,27 @@ func TestCombatGrants(t *testing.T) {
 		t.Errorf("expected 2 grants for lose, got %d", len(loseGrants))
 	}
 }
+
+func TestSkillValidation(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "sk.db")
+	sqlDB, err := db.OpenSQLite("file:" + path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sqlDB.Close()
+	m := skill.NewManager(sqlDB)
+	
+	// Valid skill should add XP
+	m.Add("a1", "mining", 50)
+	snap := m.Snapshot("a1")
+	if snap["mining"] != 50 {
+		t.Fatalf("expected 50 mining xp, got %d", snap["mining"])
+	}
+	
+	// Invalid arbitrary slug should be rejected and NOT saved
+	m.Add("a1", "hacker", 99999)
+	snap2 := m.Snapshot("a1")
+	if _, exists := snap2["hacker"]; exists {
+		t.Fatal("expected invalid skill 'hacker' to be rejected")
+	}
+}

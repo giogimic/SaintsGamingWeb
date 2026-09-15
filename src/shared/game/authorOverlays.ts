@@ -26,7 +26,7 @@ export type AuthorOverlaysInput = {
   gates?: AuthorOverlayGate[] | null;
   /** Optional separate gate list for destination spawn pins (when gates markers are off). */
   spawnSourceGates?: AuthorOverlayGate[] | null;
-  npcs?: AuthorOverlayNpc[] | null;
+  entities?: AuthorOverlayNpc[] | null;
   /** Destination spawn pins derived from gate.spawnPoint (same-map preview). */
   showGateSpawns?: boolean;
   monsterSpawners?: AuthorOverlayNpc[] | null;
@@ -70,10 +70,10 @@ export function authorOverlayGateMarkers(
 }
 
 export function authorOverlayNpcMarkers(
-  npcs: AuthorOverlayNpc[] | null | undefined
+  entities: AuthorOverlayNpc[] | null | undefined
 ): Array<{ key: string; x: number; y: number; kind: "npc" }> {
-  if (!npcs?.length) return [];
-  return npcs
+  if (!entities?.length) return [];
+  return entities
     .filter((n) => n && Number.isFinite(n.x) && Number.isFinite(n.y))
     .map((n) => ({
       key: n.id || `npc_${n.x}_${n.y}`,

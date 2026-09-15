@@ -4,6 +4,7 @@ import { prisma } from "@/web/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { checkAdminPermission } from "../admin/game-admin";
 import { getOrphanedReferences } from "./cross-references";
+import { resolveWorldDependencies } from "./world-resolver";
 
 export interface ValidationGateResult {
   valid: boolean;
@@ -126,20 +127,10 @@ export async function createPublishSnapshot(input: {
       simulationPresetCount: simulations.length,
     };
 
-    // Fetch Draft Maps from Go Server
-    let draftMaps: any[] = [];
-    try {
-      const goMmoBase = process.env.GO_MMO_INTERNAL_URL || process.env.NEXT_PUBLIC_GO_MMO_URL || 'http://localhost:24011';
-      const res = await fetch(`${goMmoBase}/api/maps?action=drafts`);
-      if (res.ok) {
-        draftMaps = await res.json();
-      }
-    } catch (e) {
-      console.warn("Failed to fetch map drafts for publish snapshot", e);
-    }
+    const compiledManifest = await resolveWorldDependencies(gameId);
 
     const payload = {
-      gameId,
+      projectId: gameId,
       profileId,
       timestamp: new Date().toISOString(),
       startingMapId: input.startingMapId,
@@ -149,33 +140,31 @@ export async function createPublishSnapshot(input: {
       mounts,
       events,
       simulations,
-      maps: draftMaps,
+      ...compiledManifest,
     };
 
     const versionTag =
       input.version?.trim() ||
       `v1.0.${Date.now().toString().slice(-6)}`;
 
-    const saved = await prisma.worldPublishSnapshot.create({
+    const saved = await prisma.worldRelease.create({
       data: {
-        gameId,
-        profileId,
+        projectId: gameId,
         version: versionTag,
         title: input.title.trim() || `Release ${versionTag}`,
         description: input.description,
         status: validation.valid ? "PUBLISHED" : "DRAFT",
         validationReport: JSON.stringify(validation),
         contentSummary: JSON.stringify(contentSummary),
-        snapshotPayload: JSON.stringify(payload),
+        manifestData: JSON.stringify(payload),
       },
     });
 
     if (saved.status === "PUBLISHED") {
       // Archive previous snapshots for this profile
-      await prisma.worldPublishSnapshot.updateMany({
+      await prisma.worldRelease.updateMany({
         where: {
-          gameId,
-          profileId,
+          projectId: gameId,
           status: "PUBLISHED",
           id: { not: saved.id },
         },
@@ -213,8 +202,8 @@ export async function fetchDraftMaps() {
  */
 export async function listPublishSnapshots(gameId: string = "saints", profileId: string = "default") {
   try {
-    const rows = await prisma.worldPublishSnapshot.findMany({
-      where: { gameId, profileId },
+    const rows = await prisma.worldRelease.findMany({
+      where: { projectId: gameId },
       orderBy: { createdAt: "desc" },
       take: 50,
     });
@@ -233,13 +222,13 @@ export async function rollbackToSnapshot(snapshotId: string) {
   if (!isAdmin) return { success: false, error: "Unauthorized" };
 
   try {
-    const snapshot = await prisma.worldPublishSnapshot.findUnique({
+    const snapshot = await prisma.worldRelease.findUnique({
       where: { id: snapshotId },
     });
 
     if (!snapshot) return { success: false, error: "Snapshot not found" };
 
-    const payload = JSON.parse(snapshot.snapshotPayload);
+    const payload = JSON.parse(snapshot.manifestData);
     const { dungeons, shops, mounts, events, simulations } = payload;
 
     // Restore dungeons
@@ -303,51 +292,3 @@ export async function rollbackToSnapshot(snapshotId: string) {
   }
 }
 
-/**
- * Deploy an immutable publish snapshot to the live Go server.
- */
-export async function deployRelease(snapshotId: string) {
-  const isAdmin = await checkAdminPermission();
-  if (!isAdmin) return { success: false, error: "Unauthorized" };
-
-  try {
-    const snapshot = await prisma.worldPublishSnapshot.findUnique({
-      where: { id: snapshotId },
-    });
-
-    if (!snapshot) return { success: false, error: "Snapshot not found" };
-
-    const payload = JSON.parse(snapshot.snapshotPayload);
-    const maps = payload.maps || [];
-    const startingMapId = payload.startingMapId || payload.gameConfig?.startingMapId;
-    const defaultMapId = payload.defaultMapId || payload.gameConfig?.defaultMapId;
-
-    if (maps.length > 0 || startingMapId || defaultMapId) {
-      const goMmoBase = process.env.GO_MMO_INTERNAL_URL || process.env.NEXT_PUBLIC_GO_MMO_URL || 'http://localhost:24011';
-      const secret = process.env.AUTH_SECRET || '';
-
-      try {
-        const res = await fetch(`${goMmoBase}/api/internal/deploy-release`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${secret}`,
-            'X-Saints-Internal-Secret': secret
-          },
-          body: JSON.stringify({ maps, startingMapId, defaultMapId })
-        });
-
-        if (!res.ok) {
-          console.warn(`[deployRelease] Go Server returned ${res.status}`);
-        }
-      } catch (deployErr) {
-        console.warn(`[deployRelease] Go MMO server unreachable, skipping deployment notification.`, deployErr);
-      }
-    }
-
-    return { success: true as const };
-  } catch (err: any) {
-    console.error("[deployRelease]", err);
-    return { success: false as const, error: "Failed to deploy release" };
-  }
-}

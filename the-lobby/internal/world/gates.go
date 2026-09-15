@@ -9,7 +9,14 @@ import (
 type SpiritGate struct {
 	ID            string
 	MapID         string // The map where the gate is located
-	TargetMapID   string // The destination map
+	TargetMapID   string // The destination map (legacy / internal)
+	
+	Type                 string // "internal" | "external"
+	TargetMapReleaseID   string
+	TargetEntryPointID   string
+	TargetWorldProjectID string
+	TargetWorldReleaseID string
+
 	TargetX       float64
 	TargetY       float64
 	TargetZ       float64

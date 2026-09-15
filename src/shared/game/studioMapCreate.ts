@@ -30,7 +30,7 @@ export type NewStudioMapData = {
   gameId: string;
   grid: number[][];
   gates: Record<string, never>;
-  npcs: [];
+  entities: [];
   encounterPool: [];
   tileLayers: Array<{ name: string; grid: number[][] }>;
   tilesets: StudioTilesetMeta[];
@@ -104,7 +104,7 @@ export function buildNewStudioMap(input: NewStudioMapInput):
       gameId: input.gameId || "saints",
       grid,
       gates: {},
-      npcs: [],
+      entities: [],
       encounterPool: [],
       tileLayers: [ground],
       tilesets: [...DEFAULT_STUDIO_TILESETS],

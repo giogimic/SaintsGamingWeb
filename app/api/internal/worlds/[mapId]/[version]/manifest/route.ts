@@ -46,14 +46,14 @@ export async function GET(
     })).filter(r => r.artifactChecksum !== "");
   } else {
     if (version === "published") {
-      const worldMap = await prisma.worldMap.findUnique({
-        where: { id: mapId },
-        select: { publishedVersion: true }
+      const project = await prisma.worldProject.findUnique({
+        where: { id: "saints" },
+        select: { activeVersion: true }
       });
-      if (!worldMap || worldMap.publishedVersion <= 0) {
-        return NextResponse.json({ error: "Map has no published version" }, { status: 404 });
+      if (!project || project.activeVersion <= 0) {
+        return NextResponse.json({ error: "Project has no active version" }, { status: 404 });
       }
-      resolvedVersionInt = worldMap.publishedVersion;
+      resolvedVersionInt = project.activeVersion;
     } else {
       resolvedVersionInt = parseInt(version, 10);
       if (isNaN(resolvedVersionInt)) {
@@ -61,25 +61,33 @@ export async function GET(
       }
     }
 
-    const mapVersion = await prisma.worldMapVersion.findFirst({
+    const worldRelease = await prisma.worldRelease.findFirst({
       where: {
-        mapId,
-        version: resolvedVersionInt
-      },
-      include: {
-        regions: true
+        projectId: "saints",
+        version: `v1.0.${resolvedVersionInt}`
       }
     });
 
-    if (!mapVersion) {
+    if (!worldRelease) {
       return NextResponse.json({ error: "Version not found" }, { status: 404 });
     }
     
-    manifestRegions = mapVersion.regions.map(r => ({
-      regionX: r.regionX,
-      regionZ: r.regionZ,
-      artifactChecksum: r.artifactChecksum,
-    }));
+    const manifestData = JSON.parse(worldRelease.manifestData || "{}");
+    const atlas = manifestData.atlas || {};
+    
+    const prefix = `${mapId}_`;
+    for (const [key, checksum] of Object.entries(atlas)) {
+      if (key.startsWith(prefix)) {
+        const parts = key.split('_');
+        if (parts.length === 3) {
+          manifestRegions.push({
+            regionX: parseInt(parts[1], 10),
+            regionZ: parseInt(parts[2], 10),
+            artifactChecksum: checksum as string,
+          });
+        }
+      }
+    }
   }
 
   let generatorIdentity = {

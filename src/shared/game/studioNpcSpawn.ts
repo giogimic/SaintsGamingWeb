@@ -2,6 +2,8 @@
  * Studio NPC live-spawn helpers (Populate → place without rejoin).
  */
 
+import type { EntityInstanceV1 } from './entities/types';
+
 export type StudioNpcSpawnPayload = {
   id: string;
   name: string;
@@ -29,38 +31,38 @@ export function buildStudioSpawnNpcEmit(
 }
 
 export function appendNpcToMapDoc(
-  live: { npcs?: unknown[] } | null | undefined,
-  npc: StudioNpcSpawnPayload
+  live: { entities?: unknown[] } | null | undefined,
+  npc: EntityInstanceV1
 ): boolean {
   if (!live) return false;
-  const list = Array.isArray(live.npcs) ? [...live.npcs] : [];
+  const list = Array.isArray(live.entities) ? [...live.entities] : [];
   if (list.some((n: any) => n && n.id === npc.id)) return false;
   list.push(npc);
-  live.npcs = list;
+  live.entities = list;
   return true;
 }
 
 export function removeNpcFromMapDoc(
-  live: { npcs?: unknown[] } | null | undefined,
+  live: { entities?: unknown[] } | null | undefined,
   npcId: string
 ): boolean {
-  if (!live || !Array.isArray(live.npcs) || !npcId) return false;
-  const next = live.npcs.filter((n: any) => !n || n.id !== npcId);
-  if (next.length === live.npcs.length) return false;
-  live.npcs = next;
+  if (!live || !Array.isArray(live.entities) || !npcId) return false;
+  const next = live.entities.filter((n: any) => !n || n.id !== npcId);
+  if (next.length === live.entities.length) return false;
+  live.entities = next;
   return true;
 }
 
 export function upsertNpcInMapDoc(
-  live: { npcs?: unknown[] } | null | undefined,
-  npc: StudioNpcSpawnPayload
+  live: { entities?: unknown[] } | null | undefined,
+  npc: EntityInstanceV1
 ): boolean {
   if (!live || !npc?.id) return false;
-  const list = Array.isArray(live.npcs) ? [...live.npcs] : [];
+  const list = Array.isArray(live.entities) ? [...live.entities] : [];
   const idx = list.findIndex((n: any) => n && n.id === npc.id);
   if (idx >= 0) list[idx] = { ...(list[idx] as object), ...npc };
   else list.push(npc);
-  live.npcs = list;
+  live.entities = list;
   return true;
 }
 

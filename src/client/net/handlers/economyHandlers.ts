@@ -13,6 +13,7 @@ import type {
 } from '../protocol.d';
 import { usePlayerStore } from '../../state/usePlayerStore';
 import { useToastStore } from '../../state/useToastStore';
+import { skillSlugToLabel } from '../../../shared/game/skillTypings';
 
 /**
  * Server syncs our credits.
@@ -51,11 +52,26 @@ export function onInventorySync(data: InventorySyncPayload): void {
  */
 export function onSkillXpGained(data: SkillXpPayload): void {
   usePlayerStore.setState((s) => {
-    if (!s.player.skills[data.skillSlug]) {
+    const current = s.player.skills[data.skillSlug];
+    if (!current) {
       s.player.skills[data.skillSlug] = { level: 1, xp: 0 };
     }
+    
+    const oldLevel = current ? current.level : 1;
+    const oldXp = current ? current.xp : 0;
+    const xpDelta = data.totalXp - oldXp;
+    
     s.player.skills[data.skillSlug].xp = data.totalXp;
     s.player.skills[data.skillSlug].level = data.level;
+
+    const label = skillSlugToLabel(data.skillSlug);
+    if (xpDelta > 0) {
+      useToastStore.getState().showToast(`+${xpDelta} ${label} XP`);
+    }
+
+    if (data.level > oldLevel) {
+      useToastStore.getState().showToast(`⭐ LEVEL UP! ${label} Level ${data.level} ⭐`);
+    }
   });
 }
 

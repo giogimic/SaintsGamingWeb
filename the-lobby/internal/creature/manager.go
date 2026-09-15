@@ -127,7 +127,7 @@ func (m *Manager) SeedSpawns(instanceID string, spawns []SpawnDef, reg *registry
 		hostile := false
 		if reg != nil {
 			if c, ok := reg.GetCreature(s.Slug); ok {
-				name = c.SpeciesName
+				name = c.Name
 				hostile = true // Treat all wild spawned creatures as hostile for now, or add flag to schema later
 			}
 		}

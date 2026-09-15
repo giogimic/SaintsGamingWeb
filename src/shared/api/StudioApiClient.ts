@@ -17,12 +17,7 @@ export interface StudioSaveMapResult {
   backendUsed?: string;
 }
 
-export interface StudioPublishMapResult {
-  ok: boolean;
-  mapId?: string;
-  publishedVersion?: number;
-  error?: string;
-}
+
 
 export interface StudioRollbackMapResult {
   ok: boolean;
@@ -148,49 +143,7 @@ export class StudioApiClient {
     }
   }
 
-  /** Promote saved draft to immutable published version */
-  public async publishMap(mapId: string, description?: string): Promise<StudioPublishMapResult> {
-    try {
-      const headers = await this.getHeaders();
-      const res = await fetch(this.formatUrl(`/api/maps/${encodeURIComponent(mapId)}/publish`), {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ description: description || 'Published release from Studio' }),
-      });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        return { ok: false, error: err.error || `Publish failed (${res.status})` };
-      }
-
-      const data = await res.json();
-      return { ok: true, mapId, publishedVersion: data.publishedVersion };
-    } catch (e: any) {
-      return { ok: false, error: e?.message || 'Network error publishing map' };
-    }
-  }
-
-  /** Rollback map to a historical published snapshot */
-  public async rollbackMap(mapId: string, targetVersion: number): Promise<StudioRollbackMapResult> {
-    try {
-      const headers = await this.getHeaders();
-      const res = await fetch(this.formatUrl(`/api/maps/${encodeURIComponent(mapId)}/rollback`), {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ targetVersion }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        return { ok: false, error: err.error || `Rollback failed (${res.status})` };
-      }
-
-      const data = await res.json();
-      return { ok: true, mapId, restoredVersion: data.restoredVersion };
-    } catch (e: any) {
-      return { ok: false, error: e?.message || 'Network error rolling back map' };
-    }
-  }
 
   /** Fetch version history for a map */
   public async fetchVersionHistory(mapId: string): Promise<StudioMapVersion[]> {
@@ -238,3 +191,4 @@ export class StudioApiClient {
     }
   }
 }
+

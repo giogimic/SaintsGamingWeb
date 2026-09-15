@@ -1,96 +1,152 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Save, Trash2, Smile, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { WorldModelSelector, WorldModelValue } from '../components/WorldModelSelector';
+import { listNpcDefs, upsertNpcDef, deleteNpcDef } from '@/app/actions/studio/npc-def';
+import { ComponentMap } from '@/shared/game/entities/types';
 
-// Placeholder type until NPC global model is formalized
-interface MockNpcDef {
-  id: string;
+interface NpcDefState {
+  slug: string;
   name: string;
-  visualData: string; // JSON string
-  isShop: boolean;
-  isBank: boolean;
-  isQuestGiver: boolean;
+  componentsData: Partial<ComponentMap>;
 }
 
-const DEMO_NPCS: MockNpcDef[] = [
-  { id: 'npc_blacksmith', name: 'Blacksmith', visualData: '{"worldModel":{"type":"2D Sprite","assetId":"blacksmith"}}', isShop: true, isBank: false, isQuestGiver: true },
-  { id: 'npc_banker', name: 'Global Banker', visualData: '{"worldModel":{"type":"3D Model","assetId":"banker_obj"}}', isShop: false, isBank: true, isQuestGiver: false },
-];
-
 export function NpcEditorPanel() {
-  const [npcs, setNpcs] = useState<MockNpcDef[]>(DEMO_NPCS);
-  const [selected, setSelected] = useState<MockNpcDef | null>(null);
-  const [form, setForm] = useState<MockNpcDef>({ id: '', name: 'New NPC', visualData: '{}', isShop: false, isBank: false, isQuestGiver: false });
+  const [npcs, setNpcs] = useState<any[]>([]);
+  const [selected, setSelected] = useState<NpcDefState | null>(null);
+  const [form, setForm] = useState<NpcDefState>({ slug: '', name: 'New NPC', componentsData: {} });
   const [isNew, setIsNew] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchNpcs = async () => {
+    setLoading(true);
+    const res = await listNpcDefs('saints');
+    if (res.success && res.data) {
+      setNpcs(res.data);
+    } else {
+      showStatus('error', 'Failed to load NPCs.');
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchNpcs();
+  }, []);
 
   const showStatus = (type: 'success' | 'error', msg: string) => {
     setStatus({ type, msg });
     setTimeout(() => setStatus(null), 3000);
   };
 
-  const handleSelect = (n: MockNpcDef) => {
-    setSelected(n);
-    setForm(n);
+  const handleSelect = (n: any) => {
+    let parsed: Partial<ComponentMap> = {};
+    try {
+      parsed = JSON.parse(n.componentsData || '{}');
+    } catch (e) {}
+
+    const npcState: NpcDefState = {
+      slug: n.slug,
+      name: n.name,
+      componentsData: parsed,
+    };
+    setSelected(npcState);
+    setForm(npcState);
     setIsNew(false);
   };
 
   const handleNew = () => {
     setSelected(null);
-    setForm({ id: `npc_${Date.now()}`, name: 'New NPC', visualData: '{}', isShop: false, isBank: false, isQuestGiver: false });
+    setForm({ slug: `npc_${Date.now()}`, name: 'New NPC', componentsData: {} });
     setIsNew(true);
   };
 
-  const f = (key: keyof MockNpcDef, val: any) => setForm((prev) => ({ ...prev, [key]: val }));
-
-  const handleSave = () => {
-    if (!form.id || !form.name) return showStatus('error', 'ID and Name required.');
-    if (isNew) {
-      setNpcs([...npcs, form]);
-    } else {
-      setNpcs(npcs.map(n => n.id === form.id ? form : n));
-    }
-    showStatus('success', 'NPC saved (Local Mock).');
-    setIsNew(false);
-    setSelected(form);
+  const setComponent = (key: keyof ComponentMap, val: any) => {
+    setForm((prev) => ({
+      ...prev,
+      componentsData: {
+        ...prev.componentsData,
+        [key]: {
+          ...(prev.componentsData[key] || {}),
+          ...val
+        }
+      }
+    }));
   };
 
-  const handleDelete = () => {
+  const handleSave = async () => {
+    if (!form.slug || !form.name) return showStatus('error', 'Slug and Name required.');
+    
+    // Ensure identity component is updated with the slug and name
+    const finalComponentsData = {
+      ...form.componentsData,
+      identity: {
+        ...(form.componentsData.identity || {}),
+        slug: form.slug,
+        name: form.name
+      }
+    };
+
+    const payload = {
+      slug: form.slug,
+      name: form.name,
+      componentsData: JSON.stringify(finalComponentsData)
+    };
+
+    const res = await upsertNpcDef('saints', payload);
+    if (res.success) {
+      showStatus('success', 'NPC saved successfully.');
+      setIsNew(false);
+      fetchNpcs();
+      // Keep the form updated with the latest
+      handleSelect({ ...res.data, componentsData: payload.componentsData });
+    } else {
+      showStatus('error', res.error || 'Failed to save NPC.');
+    }
+  };
+
+  const handleDelete = async () => {
     if (!selected) return;
-    setNpcs(npcs.filter(n => n.id !== selected.id));
-    setSelected(null);
-    showStatus('success', 'NPC deleted.');
+    const res = await deleteNpcDef(selected.slug);
+    if (res.success) {
+      showStatus('success', 'NPC deleted.');
+      setSelected(null);
+      fetchNpcs();
+    } else {
+      showStatus('error', res.error || 'Failed to delete NPC.');
+    }
   };
 
   const getWorldModel = (): WorldModelValue => {
-    try {
-      const parsed = JSON.parse(form.visualData || '{}');
-      if (parsed.worldModel) return parsed.worldModel;
-    } catch {}
+    const app = form.componentsData.appearance;
+    if (app && app.assetProfileId && app.assetId) {
+      return { type: app.assetProfileId as any, assetId: app.assetId };
+    }
     return { type: '2D Sprite', assetId: 'adventurer' };
   };
 
   const handleWorldModelChange = (val: WorldModelValue) => {
-    let parsed: any = {};
-    try {
-      parsed = JSON.parse(form.visualData || '{}');
-      if (typeof parsed !== 'object') parsed = {};
-    } catch {}
-    parsed.worldModel = val;
-    f('visualData', JSON.stringify(parsed));
+    setComponent('appearance', { assetProfileId: val.type, assetId: val.assetId });
+  };
+
+  const toggleCapability = (cap: 'shopkeeper' | 'banker' | 'questGiver', val: boolean) => {
+    setComponent('capabilities', { [cap]: val });
   };
 
   const inputCls = "w-full bg-[#050b14] border border-amber-900/50 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-amber-500 transition-colors";
   const labelCls = "block text-[9px] font-black text-amber-500/80 uppercase tracking-[0.15em] mb-1 mt-3";
 
+  const getCap = (cap: 'shopkeeper' | 'banker' | 'questGiver') => {
+    return form.componentsData.capabilities?.[cap] || false;
+  };
+
   return (
     <div className="relative h-full min-h-0">
       <CatalogEditorShell
         title="NPC Studio"
-        blurb={`Catalog mode · ${npcs.length} global NPCs`}
+        blurb={loading ? 'Loading NPCs...' : `Catalog mode · ${npcs.length} global NPCs`}
         dirty={isNew}
         toolbar={
           <button onClick={handleNew} className="rounded p-1.5 text-emerald-400 hover:bg-white/5"><Plus size={14} /></button>
@@ -99,11 +155,11 @@ export function NpcEditorPanel() {
           <div className="space-y-1">
             {npcs.map((n) => (
               <button
-                key={n.id}
+                key={n.slug}
                 onClick={() => handleSelect(n)}
-                className={`w-full text-left px-2 py-1.5 rounded flex items-center gap-2 ${selected?.id === n.id && !isNew ? 'bg-amber-500/20 border border-amber-500/50 text-amber-100' : 'hover:bg-white/5 text-slate-300'}`}
+                className={`w-full text-left px-2 py-1.5 rounded flex items-center gap-2 ${selected?.slug === n.slug && !isNew ? 'bg-amber-500/20 border border-amber-500/50 text-amber-100' : 'hover:bg-white/5 text-slate-300'}`}
               >
-                <Smile size={14} className={selected?.id === n.id ? 'text-amber-400' : 'text-slate-500'} />
+                <Smile size={14} className={selected?.slug === n.slug ? 'text-amber-400' : 'text-slate-500'} />
                 <div className="truncate text-[11px] font-bold">{n.name}</div>
               </button>
             ))}
@@ -123,7 +179,7 @@ export function NpcEditorPanel() {
               <span className="text-[11px] font-bold text-amber-300">{isNew ? 'New NPC' : `Editing ${selected?.name}`}</span>
               <div className="flex gap-2">
                 <button onClick={handleSave} className="px-3 py-1 bg-amber-600/50 text-amber-100 text-[10px] font-bold uppercase rounded hover:bg-amber-600 flex items-center gap-1">
-                  <Save size={12} /> Save (Mock)
+                  <Save size={12} /> Save
                 </button>
                 {selected && (
                   <button onClick={handleDelete} className="px-2 py-1 text-red-400 hover:bg-red-900/30 rounded">
@@ -137,11 +193,11 @@ export function NpcEditorPanel() {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className={labelCls}>NPC Name</label>
-                  <input value={form.name} onChange={e => f('name', e.target.value)} className={inputCls} />
+                  <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} />
                 </div>
                 <div>
-                  <label className={labelCls}>Global ID</label>
-                  <input value={form.id} onChange={e => f('id', e.target.value)} disabled={!isNew} className={inputCls} style={{opacity: isNew ? 1 : 0.5}} />
+                  <label className={labelCls}>Global Slug</label>
+                  <input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} disabled={!isNew} className={inputCls} style={{opacity: isNew ? 1 : 0.5}} />
                 </div>
               </div>
               
@@ -156,12 +212,23 @@ export function NpcEditorPanel() {
                   Global Behaviors & Capabilities
                 </div>
                 
+                <div className="mb-4">
+                  <label className="block text-[9px] font-black text-amber-500/80 uppercase tracking-[0.15em] mb-1">Dialogue Reference ID</label>
+                  <input 
+                    value={(form.componentsData as any).behavior?.dialogueId || ''} 
+                    onChange={e => setComponent('behavior', { dialogueId: e.target.value })} 
+                    className="w-full bg-[#050b14] border border-amber-900/50 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-amber-500 transition-colors"
+                    placeholder="E.g. demo_welcome"
+                  />
+                  <p className="text-[9px] text-slate-500 mt-1">Leaves blank to use the NPC's Global Slug as the default dialogue tree ID.</p>
+                </div>
+                
                 <div className="space-y-3">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input 
                       type="checkbox" 
-                      checked={form.isShop} 
-                      onChange={e => f('isShop', e.target.checked)} 
+                      checked={getCap('shopkeeper')} 
+                      onChange={e => toggleCapability('shopkeeper', e.target.checked)} 
                       className="rounded bg-[#050b14] border-amber-900/50 text-amber-500 focus:ring-amber-500 focus:ring-offset-0"
                     />
                     <span className="text-[11px] text-amber-100 font-bold">Shopkeeper</span>
@@ -170,8 +237,8 @@ export function NpcEditorPanel() {
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input 
                       type="checkbox" 
-                      checked={form.isBank} 
-                      onChange={e => f('isBank', e.target.checked)} 
+                      checked={getCap('banker')} 
+                      onChange={e => toggleCapability('banker', e.target.checked)} 
                       className="rounded bg-[#050b14] border-amber-900/50 text-amber-500 focus:ring-amber-500 focus:ring-offset-0"
                     />
                     <span className="text-[11px] text-amber-100 font-bold">Banker</span>
@@ -180,8 +247,8 @@ export function NpcEditorPanel() {
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input 
                       type="checkbox" 
-                      checked={form.isQuestGiver} 
-                      onChange={e => f('isQuestGiver', e.target.checked)} 
+                      checked={getCap('questGiver')} 
+                      onChange={e => toggleCapability('questGiver', e.target.checked)} 
                       className="rounded bg-[#050b14] border-amber-900/50 text-amber-500 focus:ring-amber-500 focus:ring-offset-0"
                     />
                     <span className="text-[11px] text-amber-100 font-bold">Quest Giver</span>

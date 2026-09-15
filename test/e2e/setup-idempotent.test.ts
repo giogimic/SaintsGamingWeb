@@ -11,7 +11,6 @@ vi.mock('@/auth', () => ({
 describe('Setup Wizard Idempotency', () => {
   beforeAll(async () => {
     await prisma.worldMap.deleteMany();
-    await prisma.worldMapVersion.deleteMany();
     await prisma.mapSyncEntry.deleteMany();
   });
 
@@ -48,13 +47,7 @@ describe('Setup Wizard Idempotency', () => {
 
     const map = await prisma.worldMap.findUnique({ where: { id: 'STARTING_MEADOW' } });
     expect(map).toBeDefined();
-    expect(map?.publishedVersion).toBe(1);
-
-    const version = await prisma.worldMapVersion.findUnique({
-      where: { mapId_version: { mapId: 'STARTING_MEADOW', version: 1 } }
-    });
-    expect(version).toBeDefined();
-    expect(JSON.parse(version!.data as string)).toHaveProperty('publishedVersion', 1);
+    expect(map?.version).toBe(1);
 
     const syncs = await prisma.mapSyncEntry.findMany({ where: { mapId: 'STARTING_MEADOW' } });
     expect(syncs.length).toBeGreaterThan(0);
@@ -70,6 +63,6 @@ describe('Setup Wizard Idempotency', () => {
 
     const mapAfter = await prisma.worldMap.findUnique({ where: { id: 'STARTING_MEADOW' } });
     expect(mapAfter?.version).toBe(1); // Should not have incremented
-    expect(mapAfter?.publishedVersion).toBe(1);
+    expect(mapAfter?.version).toBe(1);
   });
 });

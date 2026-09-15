@@ -22,10 +22,7 @@ export async function saveWorldMap(data: {
   name: string;
   gridData: string;
   gatesData: string;
-  npcsData: string;
   encountersData: string;
-  tileLayersData: string;
-  tilesetsData: string;
 }) {
   try {
     const isAdmin = await verifyAdmin();
@@ -40,10 +37,7 @@ export async function saveWorldMap(data: {
           name: data.name,
           gridData: data.gridData,
           gatesData: data.gatesData,
-          npcsData: data.npcsData,
           encountersData: data.encountersData,
-          tileLayersData: data.tileLayersData,
-          tilesetsData: data.tilesetsData,
           version: existing.version + 1
         }
       });
@@ -54,10 +48,7 @@ export async function saveWorldMap(data: {
           name: data.name,
           gridData: data.gridData,
           gatesData: data.gatesData,
-          npcsData: data.npcsData,
           encountersData: data.encountersData,
-          tileLayersData: data.tileLayersData,
-          tilesetsData: data.tilesetsData,
           version: 1
         }
       });
@@ -247,10 +238,7 @@ export async function fetchWorldMapsDetailed() {
         version: true,
         updatedAt: true,
         gatesData: true,
-        npcsData: true,
         encountersData: true,
-        tileLayersData: true,
-        tilesetsData: true,
       }
     });
 
@@ -259,7 +247,6 @@ export async function fetchWorldMapsDetailed() {
       let npcCount = 0;
       let encounterCount = 0;
       try { gateCount = (JSON.parse(m.gatesData || '[]')).length; } catch {}
-      try { npcCount = (JSON.parse(m.npcsData || '[]')).length; } catch {}
       try { encounterCount = (JSON.parse(m.encountersData || '[]')).length; } catch {}
 
       return {
@@ -270,7 +257,7 @@ export async function fetchWorldMapsDetailed() {
         gateCount,
         npcCount,
         encounterCount,
-        hasTilesets: Boolean(m.tilesetsData && m.tilesetsData.length > 5),
+        hasTilesets: false,
       };
     });
 

@@ -1,5 +1,6 @@
 import { prisma } from "../../web/lib/prisma";
-import type { MapData, LogicTile } from "./types/map";
+import type { MapData, LogicTile, NPCPlacement } from "./types/map";
+import { npcToEntity, entityToNpc } from "./entities/adapters";
 import {
   getCachedMap,
   setCachedMap,
@@ -68,7 +69,6 @@ export async function loadMapData(mapId: string): Promise<MapData> {
     const worldMap = await prisma.worldMap.findUnique({ where: { id: mapId } });
     if (worldMap) {
       const grid = JSON.parse(worldMap.gridData || "[]");
-      const npcs = JSON.parse(worldMap.npcsData || "[]");
       const rawGates = JSON.parse(worldMap.gatesData || "{}");
       const connections = rawGates.connections || undefined;
       const actualGates = rawGates.gates !== undefined ? rawGates.gates : rawGates;
@@ -91,17 +91,24 @@ export async function loadMapData(mapId: string): Promise<MapData> {
         freeformLayers = [];
       }
 
+      let entities: any[] = [];
+      try {
+        if ((worldMap as any).entitiesData) {
+          entities = JSON.parse((worldMap as any).entitiesData || "[]");
+        }
+      } catch {
+        entities = [];
+      }
+
       const data: MapData = {
         id: worldMap.id,
         name: worldMap.name,
         grid,
         gates: actualGates,
         connections: connections,
-        npcs,
+        entities,
         encountersData: encounters,
-        tileLayers: JSON.parse(worldMap.tileLayersData || "[]"),
         freeformLayers,
-        tilesets: JSON.parse(worldMap.tilesetsData || "[]"),
         voxelDoc,
         width,
         height,
@@ -119,13 +126,25 @@ export async function loadMapData(mapId: string): Promise<MapData> {
       const actualGates = rawGates.gates !== undefined ? rawGates.gates : rawGates;
       const encounters = JSON.parse(gameMap.encounters || "[]");
 
+      let entities: any[] = [];
+      try {
+        if ((gameMap as any).entitiesData) {
+          entities = JSON.parse((gameMap as any).entitiesData || "[]");
+        } else if (gameMap.npcs) {
+          const npcsList = JSON.parse(gameMap.npcs || "[]");
+          entities = npcsList.map((npc: NPCPlacement) => npcToEntity(npc));
+        }
+      } catch {
+        entities = [];
+      }
+
       const data: MapData = {
         id: gameMap.id,
         name: gameMap.name,
         grid,
         gates: actualGates,
         connections,
-        npcs,
+        entities,
         encountersData: encounters,
         width: gameMap.width,
         height: gameMap.height,
@@ -136,7 +155,7 @@ export async function loadMapData(mapId: string): Promise<MapData> {
 
     // Blank fallback map
     let grid = Array(20).fill(null).map(() => Array(20).fill(0));
-    let npcs: any[] = [];
+    let entities: any[] = [];
     let width = 20;
     let height = 20;
 
@@ -144,7 +163,7 @@ export async function loadMapData(mapId: string): Promise<MapData> {
       width = 30;
       height = 30;
       grid = buildDemoSandboxGridFallback();
-      npcs = [{ id: "npc_guide_1", templateId: "Villager", name: "Guide", x: 15, y: 15, sprite: "npc_default", direction: "down" }];
+      entities = [npcToEntity({ id: "npc_guide_1", templateId: "Villager", name: "Guide", x: 15, y: 15, sprite: "npc_default", direction: "down" })];
     }
 
     const data: MapData = {
@@ -152,7 +171,7 @@ export async function loadMapData(mapId: string): Promise<MapData> {
       name: mapId,
       grid,
       gates: {},
-      npcs,
+      entities,
       encountersData: [{ speciesSlug: "rockitten", weight: 1, minLevel: 3, maxLevel: 5 }],
       width,
       height,
@@ -167,7 +186,7 @@ export async function loadMapData(mapId: string): Promise<MapData> {
       name: mapId,
       grid: blankGrid,
       gates: {},
-      npcs: [],
+      entities: [],
       encountersData: [],
       width: 24,
       height: 24,
@@ -191,7 +210,7 @@ export async function saveMapData(mapId: string, data: Partial<MapData>): Promis
         width,
         height,
         tilesetData: JSON.stringify(data.grid || []),
-        npcs: JSON.stringify(data.npcs || []),
+        npcs: JSON.stringify((data.entities || []).map(entityToNpc).filter(Boolean)),
         encounters: JSON.stringify(data.encountersData || []),
         gates: JSON.stringify(data.gates || {}),
         version,
@@ -202,7 +221,7 @@ export async function saveMapData(mapId: string, data: Partial<MapData>): Promis
         width,
         height,
         tilesetData: JSON.stringify(data.grid || []),
-        npcs: JSON.stringify(data.npcs || []),
+        npcs: JSON.stringify((data.entities || []).map(entityToNpc).filter(Boolean)),
         encounters: JSON.stringify(data.encountersData || []),
         gates: JSON.stringify(data.gates || {}),
         version,

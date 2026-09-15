@@ -123,20 +123,21 @@ const (
 
 // JoinMapRequest is the client join_map payload.
 type JoinMapRequest struct {
-	AccountID   string   `json:"accountId"`
-	CharacterID string   `json:"characterId"`
-	MapID       string   `json:"mapId"`
-	Lobby       bool     `json:"lobby"`
-	ForceDemo   bool     `json:"forceDemo"`
-	IsPrivate   bool     `json:"isPrivate"`
-	PIE         bool     `json:"pie"`
-	X           *float64 `json:"x"`
-	Y           *float64 `json:"y"`
-	Z           *float64 `json:"z"`
+	AccountID      string   `json:"accountId"`
+	CharacterID    string   `json:"characterId"`
+	MapID          string   `json:"mapId"`
+	Lobby          bool     `json:"lobby"`
+	ForceDemo      bool     `json:"forceDemo"`
+	IsPrivate      bool     `json:"isPrivate"`
+	PIE            bool     `json:"pie"`
+	X              *float64 `json:"x"`
+	Y              *float64 `json:"y"`
+	Z              *float64 `json:"z"`
 	Name           string   `json:"name"`
 	SpriteID       string   `json:"spriteId"`
 	AssetProfileID string   `json:"assetProfileId"`
 	JoinSeq        uint64   `json:"joinSeq"`
+	Version        int      `json:"version"`
 }
 
 // PlayerInput matches PlayerInput on the TS wire.

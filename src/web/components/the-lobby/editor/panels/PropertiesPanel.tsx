@@ -249,7 +249,7 @@ export const PropertiesPanel: React.FC = () => {
                 )}
 
                 {/* NPC Entities at coordinate */}
-                {currentMapData?.npcs?.filter((n: any) => n.position?.x === clickedTile.c && n.position?.y === clickedTile.r).map((npc: any) => (
+                {currentMapData?.entities?.filter((n: any) => (n.components?.transform?.x ?? n.x) === clickedTile.c && (n.components?.transform?.y ?? n.y) === clickedTile.r).map((npc: any) => (
                   <div key={npc.id} className="bg-emerald-950/30 border border-emerald-500/40 p-2 rounded flex items-center justify-between">
                     <div>
                       <span className="text-emerald-300 font-bold block">{npc.name}</span>
@@ -304,7 +304,7 @@ export const PropertiesPanel: React.FC = () => {
               </div>
               <div className="bg-black/40 p-2 rounded border border-white/5">
                 <span className="text-muted-foreground block text-[9px]">Registered NPCs</span>
-                <span className="text-foreground font-bold">{currentMapData?.npcs?.length || 0}</span>
+                <span className="text-foreground font-bold">{currentMapData?.entities?.length || 0}</span>
               </div>
               <div className="bg-black/40 p-2 rounded border border-white/5">
                 <span className="text-muted-foreground block text-[9px]">Warp Gateways</span>

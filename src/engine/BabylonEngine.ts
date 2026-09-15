@@ -115,7 +115,7 @@ export interface BabylonTileMapData {
   tilesetUrl?: string;
   tileLayers?: Array<{ name: string; grid: number[][] }>;
   tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number; imageheight?: number; tilecount?: number }>;
-  npcs?: Array<{ id: string; name: string; x: number; y: number; sprite?: string }>;
+  entities?: Array<{ id: string; name?: string; x: number; y: number; sprite?: string }>;
   freeformLayers?: FreeformLayer[];
   chunks?: RenderedChunk[];
   connections?: any;
@@ -670,7 +670,7 @@ export class BabylonEngine {
     }
 
     this.currentRawMapData = mapData;
-    const { width, height, tileSize, tiles, tileLayers, tilesets, npcs, id: mapId } = mapData;
+    const { width, height, tileSize, tiles, tileLayers, tilesets, entities, id: mapId } = mapData;
     this.currentTilesets = tilesets || [];
     this.currentMapId = mapId || '';
     this.currentMapWidth = width;
@@ -1455,8 +1455,8 @@ export class BabylonEngine {
     }
 
     // Render Map NPCs (prefer absolute /game-assets paths; never /assets/sprites/)
-    if (npcs) {
-      npcs.forEach((npc) => {
+    if (entities) {
+      entities.forEach((npc: any) => {
         const rawId = String(npc.id || "villager");
         const entityId = rawId.startsWith("npc_") ? rawId : `npc_${rawId}`;
         this.updateEntity({
@@ -2037,7 +2037,7 @@ export class BabylonEngine {
       ...(input.showGateSpawns
         ? authorOverlaySpawnMarkers(input.spawnSourceGates ?? input.gates)
         : []),
-      ...authorOverlayNpcMarkers(input.npcs),
+      ...authorOverlayNpcMarkers(input.entities),
       ...authorOverlayMonsterSpawnerMarkers(input.monsterSpawners),
     ];
 

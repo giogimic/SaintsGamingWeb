@@ -67,11 +67,8 @@ export async function POST(req: Request) {
               gameId: 'saints',
               gridData: JSON.stringify([]),
               gatesData: JSON.stringify(gatesPayload),
-              npcsData: JSON.stringify([]),
               encountersData: JSON.stringify([]),
               entitiesData: JSON.stringify([]),
-              tileLayersData: JSON.stringify([]),
-              tilesetsData: JSON.stringify([]),
               version: 1,
             },
             update: {
@@ -114,9 +111,6 @@ export async function POST(req: Request) {
           await notifyGoMapSynced({
             id: mapId,
             name: mapName,
-            npcsData: [],
-            tileLayersData: [],
-            tilesetsData: [],
           }).catch(err => console.error('[Map Import] Sync err:', err));
           importedMaps++;
         }

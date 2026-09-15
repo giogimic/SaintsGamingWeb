@@ -120,8 +120,16 @@ export interface ComponentEncounterZone {
 }
 
 export interface ComponentWarp {
-  targetMapId: string;
-  targetSpawn: { x: number; y: number };
+  // Internal target
+  targetMapId?: string;
+  targetEntryPointId?: string;
+  
+  // External target
+  targetWorldProjectId?: string;
+  targetWorldReleaseId?: string;
+  
+  // Legacy or override spawn coordinates
+  targetSpawn?: { x: number; y: number };
   requiredItem?: string;
   requiredElement?: string;
 }
@@ -134,6 +142,9 @@ export interface ComponentCapabilities {
   harvestable?: boolean;
   destructible?: boolean;
   interactable?: boolean;
+  shopkeeper?: boolean;
+  banker?: boolean;
+  questGiver?: boolean;
 }
 
 export interface ComponentMap {

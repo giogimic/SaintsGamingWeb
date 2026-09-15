@@ -143,6 +143,7 @@ export interface HudState {
 
   // Floating windows
   openWindows: string[];
+  openWindow: (windowId: string) => void;
   toggleWindow: (windowId: string) => void;
   closeWindow: (windowId: string) => void;
   closeAllWindows: () => void;
@@ -453,6 +454,9 @@ export const useHudStore = create<HudState>()(
 
       // Floating windows
       openWindows: [],
+      openWindow: (windowId) => set((s) => {
+        if (!s.openWindows.includes(windowId)) s.openWindows.push(windowId);
+      }),
       toggleWindow: (windowId) => set((s) => {
         const idx = s.openWindows.indexOf(windowId);
         if (idx >= 0) s.openWindows.splice(idx, 1);

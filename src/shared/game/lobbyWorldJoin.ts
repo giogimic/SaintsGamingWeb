@@ -10,7 +10,6 @@
 
 import { toBaseMapId } from '../net/mapIds';
 import { buildJoinKey, shouldSkipRedundantLobbyJoin, type JoinContract } from './lobbyJoin';
-import { DEFAULT_SPAWN_MAP_ID } from './realmSettings';
 import type { JoinMapPayload } from '../net/protocol';
 
 export type WorldSessionState = 'not_joined' | 'joining' | 'joined' | 'transitioning' | 'disconnected' | 'failed';
@@ -50,11 +49,10 @@ export function joinWorld(opts: JoinWorldOptions): JoinWorldResult {
     return { success: false, reason: 'disconnected' };
   }
 
-  const rawMapId = opts.contract.mapId || DEFAULT_SPAWN_MAP_ID;
-  const baseMapId = toBaseMapId(rawMapId);
-  if (!baseMapId) {
-    return { success: false, reason: 'missing_map' };
-  }
+  // The client requests to join the character's saved location (opts.contract.mapId).
+  // If not provided, it sends an empty string, allowing Go to authoritatively route to spawn.
+  const rawMapId = opts.contract.mapId || '';
+  const baseMapId = rawMapId ? toBaseMapId(rawMapId) : '';
 
   const normalizedContract: JoinContract = {
     mapId: baseMapId,
@@ -98,9 +96,10 @@ export function joinWorld(opts: JoinWorldOptions): JoinWorldResult {
     y: typeof opts.position?.y === 'number' ? opts.position.y : 15,
     name: opts.name || 'Player',
     assetProfileId: opts.assetProfileId || 'adventurer',
-    spriteId: opts.assetProfileId || 'adventurer',
+    spriteId: opts.contract.pie ? undefined : opts.assetProfileId || undefined,
     neighborMapIds: opts.neighborMapIds,
     joinSeq: nextSeq,
+
   };
 
   console.log(`[lobbyWorldJoin] Emitting 'join_map' for account=${opts.accountId} character=${opts.characterId} map=${baseMapId} seq=${nextSeq}`, payload);
@@ -147,7 +146,13 @@ export function startMapTransition(opts: StartMapTransitionOptions): JoinWorldRe
   if (typeof setTimeout !== 'undefined') {
     timerId = setTimeout(() => {
       opts.setIsMapTransitioning?.(false);
-      opts.onSetWorldSessionState('joined');
+      // We only reset to 'joined' if the transition didn't fail.
+      // Since we can't read the live state synchronously here easily without
+      // adding a new callback to JoinWorldOptions, we rely on the fact that
+      // onJoinRejected will explicitly set it to failed, and this timeout
+      // might overwrite it if we blindly call onSetWorldSessionState.
+      // We'll skip forcing it to 'joined' here. If the server accepts the join,
+      // the map_joined event will set it to 'joined' anyway!
     }, timeoutMs);
   }
 

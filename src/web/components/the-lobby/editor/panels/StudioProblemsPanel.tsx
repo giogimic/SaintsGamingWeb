@@ -143,7 +143,7 @@ export function StudioProblemsPanel({ asSubPanel }: { asSubPanel?: boolean } = {
     }
 
     // 3. Check Entity Collisions with Solid Tiles
-    const npcs = mapData.npcs || mapEntities || [];
+    const npcs = mapData.entities || mapEntities || [];
     npcs.forEach((npc: any, idx: number) => {
       const x = npc.position?.x ?? npc.x;
       const y = npc.position?.y ?? npc.y;

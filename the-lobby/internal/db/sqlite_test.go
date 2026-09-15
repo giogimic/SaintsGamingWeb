@@ -103,35 +103,3 @@ func TestVerifySchemaFailsCorrectly(t *testing.T) {
 }
 
 
-func TestRegression_StartingMeadowJoin(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "saints-db-test3")
-	if err != nil {
-		t.Fatalf("failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	dbPath := filepath.Join(tmpDir, "test3.db")
-	db, err := sql.Open("sqlite", dbPath)
-	if err != nil {
-		t.Fatalf("failed to open sqlite: %v", err)
-	}
-	defer db.Close()
-
-	if err := migrate(db); err != nil {
-		t.Fatalf("migration failed: %v", err)
-	}
-
-	_, _ = db.Exec("INSERT INTO WorldMap (id, name, gridData, publishedVersion) VALUES ('STARTING_MEADOW', 'Meadow', '{}', 1)")
-	_, _ = db.Exec("INSERT INTO WorldMapVersion (id, mapId, version, name, data) VALUES ('ver1', 'STARTING_MEADOW', 1, 'Meadow', '{}')")
-
-	query := `SELECT v.name, w.publishedVersion, v.data 
-			  FROM WorldMap w 
-			  JOIN WorldMapVersion v ON w.id = v.mapId AND w.publishedVersion = v.version 
-			  WHERE w.id = 'STARTING_MEADOW';`
-	
-	var name, data string
-	var pub int
-	if err := db.QueryRow(query).Scan(&name, &pub, &data); err != nil {
-		t.Fatalf("regression query failed: %v", err)
-	}
-}

@@ -30,7 +30,7 @@ export function getMapIndexList(): MapIndexEntry[] {
   return Object.values(GAME_MAPS).map((map: GameMapData) => {
     const width = map.grid[0]?.length || 24;
     const height = map.grid.length || 24;
-    const npcCount = map.npcs?.length || 0;
+    const npcCount = map.entities?.length || 0;
     const gateCount = Object.keys(map.gates || {}).length;
     const hasEncounters = (map.encounterPool?.length || 0) > 0;
     const category = getMapCategory(map.id, map.name);

@@ -129,6 +129,22 @@ func (m *Manager) LoadFromDB() error {
 	return nil
 }
 
+
+// LoadFromNPCs initializes dialogue trees from the extracted schema map.
+func (m *Manager) LoadFromNPCs(npcs map[string]struct{ Name string; Data string }) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	for npcID, row := range npcs {
+		if len(row.Data) == 0 || row.Data == "null" {
+			continue
+		}
+		if tree, ok := parsePrismaTree(npcID, row.Name, row.Data); ok {
+			m.trees[npcID] = tree
+		}
+	}
+}
+
 func parsePrismaTree(npcID, name, raw string) (*Tree, bool) {
 	var blob map[string]json.RawMessage
 	if json.Unmarshal([]byte(raw), &blob) != nil || len(blob) == 0 {

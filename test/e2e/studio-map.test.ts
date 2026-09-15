@@ -32,7 +32,6 @@ describe('Studio Map Editor E2E', () => {
         name: 'Smoke Studio Map',
         gridData: JSON.stringify([[1,1],[1,1]]),
         gatesData: '{}',
-        npcsData: '[]',
         encountersData: '[]',
         version: 1,
       },
@@ -105,22 +104,17 @@ describe('Studio Map Editor E2E', () => {
         name: "E2E Voxel Test Map",
         gridData: JSON.stringify(grid),
         gatesData: "{}",
-        npcsData: "[]",
         encountersData: "[]",
-        tileLayersData: null,
-        tilesetsData: null,
         regionClass: "authored",
         proceduralConfig: JSON.stringify({ biome: "temperate_plains", seed: 42 }),
         version: 1,
       },
       update: {
         gridData: JSON.stringify(grid),
-        tileLayersData: null,
-        tilesetsData: null,
         regionClass: "authored",
         proceduralConfig: JSON.stringify({ biome: "temperate_plains", seed: 42 }),
         version: { increment: 1 },
-      },
+      }
     });
 
     const { VoxelStorageService } = await import('@/server/services/VoxelStorageService');

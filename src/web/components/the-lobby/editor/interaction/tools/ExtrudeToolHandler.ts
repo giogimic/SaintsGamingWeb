@@ -13,6 +13,7 @@ export class ExtrudeToolHandler implements IToolHandler {
   private sourceWord: { low: number; high: number; } = { low: 0, high: 0 };
   private isDragging = false;
   private startPoint: { x: number, y: number, z: number } | null = null;
+  private surfaceVoxels: { x: number, y: number, z: number }[] = [];
 
   public onPointerDown(event: ToolPointerEvent, context: ToolExecutionContext): boolean {
     if (event.button !== 0 && event.rawEvent.buttons !== 1) return false;
@@ -29,7 +30,7 @@ export class ExtrudeToolHandler implements IToolHandler {
       };
 
       const word = voxelWorld.getVoxel(this.anchorVoxel.x, this.anchorVoxel.y, this.anchorVoxel.z);
-      if (word.low === undefined || (word.low === 0 && word.high === 0)) return false; // Can't extrude air
+      if (word.low === undefined || (word.low === 0 && word.high === 0)) return false;
       this.sourceWord = { low: word.low, high: word.high };
 
       this.extrudeNormal = {
@@ -41,22 +42,65 @@ export class ExtrudeToolHandler implements IToolHandler {
       this.startPoint = { x: event.worldPos.x, y: event.worldPos.y, z: event.worldPos.z };
       this.isDragging = true;
       
+      // Perform flood fill to find contiguous coplanar faces
+      this.surfaceVoxels = this.floodFillSurface(voxelWorld, this.anchorVoxel, this.extrudeNormal, this.sourceWord);
+
       this.updatePreview(0, context);
       return true;
     }
     return false;
   }
 
+  private floodFillSurface(
+    world: VoxelWorld,
+    start: { x: number, y: number, z: number },
+    normal: { x: number, y: number, z: number },
+    matchWord: { low: number, high: number }
+  ): { x: number, y: number, z: number }[] {
+    const surface: { x: number, y: number, z: number }[] = [];
+    const visited = new Set<string>();
+    const queue = [start];
+    
+    // Orthogonal directions to search (perpendicular to normal)
+    const dirs: {dx: number, dy: number, dz: number}[] = [];
+    if (normal.x !== 0) dirs.push({dx:0, dy:1, dz:0}, {dx:0, dy:-1, dz:0}, {dx:0, dy:0, dz:1}, {dx:0, dy:0, dz:-1});
+    if (normal.y !== 0) dirs.push({dx:1, dy:0, dz:0}, {dx:-1, dy:0, dz:0}, {dx:0, dy:0, dz:1}, {dx:0, dy:0, dz:-1});
+    if (normal.z !== 0) dirs.push({dx:1, dy:0, dz:0}, {dx:-1, dy:0, dz:0}, {dx:0, dy:1, dz:0}, {dx:0, dy:-1, dz:0});
+
+    while (queue.length > 0) {
+      const cur = queue.shift()!;
+      const key = `${cur.x},${cur.y},${cur.z}`;
+      if (visited.has(key)) continue;
+      visited.add(key);
+
+      surface.push(cur);
+
+      for (const dir of dirs) {
+        const nx = cur.x + dir.dx;
+        const ny = cur.y + dir.dy;
+        const nz = cur.z + dir.dz;
+        
+        if (nx < 0 || nx >= world.totalWidthBlocks || nz < 0 || nz >= world.totalDepthBlocks || ny < 0 || ny >= world.totalHeightBlocks) continue;
+        
+        const nKey = `${nx},${ny},${nz}`;
+        if (visited.has(nKey)) continue;
+
+        const w = world.getVoxel(nx, ny, nz);
+        if (w.low === matchWord.low && w.high === matchWord.high) {
+          // Check if it's exposed on the normal side
+          const frontW = world.getVoxel(nx + normal.x, ny + normal.y, nz + normal.z);
+          if (frontW.low === undefined || (frontW.low === 0 && frontW.high === 0)) {
+            queue.push({x: nx, y: ny, z: nz});
+          }
+        }
+      }
+    }
+    return surface;
+  }
+
   public onPointerMove(event: ToolPointerEvent, context: ToolExecutionContext): boolean {
     if (!this.isDragging || !this.anchorVoxel || !this.extrudeNormal || !this.startPoint) return false;
     
-    // We project the drag delta onto the normal axis
-    const dx = event.worldPos.x - this.startPoint.x;
-    const dy = event.worldPos.y - this.startPoint.y; // note: event.worldPos.y might be 0 for 2D, we might need actual 3D ray hit
-    // Wait, event.worldPos comes from the ground plane. For vertical extrusion, we should use pointer delta or raw Y.
-    // If the hit normal is Y, dragging mouse Y (in 2D space) usually maps to Z.
-    // We can just use the difference in voxelCoord for simplicity.
-
     const vT = event.voxelTarget;
     if (vT && vT.kind !== 'none') {
       let delta = 0;
@@ -65,35 +109,49 @@ export class ExtrudeToolHandler implements IToolHandler {
       if (this.extrudeNormal.y !== 0) delta = (targetCoord.wy - this.anchorVoxel.y) * this.extrudeNormal.y;
       if (this.extrudeNormal.z !== 0) delta = (targetCoord.wz - this.anchorVoxel.z) * this.extrudeNormal.z;
       
-      // We only allow positive extrusion (pulling out) for now, or push in? 
-      // Push could erase. Pull could draw. Let's do both.
       this.updatePreview(delta, context);
     }
     return true;
   }
 
   private updatePreview(delta: number, context: ToolExecutionContext) {
-    if (!this.anchorVoxel || !this.extrudeNormal) return;
+    if (this.surfaceVoxels.length === 0 || !this.extrudeNormal) return;
     if (context.engine.set3DBoxSelectionPreview) {
-      // Extrude starts from anchor + normal (so we don't overwrite the anchor itself when pushing)
-      // Actually, if delta > 0, we fill from anchor+normal to anchor+(normal*delta).
-      // If delta < 0, we erase from anchor to anchor+(normal*delta).
-      
-      let minX = this.anchorVoxel.x;
-      let maxX = this.anchorVoxel.x + this.extrudeNormal.x * delta;
-      let minY = this.anchorVoxel.y;
-      let maxY = this.anchorVoxel.y + this.extrudeNormal.y * delta;
-      let minZ = this.anchorVoxel.z;
-      let maxZ = this.anchorVoxel.z + this.extrudeNormal.z * delta;
+      // Find bounds of surface
+      let minX = this.surfaceVoxels[0].x;
+      let maxX = this.surfaceVoxels[0].x;
+      let minY = this.surfaceVoxels[0].y;
+      let maxY = this.surfaceVoxels[0].y;
+      let minZ = this.surfaceVoxels[0].z;
+      let maxZ = this.surfaceVoxels[0].z;
 
-      // If pulling out, we don't highlight the anchor itself.
+      for (const v of this.surfaceVoxels) {
+        if (v.x < minX) minX = v.x;
+        if (v.x > maxX) maxX = v.x;
+        if (v.y < minY) minY = v.y;
+        if (v.y > maxY) maxY = v.y;
+        if (v.z < minZ) minZ = v.z;
+        if (v.z > maxZ) maxZ = v.z;
+      }
+
       if (delta > 0) {
-        minX += this.extrudeNormal.x;
-        maxX = Math.max(minX, maxX);
-        minY += this.extrudeNormal.y;
-        maxY = Math.max(minY, maxY);
-        minZ += this.extrudeNormal.z;
-        maxZ = Math.max(minZ, maxZ);
+        if (this.extrudeNormal.x > 0) { minX += 1; maxX += delta; }
+        else if (this.extrudeNormal.x < 0) { maxX -= 1; minX -= delta; }
+        
+        if (this.extrudeNormal.y > 0) { minY += 1; maxY += delta; }
+        else if (this.extrudeNormal.y < 0) { maxY -= 1; minY -= delta; }
+
+        if (this.extrudeNormal.z > 0) { minZ += 1; maxZ += delta; }
+        else if (this.extrudeNormal.z < 0) { maxZ -= 1; minZ -= delta; }
+      } else if (delta < 0) {
+        if (this.extrudeNormal.x > 0) { minX += delta + 1; }
+        else if (this.extrudeNormal.x < 0) { maxX -= delta + 1; }
+        
+        if (this.extrudeNormal.y > 0) { minY += delta + 1; }
+        else if (this.extrudeNormal.y < 0) { maxY -= delta + 1; }
+
+        if (this.extrudeNormal.z > 0) { minZ += delta + 1; }
+        else if (this.extrudeNormal.z < 0) { maxZ -= delta + 1; }
       }
 
       context.engine.set3DBoxSelectionPreview(minX, minY, minZ, maxX, maxY, maxZ);
@@ -104,6 +162,7 @@ export class ExtrudeToolHandler implements IToolHandler {
     if (!this.isDragging || !this.anchorVoxel || !this.extrudeNormal) {
       this.isDragging = false;
       this.anchorVoxel = null;
+      this.surfaceVoxels = [];
       return false;
     }
     
@@ -124,11 +183,12 @@ export class ExtrudeToolHandler implements IToolHandler {
 
     this.isDragging = false;
     this.anchorVoxel = null;
+    this.surfaceVoxels = [];
     return true;
   }
 
   private executeExtrusion(delta: number, context: ToolExecutionContext) {
-    if (delta === 0 || !this.anchorVoxel || !this.extrudeNormal) return;
+    if (delta === 0 || this.surfaceVoxels.length === 0 || !this.extrudeNormal) return;
 
     const store = useEditorStore.getState();
     const gameStore = useGameStore.getState();
@@ -143,32 +203,33 @@ export class ExtrudeToolHandler implements IToolHandler {
     const isPull = delta > 0; // True = Create, False = Erase
     const absDelta = Math.abs(delta);
     
-    // For pull, start 1 unit away from anchor. For push, start at anchor and go backward.
     const startOffset = isPull ? 1 : 0; 
 
     for (let i = startOffset; i <= absDelta; i++) {
-      // If push, we move in the opposite direction of the normal
       const sign = isPull ? 1 : -1;
-      const x = this.anchorVoxel.x + this.extrudeNormal.x * i * sign;
-      const y = this.anchorVoxel.y + this.extrudeNormal.y * i * sign;
-      const z = this.anchorVoxel.z + this.extrudeNormal.z * i * sign;
 
-      const currentWord = voxelWorld.getVoxel(x, y, z);
-      const finalWord = isPull ? this.sourceWord : { low: 0, high: 0 };
+      for (const v of this.surfaceVoxels) {
+        const x = v.x + this.extrudeNormal.x * i * sign;
+        const y = v.y + this.extrudeNormal.y * i * sign;
+        const z = v.z + this.extrudeNormal.z * i * sign;
 
-      if (currentWord.low !== finalWord.low || currentWord.high !== finalWord.high) {
-        txBuilder.record(voxelWorld, x, y, z, finalWord as any);
-        voxelWorld.setVoxel(x, y, z, finalWord.low, finalWord.high);
-        const socket = gameStore.socket;
-        if (socket) {
-          socket.emit('voxel_edit', {
-            mapId: liveMap.id,
-            x,
-            y,
-            z,
-            wordLow: finalWord.low,
-            wordHigh: finalWord.high,
-          });
+        const currentWord = voxelWorld.getVoxel(x, y, z);
+        const finalWord = isPull ? this.sourceWord : { low: 0, high: 0 };
+
+        if (currentWord.low !== finalWord.low || currentWord.high !== finalWord.high) {
+          txBuilder.record(voxelWorld, x, y, z, finalWord as any);
+          voxelWorld.setVoxel(x, y, z, finalWord.low, finalWord.high);
+          const socket = gameStore.socket;
+          if (socket) {
+            socket.emit('voxel_edit', {
+              mapId: liveMap.id,
+              x,
+              y,
+              z,
+              wordLow: finalWord.low,
+              wordHigh: finalWord.high,
+            });
+          }
         }
       }
     }

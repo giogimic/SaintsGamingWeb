@@ -37,7 +37,7 @@ export async function listMapSpawners(mapId: string) {
 
     let npcs: any[] = [];
     try {
-      npcs = JSON.parse(map.npcsData);
+      npcs = JSON.parse(map.entitiesData);
       if (!Array.isArray(npcs)) npcs = [];
     } catch {
       npcs = [];
@@ -71,7 +71,7 @@ export async function placeMapSpawner(data: {
 
     let npcs: any[] = [];
     try {
-      npcs = JSON.parse(map.npcsData);
+      npcs = JSON.parse(map.entitiesData);
       if (!Array.isArray(npcs)) npcs = [];
     } catch {
       npcs = [];
@@ -98,7 +98,7 @@ export async function placeMapSpawner(data: {
 
     await prisma.worldMap.update({
       where: { id: data.mapId },
-      data: { npcsData: JSON.stringify(npcs) },
+      data: { entitiesData: JSON.stringify(npcs) },
     });
 
     void notifyGoMapSynced({ id: data.mapId });
@@ -130,7 +130,7 @@ export async function updateMapSpawner(data: {
 
     let npcs: any[] = [];
     try {
-      npcs = JSON.parse(map.npcsData);
+      npcs = JSON.parse(map.entitiesData);
       if (!Array.isArray(npcs)) npcs = [];
     } catch {
       npcs = [];
@@ -158,7 +158,7 @@ export async function updateMapSpawner(data: {
 
     await prisma.worldMap.update({
       where: { id: data.mapId },
-      data: { npcsData: JSON.stringify(npcs) },
+      data: { entitiesData: JSON.stringify(npcs) },
     });
 
     void notifyGoMapSynced({ id: data.mapId });
@@ -176,7 +176,7 @@ export async function deleteMapSpawner(data: { mapId: string; spawnerId: string 
 
     let npcs: any[] = [];
     try {
-      npcs = JSON.parse(map.npcsData);
+      npcs = JSON.parse(map.entitiesData);
       if (!Array.isArray(npcs)) npcs = [];
     } catch {
       npcs = [];
@@ -187,7 +187,7 @@ export async function deleteMapSpawner(data: { mapId: string; spawnerId: string 
 
     await prisma.worldMap.update({
       where: { id: data.mapId },
-      data: { npcsData: JSON.stringify(filtered) },
+      data: { entitiesData: JSON.stringify(filtered) },
     });
 
     void notifyGoMapSynced({ id: data.mapId });

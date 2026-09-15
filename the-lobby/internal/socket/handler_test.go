@@ -7,6 +7,7 @@ import (
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/creature"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/engine"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/player"
+	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/skill"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/world"
 )
 
@@ -135,4 +136,40 @@ func reqMatches(p *player.State, baseMapID, charID string, isPrivate, pie bool) 
 	sameBase := p.BaseMapID == baseMapID
 	samePolicy := isSamePolicy(p.MapID, baseMapID, p.AccountID, isPrivate, pie)
 	return sameChar && sameBase && samePolicy
+}
+
+func TestFishPersistence(t *testing.T) {
+	cfg := config.Config{SimTPS: 20, NetTPS: 10}
+	wm := world.NewManager(50)
+	pm := player.NewManager(16, nil)
+	cm := creature.NewManager()
+	em := newMockEmitter()
+	eng := engine.New(cfg, wm, pm, cm, em)
+
+	sm := skill.NewManager(nil)
+	deps := Deps{Skills: sm}
+	hub := NewHub(cfg, eng, deps)
+
+	accountID := "acc_fish_1"
+	charID := "char_fish_1"
+	socketID := "sock_fish_1"
+
+	inst, _ := wm.JoinMap("DEMO_SANDBOX", accountID, false, false)
+	// Player at 10,10
+	pm.CreateWithCharacter(accountID, charID, socketID, "Hero", "adventurer", inst.InstanceID, "DEMO_SANDBOX", 10, 10, 0)
+
+	// Attempt fishing exactly on top of player (within 3 tiles)
+	datas := []any{map[string]any{"x": 10.0, "y": 10.0}}
+	hub.handleFishAttempt(accountID, datas)
+
+	// Verify XP was added to the manager
+	levels := sm.Levels(accountID)
+	if levels["fishing"] < 1 {
+		t.Fatal("expected fishing skill to be granted and persisted")
+	}
+	
+	snap := sm.Snapshot(accountID)
+	if snap["fishing"] != 20 {
+		t.Fatalf("expected 20 fishing XP, got %d", snap["fishing"])
+	}
 }

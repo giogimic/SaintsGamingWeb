@@ -60,6 +60,7 @@ export function onJoinRejected(data: JoinRejectedPayload): void {
   }
   console.warn(`[worldHandlers] Join rejected for ${data.mapId}: ${data.message} (${data.reason})`);
   useWorldStore.getState().setWorldSessionState('failed');
+  useWorldStore.getState().setIsMapTransitioning(false);
   if (data.reason === 'map_not_found') {
     useSessionStore.getState().setFatalError(`Map not found: ${data.mapId}`);
   }

@@ -3,41 +3,35 @@ import { useHudStore } from '../../state/useHudStore';
 import { socketManager } from '../../net/SocketManager';
 
 interface DialableNode {
-  mapId: string;
-  name: string;
+  connectionId: string;
+  destinationName: string;
   description: string;
-  isActive: boolean;
-  publicAccess: boolean;
+  icon: string;
 }
 
 export function SpiritGateDialer() {
   const isDialerOpen = useHudStore((s) => s.openWindows.includes('spiritGateDialer'));
-  const toggleWindow = useHudStore((s) => s.toggleWindow);
   const closeWindow = useHudStore((s) => s.closeWindow);
   const [nodes, setNodes] = useState<DialableNode[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!isDialerOpen) return;
-    
-    setLoading(true);
-    // Request atlas nodes from server
-    socketManager.emit('portal_request_nodes' as any, {});
-
-    const onNodesReceived = (data: { nodes: DialableNode[] }) => {
-      setNodes(data.nodes || []);
+    const onNodesReceived = (data: DialableNode[]) => {
+      setNodes(data || []);
       setLoading(false);
+      useHudStore.getState().openWindow('spiritGateDialer');
     };
 
-    socketManager.raw?.on('portal_nodes_response' as any, onNodesReceived);
+    // The Go server sends an array directly, not an object { nodes: [] } like the old mock
+    socketManager.raw?.on('portal_request_nodes' as any, onNodesReceived);
 
     return () => {
-      socketManager.raw?.off('portal_nodes_response' as any, onNodesReceived);
+      socketManager.raw?.off('portal_request_nodes' as any, onNodesReceived);
     };
-  }, [isDialerOpen]);
+  }, []);
 
-  const handleDial = (mapId: string) => {
-    socketManager.emit('portal_dial' as any, { targetMapId: mapId });
+  const handleDial = (connectionId: string) => {
+    socketManager.emit('portal_dial' as any, { connectionId });
     closeWindow('spiritGateDialer');
   };
 
@@ -71,21 +65,14 @@ export function SpiritGateDialer() {
             <div className="grid gap-4 md:grid-cols-2">
               {nodes.map(node => (
                 <div 
-                  key={node.mapId} 
+                  key={node.connectionId} 
                   className="flex flex-col p-4 transition-colors border rounded-lg cursor-pointer bg-card/40 border-border/50 hover:bg-primary/20 hover:border-primary/40"
-                  onClick={() => handleDial(node.mapId)}
+                  onClick={() => handleDial(node.connectionId)}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-white">{node.name}</span>
-                    <span className={`text-xs px-2 py-1 rounded ${node.publicAccess ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/20 text-orange-400'}`}>
-                      {node.publicAccess ? 'Public' : 'Private'}
-                    </span>
+                    <span className="font-semibold text-white">{node.destinationName}</span>
                   </div>
                   <p className="text-sm text-muted-foreground">{node.description}</p>
-                  
-                  <div className="mt-4 text-xs font-mono text-primary/80">
-                    ID: {node.mapId}
-                  </div>
                 </div>
               ))}
             </div>

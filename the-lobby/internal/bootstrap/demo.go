@@ -2,7 +2,6 @@ package bootstrap
 
 import (
 	"database/sql"
-	"encoding/json"
 	"log"
 	"os"
 
@@ -37,42 +36,32 @@ func EnsureDemo(db *sql.DB, wm *world.Manager) error {
 	if err != nil {
 		return err
 	}
-	npcs, _ := json.Marshal(def.NPCs)
-	tilesets := `[{"firstgid":1,"name":"demo","tilewidth":16,"tileheight":16,"tilecount":64,"columns":8}]`
-	// Solid grass GID 17 in a filled Ground layer (matches TS DEFAULT_STUDIO_GROUND_GID).
-	ground := make([]int, def.Width*def.Height)
-	for i := range ground {
-		ground[i] = protocol.DefaultGroundGID
-	}
-	groundJSON, _ := json.Marshal(ground)
-	tileLayers := `[{"name":"Ground","width":` + itoa(def.Width) + `,"height":` + itoa(def.Height) + `,"data":` + string(groundJSON) + `}]`
-
 	if count > 0 {
-		_, err = db.Exec(`UPDATE WorldMap SET name=?, gridData=?, npcsData=?, tileLayersData=?, tilesetsData=?, mapType='FRACTAL', regionClass='fractal', version=version+1, publishedVersion=version+1, publishedData='{}', updatedAt=datetime('now') WHERE id=?`,
-			def.Name, gridJSON, string(npcs), tileLayers, tilesets, protocol.DemoMapID)
+		_, err = db.Exec(`UPDATE WorldMap SET name=?, gridData=?, mapType='FRACTAL', regionClass='fractal', version=version+1, updatedAt=datetime('now') WHERE id=?`,
+			def.Name, gridJSON, protocol.DemoMapID)
 	} else {
-		_, err = db.Exec(`INSERT INTO WorldMap (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, mapType, regionClass, version, publishedVersion, publishedData)
-			VALUES (?, 'saints', ?, ?, '{}', ?, '[]', ?, ?, 'FRACTAL', 'fractal', 1, 1, '{}')`,
-			protocol.DemoMapID, def.Name, gridJSON, string(npcs), tileLayers, tilesets)
+		_, err = db.Exec(`INSERT INTO WorldMap (id, gameId, name, gridData, gatesData, encountersData, mapType, regionClass, version)
+			VALUES (?, 'saints', ?, ?, '{}', '[]', 'FRACTAL', 'fractal', 1)`,
+			protocol.DemoMapID, def.Name, gridJSON)
 	}
 	if err != nil {
 		return err
 	}
 
-	_, _ = db.Exec(`INSERT INTO GameMap (id, name, width, height, tilesetData, gates, npcs, encounters)
-		VALUES (?, ?, ?, ?, ?, '{}', ?, '[]')
-		ON CONFLICT(id) DO UPDATE SET name=excluded.name, width=excluded.width, height=excluded.height, tilesetData=excluded.tilesetData, npcs=excluded.npcs`,
-		protocol.DemoMapID, def.Name, def.Width, def.Height, tilesets, string(npcs))
+	_, _ = db.Exec(`INSERT INTO GameMap (id, name, width, height, tilesetData, gates, encounters)
+		VALUES (?, ?, ?, ?, '[]', '{}', '[]')
+		ON CONFLICT(id) DO UPDATE SET name=excluded.name, width=excluded.width, height=excluded.height`,
+		protocol.DemoMapID, def.Name, def.Width, def.Height)
 
 	log.Printf("[bootstrap] seeded DEMO_SANDBOX %dx%d", def.Width, def.Height)
 	return nil
 }
 
 func loadExisting(db *sql.DB, wm *world.Manager) error {
-	rows, err := db.Query(`SELECT id, name, gridData, npcsData, regionClass FROM WorldMap`)
+	rows, err := db.Query(`SELECT id, name, gridData, regionClass FROM WorldMap`)
 	if err != nil {
 		// Fallback query if columns not present
-		rows, err = db.Query(`SELECT id, name, gridData, npcsData FROM WorldMap`)
+		rows, err = db.Query(`SELECT id, name, gridData FROM WorldMap`)
 		if err != nil {
 			return nil
 		}
@@ -80,18 +69,18 @@ func loadExisting(db *sql.DB, wm *world.Manager) error {
 	defer rows.Close()
 
 	cols, _ := rows.Columns()
-	hasRegionClass := len(cols) >= 5
+	hasRegionClass := len(cols) >= 4
 
 	for rows.Next() {
 		var id, name string
-		var gridData, npcsData, regionClass sql.NullString
+		var gridData, regionClass sql.NullString
 
 		if hasRegionClass {
-			if err := rows.Scan(&id, &name, &gridData, &npcsData, &regionClass); err != nil {
+			if err := rows.Scan(&id, &name, &gridData, &regionClass); err != nil {
 				continue
 			}
 		} else {
-			if err := rows.Scan(&id, &name, &gridData, &npcsData); err != nil {
+			if err := rows.Scan(&id, &name, &gridData); err != nil {
 				continue
 			}
 		}
@@ -105,9 +94,6 @@ func loadExisting(db *sql.DB, wm *world.Manager) error {
 			w = len(grid[0])
 		}
 		var npcs []world.NPCDef
-		if npcsData.Valid && npcsData.String != "" && npcsData.String != "[]" {
-			_ = json.Unmarshal([]byte(npcsData.String), &npcs)
-		}
 
 		rClass := "authored"
 		if regionClass.Valid && regionClass.String != "" {

@@ -8,7 +8,35 @@ export interface EnqueueMapSyncOptions {
   eagerPush?: boolean;
 }
 
+export interface EnqueueProjectSyncOptions {
+  projectId: string;
+  version: string;
+  userId?: string;
+  eagerPush?: boolean;
+}
+
 export class MapSyncService {
+  /**
+   * Enqueue a project release sync task for the game engine.
+   */
+  public static async enqueueProjectRelease(options: EnqueueProjectSyncOptions) {
+    // For now we don't have a ProjectSyncEntry table, so we just eagerly push
+    const isEagerPush = options.eagerPush ?? (process.env.SYNC_MODE !== "pull");
+    if (isEagerPush) {
+      void (async () => {
+        try {
+          const { notifyGoProjectSynced } = await import('./goMmoNotify');
+          await notifyGoProjectSynced({
+            projectId: options.projectId,
+            version: options.version,
+          });
+        } catch (e: any) {
+          console.error('[MapSyncService] project sync error', e);
+        }
+      })();
+    }
+  }
+
   /**
    * Enqueue a map sync task for the game engine / Go MMO shards.
    */
@@ -38,9 +66,7 @@ export class MapSyncService {
             version: options.version,
             name: map.name,
             voxelData: voxelDoc,
-            npcsData: JSON.parse(map.npcsData || "[]"),
-            tileLayersData: JSON.parse(map.tileLayersData || "[]"),
-            tilesetsData: JSON.parse(map.tilesetsData || "[]"),
+
           });
 
           if (res.ok && !res.skipped) {

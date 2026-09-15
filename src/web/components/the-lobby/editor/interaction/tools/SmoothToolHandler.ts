@@ -5,6 +5,7 @@ import { useGameStore } from '../../../store';
 import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
 import { VoxelTransactionBuilder } from '@/shared/game/voxel/VoxelTransaction';
 import { VOXEL_MAT_GRASS, packVoxel, VoxelShape, VoxelOrientation, VoxelPhysics, VoxelLogic } from '@/shared/game/voxel/VoxelWord';
+import type { VoxelShapeType, VoxelOrientationType } from '@/shared/game/voxel/VoxelWord';
 
 export class SmoothToolHandler implements IToolHandler {
   public readonly id = 'smooth' as const;
@@ -50,9 +51,7 @@ export class SmoothToolHandler implements IToolHandler {
     const center = event.voxelTarget.voxelCoord;
     const txBuilder = new VoxelTransactionBuilder('Melt Brush', liveMap.id || '');
 
-    // 3x3x3 or radius-based Cellular Automata smoothing
-    const toRemove: {x:number, y:number, z:number, old:{low:number, high:number}}[] = [];
-    const toAdd: {x:number, y:number, z:number}[] = [];
+    const mutationsToApply: {x:number, y:number, z:number, packed: {low:number, high:number}, current: {low:number, high:number}}[] = [];
 
     const matId = store.activeVoxelMaterialId || VOXEL_MAT_GRASS;
 
@@ -65,69 +64,83 @@ export class SmoothToolHandler implements IToolHandler {
           
           if (wx < 0 || wx >= voxelWorld.totalWidthBlocks || wz < 0 || wz >= voxelWorld.totalDepthBlocks || wy < 0 || wy >= voxelWorld.totalHeightBlocks) continue;
 
-          let neighbors = 0;
-          for (let nx = -1; nx <= 1; nx++) {
-            for (let ny = -1; ny <= 1; ny++) {
-              for (let nz = -1; nz <= 1; nz++) {
-                if (nx === 0 && ny === 0 && nz === 0) continue;
-                const nb = voxelWorld.getVoxel(wx + nx, wy + ny, wz + nz);
-                if (nb.low !== undefined && (nb.low !== 0 || nb.high !== 0)) neighbors++;
-              }
-            }
-          }
+          // Deterministic sphere check
+          if (dx*dx + dy*dy + dz*dz > radius*radius) continue;
 
           const currentWord = voxelWorld.getVoxel(wx, wy, wz);
-          if (currentWord.low !== undefined && (currentWord.low !== 0 || currentWord.high !== 0)) {
-            // Melt isolated blocks or sharp protrusions
-            if (neighbors <= 10) {
-              toRemove.push({x: wx, y: wy, z: wz, old: { low: currentWord.low, high: currentWord.high }});
-            }
-          } else {
-            // Fill in deep holes
-            if (neighbors >= 14) {
-              toAdd.push({x: wx, y: wy, z: wz});
-            }
+          if (currentWord.low === undefined || (currentWord.low === 0 && currentWord.high === 0)) continue;
+
+          const shapeId = (currentWord.low >>> 24) & 0xff;
+          if (shapeId !== VoxelShape.FULL_CUBE) continue; // Only smooth full cubes for now
+
+          // Check the 6 adjacent neighbors (N, S, E, W, Up, Down)
+          const nN = voxelWorld.getVoxel(wx, wy, wz + 1);
+          const nS = voxelWorld.getVoxel(wx, wy, wz - 1);
+          const nE = voxelWorld.getVoxel(wx + 1, wy, wz);
+          const nW = voxelWorld.getVoxel(wx - 1, wy, wz);
+          const nU = voxelWorld.getVoxel(wx, wy + 1, wz);
+          const nD = voxelWorld.getVoxel(wx, wy - 1, wz);
+
+          const hasN = nN.low !== undefined && (nN.low !== 0 || nN.high !== 0);
+          const hasS = nS.low !== undefined && (nS.low !== 0 || nS.high !== 0);
+          const hasE = nE.low !== undefined && (nE.low !== 0 || nE.high !== 0);
+          const hasW = nW.low !== undefined && (nW.low !== 0 || nW.high !== 0);
+          const hasU = nU.low !== undefined && (nU.low !== 0 || nU.high !== 0);
+          const hasD = nD.low !== undefined && (nD.low !== 0 || nD.high !== 0);
+
+          // We only smooth if the block is exposed on top
+          if (hasU) continue;
+
+          let newShape: VoxelShapeType = VoxelShape.FULL_CUBE;
+          let newOrient: VoxelOrientationType = VoxelOrientation.NORTH;
+
+          // Simple slope conversion logic
+          if (hasS && hasE && hasW && !hasN) {
+            newShape = VoxelShape.SLOPE_45;
+            newOrient = VoxelOrientation.NORTH;
+          } else if (hasN && hasE && hasW && !hasS) {
+            newShape = VoxelShape.SLOPE_45;
+            newOrient = VoxelOrientation.SOUTH;
+          } else if (hasN && hasS && hasW && !hasE) {
+            newShape = VoxelShape.SLOPE_45;
+            newOrient = VoxelOrientation.EAST;
+          } else if (hasN && hasS && hasE && !hasW) {
+            newShape = VoxelShape.SLOPE_45;
+            newOrient = VoxelOrientation.WEST;
+          }
+
+          if (newShape !== VoxelShape.FULL_CUBE) {
+            const packed = packVoxel(
+              currentWord.low & 0xffffff, // keep original material
+              newShape,
+              newOrient,
+              (currentWord.high >>> 4) & 0x0f,
+              VoxelPhysics.WALKABLE_SLOPE,
+              (currentWord.high >>> 12) & 0x0f
+            );
+            mutationsToApply.push({
+              x: wx, y: wy, z: wz,
+              packed,
+              current: { low: currentWord.low, high: currentWord.high }
+            });
           }
         }
       }
     }
 
     const socket = useGameStore.getState().socket;
-    // Apply the melt/fill
-    for (const r of toRemove) {
-      txBuilder.record(voxelWorld, r.x, r.y, r.z, { low: 0, high: 0 } as any);
-      voxelWorld.setVoxel(r.x, r.y, r.z, 0, 0);
+    // Apply the mutations
+    for (const mut of mutationsToApply) {
+      txBuilder.record(voxelWorld, mut.x, mut.y, mut.z, mut.packed as any);
+      voxelWorld.setVoxel(mut.x, mut.y, mut.z, mut.packed.low, mut.packed.high);
       if (socket) {
         socket.emit('voxel_edit', {
           mapId: liveMap.id,
-          x: r.x,
-          y: r.y,
-          z: r.z,
-          wordLow: 0,
-          wordHigh: 0,
-        });
-      }
-    }
-    for (const a of toAdd) {
-      // Create a default full cube
-      const packed = packVoxel(
-        matId,
-        VoxelShape.FULL_CUBE,
-        VoxelOrientation.NORTH,
-        0,
-        VoxelPhysics.SOLID_OBSTACLE,
-        VoxelLogic.NONE
-      );
-      txBuilder.record(voxelWorld, a.x, a.y, a.z, packed as any);
-      voxelWorld.setVoxel(a.x, a.y, a.z, packed.low, packed.high);
-      if (socket) {
-        socket.emit('voxel_edit', {
-          mapId: liveMap.id,
-          x: a.x,
-          y: a.y,
-          z: a.z,
-          wordLow: packed.low,
-          wordHigh: packed.high,
+          x: mut.x,
+          y: mut.y,
+          z: mut.z,
+          wordLow: mut.packed.low,
+          wordHigh: mut.packed.high,
         });
       }
     }

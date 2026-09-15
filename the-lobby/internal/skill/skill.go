@@ -23,6 +23,17 @@ var AllSlugs = []string{
 	"thieving", "summoning", "magic", "prayer", "necromancy",
 }
 
+// IsValid returns true if the normalized slug exists in the 27-skill matrix.
+func IsValid(slug string) bool {
+	norm := Normalize(slug)
+	for _, s := range AllSlugs {
+		if s == norm {
+			return true
+		}
+	}
+	return false
+}
+
 var combatSlugs = map[string]bool{
 	"attack": true, "strength": true, "defence": true, "hitpoints": true, "ranged": true,
 	"agility": true, "perception": true, "wisdom": true, "intelligence": true,
@@ -126,6 +137,15 @@ func (m *Manager) Add(accountID, skill string, amount int) map[string]int {
 	defer m.mu.Unlock()
 	m.ensure(accountID)
 	skill = Normalize(skill)
+	
+	if !IsValid(skill) {
+		out := make(map[string]int, len(m.xp[accountID]))
+		for k, v := range m.xp[accountID] {
+			out[k] = v
+		}
+		return out
+	}
+
 	bag := m.xp[accountID]
 	bag[skill] += amount
 	m.flush(accountID)

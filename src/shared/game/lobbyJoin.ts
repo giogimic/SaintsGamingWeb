@@ -10,6 +10,7 @@ export type JoinContract = {
   lobby: boolean;
   isPrivate: boolean;
   pie: boolean;
+
 };
 
 /** Stable key for the seat contract (not spawn coords). */
@@ -20,6 +21,7 @@ export function buildJoinKey(contract: JoinContract): string {
     contract.lobby ? "lobby" : "studio",
     contract.isPrivate ? "priv" : "pub",
     contract.pie ? "pie" : "nopie",
+    "latest",
   ].join("|");
 }
 

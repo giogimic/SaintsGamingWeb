@@ -146,7 +146,7 @@ export const NewVoxelMapPanel: React.FC = () => {
           height: newMapH,
           grid: newMapData.grid,
           gates: newMapData.gates,
-          npcs: newMapData.npcs,
+          entities: newMapData.entities || [],
           encounterPool: newMapData.encounterPool,
           mapType: newMapData.mapType,
           tileLayers: newMapData.tileLayers,

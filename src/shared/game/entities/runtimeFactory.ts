@@ -74,6 +74,9 @@ export function buildRuntimeEntities(entities: EntityInstanceV1[]): RuntimeWorld
             targetMapId: warpComp.targetMapId,
             spawnPoint: warpComp.targetSpawn,
             requiredElement: warpComp.requiredElement,
+            targetEntryPointId: warpComp.targetEntryPointId,
+            targetWorldProjectId: warpComp.targetWorldProjectId,
+            targetWorldReleaseId: warpComp.targetWorldReleaseId,
             x,
             y,
           };

@@ -125,7 +125,7 @@ export const NewFractalMapPanel: React.FC = () => {
           height: 8,
           grid: newMapData.grid,
           gates: newMapData.gates,
-          npcs: newMapData.npcs,
+          entities: newMapData.entities || [],
           encounterPool: newMapData.encounterPool,
           mapType: newMapData.mapType,
           tileLayers: newMapData.tileLayers,

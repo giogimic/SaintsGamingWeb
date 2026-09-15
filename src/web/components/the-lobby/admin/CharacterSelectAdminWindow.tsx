@@ -49,10 +49,10 @@ import {
   listPublishSnapshots,
   rollbackToSnapshot,
   createPublishSnapshot,
-  deployRelease,
   type ValidationGateResult,
 } from '@/app/actions/studio/publishing';
-import type { WorldPublishSnapshot } from '@prisma/client';
+import { createWorldRelease } from '@/app/actions/studio/world-release';
+import type { WorldRelease } from '@prisma/client';
 
 interface CharacterSelectAdminWindowProps {
   isOpen: boolean;
@@ -99,7 +99,7 @@ export function CharacterSelectAdminWindow({
   const [serverActionMsg, setServerActionMsg] = useState<string | null>(null);
 
   // Releases & Snapshots State
-  const [snapshots, setSnapshots] = useState<WorldPublishSnapshot[]>([]);
+  const [snapshots, setSnapshots] = useState<WorldRelease[]>([]);
   const [validationResult, setValidationResult] = useState<ValidationGateResult | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [isRollingBack, setIsRollingBack] = useState(false);
@@ -332,7 +332,7 @@ export function CharacterSelectAdminWindow({
         description: publishNotes || undefined,
       });
       if (res.success && res.data) {
-        const deployRes = await deployRelease(res.data.id);
+        const deployRes = await createWorldRelease('saints');
         if (!deployRes.success) {
           console.error("Deployment failed: ", deployRes.error);
         }

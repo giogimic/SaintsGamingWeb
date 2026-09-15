@@ -1,21 +1,12 @@
 'use server';
 
+import type { EntityInstanceV1 } from '@/shared/game/entities/types';
 import { prisma } from '@/web/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { checkAdminPermission } from '../admin/game-admin';
 import { invalidateDialogueCache } from '@/server/dialogueCache';
 import { toBaseMapId } from '@/shared/net/mapIds';
 import { notifyGoMapSynced, notifyGoDialogueSynced } from '@/server/goMmoNotify';
-
-export type MapNpcData = {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  sprite: string;
-  direction?: string;
-  dialogue?: string[];
-};
 
 function slugify(name: string): string {
   return name
@@ -48,7 +39,7 @@ function defaultDialogueTree(npcName: string, greeting: string, questSlug?: stri
   };
 }
 
-/** Append an NPC to WorldMap.npcsData (+ GameMap mirror) and seed a dialogue tree. */
+/** Append an NPC to WorldMap.entitiesData (+ GameMap mirror) and seed a dialogue tree. */
 export async function placeMapNpc(opts: {
   mapId: string;
   name: string;
@@ -68,9 +59,9 @@ export async function placeMapNpc(opts: {
     const world = await prisma.worldMap.findUnique({ where: { id: mapId } });
     if (!world) return { success: false, error: `Map not found: ${mapId}` };
 
-    let npcs: MapNpcData[] = [];
+    let npcs: EntityInstanceV1[] = [];
     try {
-      npcs = JSON.parse(world.npcsData || '[]');
+      npcs = JSON.parse(world.entitiesData || '[]');
     } catch {
       npcs = [];
     }
@@ -86,21 +77,23 @@ export async function placeMapNpc(opts: {
       .replace(/^\/game-assets\/npc\//, '')
       .replace(/\.png$/, '');
 
-    const npc: MapNpcData = {
+    const npc: EntityInstanceV1 = {
+      schemaVersion: 1,
       id,
-      name: opts.name,
-      x: opts.x,
-      y: opts.y,
-      sprite,
-      direction: 'down',
-      dialogue: opts.greeting ? [opts.greeting] : undefined,
+      archetype: 'npc',
+      components: {
+        identity: { name: opts.name, slug: base },
+        transform: { x: opts.x, y: opts.y, facing: 'S' },
+        appearance: { assetProfileId: sprite },
+        dialogue: opts.greeting ? { dialogueKey: opts.greeting } : undefined,
+      },
     };
     npcs.push(npc);
 
     await prisma.worldMap.update({
       where: { id: mapId },
       data: {
-        npcsData: JSON.stringify(npcs),
+        entitiesData: JSON.stringify(npcs),
         version: { increment: 1 },
       },
     });
@@ -120,24 +113,35 @@ export async function placeMapNpc(opts: {
       update: { npcs: JSON.stringify(npcs) },
     });
 
-    const tree = defaultDialogueTree(opts.name, opts.greeting || '', opts.questSlug);
-    await prisma.npcDialogueTree.upsert({
-      where: { npcId: id },
+    // Create or update NpcDef
+    const defComponents = {
+      identity: { name: opts.name, slug: base },
+      appearance: { assetProfileId: sprite },
+      dialogue: opts.greeting ? { dialogueKey: opts.greeting } : undefined,
+    };
+    
+    await prisma.npcDef.upsert({
+      where: { slug: base },
       create: {
-        npcId: id,
+        slug: base,
         name: opts.name,
-        data: JSON.stringify(tree),
+        componentsData: JSON.stringify(defComponents)
       },
-      update: {
-        name: opts.name,
-        data: JSON.stringify(tree),
-      },
+      update: { }
     });
 
+    const tree = defaultDialogueTree(opts.name, opts.greeting || '', opts.questSlug);
+    await prisma.npcDialogueTree.upsert({
+      where: { npcId: base },
+      create: { npcId: base, name: opts.name, data: JSON.stringify(tree) },
+      update: { name: opts.name, data: JSON.stringify(tree) },
+    });
+
+    invalidateDialogueCache(base);
     revalidatePath('/lobby');
-    invalidateDialogueCache(id);
     void notifyGoMapSynced({ id: mapId });
     void notifyGoDialogueSynced();
+
     return { success: true, npc, count: npcs.length };
   } catch (err: any) {
     console.error('[placeMapNpc]', err);
@@ -146,44 +150,29 @@ export async function placeMapNpc(opts: {
 }
 
 export async function listMapNpcs(mapId: string) {
+  const isAdmin = await checkAdminPermission();
+  if (!isAdmin) return { success: false, error: 'Unauthorized' };
+
+  const id = toBaseMapId(mapId);
+  if (!id) return { success: false, error: 'Map id required' };
+
   try {
-    const world = await prisma.worldMap.findUnique({
-      where: { id: toBaseMapId(mapId) },
-      select: { npcsData: true },
-    });
-    if (!world) return { success: false, data: [] as MapNpcData[] };
-    return { success: true, data: JSON.parse(world.npcsData || '[]') as MapNpcData[] };
-  } catch {
-    return { success: false, data: [] as MapNpcData[] };
+    const world = await prisma.worldMap.findUnique({ where: { id } });
+    if (!world) return { success: false, error: `Map not found: ${id}` };
+    
+    let npcs: EntityInstanceV1[] = [];
+    try {
+      npcs = JSON.parse(world.entitiesData || '[]');
+    } catch {
+      npcs = [];
+    }
+    return { success: true, data: npcs };
+  } catch (err: any) {
+    console.error('[listMapNpcs]', err);
+    return { success: false, error: err.message || 'Failed to list map npcs' };
   }
 }
 
-async function writeNpcs(mapId: string, worldName: string, worldGrid: string | null | undefined, worldGates: string, worldEncounters: string, npcs: MapNpcData[]) {
-  const safeGrid = worldGrid || "[]";
-  await prisma.worldMap.update({
-    where: { id: mapId },
-    data: {
-      npcsData: JSON.stringify(npcs),
-      version: { increment: 1 },
-    },
-  });
-  await prisma.gameMap.upsert({
-    where: { id: mapId },
-    create: {
-      id: mapId,
-      name: worldName,
-      width: 24,
-      height: 24,
-      tilesetData: safeGrid,
-      gates: worldGates,
-      npcs: JSON.stringify(npcs),
-      encounters: worldEncounters,
-    },
-    update: { npcs: JSON.stringify(npcs) },
-  });
-}
-
-/** Update an existing NPC placement (position / name / sprite / greeting). */
 export async function updateMapNpc(opts: {
   mapId: string;
   npcId: string;
@@ -196,6 +185,7 @@ export async function updateMapNpc(opts: {
 }) {
   const isAdmin = await checkAdminPermission();
   if (!isAdmin) return { success: false, error: 'Unauthorized' };
+
   const mapId = toBaseMapId(opts.mapId);
   const npcId = String(opts.npcId || '');
   if (!mapId || !npcId) return { success: false, error: 'Map id and npc id required' };
@@ -203,57 +193,99 @@ export async function updateMapNpc(opts: {
   try {
     const world = await prisma.worldMap.findUnique({ where: { id: mapId } });
     if (!world) return { success: false, error: `Map not found: ${mapId}` };
-    let npcs: MapNpcData[] = [];
+    
+    let npcs: EntityInstanceV1[] = [];
     try {
-      npcs = JSON.parse(world.npcsData || '[]');
+      npcs = JSON.parse(world.entitiesData || '[]');
     } catch {
       npcs = [];
     }
+
     const idx = npcs.findIndex((p) => p.id === npcId);
     if (idx < 0) return { success: false, error: `NPC not found: ${npcId}` };
 
-    const prev = npcs[idx]!;
-    const sprite = opts.sprite
-      ? opts.sprite.replace(/^\/game-assets\/npc\//, '').replace(/\.png$/, '')
-      : prev.sprite;
-    const next: MapNpcData = {
-      ...prev,
-      name: opts.name ?? prev.name,
-      sprite,
-      x: opts.x ?? prev.x,
-      y: opts.y ?? prev.y,
-      dialogue:
-        opts.greeting !== undefined
-          ? opts.greeting
-            ? [opts.greeting]
-            : undefined
-          : prev.dialogue,
-    };
+    const prev = npcs[idx];
+    const next: EntityInstanceV1 = { ...prev };
+    if (!next.components) next.components = {};
+    if (!next.components.identity) next.components.identity = { name: "Unknown", slug: "unknown" };
+    if (!next.components.transform) next.components.transform = { x: 0, y: 0, facing: 'S' };
+    if (!next.components.appearance) next.components.appearance = { assetProfileId: "heroine" };
+
+    if (opts.name !== undefined) next.components.identity.name = opts.name;
+    if (opts.x !== undefined) next.components.transform.x = opts.x;
+    if (opts.y !== undefined) next.components.transform.y = opts.y;
+    
+    let sprite = prev.components?.appearance?.assetProfileId || 'heroine';
+    if (opts.sprite !== undefined) {
+      sprite = opts.sprite.replace(/^\/game-assets\/npc\//, '').replace(/\.png$/, '');
+      next.components.appearance.assetProfileId = sprite;
+    }
+
+    if (opts.greeting !== undefined) {
+      if (!next.components.dialogue) next.components.dialogue = {};
+      next.components.dialogue.dialogueKey = opts.greeting;
+    }
+
     npcs[idx] = next;
 
-    await writeNpcs(
-      mapId,
-      world.name,
-      world.gridData,
-      world.gatesData,
-      world.encountersData,
-      npcs
-    );
+    await prisma.worldMap.update({
+      where: { id: mapId },
+      data: {
+        entitiesData: JSON.stringify(npcs),
+        version: { increment: 1 },
+      },
+    });
+
+    await prisma.gameMap.upsert({
+      where: { id: mapId },
+      create: {
+        id: mapId,
+        name: world.name,
+        width: 24,
+        height: 24,
+        tilesetData: world.gridData,
+        gates: world.gatesData,
+        npcs: JSON.stringify(npcs),
+        encounters: world.encountersData,
+      },
+      update: { npcs: JSON.stringify(npcs) },
+    });
+
+    const defSlug = next.components.identity.slug || 'unknown';
+    const defComponents = {
+      identity: { name: next.components.identity.name, slug: defSlug },
+      appearance: { assetProfileId: sprite },
+      dialogue: opts.greeting ? { dialogueKey: opts.greeting } : undefined,
+    };
+
+    await prisma.npcDef.upsert({
+      where: { slug: defSlug },
+      create: {
+        slug: defSlug,
+        name: next.components.identity.name,
+        componentsData: JSON.stringify(defComponents)
+      },
+      update: {
+        name: next.components.identity.name,
+        componentsData: JSON.stringify(defComponents)
+      }
+    });
 
     if (opts.greeting !== undefined || opts.questSlug !== undefined) {
       const tree = defaultDialogueTree(
-        next.name,
-        opts.greeting ?? next.dialogue?.[0] ?? '',
+        next.components.identity.name,
+        opts.greeting ?? next.components.dialogue?.dialogueKey ?? '',
         opts.questSlug
       );
       await prisma.npcDialogueTree.upsert({
-        where: { npcId },
-        create: { npcId, name: next.name, data: JSON.stringify(tree) },
-        update: { name: next.name, data: JSON.stringify(tree) },
+        where: { npcId: defSlug },
+        create: { npcId: defSlug, name: next.components.identity.name, data: JSON.stringify(tree) },
+        update: { name: next.components.identity.name, data: JSON.stringify(tree) },
       });
-      invalidateDialogueCache(npcId);
+      invalidateDialogueCache(defSlug);
       void notifyGoDialogueSynced();
     }
+
     revalidatePath('/lobby');
     void notifyGoMapSynced({ id: mapId });
     return { success: true, npc: next, count: npcs.length };
@@ -263,7 +295,7 @@ export async function updateMapNpc(opts: {
   }
 }
 
-/** Remove an NPC from the map document (+ optional dialogue tree). */
+/** Remove an NPC from the map document */
 export async function deleteMapNpc(opts: { mapId: string; npcId: string }) {
   const isAdmin = await checkAdminPermission();
   if (!isAdmin) return { success: false, error: 'Unauthorized' };
@@ -274,9 +306,9 @@ export async function deleteMapNpc(opts: { mapId: string; npcId: string }) {
   try {
     const world = await prisma.worldMap.findUnique({ where: { id: mapId } });
     if (!world) return { success: false, error: `Map not found: ${mapId}` };
-    let npcs: MapNpcData[] = [];
+    let npcs: EntityInstanceV1[] = [];
     try {
-      npcs = JSON.parse(world.npcsData || '[]');
+      npcs = JSON.parse(world.entitiesData || '[]');
     } catch {
       npcs = [];
     }
@@ -285,22 +317,30 @@ export async function deleteMapNpc(opts: { mapId: string; npcId: string }) {
       return { success: false, error: `NPC not found: ${npcId}` };
     }
 
-    await writeNpcs(
-      mapId,
-      world.name,
-      world.gridData,
-      world.gatesData,
-      world.encountersData,
-      next
-    );
+    await prisma.worldMap.update({
+      where: { id: mapId },
+      data: {
+        entitiesData: JSON.stringify(next),
+        version: { increment: 1 },
+      },
+    });
 
-    try {
-      await prisma.npcDialogueTree.delete({ where: { npcId } }).catch(() => {});
-      invalidateDialogueCache(npcId);
-      void notifyGoDialogueSynced();
-    } catch {
-      /* tree may not exist */
-    }
+    await prisma.gameMap.upsert({
+      where: { id: mapId },
+      create: {
+        id: mapId,
+        name: world.name,
+        width: 24,
+        height: 24,
+        tilesetData: world.gridData,
+        gates: world.gatesData,
+        npcs: JSON.stringify(next),
+        encounters: world.encountersData,
+      },
+      update: { npcs: JSON.stringify(next) },
+    });
+
+    // We no longer delete dialogue trees when deleting an instance, as they belong to the NpcDef
     revalidatePath('/lobby');
     void notifyGoMapSynced({ id: mapId });
     return { success: true, npcId, count: next.length };

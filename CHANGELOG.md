@@ -1,3 +1,9 @@
+## 2.1.871
+- **Go Deployment Sync Fixed:** Removed obsolete map-by-map deployment functions (like `StartSyncPoller`) in `maps.go` and `main.go`. Re-implemented `deployPublishedProjectRelease` to fetch the monolithic Release Manifest from Next.js, persist it, and load it atomically.
+- **Client Join Recovery Implementation:** Implemented the "Controlled Recovery" rule: If the client requests an invalid map that doesn't exist in the active `WorldRelease`, Go intercepts the join, logs the mismatch, updates `req.MapID` and coords to the canonical `ActiveRelease.World.SpawnMap`, and emits a toast notifying the user they've been recovered.
+- **Next.js TS Errors Fixed:** Removed outdated references to `deployRelease` in the React UI (`VersionManagerPanel`, `CharacterSelectAdminWindow`), switching them over to the unified `createWorldRelease`. Fixed a string typing issue when querying the `WorldRelease` model. Resolved `VoxelShape` enum type inference errors in `SmoothToolHandler.ts`.
+- **Orphan Code Cleaned up:** Fixed a lingering merge-conflict/dangling code block in `maps.go` that broke compilation.
+
 ## 2.1.868
 - Implemented formal non-destructive Go SQLite schema migration system.
 - Fixed runtime crash caused by missing data column in WorldMapVersion table during map loads.

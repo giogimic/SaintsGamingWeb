@@ -1,4 +1,5 @@
 'use client';
+import type { EntityInstanceV1 } from '@/shared/game/entities/types';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -6,7 +7,7 @@ import {
   listMapNpcs,
   placeMapNpc,
   updateMapNpc,
-  type MapNpcData,
+
 } from '@/app/actions/studio/map-npcs';
 import { UserPlus, Save, Loader2, Trash2, RefreshCw, MessageSquare, ScrollText, ExternalLink, Plus, Users } from 'lucide-react';
 import { listQuestTemplates } from '@/app/actions/game/quest-templates';
@@ -63,7 +64,7 @@ export const EntityEditorPanel: React.FC = () => {
   const [npcDialogue, setNpcDialogue] = useState('Welcome to the animist grounds, Saint!');
   const [questSlug, setQuestSlug] = useState('');
   const [saving, setSaving] = useState(false);
-  const [list, setList] = useState<MapNpcData[]>([]);
+  const [list, setList] = useState<EntityInstanceV1[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const clickedTile = useEditorStore((state) => state.clickedTile);
@@ -119,7 +120,7 @@ export const EntityEditorPanel: React.FC = () => {
       return;
     }
     const res = await listMapNpcs(mapId);
-    if (res.success) setList(res.data);
+    if (res.success && res.data) setList(res.data);
   }, [mapId]);
 
   useEffect(() => {
@@ -148,16 +149,16 @@ export const EntityEditorPanel: React.FC = () => {
     return () => window.removeEventListener('studio_sprite_picked', handleSpritePicked);
   }, [showToast]);
 
-  const handleSelect = useCallback((npc: MapNpcData) => {
+  const handleSelect = useCallback((npc: EntityInstanceV1) => {
     setSelectedId(npc.id);
     setEntityProps((prev) => ({
       ...prev,
-      displayName: npc.name,
-      assetProfileId: npc.sprite || 'adventurer',
+      displayName: npc.components?.identity?.name || npc.id,
+      assetProfileId: npc.components?.appearance?.assetProfileId || 'adventurer',
     }));
-    setSpawnX(npc.x);
-    setSpawnY(npc.y);
-    setNpcDialogue(npc.dialogue?.[0] || '');
+    setSpawnX(npc.components?.transform?.x || 0);
+    setSpawnY(npc.components?.transform?.y || 0);
+    setNpcDialogue(npc.components?.dialogue?.dialogueKey || '');
   }, []);
 
   // Listen for context menu smart actions
@@ -169,10 +170,10 @@ export const EntityEditorPanel: React.FC = () => {
         if (found) {
           handleSelect(found);
         } else {
-          void listMapNpcs(mapId).then((res) => {
+          void listMapNpcs(mapId).then((res: any) => {
             if (res.success && res.data) {
               setList(res.data);
-              const foundAgain = res.data.find((n: any) => n.id === customEv.detail.npcId);
+              const foundAgain = res.data.find((n: EntityInstanceV1) => n.id === customEv.detail.npcId);
               if (foundAgain) {
                 handleSelect(foundAgain);
               }
@@ -230,7 +231,7 @@ export const EntityEditorPanel: React.FC = () => {
     setQuestSlug('');
   };
 
-  const liveResync = (npc: MapNpcData, mode: 'spawn' | 'replace') => {
+  const liveResync = (npc: EntityInstanceV1, mode: 'spawn' | 'replace') => {
     const live = useGameStore.getState().activeMapData;
     if (mode === 'replace') {
       const despawn = buildStudioDespawnNpcEmit(mapId, npc.id);
@@ -243,10 +244,10 @@ export const EntityEditorPanel: React.FC = () => {
     }
     const payload = buildStudioSpawnNpcEmit(mapId, {
       id: npc.id,
-      name: npc.name,
-      x: npc.x,
-      y: npc.y,
-      sprite: npc.sprite,
+      name: npc.components?.identity?.name || npc.id,
+      x: npc.components?.transform?.x || 0,
+      y: npc.components?.transform?.y || 0,
+      sprite: npc.components?.appearance?.assetProfileId || 'adventurer',
     });
     if (payload) {
       useGameStore.getState().emitSocketEvent?.('studio_spawn_npc', payload);
@@ -335,7 +336,7 @@ export const EntityEditorPanel: React.FC = () => {
   return (
     <CatalogEditorShell
       title="Entity Catalog"
-      blurb={`Place / edit / delete · map ${currentMapId || '—'} · WorldMap.npcsData`}
+      blurb={`Place / edit / delete · map ${currentMapId || '—'} · WorldMap.entitiesData`}
       dirty={!!selectedId}
       toolbar={
         <div className="flex gap-1">
@@ -367,9 +368,9 @@ export const EntityEditorPanel: React.FC = () => {
                 <Users className="w-3.5 h-3.5" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="truncate text-[11px] font-bold text-slate-100">{npc.name}</div>
+                <div className="truncate text-[11px] font-bold text-slate-100">{npc.components?.identity?.name || npc.id}</div>
                 <div className="truncate text-[9px] text-slate-500 font-mono">
-                  {npc.id} · ({npc.x},{npc.y})
+                  {npc.id} · ({npc.components?.transform?.x || 0},{npc.components?.transform?.y || 0})
                 </div>
               </div>
             </button>

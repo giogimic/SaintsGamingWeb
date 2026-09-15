@@ -44,6 +44,20 @@ func migrate(db *sql.DB) error {
 		setVersion(db, 3)
 	}
 
+	if version < 4 {
+		if err := migrateV4(db); err != nil {
+			return err
+		}
+		setVersion(db, 4)
+	}
+
+	if version < 5 {
+		if err := migrateV5(db); err != nil {
+			return err
+		}
+		setVersion(db, 5)
+	}
+
 	// Verify schema explicitly at the end
 	if err := verifySchema(db); err != nil {
 		return fmt.Errorf("schema verification failed: %w", err)
@@ -67,27 +81,7 @@ func migrateV1(db *sql.DB) error {
 			name TEXT NOT NULL,
 			gridData TEXT NOT NULL,
 			gatesData TEXT NOT NULL DEFAULT '{}',
-			npcsData TEXT NOT NULL DEFAULT '[]',
 			encountersData TEXT NOT NULL DEFAULT '[]',
-			tileLayersData TEXT NOT NULL DEFAULT '[]',
-			tilesetsData TEXT NOT NULL DEFAULT '[]',
-			mapType TEXT NOT NULL DEFAULT 'HYBRID',
-			regionClass TEXT NOT NULL DEFAULT 'authored',
-			version INTEGER NOT NULL DEFAULT 1,
-			publishedVersion INTEGER NOT NULL DEFAULT 0,
-			publishedData TEXT NOT NULL DEFAULT '{}',
-			updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
-		)`,
-		`CREATE TABLE IF NOT EXISTS WorldMapDraft (
-			id TEXT PRIMARY KEY,
-			gameId TEXT DEFAULT 'saints',
-			name TEXT NOT NULL,
-			gridData TEXT NOT NULL,
-			gatesData TEXT NOT NULL DEFAULT '{}',
-			npcsData TEXT NOT NULL DEFAULT '[]',
-			encountersData TEXT NOT NULL DEFAULT '[]',
-			tileLayersData TEXT NOT NULL DEFAULT '[]',
-			tilesetsData TEXT NOT NULL DEFAULT '[]',
 			mapType TEXT NOT NULL DEFAULT 'HYBRID',
 			regionClass TEXT NOT NULL DEFAULT 'authored',
 			version INTEGER NOT NULL DEFAULT 1,
@@ -134,41 +128,7 @@ func migrateV1(db *sql.DB) error {
 			baseStats TEXT DEFAULT '{}',
 			stackable INTEGER NOT NULL DEFAULT 0
 		)`,
-		`CREATE TABLE IF NOT EXISTS WorldMapVersion (
-			id TEXT PRIMARY KEY,
-			mapId TEXT NOT NULL,
-			version INTEGER NOT NULL,
-			name TEXT NOT NULL,
-			createdAt TEXT NOT NULL DEFAULT (datetime('now'))
-		)`,
-		`CREATE TABLE IF NOT EXISTS WorldMapVersionRegion (
-			id TEXT PRIMARY KEY,
-			mapId TEXT,
-			version INTEGER,
-			regionX INTEGER NOT NULL,
-			regionZ INTEGER NOT NULL,
-			artifactChecksum TEXT NOT NULL
-		)`,
-		`CREATE TABLE IF NOT EXISTS CreatureTemplate (
-			id TEXT PRIMARY KEY,
-			slug TEXT UNIQUE NOT NULL,
-			speciesName TEXT NOT NULL,
-			stage TEXT NOT NULL,
-			shape TEXT NOT NULL,
-			types TEXT NOT NULL,
-			spriteFront TEXT,
-			spriteOverworld TEXT
-		)`,
-		`CREATE TABLE IF NOT EXISTS CreatureBaseStats (
-			id TEXT PRIMARY KEY,
-			speciesId TEXT UNIQUE NOT NULL,
-			hp INTEGER NOT NULL,
-			physicalPower INTEGER NOT NULL,
-			physicalDefense INTEGER NOT NULL,
-			abilityPower INTEGER NOT NULL,
-			abilityDefense INTEGER NOT NULL,
-			combatTempo INTEGER NOT NULL
-		)`,
+
 		`CREATE TABLE IF NOT EXISTS CreatureDef (
 			id TEXT PRIMARY KEY,
 			slug TEXT UNIQUE NOT NULL,
@@ -239,9 +199,6 @@ func migrateV1(db *sql.DB) error {
 		`ALTER TABLE WorldMap ADD COLUMN regionClass TEXT NOT NULL DEFAULT 'authored'`,
 		`ALTER TABLE WorldMap ADD COLUMN publishedVersion INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE WorldMap ADD COLUMN publishedData TEXT NOT NULL DEFAULT '{}'`,
-		`ALTER TABLE WorldMapDraft ADD COLUMN regionClass TEXT NOT NULL DEFAULT 'authored'`,
-		`ALTER TABLE WorldMapDraft ADD COLUMN publishedVersion INTEGER NOT NULL DEFAULT 0`,
-		`ALTER TABLE WorldMapDraft ADD COLUMN publishedData TEXT NOT NULL DEFAULT '{}'`,
 	}
 	for _, a := range alters {
 		_, _ = db.Exec(a) // Ignore errors (column may already exist from earlier CREATE TABLE logic)
@@ -275,113 +232,34 @@ func hasColumn(db *sql.DB, table, col string) (bool, error) {
 	return false, nil
 }
 
-// migrateV2 adds the missing data, description, publishedBy columns to WorldMapVersion
+// migrateV2 previously added columns to WorldMapVersion. Obsoleted.
 func migrateV2(db *sql.DB) error {
-	log.Println("[DB] Applying migration v2: WorldMapVersion columns")
-
-	colsToAdd := map[string]string{
-		"data": "TEXT",
-		"description": "TEXT",
-		"publishedBy": "TEXT",
-	}
-
-	for col, typ := range colsToAdd {
-		has, err := hasColumn(db, "WorldMapVersion", col)
-		if err != nil {
-			return fmt.Errorf("failed to check column %s: %w", col, err)
-		}
-		if !has {
-			q := fmt.Sprintf("ALTER TABLE WorldMapVersion ADD COLUMN %s %s", col, typ)
-			if _, err := db.Exec(q); err != nil {
-				return fmt.Errorf("failed to add column %s: %w", col, err)
-			}
-		}
-	}
-
 	return nil
 }
 
-// migrateV3 structurally migrates WorldMapVersionRegion to drop mapId/version and use versionId
+// migrateV3 previously migrated WorldMapVersionRegion structurally. Obsoleted.
 func migrateV3(db *sql.DB) error {
-	log.Println("[DB] Applying migration v3: WorldMapVersionRegion structural change")
+	return nil
+}
 
-	hasVersionId, err := hasColumn(db, "WorldMapVersionRegion", "versionId")
-	if err != nil {
-		return fmt.Errorf("failed to check WorldMapVersionRegion columns: %w", err)
+// migrateV4 drops obsolete WorldMapVersion and WorldMapVersionRegion tables
+func migrateV4(db *sql.DB) error {
+	log.Println("[DB] Applying migration v4: Dropping WorldMapVersion schemas")
+	if _, err := db.Exec(`DROP TABLE IF EXISTS WorldMapVersionRegion`); err != nil {
+		return fmt.Errorf("failed to drop WorldMapVersionRegion: %w", err)
 	}
-	
-	if hasVersionId {
-		return nil // Already migrated
+	if _, err := db.Exec(`DROP TABLE IF EXISTS WorldMapVersion`); err != nil {
+		return fmt.Errorf("failed to drop WorldMapVersion: %w", err)
 	}
+	return nil
+}
 
-	// 1. Create a temporary table with the correct new schema
-	tmpTable := `CREATE TABLE WorldMapVersionRegion_tmp (
-		id TEXT PRIMARY KEY,
-		versionId TEXT NOT NULL,
-		regionX INTEGER NOT NULL,
-		regionZ INTEGER NOT NULL,
-		artifactChecksum TEXT NOT NULL
-	)`
-	if _, err := db.Exec(tmpTable); err != nil {
-		return fmt.Errorf("failed to create WorldMapVersionRegion_tmp: %w", err)
+// migrateV5 drops obsolete WorldMapDraft table
+func migrateV5(db *sql.DB) error {
+	log.Println("[DB] Applying migration v5: Dropping WorldMapDraft schema")
+	if _, err := db.Exec(`DROP TABLE IF EXISTS WorldMapDraft`); err != nil {
+		return fmt.Errorf("failed to drop WorldMapDraft: %w", err)
 	}
-
-	// 2. Count rows to migrate
-	var rowCount int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM WorldMapVersionRegion`).Scan(&rowCount); err != nil {
-		return fmt.Errorf("failed to count existing regions: %w", err)
-	}
-	
-	if rowCount > 0 {
-		log.Printf("[DB] Migrating %d region records...", rowCount)
-
-		// 3. Migrate the rows. We must map (mapId, version) to WorldMapVersion.id.
-		// If the WorldMapVersion doesn't exist, we should fail as per constraints.
-		// We can do this in a single INSERT SELECT.
-		
-		q := `
-			INSERT INTO WorldMapVersionRegion_tmp (id, versionId, regionX, regionZ, artifactChecksum)
-			SELECT 
-				r.id,
-				v.id,
-				r.regionX,
-				r.regionZ,
-				r.artifactChecksum
-			FROM WorldMapVersionRegion r
-			LEFT JOIN WorldMapVersion v ON v.mapId = r.mapId AND v.version = r.version
-		`
-		if _, err := db.Exec(q); err != nil {
-			return fmt.Errorf("failed to map and insert migrated regions: %w", err)
-		}
-
-		// Verify that all regions successfully found a versionId (none are NULL)
-		var nullCount int
-		// Since versionId is NOT NULL, the INSERT above will fail if v.id is NULL. 
-		// However, in case SQLite version allows it (some strict mode diffs), we check manually.
-		if err := db.QueryRow(`SELECT COUNT(*) FROM WorldMapVersionRegion_tmp WHERE versionId IS NULL`).Scan(&nullCount); err != nil {
-			return fmt.Errorf("failed to check for null versionIds: %w", err)
-		}
-		if nullCount > 0 {
-			return fmt.Errorf("migration failure: %d regions reference a mapId/version that does not exist in WorldMapVersion", nullCount)
-		}
-
-		var newCount int
-		if err := db.QueryRow(`SELECT COUNT(*) FROM WorldMapVersionRegion_tmp`).Scan(&newCount); err != nil {
-			return fmt.Errorf("failed to count new regions: %w", err)
-		}
-		if newCount != rowCount {
-			return fmt.Errorf("migration failure: row count mismatch. Old=%d, New=%d", rowCount, newCount)
-		}
-	}
-
-	// 4. Swap the tables
-	if _, err := db.Exec(`DROP TABLE WorldMapVersionRegion`); err != nil {
-		return fmt.Errorf("failed to drop old WorldMapVersionRegion table: %w", err)
-	}
-	if _, err := db.Exec(`ALTER TABLE WorldMapVersionRegion_tmp RENAME TO WorldMapVersionRegion`); err != nil {
-		return fmt.Errorf("failed to rename WorldMapVersionRegion_tmp: %w", err)
-	}
-
 	return nil
 }
 
@@ -390,15 +268,7 @@ func verifySchema(db *sql.DB) error {
 		table string
 		col   string
 	}{
-		{"WorldMap", "publishedVersion"},
-		{"WorldMap", "publishedData"},
-		{"WorldMapVersion", "data"},
-		{"WorldMapVersion", "description"},
-		{"WorldMapVersion", "publishedBy"},
-		{"WorldMapVersionRegion", "versionId"},
-		{"WorldMapVersionRegion", "regionX"},
-		{"WorldMapVersionRegion", "regionZ"},
-		{"WorldMapVersionRegion", "artifactChecksum"},
+		{"WorldMap", "version"},
 	}
 
 	for _, check := range checks {

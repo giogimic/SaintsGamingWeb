@@ -48,7 +48,7 @@ export interface VoxelWorldDocV3 {
     createdAt?: number;
   };
   saveStatus?: 'saved' | 'saving' | 'unsaved' | 'error';
-  publishedVersion?: number;
+
 }
 
 export const DEFAULT_BLOCK_SIZE_PX = 64;

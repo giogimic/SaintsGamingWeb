@@ -44,8 +44,7 @@ async function runBakeTest(sizeStr: string, chunksDimension: number) {
       name: `${sizeStr} Bake Test Map`,
       version: 3,
       gatesData: '{}',
-      tileLayersData: '{}',
-      npcsData: '{}'
+      entitiesData: '{}'
     }
   }).catch(async (e) => {
     // If authorId is required and fails, let's just find any existing map and use its ID

@@ -108,6 +108,8 @@ const UiEditToolbar = dynamic(
   { ssr: false }
 );
 
+import { useWorldStore } from '@/client/state/useWorldStore';
+
 export type LobbyClientMode = 'player' | 'studio';
 
 export default function TheLobby({
@@ -161,6 +163,8 @@ export default function TheLobby({
     isCreationMode: studioToolsOpen,
   });
   const isEditingInterface = useGameStore((s) => s.isEditingInterface || s.isUiEditMode);
+
+
 
   // Automatically prompt for a map when entering a mode without a loaded map
   useEffect(() => {
@@ -358,6 +362,7 @@ export default function TheLobby({
             lobby: !enableStudio,
             isPrivate: enableStudio,
             pie: enableStudio && !useEditorStore.getState().isCreationMode,
+
           },
           position: validPosition,
           name: res.data.name,
@@ -2114,3 +2119,4 @@ export default function TheLobby({
     </div>
   );
 }
+

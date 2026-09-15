@@ -1,8 +1,17 @@
 import type { VoxelWorldDocV3 } from '../voxel/VoxelWorldDoc';
-
+import type { EntityInstanceV1 } from '../entities/types';
 export interface GateData {
-  targetMapId: string;
-  spawnPoint: { x: number; y: number };
+  // Legacy / internal backwards compat
+  targetMapId?: string;
+  spawnPoint?: { x: number; y: number };
+  
+  // Modern Connection Properties
+  type?: 'internal' | 'external';
+  targetMapReleaseId?: string;
+  targetEntryPointId?: string;
+  targetWorldProjectId?: string;
+  targetWorldReleaseId?: string;
+  
   requiredElement?: string;
   errorMessage?: string;
 }
@@ -135,6 +144,7 @@ export interface RenderedChunk {
   grid?: number[][];
   tileLayers?: TileLayer[];
   tilesets?: TilesetMeta[];
+  entities?: EntityInstanceV1[];
   voxelDoc?: any;
 }
 
@@ -145,7 +155,7 @@ export interface MapData {
   grid: number[][]; // Logic grid (collisions/interactions)
   regions?: number[][]; // Region tagging grid (zones, encounters, music)
   gates: Record<number, GateData>;
-  npcs: NPCPlacement[];
+  entities: EntityInstanceV1[];
   encountersData: EncounterEntry[];
   tileLayers?: TileLayer[];
   tilesets?: TilesetMeta[];

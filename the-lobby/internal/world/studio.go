@@ -39,8 +39,8 @@ func (m *Manager) SpawnNPC(baseMapID string, npc LiveNPC) {
 	for i := range def.NPCs {
 		if def.NPCs[i].ID == npc.ID {
 			def.NPCs[i] = NPCDef{
-				ID: npc.ID, Name: npc.Name, X: npc.X, Y: npc.Y,
-				SpriteID: npc.SpriteID, Dialogue: npc.Dialogue,
+				ID: npc.ID, X: npc.X, Y: npc.Y,
+				SchemaDef: NPCSchemaDef{Slug: npc.SpriteID, Name: npc.Name, WorldModel: npc.SpriteID},
 			}
 			found = true
 			break
@@ -48,8 +48,8 @@ func (m *Manager) SpawnNPC(baseMapID string, npc LiveNPC) {
 	}
 	if !found {
 		def.NPCs = append(def.NPCs, NPCDef{
-			ID: npc.ID, Name: npc.Name, X: npc.X, Y: npc.Y,
-			SpriteID: npc.SpriteID, Dialogue: npc.Dialogue,
+			ID: npc.ID, X: npc.X, Y: npc.Y,
+			SchemaDef: NPCSchemaDef{Slug: npc.SpriteID, Name: npc.Name, WorldModel: npc.SpriteID},
 		})
 	}
 }

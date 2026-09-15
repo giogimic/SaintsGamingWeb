@@ -159,19 +159,10 @@ export async function createBlankWorldProfile(opts: {
         gameId: slug,
         name: `${opts.name || slug} Start`,
         gridData: JSON.stringify(grid),
-        gatesData: "{}",
-        npcsData: "[]",
         encountersData: "[]",
-        tileLayersData: JSON.stringify([{ name: "Ground", grid }]),
-        tilesetsData: JSON.stringify([
-          {
-            firstgid: 1,
-            imageSource: "Terrain_by_George.png",
-            columns: 15,
-            tilewidth: 16,
-            tileheight: 16,
-          },
-        ]),
+        entitiesData: "[]",
+        gatesData: "{}",
+        freeformLayersData: "[]",
       },
       update: {
         gameId: slug,

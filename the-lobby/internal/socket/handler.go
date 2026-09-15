@@ -42,7 +42,7 @@ type Deps struct {
 	Skills     *skill.Manager
 	Loot       *world.LootManager
 	Registry   *registry.Manager
-	SaveMap    func(id, name, grid, npcs, tiles, tilesets string) error
+	SaveMap    func(id, name, grid string) error
 }
 
 // Hub bridges Engine Emitter to Socket.IO rooms.
@@ -97,6 +97,10 @@ func NewHub(cfg config.Config, eng *engine.Engine, deps Deps) *Hub {
 		rooms:   make(map[string]map[string]struct{}),
 		userOf:  make(map[string]string),
 	}
+}
+
+func (h *Hub) Dialogue() *dialogue.Manager {
+	return h.deps.Dialogue
 }
 
 func (h *Hub) Attach(io *socket.Server) {
@@ -241,30 +245,26 @@ func (h *Hub) onConnect(client *socket.Socket) {
 		client.Disconnect(true)
 	})
 	client.On("portal_request_nodes", func(datas ...any) {
-		// Mock response for Phase 6 dialing UI
-		nodes := []map[string]any{
-			{
-				"mapId":        "nexus",
-				"name":         "The Nexus",
-				"description":  "Central hub connecting all Sanctuaries.",
-				"isActive":     true,
-				"publicAccess": true,
-			},
-			{
-				"mapId":        "wilds_01",
-				"name":         "The Wilds",
-				"description":  "Untamed lands filled with hostile encounters.",
-				"isActive":     true,
-				"publicAccess": false,
-			},
+		var gateID string
+		if len(datas) > 0 {
+			if m, ok := datas[0].(map[string]any); ok {
+				if g, ok := m["gateId"].(string); ok {
+					gateID = g
+				}
+			}
 		}
-		h.EmitToSocket(sid, "portal_nodes_response", map[string]any{"nodes": nodes})
+		h.handlePortalRequestNodes(client, accountID, gateID)
 	})
 	client.On("portal_dial", func(datas ...any) {
-		log.Printf("[SpiritGate] User %s dialing portal", accountID)
-	})
-	client.On("portal_transit_complete", func(datas ...any) {
-		log.Printf("[SpiritGate] User %s completed portal transit", accountID)
+		var connID string
+		if len(datas) > 0 {
+			if m, ok := datas[0].(map[string]any); ok {
+				if c, ok := m["connectionId"].(string); ok {
+					connID = c
+				}
+			}
+		}
+		h.handlePortalDial(client, accountID, connID)
 	})
 	h.registerGameplay(client, accountID, sid)
 	client.On("disconnect", func(datas ...any) {
@@ -310,20 +310,41 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 	base := world.ResolvePlayableBase(req.MapID, req.Lobby, req.ForceDemo)
 	
 	log.Printf("[WorldJoinDebug] account=%s requestedMapId=%s resolvedBaseMapId=%s lobby=%v forceDemo=%v", accountID, req.MapID, base, req.Lobby, req.ForceDemo)
+	
+	isRecovery := false
 	if _, err := h.eng.World().GetDef(base); err != nil {
-		reason := "map_load_failed"
-		if strings.Contains(err.Error(), "not found") {
-			reason = "map_not_found"
+		activeRel := h.eng.World().ActiveRelease
+		if activeRel != nil && activeRel.World.SpawnMap != "" {
+			log.Printf("[WorldJoinRecovery] account=%s requested map %s not found in active release (version=%s). Recovering to canonical spawn %s.", accountID, base, activeRel.Version, activeRel.World.SpawnMap)
+			base = activeRel.World.SpawnMap
+			req.MapID = base // Update the request so downstream logic uses the correct map
+			sx := activeRel.World.SpawnX
+			sy := activeRel.World.SpawnY
+			req.X = &sx
+			req.Y = &sy
+			isRecovery = true
 		}
-		log.Printf("[socket] JOIN_REJECT account=%s reason=%s mapId=%s err=%v", accountID, reason, base, err)
-		h.EmitToSocket(sid, protocol.EvJoinRejected, protocol.JoinRejectedPayload{
-			MapID:   base,
-			JoinSeq: req.JoinSeq,
-			Reason:  reason,
-			Message: "Failed to resolve world map.",
-		})
-		h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "Failed to resolve world map."})
-		return
+		
+		// If STILL not found (e.g. spawn map is also invalid, or no active release), reject
+		if _, err2 := h.eng.World().GetDef(base); err2 != nil {
+			reason := "map_load_failed"
+			if strings.Contains(err2.Error(), "not found") {
+				reason = "map_not_found"
+			}
+			log.Printf("[socket] JOIN_REJECT account=%s reason=%s mapId=%s err=%v", accountID, reason, base, err2)
+			h.EmitToSocket(sid, protocol.EvJoinRejected, protocol.JoinRejectedPayload{
+				MapID:   base,
+				JoinSeq: req.JoinSeq,
+				Reason:  reason,
+				Message: "Failed to resolve world map.",
+			})
+			h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "Failed to resolve world map."})
+			return
+		}
+	}
+
+	if isRecovery {
+		h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "Your previous location no longer exists. Returning to spawn."})
 	}
 
 	// 1. Character ownership validation: Reject if character is actively controlled by another account
@@ -455,9 +476,9 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 			var spawns []creature.SpawnDef
 			for _, n := range def.NPCs {
 				// If it's defined in the Creature Registry, treat it as a spawn.
-				if _, ok := h.deps.Registry.GetCreature(n.SpriteID); ok {
+				if _, ok := h.deps.Registry.GetCreature(n.SchemaDef.Slug); ok {
 					spawns = append(spawns, creature.SpawnDef{
-						ID: n.ID, Slug: n.SpriteID, X: n.X, Y: n.Y,
+						ID: n.ID, Slug: n.SchemaDef.Slug, X: n.X, Y: n.Y,
 					})
 				}
 			}

@@ -509,7 +509,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
 
   // Smart Context Actions Helpers
   const npcsOnTile =
-    activeMapData?.npcs?.filter(
+    activeMapData?.entities?.filter(
       (n: any) =>
         (n.position ? n.position.x === tileC && n.position.y === tileR : n.x === tileC && n.y === tileR)
     ) || [];

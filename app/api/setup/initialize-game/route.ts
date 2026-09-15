@@ -144,15 +144,44 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid or incomplete bootstrap revision' }, { status: 400 });
     }
 
+    // Attempt to load the active WorldRelease to get the true spawn point
+    let finalSpawnMapId = mapId;
+    let finalSpawnX = spawnX;
+    let finalSpawnY = spawnY;
+    let finalSpawnZ = 16;
+    
+    const activeProject = await prisma.worldProject.findUnique({
+      where: { slug: 'saints' }
+    });
+    if (activeProject?.activeVersion) {
+      const activeVersionStr = `v1.0.${activeProject.activeVersion}`;
+      const release = await prisma.worldRelease.findUnique({
+        where: { projectId_version: { projectId: 'saints', version: activeVersionStr } }
+      });
+      if (release) {
+        try {
+          const manifest = JSON.parse(release.manifestData);
+          if (manifest.World) {
+            finalSpawnMapId = manifest.World.SpawnMap || finalSpawnMapId;
+            finalSpawnX = typeof manifest.World.SpawnX === 'number' ? manifest.World.SpawnX : finalSpawnX;
+            finalSpawnY = typeof manifest.World.SpawnY === 'number' ? manifest.World.SpawnY : finalSpawnY;
+            finalSpawnZ = typeof manifest.World.SpawnZ === 'number' ? manifest.World.SpawnZ : finalSpawnZ;
+          }
+        } catch (e) {
+          console.error("Failed to parse release manifest for spawn extraction", e);
+        }
+      }
+    }
+
     const userGates = Array.isArray(map.gates) && map.gates.length > 0
       ? map.gates.map((g: any, idx: number) => ({
           id: g.id?.trim() || (idx === 0 ? 'spawn' : `gate_${idx}`),
           name: g.name?.trim() || (idx === 0 ? 'Player Spawn' : `Gateway ${idx}`),
           category: g.category || (idx === 0 ? 'SPAWN' : 'WARP'),
           position: {
-            x: typeof g.position?.x === 'number' ? g.position.x : spawnX,
-            y: typeof g.position?.y === 'number' ? g.position.y : spawnY,
-            z: typeof g.position?.z === 'number' ? g.position.z : 16,
+            x: typeof g.position?.x === 'number' ? g.position.x : finalSpawnX,
+            y: typeof g.position?.y === 'number' ? g.position.y : finalSpawnY,
+            z: typeof g.position?.z === 'number' ? g.position.z : finalSpawnZ,
           },
           targetMapId: g.targetMapId?.trim() || undefined,
           targetPosition: g.targetPosition || undefined,
@@ -163,12 +192,12 @@ export async function POST(req: Request) {
             id: 'spawn',
             name: 'Player Spawn',
             category: 'SPAWN',
-            position: { x: spawnX, y: spawnY, z: 16 },
+            position: { x: finalSpawnX, y: finalSpawnY, z: finalSpawnZ },
           },
         ];
 
     const gatesPayload = {
-      spawnPoint: { x: spawnX, y: spawnY },
+      spawnPoint: { x: finalSpawnX, y: finalSpawnY, z: finalSpawnZ },
       gates: userGates,
     };
 
@@ -189,6 +218,20 @@ export async function POST(req: Request) {
           description: gameDesc,
           isActive: true,
           combatFormula: gameStyle === 'TURN_BASED' ? 'turn-based' : 'saints-standard',
+        },
+      });
+
+      // 4a2. Upsert WorldProject
+      await tx.worldProject.upsert({
+        where: { slug: 'saints' },
+        create: {
+          slug: 'saints',
+          name: gameName,
+          description: gameDesc,
+        },
+        update: {
+          name: gameName,
+          description: gameDesc,
         },
       });
 
@@ -225,9 +268,9 @@ export async function POST(req: Request) {
             tagColor: char.tagColor || '#38bdf8',
             sortOrder: i + 1,
             isActive: true,
-            startingMap: mapId,
-            startingX: spawnX,
-            startingY: spawnY,
+            startingMap: finalSpawnMapId,
+            startingX: finalSpawnX,
+            startingY: finalSpawnY,
             startingInventory: (char as any).startingInventory || '{"patch_kit":5}',
           },
           update: {
@@ -315,12 +358,7 @@ export async function POST(req: Request) {
       let isRecovery = false;
 
       if (existingWorld) {
-        if (existingWorld.publishedVersion) {
-          isRecovery = true;
-          nextVersion = existingWorld.publishedVersion;
-        } else {
-          nextVersion = existingWorld.version + 1;
-        }
+        nextVersion = existingWorld.version + 1;
       }
 
       let upsertedWorldMap;
@@ -337,12 +375,9 @@ export async function POST(req: Request) {
           name: mapName,
           gridData: JSON.stringify(initialLogicGrid),
           gatesData: JSON.stringify(gatesPayload),
-          npcsData: JSON.stringify([]),
           encountersData: JSON.stringify([]),
           entitiesData: JSON.stringify([]),
-          tileLayersData: JSON.stringify(initialTileLayers),
           freeformLayersData: JSON.stringify([]),
-          tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
           version: 1,
           mapType: map.mapType || 'VOXEL',
         },
@@ -351,9 +386,7 @@ export async function POST(req: Request) {
           gameId: 'saints',
           gatesData: JSON.stringify(gatesPayload),
           gridData: JSON.stringify(initialLogicGrid),
-          tileLayersData: JSON.stringify(initialTileLayers),
           freeformLayersData: JSON.stringify([]),
-          tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
           version: { increment: 1 },
           mapType: map.mapType || 'VOXEL',
         },
@@ -370,7 +403,6 @@ export async function POST(req: Request) {
           height: mapHeight,
           tilesetData: JSON.stringify(initialLogicGrid),
           gates: JSON.stringify(gatesPayload),
-          npcs: JSON.stringify([]),
           encounters: JSON.stringify([]),
         },
         update: {
@@ -440,57 +472,7 @@ export async function POST(req: Request) {
         });
       }
 
-      // 4g. Persist WorldMapVersion using exact revision artifacts (WYSIWYG Guarantee)
-      if (!isRecovery) {
-        const snapshotPayload = {
-          id: mapId,
-          name: mapName,
-          gameId: 'saints',
-          gridData: JSON.stringify(initialLogicGrid),
-          gatesData: JSON.stringify(gatesPayload),
-          npcsData: JSON.stringify([]),
-          encountersData: JSON.stringify([]),
-          entitiesData: JSON.stringify([]),
-          tileLayersData: JSON.stringify(initialTileLayers),
-          freeformLayersData: JSON.stringify([]),
-          tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
-          version: upsertedWorldMap.version,
-          publishedVersion: nextVersion,
-          publishedAt: new Date().toISOString(),
-          publishedBy: 'system-setup',
-          mapType: map.mapType || 'VOXEL',
-        };
-        
-        await tx.worldMapVersion.upsert({
-          where: {
-            mapId_version: { mapId, version: nextVersion }
-          },
-          create: {
-            mapId,
-            version: nextVersion,
-            name: mapName,
-            data: JSON.stringify(snapshotPayload),
-            regions: {
-              create: revision.regions.map(r => ({
-                regionX: r.regionX,
-                regionZ: r.regionZ,
-                artifactChecksum: r.artifactChecksum
-              }))
-            }
-          },
-          update: {
-            data: JSON.stringify(snapshotPayload),
-          }
-        });
-      }
 
-      // 4h. Update the publishedVersion pointer on the WorldMap
-      if (!isRecovery) {
-        await tx.worldMap.update({
-          where: { id: mapId },
-          data: { publishedVersion: nextVersion }
-        });
-      }
       return nextVersion;
     });
 
@@ -522,3 +504,4 @@ export async function POST(req: Request) {
     );
   }
 }
+

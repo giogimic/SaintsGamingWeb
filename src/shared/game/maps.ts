@@ -45,14 +45,7 @@ export interface RenderedChunk {
   grid?: number[][];
   tileLayers?: Array<{ name: string; grid: number[][] }>;
   tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number }>;
-  npcs?: Array<{
-    id: string;
-    name: string;
-    x: number;
-    y: number;
-    sprite: string;
-    dialogueKey: string;
-  }>;
+  entities?: any[];
   voxelDoc?: any;
 }
 
@@ -78,14 +71,7 @@ export interface GameMapData {
     yOffset?: number;
   }>;
   tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number }>;
-  npcs?: Array<{
-    id: string;
-    name: string;
-    x: number;
-    y: number;
-    sprite: string;
-    dialogueKey: string;
-  }>;
+  entities?: any[];
   encounterPool?: Array<{
     id: string;
     monsterId: string;
@@ -161,7 +147,7 @@ function emptyMapFallback(mapId: string): GameMapData {
     height: 20,
     grid: Array(20).fill(0).map(() => Array(20).fill(0)),
     gates: {},
-    npcs: [],
+    entities: [],
     encounterPool: [],
     tileLayers: [],
     tilesets: [],
@@ -308,7 +294,7 @@ export async function loadMap(
             grid: mapData.grid,
             tileLayers: mapData.tileLayers,
             tilesets: mapData.tilesets,
-            npcs: mapData.npcs,
+            entities: mapData.entities,
           }];
         }
         const processConnection = (
@@ -359,7 +345,7 @@ export async function loadMap(
                 grid: neighborData.grid,
                 tileLayers: neighborData.tileLayers,
                 tilesets: neighborData.tilesets,
-                npcs: neighborData.npcs || [],
+                entities: neighborData.entities || [],
                 voxelDoc: neighborData.voxelDoc,
               });
             }).catch(e => {

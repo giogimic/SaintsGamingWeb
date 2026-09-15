@@ -22,9 +22,11 @@ export default async function LobbyPage(props: { searchParams: Promise<{ charact
   }
 
   const params = await props.searchParams;
-  
+  const project = await prisma.worldProject.findUnique({ where: { slug: 'saints' } });
+
   return (
     <TheLobby characterId={params.characterId} forceCreate={params.create === 'true'} />
   );
 }
+
 

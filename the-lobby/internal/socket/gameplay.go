@@ -3,6 +3,7 @@ package socket
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -180,10 +181,11 @@ func (h *Hub) finishCombat(accountID, sid, instanceID, creatureID, winner string
 		}
 		for _, g := range skill.CombatGrants(winner, creatureLvl) {
 			xp := h.deps.Skills.Add(accountID, g.Skill, g.XP)
+			lvl := h.deps.Skills.Levels(accountID)[g.Skill]
 			h.EmitToSocket(sid, protocol.EvSkillXP, map[string]any{
-				"skills": xp,
-				"levels": h.deps.Skills.Levels(accountID),
-				"grant":  g,
+				"skillSlug": g.Skill,
+				"totalXp":   xp[g.Skill],
+				"level":     lvl,
 			})
 		}
 		if p := h.eng.Players().GetByAccount(accountID); p != nil && h.deps.Loot != nil {
@@ -212,10 +214,11 @@ func (h *Hub) finishCombat(accountID, sid, instanceID, creatureID, winner string
 		}
 		for _, g := range skill.CombatGrants(winner, creatureLvl) {
 			xp := h.deps.Skills.Add(accountID, g.Skill, g.XP)
+			lvl := h.deps.Skills.Levels(accountID)[g.Skill]
 			h.EmitToSocket(sid, protocol.EvSkillXP, map[string]any{
-				"skills": xp,
-				"levels": h.deps.Skills.Levels(accountID),
-				"grant":  g,
+				"skillSlug": g.Skill,
+				"totalXp":   xp[g.Skill],
+				"level":     lvl,
 			})
 		}
 	}
@@ -227,12 +230,9 @@ func (h *Hub) handleAdminSaveMap(accountID string, datas []any) {
 	}
 	b, _ := json.Marshal(datas[0])
 	var payload struct {
-		MapID          string          `json:"mapId"`
-		Name           string          `json:"name"`
-		GridData       json.RawMessage `json:"gridData"`
-		NpcsData       json.RawMessage `json:"npcsData"`
-		TileLayersData json.RawMessage `json:"tileLayersData"`
-		TilesetsData   json.RawMessage `json:"tilesetsData"`
+		MapID    string          `json:"mapId"`
+		Name     string          `json:"name"`
+		GridData json.RawMessage `json:"gridData"`
 	}
 	if json.Unmarshal(b, &payload) != nil || payload.MapID == "" {
 		return
@@ -249,7 +249,7 @@ func (h *Hub) handleAdminSaveMap(accountID string, datas []any) {
 		return
 	}
 	if h.deps.SaveMap != nil {
-		_ = h.deps.SaveMap(base, payload.Name, grid, string(payload.NpcsData), string(payload.TileLayersData), string(payload.TilesetsData))
+		_ = h.deps.SaveMap(base, payload.Name, grid)
 	}
 	h.broadcastAll(protocol.EvContentReload, map[string]any{
 		"type":    "map",
@@ -340,6 +340,13 @@ func (h *Hub) handleStudioDespawnNPC(accountID string, datas []any) {
 	h.broadcastAll(protocol.EvNPCDespawned, map[string]any{"mapId": base, "npcId": payload.NpcID})
 }
 
+func isWithinInteractionRange(px, py, tx, ty float64, maxDist float64) bool {
+	dx := px - tx
+	dy := py - ty
+	dist := math.Sqrt(dx*dx + dy*dy)
+	return dist <= maxDist
+}
+
 func (h *Hub) handleGather(accountID string, datas []any) {
 	p := h.eng.Players().GetByAccount(accountID)
 	if p == nil {
@@ -358,6 +365,13 @@ func (h *Hub) handleGather(accountID string, datas []any) {
 			}
 		}
 	}
+
+	// 1. Authoritative Distance Validation (limit 3 tiles)
+	if !isWithinInteractionRange(p.X, p.Y, x, y, 3.0) {
+		h.EmitToSocket(p.SocketID, protocol.EvShowToast, map[string]string{"message": "Too far away to gather!"})
+		return
+	}
+
 	tile := protocol.TileGrass
 	if def, err := h.eng.World().GetDef(p.BaseMapID); err == nil {
 		ix, iy := int(x), int(y)
@@ -365,22 +379,35 @@ func (h *Hub) handleGather(accountID string, datas []any) {
 			tile = def.Grid[iy][ix]
 		}
 	}
+	
 	itemID, name, qty := "loot_scrap", "Scrap", 1
+	var skillSlug string
 	switch tile {
 	case protocol.TileTree:
-		itemID, name = "wood", "Wood"
+		itemID, name, skillSlug = "wood", "Wood", "woodcutting"
 	case protocol.TileOre:
-		itemID, name = "ore", "Ore"
+		itemID, name, skillSlug = "ore", "Ore", "mining"
 	case protocol.TileFish:
-		itemID, name = "fish", "Fish"
+		itemID, name, skillSlug = "fish", "Fish", "fishing"
 	}
+	
 	items := h.deps.Inventory.AddItem(accountID, itemID, name, qty)
-	h.deps.Skills.Add(accountID, "gathering", 8)
-	h.deps.Quests.Advance(accountID, "gather_scrap", 1)
 	h.EmitToSocket(p.SocketID, protocol.EvInventorySync, map[string]any{"items": items})
 	h.EmitToSocket(p.SocketID, protocol.EvShowToast, map[string]string{"message": "Gathered " + name})
+
+	if skillSlug != "" && h.deps.Skills != nil {
+		xpMap := h.deps.Skills.Add(accountID, skillSlug, 8)
+		lvlMap := h.deps.Skills.Levels(accountID)
+		
+		h.EmitToSocket(p.SocketID, protocol.EvSkillXP, map[string]any{
+			"skillSlug": skillSlug,
+			"totalXp":   xpMap[skillSlug],
+			"level":     lvlMap[skillSlug],
+		})
+	}
+
+	h.deps.Quests.Advance(accountID, "gather_scrap", 1)
 	h.EmitToSocket(p.SocketID, protocol.EvQuestUpdate, map[string]any{"quests": h.deps.Quests.List(accountID)})
-	_ = y
 }
 
 func (h *Hub) handlePickupLoot(accountID string, datas []any) {
@@ -726,14 +753,44 @@ func (h *Hub) handleDropItem(accountID string, datas []any) {
 }
 
 func (h *Hub) handleFishAttempt(accountID string, datas []any) {
-	sid := h.eng.Players().SocketIDForAccount(accountID)
-	if sid == "" {
+	p := h.eng.Players().GetByAccount(accountID)
+	if p == nil {
 		return
 	}
+	
+	x, y := p.X, p.Y
+	if len(datas) > 0 {
+		b, _ := json.Marshal(datas[0])
+		var m map[string]any
+		if json.Unmarshal(b, &m) == nil {
+			if v, ok := m["x"].(float64); ok {
+				x = v
+			}
+			if v, ok := m["y"].(float64); ok {
+				y = v
+			}
+		}
+	}
+	
+	// 1. Authoritative Distance Validation (limit 3 tiles)
+	if !isWithinInteractionRange(p.X, p.Y, x, y, 3.0) {
+		h.EmitToSocket(p.SocketID, protocol.EvShowToast, map[string]string{"message": "Too far away to fish!"})
+		return
+	}
+
 	xpGained := 20
 	// You could add logic here for success chance, drops, etc.
-	h.EmitToSocket(sid, protocol.EvSkillXP, map[string]any{"skillSlug": "fishing", "totalXp": xpGained, "level": 1})
-	h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": fmt.Sprintf("Fishing... caught something! (+%d Fishing XP)", xpGained)})
+	if h.deps.Skills != nil {
+		xpMap := h.deps.Skills.Add(accountID, "fishing", xpGained)
+		lvlMap := h.deps.Skills.Levels(accountID)
+		
+		h.EmitToSocket(p.SocketID, protocol.EvSkillXP, map[string]any{
+			"skillSlug": "fishing",
+			"totalXp":   xpMap["fishing"],
+			"level":     lvlMap["fishing"],
+		})
+	}
+	h.EmitToSocket(p.SocketID, protocol.EvShowToast, map[string]string{"message": fmt.Sprintf("Fishing... caught something! (+%d Fishing XP)", xpGained)})
 }
 
 func (h *Hub) handleClinicHeal(accountID string, datas []any) {

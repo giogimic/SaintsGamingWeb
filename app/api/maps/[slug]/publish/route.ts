@@ -5,13 +5,13 @@ import { canWriteStudioContent, STUDIO_CONTENT_WRITE_LEVEL } from "@/shared/game
 import { verifyStudioPermission } from "@/server/auth/studioApiAuth";
 import { AuditService } from "@/server/audit/AuditService";
 import { MapSyncService } from "@/server/mapSyncService";
+import { createWorldRelease } from "@/app/actions/studio/world-release";
 
 export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/maps/[slug]/publish
- * Promotes the current saved editor draft of a map to an immutable published release version,
- * archives a snapshot in WorldMapVersion for rollback, and synchronizes with live runtime shards.
+ * Promotes the current saved editor draft of the ENTIRE Working World to an immutable published release version.
  */
 export async function POST(
   request: NextRequest,
@@ -33,121 +33,50 @@ export async function POST(
       return NextResponse.json({ error: `Map not found: ${slug}` }, { status: 404 });
     }
 
-    const nextPublishedVersion = (worldMap.publishedVersion ?? 0) + 1;
+    const projectId = worldMap.gameId || "saints";
+    const project = await prisma.worldProject.findUnique({ where: { slug: projectId }, include: { maps: true } });
+    
+    if (!project) {
+      return NextResponse.json({ error: `Project not found: ${projectId}` }, { status: 404 });
+    }
 
-    // Retrieve region metadata for snapshot
+    // Retrieve region metadata for ALL maps to ensure nothing is still generating
     const { VoxelRegionRepository } = await import('@/server/repositories/VoxelRegionRepository');
-    const regions = await VoxelRegionRepository.getRegionsForMap(slug);
-
-    // 1. Publish Validation
-    // A publish must fail if any required region is missing, still generating, or in an error state.
-    // Also, must have a valid checksum.
-    // We expect the generator metadata to tell us how many regions are expected,
-    // but for now we enforce that ALL retrieved draft regions must be COMPLETED and valid.
-    for (const r of regions) {
-      if (r.status !== 'COMPLETED') {
-        return NextResponse.json({ error: `Region ${r.coordinates.regionX},${r.coordinates.regionZ} is not COMPLETED (status: ${r.status})` }, { status: 400 });
-      }
-      if (!r.checksum) {
-        return NextResponse.json({ error: `Region ${r.coordinates.regionX},${r.coordinates.regionZ} is missing its artifact checksum` }, { status: 400 });
-      }
-      // Note: getRegionsForMap already joins the artifact, so if voxelData is null, the artifact is missing!
-      if (!r.voxelData) {
-        return NextResponse.json({ error: `Region ${r.coordinates.regionX},${r.coordinates.regionZ} points to a nonexistent artifact (checksum: ${r.checksum})` }, { status: 400 });
-      }
-    }
-
-    const regionMetadata = regions.map(r => ({
-      coordinates: r.coordinates,
-      generator: r.generator,
-      status: r.status,
-      checksum: r.checksum
-    }));
-
-    // Ensure spawnPoint has a Z coordinate (preserve 3D map spawning)
-    let processedGatesData = worldMap.gatesData;
-    try {
-      const gates = JSON.parse(worldMap.gatesData || "{}");
-      if (gates.spawnPoint && typeof gates.spawnPoint.z !== 'number') {
-        gates.spawnPoint.z = 16; // DEFAULT_SPAWN_Z
-        processedGatesData = JSON.stringify(gates);
-      }
-    } catch (e) {
-      console.warn("Failed to parse gatesData for Z coordinate preservation:", e);
-    }
-
-    const snapshotPayload = {
-      id: worldMap.id,
-      name: worldMap.name,
-      gameId: worldMap.gameId,
-      gridData: worldMap.gridData,
-      gatesData: processedGatesData,
-      npcsData: worldMap.npcsData,
-      encountersData: worldMap.encountersData,
-      entitiesData: worldMap.entitiesData,
-      tileLayersData: worldMap.tileLayersData,
-      freeformLayersData: worldMap.freeformLayersData,
-      tilesetsData: worldMap.tilesetsData,
-      mapType: worldMap.mapType,
-      version: worldMap.version,
-      publishedVersion: nextPublishedVersion,
-      publishedAt: new Date().toISOString(),
-      publishedBy: user.username || user.email || user.id,
-    };
-
-    const serializedSnapshot = JSON.stringify(snapshotPayload);
-
-    // 1. Create or upsert immutable snapshot record in WorldMapVersion
-    await prisma.worldMapVersion.upsert({
-      where: {
-        mapId_version: {
-          mapId: slug,
-          version: nextPublishedVersion,
-        },
-      },
-      create: {
-        mapId: slug,
-        version: nextPublishedVersion,
-        name: worldMap.name,
-        data: serializedSnapshot,
-        description,
-        publishedBy: user.username || user.email || user.id,
-        regions: {
-          create: regionMetadata.map(r => ({
-            regionX: r.coordinates.regionX,
-            regionZ: r.coordinates.regionZ,
-            artifactChecksum: r.checksum as string
-          }))
+    
+    for (const map of project.maps) {
+      const regions = await VoxelRegionRepository.getRegionsForMap(map.id);
+      for (const r of regions) {
+        if (r.status !== 'COMPLETED') {
+          return NextResponse.json({ error: `Map ${map.id} Region ${r.coordinates.regionX},${r.coordinates.regionZ} is not COMPLETED (status: ${r.status})` }, { status: 400 });
         }
-      },
-      update: {
-        data: serializedSnapshot,
-        description,
-      },
-    });
+        if (!r.checksum || !r.voxelData) {
+          return NextResponse.json({ error: `Map ${map.id} Region ${r.coordinates.regionX},${r.coordinates.regionZ} is missing its artifact` }, { status: 400 });
+        }
+      }
+    }
 
-    // 2. Update WorldMap with new publishedVersion and active publishedData
-    await prisma.worldMap.update({
-      where: { id: slug },
-      data: {
-        publishedVersion: nextPublishedVersion,
-        publishedData: serializedSnapshot,
-      },
-    });
+    // Create the Project-Wide Release
+    const releaseRes = await createWorldRelease(project.id);
+    if (!releaseRes.success) {
+      return NextResponse.json({ error: releaseRes.error }, { status: 500 });
+    }
 
-    // 3. Synchronize with live game engine / Go MMO shards
-    await MapSyncService.enqueue({
-      mapId: slug,
+    const nextPublishedVersion = releaseRes.version!;
+
+    // Synchronize with live game engine / Go MMO shards
+    // We now just enqueue one project release sync.
+    await MapSyncService.enqueueProjectRelease({
+      projectId: project.id,
       version: nextPublishedVersion,
       userId: user.id,
       eagerPush: true,
     });
 
-    // 4. Audit Log
+    // Audit Log
     await AuditService.write({
       userId: user.id,
-      action: "map.publish",
-      resource: { type: "map", id: slug },
+      action: "project.publish",
+      resource: { type: "project", id: project.id },
       after: {
         version: nextPublishedVersion,
         description,
@@ -156,14 +85,14 @@ export async function POST(
 
     return NextResponse.json({
       ok: true,
-      mapId: slug,
+      projectId: project.id,
       publishedVersion: nextPublishedVersion,
-      message: `Map ${slug} published successfully as v${nextPublishedVersion}`,
+      message: `Project published successfully as v${nextPublishedVersion}`,
     });
   } catch (error: any) {
-    console.error("Failed to publish map:", error);
+    console.error("Failed to publish project:", error);
     return NextResponse.json(
-      { error: error?.message || "Failed to publish map" },
+      { error: error?.message || "Failed to publish project" },
       { status: 500 }
     );
   }

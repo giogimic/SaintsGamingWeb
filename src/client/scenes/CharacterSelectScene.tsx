@@ -165,7 +165,8 @@ export function CharacterSelectScene() {
             mapId: targetMapId,
             lobby: true,
             isPrivate: false,
-            pie: false
+            pie: false,
+
           },
           position,
           name: char.name,
@@ -309,3 +310,4 @@ export function CharacterSelectScene() {
     </div>
   );
 }
+

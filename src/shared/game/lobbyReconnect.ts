@@ -60,7 +60,7 @@ export function mergeMapDocumentInPlace(
     "voxelDoc",
     "freeformLayers",
     "blockSizePx",
-    "publishedVersion",
+
     "cameraStyle",
     "allowCustomCamera",
     "defaultCameraStyle",

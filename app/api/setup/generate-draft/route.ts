@@ -42,8 +42,7 @@ export async function POST(req: NextRequest) {
       create: {
         id: mapId,
         name: body.mapName || 'Genesis Sanctuary',
-        gatesData: '[]',
-        npcsData: '[]',
+        gatesData: '{}',
         encountersData: '[]',
         entitiesData: '[]',
         regionClass: 'procedural',

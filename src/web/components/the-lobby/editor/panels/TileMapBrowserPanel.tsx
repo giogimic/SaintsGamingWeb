@@ -33,7 +33,7 @@ import {
   VOXEL_MAT_SNOW,
   VOXEL_MAT_WATER,
 } from '@/shared/game/voxel/VoxelMaterialDefinition';
-import { MapPersistenceService, type MapVersionItem } from '../services/MapPersistenceService';
+import { MapPersistenceService } from '../services/MapPersistenceService';
 import {
   WindowMenuBar,
   WindowMenuDropdown,
@@ -76,7 +76,7 @@ export const TileMapBrowserPanel: React.FC = () => {
 
   // Version History Modal State
   const [versionModalMapId, setVersionModalMapId] = useState<string | null>(null);
-  const [versionList, setVersionList] = useState<MapVersionItem[]>([]);
+  const [versionList, setVersionList] = useState<[]>([]);
   const [loadingVersions, setLoadingVersions] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isRollingBack, setIsRollingBack] = useState(false);
@@ -238,25 +238,23 @@ export const TileMapBrowserPanel: React.FC = () => {
     }
   };
 
-  const handleBatchPublish = async () => {
-    const ids = Array.from(selectedMapIds);
-    if (ids.length === 0) return;
-
+  const handlePublishProject = async () => {
+    // Publish the entire "saints" project
     setIsBatchOperating(true);
-    let publishedCount = 0;
     try {
-      await Promise.allSettled(
-        ids.map(async (id) => {
-          const res = await fetch(`/api/maps/${encodeURIComponent(id)}/publish`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ description: 'Batch published from Map Browser' }),
-          });
-          if (res.ok) publishedCount++;
-        })
-      );
-      showToast(`Batch published ${publishedCount} of ${ids.length} maps`);
+      const res = await fetch(`/api/maps/${encodeURIComponent(spawnMapId || 'STARTING_MEADOW')}/publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: 'Published Project from Map Browser' }),
+      });
+      if (!res.ok) {
+        throw new Error('Failed to publish project');
+      }
+      const data = await res.json();
+      showToast(`Published Project Version v${data.version}`);
       mutateMaps();
+    } catch (e: any) {
+      showToast(e?.message || 'Error publishing project');
     } finally {
       setIsBatchOperating(false);
     }
@@ -294,62 +292,30 @@ export const TileMapBrowserPanel: React.FC = () => {
   };
 
 
-  const handleOpenVersions = async (mapId: string) => {
-    setVersionModalMapId(mapId);
-    setLoadingVersions(true);
-    try {
-      const history = await MapPersistenceService.fetchVersionHistory(mapId);
-      setVersionList(history);
-    } catch {
-      setVersionList([]);
-    } finally {
-      setLoadingVersions(false);
-    }
-  };
-
-  const handlePublish = async (mapId: string) => {
-    setIsPublishing(true);
-    try {
-      const res = await MapPersistenceService.publishActiveMap(`Release published from Map Browser`);
-      if (res.ok) {
-        showToast(`Published v${res.publishedVersion}! Live shards updated.`);
-        mutateMaps();
-      } else {
-        showToast(res.error || 'Publish failed');
-      }
-    } finally {
-      setIsPublishing(false);
-    }
-  };
-
-  const handleRollback = async (targetVersion: number) => {
-    if (!versionModalMapId) return;
-    setIsRollingBack(true);
-    try {
-      const res = await MapPersistenceService.rollbackActiveMap(targetVersion);
-      if (res.ok) {
-        showToast(`Rolled back map to published v${targetVersion}`);
-        setVersionModalMapId(null);
-        mutateMaps();
-      } else {
-        showToast(res.error || 'Rollback failed');
-      }
-    } finally {
-      setIsRollingBack(false);
-    }
-  };
+  // Legacy publish and rollback methods removed as part of WorldProject release migration
 
   return (
     <div className="flex flex-col h-full bg-[#050b14] text-slate-200 font-mono select-none overflow-hidden">
       {/* ── SIDEBAR HEADER ── */}
       <div className="flex items-center justify-between px-3 py-2 bg-[#081220] border-b border-border/40 shrink-0">
         <div className="flex items-center gap-2">
-          <Globe className="w-4 h-4 text-primary" />
+          <Globe className="w-4 h-4 text-emerald-400" />
           <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
             Tile Maps
           </span>
         </div>
         <div className="flex items-center gap-1">
+          {canEdit && (
+            <button 
+              onClick={handlePublishProject} 
+              disabled={isBatchOperating}
+              className="p-1 px-2 rounded bg-amber-600/20 text-amber-500 hover:text-amber-300 hover:bg-amber-600/40 border border-amber-500/30 text-xs font-bold flex items-center gap-1 transition-colors disabled:opacity-50" 
+              title="Publish entire project (all maps) as a new immutable release version"
+            >
+              <UploadCloud className="w-3.5 h-3.5" />
+              <span>Publish Project</span>
+            </button>
+          )}
           <button onClick={() => mutateMaps()} className="p-1 rounded text-muted-foreground hover:text-slate-200 hover:bg-white/10" title="Reload">
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
@@ -385,7 +351,7 @@ export const TileMapBrowserPanel: React.FC = () => {
               <div className="flex flex-col">
                 {catMaps.map(map => {
                   const isCurrent = (currentMapId || '').toUpperCase() === map.id.toUpperCase();
-                  const pubVersion = (map as any).publishedVersion || (map as any).version || 1;
+                  const pubVersion = (map as any).version || 1;
                   return (
                     <div
                       key={map.id}
@@ -424,9 +390,6 @@ export const TileMapBrowserPanel: React.FC = () => {
                             <Settings className="w-3 h-3" />
                           </button>
                         )}
-                        <button onClick={() => handleOpenVersions(map.id)} className="p-1 text-slate-400 hover:text-amber-300" title="History">
-                          <History className="w-3 h-3" />
-                        </button>
                         {canEdit && map.id.toUpperCase() !== spawnMapId && (
                           <button onClick={() => setDeleteTargetMapId(map.id)} className="p-1 text-slate-400 hover:text-rose-400" title="Delete">
                             <Trash2 className="w-3 h-3" />
@@ -446,83 +409,6 @@ export const TileMapBrowserPanel: React.FC = () => {
           </div>
         )}
       </div>
-
-
-
-      {/* ═══════════════════════════════════════════════════════════
-          POPOUT WINDOW: VERSION HISTORY & ROLLBACK
-         ═══════════════════════════════════════════════════════════ */}
-      {versionModalMapId && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-150 font-mono">
-          <div className="w-full max-w-lg rounded-2xl border border-primary/50 bg-[#050b14] p-5 shadow-[0_10px_50px_rgba(0,0,0,0.8)] space-y-4">
-            <div className="flex items-center justify-between border-b border-border/40 pb-3">
-              <h3 className="font-bold text-sm text-primary flex items-center gap-2">
-                <History className="w-4 h-4" /> Version History: {versionModalMapId}
-              </h3>
-              <button onClick={() => setVersionModalMapId(null)} className="text-slate-400 hover:text-white cursor-pointer">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Immutable version releases. Rollback safely restores the realm map to any published snapshot.
-            </p>
-
-            <div className="max-h-72 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-              {loadingVersions ? (
-                <div className="text-center py-6 text-xs text-muted-foreground">Loading versions…</div>
-              ) : versionList.length === 0 ? (
-                <div className="text-center py-6 text-xs text-muted-foreground">
-                  No published snapshots yet. Use &quot;Publish&quot; on the active map to create an immutable version.
-                </div>
-              ) : (
-                versionList.map((ver) => (
-                  <div
-                    key={ver.version}
-                    className="flex items-center justify-between p-3 rounded-xl bg-[#0b1626] border border-border/40 hover:border-primary/40 text-xs"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-amber-300">v{ver.version}</span>
-                        <span className="text-slate-200 font-semibold">{ver.name}</span>
-                      </div>
-                      <div className="text-[10px] text-muted-foreground mt-0.5">
-                        {ver.description || 'Snapshot'} · by {ver.publishedBy || 'Admin'}
-                      </div>
-                      <div className="text-[9px] text-slate-500">
-                        {new Date(ver.createdAt).toLocaleString()}
-                      </div>
-                    </div>
-
-                    {canEdit && (
-                      <button
-                        onClick={() => handleRollback(ver.version)}
-                        disabled={isRollingBack}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/40 transition-colors cursor-pointer disabled:opacity-50"
-                        title="Restore this published snapshot"
-                      >
-                        <RotateCcw className="w-3 h-3" />
-                        <span>Rollback</span>
-                      </button>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div className="flex items-center justify-end pt-3 border-t border-border/40">
-              <button
-                type="button"
-                onClick={() => setVersionModalMapId(null)}
-                className="px-3.5 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-white hover:bg-white/5 cursor-pointer"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
 
       {/* ═══════════════════════════════════════════════════════════
           POPOUT WINDOW: SINGLE MAP DELETE CONFIRMATION
@@ -620,3 +506,9 @@ export const TileMapBrowserPanel: React.FC = () => {
     </div>
   );
 };
+
+
+
+
+
+

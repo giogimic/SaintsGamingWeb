@@ -20,7 +20,7 @@ export async function GET(request: Request) {
         name: true,
         gameId: true,
         version: true,
-        publishedVersion: true,
+
         updatedAt: true,
         mapType: true,
       },
@@ -36,3 +36,4 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

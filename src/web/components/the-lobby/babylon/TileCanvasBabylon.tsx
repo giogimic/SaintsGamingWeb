@@ -263,7 +263,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           tileLayers: [],
           tilesets: [],
           gates: {},
-          npcs: [],
+          entities: [],
           encounters: [],
         });
         useGameStore.getState().setActiveMapData(fallback);
@@ -297,7 +297,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       mapHeight,
       mapGrid: activeMap.grid,
       gates: normalizeGates(activeMap.gates),
-      staticNpcs: activeMap.npcs || [],
+      staticNpcs: activeMap.entities || [],
       dynamicEntities: store.mapEntities || [],
       logicTiles: store.logicTiles,
       playerPos: currentPos,
@@ -545,7 +545,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       mapHeight,
       mapGrid: activeMap?.grid || [],
       gates: normalizeGates(activeMap?.gates),
-      staticNpcs: activeMap?.npcs || [],
+      staticNpcs: activeMap?.entities || [],
       dynamicEntities: store.mapEntities || [],
       logicTiles: store.logicTiles,
       playerPos: { x: curX, y: curY },
@@ -747,7 +747,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   }, [mapData]); // Added mapData to dependencies since it's used in the new listeners
 
   // Stable key so setActiveMapData new-object refreshes do not dispose Babylon
-  // (that wiped player_main + NPCs and left only grass).
+  // (that wiped player_main + entities and left only grass).
   const engineMapKey = mapData
     ? toBaseMapId(String((mapData as { id?: string }).id || currentMapId || ''))
     : '';
@@ -810,7 +810,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         // Prefer live store/doc — mount-time `activeMap` can be null to TS and stale at click.
         const liveMap =
           (state.activeMapData as GameMapData | null) || mapDataRef.current || activeMap;
-        const npc = liveMap?.npcs?.find(
+        const npc = liveMap?.entities?.find(
           (n: any) => n.id === trueId || n.id === `npc_${trueId}` || n.id === entityId
         );
         targetName =
@@ -866,7 +866,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       babylonEngine.updateSelectionRing(entityId);
     };
 
-    // Load map grid only — NPCs/wilds come from socket mapEntities (avoids
+    // Load map grid only — entities/wilds come from socket mapEntities (avoids
     // duplicate meshes + broken /assets/sprites/ paths inside loadTilemap).
     console.log('[GameCanvasBabylon] Calling loadTilemap with', {
       id: currentMapId,
@@ -886,7 +886,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       tiles: mapData.grid || [],
       tileLayers: mapData.mapType === 'VOXEL' ? [] : mapData.tileLayers,
       tilesets: mapData.tilesets,
-      npcs: [],
+      entities: [],
       chunks: mapData.chunks,
       freeformLayers: mapData.freeformLayers,
       voxelDoc: mapData.mapType === 'TILE' ? null : mapData.voxelDoc,
@@ -964,10 +964,10 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       // Map Chunks lookup for cross-border neighbor coordinate transformation
       const liveMapDoc =
         (liveStore.activeMapData as {
-          npcs?: Array<{ id: string; name?: string; x: number; y: number; sprite?: string }>;
-          chunks?: Array<{ mapId: string; offsetX?: number; offsetZ?: number; width?: number; height?: number; npcs?: any[] }>;
+          entities?: Array<{ id: string; name?: string; x: number; y: number; sprite?: string }>;
+          chunks?: Array<{ mapId: string; offsetX?: number; offsetZ?: number; width?: number; height?: number; entities?: any[] }>;
         } | null) || activeMap;
-      let rawChunks = (liveMapDoc as any)?.chunks as Array<{ mapId: string; offsetX?: number; offsetZ?: number; width?: number; height?: number; npcs?: any[] }> | undefined;
+      let rawChunks = (liveMapDoc as any)?.chunks as Array<{ mapId: string; offsetX?: number; offsetZ?: number; width?: number; height?: number; entities?: any[] }> | undefined;
 
       if (isDevEditorOpen || isolatedMapId) {
         rawChunks = undefined;
@@ -1049,7 +1049,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
       }
 
-      // Render map entities: socket mapEntities + static map NPCs (including connected neighbor chunks)
+      // Render map entities: socket mapEntities + static map entities (including connected neighbor chunks)
       const mapEntities = !editorToolsRef.current ? (liveStore.mapEntities || []) : [];
 
       const staticNpcs: any[] = [];
@@ -1061,7 +1061,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           const cOffsetX = chunk.offsetX || 0;
           const cOffsetZ = chunk.offsetZ || 0;
 
-          for (const npc of (chunk.npcs || [])) {
+          for (const npc of (chunk.entities || [])) {
             staticNpcs.push({
               id: isMain ? `mapnpc_${npc.id}` : `mapnpc_${chunk.mapId}_${npc.id}`,
               type: 'NPC' as const,
@@ -1077,7 +1077,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           }
         }
       } else {
-        for (const npc of (liveMapDoc?.npcs || [])) {
+        for (const npc of (liveMapDoc?.entities || [])) {
           staticNpcs.push({
             id: `mapnpc_${npc.id}`,
             type: 'NPC' as const,
@@ -1093,7 +1093,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
       }
 
-      // Prefer socket entities. Skip static NPCs already covered by socket at same
+      // Prefer socket entities. Skip static entities already covered by socket at same
       // tile OR same display name (socket ids are npc_<template>_<ts>).
       const socketTiles = new Set(
         mapEntities
@@ -1196,7 +1196,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   // Handle Map Document Hydration (Studio + first paint)
   // Engine remounts only on engineMapKey. When a proxy-shell mounts first and the
   // DB doc arrives later (same base id), remesh tiles in place — do NOT remesh on
-  // lobby NPC / object-identity churn (fingerprint ignores npcs).
+  // lobby NPC / object-identity churn (fingerprint ignores entities).
   useEffect(() => {
     if (!engineRef.current || !mapData) return;
     // Paint mutates in place — same identity, skip.
@@ -1211,7 +1211,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     lastLoadedMapDataRef.current = mapData;
     lastVisualFingerprintRef.current = mapVisualFingerprint(mapData);
     const dims = resolveMapDimensions(mapData);
-    // NPCs stay empty — socket mapEntities + store activeMapData drive sprites.
+    // entities stay empty — socket mapEntities + store activeMapData drive sprites.
     engineRef.current.loadTilemap({
       id: currentMapId,
       width: dims.width,
@@ -1220,7 +1220,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       tiles: mapData.grid,
       tileLayers: mapData.mapType === 'VOXEL' ? [] : mapData.tileLayers,
       tilesets: mapData.tilesets,
-      npcs: [],
+      entities: [],
       chunks: mapData.chunks,
       connections: mapData.connections,
       freeformLayers: mapData.freeformLayers,
@@ -1295,7 +1295,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           }
           
           if (store.mapEntities?.some((e) => e.id === id)) return id;
-          if (store.activeMapData?.npcs?.some((n: any) => n.id === id)) return `mapnpc_${id}`;
+          if (store.activeMapData?.entities?.some((n: any) => n.id === id)) return `mapnpc_${id}`;
           
           return id;
         };
@@ -1669,7 +1669,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 assetProfileId: pending.assetProfileId
               };
               
-              const updatedMap = { ...map, npcs: [...(map.npcs || []), newEntity] };
+              const updatedMap = { ...map, entities: [...(map.entities || []), newEntity] };
               
               useGameStore.setState({ activeMapData: updatedMap });
               store.markMapDirty();
@@ -1720,7 +1720,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                   gameId: updatedDestMap.gameId,
                   grid: updatedDestMap.grid,
                   gates: nextDestGates,
-                  npcs: updatedDestMap.npcs || [],
+                  entities: updatedDestMap.entities || [],
                   encounterPool: updatedDestMap.encounterPool || [],
                   tileLayers: updatedDestMap.tileLayers || [],
                   tilesets: updatedDestMap.tilesets || [],
@@ -1768,7 +1768,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                   gameId: updatedOrigin.gameId,
                   grid: updatedOrigin.grid,
                   gates: nextOriginGates,
-                  npcs: updatedOrigin.npcs || [],
+                  entities: updatedOrigin.entities || [],
                   encounterPool: updatedOrigin.encounterPool || [],
                   tileLayers: updatedOrigin.tileLayers || [],
                   tilesets: updatedOrigin.tilesets || [],
@@ -1886,8 +1886,8 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
           if (picked && picked.kind === 'entity' && picked.entityId) {
             let entityObj = dynamicEntities.find((e) => e.id === picked.entityId);
-            if (!entityObj && map.npcs) {
-              const staticNpc = map.npcs.find((n: any) => `npc_${n.id}` === picked.entityId || n.id === picked.entityId);
+            if (!entityObj && map.entities) {
+              const staticNpc = map.entities.find((n: any) => `npc_${n.id}` === picked.entityId || n.id === picked.entityId);
               if (staticNpc) {
                 entityObj = {
                   id: picked.entityId,
@@ -1954,7 +1954,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               const groundPhys = (groundWord.high >>> 8) & 0xf;
               if (groundPhys === 5) return false; // Hazard
             }
-            const isStaticNpc = map.npcs?.some((npc: any) => npc.x === x && npc.y === y);
+            const isStaticNpc = map.entities?.some((npc: any) => npc.x === x && npc.y === y);
             const isDynamicNpc = dynamicEntities.some(
               (e) => Math.round(e.position.x) === x && Math.round(e.position.y) === y && (e.mapId === currentMapId || !e.mapId)
             );
@@ -1994,8 +1994,8 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
             if (picked && picked.kind === 'entity' && picked.entityId) {
               let entityObj = dynamicEntities.find((e) => e.id === picked.entityId);
-              if (!entityObj && map.npcs) {
-                const staticNpc = map.npcs.find((n: any) => `npc_${n.id}` === picked.entityId || n.id === picked.entityId);
+              if (!entityObj && map.entities) {
+                const staticNpc = map.entities.find((n: any) => `npc_${n.id}` === picked.entityId || n.id === picked.entityId);
                 if (staticNpc) {
                   entityObj = {
                     id: picked.entityId,
@@ -2273,7 +2273,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         tileLayers: map.mapType === 'VOXEL' ? [] : map.tileLayers,
         freeformLayers: map.freeformLayers,
         tilesets: map.tilesets,
-        npcs: [],
+        entities: [],
         chunks: map.chunks,
         voxelDoc: map.mapType === 'TILE' ? null : map.voxelDoc,
         blockSizePx: map.blockSizePx,
@@ -2314,7 +2314,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     }
     const map = useGameStore.getState().activeMapData || activeMap;
     const gates = normalizeGates(map?.gates);
-    const allNpcs = map?.npcs || [];
+    const allNpcs = map?.entities || [];
     const justNpcs = allNpcs.filter((n: any) => n.entityType !== 'spawner');
     const spawners = allNpcs.filter((n: any) => n.entityType === 'spawner');
 
@@ -2322,7 +2322,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       gates: showWarpOverlays ? gates : [],
       spawnSourceGates: showSpawnOverlays ? gates : [],
       // Always show map NPC pins in Studio when Spawns is on (map JSON placements).
-      npcs: showSpawnOverlays ? justNpcs : [],
+      entities: showSpawnOverlays ? justNpcs : [],
       monsterSpawners: showSpawnOverlays ? spawners : [],
       showGateSpawns: showSpawnOverlays,
     });

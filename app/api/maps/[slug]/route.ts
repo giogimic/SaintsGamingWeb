@@ -23,30 +23,7 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
   let worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
   if (!worldMap) return null;
 
-  if (!isDraft) {
-    if (!worldMap.publishedData) {
-      if (worldMap.publishedVersion && worldMap.publishedVersion > 0) {
-        const versionDoc = await prisma.worldMapVersion.findUnique({
-          where: { mapId_version: { mapId: slug, version: worldMap.publishedVersion } }
-        });
-        if (versionDoc && versionDoc.data) {
-          worldMap.publishedData = versionDoc.data;
-        } else if (worldMap.mapType !== 'FRACTAL') {
-          return null;
-        }
-      } else if (worldMap.mapType !== 'FRACTAL') {
-        return null; // Return null if the game requests a map that has never been deployed
-      }
-    }
-    try {
-      if (worldMap.publishedData) {
-        worldMap = JSON.parse(worldMap.publishedData);
-      }
-    } catch (e) {
-      console.error(`[MapAPI] Failed to parse publishedData for ${slug}:`, e);
-      return null;
-    }
-  }
+
 
   if (worldMap) {
     let grid = [];
@@ -81,19 +58,14 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
     }
 
     try {
-      const parsed = JSON.parse(worldMap.tileLayersData || "[]");
-      if (Array.isArray(parsed)) {
-        tileLayers = parsed;
-      }
+      // Obsolete fields removed, defaulting to empty.
     } catch {
       tileLayers = [];
     }
 
-
-
-    let tilesets = [];
+    let tilesets: any[] = [];
     try {
-      tilesets = JSON.parse(worldMap.tilesetsData || "[]");
+      // Obsolete fields removed, defaulting to empty.
     } catch {
       tilesets = [];
     }
@@ -165,7 +137,7 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
       allowCustomCamera,
       allowCustomPlayerCamera: allowCustomCamera,
       defaultCameraStyle,
-      npcs: JSON.parse(worldMap.npcsData || "[]"),
+      entities: JSON.parse((worldMap as any).entitiesData || "[]"),
       encounterPool: JSON.parse(worldMap.encountersData || "[]"),
       tileLayers,
       freeformLayers: cleanFreeformLayers,
@@ -175,7 +147,6 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
       proceduralConfig: parsedProceduralConfig,
       mapType: (worldMap as any).mapType || "HYBRID",
       version: worldMap.version,
-      publishedVersion: (worldMap as any).publishedVersion ?? 0,
       source: "worldMap" as const,
     };
   }
@@ -199,7 +170,7 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
       allowCustomCamera: rawGates.allowCustomCamera ?? undefined,
       allowCustomPlayerCamera: rawGates.allowCustomCamera ?? undefined,
       defaultCameraStyle: rawGates.defaultCameraStyle || rawGates.cameraStyle || undefined,
-      npcs: JSON.parse(gameMap.npcs || "[]"),
+      entities: JSON.parse(gameMap.npcs || "[]"),
       encounterPool: JSON.parse(gameMap.encounters || "[]"),
       tileLayers: [],
       tilesets: [],
@@ -252,7 +223,7 @@ export async function GET(
         allowCustomCamera: undefined,
         allowCustomPlayerCamera: undefined,
         defaultCameraStyle: undefined,
-        npcs: [],
+        entities: [],
         encounterPool: [],
         tileLayers: [],
         freeformLayers: [],
@@ -268,7 +239,6 @@ export async function GET(
         proceduralConfig: undefined,
         mapType: "HYBRID",
         version: 0,
-        publishedVersion: 0,
         source: 'worldMap' as const,
       };
     }
@@ -489,15 +459,9 @@ export async function POST(
           gameId: body.gameId || "saints",
           ...(body.grid ? { gridData: JSON.stringify(body.grid) } : {}),
           ...(serializedGatesData !== undefined ? { gatesData: serializedGatesData } : {}),
-          ...(body.npcs ? { npcsData: JSON.stringify(body.npcs) } : {}),
+          
           ...(body.encounterPool ? { encountersData: JSON.stringify(body.encounterPool) } : {}),
           entitiesData: JSON.stringify(entitiesPayload),
-          ...(visualsForWrite
-            ? {
-                tileLayersData: JSON.stringify(visualsForWrite.tileLayers || []),
-                tilesetsData: JSON.stringify(visualsForWrite.tilesets || []),
-              }
-            : {}),
           ...(body.freeformLayers || body.voxelDoc ? { freeformLayersData: JSON.stringify(freeformLayersForSave) } : {}),
           ...(body.regionClass ? { regionClass: body.regionClass } : {}),
           ...(body.proceduralConfig !== undefined
@@ -512,12 +476,10 @@ export async function POST(
           name: body.name || slug,
           gridData: JSON.stringify(body.grid || []),
           gatesData: serializedGatesData || JSON.stringify(body.gates || {}),
-          npcsData: JSON.stringify(body.npcs || []),
+          
           encountersData: JSON.stringify(body.encounterPool || []),
           entitiesData: JSON.stringify(entitiesPayload),
-          tileLayersData: JSON.stringify(visualsForCreate.tileLayers || []),
           freeformLayersData: JSON.stringify(freeformLayersForSave),
-          tilesetsData: JSON.stringify(visualsForCreate.tilesets || []),
           regionClass: body.regionClass || "authored",
           mapType: body.mapType || "TILE",
           proceduralConfig: body.proceduralConfig
@@ -553,15 +515,9 @@ export async function POST(
           gameId: body.gameId || "saints",
           ...(body.grid ? { gridData: JSON.stringify(body.grid) } : {}),
           ...(serializedGatesData !== undefined ? { gatesData: serializedGatesData } : {}),
-          ...(body.npcs ? { npcsData: JSON.stringify(body.npcs) } : {}),
+          
           ...(body.encounterPool ? { encountersData: JSON.stringify(body.encounterPool) } : {}),
           entitiesData: JSON.stringify(entitiesPayload),
-          ...(visualsForWrite
-            ? {
-                tileLayersData: JSON.stringify(visualsForWrite.tileLayers || []),
-                tilesetsData: JSON.stringify(visualsForWrite.tilesets || []),
-              }
-            : {}),
           ...(body.freeformLayers || body.voxelDoc ? { freeformLayersData: JSON.stringify(freeformLayersForSave) } : {}),
           ...(body.regionClass ? { regionClass: body.regionClass } : {}),
           ...(body.mapType ? { mapType: body.mapType } : {}),
@@ -573,12 +529,10 @@ export async function POST(
           name: body.name || slug,
           gridData: JSON.stringify(body.grid || []),
           gatesData: serializedGatesData || JSON.stringify(body.gates || {}),
-          npcsData: JSON.stringify(body.npcs || []),
+          
           encountersData: JSON.stringify(body.encounterPool || []),
           entitiesData: JSON.stringify(entitiesPayload),
-          tileLayersData: JSON.stringify(visualsForCreate.tileLayers || []),
           freeformLayersData: JSON.stringify(freeformLayersForSave),
-          tilesetsData: JSON.stringify(visualsForCreate.tilesets || []),
           regionClass: body.regionClass || "authored",
           mapType: body.mapType || "VOXEL",
         },
@@ -594,7 +548,7 @@ export async function POST(
           height,
           ...(body.grid ? { tilesetData: JSON.stringify(body.grid) } : {}),
           ...(serializedGatesData !== undefined ? { gates: serializedGatesData } : {}),
-          ...(body.npcs ? { npcs: JSON.stringify(body.npcs) } : {}),
+          ...(body.entities ? { npcs: JSON.stringify(body.entities) } : {}),
           ...(body.encounterPool ? { encounters: JSON.stringify(body.encounterPool) } : {}),
         },
         create: {
@@ -604,7 +558,7 @@ export async function POST(
           height,
           tilesetData: JSON.stringify(body.grid || []),
           gates: serializedGatesData || JSON.stringify(body.gates || {}),
-          npcs: JSON.stringify(body.npcs || []),
+          npcs: JSON.stringify(body.entities || []),
           encounters: JSON.stringify(body.encounterPool || []),
         },
       }).catch((gmErr: any) => {

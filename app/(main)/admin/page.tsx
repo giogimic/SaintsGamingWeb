@@ -65,7 +65,7 @@ export default async function AdminDashboardPage() {
     prisma.gameQuest.count(),
     prisma.gameAsset.count(),
     prisma.worldMap.count(),
-    prisma.creatureTemplate.count(),
+    prisma.creatureDef.count(),
     prisma.gameServer.count(),
     prisma.user.findMany({
       take: 4,
@@ -344,7 +344,7 @@ export default async function AdminDashboardPage() {
               {recentNews.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic py-2">No news articles published yet.</p>
               ) : (
-                recentNews.map((article) => (
+                recentNews.map((article: any) => (
                   <div key={article.id} className="text-xs space-y-1 pb-2 border-b border-border/30 last:border-0 last:pb-0">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-semibold truncate">{article.title}</span>
@@ -378,7 +378,7 @@ export default async function AdminDashboardPage() {
                 {recentTickets.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic py-2">No support tickets recorded.</p>
                 ) : (
-                  recentTickets.map((ticket) => (
+                  recentTickets.map((ticket: any) => (
                     <div key={ticket.id} className="text-xs space-y-1 pb-2 border-b border-border/30 last:border-0 last:pb-0">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-semibold truncate">{ticket.title}</span>
@@ -411,7 +411,7 @@ export default async function AdminDashboardPage() {
                 </Link>
               </CardHeader>
               <CardContent className="space-y-2.5">
-                {recentUsers.map((u) => (
+                {recentUsers.map((u: any) => (
                   <div key={u.id} className="flex items-center justify-between text-xs pb-2 border-b border-border/30 last:border-0 last:pb-0">
                     <div className="min-w-0">
                       <div className="font-semibold truncate">{u.username || u.email}</div>

@@ -108,7 +108,7 @@ export function WorldHierarchyPanel() {
         },
         {
           id: 'entities',
-          label: `Entities & Spawners (${activeMapData?.npcs?.length ?? 0} NPCs)`,
+          label: `Entities & Spawners (${activeMapData?.entities?.length ?? 0} Entities)`,
           type: 'folder',
           children: [
             {
@@ -117,11 +117,11 @@ export function WorldHierarchyPanel() {
               type: 'spawn',
               metadata: `X: ${activeMapData?.spawnPoint?.x ?? 32}, Y: ${activeMapData?.spawnPoint?.y ?? 32}`,
             },
-            ...(activeMapData?.npcs?.length ? activeMapData.npcs.map((npc: any, idx: number) => ({
-              id: `npc_${npc.id || idx}`,
-              label: npc.name || `NPC #${idx + 1}`,
+            ...(activeMapData?.entities?.length ? activeMapData.entities.map((entity: any, idx: number) => ({
+              id: `ent_${entity.id || idx}`,
+              label: entity.components?.identity?.name || entity.name || `Entity #${idx + 1}`,
               type: 'npc' as const,
-              metadata: `(${npc.x ?? 0}, ${npc.y ?? 0}) ${npc.role ? `· ${npc.role}` : ''}`,
+              metadata: `(${entity.components?.transform?.x ?? entity.x ?? 0}, ${entity.components?.transform?.y ?? entity.y ?? 0})`,
             })) : [
               {
                 id: 'ent_npc_empty',

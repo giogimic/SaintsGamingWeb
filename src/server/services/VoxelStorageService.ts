@@ -20,7 +20,7 @@ export class VoxelStorageService {
         id: true, 
         name: true, 
         gameId: true,
-        publishedVersion: true 
+        version: true 
       }
     });
 
@@ -111,8 +111,7 @@ export class VoxelStorageService {
       blockSizePx: 64,
       dimensions: { widthChunks: 2, depthChunks: 2, heightChunks: 1 },
       palette: [], // Needs to be loaded from manifest eventually
-      chunks,
-      publishedVersion: map.publishedVersion
+      chunks
     };
   }
 

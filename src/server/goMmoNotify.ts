@@ -15,7 +15,7 @@ export function goMmoInternalBase(): string | undefined {
 export async function notifyGoContentSynced(payload: {
   type: string;
   id: string;
-  version?: number;
+  version?: number | string;
   scope?: string;
 }): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
   const base = goMmoInternalBase();
@@ -35,7 +35,8 @@ export async function notifyGoContentSynced(payload: {
   const body = {
     type: payload.type,
     id: payload.id,
-    version: payload.version || 0,
+    version: typeof payload.version === 'number' ? payload.version : 0,
+    versionStr: typeof payload.version === 'string' ? payload.version : undefined,
     scope: payload.scope || "saints",
   };
 
@@ -83,5 +84,16 @@ export async function notifyGoDialogueSynced(): Promise<{ ok: boolean; skipped?:
   return notifyGoContentSynced({
     type: "dialogue",
     id: "*",
+  });
+}
+
+export async function notifyGoProjectSynced(payload: {
+  projectId: string;
+  version: string;
+}): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
+  return notifyGoContentSynced({
+    type: "project",
+    id: payload.projectId,
+    version: payload.version,
   });
 }

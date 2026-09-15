@@ -114,7 +114,7 @@ export const MapTabPanel: React.FC<MapTabPanelProps> = ({ mapId }) => {
 
   const w = mapDoc.width || mapDoc.grid?.[0]?.length || 24;
   const h = mapDoc.height || mapDoc.grid?.length || 24;
-  const npcCount = mapDoc.npcs?.length || 0;
+  const npcCount = mapDoc.entities?.length || 0;
   const gateCount = Object.keys(mapDoc.gates || {}).length;
   const layerCount = mapDoc.tileLayers?.length || 0;
   const encounterCount = (mapDoc.encounterPool || []).length;

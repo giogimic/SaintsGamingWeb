@@ -14,6 +14,7 @@ import {
 import { VOXEL_MATERIAL_CATALOG } from '@/shared/game/voxel/VoxelMaterialDefinition';
 import { VoxelWorld } from '@/shared/game/voxel/VoxelWorldDoc';
 import { VoxelTransactionBuilder } from '@/shared/game/voxel/VoxelTransaction';
+import { sphereContains, cylinderContains, boxContains, Point3D, BoxBounds } from '@/shared/game/voxel/csg-math';
 
 export class ShapeToolHandler implements IToolHandler {
   public readonly id = 'shape' as const;
@@ -135,21 +136,18 @@ export class ShapeToolHandler implements IToolHandler {
         for (let z = minZ; z <= maxZ; z++) {
           let shouldPlace = false;
           
-          if (shapeType === 'square') { // Box
-            shouldPlace = true;
-          } else if (shapeType === 'circle') { // Sphere / Ellipsoid
-            const dx = radX === 0 ? 0 : (x - cx) / radX;
-            const dy = radY === 0 ? 0 : (y - cy) / radY;
-            const dz = radZ === 0 ? 0 : (z - cz) / radZ;
-            if (dx*dx + dy*dy + dz*dz <= 1.0) {
-              shouldPlace = true;
-            }
-          } else if ((shapeType as string) === 'cylinder') { // Cylinder (Y-up)
-            const dx = radX === 0 ? 0 : (x - cx) / radX;
-            const dz = radZ === 0 ? 0 : (z - cz) / radZ;
-            if (dx*dx + dz*dz <= 1.0) {
-              shouldPlace = true;
-            }
+          if (shapeType === 'square') {
+            shouldPlace = boxContains(x, y, z, { minX, minY, minZ, maxX, maxY, maxZ });
+          } else if (shapeType === 'circle') {
+            // Note: radX, radY, radZ might be different. 
+            // If dragging an ellipsoid, sphereContains expects a uniform radius. 
+            // We can approximate by scaling or using a custom ellipsoid check if needed, 
+            // but for deterministic simple spheres, we use sphereContains with average radius.
+            const avgRad = (radX + radY + radZ) / 3.0;
+            shouldPlace = sphereContains(x, y, z, { x: cx, y: cy, z: cz }, avgRad);
+          } else if ((shapeType as string) === 'cylinder') {
+            const avgRad = (radX + radZ) / 2.0;
+            shouldPlace = cylinderContains(x, y, z, { x: cx, y: cy, z: cz }, avgRad, maxY - minY);
           }
 
           if (shouldPlace) {

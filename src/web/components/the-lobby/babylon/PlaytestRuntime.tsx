@@ -90,7 +90,7 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
       mapHeight,
       mapGrid: activeMap.grid,
       gates: normalizeGates(activeMap.gates),
-      staticNpcs: activeMap.npcs || [],
+      staticNpcs: activeMap.entities || [],
       dynamicEntities: store.mapEntities || [],
       logicTiles: store.logicTiles,
       playerPos: currentPos,
@@ -375,7 +375,7 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
       mapHeight,
       mapGrid: activeMap?.grid || [],
       gates: normalizeGates(activeMap?.gates),
-      staticNpcs: activeMap?.npcs || [],
+      staticNpcs: activeMap?.entities || [],
       dynamicEntities: store.mapEntities || [],
       logicTiles: store.logicTiles,
       playerPos: { x: curX, y: curY },
@@ -688,7 +688,7 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
       // Map Chunks lookup for cross-border neighbor coordinate transformation
       const liveMapDoc =
         (liveStore.activeMapData as {
-          npcs?: Array<{
+          entities?: Array<{
             id: string;
             name?: string;
             x: number;
@@ -701,7 +701,7 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
             offsetZ?: number;
             width?: number;
             height?: number;
-            npcs?: any[];
+            entities?: any[];
           }>;
         } | null) || activeMap;
       const rawChunks = (liveMapDoc as any)?.chunks as
@@ -711,7 +711,7 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
             offsetZ?: number;
             width?: number;
             height?: number;
-            npcs?: any[];
+            entities?: any[];
           }>
         | undefined;
       const chunkMap = new Map<
@@ -808,7 +808,7 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
         }
       }
 
-      // Render map entities: socket mapEntities + static map NPCs (including connected neighbor chunks)
+      // Render map entities: socket mapEntities + static map entities (including connected neighbor chunks)
       const mapEntities = !editorToolsRef.current
         ? liveStore.mapEntities || []
         : [];
@@ -822,41 +822,45 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
           const cOffsetX = chunk.offsetX || 0;
           const cOffsetZ = chunk.offsetZ || 0;
 
-          for (const npc of chunk.npcs || []) {
+          for (const npc of chunk.entities || chunk.entities || []) {
+            const x = npc.components?.transform?.x ?? npc.x;
+            const y = npc.components?.transform?.y ?? npc.y;
             staticNpcs.push({
               id: isMain
                 ? `mapnpc_${npc.id}`
                 : `mapnpc_${chunk.mapId}_${npc.id}`,
               type: "NPC" as const,
-              spriteKey: npc.sprite || "adventurer",
-              position: { x: npc.x, y: npc.y },
-              worldX: npc.x - cWidth / 2 + cOffsetX + offset.x,
-              worldZ: cHeight / 2 - npc.y + cOffsetZ - offset.y,
+              spriteKey: npc.components?.appearance?.assetProfileId || npc.sprite || "adventurer",
+              position: { x, y },
+              worldX: x - cWidth / 2 + cOffsetX + offset.x,
+              worldZ: cHeight / 2 - y + cOffsetZ - offset.y,
               mapId: chunk.mapId || currentMapId,
-              name: npc.name || npc.id,
-              hp: (npc as any).hp,
-              maxHp: (npc as any).maxHp,
+              name: npc.components?.identity?.name || npc.name || npc.id,
+              hp: npc.components?.combatant?.currentHp || (npc as any).hp,
+              maxHp: npc.components?.combatant?.maxHp || (npc as any).maxHp,
             });
           }
         }
       } else {
-        for (const npc of liveMapDoc?.npcs || []) {
+        for (const npc of liveMapDoc?.entities || []) {
+          const x = npc.components?.transform?.x ?? npc.x;
+          const y = npc.components?.transform?.y ?? npc.y;
           staticNpcs.push({
             id: `mapnpc_${npc.id}`,
             type: "NPC" as const,
-            spriteKey: npc.sprite || "adventurer",
-            position: { x: npc.x, y: npc.y },
-            worldX: npc.x - liveW / 2 + offset.x,
-            worldZ: liveH / 2 - npc.y - offset.y,
+            spriteKey: npc.components?.appearance?.assetProfileId || npc.sprite || "adventurer",
+            position: { x, y },
+            worldX: x - liveW / 2 + offset.x,
+            worldZ: liveH / 2 - y - offset.y,
             mapId: currentMapId,
-            name: npc.name || npc.id,
-            hp: (npc as any).hp,
-            maxHp: (npc as any).maxHp,
+            name: npc.components?.identity?.name || npc.name || npc.id,
+            hp: npc.components?.combatant?.currentHp || (npc as any).hp,
+            maxHp: npc.components?.combatant?.maxHp || (npc as any).maxHp,
           });
         }
       }
 
-      // Prefer socket entities. Skip static NPCs already covered by socket at same
+      // Prefer socket entities. Skip static entities already covered by socket at same
       // tile OR same display name (socket ids are npc_<template>_<ts>).
       const socketTiles = new Set(
         mapEntities
@@ -986,8 +990,8 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
 
         if (picked && picked.kind === "entity" && picked.entityId) {
           let entityObj = dynamicEntities.find((e) => e.id === picked.entityId);
-          if (!entityObj && (map as any)?.npcs) {
-            const staticNpc = (map as any).npcs.find(
+          if (!entityObj && (map as any)?.entities) {
+            const staticNpc = (map as any).entities.find(
               (n: any) =>
                 `npc_${n.id}` === picked.entityId || n.id === picked.entityId,
             );
@@ -1076,7 +1080,7 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
             const groundPhys = (groundWord.high >>> 8) & 0xf;
             if (groundPhys === 5) return false; // Hazard
           }
-          const isStaticNpc = map.npcs?.some(
+          const isStaticNpc = map.entities?.some(
             (npc: any) => npc.x === x && npc.y === y,
           );
           const isDynamicNpc = dynamicEntities.some(
@@ -1131,8 +1135,8 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
             let entityObj = dynamicEntities.find(
               (e) => e.id === picked.entityId,
             );
-            if (!entityObj && map.npcs) {
-              const staticNpc = map.npcs.find(
+            if (!entityObj && map.entities) {
+              const staticNpc = map.entities.find(
                 (n: any) =>
                   `npc_${n.id}` === picked.entityId || n.id === picked.entityId,
               );

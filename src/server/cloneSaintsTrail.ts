@@ -47,18 +47,7 @@ export async function cloneSaintsTrailToProfile(
       name: `${opts.name || targetSlug} Starting Zone`,
       gridData: JSON.stringify(grid),
       gatesData: JSON.stringify({ spawnPoint: { x: 12, y: 12 }, gates: [] }),
-      npcsData: '[]',
       encountersData: '[]',
-      tileLayersData: JSON.stringify([{ name: 'Ground', grid }]),
-      tilesetsData: JSON.stringify([
-        {
-          firstgid: 1,
-          imageSource: 'Terrain_by_George.png',
-          columns: 15,
-          tilewidth: 16,
-          tileheight: 16,
-        },
-      ]),
       version: 1,
     },
     update: {

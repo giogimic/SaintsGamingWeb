@@ -61,14 +61,14 @@ export async function GET(
   let resolvedVersionInt = 0;
   
   if (version === "published") {
-    const worldMap = await prisma.worldMap.findUnique({
-      where: { id: mapId },
-      select: { publishedVersion: true }
+    const project = await prisma.worldProject.findUnique({
+      where: { id: "saints" },
+      select: { activeVersion: true }
     });
-    if (!worldMap || worldMap.publishedVersion <= 0) {
-      return NextResponse.json({ error: "Map has no published version" }, { status: 404 });
+    if (!project || project.activeVersion <= 0) {
+      return NextResponse.json({ error: "Project has no active version" }, { status: 404 });
     }
-    resolvedVersionInt = worldMap.publishedVersion;
+    resolvedVersionInt = project.activeVersion;
   } else {
     resolvedVersionInt = parseInt(version, 10);
     if (isNaN(resolvedVersionInt)) {
@@ -77,24 +77,28 @@ export async function GET(
   }
 
   // Authoritative path: look up the specific version region to get the checksum
-  const versionRegion = await prisma.worldMapVersionRegion.findFirst({
+  const worldRelease = await prisma.worldRelease.findFirst({
     where: {
-      version: {
-        mapId,
-        version: resolvedVersionInt
-      },
-      regionX: rx,
-      regionZ: rz
+      projectId: "saints",
+      version: `v1.0.${resolvedVersionInt}`
     }
   });
 
-  if (!versionRegion) {
+  if (!worldRelease) {
+    return NextResponse.json({ error: "Version not found" }, { status: 404 });
+  }
+
+  const manifestData = JSON.parse(worldRelease.manifestData || "{}");
+  const atlas = manifestData.atlas || {};
+  const checksum = atlas[`${mapId}_${rx}_${rz}`];
+
+  if (!checksum) {
     return NextResponse.json({ error: "Region not found for this version" }, { status: 404 });
   }
 
   // Lookup the artifact by its checksum
   const artifact = await prisma.worldRegionArtifact.findUnique({
-    where: { checksum: versionRegion.artifactChecksum }
+    where: { checksum }
   });
 
   if (!artifact) {

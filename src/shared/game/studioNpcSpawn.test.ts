@@ -1,3 +1,4 @@
+import type { EntityInstanceV1 } from './entities/types';
 import { describe, expect, it } from "vitest";
 import {
   appendNpcToMapDoc,
@@ -40,35 +41,35 @@ describe("buildStudioSpawnNpcEmit", () => {
 
 describe("appendNpcToMapDoc", () => {
   it("appends without duplicating", () => {
-    const live: { npcs: unknown[] } = { npcs: [] };
+    const live: { entities: unknown[] } = { entities: [] };
     expect(
-      appendNpcToMapDoc(live, { id: "npc_a", name: "A", x: 1, y: 2 })
+      appendNpcToMapDoc(live, { schemaVersion: 1, id: 'npc_a', archetype: 'npc', components: { identity: { name: 'A', slug: 'b' }, transform: { x: 1, y: 2, facing: 'S' } } } as EntityInstanceV1)
     ).toBe(true);
-    expect(live.npcs).toHaveLength(1);
+    expect(live.entities).toHaveLength(1);
     expect(
-      appendNpcToMapDoc(live, { id: "npc_a", name: "A", x: 1, y: 2 })
+      appendNpcToMapDoc(live, { schemaVersion: 1, id: 'npc_a', archetype: 'npc', components: { identity: { name: 'A', slug: 'b' }, transform: { x: 1, y: 2, facing: 'S' } } } as EntityInstanceV1)
     ).toBe(false);
-    expect(live.npcs).toHaveLength(1);
+    expect(live.entities).toHaveLength(1);
   });
 });
 
 describe("remove / upsert / despawn emit", () => {
   it("removes by id", () => {
-    const live: { npcs: unknown[] } = {
-      npcs: [{ id: "npc_a", name: "A", x: 1, y: 2 }],
+    const live: { entities: unknown[] } = {
+      entities: [{ schemaVersion: 1, id: 'npc_a', archetype: 'npc', components: { identity: { name: 'A', slug: 'b' }, transform: { x: 1, y: 2, facing: 'S' } } } as EntityInstanceV1],
     };
     expect(removeNpcFromMapDoc(live, "npc_a")).toBe(true);
-    expect(live.npcs).toHaveLength(0);
+    expect(live.entities).toHaveLength(0);
   });
 
   it("upserts existing", () => {
-    const live: { npcs: unknown[] } = {
-      npcs: [{ id: "npc_a", name: "A", x: 1, y: 2 }],
+    const live: { entities: unknown[] } = {
+      entities: [{ schemaVersion: 1, id: 'npc_a', archetype: 'npc', components: { identity: { name: 'A', slug: 'b' }, transform: { x: 1, y: 2, facing: 'S' } } } as EntityInstanceV1],
     };
     expect(
-      upsertNpcInMapDoc(live, { id: "npc_a", name: "B", x: 3, y: 4 })
+      upsertNpcInMapDoc(live, { schemaVersion: 1, id: 'npc_a', archetype: 'npc', components: { identity: { name: 'B', slug: 'b' }, transform: { x: 3, y: 4, facing: 'S' } } } as EntityInstanceV1)
     ).toBe(true);
-    expect(live.npcs[0]).toMatchObject({ name: "B", x: 3, y: 4 });
+    expect(live.entities[0]).toMatchObject({ name: "B", x: 3, y: 4 });
   });
 
   it("builds despawn emit", () => {

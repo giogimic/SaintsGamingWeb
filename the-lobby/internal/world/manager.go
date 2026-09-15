@@ -35,26 +35,40 @@ type ProceduralStructure struct {
 	YOffset     int     `json:"yOffset"`
 }
 
-// GateDef is a warp gateway definition in the live world.
 type GateDef struct {
 	ID          string `json:"id"`
 	X           int    `json:"x"`
 	Y           int    `json:"y"`
-	TargetMapID string `json:"targetMapId"`
-	TargetX     int    `json:"targetX"`
-	TargetY     int    `json:"targetY"`
 	Category    string `json:"category,omitempty"`
 	Disabled    bool   `json:"disabled,omitempty"`
+
+	// Target Connection
+	Type                 string `json:"type"` // "internal" | "external"
+	TargetMapReleaseID   string `json:"targetMapReleaseId,omitempty"`
+	TargetEntryPointID   string `json:"targetEntryPointId,omitempty"`
+	TargetWorldProjectID string `json:"targetWorldProjectId,omitempty"`
+	TargetWorldReleaseID string `json:"targetWorldReleaseId,omitempty"`
+	
+	// Legacy fallback coords (if entry point is raw coordinates)
+	TargetX int `json:"targetX,omitempty"`
+	TargetY int `json:"targetY,omitempty"`
 }
 
-// NPCDef is a static overworld NPC seed.
+// NPCSchemaDef defines the immutable release state of an NPC.
+type NPCSchemaDef struct {
+	Slug         string          `json:"slug"`
+	Name         string          `json:"name"`
+	WorldModel   string          `json:"worldModel"`
+	DialogueTree json.RawMessage `json:"dialogueTree"`
+	Capabilities json.RawMessage `json:"capabilities"`
+}
+
+// NPCDef is a placed NPC instance on an overworld map.
 type NPCDef struct {
-	ID       string  `json:"id"`
-	Name     string  `json:"name"`
-	X        float64 `json:"x"`
-	Y        float64 `json:"y"`
-	SpriteID string  `json:"spriteId"`
-	Dialogue string  `json:"dialogueId,omitempty"`
+	ID         string       `json:"id"`
+	X          float64      `json:"x"`
+	Y          float64      `json:"y"`
+	SchemaDef  NPCSchemaDef `json:"-"`
 }
 
 // Instance is a live shard room.
@@ -68,9 +82,13 @@ type Instance struct {
 
 // Manager holds map defs + live instances.
 type Manager struct {
-	mu        sync.RWMutex
-	defs      map[string]*MapDef
-	instances map[string]*Instance
+	mu          sync.RWMutex
+	defs        map[string]*MapDef
+	instances   map[string]*Instance
+	NPCRegistry map[string]NPCSchemaDef
+	Connections map[string]map[string][]WorldConnection
+
+	ActiveRelease *ReleaseManifest
 
 	voxelQueue  VoxelQueue
 	maxPerShard int
@@ -89,6 +107,7 @@ func NewManager(maxPerShard int) *Manager {
 	m := &Manager{
 		defs:        make(map[string]*MapDef),
 		instances:   make(map[string]*Instance),
+		NPCRegistry: make(map[string]NPCSchemaDef),
 		voxelQueue:  make(VoxelQueue, 0),
 		maxPerShard: maxPerShard,
 		gates:       NewSpiritGateRegistry(),
@@ -118,7 +137,7 @@ func (m *Manager) GetDef(baseID string) (*MapDef, error) {
 	m.mu.RUnlock()
 	
 	if ok && d != nil {
-		log.Printf("[MapDefDebug] baseMapId=%s cacheHit=true fetchEnabled=%v dbMapFound=N/A publishedVersionFound=N/A result=ok error=nil", baseID, m.FetchMapDef != nil)
+		log.Printf("[MapDefDebug] baseMapId=%s cacheHit=true fetchEnabled=%v dbMapFound=N/A result=ok error=nil", baseID, m.FetchMapDef != nil)
 		return d, nil
 	}
 	
@@ -139,7 +158,7 @@ func (m *Manager) GetDef(baseID string) (*MapDef, error) {
 		}
 	}
 
-	log.Printf("[MapDefDebug] baseMapId=%s cacheHit=false fetchEnabled=false dbMapFound=N/A publishedVersionFound=N/A result=error error=no_fetch_configured", baseID)
+	log.Printf("[MapDefDebug] baseMapId=%s cacheHit=false fetchEnabled=false dbMapFound=N/A result=error error=no_fetch_configured", baseID)
 	return nil, fmt.Errorf("map %s not found in cache and no fetch configured", baseID)
 }
 
@@ -393,8 +412,8 @@ func BuildDemoMapDef() *MapDef {
 		RegionClass: "fractal",
 		Voxel:       voxelWorld,
 		NPCs: []NPCDef{
-			{ID: "npc_guide", Name: "Trail Guide", X: 12, Y: 15, SpriteID: "npc_guide", Dialogue: "demo_welcome"},
-			{ID: "npc_shop", Name: "Provisioner", X: 16, Y: 15, SpriteID: "npc_shop", Dialogue: "demo_shop"},
+			{ID: "npc_guide", X: 12, Y: 15, SchemaDef: NPCSchemaDef{Slug: "npc_guide", Name: "Trail Guide", WorldModel: "npc_guide"}},
+			{ID: "npc_shop", X: 16, Y: 15, SchemaDef: NPCSchemaDef{Slug: "npc_shop", Name: "Provisioner", WorldModel: "npc_shop"}},
 		},
 	}
 }

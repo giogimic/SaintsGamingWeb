@@ -642,11 +642,9 @@ func (w *VoxelWorld) IsTraversableAt(wx, wy, wz int) bool {
 	bodyPhys := VoxelPhysics(bodyWord)
 	bodyShape := VoxelShape(bodyWord)
 
-	// Traversable elevations (slopes, stairs, bottom slabs) allow stepping up/through
-	isTraversableElevation := bodyPhys == PhysicsWalkableSlope ||
-		bodyShape == ShapeStairsStraight ||
-		bodyShape == ShapeStairsCorner ||
-		bodyShape == ShapeSlabBottom
+	// Check if body is solid. If it has a walkable surface > -1, it's a traversable elevation.
+	def := ShapeRegistry[bodyShape]
+	isTraversableElevation := def.GetSurfaceHeight != nil && def.GetSurfaceHeight(VoxelOrientation(bodyWord), 0.5, 0.5) > -1.0
 
 	// If body intersects solid obstacle or hazard and is not a walkable slope/stair
 	if (bodyPhys == PhysicsSolidObstacle || bodyPhys == PhysicsHazard) && !isTraversableElevation {
@@ -659,6 +657,31 @@ func (w *VoxelWorld) IsTraversableAt(wx, wy, wz int) bool {
 	}
 
 	return true
+}
+
+// GetSurfaceHeightAt returns the walkable surface height (Y-coordinate) at a given point, 
+// or math.MinInt64 if there is no walkable surface.
+func (w *VoxelWorld) GetSurfaceHeightAt(wx, wy, wz int, localX, localZ float64) float64 {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+	
+	word := w.getVoxelLocked(wx, wy, wz)
+	if word == 0 || IsVoxelAir(word) {
+		return float64(math.MinInt64)
+	}
+	shape := VoxelShape(word)
+	def, ok := ShapeRegistry[shape]
+	if !ok || def.GetSurfaceHeight == nil {
+		if IsVoxelSolid(word) {
+			return float64(wy) + 1.0
+		}
+		return float64(math.MinInt64)
+	}
+	h := def.GetSurfaceHeight(VoxelOrientation(word), localX, localZ)
+	if h < 0 {
+		return float64(math.MinInt64)
+	}
+	return float64(wy) + h
 }
 
 // Vector3D represents a 3D float vector.
@@ -721,100 +744,24 @@ func (w *VoxelWorld) QueryObstacleBoxes(query AABB) []AABB {
 					orient := VoxelOrientation(word)
 					fx, fy, fz := float64(bx), float64(by), float64(bz)
 
-					if shape == ShapeSlabBottom {
-						boxes = append(boxes, AABB{
-							MinX: fx, MinY: fy, MinZ: fz,
-							MaxX: fx + 1, MaxY: fy + 0.5, MaxZ: fz + 1,
-						})
-					} else if shape == ShapeSlabTop {
-						boxes = append(boxes, AABB{
-							MinX: fx, MinY: fy + 0.5, MinZ: fz,
-							MaxX: fx + 1, MaxY: fy + 1, MaxZ: fz + 1,
-						})
-					} else if shape == ShapeThinLayer || shape == 17 {
-						boxes = append(boxes, AABB{
-							MinX: fx, MinY: fy, MinZ: fz,
-							MaxX: fx + 1, MaxY: fy + 0.0625, MaxZ: fz + 1,
-						})
-					} else if shape == ShapeFenceRail || shape == 13 {
-						boxes = append(boxes, AABB{
-							MinX: fx + 0.25, MinY: fy, MinZ: fz + 0.25,
-							MaxX: fx + 0.75, MaxY: fy + 1, MaxZ: fz + 0.75,
-						})
-					} else if shape == ShapeStairsStraight {
-						// Base half-slab
-						boxes = append(boxes, AABB{
-							MinX: fx, MinY: fy, MinZ: fz,
-							MaxX: fx + 1, MaxY: fy + 0.5, MaxZ: fz + 1,
-						})
-						// Top half
-						var top AABB
-						top.MinY, top.MaxY = fy+0.5, fy+1.0
-						if orient == 2 { // SOUTH
-							top.MinX, top.MaxX = fx, fx+1.0
-							top.MinZ, top.MaxZ = fz, fz+0.5
-						} else if orient == 1 { // EAST
-							top.MinX, top.MaxX = fx+0.5, fx+1.0
-							top.MinZ, top.MaxZ = fz, fz+1.0
-						} else if orient == 3 { // WEST
-							top.MinX, top.MaxX = fx, fx+0.5
-							top.MinZ, top.MaxZ = fz, fz+1.0
-						} else { // NORTH (0)
-							top.MinX, top.MaxX = fx, fx+1.0
-							top.MinZ, top.MaxZ = fz+0.5, fz+1.0
-						}
-						boxes = append(boxes, top)
-					} else if shape == ShapeStairsCorner {
-						// Base half-slab
-						boxes = append(boxes, AABB{
-							MinX: fx, MinY: fy, MinZ: fz,
-							MaxX: fx + 1, MaxY: fy + 0.5, MaxZ: fz + 1,
-						})
-						// Top quarter
-						var top AABB
-						top.MinY, top.MaxY = fy+0.5, fy+1.0
-						if orient == 2 { // SOUTH
-							top.MinX, top.MaxX = fx, fx+0.5
-							top.MinZ, top.MaxZ = fz, fz+0.5
-						} else if orient == 1 { // EAST
-							top.MinX, top.MaxX = fx+0.5, fx+1.0
-							top.MinZ, top.MaxZ = fz, fz+0.5
-						} else if orient == 3 { // WEST
-							top.MinX, top.MaxX = fx, fx+0.5
-							top.MinZ, top.MaxZ = fz+0.5, fz+1.0
-						} else { // NORTH (0)
-							top.MinX, top.MaxX = fx+0.5, fx+1.0
-							top.MinZ, top.MaxZ = fz+0.5, fz+1.0
-						}
-						boxes = append(boxes, top)
-					} else if shape == ShapeSlope45 {
-						// 4 micro-steps
-						for i := 0; i < 4; i++ {
-							stepH := float64(i) * 0.25
-							stepNext := stepH + 0.25
-							frac := float64(4-i) * 0.25 // from 1.0 down to 0.25
-							
-							box := AABB{
-								MinY: fy + stepH,
-								MaxY: fy + stepNext,
+					if def, ok := ShapeRegistry[shape]; ok && def.GetCollisionVolumes != nil {
+						vols := def.GetCollisionVolumes(orient)
+						if vols != nil && len(vols) > 0 {
+							for _, vol := range vols {
+								boxes = append(boxes, AABB{
+									MinX: fx + vol.MinX, MinY: fy + vol.MinY, MinZ: fz + vol.MinZ,
+									MaxX: fx + vol.MaxX, MaxY: fy + vol.MaxY, MaxZ: fz + vol.MaxZ,
+								})
 							}
-							if orient == 2 { // SOUTH (rises towards -Z)
-								box.MinX, box.MaxX = fx, fx+1.0
-								box.MinZ, box.MaxZ = fz, fz+frac
-							} else if orient == 1 { // EAST (rises towards -X)
-								box.MinX, box.MaxX = fx+(1.0-frac), fx+1.0
-								box.MinZ, box.MaxZ = fz, fz+1.0
-							} else if orient == 3 { // WEST (rises towards +X)
-								box.MinX, box.MaxX = fx, fx+frac
-								box.MinZ, box.MaxZ = fz, fz+1.0
-							} else { // NORTH (rises towards +Z)
-								box.MinX, box.MaxX = fx, fx+1.0
-								box.MinZ, box.MaxZ = fz+(1.0-frac), fz+1.0
+						} else {
+							if shape != ShapeAir {
+								boxes = append(boxes, AABB{
+									MinX: fx, MinY: fy, MinZ: fz,
+									MaxX: fx + 1, MaxY: fy + 1, MaxZ: fz + 1,
+								})
 							}
-							boxes = append(boxes, box)
 						}
 					} else {
-						// Default full block
 						boxes = append(boxes, AABB{
 							MinX: fx, MinY: fy, MinZ: fz,
 							MaxX: fx + 1, MaxY: fy + 1, MaxZ: fz + 1,
@@ -1031,6 +978,19 @@ func (w *VoxelWorld) ResolveSweptAABB(startPos, velocity Vector3D, dt, width, he
 			if zBlocked {
 				curVz = 0
 			}
+		}
+	}
+
+	// Canonical Shape Surface Height Snapping
+	if isGrounded || steppedUp {
+		// Calculate precise center point in local block coordinates
+		bx, by, bz := int(math.Floor(curX)), int(math.Floor(curY-0.01)), int(math.Floor(curZ))
+		localX := curX - float64(bx)
+		localZ := curZ - float64(bz)
+		surfaceY := w.GetSurfaceHeightAt(bx, by, bz, localX, localZ)
+		if surfaceY > curY-0.5 && surfaceY <= curY+stepHeight+1e-4 {
+			curY = surfaceY
+			isGrounded = true
 		}
 	}
 

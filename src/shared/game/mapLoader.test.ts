@@ -13,7 +13,7 @@ describe("Shared Map System (Cache & Queries)", () => {
       [1, 1, 0],
     ],
     gates: {},
-    npcs: [],
+    entities: [],
     encountersData: [],
     width: 3,
     height: 3,

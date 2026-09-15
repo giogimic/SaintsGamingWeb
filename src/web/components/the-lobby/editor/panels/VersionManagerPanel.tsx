@@ -21,11 +21,11 @@ import {
   createPublishSnapshot,
   listPublishSnapshots,
   rollbackToSnapshot,
-  deployRelease,
   fetchDraftMaps,
   type ValidationGateResult,
 } from '@/app/actions/studio/publishing';
-import type { WorldPublishSnapshot } from '@prisma/client';
+import { createWorldRelease } from '@/app/actions/studio/world-release';
+import type { WorldRelease } from '@prisma/client';
 import { useEditorStore } from '../editor-store';
 import { useGameStore } from '../../store';
 import {
@@ -42,7 +42,7 @@ export const VersionManagerPanel: React.FC = () => {
 
   const [validation, setValidation] = useState<ValidationGateResult | null>(null);
   const [validating, setValidating] = useState(false);
-  const [snapshots, setSnapshots] = useState<WorldPublishSnapshot[]>([]);
+  const [snapshots, setSnapshots] = useState<WorldRelease[]>([]);
   const [loadingSnapshots, setLoadingSnapshots] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [rollingBackId, setRollingBackId] = useState<string | null>(null);
@@ -121,7 +121,7 @@ export const VersionManagerPanel: React.FC = () => {
     }
   };
 
-  const handleRollback = async (snapshot: WorldPublishSnapshot) => {
+  const handleRollback = async (snapshot: WorldRelease) => {
     if (
       !confirm(
         `Are you sure you want to restore the world to snapshot "${snapshot.version} (${snapshot.title})"? This will overwrite current draft changes.`
@@ -141,7 +141,7 @@ export const VersionManagerPanel: React.FC = () => {
     }
   };
 
-  const handleDeploy = async (snapshot: WorldPublishSnapshot) => {
+  const handleDeploy = async (snapshot: WorldRelease) => {
     if (
       !confirm(
         `Are you sure you want to deploy release "${snapshot.version} (${snapshot.title})" to the live game server?`
@@ -150,7 +150,7 @@ export const VersionManagerPanel: React.FC = () => {
       return;
     }
     setPublishing(true);
-    const deployRes = await deployRelease(snapshot.id);
+    const deployRes = await createWorldRelease('saints');
     setPublishing(false);
     
     if (deployRes.success) {
