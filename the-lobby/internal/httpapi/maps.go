@@ -43,7 +43,7 @@ func (s *Server) Handler() http.Handler {
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
-		"ok": true, "service": "go-mmo", "map": protocol.FallbackMapID,
+		"ok": true, "service": "go-mmo", "map": s.World.DefaultSpawnMap(),
 	})
 }
 

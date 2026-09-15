@@ -39,7 +39,7 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
   mapData,
   isActive,
 }) => {
-  const currentMapId = mapData?.id || "STARTING_MEADOW";
+  const currentMapId = mapData?.id || "";
   const activeMap = mapData as GameMapData | null;
   const mapWidth = activeMap?.width || 30;
   const mapHeight = activeMap?.height || 30;
@@ -594,32 +594,17 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
       }
     };
 
-    const handleNodeDepletedFallback = (e: Event) => {
-      const data = (e as CustomEvent).detail || {};
-      const { x, y } = data;
-      // STARTING_MEADOW has no rich tile layers — hide prop meshes on deplete
-      if (
-        typeof x === "number" &&
-        typeof y === "number" &&
-        engineRef.current?.clearTileProps
-      ) {
-        engineRef.current.clearTileProps(y, x);
-      }
-    };
-
     window.addEventListener("combat_update_event", handleCombatUpdate);
     window.addEventListener("node_depleted_event", handleNodeDepleted);
-    window.addEventListener("node_depleted_event", handleNodeDepletedFallback);
     window.addEventListener("node_respawned_event", handleNodeRespawned);
     window.addEventListener("lobby_tile_changed", handleTileChanged);
     return () => {
       window.removeEventListener("combat_update_event", handleCombatUpdate);
       window.removeEventListener("node_depleted_event", handleNodeDepleted);
       window.removeEventListener(
-        "node_depleted_event",
-        handleNodeDepletedFallback,
+        "node_respawned_event",
+        handleNodeRespawned,
       );
-      window.removeEventListener("node_respawned_event", handleNodeRespawned);
       window.removeEventListener("lobby_tile_changed", handleTileChanged);
     };
   }, [mapData]); // Added mapData to dependencies since it's used in the new listeners

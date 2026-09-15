@@ -123,14 +123,19 @@ export default function GameOptionsMenu({
           localStorage.setItem('saints.lastUnstuckTimestamp', String(Date.now()));
         } catch {}
 
-        let targetMapId = 'STARTING_MEADOW';
+        let targetMapId = '';
         try {
           const activeRelease = await getActiveWorldRelease('saints');
           if (activeRelease) {
             const manifest = JSON.parse(activeRelease.manifestData || '{}');
-            targetMapId = manifest.gameConfig?.defaultSpawnGateId || targetMapId;
+            targetMapId = manifest.world?.spawnMap || '';
           }
         } catch {}
+
+        if (!targetMapId) {
+          showToast('Failed to find safe spawn map in active release.');
+          return;
+        }
 
         const store = useGameStore.getState();
         store.setPlayerPosition({ x: 15, y: 15 }, 'down', false);

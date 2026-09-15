@@ -156,7 +156,7 @@ export const DungeonStudioPanel: React.FC = () => {
               </h3>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between p-2 bg-black/60 border border-border/20 rounded-lg">
-                  <span className="text-emerald-300 font-bold">STARTING_MEADOW</span>
+                  <span className="text-emerald-300 font-bold opacity-50 italic">No maps linked</span>
                   <Trash2 className="w-3.5 h-3.5 text-rose-400 cursor-pointer hover:text-rose-300 transition-colors" />
                 </div>
               </div>

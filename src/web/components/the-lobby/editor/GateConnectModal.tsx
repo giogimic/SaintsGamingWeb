@@ -103,7 +103,7 @@ export const GateConnectModal: React.FC = () => {
 
   if (!modalState?.isOpen) return null;
 
-  const originMapId = activeMapData?.id || 'STARTING_MEADOW';
+  const originMapId = activeMapData?.id || '';
   const originC = modalState.originC;
   const originR = modalState.originR;
 

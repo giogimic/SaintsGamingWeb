@@ -29,7 +29,7 @@ export function PublishReviewStep({
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
-  const [persistedMapId, setPersistedMapId] = useState('STARTING_MEADOW');
+  const [persistedMapId, setPersistedMapId] = useState(startingMap.id || '');
 
   const handlePublishTransaction = async () => {
     try {
@@ -47,7 +47,7 @@ export function PublishReviewStep({
           genre: gameDefinition.genre,
         },
         startingMap: {
-          id: startingMap.id || 'STARTING_MEADOW',
+          id: startingMap.id || 'genesis',
           name: startingMap.name || 'Starting Realm',
           spawnPoint: startingMap.spawnPoint,
           gates: startingMap.gates,
@@ -66,7 +66,7 @@ export function PublishReviewStep({
       }
 
       setCompleted(true);
-      const defaultId = data.startingMapId || startingMap.id || 'STARTING_MEADOW';
+      const defaultId = data.startingMapId || startingMap.id || 'genesis';
       setPersistedMapId(defaultId);
 
       setTimeout(() => {

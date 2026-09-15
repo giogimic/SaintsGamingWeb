@@ -10,11 +10,7 @@ export interface WorldSpawnPoint {
   y: number;
 }
 
-export const DEFAULT_FALLBACK_SPAWN: WorldSpawnPoint = {
-  mapId: 'STARTING_MEADOW',
-  x: 32,
-  y: 32,
-};
+
 
 export const UNSTUCK_COOLDOWN_MS = 5 * 60 * 1000; // 5 minute cooldown
 export const UNSTUCK_CAST_DURATION_MS = 5000; // 5 second cast timer
@@ -30,7 +26,10 @@ export function resolveSafePlayerSpawn(params: {
   availableMapIds: string[];
   worldDefaultSpawn?: WorldSpawnPoint;
 }): WorldSpawnPoint {
-  const worldSpawn = params.worldDefaultSpawn || DEFAULT_FALLBACK_SPAWN;
+  if (!params.worldDefaultSpawn) {
+    throw new Error('resolveSafePlayerSpawn: missing mandatory worldDefaultSpawn from active release');
+  }
+  const worldSpawn = params.worldDefaultSpawn;
   const rawSavedMap = params.savedMapId ? params.savedMapId.replace(/_ch\d+$/, '').trim() : '';
 
   // 1. If saved map exists in available maps list (or available list is empty/loading), keep player on that map

@@ -161,13 +161,17 @@ export function detectPresentationMode(
   return 'complete';
 }
 
+export interface CharacterCreatorProps {
+  onComplete: (characterId: string) => void;
+  onCancel?: () => void;
+  defaultSpawnMapId?: string;
+}
+
 export function CharacterCreator({
   onComplete,
   onCancel,
-}: {
-  onComplete: (characterId: string) => void;
-  onCancel?: () => void;
-}) {
+  defaultSpawnMapId,
+}: CharacterCreatorProps) {
   const [step, setStep] = useState<CreatorStep>('HERO_PICK');
   const [name, setName] = useState('');
   const [assetProfileId, setassetProfileId] = useState('evil-berserker-bloodaxe-male');
@@ -370,14 +374,7 @@ export function CharacterCreator({
     let startY = hero?.startingY;
 
     if (!startMap) {
-      startMap = 'STARTING_MEADOW';
-      try {
-        const activeRelease = await getActiveWorldRelease('saints');
-        if (activeRelease) {
-          const manifest = JSON.parse(activeRelease.manifestData || '{}');
-          startMap = manifest.gameConfig?.defaultSpawnGateId || startMap;
-        }
-      } catch {}
+      startMap = defaultSpawnMapId || '';
     }
 
     if (startX === undefined || startY === undefined) {
@@ -398,8 +395,8 @@ export function CharacterCreator({
       }
     }
 
-    if (startX === undefined) startX = startMap === 'SAINTS_HAVEN' ? 20 : startMap === 'LOBBY' ? 32 : 15;
-    if (startY === undefined) startY = startMap === 'SAINTS_HAVEN' ? 20 : startMap === 'LOBBY' ? 32 : 15;
+    if (startX === undefined) startX = startMap === 'SAINTS_HAVEN' ? 20 : 15;
+    if (startY === undefined) startY = startMap === 'SAINTS_HAVEN' ? 20 : 15;
 
     const isSpyder = selectedHeroSlug === 'spyder_tamer' || startMap === 'AZURE_TOWN';
     const initialState = {

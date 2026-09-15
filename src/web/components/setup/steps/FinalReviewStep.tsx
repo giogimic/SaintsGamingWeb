@@ -44,7 +44,7 @@ export function FinalReviewStep({
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
-  const [persistedMapId, setPersistedMapId] = useState('STARTING_MEADOW');
+  const [persistedMapId, setPersistedMapId] = useState(startingMap.id || '');
 
   const handleInitializeGame = async () => {
     try {
@@ -118,7 +118,7 @@ export function FinalReviewStep({
       }
 
       setCompleted(true);
-      const defaultId = data.startingMapId || startingMap.id || 'STARTING_MEADOW';
+      const defaultId = data.startingMapId || startingMap.id || '';
       setPersistedMapId(defaultId);
 
       setTimeout(() => {

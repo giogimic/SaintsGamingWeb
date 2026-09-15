@@ -86,7 +86,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
       ...gateOnTile,
       width: Math.max(1, editGateWidth || 1),
       height: Math.max(1, editGateHeight || 1),
-      targetMapId: editGateTarget.trim().toUpperCase() || 'STARTING_MEADOW',
+      targetMapId: editGateTarget.trim().toUpperCase() || '',
       spawnPoint: { x: editGateSpawnX, y: editGateSpawnY },
       category: editGateCategory,
     };
@@ -695,7 +695,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
                         value={editGateTarget}
                         onChange={(e) => setEditGateTarget(e.target.value)}
                         className="w-full bg-black/60 border border-purple-500/30 rounded px-1.5 py-0.5 text-purple-100 text-[10px] uppercase font-mono mt-0.5"
-                        placeholder="STARTING_MEADOW"
+                        placeholder="Map ID"
                       />
                     </div>
                     

@@ -3,7 +3,6 @@ import {
   resolveSafePlayerSpawn,
   canCastUnstuck,
   UNSTUCK_COOLDOWN_MS,
-  DEFAULT_FALLBACK_SPAWN,
 } from './worldSpawns';
 
 describe('World Spawn & Unstuck Resolution Engine', () => {
@@ -38,11 +37,12 @@ describe('World Spawn & Unstuck Resolution Engine', () => {
     const result = resolveSafePlayerSpawn({
       savedMapId: null,
       availableMapIds: ['LOBBY', 'TRAINING_GROUNDS'],
+      worldDefaultSpawn: { mapId: 'NEW_WORLD_SPAWN', x: 50, y: 50 },
     });
 
-    expect(result.mapId).toBe('LOBBY');
-    expect(result.x).toBe(DEFAULT_FALLBACK_SPAWN.x);
-    expect(result.y).toBe(DEFAULT_FALLBACK_SPAWN.y);
+    expect(result.mapId).toBe('NEW_WORLD_SPAWN');
+    expect(result.x).toBe(50);
+    expect(result.y).toBe(50);
   });
 
   it('enforces a 5-minute cooldown on unstuck ability', () => {

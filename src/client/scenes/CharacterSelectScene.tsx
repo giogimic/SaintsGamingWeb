@@ -135,7 +135,7 @@ export function CharacterSelectScene() {
       setCharacter(charId, char.name);
       
       const accountId = useSessionStore.getState().accountId || (session?.user?.id as string) || '';
-      const targetMapId = realmSettings?.spawnMapId || 'STARTING_MEADOW';
+      const targetMapId = '';
       
       const socket = socketManager.raw;
       if (!socket || !socket.connected) {

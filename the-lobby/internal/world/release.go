@@ -98,6 +98,23 @@ func (m *Manager) ParseRelease(db *sql.DB, projectID string, version string) (*R
 
 // ApplyReleaseMaps loads the map definitions into the manager.
 func (m *Manager) ApplyReleaseMaps(manifest *ReleaseManifest) error {
+	if manifest == nil {
+		return fmt.Errorf("invalid manifest: manifest is nil")
+	}
+	if manifest.World.SpawnMap == "" {
+		return fmt.Errorf("invalid manifest: missing world spawn map (manifest.World.SpawnMap is empty)")
+	}
+
+	spawnMapExists := false
+	for _, mapData := range manifest.Maps {
+		if mapData.ID == manifest.World.SpawnMap {
+			spawnMapExists = true
+			break
+		}
+	}
+	if !spawnMapExists {
+		return fmt.Errorf("invalid manifest: world spawn map '%s' does not exist in manifest.Maps", manifest.World.SpawnMap)
+	}
 	// Build registries for this release in local variables
 	newNPCRegistry := make(map[string]NPCSchemaDef)
 	for _, npc := range manifest.Actors.NPCs {

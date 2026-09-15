@@ -54,6 +54,16 @@ type GateDef struct {
 	TargetY int `json:"targetY,omitempty"`
 }
 
+// DefaultSpawnMap safely returns the canonical spawn map ID from the active release, or an empty string if none exists.
+func (m *Manager) DefaultSpawnMap() string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	if m.ActiveRelease != nil && m.ActiveRelease.World.SpawnMap != "" {
+		return m.ActiveRelease.World.SpawnMap
+	}
+	return ""
+}
+
 // NPCSchemaDef defines the immutable release state of an NPC.
 type NPCSchemaDef struct {
 	Slug         string          `json:"slug"`
@@ -163,17 +173,20 @@ func (m *Manager) GetDef(baseID string) (*MapDef, error) {
 }
 
 func (m *Manager) EnsureDemoDef() *MapDef {
+	spawnMap := m.DefaultSpawnMap()
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if d, ok := m.defs[protocol.FallbackMapID]; ok {
+	if d, ok := m.defs[spawnMap]; ok {
 		if d.Voxel == nil {
 			demoVoxel := BuildDemoVoxelWorld(d.Width/32, d.Height/32)
 			d.Voxel = demoVoxel
 		}
 		return d
 	}
-	d := BuildDemoMapDef()
-	m.defs[d.ID] = d
+	
+	log.Printf("[WorldManager] Building demo map def for %s", spawnMap)
+	d := BuildDemoMapDef(spawnMap)
+	m.defs[spawnMap] = d
 	return d
 }
 
@@ -205,12 +218,13 @@ func (m *Manager) GetVoxelMapBlocks(mapID string) *VoxelWorld {
 
 // JoinMap assigns a shard and returns the live instance.
 func (m *Manager) JoinMap(baseMapID, accountID string, isPrivate, pie bool) (*Instance, error) {
+	defaultSpawn := m.DefaultSpawnMap()
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if _, ok := m.defs[baseMapID]; !ok {
-		if baseMapID == protocol.FallbackMapID {
-			m.defs[baseMapID] = BuildDemoMapDef()
+		if baseMapID == defaultSpawn {
+			m.defs[baseMapID] = BuildDemoMapDef(baseMapID)
 		} else {
 			m.defs[baseMapID] = &MapDef{
 				ID:     baseMapID,
@@ -371,11 +385,11 @@ func GetDefaultBiome() BiomeDefinition {
 }
 
 // BuildDemoMapDef creates an in-memory DEMO_SANDBOX as an infinite fractal map and pregenerates the spawn area.
-func BuildDemoMapDef() *MapDef {
+func BuildDemoMapDef(mapID string) *MapDef {
 	w, h := 0, 0 // 0 signifies infinite bounding box
 
 	voxelWorld := &VoxelWorld{
-		ID:           protocol.FallbackMapID,
+		ID:           mapID,
 		WidthChunks:  1,
 		DepthChunks:  1,
 		HeightChunks: 1,
@@ -401,7 +415,7 @@ func BuildDemoMapDef() *MapDef {
 	}
 
 	return &MapDef{
-		ID:          protocol.FallbackMapID,
+		ID:          mapID,
 		Name:        "The Firmament",
 		Width:       w,
 		Height:      h,

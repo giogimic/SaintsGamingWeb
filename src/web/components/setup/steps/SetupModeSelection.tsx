@@ -98,7 +98,7 @@ export function SetupModeSelection({ onSelectFresh, onImportSuccess }: SetupMode
       setImportSuccessMsg(data.message || 'Package successfully migrated and imported!');
       setTimeout(() => {
         if (onImportSuccess) {
-          onImportSuccess(data.defaultMapId || 'STARTING_MEADOW');
+          onImportSuccess(data.defaultMapId || '');
         } else {
           window.location.href = '/studio';
         }

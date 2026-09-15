@@ -1785,7 +1785,7 @@ export const useEditorStore = create<EditorState>()(
           const gameStore = useGameStore.getState();
           const mapType = gameStore.activeMapData?.mapType;
           const currentMapId = gameStore.currentMapId;
-          const SYSTEM_MAPS = ['STARTING_MEADOW', 'GENERIC_FALLBACK_MAP', 'STARTING_MAP'];
+          const SYSTEM_MAPS = ['GENERIC_FALLBACK_MAP'];
           const hasValidMap = currentMapId && !SYSTEM_MAPS.includes(currentMapId);
 
           const openDraftPanel = (id: PanelId) => {
@@ -1834,7 +1834,7 @@ export const useEditorStore = create<EditorState>()(
       handleMapLoaded: (mapId, mapType) => {
         set((state) => {
           // If we loaded a valid map, ensure it opens the correct panels
-          const SYSTEM_MAPS = ['STARTING_MEADOW', 'GENERIC_FALLBACK_MAP', 'STARTING_MAP'];
+          const SYSTEM_MAPS = ['GENERIC_FALLBACK_MAP'];
           if (SYSTEM_MAPS.includes(mapId)) return;
           
           state.panels['mapEditor'].isOpen = false;

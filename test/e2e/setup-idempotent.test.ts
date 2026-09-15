@@ -26,7 +26,7 @@ describe('Setup Wizard Idempotency', () => {
 
     const rev = await prisma.worldBootstrapRevision.create({
       data: {
-        mapId: 'STARTING_MEADOW',
+        mapId: 'genesis',
         seed: 'test-seed',
         generatorVersion: 'v1',
         configHash: 'test-hash',
@@ -43,7 +43,7 @@ describe('Setup Wizard Idempotency', () => {
       game: { name: 'Test Game' },
       characters: [{ slug: 'hero1', name: 'Hero', classId: 'WARRIOR' }],
       environment: {},
-      startingMap: { id: 'STARTING_MEADOW', name: 'Meadow', spawnPoint: { x: 10, y: 10, z: 16 } }
+      startingMap: { id: 'genesis', name: 'Meadow', spawnPoint: { x: 10, y: 10, z: 16 } }
     };
 
     const req = new NextRequest('http://localhost/api/setup/initialize-game', {
@@ -54,7 +54,7 @@ describe('Setup Wizard Idempotency', () => {
     const res = await POST(req);
     expect(res.status).toBe(200);
 
-    const map = await prisma.worldMap.findUnique({ where: { id: 'STARTING_MEADOW' } });
+    const map = await prisma.worldMap.findUnique({ where: { id: 'genesis' } });
     expect(map).toBeDefined();
     expect(map?.version).toBe(1);
 

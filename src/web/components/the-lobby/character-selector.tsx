@@ -53,6 +53,7 @@ interface CharacterSelectorProps {
   onRefresh: () => void;
   /** Studio author session — return without picking a character. */
   onCancel?: () => void;
+  defaultSpawnMapId?: string;
 }
 
 const CLASS_ICONS: Record<string, any> = {

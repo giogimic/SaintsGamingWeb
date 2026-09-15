@@ -14,7 +14,10 @@ export type JoinContract = {
 
 /** Stable key for the seat contract (not spawn coords). */
 export function buildJoinKey(contract: JoinContract): string {
-  const base = toBaseMapId(contract.mapId || 'STARTING_MEADOW');
+  if (!contract.mapId) {
+    throw new Error('JoinContract missing mandatory mapId');
+  }
+  const base = toBaseMapId(contract.mapId);
   return [
     base,
     contract.lobby ? "lobby" : "studio",

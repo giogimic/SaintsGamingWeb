@@ -42,7 +42,7 @@ describe('evaluateSetupStatus', () => {
       adminCount: 2,
       gameNameSettingVal: 'Custom RPG',
       gameDescriptionSettingVal: 'Custom Description',
-      defaultMapIdSettingVal: 'STARTING_MEADOW',
+      defaultMapIdSettingVal: 'genesis',
     });
 
     expect(status.isFreshInstall).toBe(false);
@@ -52,7 +52,7 @@ describe('evaluateSetupStatus', () => {
     expect(status.hasAdmin).toBe(true);
     expect(status.gameName).toBe('Custom RPG');
     expect(status.gameDescription).toBe('Custom Description');
-    expect(status.defaultMapId).toBe('STARTING_MEADOW');
+    expect(status.defaultMapId).toBe('genesis');
   });
 
   it('detects game initialization completed state with custom genre, style, and default ground GID', () => {

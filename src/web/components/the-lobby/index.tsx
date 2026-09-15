@@ -38,7 +38,7 @@ import GameTitleScreen from './GameTitleScreen';
 import GameLogin from './GameLogin';
 import ServerSelect from './ServerSelect';
 import { HudErrorBoundary } from './hud/HudErrorBoundary';
-import { Suspense } from 'react';
+import { Suspense, useMemo } from 'react';
 import { TurnBattleOverlay } from './battle/TurnBattleOverlay';
 import { useGameStore } from './store';
 import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
@@ -155,7 +155,7 @@ export default function TheLobby({
   });
   const isEditingInterface = useGameStore((s) => s.isEditingInterface || s.isUiEditMode);
   const showToast = useGameStore((s) => s.showToast);
-  const [spawnMapId, setSpawnMapId] = useState<string>('STARTING_MEADOW');
+  const [spawnMapId, setSpawnMapId] = useState<string>('');
 
 
 
@@ -255,7 +255,20 @@ export default function TheLobby({
     });
   }, []);
 
-  const DEFAULT_SPAWN = { x: 32, y: 32 };
+  const releaseManifest = useMemo(() => {
+    if (!activeRelease?.manifestData) return null;
+    try {
+      return JSON.parse(activeRelease.manifestData);
+    } catch {
+      return null;
+    }
+  }, [activeRelease]);
+
+  const defaultSpawnMapId = releaseManifest?.world?.spawnMap || '';
+  const DEFAULT_SPAWN = { 
+    x: releaseManifest?.world?.spawnX || 15, 
+    y: releaseManifest?.world?.spawnY || 15 
+  };
 
   const selectAndLoadCharacter = async (charId: string) => {
     setIsInitializing(true);
@@ -292,18 +305,20 @@ export default function TheLobby({
         return;
       }
       const manifest = JSON.parse(activeRelease.manifestData || '{}');
-      const loadedSpawn = manifest.gameConfig?.defaultSpawnGateId || availableMapIds[0] || 'STARTING_MEADOW';
-      setSpawnMapId(loadedSpawn);
+      const loadedSpawn = manifest.world?.spawnMap || availableMapIds[0] || '';
 
       const safeSpawn = resolveSafePlayerSpawn({
         savedMapId: savedMap,
         savedX: parsedState.position?.x,
         savedY: parsedState.position?.y,
         availableMapIds,
-        worldDefaultSpawn: { mapId: spawnMapId, x: 15, y: 15 }
+        worldDefaultSpawn: { mapId: defaultSpawnMapId, x: DEFAULT_SPAWN.x, y: DEFAULT_SPAWN.y }
       });
 
-      validMapId = safeSpawn.mapId || availableMapIds[0] || spawnMapId;
+      validMapId = safeSpawn.mapId;
+      if (!validMapId) {
+        validMapId = availableMapIds[0] || defaultSpawnMapId;
+      }
       validPosition = { x: safeSpawn.x, y: safeSpawn.y };
 
       try {
@@ -317,7 +332,7 @@ export default function TheLobby({
         useGameStore.getState().setActiveMapData(loaded);
         preloadAdjacentMaps(validMapId).catch(console.error);
       } catch {
-        validMapId = availableMapIds[0] || spawnMapId;
+        validMapId = availableMapIds[0] || defaultSpawnMapId;
         validPosition = { ...DEFAULT_SPAWN };
         try {
           const loadedFallback = ensureMapHasStudioTilesets(await loadMap(validMapId));
@@ -401,7 +416,12 @@ export default function TheLobby({
       return;
     }
     const manifest = JSON.parse(activeRelease.manifestData || '{}');
-    const spawnMapId = manifest.gameConfig?.defaultSpawnGateId || 'STARTING_MEADOW';
+    const spawnMapId = manifest.world?.spawnMap || '';
+    if (!spawnMapId) {
+      showToast('Studio Login Failed: The deployed release manifest has an empty spawnMap.');
+      setIsInitializing(false);
+      return;
+    }
     let validMapId = mapId === 'SAINTS_VILLAGE' || !mapId ? spawnMapId : mapId.replace(/_ch\d+$/, '');
     let validPosition = { ...DEFAULT_SPAWN };
 
@@ -687,7 +707,7 @@ export default function TheLobby({
             accountId: effectiveAccountId,
             characterId: activeCharacterId,
             contract: {
-              mapId: state.currentMapId || spawnMapId,
+              mapId: state.currentMapId || defaultSpawnMapId,
               lobby: !enableStudio,
               isPrivate: enableStudio,
               pie: enableStudio && !useEditorStore.getState().isCreationMode,
@@ -708,16 +728,16 @@ export default function TheLobby({
             onUpdateLastJoinKey: (k) => { lastJoinKeyRef.current = k; },
           });
           if (!enableStudio) {
-            const cur = toBaseMapId(state.currentMapId || spawnMapId);
-            if (cur !== spawnMapId) {
-              const fallback = cur || spawnMapId;
+            const cur = toBaseMapId(state.currentMapId || defaultSpawnMapId);
+            if (cur !== defaultSpawnMapId) {
+              const fallback = cur || defaultSpawnMapId;
               state.setCurrentMapId(fallback);
               void loadMap(fallback).then((m) => {
                 useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
                 preloadAdjacentMaps(fallback).catch(console.error);
               }).catch(() => {
-                 state.setCurrentMapId(spawnMapId);
-                 void loadMap(spawnMapId).then(m => useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m)));
+                 state.setCurrentMapId(defaultSpawnMapId);
+                 void loadMap(defaultSpawnMapId).then(m => useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m)));
               });
             }
           }
@@ -781,7 +801,7 @@ export default function TheLobby({
           { instanceId: data.instanceId, mapId: data.mapId, seq: data.joinSeq, peerHint: peerCount }
         );
       }
-      // Server may remap retired maps (SAINTS_VILLAGE → STARTING_MEADOW).
+      // Server may remap retired maps.
       // Compare base ids — setCurrentMapId clears activeMapData and would wipe Studio paint state.
       const joinedBase = toBaseMapId(String(data.mapId || ''));
       const currentBase = toBaseMapId(String(state.currentMapId || ''));
@@ -1275,7 +1295,7 @@ export default function TheLobby({
       const state = useGameStore.getState();
       state.showToast("You blacked out... Respawning at Safe Zone");
       if (data?.instanceId) state.setInstanceId(data.instanceId);
-      const defeatMap = toBaseMapId(String(data?.mapId || state.currentMapId || spawnMapId));
+      const defeatMap = toBaseMapId(String(data?.mapId || state.currentMapId || defaultSpawnMapId));
       const currentBase = toBaseMapId(String(state.currentMapId || ''));
       if (defeatMap !== currentBase) {
         state.setOtherPlayers({});
@@ -1908,6 +1928,7 @@ export default function TheLobby({
     return (
       <div className={frameClass}>
         <CharacterCreator 
+          defaultSpawnMapId={defaultSpawnMapId}
           onComplete={(newId) => selectAndLoadCharacter(newId)} 
           onCancel={userCharacters.length > 0 ? () => { useGameStore.getState().setGameMode('CHARACTER_SELECT'); setShowCreator(false); } : undefined}
         />
@@ -1931,6 +1952,7 @@ export default function TheLobby({
     return (
       <div className={frameClass}>
         <CharacterSelector 
+          defaultSpawnMapId={defaultSpawnMapId}
           characters={userCharacters}
           onSelect={(id) => selectAndLoadCharacter(id)} 
           onCreateNew={() => { useGameStore.getState().setGameMode('CHARACTER_CREATOR'); setShowSelector(false); setShowCreator(true); }}

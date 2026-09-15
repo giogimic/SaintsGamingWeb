@@ -19,7 +19,7 @@ export const StreamingInspectorPanel: React.FC<{ asSubPanel?: boolean }> = ({ as
     networkFetchesSec: 0,
     cacheHits: 0,
     chunkBuildMs: 12,
-    activeFootprint: 'STARTING_MEADOW'
+    activeFootprint: 'None'
   });
 
   const handleRefresh = () => {

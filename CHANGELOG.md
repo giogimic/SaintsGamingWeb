@@ -1,4 +1,12 @@
-## 2.1.880
+## 2.1.884
+- **Legacy Fallback Eradication:** Systematically removed all remaining instances of the `STARTING_MEADOW` fallback string from the entire codebase (frontend and backend).
+  - Client-side: Removed from bootstrap logic (`the-lobby/index.tsx`), game initialization loops, unstuck logic (`GameOptionsMenu.tsx`), and Babylon.js component scopes (`VoxelCanvasBabylon.tsx`, etc.).
+  - Setup Wizard: Changed default genesis map ID logic to generate a real valid map rather than relying on `STARTING_MEADOW`. Test suites updated accordingly.
+  - Editor Panels: Purged from `SYSTEM_MAPS` registry and replaced with accurate UI states ("No map loaded") in all Studio panels (`StudioEscapeMenu`, `PropertiesPanel`, `WorldHierarchyPanel`, `DungeonStudioPanel`, etc.).
+  - Backend: Purged `STARTING_MEADOW` from default schema migrations (`migrations.go`) and standard inventory resolution logic (`persist.go`).
+- **World Spawns Resolution:** Updated `resolveSafePlayerSpawn` to enforce dependency on `worldDefaultSpawn` explicitly supplied by the active release, dropping the legacy `DEFAULT_FALLBACK_SPAWN` constant.
+
+## 2.1.883
 - **Zero-Release Studio Bootstrap:** Decoupled the Studio authoring shell from the `TheLobby` playable application container.
   - `StudioClient` now mounts `StudioEditorShell` directly and independently, removing all gameplay initialization (character fetching, gameMode, sockets) from the authoring shell.
   - Studio can now be launched entirely from scratch with zero WorldProjects and zero deployed WorldReleases.

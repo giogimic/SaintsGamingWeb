@@ -106,7 +106,7 @@ export const SpawnEditorPanel: React.FC = () => {
                   placeholder="e.g. T001-G001"
                   className="rounded bg-black/50 px-3 py-2 border border-[#806f47]/30 text-slate-200 w-full"
                 />
-                <span className="text-[10px] text-slate-500 font-normal">Enter the ID of the WorldGate you want players to spawn at. Leaving this empty defaults to STARTING_MEADOW.</span>
+                <span className="text-[10px] text-slate-500 font-normal">Enter the ID of the WorldGate you want players to spawn at. Leaving this empty defaults to the active release's canonical spawn map.</span>
               </label>
             </div>
           )}

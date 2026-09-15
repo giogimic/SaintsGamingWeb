@@ -22,6 +22,7 @@ func TestGateTransitionSpoofing(t *testing.T) {
 
 	manifestStr := `{
 		"version": "v1.0.1",
+		"world": { "spawnMap": "mapA" },
 		"maps": [
 			{"id": "mapA", "name": "Map A", "mapType": "TILE", "version": 1},
 			{"id": "mapB", "name": "Map B", "mapType": "TILE", "version": 1}

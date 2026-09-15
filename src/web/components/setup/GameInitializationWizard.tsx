@@ -37,7 +37,7 @@ export function GameInitializationWizard({ isReinit = false }: { isReinit?: bool
   });
 
   const [startingMap, setStartingMap] = useState<SetupStartingMapData>(() => ({
-    id: 'STARTING_MEADOW',
+    id: 'genesis',
     name: 'Starting Meadow',
     mapType: 'VOXEL',
     widthChunks: 4,
