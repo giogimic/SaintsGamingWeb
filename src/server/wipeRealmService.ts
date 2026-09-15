@@ -34,8 +34,12 @@ export async function wipeNonBundledRealmContent(prisma: any): Promise<WipeRealm
   }
 
   // 2. Wipe map versions and sync entries
-  await prisma.worldMapVersion.deleteMany({});
-  await prisma.mapSyncEntry.deleteMany({});
+  if (prisma.worldMapVersion?.deleteMany) {
+    await prisma.worldMapVersion.deleteMany({});
+  }
+  if (prisma.mapSyncEntry?.deleteMany) {
+    await prisma.mapSyncEntry.deleteMany({});
+  }
   
   // Wipe compiled releases and persistence outbox
   if (prisma.worldReleaseManifest?.deleteMany) await prisma.worldReleaseManifest.deleteMany({});

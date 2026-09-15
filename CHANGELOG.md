@@ -22,7 +22,11 @@
 - Prevented a false [SpiritGate] ghost fallback on JOIN_REJECT.
 - Added smart update.sh detection for Go SQLite schema changes.
 
-## [2.1.875] - 2026-09-15
+## [2.1.876] - 2026-09-15
+### Fixed
+- Fixed wipe-data crash (Cannot read properties of undefined reading deleteMany) when trying to wipe deprecated WorldMapVersion entries.
+
+2.1.875] - 2026-09-15
 ### Fixed
 - Fixed update deployment script bypassing wipe flags in non-interactive mode.
 - Fixed Next.js wipe script ignoring missing Release/Outbox tables and swallowing errors.
