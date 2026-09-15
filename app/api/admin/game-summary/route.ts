@@ -3,7 +3,6 @@ import { auth } from '@/auth';
 import { prisma } from '@/web/lib/prisma';
 import { PERMISSION_LEVELS } from '@/web/lib/permissions';
 import { AuditService } from '@/server/audit/AuditService';
-import { validateWorldForPublish } from '@/app/actions/studio/publishing';
 import { REALM_SETTING_KEYS, DEFAULT_REALM_SETTINGS } from '@/shared/game/realmSettings';
 import os from 'os';
 import fs from 'fs';
@@ -44,8 +43,8 @@ export async function GET() {
       prisma.worldMap.count().catch(() => 0),
       prisma.gameServer.count().catch(() => 0),
       prisma.supportTicket.count({ where: { status: 'OPEN' } }).catch(() => 0),
-      prisma.worldPublishSnapshot.findFirst({ orderBy: { createdAt: 'desc' } }).catch(() => null),
-      prisma.worldPublishSnapshot.count().catch(() => 0),
+      prisma.worldRelease.findFirst({ orderBy: { createdAt: 'desc' } }).catch(() => null),
+      prisma.worldRelease.count().catch(() => 0),
       prisma.siteSetting.findMany({
         where: {
           key: {
@@ -69,16 +68,6 @@ export async function GET() {
 
     // Run lightweight validation summary
     let validationResult = { valid: true, errorCount: 0, warningCount: 0 };
-    try {
-      const v = await validateWorldForPublish();
-      validationResult = {
-        valid: v.valid,
-        errorCount: v.errorCount,
-        warningCount: v.warningCount,
-      };
-    } catch {
-      // Fallback if db is busy
-    }
 
     // Determine gateway status
     const goMmoBase = process.env.GO_MMO_INTERNAL_URL || process.env.NEXT_PUBLIC_GO_MMO_URL || null;

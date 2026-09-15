@@ -57,6 +57,12 @@ func migrate(db *sql.DB) error {
 		}
 		setVersion(db, 5)
 	}
+	if version < 6 {
+		if err := migrateV6(db); err != nil {
+			return err
+		}
+		setVersion(db, 6)
+	}
 
 	// Verify schema explicitly at the end
 	if err := verifySchema(db); err != nil {
@@ -75,30 +81,6 @@ func setVersion(db *sql.DB, v int) {
 // migrateV1 installs the base tables. 
 func migrateV1(db *sql.DB) error {
 	stmts := []string{
-		`CREATE TABLE IF NOT EXISTS WorldMap (
-			id TEXT PRIMARY KEY,
-			gameId TEXT DEFAULT 'saints',
-			name TEXT NOT NULL,
-			gridData TEXT NOT NULL,
-			gatesData TEXT NOT NULL DEFAULT '{}',
-			encountersData TEXT NOT NULL DEFAULT '[]',
-			mapType TEXT NOT NULL DEFAULT 'HYBRID',
-			regionClass TEXT NOT NULL DEFAULT 'authored',
-			version INTEGER NOT NULL DEFAULT 1,
-			publishedVersion INTEGER NOT NULL DEFAULT 0,
-			publishedData TEXT NOT NULL DEFAULT '{}',
-			updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
-		)`,
-		`CREATE TABLE IF NOT EXISTS GameMap (
-			id TEXT PRIMARY KEY,
-			name TEXT NOT NULL,
-			width INTEGER NOT NULL,
-			height INTEGER NOT NULL,
-			tilesetData TEXT NOT NULL,
-			gates TEXT NOT NULL DEFAULT '{}',
-			npcs TEXT NOT NULL DEFAULT '[]',
-			encounters TEXT NOT NULL DEFAULT '[]'
-		)`,
 		`CREATE TABLE IF NOT EXISTS MapLogicTile (
 			id INTEGER PRIMARY KEY,
 			name TEXT NOT NULL,
@@ -183,25 +165,11 @@ func migrateV1(db *sql.DB) error {
 			createdAt TEXT NOT NULL DEFAULT (datetime('now')),
 			updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
 		)`,
-		`CREATE TABLE IF NOT EXISTS ServerSettings (
-			key TEXT PRIMARY KEY,
-			value TEXT NOT NULL
-		)`,
 	}
 	for _, s := range stmts {
 		if _, err := db.Exec(s); err != nil {
 			return fmt.Errorf("migrateV1: %w\nstmt: %s", err, s)
 		}
-	}
-	
-	// Ensure old DBs get the additive updates from old logic
-	alters := []string{
-		`ALTER TABLE WorldMap ADD COLUMN regionClass TEXT NOT NULL DEFAULT 'authored'`,
-		`ALTER TABLE WorldMap ADD COLUMN publishedVersion INTEGER NOT NULL DEFAULT 0`,
-		`ALTER TABLE WorldMap ADD COLUMN publishedData TEXT NOT NULL DEFAULT '{}'`,
-	}
-	for _, a := range alters {
-		_, _ = db.Exec(a) // Ignore errors (column may already exist from earlier CREATE TABLE logic)
 	}
 
 	return nil
@@ -263,12 +231,44 @@ func migrateV5(db *sql.DB) error {
 	return nil
 }
 
+// migrateV6 drops obsolete mutable World tables and sets up NextjsSyncOutbox
+func migrateV6(db *sql.DB) error {
+	log.Println("[DB] Applying migration v6: Dropping WorldMap schemas & creating NextjsSyncOutbox")
+	dropTables := []string{
+		"WorldMap",
+		"GameMap",
+		"ServerSettings",
+		"MapTile",
+		"VoxelNode",
+		"GameCharacter", // If it accidentally got created locally
+	}
+	for _, table := range dropTables {
+		if _, err := db.Exec(fmt.Sprintf(`DROP TABLE IF EXISTS %s`, table)); err != nil {
+			return fmt.Errorf("failed to drop %s: %w", table, err)
+		}
+	}
+
+	outboxTable := `CREATE TABLE IF NOT EXISTS NextjsSyncOutbox (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		accountId TEXT NOT NULL,
+		characterId TEXT NOT NULL,
+		payloadJson TEXT NOT NULL,
+		status TEXT NOT NULL DEFAULT 'PENDING',
+		createdAt TEXT NOT NULL DEFAULT (datetime('now'))
+	)`
+	if _, err := db.Exec(outboxTable); err != nil {
+		return fmt.Errorf("failed to create NextjsSyncOutbox: %w", err)
+	}
+
+	return nil
+}
+
 func verifySchema(db *sql.DB) error {
 	checks := []struct {
 		table string
 		col   string
 	}{
-		{"WorldMap", "version"},
+		{"GoPlayerState", "mapId"},
 	}
 
 	for _, check := range checks {

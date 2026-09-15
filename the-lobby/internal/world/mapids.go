@@ -5,22 +5,16 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/protocol"
 )
 
 var (
 	rePublicChannel = regexp.MustCompile(`^(.*)_ch(\d+)$`)
-	
-	// ServerSpawnMapID is the map players will spawn into if none is provided.
-	// It is loaded from ServerSettings on boot.
-	ServerSpawnMapID = protocol.DemoMapID
 )
 
 // ToBaseMapID strips _chN public shard suffixes only.
 func ToBaseMapID(mapOrInstanceID string) string {
 	if mapOrInstanceID == "" {
-		return protocol.DemoMapID
+		return ""
 	}
 	if m := rePublicChannel.FindStringSubmatch(mapOrInstanceID); len(m) == 3 {
 		return m[1]
@@ -36,13 +30,7 @@ func IsStudioPIE(instanceID string) bool {
 	return strings.HasPrefix(instanceID, "studio_pie_")
 }
 
-func ResolvePlayableBase(mapID string, lobby, forceDemo bool) string {
-	base := ToBaseMapID(mapID)
-	if forceDemo || base == "" || base == protocol.RetiredVillage {
-		return ServerSpawnMapID
-	}
-	return base
-}
+
 
 // PublicShardCandidate is one live public shard for assignment.
 type PublicShardCandidate struct {

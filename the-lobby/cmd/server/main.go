@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -8,7 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/bootstrap"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/combat"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/config"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/craft"
@@ -21,6 +21,7 @@ import (
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/httpapi"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/inventory"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/party"
+	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/persist"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/player"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/protocol"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/quest"
@@ -42,11 +43,7 @@ func main() {
 	}
 	defer sqlDB.Close()
 
-	var spawnMapID string
-	if err := sqlDB.QueryRow("SELECT value FROM ServerSettings WHERE key = 'startingMapId'").Scan(&spawnMapID); err == nil && spawnMapID != "" {
-		world.ServerSpawnMapID = spawnMapID
-		log.Printf("[go-mmo] loaded ServerSpawnMapID: %s", spawnMapID)
-	}
+	// Legacy ServerSpawnMapID from database removed due to migration v6
 
 	wm := world.NewManager(cfg.LobbyCapacity)
 	pm := player.NewManager(cfg.AOIZoneSize, sqlDB)
@@ -69,10 +66,6 @@ func main() {
 		SaveMap: func(id, name, grid string) error {
 			return httpapi.PersistMap(sqlDB, wm, id, name, grid, "{}")
 		},
-	}
-
-	if err := bootstrap.EnsureDemo(sqlDB, wm); err != nil {
-		log.Fatalf("bootstrap: %v", err)
 	}
 
 	// Load latest saints release on boot
@@ -146,6 +139,10 @@ func main() {
 	eng.Start()
 	defer eng.Stop()
 
+	workerCtx, workerCancel := context.WithCancel(context.Background())
+	outboxWorker := persist.NewOutboxWorker(sqlDB, cfg.NextJsUrl, cfg.AuthSecret)
+	go outboxWorker.Start(workerCtx)
+
 	go func() {
 		log.Printf("[go-mmo] listening http+socket.io on %s", cfg.HTTPAddr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -157,6 +154,7 @@ func main() {
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	<-ch
 	log.Printf("[go-mmo] shutting down")
+	workerCancel()
 	_ = srv.Close()
 	io.Close(nil)
 }

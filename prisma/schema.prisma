@@ -739,30 +739,30 @@ model SteamWishlistItem {
 // ─── Saints Tamer Minigame (MMO Architecture) ─────────────────────────
 
 model GameCharacter {
-  id                 String   @id @default(cuid())
-  userId             String
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name               String
-  assetProfileId     String   @default("adventurer")
-  visualData         String   @default("[]") // JSON array of visual component layers
-  classId            String
-  stateData          String // JSON string of the Zustand store PlayerState
-  
+  id             String @id @default(cuid())
+  userId         String
+  user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  assetProfileId String @default("adventurer")
+  visualData     String @default("[]") // JSON array of visual component layers
+  classId        String
+  stateData      String // JSON string of the Zustand store PlayerState
+
   // Deterministic Release Context
-  worldProjectId     String   @default("saints")
+  worldProjectId     String  @default("saints")
   lastReleaseVersion String?
   lastMapId          String?
   lastX              Float?
   lastY              Float?
   lastZ              Float?
-  
-  homeMapId          String?
-  homeX              Float?
-  homeY              Float?
-  homeZ              Float?
-  
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+
+  homeMapId String?
+  homeX     Float?
+  homeY     Float?
+  homeZ     Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   gtcListings GtcListing[]
 
@@ -795,8 +795,8 @@ model WorldProject {
   // The version of the current "Working World"
   activeVersion Int @default(1)
 
-  gameId      String?
-  game        GameConfig? @relation(fields: [gameId], references: [id])
+  gameId String?
+  game   GameConfig? @relation(fields: [gameId], references: [id])
 
   releases WorldRelease[]
   maps     WorldMap[]
@@ -814,8 +814,8 @@ model WorldRelease {
   description String?
   status      String       @default("PUBLISHED") // DRAFT, VALIDATED, PUBLISHED, ARCHIVED
 
-  validationReport String    @default("{}")
-  contentSummary   String    @default("{}")
+  validationReport String @default("{}")
+  contentSummary   String @default("{}")
 
   // The Immutable Dependency Manifest
   // Stores exact actor revisions, asset versions, gameplay configs, and connections
@@ -994,10 +994,11 @@ model GameConfig {
   enablePvP     Boolean @default(true)
   maxPartySize  Int     @default(4)
 
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  classes   CharacterClass[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  classes       CharacterClass[]
   worldProjects WorldProject[]
+
   @@index([isActive])
 }
 
@@ -1391,8 +1392,6 @@ model Report {
 }
 
 // ─── Generic Creature Engine ──────────────────────────────────────
-
-
 
 model AbilityDictionary {
   slug        String  @id
@@ -2208,4 +2207,3 @@ model WorldBootstrapRevisionRegion {
 
   @@unique([revisionId, regionX, regionZ])
 }
-

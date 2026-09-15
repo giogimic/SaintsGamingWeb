@@ -3,7 +3,6 @@ package world_test
 import (
 	"testing"
 
-	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/protocol"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/world"
 )
 
@@ -14,7 +13,7 @@ func TestToBaseMapID(t *testing.T) {
 		"DEMO_SANDBOX":     "DEMO_SANDBOX",
 		"studio_pie_abc":   "studio_pie_abc",
 		"DEMO_SANDBOX_user1": "DEMO_SANDBOX_user1",
-		"":                 protocol.DemoMapID,
+		"":                 "",
 	}
 	for in, want := range cases {
 		if got := world.ToBaseMapID(in); got != want {
@@ -51,31 +50,19 @@ func TestPickPublicShard(t *testing.T) {
 func TestJoinMapLobbyShards(t *testing.T) {
 	m := world.NewManager(2)
 	m.EnsureDemoDef()
-	a, err := m.JoinMap(protocol.DemoMapID, "acc1", false, false)
+	a, err := m.JoinMap("DEMO_SANDBOX", "acc1", false, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if a.InstanceID != "DEMO_SANDBOX_ch1" {
 		t.Fatalf("first shard %s", a.InstanceID)
 	}
-	b, _ := m.JoinMap(protocol.DemoMapID, "acc2", false, false)
+	b, _ := m.JoinMap("DEMO_SANDBOX", "acc2", false, false)
 	if b.InstanceID != "DEMO_SANDBOX_ch1" {
 		t.Fatalf("second should share shard, got %s", b.InstanceID)
 	}
-	c, _ := m.JoinMap(protocol.DemoMapID, "acc3", false, false)
+	c, _ := m.JoinMap("DEMO_SANDBOX", "acc3", false, false)
 	if c.InstanceID != "DEMO_SANDBOX_ch2" {
 		t.Fatalf("third should spill to ch2, got %s", c.InstanceID)
-	}
-}
-
-func TestResolvePlayableBase(t *testing.T) {
-	if got := world.ResolvePlayableBase("ANY", false, true); got != protocol.DemoMapID {
-		t.Fatal(got)
-	}
-	if got := world.ResolvePlayableBase(protocol.RetiredVillage, false, false); got != protocol.DemoMapID {
-		t.Fatal(got)
-	}
-	if got := world.ResolvePlayableBase("CUSTOM_MAP", false, false); got != "CUSTOM_MAP" {
-		t.Fatal(got)
 	}
 }

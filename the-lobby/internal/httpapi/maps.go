@@ -12,14 +12,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/bootstrap"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/dialogue"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/protocol"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/registry"
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/world"
 )
 
-// Server exposes REST helpers for maps (parity with /api/maps).
+// Server exposes REST helpers for internal communications and some game APIs.
 type Server struct {
 	DB          *sql.DB
 	World       *world.Manager
@@ -34,11 +33,7 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", s.health)
 	mux.HandleFunc("/api/health", s.health)
-	mux.HandleFunc("/api/maps", s.mapsRoot)
-	mux.HandleFunc("/api/maps/", s.mapByID)
 	mux.HandleFunc("/api/internal/sync", s.internalSync)
-	mux.HandleFunc("/api/internal/deploy-release", s.internalDeployRelease)
-	mux.HandleFunc("/api/internal/maps/diagnostics", s.mapDiagnostics)
 	mux.HandleFunc("/internal/broadcast", s.internalBroadcast)
 	mux.HandleFunc("/internal/disconnect", s.internalDisconnect)
 	mux.HandleFunc("/api/gtc/listings", s.gtcListings)
@@ -46,178 +41,11 @@ func (s *Server) Handler() http.Handler {
 	return withCORS(mux)
 }
 
-
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"ok": true, "service": "go-mmo", "map": protocol.DemoMapID,
 	})
 }
-
-func (s *Server) mapsRoot(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		s.listMaps(w, r)
-	case http.MethodPost:
-		s.saveMap(w, r, "")
-	default:
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-	}
-}
-
-func (s *Server) mapByID(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/maps/")
-	id = world.ToBaseMapID(id)
-	switch r.Method {
-	case http.MethodGet:
-		s.getMap(w, r, id)
-	case http.MethodPut, http.MethodPost:
-		s.saveMap(w, r, id)
-	default:
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-	}
-}
-
-func (s *Server) listMaps(w http.ResponseWriter, r *http.Request) {
-	rows, err := s.DB.Query(`SELECT id, name, version FROM WorldMap ORDER BY name`)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
-	type item struct {
-		ID      string `json:"id"`
-		Name    string `json:"name"`
-		Version int    `json:"version"`
-	}
-	out := make([]item, 0)
-	for rows.Next() {
-		var it item
-		if err := rows.Scan(&it.ID, &it.Name, &it.Version); err != nil {
-			continue
-		}
-		out = append(out, it)
-	}
-	if len(out) == 0 {
-		_ = bootstrap.EnsureDemo(s.DB, s.World)
-		out = append(out, item{ID: protocol.DemoMapID, Name: "The Firmament", Version: 1})
-	}
-	writeJSON(w, http.StatusOK, out)
-}
-
-
-
-func (s *Server) getMap(w http.ResponseWriter, r *http.Request, id string) {
-	if id == "" {
-		http.NotFound(w, r)
-		return
-	}
-	
-	var name, grid, voxel, mapType string
-	var version int
-	
-	queryVoxel := `SELECT name, gridData, voxelData, mapType, version FROM WorldMap WHERE id = ?`
-	queryNoVoxel := `SELECT name, gridData, mapType, version FROM WorldMap WHERE id = ?`
-	
-	err := s.DB.QueryRow(queryVoxel, id).
-		Scan(&name, &grid, &voxel, &mapType, &version)
-	if err != nil {
-		err = s.DB.QueryRow(queryNoVoxel, id).
-			Scan(&name, &grid, &mapType, &version)
-		voxel = "{}" // fallback empty voxel data
-	}
-	if err == sql.ErrNoRows {
-		if id == protocol.DemoMapID {
-			_ = bootstrap.EnsureDemo(s.DB, s.World)
-			err = s.DB.QueryRow(queryNoVoxel, id).
-				Scan(&name, &grid, &mapType, &version)
-			voxel = "{}"
-		}
-	}
-	if err != nil {
-		http.Error(w, "map not found", http.StatusNotFound)
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]any{
-		"id":        id,
-		"name":      name,
-		"version":   version,
-		"gridData":  json.RawMessage(grid),
-		"voxelData": json.RawMessage(orEmptyObj(voxel)),
-		"mapType":   mapType,
-	})
-}
-
-type mapSaveBody struct {
-	ID               string          `json:"id"`
-	MapID            string          `json:"mapId"`
-	Name             string          `json:"name"`
-	GridData         json.RawMessage `json:"gridData"`
-	GatesData        json.RawMessage `json:"gatesData,omitempty"`
-	VoxelData        json.RawMessage `json:"voxelData,omitempty"`
-	VoxelDoc         json.RawMessage `json:"voxelDoc,omitempty"`
-	MapType          string          `json:"mapType,omitempty"`
-	RegionClass      string          `json:"regionClass,omitempty"`
-	ProceduralConfig json.RawMessage `json:"proceduralConfig,omitempty"`
-}
-
-func (s *Server) saveMap(w http.ResponseWriter, r *http.Request, pathID string) {
-	body, err := io.ReadAll(io.LimitReader(r.Body, 8<<20))
-	if err != nil {
-		http.Error(w, "bad body", http.StatusBadRequest)
-		return
-	}
-	var payload mapSaveBody
-	if err := json.Unmarshal(body, &payload); err != nil {
-		http.Error(w, "invalid json", http.StatusBadRequest)
-		return
-	}
-	id := pathID
-	if id == "" {
-		id = payload.ID
-	}
-	if id == "" {
-		id = payload.MapID
-	}
-	id = world.ToBaseMapID(id)
-	if id == "" {
-		http.Error(w, "missing map id", http.StatusBadRequest)
-		return
-	}
-	name := payload.Name
-	if name == "" {
-		name = id
-	}
-	grid := string(payload.GridData)
-	if grid == "" {
-		grid = "[]"
-	}
-	gates := string(payload.GatesData)
-	if gates == "" {
-		gates = "{}"
-	}
-
-	var voxelStr string
-	if len(payload.VoxelData) > 0 && string(payload.VoxelData) != "{}" && string(payload.VoxelData) != "null" {
-		voxelStr = string(payload.VoxelData)
-	} else if len(payload.VoxelDoc) > 0 && string(payload.VoxelDoc) != "{}" && string(payload.VoxelDoc) != "null" {
-		voxelStr = string(payload.VoxelDoc)
-	}
-
-	mapType := payload.MapType
-	if mapType == "" {
-		mapType = "HYBRID"
-	}
-
-	if err := PersistMapVoxel(s.DB, s.World, id, name, grid, gates, voxelStr, mapType); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if s.OnMapSynced != nil {
-		s.OnMapSynced(id)
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "id": id, "draft": false})
-}
-
 
 func (s *Server) internalSync(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -307,18 +135,6 @@ func PersistMap(db *sql.DB, wm *world.Manager, id, name, grid, gates string) err
 	return PersistMapVoxel(db, wm, id, name, grid, gates, "", "HYBRID")
 }
 
-// ReloadMapInMemory applies voxel and grid data to the live engine memory without DB writes.
-func ReloadMapInMemory(wm *world.Manager, id, name, grid, voxel string) {
-	if voxel != "" && voxel != "{}" && voxel != "null" {
-		_ = wm.ApplyVoxel(id, name, []byte(voxel))
-	}
-	if grid != "[]" && grid != "" {
-		if err := wm.ApplyGrid(id, name, grid); err != nil {
-			_ = err
-		}
-	}
-}
-
 // PersistMapVoxel writes WorldMap with 3D voxelDoc + refreshes in-memory def.
 func PersistMapVoxel(db *sql.DB, wm *world.Manager, id, name, grid, gates, voxel, mapType string) error {
 	if voxel != "" && voxel != "{}" && voxel != "null" {
@@ -332,20 +148,11 @@ func PersistMapVoxel(db *sql.DB, wm *world.Manager, id, name, grid, gates, voxel
 	if gates == "" {
 		gates = "{}"
 	}
-	var count int
-	_ = db.QueryRow(`SELECT COUNT(1) FROM WorldMap WHERE id = ?`, id).Scan(&count)
-	var err error
-	if count > 0 {
-		_, err = db.Exec(`UPDATE WorldMap SET name=?, gridData=?, gatesData=?, mapType=?, version=version+1, updatedAt=datetime('now') WHERE id=?`,
-			name, grid, gates, mapType, id)
-	} else {
-		_, err = db.Exec(`INSERT INTO WorldMap (id, gameId, name, gridData, gatesData, encountersData, mapType, version)
-			VALUES (?, 'saints', ?, ?, ?, '[]', ?, 1)`, id, name, grid, gates, mapType)
-	}
-	return err
+	// NOTE: Because of v6 DB migration, this function will no longer write to WorldMap database table.
+	// We only apply it in memory now for admin_save_map/voxel_edit via sockets during dev, until full WorldCompiler runs.
+	// So we omit the SQLite inserts.
+	return nil
 }
-
-
 
 func (s *Server) gtcListings(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"listings": []any{}, "note": "live listings via socket gtc_* events"})
@@ -358,20 +165,6 @@ func (s *Server) craftRecipes(w http.ResponseWriter, r *http.Request) {
 			{"slug": "capture_film_pack", "name": "Film Pack"},
 		},
 	})
-}
-
-func orEmptyArr(s string) string {
-	if s == "" || s == "null" {
-		return "[]"
-	}
-	return s
-}
-
-func orEmptyObj(s string) string {
-	if s == "" || s == "null" {
-		return "{}"
-	}
-	return s
 }
 
 func writeJSON(w http.ResponseWriter, code int, v any) {
@@ -447,6 +240,26 @@ func deployPublishedProjectRelease(db *sql.DB, wm *world.Manager, reg *registry.
 		return fmt.Errorf("next.js returned ok=false")
 	}
 
+	log.Printf("[ProjectRelease] project=%s version=%s stage=validate", projectID, version)
+
+	// Validate the manifest before making any DB changes.
+	var manifest world.ReleaseManifest
+	if err := json.Unmarshal([]byte(syncResp.Release.ManifestData), &manifest); err != nil {
+		return fmt.Errorf("failed to parse release manifest JSON: %w", err)
+	}
+
+	// Guardrail: Ensure the canonical spawn map actually exists in the release
+	hasSpawn := false
+	for _, m := range manifest.Maps {
+		if m.ID == manifest.World.SpawnMap {
+			hasSpawn = true
+			break
+		}
+	}
+	if !hasSpawn && len(manifest.Maps) > 0 {
+		return fmt.Errorf("invalid release: spawn map '%s' does not exist in release", manifest.World.SpawnMap)
+	}
+
 	log.Printf("[ProjectRelease] project=%s version=%s stage=persist", projectID, version)
 
 	tx, err := db.Begin()
@@ -482,20 +295,17 @@ func deployPublishedProjectRelease(db *sql.DB, wm *world.Manager, reg *registry.
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-		// Trigger the catalog to load this release
+	// Trigger the catalog to load this release
 	if wm != nil {
-		manifest, err := wm.ParseRelease(db, projectID, version)
-		if err != nil {
-			return fmt.Errorf("failed to parse release from db: %w", err)
-		}
-		if err := wm.ApplyReleaseMaps(manifest); err != nil {
+		// Use the already parsed manifest rather than reading from DB again
+		if err := wm.ApplyReleaseMaps(&manifest); err != nil {
 			return fmt.Errorf("failed to load release maps into manager: %w", err)
 		}
 		
 		if reg != nil {
 			reg.LoadFromManifest(manifest.Actors.Creatures, manifest.Items)
 		}
-		if dm != nil && wm != nil {
+		if dm != nil {
 			npcMap := make(map[string]struct{ Name string; Data string })
 			for slug, npc := range wm.NPCRegistry {
 				if len(npc.DialogueTree) > 0 {
@@ -510,40 +320,4 @@ func deployPublishedProjectRelease(db *sql.DB, wm *world.Manager, reg *registry.
 	}
 
 	return nil
-}
-
-func (s *Server) mapDiagnostics(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
-	if id == "" {
-		http.Error(w, "missing id", http.StatusBadRequest)
-		return
-	}
-	
-	var hasMap int
-	var pubVersion int
-	var runtimeVersion int
-	var regionCount int
-	
-	_ = s.DB.QueryRow("SELECT 1, COALESCE(publishedVersion, 0) FROM WorldMap WHERE id = ?", id).Scan(&hasMap, &pubVersion)
-	
-	if hasMap == 1 {
-		_ = s.DB.QueryRow("SELECT version FROM WorldMapVersion WHERE mapId = ? ORDER BY version DESC LIMIT 1", id).Scan(&runtimeVersion)
-		_ = s.DB.QueryRow("SELECT COUNT(1) FROM WorldMapVersionRegion WHERE versionId = ?", fmt.Sprintf("%s_v%d", id, pubVersion)).Scan(&regionCount)
-	}
-
-	active := false
-	if s.World != nil && s.World.RM != nil {
-		if _, err := s.World.RM.LoadManifest(id, pubVersion); err == nil {
-			active = true
-		}
-	}
-
-	writeJSON(w, http.StatusOK, map[string]any{
-		"id": id,
-		"hasMap": hasMap == 1,
-		"publishedVersion": pubVersion,
-		"runtimeVersion": runtimeVersion,
-		"regions": regionCount,
-		"active": active,
-	})
 }

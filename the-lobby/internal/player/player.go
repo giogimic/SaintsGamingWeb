@@ -2,6 +2,7 @@ package player
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -95,11 +96,21 @@ func (m *Manager) SaveHome(accountID, characterID, mapID string, x, y, z float64
 	if m.store == nil || accountID == "" || characterID == "" {
 		return
 	}
+	payload := map[string]any{
+		"characterId": characterID,
+		"userId":      accountID,
+		"mapId":       mapID,
+		"x":           x,
+		"y":           y,
+		"z":           z,
+		"isHome":      true,
+		"timestamp":   time.Now().UnixMilli(),
+	}
+	b, _ := json.Marshal(payload)
 	m.store.DB.Exec(`
-UPDATE GameCharacter 
-SET homeMapId = ?, homeX = ?, homeY = ?, homeZ = ? 
-WHERE id = ? AND userId = ?
-	`, mapID, x, y, z, characterID, accountID)
+INSERT INTO NextjsSyncOutbox (accountId, characterId, payloadJson, status, createdAt)
+VALUES (?, ?, ?, 'PENDING', datetime('now'))
+	`, accountID, characterID, string(b))
 }
 
 func (m *Manager) ZoneSize() int { return m.aoiZoneSize }

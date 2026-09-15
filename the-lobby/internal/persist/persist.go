@@ -3,6 +3,7 @@ package persist
 import (
 	"database/sql"
 	"encoding/json"
+	"time"
 
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/world"
 )
@@ -63,11 +64,20 @@ ON CONFLICT(accountId) DO UPDATE SET mapId=excluded.mapId, x=excluded.x, y=exclu
 	`, accountID, base, x, y, z, credits)
 
 	if characterID != "" {
+		payload := map[string]any{
+			"characterId": characterID,
+			"userId":      accountID,
+			"mapId":       base,
+			"x":           x,
+			"y":           y,
+			"z":           z,
+			"timestamp":   time.Now().UnixMilli(),
+		}
+		b, _ := json.Marshal(payload)
 		_, _ = s.DB.Exec(`
-UPDATE GameCharacter 
-SET lastMapId = ?, lastX = ?, lastY = ?, lastZ = ? 
-WHERE id = ? AND userId = ?
-		`, base, x, y, z, characterID, accountID)
+INSERT INTO NextjsSyncOutbox (accountId, characterId, payloadJson, status, createdAt)
+VALUES (?, ?, ?, 'PENDING', datetime('now'))
+		`, accountID, characterID, string(b))
 	}
 }
 

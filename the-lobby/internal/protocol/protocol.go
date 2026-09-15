@@ -128,7 +128,6 @@ type JoinMapRequest struct {
 	CharacterID    string   `json:"characterId"`
 	MapID          string   `json:"mapId"`
 	Lobby          bool     `json:"lobby"`
-	ForceDemo      bool     `json:"forceDemo"`
 	IsPrivate      bool     `json:"isPrivate"`
 	PIE            bool     `json:"pie"`
 	X              *float64 `json:"x"`

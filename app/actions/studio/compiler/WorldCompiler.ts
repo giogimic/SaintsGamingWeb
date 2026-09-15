@@ -15,7 +15,7 @@ import { validateRelease } from './ReleaseValidator';
  * 2. Immutable: Generates a monolithic JSON payload that is self-contained.
  * 3. Transitive: Packages exactly the required dependencies, no more, no less.
  */
-export async function compileWorldRelease(projectId: string): Promise<{ manifest: ReleaseManifest, releaseInfo: { releaseId: string, version: string } }> {
+export async function compileWorldRelease(projectId: string, title?: string, description?: string): Promise<{ manifest: ReleaseManifest, releaseInfo: { releaseId: string, version: string } }> {
   const project = await prisma.worldProject.findUnique({
     where: { id: projectId },
   });
@@ -220,6 +220,8 @@ export async function compileWorldRelease(projectId: string): Promise<{ manifest
       data: {
         projectId,
         version: nextVersionStr,
+        title: title || `Release ${nextVersionStr}`,
+        description: description || '',
         manifestData: JSON.stringify(ctx.manifest),
         publishedBy: 'System', // Could read from auth context
       }

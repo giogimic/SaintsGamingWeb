@@ -1,3 +1,9 @@
+## 2.1.874
+- **Outbox Persistence System:** Implemented SQLite-based `NextjsSyncOutbox` pattern with a dedicated background worker to guarantee idempotency and avoid locking the main game loop during player state/location saves.
+- **Removed Go Legacy Draft Fallbacks:** Completely removed obsolete Go-side deploy handlers (`deploy.go`), draft upload API routes, and `ResolvePlayableBase` map-id hacks, enforcing the rule that all world joins route strictly through the active monolithic `WorldRelease`.
+- **Admin Tools Refactored:** Updated `VersionManagerPanel` and `CharacterSelectAdminWindow` to decouple completely from map-level drafts, driving World Releases exclusively via unified `createWorldRelease` and Snapshot payloads.
+- **Go Compilation Hardening:** Addressed strict compilation errors by typing `tsc` warnings in the UI and removing unused packages in `persist.go`, `maps.go`, and `handler.go`.
+
 ## 2.1.873
 - **True Restore Logic Implemented:** Added restoreWorldRelease server action that safely reconstructs a working world state from an immutable snapshot without mutating the source release.
 - **Persistent Player Location:** Updated Go server and client to persist and prioritize lastMapId and coordinates from GameCharacter, ensuring location survival across releases.

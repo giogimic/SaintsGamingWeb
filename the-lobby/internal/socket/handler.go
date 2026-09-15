@@ -310,9 +310,9 @@ func isSamePolicy(instanceID, baseMapID, accountID string, isPrivate, pie bool) 
 
 func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protocol.JoinMapRequest) {
 	sid := string(client.Id())
-	base := world.ResolvePlayableBase(req.MapID, req.Lobby, req.ForceDemo)
+	base := world.ToBaseMapID(req.MapID)
 	
-	log.Printf("[WorldJoinDebug] account=%s requestedMapId=%s resolvedBaseMapId=%s lobby=%v forceDemo=%v", accountID, req.MapID, base, req.Lobby, req.ForceDemo)
+	log.Printf("[WorldJoinDebug] account=%s requestedMapId=%s resolvedBaseMapId=%s lobby=%v", accountID, req.MapID, base, req.Lobby)
 	
 	isRecovery := false
 	if _, err := h.eng.World().GetDef(base); err != nil {
