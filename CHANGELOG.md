@@ -1,3 +1,8 @@
+## 2.1.879
+- **Backend API Cleanup:** Renamed the legacy map publishing route from `api/maps/[slug]/publish` to `api/world/publish` and refactored it to use the new monolithic `WorldRelease` payload based on `projectId` instead of map slugs.
+- **Realm Settings Clean:** Completely removed the legacy `spawnMapId` from `RealmSettingsConfig`, `REALM_SETTING_KEYS`, the `StudioSettingsPanel`, and the `lobbyJoin.ts` coalescing functions. The game engine now strictly relies on the active `WorldRelease` for spawn resolution.
+- **Next.js Route Fixes:** Verified types and cleaned up cached Next.js `route.ts` artifacts.
+
 ## 2.1.878
 - **Studio Panel Registration:** Updated `PanelId` and `StudioDockId` typings in `editor-store.ts` and `studioModes.ts` to properly register the new `worldManager`, `mapEditor`, and `spawnEditor` panels.
 - **Voxel Browser Fix:** Removed undefined `spawnMapId` fallback check in `VoxelMapBrowserView.tsx` batch operations.

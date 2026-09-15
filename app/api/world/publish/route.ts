@@ -10,13 +10,10 @@ import { createWorldRelease } from "@/app/actions/studio/world-release";
 export const dynamic = 'force-dynamic';
 
 /**
- * POST /api/maps/[slug]/publish
+ * POST /api/world/publish
  * Promotes the current saved editor draft of the ENTIRE Working World to an immutable published release version.
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
-) {
+export async function POST(request: NextRequest) {
   try {
     const authCheck = await verifyStudioPermission(request, STUDIO_CONTENT_WRITE_LEVEL);
     if ("errorResponse" in authCheck) {
@@ -24,16 +21,10 @@ export async function POST(
     }
     const user = authCheck.user;
 
-    const { slug } = await params;
     const body = await request.json().catch(() => ({}));
     const description = typeof body.description === 'string' ? body.description.trim() : 'Published release';
+    const projectId = typeof body.projectId === 'string' ? body.projectId.trim() : 'saints';
 
-    const worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
-    if (!worldMap) {
-      return NextResponse.json({ error: `Map not found: ${slug}` }, { status: 404 });
-    }
-
-    const projectId = worldMap.projectId || "saints";
     const project = await prisma.worldProject.findUnique({ where: { slug: projectId }, include: { maps: true } });
     
     if (!project) {

@@ -3,7 +3,6 @@
  */
 
 import { isPublicChannelInstanceId, toBaseMapId } from "../net/mapIds";
-import { DEFAULT_SPAWN_MAP_ID } from "./realmSettings";
 
 export type JoinContract = {
   mapId: string;
@@ -15,7 +14,7 @@ export type JoinContract = {
 
 /** Stable key for the seat contract (not spawn coords). */
 export function buildJoinKey(contract: JoinContract): string {
-  const base = toBaseMapId(contract.mapId || DEFAULT_SPAWN_MAP_ID);
+  const base = toBaseMapId(contract.mapId || 'STARTING_MEADOW');
   return [
     base,
     contract.lobby ? "lobby" : "studio",

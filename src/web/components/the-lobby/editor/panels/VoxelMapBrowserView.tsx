@@ -19,7 +19,7 @@ import { useSession } from 'next-auth/react';
 import { canWriteStudioContent } from '@/shared/game/studioPermissions';
 import { useDebounce } from '@/web/hooks/useDebounce';
 import { useMapIndex, useRealmSettings } from '@/web/hooks/studio-data';
-import { DEFAULT_SPAWN_MAP_ID } from '@/shared/game/realmSettings';
+
 import {
   generateVoxelWorldDoc,
   type VoxelTerrainProfile,

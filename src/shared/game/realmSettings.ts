@@ -17,8 +17,6 @@ export const DEFAULT_CAPTURE_AMMO_NAME = 'Film';
 export const DEFAULT_REALM_NAME = 'The Lobby';
 export const DEFAULT_REALM_DESCRIPTION = 'The Lobby ~ Socialize, Battle, Capture, Explore! ~ Coming Soon ~';
 export const DEFAULT_REALM_MOTD = 'Welcome to Saints MMO — where spirit captures and heroic battles unfold!';
-export const DEFAULT_SPAWN_MAP_ID = '';
-
 export interface RealmSettingsConfig {
   playerClassName: string;
   playerClassNamePlural: string;
@@ -30,7 +28,6 @@ export interface RealmSettingsConfig {
   realmName: string;
   realmDescription: string;
   motd: string;
-  spawnMapId: string;
   allowGuestAccess?: boolean;
   // 2.5D & 3D Global Visuals
   enable3DLighting?: boolean;
@@ -94,7 +91,6 @@ export const DEFAULT_REALM_SETTINGS: RealmSettingsConfig = {
   realmName: DEFAULT_REALM_NAME,
   realmDescription: DEFAULT_REALM_DESCRIPTION,
   motd: DEFAULT_REALM_MOTD,
-  spawnMapId: DEFAULT_SPAWN_MAP_ID,
   allowGuestAccess: true,
   // 2.5D & 3D Global Defaults
   enable3DLighting: true,
@@ -157,7 +153,6 @@ export const REALM_SETTING_KEYS = {
   CAPTURE_TOOL_NAME: 'CAPTURE_TOOL_NAME',
   CAPTURE_AMMO_NAME: 'CAPTURE_AMMO_NAME',
   REALM_MOTD: 'REALM_MOTD',
-  SPAWN_MAP_ID: 'SPAWN_MAP_ID',
   ALLOW_GUEST_ACCESS: 'ALLOW_GUEST_ACCESS',
   ENABLE_3D_LIGHTING: 'ENABLE_3D_LIGHTING',
   ENABLE_SHADOWS: 'ENABLE_SHADOWS',

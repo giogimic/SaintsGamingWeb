@@ -1343,30 +1343,6 @@ export function StudioSettingsPanel() {
                 />
               </div>
 
-              {/* Spawn / Lobby Map Selector */}
-              <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30">
-                <div className="flex items-center gap-2 text-emerald-300 font-bold mb-1">
-                  <Globe2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Spawn Hub Map</span>
-                </div>
-                <p className="text-[10px] text-muted-foreground leading-relaxed mb-2">
-                  The map where new players spawn and where players return as a fallback. This map cannot be deleted while it is the active spawn hub.
-                </p>
-                <select
-                  value={settings.spawnMapId || 'STARTING_MEADOW'}
-                  onChange={(e) => setSettings({ ...settings, spawnMapId: e.target.value })}
-                  className="w-full bg-[#060e1c] border border-emerald-500/30 focus:border-emerald-400 rounded-lg p-2 text-foreground text-xs outline-none cursor-pointer"
-                >
-                  {(availableMaps || []).map((m: MapIndexEntry) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name || m.id} ({m.id})
-                    </option>
-                  ))}
-                </select>
-                <div className="mt-1.5 text-[9px] text-muted-foreground">
-                  Current spawn hub: <span className="text-emerald-300 font-bold">{settings.spawnMapId || 'STARTING_MEADOW'}</span>
-                </div>
-              </div>
 
               <div className="flex items-center justify-between p-3 rounded-xl bg-black/40 border border-border/20">
                 <div>
