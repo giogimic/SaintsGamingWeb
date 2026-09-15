@@ -16,32 +16,38 @@ async function main() {
   try {
     if (wipeSocial) {
       console.log('[*] Wiping Feed/Forum/News (Social) Data...');
-      // Social Feed
+      
+      // 1. Deepest Dependencies (Moderation, Media, Interactions)
+      await prisma.report.deleteMany({});
+      await prisma.image.deleteMany({});
+      
+      // 2. Forum (Child -> Parent)
+      await prisma.pollVote.deleteMany({});
+      await prisma.pollOption.deleteMany({});
+      await prisma.poll.deleteMany({});
+      await prisma.replyLike.deleteMany({});
+      await prisma.reaction.deleteMany({});
+      await prisma.reply.deleteMany({});
+      await prisma.threadSubscription.deleteMany({});
+      await prisma.threadHashtag.deleteMany({});
+      await prisma.thread.deleteMany({});
+
+      // 3. Social (Child -> Parent)
+      await prisma.socialWatchHistory.deleteMany({});
       await prisma.socialReaction.deleteMany({});
       await prisma.socialPostHashtag.deleteMany({});
       await prisma.socialPost.deleteMany({});
       await prisma.socialHashtag.deleteMany({});
       await prisma.socialBookmark.deleteMany({});
-      await prisma.socialWatchHistory.deleteMany({});
       await prisma.socialBookmarkFolder.deleteMany({});
       await prisma.socialMutedKeyword.deleteMany({});
       await prisma.socialTip.deleteMany({});
       await prisma.socialSubscription.deleteMany({});
       await prisma.socialUserPreference.deleteMany({});
 
-      // Forum
-      await prisma.replyLike.deleteMany({});
-      await prisma.reaction.deleteMany({});
-      await prisma.pollVote.deleteMany({});
-      await prisma.pollOption.deleteMany({});
-      await prisma.poll.deleteMany({});
-      await prisma.reply.deleteMany({});
-      await prisma.threadSubscription.deleteMany({});
-      await prisma.threadHashtag.deleteMany({});
-      await prisma.thread.deleteMany({});
-      // Note: we usually keep Categories and Subcategories, as they are config, not user data!
-
-      // News
+      // 4. News (Child -> Parent)
+      await prisma.promoLink.deleteMany({});
+      await prisma.mediaAsset.deleteMany({});
       await prisma.newsHashtag.deleteMany({});
       await prisma.newsArticle.deleteMany({});
       
@@ -54,12 +60,13 @@ async function main() {
         await wipeNonBundledRealmContent(prisma);
         console.log('[+] Game Data wiped successfully. Studio Setup will run on next boot.');
       } catch (err) {
-        console.error('Failed to wipe game data:', err);
+        console.log('[!] Failed to wipe game data:', err);
         throw err;
       }
     }
   } catch (error) {
-    console.error('[!] Error wiping data:', error);
+    console.log('[!] Error wiping data (FULL TRACE):');
+    console.log(error);
     process.exit(1);
   } finally {
     await prisma.$disconnect();
