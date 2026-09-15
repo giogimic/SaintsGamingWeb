@@ -74,6 +74,8 @@ show_help() {
 # --- Parse Arguments ---
 UPDATE_MODE=""
 NON_INTERACTIVE=0
+WIPE_GAME_DATA_CLI=0
+WIPE_SOCIAL_DATA_CLI=0
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -107,6 +109,14 @@ while [ $# -gt 0 ]; do
             ;;
         --auto|--smart)
             UPDATE_MODE="auto"
+            shift
+            ;;
+        --wipe-game)
+            WIPE_GAME_DATA_CLI=1
+            shift
+            ;;
+        --wipe-social)
+            WIPE_SOCIAL_DATA_CLI=1
             shift
             ;;
         -y|--yes|--non-interactive)
@@ -214,17 +224,22 @@ fi
 echo -e "${PURPLE}[⚡] Active Update Profile: ${BOLD}${UPDATE_MODE^^}${NC}\n"
 
 # --- Optional Data Wiping ---
-WIPE_GAME_DATA=0
-WIPE_SOCIAL_DATA=0
+WIPE_GAME_DATA=$WIPE_GAME_DATA_CLI
+WIPE_SOCIAL_DATA=$WIPE_SOCIAL_DATA_CLI
 SEED_STARTER_DATA=0
 
 if [ "$UPDATE_MODE" != "restart" ] && [ "$NON_INTERACTIVE" -eq 0 ]; then
     echo -e "${BOLD}Optional Data Wipes:${NC}"
     
-    read -p "Wipe Game/MMO Data? (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        WIPE_GAME_DATA=1
+    if [ "$WIPE_GAME_DATA" -eq 0 ]; then
+        read -p "Wipe Game/MMO Data? (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            WIPE_GAME_DATA=1
+        fi
+    fi
+    
+    if [ "$WIPE_GAME_DATA" -eq 1 ]; then
         read -p "Run starter content seed to restore logic tiles and setup defaults? (y/N): " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -232,10 +247,12 @@ if [ "$UPDATE_MODE" != "restart" ] && [ "$NON_INTERACTIVE" -eq 0 ]; then
         fi
     fi
     
-    read -p "Wipe Social Data (Feed/Forum/News)? (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        WIPE_SOCIAL_DATA=1
+    if [ "$WIPE_SOCIAL_DATA" -eq 0 ]; then
+        read -p "Wipe Social Data (Feed/Forum/News)? (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            WIPE_SOCIAL_DATA=1
+        fi
     fi
     echo ""
 fi
@@ -597,7 +614,28 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
     
     if [ -n "$WIPE_ARGS" ]; then
         echo -e "${CYAN}[*] Executing requested data wipes inside container...${NC}"
-        docker exec saints-gaming-web npx tsx scripts/wipe-data.ts $WIPE_ARGS 2>/dev/null || true
+        if ! docker exec saints-gaming-web npx tsx scripts/wipe-data.ts $WIPE_ARGS; then
+            echo -e "${RED}[!] Data wipe failed! Aborting update.${NC}"
+            exit 1
+        fi
+        
+        if [ "$WIPE_GAME_DATA" -eq 1 ]; then
+            echo -e "${CYAN}[*] Wiping Go MMO SQLite database...${NC}"
+            
+            # Stop any running Go containers to safely delete the file
+            if docker ps -a --format '{{.Names}}' | grep -q '^saints-lobby$'; then
+                docker stop saints-lobby 2>/dev/null || true
+                docker rm -f saints-lobby 2>/dev/null || true
+                docker volume rm saints_lobby_data 2>/dev/null || true
+            fi
+            if docker ps -a --format '{{.Names}}' | grep -q '^saints-gaming-mmo-go$'; then
+                docker stop saints-gaming-mmo-go 2>/dev/null || true
+                rm -f ./data/dev.db 2>/dev/null || true
+            fi
+            
+            echo -e "${GREEN}[✓] Go SQLite wiped safely.${NC}\n"
+        fi
+        
         echo -e "${GREEN}[✓] Data wipes completed.${NC}\n"
     fi
 

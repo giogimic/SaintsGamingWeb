@@ -22,7 +22,15 @@
 - Prevented a false [SpiritGate] ghost fallback on JOIN_REJECT.
 - Added smart update.sh detection for Go SQLite schema changes.
 
-## [2.1.867] - 2026-09-13
+## [2.1.875] - 2026-09-15
+### Fixed
+- Fixed update deployment script bypassing wipe flags in non-interactive mode.
+- Fixed Next.js wipe script ignoring missing Release/Outbox tables and swallowing errors.
+- Implemented safe Go SQLite persistence reset during explicit --wipe-game calls.
+- Fixed Go MMO test suite (persist/quest) compilation and migration tests.
+- Fixed Go MMO Voxel world traversability check allowing collisions inside full cube shapes.
+
+2.1.867] - 2026-09-13
 
 ### Fixed
 - Fixed map deployment contract between Next.js and Go MMO.

@@ -52,10 +52,11 @@ async function main() {
       console.log('[*] Wiping Game Data...');
       try {
         await wipeNonBundledRealmContent(prisma);
+        console.log('[+] Game Data wiped successfully. Studio Setup will run on next boot.');
       } catch (err) {
         console.error('Failed to wipe game data:', err);
+        throw err;
       }
-      console.log('[+] Game Data wiped successfully. Studio Setup will run on next boot.');
     }
   } catch (error) {
     console.error('[!] Error wiping data:', error);

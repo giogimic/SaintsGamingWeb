@@ -62,22 +62,19 @@ func TestMigration(t *testing.T) {
 		t.Fatalf("migration failed: %v", err)
 	}
 
-	// 3. Verify V2 constraints (v.data exists)
-	var data sql.NullString
-	if err := db.QueryRow(`SELECT data FROM WorldMapVersion WHERE id = 'ver1'`).Scan(&data); err != nil {
-		t.Errorf("failed to select data from WorldMapVersion: %v", err)
+	// 3. Verify legacy tables were dropped
+	var tableName string
+	err = db.QueryRow(`SELECT name FROM sqlite_master WHERE type='table' AND name='WorldMapVersion'`).Scan(&tableName)
+	if err != sql.ErrNoRows {
+		t.Errorf("expected WorldMapVersion to be dropped, but got error/name: %v, %v", err, tableName)
 	}
 
-	// 4. Verify V3 constraints (r.versionId exists, migrated correctly)
-	var versionId string
-	if err := db.QueryRow(`SELECT versionId FROM WorldMapVersionRegion WHERE id = 'reg1'`).Scan(&versionId); err != nil {
-		t.Errorf("failed to select versionId from migrated region: %v", err)
-	}
-	if versionId != "ver1" {
-		t.Errorf("expected versionId 'ver1', got '%s'", versionId)
+	err = db.QueryRow(`SELECT name FROM sqlite_master WHERE type='table' AND name='WorldMapVersionRegion'`).Scan(&tableName)
+	if err != sql.ErrNoRows {
+		t.Errorf("expected WorldMapVersionRegion to be dropped, but got error/name: %v, %v", err, tableName)
 	}
 
-	// 5. Test idempotency
+	// 4. Test idempotency
 	if err := migrate(db); err != nil {
 		t.Fatalf("second migration run failed: %v", err)
 	}

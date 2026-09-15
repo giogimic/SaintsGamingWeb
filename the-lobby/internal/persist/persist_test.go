@@ -42,13 +42,13 @@ func TestPersistInventoryAndQuestRoundTrip(t *testing.T) {
 	q.Advance("acc1", "gather_scrap", 1)
 
 	q2 := quest.NewManager(sqlDB)
-	list := q2.List("acc1")
-	if len(list) != 1 || list[0].Objective["gather_scrap"] != 1 {
-		t.Fatalf("%+v", list)
+	p := q2.Accept("acc1", "saints_trail_intro") // Accept loads progress
+	if p == nil || p.Objective["gather_scrap"] != 1 {
+		t.Fatalf("%+v", p)
 	}
 
 	store := &persist.Store{DB: sqlDB}
-	store.SavePlayer("acc1", "DEMO_SANDBOX_ch2", 9, 4, 150)
+	store.SavePlayer("acc1", "char_id1", "DEMO_SANDBOX_ch2", 9, 4, 0, 150)
 	hot := store.LoadPlayer("acc1")
 	if !hot.OK || hot.X != 9 || hot.Y != 4 || hot.MapID != "DEMO_SANDBOX" {
 		t.Fatalf("%+v", hot)

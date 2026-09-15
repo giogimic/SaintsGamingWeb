@@ -640,19 +640,26 @@ func (w *VoxelWorld) IsTraversableAt(wx, wy, wz int) bool {
 	groundWord := w.getVoxelLocked(wx, wy-1, wz)
 
 	bodyPhys := VoxelPhysics(bodyWord)
-	bodyShape := VoxelShape(bodyWord)
 
-	// Check if body is solid. If it has a walkable surface > -1, it's a traversable elevation.
-	def := ShapeRegistry[bodyShape]
-	isTraversableElevation := def.GetSurfaceHeight != nil && def.GetSurfaceHeight(VoxelOrientation(bodyWord), 0.5, 0.5) > -1.0
-
-	// If body intersects solid obstacle or hazard and is not a walkable slope/stair
-	if (bodyPhys == PhysicsSolidObstacle || bodyPhys == PhysicsHazard) && !isTraversableElevation {
+	// If body intersects solid obstacle or hazard, it's blocked.
+	// PhysicsWalkableSlope is allowed to intersect the player body.
+	if bodyPhys == PhysicsSolidObstacle || bodyPhys == PhysicsHazard {
 		return false
 	}
 
-	// Check ground support (must have solid ground or active traversable elevation)
+	groundPhys := VoxelPhysics(groundWord)
+	groundShape := VoxelShape(groundWord)
+	
+	def := ShapeRegistry[groundShape]
+	isTraversableElevation := def.GetSurfaceHeight != nil && def.GetSurfaceHeight(VoxelOrientation(groundWord), 0.5, 0.5) > -1.0
+
+	// Check ground support (must have solid ground or active traversable elevation below)
 	if (groundWord == 0 || IsVoxelAir(groundWord)) && !isTraversableElevation {
+		return false
+	}
+	
+	// A non-solid ground block that isn't a traversable elevation (like air) also doesn't support the player.
+	if groundPhys != PhysicsSolidObstacle && groundPhys != PhysicsWalkableSlope && !isTraversableElevation {
 		return false
 	}
 

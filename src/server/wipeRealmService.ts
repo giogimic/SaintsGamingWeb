@@ -27,30 +27,36 @@ export async function wipeNonBundledRealmContent(prisma: any): Promise<WipeRealm
     return { count: 0 };
   });
   if (prisma.gameMap?.deleteMany) {
-    await prisma.gameMap.deleteMany({}).catch(() => {});
+    await prisma.gameMap.deleteMany({});
   }
   if (prisma.worldAtlas?.deleteMany) {
-    await prisma.worldAtlas.deleteMany({}).catch(() => {});
+    await prisma.worldAtlas.deleteMany({});
   }
 
   // 2. Wipe map versions and sync entries
-  await prisma.worldMapVersion.deleteMany({}).catch(() => {});
-  await prisma.mapSyncEntry.deleteMany({}).catch(() => {});
-  if (prisma.worldPublishSnapshot?.deleteMany) await prisma.worldPublishSnapshot.deleteMany({}).catch(() => {});
-  if (prisma.mapChunk?.deleteMany) await prisma.mapChunk.deleteMany({}).catch(() => {});
-  if (prisma.saintsMap?.deleteMany) await prisma.saintsMap.deleteMany({}).catch(() => {});
+  await prisma.worldMapVersion.deleteMany({});
+  await prisma.mapSyncEntry.deleteMany({});
+  
+  // Wipe compiled releases and persistence outbox
+  if (prisma.worldReleaseManifest?.deleteMany) await prisma.worldReleaseManifest.deleteMany({});
+  if (prisma.worldRelease?.deleteMany) await prisma.worldRelease.deleteMany({});
+  if (prisma.nextjsSyncOutbox?.deleteMany) await prisma.nextjsSyncOutbox.deleteMany({});
+  
+  if (prisma.worldPublishSnapshot?.deleteMany) await prisma.worldPublishSnapshot.deleteMany({});
+  if (prisma.mapChunk?.deleteMany) await prisma.mapChunk.deleteMany({});
+  if (prisma.saintsMap?.deleteMany) await prisma.saintsMap.deleteMany({});
 
   // 3. Wipe custom map prefabs and quests
-  await prisma.mapPrefab.deleteMany({}).catch(() => {});
-  await prisma.gameQuest.deleteMany({}).catch(() => {});
+  await prisma.mapPrefab.deleteMany({});
+  await prisma.gameQuest.deleteMany({});
 
   // 4. Wipe player gameplay state and characters tied to previous maps
   // Must delete dependent records BEFORE deleting the parent GameCharacter to satisfy foreign key constraints
-  await prisma.playerCreature.deleteMany({}).catch(() => {});
-  await prisma.playerInventoryItem.deleteMany({}).catch(() => {});
-  await prisma.playerSkill.deleteMany({}).catch(() => {});
-  await prisma.playerQuestState.deleteMany({}).catch(() => {});
-  await prisma.gtcListing.deleteMany({}).catch(() => {});
+  await prisma.playerCreature.deleteMany({});
+  await prisma.playerInventoryItem.deleteMany({});
+  await prisma.playerSkill.deleteMany({});
+  await prisma.playerQuestState.deleteMany({});
+  await prisma.gtcListing.deleteMany({});
 
   const deletedCharacters = await prisma.gameCharacter.deleteMany({}).catch((e: any) => {
     console.error('[WipeRealmService] Failed to wipe characters:', e?.message);
@@ -58,20 +64,20 @@ export async function wipeNonBundledRealmContent(prisma: any): Promise<WipeRealm
   });
 
   // 4.5 Wipe all authored RPG Definitions (Classes, Abilities, Items, etc)
-  await prisma.starterHero.deleteMany({}).catch(() => {});
-  await prisma.characterClass.deleteMany({}).catch(() => {});
-  await prisma.abilityDictionary.deleteMany({}).catch(() => {});
-  await prisma.creatureDef.deleteMany({}).catch(() => {});
-  await prisma.itemTemplate.deleteMany({}).catch(() => {});
-  await prisma.mountTemplate.deleteMany({}).catch(() => {});
-  await prisma.dungeonTemplate.deleteMany({}).catch(() => {});
-  await prisma.shopTemplate.deleteMany({}).catch(() => {});
-  await prisma.professionTemplate.deleteMany({}).catch(() => {});
-  await prisma.craftingRecipe.deleteMany({}).catch(() => {});
-  await prisma.worldEventTemplate.deleteMany({}).catch(() => {});
-  await prisma.questTemplate.deleteMany({}).catch(() => {});
-  await prisma.creatureElement.deleteMany({}).catch(() => {});
-  await prisma.elementEffectiveness.deleteMany({}).catch(() => {});
+  await prisma.starterHero.deleteMany({});
+  await prisma.characterClass.deleteMany({});
+  await prisma.abilityDictionary.deleteMany({});
+  await prisma.creatureDef.deleteMany({});
+  await prisma.itemTemplate.deleteMany({});
+  await prisma.mountTemplate.deleteMany({});
+  await prisma.dungeonTemplate.deleteMany({});
+  await prisma.shopTemplate.deleteMany({});
+  await prisma.professionTemplate.deleteMany({});
+  await prisma.craftingRecipe.deleteMany({});
+  await prisma.worldEventTemplate.deleteMany({});
+  await prisma.questTemplate.deleteMany({});
+  await prisma.creatureElement.deleteMany({});
+  await prisma.elementEffectiveness.deleteMany({});
 
   // 5. Wipe non-bundled game assets (preserving any asset tagged 'bundled')
   await prisma.gameAsset.deleteMany({
@@ -80,7 +86,7 @@ export async function wipeNonBundledRealmContent(prisma: any): Promise<WipeRealm
         tags: { contains: 'bundled' },
       },
     },
-  }).catch(() => {});
+  });
 
   // 6. Reset setup settings to fresh install state
   const setupKeysToReset = [
@@ -105,7 +111,7 @@ export async function wipeNonBundledRealmContent(prisma: any): Promise<WipeRealm
     where: {
       key: { in: setupKeysToReset },
     },
-  }).catch(() => {});
+  });
 
   // 7. (Removed) We no longer re-seed DEMO_SANDBOX
   // await ensureStudioMapFoundation();
