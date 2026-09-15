@@ -19,7 +19,7 @@ export class VoxelStorageService {
       select: { 
         id: true, 
         name: true, 
-        gameId: true,
+        projectId: true,
         version: true 
       }
     });
@@ -46,7 +46,7 @@ export class VoxelStorageService {
   static async getVoxelDocFromArtifacts(mapId: string, checksums: string[]): Promise<VoxelWorldDocV3 | null> {
     const map = await prisma.worldMap.findUnique({
       where: { id: mapId },
-      select: { id: true, name: true, gameId: true }
+      select: { id: true, name: true, projectId: true }
     });
     if (!map) return null;
 
@@ -106,7 +106,7 @@ export class VoxelStorageService {
       formatVersion: 3,
       id: map.id,
       name: map.name,
-      gameId: map.gameId || 'saints',
+      projectId: map.projectId || 'saints',
       version: 1,
       blockSizePx: 64,
       dimensions: { widthChunks: 2, depthChunks: 2, heightChunks: 1 },

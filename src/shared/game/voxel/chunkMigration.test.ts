@@ -27,7 +27,7 @@ describe('32³ Isotropic Chunk Migration & Voxel-To-Grid Projection', () => {
       formatVersion: 3,
       id: 'test_legacy',
       name: 'Legacy Map',
-      gameId: 'saints',
+      projectId: 'saints',
       version: 1,
       blockSizePx: 64,
       dimensions: {

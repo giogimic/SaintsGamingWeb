@@ -18,7 +18,7 @@ export interface VoxelWorldDocV3 {
   formatVersion: 3;
   id: string;
   name: string;
-  gameId: string;
+  projectId: string;
   version: number;
   blockSizePx: number; // 6..1024, default 64
   dimensions: {
@@ -421,7 +421,7 @@ export class VoxelWorld {
       formatVersion: 3,
       id: this.id,
       name: this.name,
-      gameId: 'saints',
+      projectId: 'saints',
       version: 1,
       blockSizePx: this.blockSizePx,
       dimensions: {

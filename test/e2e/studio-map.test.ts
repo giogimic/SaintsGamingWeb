@@ -28,7 +28,7 @@ describe('Studio Map Editor E2E', () => {
       where: { id: mapId },
       create: {
         id: mapId,
-        gameId: 'saints',
+        projectId: 'saints',
         name: 'Smoke Studio Map',
         gridData: JSON.stringify([[1,1],[1,1]]),
         gatesData: '{}',
@@ -100,7 +100,7 @@ describe('Studio Map Editor E2E', () => {
       where: { id: testMapId },
       create: {
         id: testMapId,
-        gameId: "saints",
+        projectId: "saints",
         name: "E2E Voxel Test Map",
         gridData: JSON.stringify(grid),
         gatesData: "{}",

@@ -43,7 +43,7 @@ export async function cloneSaintsTrailToProfile(
     where: { id: mapId },
     create: {
       id: mapId,
-      gameId: targetSlug,
+      projectId: targetSlug,
       name: `${opts.name || targetSlug} Starting Zone`,
       gridData: JSON.stringify(grid),
       gatesData: JSON.stringify({ spawnPoint: { x: 12, y: 12 }, gates: [] }),
@@ -51,7 +51,7 @@ export async function cloneSaintsTrailToProfile(
       version: 1,
     },
     update: {
-      gameId: targetSlug,
+      projectId: targetSlug,
       name: `${opts.name || targetSlug} Starting Zone`,
     },
   });

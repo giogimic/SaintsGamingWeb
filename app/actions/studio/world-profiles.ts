@@ -156,7 +156,7 @@ export async function createBlankWorldProfile(opts: {
       where: { id: mapId },
       create: {
         id: mapId,
-        gameId: slug,
+        projectId: slug,
         name: `${opts.name || slug} Start`,
         gridData: JSON.stringify(grid),
         encountersData: "[]",
@@ -165,7 +165,7 @@ export async function createBlankWorldProfile(opts: {
         freeformLayersData: "[]",
       },
       update: {
-        gameId: slug,
+        projectId: slug,
         name: `${opts.name || slug} Start`,
       },
     });

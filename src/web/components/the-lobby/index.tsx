@@ -283,10 +283,15 @@ export default function TheLobby({
     if (res.success && res.data) {
       const parsedState = JSON.parse(res.data.stateData);
 
-      const savedMap = String(parsedState.currentMapId || parsedState.mapId || '')
+      // Prefer DB columns for persistent location, fallback to JSON state
+      const savedMap = res.data.lastMapId || String(parsedState.currentMapId || parsedState.mapId || '')
         .replace(/_ch\d+$/, '');
       let validMapId = savedMap;
+      
       let validPosition = parsedState.position || { ...DEFAULT_SPAWN };
+      if (typeof res.data.lastX === 'number' && typeof res.data.lastY === 'number') {
+        validPosition = { x: res.data.lastX, y: res.data.lastY, z: res.data.lastZ ?? 14 };
+      }
 
       // Query available world maps to verify map existence
       let availableMapIds: string[] = [];

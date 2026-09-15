@@ -64,7 +64,7 @@ export async function POST(req: Request) {
             create: {
               id: mapId,
               name: mapName,
-              gameId: 'saints',
+              projectId: 'saints',
               gridData: JSON.stringify([]),
               gatesData: JSON.stringify(gatesPayload),
               encountersData: JSON.stringify([]),
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
             },
             update: {
               name: mapName,
-              gameId: 'saints',
+              projectId: 'saints',
               gatesData: JSON.stringify(gatesPayload),
               version: { increment: 1 },
             },

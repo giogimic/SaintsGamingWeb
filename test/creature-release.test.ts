@@ -47,7 +47,7 @@ async function runTests() {
     data: {
       id: mapId,
       name: 'Test Map Agnite',
-      gameId: 'saints',
+      projectId: 'saints',
       version: 1,
       entitiesData: '[]',
       gatesData: '[]',

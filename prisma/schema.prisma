@@ -795,6 +795,9 @@ model WorldProject {
   // The version of the current "Working World"
   activeVersion Int @default(1)
 
+  gameId      String?
+  game        GameConfig? @relation(fields: [gameId], references: [id])
+
   releases WorldRelease[]
   maps     WorldMap[]
 
@@ -827,8 +830,8 @@ model WorldRelease {
 
 model WorldMap {
   id                 String        @id // e.g. "SAINTS_VILLAGE"
-  gameId             String?       @default("saints")
-  project            WorldProject? @relation(fields: [gameId], references: [slug])
+  projectId          String?
+  project            WorldProject? @relation(fields: [projectId], references: [id])
   name               String
   gridData           String? // JSON 2D Array (legacy fallback)
   gatesData          String // JSON
@@ -855,7 +858,7 @@ model WorldMap {
 
   regions WorldRegion[]
 
-  @@index([gameId])
+  @@index([projectId])
 }
 
 model WorldRegionArtifact {
@@ -994,7 +997,7 @@ model GameConfig {
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
   classes   CharacterClass[]
-
+  worldProjects WorldProject[]
   @@index([isActive])
 }
 

@@ -111,12 +111,14 @@ export async function createPublishSnapshot(input: {
     const validation = await validateWorldForPublish(gameId, profileId);
 
     // 2. Fetch all templates
-    const [dungeons, shops, mounts, events, simulations] = await Promise.all([
+    const [dungeons, shops, mounts, events, simulations, gameConfig, characterClasses] = await Promise.all([
       prisma.dungeonTemplate.findMany({ where: { gameId, profileId } }),
       prisma.shopTemplate.findMany({ where: { gameId, profileId } }),
       prisma.mountTemplate.findMany({ where: { gameId, profileId } }),
       prisma.worldEventTemplate.findMany({ where: { gameId, profileId } }),
       prisma.simulationPreset.findMany({ where: { gameId, profileId } }),
+      prisma.gameConfig.findUnique({ where: { slug: gameId } }),
+      prisma.characterClass.findMany({ where: { gameId } }),
     ]);
 
     const contentSummary: ContentSummary = {
@@ -133,13 +135,20 @@ export async function createPublishSnapshot(input: {
       projectId: gameId,
       profileId,
       timestamp: new Date().toISOString(),
-      startingMapId: input.startingMapId,
-      defaultMapId: input.defaultMapId,
+      world: {
+        name: gameConfig?.name || input.title || gameId,
+        spawnMap: gameConfig?.defaultSpawnGateId || input.startingMapId || input.defaultMapId || compiledManifest.maps?.[0]?.id || "",
+        spawnX: 14,
+        spawnY: 14,
+        spawnZ: 14,
+      },
       dungeons,
       shops,
       mounts,
       events,
       simulations,
+      gameConfig,
+      characterClasses,
       ...compiledManifest,
     };
 
@@ -147,9 +156,22 @@ export async function createPublishSnapshot(input: {
       input.version?.trim() ||
       `v1.0.${Date.now().toString().slice(-6)}`;
 
+    // Resolve WorldProject ID to satisfy CUID relation
+    const projectSlug = gameId || "saints";
+    let activeProject = await prisma.worldProject.findUnique({
+      where: { slug: projectSlug },
+    });
+    if (!activeProject) {
+      activeProject = await prisma.worldProject.upsert({
+        where: { slug: projectSlug },
+        create: { slug: projectSlug, name: "Default Project" },
+        update: {},
+      });
+    }
+
     const saved = await prisma.worldRelease.create({
       data: {
-        projectId: gameId,
+        projectId: activeProject.id,
         version: versionTag,
         title: input.title.trim() || `Release ${versionTag}`,
         description: input.description,
@@ -164,7 +186,7 @@ export async function createPublishSnapshot(input: {
       // Archive previous snapshots for this profile
       await prisma.worldRelease.updateMany({
         where: {
-          projectId: gameId,
+          projectId: activeProject.id,
           status: "PUBLISHED",
           id: { not: saved.id },
         },
@@ -215,9 +237,12 @@ export async function listPublishSnapshots(gameId: string = "saints", profileId:
 }
 
 /**
- * Rollback / Restore world definitions from an immutable publish snapshot.
+ * True Restore Implementation
+ * Wipes current Working World (WorldMap, WorldRegion)
+ * Reconstructs exactly from manifest (Release-owned state)
+ * Retains Player State (GameCharacter) and WorldProject untouched.
  */
-export async function rollbackToSnapshot(snapshotId: string) {
+export async function restoreWorldRelease(snapshotId: string) {
   const isAdmin = await checkAdminPermission();
   if (!isAdmin) return { success: false, error: "Unauthorized" };
 
@@ -229,41 +254,36 @@ export async function rollbackToSnapshot(snapshotId: string) {
     if (!snapshot) return { success: false, error: "Snapshot not found" };
 
     const payload = JSON.parse(snapshot.manifestData);
-    const { maps, atlas } = payload;
+    const { maps, atlas, gameConfig, characterClasses, actors } = payload;
+    
+    // Wipe Working World records for this project. WorldRegion cascades from WorldMap.
+    await prisma.worldMap.deleteMany({
+      where: { projectId: snapshot.projectId }
+    });
 
-    // Restore Maps
+    // Reconstruct Maps EXACTLY as they were
     if (Array.isArray(maps)) {
       for (const m of maps) {
-        await prisma.worldMap.upsert({
-          where: { id: m.id },
-          create: {
+        await prisma.worldMap.create({
+          data: {
             id: m.id,
-            gameId: snapshot.projectId,
+            projectId: snapshot.projectId,
             name: m.name,
-            gridData: m.gridData,
+            gridData: m.gridData || "[]",
             gatesData: m.gatesData || "[]",
             encountersData: m.encountersData || "[]",
             entitiesData: m.entitiesData || "[]",
             freeformLayersData: m.freeformLayersData || "[]",
             mapType: m.mapType || "TILE",
-          },
-          update: {
-            name: m.name,
-            gridData: m.gridData,
-            gatesData: m.gatesData || "[]",
-            encountersData: m.encountersData || "[]",
-            entitiesData: m.entitiesData || "[]",
-            freeformLayersData: m.freeformLayersData || "[]",
-            mapType: m.mapType || "TILE",
+            version: m.version || 1,
           },
         });
       }
     }
 
-    // Restore Atlas Regions
+    // Reconstruct Atlas Regions exactly as they were
     if (atlas && typeof atlas === 'object') {
       for (const [key, checksum] of Object.entries(atlas)) {
-        // key format: "mapId_regionX_regionZ"
         const parts = key.split('_');
         if (parts.length >= 3) {
           const mapId = parts.slice(0, parts.length - 2).join('_');
@@ -271,23 +291,11 @@ export async function rollbackToSnapshot(snapshotId: string) {
           const regionZ = parseInt(parts[parts.length - 1], 10);
           
           if (!isNaN(regionX) && !isNaN(regionZ)) {
-            // Upsert the WorldRegion pointing to the immutable artifact
-            await prisma.worldRegion.upsert({
-              where: {
-                mapId_regionX_regionZ: {
-                  mapId,
-                  regionX,
-                  regionZ
-                }
-              },
-              create: {
+            await prisma.worldRegion.create({
+              data: {
                 mapId,
                 regionX,
                 regionZ,
-                status: "COMPLETED",
-                artifactChecksum: checksum as string,
-              },
-              update: {
                 status: "COMPLETED",
                 artifactChecksum: checksum as string,
               }
@@ -296,11 +304,111 @@ export async function rollbackToSnapshot(snapshotId: string) {
         }
       }
     }
+    
+    // Restore GameConfig exactly
+    if (gameConfig && gameConfig.slug) {
+      await prisma.gameConfig.update({
+        where: { slug: gameConfig.slug },
+        data: {
+          defaultSpawnGateId: gameConfig.defaultSpawnGateId,
+          baseStats: gameConfig.baseStats,
+          combatFormula: gameConfig.combatFormula,
+          skillFormula: gameConfig.skillFormula,
+          xpCurve: gameConfig.xpCurve,
+          globalShinyChancePercent: gameConfig.globalShinyChancePercent,
+          maxEntitiesPerMap: gameConfig.maxEntitiesPerMap,
+          maxPlayersPerMap: gameConfig.maxPlayersPerMap,
+        }
+      });
+    }
+
+    // Restore CharacterClasses exactly
+    if (Array.isArray(characterClasses)) {
+      for (const cc of characterClasses) {
+        if (cc.id) {
+          await prisma.characterClass.updateMany({
+            where: { id: cc.id },
+            data: {
+              name: cc.name,
+              description: cc.description,
+              icon: cc.icon,
+              color: cc.color,
+              iconAssetId: cc.iconAssetId,
+              baseStats: cc.baseStats,
+              statDeltas: cc.statDeltas,
+              skillDeltas: cc.skillDeltas,
+              classId: cc.classId,
+              growthRates: cc.growthRates,
+              allowedSpriteTags: cc.allowedSpriteTags,
+              spriteFilters: cc.spriteFilters,
+              startingEquipment: cc.startingEquipment,
+              learnableSkills: cc.learnableSkills,
+              perks: cc.perks,
+              abilities: cc.abilities,
+              skillProgression: cc.skillProgression,
+              abilityProgression: cc.abilityProgression,
+              perkProgression: cc.perkProgression,
+              isPlayable: cc.isPlayable,
+              sortOrder: cc.sortOrder,
+            }
+          });
+        }
+      }
+    }
+
+    // Restore CreatureDefs exactly
+    if (actors && Array.isArray(actors.creatures)) {
+      for (const creature of actors.creatures) {
+        if (creature.slug) {
+          await prisma.creatureDef.updateMany({
+            where: { slug: creature.slug },
+            data: {
+              name: creature.name,
+              dexNumber: creature.dexNumber,
+              typePrimary: creature.typePrimary,
+              typeSecondary: creature.typeSecondary,
+              mythos: creature.mythos,
+              spriteOverworld: creature.spriteOverworld,
+              spriteBattle: creature.spriteBattle,
+              spriteBack: creature.spriteBack,
+              shinyEnabled: creature.shinyEnabled,
+              shinyUseGlobalChance: creature.shinyUseGlobalChance,
+              shinyChancePercent: creature.shinyChancePercent,
+              shinySpriteOverworld: creature.shinySpriteOverworld,
+              shinySpriteBattle: creature.shinySpriteBattle,
+              shinySpriteBack: creature.shinySpriteBack,
+              baseHp: creature.baseHp,
+              physicalPower: creature.physicalPower,
+              physicalDefense: creature.physicalDefense,
+              abilityPower: creature.abilityPower,
+              abilityDefense: creature.abilityDefense,
+              combatTempo: creature.combatTempo,
+              catchRate: creature.catchRate,
+              isCapturable: creature.isCapturable,
+              starterLevel: creature.starterLevel,
+              passivesJson: creature.passivesJson,
+              worldSkillName: creature.worldSkillName,
+              worldSkillDescription: creature.worldSkillDescription,
+              abilitiesJson: creature.abilitiesJson,
+              flavor: creature.flavor,
+              tag: creature.tag,
+              tagColor: creature.tagColor,
+              stage: creature.stage,
+              isStarter: creature.isStarter,
+              isWildSpawn: creature.isWildSpawn,
+              isActive: creature.isActive,
+              sortOrder: creature.sortOrder,
+              evolutionsJson: creature.evolutionsJson,
+            }
+          });
+        }
+      }
+    }
 
     return { success: true as const };
   } catch (err: any) {
-    console.error("[rollbackToSnapshot]", err);
-    return { success: false as const, error: "Failed to rollback" };
+    console.error("[restoreWorldRelease]", err);
+    return { success: false as const, error: "Failed to restore" };
   }
 }
 

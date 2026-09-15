@@ -47,7 +47,7 @@ import {
 import {
   validateWorldForPublish,
   listPublishSnapshots,
-  rollbackToSnapshot,
+  restoreWorldRelease,
   createPublishSnapshot,
   type ValidationGateResult,
 } from '@/app/actions/studio/publishing';
@@ -310,7 +310,7 @@ export function CharacterSelectAdminWindow({
         setIsRollingBack(true);
         soundSynth?.playActionSound?.();
         try {
-          const res = await rollbackToSnapshot(snapshotId);
+          const res = await restoreWorldRelease(snapshotId);
           if (res.success) {
             fetchReleases();
           }

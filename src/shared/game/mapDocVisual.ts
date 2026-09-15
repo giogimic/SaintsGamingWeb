@@ -47,8 +47,8 @@ export function resolveMapDimensions(doc: MapDocVisual | null | undefined): {
   const vw = (doc as any).voxelDoc?.mapWidth;
   const vh = (doc as any).voxelDoc?.mapHeight;
   return {
-    width: lw ?? gw ?? vw ?? doc.width ?? 24,
-    height: lh ?? gh ?? vh ?? doc.height ?? 24,
+    width: lw || gw || vw || doc.width || 24,
+    height: lh || gh || vh || doc.height || 24,
   };
 }
 

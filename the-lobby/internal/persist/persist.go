@@ -65,9 +65,9 @@ ON CONFLICT(accountId) DO UPDATE SET mapId=excluded.mapId, x=excluded.x, y=exclu
 	if characterID != "" {
 		_, _ = s.DB.Exec(`
 UPDATE GameCharacter 
-SET lastX = ?, lastY = ?, lastZ = ? 
+SET lastMapId = ?, lastX = ?, lastY = ?, lastZ = ? 
 WHERE id = ? AND userId = ?
-		`, x, y, z, characterID, accountID)
+		`, base, x, y, z, characterID, accountID)
 	}
 }
 

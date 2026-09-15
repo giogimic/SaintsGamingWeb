@@ -17,7 +17,7 @@ async function main() {
   const mapA = await prisma.worldMap.create({
     data: {
       id: 'map_a_test',
-      gameId: project.slug,
+      projectId: project.slug,
       name: 'Map A',
       mapType: 'TILE',
       gridData: '[[]]',
@@ -38,7 +38,7 @@ async function main() {
   const mapB = await prisma.worldMap.create({
     data: {
       id: 'map_b_test',
-      gameId: project.slug,
+      projectId: project.slug,
       name: 'Map B',
       mapType: 'TILE',
       gridData: '[[]]',
@@ -88,7 +88,7 @@ async function main() {
   }
 
   // Cleanup
-  await prisma.worldMap.deleteMany({ where: { gameId: project.slug } });
+  await prisma.worldMap.deleteMany({ where: { projectId: project.slug } });
   await prisma.worldProject.delete({ where: { id: project.id } });
 }
 

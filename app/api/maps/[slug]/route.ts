@@ -125,7 +125,7 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
 
     return {
       id: worldMap.id,
-      gameId: worldMap.gameId,
+      projectId: worldMap.projectId,
       name: worldMap.name,
       width: dims.width,
       height: dims.height,
@@ -211,7 +211,7 @@ export async function GET(
       const blankW = 30, blankH = 30;
       payload = {
         id: slug,
-        gameId: 'saints',
+        projectId: 'saints',
         name: slug.replace(/_/g, ' '),
         width: blankW,
         height: blankH,
@@ -274,6 +274,13 @@ export async function POST(
     });
     const width = dims.width;
     const height = dims.height;
+
+    if (width <= 0 || height <= 0) {
+      return NextResponse.json(
+        { error: "Invalid map dimensions. Width and height must be greater than 0." },
+        { status: 400 }
+      );
+    }
 
     let grid = rawGrid;
 
@@ -428,6 +435,19 @@ export async function POST(
       serializedGatesData = JSON.stringify(gatesObj);
     }
 
+    const projectSlug = body.gameId || "saints";
+    let activeProject = await prisma.worldProject.findUnique({
+      where: { slug: projectSlug },
+    });
+    if (!activeProject) {
+      // Fallback to ensuring project exists
+      activeProject = await prisma.worldProject.upsert({
+        where: { slug: projectSlug },
+        create: { slug: projectSlug, name: "Default Project" },
+        update: {},
+      });
+    }
+
     // Security compliance audit record prior to DB write
     try {
       await AuditService.write({
@@ -438,7 +458,7 @@ export async function POST(
           name: body.name || slug,
           width,
           height,
-          gameId: body.gameId || "saints",
+          projectId: activeProject.id,
           entityCount: entitiesPayload?.length || 0,
         },
       });
@@ -456,7 +476,7 @@ export async function POST(
         where: { id: slug },
         update: {
           name: body.name || slug,
-          gameId: body.gameId || "saints",
+          projectId: activeProject.id,
           ...(body.grid ? { gridData: JSON.stringify(body.grid) } : {}),
           ...(serializedGatesData !== undefined ? { gatesData: serializedGatesData } : {}),
           
@@ -472,7 +492,7 @@ export async function POST(
         },
         create: {
           id: slug,
-          gameId: body.gameId || "saints",
+          projectId: activeProject.id,
           name: body.name || slug,
           gridData: JSON.stringify(body.grid || []),
           gatesData: serializedGatesData || JSON.stringify(body.gates || {}),
@@ -512,7 +532,7 @@ export async function POST(
         where: { id: slug },
         update: {
           name: body.name || slug,
-          gameId: body.gameId || "saints",
+          projectId: body.gameId || "saints",
           ...(body.grid ? { gridData: JSON.stringify(body.grid) } : {}),
           ...(serializedGatesData !== undefined ? { gatesData: serializedGatesData } : {}),
           
@@ -525,7 +545,7 @@ export async function POST(
         },
         create: {
           id: slug,
-          gameId: body.gameId || "saints",
+          projectId: body.gameId || "saints",
           name: body.name || slug,
           gridData: JSON.stringify(body.grid || []),
           gatesData: serializedGatesData || JSON.stringify(body.gates || {}),

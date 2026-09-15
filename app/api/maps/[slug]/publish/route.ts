@@ -33,7 +33,7 @@ export async function POST(
       return NextResponse.json({ error: `Map not found: ${slug}` }, { status: 404 });
     }
 
-    const projectId = worldMap.gameId || "saints";
+    const projectId = worldMap.projectId || "saints";
     const project = await prisma.worldProject.findUnique({ where: { slug: projectId }, include: { maps: true } });
     
     if (!project) {

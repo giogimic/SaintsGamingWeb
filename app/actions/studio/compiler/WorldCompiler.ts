@@ -26,7 +26,7 @@ export async function compileWorldRelease(projectId: string): Promise<{ manifest
 
   // 1. Fetch Data
   const maps = await prisma.worldMap.findMany({
-    where: { gameId: projectId },
+    where: { projectId: projectId },
   });
 
   if (maps.length === 0) {

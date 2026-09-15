@@ -1,3 +1,9 @@
+## 2.1.873
+- **True Restore Logic Implemented:** Added restoreWorldRelease server action that safely reconstructs a working world state from an immutable snapshot without mutating the source release.
+- **Persistent Player Location:** Updated Go server and client to persist and prioritize lastMapId and coordinates from GameCharacter, ensuring location survival across releases.
+- **Studio Version Manager Restructured:** Removed ambiguous map-saving logic, added explicit 'Publish World' actions to VersionManagerPanel and Studio menus.
+- **Architectural Schema Alignment:** Completed the migration from gameId to projectId across API routes, VoxelWorldDoc types, and test suites.
+
 ## 2.1.871
 - **Go Deployment Sync Fixed:** Removed obsolete map-by-map deployment functions (like `StartSyncPoller`) in `maps.go` and `main.go`. Re-implemented `deployPublishedProjectRelease` to fetch the monolithic Release Manifest from Next.js, persist it, and load it atomically.
 - **Client Join Recovery Implementation:** Implemented the "Controlled Recovery" rule: If the client requests an invalid map that doesn't exist in the active `WorldRelease`, Go intercepts the join, logs the mismatch, updates `req.MapID` and coords to the canonical `ActiveRelease.World.SpawnMap`, and emits a toast notifying the user they've been recovered.

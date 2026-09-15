@@ -20,7 +20,7 @@ import {
   validateWorldForPublish,
   createPublishSnapshot,
   listPublishSnapshots,
-  rollbackToSnapshot,
+  restoreWorldRelease,
   fetchDraftMaps,
   type ValidationGateResult,
 } from '@/app/actions/studio/publishing';
@@ -130,7 +130,7 @@ export const VersionManagerPanel: React.FC = () => {
       return;
     }
     setRollingBackId(snapshot.id);
-    const res = await rollbackToSnapshot(snapshot.id);
+    const res = await restoreWorldRelease(snapshot.id);
     setRollingBackId(null);
     if (res.success) {
       incrementDataVersion();
@@ -173,7 +173,7 @@ export const VersionManagerPanel: React.FC = () => {
           label="Releases"
           items={[
             {
-              label: 'Create Release Snapshot',
+              label: 'Publish World Release',
               shortcut: 'Ctrl+Shift+P',
               onClick: () => setShowPublishModal(true),
             },
@@ -192,17 +192,17 @@ export const VersionManagerPanel: React.FC = () => {
         />
         <WindowMenuDivider />
         <WindowMenuButton
+          label="Publish World"
+          icon={UploadCloud}
+          onClick={() => setShowPublishModal(true)}
+          title="Publish the active world state as a new immutable release"
+        />
+        <WindowMenuButton
           label={validating ? 'Validating...' : 'Validate'}
           icon={RefreshCw}
           onClick={runValidation}
           disabled={validating}
           title="Run pre-flight integrity check on all maps, spawners, and loot"
-        />
-        <WindowMenuButton
-          label="Create Release Snapshot"
-          icon={UploadCloud}
-          onClick={() => setShowPublishModal(true)}
-          title="Package active world into an immutable snapshot"
         />
         <div className="flex-1" />
         {validation && (

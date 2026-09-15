@@ -14,11 +14,11 @@ export async function GET(request: Request) {
     const gameId = searchParams.get("gameId");
 
     let maps = await prisma.worldMap.findMany({
-      where: gameId ? { gameId } : undefined,
+      where: gameId ? { projectId: gameId } : undefined,
       select: {
         id: true,
         name: true,
-        gameId: true,
+        projectId: true,
         version: true,
 
         updatedAt: true,

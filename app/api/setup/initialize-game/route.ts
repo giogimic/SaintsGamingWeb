@@ -222,16 +222,18 @@ export async function POST(req: Request) {
       });
 
       // 4a2. Upsert WorldProject
-      await tx.worldProject.upsert({
+      const worldProject = await tx.worldProject.upsert({
         where: { slug: 'saints' },
         create: {
           slug: 'saints',
+          gameId: gameConfig.id,
           name: gameName,
           description: gameDesc,
         },
         update: {
           name: gameName,
           description: gameDesc,
+          gameId: gameConfig.id,
         },
       });
 
@@ -355,23 +357,16 @@ export async function POST(req: Request) {
       });
 
       let nextVersion = 1;
-      let isRecovery = false;
 
       if (existingWorld) {
         nextVersion = existingWorld.version + 1;
       }
 
-      let upsertedWorldMap;
-      
-      if (isRecovery) {
-        // Recovery path: Just fetch it, do not bump version or wipe data
-        upsertedWorldMap = existingWorld!;
-      } else {
-        upsertedWorldMap = await tx.worldMap.upsert({
+      const upsertedWorldMap = await tx.worldMap.upsert({
         where: { id: mapId },
         create: {
           id: mapId,
-          gameId: 'saints',
+          projectId: worldProject.id,
           name: mapName,
           gridData: JSON.stringify(initialLogicGrid),
           gatesData: JSON.stringify(gatesPayload),
@@ -383,18 +378,16 @@ export async function POST(req: Request) {
         },
         update: {
           name: mapName,
-          gameId: 'saints',
+          projectId: worldProject.id,
           gatesData: JSON.stringify(gatesPayload),
           gridData: JSON.stringify(initialLogicGrid),
           freeformLayersData: JSON.stringify([]),
           version: { increment: 1 },
           mapType: map.mapType || 'VOXEL',
-        },
+        }
       });
-      }
 
-      if (!isRecovery) {
-        await tx.gameMap.upsert({
+      await tx.gameMap.upsert({
         where: { id: mapId },
         create: {
           id: mapId,
@@ -413,7 +406,6 @@ export async function POST(req: Request) {
           gates: JSON.stringify(gatesPayload),
         },
       });
-      }
 
       // 4d2. Setup Parity (Section 19): Adopt the Procedural Generation Pipeline
       // The Setup Route must use the same underlying systems as Studio.

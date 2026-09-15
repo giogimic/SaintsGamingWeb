@@ -98,15 +98,10 @@ func (m *Manager) ParseRelease(db *sql.DB, projectID string, version string) (*R
 
 // ApplyReleaseMaps loads the map definitions into the manager.
 func (m *Manager) ApplyReleaseMaps(manifest *ReleaseManifest) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	m.ActiveRelease = manifest
-
-	// Clear and rebuild registries for this release
-	m.NPCRegistry = make(map[string]NPCSchemaDef)
+	// Build registries for this release in local variables
+	newNPCRegistry := make(map[string]NPCSchemaDef)
 	for _, npc := range manifest.Actors.NPCs {
-		m.NPCRegistry[npc.Slug] = NPCSchemaDef{
+		newNPCRegistry[npc.Slug] = NPCSchemaDef{
 			Slug:         npc.Slug,
 			Name:         npc.Name,
 			WorldModel:   npc.WorldModel,
@@ -195,7 +190,7 @@ func (m *Manager) ApplyReleaseMaps(manifest *ReleaseManifest) error {
 						y = e.Position.Y
 					}
 
-					if schemaDef, ok := m.NPCRegistry[slug]; ok {
+					if schemaDef, ok := newNPCRegistry[slug]; ok {
 						npcs = append(npcs, NPCDef{
 							ID:        e.ID,
 							X:         x,
@@ -223,19 +218,17 @@ func (m *Manager) ApplyReleaseMaps(manifest *ReleaseManifest) error {
 		newDefs[def.ID] = def
 	}
 
-	m.defs = newDefs
-
 	// Apply Connections Graph to Gates and build Connection Registry
-	m.Connections = make(map[string]map[string][]WorldConnection)
+	newConnections := make(map[string]map[string][]WorldConnection)
 	for _, c := range manifest.Connections {
-		if _, ok := m.Connections[c.SourceMapID]; !ok {
-			m.Connections[c.SourceMapID] = make(map[string][]WorldConnection)
+		if _, ok := newConnections[c.SourceMapID]; !ok {
+			newConnections[c.SourceMapID] = make(map[string][]WorldConnection)
 		}
-		m.Connections[c.SourceMapID][c.SourceGateID] = append(m.Connections[c.SourceMapID][c.SourceGateID], c)
+		newConnections[c.SourceMapID][c.SourceGateID] = append(newConnections[c.SourceMapID][c.SourceGateID], c)
 	}
 
-	for mapID, def := range m.defs {
-		if gatesConn, ok := m.Connections[mapID]; ok {
+	for mapID, def := range newDefs {
+		if gatesConn, ok := newConnections[mapID]; ok {
 			for i, g := range def.Gates {
 				if conns, ok := gatesConn[g.ID]; ok && len(conns) > 0 {
 					// Apply legacy backward-compat fields to the gate definition (just takes the first connection)
@@ -251,6 +244,15 @@ func (m *Manager) ApplyReleaseMaps(manifest *ReleaseManifest) error {
 	}
 
 	log.Printf("[WorldManager] Release maps loaded: %d maps, %d connections", len(manifest.Maps), len(manifest.Connections))
+
+	// Lock and swap the state atomically
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.ActiveRelease = manifest
+	m.NPCRegistry = newNPCRegistry
+	m.defs = newDefs
+	m.Connections = newConnections
 
 	return nil
 }
