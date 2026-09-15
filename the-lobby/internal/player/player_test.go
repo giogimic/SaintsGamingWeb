@@ -9,12 +9,12 @@ import (
 
 func TestCreateMoveAndPeers(t *testing.T) {
 	m := player.NewManager(16, nil)
-	p := m.Create("a1", "s1", "Ada", "spr", "DEMO_SANDBOX_ch1", "DEMO_SANDBOX", 5, 5, 0)
+	p := m.Create("a1", "s1", "Ada", "spr", "STARTING_MEADOW_ch1", "STARTING_MEADOW", 5, 5, 0)
 	if p.EntityID == "" {
 		t.Fatal("missing entity id")
 	}
-	_ = m.Create("a2", "s2", "Bob", "spr", "DEMO_SANDBOX_ch1", "DEMO_SANDBOX", 6, 6, 0)
-	peers := m.SnapshotPeers("DEMO_SANDBOX_ch1", "a1")
+	_ = m.Create("a2", "s2", "Bob", "spr", "STARTING_MEADOW_ch1", "STARTING_MEADOW", 6, 6, 0)
+	peers := m.SnapshotPeers("STARTING_MEADOW_ch1", "a1")
 	if len(peers) != 1 || peers["s2"].Name != "Bob" {
 		t.Fatalf("peers=%v", peers)
 	}

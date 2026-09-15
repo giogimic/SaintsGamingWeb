@@ -18,7 +18,7 @@ function getBiomeIcon(mapId: string) {
   return <Globe className={cls} />;
 }
 
-export const FractalDomainsPanel: React.FC = () => {
+export const FractalDomainsView: React.FC = () => {
   const setStudioMode = useEditorStore((state) => state.setStudioMode);
   const showToast = useGameStore((state) => state.showToast);
 

@@ -65,10 +65,10 @@ type WorldConnection struct {
 	TargetWorldReleaseID string `json:"targetWorldReleaseId,omitempty"`
 }
 
-// LatestReleaseVersion returns the version string for the most recently created project release, or "" if none.
-func (m *Manager) LatestReleaseVersion(db *sql.DB, projectID string) (string, error) {
+// ActiveReleaseVersion returns the version string for the most recently created project release, or "" if none.
+func (m *Manager) ActiveReleaseVersion(db *sql.DB, projectID string) (string, error) {
 	var version string
-	err := db.QueryRow("SELECT version FROM WorldRelease WHERE projectId = ? ORDER BY createdAt DESC LIMIT 1", projectID).Scan(&version)
+	err := db.QueryRow("SELECT version FROM WorldRelease WHERE projectId = ? AND status = 'LIVE' LIMIT 1", projectID).Scan(&version)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", nil

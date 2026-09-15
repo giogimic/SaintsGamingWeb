@@ -52,8 +52,8 @@ export function StudioProblemsPanel({ asSubPanel }: { asSubPanel?: boolean } = {
   const logicTiles = useGameStore((s) => s.logicTiles);
   const setClickedTile = useEditorStore((s) => s.setClickedTile);
 
-  const baseMapId = toBaseMapId(currentMapId || 'DEMO_SANDBOX');
-  const mapData = activeMapData || GAME_MAPS[baseMapId] || GAME_MAPS['DEMO_SANDBOX'];
+  const baseMapId = toBaseMapId(currentMapId || 'STARTING_MEADOW');
+  const mapData = activeMapData || GAME_MAPS[baseMapId] || GAME_MAPS['STARTING_MEADOW'];
 
   const problems = useMemo<MapProblem[]>(() => {
     const list: MapProblem[] = [];

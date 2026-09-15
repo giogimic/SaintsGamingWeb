@@ -7,7 +7,7 @@ import (
 )
 
 func TestToBaseMapIDLegacy(t *testing.T) {
-	if protocol.ToBaseMapID("DEMO_SANDBOX_ch3") != "DEMO_SANDBOX" {
-		t.Fatal(protocol.ToBaseMapID("DEMO_SANDBOX_ch3"))
+	if protocol.ToBaseMapID("STARTING_MEADOW_ch3") != "STARTING_MEADOW" {
+		t.Fatal(protocol.ToBaseMapID("STARTING_MEADOW_ch3"))
 	}
 }

@@ -1,3 +1,10 @@
+## 2.1.877
+- **Removed DEMO_SANDBOX Fallback:** System-wide removal of DEMO_SANDBOX constants in TypeScript and Go. Replaced with STARTING_MEADOW to enforce WorldRelease dependency.
+- **Backend Migration:** Replaced hardcoded DEMO_SANDBOX with STARTING_MEADOW in `persist.go`, `migrations.go`, and `voxel.go`.
+- **Character Creation Fix:** Updated character creator to dynamically resolve spawn maps via `getActiveWorldRelease` instead of legacy static settings.
+- **Go ActiveRelease Logic:** Implemented `ActiveReleaseVersion` to correctly query `status = 'LIVE'` from the database, locking the authoritative game state to deployed releases.
+- **Idempotency Setup Tests Fixed:** Restored setup idempotency by utilizing `zlib.deflateSync` for valid mocked WorldRegion compression data.
+
 ## 2.1.874
 - **Outbox Persistence System:** Implemented SQLite-based `NextjsSyncOutbox` pattern with a dedicated background worker to guarantee idempotency and avoid locking the main game loop during player state/location saves.
 - **Removed Go Legacy Draft Fallbacks:** Completely removed obsolete Go-side deploy handlers (`deploy.go`), draft upload API routes, and `ResolvePlayableBase` map-id hacks, enforcing the rule that all world joins route strictly through the active monolithic `WorldRelease`.

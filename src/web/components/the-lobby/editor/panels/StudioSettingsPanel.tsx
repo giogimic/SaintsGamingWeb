@@ -1353,7 +1353,7 @@ export function StudioSettingsPanel() {
                   The map where new players spawn and where players return as a fallback. This map cannot be deleted while it is the active spawn hub.
                 </p>
                 <select
-                  value={settings.spawnMapId || 'DEMO_SANDBOX'}
+                  value={settings.spawnMapId || 'STARTING_MEADOW'}
                   onChange={(e) => setSettings({ ...settings, spawnMapId: e.target.value })}
                   className="w-full bg-[#060e1c] border border-emerald-500/30 focus:border-emerald-400 rounded-lg p-2 text-foreground text-xs outline-none cursor-pointer"
                 >
@@ -1364,7 +1364,7 @@ export function StudioSettingsPanel() {
                   ))}
                 </select>
                 <div className="mt-1.5 text-[9px] text-muted-foreground">
-                  Current spawn hub: <span className="text-emerald-300 font-bold">{settings.spawnMapId || 'DEMO_SANDBOX'}</span>
+                  Current spawn hub: <span className="text-emerald-300 font-bold">{settings.spawnMapId || 'STARTING_MEADOW'}</span>
                 </div>
               </div>
 

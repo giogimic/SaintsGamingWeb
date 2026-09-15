@@ -195,7 +195,7 @@ func (h *Hub) finishCombat(accountID, sid, instanceID, creatureID, winner string
 	} else if winner != "flee" {
 		p := h.eng.Players().GetByAccount(accountID)
 		spawnX, spawnY := 10.0, 10.0
-		mapID := protocol.DemoMapID
+		mapID := protocol.FallbackMapID
 		instID := instanceID
 		if p != nil {
 			mapID = p.BaseMapID
@@ -260,7 +260,7 @@ func (h *Hub) handleAdminSaveMap(accountID string, datas []any) {
 }
 
 func (h *Hub) handleAdminReloadMap(accountID string, datas []any) {
-	mapID := protocol.DemoMapID
+	mapID := protocol.FallbackMapID
 	if len(datas) > 0 {
 		b, _ := json.Marshal(datas[0])
 		var m map[string]any

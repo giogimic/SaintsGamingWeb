@@ -165,7 +165,7 @@ func (m *Manager) GetDef(baseID string) (*MapDef, error) {
 func (m *Manager) EnsureDemoDef() *MapDef {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if d, ok := m.defs[protocol.DemoMapID]; ok {
+	if d, ok := m.defs[protocol.FallbackMapID]; ok {
 		if d.Voxel == nil {
 			demoVoxel := BuildDemoVoxelWorld(d.Width/32, d.Height/32)
 			d.Voxel = demoVoxel
@@ -209,7 +209,7 @@ func (m *Manager) JoinMap(baseMapID, accountID string, isPrivate, pie bool) (*In
 	defer m.mu.Unlock()
 
 	if _, ok := m.defs[baseMapID]; !ok {
-		if baseMapID == protocol.DemoMapID {
+		if baseMapID == protocol.FallbackMapID {
 			m.defs[baseMapID] = BuildDemoMapDef()
 		} else {
 			m.defs[baseMapID] = &MapDef{
@@ -375,7 +375,7 @@ func BuildDemoMapDef() *MapDef {
 	w, h := 0, 0 // 0 signifies infinite bounding box
 
 	voxelWorld := &VoxelWorld{
-		ID:           protocol.DemoMapID,
+		ID:           protocol.FallbackMapID,
 		WidthChunks:  1,
 		DepthChunks:  1,
 		HeightChunks: 1,
@@ -401,7 +401,7 @@ func BuildDemoMapDef() *MapDef {
 	}
 
 	return &MapDef{
-		ID:          protocol.DemoMapID,
+		ID:          protocol.FallbackMapID,
 		Name:        "The Firmament",
 		Width:       w,
 		Height:      h,

@@ -95,12 +95,10 @@ export interface WorldState {
 
   // Game Registry (fetched from API — replaces hardcoded data files)
   gameRegistry: GameRegistryData | null;
-  publishedVersion?: number;
 
   // Actions
   setCurrentMapId: (id: string) => void;
   setInstanceId: (id: string) => void;
-  setPublishedVersion: (version: number) => void;
   setActiveMapData: (data: any) => void;
   setIsMapTransitioning: (transitioning: boolean) => void;
   setWorldSessionState: (state: WorldSessionState) => void;
@@ -146,8 +144,6 @@ export const useWorldStore = create<WorldState>()(
       setCurrentMapId: (id) => set((s) => { s.currentMapId = id; }),
 
       setInstanceId: (id) => set((s) => { s.instanceId = id; }),
-
-      setPublishedVersion: (v) => set((s) => { s.publishedVersion = v; }),
 
       setActiveMapData: (data) => set((s) => { s.activeMapData = data; }),
 

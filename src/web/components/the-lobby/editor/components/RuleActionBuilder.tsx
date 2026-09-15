@@ -151,10 +151,10 @@ export const RuleActionBuilder: React.FC<RuleActionBuilderProps> = ({
                           updateActionAt(i, { kind: 'SEND_NOTIFICATION', title: 'Notice', message: 'You received a reward!', type: 'SUCCESS' });
                           break;
                         case 'SPAWN_ENTITY':
-                          updateActionAt(i, { kind: 'SPAWN_ENTITY', entityId: 'entity_slug', entityType: 'MONSTER', mapId: 'DEMO_SANDBOX', x: 0, y: 0 });
+                          updateActionAt(i, { kind: 'SPAWN_ENTITY', entityId: 'entity_slug', entityType: 'MONSTER', mapId: 'STARTING_MEADOW', x: 0, y: 0 });
                           break;
                         case 'TELEPORT_PLAYER':
-                          updateActionAt(i, { kind: 'TELEPORT_PLAYER', mapId: 'DEMO_SANDBOX', x: 10, y: 10 });
+                          updateActionAt(i, { kind: 'TELEPORT_PLAYER', mapId: 'STARTING_MEADOW', x: 10, y: 10 });
                           break;
                       }
                     }}
@@ -468,7 +468,7 @@ function ActionFields({
               value={action.mapId}
               onChange={(e) => onChange({ ...action, mapId: e.target.value })}
               className="rounded bg-black/50 px-2 py-1 border border-slate-700 text-slate-200 font-mono"
-              placeholder="e.g. DEMO_SANDBOX"
+              placeholder="e.g. STARTING_MEADOW"
             />
           </label>
           <label className="flex flex-col gap-1 text-[10px] text-slate-400">

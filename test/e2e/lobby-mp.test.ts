@@ -28,7 +28,7 @@ describe('Lobby Multiplayer', () => {
   it('should place players in the same shard and make them mutually visible', async () => {
     const joinedA = once<{ instanceId?: string; mapId?: string }>(sa, 'map_joined');
     sa.emit('join_map', {
-      mapId: 'DEMO_SANDBOX',
+      mapId: 'STARTING_MEADOW',
       lobby: true,
       name: 'SmokeA',
       x: 10,
@@ -53,7 +53,7 @@ describe('Lobby Multiplayer', () => {
     });
 
     sb.emit('join_map', {
-      mapId: 'DEMO_SANDBOX',
+      mapId: 'STARTING_MEADOW',
       lobby: true,
       name: 'SmokeB',
       x: 12,
@@ -77,7 +77,7 @@ describe('Lobby Multiplayer', () => {
     const aRejoined = once<{ instanceId?: string }>(sa, 'map_joined');
     const peersAfterStorm = once<Record<string, unknown>>(sa, 'map_players');
     sa.emit('join_map', {
-      mapId: 'DEMO_SANDBOX',
+      mapId: 'STARTING_MEADOW',
       lobby: true,
       name: 'SmokeA',
       x: 10,
@@ -146,7 +146,7 @@ describe('Lobby Multiplayer', () => {
 
     const emitLobbyJoin = (socket: Socket, name: string) => {
       socket.emit("join_map", {
-        mapId: "DEMO_SANDBOX",
+        mapId: "STARTING_MEADOW",
         lobby: true,
         name,
         x: 14,
@@ -188,7 +188,7 @@ describe('Lobby Multiplayer', () => {
   it('should issue session_replaced for dual-tabbing on same account', async () => {
     // 1. Establish initial map connection on SA1
     const ja1 = once<{ instanceId: string }>(sa, "map_joined");
-    sa.emit("join_map", { mapId: "DEMO_SANDBOX", lobby: true, name: "AccA", x: 14, y: 15 });
+    sa.emit("join_map", { mapId: "STARTING_MEADOW", lobby: true, name: "AccA", x: 14, y: 15 });
     await ja1;
 
     // 2. Open a second socket for the same user Account A
@@ -197,7 +197,7 @@ describe('Lobby Multiplayer', () => {
     const ja2 = once<{ instanceId: string }>(sa2, "map_joined");
     const peersOnSa2 = once<Record<string, { name?: string }>>(sa2, "map_players");
 
-    sa2.emit("join_map", { mapId: "DEMO_SANDBOX", lobby: true, name: "AccA-tab2", x: 14, y: 15 });
+    sa2.emit("join_map", { mapId: "STARTING_MEADOW", lobby: true, name: "AccA-tab2", x: 14, y: 15 });
     
     // SA1 should get session_replaced, while SA2 successfully joins
     const [rep, mapA2, peers2] = await Promise.all([replaced, ja2, peersOnSa2]);

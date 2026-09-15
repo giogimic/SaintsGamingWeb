@@ -65,8 +65,8 @@ export const VoxelStudioPanel: React.FC = () => {
     const wChunks = Math.max(1, Math.ceil((currentMapData.grid?.[0]?.length || 32) / 32));
     const dChunks = Math.max(1, Math.ceil((currentMapData.grid?.length || 32) / 32));
     const world = new (require('@/shared/game/voxel/VoxelWorldDoc').VoxelWorld)(
-      baseMapId || 'DEMO_SANDBOX',
-      baseMapId || 'DEMO_SANDBOX',
+      baseMapId || 'STARTING_MEADOW',
+      baseMapId || 'STARTING_MEADOW',
       wChunks,
       dChunks,
       1,

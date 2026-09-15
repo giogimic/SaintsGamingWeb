@@ -43,7 +43,7 @@ import { TurnBattleOverlay } from './battle/TurnBattleOverlay';
 import { useGameStore } from './store';
 import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
 import { canEnterStudio } from '@/shared/game/studioPermissions';
-import { getSpawnMapId } from '@/app/actions/settings';
+import { getActiveWorldRelease } from '@/app/actions/studio/world-release';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import {
   setEditorMode,
@@ -269,10 +269,10 @@ export default function TheLobby({
     return [];
   };
 
-  const [spawnMapId, setSpawnMapId] = useState('DEMO_SANDBOX');
+  const [activeRelease, setActiveRelease] = useState<any>(null);
 
   useEffect(() => {
-    getSpawnMapId().then(setSpawnMapId).catch(console.error);
+    getActiveWorldRelease('saints').then(setActiveRelease).catch(console.error);
   }, []);
 
   const DEFAULT_SPAWN = { x: 32, y: 32 };
@@ -305,7 +305,14 @@ export default function TheLobby({
         /* ignore */
       }
 
-      const spawnMapId = await getSpawnMapId();
+      const activeRelease = await getActiveWorldRelease('saints');
+      if (!activeRelease) {
+        showToast('World Login Failed: No active release deployed on server.');
+        setIsInitializing(false);
+        return;
+      }
+      const manifest = JSON.parse(activeRelease.manifestData || '{}');
+      const spawnMapId = manifest.gameConfig?.defaultSpawnGateId || availableMapIds[0] || 'STARTING_MEADOW';
 
       const safeSpawn = resolveSafePlayerSpawn({
         savedMapId: savedMap,
@@ -406,7 +413,14 @@ export default function TheLobby({
   const enterStudioAuthorSession = async (mapId?: string) => {
     if (!enableStudio) return;
     setIsInitializing(true);
-    const spawnMapId = await getSpawnMapId();
+    const activeRelease = await getActiveWorldRelease('saints');
+    if (!activeRelease) {
+      showToast('Studio Login Failed: No active release deployed. You must publish a release first.');
+      setIsInitializing(false);
+      return;
+    }
+    const manifest = JSON.parse(activeRelease.manifestData || '{}');
+    const spawnMapId = manifest.gameConfig?.defaultSpawnGateId || 'STARTING_MEADOW';
     let validMapId = mapId === 'SAINTS_VILLAGE' || !mapId ? spawnMapId : mapId.replace(/_ch\d+$/, '');
     let validPosition = { ...DEFAULT_SPAWN };
 

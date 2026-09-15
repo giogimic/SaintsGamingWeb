@@ -48,9 +48,9 @@ func TestPersistInventoryAndQuestRoundTrip(t *testing.T) {
 	}
 
 	store := &persist.Store{DB: sqlDB}
-	store.SavePlayer("acc1", "char_id1", "DEMO_SANDBOX_ch2", 9, 4, 0, 150)
+	store.SavePlayer("acc1", "char_id1", "STARTING_MEADOW_ch2", 9, 4, 0, 150)
 	hot := store.LoadPlayer("acc1")
-	if !hot.OK || hot.X != 9 || hot.Y != 4 || hot.MapID != "DEMO_SANDBOX" {
+	if !hot.OK || hot.X != 9 || hot.Y != 4 || hot.MapID != "STARTING_MEADOW" {
 		t.Fatalf("%+v", hot)
 	}
 }

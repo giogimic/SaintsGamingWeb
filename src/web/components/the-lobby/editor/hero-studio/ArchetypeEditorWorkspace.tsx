@@ -27,7 +27,7 @@ const EMPTY_HERO: StarterHeroData = {
   tagColor: '#a78bfa',
   sortOrder: 0,
   isActive: true,
-  startingMap: 'DEMO_SANDBOX',
+  startingMap: 'STARTING_MEADOW',
   startingX: 14,
   startingY: 15,
   startingInventory: '{"patch_kit":5}',
@@ -497,7 +497,7 @@ export function ArchetypeEditorWorkspace() {
                 <div>
                   <label className={labelCls}>Initial Map</label>
                   <select value={form.startingMap} onChange={e => f('startingMap', e.target.value)} className={inputCls}>
-                    {mapList.length === 0 && <option value="DEMO_SANDBOX">DEMO_SANDBOX (Fallback)</option>}
+                    {mapList.length === 0 && <option value="STARTING_MEADOW">STARTING_MEADOW (Fallback)</option>}
                     {mapList.map(map => <option key={map.id} value={map.id}>{map.name}</option>)}
                   </select>
                 </div>

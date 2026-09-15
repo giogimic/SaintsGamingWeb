@@ -1018,7 +1018,7 @@ func BuildDemoVoxelWorld(widthBlocks, depthBlocks int) *VoxelWorld {
 	dChunks := (depthBlocks + ChunkSizeZ - 1) / ChunkSizeZ
 
 	world := &VoxelWorld{
-		ID:           "DEMO_SANDBOX",
+		ID:           "STARTING_MEADOW",
 		WidthChunks:  wChunks,
 		DepthChunks:  dChunks,
 		HeightChunks: 1,

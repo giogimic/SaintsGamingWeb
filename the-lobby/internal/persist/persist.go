@@ -119,7 +119,7 @@ func (s *Store) SaveInventory(accountID string, items []Item, credits int) {
 	defer func() { _ = tx.Rollback() }()
 	_, _ = tx.Exec(`
 INSERT INTO GoPlayerState (accountId, mapId, x, y, credits, updatedAt)
-VALUES (?, 'DEMO_SANDBOX', 5, 5, ?, datetime('now'))
+VALUES (?, 'STARTING_MEADOW', 14, 15, ?, datetime('now'))
 ON CONFLICT(accountId) DO UPDATE SET credits=excluded.credits, updatedAt=datetime('now')
 `, accountID, credits)
 	_, _ = tx.Exec(`DELETE FROM GoInventory WHERE accountId = ?`, accountID)

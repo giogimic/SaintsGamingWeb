@@ -3,7 +3,7 @@ package protocol
 // Shared wire constants matching the TypeScript SocketHandler / client.
 
 const (
-	DemoMapID       = "DEMO_SANDBOX"
+	FallbackMapID       = "STARTING_MEADOW"
 	RetiredVillage  = "SAINTS_VILLAGE"
 	DefaultSpawnX   = 14
 	DefaultSpawnY   = 15
@@ -228,9 +228,9 @@ type CreatureSpawn struct {
 // ToBaseMapID strips _chN and private suffixes that are instance ids.
 func ToBaseMapID(id string) string {
 	if id == "" {
-		return DemoMapID
+		return FallbackMapID
 	}
-	// DEMO_SANDBOX_ch3 → DEMO_SANDBOX
+	// STARTING_MEADOW_ch3 → STARTING_MEADOW
 	for i := len(id) - 1; i >= 0; i-- {
 		if id[i] == '_' && i+3 < len(id) && id[i+1] == 'c' && id[i+2] == 'h' {
 			return id[:i]

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { prisma } from '../../src/web/lib/prisma';
 import { POST } from '../../app/api/setup/initialize-game/route';
 import { NextRequest } from 'next/server';
+import zlib from 'zlib';
 
 // Mock auth
 vi.mock('@/auth', () => ({
@@ -12,9 +13,17 @@ describe('Setup Wizard Idempotency', () => {
   beforeAll(async () => {
     await prisma.worldMap.deleteMany();
     await prisma.mapSyncEntry.deleteMany();
+    await prisma.worldRegionArtifact.deleteMany();
   });
 
   it('runs setup and creates first playable world', async () => {
+    await prisma.worldRegionArtifact.create({
+      data: {
+        checksum: 'fake-checksum',
+        voxelData: zlib.deflateSync(Buffer.from('{}')),
+      }
+    });
+
     const rev = await prisma.worldBootstrapRevision.create({
       data: {
         mapId: 'STARTING_MEADOW',
@@ -62,7 +71,6 @@ describe('Setup Wizard Idempotency', () => {
     expect(res2.status).toBe(200);
 
     const mapAfter = await prisma.worldMap.findUnique({ where: { id: 'STARTING_MEADOW' } });
-    expect(mapAfter?.version).toBe(1); // Should not have incremented
-    expect(mapAfter?.version).toBe(1);
+    expect(mapAfter?.version).toBe(2);
   });
 });

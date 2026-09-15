@@ -312,7 +312,7 @@ export function WorldHierarchyPanel() {
           <span>Inspect Node</span>
         </button>
         <span className="text-[10px] text-muted-foreground/60">
-          Root: {currentMapId || 'DEMO_SANDBOX'}
+          Root: {currentMapId || 'STARTING_MEADOW'}
         </span>
       </div>
     </div>

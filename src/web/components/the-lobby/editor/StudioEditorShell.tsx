@@ -46,7 +46,8 @@ import {
   Wand2,
   EyeOff,
   Eye,
-  Box
+  Box,
+  MapPin
 } from 'lucide-react';
 import { resolveTilesetTextureUrl } from '@/shared/game/tileBatchHelpers';
 import { useGameStore } from '../store';
@@ -87,15 +88,14 @@ const DungeonEditorPanel = lazy(() => import('./panels/DungeonEditorPanel').then
 const ShopEditorPanel = lazy(() => import('./panels/ShopEditorPanel').then((m) => ({ default: m.ShopEditorPanel })));
 const MountEditorPanel = lazy(() => import('./panels/MountEditorPanel').then((m) => ({ default: m.MountEditorPanel })));
 const WorldEventPanel = lazy(() => import('./panels/WorldEventPanel').then((m) => ({ default: m.WorldEventPanel })));
-const VersionManagerPanel = lazy(() => import('./panels/VersionManagerPanel').then((m) => ({ default: m.VersionManagerPanel })));
+const WorldManagerPanel = lazy(() => import('./panels/WorldManagerPanel').then((m) => ({ default: m.WorldManagerPanel })));
+const SpawnEditorPanel = lazy(() => import('./panels/SpawnEditorPanel').then((m) => ({ default: m.SpawnEditorPanel })));
 const AnimationStudioPanel = lazy(() => import('./panels/AnimationStudioPanel').then((m) => ({ default: m.AnimationStudioPanel })));
 const MapTabPanel = lazy(() => import('./panels/MapTabPanel').then((m) => ({ default: m.MapTabPanel })));
-const TileMapBrowserPanel = lazy(() => import('./panels/TileMapBrowserPanel').then((m) => ({ default: m.TileMapBrowserPanel })));
-const VoxelMapBrowserPanel = lazy(() => import('./panels/VoxelMapBrowserPanel').then((m) => ({ default: m.VoxelMapBrowserPanel })));
+const MapEditorPanel = lazy(() => import('./panels/MapEditorPanel').then((m) => ({ default: m.MapEditorPanel })));
 const NewTileMapPanel = lazy(() => import('./panels/NewTileMapPanel').then((m) => ({ default: m.NewTileMapPanel })));
 const NewVoxelMapPanel = lazy(() => import('./panels/NewVoxelMapPanel').then((m) => ({ default: m.NewVoxelMapPanel })));
 const NewFractalMapPanel = lazy(() => import('./panels/NewFractalMapPanel').then((m) => ({ default: m.NewFractalMapPanel })));
-const FractalDomainsPanel = lazy(() => import('./panels/FractalDomainsPanel').then((m) => ({ default: m.FractalDomainsPanel })));
 const InterfaceEditorPanel = lazy(() => import('./panels/InterfaceEditorPanel').then((m) => ({ default: m.InterfaceEditorPanel })));
 const CameraSettingsPanel = lazy(() => import('./panels/CameraSettingsPanel').then((m) => ({ default: m.CameraSettingsPanel })));
 const BiomeConfiguratorPanel = lazy(() => import('./panels/BiomeConfiguratorPanel').then((m) => ({ default: m.BiomeConfiguratorPanel })));
@@ -580,15 +580,9 @@ export const StudioEditorShell: React.FC = () => {
             </DraggablePanel>
           )}
 
-          {(canUseStudioDock(permissionLevel, 'tileBrowser') || canUseStudioDock(permissionLevel, 'atlas')) && (
-            <DraggablePanel id="tileBrowser" icon={<Globe className="w-4 h-4" />} title="Tile Map Browser">
-              <Suspense fallback={<div>Loading...</div>}><TileMapBrowserPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {(canUseStudioDock(permissionLevel, 'voxelBrowser') || canUseStudioDock(permissionLevel, 'atlas')) && (
-            <DraggablePanel id="voxelBrowser" icon={<Box className="w-4 h-4 text-blue-400" />} title="Voxel Map Browser">
-              <Suspense fallback={<div>Loading...</div>}><VoxelMapBrowserPanel /></Suspense>
+          {(canUseStudioDock(permissionLevel, 'mapEditor') || canUseStudioDock(permissionLevel, 'atlas')) && (
+            <DraggablePanel id="mapEditor" icon={<Globe className="w-4 h-4" />} title="Map Editor">
+              <Suspense fallback={<div>Loading...</div>}><MapEditorPanel /></Suspense>
             </DraggablePanel>
           )}
 
@@ -610,12 +604,6 @@ export const StudioEditorShell: React.FC = () => {
             </DraggablePanel>
           )}
 
-          {canUseStudioDock(permissionLevel, 'atlas') && (
-            <DraggablePanel id="fractals" icon={<Globe className="w-4 h-4 text-emerald-400" />} title="Fractal Domains">
-              <Suspense fallback={<div>Loading...</div>}><FractalDomainsPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
           {(canUseStudioDock(permissionLevel, 'dungeons') || canUseStudioDock(permissionLevel, 'dungeon')) && (
             <DraggablePanel id="dungeons" icon={<Shield className="w-4 h-4 text-purple-400" />} title="Dungeon Studio">
               <Suspense fallback={<div>Loading...</div>}><DungeonEditorPanel /></Suspense>
@@ -630,9 +618,15 @@ export const StudioEditorShell: React.FC = () => {
             </DraggablePanel>
           )}
 
-          {canUseStudioDock(permissionLevel, 'versionManager') && (
-            <DraggablePanel id="versionManager" icon={<CloudUpload className="w-4 h-4 text-emerald-400" />} title="Version Manager" portalToBody={true}>
-              <Suspense fallback={<div>Loading...</div>}><VersionManagerPanel /></Suspense>
+          {canUseStudioDock(permissionLevel, 'worldManager') && (
+            <DraggablePanel id="worldManager" icon={<CloudUpload className="w-4 h-4 text-emerald-400" />} title="World Manager" portalToBody={true}>
+              <Suspense fallback={<div>Loading...</div>}><WorldManagerPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'spawnEditor') && (
+            <DraggablePanel id="spawnEditor" icon={<MapPin className="w-4 h-4 text-emerald-400" />} title="Spawn Editor" portalToBody={true}>
+              <Suspense fallback={<div>Loading...</div>}><SpawnEditorPanel /></Suspense>
             </DraggablePanel>
           )}
 

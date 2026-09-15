@@ -69,7 +69,7 @@ func main() {
 	}
 
 	// Load latest saints release on boot
-	if version, err := wm.LatestReleaseVersion(sqlDB, "saints"); err == nil && version != "" {
+	if version, err := wm.ActiveReleaseVersion(sqlDB, "saints"); err == nil && version != "" {
 		if manifest, err := wm.ParseRelease(sqlDB, "saints", version); err == nil {
 			_ = wm.ApplyReleaseMaps(manifest)
 			deps.Registry.LoadFromManifest(manifest.Actors.Creatures, manifest.Items)
@@ -158,3 +158,4 @@ func main() {
 	_ = srv.Close()
 	io.Close(nil)
 }
+

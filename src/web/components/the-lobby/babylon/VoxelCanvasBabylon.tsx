@@ -64,7 +64,7 @@ import { VoxelChunk } from '@/shared/game/voxel/VoxelChunk';
 import { validatePortalFrame } from '@/client/engine/voxel/PortalValidator';
 
 /** Lobby multiplayer shard base — keep in sync with server DEMO_MAP_ID. */
-const LOBBY_MULTIPLAYER_MAP = 'DEMO_SANDBOX';
+const LOBBY_MULTIPLAYER_MAP = 'STARTING_MEADOW';
 
 
 
@@ -709,7 +709,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const handleNodeDepletedFallback = (e: Event) => {
       const data = (e as CustomEvent).detail || {};
       const { x, y } = data;
-      // DEMO_SANDBOX has no rich tile layers — hide prop meshes on deplete
+      // STARTING_MEADOW has no rich tile layers — hide prop meshes on deplete
       if (typeof x === 'number' && typeof y === 'number' && engineRef.current?.clearTileProps) {
         engineRef.current.clearTileProps(y, x);
       }

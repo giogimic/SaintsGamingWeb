@@ -296,7 +296,7 @@ export const PropertiesPanel: React.FC = () => {
             <div className="grid grid-cols-2 gap-2 text-[10px]">
               <div className="bg-black/40 p-2 rounded border border-white/5">
                 <span className="text-muted-foreground block text-[9px]">Map Base ID</span>
-                <span className="text-foreground font-bold">{currentMapId || 'DEMO_SANDBOX'}</span>
+                <span className="text-foreground font-bold">{currentMapId || 'STARTING_MEADOW'}</span>
               </div>
               <div className="bg-black/40 p-2 rounded border border-white/5">
                 <span className="text-muted-foreground block text-[9px]">Grid Bounds</span>

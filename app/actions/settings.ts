@@ -15,31 +15,16 @@ export async function getDiscordInviteUrl() {
 }
 
 export async function getSiteVersion(isStatic = false): Promise<string> {
-  if (isStatic) return process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.876";
+  if (isStatic) return process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.877";
 
   try {
     const setting = await prisma.siteSetting.findUnique({ where: { key: 'SITE_VERSION' } });
-    return setting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.876";
+    return setting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.877";
   } catch {
     // Fallback if DB not ready
-    return process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.876";
+    return process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.877";
   }
 }
 
-export async function getSpawnMapId() {
-  try {
-    const setting = await prisma.siteSetting.findUnique({
-      where: { key: "SPAWN_MAP_ID" }
-    });
-    if (setting?.value) return setting.value;
 
-    const defaultSetting = await prisma.siteSetting.findUnique({
-      where: { key: "DEFAULT_MAP_ID" }
-    });
-    return defaultSetting?.value || "STARTING_MEADOW";
-  } catch (e) {
-    console.error("Failed to fetch spawn map ID", e);
-    return "STARTING_MEADOW";
-  }
-}
 

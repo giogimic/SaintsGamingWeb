@@ -42,3 +42,34 @@ export async function getActiveWorldProject(slug: string = 'saints') {
     return { success: false, error: err.message };
   }
 }
+
+export async function setCanonicalSpawn(gateId: string) {
+  const isAdmin = await checkAdminPermission();
+  if (!isAdmin) return { success: false, error: 'Unauthorized' };
+
+  try {
+    const config = await prisma.gameConfig.findFirst();
+    if (!config) return { success: false, error: 'No game config found' };
+
+    await prisma.gameConfig.update({
+      where: { id: config.id },
+      data: { defaultSpawnGateId: gateId },
+    });
+
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function getCanonicalSpawn() {
+  const isAdmin = await checkAdminPermission();
+  if (!isAdmin) return { success: false, error: 'Unauthorized' };
+
+  try {
+    const config = await prisma.gameConfig.findFirst();
+    return { success: true, gateId: config?.defaultSpawnGateId || '' };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}

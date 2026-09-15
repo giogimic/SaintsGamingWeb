@@ -39,7 +39,7 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
   mapData,
   isActive,
 }) => {
-  const currentMapId = mapData?.id || "DEMO_SANDBOX";
+  const currentMapId = mapData?.id || "STARTING_MEADOW";
   const activeMap = mapData as GameMapData | null;
   const mapWidth = activeMap?.width || 30;
   const mapHeight = activeMap?.height || 30;
@@ -597,7 +597,7 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
     const handleNodeDepletedFallback = (e: Event) => {
       const data = (e as CustomEvent).detail || {};
       const { x, y } = data;
-      // DEMO_SANDBOX has no rich tile layers — hide prop meshes on deplete
+      // STARTING_MEADOW has no rich tile layers — hide prop meshes on deplete
       if (
         typeof x === "number" &&
         typeof y === "number" &&

@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { createGameCharacter } from '@/app/actions/game';
 import { getStarterHeroes } from '@/app/actions/game/starter-heroes';
-import { getSpawnMapId } from '@/app/actions/settings';
+import { getActiveWorldRelease } from '@/app/actions/studio/world-release';
 import { getPlayableClasses } from '@/app/actions/game/character-classes';
 import { ensureWorldProfiles } from '@/app/actions/studio/world-profiles';
 import { toast } from 'sonner';
@@ -370,11 +370,14 @@ export function CharacterCreator({
     let startY = hero?.startingY;
 
     if (!startMap) {
+      startMap = 'STARTING_MEADOW';
       try {
-        startMap = await getSpawnMapId();
-      } catch {
-        startMap = 'STARTING_MEADOW';
-      }
+        const activeRelease = await getActiveWorldRelease('saints');
+        if (activeRelease) {
+          const manifest = JSON.parse(activeRelease.manifestData || '{}');
+          startMap = manifest.gameConfig?.defaultSpawnGateId || startMap;
+        }
+      } catch {}
     }
 
     if (startX === undefined || startY === undefined) {

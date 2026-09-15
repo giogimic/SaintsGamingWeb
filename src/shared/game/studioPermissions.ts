@@ -42,8 +42,7 @@ export type StudioDockId =
   | "professions"
   | "recipes"
   | "dungeon"
-  | "tileBrowser"
-  | "voxelBrowser"
+  | "mapEditor"
   | "newTileMap"
   | "newVoxelMap"
   | "animations"
@@ -56,7 +55,8 @@ export type StudioDockId =
   | "layers"
   | "hierarchy"
   | "materials"
-  | "versionManager";
+  | "worldManager"
+  | "spawnEditor";
 
 /** Minimum level to enter `/studio` and use create docks (= ADMIN). */
 export const STUDIO_ENTRY_LEVEL = 400;
@@ -103,8 +103,7 @@ export const STUDIO_DOCK_MIN_LEVEL: Record<StudioDockId, number> = {
   publishing: STUDIO_ENTRY_LEVEL,
   professions: STUDIO_ENTRY_LEVEL,
   recipes: STUDIO_ENTRY_LEVEL,
-  tileBrowser: STUDIO_ENTRY_LEVEL,
-  voxelBrowser: STUDIO_ENTRY_LEVEL,
+  mapEditor: STUDIO_ENTRY_LEVEL,
   newTileMap: STUDIO_ENTRY_LEVEL,
   newVoxelMap: STUDIO_ENTRY_LEVEL,
   animations: STUDIO_ENTRY_LEVEL,
@@ -117,7 +116,8 @@ export const STUDIO_DOCK_MIN_LEVEL: Record<StudioDockId, number> = {
   layers: STUDIO_ENTRY_LEVEL,
   hierarchy: STUDIO_ENTRY_LEVEL,
   materials: STUDIO_ENTRY_LEVEL,
-  versionManager: STUDIO_ENTRY_LEVEL,
+  worldManager: STUDIO_ENTRY_LEVEL,
+  spawnEditor: STUDIO_ENTRY_LEVEL,
 };
 
 

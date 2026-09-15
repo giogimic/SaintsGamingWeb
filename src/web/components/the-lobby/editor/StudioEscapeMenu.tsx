@@ -290,7 +290,7 @@ export const StudioEscapeMenu: React.FC<StudioEscapeMenuProps> = ({
                 <div className="p-3.5 rounded-lg bg-[#0a1628]/60 border border-border/40 space-y-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Document ID</span>
-                    <span className="font-bold text-primary">{activeMapData?.id || 'DEMO_SANDBOX'}</span>
+                    <span className="font-bold text-primary">{activeMapData?.id || 'STARTING_MEADOW'}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Dimensions</span>

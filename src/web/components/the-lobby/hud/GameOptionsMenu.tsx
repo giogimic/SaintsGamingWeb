@@ -28,7 +28,7 @@ import {
   Eye,
   Lock,
 } from 'lucide-react';
-import { getSpawnMapId } from '@/app/actions/settings';
+import { getActiveWorldRelease } from '@/app/actions/studio/world-release';
 import { BUILTIN_HUD_PRESETS } from './default-presets';
 import { HUD_THEME_LIST } from './hud-themes';
 import { soundSynth } from '@/engine/sound-synth';
@@ -123,9 +123,13 @@ export default function GameOptionsMenu({
           localStorage.setItem('saints.lastUnstuckTimestamp', String(Date.now()));
         } catch {}
 
-        let targetMapId = 'DEMO_SANDBOX';
+        let targetMapId = 'STARTING_MEADOW';
         try {
-          targetMapId = await getSpawnMapId();
+          const activeRelease = await getActiveWorldRelease('saints');
+          if (activeRelease) {
+            const manifest = JSON.parse(activeRelease.manifestData || '{}');
+            targetMapId = manifest.gameConfig?.defaultSpawnGateId || targetMapId;
+          }
         } catch {}
 
         const store = useGameStore.getState();

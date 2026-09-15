@@ -990,9 +990,9 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 480,
     zIndex: 10,
   },
-  versionManager: {
-    id: 'versionManager',
-    title: 'Version Manager',
+  worldManager: {
+    id: 'worldManager',
+    title: 'World Manager',
     isOpen: false,
     isCollapsed: false,
     x: 300,
@@ -1001,26 +1001,26 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 620,
     zIndex: 10,
   },
-  tileBrowser: {
-    id: 'tileBrowser',
-    title: 'Tile Maps',
+  spawnEditor: {
+    id: 'spawnEditor',
+    title: 'World Spawn Editor',
     isOpen: false,
     isCollapsed: false,
-    x: typeof window !== 'undefined' ? Math.max(20, (window.innerWidth - 600) / 2) : 300,
-    y: typeof window !== 'undefined' ? Math.max(20, (window.innerHeight - 500) / 2) : 150,
+    x: 400,
+    y: 100,
     width: 600,
-    height: 500,
+    height: 480,
     zIndex: 10,
   },
-  voxelBrowser: {
-    id: 'voxelBrowser',
-    title: 'Voxel Maps',
+  mapEditor: {
+    id: 'mapEditor',
+    title: 'Map Editor',
     isOpen: false,
     isCollapsed: false,
-    x: typeof window !== 'undefined' ? Math.max(20, (window.innerWidth - 600) / 2) : 300,
-    y: typeof window !== 'undefined' ? Math.max(20, (window.innerHeight - 500) / 2) : 150,
-    width: 600,
-    height: 500,
+    x: typeof window !== 'undefined' ? Math.max(20, (window.innerWidth - 700) / 2) : 300,
+    y: typeof window !== 'undefined' ? Math.max(20, (window.innerHeight - 550) / 2) : 150,
+    width: 700,
+    height: 550,
     zIndex: 10,
   },
   newTileMap: {
@@ -1632,8 +1632,8 @@ export const useEditorStore = create<EditorState>()(
       showWarpOverlays: true,
       showSpawnOverlays: true,
 
-      openMapTabs: ['DEMO_SANDBOX'],
-      activeMapTab: 'DEMO_SANDBOX',
+      openMapTabs: [],
+      activeMapTab: '',
       isStudioFreeCam: false,
       canvasViewport: { 
         x: typeof window !== 'undefined' ? Math.max(360, Math.floor((window.innerWidth - 880) / 2)) : 360, 
@@ -1785,7 +1785,7 @@ export const useEditorStore = create<EditorState>()(
           const gameStore = useGameStore.getState();
           const mapType = gameStore.activeMapData?.mapType;
           const currentMapId = gameStore.currentMapId;
-          const SYSTEM_MAPS = ['STARTING_MEADOW', 'GENERIC_FALLBACK_MAP', 'DEMO_SANDBOX', 'STARTING_MAP'];
+          const SYSTEM_MAPS = ['STARTING_MEADOW', 'GENERIC_FALLBACK_MAP', 'STARTING_MAP'];
           const hasValidMap = currentMapId && !SYSTEM_MAPS.includes(currentMapId);
 
           const openDraftPanel = (id: PanelId) => {
@@ -1801,7 +1801,7 @@ export const useEditorStore = create<EditorState>()(
               openModePanels(state, mode);
               openDraftPanel('primaryTileViewport');
             } else {
-              openDraftPanel('tileBrowser');
+              openDraftPanel('mapEditor');
             }
           } else if (mode === 'voxel') {
             if (hasValidMap && (mapType === 'VOXEL' || mapType === 'FRACTAL')) {
@@ -1834,11 +1834,10 @@ export const useEditorStore = create<EditorState>()(
       handleMapLoaded: (mapId, mapType) => {
         set((state) => {
           // If we loaded a valid map, ensure it opens the correct panels
-          const SYSTEM_MAPS = ['STARTING_MEADOW', 'GENERIC_FALLBACK_MAP', 'DEMO_SANDBOX', 'STARTING_MAP'];
+          const SYSTEM_MAPS = ['STARTING_MEADOW', 'GENERIC_FALLBACK_MAP', 'STARTING_MAP'];
           if (SYSTEM_MAPS.includes(mapId)) return;
           
-          state.panels['tileBrowser'].isOpen = false;
-          state.panels['voxelBrowser'].isOpen = false;
+          state.panels['mapEditor'].isOpen = false;
           
           const openDraftPanel = (id: PanelId) => {
             if (!state.panels[id]) return;

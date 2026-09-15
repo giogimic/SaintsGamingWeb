@@ -47,7 +47,7 @@ type SizePreset = 'tiny' | 'small' | 'standard' | 'large' | 'custom';
 type ViewMode = 'list' | 'grid';
 type SortField = 'name' | 'id' | 'size' | 'category';
 
-export const TileMapBrowserPanel: React.FC = () => {
+export const VoxelMapBrowserView: React.FC = () => {
   const { data: session } = useSession();
   const userPermission = (session?.user as any)?.permissionLevel ?? 0;
   const canEdit = canWriteStudioContent(userPermission);
@@ -70,16 +70,7 @@ export const TileMapBrowserPanel: React.FC = () => {
   const [batchDeleteModalOpen, setBatchDeleteModalOpen] = useState(false);
 
   const { maps: remoteMaps, isLoading: loading, mutateMaps } = useMapIndex();
-  const { settings: realmSettings } = useRealmSettings();
-  const spawnMapId = (realmSettings?.spawnMapId || DEFAULT_SPAWN_MAP_ID).toUpperCase();
 
-
-  // Version History Modal State
-  const [versionModalMapId, setVersionModalMapId] = useState<string | null>(null);
-  const [versionList, setVersionList] = useState<[]>([]);
-  const [loadingVersions, setLoadingVersions] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [isRollingBack, setIsRollingBack] = useState(false);
 
   // Single Delete confirm state
   const [deleteTargetMapId, setDeleteTargetMapId] = useState<string | null>(null);
@@ -88,18 +79,16 @@ export const TileMapBrowserPanel: React.FC = () => {
   // Map Settings Modal State
   const [settingsModalMapId, setSettingsModalMapId] = useState<string | null>(null);
 
-  useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (versionModalMapId) setVersionModalMapId(null);
-        else if (deleteTargetMapId) setDeleteTargetMapId(null);
+        if (deleteTargetMapId) setDeleteTargetMapId(null);
         else if (batchDeleteModalOpen) setBatchDeleteModalOpen(false);
         else if (settingsModalMapId) setSettingsModalMapId(null);
       }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [versionModalMapId, deleteTargetMapId, batchDeleteModalOpen, settingsModalMapId]);
+  }, [deleteTargetMapId, batchDeleteModalOpen, settingsModalMapId]);
 
   // Combined & Filtered Map list
   const localList = searchMapIndex(debouncedSearchQuery);
@@ -111,12 +100,12 @@ export const TileMapBrowserPanel: React.FC = () => {
   const SYSTEM_MAPS = ['DEMO_SANDBOX', 'STARTING_MAP', 'GENERIC_FALLBACK_MAP'];
   const combined = [...localList, ...remoteFiltered.filter((m) => !seen.has(m.id))].filter(m => !SYSTEM_MAPS.includes(m.id.toUpperCase()));
 
-  const categories = ['ALL', 'Tile Maps'];
+  const categories = ['ALL', 'Voxel Maps'];
   const filtered = useMemo(() => {
     let list = combined;
 
-    // Isolate by map type (strictly Tile maps only)
-    list = list.filter((m) => m.mapType !== 'VOXEL' && m.mapType !== 'FRACTAL');
+    // Isolate by map type (strictly Voxel/Fractal maps only)
+    list = list.filter((m) => m.mapType === 'VOXEL' || m.mapType === 'FRACTAL' || m.mapType === 'HYBRID');
 
     return list.sort((a, b) => {
       let cmp = 0;
@@ -179,7 +168,7 @@ export const TileMapBrowserPanel: React.FC = () => {
     } catch {
       useGameStore.setState({ currentMapId: mapId });
       showToast(`Switched to ${mapId} (loading…)`);
-      useEditorStore.getState().closePanel('tileBrowser');
+      useEditorStore.getState().closePanel('voxelBrowser');
     }
   };
 
@@ -220,44 +209,32 @@ export const TileMapBrowserPanel: React.FC = () => {
     if (ids.length === 0) return;
 
     setIsBatchOperating(true);
-    let deletedCount = 0;
-    try {
-      await Promise.allSettled(
-        ids.map(async (id) => {
-          unregisterMap(id);
-          const res = await fetch(`/api/maps/${encodeURIComponent(id)}`, { method: 'DELETE' });
-          if (res.ok) deletedCount++;
-        })
-      );
-      showToast(`Deleted ${deletedCount} maps`);
-      setSelectedMapIds(new Set());
-      setBatchDeleteModalOpen(false);
-      mutateMaps();
-    } finally {
-      setIsBatchOperating(false);
-    }
-  };
-
-  const handlePublishProject = async () => {
-    // Publish the entire "saints" project
+    if (selectedMapIds.size === 0) return;
     setIsBatchOperating(true);
-    try {
-      const res = await fetch(`/api/maps/${encodeURIComponent(spawnMapId || 'STARTING_MEADOW')}/publish`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: 'Published Project from Map Browser' }),
-      });
-      if (!res.ok) {
-        throw new Error('Failed to publish project');
+    let successCount = 0;
+    
+    // Convert Set to Array
+    const ids = Array.from(selectedMapIds);
+
+    for (const id of ids) {
+      try {
+        const res = await fetch(`/api/maps/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        if (res.ok) {
+          unregisterMap(id);
+          successCount++;
+        }
+      } catch (e) {
+        console.error(`Failed to delete map ${id}`, e);
       }
-      const data = await res.json();
-      showToast(`Published Project Version v${data.version}`);
-      mutateMaps();
-    } catch (e: any) {
-      showToast(e?.message || 'Error publishing project');
-    } finally {
-      setIsBatchOperating(false);
     }
+
+    if (successCount > 0) {
+      showToast(`Deleted ${successCount} maps successfully.`);
+      await mutateMaps();
+      setSelectedMapIds(new Set());
+    }
+    setIsBatchOperating(false);
+    setBatchDeleteModalOpen(false);
   };
 
   const handleBatchExport = async () => {
@@ -291,31 +268,17 @@ export const TileMapBrowserPanel: React.FC = () => {
     }
   };
 
-
-  // Legacy publish and rollback methods removed as part of WorldProject release migration
-
   return (
     <div className="flex flex-col h-full bg-[#050b14] text-slate-200 font-mono select-none overflow-hidden">
       {/* ── SIDEBAR HEADER ── */}
       <div className="flex items-center justify-between px-3 py-2 bg-[#081220] border-b border-border/40 shrink-0">
         <div className="flex items-center gap-2">
-          <Globe className="w-4 h-4 text-emerald-400" />
+          <Globe className="w-4 h-4 text-primary" />
           <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-            Tile Maps
+            Voxel Maps
           </span>
         </div>
         <div className="flex items-center gap-1">
-          {canEdit && (
-            <button 
-              onClick={handlePublishProject} 
-              disabled={isBatchOperating}
-              className="p-1 px-2 rounded bg-amber-600/20 text-amber-500 hover:text-amber-300 hover:bg-amber-600/40 border border-amber-500/30 text-xs font-bold flex items-center gap-1 transition-colors disabled:opacity-50" 
-              title="Publish entire project (all maps) as a new immutable release version"
-            >
-              <UploadCloud className="w-3.5 h-3.5" />
-              <span>Publish Project</span>
-            </button>
-          )}
           <button onClick={() => mutateMaps()} className="p-1 rounded text-muted-foreground hover:text-slate-200 hover:bg-white/10" title="Reload">
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
@@ -331,8 +294,7 @@ export const TileMapBrowserPanel: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search maps..."
-            className="w-full pl-7 pr-2 py-1 bg-black/40 border border-border/40 rounded text-xs text-slate-200 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 select-text"
-            onKeyDown={(e) => e.stopPropagation()}
+            className="w-full pl-7 pr-2 py-1 bg-black/40 border border-border/40 rounded text-xs text-slate-200 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
           />
         </div>
       </div>
@@ -351,7 +313,6 @@ export const TileMapBrowserPanel: React.FC = () => {
               <div className="flex flex-col">
                 {catMaps.map(map => {
                   const isCurrent = (currentMapId || '').toUpperCase() === map.id.toUpperCase();
-                  const pubVersion = (map as any).version || 1;
                   return (
                     <div
                       key={map.id}
@@ -368,7 +329,6 @@ export const TileMapBrowserPanel: React.FC = () => {
                           </div>
                           <div className="text-[9px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
                             <span className="truncate">{map.id}</span>
-                            <span className="px-1 rounded bg-black/30 text-amber-500/80">v{pubVersion}</span>
                           </div>
                         </div>
                       </div>
@@ -378,7 +338,7 @@ export const TileMapBrowserPanel: React.FC = () => {
                         <button 
                           onClick={() => {
                             useEditorStore.getState().setSecondaryMap(map.id, map.mapType as any);
-                            useEditorStore.getState().openPanel('secondaryTileViewport');
+                            useEditorStore.getState().openPanel('secondaryVoxelViewport');
                           }} 
                           className="p-1 text-slate-400 hover:text-white" 
                           title="Open in New View"
@@ -390,7 +350,7 @@ export const TileMapBrowserPanel: React.FC = () => {
                             <Settings className="w-3 h-3" />
                           </button>
                         )}
-                        {canEdit && map.id.toUpperCase() !== spawnMapId && (
+                        {canEdit && (
                           <button onClick={() => setDeleteTargetMapId(map.id)} className="p-1 text-slate-400 hover:text-rose-400" title="Delete">
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -459,18 +419,14 @@ export const TileMapBrowserPanel: React.FC = () => {
               <div>
                 <h3 className="font-bold text-sm text-slate-100">Batch Delete Maps</h3>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Are you sure you want to delete {selectedMapIds.size} selected maps? (The spawn map will be protected).
+                  Are you sure you want to delete {selectedMapIds.size} selected maps?
                 </p>
               </div>
             </div>
-
             <div className="max-h-40 overflow-y-auto custom-scrollbar p-2 rounded-lg bg-black/40 border border-border/30 text-[11px] text-slate-300 space-y-1">
               {Array.from(selectedMapIds).map((id) => (
                 <div key={id} className="flex items-center justify-between">
                   <span>{id}</span>
-                  {id.toUpperCase() === spawnMapId && (
-                    <span className="text-emerald-400 text-[9px]">Spawn Protected</span>
-                  )}
                 </div>
               ))}
             </div>
