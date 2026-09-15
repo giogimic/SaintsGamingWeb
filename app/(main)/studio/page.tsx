@@ -15,10 +15,7 @@ export default async function StudioPage(props: {
   return (
     <div className="fixed inset-0 w-screen h-screen overflow-hidden z-50">
       <MidnightTropicalBackground showPalms={true} showWater={true} />
-      <StudioLobby
-        characterId={params.characterId}
-        forceCreate={params.create === 'true'}
-      />
+      <StudioLobby />
     </div>
   );
 }

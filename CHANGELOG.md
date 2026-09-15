@@ -1,3 +1,9 @@
+## 2.1.880
+- **Zero-Release Studio Bootstrap:** Decoupled the Studio authoring shell from the `TheLobby` playable application container.
+  - `StudioClient` now mounts `StudioEditorShell` directly and independently, removing all gameplay initialization (character fetching, gameMode, sockets) from the authoring shell.
+  - Studio can now be launched entirely from scratch with zero WorldProjects and zero deployed WorldReleases.
+  - Updated `/lobby` to track the active release check. If zero deployed releases exist, `/lobby` correctly intercepts rendering to display an offline message ("No playable world deployed") instead of dropping into character selection.
+
 ## 2.1.879
 - **Backend API Cleanup:** Renamed the legacy map publishing route from `api/maps/[slug]/publish` to `api/world/publish` and refactored it to use the new monolithic `WorldRelease` payload based on `projectId` instead of map slugs.
 - **Realm Settings Clean:** Completely removed the legacy `spawnMapId` from `RealmSettingsConfig`, `REALM_SETTING_KEYS`, the `StudioSettingsPanel`, and the `lobbyJoin.ts` coalescing functions. The game engine now strictly relies on the active `WorldRelease` for spawn resolution.

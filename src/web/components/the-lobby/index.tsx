@@ -115,13 +115,11 @@ export type LobbyClientMode = 'player' | 'studio';
 export default function TheLobby({
   characterId: initialCharacterId,
   forceCreate,
-  mode = 'player',
 }: {
   characterId?: string;
   forceCreate?: boolean;
-  mode?: LobbyClientMode;
 }) {
-  const enableStudio = mode === 'studio';
+  const enableStudio = false;
   const gameMode = useGameStore((state) => state.gameMode);
   const activeDialog = useGameStore((state) => state.activeDialog);
   const isMapTransitioning = useGameStore((state) => state.isMapTransitioning);
@@ -145,22 +143,15 @@ export default function TheLobby({
   const isCreationMode = useEditorStore((state) => state.isCreationMode);
   const studioMode = useEditorStore((state) => state.studioMode);
   /** Studio editor tools only — never treat /lobby as create-mode (store defaults true). */
-  const studioToolsOpen = enableStudio && isCreationMode;
+  const studioToolsOpen = false;
   const pieOptions = useEditorStore((state) => state.pieOptions);
   const activeBrushTileId = useEditorStore((state) => state.activeBrushTileId);
   const activeLayerIdx = useEditorStore((state) => state.activeLayerIdx);
   const setClickedTile = useEditorStore((state) => state.setClickedTile);
-  const suppressGameplay =
-    shouldSuppressGameplaySystems({
-      isEditorMode: enableStudio,
-      isCreationMode: studioToolsOpen,
-    }) ||
-    (enableStudio &&
-      !isCreationMode &&
-      shouldPieSuppressEncounters(pieOptions));
+  const suppressGameplay = false;
   const showGameplayHud = shouldShowGameplayHud({
-    isEditorMode: enableStudio,
-    isCreationMode: studioToolsOpen,
+    isEditorMode: false,
+    isCreationMode: false,
   });
   const isEditingInterface = useGameStore((s) => s.isEditingInterface || s.isUiEditMode);
   const showToast = useGameStore((s) => s.showToast);
@@ -168,32 +159,12 @@ export default function TheLobby({
 
 
 
-  // Automatically prompt for a map when entering a mode without a loaded map
-  useEffect(() => {
-    if (!enableStudio) return;
-    const currentMapId = useGameStore.getState().currentMapId;
-    if (currentMapId === spawnMapId) {
-      if (studioMode === 'tile') {
-        const hasTileMaps = devMapList.some(m => m.mapType !== 'VOXEL' && m.mapType !== 'FRACTAL');
-        if (hasTileMaps) useEditorStore.getState().openPanel('tileBrowser');
-        else useEditorStore.getState().openPanel('newTileMap');
-      } else if (studioMode === 'voxel') {
-        const hasVoxelMaps = devMapList.some(m => m.mapType === 'VOXEL' || m.mapType === 'FRACTAL' || m.mapType === 'HYBRID');
-        if (hasVoxelMaps) useEditorStore.getState().openPanel('voxelBrowser');
-        else useEditorStore.getState().openPanel('newVoxelMap');
-      }
-    }
-  }, [studioMode, enableStudio, devMapList]);
-
-  // Bible 17 — Studio sets global isEditorMode for clean gameplay gating.
   // Lobby must clear create-mode so shared editor-store never blocks walk/avatar.
   useEffect(() => {
-    setEditorMode(enableStudio);
-    if (!enableStudio) {
-      useEditorStore.setState({ isCreationMode: false, studioMode: 'test' });
-    }
+    setEditorMode(false);
+    useEditorStore.setState({ isCreationMode: false, studioMode: 'test' });
     return () => setEditorMode(false);
-  }, [enableStudio]);
+  }, []);
 
   // Infallible safety watchdog: never let the client remain permanently trapped in a black transition curtain
   useEffect(() => {
@@ -272,9 +243,16 @@ export default function TheLobby({
   };
 
   const [activeRelease, setActiveRelease] = useState<any>(null);
+  const [releaseCheckComplete, setReleaseCheckComplete] = useState(false);
 
   useEffect(() => {
-    getActiveWorldRelease('saints').then(setActiveRelease).catch(console.error);
+    getActiveWorldRelease('saints').then((release) => {
+      setActiveRelease(release);
+      setReleaseCheckComplete(true);
+    }).catch((err) => {
+      console.error(err);
+      setReleaseCheckComplete(true);
+    });
   }, []);
 
   const DEFAULT_SPAWN = { x: 32, y: 32 };
@@ -1937,6 +1915,18 @@ export default function TheLobby({
     );
   }
 
+  if (!releaseCheckComplete) {
+    return null;
+  }
+
+  if (releaseCheckComplete && !activeRelease) {
+    return (
+      <GameOfflineScreen 
+        customMessage="No playable world deployed. Publish and deploy a WorldRelease before entering the game." 
+      />
+    );
+  }
+
   if (gameMode === 'CHARACTER_SELECT' || showSelector) {
     return (
       <div className={frameClass}>
@@ -1945,16 +1935,7 @@ export default function TheLobby({
           onSelect={(id) => selectAndLoadCharacter(id)} 
           onCreateNew={() => { useGameStore.getState().setGameMode('CHARACTER_CREATOR'); setShowSelector(false); setShowCreator(true); }}
           onRefresh={() => loadCharactersList()}
-          onCancel={
-            enableStudio
-              ? () => {
-                  setShowSelector(false);
-                  void enterStudioAuthorSession(
-                    toBaseMapId(useGameStore.getState().currentMapId || spawnMapId)
-                  );
-                }
-              : undefined
-          }
+          onCancel={undefined}
         />
       </div>
     );
@@ -1965,10 +1946,8 @@ export default function TheLobby({
       ref={containerRef}
       className={frameClass}
     >
-      {enableStudio && <MidnightTropicalBackground />}
-      {enableStudio ? null : (
-        gameMode !== 'TITLE_SCREEN' && gameMode !== 'LOGIN' && gameMode !== 'SERVER_SELECT' && (
-          useGameStore.getState().activeMapData?.mapType === 'VOXEL' || useGameStore.getState().activeMapData?.mapType === 'FRACTAL' ? (
+      {gameMode !== 'TITLE_SCREEN' && gameMode !== 'LOGIN' && gameMode !== 'SERVER_SELECT' && (
+        useGameStore.getState().activeMapData?.mapType === 'VOXEL' || useGameStore.getState().activeMapData?.mapType === 'FRACTAL' ? (
             <VoxelCanvasBabylon 
               activeBrushTileId={activeBrushTileId}
               activeLayerIdx={activeLayerIdx}
@@ -1990,7 +1969,7 @@ export default function TheLobby({
             />
           )
         )
-      )}
+      }
 
       {/* Touch controls — only in-world. Do NOT wrap in a full-screen
           pointer-events-auto layer: that sat above the title UI (z-30 vs sibling
@@ -2014,7 +1993,7 @@ export default function TheLobby({
       <div
         className="pointer-events-none absolute inset-0 origin-top-left z-40"
         style={
-          isMobile && !enableStudio
+          isMobile
             ? {
                 transform: `scale(${uiScale})`,
                 transformOrigin: "top left",
@@ -2025,14 +2004,6 @@ export default function TheLobby({
         }
       >
         {gameMode === 'BATTLE' && !suppressGameplay && <TurnBattleOverlay />}
-
-        {/* Defense-in-depth: /studio layout already redirects non-Admin+ users,
-            but gate the shell on the client too if this mounts elsewhere. */}
-        {enableStudio && canStudio && (
-          <Suspense fallback={null}>
-            <StudioEditorShell />
-          </Suspense>
-        )}
 
         {studioToolsOpen ? (
           <StudioEscapeMenu
@@ -2054,13 +2025,7 @@ export default function TheLobby({
             isCreationMode={studioToolsOpen}
             onToggleDevEditor={() => {
               if (!canStudio) return;
-              if (!enableStudio) {
-                window.location.href = '/studio';
-                return;
-              }
-              if (!studioToolsOpen) useGameStore.getState().setGameMode('EXPLORING');
-              useEditorStore.getState().toggleCreationMode(); 
-              setIsOptionsOpen(false);
+              window.location.href = '/studio';
             }}
           />
         )}
@@ -2119,7 +2084,7 @@ export default function TheLobby({
         {/* Modular Dock-Based In-Game HUD */}
         {((['EXPLORING', 'DIALOG'].includes(gameMode) && showGameplayHud) || isEditingInterface) && (
           <HudErrorBoundary fallbackTitle="HUD Dock Error">
-            <LobbyHudDockLayout enableStudio={enableStudio} />
+            <LobbyHudDockLayout enableStudio={false} />
           </HudErrorBoundary>
         )}
 
