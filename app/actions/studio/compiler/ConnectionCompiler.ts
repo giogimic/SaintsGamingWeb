@@ -15,7 +15,7 @@ export async function compileConnections(ctx: CompilerContext): Promise<void> {
   // 1. Gather all Entry Points from the maps in this release
   for (const map of ctx.manifest.maps) {
     if (!mapEntryPoints.has(map.id)) {
-      mapEntryPoints.set(map.id, new Set(['default']));
+      mapEntryPoints.set(map.id, new Set());
     }
     
     // Parse Entities for Warp components (which act as entry points)
@@ -72,7 +72,11 @@ export async function compileConnections(ctx: CompilerContext): Promise<void> {
         return;
       }
       
-      const targetEntryPointId = warp.targetEntryPointId || 'default';
+      const targetEntryPointId = warp.targetEntryPointId;
+      if (!targetEntryPointId) {
+        ctx.errors.push(`Internal gate ${entId} in map ${map.id} is missing targetEntryPointId.`);
+        return;
+      }
       
       // VALIDATION: Does the target map exist in this release?
       if (!ctx.mapsIncluded.has(warp.targetMapId)) {

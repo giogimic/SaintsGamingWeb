@@ -103,7 +103,7 @@ func (m *Manager) ApplyReleaseMaps(manifest *ReleaseManifest) error {
 
 	m.ActiveRelease = manifest
 
-	// Clear and rebuild NPC registry for this release
+	// Clear and rebuild registries for this release
 	m.NPCRegistry = make(map[string]NPCSchemaDef)
 	for _, npc := range manifest.Actors.NPCs {
 		m.NPCRegistry[npc.Slug] = NPCSchemaDef{
@@ -114,6 +114,10 @@ func (m *Manager) ApplyReleaseMaps(manifest *ReleaseManifest) error {
 			Capabilities: npc.Capabilities,
 		}
 	}
+
+	// 20. MapSync Hardening: Evict outdated in-memory cache versions
+	// By creating a fresh defs map, we ensure maps deleted in this release are fully evicted from memory.
+	newDefs := make(map[string]*MapDef)
 
 	for _, mapData := range manifest.Maps {
 		def := &MapDef{
@@ -216,8 +220,10 @@ func (m *Manager) ApplyReleaseMaps(manifest *ReleaseManifest) error {
 			}
 		}
 
-		m.defs[def.ID] = def
+		newDefs[def.ID] = def
 	}
+
+	m.defs = newDefs
 
 	// Apply Connections Graph to Gates and build Connection Registry
 	m.Connections = make(map[string]map[string][]WorldConnection)

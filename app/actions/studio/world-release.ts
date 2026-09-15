@@ -12,16 +12,21 @@ export async function createWorldRelease(projectId: string) {
     const { releaseInfo } = await compileWorldRelease(projectId);
     
     // Notify Go server of the exact immutable release
-    await notifyGoServer(projectId, releaseInfo.version);
+    const deploySuccess = await notifyGoServer(projectId, releaseInfo.version);
     
-    return { success: true, releaseId: releaseInfo.releaseId, version: releaseInfo.version };
+    return { 
+      success: true, 
+      releaseId: releaseInfo.releaseId, 
+      version: releaseInfo.version,
+      deployStatus: deploySuccess ? 'success' : 'pending' 
+    };
   } catch (err: any) {
     console.error('[createWorldRelease]', err);
     return { success: false, error: err.message };
   }
 }
 
-async function notifyGoServer(projectId: string, version: string) {
+async function notifyGoServer(projectId: string, version: string): Promise<boolean> {
   const goMmoBase = process.env.GO_MMO_INTERNAL_URL || process.env.NEXT_PUBLIC_GO_MMO_URL || 'http://localhost:24011';
   const secret = process.env.AUTH_SECRET || '';
 
@@ -38,8 +43,11 @@ async function notifyGoServer(projectId: string, version: string) {
 
     if (!res.ok) {
       console.warn(`[notifyGoServer] Go Server returned ${res.status}`);
+      return false;
     }
+    return true;
   } catch (deployErr) {
     console.warn(`[notifyGoServer] Go MMO server unreachable, skipping notification.`, deployErr);
+    return false;
   }
 }

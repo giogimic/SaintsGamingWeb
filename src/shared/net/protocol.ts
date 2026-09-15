@@ -58,6 +58,9 @@ export const RealtimeEvents = {
   PARTY_INVITE: "party_invite",
   PARTY_JOIN: "party_join",
   PARTY_LEAVE: "party_leave",
+  
+  // Player Data
+  SET_HOME: "set_home",
   PARTY_UPDATE: "party_update",
 
   // Dungeons & Instancing
@@ -113,6 +116,7 @@ export interface JoinMapPayload {
   neighborMapIds?: string[];
   x?: number;
   y?: number;
+  z?: number;
   direction?: string;
   joinSeq?: number;
 
@@ -123,6 +127,7 @@ export interface MapJoinedPayload {
   mapId: string;
   x: number;
   y: number;
+  z?: number;
   revision?: number;
   protocolVersion: string;
   joinSeq?: number;

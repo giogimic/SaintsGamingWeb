@@ -11,7 +11,8 @@ import { CANONICAL_ABILITIES } from '@/shared/game/combat/abilityRegistry';
  */
 export async function resolveGameplay(ctx: CompilerContext): Promise<void> {
   // 1. Resolve Quests
-  const pendingQuests = Array.from(ctx.requiredQuests);
+  const resolvedQuests = new Set(ctx.manifest.gameplay.quests.map((q: any) => q.slug));
+  const pendingQuests = Array.from(ctx.requiredQuests).filter(s => !resolvedQuests.has(s));
   if (pendingQuests.length > 0) {
     const quests = await prisma.questTemplate.findMany({ 
       where: { slug: { in: pendingQuests } },
@@ -38,7 +39,8 @@ export async function resolveGameplay(ctx: CompilerContext): Promise<void> {
   }
 
   // 2. Resolve Items
-  const pendingItems = Array.from(ctx.requiredItems);
+  const resolvedItems = new Set(ctx.manifest.items.map((i: any) => i.slug));
+  const pendingItems = Array.from(ctx.requiredItems).filter(s => !resolvedItems.has(s));
   if (pendingItems.length > 0) {
     const items = await prisma.itemTemplate.findMany({ 
       where: { slug: { in: pendingItems } } 
@@ -57,7 +59,8 @@ export async function resolveGameplay(ctx: CompilerContext): Promise<void> {
   }
 
   // 3. Resolve Abilities
-  const pendingAbilities = Array.from(ctx.requiredAbilities);
+  const resolvedAbilities = new Set(ctx.manifest.gameplay.abilities.map((a: any) => a.slug));
+  const pendingAbilities = Array.from(ctx.requiredAbilities).filter(s => !resolvedAbilities.has(s));
   for (const slug of pendingAbilities) {
     if (CANONICAL_ABILITIES[slug]) {
       ctx.manifest.gameplay.abilities.push(CANONICAL_ABILITIES[slug]);
@@ -75,5 +78,60 @@ export async function resolveGameplay(ctx: CompilerContext): Promise<void> {
  * Then we would validate they exist in Cloud Storage / CDN.
  */
 export async function resolveAssets(ctx: CompilerContext): Promise<void> {
-  // Currently a no-op until we implement strict asset packing
+  const assetSet = new Set<string>();
+  
+  // Scan NPCs
+  for (const npc of ctx.manifest.actors.npcs) {
+    if (npc.worldModel) assetSet.add(npc.worldModel);
+    if (npc.capabilities?.shopInventory) {
+      // Just in case shop inventory has explicit icons
+    }
+  }
+  
+  // Scan Creatures
+  for (const c of ctx.manifest.actors.creatures) {
+    if (c.spriteId) assetSet.add(c.spriteId);
+    if (c.spriteUrl) assetSet.add(c.spriteUrl);
+  }
+  for (const c of ctx.manifest.actors.monsters) {
+    if (c.spriteId) assetSet.add(c.spriteId);
+    if (c.spriteUrl) assetSet.add(c.spriteUrl);
+  }
+  
+  // Scan Items
+  for (const item of ctx.manifest.items) {
+    if (item.iconAssetId) assetSet.add(item.iconAssetId);
+    if (item.modelUrl) assetSet.add(item.modelUrl);
+  }
+  
+  // Ensure identities exist in DB (if they are CUIDs)
+  const allRefs = Array.from(assetSet).filter(Boolean);
+  
+  // We can lookup UsableAssets and SourceAssets to guarantee existence
+  const cuidRefs = allRefs.filter(ref => ref.length > 20 && !ref.includes('/'));
+  
+  if (cuidRefs.length > 0) {
+    const usableAssets = await prisma.usableAsset.findMany({
+      where: { id: { in: cuidRefs } },
+      select: { id: true, sourceAssetId: true }
+    });
+    
+    const sourceAssets = await prisma.sourceAsset.findMany({
+      where: { id: { in: cuidRefs } },
+      select: { id: true }
+    });
+    
+    const foundIds = new Set([
+      ...usableAssets.map(u => u.id),
+      ...sourceAssets.map(s => s.id)
+    ]);
+    
+    for (const ref of cuidRefs) {
+      if (!foundIds.has(ref)) {
+        ctx.errors.push(`Missing Asset Dependency: Asset ID '${ref}' does not exist in UsableAsset or SourceAsset registry.`);
+      }
+    }
+  }
+  
+  ctx.manifest.assets = allRefs;
 }

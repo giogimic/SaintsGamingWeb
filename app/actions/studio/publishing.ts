@@ -229,62 +229,74 @@ export async function rollbackToSnapshot(snapshotId: string) {
     if (!snapshot) return { success: false, error: "Snapshot not found" };
 
     const payload = JSON.parse(snapshot.manifestData);
-    const { dungeons, shops, mounts, events, simulations } = payload;
+    const { maps, atlas } = payload;
 
-    // Restore dungeons
-    if (Array.isArray(dungeons)) {
-      for (const d of dungeons) {
-        await prisma.dungeonTemplate.upsert({
-          where: { slug: d.slug },
-          create: d,
-          update: d,
+    // Restore Maps
+    if (Array.isArray(maps)) {
+      for (const m of maps) {
+        await prisma.worldMap.upsert({
+          where: { id: m.id },
+          create: {
+            id: m.id,
+            gameId: snapshot.projectId,
+            name: m.name,
+            gridData: m.gridData,
+            gatesData: m.gatesData || "[]",
+            encountersData: m.encountersData || "[]",
+            entitiesData: m.entitiesData || "[]",
+            freeformLayersData: m.freeformLayersData || "[]",
+            mapType: m.mapType || "TILE",
+          },
+          update: {
+            name: m.name,
+            gridData: m.gridData,
+            gatesData: m.gatesData || "[]",
+            encountersData: m.encountersData || "[]",
+            entitiesData: m.entitiesData || "[]",
+            freeformLayersData: m.freeformLayersData || "[]",
+            mapType: m.mapType || "TILE",
+          },
         });
       }
     }
 
-    // Restore shops
-    if (Array.isArray(shops)) {
-      for (const s of shops) {
-        await prisma.shopTemplate.upsert({
-          where: { slug: s.slug },
-          create: s,
-          update: s,
-        });
+    // Restore Atlas Regions
+    if (atlas && typeof atlas === 'object') {
+      for (const [key, checksum] of Object.entries(atlas)) {
+        // key format: "mapId_regionX_regionZ"
+        const parts = key.split('_');
+        if (parts.length >= 3) {
+          const mapId = parts.slice(0, parts.length - 2).join('_');
+          const regionX = parseInt(parts[parts.length - 2], 10);
+          const regionZ = parseInt(parts[parts.length - 1], 10);
+          
+          if (!isNaN(regionX) && !isNaN(regionZ)) {
+            // Upsert the WorldRegion pointing to the immutable artifact
+            await prisma.worldRegion.upsert({
+              where: {
+                mapId_regionX_regionZ: {
+                  mapId,
+                  regionX,
+                  regionZ
+                }
+              },
+              create: {
+                mapId,
+                regionX,
+                regionZ,
+                status: "COMPLETED",
+                artifactChecksum: checksum as string,
+              },
+              update: {
+                status: "COMPLETED",
+                artifactChecksum: checksum as string,
+              }
+            });
+          }
+        }
       }
     }
 
-    // Restore mounts
-    if (Array.isArray(mounts)) {
-      for (const m of mounts) {
-        await prisma.mountTemplate.upsert({
-          where: { slug: m.slug },
-          create: m,
-          update: m,
-        });
-      }
-    }
-
-    // Restore events
-    if (Array.isArray(events)) {
-      for (const e of events) {
-        await prisma.worldEventTemplate.upsert({
-          where: { slug: e.slug },
-          create: e,
-          update: e,
-        });
-      }
-    }
-
-    // Restore simulation presets
-    if (Array.isArray(simulations)) {
-      for (const sim of simulations) {
-        await prisma.simulationPreset.upsert({
-          where: { slug: sim.slug },
-          create: sim,
-          update: sim,
-        });
-      }
-    }
     return { success: true as const };
   } catch (err: any) {
     console.error("[rollbackToSnapshot]", err);

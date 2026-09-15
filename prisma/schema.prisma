@@ -756,6 +756,11 @@ model GameCharacter {
   lastY              Float?
   lastZ              Float?
   
+  homeMapId          String?
+  homeX              Float?
+  homeY              Float?
+  homeZ              Float?
+  
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -959,6 +964,7 @@ model GameConfig {
   isActive    Boolean @default(false)
 
   // Game rules
+  defaultSpawnGateId       String? // The canonical entry point ID for the world
   maxLevel                 Int     @default(100)
   baseStats                String  @default("{}") // JSON: {hp: 100, atk: 50, ...}
   combatFormula            String  @default("saints-standard")

@@ -11,7 +11,8 @@ import type { CompilerContext } from './types';
  */
 export async function resolveActors(ctx: CompilerContext): Promise<void> {
   // 1. Resolve NPCs
-  const pendingNpcs = Array.from(ctx.requiredNPCs);
+  const resolvedNpcs = new Set(ctx.manifest.actors.npcs.map((n: any) => n.slug));
+  const pendingNpcs = Array.from(ctx.requiredNPCs).filter(slug => !resolvedNpcs.has(slug));
   
   if (pendingNpcs.length > 0) {
     const npcs = await prisma.npcDef.findMany({ 
@@ -94,8 +95,15 @@ export async function resolveActors(ctx: CompilerContext): Promise<void> {
   }
 
   // 2. Resolve Monsters & Creatures
-  // They are stored in `CreatureDef`.
-  const pendingCreatures = new Set([...Array.from(ctx.requiredMonsters), ...Array.from(ctx.requiredCreatures)]);
+  const resolvedCreatures = new Set([
+    ...ctx.manifest.actors.monsters.map((c: any) => c.slug),
+    ...ctx.manifest.actors.creatures.map((c: any) => c.slug)
+  ]);
+  const pendingCreatures = new Set(
+    [...Array.from(ctx.requiredMonsters), ...Array.from(ctx.requiredCreatures)]
+      .filter(slug => !resolvedCreatures.has(slug))
+  );
+  
   if (pendingCreatures.size > 0) {
     const creatures = await prisma.creatureDef.findMany({ 
       where: { slug: { in: Array.from(pendingCreatures) } } 

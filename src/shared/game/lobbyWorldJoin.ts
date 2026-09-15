@@ -19,7 +19,7 @@ export interface JoinWorldOptions {
   accountId?: string | null;
   characterId?: string | null;
   contract: JoinContract;
-  position?: { x?: number; y?: number };
+  position?: { x?: number; y?: number; z?: number };
   name?: string;
   assetProfileId?: string;
   neighborMapIds?: string[];
@@ -92,8 +92,9 @@ export function joinWorld(opts: JoinWorldOptions): JoinWorldResult {
     lobby: normalizedContract.lobby,
     isPrivate: normalizedContract.isPrivate,
     pie: normalizedContract.pie,
-    x: typeof opts.position?.x === 'number' ? opts.position.x : 14,
-    y: typeof opts.position?.y === 'number' ? opts.position.y : 15,
+    x: typeof opts.position?.x === 'number' ? opts.position.x : undefined,
+    y: typeof opts.position?.y === 'number' ? opts.position.y : undefined,
+    z: typeof opts.position?.z === 'number' ? opts.position.z : undefined,
     name: opts.name || 'Player',
     assetProfileId: opts.assetProfileId || 'adventurer',
     spriteId: opts.contract.pie ? undefined : opts.assetProfileId || undefined,

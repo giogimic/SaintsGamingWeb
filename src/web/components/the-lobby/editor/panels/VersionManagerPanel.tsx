@@ -154,7 +154,11 @@ export const VersionManagerPanel: React.FC = () => {
     setPublishing(false);
     
     if (deployRes.success) {
-      showToast('Deployed successfully to Live Server!');
+      if (deployRes.deployStatus === 'pending') {
+        showToast('Published successfully. Deployment to Go MMO pending.');
+      } else {
+        showToast('Deployed successfully to Live Server!');
+      }
       loadSnapshots();
     } else {
       alert(deployRes.error || 'Deployment failed');

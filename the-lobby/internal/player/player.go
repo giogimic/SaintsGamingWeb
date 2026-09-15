@@ -87,7 +87,19 @@ func (m *Manager) persistLocked(p *State) {
 	if m.store == nil || p == nil {
 		return
 	}
-	m.store.SavePlayer(p.AccountID, p.BaseMapID, p.X, p.Y, p.Z, p.Credits)
+	m.store.SavePlayer(p.AccountID, p.CharacterID, p.BaseMapID, p.X, p.Y, p.Z, p.Credits)
+}
+
+// SaveHome persists a character's canonical home spawn location.
+func (m *Manager) SaveHome(accountID, characterID, mapID string, x, y, z float64) {
+	if m.store == nil || accountID == "" || characterID == "" {
+		return
+	}
+	m.store.DB.Exec(`
+UPDATE GameCharacter 
+SET homeMapId = ?, homeX = ?, homeY = ?, homeZ = ? 
+WHERE id = ? AND userId = ?
+	`, mapID, x, y, z, characterID, accountID)
 }
 
 func (m *Manager) ZoneSize() int { return m.aoiZoneSize }

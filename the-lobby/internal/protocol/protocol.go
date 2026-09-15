@@ -52,6 +52,7 @@ const (
 	EvPartyInviteDecline = "party_invite_decline"
 	EvPartyJoin         = "party_join"
 	EvPartyLeave        = "party_leave"
+	EvSetHome           = "set_home"
 	EvGlobalChat        = "global_chat"
 	EvChatMessage       = "chat_message"
 	EvStaffAnnounce     = "staff_announce"

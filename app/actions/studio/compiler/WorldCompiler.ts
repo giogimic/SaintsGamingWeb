@@ -24,9 +24,65 @@ export async function compileWorldRelease(projectId: string): Promise<{ manifest
     where: { slug: projectId },
   });
 
-  const spawnMap = 'DEMO_SANDBOX';
+  // 1. Fetch Data
+  const maps = await prisma.worldMap.findMany({
+    where: { gameId: projectId },
+  });
 
-  // 1. Initialize Context
+  if (maps.length === 0) {
+    throw new Error(`Project ${projectId} has no maps to compile.`);
+  }
+
+  // 2. Resolve Canonical Spawn
+  const canonicalSpawnId = config?.defaultSpawnGateId;
+  if (!canonicalSpawnId) {
+    throw new Error(`Project ${projectId} has no defaultSpawnGateId configured. Set a Canonical World Spawn in Game Settings before publishing.`);
+  }
+
+  let spawnMapId: string | null = null;
+  let spawnX = 0, spawnY = 0, spawnZ = 0;
+  let spawnFound = false;
+
+  for (const map of maps) {
+    try {
+      const entities = JSON.parse(map.entitiesData || "[]");
+      for (const ent of entities) {
+        if (ent.id === canonicalSpawnId) {
+          spawnMapId = map.id;
+          spawnX = ent.position?.x ?? 0;
+          spawnY = ent.position?.y ?? 0;
+          spawnZ = ent.position?.z ?? 0;
+          spawnFound = true;
+          break;
+        }
+      }
+    } catch (e) {}
+    if (spawnFound) break;
+    
+    try {
+      const parsedGates = JSON.parse(map.gatesData || "[]");
+      const gatesList = Array.isArray(parsedGates) ? parsedGates : (parsedGates.gates ? parsedGates.gates : Object.values(parsedGates));
+      for (const [idx, g] of Object.entries(gatesList)) {
+        const gate = g as any;
+        const gateId = gate.id || `legacy_gate_${idx}`;
+        if (gateId === canonicalSpawnId) {
+          spawnMapId = map.id;
+          spawnX = gate.spawnPoint?.x ?? 0;
+          spawnY = gate.spawnPoint?.y ?? 0;
+          spawnZ = gate.spawnPoint?.z ?? 0;
+          spawnFound = true;
+          break;
+        }
+      }
+    } catch (e) {}
+    if (spawnFound) break;
+  }
+
+  if (!spawnFound || !spawnMapId) {
+    throw new Error(`Canonical World Spawn gate "${canonicalSpawnId}" not found in any Working World map. Publish aborted.`);
+  }
+
+  // 3. Initialize Context
   const ctx: CompilerContext = {
     projectId,
     mapsIncluded: new Set(),
@@ -42,10 +98,10 @@ export async function compileWorldRelease(projectId: string): Promise<{ manifest
       version: '', // Will be assigned by the persistence layer
       world: {
         name: project?.name || 'Saints World',
-        spawnMap: spawnMap,
-        spawnX: 14, // these will be extracted from gates or defaults
-        spawnY: 15,
-        spawnZ: 16,
+        spawnMap: spawnMapId,
+        spawnX,
+        spawnY,
+        spawnZ,
       },
       maps: [],
       atlas: {},
@@ -53,19 +109,13 @@ export async function compileWorldRelease(projectId: string): Promise<{ manifest
       gameplay: { abilities: [], quests: [] },
       items: [],
       connections: [],
+      assets: [],
     },
     warnings: [],
     errors: [],
   };
 
-  // 2. Map Compiler Phase
-  const maps = await prisma.worldMap.findMany({
-    where: { gameId: projectId },
-  });
-
-  if (maps.length === 0) {
-    throw new Error(`Project ${projectId} has no maps to compile.`);
-  }
+  // 4. Map Compiler Phase
 
   for (const map of maps) {
     ctx.mapsIncluded.add(map.id);
@@ -116,13 +166,31 @@ export async function compileWorldRelease(projectId: string): Promise<{ manifest
   // 3. Run Pipeline Steps
   await compileAtlas(ctx);
   
-  // Since ActorResolver might add new creature dependencies through evolutions,
-  // we could loop, but for now we'll do a simple two-pass or assume the resolver handles it.
-  // We'll call resolveActors twice to ensure 1-level deep evolution dependencies are caught.
-  await resolveActors(ctx);
-  await resolveActors(ctx);
+  // Fixed-point transitive dependency resolution
+  let resolving = true;
+  while (resolving) {
+    const startNpcs = ctx.requiredNPCs.size;
+    const startMonsters = ctx.requiredMonsters.size;
+    const startCreatures = ctx.requiredCreatures.size;
+    const startQuests = ctx.requiredQuests.size;
+    const startItems = ctx.requiredItems.size;
+    const startAbilities = ctx.requiredAbilities.size;
+
+    await resolveActors(ctx);
+    await resolveGameplay(ctx);
+    
+    if (
+      ctx.requiredNPCs.size === startNpcs &&
+      ctx.requiredMonsters.size === startMonsters &&
+      ctx.requiredCreatures.size === startCreatures &&
+      ctx.requiredQuests.size === startQuests &&
+      ctx.requiredItems.size === startItems &&
+      ctx.requiredAbilities.size === startAbilities
+    ) {
+      resolving = false;
+    }
+  }
   
-  await resolveGameplay(ctx);
   await resolveAssets(ctx);
   await compileConnections(ctx);
   await validateRelease(ctx);

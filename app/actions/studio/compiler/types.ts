@@ -74,4 +74,5 @@ export interface ReleaseManifest {
   };
   items: any[];
   connections: WorldConnection[];
+  assets: string[];
 }

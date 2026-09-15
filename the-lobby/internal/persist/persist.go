@@ -51,7 +51,7 @@ func (s *Store) LoadPlayer(accountID string) PlayerHot {
 	return out
 }
 
-func (s *Store) SavePlayer(accountID, mapID string, x, y, z float64, credits int) {
+func (s *Store) SavePlayer(accountID, characterID, mapID string, x, y, z float64, credits int) {
 	if !s.ok() || accountID == "" {
 		return
 	}
@@ -61,6 +61,14 @@ INSERT INTO GoPlayerState (accountId, mapId, x, y, z, credits, updatedAt)
 VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
 ON CONFLICT(accountId) DO UPDATE SET mapId=excluded.mapId, x=excluded.x, y=excluded.y, z=excluded.z, credits=excluded.credits, updatedAt=datetime('now');
 	`, accountID, base, x, y, z, credits)
+
+	if characterID != "" {
+		_, _ = s.DB.Exec(`
+UPDATE GameCharacter 
+SET lastX = ?, lastY = ?, lastZ = ? 
+WHERE id = ? AND userId = ?
+		`, x, y, z, characterID, accountID)
+	}
 }
 
 func (s *Store) LoadInventory(accountID string) (items []Item, credits int, ok bool) {

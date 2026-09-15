@@ -178,6 +178,9 @@ func (h *Hub) onConnect(client *socket.Socket) {
 	client.On(protocol.EvEncounterCheck, func(datas ...any) {
 		h.handleEncounter(accountID)
 	})
+	client.On(protocol.EvSetHome, func(datas ...any) {
+		h.handleSetHome(accountID)
+	})
 	client.On(protocol.EvGlobalChat, func(datas ...any) {
 		h.broadcastChat(accountID, sid, asString(datas, 0), true)
 	})
@@ -320,8 +323,10 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 			req.MapID = base // Update the request so downstream logic uses the correct map
 			sx := activeRel.World.SpawnX
 			sy := activeRel.World.SpawnY
+			sz := activeRel.World.SpawnZ
 			req.X = &sx
 			req.Y = &sy
+			req.Z = &sz
 			isRecovery = true
 		}
 		
@@ -1123,4 +1128,34 @@ func (h *Hub) serveChunk(client *socket.Socket, accountID string, cx, cy, cz int
 	client.Emit(protocol.EvChunkData, map[string]any{
 		"cx": cx, "cy": cy, "cz": cz, "data": data,
 	})
+}
+
+func (h *Hub) handleSetHome(accountID string) {
+	player := h.eng.Players().GetByAccount(accountID)
+	if player == nil {
+		return
+	}
+
+	activeRel := h.eng.World().ActiveRelease
+	if activeRel == nil {
+		h.EmitToSocket(player.SocketID, protocol.EvShowToast, map[string]string{"message": "Cannot set home: No active release."})
+		return
+	}
+	
+	// Validate against Active Release
+	valid := false
+	for _, m := range activeRel.Maps {
+		if m.ID == player.BaseMapID {
+			valid = true
+			break
+		}
+	}
+	if !valid {
+		h.EmitToSocket(player.SocketID, protocol.EvShowToast, map[string]string{"message": "Cannot set home in an invalid map."})
+		return
+	}
+
+	h.eng.Players().SaveHome(accountID, player.CharacterID, player.BaseMapID, player.X, player.Y, player.Z)
+
+	h.EmitToSocket(player.SocketID, protocol.EvShowToast, map[string]string{"message": "Home location set successfully."})
 }
