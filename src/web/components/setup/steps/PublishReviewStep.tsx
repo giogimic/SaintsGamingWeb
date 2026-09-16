@@ -162,7 +162,9 @@ export function PublishReviewStep({
         {/* Generation Artifacts */}
         <div className="col-span-1 sm:col-span-2 p-4 bg-[#0a1220] border border-slate-800 rounded-xl space-y-4">
           <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">
-            <div className="grid grid-cols-2 gap-4">
+            Generation Artifacts
+          </h4>
+          <div className="grid grid-cols-2 gap-4">
               <div className="p-3 bg-black/40 rounded border border-slate-800">
                 <p className="text-xs text-slate-500 mb-1">Bootstrap Revision</p>
                 <p className="text-xs text-sky-400 font-mono truncate">{startingMap.bootstrapRevisionId || 'PENDING'}</p>
