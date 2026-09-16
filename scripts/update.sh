@@ -613,11 +613,29 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
     if [ "$WIPE_SOCIAL_DATA" -eq 1 ]; then WIPE_ARGS="$WIPE_ARGS --social"; fi
     
     if [ -n "$WIPE_ARGS" ]; then
-        echo -e "${CYAN}[*] Executing requested data wipes inside container...${NC}"
-        if ! docker exec saints-gaming-web npx tsx scripts/wipe-data.ts $WIPE_ARGS; then
-            echo -e "${RED}[!] Data wipe failed! Aborting update.${NC}"
+        echo -e "${CYAN}[*] Executing requested data wipes inside container (via internal API)...${NC}"
+        
+        # Build JSON payload
+        WIPE_JSON="{"
+        if [ "$WIPE_GAME_DATA" -eq 1 ]; then WIPE_JSON="${WIPE_JSON}\"game\":true,"; fi
+        if [ "$WIPE_SOCIAL_DATA" -eq 1 ]; then WIPE_JSON="${WIPE_JSON}\"social\":true,"; fi
+        # Remove trailing comma and close JSON
+        WIPE_JSON="${WIPE_JSON%,}}"
+        
+        # Execute HTTP POST to the Next.js server running in the container
+        # wget -qO- returns the body on success, but if HTTP 500 it fails.
+        WIPE_RESP=$(docker exec saints-gaming-web wget --header="Authorization: Bearer INTERNAL_WIPE_TOKEN_SAINTS" --header="Content-Type: application/json" --post-data="$WIPE_JSON" -qO- http://127.0.0.1:24001/api/internal/wipe-data 2>&1)
+        WIPE_EXIT_CODE=$?
+        
+        if [ $WIPE_EXIT_CODE -ne 0 ]; then
+            echo -e "${RED}[!] Data wipe API failed! Exit Code: $WIPE_EXIT_CODE${NC}"
+            echo -e "${RED}Response: $WIPE_RESP${NC}"
+            echo -e "${RED}[!] Aborting update.${NC}"
             exit 1
         fi
+        
+        # Pretty print the messages returned by the API
+        echo "$WIPE_RESP" | grep -o '"messages":\[[^]]*\]' | sed 's/"messages":\[//;s/\]//;s/"//g;s/,/\n/g' || true
         
         if [ "$WIPE_GAME_DATA" -eq 1 ]; then
             echo -e "${CYAN}[*] Wiping Go MMO SQLite database...${NC}"
