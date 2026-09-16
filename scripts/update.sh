@@ -478,11 +478,19 @@ echo -e "${CYAN}[*] Pulling latest code (resetting to origin/main)...${NC}"
 git reset --hard origin/main
 echo -e "${GREEN}[✓] Code repository updated to latest commit.${NC}\n"
 
-# --- Validate docker-compose.yml and auto-repair if corrupted ---
-if docker compose config > /dev/null 2>&1; then
-    : # compose file is valid
-else
+# --- Validate docker-compose.yml and auto-repair if corrupted or missing required services ---
+REBUILD_COMPOSE=0
+if ! docker compose config > /dev/null 2>&1; then
+    REBUILD_COMPOSE=1
     echo -e "${YELLOW}[!] docker-compose.yml failed validation. Restoring from clean base...${NC}"
+elif grep -qE "^DATABASE_URL\s*=\s*.*@db(:3306|/)" .env 2>/dev/null && ! grep -q "image: mariadb" docker-compose.yml 2>/dev/null; then
+    REBUILD_COMPOSE=1
+    echo -e "${YELLOW}[!] docker-compose.yml is missing the 'db' service, but .env requires it. Injecting...${NC}"
+fi
+
+if [ "$REBUILD_COMPOSE" -eq 0 ]; then
+    : # compose file is valid and has what it needs
+else
     HAS_DB_SERVICE=0
     if grep -q "image: mariadb" docker-compose.yml 2>/dev/null; then
         HAS_DB_SERVICE=1
@@ -498,6 +506,11 @@ else
     sed -i '/^\s*args:\s*$/d' docker-compose.yml 2>/dev/null || true
     sed -i "s/container_name: saints-gaming-web/container_name: ${WEB_CN}/g" docker-compose.yml
     sed -i "s/- \"24001:24001\"/- \"${WEB_PORT_MAP}\"/g" docker-compose.yml
+
+    # Also force DB service injection if .env expects it but it wasn't found
+    if grep -qE "^DATABASE_URL\s*=\s*.*@db(:3306|/)" .env 2>/dev/null; then
+        HAS_DB_SERVICE=1
+    fi
 
     if [ "$HAS_DB_SERVICE" = "1" ]; then
         DB_PASS_ENV=$(grep '^DATABASE_URL=' .env 2>/dev/null | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
@@ -565,9 +578,9 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
         DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
         DB_USER=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://\([^:]*\):.*|\1|p')
         if [ -n "$DB_PASS" ] && [ -n "$DB_USER" ]; then
-            if ! docker exec saints-gaming-db mariadb -u "$DB_USER" -p"$DB_PASS" -e "SELECT 1;" saints_gaming &>/dev/null; then
-                ROOT_PASS=$(docker exec saints-gaming-db env | grep MARIADB_ROOT_PASSWORD= | cut -d= -f2-)
-                docker exec saints-gaming-db mariadb -u root -p"$ROOT_PASS" -e \
+            if ! docker exec "$DB_CONTAINER" mariadb -u "$DB_USER" -p"$DB_PASS" -e "SELECT 1;" saints_gaming &>/dev/null; then
+                ROOT_PASS=$(docker exec "$DB_CONTAINER" env | grep MARIADB_ROOT_PASSWORD= | cut -d= -f2-)
+                docker exec "$DB_CONTAINER" mariadb -u root -p"$ROOT_PASS" -e \
                     "ALTER USER '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}'; FLUSH PRIVILEGES;" 2>/dev/null || true
             fi
         fi
@@ -589,6 +602,9 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
         echo -e "${GREEN}[✓] Web container built successfully.${NC}\n"
 
         echo -e "${CYAN}[*] Starting web container in background...${NC}"
+        if grep -q "image: mariadb" docker-compose.yml 2>/dev/null; then
+            ( docker compose up -d db >> docker_build.log 2>&1 )
+        fi
         ( docker compose up -d --no-deps web >> docker_build.log 2>&1 ) &
         UP_PID=$!
         run_with_spinner "Launching updated web container" "docker_build.log" "$UP_PID"
@@ -600,6 +616,9 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
         echo -e "${GREEN}[✓] Web container running.${NC}\n"
     else
         echo -e "${CYAN}[*] Performing fast container reload (~2s)...${NC}"
+        if grep -q "image: mariadb" docker-compose.yml 2>/dev/null; then
+            ( docker compose up -d db >> docker_build.log 2>&1 )
+        fi
         ( docker compose restart web >> docker_build.log 2>&1 || docker compose up -d --no-deps web >> docker_build.log 2>&1 ) &
         RESTART_PID=$!
         run_with_spinner "Reloading web services" "docker_build.log" "$RESTART_PID"
