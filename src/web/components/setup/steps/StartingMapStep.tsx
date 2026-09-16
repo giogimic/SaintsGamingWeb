@@ -85,11 +85,11 @@ export function StartingMapStep({
     totalChunksCount,
     errorMsg,
     generateWorld,
-  } = useSetupWorldSession(environment, gameDefinition);
+  } = useSetupWorldSession(environment, gameDefinition, () => {});
 
   // Trigger generation on mount or when key dependencies change
   useEffect(() => {
-    generateWorld(previewSizeChunks, startingMap.mapType);
+    generateWorld('dummy-id-for-preview', previewSizeChunks, startingMap.mapType);
   }, [previewSizeChunks, environment.foundationMaterial, gameDefinition.name, startingMap.mapType, generateWorld]);
 
   // Sync to parent when ready
