@@ -544,8 +544,13 @@ fi
 if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
     echo -e "${CYAN}[*] Docker environment detected.${NC}"
 
-    # Sync MariaDB credentials if present
+    # Sync MariaDB credentials and ensure network connectivity if present
     if grep -q "^DATABASE_URL=.*@db:3306" .env 2>/dev/null && docker ps | grep -q "saints-gaming-db"; then
+        echo -e "${CYAN}[*] Ensuring database container is attached to web network with 'db' alias...${NC}"
+        # We must create the network first if it doesn't exist so we can attach to it
+        docker network inspect saintsgamingweb_default >/dev/null 2>&1 || docker network create saintsgamingweb_default >/dev/null 2>&1
+        docker network connect --alias db saintsgamingweb_default saints-gaming-db >/dev/null 2>&1 || true
+        
         DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
         DB_USER=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://\([^:]*\):.*|\1|p')
         if [ -n "$DB_PASS" ] && [ -n "$DB_USER" ]; then

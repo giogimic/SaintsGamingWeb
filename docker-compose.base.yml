@@ -10,6 +10,8 @@ services:
       - "24001:24001"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    external_links:
+      - saints-gaming-db:db
     volumes:
       # Map the SQLite DB file so it persists across container restarts
       - ./data:/app/prisma/db
