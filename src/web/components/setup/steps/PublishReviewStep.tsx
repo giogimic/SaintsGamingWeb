@@ -20,7 +20,7 @@ interface PublishReviewStepProps {
   startingMap: SetupStartingMapData;
   initializationId: string;
   diagnosticEvents: DiagnosticEvent[];
-  setDiagnosticEvents: (events: DiagnosticEvent[]) => void;
+  setDiagnosticEvents: React.Dispatch<React.SetStateAction<DiagnosticEvent[]>>;
   onBack: () => void;
   onCompleteSuccess: (defaultMapId: string) => void;
 }

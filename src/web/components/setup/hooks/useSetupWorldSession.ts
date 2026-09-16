@@ -8,7 +8,7 @@ export type WorldSessionStatus = 'IDLE' | 'GENERATING' | 'READY' | 'ERROR';
 export function useSetupWorldSession(
   environment: SetupEnvironmentData,
   gameDefinition: GameDefinitionData,
-  setDiagnosticEvents: (events: DiagnosticEvent[]) => void
+  setDiagnosticEvents: React.Dispatch<React.SetStateAction<DiagnosticEvent[]>>
 ) {
   const [status, setStatus] = useState<WorldSessionStatus>('IDLE');
   const [generationTimeMs, setGenerationTimeMs] = useState<number>(0);

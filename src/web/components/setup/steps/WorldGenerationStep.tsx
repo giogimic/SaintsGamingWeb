@@ -13,7 +13,7 @@ interface WorldGenerationStepProps {
   startingMap: SetupStartingMapData;
   initializationId: string;
   diagnosticEvents: DiagnosticEvent[];
-  setDiagnosticEvents: (events: DiagnosticEvent[]) => void;
+  setDiagnosticEvents: React.Dispatch<React.SetStateAction<DiagnosticEvent[]>>;
   onChange: (map: SetupStartingMapData) => void;
   onNext: () => void;
   onBack: () => void;
