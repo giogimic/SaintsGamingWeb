@@ -24,6 +24,12 @@ export async function POST(req: NextRequest) {
     const heightChunks = Number(body.heightChunks) || 1;
     const baseMaterial = Number(body.baseMaterial) || 2;
     const baseElevation = Number(body.baseElevation) || 16;
+    const mapTypeRaw = body.mapType || 'VOXEL';
+
+    if (!['TILE', 'VOXEL', 'FRACTAL'].includes(mapTypeRaw)) {
+      return NextResponse.json({ error: "Invalid mapType provided" }, { status: 400 });
+    }
+    const mapType = mapTypeRaw as 'TILE' | 'VOXEL' | 'FRACTAL';
 
     const regionsX = Math.ceil(widthChunks / CHUNKS_PER_REGION);
     const regionsZ = Math.ceil(depthChunks / CHUNKS_PER_REGION);
@@ -65,9 +71,14 @@ export async function POST(req: NextRequest) {
         encountersData: '[]',
         entitiesData: '[]',
         regionClass: 'procedural',
-        mapType: 'VOXEL',
+        mapType: mapType,
+        proceduralConfig: JSON.stringify({ seed, generatorVersion: '1.0.0', configHash }),
       },
-      update: { projectId: activeProject.id },
+      update: { 
+        projectId: activeProject.id,
+        mapType: mapType,
+        proceduralConfig: JSON.stringify({ seed, generatorVersion: '1.0.0', configHash }),
+      },
     });
 
     const revision = await prisma.worldBootstrapRevision.create({
@@ -117,14 +128,22 @@ export async function POST(req: NextRequest) {
       baseElevation,
     };
 
-    await prisma.worldBootstrapRevision.update({
-      where: { id: revision.id },
-      data: { status: 'GENERATING', jobId }
-    });
+    if (mapType === 'FRACTAL') {
+      // Fractal maps don't require offline baking of chunks.
+      await prisma.worldBootstrapRevision.update({
+        where: { id: revision.id },
+        data: { status: 'COMPLETED', jobId, completedAt: new Date() }
+      });
+    } else {
+      await prisma.worldBootstrapRevision.update({
+        where: { id: revision.id },
+        data: { status: 'GENERATING', jobId }
+      });
 
-    worldBakeService.submitJob(job, config).catch(e => {
-      console.error(`[GenerateDraft] Failed to submit job ${jobId}`, e);
-    });
+      worldBakeService.submitJob(job, config).catch(e => {
+        console.error(`[GenerateDraft] Failed to submit job ${jobId}`, e);
+      });
+    }
 
     return NextResponse.json({ bootstrapRevisionId: revision.id, jobId });
   } catch (error: any) {

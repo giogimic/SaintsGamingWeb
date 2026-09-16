@@ -17,7 +17,7 @@ export function useSetupWorldSession(
 
   const activeRequestId = useRef<number>(0);
 
-  const generateWorld = useCallback(async (sizeChunks: number) => {
+  const generateWorld = useCallback(async (sizeChunks: number, mapType?: 'TILE' | 'VOXEL' | 'FRACTAL') => {
     const reqId = ++activeRequestId.current;
     
     setStatus('GENERATING');
@@ -40,7 +40,8 @@ export function useSetupWorldSession(
           depthChunks: sizeChunks,
           heightChunks: 1,
           baseMaterial: environment.foundationMaterial === 'gunmetal' ? 1 : 2,
-          baseElevation: 16
+          baseElevation: 16,
+          mapType: mapType || 'VOXEL'
         })
       });
 

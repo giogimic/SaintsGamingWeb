@@ -89,8 +89,8 @@ export function StartingMapStep({
 
   // Trigger generation on mount or when key dependencies change
   useEffect(() => {
-    generateWorld(previewSizeChunks);
-  }, [previewSizeChunks, environment.foundationMaterial, gameDefinition.name, generateWorld]);
+    generateWorld(previewSizeChunks, startingMap.mapType);
+  }, [previewSizeChunks, environment.foundationMaterial, gameDefinition.name, startingMap.mapType, generateWorld]);
 
   // Sync to parent when ready
   useEffect(() => {
@@ -179,6 +179,51 @@ export function StartingMapStep({
                   <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">{arch.desc}</p>
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Map Type Selection */}
+          <div className="p-3.5 rounded-xl bg-[#070e1b] border border-slate-800/80 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                World Engine
+              </h3>
+            </div>
+            <div className="space-y-2">
+              <button
+                onClick={() => onChange({ ...startingMap, mapType: 'VOXEL' })}
+                className={`w-full text-left p-2.5 rounded-lg border transition-all cursor-pointer ${
+                  startingMap.mapType === 'VOXEL'
+                    ? 'bg-amber-500/10 border-amber-500/40 shadow-inner'
+                    : 'bg-[#050b14] border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs font-bold font-mono ${startingMap.mapType === 'VOXEL' ? 'text-amber-300' : 'text-slate-300'}`}>
+                    Fixed Voxel Plane (Authored)
+                  </span>
+                  {startingMap.mapType === 'VOXEL' && <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />}
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">Generates a bounded voxel terrain for manual authoring.</p>
+              </button>
+              
+              <button
+                onClick={() => onChange({ ...startingMap, mapType: 'FRACTAL' })}
+                className={`w-full text-left p-2.5 rounded-lg border transition-all cursor-pointer ${
+                  startingMap.mapType === 'FRACTAL'
+                    ? 'bg-amber-500/10 border-amber-500/40 shadow-inner'
+                    : 'bg-[#050b14] border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs font-bold font-mono ${startingMap.mapType === 'FRACTAL' ? 'text-amber-300' : 'text-slate-300'}`}>
+                    Infinite Fractal Domain (Procedural)
+                  </span>
+                  {startingMap.mapType === 'FRACTAL' && <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />}
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">Generates limitless deterministic procedural terrain on the fly.</p>
+              </button>
             </div>
           </div>
 
