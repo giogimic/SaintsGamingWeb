@@ -17,40 +17,56 @@ async function main() {
     if (wipeSocial) {
       console.log('[*] Wiping Feed/Forum/News (Social) Data...');
       
+      // Helper for safe deletion
+      let failedWipes = 0;
+      const safeDelete = async (model: string, promise: Promise<any>) => {
+        try {
+          await promise;
+          console.log(`  [+] Wiped ${model}`);
+        } catch (e: any) {
+          failedWipes++;
+          console.log(`  [!] FAILED to wipe ${model}: ${e.message}`);
+        }
+      };
+      
       // 1. Deepest Dependencies (Moderation, Media, Interactions)
-      await prisma.report.deleteMany({});
-      await prisma.image.deleteMany({});
+      await safeDelete('Report', prisma.report.deleteMany({}));
+      await safeDelete('Image', prisma.image.deleteMany({}));
       
       // 2. Forum (Child -> Parent)
-      await prisma.pollVote.deleteMany({});
-      await prisma.pollOption.deleteMany({});
-      await prisma.poll.deleteMany({});
-      await prisma.replyLike.deleteMany({});
-      await prisma.reaction.deleteMany({});
-      await prisma.reply.deleteMany({});
-      await prisma.threadSubscription.deleteMany({});
-      await prisma.threadHashtag.deleteMany({});
-      await prisma.thread.deleteMany({});
+      await safeDelete('PollVote', prisma.pollVote.deleteMany({}));
+      await safeDelete('PollOption', prisma.pollOption.deleteMany({}));
+      await safeDelete('Poll', prisma.poll.deleteMany({}));
+      await safeDelete('ReplyLike', prisma.replyLike.deleteMany({}));
+      await safeDelete('Reaction', prisma.reaction.deleteMany({}));
+      await safeDelete('Reply', prisma.reply.deleteMany({}));
+      await safeDelete('ThreadSubscription', prisma.threadSubscription.deleteMany({}));
+      await safeDelete('ThreadHashtag', prisma.threadHashtag.deleteMany({}));
+      await safeDelete('Thread', prisma.thread.deleteMany({}));
 
       // 3. Social (Child -> Parent)
-      await prisma.socialWatchHistory.deleteMany({});
-      await prisma.socialReaction.deleteMany({});
-      await prisma.socialPostHashtag.deleteMany({});
-      await prisma.socialPost.deleteMany({});
-      await prisma.socialHashtag.deleteMany({});
-      await prisma.socialBookmark.deleteMany({});
-      await prisma.socialBookmarkFolder.deleteMany({});
-      await prisma.socialMutedKeyword.deleteMany({});
-      await prisma.socialTip.deleteMany({});
-      await prisma.socialSubscription.deleteMany({});
-      await prisma.socialUserPreference.deleteMany({});
+      await safeDelete('SocialWatchHistory', prisma.socialWatchHistory.deleteMany({}));
+      await safeDelete('SocialReaction', prisma.socialReaction.deleteMany({}));
+      await safeDelete('SocialPostHashtag', prisma.socialPostHashtag.deleteMany({}));
+      await safeDelete('SocialPost', prisma.socialPost.deleteMany({}));
+      await safeDelete('SocialHashtag', prisma.socialHashtag.deleteMany({}));
+      await safeDelete('SocialBookmark', prisma.socialBookmark.deleteMany({}));
+      await safeDelete('SocialBookmarkFolder', prisma.socialBookmarkFolder.deleteMany({}));
+      await safeDelete('SocialMutedKeyword', prisma.socialMutedKeyword.deleteMany({}));
+      await safeDelete('SocialTip', prisma.socialTip.deleteMany({}));
+      await safeDelete('SocialSubscription', prisma.socialSubscription.deleteMany({}));
+      await safeDelete('SocialUserPreference', prisma.socialUserPreference.deleteMany({}));
 
       // 4. News (Child -> Parent)
-      await prisma.promoLink.deleteMany({});
-      await prisma.mediaAsset.deleteMany({});
-      await prisma.newsHashtag.deleteMany({});
-      await prisma.newsArticle.deleteMany({});
+      await safeDelete('PromoLink', prisma.promoLink.deleteMany({}));
+      await safeDelete('MediaAsset', prisma.mediaAsset.deleteMany({}));
+      await safeDelete('NewsHashtag', prisma.newsHashtag.deleteMany({}));
+      await safeDelete('NewsArticle', prisma.newsArticle.deleteMany({}));
       
+      if (failedWipes > 0) {
+        throw new Error(`Social data wipe completed with ${failedWipes} errors.`);
+      }
+
       console.log('[+] Social Data wiped successfully.');
     }
 
