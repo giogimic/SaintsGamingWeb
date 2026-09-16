@@ -622,15 +622,30 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
         # Remove trailing comma and close JSON
         WIPE_JSON="${WIPE_JSON%,}}"
         
-        # Execute HTTP POST to the Next.js server running in the container
-        # wget -qO- returns the body on success, but if HTTP 500 it fails.
-        WIPE_RESP=$(docker exec saints-gaming-web wget --header="Authorization: Bearer INTERNAL_WIPE_TOKEN_SAINTS" --header="Content-Type: application/json" --post-data="$WIPE_JSON" -qO- http://127.0.0.1:24001/api/internal/wipe-data 2>&1)
+        # Execute HTTP POST to the Next.js server running in the container using Node's native fetch
+        # This avoids wget exit codes and formatting issues.
+        WIPE_RESP=$(docker exec saints-gaming-web node -e "
+            fetch('http://127.0.0.1:24001/api/internal/wipe-data', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer INTERNAL_WIPE_TOKEN_SAINTS', 'Content-Type': 'application/json' },
+                body: JSON.stringify($WIPE_JSON)
+            })
+            .then(async r => {
+                const text = await r.text();
+                if (!r.ok) { console.error('API Error (' + r.status + '): ' + text); process.exit(1); }
+                console.log(text);
+            })
+            .catch(e => { console.error('Fetch Failed:', e.message); process.exit(1); })
+        " 2>&1)
         WIPE_EXIT_CODE=$?
         
         if [ $WIPE_EXIT_CODE -ne 0 ]; then
             echo -e "${RED}[!] Data wipe API failed! Exit Code: $WIPE_EXIT_CODE${NC}"
-            echo -e "${RED}Response: $WIPE_RESP${NC}"
-            echo -e "${RED}[!] Aborting update.${NC}"
+            echo -e "${RED}Response/Error:${NC}"
+            echo "$WIPE_RESP"
+            echo -e "\n${YELLOW}[*] Fetching recent container logs to diagnose...${NC}"
+            docker logs --tail 50 saints-gaming-web
+            echo -e "\n${RED}[!] Aborting update.${NC}"
             exit 1
         fi
         
