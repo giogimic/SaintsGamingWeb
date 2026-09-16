@@ -545,11 +545,22 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
     echo -e "${CYAN}[*] Docker environment detected.${NC}"
 
     # Sync MariaDB credentials and ensure network connectivity if present
-    if grep -q "^DATABASE_URL=.*@db:3306" .env 2>/dev/null && docker ps | grep -q "saints-gaming-db"; then
-        echo -e "${CYAN}[*] Ensuring database container is attached to web network with 'db' alias...${NC}"
-        # We must create the network first if it doesn't exist so we can attach to it
-        docker network inspect saintsgamingweb_default >/dev/null 2>&1 || docker network create saintsgamingweb_default >/dev/null 2>&1
-        docker network connect --alias db saintsgamingweb_default saints-gaming-db >/dev/null 2>&1 || true
+    # We use -E to allow optional spaces around the equals sign, and optional port.
+    if grep -qE "^DATABASE_URL\s*=\s*.*@db(:3306|/)" .env 2>/dev/null; then
+        DB_CONTAINER="saints-gaming-db"
+        if ! docker ps | grep -q "$DB_CONTAINER"; then
+            # Fallback: try to find ANY running mariadb/mysql container just in case
+            DB_CONTAINER=$(docker ps --format '{{.Names}}' -f "ancestor=mariadb" | head -n 1)
+        fi
+        
+        if [ -n "$DB_CONTAINER" ]; then
+            echo -e "${CYAN}[*] Ensuring database container ($DB_CONTAINER) is attached to web network with 'db' alias...${NC}"
+            # We must create the network first if it doesn't exist so we can attach to it
+            docker network inspect saintsgamingweb_default >/dev/null 2>&1 || docker network create saintsgamingweb_default >/dev/null 2>&1
+            docker network connect --alias db saintsgamingweb_default "$DB_CONTAINER" >/dev/null 2>&1 || true
+        else
+            echo -e "${YELLOW}[!] Warning: DATABASE_URL expects 'db:3306' but no database container is running!${NC}"
+        fi
         
         DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
         DB_USER=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://\([^:]*\):.*|\1|p')
