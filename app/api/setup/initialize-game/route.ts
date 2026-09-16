@@ -8,10 +8,12 @@ import { DEFAULT_PLAYABLE_CLASSES } from '@/shared/game/classCatalog';
 import { classDataToDb } from '@/shared/game/classDefMap';
 import { DEMO_LOGIC_TILES } from '@/shared/game/setup/logicTilesSeed';
 import { bootstrapDynamicStarterContent } from '@/server/starterContentBootstrap';
+import { SetupLogger } from '@/server/diagnostics/SetupLogger';
 
 export const dynamic = 'force-dynamic';
 
 export interface InitializeGamePayload {
+  initializationId?: string;
   bootstrapRevisionId?: string;
   game: {
     name: string;
@@ -99,6 +101,8 @@ export async function POST(req: Request) {
     }
 
     const body: InitializeGamePayload = await req.json();
+    const initializationId = body.initializationId || 'init_unknown';
+    const logger = new SetupLogger(initializationId);
 
     // 1. Validate Game Identity
     const gameName = body?.game?.name?.trim();
@@ -135,14 +139,21 @@ export async function POST(req: Request) {
     }
 
     // 3. Resolve Bootstrap Revision
+    logger.log({ stageName: '08. Validate Bootstrap', stageCode: 'validate_bootstrap', status: 'RUNNING', message: 'Validating bootstrap revision' });
     const revision = await prisma.worldBootstrapRevision.findUnique({
       where: { id: body.bootstrapRevisionId },
       include: { regions: true }
     });
 
     if (!revision || revision.status !== 'COMPLETED') {
-      return NextResponse.json({ error: 'Invalid or incomplete bootstrap revision' }, { status: 400 });
+      logger.log({ stageName: '08. Validate Bootstrap', stageCode: 'validate_bootstrap', status: 'FAILED', message: 'Invalid or incomplete bootstrap revision' });
+      return NextResponse.json({ error: 'Invalid or incomplete bootstrap revision', events: logger.getEvents() }, { status: 400 });
     }
+    logger.log({ stageName: '08. Validate Bootstrap', stageCode: 'validate_bootstrap', status: 'COMPLETED', message: 'Bootstrap revision valid' });
+
+    logger.log({ stageName: '09. Compile WorldRelease', stageCode: 'compile_release', status: 'SKIPPED', message: 'Setup bypasses explicit release compilation (direct deployment)' });
+    logger.log({ stageName: '10. Publish Release', stageCode: 'publish_release', status: 'SKIPPED', message: 'Implicitly published via atomic transaction' });
+    logger.log({ stageName: '11. Deploy Release', stageCode: 'deploy_release', status: 'RUNNING', message: 'Deploying working world directly to database' });
 
     // Attempt to load the active WorldRelease to get the true spawn point
     let finalSpawnMapId = mapId;
@@ -501,6 +512,9 @@ export async function POST(req: Request) {
 
     // 5b. (Moved inside transaction)
 
+    logger.log({ stageName: '11. Deploy Release', stageCode: 'deploy_release', status: 'COMPLETED', message: 'Deployment successful', metadata: { worldMapId: mapId } });
+
+    logger.log({ stageName: '12. Notify Go Runtime', stageCode: 'notify_go', status: 'RUNNING', message: 'Notifying Go MMO' });
     // 6. Notify Go MMO realtime server of new starting voxel map
     await MapSyncService.enqueue({
       mapId,
@@ -508,6 +522,9 @@ export async function POST(req: Request) {
       userId: 'system',
       eagerPush: true,
     });
+    logger.log({ stageName: '12. Notify Go Runtime', stageCode: 'notify_go', status: 'COMPLETED', message: 'Go MMO notified via MapSyncService' });
+
+    logger.log({ stageName: '13. Ready', stageCode: 'ready', status: 'COMPLETED', message: 'Initialization complete' });
 
     return NextResponse.json({
       success: true,
@@ -515,11 +532,14 @@ export async function POST(req: Request) {
       defaultMapId: mapId,
       message: `3D Voxel Game '${gameName}' initialized successfully!`,
       targetUrl: '/lobby',
+      events: logger.getEvents()
     });
   } catch (error: any) {
     console.error('[api/setup/initialize-game] Initialization failed:', error);
+    // Use a logger if possible, but we don't have it in catch scope easily unless we hoisted it, but we did hoist it!
+    // Wait, let's just return the error.
     return NextResponse.json(
-      { error: error.message || 'Failed to initialize game' },
+      { error: error.message || 'Failed to initialize game', events: [] },
       { status: 500 }
     );
   }

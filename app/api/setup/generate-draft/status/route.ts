@@ -3,6 +3,7 @@ import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
 import { worldBakeService } from "@/server/services/bake/WorldBakeService";
 import { VoxelRegionRepository } from "@/server/repositories/VoxelRegionRepository";
+import { SetupLogger } from "@/server/diagnostics/SetupLogger";
 
 export const dynamic = 'force-dynamic';
 
@@ -15,9 +16,12 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const jobId = searchParams.get('jobId');
+    const initializationId = searchParams.get('initializationId') || 'init_unknown';
     if (!jobId) {
       return NextResponse.json({ error: "jobId required" }, { status: 400 });
     }
+
+    const logger = new SetupLogger(initializationId);
 
     // Attempt to get realtime progress from the service
     const progress = worldBakeService.getProgress(jobId);
@@ -61,6 +65,12 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    if (revision.status === 'COMPLETED') {
+      logger.log({ stageName: '07. Bake / Generate Terrain', stageCode: 'voxel_bake', status: 'COMPLETED', message: 'Voxel bake finished', metadata: { totalRegions: completedRegions.length } });
+    } else if (revision.status === 'FAILED') {
+      logger.log({ stageName: '07. Bake / Generate Terrain', stageCode: 'voxel_bake', status: 'FAILED', message: 'Voxel bake failed' });
+    }
+
     return NextResponse.json({
       status: revision.status,
       completedRegions: progress ? progress.completedRegions : completedRegions.length,
@@ -68,7 +78,8 @@ export async function GET(req: NextRequest) {
       progressPercent: progress ? progress.progressPercent : (revision.status === 'COMPLETED' ? 100 : 0),
       activeWorkers: progress?.activeWorkers || 0,
       regions: completedRegions,
-      payloads
+      payloads,
+      events: logger.getEvents()
     });
 
   } catch (error: any) {

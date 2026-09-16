@@ -17,6 +17,7 @@ import { ActorsSetupStep } from './steps/ActorsSetupStep';
 import { WorldGenerationStep } from './steps/WorldGenerationStep';
 import { PublishReviewStep } from './steps/PublishReviewStep';
 import { type SetupStartingMapData } from './steps/StartingMapStep';
+import type { DiagnosticEvent } from '@/server/diagnostics/SetupLogger';
 
 export function GameInitializationWizard({ isReinit = false }: { isReinit?: boolean }) {
   const router = useRouter();
@@ -26,6 +27,12 @@ export function GameInitializationWizard({ isReinit = false }: { isReinit?: bool
   const [canSetup, setCanSetup] = useState(false);
   const [authenticatedUser, setAuthenticatedUser] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [initializationId] = useState<string>(() => {
+    return typeof crypto !== 'undefined' && crypto.randomUUID 
+      ? crypto.randomUUID() 
+      : Math.random().toString(36).substring(2) + Date.now().toString(36);
+  });
+  const [diagnosticEvents, setDiagnosticEvents] = useState<DiagnosticEvent[]>([]);
 
   const [gameDefinition, setGameDefinition] = useState<GameDefinitionData>({
     name: 'Saints Adventure',
@@ -138,8 +145,29 @@ export function GameInitializationWizard({ isReinit = false }: { isReinit?: bool
         <div className="p-4 sm:p-6 text-foreground">
           {step === 0 && <div className="space-y-6"><GameIdentityStep data={gameDefinition} onChange={(updates) => setGameDefinition((prev) => ({ ...prev, ...updates }))} /><div className="flex justify-end pt-6 border-t border-border/40"><button onClick={() => setStep(1)} className="px-6 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-sky-950 text-xs font-bold uppercase tracking-wider transition-colors">Next: Actors</button></div></div>}
           {step === 1 && <div className="space-y-6"><ActorsSetupStep /><div className="flex items-center justify-between pt-6 border-t border-border/40"><button onClick={() => setStep(0)} className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold uppercase tracking-wider transition-colors">Back</button><button onClick={() => setStep(2)} className="px-6 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-sky-950 text-xs font-bold uppercase tracking-wider transition-colors">Next: World Gen</button></div></div>}
-          {step === 2 && <div className="space-y-6"><WorldGenerationStep gameDefinition={gameDefinition} startingMap={startingMap} onChange={setStartingMap} onNext={() => setStep(3)} onBack={() => setStep(1)} /><div className="flex items-center justify-between pt-6 border-t border-border/40"><button onClick={() => setStep(1)} className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold uppercase tracking-wider transition-colors">Back</button><button onClick={() => setStep(3)} disabled={!startingMap.bootstrapRevisionId} className="px-6 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-sky-950 text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Next: Review</button></div></div>}
-          {step === 3 && <PublishReviewStep gameDefinition={gameDefinition} startingMap={startingMap} onBack={() => setStep(2)} onCompleteSuccess={handleCompleteSuccess} />}
+          {step === 2 && (
+            <WorldGenerationStep
+              gameDefinition={gameDefinition}
+              startingMap={startingMap}
+              onChangeStartingMap={setStartingMap}
+              initializationId={initializationId}
+              diagnosticEvents={diagnosticEvents}
+              setDiagnosticEvents={setDiagnosticEvents}
+              onNext={() => setStep(3)}
+              onBack={() => setStep(1)}
+            />
+          )}
+          {step === 3 && (
+            <PublishReviewStep
+              gameDefinition={gameDefinition}
+              startingMap={startingMap}
+              initializationId={initializationId}
+              diagnosticEvents={diagnosticEvents}
+              setDiagnosticEvents={setDiagnosticEvents}
+              onPublishSuccess={handleCompleteSuccess}
+              onBack={() => setStep(2)}
+            />
+          )}
         </div>
       </div>
     </div>

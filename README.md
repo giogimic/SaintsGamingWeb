@@ -48,6 +48,11 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📜 Changelog
 
+### v2.1.885 - Initialization Generation Diagnostics
+- **Observable Setup Pipeline:** Stripped out opaque, fake progress timers during setup in favor of a real-time `DiagnosticConsole` that tracks exactly what happens across 13 backend stages.
+- **Unified Correlation:** Implemented a new `SetupLogger` that generates deterministic logs using a unified `initializationId`, correlating the frontend wizard to the backend persistence layer.
+- **Explicit Fractal Hand-off:** The setup process now explicitly logs Fractal bake generation as `SKIPPED`, rather than bypassing silently, and logs the canonical map contract with its `proceduralConfig`.
+
 ### v2.1.857 - Actor Editor Architecture Standardization
 - **Unified World Model Selector:** Abstracted the World Model visualization logic (2D Sprite, 2D Box Sprite, 3D Model, Other) into a unified `WorldModelSelector` component.
 - **Strict Actor Boundaries:** Segmented the editor UI to reflect strict architectural boundaries:

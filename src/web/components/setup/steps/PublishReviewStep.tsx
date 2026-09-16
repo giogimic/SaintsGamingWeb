@@ -12,10 +12,15 @@ import {
 } from 'lucide-react';
 import type { GameDefinitionData } from './GameIdentityStep';
 import type { SetupStartingMapData } from './StartingMapStep';
+import { DiagnosticConsole } from '../DiagnosticConsole';
+import type { DiagnosticEvent } from '@/server/diagnostics/SetupLogger';
 
 interface PublishReviewStepProps {
   gameDefinition: GameDefinitionData;
   startingMap: SetupStartingMapData;
+  initializationId: string;
+  diagnosticEvents: DiagnosticEvent[];
+  setDiagnosticEvents: (events: DiagnosticEvent[]) => void;
   onBack: () => void;
   onCompleteSuccess: (defaultMapId: string) => void;
 }
@@ -23,6 +28,9 @@ interface PublishReviewStepProps {
 export function PublishReviewStep({
   gameDefinition,
   startingMap,
+  initializationId,
+  diagnosticEvents,
+  setDiagnosticEvents,
   onBack,
   onCompleteSuccess,
 }: PublishReviewStepProps) {
@@ -39,6 +47,7 @@ export function PublishReviewStep({
       // The new Coordinated Transaction endpoint:
       // Validates that drafts exist, validates the world artifact, and promotes everything to live.
       const payload = {
+        initializationId,
         bootstrapRevisionId: startingMap.bootstrapRevisionId,
         gameId: 'saints', // Using default canonical Game ID for initialization
         game: {
@@ -61,6 +70,19 @@ export function PublishReviewStep({
       });
 
       const data = await res.json();
+      if (data.events) {
+        setDiagnosticEvents(prev => {
+          // Merge events by ID to avoid duplicates just in case
+          const newEvents = [...prev];
+          for (const ev of data.events) {
+            if (!newEvents.some(e => e.id === ev.id)) {
+              newEvents.push(ev);
+            }
+          }
+          return newEvents;
+        });
+      }
+
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Validation failed. Drafts not published.');
       }
@@ -136,6 +158,25 @@ export function PublishReviewStep({
             </div>
           </div>
         </div>
+
+        {/* Generation Artifacts */}
+        <div className="col-span-1 sm:col-span-2 p-4 bg-[#0a1220] border border-slate-800 rounded-xl space-y-4">
+          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-black/40 rounded border border-slate-800">
+                <p className="text-xs text-slate-500 mb-1">Bootstrap Revision</p>
+                <p className="text-xs text-sky-400 font-mono truncate">{startingMap.bootstrapRevisionId || 'PENDING'}</p>
+              </div>
+              <div className="p-3 bg-black/40 rounded border border-slate-800">
+                <p className="text-xs text-slate-500 mb-1">Environment Config</p>
+                <p className="text-xs text-emerald-400 font-mono">{startingMap.mapType}</p>
+              </div>
+            </div>
+            
+            <div className="mt-4">
+              <DiagnosticConsole events={diagnosticEvents} />
+            </div>
+          </div>
 
         {/* World Generation Summary */}
         <div className="p-4 rounded-xl bg-[#070e1b] border border-slate-800/80">

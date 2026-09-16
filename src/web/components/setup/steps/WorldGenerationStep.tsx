@@ -3,12 +3,17 @@
 import React, { useEffect, useState } from 'react';
 import { Globe, ArrowRight, ArrowLeft, Loader2, ShieldAlert, Layers } from 'lucide-react';
 import { useSetupWorldSession } from '../hooks/useSetupWorldSession';
+import { DiagnosticConsole } from '../DiagnosticConsole';
 import type { GameDefinitionData } from './GameIdentityStep';
 import type { SetupStartingMapData } from './StartingMapStep';
+import type { DiagnosticEvent } from '@/server/diagnostics/SetupLogger';
 
 interface WorldGenerationStepProps {
   gameDefinition: GameDefinitionData;
   startingMap: SetupStartingMapData;
+  initializationId: string;
+  diagnosticEvents: DiagnosticEvent[];
+  setDiagnosticEvents: (events: DiagnosticEvent[]) => void;
   onChange: (map: SetupStartingMapData) => void;
   onNext: () => void;
   onBack: () => void;
@@ -31,12 +36,13 @@ const TOTAL_WEIGHT = Object.values(STAGE_WEIGHTS).reduce((sum, w) => sum + w, 0)
 export function WorldGenerationStep({
   gameDefinition,
   startingMap,
+  initializationId,
+  diagnosticEvents,
+  setDiagnosticEvents,
   onChange,
   onNext,
   onBack,
 }: WorldGenerationStepProps) {
-  const [activeStage, setActiveStage] = useState<keyof typeof STAGE_WEIGHTS>('PREPARING');
-  const [internalProgress, setInternalProgress] = useState(0); // 0-100 within the current stage
 
   // Hardcode environment to use Standard Content Baseline
   const environment = {
@@ -53,52 +59,15 @@ export function WorldGenerationStep({
     totalChunksCount,
     errorMsg,
     generateWorld,
-  } = useSetupWorldSession(environment, gameDefinition);
+  } = useSetupWorldSession(environment, gameDefinition, setDiagnosticEvents);
 
   // Trigger world bake automatically on mount
   useEffect(() => {
-    generateWorld(4); // 4x4 chunks default
-  }, [generateWorld]);
+    generateWorld(initializationId, 4, startingMap.mapType); // 4x4 chunks default
+  }, [generateWorld, initializationId, startingMap.mapType]);
 
   // Simulate or map the active stages based on chunk progress
-  useEffect(() => {
-    if (status === 'READY') {
-      setActiveStage('VALIDATION');
-      setInternalProgress(100);
-      return;
-    }
-    
-    if (totalChunksCount > 0) {
-      const chunkPct = (generatedChunksCount / totalChunksCount) * 100;
-      // We map the chunk generation progress to the 'TERRAIN' and 'GEOLOGY' stages as an approximation
-      if (chunkPct < 50) {
-        setActiveStage('TERRAIN');
-        setInternalProgress(chunkPct * 2); 
-      } else if (chunkPct < 100) {
-        setActiveStage('GEOLOGY');
-        setInternalProgress((chunkPct - 50) * 2);
-      }
-    }
-  }, [generatedChunksCount, totalChunksCount, status]);
 
-  // Calculate normalized total percentage (0-100)
-  const calculateTotalPercentage = () => {
-    let accumulatedWeight = 0;
-    
-    const stageKeys = Object.keys(STAGE_WEIGHTS) as Array<keyof typeof STAGE_WEIGHTS>;
-    for (const key of stageKeys) {
-      if (key === activeStage) {
-        const currentStageWeight = STAGE_WEIGHTS[key];
-        const currentStageContribution = currentStageWeight * (internalProgress / 100);
-        return Math.min(100, Math.round(((accumulatedWeight + currentStageContribution) / TOTAL_WEIGHT) * 100));
-      }
-      accumulatedWeight += STAGE_WEIGHTS[key];
-    }
-    
-    return 100;
-  };
-
-  const currentTotalPercentage = status === 'READY' ? 100 : calculateTotalPercentage();
 
   // Handle successful sync
   useEffect(() => {
@@ -147,53 +116,9 @@ export function WorldGenerationStep({
         </div>
       )}
 
-      {/* GENERATION PROGRESS UI */}
+      {/* GENERATION DIAGNOSTICS */}
       {status !== 'READY' && status !== 'ERROR' && (
-        <div className="p-8 rounded-xl bg-[#070e1b] border border-slate-800/80 flex flex-col items-center justify-center space-y-6">
-          <div className="relative">
-            <Loader2 className="w-16 h-16 text-sky-400 animate-spin" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-[11px] font-bold text-white font-mono">{currentTotalPercentage}%</span>
-            </div>
-          </div>
-          
-          <div className="text-center">
-            <h3 className="text-sm font-bold text-white tracking-widest font-mono uppercase mb-1">
-              Baking World Artifact
-            </h3>
-            <p className="text-xs text-sky-400 font-mono uppercase tracking-widest animate-pulse">
-              Stage: {activeStage}
-            </p>
-          </div>
-
-          <div className="w-full max-w-md h-1.5 bg-slate-900 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-sky-500 transition-all duration-300 ease-out"
-              style={{ width: `${currentTotalPercentage}%` }}
-            />
-          </div>
-
-          <div className="w-full max-w-md grid grid-cols-7 gap-1 mt-4">
-            {Object.keys(STAGE_WEIGHTS).map((stage) => {
-              const stageKeys = Object.keys(STAGE_WEIGHTS);
-              const currentIndex = stageKeys.indexOf(activeStage);
-              const thisIndex = stageKeys.indexOf(stage);
-              
-              let bgColor = 'bg-slate-800';
-              if (thisIndex < currentIndex) bgColor = 'bg-sky-500/60';
-              else if (thisIndex === currentIndex) bgColor = 'bg-sky-400 animate-pulse';
-
-              return (
-                <div key={stage} className="flex flex-col items-center gap-1">
-                  <div className={`w-full h-1 rounded-full ${bgColor}`} />
-                  <span className="text-[8px] uppercase tracking-widest text-slate-500 font-mono truncate max-w-full">
-                    {stage.substring(0, 3)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <DiagnosticConsole events={diagnosticEvents} />
       )}
 
       {/* SUCCESS STATE */}

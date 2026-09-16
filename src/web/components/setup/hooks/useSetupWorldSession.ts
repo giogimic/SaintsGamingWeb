@@ -1,12 +1,14 @@
 import { useState, useCallback, useRef } from 'react';
 import type { SetupEnvironmentData } from '../steps/EnvironmentSetupStep';
 import type { GameDefinitionData } from '../steps/GameDefinitionStep';
+import type { DiagnosticEvent } from '@/server/diagnostics/SetupLogger';
 
 export type WorldSessionStatus = 'IDLE' | 'GENERATING' | 'READY' | 'ERROR';
 
 export function useSetupWorldSession(
   environment: SetupEnvironmentData,
-  gameDefinition: GameDefinitionData
+  gameDefinition: GameDefinitionData,
+  setDiagnosticEvents: (events: DiagnosticEvent[]) => void
 ) {
   const [status, setStatus] = useState<WorldSessionStatus>('IDLE');
   const [generationTimeMs, setGenerationTimeMs] = useState<number>(0);
@@ -17,7 +19,7 @@ export function useSetupWorldSession(
 
   const activeRequestId = useRef<number>(0);
 
-  const generateWorld = useCallback(async (sizeChunks: number, mapType?: 'TILE' | 'VOXEL' | 'FRACTAL') => {
+  const generateWorld = useCallback(async (initializationId: string, sizeChunks: number, mapType?: 'TILE' | 'VOXEL' | 'FRACTAL') => {
     const reqId = ++activeRequestId.current;
     
     setStatus('GENERATING');
@@ -41,17 +43,27 @@ export function useSetupWorldSession(
           heightChunks: 1,
           baseMaterial: environment.foundationMaterial === 'gunmetal' ? 1 : 2,
           baseElevation: 16,
-          mapType: mapType || 'VOXEL'
+          mapType: mapType || 'VOXEL',
+          initializationId
         })
       });
 
       if (!startRes.ok) {
-        throw new Error(`Failed to start generation: ${await startRes.text()}`);
+        let errStr = await startRes.text();
+        try {
+          const parsed = JSON.parse(errStr);
+          if (parsed.events) setDiagnosticEvents(parsed.events);
+          errStr = parsed.error || errStr;
+        } catch(e) {}
+        throw new Error(`Failed to start generation: ${errStr}`);
       }
 
-      const { bootstrapRevisionId, jobId } = await startRes.json();
+      const { bootstrapRevisionId, jobId, events } = await startRes.json();
       if (reqId !== activeRequestId.current) return;
       setBootstrapRevisionId(bootstrapRevisionId);
+      if (events) {
+        setDiagnosticEvents(events);
+      }
 
       // 2. Poll for Status
       const pollInterval = setInterval(async () => {
@@ -61,11 +73,15 @@ export function useSetupWorldSession(
         }
 
         try {
-          const statusRes = await fetch(`/api/setup/generate-draft/status?jobId=${jobId}`);
+          const statusRes = await fetch(`/api/setup/generate-draft/status?jobId=${jobId}&initializationId=${initializationId}`);
           if (!statusRes.ok) return;
 
           const data = await statusRes.json();
           if (reqId !== activeRequestId.current) return;
+
+          if (data.events) {
+            setDiagnosticEvents(data.events);
+          }
 
           if (data.status === 'FAILED' || data.error) {
             clearInterval(pollInterval);
