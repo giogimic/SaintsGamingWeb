@@ -319,7 +319,7 @@ export function StartingMapStep({
           
           <div className="flex items-center justify-between mt-1">
             <button
-              onClick={() => generateWorld(previewSizeChunks)}
+              onClick={() => generateWorld('dummy-id-for-preview', previewSizeChunks, startingMap.mapType)}
               disabled={status !== 'READY' && status !== 'ERROR'}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-mono font-semibold text-slate-300 transition cursor-pointer disabled:opacity-50"
             >
