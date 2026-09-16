@@ -149,7 +149,7 @@ export function GameInitializationWizard({ isReinit = false }: { isReinit?: bool
             <WorldGenerationStep
               gameDefinition={gameDefinition}
               startingMap={startingMap}
-              onChangeStartingMap={setStartingMap}
+              onChange={setStartingMap}
               initializationId={initializationId}
               diagnosticEvents={diagnosticEvents}
               setDiagnosticEvents={setDiagnosticEvents}
