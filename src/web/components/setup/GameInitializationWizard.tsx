@@ -164,7 +164,7 @@ export function GameInitializationWizard({ isReinit = false }: { isReinit?: bool
               initializationId={initializationId}
               diagnosticEvents={diagnosticEvents}
               setDiagnosticEvents={setDiagnosticEvents}
-              onPublishSuccess={handleCompleteSuccess}
+              onCompleteSuccess={handleCompleteSuccess}
               onBack={() => setStep(2)}
             />
           )}
