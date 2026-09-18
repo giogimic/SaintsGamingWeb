@@ -48,6 +48,14 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📜 Changelog
 
+### v2.1.907 - Studio Release Pipeline Hardening & Resilient Runtime Sync
+- **Studio Release Pipeline Verification:** Audited all compiler, publish, and restore stages against `.docs/STUDIO-RELEASE--PIPELINE/`. Resolved potential failure vectors where dangling or missing sub-dependencies could block publishing.
+- **Resilient Connection & Dependency Resolvers:** Upgraded `ConnectionCompiler.ts` to automatically route warp gates to destination map spawns/entry points and record non-fatal warnings instead of hard aborting on unlinked gates. Updated `ActorDependencyResolver.ts` and `GameplayDependencyResolver.ts` to push non-fatal warnings for missing optional NPC, creature, item, ability, and quest templates.
+- **Go MMO Multi-Secret & Docker Networking Support:** Updated `the-lobby/internal/config/config.go`, `goMmoNotify.ts`, and `docker-compose.yml` to support `GO_MMO_ADMIN_SECRET`, `GO_MMO_INTERNAL_SECRET`, and `GO_MMO_INTERNAL_URL`, guaranteeing internal notification delivery in containerized and bare-metal environments.
+- **Map Loading & Snapshot Fallback:** Upgraded `/api/maps/[slug]` with case-insensitive map resolution and `worldMapSnapshot` fallback, ensuring all published release maps can be loaded even if working-world tables are altered.
+- **Restore Pipeline Go MMO Synchronization:** Added `MapSyncService.enqueueProjectRelease()` call in `restoreWorldRelease` (`publishing.ts`), ensuring Go MMO runtime shards stay synchronized whenever an admin restores a world snapshot backup.
+- **Character Select Location Routing:** Improved character login in `CharacterSelectScene.tsx` and `the-lobby` socket handler to preserve character's saved map ID and avoid spurious "location no longer exists" toasts on normal fresh logins.
+
 ### v2.1.906 - World Compiler Spawn Fallback & Go MMO On-Demand Recovery
 - **Resilient World Compiler Spawn Resolution:** Upgraded `WorldCompiler.ts` with fallback scanning for `category === 'SPAWN'` gates, explicit `spawnPoint` positions, and map origins, preventing fatal publish aborts when custom spawn gates are configured in Studio.
 - **Map Spawn Coordinate Propagation:** Configured `WorldCompiler` to embed exact `spawnX`, `spawnY`, and `spawnZ` coordinates directly into `ctx.manifest.maps` for the designated spawn map, ensuring Go MMO receives accurate spawn points.

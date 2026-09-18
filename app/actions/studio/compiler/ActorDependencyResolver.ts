@@ -42,7 +42,7 @@ export async function resolveActors(ctx: CompilerContext): Promise<void> {
     for (const slug of pendingNpcs) {
       const npcDef = npcs.find(n => n.slug === slug);
       if (!npcDef) {
-        ctx.errors.push(`Missing NpcDef for slug '${slug}'`);
+        ctx.warnings.push(`Missing NpcDef for slug '${slug}', skipping actor from release.`);
         continue;
       }
 
@@ -112,7 +112,7 @@ export async function resolveActors(ctx: CompilerContext): Promise<void> {
     for (const slug of pendingCreatures) {
       const c = creatures.find(cr => cr.slug === slug);
       if (!c) {
-        ctx.errors.push(`Missing CreatureDef for slug '${slug}'`);
+        ctx.warnings.push(`Missing CreatureDef for slug '${slug}', skipping creature from release.`);
         continue;
       }
       

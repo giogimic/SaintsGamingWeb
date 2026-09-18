@@ -217,6 +217,19 @@ export async function restoreWorldRelease(snapshotId: string) {
       }
     }
 
+    // Notify Go MMO that the project release has been restored
+    try {
+      const { MapSyncService } = await import('@/server/mapSyncService');
+      await MapSyncService.enqueueProjectRelease({
+        projectId: snapshot.projectId,
+        version: snapshot.version,
+        userId: 'system',
+        eagerPush: true,
+      });
+    } catch (syncErr) {
+      console.warn('[restoreWorldRelease] MapSyncService notify failed:', syncErr);
+    }
+
     return { success: true as const };
   } catch (err: any) {
     console.error("[restoreWorldRelease]", err);

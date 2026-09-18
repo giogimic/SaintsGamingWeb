@@ -8,7 +8,13 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const secret = request.headers.get("Authorization")?.replace("Bearer ", "");
-  if (!secret || secret !== (process.env.SAINTS_INTERNAL_SECRET || process.env.AUTH_SECRET)) {
+  const allowedSecrets = [
+    process.env.GO_MMO_ADMIN_SECRET,
+    process.env.GO_MMO_INTERNAL_SECRET,
+    process.env.SAINTS_INTERNAL_SECRET,
+    process.env.AUTH_SECRET,
+  ].filter(Boolean);
+  if (!secret || !allowedSecrets.includes(secret)) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 

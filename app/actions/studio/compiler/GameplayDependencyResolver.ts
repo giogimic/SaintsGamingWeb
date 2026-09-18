@@ -22,7 +22,7 @@ export async function resolveGameplay(ctx: CompilerContext): Promise<void> {
     for (const slug of pendingQuests) {
       const quest = quests.find(q => q.slug === slug);
       if (!quest) {
-        ctx.errors.push(`Missing QuestTemplate for slug '${slug}'`);
+        ctx.warnings.push(`Missing QuestTemplate for slug '${slug}', skipping quest from release.`);
         continue;
       }
       
@@ -49,7 +49,7 @@ export async function resolveGameplay(ctx: CompilerContext): Promise<void> {
     for (const slug of pendingItems) {
       const it = items.find(i => i.slug === slug);
       if (!it) {
-        ctx.errors.push(`Missing ItemTemplate for slug '${slug}'`);
+        ctx.warnings.push(`Missing ItemTemplate for slug '${slug}', skipping item from release.`);
         continue;
       }
       
@@ -65,7 +65,7 @@ export async function resolveGameplay(ctx: CompilerContext): Promise<void> {
     if (CANONICAL_ABILITIES[slug]) {
       ctx.manifest.gameplay.abilities.push(CANONICAL_ABILITIES[slug]);
     } else {
-      ctx.errors.push(`Missing canonical ability '${slug}'`);
+      ctx.warnings.push(`Missing canonical ability '${slug}', skipping ability from release.`);
     }
   }
 }

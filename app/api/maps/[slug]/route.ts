@@ -21,9 +21,18 @@ export const dynamic = 'force-dynamic';
 
 async function loadMapPayload(slug: string, isDraft?: boolean) {
   let worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
-  if (!worldMap) return null;
-
-
+  if (!worldMap) {
+    worldMap = await prisma.worldMap.findFirst({
+      where: {
+        OR: [
+          { id: slug },
+          { id: slug.toUpperCase() },
+          { id: slug.toLowerCase() },
+          { name: slug },
+        ]
+      }
+    });
+  }
 
   if (worldMap) {
     let grid = [];
@@ -181,6 +190,66 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
       ),
       mapType: "TILE",
       source: "gameMap" as const,
+    };
+  }
+
+  // Fallback to WorldMapSnapshot for published release maps
+  const snap = await prisma.worldMapSnapshot.findFirst({
+    where: {
+      OR: [
+        { mapId: slug },
+        { mapId: slug.toUpperCase() },
+        { mapId: slug.toLowerCase() },
+      ],
+    },
+    orderBy: { id: 'desc' },
+  });
+
+  if (snap) {
+    let grid: any[] = [];
+    try { grid = JSON.parse(snap.gridData || "[]"); } catch { grid = []; }
+    const rawGates = JSON.parse(snap.gatesData || "{}");
+    const connections = rawGates.connections || undefined;
+    const actualGates = rawGates.gates !== undefined ? rawGates.gates : rawGates;
+    const dims = resolveMapDimensions({ grid, tileLayers: [], mapType: snap.regionClass } as any);
+    const spawnPoint = rawGates.spawnPoint || (Array.isArray(actualGates) ? actualGates.find((g: any) => g.id === 'spawn' || g.category === 'SPAWN')?.position : undefined) || { x: Math.floor(dims.width / 2), y: Math.floor(dims.height / 2) };
+    
+    let voxelDoc: any = undefined;
+    try {
+      const { VoxelStorageService } = await import('@/server/services/VoxelStorageService');
+      voxelDoc = await VoxelStorageService.getVoxelDoc(snap.mapId);
+    } catch (e) {}
+
+    if (!voxelDoc) {
+      voxelDoc = generateDefaultWorldDoc(
+        Math.max(1, Math.ceil(dims.width / CHUNK_SIZE_X)),
+        Math.max(1, Math.ceil(dims.height / CHUNK_SIZE_Z)),
+        64,
+        dims.width,
+        dims.height
+      );
+      voxelDoc.id = snap.mapId;
+    }
+
+    return {
+      id: snap.mapId,
+      name: snap.mapId.replace(/_/g, ' '),
+      width: dims.width,
+      height: dims.height,
+      grid: Array.isArray(grid) && grid.length > 0 ? grid : generateGridFromVoxelDoc(voxelDoc, dims.width, dims.height),
+      gates: actualGates,
+      connections,
+      spawnPoint,
+      entities: JSON.parse(snap.entitiesData || "[]"),
+      encounterPool: JSON.parse(snap.encountersData || "[]"),
+      tileLayers: [],
+      freeformLayers: [],
+      tilesets: DEFAULT_STUDIO_TILESETS,
+      voxelDoc,
+      regionClass: snap.regionClass || "authored",
+      mapType: "VOXEL",
+      version: 1,
+      source: "worldMapSnapshot" as const,
     };
   }
 

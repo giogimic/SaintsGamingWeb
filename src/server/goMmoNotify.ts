@@ -5,8 +5,10 @@
 export function goMmoInternalBase(): string | undefined {
   const raw = (
     process.env.GO_MMO_INTERNAL_URL ||
+    process.env.GO_MMO_API_URL ||
+    process.env.GO_MMO_URL ||
     process.env.NEXT_PUBLIC_GO_MMO_URL ||
-    ""
+    (process.env.NODE_ENV === "production" ? "http://game-server:24011" : "http://127.0.0.1:24011")
   ).trim();
   if (!raw) return undefined;
   return raw.replace(/\/+$/, "");
@@ -23,12 +25,13 @@ export async function notifyGoContentSynced(payload: {
     return { ok: true, skipped: true };
   }
   const secret =
+    process.env.GO_MMO_ADMIN_SECRET ||
     process.env.GO_MMO_INTERNAL_SECRET ||
     process.env.SAINTS_INTERNAL_SECRET ||
     process.env.AUTH_SECRET ||
     "";
   if (!secret) {
-    console.warn(`[goMmoNotify] AUTH_SECRET missing — cannot sync ${payload.type} to Go`);
+    console.warn(`[goMmoNotify] AUTH_SECRET / GO_MMO_ADMIN_SECRET missing — cannot sync ${payload.type} to Go`);
     return { ok: false, error: "missing secret" };
   }
 

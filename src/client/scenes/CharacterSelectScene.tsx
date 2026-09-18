@@ -135,7 +135,6 @@ export function CharacterSelectScene() {
       setCharacter(charId, char.name);
       
       const accountId = useSessionStore.getState().accountId || (session?.user?.id as string) || '';
-      const targetMapId = '';
       
       const socket = socketManager.raw;
       if (!socket || !socket.connected) {
@@ -148,12 +147,19 @@ export function CharacterSelectScene() {
 
       try {
         let position = { x: 15, y: 15 };
+        let charMapId = '';
         try {
           if (char.stateData) {
             const parsed = JSON.parse(char.stateData);
             if (parsed.position) {
               position = parsed.position;
             }
+            if (parsed.currentMapId) {
+              charMapId = parsed.currentMapId;
+            }
+          }
+          if (!charMapId && char.lastMapId) {
+            charMapId = char.lastMapId;
           }
         } catch {}
 
@@ -162,11 +168,10 @@ export function CharacterSelectScene() {
           accountId,
           characterId: charId,
           contract: {
-            mapId: targetMapId,
+            mapId: charMapId,
             lobby: true,
             isPrivate: false,
             pie: false,
-
           },
           position,
           name: char.name,

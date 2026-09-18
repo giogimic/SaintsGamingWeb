@@ -300,25 +300,30 @@ export default function TheLobby({
 
       const activeRelease = await getActiveWorldRelease('saints');
       let manifestSpawn = '';
+      let manifestMaps: string[] = [];
       if (activeRelease) {
         try {
           const manifest = JSON.parse(activeRelease.manifestData || '{}');
           manifestSpawn = manifest.world?.spawnMap || '';
+          if (Array.isArray(manifest.maps)) {
+            manifestMaps = manifest.maps.map((m: any) => m.id);
+          }
         } catch {}
       }
-      const loadedSpawn = manifestSpawn || availableMapIds[0] || 'genesis';
+      const allKnownMaps = Array.from(new Set([...availableMapIds, ...manifestMaps]));
+      const loadedSpawn = manifestSpawn || defaultSpawnMapId || allKnownMaps[0] || 'genesis';
 
       const safeSpawn = resolveSafePlayerSpawn({
         savedMapId: savedMap,
         savedX: parsedState.position?.x,
         savedY: parsedState.position?.y,
-        availableMapIds,
-        worldDefaultSpawn: { mapId: defaultSpawnMapId, x: DEFAULT_SPAWN.x, y: DEFAULT_SPAWN.y }
+        availableMapIds: allKnownMaps,
+        worldDefaultSpawn: { mapId: defaultSpawnMapId || loadedSpawn, x: DEFAULT_SPAWN.x, y: DEFAULT_SPAWN.y }
       });
 
       validMapId = safeSpawn.mapId;
       if (!validMapId) {
-        validMapId = availableMapIds[0] || defaultSpawnMapId;
+        validMapId = defaultSpawnMapId || loadedSpawn || allKnownMaps[0] || 'genesis';
       }
       validPosition = { x: safeSpawn.x, y: safeSpawn.y };
 

@@ -369,7 +369,7 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 		}
 	}
 
-	if isRecovery {
+	if isRecovery && req.MapID != "" {
 		h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "Your previous location no longer exists. Returning to spawn."})
 	}
 

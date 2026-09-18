@@ -67,12 +67,14 @@ func Load() Config {
 		aoiSize = 64
 	}
 
+	authSecret := getenv("GO_MMO_ADMIN_SECRET", getenv("GO_MMO_INTERNAL_SECRET", getenv("SAINTS_INTERNAL_SECRET", getenv("AUTH_SECRET", "dev-secret-change-me"))))
+
 	return Config{
 		Host:          host,
 		Port:          port,
 		HTTPAddr:      host + ":" + strconv.Itoa(port),
 		DatabaseURL:   getenv("GO_MMO_DATABASE_URL", getenv("DATABASE_URL", "file:../prisma/db/dev.db")),
-		AuthSecret:    getenv("AUTH_SECRET", "dev-secret-change-me"),
+		AuthSecret:    authSecret,
 		DevAuthBypass: getenvBool("GO_MMO_DEV_AUTH", getenv("NODE_ENV", "development") != "production"),
 		SimTPS:        getenvInt("GO_MMO_SIM_TPS", 20),
 		NetTPS:        getenvInt("GO_MMO_NET_TPS", 10),
@@ -81,7 +83,7 @@ func Load() Config {
 		LobbyCapacity: getenvInt("GO_MMO_LOBBY_CAPACITY", 50),
 		CORSOrigin:    getenv("GO_MMO_CORS_ORIGIN", "*"),
 		PublicBaseURL: getenv("GO_MMO_PUBLIC_URL", "http://127.0.0.1:24011"),
-		InternalRpcSecret: getenv("INTERNAL_RPC_SECRET", "dev-rpc-secret-123"),
+		InternalRpcSecret: getenv("INTERNAL_RPC_SECRET", authSecret),
 		NextJsUrl:     getenv("NEXT_JS_URL", "http://127.0.0.1:3000"),
 	}
 }

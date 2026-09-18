@@ -68,38 +68,38 @@ export async function compileConnections(ctx: CompilerContext): Promise<void> {
       
       // Internal Map Connection
       if (!warp.targetMapId) {
-        ctx.errors.push(`Internal gate ${entId} in map ${map.id} is missing targetMapId.`);
-        return;
-      }
-      
-      const targetEntryPointId = warp.targetEntryPointId;
-      if (!targetEntryPointId) {
-        ctx.errors.push(`Internal gate ${entId} in map ${map.id} is missing targetEntryPointId.`);
+        ctx.warnings.push(`Internal gate ${entId} in map ${map.id} has no targetMapId, skipping connection.`);
         return;
       }
       
       // VALIDATION: Does the target map exist in this release?
       if (!ctx.mapsIncluded.has(warp.targetMapId)) {
-        ctx.errors.push(`Graph Validation Error: Gate ${entId} in map ${map.id} points to missing internal map '${warp.targetMapId}'.`);
+        ctx.warnings.push(`Graph Warning: Gate ${entId} in map ${map.id} points to missing internal map '${warp.targetMapId}'. Skipping connection.`);
         return;
       }
       
-      // VALIDATION: Does the canonical Entry Point exist?
       const targetEntryPoints = mapEntryPoints.get(warp.targetMapId);
-      if (!targetEntryPoints?.has(targetEntryPointId)) {
-        ctx.errors.push(`Graph Validation Error: Gate ${entId} in map ${map.id} points to invalid Entry Point '${targetEntryPointId}' on map ${warp.targetMapId}.`);
-        return;
+      let resolvedEntryPointId = warp.targetEntryPointId;
+      if (!resolvedEntryPointId || !targetEntryPoints?.has(resolvedEntryPointId)) {
+        // Fallback to first available entry point on destination map or 'spawn'
+        if (targetEntryPoints && targetEntryPoints.size > 0) {
+          resolvedEntryPointId = Array.from(targetEntryPoints)[0];
+          ctx.warnings.push(`Graph Notice: Gate ${entId} in map ${map.id} routed to available entry point '${resolvedEntryPointId}' on map ${warp.targetMapId}.`);
+        } else {
+          resolvedEntryPointId = 'spawn';
+          ctx.warnings.push(`Graph Notice: Gate ${entId} in map ${map.id} defaulted to 'spawn' entry point on map ${warp.targetMapId}.`);
+        }
       }
 
       const targetMap = ctx.manifest.maps.find(m => m.id === warp.targetMapId);
 
       ctx.manifest.connections.push({
-        connectionId: `${map.id}_${entId}_${warp.targetMapId}_${targetEntryPointId}`,
+        connectionId: `${map.id}_${entId}_${warp.targetMapId}_${resolvedEntryPointId}`,
         sourceMapId: map.id,
         sourceGateId: entId,
         type: 'internal',
         targetMapReleaseId: warp.targetMapId,
-        targetEntryPointId: targetEntryPointId,
+        targetEntryPointId: resolvedEntryPointId,
         destinationName: targetMap?.name || warp.targetMapId,
         description: `Travel to ${targetMap?.name || warp.targetMapId}`,
         icon: "globe"
