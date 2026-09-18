@@ -223,12 +223,14 @@ export async function POST(req: Request) {
           description: gameDesc,
           isActive: true,
           combatFormula: gameStyle === 'TURN_BASED' ? 'turn-based' : 'saints-standard',
+          defaultSpawnGateId: 'spawn',
         },
         update: {
           name: gameName,
           description: gameDesc,
           isActive: true,
           combatFormula: gameStyle === 'TURN_BASED' ? 'turn-based' : 'saints-standard',
+          defaultSpawnGateId: 'spawn',
         },
       });
 

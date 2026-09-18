@@ -78,9 +78,9 @@ export async function compileWorldRelease(projectIdentifier: string, title?: str
         const gateId = gate.id || `legacy_gate_${idx}`;
         if (gateId === canonicalSpawnId) {
           spawnMapId = map.id;
-          spawnX = gate.spawnPoint?.x ?? 0;
-          spawnY = gate.spawnPoint?.y ?? 0;
-          spawnZ = gate.spawnPoint?.z ?? 0;
+          spawnX = gate.spawnPoint?.x ?? gate.position?.x ?? 0;
+          spawnY = gate.spawnPoint?.y ?? gate.position?.y ?? 0;
+          spawnZ = gate.spawnPoint?.z ?? gate.position?.z ?? 0;
           spawnFound = true;
           break;
         }
