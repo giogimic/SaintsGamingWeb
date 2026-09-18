@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     // Also, we might want to store a permanent link somewhere (e.g. gameCharacters).
     // For now, let's create a GameCharacter record if one doesn't exist.
     const existingChar = await prisma.gameCharacter.findFirst({
-      where: { name: playerName, game: "SAMP" },
+      where: { name: playerName },
     });
 
     if (!existingChar) {
@@ -48,7 +48,8 @@ export async function POST(req: NextRequest) {
         data: {
           userId: linkCode.userId,
           name: playerName,
-          game: "SAMP",
+          classId: "samp-player", // A dummy class for SAMP
+          stateData: "{}",
         },
       });
     } else if (existingChar.userId !== linkCode.userId) {
