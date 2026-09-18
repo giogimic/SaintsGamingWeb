@@ -264,7 +264,14 @@ if [ "$UPDATE_MODE" = "restart" ]; then
         ( docker compose restart web >> docker_build.log 2>&1 || docker compose up -d web >> docker_build.log 2>&1 ) &
         UP_PID=$!
         run_with_spinner "Restarting web container" "docker_build.log" "$UP_PID"
-        echo -e "${GREEN}[✓] Docker web container restarted.${NC}"
+        
+        if docker ps -a --format '{{.Names}}' | grep -q '^saints-lobby$'; then
+            ( docker restart saints-lobby >> docker_build.log 2>&1 ) &
+            GO_PID=$!
+            run_with_spinner "Restarting Go MMO container" "docker_build.log" "$GO_PID"
+        fi
+        
+        echo -e "${GREEN}[✓] Docker containers restarted.${NC}"
     fi
     if command -v pm2 &>/dev/null; then
         pm2 restart all 2>/dev/null || true
@@ -694,7 +701,7 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
             if docker ps -a --format '{{.Names}}' | grep -q '^saints-lobby$'; then
                 docker stop saints-lobby 2>/dev/null || true
                 docker rm -f saints-lobby 2>/dev/null || true
-                docker volume rm saints_lobby_data 2>/dev/null || true
+                # REMOVED: docker volume rm saints_lobby_data (to prevent persistent player data loss)
             fi
             if docker ps -a --format '{{.Names}}' | grep -q '^saints-gaming-mmo-go$'; then
                 docker stop saints-gaming-mmo-go 2>/dev/null || true

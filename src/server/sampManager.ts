@@ -64,6 +64,16 @@ export class SampManager extends EventEmitter {
 
     this.updateMysqlConfig();
 
+    if (!isWindows) {
+      try {
+        if (fs.existsSync(cmd)) {
+          fs.chmodSync(cmd, 0o755);
+        }
+      } catch (e) {
+        console.error("[SampManager] Failed to chmod +x executable:", e);
+      }
+    }
+
     this.process = spawn(cmd, args, {
       cwd: execCwd,
       detached: !isWindows, // detaches process group on linux so we can kill it

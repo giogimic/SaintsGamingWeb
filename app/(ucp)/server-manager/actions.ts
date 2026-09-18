@@ -169,6 +169,26 @@ export async function downloadAndExtractServer(archiveUrl: string) {
 
     // Cleanup
     if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+
+    // Post-extraction fix for open.mp / sa-mp putting things in subfolders
+    for (const subDir of ['Server', 'samp03']) {
+      const subPath = path.join(targetDir, subDir);
+      if (fs.existsSync(subPath) && fs.statSync(subPath).isDirectory()) {
+        try {
+          const items = fs.readdirSync(subPath);
+          for (const item of items) {
+            const oldPath = path.join(subPath, item);
+            const newPath = path.join(targetDir, item);
+            // Replace if it exists
+            if (fs.existsSync(newPath)) fs.rmSync(newPath, { recursive: true, force: true });
+            fs.renameSync(oldPath, newPath);
+          }
+          fs.rmdirSync(subPath);
+        } catch(e) {
+          console.error("Failed to move items from " + subDir, e);
+        }
+      }
+    }
     
     return { success: true };
   } catch (error: any) {
