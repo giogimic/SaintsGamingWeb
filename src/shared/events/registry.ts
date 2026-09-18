@@ -19,7 +19,7 @@ export const EventEnvelopeSchema = z.object({
   type: z.string().min(1),
   version: z.string().default("1.0"),
   timestamp: z.number().int().positive(),
-  source: z.enum(["web", "mmo", "discord", "fivem", "system"] as const),
+  source: z.enum(["web", "mmo", "discord", "samp", "system"] as const),
   priority: z.enum(["CRITICAL", "NORMAL", "EPHEMERAL"] as const),
   payload: z.record(z.unknown()),
 });
@@ -85,40 +85,7 @@ export const DiscordCommunityAnnounceSchema = z.object({
   link: z.string().nullable(),
 });
 
-export const FivemPlayerOnlineSchema = z.object({
-  userId: z.string(),
-  fivemLicense: z.string(),
-  characterId: z.string().optional(),
-  characterName: z.string().optional(),
-  playerCount: z.number().int().nonnegative().optional(),
-});
 
-export const FivemPlayerOfflineSchema = z.object({
-  userId: z.string(),
-  fivemLicense: z.string(),
-  playerCount: z.number().int().nonnegative().optional(),
-});
-
-export const FivemCharacterUpdatedSchema = z.object({
-  userId: z.string(),
-  characterId: z.string(),
-  characterName: z.string(),
-  cash: z.number().int(),
-  bank: z.number().int(),
-  health: z.number().int(),
-  armor: z.number().int(),
-  isDead: z.boolean(),
-});
-
-export const FivemBankUpdatedSchema = z.object({
-  userId: z.string(),
-  characterId: z.string(),
-  characterName: z.string(),
-  transactionType: z.string(),
-  amount: z.number().int(),
-  cash: z.number().int(),
-  bank: z.number().int(),
-});
 
 // ─── Registry Entry ───────────────────────────────────────────────────────────
 export interface RegistryEntry {
@@ -150,7 +117,7 @@ export const EVENT_REGISTRY: Record<string, RegistryEntry> = {
     schema: PresenceUpdatedSchema,
     priority: "EPHEMERAL",
     persistent: false,
-    producer: ["web", "mmo", "fivem"],
+    producer: ["web", "mmo", "samp"],
     consumers: ["UserAvatarBadge", "FriendList"],
   },
   "forum.reply.created": {
@@ -195,34 +162,7 @@ export const EVENT_REGISTRY: Record<string, RegistryEntry> = {
     producer: ["discord"],
     consumers: ["RealtimeProvider toast / site banner"],
   },
-  "fivem.player.online": {
-    schema: FivemPlayerOnlineSchema,
-    priority: "EPHEMERAL",
-    persistent: false,
-    producer: ["fivem"],
-    consumers: ["UCP live refresh", "FriendsList presence (playing)", "Admin audit"],
-  },
-  "fivem.player.offline": {
-    schema: FivemPlayerOfflineSchema,
-    priority: "EPHEMERAL",
-    persistent: false,
-    producer: ["fivem"],
-    consumers: ["UCP live refresh", "FriendsList presence", "Admin audit"],
-  },
-  "fivem.character.updated": {
-    schema: FivemCharacterUpdatedSchema,
-    priority: "NORMAL",
-    persistent: false,
-    producer: ["fivem", "web"],
-    consumers: ["UCP dashboard refresh", "profile/character panels"],
-  },
-  "fivem.bank.updated": {
-    schema: FivemBankUpdatedSchema,
-    priority: "NORMAL",
-    persistent: false,
-    producer: ["fivem"],
-    consumers: ["UCP banking refresh", "achievement checks (high_roller)"],
-  },
+
 };
 
 /**
