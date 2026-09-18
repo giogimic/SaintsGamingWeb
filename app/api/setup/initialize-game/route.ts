@@ -510,7 +510,21 @@ export async function POST(req: Request) {
     // 5. Seed Dynamic Starter Content (Abilities, Items, Mounts, Dungeons)
     await bootstrapDynamicStarterContent('saints', 'default');
 
-    // 5b. (Moved inside transaction)
+    logger.log({ stageName: '09. Compile WorldRelease', stageCode: 'compile_release', status: 'RUNNING', message: 'Compiling monolithic release' });
+    const { compileWorldRelease } = await import('@/app/actions/studio/compiler/WorldCompiler');
+    const { releaseInfo } = await compileWorldRelease('saints', `${gameName} - Initial Release`, 'Auto-generated during initial setup.');
+    
+    // Demote old LIVE releases
+    await prisma.worldRelease.updateMany({
+      where: { projectId: 'saints', status: 'LIVE' },
+      data: { status: 'PUBLISHED' }
+    });
+    // Set to LIVE
+    await prisma.worldRelease.update({
+      where: { id: releaseInfo.releaseId },
+      data: { status: 'LIVE' }
+    });
+    logger.log({ stageName: '09. Compile WorldRelease', stageCode: 'compile_release', status: 'COMPLETED', message: 'Compiled monolithic release', metadata: { releaseId: releaseInfo.releaseId } });
 
     logger.log({ stageName: '11. Deploy Release', stageCode: 'deploy_release', status: 'COMPLETED', message: 'Deployment successful', metadata: { worldMapId: mapId } });
 

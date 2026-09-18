@@ -1,3 +1,9 @@
+## 2.1.873
+- **True Restore Logic Implemented:** Added restoreWorldRelease server action that safely reconstructs a working world state from an immutable snapshot without mutating the source release.
+- **Persistent Player Location:** Updated Go server and client to persist and prioritize lastMapId and coordinates from GameCharacter, ensuring location survival across releases.
+- **Studio Version Manager Restructured:** Removed ambiguous map-saving logic, added explicit 'Publish World' actions to VersionManagerPanel and Studio menus.
+- **Architectural Schema Alignment:** Completed the migration from gameId to projectId across API routes, VoxelWorldDoc types, and test suites.
+
 ## 2.1.891
 - **SA-MP Server File Manager:** Replaced the curl shell command with Node.js native etch to fix download failures inside minimal Docker container environments that lack curl.
 - **World Setup Wizard:** Fixed a bug where generation would appear to hang at 7% for Fractal terrain by injecting the missing action bar and Next button for the final publish phase.

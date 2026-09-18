@@ -62,7 +62,7 @@ async function runTests() {
 
   await prisma.npcDef.create({
     data: {
-      gameId: 'saints',
+      projectId: 'saints',
       slug: npcSlug,
       name: 'Quest Giver',
       componentsData: JSON.stringify({ behavior: { dialogueId: npcSlug } })
