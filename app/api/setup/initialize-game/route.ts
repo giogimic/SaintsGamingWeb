@@ -553,10 +553,9 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error('[api/setup/initialize-game] Initialization failed:', error);
     // Use a logger if possible, but we don't have it in catch scope easily unless we hoisted it, but we did hoist it!
-    // Wait, let's just return the error.
     return NextResponse.json(
-      { error: error.message || 'Failed to initialize game', events: [] },
-      { status: 500 }
+      { error: error.message || 'Failed to initialize game', stack: error.stack, events: [] },
+      { status: 400 }
     );
   }
 }
