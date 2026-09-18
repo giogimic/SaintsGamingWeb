@@ -316,6 +316,13 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 	
 	isRecovery := false
 	if _, err := h.eng.World().GetDef(base); err != nil {
+		// If no active release is loaded yet in-memory, attempt to pull latest from database on-demand
+		if h.eng.World().ActiveRelease == nil {
+			if err := h.eng.World().LoadActiveRelease("saints"); err == nil {
+				log.Printf("[WorldJoinOnDemand] Loaded active release on-demand for account %s", accountID)
+			}
+		}
+
 		activeRel := h.eng.World().ActiveRelease
 		if activeRel != nil && activeRel.World.SpawnMap != "" {
 			log.Printf("[WorldJoinRecovery] account=%s requested map %s not found in active release (version=%s). Recovering to canonical spawn %s.", accountID, base, activeRel.Version, activeRel.World.SpawnMap)
@@ -330,21 +337,35 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 			isRecovery = true
 		}
 		
-		// If STILL not found (e.g. spawn map is also invalid, or no active release), reject
+		// If STILL not found (e.g. spawn map is also invalid, or no active release), fallback to demo map rather than rejecting
 		if _, err2 := h.eng.World().GetDef(base); err2 != nil {
-			reason := "map_load_failed"
-			if strings.Contains(err2.Error(), "not found") {
-				reason = "map_not_found"
+			demoDef := h.eng.World().EnsureDemoDef()
+			if demoDef != nil {
+				base = demoDef.ID
+				req.MapID = base
+				sx := 64.0
+				sy := 64.0
+				sz := 16.0
+				req.X = &sx
+				req.Y = &sy
+				req.Z = &sz
+				isRecovery = true
+				log.Printf("[WorldJoinFallback] account=%s recovered to demo map %s", accountID, base)
+			} else {
+				reason := "map_load_failed"
+				if strings.Contains(err2.Error(), "not found") {
+					reason = "map_not_found"
+				}
+				log.Printf("[socket] JOIN_REJECT account=%s reason=%s mapId=%s err=%v", accountID, reason, base, err2)
+				h.EmitToSocket(sid, protocol.EvJoinRejected, protocol.JoinRejectedPayload{
+					MapID:   base,
+					JoinSeq: req.JoinSeq,
+					Reason:  reason,
+					Message: "Failed to resolve world map.",
+				})
+				h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "Failed to resolve world map."})
+				return
 			}
-			log.Printf("[socket] JOIN_REJECT account=%s reason=%s mapId=%s err=%v", accountID, reason, base, err2)
-			h.EmitToSocket(sid, protocol.EvJoinRejected, protocol.JoinRejectedPayload{
-				MapID:   base,
-				JoinSeq: req.JoinSeq,
-				Reason:  reason,
-				Message: "Failed to resolve world map.",
-			})
-			h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "Failed to resolve world map."})
-			return
 		}
 	}
 

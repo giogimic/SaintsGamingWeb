@@ -48,6 +48,11 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📜 Changelog
 
+### v2.1.906 - World Compiler Spawn Fallback & Go MMO On-Demand Recovery
+- **Resilient World Compiler Spawn Resolution:** Upgraded `WorldCompiler.ts` with fallback scanning for `category === 'SPAWN'` gates, explicit `spawnPoint` positions, and map origins, preventing fatal publish aborts when custom spawn gates are configured in Studio.
+- **Map Spawn Coordinate Propagation:** Configured `WorldCompiler` to embed exact `spawnX`, `spawnY`, and `spawnZ` coordinates directly into `ctx.manifest.maps` for the designated spawn map, ensuring Go MMO receives accurate spawn points.
+- **Go MMO Shard On-Demand Auto-Recovery:** Implemented `LoadActiveRelease()` and fallback handling in `the-lobby/internal/socket/handler.go` and `manager.go` so when players connect or join a map without prior cache, Go MMO loads the release on demand from SQLite/MySQL or recovers gracefully to the demo realm rather than dropping players with a connection rejection.
+
 ### v2.1.905 - Complete Studio-to-Game Release Pipeline Alignment
 - **Go MMO Release Sync On Setup:** Dispatched `MapSyncService.enqueueProjectRelease()` during `initialize-game` setup so Go MMO automatically ingests the newly compiled release manifest, registering maps, gates, NPCs, and canonical world spawn.
 - **Project ID & Slug Decoupling:** Upgraded `/api/internal/projects/[slug]`, `/api/internal/worlds/[mapId]/[version]/manifest`, and `/api/internal/worlds/[mapId]/[version]/regions/[regionX]/[regionZ]` to resolve projects by either ID (CUID) or slug (`saints`), preventing 404s when Go MMO pulls published releases and voxel artifacts.

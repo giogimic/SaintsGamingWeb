@@ -2,6 +2,7 @@ package world
 
 import (
 	"container/heap"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -108,6 +109,23 @@ type Manager struct {
 	// FetchMapDef is an injected callback to lazily load a MapDef from the database
 	FetchMapDef func(id string) (*MapDef, error)
 	RM          *RegionManager
+	DB          *sql.DB
+}
+
+// LoadActiveRelease loads the active release from DB if not already loaded, or reloads it.
+func (m *Manager) LoadActiveRelease(projectID string) error {
+	if m.DB == nil {
+		return fmt.Errorf("no db configured on world manager")
+	}
+	version, err := m.ActiveReleaseVersion(m.DB, projectID)
+	if err != nil || version == "" {
+		return fmt.Errorf("no active release version found for %s: %w", projectID, err)
+	}
+	manifest, err := m.ParseRelease(m.DB, projectID, version)
+	if err != nil {
+		return fmt.Errorf("failed to parse release %s: %w", version, err)
+	}
+	return m.ApplyReleaseMaps(manifest)
 }
 
 func NewManager(maxPerShard int) *Manager {
@@ -174,6 +192,9 @@ func (m *Manager) GetDef(baseID string) (*MapDef, error) {
 
 func (m *Manager) EnsureDemoDef() *MapDef {
 	spawnMap := m.DefaultSpawnMap()
+	if spawnMap == "" {
+		spawnMap = "STARTING_MEADOW"
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if d, ok := m.defs[spawnMap]; ok {

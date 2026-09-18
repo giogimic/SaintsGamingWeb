@@ -46,6 +46,7 @@ func main() {
 	// Legacy ServerSpawnMapID from database removed due to migration v6
 
 	wm := world.NewManager(cfg.LobbyCapacity)
+	wm.DB = sqlDB
 	pm := player.NewManager(cfg.AOIZoneSize, sqlDB)
 	cm := creature.NewManager()
 
