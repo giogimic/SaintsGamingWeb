@@ -109,7 +109,16 @@ export async function downloadAndExtractServer(archiveUrl: string) {
     const isWindows = process.platform === 'win32';
     
     if (archiveUrl.endsWith('.tar.gz')) {
-      await execAsync(`tar -xzf "${tempFile}" -C "${targetDir}"`);
+      let stripFlags = "";
+      try {
+        const { stdout } = await execAsync(`tar -tzf "${tempFile}"`);
+        const lines = stdout.split('\n').filter((l: string) => l.trim().length > 0);
+        const rootSegments = new Set(lines.map((l: string) => l.split('/')[0]));
+        if (rootSegments.size === 1) {
+          stripFlags = "--strip-components=1";
+        }
+      } catch (e) {}
+      await execAsync(`tar -xzf "${tempFile}" -C "${targetDir}" ${stripFlags}`);
     } else {
       if (isWindows) {
         // Windows native tar supports zip now!
@@ -519,7 +528,16 @@ export async function unzipServerArchive(filePath: string) {
     const isWindows = process.platform === 'win32';
     
     if (filePath.endsWith('.tar.gz')) {
-      await execAsync(`tar -xzf "${targetFile}" -C "${targetDir}"`);
+      let stripFlags = "";
+      try {
+        const { stdout } = await execAsync(`tar -tzf "${targetFile}"`);
+        const lines = stdout.split('\n').filter((l: string) => l.trim().length > 0);
+        const rootSegments = new Set(lines.map((l: string) => l.split('/')[0]));
+        if (rootSegments.size === 1) {
+          stripFlags = "--strip-components=1";
+        }
+      } catch (e) {}
+      await execAsync(`tar -xzf "${targetFile}" -C "${targetDir}" ${stripFlags}`);
     } else if (filePath.endsWith('.zip')) {
       if (isWindows) {
         await execAsync(`tar -xf "${targetFile}" -C "${targetDir}"`);
