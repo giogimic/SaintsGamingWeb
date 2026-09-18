@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
-  downloadAndExtractServer, installLatestOMP,
+  downloadAndExtractServer, getDeployKey, syncGitDeploy, getGitRemoteUrl,
   listServerFiles, readServerFile, writeServerFile, deleteServerItem, renameServerItem, uploadServerFile,
   executeSqlFile, executeSqlFolder, unzipServerArchive
 } from '@/../app/(ucp)/server-manager/actions';
@@ -20,6 +20,10 @@ export default function ServerFileManager() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [archiveUrl, setArchiveUrl] = useState('');
   const [logs, setLogs] = useState<string[]>([]);
+
+  // Git State
+  const [deployKey, setDeployKey] = useState<string>('');
+  const [repoUrl, setRepoUrl] = useState<string>('');
 
   // File Browser State
   const [currentPath, setCurrentPath] = useState<string>('');
@@ -31,6 +35,19 @@ export default function ServerFileManager() {
   const [editingFile, setEditingFile] = useState<{ path: string, content: string } | null>(null);
 
   const addLog = (msg: string) => setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+
+  useEffect(() => {
+    getDeployKey().then(res => {
+      if (res.success && res.publicKey) {
+        setDeployKey(res.publicKey);
+      }
+    });
+    getGitRemoteUrl().then(res => {
+      if (res.success && res.url) {
+        setRepoUrl(res.url);
+      }
+    });
+  }, []);
 
   // Load files when path changes
   useEffect(() => {
@@ -48,18 +65,19 @@ export default function ServerFileManager() {
     setIsLoadingFiles(false);
   };
 
-  const handleInstallLatestOMP = async () => {
+  const handleGitDeploy = async () => {
+    if (!repoUrl.trim()) return;
     setIsProcessing(true);
-    addLog('Initiating open.mp (OMP) latest installation...');
+    addLog(`Initiating Git sync for ${repoUrl}...`);
     try {
-      const res = await installLatestOMP();
+      const res = await syncGitDeploy(repoUrl);
       if (res.success) {
-        addLog('Installation successful! You can now start the server.');
-        toast.success('open.mp installed successfully!');
+        addLog('Git sync successful!');
+        toast.success('Server synchronized with Git repository!');
         loadFiles(currentPath);
       } else {
         addLog(`Error: ${res.error}`);
-        toast.error('Failed to install open.mp');
+        toast.error('Failed to sync with Git');
       }
     } catch (e: any) {
       addLog(`Exception: ${e.message}`);
@@ -321,17 +339,32 @@ export default function ServerFileManager() {
           <Card className="bg-black/40 border-border/40 p-4 flex flex-col justify-between space-y-3">
             <div>
               <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-2 mb-1">
-                <Rocket className="w-4 h-4" /> Quick Setup
+                <Rocket className="w-4 h-4" /> Git Deployment
               </h3>
-              <p className="text-xs text-muted-foreground">Downloads the latest compatible Windows/Linux open.mp server binaries directly from GitHub.</p>
+              <p className="text-xs text-muted-foreground mb-2">Sync server files directly from a private Git repository.</p>
+              {deployKey && (
+                <div className="text-[10px] font-mono bg-black/60 p-2 rounded text-muted-foreground break-all mb-2 relative group cursor-pointer border border-border/30 hover:border-primary/50 transition-colors" onClick={() => { navigator.clipboard.writeText(deployKey); toast.success('SSH Key copied!'); }}>
+                  {deployKey}
+                  <span className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 bg-black text-white px-2 py-0.5 rounded shadow">Copy Key</span>
+                </div>
+              )}
             </div>
-            <Button 
-              onClick={handleInstallLatestOMP} 
-              disabled={isProcessing}
-              className="bg-primary text-black hover:bg-primary/80 font-bold w-full"
-            >
-              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Install open.mp'}
-            </Button>
+            <div className="flex gap-2">
+              <Input
+                placeholder="git@github.com:user/repo.git"
+                value={repoUrl}
+                onChange={(e) => setRepoUrl(e.target.value)}
+                disabled={isProcessing}
+                className="font-mono text-xs bg-black/60 h-9"
+              />
+              <Button 
+                onClick={handleGitDeploy} 
+                disabled={isProcessing || !repoUrl.trim()}
+                className="bg-primary text-black hover:bg-primary/80 font-bold h-9 whitespace-nowrap"
+              >
+                {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Pull Latest'}
+              </Button>
+            </div>
           </Card>
 
           <Card className="bg-black/40 border-border/40 p-4 flex flex-col justify-between space-y-3">

@@ -168,45 +168,100 @@ export async function downloadAndExtractServer(archiveUrl: string) {
   }
 }
 
-/**
- * Automatically fetches the latest open.mp server release for the correct platform,
- * downloads it, and extracts it to /samp-server.
- */
-export async function installLatestOMP() {
+// ─── GIT DEPLOYMENT ACTIONS ────────────────────────────────────────────────
+
+export async function getDeployKey() {
+  await requireAdmin();
+  const targetDir = path.join(process.cwd(), 'samp-server');
+  if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+
+  const keyPath = path.join(targetDir, 'samp-deploy-key');
+  const pubPath = `${keyPath}.pub`;
+
+  try {
+    if (!fs.existsSync(keyPath)) {
+      // Generate ed25519 key without passphrase
+      await execAsync(`ssh-keygen -t ed25519 -f "${keyPath}" -N "" -C "saints-web-manager"`);
+    }
+    
+    if (fs.existsSync(pubPath)) {
+      const pubKey = fs.readFileSync(pubPath, 'utf-8');
+      return { success: true, publicKey: pubKey.trim() };
+    }
+    return { success: false, error: 'Public key not found after generation' };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getGitRemoteUrl() {
+  await requireAdmin();
+  const targetDir = path.join(process.cwd(), 'samp-server');
+  try {
+    const { stdout } = await execAsync(`git config --get remote.origin.url`, { cwd: targetDir });
+    return { success: true, url: stdout.trim() };
+  } catch {
+    return { success: true, url: '' };
+  }
+}
+
+export async function syncGitDeploy(repoUrl: string) {
   await requireAdmin();
   const manager = SampManager.getInstance();
   
   if (manager.isRunning()) {
-    return { success: false, error: 'Cannot install open.mp while the server is running.' };
+    return { success: false, error: 'Cannot sync git repository while the server is running.' };
   }
 
+  if (!repoUrl || !repoUrl.includes('git')) {
+    return { success: false, error: 'Invalid Git repository URL provided.' };
+  }
+
+  const targetDir = path.join(process.cwd(), 'samp-server');
+  if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+
+  const keyPath = path.join(targetDir, 'samp-deploy-key');
+  if (!fs.existsSync(keyPath)) {
+    return { success: false, error: 'Deploy key not found. Please generate one first.' };
+  }
+
+  const isWindows = process.platform === 'win32';
+  // On Windows, the path needs to be properly escaped for the ssh command
+  const sshCmd = `ssh -i "${isWindows ? keyPath.replace(/\\/g, '/') : keyPath}" -o StrictHostKeyChecking=no`;
+  const env = { ...process.env, GIT_SSH_COMMAND: sshCmd };
+
   try {
-    // 1. Fetch latest release from open.mp GitHub
-    const res = await fetch('https://api.github.com/repos/openmultiplayer/open.mp/releases/latest', {
-      headers: { 'User-Agent': 'Saints-Web-UCP' }
-    });
-    const data = await res.json();
-    
-    if (!data || !data.assets) {
-      return { success: false, error: 'Could not fetch latest release from GitHub.' };
+    const isRepo = fs.existsSync(path.join(targetDir, '.git'));
+
+    if (!isRepo) {
+      // Initialize, set remote, and pull instead of clone to handle non-empty dirs (like the deploy key itself)
+      await execAsync(`git init`, { cwd: targetDir, env });
+      await execAsync(`git remote add origin "${repoUrl}"`, { cwd: targetDir, env });
+      await execAsync(`git fetch origin`, { cwd: targetDir, env });
+      await execAsync(`git reset --hard origin/main`, { cwd: targetDir, env });
+    } else {
+      // Check if remote matches, if not update it
+      const { stdout: remoteUrl } = await execAsync(`git config --get remote.origin.url`, { cwd: targetDir, env }).catch(() => ({ stdout: '' }));
+      if (remoteUrl.trim() !== repoUrl) {
+        await execAsync(`git remote set-url origin "${repoUrl}"`, { cwd: targetDir, env }).catch(async () => {
+          await execAsync(`git remote add origin "${repoUrl}"`, { cwd: targetDir, env });
+        });
+      }
+      
+      // Pull latest
+      await execAsync(`git fetch origin`, { cwd: targetDir, env });
+      await execAsync(`git reset --hard origin/main`, { cwd: targetDir, env });
     }
 
-    // 2. Determine platform and find correct asset
-    const isWindows = process.platform === 'win32';
-    const osKeyword = isWindows ? 'windows' : 'linux';
-    
-    const asset = data.assets.find((a: any) => 
-      a.name.toLowerCase().includes(osKeyword) && 
-      !a.name.toLowerCase().includes('scripting') // Ignore scripting packages
-    );
-
-    if (!asset) {
-      return { success: false, error: `No compatible ${osKeyword} binary found in the latest release.` };
+    // Auto-chmod scripts and binaries on Linux
+    if (!isWindows) {
+      try {
+        await execAsync(`find . -type f -name "*.sh" -exec chmod +x {} +`, { cwd: targetDir });
+        await execAsync(`chmod +x omp-server samp03svr announce 2>/dev/null || true`, { cwd: targetDir });
+      } catch (e) {}
     }
 
-    // 3. Download and extract using our helper
-    return await downloadAndExtractServer(asset.browser_download_url);
-
+    return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

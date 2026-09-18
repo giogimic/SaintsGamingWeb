@@ -28,62 +28,12 @@ export class SampManager extends EventEmitter {
       throw new Error("Server is already running.");
     }
 
+    if (!fs.existsSync(this.serverPath)) {
+      fs.mkdirSync(this.serverPath, { recursive: true });
+    }
+
     if (!fs.existsSync(this.serverPath) || fs.readdirSync(this.serverPath).length === 0) {
-      const baseZipPath = path.join(process.cwd(), 'samp-server-base.zip');
-      if (fs.existsSync(baseZipPath)) {
-        console.log("Extracting base SA-MP server files...");
-        const JSZip = require('jszip');
-        const zipData = fs.readFileSync(baseZipPath);
-        const zip = await JSZip.loadAsync(zipData);
-        let files = Object.entries(zip.files) as [string, any][];
-        
-        // Detect single wrapper directory (e.g. GitHub downloads or Zips from a folder)
-        const rootSegments = new Set(files.filter(([rel]) => rel.includes('/')).map(([rel]) => rel.split('/')[0]));
-        let prefixToStrip = "";
-        
-        const allPaths = files.map(([rel]) => rel);
-        if (rootSegments.size === 1) {
-          const rootDir = Array.from(rootSegments)[0];
-          const hasFilesOutsideRoot = allPaths.some(p => p !== rootDir && p !== rootDir + '/' && !p.startsWith(rootDir + '/'));
-          if (!hasFilesOutsideRoot) {
-            prefixToStrip = rootDir + '/';
-          }
-        }
-
-        for (const [relativePath, file] of files) {
-          let finalPath = relativePath;
-          if (prefixToStrip && finalPath.startsWith(prefixToStrip)) {
-            finalPath = finalPath.slice(prefixToStrip.length);
-          }
-          if (!finalPath) continue; // Skip the root dir entry itself
-
-          const fullPath = path.join(this.serverPath, finalPath);
-          if (file.dir) {
-            if (!fs.existsSync(fullPath)) fs.mkdirSync(fullPath, { recursive: true });
-          } else {
-            const content = await file.async('nodebuffer');
-            const dirname = path.dirname(fullPath);
-            if (!fs.existsSync(dirname)) fs.mkdirSync(dirname, { recursive: true });
-            fs.writeFileSync(fullPath, content);
-            if (process.platform !== 'win32' && (finalPath.endsWith('.sh') || finalPath.includes('omp-server') || finalPath.includes('samp03svr') || finalPath.includes('announce'))) {
-              try { fs.chmodSync(fullPath, 0o755); } catch (e) {}
-            }
-          }
-        }
-        
-        // Auto-configure the launcher to use the base script
-        const configPath = path.join(this.serverPath, 'launcher.json');
-        if (!fs.existsSync(configPath)) {
-          fs.writeFileSync(configPath, JSON.stringify({ executable: 'sh start.sh' }, null, 2));
-        }
-        
-        // If they didn't provide a custom executable, override it to the newly set start script
-        if (!customExecutable) {
-          customExecutable = 'sh start.sh';
-        }
-      } else {
-        throw new Error(`Server path does not exist and base zip not found: ${this.serverPath}`);
-      }
+      console.log("[SampManager] Server path is empty. Waiting for deployment.");
     }
 
     this.extractRconConfig();
