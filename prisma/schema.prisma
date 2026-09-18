@@ -671,9 +671,9 @@ model GameCharacter {
   user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   name           String
   assetProfileId String @default("adventurer")
-  visualData     String @default("[]") @db.LongText // JSON array of visual component layers
+  visualData     String @default("[]") // JSON array of visual component layers
   classId        String
-  stateData      String @db.LongText // JSON string of the Zustand store PlayerState
+  stateData      String // JSON string of the Zustand store PlayerState
 
   // Deterministic Release Context
   worldProjectId     String  @default("saints")
@@ -703,8 +703,8 @@ model MapPrefab {
   category   String   @default("decor")
   width      Int
   height     Int
-  visualData String @db.LongText // JSON array of tiles: [{ layerOffset, r, c, tileId }]
-  logicData  String @db.LongText // JSON array of logic tags: [{ r, c, tileId }]
+  visualData String // JSON array of tiles: [{ layerOffset, r, c, tileId }]
+  logicData  String // JSON array of logic tags: [{ r, c, tileId }]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -741,12 +741,12 @@ model WorldRelease {
   description String?
   status      String       @default("PUBLISHED") // DRAFT, VALIDATED, PUBLISHED, ARCHIVED
 
-  validationReport String @default("{}") @db.LongText
-  contentSummary   String @default("{}") @db.LongText
+  validationReport String @default("{}")
+  contentSummary   String @default("{}")
 
   // The Immutable Dependency Manifest
   // Stores exact actor revisions, asset versions, gameplay configs, and connections
-  manifestData String @db.LongText // JSON
+  manifestData String // JSON
 
   publishedBy String?
   createdAt   DateTime @default(now())
@@ -766,12 +766,12 @@ model WorldMapSnapshot {
   version            Int
   mapType            String
   regionClass        String
-  proceduralConfig   String? @db.LongText // JSON for deterministic procedural biome configuration
-  gridData           String? @db.LongText // JSON 2D Array
-  gatesData          String @db.LongText // JSON
-  encountersData     String        @default("[]") @db.LongText // JSON
-  entitiesData       String        @default("[]") @db.LongText // JSON
-  freeformLayersData String?       @default("[]") @db.LongText // JSON
+  proceduralConfig   String? // JSON for deterministic procedural biome configuration
+  gridData           String? // JSON 2D Array
+  gatesData          String // JSON
+  encountersData     String        @default("[]") // JSON
+  entitiesData       String        @default("[]") // JSON
+  freeformLayersData String?       @default("[]") // JSON
 
   createdAt          DateTime      @default(now())
 
