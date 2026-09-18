@@ -38,7 +38,7 @@ export async function checkAndAwardAchievements(userId: string): Promise<string[
             sentFriendships: true,
           },
         },
-        characters: { select: { bank: true } },
+
       },
     });
 
@@ -75,12 +75,7 @@ export async function checkAndAwardAchievements(userId: string): Promise<string[
       }
     }
 
-    if (!ownedBadges.has("rich")) {
-      const isRich = user.characters.some((char) => char.bank >= 100000);
-      if (isRich) {
-        newAwards.push("rich");
-      }
-    }
+
 
     if (!ownedBadges.has("veteran")) {
       const oneYearAgo = new Date();
