@@ -10,6 +10,8 @@ RUN apt-get update \
       make \
       g++ \
       wget \
+      git \
+      openssh-client \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
