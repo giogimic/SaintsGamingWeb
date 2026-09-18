@@ -18,7 +18,7 @@ async function runTests() {
   const res1 = await prisma.npcDef.upsert({
     where: { slug: npcSlug },
     create: {
-      projectId: 'saints',
+      gameId: 'saints',
       slug: npcSlug,
       name: 'Blacksmith Test',
       componentsData: JSON.stringify(components)

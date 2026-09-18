@@ -45,7 +45,7 @@ export async function GET(
         version: release.version,
         manifestData: release.manifestData,
         publishedBy: release.publishedBy,
-        snapshots: release.snapshots,
+        snapshots: release.mapSnapshots,
       },
     });
   } catch (err: any) {

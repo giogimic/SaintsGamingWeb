@@ -9,7 +9,7 @@ async function runTests() {
   // Create Agnite V1
   const agnite = await prisma.creatureDef.create({
     data: {
-      projectId: 'saints',
+      gameId: 'saints',
       slug,
       name: 'Agnite',
       baseHp: 100,

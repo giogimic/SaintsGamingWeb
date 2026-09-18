@@ -48,6 +48,10 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📜 Changelog
 
+### v2.1.901 - Fix Internal Project Route Snapshot Typo & Type Alignment
+- **Prisma Field Alignment:** Fixed TypeScript compile failure in `app/api/internal/projects/[slug]/route.ts` where `release.snapshots` was referenced instead of `release.mapSnapshots`.
+- **Test Definition Compatibility:** Corrected `projectId` property references to `gameId` in creature and NPC release integration tests.
+
 ### v2.1.885 - Initialization Generation Diagnostics
 - **Observable Setup Pipeline:** Stripped out opaque, fake progress timers during setup in favor of a real-time `DiagnosticConsole` that tracks exactly what happens across 13 backend stages.
 - **Unified Correlation:** Implemented a new `SetupLogger` that generates deterministic logs using a unified `initializationId`, correlating the frontend wizard to the backend persistence layer.
