@@ -48,6 +48,10 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📜 Changelog
 
+### v2.1.902 - Purge Obsolete Fix/Scratch Scripts & Enforce Git Ignore
+- **Repository Cleanup:** Eradicated all 38 obsolete scratch and fix scripts (`fix*.js`, `fix_db.*`, `patch.js`, `temp.ts`, `app/api/admin/fix-db/route.ts`, broken `scripts/check-*.ts`, and the deprecated `.scripts/` engine extraction directory).
+- **Git Hygiene Protection:** Updated `.gitignore` to prevent any temporary fix/patch scripts from being accidentally tracked or deployed to production servers.
+
 ### v2.1.901 - Fix Internal Project Route Snapshot Typo & Type Alignment
 - **Prisma Field Alignment:** Fixed TypeScript compile failure in `app/api/internal/projects/[slug]/route.ts` where `release.snapshots` was referenced instead of `release.mapSnapshots`.
 - **Test Definition Compatibility:** Corrected `projectId` property references to `gameId` in creature and NPC release integration tests.

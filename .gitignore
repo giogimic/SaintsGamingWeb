@@ -78,6 +78,12 @@ fix_seed.py
 scripts/deploy-beta*.py
 # temp
 refactor.js
+fix*.js
+fix*.mjs
+fix*.sh
+patch*.js
+temp.*
+.scripts/
 docker_build.log
 
 # databases
