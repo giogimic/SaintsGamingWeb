@@ -369,12 +369,61 @@ export function CharacterCreator({
       starterHeroes.find((h) => h.slug === selectedHeroSlug) ||
       starterHeroes.find((h) => h.classId === classId && h.assetProfileId === assetProfileId);
 
-    let startMap = hero?.startingMap && hero.startingMap !== 'DEMO_SANDBOX' ? hero.startingMap : '';
+    let startMap = hero?.startingMap && hero.startingMap !== 'DEMO_SANDBOX' && hero.startingMap !== 'spawn' ? hero.startingMap : '';
     let startX = hero?.startingX;
     let startY = hero?.startingY;
 
-    if (!startMap) {
-      startMap = defaultSpawnMapId || '';
+    if (!startMap || startMap === 'spawn') {
+      startMap = defaultSpawnMapId && defaultSpawnMapId !== 'spawn' ? defaultSpawnMapId : '';
+    }
+
+    if (!startMap || startMap === 'spawn') {
+      try {
+        const activeRelease = await getActiveWorldRelease('saints');
+        if (activeRelease) {
+          const manifest = JSON.parse(activeRelease.manifestData || '{}');
+          if (manifest.world?.spawnMap && manifest.world.spawnMap !== 'spawn') {
+            startMap = manifest.world.spawnMap;
+          }
+          if (startX === undefined && typeof manifest.world?.spawnX === 'number') {
+            startX = manifest.world.spawnX;
+          }
+          if (startY === undefined && typeof manifest.world?.spawnY === 'number') {
+            startY = manifest.world.spawnY;
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to resolve spawn map from active release during character creation', err);
+      }
+    }
+
+    if (!startMap || startMap === 'spawn') {
+      try {
+        const setupRes = await fetch('/api/setup/status');
+        if (setupRes.ok) {
+          const setupJson = await setupRes.json();
+          if (setupJson.status?.defaultMapId && setupJson.status.defaultMapId !== 'STARTING_MAP' && setupJson.status.defaultMapId !== 'spawn') {
+            startMap = setupJson.status.defaultMapId;
+          }
+        }
+      } catch {}
+    }
+
+    if (!startMap || startMap === 'spawn') {
+      try {
+        const mapsRes = await fetch('/api/maps');
+        if (mapsRes.ok) {
+          const mapsJson = await mapsRes.json();
+          const firstMap = mapsJson?.maps?.[0]?.id || (Array.isArray(mapsJson) ? mapsJson[0]?.id : null);
+          if (firstMap && firstMap !== 'spawn') {
+            startMap = firstMap;
+          }
+        }
+      } catch {}
+    }
+
+    if (!startMap || startMap === 'spawn') {
+      startMap = 'genesis';
     }
 
     if (startX === undefined || startY === undefined) {

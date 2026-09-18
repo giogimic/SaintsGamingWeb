@@ -48,6 +48,12 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📜 Changelog
 
+### v2.1.904 - World Release Fallback Resolution, Studio Hook Fix & Linux SAMP Server Management
+- **Spawn Map & World Release Fallback:** Resolved "Cannot create character: No spawn map configured" and false setup-pending prompts. Upgraded `getActiveWorldRelease` to resolve project ID or slug across `LIVE`, `PUBLISHED`, or latest database releases, and added robust fallback chains in `CharacterCreateScene`, `character-creator`, and `The Lobby` so players are never blocked if a release compilation is pending.
+- **Studio React Hook Fix (#310):** Hoisted conditional `useEditorStore` hooks to the top level of `StudioEditorShell.tsx`, resolving React error #310 during Author session initialization on `/studio`.
+- **Debian / Linux Native SAMP Lifecycle:** Upgraded `SampManager` with cross-platform binary auto-detection (`omp-server`, `start.sh`, `samp03svr` on Linux vs `.exe` on Windows), line ending sanitization (CRLF -> LF), executable chmod enforcement, persistent PID file tracking (`server.pid`), process-group graceful signal termination (`SIGTERM`/`SIGKILL`), and added server restart support.
+- **Server File Manager & Window Sizing:** Added responsive window containment (`min(defaultWidth, 96vw)`, `min(defaultHeight, 88vh)`) with inner flex scroll, collapsible deployment cards, and a real-time file search filter to prevent UI overflow on displays and long directory listings.
+
 ### v2.1.903 - Optimize Build Pipeline & Route Dynamism
 - **Dynamic Server Usage Fix:** Configured `/api/servers/status` with `export const dynamic = "force-dynamic"` to resolve `DYNAMIC_SERVER_USAGE` errors caused by reading client request headers during static prerendering.
 - **Lazy Bake Worker Pool:** Deferred `WorldBakeService` thread pool initialization to on-demand job submission, preventing premature worker instantiation and critical missing bundle warnings during Next.js static build phases.

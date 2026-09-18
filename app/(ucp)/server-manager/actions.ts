@@ -18,22 +18,22 @@ async function requireAdmin() {
   return session.user;
 }
 
-import { getLauncherConfig } from './launcher';
+import { getLauncherConfig, setLauncherConfig } from './launcher';
 
 export async function startSampServer() {
   await requireAdmin();
   const manager = SampManager.getInstance();
   
   if (manager.isRunning()) {
-    return { success: false, error: 'Server is already running.' };
+    return { success: false, error: `Server is already running (PID: ${manager.getPid()}).` };
   }
   
   try {
     const launcherCfg = await getLauncherConfig();
     const customExecutable = launcherCfg.executable || undefined;
-    await manager.startServer(customExecutable);
+    const res = await manager.startServer(customExecutable);
     revalidatePath('/server-manager');
-    return { success: true };
+    return { success: true, pid: res.pid, executable: res.executable };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -43,14 +43,25 @@ export async function stopSampServer() {
   await requireAdmin();
   const manager = SampManager.getInstance();
   
-  if (!manager.isRunning()) {
-    return { success: false, error: 'Server is not running.' };
-  }
-  
   try {
-    manager.stopServer();
+    await manager.stopServer();
     revalidatePath('/server-manager');
     return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function restartSampServer() {
+  await requireAdmin();
+  const manager = SampManager.getInstance();
+  
+  try {
+    const launcherCfg = await getLauncherConfig();
+    const customExecutable = launcherCfg.executable || undefined;
+    const res = await manager.restartServer(customExecutable);
+    revalidatePath('/server-manager');
+    return { success: true, pid: res.pid, executable: res.executable };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -72,7 +83,12 @@ export async function sendSampRcon(command: string) {
 
 export async function getSampStatus() {
   const manager = SampManager.getInstance();
-  return { isRunning: manager.isRunning() };
+  return {
+    isRunning: manager.isRunning(),
+    pid: manager.getPid(),
+    platform: manager.getPlatform(),
+    isLinux: manager.getPlatform() !== 'win32',
+  };
 }
 
 // ─── FILE MANAGEMENT ACTIONS ───────────────────────────────────────────────
@@ -234,7 +250,12 @@ export async function installLatestOMP() {
     }
 
     // 3. Download and extract using our helper
-    return await downloadAndExtractServer(asset.browser_download_url);
+    const result = await downloadAndExtractServer(asset.browser_download_url);
+    if (result.success) {
+      const ompExe = isWindows ? 'omp-server.exe' : './omp-server';
+      await setLauncherConfig(ompExe).catch(() => {});
+    }
+    return result;
 
   } catch (error: any) {
     return { success: false, error: error.message };

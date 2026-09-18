@@ -177,6 +177,8 @@ export const StudioEditorShell: React.FC = () => {
   const showToast = useGameStore((state) => state.showToast);
   const gameMode = useGameStore((state) => state.gameMode);
   const activeMapData = useGameStore((state) => state.activeMapData);
+  const isGeneratingRegion = useEditorStore((state) => state.isGeneratingRegion);
+  const isSavingMap = useEditorStore((state) => state.isSavingMap);
 
   const canDev = canUseStudioDock(permissionLevel, 'dev');
   
@@ -418,7 +420,7 @@ export const StudioEditorShell: React.FC = () => {
           </div>
         </div>
       )}
-      {useEditorStore((s) => s.isGeneratingRegion) && (
+      {isGeneratingRegion && (
         <div className="pointer-events-auto fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#050b14]/90 backdrop-blur-xl transition-opacity duration-500">
           <div className="flex flex-col items-center justify-center animate-pulse">
             <Loader2 className="h-16 w-16 text-primary animate-spin mb-6" />
@@ -427,7 +429,7 @@ export const StudioEditorShell: React.FC = () => {
           </div>
         </div>
       )}
-      {useEditorStore((s) => s.isSavingMap) && (
+      {isSavingMap && (
         <div className="pointer-events-auto fixed inset-0 z-[9998] flex flex-col items-center justify-center bg-[#050b14]/70 backdrop-blur-md transition-opacity duration-300">
           <div className="flex flex-col items-center justify-center animate-pulse">
             <Loader2 className="h-10 w-10 text-amber-500 animate-spin mb-4" />

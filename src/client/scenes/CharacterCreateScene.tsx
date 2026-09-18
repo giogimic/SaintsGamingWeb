@@ -363,26 +363,65 @@ export function CharacterCreateScene() {
       starterHeroes.find((h) => h.slug === selectedHeroSlug) ||
       starterHeroes.find((h) => h.classId === classId && h.assetProfileId === assetProfileId);
 
-    let startMap = hero?.startingMap && hero.startingMap !== 'DEMO_SANDBOX' ? hero.startingMap : '';
+    let startMap = hero?.startingMap && hero.startingMap !== 'DEMO_SANDBOX' && hero.startingMap !== 'spawn' ? hero.startingMap : '';
     let startX = hero?.startingX;
     let startY = hero?.startingY;
 
-    if (!startMap) {
+    // 1. Try active release manifest
+    if (!startMap || startMap === 'spawn') {
       try {
         const activeRelease = await getActiveWorldRelease('saints');
         if (activeRelease) {
           const manifest = JSON.parse(activeRelease.manifestData || '{}');
-          startMap = manifest.gameConfig?.defaultSpawnGateId || startMap;
+          if (manifest.world?.spawnMap && manifest.world.spawnMap !== 'spawn') {
+            startMap = manifest.world.spawnMap;
+          }
+          if (startX === undefined && typeof manifest.world?.spawnX === 'number') {
+            startX = manifest.world.spawnX;
+          }
+          if (startY === undefined && typeof manifest.world?.spawnY === 'number') {
+            startY = manifest.world.spawnY;
+          }
         }
       } catch (err) {
-        console.warn('Failed to resolve spawn map during character creation', err);
+        console.warn('Failed to resolve spawn map from active release during character creation', err);
       }
     }
 
-    if (!startMap) {
-      toast.error('Cannot create character: No spawn map configured. Please run setup wizard.');
-      setLoading(false);
-      return;
+    // 2. Fallback: Query system setup status for default map
+    if (!startMap || startMap === 'spawn') {
+      try {
+        const setupRes = await fetch('/api/setup/status');
+        if (setupRes.ok) {
+          const setupJson = await setupRes.json();
+          if (setupJson.status?.defaultMapId && setupJson.status.defaultMapId !== 'STARTING_MAP' && setupJson.status.defaultMapId !== 'spawn') {
+            startMap = setupJson.status.defaultMapId;
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to query setup status for spawn map', err);
+      }
+    }
+
+    // 3. Fallback: Query maps API for first existing authored map
+    if (!startMap || startMap === 'spawn') {
+      try {
+        const mapsRes = await fetch('/api/maps');
+        if (mapsRes.ok) {
+          const mapsJson = await mapsRes.json();
+          const firstMap = mapsJson?.maps?.[0]?.id || (Array.isArray(mapsJson) ? mapsJson[0]?.id : null);
+          if (firstMap && firstMap !== 'spawn') {
+            startMap = firstMap;
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to query maps API for spawn map', err);
+      }
+    }
+
+    // 4. Safe default
+    if (!startMap || startMap === 'spawn') {
+      startMap = 'genesis';
     }
 
     if (startX === undefined || startY === undefined) {

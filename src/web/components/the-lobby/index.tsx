@@ -299,13 +299,14 @@ export default function TheLobby({
       }
 
       const activeRelease = await getActiveWorldRelease('saints');
-      if (!activeRelease) {
-        showToast('World Login Failed: No active release deployed on server.');
-        setIsInitializing(false);
-        return;
+      let manifestSpawn = '';
+      if (activeRelease) {
+        try {
+          const manifest = JSON.parse(activeRelease.manifestData || '{}');
+          manifestSpawn = manifest.world?.spawnMap || '';
+        } catch {}
       }
-      const manifest = JSON.parse(activeRelease.manifestData || '{}');
-      const loadedSpawn = manifest.world?.spawnMap || availableMapIds[0] || '';
+      const loadedSpawn = manifestSpawn || availableMapIds[0] || 'genesis';
 
       const safeSpawn = resolveSafePlayerSpawn({
         savedMapId: savedMap,
@@ -410,18 +411,23 @@ export default function TheLobby({
     if (!enableStudio) return;
     setIsInitializing(true);
     const activeRelease = await getActiveWorldRelease('saints');
-    if (!activeRelease) {
-      showToast('Studio Login Failed: No active release deployed. You must publish a release first.');
-      setIsInitializing(false);
-      return;
+    let spawnMapId = '';
+    if (activeRelease) {
+      try {
+        const manifest = JSON.parse(activeRelease.manifestData || '{}');
+        spawnMapId = manifest.world?.spawnMap || '';
+      } catch {}
     }
-    const manifest = JSON.parse(activeRelease.manifestData || '{}');
-    const spawnMapId = manifest.world?.spawnMap || '';
     if (!spawnMapId) {
-      showToast('Studio Login Failed: The deployed release manifest has an empty spawnMap.');
-      setIsInitializing(false);
-      return;
+      try {
+        const mapListRes = await fetch('/api/maps');
+        if (mapListRes.ok) {
+          const mapData = await mapListRes.json();
+          spawnMapId = mapData.maps?.[0]?.id || (Array.isArray(mapData) ? mapData[0]?.id : '') || '';
+        }
+      } catch {}
     }
+    if (!spawnMapId) spawnMapId = 'genesis';
     let validMapId = mapId === 'SAINTS_VILLAGE' || !mapId ? spawnMapId : mapId.replace(/_ch\d+$/, '');
     let validPosition = { ...DEFAULT_SPAWN };
 

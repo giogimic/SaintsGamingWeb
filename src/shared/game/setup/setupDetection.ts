@@ -160,7 +160,9 @@ export async function getSystemSetupStatus(prismaClient: any): Promise<SetupStat
       defaultGidSetting,
       realmNameSetting,
       realmDescSetting,
-      mapCount,
+      worldMapCount,
+      gameMapCount,
+      releaseCount,
       userCount,
       adminCount,
       activeGameConfigCount,
@@ -177,10 +179,14 @@ export async function getSystemSetupStatus(prismaClient: any): Promise<SetupStat
       prismaClient.siteSetting.findUnique({ where: { key: SETUP_SETTING_KEYS.REALM_NAME } }).catch(() => null),
       prismaClient.siteSetting.findUnique({ where: { key: SETUP_SETTING_KEYS.REALM_DESCRIPTION } }).catch(() => null),
       prismaClient.worldMap.count().catch(() => 0),
+      prismaClient.gameMap.count().catch(() => 0),
+      prismaClient.worldRelease.count().catch(() => 0),
       prismaClient.user.count().catch(() => 0),
       prismaClient.user.count({ where: { OR: [{ permissionLevel: { gte: 80 } }, { role: { name: 'ADMIN' } }] } }).catch(() => 0),
       prismaClient.gameConfig.count({ where: { isActive: true } }).catch(() => 0),
     ]);
+
+    const mapCount = Math.max(worldMapCount, gameMapCount, releaseCount > 0 ? 1 : 0);
 
     return evaluateSetupStatus({
       gameInitializedVal: gameInitSetting?.value,

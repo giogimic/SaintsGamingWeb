@@ -49,12 +49,68 @@ export async function deployWorldRelease(releaseId: string) {
   }
 }
 
-export async function getActiveWorldRelease(projectId: string = 'saints') {
+export async function getActiveWorldRelease(projectIdOrSlug: string = 'saints') {
   try {
-    const release = await prisma.worldRelease.findFirst({
-      where: { projectId, status: 'LIVE' },
-      orderBy: { createdAt: 'desc' }
+    // 1. Resolve project by ID or slug
+    const project = await prisma.worldProject.findFirst({
+      where: {
+        OR: [
+          { id: projectIdOrSlug },
+          { slug: projectIdOrSlug },
+        ],
+      },
+      select: { id: true, slug: true },
     });
+
+    const targetProjectIds = project
+      ? Array.from(new Set([project.id, projectIdOrSlug, project.slug]))
+      : [projectIdOrSlug];
+
+    // 2. Query for explicit LIVE release
+    let release = await prisma.worldRelease.findFirst({
+      where: {
+        projectId: { in: targetProjectIds },
+        status: 'LIVE',
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // 3. Fallback: Query for PUBLISHED release
+    if (!release) {
+      release = await prisma.worldRelease.findFirst({
+        where: {
+          projectId: { in: targetProjectIds },
+          status: 'PUBLISHED',
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+
+    // 4. Fallback: Query for any release belonging to this project
+    if (!release) {
+      release = await prisma.worldRelease.findFirst({
+        where: {
+          projectId: { in: targetProjectIds },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+
+    // 5. Ultimate Fallback: Query latest release across the entire database
+    if (!release) {
+      release = await prisma.worldRelease.findFirst({
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+
+    // 6. Auto-heal: Ensure this active release is marked LIVE if none other is
+    if (release && release.status !== 'LIVE') {
+      prisma.worldRelease.update({
+        where: { id: release.id },
+        data: { status: 'LIVE' },
+      }).catch((e) => console.warn('[getActiveWorldRelease] Auto-heal to LIVE skipped:', e));
+    }
+
     return release;
   } catch (err) {
     console.error('[getActiveWorldRelease]', err);

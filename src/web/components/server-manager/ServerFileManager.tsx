@@ -6,7 +6,8 @@ import { Button } from '@/web/components/ui/button';
 import { Input } from '@/web/components/ui/input';
 import { 
   DownloadCloud, Rocket, FileArchive, Loader2, AlertTriangle, 
-  FileText, Folder, CornerUpLeft, Trash2, Edit2, Save, X, Plus, Upload, Type, Database, PackageOpen
+  FileText, Folder, CornerUpLeft, Trash2, Edit2, Save, X, Plus, Upload, Type, Database, PackageOpen,
+  ChevronDown, ChevronRight, Search
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
@@ -30,6 +31,8 @@ export default function ServerFileManager() {
   const [files, setFiles] = useState<any[]>([]);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [showDeployTools, setShowDeployTools] = useState(false);
+  const [fileSearch, setFileSearch] = useState('');
   
   // Editor State
   const [editingFile, setEditingFile] = useState<{ path: string, content: string } | null>(null);
@@ -349,188 +352,229 @@ export default function ServerFileManager() {
     );
   }
 
+  const filteredFiles = files.filter(f => 
+    !fileSearch.trim() || f.name.toLowerCase().includes(fileSearch.toLowerCase().trim())
+  );
+
   return (
     <div className="flex flex-col h-full bg-background/50 overflow-hidden">
-      <div className="p-4 space-y-6 flex-1 overflow-auto">
+      <div className="p-4 space-y-3 flex-1 flex flex-col min-h-0 overflow-hidden">
         
-        {/* Quick Setups & Archive */}
-        <div className="flex flex-wrap gap-4">
-          <Card className="flex-1 min-w-[280px] bg-black/40 border-border/40 p-4 flex flex-col justify-between space-y-3">
-            <div>
-              <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-2 mb-1">
-                <Rocket className="w-4 h-4" /> Quick Setup
-              </h3>
-              <p className="text-xs text-muted-foreground">Downloads the latest compatible Windows/Linux open.mp binaries directly from GitHub.</p>
-            </div>
-            <Button 
-              onClick={handleInstallLatestOMP} 
-              disabled={isProcessing}
-              className="bg-primary text-black hover:bg-primary/80 font-bold w-full"
-            >
-              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Install open.mp'}
-            </Button>
-          </Card>
-
-          <Card className="flex-[2] min-w-[320px] bg-black/40 border-border/40 p-4 flex flex-col justify-between space-y-3">
-            <div>
-              <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-2 mb-1">
-                <Rocket className="w-4 h-4" /> Git Deployment
-              </h3>
-              <p className="text-xs text-muted-foreground mb-2">Sync server files directly from a private Git repository.</p>
-              {deployKey && (
-                <div className="text-[10px] font-mono bg-black/60 p-2 rounded text-muted-foreground break-all mb-2 relative group cursor-pointer border border-border/30 hover:border-primary/50 transition-colors" onClick={() => { navigator.clipboard.writeText(deployKey); toast.success('SSH Key copied!'); }}>
-                  {deployKey}
-                  <span className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 bg-black text-white px-2 py-0.5 rounded shadow">Copy Key</span>
-                </div>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Input
-                placeholder="git@github.com:user/repo.git"
-                value={repoUrl}
-                onChange={(e) => setRepoUrl(e.target.value)}
-                disabled={isProcessing}
-                className="font-mono text-xs bg-black/60 h-9"
-              />
-              <Button 
-                onClick={handleGitDeploy} 
-                disabled={isProcessing || !repoUrl.trim()}
-                className="bg-primary text-black hover:bg-primary/80 font-bold h-9 whitespace-nowrap"
-              >
-                {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Pull Latest'}
-              </Button>
-            </div>
-          </Card>
-
-          <Card className="flex-1 min-w-[280px] bg-black/40 border-border/40 p-4 flex flex-col justify-between space-y-3">
-            <div>
-              <h3 className="text-sm font-bold text-cyan-400 flex items-center gap-2 mb-1">
-                <DownloadCloud className="w-4 h-4" /> Custom Archive
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Extract a <code className="text-primary">.zip</code> or <code className="text-primary">.tar.gz</code> server archive URL into the root.
-              </p>
-            </div>
-            <form onSubmit={handleCustomArchiveDownload} className="flex gap-2">
-              <Input
-                placeholder="https://example.com/gamemode.zip"
-                value={archiveUrl}
-                onChange={(e) => setArchiveUrl(e.target.value)}
-                disabled={isProcessing}
-                className="font-mono text-xs bg-black/60 h-9"
-              />
-              <Button type="submit" disabled={isProcessing || !archiveUrl} variant="secondary" className="h-9 px-3">
-                {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileArchive className="w-4 h-4" />}
-              </Button>
-            </form>
-          </Card>
+        {/* Top bar with quick toggle & path stats */}
+        <div className="flex items-center justify-between gap-2 flex-shrink-0">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowDeployTools(prev => !prev)}
+            className="h-8 px-3 text-xs text-muted-foreground hover:text-foreground border-border/40 gap-1.5 bg-black/40"
+          >
+            {showDeployTools ? <ChevronDown className="w-3.5 h-3.5 text-primary" /> : <ChevronRight className="w-3.5 h-3.5 text-primary" />}
+            <span>Deployment & Setup Tools</span>
+          </Button>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>{files.length} items</span>
+            {fileSearch && <span className="text-primary font-mono">({filteredFiles.length} matching)</span>}
+          </div>
         </div>
 
-        {/* File Browser */}
-        <div className="space-y-2 flex-1 flex flex-col min-h-[300px]">
-          <div className="flex items-center justify-between bg-black/60 px-3 py-2 rounded-t-lg border border-border/30 border-b-0">
-            <div className="flex items-center gap-2 text-sm font-mono text-muted-foreground overflow-hidden">
-              <span className="text-primary">/samp-server</span>
-              {currentPath && <span className="truncate">/{currentPath}</span>}
+        {/* Quick Setups & Archive (Collapsible) */}
+        {showDeployTools && (
+          <div className="flex flex-wrap gap-3 flex-shrink-0 pb-1">
+            <Card className="flex-1 min-w-[260px] bg-black/40 border-border/40 p-3.5 flex flex-col justify-between space-y-2.5">
+              <div>
+                <h3 className="text-xs font-bold text-emerald-400 flex items-center gap-1.5 mb-0.5">
+                  <Rocket className="w-3.5 h-3.5" /> Quick Setup
+                </h3>
+                <p className="text-[11px] text-muted-foreground">Downloads the latest compatible Linux/Windows open.mp binaries directly from GitHub.</p>
+              </div>
+              <Button 
+                onClick={handleInstallLatestOMP} 
+                disabled={isProcessing}
+                size="sm"
+                className="bg-primary text-black hover:bg-primary/80 font-bold w-full h-8 text-xs"
+              >
+                {isProcessing ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+                Install open.mp
+              </Button>
+            </Card>
+
+            <Card className="flex-[2] min-w-[300px] bg-black/40 border-border/40 p-3.5 flex flex-col justify-between space-y-2.5">
+              <div>
+                <h3 className="text-xs font-bold text-emerald-400 flex items-center gap-1.5 mb-0.5">
+                  <Rocket className="w-3.5 h-3.5" /> Git Deployment
+                </h3>
+                <p className="text-[11px] text-muted-foreground mb-1.5">Sync server files directly from a private Git repository.</p>
+                {deployKey && (
+                  <div className="text-[10px] font-mono bg-black/60 p-1.5 rounded text-muted-foreground break-all mb-1.5 relative group cursor-pointer border border-border/30 hover:border-primary/50 transition-colors" onClick={() => { navigator.clipboard.writeText(deployKey); toast.success('SSH Key copied!'); }}>
+                    {deployKey}
+                    <span className="absolute right-2 top-1 opacity-0 group-hover:opacity-100 bg-black text-white px-1.5 py-0.5 rounded shadow text-[9px]">Copy Key</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="git@github.com:user/repo.git"
+                  value={repoUrl}
+                  onChange={(e) => setRepoUrl(e.target.value)}
+                  disabled={isProcessing}
+                  className="font-mono text-xs bg-black/60 h-8"
+                />
+                <Button 
+                  onClick={handleGitDeploy} 
+                  disabled={isProcessing || !repoUrl.trim()}
+                  size="sm"
+                  className="bg-primary text-black hover:bg-primary/80 font-bold h-8 text-xs whitespace-nowrap px-3"
+                >
+                  {isProcessing ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+                  Pull Latest
+                </Button>
+              </div>
+            </Card>
+
+            <Card className="flex-1 min-w-[260px] bg-black/40 border-border/40 p-3.5 flex flex-col justify-between space-y-2.5">
+              <div>
+                <h3 className="text-xs font-bold text-cyan-400 flex items-center gap-1.5 mb-0.5">
+                  <DownloadCloud className="w-3.5 h-3.5" /> Custom Archive
+                </h3>
+                <p className="text-[11px] text-muted-foreground">
+                  Extract a <code className="text-primary">.zip</code> or <code className="text-primary">.tar.gz</code> archive URL into root.
+                </p>
+              </div>
+              <form onSubmit={handleCustomArchiveDownload} className="flex gap-2">
+                <Input
+                  placeholder="https://example.com/gamemode.zip"
+                  value={archiveUrl}
+                  onChange={(e) => setArchiveUrl(e.target.value)}
+                  disabled={isProcessing}
+                  className="font-mono text-xs bg-black/60 h-8"
+                />
+                <Button type="submit" disabled={isProcessing || !archiveUrl} variant="secondary" size="sm" className="h-8 px-2.5">
+                  {isProcessing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileArchive className="w-3.5 h-3.5" />}
+                </Button>
+              </form>
+            </Card>
+          </div>
+        )}
+
+        {/* File Browser Table Section */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden border border-border/30 rounded-lg bg-[#0a0a0a]">
+          {/* Action Toolbar */}
+          <div className="flex items-center justify-between bg-black/60 px-3 py-2 border-b border-border/30 flex-shrink-0 gap-2">
+            <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground overflow-hidden">
+              <span className="text-primary font-semibold">/samp-server</span>
+              {currentPath && <span className="truncate text-foreground/80">/{currentPath}</span>}
             </div>
-            <div className="flex gap-2">
+
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Filter Search Box */}
+              <div className="relative w-36 sm:w-48">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <Input
+                  placeholder="Filter files..."
+                  value={fileSearch}
+                  onChange={(e) => setFileSearch(e.target.value)}
+                  className="h-7 pl-8 pr-2 text-xs bg-black/60 border-border/40 font-mono"
+                />
+              </div>
+
               {uploadProgress !== null && (
-                <div className="text-xs font-mono text-emerald-400 flex items-center bg-emerald-400/10 px-2 rounded">
+                <div className="text-xs font-mono text-emerald-400 flex items-center bg-emerald-400/10 px-2 h-7 rounded border border-emerald-400/20">
                   Uploading: {uploadProgress}%
                 </div>
               )}
-              <label className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-7 px-2">
-                <Upload className="w-4 h-4 mr-1" /> Upload
+              <label className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-xs font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-7 px-2.5 border border-border/40 bg-black/40">
+                <Upload className="w-3.5 h-3.5 mr-1 text-primary" /> Upload
                 <input type="file" className="hidden" onChange={handleUploadFile} disabled={isProcessing} />
               </label>
-              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={handleCreateFile} disabled={isProcessing}>
-                <Plus className="w-4 h-4 mr-1" /> New File
+              <Button size="sm" variant="ghost" className="h-7 px-2.5 text-xs border border-border/40 bg-black/40" onClick={handleCreateFile} disabled={isProcessing}>
+                <Plus className="w-3.5 h-3.5 mr-1 text-primary" /> New File
               </Button>
-              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => loadFiles(currentPath)} disabled={isLoadingFiles || isProcessing}>
-                <Loader2 className={`w-4 h-4 ${isLoadingFiles ? 'animate-spin' : ''}`} />
+              <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground border border-border/40 bg-black/40" onClick={() => loadFiles(currentPath)} disabled={isLoadingFiles || isProcessing}>
+                <Loader2 className={`w-3.5 h-3.5 ${isLoadingFiles ? 'animate-spin text-primary' : ''}`} />
               </Button>
             </div>
           </div>
           
-          <div className="bg-[#0a0a0a] border border-border/30 rounded-b-lg flex-1 overflow-y-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-muted-foreground bg-black/40 uppercase sticky top-0">
+          {/* Scrollable File List */}
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <table className="w-full text-xs text-left">
+              <thead className="text-[11px] text-muted-foreground bg-black/50 uppercase sticky top-0 backdrop-blur-sm z-10 border-b border-border/20">
                 <tr>
-                  <th className="px-4 py-2 font-medium">Name</th>
-                  <th className="px-4 py-2 font-medium w-24">Size</th>
-                  <th className="px-4 py-2 font-medium w-40 text-right">Actions</th>
+                  <th className="px-3.5 py-2 font-medium">Name</th>
+                  <th className="px-3 py-2 font-medium w-24">Size</th>
+                  <th className="px-3.5 py-2 font-medium w-40 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {currentPath && (
-                  <tr className="border-b border-border/10 hover:bg-white/5 cursor-pointer" onClick={handleNavigateUp}>
-                    <td className="px-4 py-2 flex items-center gap-2 text-primary font-medium">
-                      <CornerUpLeft className="w-4 h-4" /> ..
+                  <tr className="border-b border-border/10 hover:bg-white/5 cursor-pointer transition-colors" onClick={handleNavigateUp}>
+                    <td className="px-3.5 py-2 flex items-center gap-2 text-primary font-medium">
+                      <CornerUpLeft className="w-3.5 h-3.5" /> ..
                     </td>
                     <td></td>
                     <td></td>
                   </tr>
                 )}
-                {files.map((file, i) => (
-                  <tr key={i} className="border-b border-border/10 hover:bg-white/5 group">
-                    <td className="px-4 py-2 flex items-center gap-2">
+                {filteredFiles.map((file, i) => (
+                  <tr key={i} className="border-b border-border/10 hover:bg-white/5 group transition-colors">
+                    <td className="px-3.5 py-1.5 flex items-center gap-2">
                       {file.isDirectory ? (
-                        <Folder className="w-4 h-4 text-amber-400" />
+                        <Folder className="w-4 h-4 text-amber-400 flex-shrink-0" />
                       ) : (
-                        <FileText className="w-4 h-4 text-blue-400" />
+                        <FileText className="w-4 h-4 text-blue-400 flex-shrink-0" />
                       )}
                       {file.isDirectory ? (
-                        <span className="cursor-pointer hover:underline" onClick={() => handleNavigate(file.name)}>
+                        <span className="cursor-pointer hover:underline text-foreground font-medium" onClick={() => handleNavigate(file.name)}>
                           {file.name}
                         </span>
                       ) : (
-                        <span>{file.name}</span>
+                        <span className="text-foreground/90 font-mono text-[11px]">{file.name}</span>
                       )}
                     </td>
-                    <td className="px-4 py-2 text-muted-foreground text-xs">
+                    <td className="px-3 py-1.5 text-muted-foreground text-[11px] font-mono">
                       {file.isDirectory ? '--' : `${(file.size / 1024).toFixed(1)} KB`}
                     </td>
-                    <td className="px-4 py-2 text-right">
+                    <td className="px-3.5 py-1.5 text-right">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {!file.isDirectory && (file.name.endsWith('.sh') || file.name.endsWith('.exe') || file.name.includes('samp03svr') || file.name.includes('omp-server') || file.name.includes('announce')) && (
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-purple-400 hover:bg-purple-400/20" onClick={() => handleSetLaunchScript(file.name)} title="Set as Launch Script">
-                            <Rocket className="w-3.5 h-3.5" />
+                          <Button size="icon" variant="ghost" className="h-6 w-6 text-purple-400 hover:bg-purple-400/20" onClick={() => handleSetLaunchScript(file.name)} title="Set as Launch Script">
+                            <Rocket className="w-3 h-3" />
                           </Button>
                         )}
                         {!file.isDirectory && file.name.endsWith('.sql') && (
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-400 hover:bg-emerald-400/20" onClick={() => handleExecuteSqlFile(file.name)} title="Execute SQL File">
-                            <Database className="w-3.5 h-3.5" />
+                          <Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-400 hover:bg-emerald-400/20" onClick={() => handleExecuteSqlFile(file.name)} title="Execute SQL File">
+                            <Database className="w-3 h-3" />
                           </Button>
                         )}
                         {!file.isDirectory && (file.name.endsWith('.zip') || file.name.endsWith('.tar.gz')) && (
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-cyan-400 hover:bg-cyan-400/20" onClick={() => handleUnzip(file.name)} title="Extract Archive Here">
-                            <PackageOpen className="w-3.5 h-3.5" />
+                          <Button size="icon" variant="ghost" className="h-6 w-6 text-cyan-400 hover:bg-cyan-400/20" onClick={() => handleUnzip(file.name)} title="Extract Archive Here">
+                            <PackageOpen className="w-3 h-3" />
                           </Button>
                         )}
                         {file.isDirectory && (
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-400 hover:bg-emerald-400/20" onClick={() => handleExecuteSqlFolder(file.name)} title="Execute all SQL in folder">
-                            <Database className="w-3.5 h-3.5" />
+                          <Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-400 hover:bg-emerald-400/20" onClick={() => handleExecuteSqlFolder(file.name)} title="Execute all SQL in folder">
+                            <Database className="w-3 h-3" />
                           </Button>
                         )}
                         {!file.isDirectory && (
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-blue-400 hover:bg-blue-400/20" onClick={() => handleEditFile(file.name)}>
-                            <Edit2 className="w-3.5 h-3.5" />
+                          <Button size="icon" variant="ghost" className="h-6 w-6 text-blue-400 hover:bg-blue-400/20" onClick={() => handleEditFile(file.name)}>
+                            <Edit2 className="w-3 h-3" />
                           </Button>
                         )}
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-amber-400 hover:bg-amber-400/20" onClick={() => handleRename(file.name)}>
-                          <Type className="w-3.5 h-3.5" />
+                        <Button size="icon" variant="ghost" className="h-6 w-6 text-amber-400 hover:bg-amber-400/20" onClick={() => handleRename(file.name)}>
+                          <Type className="w-3 h-3" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-rose-400 hover:bg-rose-400/20" onClick={() => handleDelete(file.name)}>
-                          <Trash2 className="w-3.5 h-3.5" />
+                        <Button size="icon" variant="ghost" className="h-6 w-6 text-rose-400 hover:bg-rose-400/20" onClick={() => handleDelete(file.name)}>
+                          <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
                     </td>
                   </tr>
                 ))}
-                {files.length === 0 && !isLoadingFiles && (
+                {filteredFiles.length === 0 && !isLoadingFiles && (
                   <tr>
-                    <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground italic">
-                      Directory is empty
+                    <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground italic text-xs">
+                      {fileSearch ? `No files match "${fileSearch}"` : 'Directory is empty'}
                     </td>
                   </tr>
                 )}
