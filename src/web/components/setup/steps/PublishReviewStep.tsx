@@ -88,7 +88,7 @@ export function PublishReviewStep({
       }
 
       setCompleted(true);
-      const defaultId = data.startingMapId || startingMap.id || 'genesis';
+      const defaultId = data.defaultMapId || data.startingMapId || startingMap.id || 'genesis';
       setPersistedMapId(defaultId);
 
       setTimeout(() => {

@@ -158,13 +158,21 @@ export function GameOfflineScreen({
                 <p className="text-[11px] font-mono text-slate-400 mb-3">
                   World Developer Account Detected
                 </p>
-                <Link
-                  href="/setup"
-                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-mono font-extrabold text-xs uppercase tracking-widest transition-all bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white shadow-[0_0_20px_rgba(251,191,36,0.4)] active:scale-95 cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <Sparkles size={15} />
-                  Proceed to Realm Setup
-                </Link>
+                <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
+                  <Link
+                    href="/studio"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-mono font-extrabold text-xs uppercase tracking-widest transition-all bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white shadow-[0_0_20px_rgba(251,191,36,0.4)] active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Sparkles size={15} />
+                    Open World Studio
+                  </Link>
+                  <Link
+                    href="/setup"
+                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl font-mono font-bold text-xs uppercase tracking-widest transition-all bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700/80 active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    Realm Setup
+                  </Link>
+                </div>
               </>
             ) : (
               <>

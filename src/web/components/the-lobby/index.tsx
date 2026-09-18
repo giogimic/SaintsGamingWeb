@@ -1953,9 +1953,20 @@ export default function TheLobby({
 
   if (releaseCheckComplete && !activeRelease) {
     return (
-      <GameOfflineScreen 
-        customMessage="No playable world deployed. Publish and deploy a WorldRelease before entering the game." 
-      />
+      <div className={frameClass}>
+        <GameOfflineScreen 
+          isAdmin={enableStudio && canStudio}
+          customMessage="No playable world deployed. Publish and deploy a WorldRelease before entering the game." 
+          onRefresh={async () => {
+            try {
+              const release = await getActiveWorldRelease('saints');
+              if (release) {
+                setActiveRelease(release);
+              }
+            } catch {}
+          }}
+        />
+      </div>
     );
   }
 

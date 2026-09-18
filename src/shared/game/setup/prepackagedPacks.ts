@@ -78,11 +78,22 @@ export async function importStarterPackToDb(
   }
 
   // 2. Mark setup as initialized
-  await prismaClient.siteSetting.upsert({
-    where: { key: SETUP_SETTING_KEYS.STARTER_PACK_IMPORTED },
-    create: { key: SETUP_SETTING_KEYS.STARTER_PACK_IMPORTED, value: packId },
-    update: { value: packId },
-  });
+  const now = new Date().toISOString();
+  const setupSettings = [
+    { key: SETUP_SETTING_KEYS.STARTER_PACK_IMPORTED, value: packId },
+    { key: SETUP_SETTING_KEYS.GAME_INITIALIZED, value: 'true' },
+    { key: SETUP_SETTING_KEYS.GAME_INITIALIZED_AT, value: now },
+    { key: SETUP_SETTING_KEYS.SETUP_COMPLETED, value: 'true' },
+    { key: SETUP_SETTING_KEYS.SETUP_COMPLETED_AT, value: now },
+  ];
+
+  for (const s of setupSettings) {
+    await prismaClient.siteSetting.upsert({
+      where: { key: s.key },
+      create: { key: s.key, value: s.value },
+      update: { value: s.value },
+    }).catch((e: any) => console.warn(`[Setup] Setting ${s.key} skip:`, e.message));
+  }
 
   return {
     success: true,

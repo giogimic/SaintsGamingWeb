@@ -73,8 +73,18 @@ type WorldConnection struct {
 // ActiveReleaseVersion returns the version string for the most recently created project release, or "" if none.
 func (m *Manager) ActiveReleaseVersion(db *sql.DB, projectID string) (string, error) {
 	var version string
-	// Check for release matching project ID or 'saints'
+	// Check for LIVE release matching project ID or 'saints'
 	err := db.QueryRow(`
+		SELECT version FROM WorldRelease
+		WHERE (projectId = ? OR projectId = 'saints') AND status = 'LIVE'
+		ORDER BY id DESC LIMIT 1
+	`, projectID).Scan(&version)
+	if err == nil && version != "" {
+		return version, nil
+	}
+
+	// Fallback to any release matching project ID or 'saints'
+	err = db.QueryRow(`
 		SELECT version FROM WorldRelease
 		WHERE projectId = ? OR projectId = 'saints'
 		ORDER BY id DESC LIMIT 1
@@ -101,19 +111,20 @@ func (m *Manager) ActiveReleaseVersion(db *sql.DB, projectID string) (string, er
 func (m *Manager) ParseRelease(db *sql.DB, projectID string, version string) (*ReleaseManifest, error) {
 	log.Printf("[WorldManager] Loading release project=%s version=%s", projectID, version)
 	
+	var releaseID int64
 	var manifestStr string
 	err := db.QueryRow(`
-		SELECT manifestData FROM WorldRelease
+		SELECT id, manifestData FROM WorldRelease
 		WHERE (projectId = ? OR projectId = 'saints') AND version = ?
 		ORDER BY id DESC LIMIT 1
-	`, projectID, version).Scan(&manifestStr)
+	`, projectID, version).Scan(&releaseID, &manifestStr)
 	if err != nil {
 		// Fallback without project filter
 		err = db.QueryRow(`
-			SELECT manifestData FROM WorldRelease
+			SELECT id, manifestData FROM WorldRelease
 			WHERE version = ?
 			ORDER BY id DESC LIMIT 1
-		`, version).Scan(&manifestStr)
+		`, version).Scan(&releaseID, &manifestStr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch release manifest from db: %w", err)
 		}
@@ -124,27 +135,12 @@ func (m *Manager) ParseRelease(db *sql.DB, projectID string, version string) (*R
 		return nil, fmt.Errorf("failed to unmarshal manifest: %w", err)
 	}
 
-	// Fetch heavy map data from WorldMapSnapshot table
+	// Fetch heavy map data from WorldMapSnapshot table directly using releaseID
 	rows, err := db.Query(`
 		SELECT mapId, regionClass, proceduralConfig, gridData, gatesData, encountersData, entitiesData, freeformLayersData 
 		FROM WorldMapSnapshot 
-		WHERE releaseId = (
-			SELECT id FROM WorldRelease
-			WHERE (projectId = ? OR projectId = 'saints') AND version = ?
-			ORDER BY id DESC LIMIT 1
-		)
-	`, projectID, version)
-	if err != nil || rows == nil {
-		rows, err = db.Query(`
-			SELECT mapId, regionClass, proceduralConfig, gridData, gatesData, encountersData, entitiesData, freeformLayersData 
-			FROM WorldMapSnapshot 
-			WHERE releaseId = (
-				SELECT id FROM WorldRelease
-				WHERE version = ?
-				ORDER BY id DESC LIMIT 1
-			)
-		`, version)
-	}
+		WHERE releaseId = ?
+	`, releaseID)
 	
 	if err == nil {
 		defer rows.Close()

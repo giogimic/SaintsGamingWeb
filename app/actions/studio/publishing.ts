@@ -217,6 +217,18 @@ export async function restoreWorldRelease(snapshotId: string) {
       }
     }
 
+    // 5. Promote the restored snapshot to LIVE
+    await prisma.$transaction([
+      prisma.worldRelease.updateMany({
+        where: { projectId: snapshot.projectId, status: 'LIVE' },
+        data: { status: 'PUBLISHED' },
+      }),
+      prisma.worldRelease.update({
+        where: { id: snapshotId },
+        data: { status: 'LIVE' },
+      }),
+    ]);
+
     // Notify Go MMO that the project release has been restored
     try {
       const { MapSyncService } = await import('@/server/mapSyncService');

@@ -178,25 +178,70 @@ export async function POST(req: Request) {
         }
       }
 
-      // 4. Update Game Identity Settings
-      if (pkg.game) {
-        const gameSettings = [
-          { key: SETUP_SETTING_KEYS.GAME_INITIALIZED, value: 'true' },
-          { key: SETUP_SETTING_KEYS.GAME_INITIALIZED_AT, value: new Date().toISOString() },
-          { key: SETUP_SETTING_KEYS.GAME_NAME, value: pkg.game.name || 'Saints Game' },
-          { key: SETUP_SETTING_KEYS.GAME_DESCRIPTION, value: pkg.game.description || '' },
-          { key: SETUP_SETTING_KEYS.GAME_GENRE, value: pkg.game.genre || 'CREATURE_MMO' },
-          { key: SETUP_SETTING_KEYS.GAME_STYLE, value: pkg.game.style || 'SAINTS_HYBRID' },
-          { key: SETUP_SETTING_KEYS.GAME_CAMERA, value: pkg.game.camera || 'ISOMETRIC_25D' },
-          { key: SETUP_SETTING_KEYS.DEFAULT_MAP_ID, value: pkg.game.defaultMapId || (pkg.maps?.[0]?.id ?? 'STARTING_MEADOW') },
-        ];
+      // 4. Update Game Identity & Project Infrastructure
+      const now = new Date().toISOString();
+      const resolvedGameName = pkg.game?.name || 'Saints Game';
+      const resolvedGameDesc = pkg.game?.description || 'Explore, battle, capture, and build in this 2.5D MMO universe.';
+      const defaultMapId = pkg.game?.defaultMapId || (pkg.maps?.[0]?.id ?? 'STARTING_MEADOW');
 
-        for (const s of gameSettings) {
-          await prisma.siteSetting.upsert({
-            where: { key: s.key },
-            create: { key: s.key, value: s.value },
-            update: { value: s.value },
-          });
+      await prisma.worldProject.upsert({
+        where: { slug: 'saints' },
+        create: {
+          slug: 'saints',
+          name: resolvedGameName,
+          description: resolvedGameDesc,
+        },
+        update: {
+          name: resolvedGameName,
+          description: resolvedGameDesc,
+        },
+      });
+
+      await prisma.gameConfig.upsert({
+        where: { slug: 'saints' },
+        create: {
+          slug: 'saints',
+          name: resolvedGameName,
+          description: resolvedGameDesc,
+          isActive: true,
+          defaultSpawnGateId: 'spawn',
+        },
+        update: {
+          name: resolvedGameName,
+          description: resolvedGameDesc,
+        },
+      });
+
+      const gameSettings = [
+        { key: SETUP_SETTING_KEYS.GAME_INITIALIZED, value: 'true' },
+        { key: SETUP_SETTING_KEYS.GAME_INITIALIZED_AT, value: now },
+        { key: SETUP_SETTING_KEYS.SETUP_COMPLETED, value: 'true' },
+        { key: SETUP_SETTING_KEYS.SETUP_COMPLETED_AT, value: now },
+        { key: SETUP_SETTING_KEYS.GAME_NAME, value: resolvedGameName },
+        { key: SETUP_SETTING_KEYS.GAME_DESCRIPTION, value: resolvedGameDesc },
+        { key: SETUP_SETTING_KEYS.GAME_GENRE, value: pkg.game?.genre || 'CREATURE_MMO' },
+        { key: SETUP_SETTING_KEYS.GAME_STYLE, value: pkg.game?.style || 'SAINTS_HYBRID' },
+        { key: SETUP_SETTING_KEYS.GAME_CAMERA, value: pkg.game?.camera || 'ISOMETRIC_25D' },
+        { key: SETUP_SETTING_KEYS.DEFAULT_MAP_ID, value: defaultMapId },
+      ];
+
+      for (const s of gameSettings) {
+        await prisma.siteSetting.upsert({
+          where: { key: s.key },
+          create: { key: s.key, value: s.value },
+          update: { value: s.value },
+        });
+      }
+
+      // 5. Auto-compile and deploy initial WorldRelease if maps were imported
+      if (importedMaps > 0) {
+        try {
+          const { compileWorldRelease } = await import('@/app/actions/studio/compiler/WorldCompiler');
+          const { deployWorldRelease } = await import('@/app/actions/studio/world-release');
+          const { releaseInfo } = await compileWorldRelease('saints', 'Imported Package Release', 'Auto-compiled release from imported package');
+          await deployWorldRelease(releaseInfo.releaseId);
+        } catch (releaseErr) {
+          console.warn('[Map Import] Auto-compile release skipped:', releaseErr);
         }
       }
 
@@ -205,7 +250,7 @@ export async function POST(req: Request) {
         importedMaps,
         importedHeroes,
         importedCreatures,
-        defaultMapId: pkg.game?.defaultMapId || pkg.maps?.[0]?.id || 'STARTING_MEADOW',
+        defaultMapId,
         message: `Package successfully migrated and imported: ${importedMaps} 3D Voxel Maps, ${importedHeroes} Heroes, ${importedCreatures} Creatures.`,
       });
     }

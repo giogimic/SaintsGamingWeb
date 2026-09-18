@@ -71,7 +71,7 @@ export function WorldGenerationStep({
 
   // Handle successful sync
   useEffect(() => {
-    if (status === 'READY' && bootstrapRevisionId) {
+    if (status === 'READY' && bootstrapRevisionId && startingMap.bootstrapRevisionId !== bootstrapRevisionId) {
       onChange({
         ...startingMap,
         widthChunks: 4,

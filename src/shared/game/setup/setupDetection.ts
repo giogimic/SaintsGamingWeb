@@ -66,6 +66,7 @@ export const DEFAULT_REALM_DESCRIPTION = DEFAULT_GAME_DESCRIPTION;
 export function evaluateSetupStatus(params: {
   gameInitializedVal?: string | null;
   setupSettingVal?: string | null;
+  starterPackVal?: string | null;
   mapCount: number;
   userCount: number;
   adminCount: number;
@@ -87,7 +88,8 @@ export function evaluateSetupStatus(params: {
   const hasExplicitCompleted =
     isGameInitialized ||
     params.setupSettingVal === 'true' ||
-    params.setupSettingVal === '1';
+    params.setupSettingVal === '1' ||
+    Boolean(params.starterPackVal?.trim());
 
   // An existing installation is indicated by existing authored maps.
   // We no longer check userCount > 1 or gameConfigActive, because an admin might wipe the game data (maps) but keep users and bundled configs.
@@ -166,6 +168,7 @@ export async function getSystemSetupStatus(prismaClient: any): Promise<SetupStat
       userCount,
       adminCount,
       activeGameConfigCount,
+      starterPackSetting,
     ] = await Promise.all([
       prismaClient.siteSetting.findUnique({ where: { key: SETUP_SETTING_KEYS.GAME_INITIALIZED } }).catch(() => null),
       prismaClient.siteSetting.findUnique({ where: { key: SETUP_SETTING_KEYS.SETUP_COMPLETED } }).catch(() => null),
@@ -184,6 +187,7 @@ export async function getSystemSetupStatus(prismaClient: any): Promise<SetupStat
       prismaClient.user.count().catch(() => 0),
       prismaClient.user.count({ where: { OR: [{ permissionLevel: { gte: 80 } }, { role: { name: 'ADMIN' } }] } }).catch(() => 0),
       prismaClient.gameConfig.count({ where: { isActive: true } }).catch(() => 0),
+      prismaClient.siteSetting.findUnique({ where: { key: SETUP_SETTING_KEYS.STARTER_PACK_IMPORTED } }).catch(() => null),
     ]);
 
     const mapCount = Math.max(worldMapCount, gameMapCount, releaseCount > 0 ? 1 : 0);
@@ -191,6 +195,7 @@ export async function getSystemSetupStatus(prismaClient: any): Promise<SetupStat
     return evaluateSetupStatus({
       gameInitializedVal: gameInitSetting?.value,
       setupSettingVal: setupSetting?.value,
+      starterPackVal: starterPackSetting?.value,
       gameNameSettingVal: gameNameSetting?.value,
       gameDescriptionSettingVal: gameDescSetting?.value,
       gameGenreSettingVal: gameGenreSetting?.value,

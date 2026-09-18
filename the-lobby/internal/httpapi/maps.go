@@ -312,6 +312,12 @@ func deployPublishedProjectRelease(db *sql.DB, wm *world.Manager, reg *registry.
 		return fmt.Errorf("failed to create WorldRelease table: %w", err)
 	}
 
+	// Demote any previously LIVE releases in SQLite for this project
+	_, _ = tx.Exec(`
+		UPDATE WorldRelease SET status = 'PUBLISHED'
+		WHERE (projectId = ? OR projectId = 'saints') AND status = 'LIVE'
+	`, syncResp.Release.ProjectID)
+
 	_, err = tx.Exec(`
 		INSERT INTO WorldRelease (projectId, version, manifestData, publishedBy, status)
 		VALUES (?, ?, ?, ?, 'LIVE')

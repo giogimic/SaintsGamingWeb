@@ -46,47 +46,45 @@ export async function compileWorldRelease(projectIdentifier: string, title?: str
 
   // 2. Resolve Canonical Spawn
   const canonicalSpawnId = config?.defaultSpawnGateId;
-  if (!canonicalSpawnId) {
-    throw new Error(`Project ${projectId} has no defaultSpawnGateId configured. Set a Canonical World Spawn in Game Settings before publishing.`);
-  }
-
   let spawnMapId: string | null = null;
   let spawnX = 0, spawnY = 0, spawnZ = 0;
   let spawnFound = false;
 
-  for (const map of maps) {
-    try {
-      const entities = JSON.parse(map.entitiesData || "[]");
-      for (const ent of entities) {
-        if (ent.id === canonicalSpawnId) {
-          spawnMapId = map.id;
-          spawnX = ent.position?.x ?? 0;
-          spawnY = ent.position?.y ?? 0;
-          spawnZ = ent.position?.z ?? 0;
-          spawnFound = true;
-          break;
+  if (canonicalSpawnId) {
+    for (const map of maps) {
+      try {
+        const entities = JSON.parse(map.entitiesData || "[]");
+        for (const ent of entities) {
+          if (ent.id === canonicalSpawnId) {
+            spawnMapId = map.id;
+            spawnX = ent.position?.x ?? 0;
+            spawnY = ent.position?.y ?? 0;
+            spawnZ = ent.position?.z ?? 0;
+            spawnFound = true;
+            break;
+          }
         }
-      }
-    } catch (e) {}
-    if (spawnFound) break;
-    
-    try {
-      const parsedGates = JSON.parse(map.gatesData || "[]");
-      const gatesList = Array.isArray(parsedGates) ? parsedGates : (parsedGates.gates ? parsedGates.gates : Object.values(parsedGates));
-      for (const [idx, g] of Object.entries(gatesList)) {
-        const gate = g as any;
-        const gateId = gate.id || `legacy_gate_${idx}`;
-        if (gateId === canonicalSpawnId) {
-          spawnMapId = map.id;
-          spawnX = gate.spawnPoint?.x ?? gate.position?.x ?? 0;
-          spawnY = gate.spawnPoint?.y ?? gate.position?.y ?? 0;
-          spawnZ = gate.spawnPoint?.z ?? gate.position?.z ?? 0;
-          spawnFound = true;
-          break;
+      } catch (e) {}
+      if (spawnFound) break;
+      
+      try {
+        const parsedGates = JSON.parse(map.gatesData || "[]");
+        const gatesList = Array.isArray(parsedGates) ? parsedGates : (parsedGates.gates ? parsedGates.gates : Object.values(parsedGates));
+        for (const [idx, g] of Object.entries(gatesList)) {
+          const gate = g as any;
+          const gateId = gate.id || `legacy_gate_${idx}`;
+          if (gateId === canonicalSpawnId) {
+            spawnMapId = map.id;
+            spawnX = gate.spawnPoint?.x ?? gate.position?.x ?? 0;
+            spawnY = gate.spawnPoint?.y ?? gate.position?.y ?? 0;
+            spawnZ = gate.spawnPoint?.z ?? gate.position?.z ?? 0;
+            spawnFound = true;
+            break;
+          }
         }
-      }
-    } catch (e) {}
-    if (spawnFound) break;
+      } catch (e) {}
+      if (spawnFound) break;
+    }
   }
 
   // Resilient fallback: If exact canonicalSpawnId is not found, search for any SPAWN category gate or explicit spawnPoint
