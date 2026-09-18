@@ -420,7 +420,7 @@ export const WorldManagerPanel: React.FC = () => {
 
       {/* ── Create Release Modal ───────────────────────── */}
       {showPublishModal && (
-        <div className="fixed inset-0 z-50 bg-black/50/80 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
           <form
             onSubmit={handlePublish}
             className="bg-[#050b14]/95 backdrop-blur-xl border border-[#806f47]/30 rounded-xl shadow-2xl flex flex-col w-full max-w-lg overflow-hidden font-sans text-xs"
