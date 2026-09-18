@@ -143,6 +143,10 @@ model User {
   // Profile Customization
   gameCharacters  GameCharacter[]
   youtubeVideoUrl String?
+
+  // SAMP Integrations
+  sampPlayerSessions SampPlayerSession[]
+  sampLinkCodes      SampLinkCode[]
   youtubeMusicUrl String?
   profileImages   ProfileImage[]
   pinnedBeastId   String? // ID of the Beast/Creature to display on profile
@@ -459,9 +463,60 @@ model GameServer {
   queryPort Int? // Creature Battler uses a specific port for RCON/Query
   isActive  Boolean  @default(true)
   trackerId String? // Optional: ID for Battlemetrics or similar API
-  order     Int      @default(0) // For sorting on the UI
+  order        Int      @default(0) // For sorting on the UI
+  apiKeyHash   String?
+  isRemote     Boolean  @default(false)
+  agentVersion String?
+  lastSeen     DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  commands ServerCommand[]
+  sessions SampPlayerSession[]
+}
+
+model ServerCommand {
+  id        String     @id @default(cuid())
+  serverId  String
+  server    GameServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  type      String     // "UPDATE_GAMEMODE" | "RCON" | "RESTART" | "CONFIG_PUSH"
+  payload   String     // JSON stringified
+  status    String     @default("PENDING") // PENDING | RUNNING | DONE | FAILED
+  result    String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([serverId, status])
+}
+
+model SampPlayerSession {
+  id          String     @id @default(cuid())
+  serverId    String
+  server      GameServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  playerName  String
+  userId      String?    // linked Saints account (null if unregistered)
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  score       Int        @default(0)
+  money       Int        @default(0)
+  posX        Float      @default(0)
+  posY        Float      @default(0)
+  posZ        Float      @default(0)
+  interior    Int        @default(0)
+  connectedAt DateTime   @default(now())
+  lastSeen    DateTime   @updatedAt
+  isOnline    Boolean    @default(true)
+
+  @@index([serverId, isOnline])
+  @@index([playerName])
+}
+
+model SampLinkCode {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 // ─── Streams ────────────────────────────────────────────────────

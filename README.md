@@ -151,6 +151,17 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ---
 
+## Changelog
+
+**v2.1.894**
+- Built **SA-MP Remote Integration Architecture**:
+  - `GameServer` schema extended to support remote servers via `apiKeyHash`.
+  - Added standalone `saints-server-agent` to be run on external nodes to securely poll UCP for remote commands and push stats.
+  - New `SampPlayerSession` and `SampLinkCode` Prisma models for syncing live player states and generating one-time authentication link codes.
+  - Implemented `/api/samp/player/*` and `/api/servers/[serverId]/commands` endpoints, secured via SHA-256 API Key verification headers.
+
+---
+
 ## 📖 Documentation
 
 If you are looking for **deep technical breakdowns**, engine architecture, and creator guides, please check out our interactive **Wiki** directly on the website once you have the app running, or navigate to the `/wiki` page on saintsgaming.net!
