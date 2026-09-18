@@ -114,9 +114,30 @@ export async function downloadAndExtractServer(archiveUrl: string) {
         // Use JSZip since unzip is not available in minimal docker
         const zipData = fs.readFileSync(tempFile);
         const zip = await JSZip.loadAsync(zipData);
-        const files = Object.entries(zip.files);
+        let files = Object.entries(zip.files);
+
+        // Detect single wrapper directory (e.g. GitHub downloads)
+        const rootSegments = new Set(files.filter(([rel]) => rel.includes('/')).map(([rel]) => rel.split('/')[0]));
+        let prefixToStrip = "";
+        
+        // If every file is inside a single root folder, strip it
+        const allPaths = files.map(([rel]) => rel);
+        if (rootSegments.size === 1) {
+          const rootDir = Array.from(rootSegments)[0];
+          const hasFilesOutsideRoot = allPaths.some(p => p !== rootDir && p !== rootDir + '/' && !p.startsWith(rootDir + '/'));
+          if (!hasFilesOutsideRoot) {
+            prefixToStrip = rootDir + '/';
+          }
+        }
+
         for (const [relativePath, file] of files) {
-          const fullPath = path.join(targetDir, relativePath);
+          let finalPath = relativePath;
+          if (prefixToStrip && finalPath.startsWith(prefixToStrip)) {
+            finalPath = finalPath.slice(prefixToStrip.length);
+          }
+          if (!finalPath) continue; // Skip the root dir entry itself
+
+          const fullPath = path.join(targetDir, finalPath);
           if (file.dir) {
             if (!fs.existsSync(fullPath)) fs.mkdirSync(fullPath, { recursive: true });
           } else {
@@ -125,7 +146,7 @@ export async function downloadAndExtractServer(archiveUrl: string) {
             if (!fs.existsSync(dirname)) fs.mkdirSync(dirname, { recursive: true });
             fs.writeFileSync(fullPath, content);
             // Fix permissions for Linux executables
-            if (relativePath.includes('samp03svr') || relativePath.includes('announce') || relativePath.includes('omp-server')) {
+            if (finalPath.includes('samp03svr') || finalPath.includes('announce') || finalPath.includes('omp-server')) {
               fs.chmodSync(fullPath, 0o755);
             }
           }
