@@ -254,9 +254,24 @@ func (m *Manager) GetVoxelMapBlocks(mapID string) *VoxelWorld {
 
 // JoinMap assigns a shard and returns the live instance.
 func (m *Manager) JoinMap(baseMapID, accountID string, isPrivate, pie bool) (*Instance, error) {
+	// Canonicalize and load definition if available
+	if resolvedDef, _ := m.GetDef(baseMapID); resolvedDef != nil {
+		baseMapID = resolvedDef.ID
+	}
+
 	defaultSpawn := m.DefaultSpawnMap()
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	if _, ok := m.defs[baseMapID]; !ok {
+		// Case-insensitive fallback
+		for k := range m.defs {
+			if strings.EqualFold(k, baseMapID) {
+				baseMapID = k
+				break
+			}
+		}
+	}
 
 	if _, ok := m.defs[baseMapID]; !ok {
 		if baseMapID == defaultSpawn {

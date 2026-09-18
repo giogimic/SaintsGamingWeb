@@ -34,6 +34,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/healthz", s.health)
 	mux.HandleFunc("/api/health", s.health)
 	mux.HandleFunc("/api/internal/sync", s.internalSync)
+	mux.HandleFunc("/api/internal/sync-map", s.internalSync)
+	mux.HandleFunc("/api/sync/map", s.internalSync)
 	mux.HandleFunc("/internal/broadcast", s.internalBroadcast)
 	mux.HandleFunc("/internal/disconnect", s.internalDisconnect)
 	mux.HandleFunc("/api/gtc/listings", s.gtcListings)

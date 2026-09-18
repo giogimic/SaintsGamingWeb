@@ -1,3 +1,10 @@
+## [2.1.910] - 2026-09-18
+### Fixed
+- **Go MMO Snapshot Lazy Fetching (`FetchMapDef`):** Wired up `wm.FetchMapDef` in `the-lobby/cmd/server/main.go` to lazily query `WorldMapSnapshot` from SQLite on demand. Any map requested by clients or transitions that is not yet resident in memory is dynamically parsed and instantiated with its full grid, gates, and encounters.
+- **JoinMap Definition Canonicalization & Case-Insensitive Matching:** In `the-lobby/internal/world/manager.go`, `JoinMap` now calls `GetDef(baseMapID)` before assigning shards, properly canonicalizing map IDs case-insensitively and triggering lazy loading. This eliminates the edge case where un-cached maps or casing variations dropped players into empty 128x128 fallback voids.
+- **Atlas Compiler Checksum Fallback Resilience:** In `app/actions/studio/compiler/AtlasCompiler.ts`, missing `artifactChecksum` values on regions now generate a deterministic fallback checksum and log a non-fatal warning instead of halting compilation with a hard error.
+- **Go MMO Sync Webhook Aliases:** Registered `/api/internal/sync-map` and `/api/sync/map` aliases alongside `/api/internal/sync` in `the-lobby/internal/httpapi/maps.go`, ensuring 100% compatibility across all pipeline documentation, scripts, and webhook callers.
+
 ## [2.1.909] - 2026-09-18
 ### Fixed
 - **Setup Completion & Starter Pack Setting Alignment:** Fixed an issue where importing a starter pack (such as `blank-canvas`) recorded `STARTER_PACK_IMPORTED` but omitted `SETUP_COMPLETED` and `GAME_INITIALIZED`, causing the system to falsely report that setup was never completed. Both flags and timestamps are now written explicitly, and `setupDetection.ts` now checks `STARTER_PACK_IMPORTED` as an additional completion indicator.

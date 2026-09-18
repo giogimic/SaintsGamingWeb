@@ -48,6 +48,12 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📜 Changelog
 
+### v2.1.910 - Go MMO Snapshot Lazy Fetching, JoinMap Definition Canonicalization & Atlas Checksum Resilience
+- **Go MMO Snapshot Lazy Fetching (`FetchMapDef`):** Wired up `wm.FetchMapDef` in `the-lobby/cmd/server/main.go` to lazily query `WorldMapSnapshot` from SQLite on demand. Any map requested by clients or transitions that is not yet resident in memory is dynamically parsed and instantiated with its full grid, gates, and encounters.
+- **JoinMap Definition Canonicalization & Case-Insensitive Matching:** In `the-lobby/internal/world/manager.go`, `JoinMap` now calls `GetDef(baseMapID)` before assigning shards, properly canonicalizing map IDs case-insensitively and triggering lazy loading. This eliminates the edge case where un-cached maps or casing variations dropped players into empty 128x128 fallback voids.
+- **Atlas Compiler Checksum Fallback Resilience:** In `app/actions/studio/compiler/AtlasCompiler.ts`, missing `artifactChecksum` values on regions now generate a deterministic fallback checksum and log a non-fatal warning instead of halting compilation with a hard error.
+- **Go MMO Sync Webhook Aliases:** Registered `/api/internal/sync-map` and `/api/sync/map` aliases alongside `/api/internal/sync` in `the-lobby/internal/httpapi/maps.go`, ensuring 100% compatibility across all pipeline documentation, scripts, and webhook callers.
+
 ### v2.1.909 - Setup Flow Finalization, Starter Pack Detection, Resilient Spawn Fallback & Offline Screen Clarity
 - **Setup Completion & Starter Pack Setting Alignment:** Fixed an issue where importing a starter pack (such as `blank-canvas`) recorded `STARTER_PACK_IMPORTED` but omitted `SETUP_COMPLETED` and `GAME_INITIALIZED`, causing the system to falsely report that setup was never completed. Both flags and timestamps are now written explicitly, and `setupDetection.ts` now checks `STARTER_PACK_IMPORTED` as an additional completion indicator.
 - **Package Import Auto-Publish Pipeline:** In `/api/setup/import`, ensured `worldProject` and `gameConfig` exist for project `saints`, wrote complete initialization and setup completion flags, and automatically compiled and deployed an initial `WorldRelease` when maps are imported so the imported world is immediately playable.

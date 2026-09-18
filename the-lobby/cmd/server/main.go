@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -47,6 +50,62 @@ func main() {
 
 	wm := world.NewManager(cfg.LobbyCapacity)
 	wm.DB = sqlDB
+	wm.FetchMapDef = func(id string) (*world.MapDef, error) {
+		var snap struct {
+			MapID              string
+			RegionClass        sql.NullString
+			ProceduralConfig   sql.NullString
+			GridData           sql.NullString
+			GatesData          sql.NullString
+			EncountersData     sql.NullString
+			EntitiesData       sql.NullString
+			FreeformLayersData sql.NullString
+		}
+		err := sqlDB.QueryRow(`
+			SELECT mapId, regionClass, proceduralConfig, gridData, gatesData, encountersData, entitiesData, freeformLayersData
+			FROM WorldMapSnapshot
+			WHERE mapId = ? OR mapId = ? OR mapId = ?
+			ORDER BY id DESC LIMIT 1
+		`, id, strings.ToUpper(id), strings.ToLower(id)).Scan(
+			&snap.MapID, &snap.RegionClass, &snap.ProceduralConfig, &snap.GridData,
+			&snap.GatesData, &snap.EncountersData, &snap.EntitiesData, &snap.FreeformLayersData,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		def := &world.MapDef{
+			ID:          snap.MapID,
+			Name:        snap.MapID,
+			Width:       128,
+			Height:      128,
+			SpawnX:      float64(protocol.DefaultSpawnX),
+			SpawnY:      float64(protocol.DefaultSpawnY),
+			SpawnZ:      0,
+			RegionClass: snap.RegionClass.String,
+		}
+
+		if snap.GridData.Valid && snap.GridData.String != "" && snap.GridData.String != "null" {
+			if grid, err := world.ParseGridJSON(snap.GridData.String); err == nil {
+				def.Grid = grid
+				def.Height = len(grid)
+				if def.Height > 0 {
+					def.Width = len(grid[0])
+				}
+			}
+		}
+
+		if snap.GatesData.Valid && snap.GatesData.String != "" {
+			var gates struct {
+				Gates []world.GateDef `json:"gates"`
+			}
+			if err := json.Unmarshal([]byte(snap.GatesData.String), &gates); err == nil {
+				def.Gates = gates.Gates
+			}
+		}
+
+		return def, nil
+	}
 	pm := player.NewManager(cfg.AOIZoneSize, sqlDB)
 	cm := creature.NewManager()
 
