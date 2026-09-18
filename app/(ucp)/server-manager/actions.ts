@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import JSZip from 'jszip';
 
 const execAsync = promisify(exec);
 // Helper to check admin status
@@ -110,7 +111,25 @@ export async function downloadAndExtractServer(archiveUrl: string) {
         // Windows native tar supports zip now!
         await execAsync(`tar -xf "${tempFile}" -C "${targetDir}"`);
       } else {
-        await execAsync(`unzip -o "${tempFile}" -d "${targetDir}"`);
+        // Use JSZip since unzip is not available in minimal docker
+        const zipData = fs.readFileSync(tempFile);
+        const zip = await JSZip.loadAsync(zipData);
+        const files = Object.entries(zip.files);
+        for (const [relativePath, file] of files) {
+          const fullPath = path.join(targetDir, relativePath);
+          if (file.dir) {
+            if (!fs.existsSync(fullPath)) fs.mkdirSync(fullPath, { recursive: true });
+          } else {
+            const content = await file.async('nodebuffer');
+            const dirname = path.dirname(fullPath);
+            if (!fs.existsSync(dirname)) fs.mkdirSync(dirname, { recursive: true });
+            fs.writeFileSync(fullPath, content);
+            // Fix permissions for Linux executables
+            if (relativePath.includes('samp03svr') || relativePath.includes('announce') || relativePath.includes('omp-server')) {
+              fs.chmodSync(fullPath, 0o755);
+            }
+          }
+        }
       }
     }
 
