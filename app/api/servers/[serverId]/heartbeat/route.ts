@@ -13,7 +13,7 @@ export async function POST(
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    if (auth.server.id !== serverId) {
+    if (auth.server!.id !== serverId) {
       return NextResponse.json({ error: "API Key does not match server ID" }, { status: 403 });
     }
 

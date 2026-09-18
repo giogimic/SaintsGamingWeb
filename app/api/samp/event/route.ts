@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Generic event hook - could store in a log table or trigger Discord webhooks
-    console.log(`[SAMP_EVENT] Server ${auth.server.id} | Event: ${eventType}`, payload);
+    console.log(`[SAMP_EVENT] Server ${auth.server!.id} | Event: ${eventType}`, payload);
 
     return NextResponse.json({ success: true });
   } catch (error) {

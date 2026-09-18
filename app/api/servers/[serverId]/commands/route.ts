@@ -16,7 +16,7 @@ export async function GET(
       return NextResponse.json({ error: agentAuth.error }, { status: agentAuth.status });
     }
 
-    if (agentAuth.server.id !== serverId) {
+    if (agentAuth.server!.id !== serverId) {
       return NextResponse.json({ error: "API Key does not match server ID" }, { status: 403 });
     }
 
