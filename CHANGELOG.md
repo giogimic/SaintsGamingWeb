@@ -1,3 +1,9 @@
+## [2.1.911] - 2026-09-18
+### Changed
+- **Server Manager UI Redesign:** Replaced the bulky sidebar cards in "ServerManagerConsole.tsx" with a single, sleek toolbar above the terminal. The new toolbar cleanly houses process controls (executable selection, start, stop, restart) and system actions to maximize terminal real estate.
+- **Console Pop-Out Feature:** Added a "Pop Out" button to the server manager console. Users can now detach the live terminal stream into a draggable, resizable "UcpDraggableWindow", allowing them to monitor server output while managing files or navigating other settings.
+- **Dynamic CWD Resolution:** The "SampManager" class now tracks its "activeCwd" dynamically based on the location of the selected execution binary (e.g., "linux/omp-server" vs root). Database and RCON configuration parsing now correctly checks this active directory to prevent early process death.
+
 ## [2.1.910] - 2026-09-18
 ### Fixed
 - **Go MMO Snapshot Lazy Fetching (`FetchMapDef`):** Wired up `wm.FetchMapDef` in `the-lobby/cmd/server/main.go` to lazily query `WorldMapSnapshot` from SQLite on demand. Any map requested by clients or transitions that is not yet resident in memory is dynamically parsed and instantiated with its full grid, gates, and encounters.
@@ -6445,6 +6451,7 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
  S t u d i o M e n u B a r . t s x . 
  
  
+
 
 
 

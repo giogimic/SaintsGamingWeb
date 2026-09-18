@@ -14,6 +14,7 @@ export class SampManager extends EventEmitter {
   private rconPort = 7777;
   private serverPath: string;
   private pidFilePath: string;
+  private activeCwd: string | null = null;
 
   private constructor() {
     super();
@@ -84,9 +85,6 @@ export class SampManager extends EventEmitter {
       fs.mkdirSync(this.serverPath, { recursive: true });
     }
 
-    this.extractRconConfig();
-    this.updateMysqlConfig();
-
     const isWindows = process.platform === 'win32';
     let executable = customExecutable && customExecutable.trim() !== ''
       ? customExecutable.trim()
@@ -111,6 +109,10 @@ export class SampManager extends EventEmitter {
     if (fs.existsSync(fullCmdPath)) {
       execCwd = path.dirname(fullCmdPath);
     }
+
+    this.activeCwd = execCwd;
+    this.extractRconConfig();
+    this.updateMysqlConfig();
 
     // Linux / Debian preparations
     let spawnCmd = fullCmdPath;
@@ -297,7 +299,8 @@ export class SampManager extends EventEmitter {
   }
 
   private updateMysqlConfig(): void {
-    const cfgPath = path.join(this.serverPath, 'mysql.cfg');
+    const dir = this.activeCwd || this.serverPath;
+    const cfgPath = path.join(dir, 'mysql.cfg');
     if (!fs.existsSync(cfgPath)) return;
 
     const dbUrl = process.env.DATABASE_URL || '';
@@ -324,7 +327,21 @@ export class SampManager extends EventEmitter {
   }
 
   private extractRconConfig(): void {
-    const cfgPath = path.join(this.serverPath, 'server.cfg');
+    const dir = this.activeCwd || this.serverPath;
+    const jsonPath = path.join(dir, 'config.json');
+    const cfgPath = path.join(dir, 'server.cfg');
+
+    if (fs.existsSync(jsonPath)) {
+      try {
+        const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+        if (data?.rcon?.password) this.rconPassword = data.rcon.password;
+        if (data?.network?.port) this.rconPort = data.network.port;
+      } catch (e) {
+        console.warn('[SampManager] Failed to parse config.json:', e);
+      }
+      return;
+    }
+
     if (!fs.existsSync(cfgPath)) return;
 
     try {

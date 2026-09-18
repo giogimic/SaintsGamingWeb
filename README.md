@@ -48,7 +48,7 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📜 Changelog
 
-### v2.1.910 - Go MMO Snapshot Lazy Fetching, JoinMap Definition Canonicalization & Atlas Checksum Resilience
+### v2.1.911 - Go MMO Snapshot Lazy Fetching, JoinMap Definition Canonicalization & Atlas Checksum Resilience
 - **Go MMO Snapshot Lazy Fetching (`FetchMapDef`):** Wired up `wm.FetchMapDef` in `the-lobby/cmd/server/main.go` to lazily query `WorldMapSnapshot` from SQLite on demand. Any map requested by clients or transitions that is not yet resident in memory is dynamically parsed and instantiated with its full grid, gates, and encounters.
 - **JoinMap Definition Canonicalization & Case-Insensitive Matching:** In `the-lobby/internal/world/manager.go`, `JoinMap` now calls `GetDef(baseMapID)` before assigning shards, properly canonicalizing map IDs case-insensitively and triggering lazy loading. This eliminates the edge case where un-cached maps or casing variations dropped players into empty 128x128 fallback voids.
 - **Atlas Compiler Checksum Fallback Resilience:** In `app/actions/studio/compiler/AtlasCompiler.ts`, missing `artifactChecksum` values on regions now generate a deterministic fallback checksum and log a non-fatal warning instead of halting compilation with a hard error.
