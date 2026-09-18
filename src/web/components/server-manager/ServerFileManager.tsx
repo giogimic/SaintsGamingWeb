@@ -23,6 +23,7 @@ export default function ServerFileManager() {
   const [currentPath, setCurrentPath] = useState<string>('');
   const [files, setFiles] = useState<any[]>([]);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   
   // Editor State
   const [editingFile, setEditingFile] = useState<{ path: string, content: string } | null>(null);
@@ -174,20 +175,51 @@ export default function ServerFileManager() {
 
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('dirPath', currentPath);
 
     setIsProcessing(true);
-    const res = await uploadServerFile(currentPath, formData);
-    if (res.success) {
-      toast.success('File uploaded successfully');
-      loadFiles(currentPath);
-    } else {
-      toast.error('Failed to upload file: ' + res.error);
-    }
-    setIsProcessing(false);
-    
-    if (e.target) {
-      e.target.value = '';
-    }
+    setUploadProgress(0);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/samp/upload', true);
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = Math.round((event.loaded / event.total) * 100);
+        setUploadProgress(percentComplete);
+      }
+    };
+
+    xhr.onload = () => {
+      setIsProcessing(false);
+      setUploadProgress(null);
+      if (e.target) e.target.value = '';
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const res = JSON.parse(xhr.responseText);
+          if (res.success) {
+            toast.success('File uploaded successfully');
+            loadFiles(currentPath);
+          } else {
+            toast.error('Failed to upload file: ' + (res.error || 'Unknown error'));
+          }
+        } catch (err) {
+          toast.error('Upload failed with invalid response');
+        }
+      } else {
+        toast.error('Upload failed with status: ' + xhr.status);
+      }
+    };
+
+    xhr.onerror = () => {
+      setIsProcessing(false);
+      setUploadProgress(null);
+      if (e.target) e.target.value = '';
+      toast.error('Upload failed due to network error');
+    };
+
+    xhr.send(formData);
   };
 
   if (editingFile) {
@@ -272,6 +304,11 @@ export default function ServerFileManager() {
               {currentPath && <span className="truncate">/{currentPath}</span>}
             </div>
             <div className="flex gap-2">
+              {uploadProgress !== null && (
+                <div className="text-xs font-mono text-emerald-400 flex items-center bg-emerald-400/10 px-2 rounded">
+                  Uploading: {uploadProgress}%
+                </div>
+              )}
               <label className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-7 px-2">
                 <Upload className="w-4 h-4 mr-1" /> Upload
                 <input type="file" className="hidden" onChange={handleUploadFile} disabled={isProcessing} />
