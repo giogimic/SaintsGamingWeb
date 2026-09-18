@@ -47,15 +47,25 @@ export class SampManager extends EventEmitter {
     let cmd = parts[0];
     const args = parts.slice(1);
 
-    // If cmd is not a global binary and doesn't have a path separator, resolve it to serverPath
-    if (!isWindows && !cmd.includes('/') && !cmd.includes('\\') && cmd !== 'sh' && cmd !== 'bash' && cmd !== 'node') {
-      cmd = path.join(this.serverPath, cmd);
+    let execCwd = this.serverPath;
+
+    // Intelligently detect the directory of the start script to set as cwd
+    if (cmd.includes('/') || cmd.includes('\\')) {
+      // It's a relative or absolute path (e.g. ./linux/start.sh)
+      const fullCmdPath = path.resolve(this.serverPath, cmd);
+      execCwd = path.dirname(fullCmdPath);
+      cmd = fullCmdPath;
+    } else if (!isWindows && cmd !== 'sh' && cmd !== 'bash' && cmd !== 'node') {
+      // It's just a filename (e.g. omp-server) and we're not passing it to a shell
+      const fullCmdPath = path.join(this.serverPath, cmd);
+      execCwd = path.dirname(fullCmdPath);
+      cmd = fullCmdPath;
     }
 
     this.updateMysqlConfig();
 
     this.process = spawn(cmd, args, {
-      cwd: this.serverPath,
+      cwd: execCwd,
       detached: !isWindows, // detaches process group on linux so we can kill it
       shell: false,
     });
