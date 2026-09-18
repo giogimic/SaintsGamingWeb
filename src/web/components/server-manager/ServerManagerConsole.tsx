@@ -58,19 +58,14 @@ export default function ServerManagerConsole({ isDrawerMode = false, onManageFil
 
   // Server Log Polling
   useEffect(() => {
-    if (activeTab !== 'log') return;
-    
-    const fetchLog = async () => {
-      const res = await readServerFile('server_log.txt');
-      if (res.success && res.content !== undefined) {
-        // Keep only the last ~200 lines to prevent massive DOM lag
-        const lines = res.content.split('\n');
     let interval: NodeJS.Timeout;
     if (activeTab === 'log') {
       const fetchLog = async () => {
         const res = await readServerFile('server_log.txt');
         if (res.success) {
-          setServerLogContent(res.content || 'File is empty.');
+          const lines = (res.content || 'File is empty.').split('\n');
+          const lastLines = lines.slice(-200).join('\n');
+          setServerLogContent(lastLines);
         } else {
           setServerLogContent(`Could not read server_log.txt: ${res.error}`);
         }
