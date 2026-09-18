@@ -5,9 +5,9 @@ import { prisma } from "@/web/lib/prisma";
 import { MessengerProvider } from "@/web/components/messenger/messenger-provider";
 import { MessengerPopup } from "@/web/components/messenger/messenger-popup";
 import { AmbientBackground } from "@/web/components/shared/ambient-background";
-import { UcpNavigation } from "@/web/components/ucp/ucp-navigation";
+
 import { RealtimeProvider } from "@/web/components/realtime/RealtimeProvider";
-import { UcpLiveRefresh } from "./ucp/ucp-live-refresh";
+
 
 export default async function UcpLayout({
   children,
@@ -53,7 +53,6 @@ export default async function UcpLayout({
       <AmbientBackground />
       <RealtimeProvider>
         <MessengerProvider>
-          <UcpLiveRefresh />
           <Navbar
             session={session}
             dbPermissionLevel={dbPermissionLevel}
@@ -63,7 +62,7 @@ export default async function UcpLayout({
             gameTitle={gameTitle}
           />
 
-          <UcpNavigation />
+
 
           <main className="flex-1 sg-page-enter bg-background/50">{children}</main>
           <MessengerPopup />

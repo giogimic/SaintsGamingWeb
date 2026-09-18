@@ -14,10 +14,9 @@ export const metadata = {
 };
 
 export default async function DevDashboard() {
-  const [userCount, threadCount, charCount, gameCharCount, questCount, assetCount, mapCount] = await Promise.all([
+  const [userCount, threadCount, gameCharCount, questCount, assetCount, mapCount] = await Promise.all([
     prisma.user.count(),
     prisma.thread.count(),
-    prisma.character.count(),
     prisma.gameCharacter.count(),
     prisma.gameQuest.count(),
     prisma.gameAsset.count(),
