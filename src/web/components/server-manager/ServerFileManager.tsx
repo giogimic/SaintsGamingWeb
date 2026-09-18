@@ -170,6 +170,41 @@ export default function ServerFileManager() {
     setIsProcessing(false);
   };
 
+  const handleSetLaunchScript = async (fileName: string) => {
+    const filePath = currentPath ? `${currentPath}/${fileName}` : fileName;
+    const executableStr = `./${filePath}`;
+    setIsProcessing(true);
+    
+    // Import dynamically to avoid top-level import clutter if we don't need it, or just use the Server Action
+    try {
+      const { setLauncherConfig } = await import('@/../app/(ucp)/server-manager/launcher');
+      const res = await setLauncherConfig(executableStr);
+      if (res.success) {
+        toast.success(`Set ${executableStr} as launch script! Reloading...`);
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        toast.error('Failed to set launch script: ' + res.error);
+      }
+    } catch (err: any) {
+      toast.error('Failed to set launch script');
+    }
+    setIsProcessing(false);
+  };
+
+  const handleCreateFile = async () => {
+    const fileName = prompt("Enter new file name:");
+    if (!fileName) return;
+    const filePath = currentPath ? `${currentPath}/${fileName}` : fileName;
+    const res = await writeServerFile(filePath, "");
+    if (res.success) {
+      toast.success('File created');
+      handleEditFile(fileName);
+      loadFiles(currentPath);
+    } else {
+      toast.error('Failed to create file: ' + res.error);
+    }
+  };
+
   const handleUploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -403,6 +438,11 @@ export default function ServerFileManager() {
                     </td>
                     <td className="px-4 py-2 text-right">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {!file.isDirectory && (file.name.endsWith('.sh') || file.name.endsWith('.exe') || file.name.includes('samp03svr') || file.name.includes('omp-server') || file.name.includes('announce')) && (
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-purple-400 hover:bg-purple-400/20" onClick={() => handleSetLaunchScript(file.name)} title="Set as Launch Script">
+                            <Rocket className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
                         {!file.isDirectory && file.name.endsWith('.sql') && (
                           <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-400 hover:bg-emerald-400/20" onClick={() => handleExecuteSqlFile(file.name)} title="Execute SQL File">
                             <Database className="w-3.5 h-3.5" />
