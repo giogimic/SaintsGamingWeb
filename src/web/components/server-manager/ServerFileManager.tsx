@@ -190,19 +190,6 @@ export default function ServerFileManager() {
     setIsProcessing(false);
   };
 
-  const handleCreateFile = async () => {
-    const fileName = prompt("Enter new file name:");
-    if (!fileName) return;
-    const filePath = currentPath ? `${currentPath}/${fileName}` : fileName;
-    const res = await writeServerFile(filePath, "");
-    if (res.success) {
-      toast.success('File created');
-      handleEditFile(fileName);
-      loadFiles(currentPath);
-    } else {
-      toast.error('Failed to create file: ' + res.error);
-    }
-  };
 
   const handleUploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
