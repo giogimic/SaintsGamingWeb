@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
-  downloadAndExtractServer, getDeployKey, syncGitDeploy, getGitRemoteUrl,
+  downloadAndExtractServer, installLatestOMP, getDeployKey, syncGitDeploy, getGitRemoteUrl,
   listServerFiles, readServerFile, writeServerFile, deleteServerItem, renameServerItem, uploadServerFile,
   executeSqlFile, executeSqlFolder, unzipServerArchive
 } from '@/../app/(ucp)/server-manager/actions';
@@ -63,6 +63,25 @@ export default function ServerFileManager() {
       toast.error('Failed to load files: ' + res.error);
     }
     setIsLoadingFiles(false);
+  };
+
+  const handleInstallLatestOMP = async () => {
+    setIsProcessing(true);
+    addLog('Initiating open.mp (OMP) latest installation...');
+    try {
+      const res = await installLatestOMP();
+      if (res.success) {
+        addLog('Installation successful! You can now start the server.');
+        toast.success('open.mp installed successfully!');
+        loadFiles(currentPath);
+      } else {
+        addLog(`Error: ${res.error}`);
+        toast.error('Failed to install open.mp');
+      }
+    } catch (e: any) {
+      addLog(`Exception: ${e.message}`);
+    }
+    setIsProcessing(false);
   };
 
   const handleGitDeploy = async () => {
@@ -335,7 +354,23 @@ export default function ServerFileManager() {
       <div className="p-4 space-y-6 flex-1 overflow-auto">
         
         {/* Quick Setups & Archive */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="bg-black/40 border-border/40 p-4 flex flex-col justify-between space-y-3">
+            <div>
+              <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-2 mb-1">
+                <Rocket className="w-4 h-4" /> Quick Setup
+              </h3>
+              <p className="text-xs text-muted-foreground">Downloads the latest compatible Windows/Linux open.mp binaries directly from GitHub.</p>
+            </div>
+            <Button 
+              onClick={handleInstallLatestOMP} 
+              disabled={isProcessing}
+              className="bg-primary text-black hover:bg-primary/80 font-bold w-full"
+            >
+              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Install open.mp'}
+            </Button>
+          </Card>
+
           <Card className="bg-black/40 border-border/40 p-4 flex flex-col justify-between space-y-3">
             <div>
               <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-2 mb-1">

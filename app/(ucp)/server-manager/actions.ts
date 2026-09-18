@@ -168,6 +168,50 @@ export async function downloadAndExtractServer(archiveUrl: string) {
   }
 }
 
+/**
+ * Automatically fetches the latest open.mp server release for the correct platform,
+ * downloads it, and extracts it to /samp-server.
+ */
+export async function installLatestOMP() {
+  await requireAdmin();
+  const manager = SampManager.getInstance();
+  
+  if (manager.isRunning()) {
+    return { success: false, error: 'Cannot install open.mp while the server is running.' };
+  }
+
+  try {
+    // 1. Fetch latest release from open.mp GitHub
+    const res = await fetch('https://api.github.com/repos/openmultiplayer/open.mp/releases/latest', {
+      headers: { 'User-Agent': 'Saints-Web-UCP' }
+    });
+    const data = await res.json();
+    
+    if (!data || !data.assets) {
+      return { success: false, error: 'Could not fetch latest release from GitHub.' };
+    }
+
+    // 2. Determine platform and find correct asset
+    const isWindows = process.platform === 'win32';
+    const osKeyword = isWindows ? 'windows' : 'linux';
+    
+    const asset = data.assets.find((a: any) => 
+      a.name.toLowerCase().includes(osKeyword) && 
+      !a.name.toLowerCase().includes('scripting') // Ignore scripting packages
+    );
+
+    if (!asset) {
+      return { success: false, error: `No compatible ${osKeyword} binary found in the latest release.` };
+    }
+
+    // 3. Download and extract using our helper
+    return await downloadAndExtractServer(asset.browser_download_url);
+
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 // ─── GIT DEPLOYMENT ACTIONS ────────────────────────────────────────────────
 
 export async function getDeployKey() {
