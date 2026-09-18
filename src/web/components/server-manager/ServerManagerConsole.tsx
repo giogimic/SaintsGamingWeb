@@ -20,6 +20,7 @@ export default function ServerManagerConsole({ isDrawerMode = false, onManageFil
   const [isProcessing, setIsProcessing] = useState(false);
   const [launcherExe, setLauncherExe] = useState('samp-server.exe');
   const [isSavingExe, setIsSavingExe] = useState(false);
+  const [availableLaunchers, setAvailableLaunchers] = useState<string[]>([]);
   
   // Tab State
   const [activeTab, setActiveTab] = useState<'rcon' | 'log'>('rcon');
@@ -32,7 +33,17 @@ export default function ServerManagerConsole({ isDrawerMode = false, onManageFil
     // Initial status fetch
     getSampStatus().then(res => setIsRunning(res.isRunning));
     import('@/../app/(ucp)/server-manager/launcher').then(m => m.getLauncherConfig()).then(res => {
-      if (res.success && res.executable) setLauncherExe(res.executable);
+      if (res.success && res.executable) setLauncherExe(res.executable.replace('./', ''));
+    });
+    
+    // Fetch available start scripts
+    import('@/../app/(ucp)/server-manager/actions').then(m => m.listServerFiles('')).then(res => {
+      if (res.success && res.files) {
+        const launchers = res.files
+          .filter((f: any) => !f.isDirectory && (f.name.endsWith('.sh') || f.name.endsWith('.exe') || f.name.includes('samp03svr') || f.name.includes('omp-server') || f.name.includes('announce')))
+          .map((f: any) => f.name);
+        setAvailableLaunchers(launchers);
+      }
     });
   }, []);
 
@@ -97,7 +108,8 @@ export default function ServerManagerConsole({ isDrawerMode = false, onManageFil
     setIsSavingExe(true);
     try {
       const m = await import('@/../app/(ucp)/server-manager/launcher');
-      const res = await m.setLauncherConfig(launcherExe);
+      const executableStr = launcherExe.startsWith('./') ? launcherExe : `./${launcherExe}`;
+      const res = await m.setLauncherConfig(executableStr);
       if (res.success) {
         toast.success('Start script saved');
       } else {
@@ -178,14 +190,19 @@ export default function ServerManagerConsole({ isDrawerMode = false, onManageFil
           <CardContent className={`space-y-3 ${isDrawerMode ? 'flex gap-2 space-y-0 px-4 pb-4' : ''}`}>
             
             <div className="flex gap-2 items-center pb-2">
-              <input 
-                type="text" 
-                placeholder="samp-server.exe" 
+              <select
                 value={launcherExe}
                 onChange={(e) => setLauncherExe(e.target.value)}
-                className="w-full bg-black/50 border border-border/50 rounded px-2 py-1.5 text-xs font-mono"
+                className="w-full bg-black/50 border border-border/50 rounded px-2 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none focus:ring-1 focus:ring-primary"
                 title="Start Script / Executable Name"
-              />
+              >
+                {!availableLaunchers.includes(launcherExe) && (
+                  <option value={launcherExe}>{launcherExe}</option>
+                )}
+                {availableLaunchers.map(launcher => (
+                  <option key={launcher} value={launcher}>{launcher}</option>
+                ))}
+              </select>
               <Button size="sm" variant="secondary" onClick={handleSaveExe} disabled={isSavingExe} className="px-2 h-[28px]">
                 <Save className="w-3 h-3" />
               </Button>
