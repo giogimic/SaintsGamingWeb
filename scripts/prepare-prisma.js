@@ -101,7 +101,9 @@ if (isSqlite) {
     'voxelData',
     'publishedData',
     'gates',
-    'proceduralConfig'
+    'gatesData',
+    'proceduralConfig',
+    'manifestData'
   ];
   for (const col of longTextCols) {
     const regex = new RegExp(`^([ \\t]*${col}[ \\t]+String\\??[ \\t]*(?:@[^\\n\\/]+)*)([ \\t]*(?:\\/\\/.*)?)?$`, 'gm');
