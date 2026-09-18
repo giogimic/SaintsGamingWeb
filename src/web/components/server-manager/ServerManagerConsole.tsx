@@ -31,7 +31,7 @@ export default function ServerManagerConsole({ isDrawerMode = false, onManageFil
   useEffect(() => {
     // Initial status fetch
     getSampStatus().then(res => setIsRunning(res.isRunning));
-    import('./launcher').then(m => m.getLauncherConfig()).then(res => {
+    import('@/../app/(ucp)/server-manager/launcher').then(m => m.getLauncherConfig()).then(res => {
       if (res.success && res.executable) setLauncherExe(res.executable);
     });
   }, []);
@@ -96,7 +96,7 @@ export default function ServerManagerConsole({ isDrawerMode = false, onManageFil
   const handleSaveExe = async () => {
     setIsSavingExe(true);
     try {
-      const m = await import('./launcher');
+      const m = await import('@/../app/(ucp)/server-manager/launcher');
       const res = await m.setLauncherConfig(launcherExe);
       if (res.success) {
         toast.success('Start script saved');
