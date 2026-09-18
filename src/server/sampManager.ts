@@ -40,8 +40,13 @@ export class SampManager extends EventEmitter {
 
     // Handle space-separated commands nicely if shell is false
     const parts = executable.split(' ');
-    const cmd = parts[0];
+    let cmd = parts[0];
     const args = parts.slice(1);
+
+    // If cmd is not a global binary and doesn't have a path separator, resolve it to serverPath
+    if (!isWindows && !cmd.includes('/') && !cmd.includes('\\') && cmd !== 'sh' && cmd !== 'bash' && cmd !== 'node') {
+      cmd = path.join(this.serverPath, cmd);
+    }
 
     this.process = spawn(cmd, args, {
       cwd: this.serverPath,
