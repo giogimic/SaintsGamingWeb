@@ -119,8 +119,20 @@ export async function POST(req: Request) {
     const dbHeroesCount = await prisma.starterHero.count({
       where: { isActive: true }
     });
-    if ((!Array.isArray(body?.characters) || body.characters.length === 0) && dbHeroesCount === 0) {
-      return NextResponse.json({ error: 'At least one playable character (Archetype) is required' }, { status: 400 });
+    
+    if (!Array.isArray(body.characters)) {
+      body.characters = [];
+    }
+    
+    if (body.characters.length === 0 && dbHeroesCount === 0) {
+      body.characters.push({
+        slug: 'hero_adventurer',
+        name: 'Adventurer',
+        classId: 'WARRIOR',
+        spriteKey: 'evil-berserker-bloodaxe-male',
+        flavor: 'A brave adventurer setting foot in a new world.',
+        tag: 'Primary'
+      });
     }
 
     // 3. Build Starting 3D Voxel World Document
