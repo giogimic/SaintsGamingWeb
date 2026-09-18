@@ -12,7 +12,7 @@
 export type EventPriority = "CRITICAL" | "NORMAL" | "EPHEMERAL";
 
 // ─── Event Sources ────────────────────────────────────────────────────────────
-export type EventSource = "web" | "mmo" | "discord" | "fivem" | "system";
+export type EventSource = "web" | "mmo" | "discord" | "samp" | "system";
 
 // ─── Standardized Envelope ────────────────────────────────────────────────────
 // Every event emitted through the platform MUST conform to this shape.

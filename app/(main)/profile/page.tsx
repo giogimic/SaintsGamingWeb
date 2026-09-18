@@ -10,7 +10,7 @@ import Image from "next/image";
 import { prisma } from "@/web/lib/prisma";
 import { SteamWishlist } from "@/web/components/profile/steam-wishlist";
 import { ProfileMediaSettings } from "./profile-media-settings";
-import { AvatarSettings } from "@/app/(ucp)/ucp/settings/avatar-settings";
+import { AvatarSettings } from "@/web/components/profile/avatar-settings";
 import { ProfileSettingsLauncher } from "@/web/components/profile/profile-settings-launcher";
 
 export default async function ProfilePage() {
@@ -51,28 +51,6 @@ export default async function ProfilePage() {
     })
   ]);
 
-  const ucpSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_stats_on_profile" } });
-  const showUcpStats = ucpSetting?.value !== "false"; // Default true
-
-  let totalCash = 0;
-  let totalBank = 0;
-  let totalItems = 0;
-  let characters = [];
-
-  if (showUcpStats) {
-    characters = await prisma.character.findMany({
-      where: { userId: user.id },
-      include: {
-        inventory: true,
-      }
-    });
-
-    for (const char of characters) {
-      totalCash += char.cash;
-      totalBank += char.bank;
-      totalItems += char.inventory.reduce((sum, item) => sum + item.quantity, 0);
-    }
-  }
 
   return (
     <div className="w-full px-4 md:px-8 py-8 xl:px-12">
@@ -152,12 +130,7 @@ export default async function ProfilePage() {
                 <BarChart className="mr-2 h-4 w-4" />
                 Engagement Hub
               </Link>
-              {showUcpStats && (
-                <Link href="/ucp" className={buttonVariants({ variant: "secondary", size: "sm", className: "w-full justify-start mt-1" })}>
-                  <Gamepad2 className="mr-2 h-4 w-4" />
-                  Server Manager
-                </Link>
-              )}
+
               <form
                 action={async () => {
                   "use server";
@@ -263,53 +236,6 @@ export default async function ProfilePage() {
               )}
             </CardContent>
           </Card>
-
-          {showUcpStats && (
-            <Card className="bg-card/50 border-border/50 mt-6 overflow-hidden relative">
-              <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-                <Gamepad2 className="w-32 h-32" />
-              </div>
-              <CardHeader>
-                <CardTitle>FiveM Character Overview</CardTitle>
-                <CardDescription>Aggregated statistics across your roleplay characters</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {characters.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-muted/50 p-4 rounded-lg flex flex-col items-center justify-center text-center">
-                      <User className="h-5 w-5 mb-2 text-primary" />
-                      <span className="text-2xl font-bold">{characters.length}</span>
-                      <span className="text-xs text-muted-foreground uppercase tracking-wider">Characters</span>
-                    </div>
-                    <div className="bg-muted/50 p-4 rounded-lg flex flex-col items-center justify-center text-center">
-                      <Coins className="h-5 w-5 mb-2 text-emerald-500" />
-                      <span className="text-2xl font-bold">${totalCash.toLocaleString()}</span>
-                      <span className="text-xs text-muted-foreground uppercase tracking-wider">Total Cash</span>
-                    </div>
-                    <div className="bg-muted/50 p-4 rounded-lg flex flex-col items-center justify-center text-center">
-                      <Landmark className="h-5 w-5 mb-2 text-blue-500" />
-                      <span className="text-2xl font-bold">${totalBank.toLocaleString()}</span>
-                      <span className="text-xs text-muted-foreground uppercase tracking-wider">Total Bank</span>
-                    </div>
-                    <div className="bg-muted/50 p-4 rounded-lg flex flex-col items-center justify-center text-center">
-                      <Backpack className="h-5 w-5 mb-2 text-amber-500" />
-                      <span className="text-2xl font-bold">{totalItems.toLocaleString()}</span>
-                      <span className="text-xs text-muted-foreground uppercase tracking-wider">Items Owned</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-6 bg-muted/30 rounded-lg">
-                    <Gamepad2 className="h-8 w-8 text-muted-foreground mx-auto mb-3 opacity-50" />
-                    <h3 className="text-sm font-medium">No characters found</h3>
-                    <p className="text-xs text-muted-foreground mt-1 mb-4">You haven&apos;t created any FiveM roleplay characters yet.</p>
-                    <Link href="/ucp/register" className={buttonVariants({ variant: "outline", size: "sm" })}>
-                      Create Character
-                    </Link>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
 
           <Card className="bg-card/50 border-border/50 mt-6">
             <CardHeader>
