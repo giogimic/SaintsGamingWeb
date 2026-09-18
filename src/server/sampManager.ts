@@ -36,12 +36,17 @@ export class SampManager extends EventEmitter {
 
     const isWindows = process.platform === 'win32';
     const defaultExecutable = isWindows ? 'samp-server.exe' : './samp03svr';
-    const executable = customExecutable && customExecutable.trim() !== '' ? customExecutable : defaultExecutable;
+    let executable = customExecutable && customExecutable.trim() !== '' ? customExecutable : defaultExecutable;
 
-    this.process = spawn(executable, [], {
+    // Handle space-separated commands nicely if shell is false
+    const parts = executable.split(' ');
+    const cmd = parts[0];
+    const args = parts.slice(1);
+
+    this.process = spawn(cmd, args, {
       cwd: this.serverPath,
-      detached: false,
-      shell: true,
+      detached: !isWindows, // detaches process group on linux so we can kill it
+      shell: false,
     });
 
     this.process.stdout?.on('data', (data) => {
@@ -57,12 +62,28 @@ export class SampManager extends EventEmitter {
       this.emit('stopped', code);
     });
 
+    this.process.on('error', (err) => {
+      this.emit('error_log', `Failed to start process: ${err.message}`);
+      this.process = null;
+      this.emit('stopped', -1);
+    });
+
     this.emit('started');
   }
 
   public stopServer(): void {
-    if (this.process) {
-      this.process.kill('SIGTERM');
+    if (this.process && this.process.pid) {
+      try {
+        const isWindows = process.platform === 'win32';
+        if (!isWindows) {
+          // Kill the entire process group
+          process.kill(-this.process.pid, 'SIGTERM');
+        } else {
+          this.process.kill('SIGTERM');
+        }
+      } catch (e) {
+        console.error("Failed to kill server process:", e);
+      }
       this.process = null;
       this.emit('stopped', 0);
     }
