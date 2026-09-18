@@ -284,6 +284,12 @@ export async function writeServerFile(filePath: string, content: string) {
     const dir = path.dirname(targetFile);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(targetFile, content, 'utf-8');
+    
+    // Auto-chmod scripts and binaries on Linux
+    if (process.platform !== 'win32' && (targetFile.endsWith('.sh') || targetFile.includes('samp03svr') || targetFile.includes('omp-server') || targetFile.includes('announce'))) {
+      try { fs.chmodSync(targetFile, 0o755); } catch (e) {}
+    }
+    
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -422,6 +428,11 @@ export async function unzipServerArchive(filePath: string) {
             const dirname = path.dirname(fullPath);
             if (!fs.existsSync(dirname)) fs.mkdirSync(dirname, { recursive: true });
             fs.writeFileSync(fullPath, content);
+            
+            // Fix permissions for Linux executables
+            if (process.platform !== 'win32' && (relativePath.endsWith('.sh') || relativePath.includes('samp03svr') || relativePath.includes('announce') || relativePath.includes('omp-server'))) {
+              try { fs.chmodSync(fullPath, 0o755); } catch (e) {}
+            }
           }
         }
       }

@@ -41,6 +41,7 @@ export class SampManager extends EventEmitter {
     this.process = spawn(executable, [], {
       cwd: this.serverPath,
       detached: false,
+      shell: true,
     });
 
     this.process.stdout?.on('data', (data) => {
