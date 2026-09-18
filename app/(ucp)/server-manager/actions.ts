@@ -224,8 +224,9 @@ export async function getDeployKey() {
 
   try {
     if (!fs.existsSync(keyPath)) {
-      // Generate ed25519 key without passphrase
-      await execAsync(`ssh-keygen -t ed25519 -f "${keyPath}" -N "" -C "saints-web-manager"`);
+      // Generate ed25519 key without passphrase. Fix for Windows command escaping
+      const emptyPassphrase = process.platform === 'win32' ? '\'""\'' : '""';
+      await execAsync(`ssh-keygen -t ed25519 -f "${keyPath}" -N ${emptyPassphrase} -C "saints-web-manager"`);
     }
     
     if (fs.existsSync(pubPath)) {
