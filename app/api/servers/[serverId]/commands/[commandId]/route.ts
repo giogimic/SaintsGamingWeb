@@ -27,8 +27,8 @@ export async function PUT(
 
     const command = await prisma.serverCommand.update({
       where: {
-        id: params.commandId,
-        serverId: params.serverId, // double check it belongs to this server
+        id: commandId,
+        serverId: serverId, // double check it belongs to this server
       },
       data: {
         status,

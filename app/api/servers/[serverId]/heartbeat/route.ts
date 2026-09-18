@@ -21,7 +21,7 @@ export async function POST(
     const { agentVersion } = body;
 
     const server = await prisma.gameServer.update({
-      where: { id: params.serverId },
+      where: { id: serverId },
       data: {
         lastSeen: new Date(),
         agentVersion: agentVersion || auth.server!.agentVersion,

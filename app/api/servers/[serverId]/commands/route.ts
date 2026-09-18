@@ -23,7 +23,7 @@ export async function GET(
     // Get pending commands
     const pendingCommands = await prisma.serverCommand.findMany({
       where: {
-        serverId: params.serverId,
+        serverId: serverId,
         status: "PENDING",
       },
       orderBy: { createdAt: "asc" },
@@ -74,7 +74,7 @@ export async function POST(
 
     const command = await prisma.serverCommand.create({
       data: {
-        serverId: params.serverId,
+        serverId: serverId,
         type,
         payload: JSON.stringify(payload),
         status: "PENDING",
