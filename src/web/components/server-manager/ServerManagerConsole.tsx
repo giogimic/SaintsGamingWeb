@@ -18,6 +18,8 @@ export default function ServerManagerConsole({ isDrawerMode = false, onManageFil
   const [logs, setLogs] = useState<{ type: string; message: string }[]>([]);
   const [rconInput, setRconInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [launcherExe, setLauncherExe] = useState('samp-server.exe');
+  const [isSavingExe, setIsSavingExe] = useState(false);
   
   // Tab State
   const [activeTab, setActiveTab] = useState<'rcon' | 'log'>('rcon');
@@ -29,6 +31,9 @@ export default function ServerManagerConsole({ isDrawerMode = false, onManageFil
   useEffect(() => {
     // Initial status fetch
     getSampStatus().then(res => setIsRunning(res.isRunning));
+    import('./launcher').then(m => m.getLauncherConfig()).then(res => {
+      if (res.success && res.executable) setLauncherExe(res.executable);
+    });
   }, []);
 
   // RCON Live SSE Stream
