@@ -2,7 +2,8 @@ FROM node:22-bookworm-slim
 
 # Install OS dependencies required for Prisma/native packages and healthchecks.
 # Debian/glibc avoids Alpine musl native-module mismatches in Ubuntu-like deployments.
-RUN apt-get update \
+RUN dpkg --add-architecture i386 \
+    && apt-get update \
     && apt-get install -y --no-install-recommends \
       ca-certificates \
       openssl \
@@ -12,6 +13,9 @@ RUN apt-get update \
       wget \
       git \
       openssh-client \
+      libc6:i386 \
+      libncurses5:i386 \
+      libstdc++6:i386 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
