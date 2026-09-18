@@ -22,17 +22,55 @@ export async function GET(
   }
 
   try {
-    const release = await prisma.worldRelease.findUnique({
+    const project = await prisma.worldProject.findFirst({
       where: {
-        projectId_version: {
-          projectId: slug,
-          version,
-        },
+        OR: [{ id: slug }, { slug: slug }]
+      },
+      select: { id: true, activeVersion: true }
+    });
+
+    const candidateProjectIds = [slug];
+    if (project && project.id !== slug) {
+      candidateProjectIds.push(project.id);
+    }
+
+    // Try finding the exact release by version for the project
+    let release = await prisma.worldRelease.findFirst({
+      where: {
+        projectId: { in: candidateProjectIds },
+        version,
       },
       include: {
         mapSnapshots: true,
       }
     });
+
+    // If version is "latest" or not found, try finding active LIVE release
+    if (!release) {
+      release = await prisma.worldRelease.findFirst({
+        where: {
+          projectId: { in: candidateProjectIds },
+          status: "LIVE",
+        },
+        include: {
+          mapSnapshots: true,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    }
+
+    // Fallback: any published release for this project
+    if (!release) {
+      release = await prisma.worldRelease.findFirst({
+        where: {
+          projectId: { in: candidateProjectIds },
+        },
+        include: {
+          mapSnapshots: true,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    }
 
     if (!release) {
       return NextResponse.json({ ok: false, error: "Release not found" }, { status: 404 });

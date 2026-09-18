@@ -48,6 +48,13 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📜 Changelog
 
+### v2.1.905 - Complete Studio-to-Game Release Pipeline Alignment
+- **Go MMO Release Sync On Setup:** Dispatched `MapSyncService.enqueueProjectRelease()` during `initialize-game` setup so Go MMO automatically ingests the newly compiled release manifest, registering maps, gates, NPCs, and canonical world spawn.
+- **Project ID & Slug Decoupling:** Upgraded `/api/internal/projects/[slug]`, `/api/internal/worlds/[mapId]/[version]/manifest`, and `/api/internal/worlds/[mapId]/[version]/regions/[regionX]/[regionZ]` to resolve projects by either ID (CUID) or slug (`saints`), preventing 404s when Go MMO pulls published releases and voxel artifacts.
+- **Atlas Map ID Delimiter Hardening:** Fixed region manifest parsing in `/api/internal/worlds/.../manifest` so maps with underscores (e.g. `STARTING_MEADOW`) correctly extract region coordinates instead of returning an empty array.
+- **Auto-Promotion on Studio Publish:** Configured `createWorldRelease` in `world-release.ts` to automatically call `deployWorldRelease`, promoting newly compiled releases to `LIVE` status.
+- **Go MMO SQL Query Robustness:** Updated `ActiveReleaseVersion` and `ParseRelease` in `the-lobby/internal/world/release.go` with `LEFT JOIN WorldProject` and `ORDER BY createdAt DESC` fallback to ensure seamless boot and shard map loading.
+
 ### v2.1.904 - World Release Fallback Resolution, Studio Hook Fix & Linux SAMP Server Management
 - **Spawn Map & World Release Fallback:** Resolved "Cannot create character: No spawn map configured" and false setup-pending prompts. Upgraded `getActiveWorldRelease` to resolve project ID or slug across `LIVE`, `PUBLISHED`, or latest database releases, and added robust fallback chains in `CharacterCreateScene`, `character-creator`, and `The Lobby` so players are never blocked if a release compilation is pending.
 - **Studio React Hook Fix (#310):** Hoisted conditional `useEditorStore` hooks to the top level of `StudioEditorShell.tsx`, resolving React error #310 during Author session initialization on `/studio`.

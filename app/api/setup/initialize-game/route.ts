@@ -178,8 +178,13 @@ export async function POST(req: Request) {
     });
     if (activeProject?.activeVersion) {
       const activeVersionStr = `v1.0.${activeProject.activeVersion}`;
-      const release = await prisma.worldRelease.findUnique({
-        where: { projectId_version: { projectId: 'saints', version: activeVersionStr } }
+      const release = await prisma.worldRelease.findFirst({
+        where: {
+          OR: [
+            { projectId: activeProject.id, version: activeVersionStr },
+            { projectId: 'saints', version: activeVersionStr },
+          ],
+        },
       });
       if (release) {
         try {
@@ -528,22 +533,38 @@ export async function POST(req: Request) {
     const { compileWorldRelease } = await import('@/app/actions/studio/compiler/WorldCompiler');
     const { releaseInfo } = await compileWorldRelease('saints', `${gameName} - Initial Release`, 'Auto-generated during initial setup.');
     
+    const targetProjectId = (await prisma.worldProject.findUnique({ where: { slug: 'saints' } }))?.id || 'saints';
+
     // Demote old LIVE releases
     await prisma.worldRelease.updateMany({
-      where: { projectId: 'saints', status: 'LIVE' },
-      data: { status: 'PUBLISHED' }
+      where: {
+        OR: [
+          { projectId: targetProjectId },
+          { projectId: 'saints' },
+        ],
+        status: 'LIVE',
+      },
+      data: { status: 'PUBLISHED' },
     });
     // Set to LIVE
     await prisma.worldRelease.update({
       where: { id: releaseInfo.releaseId },
-      data: { status: 'LIVE' }
+      data: { status: 'LIVE' },
     });
     logger.log({ stageName: '09. Compile WorldRelease', stageCode: 'compile_release', status: 'COMPLETED', message: 'Compiled monolithic release', metadata: { releaseId: releaseInfo.releaseId } });
 
     logger.log({ stageName: '11. Deploy Release', stageCode: 'deploy_release', status: 'COMPLETED', message: 'Deployment successful', metadata: { worldMapId: mapId } });
 
     logger.log({ stageName: '12. Notify Go Runtime', stageCode: 'notify_go', status: 'RUNNING', message: 'Notifying Go MMO' });
-    // 6. Notify Go MMO realtime server of new starting voxel map
+    // 6a. Notify Go MMO of new project release (Loads maps, gates, NPCs, and canonical spawn)
+    await MapSyncService.enqueueProjectRelease({
+      projectId: targetProjectId,
+      version: releaseInfo.version,
+      userId: 'system',
+      eagerPush: true,
+    });
+
+    // 6b. Notify Go MMO realtime server of new starting voxel map
     await MapSyncService.enqueue({
       mapId,
       version: resolvedVersion,

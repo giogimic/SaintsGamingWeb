@@ -11,11 +11,14 @@ export async function createWorldRelease(projectId: string, title?: string, desc
   try {
     const { releaseInfo } = await compileWorldRelease(projectId, title, description);
     
+    // Automatically promote newly created release to LIVE (Blue-Green promotion)
+    await deployWorldRelease(releaseInfo.releaseId);
+
     return { 
       success: true, 
       releaseId: releaseInfo.releaseId, 
       version: releaseInfo.version,
-      deployStatus: 'pending' // Handled asynchronously by MapSyncService
+      deployStatus: 'deployed'
     };
   } catch (err: any) {
     console.error('[createWorldRelease]', err);

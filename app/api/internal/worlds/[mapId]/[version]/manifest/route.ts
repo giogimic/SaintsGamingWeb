@@ -45,31 +45,58 @@ export async function GET(
       artifactChecksum: r.artifact?.checksum || "",
     })).filter(r => r.artifactChecksum !== "");
   } else {
+    const project = await prisma.worldProject.findFirst({
+      where: { OR: [{ id: "saints" }, { slug: "saints" }] },
+      select: { id: true, activeVersion: true }
+    });
+    const candidateProjectIds = ["saints"];
+    if (project?.id && project.id !== "saints") {
+      candidateProjectIds.push(project.id);
+    }
+
     if (version === "published") {
-      const project = await prisma.worldProject.findUnique({
-        where: { id: "saints" },
-        select: { activeVersion: true }
-      });
-      if (!project || project.activeVersion <= 0) {
-        return NextResponse.json({ error: "Project has no active version" }, { status: 404 });
-      }
-      resolvedVersionInt = project.activeVersion;
+      resolvedVersionInt = project?.activeVersion || 0;
     } else {
       resolvedVersionInt = parseInt(version, 10);
       if (isNaN(resolvedVersionInt)) {
-        return NextResponse.json({ error: "Invalid version" }, { status: 400 });
+        resolvedVersionInt = project?.activeVersion || 0;
       }
     }
 
-    const worldRelease = await prisma.worldRelease.findFirst({
+    let worldRelease = await prisma.worldRelease.findFirst({
       where: {
-        projectId: "saints",
+        projectId: { in: candidateProjectIds },
         version: `v1.0.${resolvedVersionInt}`
-      }
+      },
+      orderBy: { createdAt: "desc" }
     });
 
     if (!worldRelease) {
+      worldRelease = await prisma.worldRelease.findFirst({
+        where: {
+          projectId: { in: candidateProjectIds },
+          status: "LIVE"
+        },
+        orderBy: { createdAt: "desc" }
+      });
+    }
+
+    if (!worldRelease) {
+      worldRelease = await prisma.worldRelease.findFirst({
+        where: {
+          projectId: { in: candidateProjectIds }
+        },
+        orderBy: { createdAt: "desc" }
+      });
+    }
+
+    if (!worldRelease) {
       return NextResponse.json({ error: "Version not found" }, { status: 404 });
+    }
+
+    if (resolvedVersionInt === 0 && worldRelease.version) {
+      const match = worldRelease.version.match(/v?1\.0\.(\d+)/);
+      if (match) resolvedVersionInt = parseInt(match[1], 10);
     }
     
     const manifestData = JSON.parse(worldRelease.manifestData || "{}");
@@ -79,12 +106,17 @@ export async function GET(
     for (const [key, checksum] of Object.entries(atlas)) {
       if (key.startsWith(prefix)) {
         const parts = key.split('_');
-        if (parts.length === 3) {
-          manifestRegions.push({
-            regionX: parseInt(parts[1], 10),
-            regionZ: parseInt(parts[2], 10),
-            artifactChecksum: checksum as string,
-          });
+        if (parts.length >= 3) {
+          const rx = parseInt(parts[parts.length - 2], 10);
+          const rz = parseInt(parts[parts.length - 1], 10);
+          const mId = parts.slice(0, parts.length - 2).join('_');
+          if (mId === mapId && !isNaN(rx) && !isNaN(rz)) {
+            manifestRegions.push({
+              regionX: rx,
+              regionZ: rz,
+              artifactChecksum: checksum as string,
+            });
+          }
         }
       }
     }

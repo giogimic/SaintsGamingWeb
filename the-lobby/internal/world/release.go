@@ -72,7 +72,24 @@ type WorldConnection struct {
 // ActiveReleaseVersion returns the version string for the most recently created project release, or "" if none.
 func (m *Manager) ActiveReleaseVersion(db *sql.DB, projectID string) (string, error) {
 	var version string
-	err := db.QueryRow("SELECT version FROM WorldRelease WHERE projectId = ? AND status = 'LIVE' LIMIT 1", projectID).Scan(&version)
+	// Check for LIVE release matching project ID or slug
+	err := db.QueryRow(`
+		SELECT wr.version FROM WorldRelease wr
+		LEFT JOIN WorldProject wp ON wr.projectId = wp.id
+		WHERE (wr.projectId = ? OR wp.slug = ? OR wp.id = ?) AND wr.status = 'LIVE'
+		ORDER BY wr.createdAt DESC LIMIT 1
+	`, projectID, projectID, projectID).Scan(&version)
+	if err == nil && version != "" {
+		return version, nil
+	}
+
+	// Fallback to most recent release if none explicitly marked LIVE
+	err = db.QueryRow(`
+		SELECT wr.version FROM WorldRelease wr
+		LEFT JOIN WorldProject wp ON wr.projectId = wp.id
+		WHERE (wr.projectId = ? OR wp.slug = ? OR wp.id = ?)
+		ORDER BY wr.createdAt DESC LIMIT 1
+	`, projectID, projectID, projectID).Scan(&version)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", nil
@@ -87,7 +104,12 @@ func (m *Manager) ParseRelease(db *sql.DB, projectID string, version string) (*R
 	log.Printf("[WorldManager] Loading release project=%s version=%s", projectID, version)
 	
 	var manifestStr string
-	err := db.QueryRow("SELECT manifestData FROM WorldRelease WHERE projectId = ? AND version = ?", projectID, version).Scan(&manifestStr)
+	err := db.QueryRow(`
+		SELECT wr.manifestData FROM WorldRelease wr
+		LEFT JOIN WorldProject wp ON wr.projectId = wp.id
+		WHERE (wr.projectId = ? OR wp.slug = ? OR wp.id = ?) AND wr.version = ?
+		LIMIT 1
+	`, projectID, projectID, projectID, version).Scan(&manifestStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch release manifest from db: %w", err)
 	}
@@ -101,8 +123,13 @@ func (m *Manager) ParseRelease(db *sql.DB, projectID string, version string) (*R
 	rows, err := db.Query(`
 		SELECT mapId, regionClass, proceduralConfig, gridData, gatesData, encountersData, entitiesData, freeformLayersData 
 		FROM WorldMapSnapshot 
-		WHERE releaseId = (SELECT id FROM WorldRelease WHERE projectId = ? AND version = ?)
-	`, projectID, version)
+		WHERE releaseId = (
+			SELECT wr.id FROM WorldRelease wr
+			LEFT JOIN WorldProject wp ON wr.projectId = wp.id
+			WHERE (wr.projectId = ? OR wp.slug = ? OR wp.id = ?) AND wr.version = ?
+			LIMIT 1
+		)
+	`, projectID, projectID, projectID, version)
 	
 	if err == nil {
 		defer rows.Close()

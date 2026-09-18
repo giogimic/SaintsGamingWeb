@@ -11,8 +11,19 @@ import { compileWorldRelease } from "./compiler/WorldCompiler";
  */
 export async function listPublishSnapshots(gameId: string = "saints", profileId: string = "default") {
   try {
+    const project = await prisma.worldProject.findFirst({
+      where: {
+        OR: [{ id: gameId }, { slug: gameId }]
+      },
+      select: { id: true }
+    });
+    const candidateIds = [gameId];
+    if (project?.id && project.id !== gameId) {
+      candidateIds.push(project.id);
+    }
+
     const rows = await prisma.worldRelease.findMany({
-      where: { projectId: gameId },
+      where: { projectId: { in: candidateIds } },
       orderBy: { createdAt: "desc" },
       take: 50,
     });
