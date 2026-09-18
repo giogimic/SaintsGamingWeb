@@ -1,18 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/web/lib/auth";
+import { auth } from "@/auth";
 import { requireServerApiKey } from "@/web/lib/server-auth";
 
-export async function GET(req: NextRequest, { params }: { params: { serverId: string } }) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ serverId: string }> }
+) {
   try {
+    const { serverId } = await params;
+
     // Authenticate Agent via API Key
-    const auth = await requireServerApiKey(req);
-    if (auth.error) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    const agentAuth = await requireServerApiKey(req);
+    if (agentAuth.error) {
+      return NextResponse.json({ error: agentAuth.error }, { status: agentAuth.status });
     }
 
-    if (auth.server.id !== params.serverId) {
+    if (agentAuth.server.id !== serverId) {
       return NextResponse.json({ error: "API Key does not match server ID" }, { status: 403 });
     }
 
@@ -40,10 +44,14 @@ export async function GET(req: NextRequest, { params }: { params: { serverId: st
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { serverId: string } }) {
+export async function POST(
+  req: NextRequest, 
+  { params }: { params: Promise<{ serverId: string }> }
+) {
   try {
+    const { serverId } = await params;
     // Authenticate Admin
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

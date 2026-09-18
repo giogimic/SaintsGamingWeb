@@ -4,16 +4,17 @@ import { requireServerApiKey } from "@/web/lib/server-auth";
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { serverId: string; commandId: string } }
+  { params }: { params: Promise<{ serverId: string; commandId: string }> }
 ) {
   try {
+    const { serverId, commandId } = await params;
     // Authenticate Agent via API Key
-    const auth = await requireServerApiKey(req);
-    if (auth.error) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    const agentAuth = await requireServerApiKey(req);
+    if (agentAuth.error) {
+      return NextResponse.json({ error: agentAuth.error }, { status: agentAuth.status });
     }
 
-    if (auth.server.id !== params.serverId) {
+    if (agentAuth.server.id !== serverId) {
       return NextResponse.json({ error: "API Key does not match server ID" }, { status: 403 });
     }
 
