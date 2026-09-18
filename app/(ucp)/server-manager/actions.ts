@@ -282,8 +282,6 @@ export async function syncGitDeploy(repoUrl: string) {
       // Initialize, set remote, and pull instead of clone to handle non-empty dirs (like the deploy key itself)
       await execAsync(`git init`, { cwd: targetDir, env });
       await execAsync(`git remote add origin "${repoUrl}"`, { cwd: targetDir, env });
-      await execAsync(`git fetch origin`, { cwd: targetDir, env });
-      await execAsync(`git reset --hard origin/main`, { cwd: targetDir, env });
     } else {
       // Check if remote matches, if not update it
       const { stdout: remoteUrl } = await execAsync(`git config --get remote.origin.url`, { cwd: targetDir, env }).catch(() => ({ stdout: '' }));
@@ -292,11 +290,22 @@ export async function syncGitDeploy(repoUrl: string) {
           await execAsync(`git remote add origin "${repoUrl}"`, { cwd: targetDir, env });
         });
       }
-      
-      // Pull latest
-      await execAsync(`git fetch origin`, { cwd: targetDir, env });
-      await execAsync(`git reset --hard origin/main`, { cwd: targetDir, env });
     }
+
+    // Try to ensure the private key has correct permissions on linux
+    if (!isWindows) {
+      try { await execAsync(`chmod 600 "${keyPath}"`); } catch (e) {}
+    }
+
+    // Fetch all branches
+    await execAsync(`git fetch origin`, { cwd: targetDir, env });
+    
+    // Determine the default branch dynamically (main or master)
+    const { stdout: remoteHead } = await execAsync(`git remote show origin | grep "HEAD branch" | cut -d ":" -f 2`, { cwd: targetDir, env }).catch(() => ({ stdout: ' main' }));
+    const defaultBranch = remoteHead.trim() || 'main';
+
+    // Reset to the remote's default branch
+    await execAsync(`git reset --hard origin/${defaultBranch}`, { cwd: targetDir, env });
 
     // Auto-chmod scripts and binaries on Linux
     if (!isWindows) {
@@ -308,7 +317,8 @@ export async function syncGitDeploy(repoUrl: string) {
 
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    const errorMsg = error.stderr || error.message || 'Unknown error';
+    return { success: false, error: errorMsg };
   }
 }
 
