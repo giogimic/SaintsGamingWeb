@@ -42,7 +42,10 @@ export function UcpDraggableWindow({
         style={{ width: defaultWidth, minHeight: defaultHeight }}
         className="pointer-events-auto absolute"
       >
-        <Card className="sg-glass border-border/50 shadow-2xl flex flex-col overflow-hidden bg-background/95 backdrop-blur-3xl w-full h-full">
+        <Card 
+          className="sg-glass border-border/50 shadow-2xl flex flex-col bg-background/95 backdrop-blur-3xl w-full h-full relative" 
+          style={{ resize: 'both', overflow: 'hidden', minWidth: '400px', minHeight: '300px' }}
+        >
           
           {/* Window Header (Draggable Area) */}
           <div 

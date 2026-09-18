@@ -52,7 +52,7 @@ export default function ServerManagerPage() {
       />
 
       {fileManagerOpen && (
-        <UcpDraggableWindow title="Server File Manager" onClose={() => setFileManagerOpen(false)}>
+        <UcpDraggableWindow title="Server File Manager" onClose={() => setFileManagerOpen(false)} defaultWidth={1000} defaultHeight={600}>
           <ServerFileManager />
         </UcpDraggableWindow>
       )}

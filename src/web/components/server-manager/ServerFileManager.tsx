@@ -354,8 +354,8 @@ export default function ServerFileManager() {
       <div className="p-4 space-y-6 flex-1 overflow-auto">
         
         {/* Quick Setups & Archive */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-black/40 border-border/40 p-4 flex flex-col justify-between space-y-3">
+        <div className="flex flex-wrap gap-4">
+          <Card className="flex-1 min-w-[280px] bg-black/40 border-border/40 p-4 flex flex-col justify-between space-y-3">
             <div>
               <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-2 mb-1">
                 <Rocket className="w-4 h-4" /> Quick Setup
@@ -371,7 +371,7 @@ export default function ServerFileManager() {
             </Button>
           </Card>
 
-          <Card className="bg-black/40 border-border/40 p-4 flex flex-col justify-between space-y-3">
+          <Card className="flex-[2] min-w-[320px] bg-black/40 border-border/40 p-4 flex flex-col justify-between space-y-3">
             <div>
               <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-2 mb-1">
                 <Rocket className="w-4 h-4" /> Git Deployment
@@ -402,7 +402,7 @@ export default function ServerFileManager() {
             </div>
           </Card>
 
-          <Card className="bg-black/40 border-border/40 p-4 flex flex-col justify-between space-y-3">
+          <Card className="flex-1 min-w-[280px] bg-black/40 border-border/40 p-4 flex flex-col justify-between space-y-3">
             <div>
               <h3 className="text-sm font-bold text-cyan-400 flex items-center gap-2 mb-1">
                 <DownloadCloud className="w-4 h-4" /> Custom Archive
