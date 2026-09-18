@@ -10,7 +10,9 @@ import { useMessenger } from "@/web/components/messenger/messenger-provider";
 import { useGameStore } from "@/web/components/the-lobby/store";
 import { soundSynth } from "@/engine/sound-synth";
 import { getUserStatusStats, UserStatusStats } from "@/app/actions/user/user";
-
+import ServerManagerConsole from "@/web/components/server-manager/ServerManagerConsole";
+import { UcpDraggableWindow } from "@/web/components/ucp/UcpDraggableWindow";
+import ServerFileManager from "@/web/components/server-manager/ServerFileManager";
 
 import {
   Activity,
@@ -117,6 +119,8 @@ export function GlobalBottomBar({
   // Dev & Mod Drawer state
   const [devConsoleOpen, setDevConsoleOpen] = useState(false);
   const [modDrawerOpen, setModDrawerOpen] = useState(false);
+  const [sampDrawerOpen, setSampDrawerOpen] = useState(false);
+  const [sampFileManagerOpen, setSampFileManagerOpen] = useState(false);
   const [activeDevTab, setActiveDevTab] = useState<"logs" | "react" | "perf">("logs");
   const [errorLogs, setErrorLogs] = useState<ClientErrorLog[]>([]);
 
@@ -437,9 +441,15 @@ export function GlobalBottomBar({
               <ActionTooltip label="SA-MP Server Console">
                 <button
                   onClick={() => {
-                    window.location.href = '/server-manager';
+                    setSampDrawerOpen((prev) => !prev);
+                    setDevConsoleOpen(false);
+                    setModDrawerOpen(false);
                   }}
-                  className="flex items-center gap-1 px-2 py-1 rounded-lg border border-emerald-500/30 text-emerald-400/80 hover:text-emerald-300 hover:border-emerald-400 bg-black/40 text-[11px] font-bold transition-all cursor-pointer"
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
+                    sampDrawerOpen
+                      ? "bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                      : "border-emerald-500/30 text-emerald-400/80 hover:text-emerald-300 hover:border-emerald-400 bg-black/40"
+                  }`}
                 >
                   <Server className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">SA-MP</span>
@@ -454,6 +464,7 @@ export function GlobalBottomBar({
                   onClick={() => {
                     setDevConsoleOpen((prev) => !prev);
                     setModDrawerOpen(false);
+                    setSampDrawerOpen(false);
                   }}
                   className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
                     devConsoleOpen
@@ -740,6 +751,56 @@ export function GlobalBottomBar({
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── SA-MP SERVER MANAGER POP-OUT DRAWER ─────────────────────── */}
+      {sampDrawerOpen && isDevOrAdmin && (
+        <div className="fixed bottom-11 right-2 sm:right-6 w-full max-w-2xl bg-card/95 backdrop-blur-2xl border border-emerald-500/40 rounded-t-xl shadow-2xl z-[300] flex flex-col font-mono text-xs overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/50 bg-black/40">
+            <div className="flex items-center gap-2">
+              <Server className="w-4 h-4 text-emerald-400" />
+              <span className="font-bold text-foreground">SA-MP Server Console</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                onClick={() => window.location.href = '/server-manager'}
+                title="Open Full Page"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                onClick={() => setSampDrawerOpen(false)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="p-4 overflow-hidden flex flex-col">
+            <ServerManagerConsole 
+              isDrawerMode={true} 
+              onManageFilesClick={() => setSampFileManagerOpen(true)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── DRAGGABLE WINDOWS PORTAL ─────────────────────── */}
+      {sampFileManagerOpen && isDevOrAdmin && (
+        <UcpDraggableWindow 
+          title="Server File Manager" 
+          onClose={() => setSampFileManagerOpen(false)}
+          defaultWidth={600}
+          defaultHeight={450}
+        >
+          <ServerFileManager />
+        </UcpDraggableWindow>
       )}
     </>
   );

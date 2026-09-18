@@ -1,3 +1,11 @@
+## 2.1.889
+- **SA-MP Server File Manager & Console Drawer:**
+  - Integrated the Server Manager Console into a slide-up drawer on the UCP Global Bottom Bar, allowing server administration without interrupting browsing.
+  - Implemented a generalized `UcpDraggableWindow` component for native, OS-like floating windows within the web interface.
+  - Added a "Manage Files" application that launches as a draggable window over the UCP.
+  - Added a 1-click installer for `open.mp`. The backend dynamically fetches the latest release from the GitHub API and natively extracts it into the server directory.
+  - Added a custom archive extractor that allows providing a direct `.zip` or `.tar.gz` URL to remotely deploy server packages.
+
 ## 2.1.888
 - **SA-MP Server Manager Integration:**
   - Added a new `samp-server` directory structure to allow dropping in San Andreas Multiplayer server files.
