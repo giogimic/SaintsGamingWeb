@@ -224,6 +224,16 @@ func deployPublishedProjectRelease(db *sql.DB, wm *world.Manager, reg *registry.
 			Version      string `json:"version"`
 			ManifestData string `json:"manifestData"`
 			PublishedBy  string `json:"publishedBy"`
+			Snapshots    []struct {
+				MapID              string  `json:"mapId"`
+				RegionClass        *string `json:"regionClass"`
+				ProceduralConfig   *string `json:"proceduralConfig"`
+				GridData           *string `json:"gridData"`
+				GatesData          *string `json:"gatesData"`
+				EncountersData     *string `json:"encountersData"`
+				EntitiesData       *string `json:"entitiesData"`
+				FreeformLayersData *string `json:"freeformLayersData"`
+			} `json:"snapshots"`
 		} `json:"release"`
 	}
 	
@@ -271,11 +281,12 @@ func deployPublishedProjectRelease(db *sql.DB, wm *world.Manager, reg *registry.
 	// Ensure WorldRelease table exists and insert it
 	_, err = tx.Exec(`
 		CREATE TABLE IF NOT EXISTS WorldRelease (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			projectId TEXT,
 			version TEXT,
 			manifestData TEXT,
 			publishedBy TEXT,
-			PRIMARY KEY (projectId, version)
+			UNIQUE (projectId, version)
 		)
 	`)
 	if err != nil {
@@ -289,6 +300,52 @@ func deployPublishedProjectRelease(db *sql.DB, wm *world.Manager, reg *registry.
 	`, syncResp.Release.ProjectID, syncResp.Release.Version, syncResp.Release.ManifestData, syncResp.Release.PublishedBy)
 	if err != nil {
 		return fmt.Errorf("failed to insert WorldRelease: %w", err)
+	}
+
+	// We need the local SQLite Release ID to associate snapshots
+	var releaseId int64
+	err = tx.QueryRow(`SELECT id FROM WorldRelease WHERE projectId = ? AND version = ?`, syncResp.Release.ProjectID, syncResp.Release.Version).Scan(&releaseId)
+	if err != nil {
+		return fmt.Errorf("failed to get release ID: %w", err)
+	}
+
+	// Ensure WorldMapSnapshot table exists
+	_, err = tx.Exec(`
+		CREATE TABLE IF NOT EXISTS WorldMapSnapshot (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			releaseId INTEGER,
+			mapId TEXT,
+			regionClass TEXT,
+			proceduralConfig TEXT,
+			gridData TEXT,
+			gatesData TEXT,
+			encountersData TEXT,
+			entitiesData TEXT,
+			freeformLayersData TEXT,
+			UNIQUE (releaseId, mapId)
+		)
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create WorldMapSnapshot table: %w", err)
+	}
+
+	// Insert all snapshots
+	for _, snap := range syncResp.Release.Snapshots {
+		_, err = tx.Exec(`
+			INSERT INTO WorldMapSnapshot (releaseId, mapId, regionClass, proceduralConfig, gridData, gatesData, encountersData, entitiesData, freeformLayersData)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			ON CONFLICT(releaseId, mapId) DO UPDATE SET 
+				regionClass=excluded.regionClass,
+				proceduralConfig=excluded.proceduralConfig,
+				gridData=excluded.gridData,
+				gatesData=excluded.gatesData,
+				encountersData=excluded.encountersData,
+				entitiesData=excluded.entitiesData,
+				freeformLayersData=excluded.freeformLayersData
+		`, releaseId, snap.MapID, snap.RegionClass, snap.ProceduralConfig, snap.GridData, snap.GatesData, snap.EncountersData, snap.EntitiesData, snap.FreeformLayersData)
+		if err != nil {
+			return fmt.Errorf("failed to insert snapshot for map %s: %w", snap.MapID, err)
+		}
 	}
 
 	if err := tx.Commit(); err != nil {

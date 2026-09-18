@@ -29,6 +29,9 @@ export async function GET(
           version,
         },
       },
+      include: {
+        snapshots: true,
+      }
     });
 
     if (!release) {
@@ -42,6 +45,7 @@ export async function GET(
         version: release.version,
         manifestData: release.manifestData,
         publishedBy: release.publishedBy,
+        snapshots: release.snapshots,
       },
     });
   } catch (err: any) {
