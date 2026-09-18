@@ -28,8 +28,62 @@ export class SampManager extends EventEmitter {
       throw new Error("Server is already running.");
     }
 
-    if (!fs.existsSync(this.serverPath)) {
-      throw new Error(`Server path does not exist: ${this.serverPath}`);
+    if (!fs.existsSync(this.serverPath) || fs.readdirSync(this.serverPath).length === 0) {
+      const baseZipPath = path.join(process.cwd(), 'samp-server-base.zip');
+      if (fs.existsSync(baseZipPath)) {
+        console.log("Extracting base SA-MP server files...");
+        const JSZip = require('jszip');
+        const zipData = fs.readFileSync(baseZipPath);
+        const zip = await JSZip.loadAsync(zipData);
+        let files = Object.entries(zip.files) as [string, any][];
+        
+        // Detect single wrapper directory (e.g. GitHub downloads or Zips from a folder)
+        const rootSegments = new Set(files.filter(([rel]) => rel.includes('/')).map(([rel]) => rel.split('/')[0]));
+        let prefixToStrip = "";
+        
+        const allPaths = files.map(([rel]) => rel);
+        if (rootSegments.size === 1) {
+          const rootDir = Array.from(rootSegments)[0];
+          const hasFilesOutsideRoot = allPaths.some(p => p !== rootDir && p !== rootDir + '/' && !p.startsWith(rootDir + '/'));
+          if (!hasFilesOutsideRoot) {
+            prefixToStrip = rootDir + '/';
+          }
+        }
+
+        for (const [relativePath, file] of files) {
+          let finalPath = relativePath;
+          if (prefixToStrip && finalPath.startsWith(prefixToStrip)) {
+            finalPath = finalPath.slice(prefixToStrip.length);
+          }
+          if (!finalPath) continue; // Skip the root dir entry itself
+
+          const fullPath = path.join(this.serverPath, finalPath);
+          if (file.dir) {
+            if (!fs.existsSync(fullPath)) fs.mkdirSync(fullPath, { recursive: true });
+          } else {
+            const content = await file.async('nodebuffer');
+            const dirname = path.dirname(fullPath);
+            if (!fs.existsSync(dirname)) fs.mkdirSync(dirname, { recursive: true });
+            fs.writeFileSync(fullPath, content);
+            if (process.platform !== 'win32' && (finalPath.endsWith('.sh') || finalPath.includes('omp-server') || finalPath.includes('samp03svr') || finalPath.includes('announce'))) {
+              try { fs.chmodSync(fullPath, 0o755); } catch (e) {}
+            }
+          }
+        }
+        
+        // Auto-configure the launcher to use the base script
+        const configPath = path.join(this.serverPath, 'launcher.json');
+        if (!fs.existsSync(configPath)) {
+          fs.writeFileSync(configPath, JSON.stringify({ executable: 'sh start.sh' }, null, 2));
+        }
+        
+        // If they didn't provide a custom executable, override it to the newly set start script
+        if (!customExecutable) {
+          customExecutable = 'sh start.sh';
+        }
+      } else {
+        throw new Error(`Server path does not exist and base zip not found: ${this.serverPath}`);
+      }
     }
 
     this.extractRconConfig();
@@ -47,6 +101,8 @@ export class SampManager extends EventEmitter {
     if (!isWindows && !cmd.includes('/') && !cmd.includes('\\') && cmd !== 'sh' && cmd !== 'bash' && cmd !== 'node') {
       cmd = path.join(this.serverPath, cmd);
     }
+
+    this.updateMysqlConfig();
 
     this.process = spawn(cmd, args, {
       cwd: this.serverPath,
@@ -74,6 +130,35 @@ export class SampManager extends EventEmitter {
     });
 
     this.emit('started');
+  }
+
+  private updateMysqlConfig(): void {
+    const cfgPath = path.join(this.serverPath, 'mysql.cfg');
+    if (!fs.existsSync(cfgPath)) return;
+    
+    // Parse DATABASE_URL if it's mysql
+    const dbUrl = process.env.DATABASE_URL || '';
+    if (!dbUrl.startsWith('mysql://')) return;
+    
+    try {
+      const url = new URL(dbUrl);
+      const host = url.hostname;
+      const user = url.username;
+      const pass = url.password;
+      const db = url.pathname.slice(1); // Remove leading slash
+      
+      let cfgContent = fs.readFileSync(cfgPath, 'utf8');
+      
+      if (host) cfgContent = cfgContent.replace(/^HOST=.*$/m, `HOST=${host}`);
+      if (user) cfgContent = cfgContent.replace(/^USER=.*$/m, `USER=${user}`);
+      if (pass !== undefined) cfgContent = cfgContent.replace(/^PASS=.*$/m, `PASS=${pass}`);
+      if (db) cfgContent = cfgContent.replace(/^DB=.*$/m, `DB=${db}`);
+      
+      fs.writeFileSync(cfgPath, cfgContent, 'utf8');
+      console.log("[SampManager] Updated mysql.cfg with DATABASE_URL credentials.");
+    } catch(e: any) {
+      console.error("[SampManager] Failed to update mysql.cfg:", e.message);
+    }
   }
 
   public stopServer(): void {
