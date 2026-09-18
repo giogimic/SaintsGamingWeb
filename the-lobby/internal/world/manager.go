@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/protocol"
@@ -61,6 +62,10 @@ func (m *Manager) DefaultSpawnMap() string {
 	defer m.mu.RUnlock()
 	if m.ActiveRelease != nil && m.ActiveRelease.World.SpawnMap != "" {
 		return m.ActiveRelease.World.SpawnMap
+	}
+	// Fallback to first map definition in memory if active release spawn map was not set
+	for mapID := range m.defs {
+		return mapID
 	}
 	return ""
 }
@@ -162,6 +167,16 @@ func (m *Manager) Gates() *SpiritGateRegistry {
 func (m *Manager) GetDef(baseID string) (*MapDef, error) {
 	m.mu.RLock()
 	d, ok := m.defs[baseID]
+	if !ok {
+		// Case-insensitive fallback
+		for k, v := range m.defs {
+			if strings.EqualFold(k, baseID) {
+				d = v
+				ok = true
+				break
+			}
+		}
+	}
 	m.mu.RUnlock()
 	
 	if ok && d != nil {

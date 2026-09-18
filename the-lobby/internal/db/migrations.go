@@ -63,6 +63,12 @@ func migrate(db *sql.DB) error {
 		}
 		setVersion(db, 6)
 	}
+	if version < 7 {
+		if err := migrateV7(db); err != nil {
+			return err
+		}
+		setVersion(db, 7)
+	}
 
 	// Verify schema explicitly at the end
 	if err := verifySchema(db); err != nil {
@@ -260,6 +266,42 @@ func migrateV6(db *sql.DB) error {
 		return fmt.Errorf("failed to create NextjsSyncOutbox: %w", err)
 	}
 
+	return nil
+}
+
+// migrateV7 ensures WorldRelease and WorldMapSnapshot tables exist on Go boot
+func migrateV7(db *sql.DB) error {
+	log.Println("[DB] Applying migration v7: Ensuring WorldRelease and WorldMapSnapshot tables exist")
+	stmts := []string{
+		`CREATE TABLE IF NOT EXISTS WorldRelease (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			projectId TEXT,
+			version TEXT,
+			manifestData TEXT,
+			publishedBy TEXT,
+			status TEXT DEFAULT 'LIVE',
+			createdAt TEXT DEFAULT (datetime('now')),
+			UNIQUE (projectId, version)
+		)`,
+		`CREATE TABLE IF NOT EXISTS WorldMapSnapshot (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			releaseId INTEGER,
+			mapId TEXT,
+			regionClass TEXT,
+			proceduralConfig TEXT,
+			gridData TEXT,
+			gatesData TEXT,
+			encountersData TEXT,
+			entitiesData TEXT,
+			freeformLayersData TEXT,
+			UNIQUE (releaseId, mapId)
+		)`,
+	}
+	for _, s := range stmts {
+		if _, err := db.Exec(s); err != nil {
+			return fmt.Errorf("migrateV7: %w\nstmt: %s", err, s)
+		}
+	}
 	return nil
 }
 

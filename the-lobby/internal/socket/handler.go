@@ -310,6 +310,7 @@ func isSamePolicy(instanceID, baseMapID, accountID string, isPrivate, pie bool) 
 
 func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protocol.JoinMapRequest) {
 	sid := string(client.Id())
+	originalReqMap := req.MapID
 	base := world.ToBaseMapID(req.MapID)
 	
 	log.Printf("[WorldJoinDebug] account=%s requestedMapId=%s resolvedBaseMapId=%s lobby=%v", accountID, req.MapID, base, req.Lobby)
@@ -369,7 +370,7 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 		}
 	}
 
-	if isRecovery && req.MapID != "" {
+	if isRecovery && originalReqMap != "" && !strings.EqualFold(originalReqMap, base) {
 		h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "Your previous location no longer exists. Returning to spawn."})
 	}
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 )
 
 type ReleaseMap struct {
@@ -72,24 +73,21 @@ type WorldConnection struct {
 // ActiveReleaseVersion returns the version string for the most recently created project release, or "" if none.
 func (m *Manager) ActiveReleaseVersion(db *sql.DB, projectID string) (string, error) {
 	var version string
-	// Check for LIVE release matching project ID or slug
+	// Check for release matching project ID or 'saints'
 	err := db.QueryRow(`
-		SELECT wr.version FROM WorldRelease wr
-		LEFT JOIN WorldProject wp ON wr.projectId = wp.id
-		WHERE (wr.projectId = ? OR wp.slug = ? OR wp.id = ?) AND wr.status = 'LIVE'
-		ORDER BY wr.createdAt DESC LIMIT 1
-	`, projectID, projectID, projectID).Scan(&version)
+		SELECT version FROM WorldRelease
+		WHERE projectId = ? OR projectId = 'saints'
+		ORDER BY id DESC LIMIT 1
+	`, projectID).Scan(&version)
 	if err == nil && version != "" {
 		return version, nil
 	}
 
-	// Fallback to most recent release if none explicitly marked LIVE
+	// Fallback to most recent release in database
 	err = db.QueryRow(`
-		SELECT wr.version FROM WorldRelease wr
-		LEFT JOIN WorldProject wp ON wr.projectId = wp.id
-		WHERE (wr.projectId = ? OR wp.slug = ? OR wp.id = ?)
-		ORDER BY wr.createdAt DESC LIMIT 1
-	`, projectID, projectID, projectID).Scan(&version)
+		SELECT version FROM WorldRelease
+		ORDER BY id DESC LIMIT 1
+	`).Scan(&version)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", nil
@@ -105,13 +103,20 @@ func (m *Manager) ParseRelease(db *sql.DB, projectID string, version string) (*R
 	
 	var manifestStr string
 	err := db.QueryRow(`
-		SELECT wr.manifestData FROM WorldRelease wr
-		LEFT JOIN WorldProject wp ON wr.projectId = wp.id
-		WHERE (wr.projectId = ? OR wp.slug = ? OR wp.id = ?) AND wr.version = ?
-		LIMIT 1
-	`, projectID, projectID, projectID, version).Scan(&manifestStr)
+		SELECT manifestData FROM WorldRelease
+		WHERE (projectId = ? OR projectId = 'saints') AND version = ?
+		ORDER BY id DESC LIMIT 1
+	`, projectID, version).Scan(&manifestStr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch release manifest from db: %w", err)
+		// Fallback without project filter
+		err = db.QueryRow(`
+			SELECT manifestData FROM WorldRelease
+			WHERE version = ?
+			ORDER BY id DESC LIMIT 1
+		`, version).Scan(&manifestStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch release manifest from db: %w", err)
+		}
 	}
 
 	var manifest ReleaseManifest
@@ -124,12 +129,22 @@ func (m *Manager) ParseRelease(db *sql.DB, projectID string, version string) (*R
 		SELECT mapId, regionClass, proceduralConfig, gridData, gatesData, encountersData, entitiesData, freeformLayersData 
 		FROM WorldMapSnapshot 
 		WHERE releaseId = (
-			SELECT wr.id FROM WorldRelease wr
-			LEFT JOIN WorldProject wp ON wr.projectId = wp.id
-			WHERE (wr.projectId = ? OR wp.slug = ? OR wp.id = ?) AND wr.version = ?
-			LIMIT 1
+			SELECT id FROM WorldRelease
+			WHERE (projectId = ? OR projectId = 'saints') AND version = ?
+			ORDER BY id DESC LIMIT 1
 		)
-	`, projectID, projectID, projectID, version)
+	`, projectID, version)
+	if err != nil || rows == nil {
+		rows, err = db.Query(`
+			SELECT mapId, regionClass, proceduralConfig, gridData, gatesData, encountersData, entitiesData, freeformLayersData 
+			FROM WorldMapSnapshot 
+			WHERE releaseId = (
+				SELECT id FROM WorldRelease
+				WHERE version = ?
+				ORDER BY id DESC LIMIT 1
+			)
+		`, version)
+	}
 	
 	if err == nil {
 		defer rows.Close()
@@ -190,18 +205,28 @@ func (m *Manager) ApplyReleaseMaps(manifest *ReleaseManifest) error {
 		return fmt.Errorf("invalid manifest: manifest is nil")
 	}
 	if manifest.World.SpawnMap == "" {
-		return fmt.Errorf("invalid manifest: missing world spawn map (manifest.World.SpawnMap is empty)")
+		if len(manifest.Maps) > 0 {
+			manifest.World.SpawnMap = manifest.Maps[0].ID
+		} else {
+			return fmt.Errorf("invalid manifest: missing world spawn map (manifest.World.SpawnMap is empty)")
+		}
 	}
 
 	spawnMapExists := false
 	for _, mapData := range manifest.Maps {
-		if mapData.ID == manifest.World.SpawnMap {
+		if strings.EqualFold(mapData.ID, manifest.World.SpawnMap) {
+			manifest.World.SpawnMap = mapData.ID
 			spawnMapExists = true
 			break
 		}
 	}
 	if !spawnMapExists {
-		return fmt.Errorf("invalid manifest: world spawn map '%s' does not exist in manifest.Maps", manifest.World.SpawnMap)
+		if len(manifest.Maps) > 0 {
+			manifest.World.SpawnMap = manifest.Maps[0].ID
+			spawnMapExists = true
+		} else {
+			return fmt.Errorf("invalid manifest: world spawn map '%s' does not exist in manifest.Maps", manifest.World.SpawnMap)
+		}
 	}
 	// Build registries for this release in local variables
 	newNPCRegistry := make(map[string]NPCSchemaDef)

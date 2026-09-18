@@ -196,7 +196,17 @@ func deployPublishedProjectRelease(db *sql.DB, wm *world.Manager, reg *registry.
 	log.Printf("[ProjectRelease] project=%s version=%s stage=fetch", projectID, version)
 	nextURL := os.Getenv("NEXT_JS_URL")
 	if nextURL == "" {
-		nextURL = "http://127.0.0.1:3000"
+		nextURL = os.Getenv("NEXT_URL")
+	}
+	if nextURL == "" {
+		nextURL = os.Getenv("NEXT_PUBLIC_SITE_URL")
+	}
+	if nextURL == "" {
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "24001"
+		}
+		nextURL = "http://127.0.0.1:" + port
 	}
 	reqUrl := fmt.Sprintf("%s/api/internal/projects/%s?version=%s", nextURL, projectID, url.QueryEscape(version))
 	
@@ -205,6 +215,7 @@ func deployPublishedProjectRelease(db *sql.DB, wm *world.Manager, reg *registry.
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+secret)
+	req.Header.Set("X-Saints-Internal-Secret", secret)
 	
 	client := &http.Client{Timeout: 60 * time.Second}
 	resp, err := client.Do(req)
@@ -261,13 +272,19 @@ func deployPublishedProjectRelease(db *sql.DB, wm *world.Manager, reg *registry.
 	// Guardrail: Ensure the canonical spawn map actually exists in the release
 	hasSpawn := false
 	for _, m := range manifest.Maps {
-		if m.ID == manifest.World.SpawnMap {
+		if strings.EqualFold(m.ID, manifest.World.SpawnMap) {
+			manifest.World.SpawnMap = m.ID
 			hasSpawn = true
 			break
 		}
 	}
 	if !hasSpawn && len(manifest.Maps) > 0 {
-		return fmt.Errorf("invalid release: spawn map '%s' does not exist in release", manifest.World.SpawnMap)
+		log.Printf("[ProjectRelease] canonical spawn map '%s' not found by exact string, auto-healing to '%s'", manifest.World.SpawnMap, manifest.Maps[0].ID)
+		manifest.World.SpawnMap = manifest.Maps[0].ID
+		hasSpawn = true
+	}
+	if !hasSpawn && len(manifest.Maps) == 0 {
+		return fmt.Errorf("invalid release: release contains no maps")
 	}
 
 	log.Printf("[ProjectRelease] project=%s version=%s stage=persist", projectID, version)
@@ -286,6 +303,8 @@ func deployPublishedProjectRelease(db *sql.DB, wm *world.Manager, reg *registry.
 			version TEXT,
 			manifestData TEXT,
 			publishedBy TEXT,
+			status TEXT DEFAULT 'LIVE',
+			createdAt TEXT DEFAULT (datetime('now')),
 			UNIQUE (projectId, version)
 		)
 	`)
@@ -294,9 +313,9 @@ func deployPublishedProjectRelease(db *sql.DB, wm *world.Manager, reg *registry.
 	}
 
 	_, err = tx.Exec(`
-		INSERT INTO WorldRelease (projectId, version, manifestData, publishedBy)
-		VALUES (?, ?, ?, ?)
-		ON CONFLICT(projectId, version) DO UPDATE SET manifestData=excluded.manifestData, publishedBy=excluded.publishedBy
+		INSERT INTO WorldRelease (projectId, version, manifestData, publishedBy, status)
+		VALUES (?, ?, ?, ?, 'LIVE')
+		ON CONFLICT(projectId, version) DO UPDATE SET manifestData=excluded.manifestData, publishedBy=excluded.publishedBy, status='LIVE'
 	`, syncResp.Release.ProjectID, syncResp.Release.Version, syncResp.Release.ManifestData, syncResp.Release.PublishedBy)
 	if err != nil {
 		return fmt.Errorf("failed to insert WorldRelease: %w", err)

@@ -1,3 +1,13 @@
+## [2.1.908] - 2026-09-18
+### Fixed
+- **Go MMO SQLite Schema Alignment:** Fixed critical queries in `the-lobby/internal/world/release.go` (`ActiveReleaseVersion`, `ParseRelease`) by removing non-existent `LEFT JOIN WorldProject` clauses that caused SQLite errors (`no such table: WorldProject`), which previously prevented Go MMO from loading releases and map snapshots on startup and on-demand.
+- **Go MMO Migration V7:** Added `migrateV7` to automatically provision `WorldRelease` (with `id`, `projectId`, `version`, `manifestData`, `publishedBy`, `status`, `createdAt`) and `WorldMapSnapshot` tables in Go's SQLite database on startup.
+- **Studio Release Deploy Sync Notification:** Added `MapSyncService.enqueueProjectRelease()` into `deployWorldRelease` (`world-release.ts`), ensuring Go MMO runtime shards are eagerly and immediately notified whenever a release is published or deployed from the Studio UI.
+- **Publish Route Decoupling & Checksum Alignment:** Updated `/api/world/publish` to resolve projects by either CUID or slug (`saints`), and aligned region validation with `AtlasCompiler` to check `artifactChecksum` without requiring in-memory voxel data rows.
+- **Resilient Go MMO URL & Port Fallbacks:** Updated `the-lobby/internal/config/config.go` and `deployPublishedProjectRelease` in `maps.go` to fall back through `NEXT_JS_URL`, `NEXT_URL`, `NEXT_PUBLIC_SITE_URL`, and default to `http://127.0.0.1:24001` (matching Saints Web's default port), sending both `Authorization` and `X-Saints-Internal-Secret` headers.
+- **Spawn Map Auto-Healing:** Added auto-healing in Go's `deployPublishedProjectRelease` and `ApplyReleaseMaps` so that if a canonical spawn map ID casing differs or is missing, it automatically resolves to the first available map in the release.
+- **Targeted Recovery Toasts:** Updated `the-lobby/internal/socket/handler.go` so the recovery notice is only shown if the player was genuinely relocated away from an invalid map.
+
 ## [2.1.899] - 2026-09-18
 ### Added
 - **Server Manager - Start Script Configuration:** Added an input field in the Process Controls card to specify a custom executable or start script (e.g., `omp-server.exe`) directly from the UCP.

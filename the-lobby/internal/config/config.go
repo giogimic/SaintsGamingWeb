@@ -84,7 +84,7 @@ func Load() Config {
 		CORSOrigin:    getenv("GO_MMO_CORS_ORIGIN", "*"),
 		PublicBaseURL: getenv("GO_MMO_PUBLIC_URL", "http://127.0.0.1:24011"),
 		InternalRpcSecret: getenv("INTERNAL_RPC_SECRET", authSecret),
-		NextJsUrl:     getenv("NEXT_JS_URL", "http://127.0.0.1:3000"),
+		NextJsUrl:     getenv("NEXT_JS_URL", getenv("NEXT_URL", getenv("NEXT_PUBLIC_SITE_URL", "http://127.0.0.1:24001"))),
 	}
 }
 

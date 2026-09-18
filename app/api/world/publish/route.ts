@@ -25,7 +25,15 @@ export async function POST(request: NextRequest) {
     const description = typeof body.description === 'string' ? body.description.trim() : 'Published release';
     const projectId = typeof body.projectId === 'string' ? body.projectId.trim() : 'saints';
 
-    const project = await prisma.worldProject.findUnique({ where: { slug: projectId }, include: { maps: true } });
+    const project = await prisma.worldProject.findFirst({
+      where: {
+        OR: [
+          { slug: projectId },
+          { id: projectId },
+        ],
+      },
+      include: { maps: true },
+    });
     
     if (!project) {
       return NextResponse.json({ error: `Project not found: ${projectId}` }, { status: 404 });
@@ -40,7 +48,7 @@ export async function POST(request: NextRequest) {
         if (r.status !== 'COMPLETED') {
           return NextResponse.json({ error: `Map ${map.id} Region ${r.coordinates.regionX},${r.coordinates.regionZ} is not COMPLETED (status: ${r.status})` }, { status: 400 });
         }
-        if (!r.checksum || !r.voxelData) {
+        if (!r.checksum) {
           return NextResponse.json({ error: `Map ${map.id} Region ${r.coordinates.regionX},${r.coordinates.regionZ} is missing its artifact` }, { status: 400 });
         }
       }

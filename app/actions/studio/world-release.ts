@@ -45,6 +45,19 @@ export async function deployWorldRelease(releaseId: string) {
       })
     ]);
 
+    // Notify Go MMO runtime shards of newly deployed LIVE release
+    try {
+      const { MapSyncService } = await import('@/server/mapSyncService');
+      await MapSyncService.enqueueProjectRelease({
+        projectId: release.projectId,
+        version: release.version,
+        userId: 'system',
+        eagerPush: true,
+      });
+    } catch (syncErr) {
+      console.warn('[deployWorldRelease] MapSyncService notify failed:', syncErr);
+    }
+
     return { success: true };
   } catch (err: any) {
     console.error('[deployWorldRelease]', err);
