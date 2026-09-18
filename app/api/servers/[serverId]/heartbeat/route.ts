@@ -4,15 +4,16 @@ import { requireServerApiKey } from "@/web/lib/server-auth";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { serverId: string } }
+  { params }: { params: Promise<{ serverId: string }> }
 ) {
   try {
+    const { serverId } = await params;
     const auth = await requireServerApiKey(req);
     if (auth.error) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    if (auth.server.id !== params.serverId) {
+    if (auth.server.id !== serverId) {
       return NextResponse.json({ error: "API Key does not match server ID" }, { status: 403 });
     }
 
