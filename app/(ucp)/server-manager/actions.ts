@@ -310,3 +310,22 @@ export async function renameServerItem(oldPath: string, newPath: string) {
     return { success: false, error: error.message };
   }
 }
+
+export async function uploadServerFile(dirPath: string, formData: FormData) {
+  await requireAdmin();
+  try {
+    const file = formData.get('file') as File;
+    if (!file) return { success: false, error: 'No file provided' };
+    
+    const targetDir = getSafePath(dirPath);
+    if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+    
+    const filePath = path.join(targetDir, file.name);
+    const buffer = Buffer.from(await file.arrayBuffer());
+    fs.writeFileSync(filePath, buffer);
+    
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

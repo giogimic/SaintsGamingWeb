@@ -6,12 +6,12 @@ import { Button } from '@/web/components/ui/button';
 import { Input } from '@/web/components/ui/input';
 import { 
   DownloadCloud, Rocket, FileArchive, Loader2, AlertTriangle, 
-  FileText, Folder, CornerUpLeft, Trash2, Edit2, Save, X, Plus
+  FileText, Folder, CornerUpLeft, Trash2, Edit2, Save, X, Plus, Upload, Type
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
   downloadAndExtractServer, installLatestOMP,
-  listServerFiles, readServerFile, writeServerFile, deleteServerItem, renameServerItem
+  listServerFiles, readServerFile, writeServerFile, deleteServerItem, renameServerItem, uploadServerFile
 } from '@/../app/(ucp)/server-manager/actions';
 
 export default function ServerFileManager() {
@@ -150,6 +150,46 @@ export default function ServerFileManager() {
     }
   };
 
+  const handleRename = async (fileName: string) => {
+    const newName = prompt(`Enter new name for ${fileName}:`, fileName);
+    if (!newName || newName === fileName) return;
+    
+    const oldPath = currentPath ? `${currentPath}/${fileName}` : fileName;
+    const newPath = currentPath ? `${currentPath}/${newName}` : newName;
+    
+    setIsProcessing(true);
+    const res = await renameServerItem(oldPath, newPath);
+    if (res.success) {
+      toast.success('Renamed successfully');
+      loadFiles(currentPath);
+    } else {
+      toast.error('Failed to rename: ' + res.error);
+    }
+    setIsProcessing(false);
+  };
+
+  const handleUploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setIsProcessing(true);
+    const res = await uploadServerFile(currentPath, formData);
+    if (res.success) {
+      toast.success('File uploaded successfully');
+      loadFiles(currentPath);
+    } else {
+      toast.error('Failed to upload file: ' + res.error);
+    }
+    setIsProcessing(false);
+    
+    if (e.target) {
+      e.target.value = '';
+    }
+  };
+
   if (editingFile) {
     return (
       <div className="flex flex-col h-full bg-background/50 p-4 space-y-4">
@@ -232,10 +272,14 @@ export default function ServerFileManager() {
               {currentPath && <span className="truncate">/{currentPath}</span>}
             </div>
             <div className="flex gap-2">
-              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={handleCreateFile}>
+              <label className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-7 px-2">
+                <Upload className="w-4 h-4 mr-1" /> Upload
+                <input type="file" className="hidden" onChange={handleUploadFile} disabled={isProcessing} />
+              </label>
+              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={handleCreateFile} disabled={isProcessing}>
                 <Plus className="w-4 h-4 mr-1" /> New File
               </Button>
-              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => loadFiles(currentPath)} disabled={isLoadingFiles}>
+              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => loadFiles(currentPath)} disabled={isLoadingFiles || isProcessing}>
                 <Loader2 className={`w-4 h-4 ${isLoadingFiles ? 'animate-spin' : ''}`} />
               </Button>
             </div>
@@ -286,6 +330,9 @@ export default function ServerFileManager() {
                             <Edit2 className="w-3.5 h-3.5" />
                           </Button>
                         )}
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-amber-400 hover:bg-amber-400/20" onClick={() => handleRename(file.name)}>
+                          <Type className="w-3.5 h-3.5" />
+                        </Button>
                         <Button size="icon" variant="ghost" className="h-7 w-7 text-rose-400 hover:bg-rose-400/20" onClick={() => handleDelete(file.name)}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
