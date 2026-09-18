@@ -112,7 +112,7 @@ elif [ "$SETUP_ACTION" = "4" ]; then
     echo -e "${RED}${BOLD}[☢️] EXECUTING NUCLEAR REINSTALL...${NC}"
     IS_NUCLEAR_MODE=1
 
-    # Force-stop & purge running containers
+    # Force-stop & purge running Docker containers
     command -v docker &>/dev/null && docker rm -f saints-gaming-web saints-gaming-db saints-lobby 2>/dev/null || true
     command -v docker &>/dev/null && docker rmi -f saints-lobby-img saints-gaming-web 2>/dev/null || true
     command -v docker-compose &>/dev/null && docker-compose down -v 2>/dev/null || true
