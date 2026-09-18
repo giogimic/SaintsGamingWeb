@@ -30,7 +30,7 @@ export async function GET(
         },
       },
       include: {
-        snapshots: true,
+        mapSnapshots: true,
       }
     });
 
