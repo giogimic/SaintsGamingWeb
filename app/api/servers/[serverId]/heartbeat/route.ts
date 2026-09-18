@@ -24,7 +24,7 @@ export async function POST(
       where: { id: params.serverId },
       data: {
         lastSeen: new Date(),
-        agentVersion: agentVersion || auth.server.agentVersion,
+        agentVersion: agentVersion || auth.server!.agentVersion,
       },
     });
 

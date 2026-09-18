@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     // Upsert the player session
     const session = await prisma.sampPlayerSession.findFirst({
-      where: { playerName, serverId: auth.server.id },
+      where: { playerName, serverId: auth.server!.id },
     });
 
     if (session) {
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     } else {
       await prisma.sampPlayerSession.create({
         data: {
-          serverId: auth.server.id,
+          serverId: auth.server!.id,
           playerName,
           score: score ?? 0,
           money: money ?? 0,
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     // Also update server lastSeen
     await prisma.gameServer.update({
-      where: { id: auth.server.id },
+      where: { id: auth.server!.id },
       data: { lastSeen: new Date() },
     });
 
