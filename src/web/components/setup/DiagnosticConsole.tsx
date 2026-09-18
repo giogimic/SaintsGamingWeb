@@ -44,38 +44,47 @@ export function DiagnosticConsole({ events }: { events: DiagnosticEvent[] }) {
         </div>
         
         <div className="space-y-1.5">
-          {ALL_STAGES.map(stage => {
+          {ALL_STAGES.map((stage, index) => {
             const ev = getStageLatestEvent(stage);
             const isPending = !ev;
             const status = ev?.status || 'PENDING';
             
             return (
-              <div key={stage} className={`flex items-center justify-between py-1 px-2 rounded ${
-                status === 'RUNNING' ? 'bg-sky-500/10' : 
-                status === 'FAILED' ? 'bg-red-500/10' : 
-                status === 'SKIPPED' ? 'opacity-50' : ''
-              }`}>
-                <div className="flex items-center gap-2.5">
-                  {status === 'COMPLETED' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
-                  {status === 'RUNNING' && <Loader2 className="w-3.5 h-3.5 text-sky-400 animate-spin" />}
-                  {status === 'FAILED' && <XCircle className="w-3.5 h-3.5 text-red-400" />}
-                  {status === 'SKIPPED' && <SkipForward className="w-3.5 h-3.5 text-slate-500" />}
-                  {status === 'WARNING' && <AlertCircle className="w-3.5 h-3.5 text-amber-400" />}
-                  {status === 'PENDING' && <div className="w-3.5 h-3.5 border border-slate-700 rounded-full" />}
+              <React.Fragment key={stage}>
+                {index === 7 && (
+                  <div className="flex items-center gap-2 px-2 pt-2 mt-2 border-t border-slate-800/50">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                      Final Review & Publish Phase (Click Next to Continue)
+                    </span>
+                  </div>
+                )}
+                <div className={`flex items-center justify-between py-1 px-2 rounded ${
+                  status === 'RUNNING' ? 'bg-sky-500/10' : 
+                  status === 'FAILED' ? 'bg-red-500/10' : 
+                  status === 'SKIPPED' ? 'opacity-50' : ''
+                }`}>
+                  <div className="flex items-center gap-2.5">
+                    {status === 'COMPLETED' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+                    {status === 'RUNNING' && <Loader2 className="w-3.5 h-3.5 text-sky-400 animate-spin" />}
+                    {status === 'FAILED' && <XCircle className="w-3.5 h-3.5 text-red-400" />}
+                    {status === 'SKIPPED' && <SkipForward className="w-3.5 h-3.5 text-slate-500" />}
+                    {status === 'WARNING' && <AlertCircle className="w-3.5 h-3.5 text-amber-400" />}
+                    {status === 'PENDING' && <div className="w-3.5 h-3.5 border border-slate-700 rounded-full" />}
+                    
+                    <span className={`${status === 'FAILED' ? 'text-red-300' : status === 'COMPLETED' ? 'text-slate-200' : status === 'RUNNING' ? 'text-sky-300' : 'text-slate-500'}`}>
+                      {stage}
+                    </span>
+                  </div>
                   
-                  <span className={`${status === 'FAILED' ? 'text-red-300' : status === 'COMPLETED' ? 'text-slate-200' : status === 'RUNNING' ? 'text-sky-300' : 'text-slate-500'}`}>
-                    {stage}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    {ev && status === 'SKIPPED' && <span className="text-[10px] text-slate-500 font-bold">SKIPPED</span>}
+                    {ev && status === 'FAILED' && <span className="text-[10px] text-red-400 font-bold">FAILED</span>}
+                    {ev && ev.durationMs !== undefined && status === 'COMPLETED' && (
+                      <span className="text-[10px] text-slate-400">{ev.durationMs}ms</span>
+                    )}
+                  </div>
                 </div>
-                
-                <div className="flex items-center gap-3">
-                  {ev && status === 'SKIPPED' && <span className="text-[10px] text-slate-500 font-bold">SKIPPED</span>}
-                  {ev && status === 'FAILED' && <span className="text-[10px] text-red-400 font-bold">FAILED</span>}
-                  {ev && ev.durationMs !== undefined && status === 'COMPLETED' && (
-                    <span className="text-[10px] text-slate-400">{ev.durationMs}ms</span>
-                  )}
-                </div>
-              </div>
+              </React.Fragment>
             );
           })}
         </div>

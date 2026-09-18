@@ -93,8 +93,11 @@ export async function downloadAndExtractServer(archiveUrl: string) {
       fs.mkdirSync(targetDir, { recursive: true });
     }
 
-    // Download using curl to stream it safely without massive memory overhead
-    await execAsync(`curl -L -o "${tempFile}" "${archiveUrl}"`);
+    // Download using native fetch to avoid missing curl in docker
+    const res = await fetch(archiveUrl);
+    if (!res.ok) throw new Error(`Failed to download: ${res.statusText}`);
+    const arrayBuffer = await res.arrayBuffer();
+    fs.writeFileSync(tempFile, Buffer.from(arrayBuffer));
 
     // Determine type and extract
     // Modern Windows 10+ and Linux both have 'tar'. Windows also has PowerShell Expand-Archive.

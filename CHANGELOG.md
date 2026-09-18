@@ -1,3 +1,7 @@
+## 2.1.891
+- **SA-MP Server File Manager:** Replaced the curl shell command with Node.js native etch to fix download failures inside minimal Docker container environments that lack curl.
+- **World Setup Wizard:** Fixed a bug where generation would appear to hang at 7% for Fractal terrain by injecting the missing action bar and Next button for the final publish phase.
+- **World Setup Wizard:** Clustered and categorized the diagnostic console output to clearly denote the boundary between initial map generation and the final World Release publication.
 ## 2.1.890
 - **Build Fix:** Fixed relative import path in `ServerFileManager.tsx` which caused Next.js production builds to fail.
 
@@ -6399,6 +6403,7 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
  S t u d i o M e n u B a r . t s x . 
  
  
+
 
 
 

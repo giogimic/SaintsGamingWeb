@@ -136,6 +136,26 @@ export function WorldGenerationStep({
           </div>
         </div>
       )}
+
+      {/* ACTION BAR */}
+      {status === 'READY' && (
+        <div className="flex items-center justify-between pt-6 border-t border-border/40">
+          <button
+            onClick={onBack}
+            className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+          <button
+            onClick={onNext}
+            className="px-6 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-emerald-950 text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+          >
+            Next: Review & Publish
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
