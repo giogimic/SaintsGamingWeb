@@ -4,8 +4,8 @@ import { GameDig } from "gamedig";
 import { coalesceAsync } from "@/shared/lib/coalesce";
 import { rateLimit, getClientIp, createRateLimitResponse } from "@/web/lib/rate-limit";
 
-// Next.js config to cache this endpoint for 60 seconds
-export const revalidate = 60;
+// Dynamic endpoint because it reads request headers for rate limiting
+export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {

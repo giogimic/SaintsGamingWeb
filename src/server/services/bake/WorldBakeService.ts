@@ -24,7 +24,13 @@ export class WorldBakeService {
   private consecutiveWorkerFailures = 0;
 
   constructor() {
-    this.initializePool();
+    // Lazy initialize when actually submitting jobs, not during Next.js build / module evaluation
+  }
+
+  public ensureWorkerPool() {
+    if (this.workerPool.length === 0 && !this.circuitBreakerTripped) {
+      this.initializePool();
+    }
   }
 
   private initializePool() {
@@ -277,6 +283,8 @@ export class WorldBakeService {
     if (this.activeJobs.has(job.jobId)) {
       throw new Error(`Job ${job.jobId} already exists.`);
     }
+
+    this.ensureWorkerPool();
 
     // 1. Setup Job
     job.status = 'RUNNING';

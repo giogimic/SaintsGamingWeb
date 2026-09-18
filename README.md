@@ -48,6 +48,10 @@ Once it's running, just open [http://localhost:3000](http://localhost:3000) in y
 
 ## 📜 Changelog
 
+### v2.1.903 - Optimize Build Pipeline & Route Dynamism
+- **Dynamic Server Usage Fix:** Configured `/api/servers/status` with `export const dynamic = "force-dynamic"` to resolve `DYNAMIC_SERVER_USAGE` errors caused by reading client request headers during static prerendering.
+- **Lazy Bake Worker Pool:** Deferred `WorldBakeService` thread pool initialization to on-demand job submission, preventing premature worker instantiation and critical missing bundle warnings during Next.js static build phases.
+
 ### v2.1.902 - Purge Obsolete Fix/Scratch Scripts & Enforce Git Ignore
 - **Repository Cleanup:** Eradicated all 38 obsolete scratch and fix scripts (`fix*.js`, `fix_db.*`, `patch.js`, `temp.ts`, `app/api/admin/fix-db/route.ts`, broken `scripts/check-*.ts`, and the deprecated `.scripts/` engine extraction directory).
 - **Git Hygiene Protection:** Updated `.gitignore` to prevent any temporary fix/patch scripts from being accidentally tracked or deployed to production servers.
