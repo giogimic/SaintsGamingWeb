@@ -825,7 +825,31 @@ model WorldRelease {
   createdAt   DateTime @default(now())
 
   // Links to the exact Map Versions included in this release
+  mapSnapshots WorldMapSnapshot[]
+
   @@unique([projectId, version])
+}
+
+model WorldMapSnapshot {
+  id                 String        @id @default(cuid())
+  releaseId          String
+  release            WorldRelease  @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+  mapId              String // Original map ID, e.g. "SAINTS_VILLAGE"
+  name               String
+  version            Int
+  mapType            String
+  regionClass        String
+  proceduralConfig   String? // JSON for deterministic procedural biome configuration
+  gridData           String? // JSON 2D Array
+  gatesData          String // JSON
+  encountersData     String        @default("[]") // JSON
+  entitiesData       String        @default("[]") // JSON
+  freeformLayersData String?       @default("[]") // JSON
+
+  createdAt          DateTime      @default(now())
+
+  @@index([releaseId])
+  @@index([mapId])
 }
 
 model WorldMap {

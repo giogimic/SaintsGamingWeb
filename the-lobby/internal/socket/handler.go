@@ -1111,11 +1111,16 @@ func (h *Hub) serveChunk(client *socket.Socket, accountID string, cx, cy, cz int
 			biome = *mapBiome
 		}
 
-		generator := world.NewProceduralVoxelGenerator(biome.Seed)
+		seed := biome.Seed
+		if voxelWorld != nil && voxelWorld.ProceduralSeed != 0 {
+			seed = voxelWorld.ProceduralSeed
+		}
+
+		generator := world.NewProceduralVoxelGenerator(seed)
 		chunk = generator.PopulateChunk(cx, cy, cz)
 
 		placer := &world.FeaturePlacer{}
-		placer.PlaceFeatures(chunk, biome.Seed, biome)
+		placer.PlaceFeatures(chunk, seed, biome)
 
 		if voxelWorld != nil {
 			voxelWorld.SetChunk(cx, cy, cz, chunk)

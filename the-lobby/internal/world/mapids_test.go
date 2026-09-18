@@ -2,7 +2,6 @@ package world_test
 
 import (
 	"testing"
-	"encoding/json"
 
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/world"
 )
@@ -60,22 +59,9 @@ func TestJoinMapLobbyShards(t *testing.T) {
 		}{
 			SpawnMap: "STARTING_MEADOW",
 		},
-		Maps: []struct {
-			ID                 string          `json:"id"`
-			Name               string          `json:"name"`
-			Version            int             `json:"version"`
-			GridData           json.RawMessage `json:"gridData"`
-			GatesData          json.RawMessage `json:"gatesData"`
-			EncountersData     json.RawMessage `json:"encountersData"`
-			EntitiesData       json.RawMessage `json:"entitiesData"`
-			TileLayersData     json.RawMessage `json:"tileLayersData"`
-			FreeformLayersData json.RawMessage `json:"freeformLayersData"`
-			TilesetsData       json.RawMessage `json:"tilesetsData"`
-			MapType            string          `json:"mapType"`
-			SpawnX             float64         `json:"spawnX"`
-			SpawnY             float64         `json:"spawnY"`
-			SpawnZ             float64         `json:"spawnZ"`
-		}{{ID: "STARTING_MEADOW"}},
+		Maps: []world.ReleaseMap{
+			{ID: "STARTING_MEADOW"},
+		},
 	})
 	m.EnsureDemoDef()
 	a, err := m.JoinMap("STARTING_MEADOW", "acc1", false, false)

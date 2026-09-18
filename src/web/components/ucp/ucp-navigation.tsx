@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Car, Landmark, LayoutDashboard, Users } from "lucide-react";
+import { Car, Landmark, LayoutDashboard, Users, Shield, Trophy } from "lucide-react";
 
 export function UcpNavigation() {
   const pathname = usePathname();
@@ -37,6 +37,20 @@ export function UcpNavigation() {
         >
           <Users className="h-4 w-4" />
           The Feed
+        </Link>
+        <Link 
+          href="/ucp/factions" 
+          className={`flex items-center gap-2 text-sm font-medium transition-all hover:text-primary ${pathname?.startsWith("/ucp/factions") ? "text-primary border-b-2 border-primary pb-1 drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]" : "text-muted-foreground"}`}
+        >
+          <Shield className="h-4 w-4" />
+          Factions
+        </Link>
+        <Link 
+          href="/ucp/leaderboards" 
+          className={`flex items-center gap-2 text-sm font-medium transition-all hover:text-primary ${pathname?.startsWith("/ucp/leaderboards") ? "text-primary border-b-2 border-primary pb-1 drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]" : "text-muted-foreground"}`}
+        >
+          <Trophy className="h-4 w-4" />
+          Leaderboards
         </Link>
       </div>
     </div>

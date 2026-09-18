@@ -223,9 +223,14 @@ export function CharacterSelectAdminWindow({
 
   const handlePointerUpHeader = (e: React.PointerEvent) => {
     setIsDragging(false);
-    try {
-      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch {}
+    const target = e.target as HTMLElement;
+    if (target && target.hasPointerCapture(e.pointerId)) {
+      try {
+        target.releasePointerCapture(e.pointerId);
+      } catch (err) {
+        console.warn("Ignored pointer capture release error in AdminWindow:", err);
+      }
+    }
   };
 
   // Toggle Realm Server

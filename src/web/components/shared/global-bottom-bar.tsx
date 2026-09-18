@@ -44,7 +44,8 @@ import {
   Flame,
   MessageSquare,
   Plus,
-  Settings
+  Settings,
+  Server
 } from "lucide-react";
 
 import { Button } from "@/web/components/ui/button";
@@ -427,6 +428,21 @@ export function GlobalBottomBar({
                 >
                   <ShieldAlert className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Mod</span>
+                </button>
+              </ActionTooltip>
+            )}
+
+            {/* SA-MP Server Console Trigger (Admins) */}
+            {isDevOrAdmin && (
+              <ActionTooltip label="SA-MP Server Console">
+                <button
+                  onClick={() => {
+                    window.location.href = '/server-manager';
+                  }}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg border border-emerald-500/30 text-emerald-400/80 hover:text-emerald-300 hover:border-emerald-400 bg-black/40 text-[11px] font-bold transition-all cursor-pointer"
+                >
+                  <Server className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">SA-MP</span>
                 </button>
               </ActionTooltip>
             )}

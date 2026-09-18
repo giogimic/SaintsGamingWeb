@@ -162,7 +162,7 @@ export function GlobalPostComposer() {
     if (isDragging || isResizing) {
       setIsDragging(false);
       setIsResizing(false);
-      if (windowRef.current) {
+      if (windowRef.current && windowRef.current.hasPointerCapture(e.pointerId)) {
         try {
           windowRef.current.releasePointerCapture(e.pointerId);
         } catch {}

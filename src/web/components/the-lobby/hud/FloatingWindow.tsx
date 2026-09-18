@@ -118,7 +118,14 @@ export function FloatingWindow({
   const handlePointerUp = (e: React.PointerEvent) => {
     if (isDragging) {
       setIsDragging(false);
-      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+      const target = e.target as HTMLElement;
+      if (target && target.hasPointerCapture && target.hasPointerCapture(e.pointerId)) {
+        try {
+          target.releasePointerCapture(e.pointerId);
+        } catch (err) {
+          console.warn("Ignored pointer capture release error in FloatingWindow:", err);
+        }
+      }
     }
   };
 

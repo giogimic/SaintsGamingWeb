@@ -47,7 +47,7 @@ export default async function UcpDashboard() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-4xl font-bold flex items-center gap-3">
-            FiveM User Control Panel
+            Saints Gaming User Control Panel
             {dbUser.isFounder && <span title="Founder"><Crown className="w-6 h-6 text-yellow-500" /></span>}
             {dbUser.isVIP && <span title="VIP"><Star className="w-6 h-6 text-purple-500" /></span>}
             {dbUser.isTrusted && <span title="Trusted"><ShieldCheck className="w-6 h-6 text-green-500" /></span>}

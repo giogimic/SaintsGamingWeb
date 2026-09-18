@@ -4,6 +4,7 @@ import { prisma } from "@/web/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { checkAdminPermission } from "../admin/game-admin";
 import { resolveWorldDependencies } from "./world-resolver";
+import { compileWorldRelease } from "./compiler/WorldCompiler";
 
 /**
  * List all historical publish snapshots.
@@ -41,30 +42,44 @@ export async function restoreWorldRelease(snapshotId: string) {
 
     const payload = JSON.parse(snapshot.manifestData);
     const { maps, atlas, gameConfig, characterClasses, actors } = payload;
-    
-    // Wipe Working World records for this project. WorldRegion cascades from WorldMap.
+    // Phase B: Restore Semantics
+    // 1. Auto-Backup Current Working World
+    try {
+      await compileWorldRelease(snapshot.projectId, "Auto-Backup Pre-Restore", "Automated backup created before restoring a previous snapshot.");
+    } catch (e) {
+      console.warn("Failed to create auto-backup before restore", e);
+    }
+
+    const project = await prisma.worldProject.findUnique({ where: { id: snapshot.projectId } });
+    const targetVersion = project?.activeVersion || 1;
+
+    // 2. Wipe Working World records for this project. WorldRegion cascades from WorldMap.
     await prisma.worldMap.deleteMany({
       where: { projectId: snapshot.projectId }
     });
 
-    // Reconstruct Maps EXACTLY as they were
-    if (Array.isArray(maps)) {
-      for (const m of maps) {
-        await prisma.worldMap.create({
-          data: {
-            id: m.id,
-            projectId: snapshot.projectId,
-            name: m.name,
-            gridData: m.gridData || "[]",
-            gatesData: m.gatesData || "[]",
-            encountersData: m.encountersData || "[]",
-            entitiesData: m.entitiesData || "[]",
-            freeformLayersData: m.freeformLayersData || "[]",
-            mapType: m.mapType || "TILE",
-            version: m.version || 1,
-          },
-        });
-      }
+    // 3. Reconstruct Maps EXACTLY as they were from the decoupled snapshots
+    const mapSnapshots = await prisma.worldMapSnapshot.findMany({
+      where: { releaseId: snapshotId }
+    });
+
+    for (const m of mapSnapshots) {
+      await prisma.worldMap.create({
+        data: {
+          id: m.mapId,
+          projectId: snapshot.projectId,
+          name: m.name,
+          gridData: m.gridData || (m.mapType === 'FRACTAL' ? null : "[]"),
+          gatesData: m.gatesData || "[]",
+          encountersData: m.encountersData || "[]",
+          entitiesData: m.entitiesData || "[]",
+          freeformLayersData: m.freeformLayersData || "[]",
+          mapType: m.mapType || "TILE",
+          regionClass: m.regionClass || "authored",
+          proceduralConfig: m.proceduralConfig,
+          version: targetVersion,
+        },
+      });
     }
 
     // Reconstruct Atlas Regions exactly as they were

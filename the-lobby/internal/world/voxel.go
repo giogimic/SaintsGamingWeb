@@ -333,6 +333,7 @@ type VoxelWorld struct {
 	Chunks        map[string]*VoxelChunk
 	RM            *RegionManager
 	ActiveVersion int
+	ProceduralSeed uint32
 }
 
 // ParseVoxelDoc deserializes a JSON voxelDoc into server memory.

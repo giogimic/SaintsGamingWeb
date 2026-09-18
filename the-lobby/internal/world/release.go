@@ -7,6 +7,25 @@ import (
 	"log"
 )
 
+type ReleaseMap struct {
+	ID                 string          `json:"id"`
+	Name               string          `json:"name"`
+	Version            int             `json:"version"`
+	GridData           json.RawMessage `json:"gridData"`
+	GatesData          json.RawMessage `json:"gatesData"`
+	EncountersData     json.RawMessage `json:"encountersData"`
+	EntitiesData       json.RawMessage `json:"entitiesData"`
+	TileLayersData     json.RawMessage `json:"tileLayersData"`
+	FreeformLayersData json.RawMessage `json:"freeformLayersData"`
+	TilesetsData       json.RawMessage `json:"tilesetsData"`
+	MapType            string          `json:"mapType"`
+	RegionClass        string          `json:"regionClass"`
+	ProceduralConfig   json.RawMessage `json:"proceduralConfig"`
+	SpawnX             float64         `json:"spawnX"`
+	SpawnY             float64         `json:"spawnY"`
+	SpawnZ             float64         `json:"spawnZ"`
+}
+
 type ReleaseManifest struct {
 	Version string `json:"version"`
 	World   struct {
@@ -16,22 +35,7 @@ type ReleaseManifest struct {
 		SpawnY   float64 `json:"spawnY"`
 		SpawnZ   float64 `json:"spawnZ"`
 	} `json:"world"`
-	Maps    []struct {
-		ID                 string          `json:"id"`
-		Name               string          `json:"name"`
-		Version            int             `json:"version"`
-		GridData           json.RawMessage `json:"gridData"`
-		GatesData          json.RawMessage `json:"gatesData"`
-		EncountersData     json.RawMessage `json:"encountersData"`
-		EntitiesData       json.RawMessage `json:"entitiesData"`
-		TileLayersData     json.RawMessage `json:"tileLayersData"`
-		FreeformLayersData json.RawMessage `json:"freeformLayersData"`
-		TilesetsData       json.RawMessage `json:"tilesetsData"`
-		MapType            string          `json:"mapType"`
-		SpawnX             float64         `json:"spawnX"`
-		SpawnY             float64         `json:"spawnY"`
-		SpawnZ             float64         `json:"spawnZ"`
-	} `json:"maps"`
+	Maps   []ReleaseMap      `json:"maps"`
 	Atlas  map[string]string `json:"atlas"`
 	Actors struct {
 		NPCs []struct {
@@ -93,6 +97,63 @@ func (m *Manager) ParseRelease(db *sql.DB, projectID string, version string) (*R
 		return nil, fmt.Errorf("failed to unmarshal manifest: %w", err)
 	}
 
+	// Fetch heavy map data from WorldMapSnapshot table
+	rows, err := db.Query(`
+		SELECT mapId, regionClass, proceduralConfig, gridData, gatesData, encountersData, entitiesData, freeformLayersData 
+		FROM WorldMapSnapshot 
+		WHERE releaseId = (SELECT id FROM WorldRelease WHERE projectId = ? AND version = ?)
+	`, projectID, version)
+	
+	if err == nil {
+		defer rows.Close()
+		
+		type MapSnap struct {
+			RegionClass        sql.NullString
+			ProceduralConfig   sql.NullString
+			GridData           sql.NullString
+			GatesData          sql.NullString
+			EncountersData     sql.NullString
+			EntitiesData       sql.NullString
+			FreeformLayersData sql.NullString
+		}
+		
+		mapSnapshots := make(map[string]MapSnap)
+		
+		for rows.Next() {
+			var mapId string
+			var snap MapSnap
+			if err := rows.Scan(&mapId, &snap.RegionClass, &snap.ProceduralConfig, &snap.GridData, &snap.GatesData, &snap.EncountersData, &snap.EntitiesData, &snap.FreeformLayersData); err == nil {
+				mapSnapshots[mapId] = snap
+			}
+		}
+		
+		for i := range manifest.Maps {
+			if snap, ok := mapSnapshots[manifest.Maps[i].ID]; ok {
+				manifest.Maps[i].RegionClass = snap.RegionClass.String
+				if snap.ProceduralConfig.Valid && snap.ProceduralConfig.String != "" && snap.ProceduralConfig.String != "null" {
+					manifest.Maps[i].ProceduralConfig = json.RawMessage(snap.ProceduralConfig.String)
+				}
+				if snap.GridData.Valid && snap.GridData.String != "" && snap.GridData.String != "null" {
+					manifest.Maps[i].GridData = json.RawMessage(snap.GridData.String)
+				}
+				if snap.GatesData.Valid && snap.GatesData.String != "" && snap.GatesData.String != "null" {
+					manifest.Maps[i].GatesData = json.RawMessage(snap.GatesData.String)
+				}
+				if snap.EncountersData.Valid && snap.EncountersData.String != "" && snap.EncountersData.String != "null" {
+					manifest.Maps[i].EncountersData = json.RawMessage(snap.EncountersData.String)
+				}
+				if snap.EntitiesData.Valid && snap.EntitiesData.String != "" && snap.EntitiesData.String != "null" {
+					manifest.Maps[i].EntitiesData = json.RawMessage(snap.EntitiesData.String)
+				}
+				if snap.FreeformLayersData.Valid && snap.FreeformLayersData.String != "" && snap.FreeformLayersData.String != "null" {
+					manifest.Maps[i].FreeformLayersData = json.RawMessage(snap.FreeformLayersData.String)
+				}
+			}
+		}
+	} else {
+		log.Printf("[WorldManager] Warning: failed to fetch map snapshots: %v", err)
+	}
+
 	return &manifest, nil
 }
 
@@ -133,13 +194,14 @@ func (m *Manager) ApplyReleaseMaps(manifest *ReleaseManifest) error {
 
 	for _, mapData := range manifest.Maps {
 		def := &MapDef{
-			ID:     mapData.ID,
-			Name:   mapData.Name,
-			Width:  128,
-			Height: 128,
-			SpawnX: mapData.SpawnX,
-			SpawnY: mapData.SpawnY,
-			SpawnZ: mapData.SpawnZ,
+			ID:          mapData.ID,
+			Name:        mapData.Name,
+			Width:       128,
+			Height:      128,
+			SpawnX:      mapData.SpawnX,
+			SpawnY:      mapData.SpawnY,
+			SpawnZ:      mapData.SpawnZ,
+			RegionClass: mapData.RegionClass,
 		}
 
 		if mapData.MapType != "FRACTAL" && mapData.MapType != "VOXEL" {
@@ -224,10 +286,18 @@ func (m *Manager) ApplyReleaseMaps(manifest *ReleaseManifest) error {
 
 		if mapData.MapType == "FRACTAL" || mapData.MapType == "VOXEL" {
 			if m.RM != nil {
+				var config struct {
+					Seed uint32 `json:"seed"`
+				}
+				if len(mapData.ProceduralConfig) > 0 {
+					_ = json.Unmarshal(mapData.ProceduralConfig, &config)
+				}
+				
 				def.Voxel = &VoxelWorld{
 					ID:            def.ID,
 					RM:            m.RM,
 					ActiveVersion: mapData.Version,
+					ProceduralSeed: config.Seed,
 				}
 			}
 		}

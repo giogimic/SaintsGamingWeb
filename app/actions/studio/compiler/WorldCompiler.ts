@@ -82,6 +82,8 @@ export async function compileWorldRelease(projectId: string, title?: string, des
     throw new Error(`Canonical World Spawn gate "${canonicalSpawnId}" not found in any Working World map. Publish aborted.`);
   }
 
+  const mapSnapshotsToCreate: any[] = [];
+
   // 3. Initialize Context
   const ctx: CompilerContext = {
     projectId,
@@ -145,17 +147,29 @@ export async function compileWorldRelease(projectId: string, title?: string, des
       ctx.warnings.push(`Map ${map.id} has malformed entitiesData`);
     }
 
-    ctx.manifest.maps.push({
-      id: map.id,
+    // Phase A: Release Architecture
+    // Keep heavy data out of the manifest and out of memory. 
+    // FRACTAL maps do not serialize gridData.
+    const isFractal = map.mapType === 'FRACTAL';
+
+    mapSnapshotsToCreate.push({
+      mapId: map.id,
       name: map.name,
       version: map.version,
-      gridData: gridDataStr,
+      mapType: map.mapType,
+      regionClass: map.regionClass || 'authored',
+      proceduralConfig: map.proceduralConfig,
+      gridData: isFractal ? null : gridDataStr,
       gatesData: gatesDataStr,
       encountersData: encountersDataStr,
       entitiesData: entitiesDataStr,
       freeformLayersData: freeformLayersDataStr,
-      tileLayersData: null,
-      tilesetsData: null,
+    });
+
+    ctx.manifest.maps.push({
+      id: map.id,
+      name: map.name,
+      version: map.version,
       mapType: map.mapType,
       spawnX: 0, // Fallback, will be replaced if we find a canonical spawn point
       spawnY: 0,
@@ -225,6 +239,14 @@ export async function compileWorldRelease(projectId: string, title?: string, des
         manifestData: JSON.stringify(ctx.manifest),
         publishedBy: 'System', // Could read from auth context
       }
+    });
+
+    // Save the decoupled Map Snapshots
+    await tx.worldMapSnapshot.createMany({
+      data: mapSnapshotsToCreate.map(snap => ({
+        ...snap,
+        releaseId: release.id,
+      }))
     });
 
     // Update the Project's pointer

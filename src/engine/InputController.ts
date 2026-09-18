@@ -139,10 +139,12 @@ public handleEditorPointerMove(e: PointerEvent) {
 public handleEditorPointerUp(e: PointerEvent) {
     if (this.editorPanPointerId !== e.pointerId) return;
     this.editorPanPointerId = null;
-    try {
-      this.engine.canvas.releasePointerCapture(e.pointerId);
-    } catch {
-      /* ignore */
+    if (this.engine.canvas.hasPointerCapture(e.pointerId)) {
+      try {
+        this.engine.canvas.releasePointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
     }
   }
 

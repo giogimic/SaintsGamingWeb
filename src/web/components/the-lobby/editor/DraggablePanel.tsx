@@ -106,8 +106,12 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
     if (isDragging || isResizing) {
       setIsDragging(false);
       setIsResizing(false);
-      if (panelRef.current) {
-        panelRef.current.releasePointerCapture(e.pointerId);
+      if (panelRef.current && panelRef.current.hasPointerCapture(e.pointerId)) {
+        try {
+          panelRef.current.releasePointerCapture(e.pointerId);
+        } catch (err) {
+          console.warn("Ignored pointer capture release error:", err);
+        }
       }
     }
   };

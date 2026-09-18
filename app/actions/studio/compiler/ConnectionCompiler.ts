@@ -20,7 +20,7 @@ export async function compileConnections(ctx: CompilerContext): Promise<void> {
     
     // Parse Entities for Warp components (which act as entry points)
     try {
-      const entities = JSON.parse(map.entitiesData);
+      const entities = JSON.parse(map.entitiesData || "[]");
       for (const ent of entities) {
         if (ent.type === 'trigger' && ent.components?.warp) {
           mapEntryPoints.get(map.id)!.add(ent.id);
@@ -30,7 +30,7 @@ export async function compileConnections(ctx: CompilerContext): Promise<void> {
     
     // Parse legacy gatesData for entry points
     try {
-      const parsedGates = JSON.parse(map.gatesData);
+      const parsedGates = JSON.parse(map.gatesData || "[]");
       const gatesList = Array.isArray(parsedGates) ? parsedGates : (parsedGates.gates ? parsedGates.gates : Object.values(parsedGates));
       for (const [idx, g] of Object.entries(gatesList)) {
         const gate = g as any;
@@ -108,7 +108,7 @@ export async function compileConnections(ctx: CompilerContext): Promise<void> {
 
     // Extract warps from Entities
     try {
-      const entities = JSON.parse(map.entitiesData);
+      const entities = JSON.parse(map.entitiesData || "[]");
       for (const ent of entities) {
         if (ent.type === 'trigger' && ent.components?.warp) {
           processWarp(ent.id, ent.components.warp);
@@ -118,7 +118,7 @@ export async function compileConnections(ctx: CompilerContext): Promise<void> {
 
     // Extract warps from legacy Gates
     try {
-      const parsedGates = JSON.parse(map.gatesData);
+      const parsedGates = JSON.parse(map.gatesData || "[]");
       const gatesList = Array.isArray(parsedGates) ? parsedGates : (parsedGates.gates ? parsedGates.gates : Object.values(parsedGates));
       for (const [idx, g] of Object.entries(gatesList)) {
         const gate = g as any;

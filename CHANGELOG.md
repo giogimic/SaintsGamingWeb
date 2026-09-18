@@ -1,3 +1,14 @@
+## 2.1.888
+- **SA-MP Server Manager Integration:**
+  - Added a new `samp-server` directory structure to allow dropping in San Andreas Multiplayer server files.
+  - Built a Node.js `SampManager` singleton to spawn the SA-MP server process, capture stdout/stderr, and auto-extract RCON credentials from `server.cfg`.
+  - Implemented standard SA-MP RCON over UDP from the Next.js server, completely bypassing the need for a shared MariaDB connection for server management.
+  - Created a real-time SSE log streaming endpoint (`api/samp/logs/route.ts`).
+  - Added a dedicated Admin Server Manager UI with live terminal logs, RCON input, and server lifecycle controls (Start/Stop).
+  - Added quick-access SA-MP button to the Global Bottom Bar for admins.
+  - Implemented Open.mp asset fetchers (`getSampSkinUrl`, `getSampVehicleUrl`) to dynamically display SA-MP assets without bloating the repository.
+  - Added a `sync.ps1` script to the SA-MP root for fast folder syncing to `wins` and `linux` sub-builds.
+
 ## 2.1.884
 - **Legacy Fallback Eradication:** Systematically removed all remaining instances of the `STARTING_MEADOW` fallback string from the entire codebase (frontend and backend).
   - Client-side: Removed from bootstrap logic (`the-lobby/index.tsx`), game initialization loops, unstuck logic (`GameOptionsMenu.tsx`), and Babylon.js component scopes (`VoxelCanvasBabylon.tsx`, etc.).
