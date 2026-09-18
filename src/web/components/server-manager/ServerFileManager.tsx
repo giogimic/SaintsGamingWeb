@@ -14,6 +14,7 @@ import {
   listServerFiles, readServerFile, writeServerFile, deleteServerItem, renameServerItem, uploadServerFile,
   executeSqlFile, executeSqlFolder, unzipServerArchive
 } from '@/../app/(ucp)/server-manager/actions';
+import { setLauncherConfig } from '@/../app/(ucp)/server-manager/launcher';
 
 export default function ServerFileManager() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -175,9 +176,7 @@ export default function ServerFileManager() {
     const executableStr = `./${filePath}`;
     setIsProcessing(true);
     
-    // Import dynamically to avoid top-level import clutter if we don't need it, or just use the Server Action
     try {
-      const { setLauncherConfig } = await import('@/../app/(ucp)/server-manager/launcher');
       const res = await setLauncherConfig(executableStr);
       if (res.success) {
         toast.success(`Set ${executableStr} as launch script! Reloading...`);
