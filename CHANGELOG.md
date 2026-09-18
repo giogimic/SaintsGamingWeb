@@ -1,3 +1,12 @@
+## [2.1.899] - 2026-09-18
+### Added
+- **Server Manager - Start Script Configuration:** Added an input field in the Process Controls card to specify a custom executable or start script (e.g., `omp-server.exe`) directly from the UCP.
+- **Server Manager - SQL Execution:** Added the ability to execute `.sql` files directly against the live database from the Server File Manager via a new contextual action.
+- **Server Manager - Batch SQL Execution:** Added the ability to batch-execute all `.sql` files within a selected folder in the Server File Manager.
+### Fixed
+- Fixed missing background styling (bg-transparent) on the WorldManager publish modal making it appear invisible.
+- Setup initial publish now works correctly since the underlying 500 error preventing it was resolved.
+
 ## 2.1.873
 - **True Restore Logic Implemented:** Added restoreWorldRelease server action that safely reconstructs a working world state from an immutable snapshot without mutating the source release.
 - **Persistent Player Location:** Updated Go server and client to persist and prioritize lastMapId and coordinates from GameCharacter, ensuring location survival across releases.

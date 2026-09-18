@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/web/components/ui/card';
 import { Button } from '@/web/components/ui/button';
 import { Input } from '@/web/components/ui/input';
-import { Terminal, Play, Square, RefreshCcw, Send, CheckCircle2, XCircle, FolderOpen, FileText } from 'lucide-react';
+import { Terminal, Play, Square, RefreshCcw, Send, CheckCircle2, XCircle, FolderOpen, FileText, Save } from 'lucide-react';
 import { startSampServer, stopSampServer, sendSampRcon, getSampStatus, readServerFile } from '@/../app/(ucp)/server-manager/actions';
 import { toast } from 'sonner';
 
@@ -65,18 +65,19 @@ export default function ServerManagerConsole({ isDrawerMode = false, onManageFil
       if (res.success && res.content !== undefined) {
         // Keep only the last ~200 lines to prevent massive DOM lag
         const lines = res.content.split('\n');
-        if (lines.length > 200) {
-          setServerLogContent(lines.slice(-200).join('\n'));
+    let interval: NodeJS.Timeout;
+    if (activeTab === 'log') {
+      const fetchLog = async () => {
+        const res = await readServerFile('server_log.txt');
+        if (res.success) {
+          setServerLogContent(res.content || 'File is empty.');
         } else {
-          setServerLogContent(res.content);
+          setServerLogContent(`Could not read server_log.txt: ${res.error}`);
         }
-      } else {
-        setServerLogContent('Failed to load server_log.txt or file does not exist yet.');
-      }
-    };
-    
-    fetchLog();
-    const interval = setInterval(fetchLog, 10000); // Poll every 10s
+      };
+      fetchLog();
+      interval = setInterval(fetchLog, 2000);
+    }
     return () => clearInterval(interval);
   }, [activeTab]);
 
@@ -91,6 +92,22 @@ export default function ServerManagerConsole({ isDrawerMode = false, onManageFil
       serverLogEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [serverLogContent, activeTab]);
+
+  const handleSaveExe = async () => {
+    setIsSavingExe(true);
+    try {
+      const m = await import('./launcher');
+      const res = await m.setLauncherConfig(launcherExe);
+      if (res.success) {
+        toast.success('Start script saved');
+      } else {
+        toast.error('Failed to save script');
+      }
+    } catch (e: any) {
+      toast.error('Error saving script');
+    }
+    setIsSavingExe(false);
+  };
 
   const handleStart = async () => {
     setIsProcessing(true);
@@ -159,6 +176,21 @@ export default function ServerManagerConsole({ isDrawerMode = false, onManageFil
             </CardTitle>
           </CardHeader>
           <CardContent className={`space-y-3 ${isDrawerMode ? 'flex gap-2 space-y-0 px-4 pb-4' : ''}`}>
+            
+            <div className="flex gap-2 items-center pb-2">
+              <input 
+                type="text" 
+                placeholder="samp-server.exe" 
+                value={launcherExe}
+                onChange={(e) => setLauncherExe(e.target.value)}
+                className="w-full bg-black/50 border border-border/50 rounded px-2 py-1.5 text-xs font-mono"
+                title="Start Script / Executable Name"
+              />
+              <Button size="sm" variant="secondary" onClick={handleSaveExe} disabled={isSavingExe} className="px-2 h-[28px]">
+                <Save className="w-3 h-3" />
+              </Button>
+            </div>
+
             <Button 
               onClick={handleStart} 
               disabled={isRunning || isProcessing}

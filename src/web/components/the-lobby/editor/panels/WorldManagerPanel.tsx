@@ -423,9 +423,9 @@ export const WorldManagerPanel: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-black/50/80 flex items-center justify-center p-4 backdrop-blur-sm">
           <form
             onSubmit={handlePublish}
-            className="bg-transparent border border-[#806f47]/30 rounded-xl shadow-2xl flex flex-col w-full max-w-lg overflow-hidden font-mono text-xs"
+            className="bg-[#050b14]/95 backdrop-blur-xl border border-[#806f47]/30 rounded-xl shadow-2xl flex flex-col w-full max-w-lg overflow-hidden font-sans text-xs"
           >
-            <div className="px-5 py-4 border-b border-[#806f47]/20 bg-transparent flex items-center justify-between">
+            <div className="px-5 py-4 border-b border-[#806f47]/20 bg-black/40 flex items-center justify-between">
               <span className="font-bold text-slate-100 flex items-center gap-2 text-sm">
                 <UploadCloud className="w-4 h-4 text-amber-400" />
                 Publish Release Snapshot

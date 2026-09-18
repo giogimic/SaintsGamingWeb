@@ -18,6 +18,8 @@ async function requireAdmin() {
   return session.user;
 }
 
+import { getLauncherConfig } from './launcher';
+
 export async function startSampServer() {
   await requireAdmin();
   const manager = SampManager.getInstance();
@@ -27,7 +29,9 @@ export async function startSampServer() {
   }
   
   try {
-    await manager.startServer();
+    const launcherCfg = await getLauncherConfig();
+    const customExecutable = launcherCfg.executable || undefined;
+    await manager.startServer(customExecutable);
     revalidatePath('/server-manager');
     return { success: true };
   } catch (error: any) {
@@ -323,6 +327,107 @@ export async function uploadServerFile(dirPath: string, formData: FormData) {
     const filePath = path.join(targetDir, file.name);
     const buffer = Buffer.from(await file.arrayBuffer());
     fs.writeFileSync(filePath, buffer);
+    
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+import { prisma } from '@/web/lib/prisma';
+
+export async function executeSqlFile(filePath: string) {
+  await requireAdmin();
+  try {
+    const targetFile = getSafePath(filePath);
+    if (!fs.existsSync(targetFile)) return { success: false, error: 'File not found' };
+    
+    const content = fs.readFileSync(targetFile, 'utf-8');
+    
+    // Split by ; followed by optional whitespace and newline
+    const statements = content.split(/;\s*$/m).filter(s => s.trim().length > 0);
+    
+    let successCount = 0;
+    for (const stmt of statements) {
+      if (stmt.trim()) {
+        try {
+          await prisma.$executeRawUnsafe(stmt.trim());
+          successCount++;
+        } catch (e: any) {
+          // Log but continue, because SQL dumps often have duplicates or missing drops
+          console.error(`[SQL Error]: ${e.message.split('\n')[0]}`);
+        }
+      }
+    }
+    
+    return { success: true, executedCount: successCount, totalCount: statements.length };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function executeSqlFolder(dirPath: string) {
+  await requireAdmin();
+  try {
+    const targetDir = getSafePath(dirPath);
+    if (!fs.existsSync(targetDir)) return { success: false, error: 'Directory not found' };
+    
+    const files = fs.readdirSync(targetDir).filter(f => f.endsWith('.sql')).sort();
+    
+    let totalExecuted = 0;
+    const results = [];
+    
+    for (const file of files) {
+      const res = await executeSqlFile(path.join(dirPath, file));
+      if (res.success) {
+        totalExecuted += res.executedCount || 0;
+        results.push({ file, success: true, count: res.executedCount });
+      } else {
+        results.push({ file, success: false, error: res.error });
+      }
+    }
+    
+    return { success: true, totalExecuted, details: results };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function unzipServerArchive(filePath: string) {
+  await requireAdmin();
+  try {
+    const targetFile = getSafePath(filePath);
+    if (!fs.existsSync(targetFile)) return { success: false, error: 'File not found' };
+    
+    const targetDir = path.dirname(targetFile);
+    const isWindows = process.platform === 'win32';
+    
+    if (filePath.endsWith('.tar.gz')) {
+      await execAsync(`tar -xzf "${targetFile}" -C "${targetDir}"`);
+    } else if (filePath.endsWith('.zip')) {
+      if (isWindows) {
+        await execAsync(`tar -xf "${targetFile}" -C "${targetDir}"`);
+      } else {
+        const JSZip = (await import('jszip')).default;
+        const zipData = fs.readFileSync(targetFile);
+        const zip = await JSZip.loadAsync(zipData);
+        let files = Object.entries(zip.files);
+
+        for (const [relativePath, file] of files) {
+          const fullPath = path.join(targetDir, relativePath);
+          if (file.dir) {
+            if (!fs.existsSync(fullPath)) fs.mkdirSync(fullPath, { recursive: true });
+          } else {
+            const content = await file.async('nodebuffer');
+            const dirname = path.dirname(fullPath);
+            if (!fs.existsSync(dirname)) fs.mkdirSync(dirname, { recursive: true });
+            fs.writeFileSync(fullPath, content);
+          }
+        }
+      }
+    } else {
+      return { success: false, error: 'Unsupported archive format. Must be .zip or .tar.gz' };
+    }
     
     return { success: true };
   } catch (error: any) {

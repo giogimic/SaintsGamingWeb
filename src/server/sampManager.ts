@@ -23,7 +23,7 @@ export class SampManager extends EventEmitter {
     return SampManager.instance;
   }
 
-  public async startServer(): Promise<void> {
+  public async startServer(customExecutable?: string): Promise<void> {
     if (this.process) {
       throw new Error("Server is already running.");
     }
@@ -35,7 +35,8 @@ export class SampManager extends EventEmitter {
     this.extractRconConfig();
 
     const isWindows = process.platform === 'win32';
-    const executable = isWindows ? 'samp-server.exe' : './samp03svr';
+    const defaultExecutable = isWindows ? 'samp-server.exe' : './samp03svr';
+    const executable = customExecutable && customExecutable.trim() !== '' ? customExecutable : defaultExecutable;
 
     this.process = spawn(executable, [], {
       cwd: this.serverPath,

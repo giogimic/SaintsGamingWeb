@@ -6,12 +6,13 @@ import { Button } from '@/web/components/ui/button';
 import { Input } from '@/web/components/ui/input';
 import { 
   DownloadCloud, Rocket, FileArchive, Loader2, AlertTriangle, 
-  FileText, Folder, CornerUpLeft, Trash2, Edit2, Save, X, Plus, Upload, Type
+  FileText, Folder, CornerUpLeft, Trash2, Edit2, Save, X, Plus, Upload, Type, Database, PackageOpen
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
   downloadAndExtractServer, installLatestOMP,
-  listServerFiles, readServerFile, writeServerFile, deleteServerItem, renameServerItem, uploadServerFile
+  listServerFiles, readServerFile, writeServerFile, deleteServerItem, renameServerItem, uploadServerFile,
+  executeSqlFile, executeSqlFolder, unzipServerArchive
 } from '@/../app/(ucp)/server-manager/actions';
 
 export default function ServerFileManager() {
@@ -222,6 +223,46 @@ export default function ServerFileManager() {
     xhr.send(formData);
   };
 
+  const handleExecuteSqlFile = async (fileName: string) => {
+    if (!confirm(`Are you sure you want to execute ${fileName} on the database? This cannot be undone.`)) return;
+    setIsProcessing(true);
+    const filePath = currentPath ? `${currentPath}/${fileName}` : fileName;
+    const res = await executeSqlFile(filePath);
+    if (res.success) {
+      toast.success(`Executed ${res.executedCount} statements successfully`);
+    } else {
+      toast.error('SQL Execution failed: ' + res.error);
+    }
+    setIsProcessing(false);
+  };
+
+  const handleExecuteSqlFolder = async (folderName: string) => {
+    if (!confirm(`Are you sure you want to execute all .sql files in ${folderName} on the database?`)) return;
+    setIsProcessing(true);
+    const folderPath = currentPath ? `${currentPath}/${folderName}` : folderName;
+    const res = await executeSqlFolder(folderPath);
+    if (res.success) {
+      toast.success(`Executed ${res.totalExecuted} statements across files`);
+    } else {
+      toast.error('SQL Folder Execution failed: ' + res.error);
+    }
+    setIsProcessing(false);
+  };
+
+  const handleUnzip = async (fileName: string) => {
+    if (!confirm(`Are you sure you want to extract ${fileName} here? Files may be overwritten.`)) return;
+    setIsProcessing(true);
+    const filePath = currentPath ? `${currentPath}/${fileName}` : fileName;
+    const res = await unzipServerArchive(filePath);
+    if (res.success) {
+      toast.success('Archive extracted successfully');
+      loadFiles(currentPath);
+    } else {
+      toast.error('Extraction failed: ' + res.error);
+    }
+    setIsProcessing(false);
+  };
+
   if (editingFile) {
     return (
       <div className="flex flex-col h-full bg-background/50 p-4 space-y-4">
@@ -362,6 +403,21 @@ export default function ServerFileManager() {
                     </td>
                     <td className="px-4 py-2 text-right">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {!file.isDirectory && file.name.endsWith('.sql') && (
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-400 hover:bg-emerald-400/20" onClick={() => handleExecuteSqlFile(file.name)} title="Execute SQL File">
+                            <Database className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {!file.isDirectory && (file.name.endsWith('.zip') || file.name.endsWith('.tar.gz')) && (
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-cyan-400 hover:bg-cyan-400/20" onClick={() => handleUnzip(file.name)} title="Extract Archive Here">
+                            <PackageOpen className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {file.isDirectory && (
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-400 hover:bg-emerald-400/20" onClick={() => handleExecuteSqlFolder(file.name)} title="Execute all SQL in folder">
+                            <Database className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
                         {!file.isDirectory && (
                           <Button size="icon" variant="ghost" className="h-7 w-7 text-blue-400 hover:bg-blue-400/20" onClick={() => handleEditFile(file.name)}>
                             <Edit2 className="w-3.5 h-3.5" />
