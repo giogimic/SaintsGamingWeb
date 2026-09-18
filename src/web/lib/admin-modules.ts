@@ -395,26 +395,7 @@ export const ADMIN_MODULES: AdminModule[] = [
     permission: PERMISSION_LEVELS.ADMIN,
     keywords: ["modpacks", "clients", "downloads", "mods", "patches", "installers"],
   },
-  {
-    id: "fivem-characters",
-    category: "infrastructure",
-    label: "FiveM Characters",
-    description: "Inspect GTA RP character records, bank wealth, and faction memberships.",
-    icon: Users,
-    href: "/admin/characters",
-    permission: PERMISSION_LEVELS.ADMIN,
-    keywords: ["fivem", "gta", "rp", "characters", "cash", "bank", "deceased", "factions"],
-  },
-  {
-    id: "fivem-server-manager",
-    category: "infrastructure",
-    label: "FiveM txAdmin",
-    description: "Start, stop, and control your local FXServer instance and txAdmin panel.",
-    icon: Server,
-    href: "/admin/server-manager",
-    permission: PERMISSION_LEVELS.FIVEM_DEVELOPER,
-    keywords: ["fivem", "txadmin", "fxserver", "restart", "start server", "console"],
-  },
+
   {
     id: "infra-notifications",
     category: "infrastructure",
