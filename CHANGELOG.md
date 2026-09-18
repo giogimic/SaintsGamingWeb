@@ -1,3 +1,6 @@
+## 2.1.890
+- **Build Fix:** Fixed relative import path in `ServerFileManager.tsx` which caused Next.js production builds to fail.
+
 ## 2.1.889
 - **SA-MP Server File Manager & Console Drawer:**
   - Integrated the Server Manager Console into a slide-up drawer on the UCP Global Bottom Bar, allowing server administration without interrupting browsing.

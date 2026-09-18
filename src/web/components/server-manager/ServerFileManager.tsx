@@ -6,7 +6,7 @@ import { Button } from '@/web/components/ui/button';
 import { Input } from '@/web/components/ui/input';
 import { DownloadCloud, Rocket, FileArchive, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
-import { downloadAndExtractServer, installLatestOMP } from './actions';
+import { downloadAndExtractServer, installLatestOMP } from '@/../app/(ucp)/server-manager/actions';
 
 export default function ServerFileManager() {
   const [isProcessing, setIsProcessing] = useState(false);
