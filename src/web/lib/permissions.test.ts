@@ -23,14 +23,14 @@ describe("permissions", () => {
     expect(getRoleName(PERMISSION_LEVELS.ADMIN)).toBe("Admin");
     expect(getRoleName(PERMISSION_LEVELS.HEAD_ADMIN)).toBe("Head Admin");
     expect(getRoleName(PERMISSION_LEVELS.COMMUNITY_MANAGER)).toBe("Community Manager");
-    expect(getRoleName(PERMISSION_LEVELS.FIVEM_DEVELOPER)).toBe("FiveM Developer");
+    expect(getRoleName(PERMISSION_LEVELS.SAMP_DEVELOPER)).toBe("SA-MP Developer");
     expect(getRoleName(PERMISSION_LEVELS.DEVELOPER)).toBe("Developer");
     expect(getRoleName(PERMISSION_LEVELS.MODERATOR + 1)).toBe("Moderator");
   });
 
   it("returns distinct badge colors for staff tiers", () => {
     expect(getRoleColor(PERMISSION_LEVELS.DEVELOPER)).toBe("text-red-400");
-    expect(getRoleColor(PERMISSION_LEVELS.FIVEM_DEVELOPER)).toBe("text-orange-400");
+    expect(getRoleColor(PERMISSION_LEVELS.SAMP_DEVELOPER)).toBe("text-orange-400");
     expect(getRoleColor(PERMISSION_LEVELS.COMMUNITY_MANAGER)).toBe("text-purple-400");
     expect(getRoleColor(PERMISSION_LEVELS.ADMIN)).toBe("text-blue-400");
     expect(getRoleColor(PERMISSION_LEVELS.MODERATOR)).toBe("text-green-400");

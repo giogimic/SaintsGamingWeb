@@ -91,7 +91,7 @@ export const ADMIN_CATEGORIES: Record<AdminCategoryId, AdminCategory> = {
     id: "infrastructure",
     label: "Game Servers & Infrastructure",
     shortLabel: "Infrastructure",
-    description: "Dedicated servers, client modpacks, FiveM txAdmin, site configuration, and broadcasts.",
+    description: "Dedicated servers, client modpacks, SA-MP server management, site configuration, and broadcasts.",
     icon: Server,
     order: 5,
   },

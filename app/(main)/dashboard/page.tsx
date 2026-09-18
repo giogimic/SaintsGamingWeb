@@ -15,12 +15,8 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Fetch full user data including characters
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    include: {
-      characters: true,
-    }
   });
 
   if (!user) {
@@ -107,55 +103,30 @@ export default async function DashboardPage() {
           </Card>
         </div>
 
-        {/* Right Column - Characters & Game Data */}
+        {/* Right Column - Game Activity */}
         <div className="space-y-8 md:col-span-2">
           <Card className="bg-card/40 border-border/50 sg-glass h-full">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  <Gamepad2 className="h-5 w-5 text-primary" /> My Characters
+                  <Gamepad2 className="h-5 w-5 text-primary" /> Game Activity
                 </CardTitle>
                 <CardDescription>
-                  Your active characters on the Saints Gaming FiveM server.
+                  Your activity across Saints Gaming servers.
                 </CardDescription>
               </div>
             </CardHeader>
             <CardContent>
-              {user.characters && user.characters.length > 0 ? (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {user.characters.map((char) => (
-                    <div key={char.id} className="p-4 rounded-lg border border-border/50 bg-background/50 hover:bg-muted/50 transition-colors">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-bold text-lg">{char.firstName} {char.lastName}</h4>
-                        <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full font-medium">
-                          ID: {char.id.substring(0, 5)}
-                        </span>
-                      </div>
-                      <div className="space-y-1 text-sm text-muted-foreground mt-4">
-                        <div className="flex justify-between">
-                          <span>Bank:</span>
-                          <span className="font-mono text-green-400">${char.bank.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Cash:</span>
-                          <span className="font-mono text-green-400">${char.cash.toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 px-4 border border-dashed border-border/50 rounded-lg bg-background/30">
-                  <Gamepad2 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium">No Characters Found</h3>
-                  <p className="text-muted-foreground text-sm max-w-sm mx-auto mt-2 mb-6">
-                    You haven&apos;t created any characters yet. Head over to the FiveM User Control Panel to create your first character!
-                  </p>
-                  <Button asChild>
-                    <Link href="/ucp/register">Create Character</Link>
-                  </Button>
-                </div>
-              )}
+              <div className="text-center py-12 px-4 border border-dashed border-border/50 rounded-lg bg-background/30">
+                <Gamepad2 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                <h3 className="text-lg font-medium">Jump Into a Server</h3>
+                <p className="text-muted-foreground text-sm max-w-sm mx-auto mt-2 mb-6">
+                  Check out our active game servers and start playing with the community!
+                </p>
+                <Button asChild>
+                  <Link href="/status">View Servers</Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>

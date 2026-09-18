@@ -33,7 +33,7 @@ export default async function UcpSettingsPage() {
           <Button variant="ghost" className="mb-4">← Back to Dashboard</Button>
         </Link>
         <h1 className="text-3xl font-bold mb-2">Account Settings</h1>
-        <p className="text-muted-foreground">Link your external accounts to synchronize your website profile with the FiveM server.</p>
+        <p className="text-muted-foreground">Link your external accounts to synchronize your website profile.</p>
       </div>
 
       <Card>
@@ -48,17 +48,6 @@ export default async function UcpSettingsPage() {
                 defaultValue={user.discordId || ""}
               />
               <p className="text-xs text-muted-foreground">Right-click your profile in Discord and select &apos;Copy User ID&apos; (requires Developer Mode).</p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="fivemLicense">FiveM License (Optional)</Label>
-              <Input 
-                id="fivemLicense" 
-                name="fivemLicense" 
-                placeholder="e.g. license:1234abc..." 
-                defaultValue={user.fivemLicense || ""}
-              />
-              <p className="text-xs text-muted-foreground">Your Rockstar License identifier. Usually begins with &apos;license:&apos;.</p>
             </div>
 
             <Button type="submit" className="w-full">Save Changes</Button>

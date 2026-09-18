@@ -63,14 +63,11 @@ export default async function UcpDashboard() {
         <CardContent>
           <div className="text-muted-foreground mb-4 space-y-2">
             <p>
-              FiveM License: {dbUser.fivemLicense ? <span className="font-mono bg-muted px-2 py-1 rounded text-primary">{dbUser.fivemLicense}</span> : <span className="text-destructive">Not Linked</span>}
-            </p>
-            <p>
               Discord ID: {dbUser.discordId ? <span className="font-mono bg-muted px-2 py-1 rounded text-primary">{dbUser.discordId}</span> : <span className="text-destructive">Not Linked</span>}
             </p>
           </div>
           
-          {(!dbUser.fivemLicense || !dbUser.discordId) && (
+          {(!dbUser.discordId) && (
             <Link href="/ucp/settings">
               <Button variant="outline">Link Accounts</Button>
             </Link>

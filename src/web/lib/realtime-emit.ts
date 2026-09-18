@@ -83,7 +83,7 @@ export async function emitForumReplyCreated(payload: {
 export async function emitPresenceUpdated(
   userId: string,
   status: "online" | "offline" | "away" | "playing",
-  options: { source?: "web" | "mmo" | "discord" | "fivem" | "system" } = {}
+  options: { source?: "web" | "mmo" | "discord" | "samp" | "system" } = {}
 ): Promise<void> {
   try {
     const realtime = await getRealtime();

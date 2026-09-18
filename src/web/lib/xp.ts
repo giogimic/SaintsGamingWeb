@@ -20,7 +20,6 @@ export const XP_VALUES = {
 
 /**
  * Awards XP to a user and automatically levels them up if they cross a tier threshold.
- * Silently rewards any linked FiveM characters with a bank deposit on level up.
  */
 export async function awardXP(userId: string, amount: number) {
   try {
@@ -61,28 +60,9 @@ export async function awardXP(userId: string, amount: number) {
       }
     });
 
-    // Handle FiveM Silent Level-Up Reward
+    // Level-up detected
     if (newLevel > user.level) {
-      const rewardAmount = 5000 * newLevel;
-      const characters = await prisma.character.findMany({
-        where: { userId }
-      });
-
-      for (const char of characters) {
-        await prisma.character.update({
-          where: { id: char.id },
-          data: { bank: { increment: rewardAmount } }
-        });
-        
-        await prisma.bankTransaction.create({
-          data: {
-            characterId: char.id,
-            type: "DEPOSIT",
-            amount: rewardAmount,
-            description: `Website Level Up Reward (Lvl ${newLevel})`
-          }
-        });
-      }
+      // Future: could hook into SA-MP or other game server rewards here
     }
 
     return updatedUser;

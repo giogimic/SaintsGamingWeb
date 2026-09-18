@@ -1,19 +1,49 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/web/components/ui/card';
 import { Button } from '@/web/components/ui/button';
 import { Input } from '@/web/components/ui/input';
-import { DownloadCloud, Rocket, FileArchive, Loader2, AlertTriangle } from 'lucide-react';
+import { 
+  DownloadCloud, Rocket, FileArchive, Loader2, AlertTriangle, 
+  FileText, Folder, CornerUpLeft, Trash2, Edit2, Save, X, Plus
+} from 'lucide-react';
 import { toast } from 'sonner';
-import { downloadAndExtractServer, installLatestOMP } from '@/../app/(ucp)/server-manager/actions';
+import { 
+  downloadAndExtractServer, installLatestOMP,
+  listServerFiles, readServerFile, writeServerFile, deleteServerItem, renameServerItem
+} from '@/../app/(ucp)/server-manager/actions';
 
 export default function ServerFileManager() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [archiveUrl, setArchiveUrl] = useState('');
   const [logs, setLogs] = useState<string[]>([]);
 
+  // File Browser State
+  const [currentPath, setCurrentPath] = useState<string>('');
+  const [files, setFiles] = useState<any[]>([]);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
+  
+  // Editor State
+  const [editingFile, setEditingFile] = useState<{ path: string, content: string } | null>(null);
+
   const addLog = (msg: string) => setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+
+  // Load files when path changes
+  useEffect(() => {
+    loadFiles(currentPath);
+  }, [currentPath]);
+
+  const loadFiles = async (dirPath: string) => {
+    setIsLoadingFiles(true);
+    const res = await listServerFiles(dirPath);
+    if (res.success) {
+      setFiles(res.files || []);
+    } else {
+      toast.error('Failed to load files: ' + res.error);
+    }
+    setIsLoadingFiles(false);
+  };
 
   const handleInstallLatestOMP = async () => {
     setIsProcessing(true);
@@ -23,6 +53,7 @@ export default function ServerFileManager() {
       if (res.success) {
         addLog('Installation successful! You can now start the server.');
         toast.success('open.mp installed successfully!');
+        loadFiles(currentPath);
       } else {
         addLog(`Error: ${res.error}`);
         toast.error('Failed to install open.mp');
@@ -45,6 +76,7 @@ export default function ServerFileManager() {
         addLog('Archive downloaded and extracted successfully.');
         toast.success('Archive installed!');
         setArchiveUrl('');
+        loadFiles(currentPath);
       } else {
         addLog(`Error: ${res.error}`);
         toast.error('Failed to install archive');
@@ -55,71 +87,221 @@ export default function ServerFileManager() {
     setIsProcessing(false);
   };
 
-  return (
-    <div className="flex flex-col h-full bg-background/50">
-      <div className="p-4 space-y-6 flex-1 overflow-auto">
-        
-        {/* Quick Setups */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-2">
-            <Rocket className="w-4 h-4" /> Quick Setup
+  const handleNavigate = (dirName: string) => {
+    setCurrentPath(prev => prev ? `${prev}/${dirName}` : dirName);
+  };
+
+  const handleNavigateUp = () => {
+    if (!currentPath) return;
+    const parts = currentPath.split('/');
+    parts.pop();
+    setCurrentPath(parts.join('/'));
+  };
+
+  const handleEditFile = async (fileName: string) => {
+    const filePath = currentPath ? `${currentPath}/${fileName}` : fileName;
+    setIsLoadingFiles(true);
+    const res = await readServerFile(filePath);
+    if (res.success) {
+      setEditingFile({ path: filePath, content: res.content || '' });
+    } else {
+      toast.error('Failed to read file: ' + res.error);
+    }
+    setIsLoadingFiles(false);
+  };
+
+  const handleSaveFile = async () => {
+    if (!editingFile) return;
+    setIsProcessing(true);
+    const res = await writeServerFile(editingFile.path, editingFile.content);
+    if (res.success) {
+      toast.success('File saved successfully');
+      setEditingFile(null);
+      loadFiles(currentPath);
+    } else {
+      toast.error('Failed to save file: ' + res.error);
+    }
+    setIsProcessing(false);
+  };
+
+  const handleDelete = async (fileName: string) => {
+    if (!confirm(`Are you sure you want to delete ${fileName}?`)) return;
+    const filePath = currentPath ? `${currentPath}/${fileName}` : fileName;
+    const res = await deleteServerItem(filePath);
+    if (res.success) {
+      toast.success('Deleted successfully');
+      loadFiles(currentPath);
+    } else {
+      toast.error('Failed to delete: ' + res.error);
+    }
+  };
+  
+  const handleCreateFile = async () => {
+    const fileName = prompt("Enter new file name:");
+    if (!fileName) return;
+    const filePath = currentPath ? `${currentPath}/${fileName}` : fileName;
+    const res = await writeServerFile(filePath, "");
+    if (res.success) {
+      toast.success('File created');
+      handleEditFile(fileName);
+      loadFiles(currentPath);
+    } else {
+      toast.error('Failed to create file: ' + res.error);
+    }
+  };
+
+  if (editingFile) {
+    return (
+      <div className="flex flex-col h-full bg-background/50 p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-lg flex items-center gap-2">
+            <FileText className="w-5 h-5 text-primary" />
+            Editing: {editingFile.path}
           </h3>
-          <div className="grid grid-cols-1 gap-3">
-            <Card className="bg-black/40 border-border/40 p-4 flex items-center justify-between">
-              <div>
-                <h4 className="font-bold text-foreground">open.mp (Latest)</h4>
-                <p className="text-xs text-muted-foreground mt-1">Downloads the latest compatible Windows/Linux open.mp server binaries directly from GitHub.</p>
-              </div>
-              <Button 
-                onClick={handleInstallLatestOMP} 
-                disabled={isProcessing}
-                className="bg-primary text-black hover:bg-primary/80 font-bold"
-              >
-                {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Install'}
-              </Button>
-            </Card>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setEditingFile(null)} disabled={isProcessing}>
+              <X className="w-4 h-4 mr-2" /> Cancel
+            </Button>
+            <Button onClick={handleSaveFile} disabled={isProcessing}>
+              {isProcessing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              Save Changes
+            </Button>
           </div>
         </div>
+        <textarea
+          className="flex-1 w-full bg-black/60 border border-border/40 rounded p-4 font-mono text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary"
+          value={editingFile.content}
+          onChange={(e) => setEditingFile({ ...editingFile, content: e.target.value })}
+          spellCheck={false}
+        />
+      </div>
+    );
+  }
 
-        {/* Custom Archive URL */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-bold text-cyan-400 flex items-center gap-2">
-            <DownloadCloud className="w-4 h-4" /> Custom Archive
-          </h3>
-          <Card className="bg-black/40 border-border/40 p-4 space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Provide a direct URL to a <code className="text-primary">.zip</code> or <code className="text-primary">.tar.gz</code> server archive. 
-              The system will automatically download and extract it into the <code className="text-primary">/samp-server</code> directory.
-            </p>
+  return (
+    <div className="flex flex-col h-full bg-background/50 overflow-hidden">
+      <div className="p-4 space-y-6 flex-1 overflow-auto">
+        
+        {/* Quick Setups & Archive */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="bg-black/40 border-border/40 p-4 flex flex-col justify-between space-y-3">
+            <div>
+              <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-2 mb-1">
+                <Rocket className="w-4 h-4" /> Quick Setup
+              </h3>
+              <p className="text-xs text-muted-foreground">Downloads the latest compatible Windows/Linux open.mp server binaries directly from GitHub.</p>
+            </div>
+            <Button 
+              onClick={handleInstallLatestOMP} 
+              disabled={isProcessing}
+              className="bg-primary text-black hover:bg-primary/80 font-bold w-full"
+            >
+              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Install open.mp'}
+            </Button>
+          </Card>
+
+          <Card className="bg-black/40 border-border/40 p-4 flex flex-col justify-between space-y-3">
+            <div>
+              <h3 className="text-sm font-bold text-cyan-400 flex items-center gap-2 mb-1">
+                <DownloadCloud className="w-4 h-4" /> Custom Archive
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Extract a <code className="text-primary">.zip</code> or <code className="text-primary">.tar.gz</code> server archive URL into the root.
+              </p>
+            </div>
             <form onSubmit={handleCustomArchiveDownload} className="flex gap-2">
               <Input
-                placeholder="https://example.com/my-gamemode.zip"
+                placeholder="https://example.com/gamemode.zip"
                 value={archiveUrl}
                 onChange={(e) => setArchiveUrl(e.target.value)}
                 disabled={isProcessing}
-                className="font-mono text-xs bg-black/60"
+                className="font-mono text-xs bg-black/60 h-9"
               />
-              <Button type="submit" disabled={isProcessing || !archiveUrl} variant="secondary">
-                {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileArchive className="w-4 h-4 mr-2" />}
-                Extract
+              <Button type="submit" disabled={isProcessing || !archiveUrl} variant="secondary" className="h-9 px-3">
+                {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileArchive className="w-4 h-4" />}
               </Button>
             </form>
           </Card>
         </div>
 
-        {/* Action Logs */}
-        <div className="space-y-2">
-          <h3 className="text-sm font-bold text-muted-foreground flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4" /> Action Logs
-          </h3>
-          <div className="bg-[#0a0a0a] border border-border/30 rounded-lg p-3 min-h-[100px] max-h-[150px] overflow-y-auto font-mono text-[10px] space-y-1">
-            {logs.length === 0 ? (
-              <span className="text-zinc-600 italic">No recent actions...</span>
-            ) : (
-              logs.map((log, i) => (
-                <div key={i} className={log.includes('Error') ? 'text-rose-400' : 'text-emerald-400/80'}>{log}</div>
-              ))
-            )}
+        {/* File Browser */}
+        <div className="space-y-2 flex-1 flex flex-col min-h-[300px]">
+          <div className="flex items-center justify-between bg-black/60 px-3 py-2 rounded-t-lg border border-border/30 border-b-0">
+            <div className="flex items-center gap-2 text-sm font-mono text-muted-foreground overflow-hidden">
+              <span className="text-primary">/samp-server</span>
+              {currentPath && <span className="truncate">/{currentPath}</span>}
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={handleCreateFile}>
+                <Plus className="w-4 h-4 mr-1" /> New File
+              </Button>
+              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => loadFiles(currentPath)} disabled={isLoadingFiles}>
+                <Loader2 className={`w-4 h-4 ${isLoadingFiles ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+          </div>
+          
+          <div className="bg-[#0a0a0a] border border-border/30 rounded-b-lg flex-1 overflow-y-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-muted-foreground bg-black/40 uppercase sticky top-0">
+                <tr>
+                  <th className="px-4 py-2 font-medium">Name</th>
+                  <th className="px-4 py-2 font-medium w-24">Size</th>
+                  <th className="px-4 py-2 font-medium w-40 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentPath && (
+                  <tr className="border-b border-border/10 hover:bg-white/5 cursor-pointer" onClick={handleNavigateUp}>
+                    <td className="px-4 py-2 flex items-center gap-2 text-primary font-medium">
+                      <CornerUpLeft className="w-4 h-4" /> ..
+                    </td>
+                    <td></td>
+                    <td></td>
+                  </tr>
+                )}
+                {files.map((file, i) => (
+                  <tr key={i} className="border-b border-border/10 hover:bg-white/5 group">
+                    <td className="px-4 py-2 flex items-center gap-2">
+                      {file.isDirectory ? (
+                        <Folder className="w-4 h-4 text-amber-400" />
+                      ) : (
+                        <FileText className="w-4 h-4 text-blue-400" />
+                      )}
+                      {file.isDirectory ? (
+                        <span className="cursor-pointer hover:underline" onClick={() => handleNavigate(file.name)}>
+                          {file.name}
+                        </span>
+                      ) : (
+                        <span>{file.name}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground text-xs">
+                      {file.isDirectory ? '--' : `${(file.size / 1024).toFixed(1)} KB`}
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {!file.isDirectory && (
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-blue-400 hover:bg-blue-400/20" onClick={() => handleEditFile(file.name)}>
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-rose-400 hover:bg-rose-400/20" onClick={() => handleDelete(file.name)}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {files.length === 0 && !isLoadingFiles && (
+                  <tr>
+                    <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground italic">
+                      Directory is empty
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 

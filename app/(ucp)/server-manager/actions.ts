@@ -207,3 +207,106 @@ export async function installLatestOMP() {
     return { success: false, error: error.message };
   }
 }
+
+// ─── FILE BROWSER ACTIONS ──────────────────────────────────────────────────
+
+const SAMP_SERVER_DIR = path.join(process.cwd(), 'samp-server');
+
+function getSafePath(subPath: string) {
+  const safePath = path.normalize(path.join(SAMP_SERVER_DIR, subPath));
+  if (!safePath.startsWith(SAMP_SERVER_DIR)) {
+    throw new Error('Invalid path');
+  }
+  return safePath;
+}
+
+export async function listServerFiles(dirPath: string = '') {
+  await requireAdmin();
+  try {
+    const targetDir = getSafePath(dirPath);
+    if (!fs.existsSync(targetDir)) {
+      return { success: true, files: [] };
+    }
+    const entries = fs.readdirSync(targetDir, { withFileTypes: true });
+    const files = entries.map(dirent => {
+      const fullPath = path.join(targetDir, dirent.name);
+      let size = 0;
+      let updatedAt = new Date();
+      try {
+        const stats = fs.statSync(fullPath);
+        size = stats.size;
+        updatedAt = stats.mtime;
+      } catch (e) {}
+      
+      return {
+        name: dirent.name,
+        isDirectory: dirent.isDirectory(),
+        size,
+        updatedAt,
+      };
+    }).sort((a, b) => {
+      if (a.isDirectory === b.isDirectory) return a.name.localeCompare(b.name);
+      return a.isDirectory ? -1 : 1;
+    });
+    return { success: true, files };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function readServerFile(filePath: string) {
+  await requireAdmin();
+  try {
+    const targetFile = getSafePath(filePath);
+    if (!fs.existsSync(targetFile)) return { success: false, error: 'File not found' };
+    
+    // Quick check to avoid reading huge binaries
+    const stats = fs.statSync(targetFile);
+    if (stats.size > 5 * 1024 * 1024) {
+      return { success: false, error: 'File is too large to read in browser (max 5MB)' };
+    }
+    
+    const content = fs.readFileSync(targetFile, 'utf-8');
+    return { success: true, content };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function writeServerFile(filePath: string, content: string) {
+  await requireAdmin();
+  try {
+    const targetFile = getSafePath(filePath);
+    const dir = path.dirname(targetFile);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(targetFile, content, 'utf-8');
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteServerItem(filePath: string) {
+  await requireAdmin();
+  try {
+    const targetFile = getSafePath(filePath);
+    if (fs.existsSync(targetFile)) {
+      fs.rmSync(targetFile, { recursive: true, force: true });
+    }
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function renameServerItem(oldPath: string, newPath: string) {
+  await requireAdmin();
+  try {
+    const safeOldPath = getSafePath(oldPath);
+    const safeNewPath = getSafePath(newPath);
+    fs.renameSync(safeOldPath, safeNewPath);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

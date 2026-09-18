@@ -75,11 +75,9 @@ export async function linkAccount(formData: FormData) {
   }
 
   const discordId = formData.get("discordId") as string;
-  const fivemLicense = formData.get("fivemLicense") as string;
 
   const dataToUpdate: any   = {};
   if (discordId) dataToUpdate.discordId = discordId;
-  if (fivemLicense) dataToUpdate.fivemLicense = fivemLicense;
 
   if (Object.keys(dataToUpdate).length === 0) {
     throw new Error("No data provided");

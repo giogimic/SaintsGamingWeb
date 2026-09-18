@@ -35,7 +35,7 @@ export const PERMISSION_LEVELS = {
   ADMIN: 400,
   HEAD_ADMIN: 500,
   COMMUNITY_MANAGER: 600,
-  FIVEM_DEVELOPER: 900,
+  SAMP_DEVELOPER: 900,
   DEVELOPER: 1000,
 } as const;
 
@@ -48,7 +48,7 @@ export type PermissionLevel =
 /** Human-readable role name from a permission level */
 export function getRoleName(level: number): string {
   if (level >= PERMISSION_LEVELS.DEVELOPER) return "Developer";
-  if (level >= PERMISSION_LEVELS.FIVEM_DEVELOPER) return "FiveM Developer";
+  if (level >= PERMISSION_LEVELS.SAMP_DEVELOPER) return "SA-MP Developer";
   if (level >= PERMISSION_LEVELS.COMMUNITY_MANAGER) return "Community Manager";
   if (level >= PERMISSION_LEVELS.HEAD_ADMIN) return "Head Admin";
   if (level >= PERMISSION_LEVELS.ADMIN) return "Admin";
@@ -68,7 +68,7 @@ export function getRoleName(level: number): string {
 /** Get a CSS-friendly color class for a role badge */
 export function getRoleColor(level: number): string {
   if (level >= PERMISSION_LEVELS.DEVELOPER) return "text-red-400";
-  if (level >= PERMISSION_LEVELS.FIVEM_DEVELOPER) return "text-orange-400";
+  if (level >= PERMISSION_LEVELS.SAMP_DEVELOPER) return "text-orange-400";
   if (level >= PERMISSION_LEVELS.COMMUNITY_MANAGER) return "text-purple-400";
   if (level >= PERMISSION_LEVELS.HEAD_ADMIN) return "text-amber-400";
   if (level >= PERMISSION_LEVELS.ADMIN) return "text-blue-400";

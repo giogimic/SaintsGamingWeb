@@ -155,7 +155,7 @@ export default async function ProfilePage() {
               {showUcpStats && (
                 <Link href="/ucp" className={buttonVariants({ variant: "secondary", size: "sm", className: "w-full justify-start mt-1" })}>
                   <Gamepad2 className="mr-2 h-4 w-4" />
-                  FiveM UCP Center
+                  Server Manager
                 </Link>
               )}
               <form

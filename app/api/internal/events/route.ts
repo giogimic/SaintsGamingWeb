@@ -2,7 +2,7 @@
  * POST /api/internal/events
  *
  * Secure HTTP event ingestion for external Saints Gaming services:
- *   - FiveM server scripts
+ *   - SA-MP server scripts
  *   - Discord bot
  *   - Admin tools
  *   - Future launcher / mobile

@@ -31,7 +31,7 @@ import { toast } from "sonner";
 import { Sheet, SheetContent, SheetTitle } from "@/web/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/web/components/ui/avatar";
 
-const DEFAULT_HASHTAGS = ["gaming", "saints", "clips", "fivem", "mmo"];
+const DEFAULT_HASHTAGS = ["gaming", "saints", "clips", "samp", "mmo"];
 
 export function GlobalPostComposer() {
   const { data: session } = useSession();

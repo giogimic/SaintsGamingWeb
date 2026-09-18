@@ -215,11 +215,11 @@ export function Navbar({
                       </DropdownMenuItem>
                     )}
 
-                    {/* FiveM UCP (site setting gated) */}
+                    {/* SA-MP UCP (site setting gated) */}
                     {showUcpLink && (
                       <DropdownMenuItem render={<Link href="/ucp" className="cursor-pointer" />}>
                         <Shield className="mr-2 h-4 w-4 text-muted-foreground" />
-                        FiveM UCP
+                        Server Manager
                       </DropdownMenuItem>
                     )}
 

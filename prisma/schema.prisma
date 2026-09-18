@@ -125,10 +125,7 @@ model User {
   supportTickets SupportTicket[]
   ticketMessages TicketMessage[]
 
-  // FiveM
-  fivemLicense  String?             @unique
   discordId     String?             @unique
-  characters    Character[]
   steamWishlist SteamWishlistItem[]
 
   // E2EE Messenger
@@ -628,131 +625,6 @@ model RealtimeEvent {
   @@index([createdAt])
 }
 
-// ─── FiveM Roleplay Server Models ───────────────────────────────
-
-model Character {
-  id             String  @id @default(cuid())
-  userId         String
-  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  firstName      String
-  lastName       String
-  phoneNumber    String? @unique
-  appearanceData String? // JSON string
-  lastCoords     String? // JSON string: {x, y, z, heading}
-  cash           Int     @default(0)
-  bank           Int     @default(0)
-  health         Int     @default(200)
-  armor          Int     @default(0)
-  isDead         Boolean @default(false)
-  drugStats      String? // JSON string: {addictions: {}, activeEffects: {}}
-
-  // Faction / Gang
-  factionId   String?
-  factionRank Int?
-  faction     Faction? @relation(fields: [factionId], references: [id], onDelete: SetNull)
-  gangId      String?
-  gangRank    Int?
-  gang        Gang?    @relation(fields: [gangId], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  properties   Property[]
-  vehicles     Vehicle[]
-  businesses   BusinessEmployee[]
-  inventory    InventoryItem[]
-  transactions BankTransaction[]
-}
-
-model BankTransaction {
-  id          String    @id @default(cuid())
-  characterId String
-  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  type        String // "DEPOSIT", "WITHDRAWAL", "WIRE_TRANSFER", "SALARY"
-  amount      Int
-  description String?
-  createdAt   DateTime  @default(now())
-}
-
-model Property {
-  id        String    @id @default(cuid())
-  type      String // "HOUSE", "APARTMENT"
-  name      String
-  coords    String? // JSON string
-  ownerId   String
-  owner     Character @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-}
-
-model Vehicle {
-  id           String    @id @default(cuid())
-  plate        String    @unique
-  modelName    String
-  activeCoords String? // JSON string
-  garageId     String?
-  ownerId      String
-  owner        Character @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-}
-
-model Faction {
-  id         String      @id @default(cuid())
-  name       String
-  type       String // "LEO", "EMS", etc.
-  characters Character[]
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-}
-
-model Gang {
-  id         String      @id @default(cuid())
-  name       String
-  characters Character[]
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-}
-
-model Business {
-  id        String             @id @default(cuid())
-  name      String
-  bank      Int                @default(0)
-  employees BusinessEmployee[]
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
-}
-
-model BusinessEmployee {
-  id            String @id @default(cuid())
-  characterId   String
-  businessId    String
-  role          String // e.g. "Owner", "Manager", "Employee"
-  hierarchyRank Int    @default(0)
-
-  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  business  Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([characterId, businessId])
-}
-
-model InventoryItem {
-  id          String  @id @default(cuid())
-  characterId String
-  itemKey     String // e.g. "marijuana", "water", "pistol"
-  quantity    Int     @default(1)
-  metadata    String? // JSON string for extra data like durability, weapon ammo
-
-  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([characterId, itemKey]) // Assuming items stack. If they don't, remove this unique constraint.
-}
 
 // ─── RSS Feeds ──────────────────────────────────────────────────
 

@@ -15,13 +15,24 @@ import { validateRelease } from './ReleaseValidator';
  * 2. Immutable: Generates a monolithic JSON payload that is self-contained.
  * 3. Transitive: Packages exactly the required dependencies, no more, no less.
  */
-export async function compileWorldRelease(projectId: string, title?: string, description?: string): Promise<{ manifest: ReleaseManifest, releaseInfo: { releaseId: string, version: string } }> {
-  const project = await prisma.worldProject.findUnique({
-    where: { id: projectId },
+export async function compileWorldRelease(projectIdentifier: string, title?: string, description?: string): Promise<{ manifest: ReleaseManifest, releaseInfo: { releaseId: string, version: string } }> {
+  const project = await prisma.worldProject.findFirst({
+    where: { 
+      OR: [
+        { id: projectIdentifier },
+        { slug: projectIdentifier }
+      ]
+    },
   });
   
+  if (!project) {
+    throw new Error(`Project ${projectIdentifier} not found.`);
+  }
+
+  const projectId = project.id;
+  
   const config = await prisma.gameConfig.findUnique({
-    where: { slug: projectId },
+    where: { slug: project.slug },
   });
 
   // 1. Fetch Data
