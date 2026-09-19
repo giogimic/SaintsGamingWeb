@@ -22,6 +22,10 @@ RUN dpkg --add-architecture i386 \
       libssl3:i386 \
     && rm -rf /var/lib/apt/lists/*
 
+# Add legacy MySQL dependency for SA-MP plugin
+COPY samp-server/libmysqlclient.so.18 /usr/lib/i386-linux-gnu/libmysqlclient.so.18
+RUN chmod 755 /usr/lib/i386-linux-gnu/libmysqlclient.so.18
+
 WORKDIR /app
 
 # Accept database provider as build arg (sqlite or mysql)
