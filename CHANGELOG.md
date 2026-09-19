@@ -1,3 +1,8 @@
+## [2.1.916] - 2026-09-19
+
+### Fixed
+- Added libatomic1 and libatomic1:i386 to the Dockerfile to fix omp-server crashing on startup with missing shared libraries.
+
 ## [2.1.915] - 2026-09-19
 
 ### Fixed

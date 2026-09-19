@@ -16,6 +16,8 @@ RUN dpkg --add-architecture i386 \
       libc6:i386 \
       libncurses5:i386 \
       libstdc++6:i386 \
+      libatomic1 \
+      libatomic1:i386 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
