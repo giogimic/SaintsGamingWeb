@@ -1,3 +1,8 @@
+## [2.1.920] - 2026-09-19
+
+### Added
+- Added a toggle button in the SA-MP Server File Manager to show or hide .so library files from the main view to reduce UI clutter.
+
 ## [2.1.919] - 2026-09-19
 
 ### Added

@@ -33,6 +33,7 @@ export default function ServerFileManager() {
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [showDeployTools, setShowDeployTools] = useState(false);
   const [fileSearch, setFileSearch] = useState('');
+  const [showSoFiles, setShowSoFiles] = useState(false);
   
   // Editor State
   const [editingFile, setEditingFile] = useState<{ path: string, content: string } | null>(null);
@@ -543,9 +544,14 @@ export default function ServerFileManager() {
     setUploadQueue(prev => prev.filter(q => q.status === 'pending' || q.status === 'uploading'));
   };
 
-  const filteredFiles = files.filter(f => 
-    !fileSearch.trim() || f.name.toLowerCase().includes(fileSearch.toLowerCase().trim())
-  );
+  const filteredFiles = files.filter(f => {
+    // Hide .so libraries unless explicitly enabled
+    if (!showSoFiles && f.type === 'file' && (f.name.endsWith('.so') || f.name.includes('.so.'))) {
+      return false;
+    }
+    // Apply search filter
+    return !fileSearch.trim() || f.name.toLowerCase().includes(fileSearch.toLowerCase().trim());
+  });
 
   return (
     <div 
@@ -685,6 +691,16 @@ export default function ServerFileManager() {
                   className="h-7 pl-8 pr-2 text-xs bg-black/60 border-border/40 font-mono"
                 />
               </div>
+
+              <Button
+                variant={showSoFiles ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowSoFiles(prev => !prev)}
+                className={`h-7 px-2.5 text-xs border border-border/40 bg-black/40 ${showSoFiles ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                title="Toggle visibility of .so library files"
+              >
+                {showSoFiles ? "Hide .so" : "Show .so"}
+              </Button>
 
               {uploadProgress !== null && (
                 <div className="text-xs font-mono text-emerald-400 flex items-center bg-emerald-400/10 px-2 h-7 rounded border border-emerald-400/20">
