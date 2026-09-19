@@ -149,13 +149,33 @@ export class SampManager extends EventEmitter {
 
     console.log(`[SampManager] Launching: ${spawnCmd} in ${execCwd}`);
 
+    const logFileName = this.getLogFileName(execCwd);
+    const logFd = fs.openSync(path.join(execCwd, logFileName), 'a');
+
+    const env = { ...process.env };
+    if (!isWindows) {
+      env.LD_LIBRARY_PATH = `${execCwd}:${env.LD_LIBRARY_PATH || ''}`;
+    }
+
     this.process = spawn(spawnCmd, spawnArgs, {
       cwd: execCwd,
       detached: true,
-      stdio: 'ignore',
+      stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: true,
       shell: false,
+      env
     });
+
+    if (this.process.stdout) {
+      this.process.stdout.on('data', (data) => {
+        try { fs.writeSync(logFd, data); } catch {}
+      });
+    }
+    if (this.process.stderr) {
+      this.process.stderr.on('data', (data) => {
+        try { fs.writeSync(logFd, Buffer.concat([Buffer.from('[STDERR] '), data])); } catch {}
+      });
+    }
 
     // Unref so the child process can live independently of the Node event loop
     this.process.unref();
@@ -166,6 +186,7 @@ export class SampManager extends EventEmitter {
     }
 
     this.process.on('close', (code) => {
+      try { fs.closeSync(logFd); } catch {}
       this.process = null;
       this.stopLogTail();
       try {
@@ -263,9 +284,7 @@ export class SampManager extends EventEmitter {
     }
   }
 
-  private startLogTail(execCwd: string) {
-    this.stopLogTail();
-    
+  private getLogFileName(execCwd: string): string {
     let logFileName = 'server_log.txt';
     try {
       const configPath = path.join(execCwd, 'config.json');
@@ -278,7 +297,13 @@ export class SampManager extends EventEmitter {
     } catch (e) {
       // fallback
     }
+    return logFileName;
+  }
 
+  private startLogTail(execCwd: string) {
+    this.stopLogTail();
+    
+    const logFileName = this.getLogFileName(execCwd);
     const logPath = path.join(execCwd, logFileName);
     
     // Create it if it doesn't exist so we can watch it
