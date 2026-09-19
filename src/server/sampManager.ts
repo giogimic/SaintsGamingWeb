@@ -112,10 +112,6 @@ export class SampManager extends EventEmitter {
       fullCmdPath = path.resolve(this.serverPath, cmd);
     }
 
-    if (fs.existsSync(fullCmdPath)) {
-      execCwd = path.dirname(fullCmdPath);
-    }
-
     this.activeCwd = execCwd;
     this.extractRconConfig();
     this.updateMysqlConfig();
