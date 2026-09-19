@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   UploadCloud,
   CheckCircle2,
@@ -48,6 +49,11 @@ export const WorldManagerPanel: React.FC = () => {
   const [titleInput, setTitleInput] = useState('');
   const [descInput, setDescInput] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const runValidation = async () => {
     setValidating(true);
@@ -419,8 +425,8 @@ export const WorldManagerPanel: React.FC = () => {
       </div>
 
       {/* ── Create Release Modal ───────────────────────── */}
-      {showPublishModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+      {showPublishModal && mounted && createPortal(
+        <div className="fixed inset-0 z-[99999] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
           <form
             onSubmit={handlePublish}
             className="bg-[#050b14]/95 backdrop-blur-xl border border-[#806f47]/30 rounded-xl shadow-2xl flex flex-col w-full max-w-lg overflow-hidden font-sans text-xs"
@@ -498,7 +504,8 @@ export const WorldManagerPanel: React.FC = () => {
               </button>
             </div>
           </form>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

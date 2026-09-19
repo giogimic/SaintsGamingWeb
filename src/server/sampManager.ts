@@ -202,10 +202,12 @@ export class SampManager extends EventEmitter {
 
     try {
       if (isWindows) {
-        if (this.process) {
-          this.process.kill('SIGTERM');
-        } else {
-          process.kill(pid, 'SIGTERM');
+        const { execSync } = require('child_process');
+        try {
+          execSync(`taskkill /F /PID ${pid} /T`, { stdio: 'ignore' });
+        } catch (e) {
+          console.warn(`[SampManager] taskkill failed, fallback to process.kill: ${e}`);
+          process.kill(pid, 'SIGKILL');
         }
       } else {
         // Kill the whole process group on Linux/Debian
@@ -216,26 +218,24 @@ export class SampManager extends EventEmitter {
         }
       }
     } catch (e: any) {
-      console.warn(`[SampManager] SIGTERM failed: ${e.message}`);
+      console.warn(`[SampManager] kill failed: ${e.message}`);
     }
 
-    // Wait up to 1.5 seconds for clean exit, otherwise SIGKILL
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    if (!isWindows) {
+      // Wait up to 1.5 seconds for clean exit on linux, otherwise SIGKILL
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    try {
-      process.kill(pid, 0); // Check if still alive
-      // Still alive -> force kill
-      if (isWindows) {
-        process.kill(pid, 'SIGKILL');
-      } else {
+      try {
+        process.kill(pid, 0); // Check if still alive
+        // Still alive -> force kill
         try {
           process.kill(-pid, 'SIGKILL');
         } catch {
           process.kill(pid, 'SIGKILL');
         }
+      } catch {
+        // Process already terminated cleanly
       }
-    } catch {
-      // Process already terminated cleanly
     }
 
     this.process = null;

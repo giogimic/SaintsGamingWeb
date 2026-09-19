@@ -11,6 +11,9 @@ import { GlobalCommandPalette } from "@/web/components/command-palette/global-co
 import { TooltipProvider } from "@/web/components/ui/tooltip";
 import { MainLayoutShell } from "@/web/components/shared/main-layout-shell";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function MainLayout({
   children,
 }: {

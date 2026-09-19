@@ -357,7 +357,7 @@ export default function ServerFileManager() {
   );
 
   return (
-    <div className="flex flex-col h-full bg-background/50 overflow-hidden">
+    <div className="absolute inset-0 flex flex-col bg-background/50 overflow-hidden rounded-b-lg">
       <div className="p-4 space-y-3 flex-1 flex flex-col min-h-0 overflow-hidden">
         
         {/* Top bar with quick toggle & path stats */}

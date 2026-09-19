@@ -345,17 +345,17 @@ export default function ServerManagerConsole({ isDrawerMode = false, onManageFil
     <div className="flex flex-col w-full space-y-4">
       
       {/* Compact Controls Toolbar */}
-      <div className="flex flex-col lg:flex-row gap-4 items-center justify-between bg-card/40 border border-border/50 rounded-lg p-3 sg-glass">
+      <div className="flex flex-row flex-wrap gap-3 items-center justify-between bg-card/40 border border-border/50 rounded-lg p-3 sg-glass">
         
         {/* Left: Executable & Environment */}
-        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex flex-col">
             <span className="text-[10px] font-mono text-muted-foreground uppercase font-bold mb-0.5">Executable</span>
             <div className="flex items-center gap-1.5">
               <select
                 value={launcherExe}
                 onChange={(e) => setLauncherExe(e.target.value)}
-                className="bg-black/60 border border-border/50 rounded px-2 py-1 text-xs font-mono text-zinc-200 focus:outline-none focus:ring-1 focus:ring-primary w-40 h-8"
+                className="bg-black/60 border border-border/50 rounded px-2 py-1 text-xs font-mono text-zinc-200 focus:outline-none focus:ring-1 focus:ring-primary w-32 sm:w-40 h-8"
               >
                 {!availableLaunchers.includes(launcherExe) && launcherExe && (
                   <option value={launcherExe}>{launcherExe}</option>
@@ -375,35 +375,35 @@ export default function ServerManagerConsole({ isDrawerMode = false, onManageFil
             </div>
           </div>
           
-          <div className="hidden lg:flex flex-col ml-2">
+          <div className="hidden sm:flex flex-col">
             <span className="text-[10px] font-mono text-muted-foreground uppercase font-bold mb-0.5">Platform</span>
             <span className="text-[11px] font-mono px-2 py-1 h-8 flex items-center rounded bg-primary/10 border border-primary/20 text-primary font-bold">
-              {isLinux ? 'Debian / Linux' : 'Windows'}
+              {isLinux ? 'Debian' : 'Windows'}
             </span>
           </div>
         </div>
 
         {/* Middle: Actions */}
-        <div className="flex items-center gap-2 w-full lg:w-auto justify-center">
-          <Button onClick={handleStart} disabled={isRunning || isProcessing} size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-bold text-xs h-8 shadow-lg shadow-emerald-600/10">
-            <Play className="w-3.5 h-3.5 mr-1.5" /> Start
+        <div className="flex flex-wrap items-center gap-2">
+          <Button onClick={handleStart} disabled={isRunning || isProcessing} size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-bold text-xs h-8 px-2.5 shadow-lg shadow-emerald-600/10">
+            <Play className="w-3.5 h-3.5 mr-1" /> Start
           </Button>
-          <Button onClick={handleStop} disabled={!isRunning || isProcessing} size="sm" variant="destructive" className="font-mono font-bold text-xs h-8">
-            <Square className="w-3.5 h-3.5 mr-1.5" /> Stop
+          <Button onClick={handleStop} disabled={!isRunning || isProcessing} size="sm" variant="destructive" className="font-mono font-bold text-xs h-8 px-2.5">
+            <Square className="w-3.5 h-3.5 mr-1" /> Stop
           </Button>
-          <Button onClick={handleRestart} disabled={!isRunning || isProcessing} size="sm" variant="outline" className="font-mono text-xs border-border/60 hover:bg-white/5 h-8">
-            <RefreshCcw className="w-3 h-3 mr-1.5 text-amber-400" /> Restart
+          <Button onClick={handleRestart} disabled={!isRunning || isProcessing} size="sm" variant="outline" className="font-mono text-xs border-border/60 hover:bg-white/5 h-8 px-2.5">
+            <RefreshCcw className="w-3 h-3 mr-1 text-amber-400" /> Restart
           </Button>
         </div>
 
         {/* Right: Files & Popout */}
-        <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
-          <Button variant="secondary" size="sm" className="text-xs font-mono cursor-pointer h-8" onClick={onManageFilesClick}>
-            <FolderOpen className="w-3.5 h-3.5 mr-1.5 text-amber-400" /> Files
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="secondary" size="sm" className="text-xs font-mono cursor-pointer h-8 px-2.5" onClick={onManageFilesClick}>
+            <FolderOpen className="w-3.5 h-3.5 mr-1 text-amber-400" /> Files
           </Button>
-          <Button variant="outline" size="sm" className={`text-xs font-mono cursor-pointer h-8 ${isPoppedOut ? 'bg-primary/20 border-primary/50 text-primary' : ''}`} onClick={() => setIsPoppedOut(!isPoppedOut)}>
-            {isPoppedOut ? <Minimize2 className="w-3.5 h-3.5 mr-1.5" /> : <ExternalLink className="w-3.5 h-3.5 mr-1.5 text-primary" />}
-            {isPoppedOut ? 'Dock Console' : 'Pop Out'}
+          <Button variant="outline" size="sm" className={`text-xs font-mono cursor-pointer h-8 px-2.5 ${isPoppedOut ? 'bg-primary/20 border-primary/50 text-primary' : ''}`} onClick={() => setIsPoppedOut(!isPoppedOut)}>
+            {isPoppedOut ? <Minimize2 className="w-3.5 h-3.5 mr-1" /> : <ExternalLink className="w-3.5 h-3.5 mr-1 text-primary" />}
+            {isPoppedOut ? 'Dock' : 'Pop Out'}
           </Button>
         </div>
       </div>

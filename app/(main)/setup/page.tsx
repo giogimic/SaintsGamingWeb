@@ -6,6 +6,8 @@ import { prisma } from '@/web/lib/prisma';
 import { getSystemSetupStatus } from '@/shared/game/setup/setupDetection';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: 'Game Setup | Saints Gaming',
