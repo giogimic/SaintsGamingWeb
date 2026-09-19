@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
   // We assume the caller is an admin if they can reach this endpoint via UCP.
 
   const manager = SampManager.getInstance();
+  manager.ensureLogTail();
 
   const responseStream = new TransformStream();
   const writer = responseStream.writable.getWriter();

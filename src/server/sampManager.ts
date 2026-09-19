@@ -15,7 +15,9 @@ export class SampManager extends EventEmitter {
   private serverPath: string;
   private pidFilePath: string;
   private activeCwd: string | null = null;
-
+  private logTailFd: number | null = null;
+  private logTailInterval: NodeJS.Timeout | null = null;
+  private logTailPos: number = 0;
   private constructor() {
     super();
     this.serverPath = path.join(process.cwd(), 'samp-server');
@@ -145,25 +147,23 @@ export class SampManager extends EventEmitter {
 
     this.process = spawn(spawnCmd, spawnArgs, {
       cwd: execCwd,
-      detached: !isWindows, // Creates new process group so child processes can be cleanly killed
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
       shell: false,
     });
+
+    // Unref so the child process can live independently of the Node event loop
+    this.process.unref();
 
     const activePid = this.process.pid;
     if (activePid) {
       fs.writeFileSync(this.pidFilePath, String(activePid), 'utf8');
     }
 
-    this.process.stdout?.on('data', (data) => {
-      this.emit('log', data.toString());
-    });
-
-    this.process.stderr?.on('data', (data) => {
-      this.emit('error_log', data.toString());
-    });
-
     this.process.on('close', (code) => {
       this.process = null;
+      this.stopLogTail();
       try {
         if (fs.existsSync(this.pidFilePath)) fs.unlinkSync(this.pidFilePath);
       } catch {}
@@ -173,11 +173,14 @@ export class SampManager extends EventEmitter {
     this.process.on('error', (err) => {
       this.emit('error_log', `Failed to start process: ${err.message}`);
       this.process = null;
+      this.stopLogTail();
       try {
         if (fs.existsSync(this.pidFilePath)) fs.unlinkSync(this.pidFilePath);
       } catch {}
       this.emit('stopped', -1);
     });
+
+    this.startLogTail(execCwd);
 
     this.emit('started');
     return { pid: activePid || 0, executable };
@@ -185,6 +188,8 @@ export class SampManager extends EventEmitter {
 
   public async stopServer(): Promise<boolean> {
     const pid = this.getPid();
+    this.stopLogTail();
+
     if (!pid) {
       this.process = null;
       try {
@@ -246,6 +251,59 @@ export class SampManager extends EventEmitter {
     await this.stopServer();
     await new Promise((resolve) => setTimeout(resolve, 1000));
     return this.startServer(customExecutable);
+  }
+
+  public ensureLogTail() {
+    if (this.isRunning() && !this.logTailInterval) {
+      this.startLogTail(this.activeCwd || this.serverPath);
+    }
+  }
+
+  private startLogTail(execCwd: string) {
+    this.stopLogTail();
+    const logPath = path.join(execCwd, 'server_log.txt');
+    
+    // Create it if it doesn't exist so we can watch it
+    if (!fs.existsSync(logPath)) {
+      try { fs.writeFileSync(logPath, ''); } catch {}
+    }
+
+    try {
+      this.logTailFd = fs.openSync(logPath, 'r');
+      const stats = fs.fstatSync(this.logTailFd);
+      this.logTailPos = stats.size; // start tailing from current end
+      
+      this.logTailInterval = setInterval(() => {
+        if (this.logTailFd === null) return;
+        try {
+          const currentStats = fs.fstatSync(this.logTailFd);
+          if (currentStats.size > this.logTailPos) {
+            const length = currentStats.size - this.logTailPos;
+            const buf = Buffer.alloc(length);
+            fs.readSync(this.logTailFd, buf, 0, length, this.logTailPos);
+            this.logTailPos = currentStats.size;
+            this.emit('log', buf.toString('utf8'));
+          } else if (currentStats.size < this.logTailPos) {
+            this.logTailPos = currentStats.size; // file truncated
+          }
+        } catch (e) {
+          // Ignore read errors
+        }
+      }, 500);
+    } catch (e) {
+      console.warn('[SampManager] Could not open server_log.txt for tailing:', e);
+    }
+  }
+
+  private stopLogTail() {
+    if (this.logTailInterval) {
+      clearInterval(this.logTailInterval);
+      this.logTailInterval = null;
+    }
+    if (this.logTailFd !== null) {
+      try { fs.closeSync(this.logTailFd); } catch {}
+      this.logTailFd = null;
+    }
   }
 
   public async sendRconCommand(command: string): Promise<string> {
