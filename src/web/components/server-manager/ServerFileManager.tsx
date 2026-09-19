@@ -456,8 +456,11 @@ export default function ServerFileManager() {
       }));
 
       if (data.success && data.existingFiles.length > 0) {
-        setCollisionItems(toQueue.filter(q => data.existingFiles.includes(q.relativePath)));
-        setUploadQueue(prev => [...prev, ...toQueue]);
+        const withCollisionState = toQueue.map(q => 
+          data.existingFiles.includes(q.relativePath) ? { ...q, status: 'collided' as const } : q
+        );
+        setCollisionItems(withCollisionState.filter(q => q.status === 'collided'));
+        setUploadQueue(prev => [...prev, ...withCollisionState]);
         setShowOverwriteModal(true);
       } else {
         setUploadQueue(prev => [...prev, ...toQueue]);
@@ -471,12 +474,14 @@ export default function ServerFileManager() {
 
   const handleOverwriteChoice = (overwrite: boolean) => {
     setShowOverwriteModal(false);
-    setUploadQueue(prev => prev.map(item => {
-      if (item.status === 'pending' && collisionItems.some(c => c.id === item.id)) {
-        return { ...item, status: overwrite ? 'pending' : 'collided' };
-      }
-      return item;
-    }));
+    if (overwrite) {
+      setUploadQueue(prev => prev.map(item => {
+        if (item.status === 'collided' && collisionItems.some(c => c.id === item.id)) {
+          return { ...item, status: 'pending' };
+        }
+        return item;
+      }));
+    }
     setCollisionItems([]);
   };
 
@@ -545,7 +550,7 @@ export default function ServerFileManager() {
 
   const filteredFiles = files.filter(f => {
     // Hide .so libraries unless explicitly enabled
-    if (!showSoFiles && f.type === 'file' && (f.name.endsWith('.so') || f.name.includes('.so.'))) {
+    if (!showSoFiles && !f.isDirectory && (f.name.endsWith('.so') || f.name.includes('.so.'))) {
       return false;
     }
     // Apply search filter
