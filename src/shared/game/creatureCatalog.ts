@@ -373,6 +373,14 @@ export function resolveEntitySpriteUrl(
     return raw;
   }
 
+  const trimmed = raw;
+  if (trimmed.startsWith('uploads/')) {
+    return `/${trimmed}`;
+  }
+  if (trimmed.startsWith('upload_') || trimmed.startsWith('asset_custom_')) {
+    return `/uploads/${trimmed.endsWith('.png') ? trimmed : `${trimmed}.png`}`;
+  }
+
   const key = raw.replace(/\.png$/i, "");
   if (key.includes("/")) {
     // Relative catalog keys that point at battle sheets → prefer overworld when possible

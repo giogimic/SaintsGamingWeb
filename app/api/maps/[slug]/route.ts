@@ -275,8 +275,9 @@ export async function GET(
     }
 
     if (!payload) {
-      // Pristine realm / missing map — return a blank canvas instead of 404
+      // Pristine realm / missing map — return a visible grass canvas instead of 404
       // so the lobby and Studio can always render something interactive.
+      // GID 1 = first tile in the default tileset (grass), not 0 (empty/void).
       const blankW = 30, blankH = 30;
       payload = {
         id: slug,
@@ -284,7 +285,7 @@ export async function GET(
         name: slug.replace(/_/g, ' '),
         width: blankW,
         height: blankH,
-        grid: Array.from({ length: blankH }, () => Array(blankW).fill(0)),
+        grid: Array.from({ length: blankH }, () => Array(blankW).fill(1)),
         gates: [],
         connections: undefined,
         spawnPoint: { x: Math.floor(blankW / 2), y: Math.floor(blankH / 2) },
@@ -296,7 +297,7 @@ export async function GET(
         encounterPool: [],
         tileLayers: [],
         freeformLayers: [],
-        tilesets: [],
+        tilesets: DEFAULT_STUDIO_TILESETS,
         voxelDoc: generateDefaultWorldDoc(
           Math.max(1, Math.ceil(blankW / CHUNK_SIZE_X)),
           Math.max(1, Math.ceil(blankH / CHUNK_SIZE_Z)),
