@@ -369,7 +369,7 @@ export default function ServerFileManager() {
           </div>
         </div>
         <textarea
-          className="flex-1 w-full bg-black/60 border border-border/40 rounded p-4 font-mono text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary"
+          className="flex-1 w-full min-h-[60vh] bg-black/60 border border-border/40 rounded p-4 font-mono text-sm resize-y focus:outline-none focus:ring-1 focus:ring-primary"
           value={editingFile.content}
           onChange={(e) => setEditingFile({ ...editingFile, content: e.target.value })}
           spellCheck={false}

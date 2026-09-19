@@ -498,10 +498,10 @@ export async function readServerFile(filePath: string) {
     const targetFile = getSafePath(filePath);
     if (!fs.existsSync(targetFile)) return { success: false, error: 'File not found' };
     
-    // Quick check to avoid reading huge binaries
+    // Quick check to avoid reading huge binaries (Next.js server actions limit is 1MB)
     const stats = fs.statSync(targetFile);
-    if (stats.size > 5 * 1024 * 1024) {
-      return { success: false, error: 'File is too large to read in browser (max 5MB)' };
+    if (stats.size > 1024 * 1024) {
+      return { success: false, error: 'File is too large to read in browser (max 1MB for Server Actions)' };
     }
     
     const content = fs.readFileSync(targetFile, 'utf-8');
