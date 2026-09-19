@@ -144,9 +144,9 @@ model User {
   // SAMP Integrations
   sampPlayerSessions SampPlayerSession[]
   sampLinkCodes      SampLinkCode[]
-  youtubeMusicUrl String?
-  profileImages   ProfileImage[]
-  pinnedBeastId   String? // ID of the Beast/Creature to display on profile
+  youtubeMusicUrl    String?
+  profileImages      ProfileImage[]
+  pinnedBeastId      String? // ID of the Beast/Creature to display on profile
 
   // Guilds
   guildMemberships GuildMember[]
@@ -452,21 +452,21 @@ model Modpack {
 // ─── Game Servers ─────────────────────────────────────────────────
 
 model GameServer {
-  id        String   @id @default(cuid())
-  name      String // e.g., "Saints Gaming - Creature Server #1"
-  game      String // e.g., "Creature Battler"
-  ip        String // e.g., "192.168.1.100" or domain
-  port      Int // e.g., 8211, 8214, 8215
-  queryPort Int? // Creature Battler uses a specific port for RCON/Query
-  isActive  Boolean  @default(true)
-  trackerId String? // Optional: ID for Battlemetrics or similar API
-  order        Int      @default(0) // For sorting on the UI
+  id           String    @id @default(cuid())
+  name         String // e.g., "Saints Gaming - Creature Server #1"
+  game         String // e.g., "Creature Battler"
+  ip           String // e.g., "192.168.1.100" or domain
+  port         Int // e.g., 8211, 8214, 8215
+  queryPort    Int? // Creature Battler uses a specific port for RCON/Query
+  isActive     Boolean   @default(true)
+  trackerId    String? // Optional: ID for Battlemetrics or similar API
+  order        Int       @default(0) // For sorting on the UI
   apiKeyHash   String?
-  isRemote     Boolean  @default(false)
+  isRemote     Boolean   @default(false)
   agentVersion String?
   lastSeen     DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   commands ServerCommand[]
   sessions SampPlayerSession[]
@@ -476,8 +476,8 @@ model ServerCommand {
   id        String     @id @default(cuid())
   serverId  String
   server    GameServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
-  type      String     // "UPDATE_GAMEMODE" | "RCON" | "RESTART" | "CONFIG_PUSH"
-  payload   String     // JSON stringified
+  type      String // "UPDATE_GAMEMODE" | "RCON" | "RESTART" | "CONFIG_PUSH"
+  payload   String // JSON stringified
   status    String     @default("PENDING") // PENDING | RUNNING | DONE | FAILED
   result    String?
   createdAt DateTime   @default(now())
@@ -491,7 +491,7 @@ model SampPlayerSession {
   serverId    String
   server      GameServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
   playerName  String
-  userId      String?    // linked Saints account (null if unregistered)
+  userId      String? // linked Saints account (null if unregistered)
   user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   score       Int        @default(0)
   money       Int        @default(0)
@@ -625,7 +625,6 @@ model RealtimeEvent {
   @@index([createdAt])
 }
 
-
 // ─── RSS Feeds ──────────────────────────────────────────────────
 
 model RssFeed {
@@ -758,9 +757,9 @@ model WorldRelease {
 }
 
 model WorldMapSnapshot {
-  id                 String        @id @default(cuid())
+  id                 String       @id @default(cuid())
   releaseId          String
-  release            WorldRelease  @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+  release            WorldRelease @relation(fields: [releaseId], references: [id], onDelete: Cascade)
   mapId              String // Original map ID, e.g. "SAINTS_VILLAGE"
   name               String
   version            Int
@@ -769,11 +768,11 @@ model WorldMapSnapshot {
   proceduralConfig   String? // JSON for deterministic procedural biome configuration
   gridData           String? // JSON 2D Array
   gatesData          String // JSON
-  encountersData     String        @default("[]") // JSON
-  entitiesData       String        @default("[]") // JSON
-  freeformLayersData String?       @default("[]") // JSON
+  encountersData     String       @default("[]") // JSON
+  entitiesData       String       @default("[]") // JSON
+  freeformLayersData String?      @default("[]") // JSON
 
-  createdAt          DateTime      @default(now())
+  createdAt DateTime @default(now())
 
   @@index([releaseId])
   @@index([mapId])

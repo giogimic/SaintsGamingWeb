@@ -37,7 +37,7 @@ async function main() {
     process.exit(1);
   }
   console.log("=== SEEDING LOGIC TILES & BASE SETUP ===");
-  const setupRes = await importStarterPackToDb(prisma, "blank-canvas");
+  const setupRes = await importStarterPackToDb(prisma, "blank-canvas", true);
   if (!setupRes.success) {
     console.error("Failed Base Setup Seeding:", setupRes.message);
     process.exit(1);

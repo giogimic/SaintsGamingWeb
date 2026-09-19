@@ -47,7 +47,8 @@ export const AVAILABLE_STARTER_PACKS: StarterPackMeta[] = [
  */
 export async function importStarterPackToDb(
   prismaClient: any,
-  packId: string = 'blank-canvas'
+  packId: string = 'blank-canvas',
+  skipSetupCompletion: boolean = false
 ): Promise<{ success: boolean; importedMaps: number; importedCreatures: number; message: string }> {
   // 1. Seed essential logic tiles for Studio brush palette
   for (const tile of DEMO_LOGIC_TILES) {
@@ -77,22 +78,24 @@ export async function importStarterPackToDb(
     }).catch((e: any) => console.warn(`[Setup] Logic tile ${tile.id} skip:`, e.message));
   }
 
-  // 2. Mark setup as initialized
-  const now = new Date().toISOString();
-  const setupSettings = [
-    { key: SETUP_SETTING_KEYS.STARTER_PACK_IMPORTED, value: packId },
-    { key: SETUP_SETTING_KEYS.GAME_INITIALIZED, value: 'true' },
-    { key: SETUP_SETTING_KEYS.GAME_INITIALIZED_AT, value: now },
-    { key: SETUP_SETTING_KEYS.SETUP_COMPLETED, value: 'true' },
-    { key: SETUP_SETTING_KEYS.SETUP_COMPLETED_AT, value: now },
-  ];
+  // 2. Mark setup as initialized (if not skipped by CLI)
+  if (!skipSetupCompletion) {
+    const now = new Date().toISOString();
+    const setupSettings = [
+      { key: SETUP_SETTING_KEYS.STARTER_PACK_IMPORTED, value: packId },
+      { key: SETUP_SETTING_KEYS.GAME_INITIALIZED, value: 'true' },
+      { key: SETUP_SETTING_KEYS.GAME_INITIALIZED_AT, value: now },
+      { key: SETUP_SETTING_KEYS.SETUP_COMPLETED, value: 'true' },
+      { key: SETUP_SETTING_KEYS.SETUP_COMPLETED_AT, value: now },
+    ];
 
-  for (const s of setupSettings) {
-    await prismaClient.siteSetting.upsert({
-      where: { key: s.key },
-      create: { key: s.key, value: s.value },
-      update: { value: s.value },
-    }).catch((e: any) => console.warn(`[Setup] Setting ${s.key} skip:`, e.message));
+    for (const s of setupSettings) {
+      await prismaClient.siteSetting.upsert({
+        where: { key: s.key },
+        create: { key: s.key, value: s.value },
+        update: { value: s.value },
+      }).catch((e: any) => console.warn(`[Setup] Setting ${s.key} skip:`, e.message));
+    }
   }
 
   return {

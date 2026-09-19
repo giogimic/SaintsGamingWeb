@@ -1,3 +1,8 @@
+## [2.1.917] - 2026-09-19
+
+### Fixed
+- Fixed an issue where wiping the realm and restoring starter content via the update script would incorrectly bypass the Game Initialization setup wizard by prematurely flagging setup as completed.
+
 ## [2.1.916] - 2026-09-19
 
 ### Fixed
