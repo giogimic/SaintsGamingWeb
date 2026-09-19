@@ -1,3 +1,11 @@
+## [2.1.919] - 2026-09-19
+
+### Added
+- Implemented advanced Drag-and-Drop file and folder uploading for the SA-MP Server File Manager.
+- Added a new backend API endpoint (/api/samp/upload/check) to detect incoming file collisions and prompt the user to Overwrite or Skip.
+- Implemented a 3-file concurrent upload queue system with a floating UI to prevent browser freezes when uploading large folders.
+- File uploads now preserve their exact relative directory structures when folders are dragged in.
+
 ## [2.1.918] - 2026-09-19
 
 ### Added

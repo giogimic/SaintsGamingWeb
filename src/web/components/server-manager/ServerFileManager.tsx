@@ -37,6 +37,12 @@ export default function ServerFileManager() {
   // Editor State
   const [editingFile, setEditingFile] = useState<{ path: string, content: string } | null>(null);
 
+  // Drag & Drop State
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadQueue, setUploadQueue] = useState<{ id: string; file: File; relativePath: string; status: 'pending' | 'uploading' | 'completed' | 'error' | 'collided'; error?: string }[]>([]);
+  const [showOverwriteModal, setShowOverwriteModal] = useState(false);
+  const [collisionItems, setCollisionItems] = useState<{ id: string; relativePath: string }[]>([]);
+
   const addLog = (msg: string) => setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
 
   useEffect(() => {
@@ -369,14 +375,185 @@ export default function ServerFileManager() {
         />
       </div>
     );
+    );
   }
+
+  // --- Drag & Drop Queue Logic ---
+  
+  // Recursively read a directory entry
+  const readDirectory = async (directoryReader: FileSystemDirectoryReader, pathPrefix: string, entries: any[] = []): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      directoryReader.readEntries(async (results) => {
+        if (!results.length) {
+          resolve();
+        } else {
+          for (const entry of results) {
+            if (entry.isFile) {
+              const file = await new Promise<File>((res) => (entry as FileSystemFileEntry).file(res));
+              entries.push({ file, relativePath: `${pathPrefix}${file.name}` });
+            } else if (entry.isDirectory) {
+              const dirReader = (entry as FileSystemDirectoryEntry).createReader();
+              await readDirectory(dirReader, `${pathPrefix}${entry.name}/`, entries);
+            }
+          }
+          await readDirectory(directoryReader, pathPrefix, entries);
+          resolve();
+        }
+      }, reject);
+    });
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    if (!e.dataTransfer.items) return;
+    
+    setIsProcessing(true);
+    addLog('Parsing dropped files...');
+
+    const newEntries: { file: File; relativePath: string }[] = [];
+
+    const promises = Array.from(e.dataTransfer.items).map(async (item) => {
+      if (item.kind !== 'file') return;
+      const entry = item.webkitGetAsEntry();
+      if (!entry) return;
+
+      if (entry.isFile) {
+        const file = item.getAsFile();
+        if (file) newEntries.push({ file, relativePath: file.name });
+      } else if (entry.isDirectory) {
+        const dirReader = (entry as FileSystemDirectoryEntry).createReader();
+        await readDirectory(dirReader, `${entry.name}/`, newEntries);
+      }
+    });
+
+    await Promise.all(promises);
+
+    if (newEntries.length === 0) {
+      setIsProcessing(false);
+      return;
+    }
+
+    addLog(`Checking ${newEntries.length} files for collisions...`);
+
+    try {
+      const res = await fetch('/api/samp/upload/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dirPath: currentPath,
+          relativePaths: newEntries.map(e => e.relativePath)
+        })
+      });
+      const data = await res.json();
+      
+      const toQueue = newEntries.map((e, idx) => ({
+        id: Math.random().toString(36).substr(2, 9) + idx,
+        file: e.file,
+        relativePath: e.relativePath,
+        status: 'pending' as const
+      }));
+
+      if (data.success && data.existingFiles.length > 0) {
+        setCollisionItems(toQueue.filter(q => data.existingFiles.includes(q.relativePath)));
+        setUploadQueue(prev => [...prev, ...toQueue]);
+        setShowOverwriteModal(true);
+      } else {
+        setUploadQueue(prev => [...prev, ...toQueue]);
+      }
+    } catch (err) {
+      toast.error('Failed to check file collisions');
+    }
+
+    setIsProcessing(false);
+  };
+
+  const handleOverwriteChoice = (overwrite: boolean) => {
+    setShowOverwriteModal(false);
+    setUploadQueue(prev => prev.map(item => {
+      if (item.status === 'pending' && collisionItems.some(c => c.id === item.id)) {
+        return { ...item, status: overwrite ? 'pending' : 'collided' };
+      }
+      return item;
+    }));
+    setCollisionItems([]);
+  };
+
+  // Queue Processor
+  useEffect(() => {
+    const processQueue = async () => {
+      const MAX_CONCURRENT = 3;
+      const activeCount = uploadQueue.filter(q => q.status === 'uploading').length;
+      
+      if (activeCount >= MAX_CONCURRENT) return;
+
+      const pendingItems = uploadQueue.filter(q => q.status === 'pending');
+      if (pendingItems.length === 0) {
+        // If everything is completed/error/collided, maybe reload files once
+        if (uploadQueue.length > 0 && activeCount === 0 && uploadQueue.some(q => q.status === 'completed')) {
+          loadFiles(currentPath);
+        }
+        return;
+      }
+
+      const itemsToStart = pendingItems.slice(0, MAX_CONCURRENT - activeCount);
+      
+      setUploadQueue(prev => prev.map(item => 
+        itemsToStart.some(start => start.id === item.id) ? { ...item, status: 'uploading' } : item
+      ));
+
+      for (const item of itemsToStart) {
+        uploadItem(item);
+      }
+    };
+
+    const uploadItem = async (item: any) => {
+      const formData = new FormData();
+      formData.append('file', item.file);
+      formData.append('dirPath', currentPath);
+      formData.append('relativePath', item.relativePath);
+
+      try {
+        const res = await fetch('/api/samp/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await res.json();
+        
+        setUploadQueue(prev => prev.map(q => {
+          if (q.id === item.id) {
+            return { ...q, status: data.success ? 'completed' : 'error', error: data.error };
+          }
+          return q;
+        }));
+      } catch (err: any) {
+        setUploadQueue(prev => prev.map(q => {
+          if (q.id === item.id) return { ...q, status: 'error', error: err.message };
+          return q;
+        }));
+      }
+    };
+
+    processQueue();
+  }, [uploadQueue, currentPath]);
+
+  const clearCompletedQueue = () => {
+    setUploadQueue(prev => prev.filter(q => q.status === 'pending' || q.status === 'uploading'));
+  };
 
   const filteredFiles = files.filter(f => 
     !fileSearch.trim() || f.name.toLowerCase().includes(fileSearch.toLowerCase().trim())
   );
 
   return (
-    <div className="flex-1 h-full w-full flex flex-col bg-background/50 overflow-hidden rounded-b-lg">
+    <div 
+      className={`flex-1 h-full w-full flex flex-col overflow-hidden rounded-b-lg transition-colors ${isDragging ? 'bg-primary/10 border-2 border-dashed border-primary' : 'bg-background/50'}`}
+      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+      onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+      onDrop={handleDrop}
+    >
       <div className="p-4 space-y-3 flex-1 flex flex-col min-h-0 overflow-hidden">
         
         {/* Top bar with quick toggle & path stats */}
@@ -616,6 +793,71 @@ export default function ServerFileManager() {
         </div>
 
       </div>
+
+      {/* Upload Queue Floating Panel */}
+      {uploadQueue.length > 0 && (
+        <div className="absolute bottom-4 right-4 w-80 bg-card border border-border/50 rounded-lg shadow-xl shadow-black/50 flex flex-col overflow-hidden z-50">
+          <div className="bg-primary/10 p-3 border-b border-border/50 flex justify-between items-center">
+            <h4 className="text-sm font-bold flex items-center gap-2">
+              <Upload className="w-4 h-4 text-primary" /> Upload Queue
+            </h4>
+            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-black/40" onClick={clearCompletedQueue}>
+              <X className="w-3.5 h-3.5 text-muted-foreground" />
+            </Button>
+          </div>
+          <div className="max-h-64 overflow-y-auto p-2 space-y-1 bg-black/40">
+            {uploadQueue.map(item => (
+              <div key={item.id} className="flex items-center justify-between p-2 text-xs rounded bg-card/40">
+                <span className="truncate max-w-[180px]" title={item.relativePath}>{item.relativePath}</span>
+                <span className="flex-shrink-0 flex items-center gap-1">
+                  {item.status === 'pending' && <span className="text-muted-foreground">Pending</span>}
+                  {item.status === 'uploading' && <><Loader2 className="w-3 h-3 animate-spin text-blue-400" /> <span className="text-blue-400">Uploading</span></>}
+                  {item.status === 'completed' && <span className="text-emerald-400 font-bold">Done</span>}
+                  {item.status === 'error' && <span className="text-red-400" title={item.error}>Error</span>}
+                  {item.status === 'collided' && <span className="text-yellow-400">Skipped</span>}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="p-2 border-t border-border/50 bg-black/60 text-[10px] text-muted-foreground flex justify-between">
+            <span>{uploadQueue.filter(q => q.status === 'completed').length} / {uploadQueue.length} Completed</span>
+            <span>{uploadQueue.filter(q => q.status === 'uploading').length} Active</span>
+          </div>
+        </div>
+      )}
+
+      {/* Overwrite Confirmation Modal */}
+      {showOverwriteModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <Card className="w-full max-w-md bg-card border-border/50 shadow-2xl p-6 flex flex-col gap-4">
+            <div className="flex items-start gap-3">
+              <div className="bg-yellow-500/20 p-2 rounded-full">
+                <AlertTriangle className="w-6 h-6 text-yellow-500" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">File Collision Detected</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {collisionItems.length} of the files you are uploading already exist on the server. Do you want to overwrite them or skip them?
+                </p>
+              </div>
+            </div>
+            <div className="max-h-32 overflow-y-auto bg-black/40 rounded p-2 text-xs font-mono text-muted-foreground border border-border/40">
+              {collisionItems.map(item => (
+                <div key={item.id} className="truncate">{item.relativePath}</div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-3 mt-2">
+              <Button variant="outline" className="border-border/50" onClick={() => handleOverwriteChoice(false)}>
+                Skip Existing
+              </Button>
+              <Button className="bg-yellow-600 hover:bg-yellow-500 text-white font-bold" onClick={() => handleOverwriteChoice(true)}>
+                Overwrite All
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
     </div>
   );
 }

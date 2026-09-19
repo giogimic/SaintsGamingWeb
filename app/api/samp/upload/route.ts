@@ -13,6 +13,7 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     let dirPath = formData.get('dirPath') as string | null;
+    const relativePath = formData.get('relativePath') as string | null;
 
     if (!file) {
       return NextResponse.json({ success: false, error: 'No file provided' }, { status: 400 });
@@ -27,11 +28,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Invalid path' }, { status: 400 });
     }
 
-    if (!fs.existsSync(targetDir)) {
+    // Determine the full file path. If relativePath is provided, use it (and create parent dirs).
+    // Otherwise fallback to just placing the file in targetDir.
+    let filePath = path.join(targetDir, file.name);
+    if (relativePath) {
+      // Ensure the relative path doesn't try to escape
+      const sanitizedRelPath = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, '');
+      filePath = path.join(targetDir, sanitizedRelPath);
+      
+      const fileDir = path.dirname(filePath);
+      if (!fs.existsSync(fileDir)) {
+        fs.mkdirSync(fileDir, { recursive: true });
+      }
+    } else if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true });
     }
-
-    const filePath = path.join(targetDir, file.name);
     
     // Process the file buffer
     const arrayBuffer = await file.arrayBuffer();
