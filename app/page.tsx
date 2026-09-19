@@ -63,7 +63,7 @@ export default function LandingPage() {
     getDiscordInviteUrl().then(setDiscordLink);
     
     // Check if the game is freshly installed and needs setup
-    fetch('/api/setup/status')
+    fetch('/api/setup/status', { cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
         if (data && data.status && !data.status.isSetupCompleted) {

@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/web/lib/prisma';
 import { getSystemSetupStatus } from '@/shared/game/setup/setupDetection';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Game Setup | Saints Gaming',
   description: 'Game initialization and onboarding wizard for configuring game identity, characters, environment, and starting maps.',

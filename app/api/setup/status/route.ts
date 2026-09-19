@@ -21,7 +21,7 @@ export async function GET() {
       }).catch(() => {});
     }
 
-    const isAdmin = user && (user.permissionLevel >= 200 || user.role === 'ADMIN' || status.userCount <= 1);
+    const isAdmin = user && (user.permissionLevel >= 80 || user.role === 'ADMIN' || status.userCount <= 1);
     const canSetup = status.userCount === 0 || isAdmin || status.userCount <= 1;
 
     return NextResponse.json({
