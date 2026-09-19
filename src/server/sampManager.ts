@@ -68,12 +68,16 @@ export class SampManager extends EventEmitter {
     if (isWindows) {
       if (fs.existsSync(path.join(this.serverPath, 'omp-server.exe'))) return 'omp-server.exe';
       if (fs.existsSync(path.join(this.serverPath, 'samp-server.exe'))) return 'samp-server.exe';
+      if (fs.existsSync(path.join(this.serverPath, 'wins', 'omp-server.exe'))) return 'wins/omp-server.exe';
+      if (fs.existsSync(path.join(this.serverPath, 'wins', 'samp-server.exe'))) return 'wins/samp-server.exe';
       return 'omp-server.exe';
     } else {
       // Linux / Debian
       if (fs.existsSync(path.join(this.serverPath, 'omp-server'))) return './omp-server';
       if (fs.existsSync(path.join(this.serverPath, 'start.sh'))) return './start.sh';
       if (fs.existsSync(path.join(this.serverPath, 'samp03svr'))) return './samp03svr';
+      if (fs.existsSync(path.join(this.serverPath, 'linux', 'omp-server'))) return 'linux/omp-server';
+      if (fs.existsSync(path.join(this.serverPath, 'linux', 'samp03svr'))) return 'linux/samp03svr';
       return './omp-server';
     }
   }

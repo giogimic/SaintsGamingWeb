@@ -5,7 +5,7 @@ import { RealtimeService } from "./src/server/realtime/RealtimeService";
 
 const dev = process.env.NODE_ENV !== "production";
 // Docker sets HOSTNAME=0.0.0.0; default to all interfaces in prod so lobby sockets work.
-const hostname = process.env.HOSTNAME || (dev ? "localhost" : "0.0.0.0");
+const hostname = process.env.HOSTNAME || (dev ? "127.0.0.1" : "0.0.0.0");
 const port = parseInt(process.env.PORT || "24001", 10);
 
 const app = next({ dev, hostname, port });
