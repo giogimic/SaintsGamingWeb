@@ -1,3 +1,10 @@
+## [2.1.914] - 2026-09-19
+### Fixed
+- **Debian SAMP Server Execution:** Fixed an issue where the SAMP server manager would immediately crash spawned Linux instances due to `SIGPIPE` errors when the parent Node process restarted. Replaced Node `stdio` pipes with direct OS file descriptors to `server_log.txt`.
+- **Stale PIDs on Debian:** Hardened `getPid()` on Linux to read `/proc/${pid}/comm` to verify if the recycled PID actually belongs to `omp-server`, `samp03svr`, or `bash`, preventing the panel from freezing if an unrelated system daemon took the old PID after a Debian reboot.
+- **Debian Launcher Arguments:** Fixed `start.sh` in the `linux/` directory to properly forward execution arguments (`"$@"`) to the `omp-server` binary.
+- **Executable Priority:** Prioritized `start.sh` and `linux/start.sh` above the raw binary on Linux in `detectDefaultExecutable()` to guarantee environment scripts are executed first.
+
 ## [2.1.913] - 2026-09-18
 ### Fixed
 - **Setup Initialization Caching:** Added `force-dynamic` to `app/(main)/home/page.tsx` and `app/(main)/setup/page.tsx`, and `cache: 'no-store'` to the setup status fetch in `app/page.tsx`. This fixes an issue where the Next.js router would aggressively cache the `isSetupCompleted` boolean from before a database wipe, preventing the Setup Wizard from rendering and incorrectly redirecting users to the studio.
