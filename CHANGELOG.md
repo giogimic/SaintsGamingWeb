@@ -1,3 +1,13 @@
+## [2.1.918] - 2026-09-19
+
+### Added
+- Added libssl3 and libssl3:i386 dependencies to the Docker image to fix missing library crashes in omp-server on Debian Bookworm.
+- Added Grab Missing Libraries button to the Server File Manager to automatically fetch and extract 32-bit and 64-bit Linux .so libraries directly into the server directory.
+- Added a --wipe-samp prompt to update.sh to allow optionally wiping SAMP server files during an update.
+
+### Fixed
+- Fixed an issue where the samp-server directory was not mounted as a Docker volume, resulting in custom files being deleted every time the container was updated or rebuilt.
+
 ## [2.1.917] - 2026-09-19
 
 ### Fixed

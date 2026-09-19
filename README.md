@@ -51,7 +51,7 @@ Once it's running, open [http://localhost:24001](http://localhost:24001) in your
 
 ## 📜 Changelog
 
-### v2.1.917 - Canonical Gameplay, Studio, and Deployment Documentation
+### v2.1.918 - Canonical Gameplay, Studio, and Deployment Documentation
 - **Canonical terminology:** Defined Archetypes as playable player foundations and Classes as modular ability, stat, and equipment packages that Archetypes can equip.
 - **Combat clarity:** Replaced retired battle labels with Creature Battles (turn-based capture) and Monster Battles (real-time action); documented the Creature-to-Monster configuration boundary.
 - **Studio map boundaries:** Documented Tile Maps, Voxel Maps, and Fractal Domains as separate authoring systems.

@@ -119,6 +119,10 @@ while [ $# -gt 0 ]; do
             WIPE_SOCIAL_DATA_CLI=1
             shift
             ;;
+        --wipe-samp)
+            WIPE_SAMP_DATA_CLI=1
+            shift
+            ;;
         -y|--yes|--non-interactive)
             NON_INTERACTIVE=1
             shift
@@ -226,6 +230,7 @@ echo -e "${PURPLE}[⚡] Active Update Profile: ${BOLD}${UPDATE_MODE^^}${NC}\n"
 # --- Optional Data Wiping ---
 WIPE_GAME_DATA=$WIPE_GAME_DATA_CLI
 WIPE_SOCIAL_DATA=$WIPE_SOCIAL_DATA_CLI
+WIPE_SAMP_DATA=${WIPE_SAMP_DATA_CLI:-0}
 SEED_STARTER_DATA=0
 
 if [ "$UPDATE_MODE" != "restart" ] && [ "$NON_INTERACTIVE" -eq 0 ]; then
@@ -252,6 +257,14 @@ if [ "$UPDATE_MODE" != "restart" ] && [ "$NON_INTERACTIVE" -eq 0 ]; then
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             WIPE_SOCIAL_DATA=1
+        fi
+    fi
+    
+    if [ "$WIPE_SAMP_DATA" -eq 0 ]; then
+        read -p "Wipe SAMP Server Files & Installed Gamemodes? (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            WIPE_SAMP_DATA=1
         fi
     fi
     echo ""
@@ -709,6 +722,13 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
             fi
             
             echo -e "${GREEN}[✓] Go SQLite wiped safely.${NC}\n"
+        fi
+
+        if [ "$WIPE_SAMP_DATA" -eq 1 ]; then
+            echo -e "${CYAN}[*] Wiping SAMP Server files...${NC}"
+            # Wipe via docker exec to ensure it clears the mounted volume contents correctly
+            docker exec saints-gaming-web sh -c 'rm -rf /app/samp-server/* /app/samp-server/.[!.]* 2>/dev/null' || true
+            echo -e "${GREEN}[✓] SAMP server directory wiped.${NC}\n"
         fi
         
         echo -e "${GREEN}[✓] Data wipes completed.${NC}\n"

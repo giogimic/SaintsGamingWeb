@@ -242,6 +242,52 @@ export async function downloadAndExtractServer(archiveUrl: string) {
 }
 
 /**
+ * Downloads missing Linux libraries into the samp-server folder.
+ */
+export async function grabMissingLibraries() {
+  await requireAdmin();
+  const targetDir = path.join(process.cwd(), 'samp-server');
+  if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+
+  if (process.platform === 'win32') {
+    return { success: false, error: 'This feature is only available on Linux/Docker deployments.' };
+  }
+
+  try {
+    // Attempt to install them globally inside the container first for maximum compatibility
+    try {
+      await execAsync(`dpkg --add-architecture i386 && apt-get update && apt-get install -y --no-install-recommends libc6:i386 libncurses5:i386 libstdc++6:i386 libatomic1 libatomic1:i386 libssl3 libssl3:i386`);
+    } catch (e) {
+      // Ignore apt errors, we will fallback to downloading debs
+    }
+
+    // Now pull the .so files directly into the samp-server directory so they persist
+    const tempDir = path.join(targetDir, 'temp_libs_dl');
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
+    // Download the most common missing libraries directly as .deb
+    const debs = 'libc6:i386 libstdc++6:i386 libssl3:i386 libssl3 libatomic1:i386 libatomic1 libncurses5:i386';
+    await execAsync(`cd "${tempDir}" && apt-get download ${debs} || true`);
+    
+    // Extract .deb files
+    await execAsync(`cd "${tempDir}" && for deb in *.deb; do dpkg-deb -x "$deb" ext 2>/dev/null || true; done`);
+
+    // Copy .so files up to the samp-server directory
+    await execAsync(`cd "${tempDir}" && find ext -type f -name "*.so*" -exec cp {} "${targetDir}/" \\;`);
+
+    // Cleanup
+    await execAsync(`rm -rf "${tempDir}"`);
+
+    // Fix permissions
+    await execAsync(`find . -maxdepth 1 -name "*.so*" -exec chmod +x {} + 2>/dev/null || true`, { cwd: targetDir });
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to grab libraries' };
+  }
+}
+
+/**
  * Automatically fetches the latest open.mp server release for the correct platform,
  * downloads it, and extracts it to /samp-server.
  */

@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { 
   downloadAndExtractServer, installLatestOMP, getDeployKey, syncGitDeploy, getGitRemoteUrl,
   listServerFiles, readServerFile, writeServerFile, deleteServerItem, renameServerItem, uploadServerFile,
-  executeSqlFile, executeSqlFolder, unzipServerArchive
+  executeSqlFile, executeSqlFolder, unzipServerArchive, grabMissingLibraries
 } from '@/../app/(ucp)/server-manager/actions';
 import { setLauncherConfig } from '@/../app/(ucp)/server-manager/launcher';
 
@@ -80,6 +80,25 @@ export default function ServerFileManager() {
       } else {
         addLog(`Error: ${res.error}`);
         toast.error('Failed to install open.mp');
+      }
+    } catch (e: any) {
+      addLog(`Exception: ${e.message}`);
+    }
+    setIsProcessing(false);
+  };
+
+  const handleGrabMissingLibraries = async () => {
+    setIsProcessing(true);
+    addLog('Pulling missing Linux libraries into directory...');
+    try {
+      const res = await grabMissingLibraries();
+      if (res.success) {
+        addLog('Missing libraries pulled successfully!');
+        toast.success('Libraries pulled into directory!');
+        loadFiles(currentPath);
+      } else {
+        addLog(`Error: ${res.error}`);
+        toast.error('Failed to pull missing libraries');
       }
     } catch (e: any) {
       addLog(`Exception: ${e.message}`);
@@ -387,15 +406,28 @@ export default function ServerFileManager() {
                 </h3>
                 <p className="text-[11px] text-muted-foreground">Downloads the latest compatible Linux/Windows open.mp binaries directly from GitHub.</p>
               </div>
-              <Button 
-                onClick={handleInstallLatestOMP} 
-                disabled={isProcessing}
-                size="sm"
-                className="bg-primary text-black hover:bg-primary/80 font-bold w-full h-8 text-xs"
-              >
-                {isProcessing ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
-                Install open.mp
-              </Button>
+              <div className="flex gap-2 w-full">
+                <Button 
+                  onClick={handleInstallLatestOMP} 
+                  disabled={isProcessing}
+                  size="sm"
+                  className="bg-primary text-black hover:bg-primary/80 font-bold h-8 text-xs flex-1 px-2"
+                >
+                  {isProcessing ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+                  Install open.mp
+                </Button>
+                <Button 
+                  onClick={handleGrabMissingLibraries} 
+                  disabled={isProcessing}
+                  size="sm"
+                  variant="outline"
+                  title="Fix missing .so library errors"
+                  className="h-8 text-xs border-primary/40 text-primary hover:bg-primary hover:text-black flex-1 px-2"
+                >
+                  {isProcessing ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+                  Grab Libraries
+                </Button>
+              </div>
             </Card>
 
             <Card className="flex-[2] min-w-[300px] bg-black/40 border-border/40 p-3.5 flex flex-col justify-between space-y-2.5">

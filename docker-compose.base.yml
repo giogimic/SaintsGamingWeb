@@ -15,6 +15,8 @@ services:
       - ./data:/app/prisma/db
       # Map the uploads directory so user images persist
       - ./uploads:/app/public/uploads
+      # Map the SAMP server directory so game files persist across updates
+      - ./samp-server:/app/samp-server
     env_file:
       - .env
     environment:
