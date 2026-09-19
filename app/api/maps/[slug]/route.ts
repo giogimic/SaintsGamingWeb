@@ -307,7 +307,7 @@ export async function GET(
         ),
         regionClass: 'authored',
         proceduralConfig: undefined,
-        mapType: "HYBRID",
+        mapType: "FRACTAL",
         version: 0,
         source: 'worldMap' as const,
       };

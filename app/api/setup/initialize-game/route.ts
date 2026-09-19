@@ -404,7 +404,7 @@ export async function POST(req: Request) {
           entitiesData: JSON.stringify([]),
           freeformLayersData: JSON.stringify([]),
           version: 1,
-          mapType: map.mapType || 'HYBRID',
+          mapType: map.mapType || 'FRACTAL',
         },
         update: {
           name: mapName,
@@ -413,7 +413,7 @@ export async function POST(req: Request) {
           gridData: JSON.stringify(initialLogicGrid),
           freeformLayersData: JSON.stringify([]),
           version: { increment: 1 },
-          mapType: map.mapType || 'HYBRID',
+          mapType: map.mapType || 'FRACTAL',
         }
       });
 
