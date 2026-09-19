@@ -1,3 +1,8 @@
+## [2.1.913] - 2026-09-18
+### Fixed
+- **Setup Initialization Caching:** Added `force-dynamic` to `app/(main)/home/page.tsx` and `app/(main)/setup/page.tsx`, and `cache: 'no-store'` to the setup status fetch in `app/page.tsx`. This fixes an issue where the Next.js router would aggressively cache the `isSetupCompleted` boolean from before a database wipe, preventing the Setup Wizard from rendering and incorrectly redirecting users to the studio.
+- **Setup Permission Misalignment:** Lowered the `canSetup` permission threshold in `/api/setup/status/route.ts` from `>= 200` to `>= 80`. This aligns the API with the UI layer (which allows level 80 Studio Admins to access the setup route), preventing level 80 users from being soft-locked on an "Administrator Access Required" screen during fresh initialization.
+
 ## [2.1.912] - 2026-09-18
 ### Fixed
 - **CLI Wipe Tool:** Added scripts/wipe-data.ts CLI tool to correctly execute the wipeNonBundledRealmContent service. This ensures that manually executed game data wipes from update.bat and update.sh actually delete the maps and setup flags, allowing the Setup Initialization Wizard to reappear instead of bypassing to the studio.
