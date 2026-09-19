@@ -376,7 +376,6 @@ export default function ServerFileManager() {
         />
       </div>
     );
-    );
   }
 
   // --- Drag & Drop Queue Logic ---
