@@ -265,7 +265,21 @@ export class SampManager extends EventEmitter {
 
   private startLogTail(execCwd: string) {
     this.stopLogTail();
-    const logPath = path.join(execCwd, 'server_log.txt');
+    
+    let logFileName = 'server_log.txt';
+    try {
+      const configPath = path.join(execCwd, 'config.json');
+      if (fs.existsSync(configPath)) {
+        const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        if (configData?.logging?.file) {
+          logFileName = configData.logging.file;
+        }
+      }
+    } catch (e) {
+      // fallback
+    }
+
+    const logPath = path.join(execCwd, logFileName);
     
     // Create it if it doesn't exist so we can watch it
     if (!fs.existsSync(logPath)) {
