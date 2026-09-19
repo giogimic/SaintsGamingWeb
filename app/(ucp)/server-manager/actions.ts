@@ -134,7 +134,8 @@ export async function downloadAndExtractServer(archiveUrl: string) {
           stripFlags = "--strip-components=1";
         }
       } catch (e) {}
-      await execAsync(`tar -xzf "${tempFile}" -C "${targetDir}" ${stripFlags}`);
+      let excludeFlags = `--exclude="*server.cfg" --exclude="*config.json" --exclude="*mysql.cfg"`;
+      await execAsync(`tar ${excludeFlags} -xzf "${tempFile}" -C "${targetDir}" ${stripFlags}`);
     } else {
       if (isWindows) {
         // Windows native tar supports zip now!
@@ -167,6 +168,15 @@ export async function downloadAndExtractServer(archiveUrl: string) {
           if (!finalPath) continue; // Skip the root dir entry itself
 
           const fullPath = path.join(targetDir, finalPath);
+          
+          // Protect configs
+          if (fs.existsSync(fullPath)) {
+            const lowerFinal = finalPath.toLowerCase();
+            if (lowerFinal.endsWith('server.cfg') || lowerFinal.endsWith('config.json') || lowerFinal.endsWith('mysql.cfg')) {
+              continue;
+            }
+          }
+
           if (file.dir) {
             if (!fs.existsSync(fullPath)) fs.mkdirSync(fullPath, { recursive: true });
           } else {
@@ -196,14 +206,32 @@ export async function downloadAndExtractServer(archiveUrl: string) {
             const oldPath = path.join(subPath, item);
             const newPath = path.join(targetDir, item);
             // Replace if it exists
-            if (fs.existsSync(newPath)) fs.rmSync(newPath, { recursive: true, force: true });
-            fs.renameSync(oldPath, newPath);
+            if (fs.existsSync(newPath)) {
+              if (fs.statSync(newPath).isDirectory() && fs.statSync(oldPath).isDirectory()) {
+                fs.cpSync(oldPath, newPath, { recursive: true, force: true });
+                fs.rmSync(oldPath, { recursive: true, force: true });
+              } else {
+                fs.rmSync(newPath, { recursive: true, force: true });
+                fs.renameSync(oldPath, newPath);
+              }
+            } else {
+              fs.renameSync(oldPath, newPath);
+            }
           }
           fs.rmdirSync(subPath);
         } catch(e) {
           console.error("Failed to move items from " + subDir, e);
         }
       }
+    }
+    
+    // Final permission fix for Linux
+    if (process.platform !== 'win32') {
+      try {
+        await execAsync(`chmod +x omp-server samp03svr announce 2>/dev/null || true`, { cwd: targetDir });
+        await execAsync(`find . -type f -name "*.so" -exec chmod +x {} + 2>/dev/null || true`, { cwd: targetDir });
+        await execAsync(`find . -type f -name "*.sh" -exec chmod +x {} + 2>/dev/null || true`, { cwd: targetDir });
+      } catch (e) {}
     }
     
     return { success: true };
@@ -494,6 +522,11 @@ export async function uploadServerFile(dirPath: string, formData: FormData) {
     const buffer = Buffer.from(await file.arrayBuffer());
     fs.writeFileSync(filePath, buffer);
     
+    // Auto-chmod scripts and plugins on Linux
+    if (process.platform !== 'win32' && (filePath.endsWith('.so') || filePath.endsWith('.sh') || filePath.includes('samp03svr') || filePath.includes('omp-server'))) {
+      try { fs.chmodSync(filePath, 0o755); } catch (e) {}
+    }
+    
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -578,7 +611,8 @@ export async function unzipServerArchive(filePath: string) {
           stripFlags = "--strip-components=1";
         }
       } catch (e) {}
-      await execAsync(`tar -xzf "${targetFile}" -C "${targetDir}" ${stripFlags}`);
+      let excludeFlags = `--exclude="*server.cfg" --exclude="*config.json" --exclude="*mysql.cfg"`;
+      await execAsync(`tar ${excludeFlags} -xzf "${targetFile}" -C "${targetDir}" ${stripFlags}`);
     } else if (filePath.endsWith('.zip')) {
       if (isWindows) {
         await execAsync(`tar -xf "${targetFile}" -C "${targetDir}"`);
@@ -590,6 +624,14 @@ export async function unzipServerArchive(filePath: string) {
 
         for (const [relativePath, file] of files) {
           const fullPath = path.join(targetDir, relativePath);
+          
+          if (fs.existsSync(fullPath)) {
+            const lowerFinal = relativePath.toLowerCase();
+            if (lowerFinal.endsWith('server.cfg') || lowerFinal.endsWith('config.json') || lowerFinal.endsWith('mysql.cfg')) {
+              continue;
+            }
+          }
+
           if (file.dir) {
             if (!fs.existsSync(fullPath)) fs.mkdirSync(fullPath, { recursive: true });
           } else {

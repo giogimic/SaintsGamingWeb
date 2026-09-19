@@ -700,7 +700,7 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
             # Stop any running Go containers to safely delete the file
             if docker ps -a --format '{{.Names}}' | grep -q '^saints-lobby$'; then
                 docker stop saints-lobby 2>/dev/null || true
-                docker rm -f saints-lobby 2>/dev/null || true
+                # REMOVED: docker rm -f saints-lobby 2>/dev/null || true
                 # REMOVED: docker volume rm saints_lobby_data (to prevent persistent player data loss)
             fi
             if docker ps -a --format '{{.Names}}' | grep -q '^saints-gaming-mmo-go$'; then
@@ -727,12 +727,12 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
         echo -e "${GREEN}[✓] Assets synced.${NC}\n"
     fi
 
-    # MMO socket cleanup
-    if docker ps -a --format '{{.Names}}' | grep -q '^saints-lobby$'; then
-        docker rm -f saints-lobby 2>/dev/null || true
-    fi
-
     if [ "$NEED_GO_BUILD" -eq 1 ]; then
+        # MMO socket cleanup
+        if docker ps -a --format '{{.Names}}' | grep -q '^saints-lobby$'; then
+            docker rm -f saints-lobby 2>/dev/null || true
+        fi
+
         if [ -f "the-lobby/docker-compose.yml" ]; then
             echo -e "${CYAN}[*] Building Go MMO container...${NC}"
             ( cd the-lobby && docker compose build > ../docker_build_go.log 2>&1 ) &
@@ -781,6 +781,14 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
                 exit 1
             fi
             echo -e "${GREEN}[✓] Go container running.${NC}\n"
+        fi
+    else
+        # Ensure Go container is running if it was stopped (e.g., during a wipe)
+        if docker ps -a --format '{{.Names}}' | grep -q '^saints-lobby$'; then
+            if ! docker ps --format '{{.Names}}' | grep -q '^saints-lobby$'; then
+                echo -e "${CYAN}[*] Restarting Go MMO container...${NC}"
+                docker start saints-lobby >/dev/null 2>&1 || true
+            fi
         fi
     fi
 

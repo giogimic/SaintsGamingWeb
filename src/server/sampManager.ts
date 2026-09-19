@@ -45,17 +45,27 @@ export class SampManager extends EventEmitter {
           try {
             process.kill(pid, 0); // Check if process is alive
             
-            // Debian/Linux strict check: verify the PID is actually our server or bash
+            // Debian/Linux strict check: verify the PID is actually our server
             if (process.platform === 'linux') {
               try {
-                if (fs.existsSync(`/proc/${pid}/comm`)) {
-                  const comm = fs.readFileSync(`/proc/${pid}/comm`, 'utf8').trim().toLowerCase();
-                  if (!comm.includes('omp-server') && !comm.includes('samp03svr') && !comm.includes('bash') && !comm.includes('sh')) {
+                // Safest Debian check: does the process working directory match our server path?
+                if (fs.existsSync(`/proc/${pid}/cwd`)) {
+                  const procCwd = fs.readlinkSync(`/proc/${pid}/cwd`);
+                  if (procCwd !== this.serverPath && procCwd !== fs.realpathSync(this.serverPath)) {
                     fs.unlinkSync(this.pidFilePath);
                     return null; // Stale PID taken by another process
                   }
                 }
               } catch (e) {} // Fallback to returning pid if /proc is unreadable
+            } else if (process.platform === 'win32') {
+              try {
+                const { execSync } = require('child_process');
+                const stdout = execSync(`tasklist /FI "PID eq ${pid}" /NH`, { stdio: ['pipe', 'pipe', 'ignore'] }).toString();
+                if (!stdout.toLowerCase().includes('omp-server.exe') && !stdout.toLowerCase().includes('samp-server.exe')) {
+                  fs.unlinkSync(this.pidFilePath);
+                  return null;
+                }
+              } catch (e) {} // Fallback to returning pid
             }
             
             return pid;
@@ -165,7 +175,15 @@ export class SampManager extends EventEmitter {
     console.log(`[SampManager] Launching: ${spawnCmd} in ${execCwd}`);
 
     const logFileName = this.getLogFileName(execCwd);
-    const logFd = fs.openSync(path.join(execCwd, logFileName), 'a');
+    const logPathFull = path.join(execCwd, logFileName);
+    const logDir = path.dirname(logPathFull);
+    if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+    
+    // Ensure scriptfiles exists
+    const scriptfilesPath = path.join(execCwd, 'scriptfiles');
+    if (!fs.existsSync(scriptfilesPath)) fs.mkdirSync(scriptfilesPath, { recursive: true });
+
+    const logFd = fs.openSync(logPathFull, 'a');
 
     const env = { ...process.env };
     if (!isWindows) {
@@ -198,8 +216,15 @@ export class SampManager extends EventEmitter {
       this.emit('stopped', code);
     });
 
-    this.process.on('error', (err) => {
-      this.emit('error_log', `Failed to start process: ${err.message}`);
+    this.process.on('error', (err: any) => {
+      const errMsg = `[SampManager] Failed to start process: ${err.message}\n` +
+                     (err.code === 'ENOENT' && fs.existsSync(fullCmdPath) && !isWindows 
+                       ? `[SampManager] HINT: The executable exists but Node failed to run it. On Debian/Linux, if you are running a 32-bit SA-MP server (samp03svr) or plugin on a 64-bit OS, you are likely missing 32-bit libraries. Run: dpkg --add-architecture i386 && apt update && apt install libc6:i386 libstdc++6:i386\n` 
+                       : '');
+      this.emit('error_log', errMsg);
+      this.emit('log', errMsg);
+      try { fs.appendFileSync(path.join(execCwd, logFileName), errMsg); } catch {}
+      
       this.process = null;
       this.stopLogTail();
       try {
@@ -224,6 +249,29 @@ export class SampManager extends EventEmitter {
         if (fs.existsSync(this.pidFilePath)) fs.unlinkSync(this.pidFilePath);
       } catch {}
       return false;
+    }
+
+    // Standard SA-MP Best Practice: Try graceful shutdown via RCON 'exit' first
+    try {
+      if (this.rconPassword && this.rconPassword !== 'changeme') {
+        await this.sendRconCommand('exit').catch(() => {});
+        // Wait up to 2 seconds for graceful exit
+        for (let i = 0; i < 4; i++) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          try {
+            process.kill(pid, 0); // Check if still alive
+          } catch {
+            // Process exited gracefully!
+            this.process = null;
+            this.stopLogTail();
+            try { if (fs.existsSync(this.pidFilePath)) fs.unlinkSync(this.pidFilePath); } catch {}
+            this.emit('stopped', 0);
+            return true;
+          }
+        }
+      }
+    } catch (e) {
+      // Fallback to signals
     }
 
     const isWindows = process.platform === 'win32';

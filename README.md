@@ -15,8 +15,9 @@ Saints Gaming started way back in 2007 as a chill group of friends hanging out o
 This project brings our community hub together with an interactive multiplayer game:
 
 - **The Community Hub**: Forums to chat, news updates, game server status trackers (so you can see who's online on our servers), and a FiveM player portal.
-- **The Lobby (The Game)**: A browser-based multiplayer world where you can drop in as a character, explore, and hang out with friends directly in your browser.
-- **World Studio**: A built-in map builder where you can paint terrain, build structures, set up areas, and test them live.
+- **The Lobby (The Game)**: A browser-based multiplayer world where you can explore, build a Saint from a playable Archetype and modular Classes, grow long-term skills, collect Creatures, and fight Monsters with friends.
+- **World Studio**: A built-in creator suite for Tile Maps, Voxel Maps, infinite procedural Fractal Domains, Archetypes, Classes, abilities, quests, dialogue, creatures, monsters, assets, and live world releases.
+- **Combat**: Creature Battles are turn-based and capture-focused. Monster Battles are real-time, open-world action combat. A Creature can be configured to appear in both systems; a Monster is action-combat-only.
 
 ---
 
@@ -27,6 +28,8 @@ If you want to poke around the code, run it on your own machine, or test things 
 ### What you need
 - **Node.js** (v22 or newer recommended)
 - **Git**
+
+Linux is the primary deployment target. Windows is supported for local development and the Saints desktop app. The built-in setup supports Caddy for HTTPS and reverse-proxy configuration, but Caddy is optional.
 
 ### Steps
 
@@ -42,11 +45,17 @@ npm run setup
 npm run dev
 ```
 
-Once it's running, just open [http://localhost:3000](http://localhost:3000) in your browser!
+Once it's running, open [http://localhost:24001](http://localhost:24001) in your browser.
 
 ---
 
 ## 📜 Changelog
+
+### v2.1.915 - Canonical Gameplay, Studio, and Deployment Documentation
+- **Canonical terminology:** Defined Archetypes as playable player foundations and Classes as modular ability, stat, and equipment packages that Archetypes can equip.
+- **Combat clarity:** Replaced retired battle labels with Creature Battles (turn-based capture) and Monster Battles (real-time action); documented the Creature-to-Monster configuration boundary.
+- **Studio map boundaries:** Documented Tile Maps, Voxel Maps, and Fractal Domains as separate authoring systems.
+- **Linux-first delivery:** Documented Linux as the primary server target, with Windows compatibility retained and built-in Caddy support kept optional.
 
 ### v2.1.911 - Go MMO Snapshot Lazy Fetching, JoinMap Definition Canonicalization & Atlas Checksum Resilience
 - **Go MMO Snapshot Lazy Fetching (`FetchMapDef`):** Wired up `wm.FetchMapDef` in `the-lobby/cmd/server/main.go` to lazily query `WorldMapSnapshot` from SQLite on demand. Any map requested by clients or transitions that is not yet resident in memory is dynamically parsed and instantiated with its full grid, gates, and encounters.

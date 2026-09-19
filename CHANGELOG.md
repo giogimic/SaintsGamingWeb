@@ -1,3 +1,15 @@
+## [2.1.915] - 2026-09-19
+
+### Fixed
+- Fixed SAMP Manager update process accidentally wiping gamemodes/scriptfiles directories.
+- Fixed SAMP Manager falsely identifying server as running on Windows and Linux due to PID reuse.
+- Prevented SAMP Manager updates from overwriting custom server.cfg, config.json, and mysql.cfg files.
+- Fixed Linux permissions (chmod +x) not being applied to .so plugins and scripts when uploaded via the UCP File Manager.
+
+### Added
+- Added graceful shutdown procedure using RCON exit command prior to process termination to prevent SA-MP/open.mp player data loss.
+- Added automatic diagnostic hint to server logs on Debian/Linux when a 32-bit server or plugin fails to load due to missing libc6:i386 architecture.
+
 ## [2.1.914] - 2026-09-19
 ### Fixed
 - **Debian SAMP Server Execution:** Fixed an issue where the SAMP server manager would immediately crash spawned Linux instances due to `SIGPIPE` errors when the parent Node process restarted. Replaced Node `stdio` pipes with direct OS file descriptors to `server_log.txt`.

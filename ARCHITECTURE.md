@@ -34,7 +34,7 @@ graph TB
     end
 
     subgraph "Realtime Backend"
-        GoMMO["Go MMO Server (go-mmo/)"]
+        GoMMO["Go MMO Server (the-lobby/)"]
     end
 
     Browser --> HTTP
@@ -140,12 +140,26 @@ Saints Gaming supports two realtime backends:
 
 | Backend | Role | Configuration |
 |---|---|---|
-| **Go MMO** (`go-mmo/`) | Primary game server: lobby sockets, movement, combat, Studio collaboration | `NEXT_PUBLIC_GO_MMO_URL` in `.env` |
+| **Go MMO** (`the-lobby/`) | Primary game server: lobby sockets, movement, combat, Studio collaboration | `NEXT_PUBLIC_GO_MMO_URL` in `.env` |
 | **Node.js Fallback** (`src/server/`) | Event router; forwards events to Go. Can run standalone TS game engine if `ENABLE_TS_GAME_ENGINE=1` | Default when Go URL is not set |
 
 The Node.js `RealtimeService` acts as a **bridge**, not a replacement. Clients connect WebSocket directly to the Go MMO server for game state, while Next.js API routes handle persistence (map save/load, character data) via Prisma.
 
-### 7. Saints App (Electron Desktop Client)
+### 7. World Authoring Systems
+
+World Studio has three separate authoring systems:
+
+| System | Scope | Purpose |
+|---|---|---|
+| **Tile Map Editor** | Finite 2D/2.5D maps | Tiles, layers, logic, entities, and authored layouts. |
+| **Voxel Map Editor** | Finite 3D maps | Authored voxel terrain, chunks, structures, and sculpted environments. |
+| **Fractal Domains** | Infinite procedural areas | Deterministic, streamed world fields and generated terrain. Finite Voxel Maps can be injected as structures. |
+
+### 8. Linux-First Deployment and Optional Caddy
+
+Linux is the primary Saints server target; Windows remains supported for local development and the Electron client. The built-in setup supports Caddy for HTTPS and reverse-proxy configuration, including additive subdomains, but Caddy is optional. Saints may run locally without a proxy or behind another compatible proxy.
+
+### 9. Saints App (Electron Desktop Client)
 
 The `saints-app/` directory contains an **Electron wrapper** that provides performance benefits for the game engine and Studio:
 

@@ -21,7 +21,25 @@ export interface WipeRealmResult {
 }
 
 export async function wipeNonBundledRealmContent(prisma: any): Promise<WipeRealmResult> {
-  // 1. Wipe all maps so only the map created by the user during setup exists
+  // 1. Wipe map versions, sync entries, and releases FIRST to satisfy foreign keys
+  if (prisma.worldMapVersion?.deleteMany) {
+    await prisma.worldMapVersion.deleteMany({});
+  }
+  if (prisma.mapSyncEntry?.deleteMany) {
+    await prisma.mapSyncEntry.deleteMany({});
+  }
+  if (prisma.worldReleaseManifest?.deleteMany) await prisma.worldReleaseManifest.deleteMany({});
+  if (prisma.worldRelease?.deleteMany) await prisma.worldRelease.deleteMany({});
+  if (prisma.nextjsSyncOutbox?.deleteMany) await prisma.nextjsSyncOutbox.deleteMany({});
+  if (prisma.worldPublishSnapshot?.deleteMany) await prisma.worldPublishSnapshot.deleteMany({});
+  if (prisma.mapChunk?.deleteMany) await prisma.mapChunk.deleteMany({});
+  if (prisma.saintsMap?.deleteMany) await prisma.saintsMap.deleteMany({});
+
+  // 2. Wipe custom map prefabs and quests
+  await prisma.mapPrefab.deleteMany({});
+  await prisma.gameQuest.deleteMany({});
+
+  // 3. Wipe all maps now that children are deleted
   const deletedMaps = await prisma.worldMap.deleteMany({}).catch((e: any) => {
     console.warn('[WipeRealmService] worldMap wipe warning:', e?.message);
     return { count: 0 };
@@ -33,26 +51,6 @@ export async function wipeNonBundledRealmContent(prisma: any): Promise<WipeRealm
     await prisma.worldAtlas.deleteMany({});
   }
 
-  // 2. Wipe map versions and sync entries
-  if (prisma.worldMapVersion?.deleteMany) {
-    await prisma.worldMapVersion.deleteMany({});
-  }
-  if (prisma.mapSyncEntry?.deleteMany) {
-    await prisma.mapSyncEntry.deleteMany({});
-  }
-  
-  // Wipe compiled releases and persistence outbox
-  if (prisma.worldReleaseManifest?.deleteMany) await prisma.worldReleaseManifest.deleteMany({});
-  if (prisma.worldRelease?.deleteMany) await prisma.worldRelease.deleteMany({});
-  if (prisma.nextjsSyncOutbox?.deleteMany) await prisma.nextjsSyncOutbox.deleteMany({});
-  
-  if (prisma.worldPublishSnapshot?.deleteMany) await prisma.worldPublishSnapshot.deleteMany({});
-  if (prisma.mapChunk?.deleteMany) await prisma.mapChunk.deleteMany({});
-  if (prisma.saintsMap?.deleteMany) await prisma.saintsMap.deleteMany({});
-
-  // 3. Wipe custom map prefabs and quests
-  await prisma.mapPrefab.deleteMany({});
-  await prisma.gameQuest.deleteMany({});
 
   // 4. Wipe player gameplay state and characters tied to previous maps
   // Must delete dependent records BEFORE deleting the parent GameCharacter to satisfy foreign key constraints
