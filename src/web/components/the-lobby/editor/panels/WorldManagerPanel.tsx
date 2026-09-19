@@ -79,9 +79,23 @@ export const WorldManagerPanel: React.FC = () => {
 
   useEffect(() => {
     const handleOpenCreate = () => setShowPublishModal(true);
+    const handleDeployLatest = () => {
+      // Find the latest snapshot in the current snapshots list
+      // Since it's sorted by id desc, index 0 is latest
+      if (snapshots.length > 0) {
+        handleDeploy(snapshots[0]);
+      } else {
+        alert("No releases available to deploy.");
+      }
+    };
+
     window.addEventListener('studio_open_release_create', handleOpenCreate);
-    return () => window.removeEventListener('studio_open_release_create', handleOpenCreate);
-  }, []);
+    window.addEventListener('studio_deploy_latest_release', handleDeployLatest);
+    return () => {
+      window.removeEventListener('studio_open_release_create', handleOpenCreate);
+      window.removeEventListener('studio_deploy_latest_release', handleDeployLatest);
+    };
+  }, [snapshots]);
 
   const handlePublish = async (e: React.FormEvent) => {
     e.preventDefault();

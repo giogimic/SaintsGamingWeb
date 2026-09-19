@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Map not found" }, { status: 404 });
     }
 
-    if (map.mapType !== 'FRACTAL') {
-      return NextResponse.json({ error: "Only FRACTAL maps support JIT generation" }, { status: 400 });
+    if (map.mapType !== 'FRACTAL' && map.mapType !== 'VOXEL' && map.mapType !== 'HYBRID') {
+      return NextResponse.json({ error: `Map type ${map.mapType} does not support 3D generation` }, { status: 400 });
     }
 
     const { VoxelStorageService } = await import('@/server/services/VoxelStorageService');

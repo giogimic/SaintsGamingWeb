@@ -247,7 +247,7 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
       tilesets: DEFAULT_STUDIO_TILESETS,
       voxelDoc,
       regionClass: snap.regionClass || "authored",
-      mapType: "VOXEL",
+      mapType: snap.mapType || "VOXEL",
       version: 1,
       source: "worldMapSnapshot" as const,
     };

@@ -44,6 +44,20 @@ export class SampManager extends EventEmitter {
         if (!isNaN(pid) && pid > 0) {
           try {
             process.kill(pid, 0); // Check if process is alive
+            
+            // Debian/Linux strict check: verify the PID is actually our server or bash
+            if (process.platform === 'linux') {
+              try {
+                if (fs.existsSync(`/proc/${pid}/comm`)) {
+                  const comm = fs.readFileSync(`/proc/${pid}/comm`, 'utf8').trim().toLowerCase();
+                  if (!comm.includes('omp-server') && !comm.includes('samp03svr') && !comm.includes('bash') && !comm.includes('sh')) {
+                    fs.unlinkSync(this.pidFilePath);
+                    return null; // Stale PID taken by another process
+                  }
+                }
+              } catch (e) {} // Fallback to returning pid if /proc is unreadable
+            }
+            
             return pid;
           } catch {
             // Stale PID file
@@ -72,9 +86,10 @@ export class SampManager extends EventEmitter {
       if (fs.existsSync(path.join(this.serverPath, 'wins', 'samp-server.exe'))) return 'wins/samp-server.exe';
       return 'omp-server.exe';
     } else {
-      // Linux / Debian
-      if (fs.existsSync(path.join(this.serverPath, 'omp-server'))) return './omp-server';
+      // Debian / Linux priority
       if (fs.existsSync(path.join(this.serverPath, 'start.sh'))) return './start.sh';
+      if (fs.existsSync(path.join(this.serverPath, 'linux', 'start.sh'))) return 'linux/start.sh';
+      if (fs.existsSync(path.join(this.serverPath, 'omp-server'))) return './omp-server';
       if (fs.existsSync(path.join(this.serverPath, 'samp03svr'))) return './samp03svr';
       if (fs.existsSync(path.join(this.serverPath, 'linux', 'omp-server'))) return 'linux/omp-server';
       if (fs.existsSync(path.join(this.serverPath, 'linux', 'samp03svr'))) return 'linux/samp03svr';
@@ -99,7 +114,6 @@ export class SampManager extends EventEmitter {
     const parts = executable.split(/\s+/);
     let cmd = parts[0];
     const args = parts.slice(1);
-    let execCwd = this.serverPath;
 
     // Resolve full path if relative or contained
     let fullCmdPath = cmd;
@@ -110,6 +124,11 @@ export class SampManager extends EventEmitter {
       fullCmdPath = cmd;
     } else {
       fullCmdPath = path.resolve(this.serverPath, cmd);
+    }
+
+    let execCwd = this.serverPath;
+    if (fs.existsSync(fullCmdPath) && fs.statSync(fullCmdPath).isFile()) {
+      execCwd = path.dirname(fullCmdPath);
     }
 
     this.activeCwd = execCwd;
@@ -156,22 +175,11 @@ export class SampManager extends EventEmitter {
     this.process = spawn(spawnCmd, spawnArgs, {
       cwd: execCwd,
       detached: true,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ['ignore', logFd, logFd],
       windowsHide: true,
       shell: false,
       env
     });
-
-    if (this.process.stdout) {
-      this.process.stdout.on('data', (data) => {
-        try { fs.writeSync(logFd, data); } catch {}
-      });
-    }
-    if (this.process.stderr) {
-      this.process.stderr.on('data', (data) => {
-        try { fs.writeSync(logFd, Buffer.concat([Buffer.from('[STDERR] '), data])); } catch {}
-      });
-    }
 
     // Unref so the child process can live independently of the Node event loop
     this.process.unref();
@@ -182,7 +190,6 @@ export class SampManager extends EventEmitter {
     }
 
     this.process.on('close', (code) => {
-      try { fs.closeSync(logFd); } catch {}
       this.process = null;
       this.stopLogTail();
       try {

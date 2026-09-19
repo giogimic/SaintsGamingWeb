@@ -34,6 +34,7 @@ import {
   Moon,
   Sparkles,
   CloudUpload,
+  UploadCloud,
   ChevronDown,
   ChevronRight,
   LayoutGrid,
@@ -590,10 +591,10 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             </SubMenu>
             <MenuItem label="World Manager (Releases)" shortcut="Ctrl+Shift+U" icon={CloudUpload} onClick={() => openPanel('worldManager')} />
             <SubMenu label="Release" icon={Package}>
-              <MenuItem label="Create Release..." icon={Plus} onClick={() => { openPanel('worldManager'); window.dispatchEvent(new CustomEvent('studio_open_release_create')); }} />
-              <MenuItem label="Manage Releases..." icon={Settings} onClick={() => openPanel('worldManager')} />
-              <MenuItem label="Release History" icon={ScrollText} onClick={() => openPanel('worldManager')} />
-              <MenuItem label="Release Settings..." icon={Settings} onClick={() => openPanel('worldManager')} />
+              <MenuItem label="Create Release Snapshot..." icon={Plus} onClick={() => { openPanel('worldManager'); window.dispatchEvent(new CustomEvent('studio_open_release_create')); }} />
+              <MenuItem label="Deploy Latest Release..." shortcut="Ctrl+Shift+D" icon={UploadCloud} onClick={() => { openPanel('worldManager'); window.dispatchEvent(new CustomEvent('studio_deploy_latest_release')); }} />
+              <MenuItem label="Open World Manager Panel..." icon={Settings} onClick={() => openPanel('worldManager')} />
+              <MenuItem label="Release History..." icon={ScrollText} onClick={() => openPanel('worldManager')} />
             </SubMenu>
             <SubMenu label="System" icon={Settings}>
               <MenuItem label="Graceful Restart (Deploy)" icon={CloudUpload} onClick={() => {

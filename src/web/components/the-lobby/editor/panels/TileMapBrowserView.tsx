@@ -105,8 +105,8 @@ export const TileMapBrowserView: React.FC = () => {
   const filtered = useMemo(() => {
     let list = combined;
 
-    // Isolate by map type (strictly Tile maps only)
-    list = list.filter((m) => m.mapType !== 'VOXEL' && m.mapType !== 'FRACTAL');
+    // Isolate by map type (strictly Tile maps only, treat missing as TILE for legacy)
+    list = list.filter((m) => m.mapType === 'TILE' || !m.mapType);
 
     return list.sort((a, b) => {
       let cmp = 0;
