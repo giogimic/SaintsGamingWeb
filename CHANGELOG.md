@@ -1,3 +1,8 @@
+## [2.1.923] - 2026-09-19
+- Fixed drag and drop upload collision logic in Server File Manager
+- Added .so file toggle visibility fix for root directories
+- Exposed SA-MP ports (7777 UDP/TCP) in docker-compose.yml and docker-compose.base.yml to allow external connections
+
 ## [2.1.920] - 2026-09-19
 
 ### Added

@@ -224,6 +224,8 @@ Once it's running, open [http://localhost:24001](http://localhost:24001) in your
 
 ## Changelog
 
+### v2.1.923 - Fix File Manager Drag & Drop and Expose SA-MP Ports
+
 **v2.1.894**
 - Built **SA-MP Remote Integration Architecture**:
   - `GameServer` schema extended to support remote servers via `apiKeyHash`.
