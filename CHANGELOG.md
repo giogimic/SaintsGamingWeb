@@ -1,3 +1,7 @@
+## [2.1.912] - 2026-09-18
+### Fixed
+- **CLI Wipe Tool:** Added scripts/wipe-data.ts CLI tool to correctly execute the wipeNonBundledRealmContent service. This ensures that manually executed game data wipes from update.bat and update.sh actually delete the maps and setup flags, allowing the Setup Initialization Wizard to reappear instead of bypassing to the studio.
+- **Cross-Platform Updates:** Both Windows (update.bat) and Debian (update.sh) updater scripts now correctly leverage the CLI wipe utility when requested before auto-restarting the application.
 ## [2.1.911] - 2026-09-18
 ### Changed
 - **Server Manager UI Redesign:** Replaced the bulky sidebar cards in "ServerManagerConsole.tsx" with a single, sleek toolbar above the terminal. The new toolbar cleanly houses process controls (executable selection, start, stop, restart) and system actions to maximize terminal real estate.
@@ -6451,6 +6455,7 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
  S t u d i o M e n u B a r . t s x . 
  
  
+
 
 
 
