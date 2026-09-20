@@ -137,7 +137,9 @@ export async function POST(req: Request) {
 
     // 3. Build Starting 3D Voxel World Document
     const map = body?.startingMap || ({} as any);
-    const mapId = map.id?.trim() || 'STARTING_MEADOW';
+    // Use the bootstrap revision's mapId as the authoritative source — it was already created by generate-draft.
+    // Fall back to client-provided ID only if revision lookup hasn't happened yet.
+    const clientMapId = map.id?.trim() || 'STARTING_MEADOW';
     const mapName = map.name?.trim() || 'Starting Realm';
     const widthChunks = Math.max(1, map.widthChunks || Math.ceil((map.width || 32) / 32));
     const depthChunks = Math.max(1, map.depthChunks || Math.ceil((map.height || 32) / 32));
@@ -162,6 +164,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid or incomplete bootstrap revision', events: logger.getEvents() }, { status: 400 });
     }
     logger.log({ stageName: '08. Validate Bootstrap', stageCode: 'validate_bootstrap', status: 'COMPLETED', message: 'Bootstrap revision valid' });
+
+    // Use the bootstrap revision's mapId as the canonical map ID — this is what generate-draft actually created.
+    const mapId = revision.mapId || clientMapId;
 
     logger.log({ stageName: '09. Compile WorldRelease', stageCode: 'compile_release', status: 'SKIPPED', message: 'Setup bypasses explicit release compilation (direct deployment)' });
     logger.log({ stageName: '10. Publish Release', stageCode: 'publish_release', status: 'SKIPPED', message: 'Implicitly published via atomic transaction' });
@@ -475,6 +480,7 @@ export async function POST(req: Request) {
         { key: SETUP_SETTING_KEYS.GAME_STYLE, value: gameStyle },
         { key: SETUP_SETTING_KEYS.GAME_CAMERA, value: gameCamera },
         { key: SETUP_SETTING_KEYS.DEFAULT_MAP_ID, value: mapId },
+        { key: 'SPAWN_MAP_ID', value: mapId },
         { key: 'DEFAULT_SPAWN_X', value: String(spawnX) },
         { key: 'DEFAULT_SPAWN_Y', value: String(spawnY) },
         { key: 'DEFAULT_SPAWN_Z', value: String(map.spawnPoint?.z ?? 16) },

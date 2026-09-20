@@ -49,17 +49,30 @@ export function PublishReviewStep({
       const payload = {
         initializationId,
         bootstrapRevisionId: startingMap.bootstrapRevisionId,
-        gameId: 'saints', // Using default canonical Game ID for initialization
+        gameId: 'saints',
         game: {
           name: gameDefinition.name,
           description: gameDefinition.description,
           genre: gameDefinition.genre,
+          style: gameDefinition.style || 'SAINTS_HYBRID',
+          defaultCameraMode: gameDefinition.defaultCameraMode || 'DYNAMIC',
+          defaultBlockSizePx: gameDefinition.defaultBlockSizePx || 64,
         },
+        characters: [], // Will use auto-generated default hero in initialize-game
         startingMap: {
           id: startingMap.id || 'genesis',
           name: startingMap.name || 'Starting Realm',
+          mapType: startingMap.mapType || 'VOXEL',
+          widthChunks: startingMap.widthChunks || 4,
+          depthChunks: startingMap.depthChunks || 4,
+          heightChunks: startingMap.heightChunks || 1,
+          width: startingMap.width || 128,
+          height: startingMap.height || 128,
           spawnPoint: startingMap.spawnPoint,
           gates: startingMap.gates,
+        },
+        environment: {
+          foundationMaterial: startingMap.foundationMaterial || 'saints_standard_stone',
         },
       };
 

@@ -450,8 +450,6 @@ export const WorldAtlasPanel: React.FC = () => {
                 const borderClass =
                   nodeType === 'procedural'
                     ? isSelected ? 'border-emerald-400 bg-emerald-950/90 shadow-[0_0_20px_rgba(16,185,129,0.4)]' : 'border-emerald-500/50 bg-[#061816]/95 hover:border-emerald-400'
-                    : nodeType === 'hybrid'
-                    ? isSelected ? 'border-purple-400 bg-purple-950/90 shadow-[0_0_20px_rgba(168,85,247,0.4)]' : 'border-purple-500/50 bg-[#160b24]/95 hover:border-purple-400'
                     : isSelected ? 'border-amber-400 bg-amber-950/90 shadow-[0_0_20px_rgba(245,158,11,0.4)]' : 'border-amber-500/40 bg-[#0f172a]/95 hover:border-amber-400';
 
                 return (
@@ -459,7 +457,7 @@ export const WorldAtlasPanel: React.FC = () => {
                     key={node.id || `${node.x}_${node.y}`}
                     onClick={() => handleGridClick(node.x, node.y)}
                     onDoubleClick={() => {
-                      if (nodeType === 'procedural' || nodeType === 'hybrid') {
+                      if (nodeType === 'procedural') {
                         useEditorStore.getState().openPanel('procedural');
                         showToast(`Opened Procedural Authoring for ${node.mapId}`);
                       } else {
@@ -487,7 +485,7 @@ export const WorldAtlasPanel: React.FC = () => {
 
                     {/* Node class badge */}
                     <div className="text-[7px] uppercase font-bold tracking-wider px-1 py-0.5 rounded bg-black/40 border border-white/10 mt-0.5">
-                      {nodeType === 'procedural' ? '[PROC]' : nodeType === 'hybrid' ? '[HYBRID]' : '[AUTH]'}
+                      {nodeType === 'procedural' ? '[PROC]' : '[AUTH]'}
                     </div>
 
                     {node.mapId === lobbyMapId && (
@@ -538,34 +536,13 @@ export const WorldAtlasPanel: React.FC = () => {
                   >
                     <option value="authored" className="bg-[#0b1320] text-amber-400">Authored Fixed Map</option>
                     <option value="procedural" className="bg-[#0b1320] text-emerald-400">Generated Procedural Region</option>
-                    <option value="hybrid" className="bg-[#0b1320] text-purple-400">Hybrid Anchor Map</option>
                   </select>
                 </div>
 
-                {/* Hybrid Seam Threshold */}
-                {(selectedNode.nodeType === 'hybrid') && (
-                  <div className="flex items-center gap-1.5 bg-black/40 px-2 py-0.5 rounded border border-purple-500/40 text-[10px]">
-                    <span className="text-purple-300 font-bold">Seam:</span>
-                    <input
-                      type="number"
-                      min="2"
-                      max="16"
-                      value={selectedNode.seamThreshold ?? 4}
-                      onChange={(e) => {
-                        const val = Math.max(2, Math.min(16, Number(e.target.value)));
-                        const updatedNodes = atlasData.nodes.map(n => n.id === selectedNode.id ? { ...n, seamThreshold: val } : n);
-                        setAtlasData({ ...atlasData, nodes: updatedNodes });
-                        setSelectedNode({ ...selectedNode, seamThreshold: val });
-                        useEditorStore.getState().markMapDirty();
-                      }}
-                      className="w-10 bg-transparent text-white font-mono text-center border-b border-purple-400/50 focus:outline-none"
-                    />
-                    <span className="text-muted-foreground">blocks</span>
-                  </div>
-                )}
+
 
                 {/* Procedural Region Scope (Finite vs Infinite) & Settings */}
-                {(selectedNode.nodeType === 'procedural' || selectedNode.nodeType === 'hybrid') && (
+                {selectedNode.nodeType === 'procedural' && (
                   <>
                     <div className="flex items-center gap-1.5 bg-black/40 px-2 py-0.5 rounded border border-emerald-500/40 text-[10px]">
                       <span className="text-emerald-300 font-bold">Scope:</span>
@@ -651,7 +628,7 @@ export const WorldAtlasPanel: React.FC = () => {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {(selectedNode.nodeType === 'procedural' || selectedNode.nodeType === 'hybrid') && (
+                {selectedNode.nodeType === 'procedural' && (
                   <>
                     <button
                       onClick={() => {

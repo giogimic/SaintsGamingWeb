@@ -53,7 +53,7 @@ export interface GameMapData {
   id: string;
   gameId?: string;
   name: string;
-  mapType?: 'TILE' | 'VOXEL' | 'HYBRID' | string;
+  mapType?: 'TILE' | 'VOXEL' | 'FRACTAL' | string;
   grid: number[][]; // 0: safe, 1: wall/boundary, 2: tall grass, 3-4: gates, 5: tree(woodcutting), 6: ore(mining), 7: shop, 8: clinic, 10: fishing spot
   regions?: number[][];
   gates: Record<number, MapGate>;
@@ -210,10 +210,9 @@ export async function loadMap(
       if (!rawMapData.mapType) {
         const hasTiles = rawMapData.tileLayers && rawMapData.tileLayers.length > 0;
         const hasVoxel = rawMapData.voxelDoc && Object.keys(rawMapData.voxelDoc).length > 0;
-        if (hasTiles && hasVoxel) rawMapData.mapType = 'HYBRID';
-        else if (hasVoxel) rawMapData.mapType = 'VOXEL';
+        if (hasVoxel) rawMapData.mapType = 'VOXEL';
         else if (hasTiles) rawMapData.mapType = 'TILE';
-        else rawMapData.mapType = 'HYBRID'; // Default legacy fallback
+        else rawMapData.mapType = 'VOXEL'; // Default fallback — VOXEL is the primary 3D map type
       }
 
       // Clone mapData so different placements with the same base map do not mutate the same object

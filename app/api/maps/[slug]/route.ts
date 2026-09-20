@@ -154,7 +154,7 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
       voxelDoc,
       regionClass: (worldMap as any).regionClass || "authored",
       proceduralConfig: parsedProceduralConfig,
-      mapType: (worldMap as any).mapType || "HYBRID",
+      mapType: (worldMap as any).mapType || "VOXEL",
       version: worldMap.version,
       source: "worldMap" as const,
     };
