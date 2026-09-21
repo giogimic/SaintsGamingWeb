@@ -20,7 +20,7 @@ import {
   creatureAssetUrl,
 } from '@/shared/game/creatureCatalog';
 import {
-  Plus, Trash2, Save, RefreshCw, Eye, EyeOff, Database, FileJson, CheckCircle2, AlertCircle, Coins, ExternalLink, Filter, PawPrint, Skull, Shield, Wand2,
+  Plus, Trash2, Save, RefreshCw, Eye, EyeOff, Database, FileJson, CheckCircle2, AlertCircle, Coins, ExternalLink, Filter, PawPrint, Skull, Shield, Wand2, Camera,
 } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
 import { useGameStore } from '../../store';
@@ -61,6 +61,7 @@ export function CreatureDefEditorPanel() {
   const [abilitiesList, setAbilitiesList] = useState<Array<{ slug: string; name: string }>>([]);
   const [showCatalogBrowser, setShowCatalogBrowser] = useState(false);
   const [activeLayerPicker, setActiveLayerPicker] = useState<'overworld' | 'battle' | 'back' | null>(null);
+  const [viewMode, setViewMode] = useState<'catalog' | 'cameras'>('catalog');
   const isNewRef = useRef(isNew);
   isNewRef.current = isNew;
 
@@ -310,8 +311,45 @@ export function CreatureDefEditorPanel() {
   );
 
   return (
-    <>
-      <CatalogEditorShell
+    <div className="h-full flex flex-col bg-[#050b14]/95 text-slate-200 overflow-hidden relative">
+      <div className="flex bg-black/40 border-b border-slate-900 text-[10px] font-mono">
+        <button
+          onClick={() => setViewMode('catalog')}
+          className={`flex-1 py-1.5 flex items-center justify-center gap-1.5 transition-all ${
+            viewMode === 'catalog' ? 'bg-amber-500/20 text-amber-400 font-bold border-b-2 border-amber-500' : 'text-slate-400 hover:bg-white/5'
+          }`}
+        >
+          <Database className="w-3 h-3" />
+          Creature Catalog
+        </button>
+        <button
+          onClick={() => setViewMode('cameras')}
+          className={`flex-1 py-1.5 flex items-center justify-center gap-1.5 transition-all ${
+            viewMode === 'cameras' ? 'bg-indigo-500/20 text-indigo-400 font-bold border-b-2 border-indigo-500' : 'text-slate-400 hover:bg-white/5'
+          }`}
+        >
+          <Camera className="w-3 h-3" />
+          Souls & Cameras
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-hidden relative">
+        {viewMode === 'cameras' && (
+          <div className="p-4 space-y-4 overflow-y-auto h-full custom-scrollbar">
+            <div className="bg-card/40 border border-border/40 rounded-xl p-4 space-y-4">
+              <div className="flex items-center gap-2 border-b border-border/40 pb-3">
+                <Camera className="w-4 h-4 text-indigo-400" />
+                <h3 className="font-bold text-slate-200">Souls & Cameras Settings</h3>
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                Camera tracking, focal lengths, and character Soul parameters have been relocated here.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {viewMode === 'catalog' && (
+          <CatalogEditorShell
       title="Creature Catalog"
       blurb={`${list.length} defs · world ${activeGameId} · GameAsset + CreatureDef SoT · definition undo on blur`}
       dirty={isNew || canUndoDefinition}
@@ -1243,6 +1281,7 @@ export function CreatureDefEditorPanel() {
           )}
         </div>
       </CatalogEditorShell>
+
 
       {/* Catalog Sprite Picker Modal */}
       {(showCatalogBrowser || activeLayerPicker) && (

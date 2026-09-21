@@ -531,8 +531,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <SubMenu label="New" icon={FolderPlus}>
               <MenuItem label="New Authored Map" icon={Folder} onClick={() => { setStudioMode('tile'); openPanel('newTileMap'); showToast('Opened Tile Map Generator'); }} />
               <MenuItem label="New Voxel Map" icon={Sparkles} onClick={() => { setStudioMode('voxel'); openPanel('newVoxelMap'); showToast('Opened Voxel Map Generator'); }} />
-              <MenuItem label="New Fractal Region" icon={Sparkles} onClick={() => { setStudioMode('voxel'); openPanel('newFractalMap'); showToast('Opened Fractal Map Generator'); }} />
-              <MenuItem label="New Hybrid Region" icon={Globe} onClick={() => { setStudioMode('atlas'); openPanel('atlas'); showToast('Select Atlas Node for Hybrid Generation'); }} />
+              <MenuItem label="New Fractal Region" icon={Sparkles} onClick={() => { setStudioMode('fractal'); openPanel('newFractalMap'); showToast('Opened Fractal Map Generator'); }} />
               <MenuItem label="New Blueprint Asset" icon={Package} onClick={() => { setStudioMode('assets'); openPanel('assets'); showToast('Opened Asset Studio'); }} />
             </SubMenu>
             <SubMenu label="Open" icon={Folder}>
@@ -589,13 +588,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               <MenuItem label="World Data..." icon={Folder} onClick={() => { setStudioMode('tile'); openPanel('build'); showToast('World Data export available in World Builder'); }} />
               <MenuItem label="Blueprint / Structure..." icon={Package} onClick={() => { setStudioMode('assets'); openPanel('assets'); showToast('Blueprint export available in Asset Studio'); }} />
             </SubMenu>
-            <MenuItem label="World Manager (Releases)" shortcut="Ctrl+Shift+U" icon={CloudUpload} onClick={() => openPanel('worldManager')} />
-            <SubMenu label="Release" icon={Package}>
-              <MenuItem label="Create Release Snapshot..." icon={Plus} onClick={() => { openPanel('worldManager'); window.dispatchEvent(new CustomEvent('studio_open_release_create')); }} />
-              <MenuItem label="Deploy Latest Release..." shortcut="Ctrl+Shift+D" icon={UploadCloud} onClick={() => { openPanel('worldManager'); window.dispatchEvent(new CustomEvent('studio_deploy_latest_release')); }} />
-              <MenuItem label="Open World Manager Panel..." icon={Settings} onClick={() => openPanel('worldManager')} />
-              <MenuItem label="Release History..." icon={ScrollText} onClick={() => openPanel('worldManager')} />
-            </SubMenu>
+            <MenuItem label="Release & Deployment Manager" shortcut="Ctrl+Shift+U" icon={CloudUpload} onClick={() => openPanel('worldManager')} />
             <SubMenu label="System" icon={Settings}>
               <MenuItem label="Graceful Restart (Deploy)" icon={CloudUpload} onClick={() => {
                 if (confirm('Are you sure you want to gracefully restart the server? Connected players will experience a short interruption.')) {
@@ -866,70 +859,26 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             Voxel Builder
           </button>
           <button
-            onClick={() => handleSwitchMode('assets')}
+            onClick={() => openPanel('worldStudio')}
             className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-              studioMode === 'assets'
+              panels.worldStudio?.isOpen
                 ? 'bg-amber-500 text-black font-extrabold shadow'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
-            title="Asset Studio (Blueprints & Assets)"
+            title="World Studio (Content, NPCs, Quests, Items)"
           >
-            Asset Studio
+            World Studio
           </button>
           <button
-            onClick={() => handleSwitchMode('hero')}
+            onClick={() => openPanel('abilityStudio')}
             className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-              studioMode === 'hero'
-                ? 'bg-purple-500 text-white font-extrabold shadow'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-            title="Hero Studio (Classes & Characters)"
-          >
-            Hero Studio
-          </button>
-          <button
-            onClick={() => { handleSwitchMode('develop'); openPanel('abilities'); }}
-            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-              panels.abilities?.isOpen
+              panels.abilityStudio?.isOpen
                 ? 'bg-cyan-600 text-white font-extrabold shadow'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
-            title="Gameplay & Systems (Abilities, Skills, Professions)"
+            title="Ability Studio (Systems, Classes, Skills)"
           >
-            Systems
-          </button>
-          <button
-            onClick={() => { handleSwitchMode('develop'); openPanel('quest'); }}
-            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-              panels.quest?.isOpen
-                ? 'bg-emerald-600 text-white font-extrabold shadow'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-            title="Quest Studio (Quests & Hooks)"
-          >
-            Quest Studio
-          </button>
-          <button
-            onClick={() => { handleSwitchMode('develop'); openPanel('interface'); }}
-            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-              panels.interface?.isOpen
-                ? 'bg-pink-600 text-white font-extrabold shadow'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-            title="HUD Studio (Interface & Overlays)"
-          >
-            HUD Studio
-          </button>
-          <button
-            onClick={() => { handleSwitchMode('npc'); openPanel('npc'); openPanel('creature'); }}
-            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-              studioMode === 'npc' || studioMode === 'creature'
-                ? 'bg-indigo-500 text-white font-extrabold shadow'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-            title="NPC & Creature Studio (Spawners & Catalogs)"
-          >
-            NPC & Creature
+            Ability Studio
           </button>
         </div>
       </div>

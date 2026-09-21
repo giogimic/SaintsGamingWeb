@@ -53,7 +53,7 @@ export const InterfaceEditorPanel: React.FC = () => {
   const activeHudPreset = useGameStore((s) => s.activeHudPreset);
   const setActiveHudPreset = useGameStore((s) => s.setActiveHudPreset);
 
-  const [activeTab, setActiveTab] = useState<'themes' | 'customizer' | 'dock' | 'presets' | 'share'>('themes');
+  const [activeTab, setActiveTab] = useState<'themes' | 'customizer' | 'dock' | 'presets' | 'share' | 'comms'>('themes');
   const [importJson, setImportJson] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -142,6 +142,7 @@ export const InterfaceEditorPanel: React.FC = () => {
             { id: 'themes', label: 'Themes' },
             { id: 'customizer', label: 'Controls' },
             { id: 'dock', label: 'Dock' },
+            { id: 'comms', label: 'Comms' },
             { id: 'presets', label: 'Presets' },
             { id: 'share', label: 'JSON' },
           ]}
@@ -581,6 +582,22 @@ export const InterfaceEditorPanel: React.FC = () => {
             </div>
           </div>
         </div>
+        {/* TAB: COMMS */}
+        {activeTab === 'comms' && (
+          <div className="space-y-4">
+            <div className="bg-card/40 border border-border/40 rounded-xl p-4 space-y-4">
+              <div className="flex items-center gap-2 border-b border-border/40 pb-3">
+                <Radio className="w-4 h-4 text-primary" />
+                <h3 className="font-bold text-slate-200">Soul Link Chat Settings</h3>
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                Communication settings have been relocated here. 
+                Configure local, global, and party chat visibility, profanity filters, and chat box positioning.
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

@@ -793,8 +793,13 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       resizeObserver = new ResizeObserver(() => {
         if (engineRef.current && engineRef.current.engine && engineRef.current.renderer) {
           engineRef.current.renderer.onResize();
+          // Force hardware scaling level to ensure DPR changes are caught
+          if (typeof window !== 'undefined') {
+            engineRef.current.engine.engine.setHardwareScalingLevel(1 / (window.devicePixelRatio || 1));
+          }
         }
       });
+      resizeObserver.observe(canvasRef.current);
       resizeObserver.observe(canvasRef.current.parentElement);
     }
 

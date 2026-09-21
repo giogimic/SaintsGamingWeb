@@ -3,6 +3,7 @@ import { VoxelWorldDocV3 } from '@/shared/game/voxel/VoxelWorldDoc';
 import { VoxelRegionRepository } from '../repositories/VoxelRegionRepository';
 import { RegionArtifact } from '@/shared/game/voxel/WorldBakeContracts';
 import zlib from 'zlib';
+import crypto from 'crypto';
 
 const prisma = new PrismaClient();
 
@@ -142,6 +143,9 @@ export class VoxelStorageService {
     const promises = Array.from(regionPayloads.entries()).map(([rKey, payload]) => {
       const [rxStr, rzStr] = rKey.split('_');
       
+      const compressedData = new Uint8Array(zlib.deflateSync(Buffer.from(JSON.stringify(payload), 'utf-8')));
+      const checksum = crypto.createHash('sha256').update(compressedData).digest('hex');
+      
       const artifact: RegionArtifact = {
         coordinates: {
           mapId: doc.id,
@@ -154,8 +158,9 @@ export class VoxelStorageService {
           configHash: 'legacy'
         },
         status: 'COMPLETED',
+        checksum,
         // Compress region chunk arrays using zlib deflate
-        voxelData: new Uint8Array(zlib.deflateSync(Buffer.from(JSON.stringify(payload), 'utf-8'))),
+        voxelData: compressedData,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };

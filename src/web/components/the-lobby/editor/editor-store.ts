@@ -990,6 +990,28 @@ const DEFAULT_PANELS = {
     height: 480,
     zIndex: 10,
   },
+  worldStudio: {
+    id: 'worldStudio',
+    title: 'World Studio',
+    isOpen: false,
+    isCollapsed: false,
+    x: 100,
+    y: 100,
+    width: 360,
+    height: 480,
+    zIndex: 10,
+  },
+  abilityStudio: {
+    id: 'abilityStudio',
+    title: 'Ability Studio',
+    isOpen: false,
+    isCollapsed: false,
+    x: 100,
+    y: 100,
+    width: 360,
+    height: 480,
+    zIndex: 10,
+  },
   worldManager: {
     id: 'worldManager',
     title: 'World Manager',
@@ -1847,9 +1869,13 @@ export const useEditorStore = create<EditorState>()(
             state.activePanel = id;
           };
 
-          if (mapType === 'VOXEL' || mapType === 'FRACTAL') {
+          if (mapType === 'VOXEL') {
             state.studioMode = 'voxel';
             openModePanels(state, 'voxel');
+            openDraftPanel('primaryVoxelViewport');
+          } else if (mapType === 'FRACTAL') {
+            state.studioMode = 'fractal';
+            openModePanels(state, 'fractal');
             openDraftPanel('primaryVoxelViewport');
           } else {
             state.studioMode = 'tile';

@@ -7,6 +7,9 @@ import { Textarea } from "@/web/components/ui/textarea";
 import { Button } from "@/web/components/ui/button";
 import { Camera, Loader2, Save } from "lucide-react";
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/web/components/ui/select";
+import { Switch } from "@/web/components/ui/switch";
+
 type ProfileFormProps = {
   user: {
     username: string;
@@ -15,6 +18,19 @@ type ProfileFormProps = {
     image: string | null;
     youtubeVideoUrl: string | null;
     discordId: string | null;
+    profileSettings?: {
+      accent: string;
+      headerTreatment: string;
+      activityVisibility: string;
+      achievementsVisibility: string;
+      mediaVisibility: string;
+      gameCharactersVisibility: string;
+      sampVisibility: string;
+      friendsVisibility: string;
+      steamWishlistVisibility: string;
+      galleryVisibility: string;
+      showMilestones: boolean;
+    } | null;
   };
   updateProfileAction: (formData: FormData) => Promise<void>;
 };
@@ -124,6 +140,84 @@ export function ProfileForm({ user, updateProfileAction }: ProfileFormProps) {
         <div className="space-y-2">
           <Label htmlFor="discordId">Discord ID (Optional)</Label>
           <Input id="discordId" name="discordId" defaultValue={user.discordId || ""} placeholder="Your Discord Username or ID" />
+        </div>
+      </div>
+
+      <div className="space-y-4 pt-4 border-t border-border/50">
+        <h3 className="text-lg font-medium">Profile Appearance</h3>
+        
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="accent">Accent Color</Label>
+            <Select name="accent" defaultValue={user.profileSettings?.accent || "SUNSET_GOLD"}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select an accent color" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="SUNSET_GOLD">Sunset Gold</SelectItem>
+                <SelectItem value="OCEAN_CYAN">Ocean Cyan</SelectItem>
+                <SelectItem value="VICE_PINK">Vice Pink</SelectItem>
+                <SelectItem value="PALM_GREEN">Palm Green</SelectItem>
+                <SelectItem value="ELECTRIC_VIOLET">Electric Violet</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="headerTreatment">Header Treatment</Label>
+            <Select name="headerTreatment" defaultValue={user.profileSettings?.headerTreatment || "HORIZON"}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a header style" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="HORIZON">Horizon</SelectItem>
+                <SelectItem value="NIGHT_DRIVE">Night Drive</SelectItem>
+                <SelectItem value="WAVE_GRID">Wave Grid</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4 pt-4 border-t border-border/50">
+        <h3 className="text-lg font-medium">Profile Visibility</h3>
+        <p className="text-sm text-muted-foreground mb-4">Control who can see different sections of your public profile.</p>
+        
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            { id: "activityVisibility", label: "Activity Feed", default: "PUBLIC" },
+            { id: "achievementsVisibility", label: "Achievements", default: "PUBLIC" },
+            { id: "mediaVisibility", label: "YouTube Embeds", default: "HIDDEN" },
+            { id: "gameCharactersVisibility", label: "Saints Characters", default: "HIDDEN" },
+            { id: "sampVisibility", label: "SA-MP Identity", default: "HIDDEN" },
+            { id: "friendsVisibility", label: "Friends List", default: "HIDDEN" },
+            { id: "steamWishlistVisibility", label: "Steam Wishlist", default: "HIDDEN" },
+            { id: "galleryVisibility", label: "Gallery", default: "HIDDEN" },
+          ].map((field) => (
+            <div key={field.id} className="space-y-2">
+              <Label htmlFor={field.id}>{field.label}</Label>
+              <Select name={field.id} defaultValue={(user.profileSettings as any)?.[field.id] || field.default}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select visibility" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PUBLIC">Public</SelectItem>
+                  <SelectItem value="FRIENDS">Friends Only</SelectItem>
+                  <SelectItem value="HIDDEN">Hidden</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          ))}
+
+          <div className="space-y-2 flex flex-col justify-between pt-2">
+            <div>
+              <Label htmlFor="showMilestones" className="mb-1 block">Show Milestones</Label>
+              <p className="text-xs text-muted-foreground">Include system events in your activity feed.</p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch id="showMilestones" name="showMilestones" value="true" defaultChecked={user.profileSettings?.showMilestones ?? false} />
+            </div>
+          </div>
         </div>
       </div>
 

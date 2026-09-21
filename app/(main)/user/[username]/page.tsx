@@ -1,17 +1,19 @@
 import { getPublicProfile } from "@/app/actions/user/users";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import { User as UserIcon, Calendar, Gamepad2, Crown, BadgeCheck, ShieldCheck } from "lucide-react";
+import { User as UserIcon, Calendar, Gamepad2, Crown, BadgeCheck, ShieldCheck, Settings, Heart, Share2, MessageSquare, ListTodo } from "lucide-react";
 import { ProfileActions } from "./profile-actions";
-import { ProfileMediaShowcase } from "./profile-media-showcase";
-import { AchievementShowcase } from "@/web/components/achievements/achievement-showcase";
-import { ActivityStats } from "@/web/components/profile/activity-stats";
-import { ProfileCharacterDetails } from "@/web/components/profile/ProfileCharacterDetails";
 import { auth } from "@/auth";
 import { Metadata } from "next";
 import Link from "next/link";
-
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/web/components/ui/tabs";
 import { getUserProfileMetadata } from "@/web/lib/seo";
+import { ActivityFeed } from "@/web/components/profile/tabs/ActivityFeed";
+import { AboutTab } from "@/web/components/profile/tabs/AboutTab";
+import { CharactersTab } from "@/web/components/profile/tabs/CharactersTab";
+import { GamesTab } from "@/web/components/profile/tabs/GamesTab";
+import { GalleryTab } from "@/web/components/profile/tabs/GalleryTab";
+import { FriendsTab } from "@/web/components/profile/tabs/FriendsTab";
 
 export async function generateMetadata(props: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const params = await props.params;
@@ -28,7 +30,16 @@ export async function generateMetadata(props: { params: Promise<{ username: stri
   });
 }
 
-
+function getAccentColor(accent: string) {
+  switch (accent) {
+    case "SUNSET_GOLD": return "250 204 21";
+    case "OCEAN_CYAN": return "6 182 212";
+    case "VICE_PINK": return "236 72 153";
+    case "PALM_GREEN": return "34 197 94";
+    case "ELECTRIC_VIOLET": return "139 92 246";
+    default: return "250 204 21";
+  }
+}
 
 export default async function PublicProfilePage(props: { params: Promise<{ username: string }> }) {
   const params = await props.params;
@@ -43,185 +54,165 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
   const session = await auth();
   const isSelf = session?.user?.id === profile.id;
 
+  const accentColor = getAccentColor(profile.profileSettings.accent);
+  const headerTreatment = profile.profileSettings.headerTreatment;
+
   return (
-    <div className="w-full pb-12 animate-in fade-in duration-500">
-      
-      {/* Edge-to-Edge Header Profile Banner */}
-      <div className="w-full bg-card/40 backdrop-blur-md border-b border-white/5 relative overflow-hidden flex flex-col items-center justify-center pt-24 pb-12 shadow-2xl mb-8">
-        <div className="absolute top-0 left-0 w-full h-1 bg-primary/80"></div>
-        
-        {/* Subtle background glow behind avatar */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/20 blur-[80px] rounded-full pointer-events-none"></div>
+    <div className="w-full pb-12 animate-in fade-in duration-500" style={{ "--profile-accent": accentColor } as React.CSSProperties}>
+      <Tabs defaultValue="activity" className="w-full">
+        {/* Edge-to-Edge Header Profile Banner */}
+        <div 
+          className="w-full relative overflow-hidden flex flex-col items-center justify-center pt-24 pb-0 mb-8 border-b border-border/50"
+          data-profile-treatment={headerTreatment}
+        >
+          {/* Background treatments */}
+          <div className="absolute inset-0 bg-card/40 backdrop-blur-md z-0"></div>
+          <div className="absolute top-0 left-0 w-full h-1 bg-[rgb(var(--profile-accent))]/80 z-10"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[rgb(var(--profile-accent))]/10 blur-[120px] rounded-full pointer-events-none z-0"></div>
 
-        <div className="w-40 h-40 rounded-full bg-muted border-4 border-background/50 flex items-center justify-center overflow-hidden shadow-2xl relative shrink-0 z-10 transition-transform hover:scale-105 duration-500">
-          {profile.image ? (
-            <Image src={profile.image} alt={profile.username} fill className="object-cover" />
-          ) : (
-            <UserIcon className="w-20 h-20 text-muted-foreground opacity-50" />
+          {/* Treatment-specific overlays */}
+          {headerTreatment === "WAVE_GRID" && (
+            <div className="absolute inset-0 bg-[url('/img/grid.svg')] opacity-20 z-0"></div>
           )}
-        </div>
-
-        <div className="text-center space-y-4 mt-6 z-10">
-          <div>
-            <div className="flex items-center justify-center gap-2">
-              <h1 className="text-5xl font-extrabold tracking-tight sg-text-gradient drop-shadow-sm">{profile.username}</h1>
-              <div className="flex items-center gap-1 mt-1">
-                {profile.isFounder && (
-                  <span title="Founder"><Crown className="w-6 h-6 text-yellow-500 fill-yellow-500" /></span>
-                )}
-                {profile.isVIP && (
-                  <span title="VIP"><BadgeCheck className="w-6 h-6 text-blue-500 fill-blue-500" /></span>
-                )}
-                {profile.isTrusted && (
-                  <span title="Trusted User"><ShieldCheck className="w-6 h-6 text-green-500 fill-green-500" /></span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center justify-center gap-4 mt-3 text-muted-foreground font-medium">
-              <span className="flex items-center gap-1.5 bg-background/50 backdrop-blur-sm px-3 py-1 rounded-full text-sm shadow-sm border border-white/5">
-                <Calendar className="w-4 h-4 text-primary" />
-                Joined {new Date(profile.createdAt).toLocaleDateString()}
-              </span>
-            </div>
-          </div>
-
-          {!isSelf && session?.user && (
-            <div className="pt-2">
-              <ProfileActions 
-                targetId={profile.id} 
-                targetUsername={profile.username}
-                targetImage={profile.image}
-                initialFriendship={profile.friendship} 
-              />
-            </div>
+          {headerTreatment === "NIGHT_DRIVE" && (
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-[rgb(var(--profile-accent))]/5 z-0"></div>
           )}
-        </div>
-      </div>
-
-      <div className="w-full px-4 sm:px-6 lg:px-12 space-y-12">
-        {/* Achievements */}
-        <AchievementShowcase achievements={profile.achievements} />
-
-        {/* Media Showcase */}
-        <ProfileMediaShowcase 
-          videoUrl={profile.youtubeVideoUrl} 
-          musicUrl={profile.youtubeMusicUrl} 
-          images={profile.profileImages} 
-        />
-
-        {/* Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-        
-        {/* Saints Gaming Characters */}
-        <div className="space-y-4 lg:col-span-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              <Gamepad2 className="w-6 h-6 text-primary" />
-              Saints Characters
-            </h2>
-            {isSelf && (
-              <Link href="/lobby" className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md font-semibold text-sm shadow-md transition-all hover:scale-105 inline-flex items-center gap-2">
-                <Gamepad2 className="w-4 h-4" />
-                The Lobby
-              </Link>
-            )}
-          </div>
           
-          {profile.gameCharacters && profile.gameCharacters.length > 0 ? (
-            <div className="space-y-4">
-              {profile.gameCharacters.map((char) => (
-                <ProfileCharacterDetails
-                  key={char.id}
-                  character={char as any}
-                  userId={profile.id}
-                  isSelf={isSelf}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="p-8 border border-dashed rounded-xl text-center text-muted-foreground bg-muted/20">
-              <Gamepad2 className="w-8 h-8 mx-auto mb-2 opacity-20" />
-              <p className="text-sm">No characters created yet.</p>
-            </div>
-          )}
+          {/* Scrim for contrast */}
+          <div className="absolute inset-0 bg-black/40 z-10"></div>
 
-          {/* Pinned Beast Showcase — ALIGNMENT E.1 (PlayerCreature + sprite) */}
-          {profile.pinnedCreature && (
-            <div className="mt-4 p-4 rounded-xl border border-cyan-500/30 bg-cyan-950/20 flex items-center justify-between shadow-lg gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="relative w-16 h-16 shrink-0 rounded-lg bg-black/80 border border-cyan-500/40 overflow-hidden flex items-center justify-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={profile.pinnedCreature.spriteUrl}
-                    alt={profile.pinnedCreature.name}
-                    className="max-w-full max-h-full object-contain pixelated"
-                    style={{ imageRendering: 'pixelated' }}
-                  />
+          <div className="relative z-20 container max-w-5xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center md:items-end gap-6 pb-6">
+            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-muted border-4 border-[rgb(var(--profile-accent))]/50 flex items-center justify-center overflow-hidden shadow-2xl relative shrink-0 transition-transform hover:scale-105 duration-500">
+              {profile.image ? (
+                <Image src={profile.image} alt={profile.username} fill className="object-cover" />
+              ) : (
+                <UserIcon className="w-20 h-20 text-muted-foreground opacity-50" />
+              )}
+            </div>
+
+            <div className="flex-1 text-center md:text-left space-y-3 pb-2 w-full">
+              <div className="flex flex-col md:flex-row items-center md:items-end justify-between gap-4">
+                <div>
+                  <div className="flex items-center justify-center md:justify-start gap-2">
+                    <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white drop-shadow-sm">{profile.username}</h1>
+                    <div className="flex items-center gap-1 mt-1">
+                      {profile.isFounder && <span title="Founder"><Crown className="w-6 h-6 text-yellow-500 fill-yellow-500" /></span>}
+                      {profile.isVIP && <span title="VIP"><BadgeCheck className="w-6 h-6 text-blue-500 fill-blue-500" /></span>}
+                      {profile.isTrusted && <span title="Trusted User"><ShieldCheck className="w-6 h-6 text-green-500 fill-green-500" /></span>}
+                    </div>
+                  </div>
+                  {profile.displayName && (
+                    <p className="text-lg text-white/80 font-medium mt-1">@{profile.username}</p>
+                  )}
                 </div>
-                <div className="min-w-0">
-                  <h4 className="font-bold text-cyan-300 text-sm">PINNED COMPANION</h4>
-                  <p className="text-sm text-foreground font-semibold truncate">
-                    {profile.pinnedCreature.nickname || profile.pinnedCreature.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground font-mono truncate">
-                    {profile.pinnedCreature.speciesSlug} · Lv {profile.pinnedCreature.level}
-                  </p>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {!isSelf && session?.user ? (
+                    <ProfileActions 
+                      targetId={profile.id} 
+                      targetUsername={profile.username}
+                      targetImage={profile.image}
+                      initialFriendship={profile.friendship} 
+                    />
+                  ) : isSelf ? (
+                    <Link href="/settings" className="bg-white/10 hover:bg-white/20 text-white backdrop-blur-md px-4 py-2 rounded-md font-semibold text-sm shadow-md transition-all inline-flex items-center gap-2 border border-white/20">
+                      <Settings className="w-4 h-4" />
+                      Edit Profile
+                    </Link>
+                  ) : null}
                 </div>
               </div>
-              <span className="shrink-0 text-[10px] px-2 py-1 bg-cyan-950 text-cyan-300 border border-cyan-700 rounded font-mono font-bold uppercase">
-                Showcase
-              </span>
+
+              {/* Level Chip and Stats Grid */}
+              <div className="flex flex-col sm:flex-row items-center sm:justify-start gap-4 pt-2">
+                <div className="flex items-center gap-2 bg-black/40 backdrop-blur-sm border border-[rgb(var(--profile-accent))]/30 px-3 py-1.5 rounded-full">
+                  <span className="font-bold text-[rgb(var(--profile-accent))] text-sm">Lv {profile.level}</span>
+                  <div className="w-24 h-1.5 bg-black/50 rounded-full overflow-hidden">
+                    <div className="h-full bg-[rgb(var(--profile-accent))]" style={{ width: `${(profile.xp % 1000) / 10}%` }}></div>
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap justify-center sm:justify-start gap-2">
+                  <StatChip icon={<ListTodo className="w-3.5 h-3.5" />} value={profile.stats.posts} label="Posts" />
+                  <StatChip icon={<MessageSquare className="w-3.5 h-3.5" />} value={profile.stats.commentsReceived} label="Comments" />
+                  <StatChip icon={<Heart className="w-3.5 h-3.5" />} value={profile.stats.likesReceived} label="Likes" />
+                  <StatChip icon={<Share2 className="w-3.5 h-3.5" />} value={profile.stats.sharesReceived} label="Shares" />
+                  <StatChip icon={<Gamepad2 className="w-3.5 h-3.5" />} value={profile.stats.forumContributions} label="Forum" />
+                </div>
+              </div>
+              
             </div>
+          </div>
+
+          {/* Tab Rail placed inside the header bottom */}
+          <div className="relative z-20 w-full bg-black/20 border-t border-white/10 backdrop-blur-md overflow-x-auto no-scrollbar">
+            <div className="container max-w-5xl mx-auto px-4 sm:px-6">
+              <TabsList className="bg-transparent border-0 h-12 p-0 justify-start space-x-1 sm:space-x-4 inline-flex min-w-max">
+                <TabsTrigger value="activity" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[rgb(var(--profile-accent))] data-[state=active]:text-white rounded-none px-4 h-full text-white/60 hover:text-white/90">Activity</TabsTrigger>
+                <TabsTrigger value="about" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[rgb(var(--profile-accent))] data-[state=active]:text-white rounded-none px-4 h-full text-white/60 hover:text-white/90">About</TabsTrigger>
+                
+                {profile.gameCharacters.length > 0 && (
+                  <TabsTrigger value="characters" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[rgb(var(--profile-accent))] data-[state=active]:text-white rounded-none px-4 h-full text-white/60 hover:text-white/90">Characters</TabsTrigger>
+                )}
+                
+                {/* SA-MP Tab conditionally rendered - placeholder for now */}
+                
+                {/* Friends Tab conditionally rendered */}
+                {profile.profileSettings.friendsVisibility !== "HIDDEN" && (
+                  <TabsTrigger value="friends" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[rgb(var(--profile-accent))] data-[state=active]:text-white rounded-none px-4 h-full text-white/60 hover:text-white/90">Friends</TabsTrigger>
+                )}
+                
+                {profile.steamWishlist.length > 0 && (
+                  <TabsTrigger value="games" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[rgb(var(--profile-accent))] data-[state=active]:text-white rounded-none px-4 h-full text-white/60 hover:text-white/90">Games</TabsTrigger>
+                )}
+                
+                {profile.profileImages.length > 0 && (
+                  <TabsTrigger value="gallery" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[rgb(var(--profile-accent))] data-[state=active]:text-white rounded-none px-4 h-full text-white/60 hover:text-white/90">Gallery</TabsTrigger>
+                )}
+              </TabsList>
+            </div>
+          </div>
+        </div>
+        
+        <div className="container max-w-5xl mx-auto px-4 sm:px-6">
+          <TabsContent value="activity">
+            <ActivityFeed username={profile.username} showMilestones={profile.profileSettings.showMilestones} />
+          </TabsContent>
+          <TabsContent value="about">
+            <AboutTab profile={profile} />
+          </TabsContent>
+          {profile.gameCharacters.length > 0 && (
+            <TabsContent value="characters">
+              <CharactersTab characters={profile.gameCharacters} isSelf={isSelf} profileId={profile.id} />
+            </TabsContent>
+          )}
+          {profile.profileSettings.friendsVisibility !== "HIDDEN" && (
+            <TabsContent value="friends">
+              <FriendsTab userId={profile.id} />
+            </TabsContent>
+          )}
+          {profile.steamWishlist.length > 0 && (
+            <TabsContent value="games">
+              <GamesTab wishlist={profile.steamWishlist} />
+            </TabsContent>
+          )}
+          {profile.profileImages.length > 0 && (
+            <TabsContent value="gallery">
+              <GalleryTab images={profile.profileImages} />
+            </TabsContent>
           )}
         </div>
+      </Tabs>
+    </div>
+  );
+}
 
-        {/* Steam Wishlist (if any) */}
-        {profile.steamWishlist.length > 0 ? (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              <Gamepad2 className="w-6 h-6 text-primary" />
-              Steam Wishlist
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {profile.steamWishlist.map((game) => (
-                <a 
-                  key={game.appId} 
-                  href={`https://store.steampowered.com/app/${game.appId}`} 
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group relative rounded-xl overflow-hidden border border-border/50 bg-card hover:border-primary/50 transition-all hover:shadow-lg"
-                >
-                  <div className="aspect-[460/215] relative bg-muted">
-                    {game.image ? (
-                      <Image src={game.image} alt={game.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground">No Image</div>
-                    )}
-                  </div>
-                  <div className="p-3">
-                    <h3 className="font-semibold text-sm truncate" title={game.name}>{game.name}</h3>
-                  </div>
-                </a>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              <Gamepad2 className="w-6 h-6 text-primary" />
-              Gaming
-            </h2>
-            <div className="p-8 border border-dashed rounded-xl text-center text-muted-foreground bg-muted/20">
-              <Gamepad2 className="w-8 h-8 mx-auto mb-2 opacity-20" />
-              <p className="text-sm">This user hasn&apos;t linked any Steam games to their wishlist yet.</p>
-            </div>
-          </div>
-        )}
-
-        {/* Activity & Stats */}
-        <ActivityStats profile={profile as any} />
-        </div>
-      </div>
+function StatChip({ icon, value, label }: { icon: React.ReactNode, value: number, label: string }) {
+  return (
+    <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm border border-white/5 px-2.5 py-1 rounded-md">
+      <span className="text-[rgb(var(--profile-accent))]">{icon}</span>
+      <span className="font-semibold text-white text-sm">{value}</span>
+      <span className="text-white/60 text-xs uppercase font-medium">{label}</span>
     </div>
   );
 }

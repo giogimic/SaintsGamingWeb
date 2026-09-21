@@ -343,6 +343,11 @@ export function resolveEntitySpriteUrl(
 
   const raw = String(spriteKey).trim();
   if (!raw) return fallback;
+
+  if (raw.startsWith("blob:") || raw.startsWith("data:")) {
+    return raw;
+  }
+
   if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("/")) {
     // Legacy broken prefix used by BabylonEngine loadTilemap
     if (raw.startsWith("/assets/sprites/") || raw.startsWith("/game-assets/sprites/")) {

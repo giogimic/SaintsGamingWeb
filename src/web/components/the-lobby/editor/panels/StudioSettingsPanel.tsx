@@ -159,14 +159,10 @@ export function StudioSettingsPanel() {
 
   const tabs = [
     { id: 'visuals', label: '2.5D / 3D Visuals', icon: Sun },
-
-    { id: 'comms', label: 'Soul Link Chat', icon: Radio },
-    { id: 'capture', label: 'Souls & Cameras', icon: Camera },
     { id: 'realm', label: 'Realm Info', icon: Globe2 },
     { id: 'diagnostics', label: 'Diagnostics', icon: AlertCircle },
     { id: 'simulation', label: 'Simulations', icon: Activity },
     { id: 'streaming', label: 'Streaming', icon: Compass },
-    { id: 'devtools', label: 'Dev Tools', icon: Terminal },
   ];
 
   return (

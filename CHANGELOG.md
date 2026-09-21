@@ -1,3 +1,9 @@
+## [2.1.926] - 2026-09-21
+- Overhauled User Profiles into a social creator hub format
+- Added ProfileSettings to Prisma schema for accent color, background treatment, and section visibility
+- Added unified ActivityFeed combining social posts, forum threads, and replies with timeline UI
+- Replaced monolithic profile layout with horizontal Tab components for Activity, About, Characters, Friends, Games, and Gallery
+
 ## [2.1.923] - 2026-09-19
 - Fixed drag and drop upload collision logic in Server File Manager
 - Added .so file toggle visibility fix for root directories

@@ -22,6 +22,7 @@ export default async function SettingsPage() {
       image: true,
       youtubeVideoUrl: true,
       discordId: true,
+      profileSettings: true,
     }
   });
 
@@ -48,6 +49,9 @@ export default async function SettingsPage() {
         ...(image ? { image } : {}) // Update image if provided
       }
     });
+
+    const { updateProfileSettings } = await import("@/app/actions/user/profile");
+    await updateProfileSettings(formData);
 
     revalidatePath("/settings");
     revalidatePath("/profile");

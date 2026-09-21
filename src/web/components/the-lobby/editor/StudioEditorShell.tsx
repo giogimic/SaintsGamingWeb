@@ -84,6 +84,8 @@ const RecipeEditorPanel = lazy(() => import('./panels/RecipeEditorPanel').then((
 const MonsterSpawnerPanel = lazy(() => import('./panels/MonsterSpawnerPanel').then((m) => ({ default: m.MonsterSpawnerPanel })));
 const WorldAtlasPanel = lazy(() => import('./panels/WorldAtlasPanel').then((m) => ({ default: m.WorldAtlasPanel })));
 const StudioSettingsPanel = lazy(() => import('./panels/StudioSettingsPanel').then((m) => ({ default: m.StudioSettingsPanel })));
+const WorldStudioPanel = lazy(() => import('./panels/WorldStudioPanel').then((m) => ({ default: m.WorldStudioPanel })));
+const AbilityStudioPanel = lazy(() => import('./panels/AbilityStudioPanel').then((m) => ({ default: m.AbilityStudioPanel })));
 const DungeonEditorPanel = lazy(() => import('./panels/DungeonEditorPanel').then((m) => ({ default: m.DungeonEditorPanel })));
 const ShopEditorPanel = lazy(() => import('./panels/ShopEditorPanel').then((m) => ({ default: m.ShopEditorPanel })));
 const MountEditorPanel = lazy(() => import('./panels/MountEditorPanel').then((m) => ({ default: m.MountEditorPanel })));
@@ -578,9 +580,14 @@ export const StudioEditorShell: React.FC = () => {
 
           {canUseStudioDock(permissionLevel, 'settings') && (
             <DraggablePanel id="settings" icon={<Settings className="w-4 h-4" />} title="Studio Settings">
-              <Suspense fallback={<div>Loading...</div>}><StudioSettingsPanel /></Suspense>
+              {panels.settings?.isOpen && (
+                <Suspense fallback={<div>Loading...</div>}><StudioSettingsPanel /></Suspense>
+              )}
             </DraggablePanel>
           )}
+
+          <Suspense fallback={null}><WorldStudioPanel /></Suspense>
+          <Suspense fallback={null}><AbilityStudioPanel /></Suspense>
 
           {(canUseStudioDock(permissionLevel, 'mapEditor') || canUseStudioDock(permissionLevel, 'atlas')) && (
             <DraggablePanel id="mapEditor" icon={<Globe className="w-4 h-4" />} title="Map Editor">

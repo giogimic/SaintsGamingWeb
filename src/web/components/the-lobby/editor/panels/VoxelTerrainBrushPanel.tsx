@@ -11,7 +11,7 @@ export const VoxelTerrainBrushPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'BRUSH' | 'SELECT' | 'TRANSFORM'>('BRUSH');
 
   return (
-    <div className="flex flex-col h-full bg-[#050b14] text-slate-200 w-[340px]">
+    <div className="flex flex-col h-full bg-[#050b14] text-slate-200 w-full">
       
       {/* Navigation Tabs */}
       <div className="flex bg-[#0a1628]/80 border-b border-border/40 p-1">

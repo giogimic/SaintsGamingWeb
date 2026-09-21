@@ -105,8 +105,8 @@ export const VoxelMapBrowserView: React.FC = () => {
   const filtered = useMemo(() => {
     let list = combined;
 
-    // Isolate by map type (strictly Voxel/Fractal maps only)
-    list = list.filter((m) => m.mapType === 'VOXEL' || m.mapType === 'FRACTAL' || m.mapType === 'HYBRID');
+    // Isolate by map type (strictly Voxel maps only - no Fractals)
+    list = list.filter((m) => m.mapType === 'VOXEL');
 
     return list.sort((a, b) => {
       let cmp = 0;

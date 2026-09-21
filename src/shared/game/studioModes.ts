@@ -6,7 +6,7 @@
  * Internal ids stay stable for permissions / defaults.
  */
 
-export type StudioMode = 'develop' | 'voxel' | 'tile' | 'logic' | 'atlas' | 'npc' | 'quest' | 'creature' | 'assets' | 'hero' | 'test';
+export type StudioMode = 'develop' | 'voxel' | 'tile' | 'fractal' | 'logic' | 'atlas' | 'npc' | 'quest' | 'creature' | 'assets' | 'hero' | 'test';
 
 /** Bible 29 canonical tool modes (UI vocabulary). */
 export type StudioCanonicalMode =
@@ -79,6 +79,8 @@ export type StudioDockId =
   | 'secondaryVoxelViewport'
   | 'studioHome'
   | 'worldManager'
+  | 'worldStudio'
+  | 'abilityStudio'
   | 'mapEditor'
   | 'spawnEditor';
 
@@ -88,6 +90,7 @@ export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> =
   develop: 'paint',
   tile: 'paint',
   voxel: 'voxel',
+  fractal: 'voxel',
   logic: 'logic',
   atlas: 'atlas',
   npc: 'populate',
@@ -100,8 +103,9 @@ export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> =
 /** Default panels opened when entering each studio mode (Walk/test closes all). */
 export const STUDIO_MODE_DEFAULTS: Record<StudioMode, StudioDockId[]> = {
   develop: ['studioHome'],
-  tile: ['primaryTileViewport', 'build', 'layers', 'hierarchy', 'logic', 'entityLibrary'],
-  voxel: ['primaryVoxelViewport', 'build', 'voxelTerrainBrush', 'hierarchy', 'entityLibrary'],
+  tile: ['primaryTileViewport', 'build'],
+  voxel: ['primaryVoxelViewport', 'voxelTerrainBrush'],
+  fractal: ['primaryVoxelViewport', 'voxelTerrainBrush'],
   logic: ['logic'],
   atlas: ['atlas'],
   npc: ['entityLibrary', 'npc', 'properties', 'assets', 'spawner'],
@@ -130,6 +134,11 @@ export const STUDIO_MODE_META: Record<
     label: 'Voxel',
     canonical: 'voxel',
     blurb: '3D block chunk building, slope ramps, and terrain stratigraphy.',
+  },
+  fractal: {
+    label: 'Fractal',
+    canonical: 'voxel',
+    blurb: 'Infinite procedural terrain, biomes, and rulesets.',
   },
   logic: {
     label: 'Logic',
@@ -392,24 +401,28 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
     blurb: 'Isolated 3D voxel canvas viewport.',
   },
   studioHome: {
-    label: 'Studio Dashboard',
-    blurb: 'Welcome to Saints Studio. Access quick tools and assets.',
+    label: 'Studio Home',
+    blurb: 'Saints Studio dashboard, recent maps, and tools.',
   },
-  versionManager: {
-    label: 'Version Manager',
-    blurb: 'Atlas-driven version history and map releases.',
+  worldStudio: {
+    label: 'World Studio',
+    blurb: 'Author content, characters, items, and quests.',
+  },
+  abilityStudio: {
+    label: 'Ability Studio',
+    blurb: 'Design classes, skills, professions, and abilities.',
   },
   worldManager: {
-    label: 'World Releases',
-    blurb: 'Manage deployed releases, publishing, and snapshots.',
+    label: 'World Manager',
+    blurb: 'Manage saved realms, deploy releases, and publish to the live network.',
   },
   mapEditor: {
     label: 'Map Editor',
-    blurb: 'Create and edit map chunks.',
+    blurb: 'Map browser and configuration.',
   },
   spawnEditor: {
     label: 'Spawn Editor',
-    blurb: 'Edit global player spawn coordinates.',
+    blurb: 'NPC, Monster, and Trigger spawners.',
   },
 };
 
