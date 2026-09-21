@@ -1,3 +1,6 @@
+## [2.1.928] - 2026-09-21
+- **Hotfix**: Fixed Next.js build failure during deployment by stripping invalid exports from internal variables within the Server Action module (`actions.ts`).
+
 ## [2.1.927] - 2026-09-21
 - **Docker Topology Migration**: Consolidated SA-MP services into the root `docker-compose.yml` and isolated the process in a new container.
 - **Sidecar Process Manager**: Created an internal Node.js sidecar API (`samp-server/sidecar/index.js`) to natively host and stream SA-MP instances.

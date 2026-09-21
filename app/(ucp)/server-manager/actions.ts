@@ -11,7 +11,7 @@ import JSZip from 'jszip';
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
-export const MAINTENANCE_MODE = true;
+const MAINTENANCE_MODE = true;
 
 // Helper to check admin status
 async function requireServerManager() {
@@ -450,7 +450,7 @@ export async function syncGitDeploy(repoUrl: string) {
 
 const SAMP_SERVER_DIR = path.join(process.cwd(), 'samp-server');
 
-export function getSafePath(subPath: string) {
+function getSafePath(subPath: string) {
   const resolvedPath = path.resolve(SAMP_SERVER_DIR, subPath);
   const relative = path.relative(SAMP_SERVER_DIR, resolvedPath);
   
