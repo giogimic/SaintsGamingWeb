@@ -6555,3 +6555,7 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 - Fixed Server Logs stream failing to connect to sidecar daemon due to hostname resolution.
 - Drastically sped up Archive Download and Extraction by utilizing native unzip instead of JSZip.
 - Fixed a UI stall during extraction where no indicator was provided during JSZip blocking loops.
+
+## [v2.1.931] - 2026-09-21
+### Fixed
+- Re-architected SA-MP Sidecar build context. The sidecar Node API is now stored in a dedicated Git-tracked samp-sidecar/ directory, decoupling it from the ephemeral samp-server/ directory which gets periodically wiped by update scripts.

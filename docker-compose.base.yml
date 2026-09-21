@@ -65,7 +65,7 @@ services:
 
   samp:
     build:
-      context: ./samp-server
+      context: ./samp-sidecar
       dockerfile: Dockerfile
     container_name: saints-samp-server
     restart: unless-stopped
