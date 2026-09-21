@@ -67,10 +67,8 @@ async function handleTask(task: BakeWorkerTask) {
       // We store it simply in the record for region assembly. 
       // In a real binary layout we might serialize these consecutively into a buffer.
       // For now, we will JSON stringify the region chunks and then Deflate compress it.
-      regionData[chunkKey] = [
-        ...chunk.dataLow,
-        ...chunk.dataHigh
-      ];
+      const rleBytes = chunk.serializePaletteRLEBinary();
+      regionData[chunkKey] = Array.from(rleBytes);
 
       chunksGenerated++;
       

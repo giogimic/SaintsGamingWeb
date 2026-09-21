@@ -40,9 +40,10 @@ app.prepare().then(async () => {
       if (parsedUrl.pathname?.startsWith("/uploads/")) {
         const fs = require("fs");
         const path = require("path");
-        // Prevent directory traversal
-        const safeSuffix = path.normalize(parsedUrl.pathname).replace(/^(\.\.[\/\\])+/, '');
-        const filePath = path.join(process.cwd(), "public", safeSuffix);
+        // Prevent directory traversal and strip leading slashes for Windows path.join safety
+        let suffix = parsedUrl.pathname.replace(/^\/+/, '');
+        suffix = path.normalize(suffix).replace(/^(\.\.[\/\\])+/, '');
+        const filePath = path.join(process.cwd(), "public", suffix);
         
         if (fs.existsSync(filePath)) {
           const ext = path.extname(filePath).toLowerCase();
