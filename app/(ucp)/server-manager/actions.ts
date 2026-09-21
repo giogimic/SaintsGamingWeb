@@ -11,7 +11,7 @@ import JSZip from 'jszip';
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
-const MAINTENANCE_MODE = true;
+const MAINTENANCE_MODE = false;
 
 // Helper to check admin status
 async function requireServerManager() {
