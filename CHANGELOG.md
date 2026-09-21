@@ -6548,3 +6548,10 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 
 
 
+
+## [v2.1.930] - 2026-09-21
+### Fixed
+- Fixed SA-MP Server console RCON connection ignoring sidecar host configuration.
+- Fixed Server Logs stream failing to connect to sidecar daemon due to hostname resolution.
+- Drastically sped up Archive Download and Extraction by utilizing native unzip instead of JSZip.
+- Fixed a UI stall during extraction where no indicator was provided during JSZip blocking loops.

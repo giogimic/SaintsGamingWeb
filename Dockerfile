@@ -11,6 +11,7 @@ RUN dpkg --add-architecture i386 \
       make \
       g++ \
       wget \
+      unzip \
       git \
       openssh-client \
       libc6:i386 \

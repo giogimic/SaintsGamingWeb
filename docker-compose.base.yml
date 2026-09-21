@@ -32,6 +32,8 @@ services:
       - NEXT_PUBLIC_DISCORD_INVITE=${NEXT_PUBLIC_DISCORD_INVITE}
       - GO_MMO_INTERNAL_URL=${GO_MMO_INTERNAL_URL:-http://game-server:24011}
       - GO_MMO_ADMIN_SECRET=${GO_MMO_ADMIN_SECRET:-${AUTH_SECRET}}
+      - SAMP_SIDECAR_URL=http://samp:24002/api
+      - SAMP_RCON_HOST=samp
 
     healthcheck:
       test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:24001/" ]

@@ -151,8 +151,39 @@ export async function downloadAndExtractServer(archiveUrl: string) {
         // Windows native tar supports zip now!
         await execAsync(`tar -xf "${tempFile}" -C "${targetDir}"`);
       } else {
-        // Use JSZip since unzip is not available in minimal docker
-        const zipData = fs.readFileSync(tempFile);
+        // Try native unzip first for massive speedup
+        try {
+          const tempExtract = path.join(process.cwd(), `temp_extract_${Date.now()}`);
+          await execAsync(`unzip -q "${tempFile}" -d "${tempExtract}"`);
+          
+          const items = fs.readdirSync(tempExtract);
+          let sourceDir = tempExtract;
+          // Strip root directory if it's a wrapper (e.g. github download)
+          if (items.length === 1 && fs.statSync(path.join(tempExtract, items[0])).isDirectory()) {
+            sourceDir = path.join(tempExtract, items[0]);
+          }
+          
+          // Protect configs by removing them from sourceDir before copy
+          const protectFiles = ['server.cfg', 'config.json', 'mysql.cfg'];
+          for (const pf of protectFiles) {
+            const pfPath = path.join(sourceDir, pf);
+            if (fs.existsSync(pfPath) && fs.existsSync(path.join(targetDir, pf))) {
+              fs.unlinkSync(pfPath); // Don't overwrite existing
+            }
+          }
+
+          // Use cp -a to merge directories and preserve permissions, then rm
+          await execAsync(`cp -a "${sourceDir}/." "${targetDir}/"`);
+          await execAsync(`rm -rf "${tempExtract}"`);
+          
+          // Fix execute permissions
+          try {
+            await execAsync(`chmod +x "${targetDir}/samp03svr" "${targetDir}/announce" "${targetDir}/omp-server" 2>/dev/null || true`);
+          } catch(e) {}
+          
+        } catch (unzipErr) {
+          // Fallback to JSZip if unzip is not installed
+          const zipData = fs.readFileSync(tempFile);
         const zip = await JSZip.loadAsync(zipData);
         let files = Object.entries(zip.files);
 
@@ -199,9 +230,10 @@ export async function downloadAndExtractServer(archiveUrl: string) {
               fs.chmodSync(fullPath, 0o755);
             }
           }
-        }
-      }
-    }
+        } // close for loop
+        } // close catch (unzipErr)
+      } // close else (!isWindows)
+    } // close else (!tar.gz)
 
     // Cleanup
     if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);

@@ -20,7 +20,7 @@ export class SampManager extends EventEmitter {
   private constructor() {
     super();
     this.serverPath = path.join(process.cwd(), 'samp-server');
-    this.sidecarUrl = 'http://samp:24002/api';
+    this.sidecarUrl = process.env.SAMP_SIDECAR_URL || 'http://127.0.0.1:24002/api';
     this.apiKey = process.env.SAMP_API_KEY || process.env.AUTH_SECRET || '';
   }
 
@@ -207,7 +207,8 @@ export class SampManager extends EventEmitter {
       packet.writeUInt16LE(cmdBuf.length, 13 + passBuf.length);
       cmdBuf.copy(packet, 15 + passBuf.length);
 
-      client.send(packet, this.rconPort, 'samp');
+      const host = process.env.SAMP_RCON_HOST || '127.0.0.1';
+      client.send(packet, this.rconPort, host);
     });
   }
 
