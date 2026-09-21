@@ -1,3 +1,7 @@
+## [2.1.933] - 2026-09-21
+- **Setup Generation**: Restored World Engine selection in the World Generation wizard to properly support procedural Infinite Fractal Domains.
+- **Asset Resolution**: Fixed custom asset rendering for uploaded NPCs and Characters in the 3D Voxel Engine by integrating `resolveEntitySpriteUrl`.
+
 ## [2.1.929] - 2026-09-21
 - **Bugfix**: Fixed empty map default type resolving to "FRACTAL" instead of "TILE", which caused the 3D Voxel canvas to attempt loading for blank/wiped databases and resulted in black game views.
 
