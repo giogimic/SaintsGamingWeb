@@ -1,3 +1,6 @@
+## [2.1.929] - 2026-09-21
+- **Bugfix**: Fixed empty map default type resolving to "FRACTAL" instead of "TILE", which caused the 3D Voxel canvas to attempt loading for blank/wiped databases and resulted in black game views.
+
 ## [2.1.928] - 2026-09-21
 - **Hotfix**: Fixed Next.js build failure during deployment by stripping invalid exports from internal variables within the Server Action module (`actions.ts`).
 

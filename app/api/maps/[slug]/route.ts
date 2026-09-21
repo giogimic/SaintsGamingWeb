@@ -154,7 +154,7 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
       voxelDoc,
       regionClass: (worldMap as any).regionClass || "authored",
       proceduralConfig: parsedProceduralConfig,
-      mapType: (worldMap as any).mapType || "VOXEL",
+      mapType: (worldMap as any).mapType || "TILE",
       version: worldMap.version,
       source: "worldMap" as const,
     };
@@ -247,7 +247,7 @@ async function loadMapPayload(slug: string, isDraft?: boolean) {
       tilesets: DEFAULT_STUDIO_TILESETS,
       voxelDoc,
       regionClass: snap.regionClass || "authored",
-      mapType: snap.mapType || "VOXEL",
+      mapType: snap.mapType || "TILE",
       version: 1,
       source: "worldMapSnapshot" as const,
     };
@@ -307,7 +307,7 @@ export async function GET(
         ),
         regionClass: 'authored',
         proceduralConfig: undefined,
-        mapType: "FRACTAL",
+        mapType: "TILE",
         version: 0,
         source: 'worldMap' as const,
       };
