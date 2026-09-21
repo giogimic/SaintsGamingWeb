@@ -133,7 +133,7 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
         willChange: isDragging ? 'transform' : 'auto',
         width,
         height: isCollapsed ? 'auto' : height,
-        zIndex: (id === 'assetUpload' || id === 'quickUpload' || id === 'versionManager') ? Math.max(zIndex, 1100) : zIndex,
+        zIndex: (portalToBody || id === 'assetUpload' || id === 'quickUpload' || id === 'worldManager') ? Math.max(zIndex, 1100) : zIndex,
         touchAction: 'none',
       }}
       className={`
