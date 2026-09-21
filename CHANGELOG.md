@@ -6559,3 +6559,7 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 ## [v2.1.931] - 2026-09-21
 ### Fixed
 - Re-architected SA-MP Sidecar build context. The sidecar Node API is now stored in a dedicated Git-tracked samp-sidecar/ directory, decoupling it from the ephemeral samp-server/ directory which gets periodically wiped by update scripts.
+
+## [v2.1.932] - 2026-09-21
+### Fixed
+- Updated samp-sidecar Dockerfile to use ookworm-slim base image to resolve 404 errors during pt-get update caused by Debian 11 (Bullseye) repositories moving to archive.
