@@ -795,7 +795,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           engineRef.current.renderer.onResize();
           // Force hardware scaling level to ensure DPR changes are caught
           if (typeof window !== 'undefined') {
-            engineRef.current.engine.engine.setHardwareScalingLevel(1 / (window.devicePixelRatio || 1));
+            engineRef.current.engine.setHardwareScalingLevel(1 / (window.devicePixelRatio || 1));
           }
         }
       });

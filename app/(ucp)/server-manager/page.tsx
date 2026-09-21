@@ -23,6 +23,12 @@ export default function ServerManagerPage() {
 
   return (
     <div className="container max-w-6xl py-8 space-y-6">
+      <div className="bg-amber-500/10 border border-amber-500/50 text-amber-500 p-4 rounded-lg flex items-center justify-center mb-6">
+        <p className="font-semibold text-center">
+          SA-MP Server Manager is currently disabled for maintenance and security upgrades.
+        </p>
+      </div>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold sg-text-gradient flex items-center gap-2">

@@ -187,20 +187,20 @@ model User {
 }
 
 model ProfileSettings {
-  userId                    String   @id
-  user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accent                    String   @default("SUNSET_GOLD")
-  headerTreatment           String   @default("HORIZON")
-  activityVisibility        String   @default("PUBLIC")
-  achievementsVisibility    String   @default("PUBLIC")
-  mediaVisibility           String   @default("HIDDEN")
-  gameCharactersVisibility  String   @default("HIDDEN")
-  sampVisibility            String   @default("HIDDEN")
-  friendsVisibility         String   @default("HIDDEN")
-  steamWishlistVisibility   String   @default("HIDDEN")
-  galleryVisibility         String   @default("HIDDEN")
-  showMilestones            Boolean  @default(false)
-  updatedAt                 DateTime @updatedAt
+  userId                   String   @id
+  user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accent                   String   @default("SUNSET_GOLD")
+  headerTreatment          String   @default("HORIZON")
+  activityVisibility       String   @default("PUBLIC")
+  achievementsVisibility   String   @default("PUBLIC")
+  mediaVisibility          String   @default("HIDDEN")
+  gameCharactersVisibility String   @default("HIDDEN")
+  sampVisibility           String   @default("HIDDEN")
+  friendsVisibility        String   @default("HIDDEN")
+  steamWishlistVisibility  String   @default("HIDDEN")
+  galleryVisibility        String   @default("HIDDEN")
+  showMilestones           Boolean  @default(false)
+  updatedAt                DateTime @updatedAt
 }
 
 model ProfileImage {
@@ -521,6 +521,7 @@ model SampPlayerSession {
   lastSeen    DateTime   @updatedAt
   isOnline    Boolean    @default(true)
 
+  @@unique([serverId, playerName])
   @@index([serverId, isOnline])
   @@index([playerName])
 }

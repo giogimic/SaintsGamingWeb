@@ -6,9 +6,12 @@ import { auth } from '@/auth';
 import { SampManager } from '@/server/sampManager';
 
 // Helper to check admin status
-async function requireAdmin() {
+async function requireServerManager() {
   const session = await auth();
   if (!session?.user) throw new Error('Unauthorized');
+  if (session.user.role !== 'ADMIN' && session.user.permissionLevel < 3) {
+    throw new Error("Unauthorized: Server Manager access required");
+  }
   return session.user;
 }
 
@@ -16,7 +19,8 @@ const SAMP_SERVER_DIR = path.join(process.cwd(), 'samp-server');
 const LAUNCHER_CONFIG_PATH = path.join(SAMP_SERVER_DIR, 'launcher.json');
 
 export async function getLauncherConfig() {
-  await requireAdmin();
+  await requireServerManager();
+  return { success: false, error: 'Disabled for maintenance.' };
   try {
     if (!fs.existsSync(SAMP_SERVER_DIR)) {
       fs.mkdirSync(SAMP_SERVER_DIR, { recursive: true });
@@ -50,7 +54,8 @@ export async function getLauncherConfig() {
 }
 
 export async function setLauncherConfig(executable: string) {
-  await requireAdmin();
+  await requireServerManager();
+  return { success: false, error: 'Disabled for maintenance.' };
   try {
     if (!fs.existsSync(SAMP_SERVER_DIR)) {
       fs.mkdirSync(SAMP_SERVER_DIR, { recursive: true });

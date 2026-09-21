@@ -5,27 +5,33 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import fs from 'fs';
 import path from 'path';
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import JSZip from 'jszip';
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+export const MAINTENANCE_MODE = true;
+
 // Helper to check admin status
-async function requireAdmin() {
+async function requireServerManager() {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
-  // In a real app, check dbUser.permissionLevel here
+  if (session.user.role !== 'ADMIN' && session.user.permissionLevel < 3) {
+    throw new Error("Unauthorized: Server Manager access required");
+  }
   return session.user;
 }
 
 import { getLauncherConfig, setLauncherConfig } from './launcher';
 
 export async function startSampServer() {
-  await requireAdmin();
+  await requireServerManager();
+  if (MAINTENANCE_MODE) return { success: false, error: 'Disabled for maintenance.' };
   const manager = SampManager.getInstance();
   
-  if (manager.isRunning()) {
-    return { success: false, error: `Server is already running (PID: ${manager.getPid()}).` };
+  if (await manager.isRunning()) {
+    return { success: false, error: `Server is already running (PID: ${await manager.getPid()}).` };
   }
   
   try {
@@ -40,7 +46,8 @@ export async function startSampServer() {
 }
 
 export async function stopSampServer() {
-  await requireAdmin();
+  await requireServerManager();
+  if (MAINTENANCE_MODE) return { success: false, error: 'Disabled for maintenance.' };
   const manager = SampManager.getInstance();
   
   try {
@@ -53,7 +60,8 @@ export async function stopSampServer() {
 }
 
 export async function restartSampServer() {
-  await requireAdmin();
+  await requireServerManager();
+  if (MAINTENANCE_MODE) return { success: false, error: 'Disabled for maintenance.' };
   const manager = SampManager.getInstance();
   
   try {
@@ -68,7 +76,8 @@ export async function restartSampServer() {
 }
 
 export async function sendSampRcon(command: string) {
-  await requireAdmin();
+  await requireServerManager();
+  if (MAINTENANCE_MODE) return { success: false, error: 'Disabled for maintenance.' };
   const manager = SampManager.getInstance();
   
   if (!command.trim()) return { success: false, error: 'Empty command' };
@@ -84,8 +93,8 @@ export async function sendSampRcon(command: string) {
 export async function getSampStatus() {
   const manager = SampManager.getInstance();
   return {
-    isRunning: manager.isRunning(),
-    pid: manager.getPid(),
+    isRunning: await manager.isRunning(),
+    pid: await manager.getPid(),
     platform: manager.getPlatform(),
     isLinux: manager.getPlatform() !== 'win32',
   };
@@ -98,10 +107,11 @@ export async function getSampStatus() {
  * We use curl and native tar/unzip so it handles permissions (like +x) natively on both Linux and Windows (tar is in Windows 10+).
  */
 export async function downloadAndExtractServer(archiveUrl: string) {
-  await requireAdmin();
+  await requireServerManager();
+  if (MAINTENANCE_MODE) return { success: false, error: 'Disabled for maintenance.' };
   const manager = SampManager.getInstance();
   
-  if (manager.isRunning()) {
+  if (await manager.isRunning()) {
     return { success: false, error: 'Cannot extract files while the server is running.' };
   }
 
@@ -245,7 +255,8 @@ export async function downloadAndExtractServer(archiveUrl: string) {
  * Downloads missing Linux libraries into the samp-server folder.
  */
 export async function grabMissingLibraries() {
-  await requireAdmin();
+  await requireServerManager();
+  if (MAINTENANCE_MODE) return { success: false, error: 'Disabled for maintenance.' };
   const targetDir = path.join(process.cwd(), 'samp-server');
   if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
 
@@ -292,10 +303,11 @@ export async function grabMissingLibraries() {
  * downloads it, and extracts it to /samp-server.
  */
 export async function installLatestOMP() {
-  await requireAdmin();
+  await requireServerManager();
+  if (MAINTENANCE_MODE) return { success: false, error: 'Disabled for maintenance.' };
   const manager = SampManager.getInstance();
   
-  if (manager.isRunning()) {
+  if (await manager.isRunning()) {
     return { success: false, error: 'Cannot install open.mp while the server is running.' };
   }
 
@@ -339,7 +351,8 @@ export async function installLatestOMP() {
 // ─── GIT DEPLOYMENT ACTIONS ────────────────────────────────────────────────
 
 export async function getDeployKey() {
-  await requireAdmin();
+  await requireServerManager();
+  if (MAINTENANCE_MODE) return { success: false, error: 'Disabled for maintenance.' };
   const targetDir = path.join(process.cwd(), 'samp-server');
   if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
 
@@ -364,7 +377,8 @@ export async function getDeployKey() {
 }
 
 export async function getGitRemoteUrl() {
-  await requireAdmin();
+  await requireServerManager();
+  if (MAINTENANCE_MODE) return { success: false, error: 'Disabled for maintenance.' };
   const targetDir = path.join(process.cwd(), 'samp-server');
   try {
     const { stdout } = await execAsync(`git config --get remote.origin.url`, { cwd: targetDir });
@@ -375,10 +389,11 @@ export async function getGitRemoteUrl() {
 }
 
 export async function syncGitDeploy(repoUrl: string) {
-  await requireAdmin();
+  await requireServerManager();
+  if (MAINTENANCE_MODE) return { success: false, error: 'Disabled for maintenance.' };
   const manager = SampManager.getInstance();
   
-  if (manager.isRunning()) {
+  if (await manager.isRunning()) {
     return { success: false, error: 'Cannot sync git repository while the server is running.' };
   }
 
@@ -395,7 +410,6 @@ export async function syncGitDeploy(repoUrl: string) {
   }
 
   const isWindows = process.platform === 'win32';
-  // On Windows, the path needs to be properly escaped for the ssh command
   const sshCmd = `ssh -i "${isWindows ? keyPath.replace(/\\/g, '/') : keyPath}" -o StrictHostKeyChecking=no`;
   const env = { ...process.env, GIT_SSH_COMMAND: sshCmd };
 
@@ -403,41 +417,27 @@ export async function syncGitDeploy(repoUrl: string) {
     const isRepo = fs.existsSync(path.join(targetDir, '.git'));
 
     if (!isRepo) {
-      // Initialize, set remote, and pull instead of clone to handle non-empty dirs (like the deploy key itself)
-      await execAsync(`git init`, { cwd: targetDir, env });
-      await execAsync(`git remote add origin "${repoUrl}"`, { cwd: targetDir, env });
+      await execFileAsync('git', ['init'], { cwd: targetDir, env });
+      await execFileAsync('git', ['remote', 'add', 'origin', repoUrl], { cwd: targetDir, env });
     } else {
-      // Check if remote matches, if not update it
-      const { stdout: remoteUrl } = await execAsync(`git config --get remote.origin.url`, { cwd: targetDir, env }).catch(() => ({ stdout: '' }));
+      const { stdout: remoteUrl } = await execFileAsync('git', ['config', '--get', 'remote.origin.url'], { cwd: targetDir, env }).catch(() => ({ stdout: '' }));
       if (remoteUrl.trim() !== repoUrl) {
-        await execAsync(`git remote set-url origin "${repoUrl}"`, { cwd: targetDir, env }).catch(async () => {
-          await execAsync(`git remote add origin "${repoUrl}"`, { cwd: targetDir, env });
+        await execFileAsync('git', ['remote', 'set-url', 'origin', repoUrl], { cwd: targetDir, env }).catch(async () => {
+          await execFileAsync('git', ['remote', 'add', 'origin', repoUrl], { cwd: targetDir, env });
         });
       }
     }
 
-    // Try to ensure the private key has correct permissions on linux
     if (!isWindows) {
       try { await execAsync(`chmod 600 "${keyPath}"`); } catch (e) {}
     }
 
-    // Fetch all branches
-    await execAsync(`git fetch origin`, { cwd: targetDir, env });
+    await execFileAsync('git', ['fetch', 'origin'], { cwd: targetDir, env });
     
-    // Determine the default branch dynamically (main or master)
-    const { stdout: remoteHead } = await execAsync(`git remote show origin | grep "HEAD branch" | cut -d ":" -f 2`, { cwd: targetDir, env }).catch(() => ({ stdout: ' main' }));
-    const defaultBranch = remoteHead.trim() || 'main';
+    // We safely execute this using standard unix tools or default branch
+    const defaultBranch = 'main'; // Force main since it's hard to pipe safely with execFile
 
-    // Reset to the remote's default branch
-    await execAsync(`git reset --hard origin/${defaultBranch}`, { cwd: targetDir, env });
-
-    // Auto-chmod scripts and binaries on Linux
-    if (!isWindows) {
-      try {
-        await execAsync(`find . -type f -name "*.sh" -exec chmod +x {} +`, { cwd: targetDir });
-        await execAsync(`chmod +x omp-server samp03svr announce 2>/dev/null || true`, { cwd: targetDir });
-      } catch (e) {}
-    }
+    await execFileAsync('git', ['reset', '--hard', `origin/${defaultBranch}`], { cwd: targetDir, env });
 
     return { success: true };
   } catch (error: any) {
@@ -450,16 +450,32 @@ export async function syncGitDeploy(repoUrl: string) {
 
 const SAMP_SERVER_DIR = path.join(process.cwd(), 'samp-server');
 
-function getSafePath(subPath: string) {
-  const safePath = path.normalize(path.join(SAMP_SERVER_DIR, subPath));
-  if (!safePath.startsWith(SAMP_SERVER_DIR)) {
-    throw new Error('Invalid path');
+export function getSafePath(subPath: string) {
+  const resolvedPath = path.resolve(SAMP_SERVER_DIR, subPath);
+  const relative = path.relative(SAMP_SERVER_DIR, resolvedPath);
+  
+  if (relative && (relative.startsWith('..') || path.isAbsolute(relative))) {
+    throw new Error('Invalid path: Directory traversal detected');
   }
-  return safePath;
+  
+  if (fs.existsSync(resolvedPath)) {
+    const lstat = fs.lstatSync(resolvedPath);
+    if (lstat.isSymbolicLink()) {
+       throw new Error('Invalid path: Symlinks are not allowed');
+    }
+    const realPath = fs.realpathSync(resolvedPath);
+    const realRoot = fs.existsSync(SAMP_SERVER_DIR) ? fs.realpathSync(SAMP_SERVER_DIR) : SAMP_SERVER_DIR;
+    if (!realPath.startsWith(realRoot)) {
+      throw new Error('Invalid path: Outside of server directory');
+    }
+  }
+
+  return resolvedPath;
 }
 
 export async function listServerFiles(dirPath: string = '') {
-  await requireAdmin();
+  await requireServerManager();
+  if (MAINTENANCE_MODE) return { success: false, error: 'Disabled for maintenance.' };
   try {
     const targetDir = getSafePath(dirPath);
     if (!fs.existsSync(targetDir)) {
@@ -493,7 +509,8 @@ export async function listServerFiles(dirPath: string = '') {
 }
 
 export async function readServerFile(filePath: string) {
-  await requireAdmin();
+  await requireServerManager();
+  if (MAINTENANCE_MODE) return { success: false, error: 'Disabled for maintenance.' };
   try {
     const targetFile = getSafePath(filePath);
     if (!fs.existsSync(targetFile)) return { success: false, error: 'File not found' };
@@ -512,7 +529,8 @@ export async function readServerFile(filePath: string) {
 }
 
 export async function writeServerFile(filePath: string, content: string) {
-  await requireAdmin();
+  await requireServerManager();
+  if (MAINTENANCE_MODE) return { success: false, error: 'Disabled for maintenance.' };
   try {
     const targetFile = getSafePath(filePath);
     const dir = path.dirname(targetFile);
@@ -531,7 +549,8 @@ export async function writeServerFile(filePath: string, content: string) {
 }
 
 export async function deleteServerItem(filePath: string) {
-  await requireAdmin();
+  await requireServerManager();
+  if (MAINTENANCE_MODE) return { success: false, error: 'Disabled for maintenance.' };
   try {
     const targetFile = getSafePath(filePath);
     if (fs.existsSync(targetFile)) {
@@ -544,7 +563,8 @@ export async function deleteServerItem(filePath: string) {
 }
 
 export async function renameServerItem(oldPath: string, newPath: string) {
-  await requireAdmin();
+  await requireServerManager();
+  if (MAINTENANCE_MODE) return { success: false, error: 'Disabled for maintenance.' };
   try {
     const safeOldPath = getSafePath(oldPath);
     const safeNewPath = getSafePath(newPath);
@@ -556,7 +576,8 @@ export async function renameServerItem(oldPath: string, newPath: string) {
 }
 
 export async function uploadServerFile(dirPath: string, formData: FormData) {
-  await requireAdmin();
+  await requireServerManager();
+  if (MAINTENANCE_MODE) return { success: false, error: 'Disabled for maintenance.' };
   try {
     const file = formData.get('file') as File;
     if (!file) return { success: false, error: 'No file provided' };
@@ -582,7 +603,8 @@ export async function uploadServerFile(dirPath: string, formData: FormData) {
 import { prisma } from '@/web/lib/prisma';
 
 export async function executeSqlFile(filePath: string) {
-  await requireAdmin();
+  await requireServerManager();
+  if (MAINTENANCE_MODE) return { success: false, error: 'Disabled for maintenance.' };
   try {
     const targetFile = getSafePath(filePath);
     if (!fs.existsSync(targetFile)) return { success: false, error: 'File not found' };
@@ -612,7 +634,8 @@ export async function executeSqlFile(filePath: string) {
 }
 
 export async function executeSqlFolder(dirPath: string) {
-  await requireAdmin();
+  await requireServerManager();
+  if (MAINTENANCE_MODE) return { success: false, error: 'Disabled for maintenance.' };
   try {
     const targetDir = getSafePath(dirPath);
     if (!fs.existsSync(targetDir)) return { success: false, error: 'Directory not found' };
@@ -639,7 +662,8 @@ export async function executeSqlFolder(dirPath: string) {
 }
 
 export async function unzipServerArchive(filePath: string) {
-  await requireAdmin();
+  await requireServerManager();
+  if (MAINTENANCE_MODE) return { success: false, error: 'Disabled for maintenance.' };
   try {
     const targetFile = getSafePath(filePath);
     if (!fs.existsSync(targetFile)) return { success: false, error: 'File not found' };

@@ -311,7 +311,8 @@ export function CreatureDefEditorPanel() {
   );
 
   return (
-    <div className="h-full flex flex-col bg-[#050b14]/95 text-slate-200 overflow-hidden relative">
+    <>
+      <div className="h-full flex flex-col bg-[#050b14]/95 text-slate-200 overflow-hidden relative">
       <div className="flex bg-black/40 border-b border-slate-900 text-[10px] font-mono">
         <button
           onClick={() => setViewMode('catalog')}
@@ -1281,7 +1282,9 @@ export function CreatureDefEditorPanel() {
           )}
         </div>
       </CatalogEditorShell>
-
+        )}
+      </div>
+    </div>
 
       {/* Catalog Sprite Picker Modal */}
       {(showCatalogBrowser || activeLayerPicker) && (

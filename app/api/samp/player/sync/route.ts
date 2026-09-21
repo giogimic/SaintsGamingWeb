@@ -17,38 +17,34 @@ export async function POST(req: NextRequest) {
     }
 
     // Upsert the player session
-    const session = await prisma.sampPlayerSession.findFirst({
-      where: { playerName, serverId: auth.server!.id },
-    });
-
-    if (session) {
-      await prisma.sampPlayerSession.update({
-        where: { id: session.id },
-        data: {
-          score: score ?? session.score,
-          money: money ?? session.money,
-          posX: posX ?? session.posX,
-          posY: posY ?? session.posY,
-          posZ: posZ ?? session.posZ,
-          interior: interior ?? session.interior,
-          isOnline: isOnline ?? true,
-        },
-      });
-    } else {
-      await prisma.sampPlayerSession.create({
-        data: {
+    await prisma.sampPlayerSession.upsert({
+      where: {
+        serverId_playerName: {
           serverId: auth.server!.id,
           playerName,
-          score: score ?? 0,
-          money: money ?? 0,
-          posX: posX ?? 0,
-          posY: posY ?? 0,
-          posZ: posZ ?? 0,
-          interior: interior ?? 0,
-          isOnline: isOnline ?? true,
         },
-      });
-    }
+      },
+      update: {
+        score: score ?? undefined,
+        money: money ?? undefined,
+        posX: posX ?? undefined,
+        posY: posY ?? undefined,
+        posZ: posZ ?? undefined,
+        interior: interior ?? undefined,
+        isOnline: isOnline ?? true,
+      },
+      create: {
+        serverId: auth.server!.id,
+        playerName,
+        score: score ?? 0,
+        money: money ?? 0,
+        posX: posX ?? 0,
+        posY: posY ?? 0,
+        posZ: posZ ?? 0,
+        interior: interior ?? 0,
+        isOnline: isOnline ?? true,
+      },
+    });
 
     // Also update server lastSeen
     await prisma.gameServer.update({

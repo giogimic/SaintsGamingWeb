@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEditorStore } from '../editor-store';
-import { DraggablePanel } from './DraggablePanel';
+import { DraggablePanel } from '../DraggablePanel';
 import {
   Users, PawPrint, Package, Coins, Sparkles, ScrollText, MessageSquare, MapPin, Sword, Shield, Store, Globe
 } from 'lucide-react';
@@ -43,7 +43,7 @@ export function WorldStudioPanel() {
   ];
 
   return (
-    <DraggablePanel id="worldStudio" minWidth={340} minHeight={480}>
+    <DraggablePanel id="worldStudio">
       <div className="flex flex-col h-full bg-[#050b14]/95 text-slate-200 font-mono text-xs overflow-y-auto custom-scrollbar p-2 space-y-4">
         
         <div className="flex items-center gap-2 px-2 py-1 mb-2 border-b border-border/40 pb-3">

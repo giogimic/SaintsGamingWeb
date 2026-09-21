@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
     // Try to find if this player has an active session or is linked to a user
     const session = await prisma.sampPlayerSession.findFirst({
-      where: { playerName },
+      where: { playerName, serverId: auth.server!.id },
       include: { user: true },
     });
 

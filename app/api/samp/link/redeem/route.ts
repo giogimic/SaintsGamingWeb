@@ -31,9 +31,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Code expired" }, { status: 400 });
     }
 
-    // Link the player session if it exists
+    // Link the player session if it exists on THIS server
     await prisma.sampPlayerSession.updateMany({
-      where: { playerName },
+      where: { playerName, serverId: auth.server!.id },
       data: { userId: linkCode.userId },
     });
 
@@ -51,11 +51,6 @@ export async function POST(req: NextRequest) {
           classId: "samp-player", // A dummy class for SAMP
           stateData: "{}",
         },
-      });
-    } else if (existingChar.userId !== linkCode.userId) {
-      await prisma.gameCharacter.update({
-        where: { id: existingChar.id },
-        data: { userId: linkCode.userId },
       });
     }
 

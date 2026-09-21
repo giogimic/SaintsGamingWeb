@@ -181,6 +181,7 @@ export const StudioEditorShell: React.FC = () => {
   const activeMapData = useGameStore((state) => state.activeMapData);
   const isGeneratingRegion = useEditorStore((state) => state.isGeneratingRegion);
   const isSavingMap = useEditorStore((state) => state.isSavingMap);
+  const panels = useEditorStore((state) => state.panels);
 
   const canDev = canUseStudioDock(permissionLevel, 'dev');
   

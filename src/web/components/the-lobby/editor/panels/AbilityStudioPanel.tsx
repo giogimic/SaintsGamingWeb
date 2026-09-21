@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEditorStore } from '../editor-store';
-import { DraggablePanel } from './DraggablePanel';
+import { DraggablePanel } from '../DraggablePanel';
 import {
   Sparkles, Shield, ScrollText, Hammer, Target, BookOpen, Crown
 } from 'lucide-react';
@@ -24,7 +24,7 @@ export function AbilityStudioPanel() {
   ];
 
   return (
-    <DraggablePanel id="abilityStudio" minWidth={340} minHeight={480}>
+    <DraggablePanel id="abilityStudio">
       <div className="flex flex-col h-full bg-[#050b14]/95 text-slate-200 font-mono text-xs overflow-y-auto custom-scrollbar p-2 space-y-4">
         
         <div className="flex items-center gap-2 px-2 py-1 mb-2 border-b border-border/40 pb-3">

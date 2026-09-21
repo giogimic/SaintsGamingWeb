@@ -424,6 +424,10 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
     label: 'Spawn Editor',
     blurb: 'NPC, Monster, and Trigger spawners.',
   },
+  versionManager: {
+    label: 'Version Manager',
+    blurb: 'Manage asset releases and world snapshots.',
+  },
 };
 
 export interface WorkspacePresetDef {

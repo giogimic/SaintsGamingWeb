@@ -1,11 +1,14 @@
 import { NextRequest } from 'next/server';
 import { SampManager } from '@/server/sampManager';
+import { auth } from '@/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  // Authentication check would go here for production.
-  // We assume the caller is an admin if they can reach this endpoint via UCP.
+  const session = await auth();
+  if (!session?.user || (session.user.role !== 'ADMIN' && session.user.permissionLevel < 3)) {
+    return new Response('Unauthorized', { status: 401 });
+  }
 
   const manager = SampManager.getInstance();
   manager.ensureLogTail();

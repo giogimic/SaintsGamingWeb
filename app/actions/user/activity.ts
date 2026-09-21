@@ -2,7 +2,6 @@
 
 import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
-import { getViewerAccessLevel } from "./users"; // From my earlier refactor
 
 export type ActivityItem = {
   id: string;
@@ -22,8 +21,8 @@ export async function getUserActivityFeed(username: string, limit = 20): Promise
       id: true,
       createdAt: true,
       profileSettings: true,
-      receivedFriendships: { where: { status: "ACCEPTED", senderId: session?.user?.id } },
-      sentFriendships: { where: { status: "ACCEPTED", receiverId: session?.user?.id } }
+      receivedFriendships: { where: { status: "ACCEPTED", userId: session?.user?.id } },
+      sentFriendships: { where: { status: "ACCEPTED", friendId: session?.user?.id } }
     }
   });
 

@@ -1,3 +1,10 @@
+## [2.1.927] - 2026-09-21
+- **Docker Topology Migration**: Consolidated SA-MP services into the root `docker-compose.yml` and isolated the process in a new container.
+- **Sidecar Process Manager**: Created an internal Node.js sidecar API (`samp-server/sidecar/index.js`) to natively host and stream SA-MP instances.
+- **Security Lockdown**: Removed fragile in-process `execAsync` shell commands. Safely refactored `getSafePath` leveraging `realpathSync` to eliminate traversal and symlink vulnerabilities.
+- **API Hardening**: Scoped SA-MP API endpoints (`sync`, `redeem`, `lookup`) by server isolation ID to fix character hijacking.
+- **Pawn Integration**: Wrote `saints-api.pwn` using modern `samp-plugin-requests` for robust cross-container Web API communication.
+
 ## [2.1.926] - 2026-09-21
 - Overhauled User Profiles into a social creator hub format
 - Added ProfileSettings to Prisma schema for accent color, background treatment, and section visibility
