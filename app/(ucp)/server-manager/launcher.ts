@@ -20,7 +20,6 @@ const LAUNCHER_CONFIG_PATH = path.join(SAMP_SERVER_DIR, 'launcher.json');
 
 export async function getLauncherConfig() {
   await requireServerManager();
-  return { success: false, error: 'Disabled for maintenance.' };
   try {
     if (!fs.existsSync(SAMP_SERVER_DIR)) {
       fs.mkdirSync(SAMP_SERVER_DIR, { recursive: true });
@@ -55,7 +54,6 @@ export async function getLauncherConfig() {
 
 export async function setLauncherConfig(executable: string) {
   await requireServerManager();
-  return { success: false, error: 'Disabled for maintenance.' };
   try {
     if (!fs.existsSync(SAMP_SERVER_DIR)) {
       fs.mkdirSync(SAMP_SERVER_DIR, { recursive: true });
