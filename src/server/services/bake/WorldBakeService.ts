@@ -326,6 +326,13 @@ export class WorldBakeService {
     const prog = this.progressMap.get(job.jobId);
     if (prog && prog.completedRegions >= prog.totalRegions) {
       job.status = 'COMPLETED';
+      if (job.revisionId) {
+        await prisma.worldBootstrapRevision.update({
+          where: { id: job.revisionId },
+          data: { status: 'COMPLETED', completedAt: new Date() }
+        });
+      }
+      console.log(`[BakeService] Job ${job.jobId} COMPLETED! (Fully Resumed)`);
       return;
     }
 
