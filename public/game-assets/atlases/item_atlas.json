@@ -1,0 +1,1246 @@
+{
+  "filename": "item_atlas.png",
+  "width": 1024,
+  "height": 120,
+  "frames": [
+    {
+      "filename": "aardant.png",
+      "x": 0,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "ancient_egg.png",
+      "x": 24,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "ancient_tea.png",
+      "x": 48,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "antidote-grapes.png",
+      "x": 72,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "apple.png",
+      "x": 96,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "app_banking.png",
+      "x": 120,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "app_contacts.png",
+      "x": 144,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "app_map.png",
+      "x": 168,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "app_renaming.png",
+      "x": 192,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "app_tuxepedia.png",
+      "x": 216,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "banana.png",
+      "x": 240,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "bivouac.png",
+      "x": 264,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "blue-potion.png",
+      "x": 288,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "book_wishes.png",
+      "x": 312,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "booster_tech.png",
+      "x": 336,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "boost_armour.png",
+      "x": 360,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "boost_dodge.png",
+      "x": 384,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "boost_melee.png",
+      "x": 408,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "boost_ranged.png",
+      "x": 432,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "boost_speed.png",
+      "x": 456,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "box.png",
+      "x": 480,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "cosmic_berry.png",
+      "x": 504,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "cure-festering.png",
+      "x": 528,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "die.png",
+      "x": 552,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "dojo_pass.png",
+      "x": 576,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "drone.png",
+      "x": 600,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "earthmover_key.png",
+      "x": 624,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "earth_berry.png",
+      "x": 648,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "earth_booster.png",
+      "x": 672,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "escape_key.png",
+      "x": 696,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "feather.png",
+      "x": 720,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "fire_berry.png",
+      "x": 744,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "fire_booster.png",
+      "x": 768,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "fishing_rod.png",
+      "x": 792,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "flintstone.png",
+      "x": 816,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "flute.png",
+      "x": 840,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "friendship_scroll.png",
+      "x": 864,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "frost_berry.png",
+      "x": 888,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_blue_assymetrical.png",
+      "x": 912,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_blue_emerald.png",
+      "x": 936,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_blue_triangular.png",
+      "x": 960,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_blue_triangular2.png",
+      "x": 984,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_cyan_assymetrical.png",
+      "x": 0,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_cyan_emerald.png",
+      "x": 24,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_cyan_triangular.png",
+      "x": 48,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_cyan_triangular2.png",
+      "x": 72,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_gray_assymetrical.png",
+      "x": 96,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_gray_emerald.png",
+      "x": 120,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_gray_triangular.png",
+      "x": 144,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_gray_triangular2.png",
+      "x": 168,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_green_assymetrical.png",
+      "x": 192,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_green_emerald.png",
+      "x": 216,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_green_triangular.png",
+      "x": 240,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_green_triangular2.png",
+      "x": 264,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_pink_assymetrical.png",
+      "x": 288,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_pink_emerald.png",
+      "x": 312,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_pink_triangular.png",
+      "x": 336,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_pink_triangular2.png",
+      "x": 360,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_red_assymetrical.png",
+      "x": 384,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_red_emerald.png",
+      "x": 408,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_red_triangular.png",
+      "x": 432,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_red_triangular2.png",
+      "x": 456,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_yellow_assymetrical.png",
+      "x": 480,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_yellow_emerald.png",
+      "x": 504,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_yellow_triangular.png",
+      "x": 528,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gem_yellow_triangular2.png",
+      "x": 552,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "gold_pass.png",
+      "x": 576,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "green-potion.png",
+      "x": 600,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "greenwash_badge.png",
+      "x": 624,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "hatchet.png",
+      "x": 648,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "heroic_berry.png",
+      "x": 672,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "horseshoe.png",
+      "x": 696,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "imperial_potion.png",
+      "x": 720,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "imperial_tea.png",
+      "x": 744,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "key-card.png",
+      "x": 768,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "lightning_berry.png",
+      "x": 792,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "lima_pie.png",
+      "x": 816,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "lucky_bamboo.png",
+      "x": 840,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "luminescent-potion.png",
+      "x": 864,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "marble.png",
+      "x": 888,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "mega_potion.png",
+      "x": 912,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "metal_berry.png",
+      "x": 936,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "metal_booster.png",
+      "x": 960,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "miaow_milk.png",
+      "x": 984,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "mm_earth.png",
+      "x": 0,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "mm_fire.png",
+      "x": 24,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "mm_metal.png",
+      "x": 48,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "mm_water.png",
+      "x": 72,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "mm_wood.png",
+      "x": 96,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "monsters_eyes.png",
+      "x": 120,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "mystery_tea.png",
+      "x": 144,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "neptune.png",
+      "x": 168,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "nimrod_badge.png",
+      "x": 192,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "normal_berry.png",
+      "x": 216,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "nu_phone.png",
+      "x": 240,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "omnichannel_badge.png",
+      "x": 264,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "open-hand.png",
+      "x": 288,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "orange.png",
+      "x": 312,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "ox_stick.png",
+      "x": 336,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "peace_lily.png",
+      "x": 360,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "petrified_dung.png",
+      "x": 384,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "pink-potion.png",
+      "x": 408,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "poseidon.png",
+      "x": 432,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "potion.png",
+      "x": 456,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "purple-potion.png",
+      "x": 480,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "pyramidion.png",
+      "x": 504,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "raise_armour.png",
+      "x": 528,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "raise_dodge.png",
+      "x": 552,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "raise_hp.png",
+      "x": 576,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "raise_melee.png",
+      "x": 600,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "raise_ranged.png",
+      "x": 624,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "raise_speed.png",
+      "x": 648,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "red-potion.png",
+      "x": 672,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "refreshing-slice.png",
+      "x": 696,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "revive.png",
+      "x": 720,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "rhincus_fossil.png",
+      "x": 744,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "scoop_badge.png",
+      "x": 768,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "sea_girdle.png",
+      "x": 792,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "shadow_berry.png",
+      "x": 816,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "shaft_badge.png",
+      "x": 840,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "shammer_fossil.png",
+      "x": 864,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "sky_berry.png",
+      "x": 888,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "sledgehammer.png",
+      "x": 912,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "spyder_pass.png",
+      "x": 936,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "starry_night.png",
+      "x": 960,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "stovepipe.png",
+      "x": 984,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "super_potion.png",
+      "x": 0,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "surfboard.png",
+      "x": 24,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "sweet_sand.png",
+      "x": 48,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tea.png",
+      "x": 72,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tectonic_drill.png",
+      "x": 96,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "thunderstone.png",
+      "x": 120,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tm_earth.png",
+      "x": 144,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tm_fire.png",
+      "x": 168,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tm_generic.png",
+      "x": 192,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tm_metal.png",
+      "x": 216,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tm_water.png",
+      "x": 240,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tm_wood.png",
+      "x": 264,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "toy-bear.png",
+      "x": 288,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "trepidation.png",
+      "x": 312,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball.png",
+      "x": 336,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_ancient.png",
+      "x": 360,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_candy.png",
+      "x": 384,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_crusher.png",
+      "x": 408,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_diurnal.png",
+      "x": 432,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_earth.png",
+      "x": 456,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_female.png",
+      "x": 480,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_fire.png",
+      "x": 504,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_gambler.png",
+      "x": 528,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_grand.png",
+      "x": 552,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_hardened.png",
+      "x": 576,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_hearty.png",
+      "x": 600,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_lavish.png",
+      "x": 624,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_majestic.png",
+      "x": 648,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_male.png",
+      "x": 672,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_metal.png",
+      "x": 696,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_neuter.png",
+      "x": 720,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_noble.png",
+      "x": 744,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_nocturnal.png",
+      "x": 768,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_omni.png",
+      "x": 792,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_park.png",
+      "x": 816,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_peppy.png",
+      "x": 840,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_refined.png",
+      "x": 864,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_salty.png",
+      "x": 888,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_water.png",
+      "x": 912,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_wood.png",
+      "x": 936,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_xero.png",
+      "x": 960,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "tuxeball_zesty.png",
+      "x": 984,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "venom_berry.png",
+      "x": 0,
+      "y": 96,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "water_berry.png",
+      "x": 24,
+      "y": 96,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "water_booster.png",
+      "x": 48,
+      "y": 96,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "wood_berry.png",
+      "x": 72,
+      "y": 96,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "wood_booster.png",
+      "x": 96,
+      "y": 96,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "xp-feeder.png",
+      "x": 120,
+      "y": 96,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "xp_transmitter.png",
+      "x": 144,
+      "y": 96,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "yellow-key.png",
+      "x": 168,
+      "y": 96,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "filename": "yellow-potion.png",
+      "x": 192,
+      "y": 96,
+      "width": 24,
+      "height": 24
+    }
+  ]
+}

@@ -180,7 +180,7 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
   }, [draw]);
 
   const mapData = activeMapData || GAME_MAPS[currentMapId];
-  const mapName = mapData?.name || currentMapId;
+  const mapName = mapData?.name || currentMapId || 'Unknown Region';
 
   let channelText = '';
   if (instanceId && instanceId.includes('_ch')) {
@@ -232,15 +232,15 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
         }}
       >
         {/* 1. Header Action Row: Quick Navigation Buttons */}
-        <div className="flex items-center justify-between gap-1 pb-1 border-b border-white/10">
+        <div className="flex items-center justify-between gap-1 pb-1 border-b border-white/10 overflow-hidden">
           <button
             type="button"
             onClick={handleOpenOptionsClick}
             className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
             title="Game Settings (ESC)"
           >
-            <Settings className="w-3 h-3 text-amber-400" />
-            <span>Options</span>
+            <Settings className="w-3 h-3 text-amber-400 shrink-0" />
+            <span className="truncate">Options</span>
           </button>
 
           {enableStudio ? (
@@ -257,8 +257,8 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
               }`}
               title="Toggle Studio Editor (Ctrl+E)"
             >
-              <Hammer className="w-3 h-3 text-amber-400" />
-              <span>{studioToolsOpen ? 'Play' : 'Edit'}</span>
+              <Hammer className="w-3 h-3 text-amber-400 shrink-0" />
+              <span className="truncate">{studioToolsOpen ? 'Play' : 'Edit'}</span>
             </button>
           ) : null}
 
@@ -268,7 +268,7 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
               soundSynth?.playSelectSound?.();
               window.location.href = '/';
             }}
-            className="flex items-center justify-center p-1 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 hover:text-white transition-colors cursor-pointer"
+            className="flex items-center justify-center p-1 shrink-0 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 hover:text-white transition-colors cursor-pointer"
             title="Leave Game (Return to Portal)"
           >
             <LogOut className="w-3 h-3" />
@@ -293,9 +293,9 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
 
         {/* 3. Footer Line: Location Label & Coordinates Readout */}
         <div className="flex flex-col gap-1 pt-1.5 border-t border-white/10">
-          <div className="flex items-center gap-1.5 text-[10px] text-slate-100 font-black truncate">
+          <div className="flex items-center gap-1.5 text-[10px] text-slate-100 font-black min-w-0">
             <Map className="h-3 w-3 shrink-0 text-amber-400" />
-            <span className="truncate">
+            <span className="truncate block">
               {mapName}
               {channelText}
             </span>

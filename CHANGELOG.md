@@ -1,3 +1,13 @@
+## [2.1.936] - 2026-09-21
+- **Bugfix**: Fixed Babylon.js engine crashes (WebGL context loss) and black screens by disabling the 3D interactive logo on game routes.
+- **Bugfix**: Fixed the in-game ESC menu failing to open when a combat target was selected.
+- **Bugfix**: Fixed missing map names in the radar minimap caused by aggressive flexbox CSS truncation and missing fallbacks.
+
+## [2.1.935] - 2026-09-21
+- **Critical Fix: Asset Restoration**: Restored 1,948 game asset files (NPC sprites, creatures, monsters, items, tilesets, UI, audio, atlases) from `.old-assets/game-assets/` back into `public/game-assets/`. The `public/game-assets/` directory only contained `tilesets/terrain-overworld.png`, causing every sprite reference to 404 in the client.
+- **Fix: EntityRenderer Sprite Resolution**: Fixed local player and remote player sprite URLs in `EntityRenderer.ts` — was using non-existent `/sprites/player/` path, now correctly uses `resolveEntitySpriteUrl()` which maps to `/game-assets/npc/`.
+- **Debug: MapMesher Voxel Logging**: Added diagnostic logging to `MapMesher.loadStreamedChunk()` to trace voxel chunk arrival, meshing results, and empty chunks for debugging invisible world terrain.
+
 ## [2.1.933] - 2026-09-21
 - **Setup Generation**: Restored World Engine selection in the World Generation wizard to properly support procedural Infinite Fractal Domains.
 - **Asset Resolution**: Fixed custom asset rendering for uploaded NPCs and Characters in the 3D Voxel Engine by integrating `resolveEntitySpriteUrl`.

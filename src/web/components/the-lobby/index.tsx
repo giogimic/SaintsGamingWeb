@@ -1830,7 +1830,6 @@ export default function TheLobby({
         // Target selected: Escape deselects target
         if (store.combatTarget) {
           store.setCombatTarget(null);
-          return;
         }
         setIsOptionsOpen((open) => !open);
         return;

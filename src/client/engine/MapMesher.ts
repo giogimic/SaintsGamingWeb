@@ -123,7 +123,11 @@ export class MapMesher {
   }
 
   public loadStreamedChunk(chunkData: { cx: number; cy: number; cz: number; low: Uint32Array; high: Uint32Array }) {
-    if (!this.voxelWorld || !this.voxelChunkMesher || !this.voxelRoot) return;
+    console.log(`[MapMesher] loadStreamedChunk(${chunkData.cx}, ${chunkData.cy}, ${chunkData.cz}) — low.length=${chunkData.low.length}, high.length=${chunkData.high.length}`);
+    if (!this.voxelWorld || !this.voxelChunkMesher || !this.voxelRoot) {
+      console.warn('[MapMesher] loadStreamedChunk bailed — missing:', { voxelWorld: !!this.voxelWorld, voxelChunkMesher: !!this.voxelChunkMesher, voxelRoot: !!this.voxelRoot });
+      return;
+    }
     const chunk = this.voxelWorld.getChunk(chunkData.cx, chunkData.cz, chunkData.cy, true);
     if (!chunk) return;
     const low = chunkData.low.length === CHUNK_TOTAL_CELLS * 2 ? chunkData.low.subarray(0, CHUNK_TOTAL_CELLS) : chunkData.low;
@@ -133,7 +137,15 @@ export class MapMesher {
       return;
     }
     chunk.dataLow.set(low); chunk.dataHigh.set(high); chunk.isDirty = true;
-    if (!chunk.isEmpty()) { const result=this.voxelChunkMesher.meshChunk(this.voxelWorld,chunk); if(result?.mesh) result.mesh.parent=this.voxelRoot; }
+    if (!chunk.isEmpty()) {
+      const result = this.voxelChunkMesher.meshChunk(this.voxelWorld, chunk);
+      if (result?.mesh) {
+        result.mesh.parent = this.voxelRoot;
+        console.log(`[MapMesher] Meshed chunk (${chunkData.cx},${chunkData.cy},${chunkData.cz}) — ${result.quadCount} quads`);
+      }
+    } else {
+      console.log(`[MapMesher] Chunk (${chunkData.cx},${chunkData.cy},${chunkData.cz}) is empty (air only)`);
+    }
   }
 
   public loadEncodedChunk(bytes: Uint8Array | ArrayBuffer | number[]): void {

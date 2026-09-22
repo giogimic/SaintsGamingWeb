@@ -4,6 +4,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Center, Float, Box } from "@react-three/drei";
 import { Suspense, useMemo, useRef, useState, useEffect } from "react";
 import * as THREE from "three";
+import { usePathname } from "next/navigation";
 
 // 7x5 Voxel Grid for 'S' (Identical to landing page 3D model)
 const S_GRID = [
@@ -172,17 +173,25 @@ interface SGMicro3DLogoProps {
 export function SGMicro3DLogo({ size = 36, className = "" }: SGMicro3DLogoProps) {
   const [mounted, setMounted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted) {
+  // To prevent WebGL context exhaustion (which crashes Babylon.js), 
+  // disable the 3D logo on game and studio routes.
+  const isGameRoute = pathname?.startsWith('/play') || pathname?.startsWith('/studio') || pathname?.startsWith('/admin');
+
+  if (!mounted || isGameRoute) {
     return (
       <div
-        className={`inline-block rounded-lg shrink-0 ${className}`}
+        className={`inline-flex shrink-0 rounded-lg items-center justify-center bg-primary/20 border border-primary/30 select-none ${className}`}
         style={{ width: size, height: size }}
-      />
+        title="Saints Gaming"
+      >
+        <span className="text-primary font-black text-xs">SG</span>
+      </div>
     );
   }
 

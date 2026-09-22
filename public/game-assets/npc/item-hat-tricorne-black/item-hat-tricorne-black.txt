@@ -1,0 +1,11 @@
+CREDITS & ATTRIBUTION FOR ITEM-HAT-TRICORNE-BLACK
+==================================================
+
+File: hat/pirate/tricorne/basic/adult/walk/black.png
+Authors: bluecarrot16
+Licenses: OGA-BY 3.0
+Source: https://opengameart.org/content/lpc-pirates, https://opengameart.org/content/lpc-expanded-hats-facial-helmets
+----------------------------------------
+
+Generated with Universal LPC Spritesheet Generator.
+Free/Libre pixel art from Liberated Pixel Cup (LPC). You must credit the authors.
