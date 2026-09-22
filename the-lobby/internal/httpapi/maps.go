@@ -415,9 +415,9 @@ func deployPublishedProjectRelease(db *sql.DB, wm *world.Manager, reg *registry.
 		}
 		if dm != nil {
 			npcMap := make(map[string]struct{ Name string; Data string })
-			for slug, npc := range wm.NPCRegistry {
+			for _, npc := range manifest.Actors.NPCs {
 				if len(npc.DialogueTree) > 0 {
-					npcMap[slug] = struct{ Name string; Data string }{
+					npcMap[npc.Slug] = struct{ Name string; Data string }{
 						Name: npc.Name,
 						Data: string(npc.DialogueTree),
 					}

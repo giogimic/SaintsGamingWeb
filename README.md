@@ -223,6 +223,7 @@ Once it's running, open [http://localhost:24001](http://localhost:24001) in your
 ---
 
 ## Changelog
+- Fixed a fatal concurrent map read crash in 	he-lobby Go MMO backend during project release publishing (by safely iterating over manifest NPC list instead of unprotected map).
 
 ### v2.1.923 - Fix File Manager Drag & Drop and Expose SA-MP Ports
 
@@ -256,3 +257,4 @@ Come say hello, hang out, or give feedback! We'd love to have you:
 - **Creator:** GioGimic
 - **License:** [Business Source License 1.1 (BSL-1.1)](LICENSE). Free for personal use, learning, modding, and community self-hosting.
 - © 2007–2026 Saints Gaming.
+

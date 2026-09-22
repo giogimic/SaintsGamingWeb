@@ -1,0 +1,1 @@
+import { PrismaClient } from '@prisma/client'; const prisma = new PrismaClient(); async function main() { const assets = await prisma.gameAsset.findMany({ orderBy: { createdAt: 'desc' }, take: 5 }); console.log(assets); } main().finally(() => prisma.$disconnect());
