@@ -1,3 +1,6 @@
+## [2.1.940] - 2026-09-22
+- **Bugfix**: Added a "Custom Uploads" filter to the `SpriteBrowser` used in the Setup UI. This fixes an issue where newly uploaded character/creature sprites were missing from the picker because it did not sort by `createdAt`, pushing custom assets beyond the initial 40-item result limit.
+
 ## [2.1.939] - 2026-09-21
 - **Bugfix**: Fixed a compilation error in `MapMesher.ts` introduced in `2.1.938` where `getChunks()` was called on `VoxelWorld` instead of `chunks.values()`.
 

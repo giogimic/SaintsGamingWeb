@@ -92,7 +92,7 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [creatureSubFilter, setCreatureSubFilter] = useState<string>('ALL');
-  const [packFilter, setPackFilter] = useState<AssetPackId | 'ALL'>('ALL');
+  const [packFilter, setPackFilter] = useState<AssetPackId | 'ALL' | 'UPLOADS'>('ALL');
   const [activeClassFilter, setActiveClassFilter] = useState<boolean>(!!classDef);
   const [gridSize, setGridSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(selectedAssetIds));
@@ -131,10 +131,12 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
         more = false;
         count = result.length;
       } else {
+        const isUploads = packFilter === 'UPLOADS';
         const tagsToQuery = [
           ...(selectedTag ? [selectedTag] : []),
           ...(creatureSubFilter !== 'ALL' ? [creatureSubFilter] : []),
           ...(filterTags.length > 0 ? filterTags : []),
+          ...(isUploads ? ['uploaded'] : []),
         ];
         const res = await manager.searchAssets(
           {
@@ -143,9 +145,9 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
             profile: filterProfile || undefined,
             query: searchQuery || undefined,
             tags: tagsToQuery.length > 0 ? tagsToQuery : undefined,
-            pack: packFilter === 'ALL' ? undefined : packFilter,
-            sortBy: 'source',
-            sortOrder: 'asc',
+            pack: packFilter === 'ALL' ? undefined : (isUploads ? 'uploads' : packFilter),
+            sortBy: isUploads ? 'createdAt' : 'source',
+            sortOrder: isUploads ? 'desc' : 'asc',
           },
           pageNum,
           50
@@ -238,12 +240,13 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
           value={packFilter}
           onChange={(e) => {
             soundSynth?.playUiClick?.();
-            setPackFilter(e.target.value as AssetPackId | 'ALL');
+            setPackFilter(e.target.value as AssetPackId | 'ALL' | 'UPLOADS');
           }}
           title="Approved packs"
           className="bg-[#050b14] border border-amber-500/30 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-400 cursor-pointer"
         >
           <option value="ALL">All packs</option>
+          <option value="UPLOADS">Custom Uploads</option>
           {ASSET_PACKS.map((p) => (
             <option key={p} value={p}>
               {ASSET_PACK_LABELS[p]}
