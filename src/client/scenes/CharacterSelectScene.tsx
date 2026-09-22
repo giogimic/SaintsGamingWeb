@@ -2,9 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useSessionStore } from '../state/useSessionStore';
 import { useWorldStore } from '../state/useWorldStore';
-import { usePlayerStore } from '../state/usePlayerStore';
+import { usePlayerStore, type PlayerData } from '../state/usePlayerStore';
 import { socketManager } from '../net/SocketManager';
-import { registerAllHandlers } from '../net/SocketEventRouter';
+import { useGameStore } from '@/web/components/the-lobby/store';
 import { useAppStore } from "@/shared/store/useAppStore";
 import { deleteGameCharacter, getUserCharacters } from '@/app/actions/game';
 import { joinWorld } from '@/shared/game/lobbyWorldJoin';
@@ -15,7 +15,7 @@ import { useRealmSettings } from '@/web/hooks/studio-data';
 import { useAuth } from '@/web/hooks/use-auth';
 
 import {
-  Gamepad2, Plus, Trash2, Shield, Sparkles, Zap, Wrench, User, Play, Swords, Heart,
+  Gamepad2, Plus, Trash2, Shield, Sparkles, Zap, Wrench, User, Swords, Heart,
   ArrowLeft, RefreshCw, AlertTriangle, Layers, Settings, ScrollText, Award
 } from 'lucide-react';
 
@@ -132,9 +132,43 @@ export function CharacterSelectScene() {
     soundSynth?.playActionSound?.();
     const char = characters.find(c => c.id === charId);
     if (char) {
-      setCharacter(charId, char.name);
-      
       const accountId = useSessionStore.getState().accountId || (session?.user?.id as string) || '';
+      let persistedPlayer: Partial<PlayerData> = {};
+      let position: { x: number; y: number; z?: number } = { x: 15, y: 15 };
+      let charMapId = '';
+
+      try {
+        if (char.stateData) {
+          const parsed = JSON.parse(char.stateData);
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            persistedPlayer = parsed as Partial<PlayerData>;
+            if (parsed.position && typeof parsed.position.x === 'number' && typeof parsed.position.y === 'number') {
+              position = parsed.position;
+            }
+            if (typeof parsed.currentMapId === 'string') {
+              charMapId = parsed.currentMapId;
+            }
+          }
+        }
+        if (!charMapId && typeof char.lastMapId === 'string') {
+          charMapId = char.lastMapId;
+        }
+        if (typeof char.lastX === 'number' && typeof char.lastY === 'number') {
+          position = { x: char.lastX, y: char.lastY, z: typeof char.lastZ === 'number' ? char.lastZ : undefined };
+        }
+      } catch {}
+
+      const assetProfileId = char.assetProfileId || 'adventurer';
+      const playerSnapshot: Partial<PlayerData> = {
+        ...persistedPlayer,
+        accountId: accountId || undefined,
+        name: char.name,
+        assetProfileId,
+        position,
+      };
+      usePlayerStore.getState().hydratePlayer(playerSnapshot);
+      useGameStore.getState().hydratePlayer(playerSnapshot);
+      setCharacter(charId, char.name);
       
       const socket = socketManager.raw;
       if (!socket || !socket.connected) {
@@ -146,23 +180,6 @@ export function CharacterSelectScene() {
       useWorldStore.getState().setWorldSessionState('joining');
 
       try {
-        let position = { x: 15, y: 15 };
-        let charMapId = '';
-        try {
-          if (char.stateData) {
-            const parsed = JSON.parse(char.stateData);
-            if (parsed.position) {
-              position = parsed.position;
-            }
-            if (parsed.currentMapId) {
-              charMapId = parsed.currentMapId;
-            }
-          }
-          if (!charMapId && char.lastMapId) {
-            charMapId = char.lastMapId;
-          }
-        } catch {}
-
         joinWorld({
           socket: socket as any,
           accountId,
@@ -175,7 +192,7 @@ export function CharacterSelectScene() {
           },
           position,
           name: char.name,
-          assetProfileId: char.assetProfileId || usePlayerStore.getState().player.assetProfileId || 'adventurer',
+          assetProfileId,
           worldSessionState: useWorldStore.getState().worldSessionState,
           currentInstanceId: useWorldStore.getState().instanceId,
           worldJoinSeq: useWorldStore.getState().worldJoinSeq,
