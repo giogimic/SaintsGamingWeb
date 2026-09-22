@@ -24,12 +24,15 @@ export async function notifyGoContentSynced(payload: {
   if (!base) {
     return { ok: true, skipped: true };
   }
-  const secret =
+  let secret =
     process.env.GO_MMO_ADMIN_SECRET ||
     process.env.GO_MMO_INTERNAL_SECRET ||
     process.env.SAINTS_INTERNAL_SECRET ||
     process.env.AUTH_SECRET ||
     "";
+  
+  secret = secret.trim().replace(/^["']|["']$/g, '');
+
   if (!secret) {
     console.warn(`[goMmoNotify] AUTH_SECRET / GO_MMO_ADMIN_SECRET missing — cannot sync ${payload.type} to Go`);
     return { ok: false, error: "missing secret" };

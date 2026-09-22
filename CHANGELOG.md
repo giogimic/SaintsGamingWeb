@@ -1,3 +1,6 @@
+## [2.1.944] - 2026-09-22
+- **Bugfix**: Fixed HTTP 401 Unauthorized errors between Next.js and the Go MMO during world-release syncing by adding robust string trimming (removing spaces and `"`/`'` quotes) when parsing the `AUTH_SECRET` environment variables. This resolves mismatches caused by Docker parsing `.env` files differently than Node.js (which can leave quotes intact).
+
 ## [2.1.943] - 2026-09-22
 - **Bugfix**: Improved Studio setup and publish API paths to prevent failures on Linux deployment environments (fixing SYNC_MODE logic, generating draft logic, world-release waiting states).
 - **Reverted**: Restored the 3D interactive SGMicro3DLogo to the `/lobby` and `/setup` routes based on feedback.

@@ -121,12 +121,36 @@ func (s *Server) authorizeInternal(r *http.Request) bool {
 	if s.Secret == "" {
 		return false
 	}
+	
+	cleanSecret := strings.TrimSpace(s.Secret)
+	cleanSecret = strings.TrimPrefix(cleanSecret, "\"")
+	cleanSecret = strings.TrimSuffix(cleanSecret, "\"")
+	cleanSecret = strings.TrimPrefix(cleanSecret, "'")
+	cleanSecret = strings.TrimSuffix(cleanSecret, "'")
+	
+	if cleanSecret == "" {
+		return false
+	}
+
 	authz := r.Header.Get("Authorization")
 	const prefix = "Bearer "
-	if strings.HasPrefix(authz, prefix) && strings.TrimSpace(authz[len(prefix):]) == s.Secret {
-		return true
+	if strings.HasPrefix(authz, prefix) {
+		token := strings.TrimSpace(authz[len(prefix):])
+		token = strings.TrimPrefix(token, "\"")
+		token = strings.TrimSuffix(token, "\"")
+		token = strings.TrimPrefix(token, "'")
+		token = strings.TrimSuffix(token, "'")
+		if token == cleanSecret {
+			return true
+		}
 	}
-	if r.Header.Get("X-Saints-Internal-Secret") == s.Secret {
+	
+	fallback := strings.TrimSpace(r.Header.Get("X-Saints-Internal-Secret"))
+	fallback = strings.TrimPrefix(fallback, "\"")
+	fallback = strings.TrimSuffix(fallback, "\"")
+	fallback = strings.TrimPrefix(fallback, "'")
+	fallback = strings.TrimSuffix(fallback, "'")
+	if fallback == cleanSecret {
 		return true
 	}
 	return false
