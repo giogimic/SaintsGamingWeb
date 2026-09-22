@@ -47,7 +47,7 @@ export class MapMesher {
 
     // Mesh any chunks that arrived via streaming before initialize was called
     if (this.voxelWorld) {
-      this.voxelWorld.getChunks().forEach((chunk) => {
+      Array.from(this.voxelWorld.chunks.values()).forEach((chunk) => {
         if (chunk.isDirty && !chunk.isEmpty() && this.voxelChunkMesher && this.voxelRoot) {
           const result = this.voxelChunkMesher.meshChunk(this.voxelWorld!, chunk);
           if (result?.mesh) result.mesh.parent = this.voxelRoot;

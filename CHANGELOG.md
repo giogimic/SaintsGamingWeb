@@ -1,3 +1,6 @@
+## [2.1.939] - 2026-09-21
+- **Bugfix**: Fixed a compilation error in `MapMesher.ts` introduced in `2.1.938` where `getChunks()` was called on `VoxelWorld` instead of `chunks.values()`.
+
 ## [2.1.938] - 2026-09-21
 - **Bugfix**: Fixed a race condition where voxel map chunks streamed to the client during a `join_map` event before `EngineCore` and `MapMesher` had finished initializing would be discarded, resulting in an invisible world. Incoming chunks are now deferred and meshed automatically once the engine connects to the canvas.
 
