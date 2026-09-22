@@ -740,11 +740,7 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
         echo -e "${GREEN}[✓] Starter content seeded.${NC}\n"
     fi
 
-    # Sync local game assets if required
-    if [ "$NEED_ASSET_SYNC" -eq 1 ]; then
-        echo -e "${CYAN}[*] Syncing local game assets to database...${NC}"
-        echo -e "${GREEN}[✓] Assets synced.${NC}\n"
-    fi
+
 
     if [ "$NEED_GO_BUILD" -eq 1 ]; then
         # MMO socket cleanup
@@ -836,8 +832,7 @@ else
         npm run build
     fi
 
-    if [ "$NEED_ASSET_SYNC" -eq 1 ]; then
-    fi
+
 
     if [ "$NEED_STUDIO_BUILD" -eq 1 ] && [ -f "saints-app/package.json" ]; then
         echo -e "${CYAN}[*] Updating Saints World Studio desktop application...${NC}"
