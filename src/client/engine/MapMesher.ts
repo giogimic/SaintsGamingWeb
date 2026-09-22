@@ -44,6 +44,16 @@ export class MapMesher {
     window.addEventListener('studio_voxels_changed', this.onStudioVoxelsChanged);
     const initialData = useWorldStore.getState().activeMapData;
     if (initialData) this.buildMap(initialData);
+
+    // Mesh any chunks that arrived via streaming before initialize was called
+    if (this.voxelWorld) {
+      this.voxelWorld.getChunks().forEach((chunk) => {
+        if (chunk.isDirty && !chunk.isEmpty() && this.voxelChunkMesher && this.voxelRoot) {
+          const result = this.voxelChunkMesher.meshChunk(this.voxelWorld!, chunk);
+          if (result?.mesh) result.mesh.parent = this.voxelRoot;
+        }
+      });
+    }
   }
 
   private buildMap(mapData: any) {
@@ -124,8 +134,8 @@ export class MapMesher {
 
   public loadStreamedChunk(chunkData: { cx: number; cy: number; cz: number; low: Uint32Array; high: Uint32Array }) {
     console.log(`[MapMesher] loadStreamedChunk(${chunkData.cx}, ${chunkData.cy}, ${chunkData.cz}) — low.length=${chunkData.low.length}, high.length=${chunkData.high.length}`);
-    if (!this.voxelWorld || !this.voxelChunkMesher || !this.voxelRoot) {
-      console.warn('[MapMesher] loadStreamedChunk bailed — missing:', { voxelWorld: !!this.voxelWorld, voxelChunkMesher: !!this.voxelChunkMesher, voxelRoot: !!this.voxelRoot });
+    if (!this.voxelWorld) {
+      console.warn('[MapMesher] loadStreamedChunk bailed — missing voxelWorld');
       return;
     }
     const chunk = this.voxelWorld.getChunk(chunkData.cx, chunkData.cz, chunkData.cy, true);
@@ -137,6 +147,12 @@ export class MapMesher {
       return;
     }
     chunk.dataLow.set(low); chunk.dataHigh.set(high); chunk.isDirty = true;
+
+    if (!this.voxelChunkMesher || !this.voxelRoot) {
+      // Wait for initialize() to be called. It will mesh this chunk.
+      return;
+    }
+
     if (!chunk.isEmpty()) {
       const result = this.voxelChunkMesher.meshChunk(this.voxelWorld, chunk);
       if (result?.mesh) {

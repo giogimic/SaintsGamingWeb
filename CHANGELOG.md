@@ -1,3 +1,6 @@
+## [2.1.938] - 2026-09-21
+- **Bugfix**: Fixed a race condition where voxel map chunks streamed to the client during a `join_map` event before `EngineCore` and `MapMesher` had finished initializing would be discarded, resulting in an invisible world. Incoming chunks are now deferred and meshed automatically once the engine connects to the canvas.
+
 ## [2.1.937] - 2026-09-21
 - **Bugfix**: Fixed uploaded assets not appearing in the Asset Manager/Picker for Character Archetypes. Custom uploads are now properly tagged and fetched server-side with recent-first sorting, resolving an issue where the frontend incorrectly filtered the first 40 default assets.
 
