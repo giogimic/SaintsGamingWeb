@@ -441,6 +441,16 @@ export async function GET(req: NextRequest) {
             ],
           },
         ];
+      } else if (p === "uploads") {
+        whereClause.AND = [
+          ...(whereClause.AND || []),
+          {
+            OR: [
+              { tags: { contains: "uploaded" } },
+              { source: { contains: "uploads" } },
+            ],
+          },
+        ];
       } else {
         whereClause.AND = [
           ...(whereClause.AND || []),

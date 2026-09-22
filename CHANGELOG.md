@@ -1,3 +1,6 @@
+## [2.1.942] - 2026-09-22
+- **Bugfix**: Fixed an issue in `/api/assets` where querying for `pack="uploads"` resulted in zero assets being returned. The route now properly looks for the `uploaded` tag instead of incorrectly searching for `uploads`, which resolves custom uploads missing from both the Setup Wizard and the Studio Asset Picker.
+
 ## [2.1.941] - 2026-09-22
 - **Bugfix**: Fixed WebGL Context Lost crashing the game renderer because the 3D logo in the navbar was not properly disabled on the `/lobby` and `/setup` routes. It is now properly disabled, preventing context exhaustion.
 
