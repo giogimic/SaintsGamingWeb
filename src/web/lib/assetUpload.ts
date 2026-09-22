@@ -135,13 +135,18 @@ export async function ingestAsset(options: AssetIngestOptions): Promise<AssetIng
       }
     }
 
+    const finalTags = Array.isArray(options.tags) ? [...options.tags] : [];
+    if (!finalTags.includes("uploaded")) {
+      finalTags.push("uploaded");
+    }
+
     const canonical = buildCanonicalAssetData({
       userId,
       gameId,
       name: options.name,
       type: options.type,
       category: options.category,
-      tags: options.tags,
+      tags: finalTags,
       width,
       height,
       sourceUrl: storedUrl,

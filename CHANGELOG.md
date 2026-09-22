@@ -1,3 +1,6 @@
+## [2.1.937] - 2026-09-21
+- **Bugfix**: Fixed uploaded assets not appearing in the Asset Manager/Picker for Character Archetypes. Custom uploads are now properly tagged and fetched server-side with recent-first sorting, resolving an issue where the frontend incorrectly filtered the first 40 default assets.
+
 ## [2.1.936] - 2026-09-21
 - **Bugfix**: Fixed Babylon.js engine crashes (WebGL context loss) and black screens by disabling the 3D interactive logo on game routes.
 - **Bugfix**: Fixed the in-game ESC menu failing to open when a combat target was selected.

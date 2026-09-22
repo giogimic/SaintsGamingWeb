@@ -71,12 +71,16 @@ export function RoleAwareAssetPicker({
       else if (categoryFilter === 'CREATURES') typeParam = 'CREATURE';
       else if (categoryFilter === 'MONSTERS') typeParam = 'MONSTER';
 
+      const isCustom = categoryFilter === 'CUSTOM';
+
       const res = await manager.searchAssets(
         {
           type: typeParam,
           query: searchQuery.trim() || undefined,
-          sortBy: 'source',
-          sortOrder: 'asc',
+          sortBy: isCustom ? 'createdAt' : 'source',
+          sortOrder: isCustom ? 'desc' : 'asc',
+          pack: isCustom ? 'uploads' : undefined,
+          tags: isCustom ? ['uploaded'] : undefined,
         },
         pageNum,
         40
@@ -84,12 +88,8 @@ export function RoleAwareAssetPicker({
 
       let items = res.items || [];
 
-      // Custom uploads filter
-      if (categoryFilter === 'CUSTOM') {
-        items = items.filter(
-          (a) => (a.tags || []).includes('uploaded') || (a.tags || []).includes('custom_manual') || (a.source || '').includes('/uploads/')
-        );
-      } else if (categoryFilter === 'NPC') {
+      // Frontend fallback for extra safety on NPC
+      if (categoryFilter === 'NPC') {
         items = items.filter(
           (a) => (a.tags || []).includes('npc') || (a.source || '').includes('/npc/')
         );
