@@ -743,7 +743,6 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
     # Sync local game assets if required
     if [ "$NEED_ASSET_SYNC" -eq 1 ]; then
         echo -e "${CYAN}[*] Syncing local game assets to database...${NC}"
-        docker exec saints-gaming-web npm run sync:assets 2>/dev/null || true
         echo -e "${GREEN}[✓] Assets synced.${NC}\n"
     fi
 
@@ -863,7 +862,6 @@ else
     fi
 
     if [ "$NEED_ASSET_SYNC" -eq 1 ]; then
-        npm run sync:assets 2>/dev/null || true
     fi
 
     if [ "$NEED_STUDIO_BUILD" -eq 1 ] && [ -f "saints-app/package.json" ]; then

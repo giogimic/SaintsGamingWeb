@@ -24,7 +24,6 @@
     "test:e2e": "vitest run test/e2e",
     "validate:hooks": "tsx scripts/validate-hooks.ts",
     "validate:maps": "tsx scripts/validate-maps.ts",
-    "sync:assets": "tsx scripts/sync-local-assets.ts",
     "ensure:starter-heroes": "tsx scripts/ensure-starter-heroes.ts",
     "ensure:world-profiles": "tsx scripts/ensure-world-profiles.ts",
     "seed:starter-content": "tsx scripts/seed-starter-content.ts",
