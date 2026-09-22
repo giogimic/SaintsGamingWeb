@@ -28,6 +28,7 @@ import {
   Eye,
   Lock,
 } from 'lucide-react';
+import { SGMicro3DLogo } from '@/web/components/landing/sg-logo-3d-micro';
 import { getActiveWorldRelease } from '@/app/actions/studio/world-release';
 import { BUILTIN_HUD_PRESETS } from './default-presets';
 import { HUD_THEME_LIST } from './hud-themes';
@@ -253,7 +254,7 @@ export default function GameOptionsMenu({
         {/* OS Window Title Bar */}
         <div className="flex items-center justify-between px-4 py-2.5 bg-[#0a1628]/90 border-b border-border/40 select-none">
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+            <SGMicro3DLogo size={16} />
             <span className="font-mono text-xs font-bold tracking-wider text-foreground">
               SAINTS GAMING
             </span>
