@@ -1,3 +1,6 @@
+## [2.1.941] - 2026-09-22
+- **Bugfix**: Fixed WebGL Context Lost crashing the game renderer because the 3D logo in the navbar was not properly disabled on the `/lobby` and `/setup` routes. It is now properly disabled, preventing context exhaustion.
+
 ## [2.1.940] - 2026-09-22
 - **Bugfix**: Added a "Custom Uploads" filter to the `SpriteBrowser` used in the Setup UI. This fixes an issue where newly uploaded character/creature sprites were missing from the picker because it did not sort by `createdAt`, pushing custom assets beyond the initial 40-item result limit.
 

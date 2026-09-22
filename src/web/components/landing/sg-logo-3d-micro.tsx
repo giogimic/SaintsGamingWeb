@@ -181,7 +181,7 @@ export function SGMicro3DLogo({ size = 36, className = "" }: SGMicro3DLogoProps)
 
   // To prevent WebGL context exhaustion (which crashes Babylon.js), 
   // disable the 3D logo on game and studio routes.
-  const isGameRoute = pathname?.startsWith('/play') || pathname?.startsWith('/studio') || pathname?.startsWith('/admin');
+  const isGameRoute = pathname?.startsWith('/play') || pathname?.startsWith('/lobby') || pathname?.startsWith('/setup') || pathname?.startsWith('/studio') || pathname?.startsWith('/admin');
 
   if (!mounted || isGameRoute) {
     return (
