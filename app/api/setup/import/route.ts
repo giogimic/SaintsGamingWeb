@@ -33,6 +33,39 @@ export async function POST(req: Request) {
       let importedMaps = 0;
       let importedHeroes = 0;
       let importedCreatures = 0;
+      const resolvedGameName = pkg.game?.name || 'Saints Game';
+      const resolvedGameDesc = pkg.game?.description || 'Explore, battle, capture, and build in this 2.5D MMO universe.';
+      const defaultMapId = pkg.game?.defaultMapId || (pkg.maps?.[0]?.id ?? 'STARTING_MEADOW');
+
+      const gameConfig = await prisma.gameConfig.upsert({
+        where: { slug: 'saints' },
+        create: {
+          slug: 'saints',
+          name: resolvedGameName,
+          description: resolvedGameDesc,
+          isActive: true,
+          defaultSpawnGateId: 'spawn',
+        },
+        update: {
+          name: resolvedGameName,
+          description: resolvedGameDesc,
+        },
+      });
+
+      const worldProject = await prisma.worldProject.upsert({
+        where: { slug: 'saints' },
+        create: {
+          slug: 'saints',
+          gameId: gameConfig.id,
+          name: resolvedGameName,
+          description: resolvedGameDesc,
+        },
+        update: {
+          gameId: gameConfig.id,
+          name: resolvedGameName,
+          description: resolvedGameDesc,
+        },
+      });
 
       // 1. Import Maps & convert to VoxelWorldDocV3
       if (Array.isArray(pkg.maps)) {
@@ -64,7 +97,7 @@ export async function POST(req: Request) {
             create: {
               id: mapId,
               name: mapName,
-              projectId: 'saints',
+              projectId: worldProject.id,
               gridData: JSON.stringify([]),
               gatesData: JSON.stringify(gatesPayload),
               encountersData: JSON.stringify([]),
@@ -73,7 +106,7 @@ export async function POST(req: Request) {
             },
             update: {
               name: mapName,
-              projectId: 'saints',
+              projectId: worldProject.id,
               gatesData: JSON.stringify(gatesPayload),
               version: { increment: 1 },
             },
@@ -180,37 +213,6 @@ export async function POST(req: Request) {
 
       // 4. Update Game Identity & Project Infrastructure
       const now = new Date().toISOString();
-      const resolvedGameName = pkg.game?.name || 'Saints Game';
-      const resolvedGameDesc = pkg.game?.description || 'Explore, battle, capture, and build in this 2.5D MMO universe.';
-      const defaultMapId = pkg.game?.defaultMapId || (pkg.maps?.[0]?.id ?? 'STARTING_MEADOW');
-
-      await prisma.worldProject.upsert({
-        where: { slug: 'saints' },
-        create: {
-          slug: 'saints',
-          name: resolvedGameName,
-          description: resolvedGameDesc,
-        },
-        update: {
-          name: resolvedGameName,
-          description: resolvedGameDesc,
-        },
-      });
-
-      await prisma.gameConfig.upsert({
-        where: { slug: 'saints' },
-        create: {
-          slug: 'saints',
-          name: resolvedGameName,
-          description: resolvedGameDesc,
-          isActive: true,
-          defaultSpawnGateId: 'spawn',
-        },
-        update: {
-          name: resolvedGameName,
-          description: resolvedGameDesc,
-        },
-      });
 
       const gameSettings = [
         { key: SETUP_SETTING_KEYS.GAME_INITIALIZED, value: 'true' },
@@ -236,12 +238,25 @@ export async function POST(req: Request) {
       // 5. Auto-compile and deploy initial WorldRelease if maps were imported
       if (importedMaps > 0) {
         try {
-          const { compileWorldRelease } = await import('@/app/actions/studio/compiler/WorldCompiler');
-          const { deployWorldRelease } = await import('@/app/actions/studio/world-release');
-          const { releaseInfo } = await compileWorldRelease('saints', 'Imported Package Release', 'Auto-compiled release from imported package');
-          await deployWorldRelease(releaseInfo.releaseId);
+          const { compileAndDeployWorldRelease } = await import('@/app/actions/studio/world-release');
+          const deployment = await compileAndDeployWorldRelease(
+            'saints',
+            'Imported Package Release',
+            'Auto-compiled release from imported package',
+          );
+          if (!deployment.success) {
+            throw new Error(deployment.error || 'Imported release could not be deployed');
+          }
         } catch (releaseErr) {
-          console.warn('[Map Import] Auto-compile release skipped:', releaseErr);
+          const message = releaseErr instanceof Error ? releaseErr.message : String(releaseErr);
+          console.error('[Map Import] Auto-compile and deploy failed:', releaseErr);
+          return NextResponse.json({
+            error: `Maps imported, but the initial WorldRelease could not be deployed: ${message}`,
+            importedMaps,
+            importedHeroes,
+            importedCreatures,
+            defaultMapId,
+          }, { status: 503 });
         }
       }
 

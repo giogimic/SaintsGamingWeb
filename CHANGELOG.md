@@ -1,3 +1,7 @@
+## [2.1.943] - 2026-09-22
+- **Bugfix**: Improved Studio setup and publish API paths to prevent failures on Linux deployment environments (fixing SYNC_MODE logic, generating draft logic, world-release waiting states).
+- **Reverted**: Restored the 3D interactive SGMicro3DLogo to the `/lobby` and `/setup` routes based on feedback.
+
 ## [2.1.942] - 2026-09-22
 - **Bugfix**: Fixed an issue in `/api/assets` where querying for `pack="uploads"` resulted in zero assets being returned. The route now properly looks for the `uploaded` tag instead of incorrectly searching for `uploads`, which resolves custom uploads missing from both the Setup Wizard and the Studio Asset Picker.
 

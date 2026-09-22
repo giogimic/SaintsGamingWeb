@@ -166,9 +166,18 @@ export async function POST(req: NextRequest) {
         data: { status: 'GENERATING', jobId }
       });
 
-      worldBakeService.submitJob(job, config).catch(e => {
-        console.error(`[GenerateDraft] Failed to submit job ${jobId}`, e);
-      });
+      try {
+        await worldBakeService.submitJob(job, config);
+      } catch (error: any) {
+        const message = error?.message || 'Failed to submit voxel bake job';
+        console.error(`[GenerateDraft] Failed to submit job ${jobId}`, error);
+        await prisma.worldBootstrapRevision.update({
+          where: { id: revision.id },
+          data: { status: 'FAILED' },
+        });
+        logger.log({ stageName: '07. Bake / Generate Terrain', stageCode: 'voxel_bake', status: 'FAILED', message, error: message });
+        return NextResponse.json({ error: message, events: logger.getEvents() }, { status: 503 });
+      }
     }
 
     return NextResponse.json({ bootstrapRevisionId: revision.id, jobId, events: logger.getEvents() });

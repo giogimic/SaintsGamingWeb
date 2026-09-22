@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/web/lib/prisma';
 import { auth } from '@/auth';
 import { getSystemSetupStatus, SETUP_SETTING_KEYS } from '@/shared/game/setup/setupDetection';
-import { DEFAULT_STUDIO_TILESETS, DEFAULT_STUDIO_GROUND_GID } from '@/shared/game/studioTilesetBootstrap';
 import { MapSyncService } from '@/server/mapSyncService';
 import { DEFAULT_PLAYABLE_CLASSES } from '@/shared/game/classCatalog';
 import { classDataToDb } from '@/shared/game/classDefMap';
@@ -380,12 +379,6 @@ export async function POST(req: Request) {
       // 4d. Upsert Starting WorldMap & GameMap
       const is3D = map.mapType === 'VOXEL' || map.mapType === 'FRACTAL';
       const initialLogicGrid = is3D ? [] : Array.from({ length: mapHeight }, () => Array(mapWidth).fill(0));
-      const initialTileLayers = is3D ? [] : [
-        {
-          name: 'Ground',
-          grid: Array.from({ length: mapHeight }, () => Array(mapWidth).fill(DEFAULT_STUDIO_GROUND_GID || 17)),
-        },
-      ];
 
       const existingWorld = await tx.worldMap.findUnique({
         where: { id: mapId }
@@ -397,7 +390,7 @@ export async function POST(req: Request) {
         nextVersion = existingWorld.version + 1;
       }
 
-      const upsertedWorldMap = await tx.worldMap.upsert({
+      await tx.worldMap.upsert({
         where: { id: mapId },
         create: {
           id: mapId,
@@ -536,48 +529,32 @@ export async function POST(req: Request) {
     await bootstrapDynamicStarterContent('saints', 'default');
 
     logger.log({ stageName: '09. Compile WorldRelease', stageCode: 'compile_release', status: 'RUNNING', message: 'Compiling monolithic release' });
-    const { compileWorldRelease } = await import('@/app/actions/studio/compiler/WorldCompiler');
-    const { releaseInfo } = await compileWorldRelease('saints', `${gameName} - Initial Release`, 'Auto-generated during initial setup.');
-    
-    const targetProjectId = (await prisma.worldProject.findUnique({ where: { slug: 'saints' } }))?.id || 'saints';
-
-    // Demote old LIVE releases
-    await prisma.worldRelease.updateMany({
-      where: {
-        OR: [
-          { projectId: targetProjectId },
-          { projectId: 'saints' },
-        ],
-        status: 'LIVE',
-      },
-      data: { status: 'PUBLISHED' },
-    });
-    // Set to LIVE
-    await prisma.worldRelease.update({
-      where: { id: releaseInfo.releaseId },
-      data: { status: 'LIVE' },
-    });
+    const { compileAndDeployWorldRelease } = await import('@/app/actions/studio/world-release');
+    const releaseResult = await compileAndDeployWorldRelease(
+      'saints',
+      `${gameName} - Initial Release`,
+      'Auto-generated during initial setup.',
+    );
+    if (!releaseResult.success) {
+      const message = releaseResult.error || 'Failed to compile and deploy initial WorldRelease';
+      logger.log({ stageName: '09. Compile WorldRelease', stageCode: 'compile_release', status: 'FAILED', message, error: message });
+      logger.log({ stageName: '11. Deploy Release', stageCode: 'deploy_release', status: 'FAILED', message, error: message });
+      return NextResponse.json({ error: message, events: logger.getEvents() }, { status: 503 });
+    }
+    const releaseInfo = { releaseId: releaseResult.releaseId, version: releaseResult.version };
     logger.log({ stageName: '09. Compile WorldRelease', stageCode: 'compile_release', status: 'COMPLETED', message: 'Compiled monolithic release', metadata: { releaseId: releaseInfo.releaseId } });
-
     logger.log({ stageName: '11. Deploy Release', stageCode: 'deploy_release', status: 'COMPLETED', message: 'Deployment successful', metadata: { worldMapId: mapId } });
 
-    logger.log({ stageName: '12. Notify Go Runtime', stageCode: 'notify_go', status: 'RUNNING', message: 'Notifying Go MMO' });
-    // 6a. Notify Go MMO of new project release (Loads maps, gates, NPCs, and canonical spawn)
-    await MapSyncService.enqueueProjectRelease({
-      projectId: targetProjectId,
-      version: releaseInfo.version,
-      userId: 'system',
-      eagerPush: true,
-    });
+    logger.log({ stageName: '12. Notify Go Runtime', stageCode: 'notify_go', status: 'RUNNING', message: 'Queueing map sync' });
 
-    // 6b. Notify Go MMO realtime server of new starting voxel map
+    // 6. Queue the starting map artifact sync after the project release is live.
     await MapSyncService.enqueue({
       mapId,
       version: resolvedVersion,
       userId: 'system',
       eagerPush: true,
     });
-    logger.log({ stageName: '12. Notify Go Runtime', stageCode: 'notify_go', status: 'COMPLETED', message: 'Go MMO notified via MapSyncService' });
+    logger.log({ stageName: '12. Notify Go Runtime', stageCode: 'notify_go', status: 'COMPLETED', message: 'Project deployed and map sync queued' });
 
     logger.log({ stageName: '13. Ready', stageCode: 'ready', status: 'COMPLETED', message: 'Initialization complete' });
 

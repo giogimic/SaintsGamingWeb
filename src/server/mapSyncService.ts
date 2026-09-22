@@ -1,5 +1,5 @@
 import { prisma } from "@/web/lib/prisma";
-import { notifyGoMapSynced } from "./goMmoNotify";
+import { notifyGoMapSynced, notifyGoProjectSynced } from "./goMmoNotify";
 
 export interface EnqueueMapSyncOptions {
   mapId: string;
@@ -20,20 +20,28 @@ export class MapSyncService {
    * Enqueue a project release sync task for the game engine.
    */
   public static async enqueueProjectRelease(options: EnqueueProjectSyncOptions) {
-    // For now we don't have a ProjectSyncEntry table, so we just eagerly push
     const isEagerPush = options.eagerPush ?? (process.env.SYNC_MODE !== "pull");
-    if (isEagerPush) {
-      void (async () => {
-        try {
-          const { notifyGoProjectSynced } = await import('./goMmoNotify');
-          await notifyGoProjectSynced({
-            projectId: options.projectId,
-            version: options.version,
-          });
-        } catch (e: any) {
-          console.error('[MapSyncService] project sync error', e);
-        }
-      })();
+    if (!isEagerPush) {
+      return {
+        ok: false,
+        skipped: true,
+        error: 'SYNC_MODE=pull does not support project release deployment',
+      };
+    }
+
+    try {
+      const result = await notifyGoProjectSynced({
+        projectId: options.projectId,
+        version: options.version,
+      });
+      if (!result.ok) {
+        console.error('[MapSyncService] project sync failed:', result.error);
+      }
+      return result;
+    } catch (error: any) {
+      const message = error?.message || 'Project release sync failed';
+      console.error('[MapSyncService] project sync error', error);
+      return { ok: false, error: message };
     }
   }
 

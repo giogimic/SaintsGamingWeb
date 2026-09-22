@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
-import { auth } from "@/auth";
-import { canWriteStudioContent, STUDIO_CONTENT_WRITE_LEVEL } from "@/shared/game/studioPermissions";
+import { STUDIO_CONTENT_WRITE_LEVEL } from "@/shared/game/studioPermissions";
 import { verifyStudioPermission } from "@/server/auth/studioApiAuth";
 import { AuditService } from "@/server/audit/AuditService";
-import { MapSyncService } from "@/server/mapSyncService";
-import { createWorldRelease } from "@/app/actions/studio/world-release";
+import { compileAndDeployWorldRelease } from "@/app/actions/studio/world-release";
 
 export const dynamic = 'force-dynamic';
 
@@ -55,21 +53,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the Project-Wide Release
-    const releaseRes = await createWorldRelease(project.id);
+    const releaseRes = await compileAndDeployWorldRelease(project.id, undefined, description);
     if (!releaseRes.success) {
       return NextResponse.json({ error: releaseRes.error }, { status: 500 });
     }
 
     const nextPublishedVersion = releaseRes.version!;
-
-    // Synchronize with live game engine / Go MMO shards
-    // We now just enqueue one project release sync.
-    await MapSyncService.enqueueProjectRelease({
-      projectId: project.id,
-      version: nextPublishedVersion,
-      userId: user.id,
-      eagerPush: true,
-    });
 
     // Audit Log
     await AuditService.write({

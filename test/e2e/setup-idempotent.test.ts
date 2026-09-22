@@ -9,6 +9,11 @@ vi.mock('@/auth', () => ({
   auth: async () => ({ user: { id: 'test-admin', role: 'ADMIN', permissionLevel: 100 } })
 }));
 
+vi.mock('@/server/goMmoNotify', () => ({
+  notifyGoProjectSynced: vi.fn().mockResolvedValue({ ok: true }),
+  notifyGoMapSynced: vi.fn().mockResolvedValue({ ok: true, skipped: true }),
+}));
+
 describe('Setup Wizard Idempotency', () => {
   beforeAll(async () => {
     await prisma.worldMap.deleteMany();
@@ -58,7 +63,7 @@ describe('Setup Wizard Idempotency', () => {
     expect(map).toBeDefined();
     expect(map?.version).toBe(1);
 
-    const syncs = await prisma.mapSyncEntry.findMany({ where: { mapId: 'STARTING_MEADOW' } });
+    const syncs = await prisma.mapSyncEntry.findMany({ where: { mapId: 'genesis' } });
     expect(syncs.length).toBeGreaterThan(0);
     expect(syncs[0].version).toBe(1);
     
@@ -70,7 +75,7 @@ describe('Setup Wizard Idempotency', () => {
     const res2 = await POST(req2);
     expect(res2.status).toBe(200);
 
-    const mapAfter = await prisma.worldMap.findUnique({ where: { id: 'STARTING_MEADOW' } });
+    const mapAfter = await prisma.worldMap.findUnique({ where: { id: 'genesis' } });
     expect(mapAfter?.version).toBe(2);
   });
 });

@@ -1,7 +1,7 @@
 import { Worker } from 'worker_threads';
 import path from 'path';
 import fs from 'fs';
-import { WorldBakeJob, WorldBakeProgress, RegionCoordinate, RegionArtifact, WorldBakeJobStatus } from '@/shared/game/voxel/WorldBakeContracts';
+import { WorldBakeJob, WorldBakeProgress, RegionArtifact } from '@/shared/game/voxel/WorldBakeContracts';
 import { VoxelWorldGenerationConfig } from '@/shared/game/voxel/VoxelWorldGenerator';
 import { BakeWorkerTask, BakeWorkerResult } from './bakeWorker';
 import { VoxelRegionRepository } from '../../repositories/VoxelRegionRepository';
@@ -164,10 +164,9 @@ export class WorldBakeService {
     }
 
     if (result.status === 'ERROR') {
-      console.error(`[BakeService] Job ${taskJobId} failed on region ${result.regionX},${result.regionZ}: ${result.error}`);
-      job.status = 'FAILED';
-      const prog = this.progressMap.get(taskJobId);
-      if (prog) prog.error = result.error;
+      const error = result.error || `Bake failed for region ${result.regionX},${result.regionZ}`;
+      console.error(`[BakeService] Job ${taskJobId} failed on region ${result.regionX},${result.regionZ}: ${error}`);
+      await this.failJob(job, error);
       this.processNextTask();
       return;
     }
@@ -232,16 +231,29 @@ export class WorldBakeService {
       }
     } catch (e) {
       console.error(`[BakeService] Failed to persist region artifact:`, e);
-      job.status = 'FAILED';
-      if (job.revisionId) {
-        await prisma.worldBootstrapRevision.update({
-          where: { id: job.revisionId },
-          data: { status: 'FAILED' }
-        });
-      }
+      await this.failJob(job, e instanceof Error ? e.message : 'Failed to persist region artifact');
     }
 
     this.processNextTask();
+  }
+
+  private async failJob(job: WorldBakeJob, error: string) {
+    job.status = 'FAILED';
+    this.pendingTasks = this.pendingTasks.filter((task) => !task.taskId.startsWith(`${job.jobId}__`));
+
+    const progress = this.progressMap.get(job.jobId);
+    if (progress) progress.error = error;
+
+    if (job.revisionId) {
+      try {
+        await prisma.worldBootstrapRevision.update({
+          where: { id: job.revisionId },
+          data: { status: 'FAILED' },
+        });
+      } catch (persistError) {
+        console.error(`[BakeService] Failed to persist failed status for ${job.jobId}:`, persistError);
+      }
+    }
   }
 
   private processNextTask() {
@@ -253,7 +265,7 @@ export class WorldBakeService {
 
     const taskJobId = task.taskId.split('__')[0];
     const job = this.activeJobs.get(taskJobId);
-    if (job?.status === 'CANCELLED' || job?.status === 'PAUSED') {
+    if (!job || job.status !== 'RUNNING') {
       this.processNextTask();
       return;
     }
@@ -285,6 +297,9 @@ export class WorldBakeService {
     }
 
     this.ensureWorkerPool();
+    if (this.circuitBreakerTripped || this.workerPool.length === 0) {
+      throw new Error('Voxel bake worker is unavailable');
+    }
 
     // 1. Setup Job
     job.status = 'RUNNING';

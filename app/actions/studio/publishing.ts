@@ -1,15 +1,13 @@
 "use server";
 
 import { prisma } from "@/web/lib/prisma";
-import { revalidatePath } from "next/cache";
 import { checkAdminPermission } from "../admin/game-admin";
-import { resolveWorldDependencies } from "./world-resolver";
 import { compileWorldRelease } from "./compiler/WorldCompiler";
 
 /**
  * List all historical publish snapshots.
  */
-export async function listPublishSnapshots(gameId: string = "saints", profileId: string = "default") {
+export async function listPublishSnapshots(gameId: string = "saints", _profileId: string = "default") {
   try {
     const project = await prisma.worldProject.findFirst({
       where: {
@@ -52,7 +50,7 @@ export async function restoreWorldRelease(snapshotId: string) {
     if (!snapshot) return { success: false, error: "Snapshot not found" };
 
     const payload = JSON.parse(snapshot.manifestData);
-    const { maps, atlas, gameConfig, characterClasses, actors } = payload;
+    const { atlas, gameConfig, characterClasses, actors } = payload;
     // Phase B: Restore Semantics
     // 1. Auto-Backup Current Working World
     try {
@@ -217,7 +215,21 @@ export async function restoreWorldRelease(snapshotId: string) {
       }
     }
 
-    // 5. Promote the restored snapshot to LIVE
+    try {
+      const { MapSyncService } = await import('@/server/mapSyncService');
+      const syncResult = await MapSyncService.enqueueProjectRelease({
+        projectId: snapshot.projectId,
+        version: snapshot.version,
+        userId: 'system',
+        eagerPush: true,
+      });
+      if (!syncResult.ok) {
+        return { success: false as const, error: `Restore completed, but the Go MMO sync failed: ${syncResult.error || 'unknown error'}` };
+      }
+    } catch (syncErr) {
+      return { success: false as const, error: `Restore completed, but the Go MMO sync failed: ${syncErr instanceof Error ? syncErr.message : String(syncErr)}` };
+    }
+
     await prisma.$transaction([
       prisma.worldRelease.updateMany({
         where: { projectId: snapshot.projectId, status: 'LIVE' },
@@ -228,19 +240,6 @@ export async function restoreWorldRelease(snapshotId: string) {
         data: { status: 'LIVE' },
       }),
     ]);
-
-    // Notify Go MMO that the project release has been restored
-    try {
-      const { MapSyncService } = await import('@/server/mapSyncService');
-      await MapSyncService.enqueueProjectRelease({
-        projectId: snapshot.projectId,
-        version: snapshot.version,
-        userId: 'system',
-        eagerPush: true,
-      });
-    } catch (syncErr) {
-      console.warn('[restoreWorldRelease] MapSyncService notify failed:', syncErr);
-    }
 
     return { success: true as const };
   } catch (err: any) {
