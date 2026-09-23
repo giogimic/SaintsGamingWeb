@@ -169,6 +169,9 @@ export default function GameOptionsMenu({
     }, 1000);
   };
 
+  const clientSettings = useGameStore((state) => state.clientSettings);
+  const updateClientSettings = useGameStore((state) => state.updateClientSettings);
+
   // Audio Settings
   const masterVolume = Math.round((clientSettings?.audio?.masterVolume ?? 1.0) * 100);
   const sfxVolume = Math.round((clientSettings?.audio?.sfxVolume ?? 1.0) * 100);
@@ -189,9 +192,8 @@ export default function GameOptionsMenu({
   const [combatAutoTarget, setCombatAutoTarget] = useState(true);
 
   // Camera Settings
-  const clientSettings = useGameStore((state) => state.clientSettings);
-  const updateClientSettings = useGameStore((state) => state.updateClientSettings);
   
+
   const inGameCameraStyle = clientSettings?.camera?.profile || 'adaptive';
   const inGameFollowSmoothing = Math.round((clientSettings?.camera?.smoothing ?? 0.35) * 100);
   const inGameBorderClamping = clientSettings?.camera?.borderClamping ?? true;
