@@ -7,6 +7,9 @@
 import { inputController } from '../input/InputController';
 import { localMovementSystem } from '../engine/physics/LocalMovementSystem';
 import { remoteMovementSystem } from '../engine/physics/RemoteMovementSystem';
+import { worldStreamer } from '../engine/streaming/WorldStreamer';
+import { usePlayerStore } from '../state/usePlayerStore';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 export class GameLoop {
   private isRunning = false;
@@ -73,6 +76,13 @@ export class GameLoop {
 
     // 3. Process Combat/Game Logic Systems
     // combatSystem.update(dt);
+
+    // 4. Update World Streaming
+    const playerStore = usePlayerStore.getState();
+    const pos = playerStore.player.position;
+    if (pos && pos.z !== undefined) {
+       worldStreamer.updateStreamingForPosition(new Vector3(pos.x, pos.y, pos.z));
+    }
   }
 
   /**

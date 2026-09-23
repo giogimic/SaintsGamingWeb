@@ -61,9 +61,10 @@ export class EntityRenderer {
 
     // 1. Local Player
     const player = usePlayerStore.getState().player;
+    const is3D = player.position.z !== undefined;
     this.upsertSprite('local_player', {
       x: player.position.x,
-      y: player.position.y,
+      y: is3D ? (player.position.z as number) : player.position.y,
       name: player.name || 'You',
       color: new BABYLON.Color3(0.2, 0.6, 1),
       spriteUrl: player.assetProfileId ? resolveEntitySpriteUrl(player.assetProfileId, { kind: 'player' }) : undefined,
@@ -74,12 +75,14 @@ export class EntityRenderer {
     for (const [id, rp] of Object.entries(remotePlayers)) {
       // Dead reckoning: predict position based on velocity
       let px = rp.x ?? 0;
-      let py = rp.y ?? 0;
+      let py = rp.z !== undefined ? rp.z : (rp.y ?? 0);
       if (rp.vx !== undefined && rp.vy !== undefined && rp.lastUpdateMs) {
         const elapsed = (now - rp.lastUpdateMs) / 1000.0;
         if (elapsed > 0 && elapsed < 2) {
           px += rp.vx * elapsed;
-          py += rp.vy * elapsed;
+          // Note: if 3D, vz would be depth velocity. Assuming vy is used for depth if vz is undefined.
+          const depthVel = rp.vz !== undefined ? rp.vz : rp.vy;
+          py += depthVel * elapsed;
         }
       }
 
@@ -103,7 +106,7 @@ export class EntityRenderer {
 
       this.upsertSprite(`entity_${ent.id}`, {
         x: ent.position.x,
-        y: ent.position.y,
+        y: ent.position.z !== undefined ? ent.position.z : ent.position.y,
         name: ent.name || ent.type,
         color: entityColor,
         spriteUrl: entitySpriteUrl,

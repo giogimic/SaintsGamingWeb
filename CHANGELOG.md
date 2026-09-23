@@ -1,3 +1,9 @@
+## [2.1.967] - 2026-09-23
+- **Feature**: Replaced discrete 1-tile grid hops with continuous floating-point camera-relative movement in 3D maps.
+- **Bugfix**: Fixed player sprite disappearing in 3D maps by correctly mapping the 3D Z depth to altitude instead of relying on the 2D Y coordinate.
+- **Bugfix**: Fixed Fractal Domains not generating past the initial chunk by implementing a 5x5 spiral chunk streaming algorithm around the player's position.
+- **Bugfix**: Restored the `GameOptionsMenu` in the new `GameUI` decoupled client so that pressing ESC correctly opens the system menu.
+
 ## [2.1.966] - 2026-09-23
 - **Bugfix**: Fixed the in-game ESC menu failing to open the system menu when in the new Decoupled Client.
 - **Bugfix**: Implemented Pointer Lock for Camera controls when clicking the game canvas. Mouse movement now smoothly rotates the camera in `free` and `firstperson` modes, and unlocks seamlessly when opening menus.

@@ -8,10 +8,11 @@ import { socketManager } from '../../net/SocketManager';
 import { PortalTransitSystem } from './PortalTransitSystem';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { mapMesher } from '../MapMesher';
+import { cameraManager } from '../CameraManager';
 
 export class LocalMovementSystem {
   private lastMoveCommandTime = 0;
-  private readonly MOVE_THROTTLE_MS = 150; // Throttle socket emits (grid-based movement pace)
+  private readonly MOVE_THROTTLE_MS = 150; // Throttle socket emits
   
   // Spirit Gate Physics Handoff
   private portalTransit = new PortalTransitSystem();
@@ -22,7 +23,7 @@ export class LocalMovementSystem {
     // Only process player movement input if we're exploring
     if (scene !== 'exploring') return;
     
-    this.processMovement();
+    this.processMovement(dt);
   }
 
   private isTileWalkable(x: number, y: number): boolean {
@@ -65,84 +66,121 @@ export class LocalMovementSystem {
     return true;
   }
 
-  private processMovement() {
-    let dx = 0;
-    let dy = 0;
-    let dz = 0;
+  private processMovement(dt: number) {
+    let inputX = 0;
+    let inputZ = 0;
     let newDirection = '';
 
     const activeMapData = useWorldStore.getState().activeMapData;
     const is3D = activeMapData && (activeMapData.mapType === 'VOXEL' || activeMapData.mapType === 'FRACTAL' || activeMapData.mapType === 'HYBRID');
 
     if (inputManager.isAnyKeyPressed(KEYBINDS.MOVE_UP)) {
-      if (is3D) dz = 1; else dy = -1;
+      inputZ = 1;
       newDirection = 'up';
     } else if (inputManager.isAnyKeyPressed(KEYBINDS.MOVE_DOWN)) {
-      if (is3D) dz = -1; else dy = 1;
+      inputZ = -1;
       newDirection = 'down';
-    } else if (inputManager.isAnyKeyPressed(KEYBINDS.MOVE_LEFT)) {
-      dx = -1;
+    }
+    if (inputManager.isAnyKeyPressed(KEYBINDS.MOVE_LEFT)) {
+      inputX = -1;
       newDirection = 'left';
     } else if (inputManager.isAnyKeyPressed(KEYBINDS.MOVE_RIGHT)) {
-      dx = 1;
+      inputX = 1;
       newDirection = 'right';
     }
 
-    const isMoving = dx !== 0 || dy !== 0 || dz !== 0;
+    const isMoving = inputX !== 0 || inputZ !== 0;
     const now = Date.now();
     const playerStore = usePlayerStore.getState();
     const currentPos = playerStore.player.position;
 
-    if (isMoving && now - this.lastMoveCommandTime > this.MOVE_THROTTLE_MS) {
+    if (isMoving) {
+      let dx = 0;
+      let dz = 0;
+      let dy = 0;
+      
+      if (is3D) {
+        // Continuous, camera-relative movement
+        const speed = 15.0; // units per second
+        const yaw = cameraManager.yaw;
+        
+        // Normalize input vector
+        const length = Math.sqrt(inputX * inputX + inputZ * inputZ);
+        const normX = inputX / length;
+        const normZ = inputZ / length;
+        
+        // Rotate input by camera yaw. 
+        // Babylon uses a left-handed coordinate system.
+        // Yaw = 0 means looking down +Z axis.
+        const moveX = normX * Math.cos(yaw) + normZ * Math.sin(yaw);
+        const moveZ = -normX * Math.sin(yaw) + normZ * Math.cos(yaw);
+        
+        // Convert to delta-time movement
+        dx = moveX * speed * dt;
+        dz = moveZ * speed * dt;
+      } else {
+        // Discrete 2D grid movement
+        if (now - this.lastMoveCommandTime < this.MOVE_THROTTLE_MS) return;
+        dx = inputX;
+        if (inputManager.isAnyKeyPressed(KEYBINDS.MOVE_UP)) dy = -1;
+        else if (inputManager.isAnyKeyPressed(KEYBINDS.MOVE_DOWN)) dy = 1;
+      }
       
       const targetX = currentPos.x + dx;
-      let targetY = currentPos.y + dy;
-      let targetZ = (currentPos.z || 0) + dz;
+      const targetY = currentPos.y + dy;
+      const targetZ = (currentPos.z || 0) + dz;
 
       if (!this.isTileWalkable(targetX, is3D ? targetZ : targetY)) {
         if (playerStore.player.direction !== newDirection) {
             playerStore.setPlayerPosition(currentPos, newDirection as any, false);
-            socketManager.emit('player_move' as any, { x: currentPos.x, y: currentPos.y, z: currentPos.z, direction: newDirection });
+            if (now - this.lastMoveCommandTime > this.MOVE_THROTTLE_MS) {
+              socketManager.emit('player_move' as any, { x: currentPos.x, y: currentPos.y, z: currentPos.z, direction: newDirection });
+              this.lastMoveCommandTime = now;
+            }
         }
         return;
       }
 
-      this.lastMoveCommandTime = now;
-      
+      // Update local position smoothly
       playerStore.setPlayerPosition({ x: targetX, y: targetY, z: targetZ }, newDirection as any, true);
 
-      const multiStore = useMultiplayerStore.getState();
-      const seq = multiStore.incrementMoveSeq();
-      multiStore.addPendingMove({
-          seq,
-          direction: newDirection as any,
-          predictedPos: { x: targetX, y: targetY, z: targetZ }
-      });
-
-      const targetPos3D = new Vector3(targetX, targetY, targetZ);
-      const dummyPlayerAABB = {
-         intersectsPoint: (p: Vector3) => p.x === targetPos3D.x && p.z === targetPos3D.z,
-         intersectsMinMax: () => false
-      };
-      
-      this.portalTransit.checkIntersection(
-        dummyPlayerAABB as any,
-        dummyPlayerAABB as any,
-        'dummy_portal',
-        'nexus',
-        new Vector3(0, 0, 0)
-      );
-
-      if (this.portalTransit.activeTransit) {
-        this.portalTransit.broadcastMovement(targetPos3D, newDirection);
-      } else {
-        socketManager.emit('player_move' as any, {
-          x: targetX,
-          y: targetY,
-          z: targetZ,
-          direction: newDirection,
-          seq
+      // Throttle network broadcast
+      if (now - this.lastMoveCommandTime > this.MOVE_THROTTLE_MS) {
+        this.lastMoveCommandTime = now;
+        
+        const multiStore = useMultiplayerStore.getState();
+        const seq = multiStore.incrementMoveSeq();
+        multiStore.addPendingMove({
+            seq,
+            direction: newDirection as any,
+            predictedPos: { x: targetX, y: targetY, z: targetZ }
         });
+
+        const targetPos3D = new Vector3(targetX, targetY, targetZ);
+        const dummyPlayerAABB = {
+           intersectsPoint: (p: Vector3) => p.x === targetPos3D.x && p.z === targetPos3D.z,
+           intersectsMinMax: () => false
+        };
+        
+        this.portalTransit.checkIntersection(
+          dummyPlayerAABB as any,
+          dummyPlayerAABB as any,
+          'dummy_portal',
+          'nexus',
+          new Vector3(0, 0, 0)
+        );
+
+        if (this.portalTransit.activeTransit) {
+          this.portalTransit.broadcastMovement(targetPos3D, newDirection);
+        } else {
+          socketManager.emit('player_move' as any, {
+            x: targetX,
+            y: targetY,
+            z: targetZ,
+            direction: newDirection,
+            seq
+          });
+        }
       }
     } else if (!isMoving && playerStore.player.isMoving) {
       playerStore.setPlayerPosition(currentPos, undefined, false);
@@ -152,6 +190,7 @@ export class LocalMovementSystem {
         z: currentPos.z,
         direction: playerStore.player.direction
       });
+      this.lastMoveCommandTime = now;
     }
   }
 }

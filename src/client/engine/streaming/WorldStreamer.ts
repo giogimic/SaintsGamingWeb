@@ -263,8 +263,28 @@ export class WorldStreamer {
     // Only stream if fully booted
     if (useSessionStore.getState().bootState !== 'READY') return;
 
-    // TODO: spiral outward from chunk(X,Y,Z) to load neighbors
-    // TODO: evaluate chunkResidency and evict distant meshes
+    const activeMap = useWorldStore.getState().activeMapData;
+    if (!activeMap || activeMap.mapType !== 'FRACTAL') return; // Only fractal needs JIT chunk requests
+
+    const chunk = this.worldToChunk(worldPos);
+    const radius = 2; // Stream chunks within 2 chunks radius (5x5 grid)
+    
+    for (let dx = -radius; dx <= radius; dx++) {
+      for (let dz = -radius; dz <= radius; dz++) {
+        const cx = chunk.cx + dx;
+        const cy = chunk.cy;
+        const cz = chunk.cz + dz;
+        
+        const cKey = this.getChunkKey(cx, cy, cz);
+        const state = this.chunkResidency.get(cKey);
+        
+        // If we haven't requested this chunk yet, fetch it
+        if (!state || state === 'EVICTED') {
+          this.chunkResidency.set(cKey, 'REQUESTED');
+          socketManager.emit('request_chunk' as any, { cx, cy, cz });
+        }
+      }
+    }
   }
 }
 
