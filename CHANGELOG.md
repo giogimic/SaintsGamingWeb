@@ -1,3 +1,7 @@
+## [2.1.966] - 2026-09-23
+- **Bugfix**: Fixed the in-game ESC menu failing to open the system menu when in the new Decoupled Client.
+- **Bugfix**: Implemented Pointer Lock for Camera controls when clicking the game canvas. Mouse movement now smoothly rotates the camera in `free` and `firstperson` modes, and unlocks seamlessly when opening menus.
+
 ## [2.1.965] - 2026-09-23
 - **Bugfix**: Fixed TypeScript spread operator error in `clientSettingsSlice.ts` preventing Next.js production builds.
 

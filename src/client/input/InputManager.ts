@@ -6,6 +6,7 @@
 export class InputManager {
   private keys: Record<string, boolean> = {};
   private mousePos: { x: number; y: number } = { x: 0, y: 0 };
+  private mouseDelta: { x: number; y: number } = { x: 0, y: 0 };
   private mouseDown: boolean = false;
   private canvasElement: HTMLCanvasElement | null = null;
   private isListening = false;
@@ -46,6 +47,10 @@ export class InputManager {
 
   // --- State Getters ---
 
+  public getCanvas(): HTMLCanvasElement | null {
+    return this.canvasElement;
+  }
+
   public isKeyPressed(key: string): boolean {
     return !!this.keys[key.toLowerCase()];
   }
@@ -73,6 +78,12 @@ export class InputManager {
     return this.mouseDown;
   }
 
+  public consumeMouseDelta() {
+    const delta = { ...this.mouseDelta };
+    this.mouseDelta = { x: 0, y: 0 };
+    return delta;
+  }
+
   // --- Event Handlers ---
 
   private onKeyDown = (e: KeyboardEvent) => {
@@ -92,6 +103,8 @@ export class InputManager {
 
   private onMouseMove = (e: MouseEvent) => {
     this.mousePos = { x: e.clientX, y: e.clientY };
+    this.mouseDelta.x += e.movementX;
+    this.mouseDelta.y += e.movementY;
   };
 
   private onMouseDown = (e: MouseEvent) => {
