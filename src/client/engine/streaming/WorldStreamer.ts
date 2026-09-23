@@ -242,15 +242,9 @@ export class WorldStreamer {
         // The real implementation needs to match the chunk data format (e.g. 16-bit or 32-bit palettes).
         // Since VoxelChunkMesher handles the actual VoxelChunk, we just instantiate a basic payload.
         
-        // VoxelChunk expects dataLow and dataHigh (usually just dataLow for simple palettes).
-        // Convert the generic array into a Uint32Array for dataLow.
-        const lowArray = new Uint32Array(chunkData as number[]);
-        
-        mapMesher.loadStreamedChunk({
-          cx: rcx, cy: rcy, cz: rcz,
-          low: lowArray,
-          high: new Uint32Array(lowArray.length) // Usually zeroed out unless high bits are used
-        });
+        // The chunk data is a PaletteRLEBinary compressed array.
+        // We must pass it to MapMesher's loadEncodedChunk which will decompress it to 32x32x32.
+        mapMesher.loadEncodedChunk(chunkData as number[]);
         
         this.chunkResidency.set(this.getChunkKey(rcx, rcy, rcz), 'MESHED');
       }
