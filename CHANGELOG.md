@@ -1,3 +1,9 @@
+## [2.1.973] - 2026-09-23
+- **Feature**: Scaled player character to 2 blocks tall (1×2 billboard) matching classic voxel game proportions. NPCs/creatures retain their original 1.2×1.2 size.
+- **Improvement**: First-person camera eye height raised to 1.62 blocks (natural eye level for a 2-block-tall character).
+- **Improvement**: Third-person camera now orbits at chest height (1.0 block above terrain) instead of floor level, centering the player in view.
+- **Improvement**: Sprite ground clearance now dynamically calculated per-entity type so feet sit exactly on terrain surface.
+
 ## [2.1.972] - 2026-09-23
 - **Bugfix**: Fixed a race condition in `MapMesher.ts` where joining a 3D/Fractal map would cause the newly streamed-in chunks to be immediately destroyed and cleared from memory when the active map data finished loading.
 - **Bugfix**: Fixed the "Publish World" buttons in the Studio Release Manager not firing the necessary data fetches to populate the Spawn Map dropdown.

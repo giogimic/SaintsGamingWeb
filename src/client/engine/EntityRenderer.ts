@@ -17,8 +17,15 @@ import { usePlayerStore } from '../state/usePlayerStore';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
 import { mapMesher } from './MapMesher';
 
-const ENTITY_GROUND_CLEARANCE = 0.5;
-const SPRITE_SIZE = 1.2;
+// Player is 2 blocks tall (like a classic voxel game character)
+const PLAYER_HEIGHT = 2.0;
+const PLAYER_WIDTH = 1.0;
+const PLAYER_EYE_HEIGHT = 1.62; // ~81% of height, natural eye level
+
+// NPCs / creatures keep their original compact sizing
+const ENTITY_HEIGHT = 1.2;
+const ENTITY_WIDTH = 1.2;
+
 const INTERPOLATION_SPEED = 12; // Higher = snappier
 
 interface ManagedSprite {
@@ -68,6 +75,7 @@ export class EntityRenderer {
       name: player.name || 'You',
       color: new BABYLON.Color3(0.2, 0.6, 1),
       spriteUrl: player.assetProfileId ? resolveEntitySpriteUrl(player.assetProfileId, { kind: 'player' }) : undefined,
+      isPlayer: true,
     }, now);
 
     // 2. Remote Players
@@ -93,6 +101,7 @@ export class EntityRenderer {
         color: new BABYLON.Color3(1, 0.6, 0.2),
         spriteUrl: rp.assetProfileId ? resolveEntitySpriteUrl(rp.assetProfileId, { kind: 'player' }) : undefined,
         chatMessage: rp.chatMessage,
+        isPlayer: true,
       }, now);
     }
 
@@ -147,6 +156,7 @@ export class EntityRenderer {
       color: BABYLON.Color3;
       spriteUrl?: string;
       chatMessage?: string;
+      isPlayer?: boolean;
     },
     now: number
   ) {
@@ -154,11 +164,14 @@ export class EntityRenderer {
 
     let sprite = this.sprites.get(id);
 
+    const spriteW = data.isPlayer ? PLAYER_WIDTH : ENTITY_WIDTH;
+    const spriteH = data.isPlayer ? PLAYER_HEIGHT : ENTITY_HEIGHT;
+
     if (!sprite) {
       // Create billboard mesh
       const mesh = BABYLON.MeshBuilder.CreatePlane(`sprite_${id}`, {
-        width: SPRITE_SIZE,
-        height: SPRITE_SIZE,
+        width: spriteW,
+        height: spriteH,
       }, this.scene);
       mesh.parent = this.entityRoot;
       mesh.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
@@ -199,7 +212,7 @@ export class EntityRenderer {
       if (data.name && id !== 'local_player') {
         labelMesh = BABYLON.MeshBuilder.CreatePlane(`label_${id}`, { width: 2, height: 0.4 }, this.scene);
         labelMesh.parent = mesh;
-        labelMesh.position.y = SPRITE_SIZE / 2 + 0.3;
+        labelMesh.position.y = spriteH / 2 + 0.3;
         labelMesh.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
 
         gui = AdvancedDynamicTexture.CreateForMesh(labelMesh, 256, 64);
@@ -226,7 +239,7 @@ export class EntityRenderer {
         gui,
         targetX: data.x,
         targetZ: is3D ? data.y : -data.y,
-        targetY: ENTITY_GROUND_CLEARANCE,
+        targetY: spriteH / 2,
         lastSeen: now,
       };
       this.sprites.set(id, sprite);
@@ -245,7 +258,7 @@ export class EntityRenderer {
     if (world) {
       terrainY = world.getTopSolidVoxelY(data.x, sprite.targetZ) + world.originOffsetY;
     }
-    sprite.targetY = terrainY + ENTITY_GROUND_CLEARANCE;
+    sprite.targetY = terrainY + spriteH / 2;
     
     sprite.lastSeen = now;
   }

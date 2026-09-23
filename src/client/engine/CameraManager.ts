@@ -20,6 +20,11 @@ import { inputManager } from '../input/InputManager';
 
 export type CameraStyle = 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson' | 'dynamic';
 
+/** Eye level for a 2-block-tall player character (~81% of height) */
+const PLAYER_EYE_HEIGHT = 1.62;
+/** Chest height for third-person orbit target */
+const PLAYER_CHEST_HEIGHT = 1.0;
+
 export interface CameraSettings {
   fov: number;
   orbitSensitivity: number;
@@ -306,13 +311,13 @@ export class CameraManager {
     const offsetZ = -horizDist * Math.cos(currentYaw);
 
     const isFirstPerson = this.settings.playerCameraStyle === 'firstperson';
-    const targetYWithOffset = isFirstPerson ? y + 1.2 : y;
+    const targetYWithOffset = isFirstPerson ? y + PLAYER_EYE_HEIGHT : y;
 
     this.camera.position = new BABYLON.Vector3(x + offsetX, y + camY, z + offsetZ);
     this.camera.setTarget(
       isFirstPerson
         ? new BABYLON.Vector3(x + Math.sin(currentYaw) * 10, targetYWithOffset, z + Math.cos(currentYaw) * 10)
-        : new BABYLON.Vector3(x, y, z)
+        : new BABYLON.Vector3(x, y + PLAYER_CHEST_HEIGHT, z)
     );
     this.snapped = true;
   }
@@ -381,14 +386,14 @@ export class CameraManager {
 
       const targetCamPos = new BABYLON.Vector3(px + offsetX, this.targetY + camY, pz + offsetZ);
       const isFirstPerson = this.settings.playerCameraStyle === 'firstperson';
-      const targetYWithOffset = isFirstPerson ? this.targetY + 1.2 : this.targetY;
+      const targetYWithOffset = isFirstPerson ? this.targetY + PLAYER_EYE_HEIGHT : this.targetY;
 
       this.camera.position = BABYLON.Vector3.Lerp(this.camera.position, targetCamPos, smoothFactor);
       this.camera.setTarget(BABYLON.Vector3.Lerp(
         this.camera.getTarget(),
         isFirstPerson
           ? new BABYLON.Vector3(px + Math.sin(currentYaw) * 10, targetYWithOffset, pz + Math.cos(currentYaw) * 10)
-          : new BABYLON.Vector3(px, this.targetY, pz),
+          : new BABYLON.Vector3(px, this.targetY + PLAYER_CHEST_HEIGHT, pz),
         smoothFactor
       ));
     }
