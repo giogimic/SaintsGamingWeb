@@ -555,7 +555,7 @@ cmd_setup() {
         driver: default
         config:
           - subnet: 10.254.254.0/24
-  NETEOF
+NETEOF
   fi
   
   # Write the .env file — pure bash, guaranteed to work on any Linux system
@@ -568,7 +568,7 @@ cmd_setup() {
   AUTH_DISCORD_ID=${DISCORD_ID}
   AUTH_DISCORD_SECRET=${DISCORD_SECRET}
   NEXT_PUBLIC_DISCORD_INVITE=${DISCORD_INVITE}
-  ENVEOF
+ENVEOF
   
   echo -e "${GREEN}[✓] .env file created successfully.${NC}"
   
@@ -653,7 +653,7 @@ cmd_setup() {
   
   # SAINTS_PROXY_LIST_BEGIN
   # SAINTS_PROXY_LIST_END
-  CADDYEOF
+CADDYEOF
           sudo systemctl unmask caddy 2>/dev/null || true
           sudo systemctl enable caddy 2>/dev/null || true
           sudo systemctl restart caddy || sudo systemctl start caddy || true
@@ -686,7 +686,7 @@ cmd_setup() {
           proxy_set_header X-Forwarded-Proto \$scheme;
       }
   }
-  NGINXEOF
+NGINXEOF
           fi
           sudo ln -sf /etc/nginx/sites-available/$DOMAIN /etc/nginx/sites-enabled/
           sudo systemctl reload nginx || sudo systemctl restart nginx
@@ -726,7 +726,7 @@ cmd_setup() {
           proxy_set_header X-Forwarded-Proto \$scheme;
       }
   }
-  NGINXEOF
+NGINXEOF
               sudo ln -sf /etc/nginx/sites-available/$SUBDOMAIN /etc/nginx/sites-enabled/
               sudo systemctl reload nginx || sudo systemctl restart nginx
           fi
@@ -1548,7 +1548,7 @@ cmd_update() {
         driver: default
         config:
           - subnet: 10.254.254.0/24
-  NETEOF
+NETEOF
   fi
   
   # --- Execution Phase ---
@@ -1948,7 +1948,7 @@ cmd_proxy() {
   
   Environment:
     CADDYFILE=/etc/caddy/Caddyfile   (override path)
-  EOF
+EOF
   }
   
   has_whiptail() {
