@@ -12,6 +12,7 @@ import { findPath } from '@/engine/pathfinding';
 import { WorldSimulation } from '@/engine/WorldSimulation';
 import { FloatingHealthBars } from './FloatingHealthBar';
 import { LOBBY_TOUCH_INTERACT_EVENT, LOBBY_TOUCH_MOVE_EVENT } from '../MobileControls';
+import { globalGameplayInputController } from '../input/GameplayInputController';
 
 
 import CraftingOverlay from '../crafting-overlay';
@@ -262,337 +263,19 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
   // Unified Movement Execution Engine
   const tryMovePlayerTo = (targetX: number, targetY: number, intentOptions?: { isSprinting?: boolean, isJumping?: boolean }) => {
-    // Editor runtime: gameplay input dormant (engine-editor foundation).
-    if (isDevEditorOpen) return;
-    if (!activeMap) return;
-    
-    const store = useGameStore.getState();
-    if (store.isMapTransitioning || store.worldSessionState === 'transitioning') return;
-    
-    const currentPos = store.player?.position;
-    if (!currentPos) return;
-
-    const worldState = {
-      currentMapId,
-      mapWidth,
-      mapHeight,
-      mapGrid: activeMap.grid,
-      gates: normalizeGates(activeMap.gates),
-      staticNpcs: activeMap.entities || [],
-      dynamicEntities: store.mapEntities || [],
-      logicTiles: store.logicTiles,
-      playerPos: currentPos,
-      isDevEditorOpen,
-      connections: activeMap.connections,
-      nodeConnections: activeMap.nodeConnections,
-      voxelWorld: (engineRef.current as any)?.voxel?.voxelWorld,
-    };
-
-    const result = WorldSimulation.tryMove(worldState, targetX, targetY, intentOptions);
-
-    if (result.type === 'BLOCKED') {
-      if (isDevEditorOpen && result.reason === 'WALL') {
-        // Prevent toast spam by checking a ref or just letting the toast queue handle it.
-        // We'll rely on the toast queue to coalesce rapid identical messages (built in Game UI P0).
-        store.showToast('Blocked by wall collision (Logic Tag)');
-      }
-      
-      // Phase 2: Client Prediction (Turn in place)
-      setPlayerPosition(currentPos, result.direction, false);
-      const seq = store.incrementMoveSeq();
-      store.addPendingMove({ seq, direction: result.direction, predictedPos: currentPos });
-      emitSocketEvent?.('input', { type: "MOVE_3D", direction: result.direction, sequence: seq, timestamp: Date.now(), x: currentPos.x, y: currentPos.y, z: 17, vx: 0, vy: 0, vz: 0 });
-      emitSocketEvent?.('player_move', { x: currentPos.x, y: currentPos.y, direction: result.direction, moving: false, seq });
-      return;
-    }
-
-    // Drain stamina on successful move
-    if (intentOptions?.isJumping) {
-      store.modifyStamina(-10);
-    } else if (intentOptions?.isSprinting) {
-      store.modifyStamina(-5);
-    }
-
-    if (result.type === 'WARP') {
-      const gate = result.gate;
-      let spawnX = targetX;
-      let spawnY = targetY;
-
-      if (gate.isEdgeConnection) {
-        if (gate.edgeDirection === 'north') {
-          spawnX = targetX;
-          spawnY = -1; // becomes finalH - 1 on destination
-        } else if (gate.edgeDirection === 'south') {
-          spawnX = targetX;
-          spawnY = 0; // top row on destination
-        } else if (gate.edgeDirection === 'west') {
-          spawnX = -1; // becomes finalW - 1 on destination
-          spawnY = targetY;
-        } else if (gate.edgeDirection === 'east') {
-          spawnX = 0; // left column on destination
-          spawnY = targetY;
-        }
-      } else {
-        const destSpawn = gate.targetSpawn || gate.spawnPoint;
-        if (destSpawn && typeof destSpawn.x === 'number' && typeof destSpawn.y === 'number') {
-          const gatePosX = gate.position?.x ?? targetX;
-          const gatePosY = gate.position?.y ?? targetY;
-          const relX = targetX - gatePosX;
-          const relY = targetY - gatePosY;
-          spawnX = destSpawn.x + relX;
-          spawnY = destSpawn.y + relY;
-        } else {
-          spawnX = targetX;
-          spawnY = targetY;
-        }
-      }
-
-      const spawn = { x: spawnX, y: spawnY };
-      const targetBase = toBaseMapId(gate.targetMapId);
-      const finishWarp = () => {
-        const store = useGameStore.getState();
-        store.setWorldOriginOffset(0, 0);
-
-        let loadedGrid: number[][] | undefined = undefined;
-        // Load destination document before flipping ids — never leave stale
-        // activeMapData mounted (World Builder warp already does this pair).
-        const targetNodeId = (gate as any).targetNodeId;
-        void loadMap(gate.targetMapId, 0, targetNodeId)
-          .then((data) => {
-            const loaded = ensureMapHasStudioTilesets(data);
-            loadedGrid = loaded.grid;
-            useGameStore.setState({
-              currentMapId: gate.targetMapId,
-              activeAtlasNodeId: targetNodeId || loaded.atlasNodeId || null,
-              activeMapData: loaded,
-            });
-          })
-          .catch(() => {
-            // Clears activeMapData so the canvas effect loads fresh.
-            useGameStore.setState({
-              currentMapId: gate.targetMapId,
-              activeAtlasNodeId: targetNodeId || null,
-              activeMapData: null,
-            });
-          })
-          .finally(() => {
-            const finalW = loadedGrid?.[0]?.length || 20;
-            const finalH = loadedGrid?.length || 20;
-            if (spawn.x === -1) {
-              spawn.x = finalW - 1;
-            }
-            if (spawn.y === -1) {
-              spawn.y = finalH - 1;
-            }
-            // Clamp spawn safely within destination bounds
-            spawn.x = Math.max(0, Math.min(finalW - 1, spawn.x));
-            spawn.y = Math.max(0, Math.min(finalH - 1, spawn.y));
-
-            setPlayerPosition(spawn);
-
-            // Immediate camera alignment on the new map
-            if (engineRef.current && !editorToolsRef.current) {
-              const snapX = spawn.x - finalW / 2;
-              const snapZ = finalH / 2 - spawn.y;
-              engineRef.current.renderer.snapCameraTo(snapX, snapZ);
-            }
-
-            const liveStore = useGameStore.getState();
-            const p = liveStore.player;
-            const inStudio = getIsEditorMode();
-            const creation = useEditorStore.getState().isCreationMode;
-            if (emitSocketEvent && p.accountId) {
-              startMapTransition({
-                socket: { connected: true, emit: emitSocketEvent },
-                accountId: p.accountId,
-                contract: {
-                  mapId: targetBase,
-                  lobby: !inStudio,
-                  // Studio must stay on private / PIE — never leak into public DEMO_chN.
-                  isPrivate: inStudio && creation,
-                  pie: inStudio && !creation,
-                },
-                position: { x: spawn.x, y: spawn.y },
-                name: p.name || 'Player',
-                assetProfileId: p.assetProfileId || 'adventurer',
-                currentInstanceId: liveStore.instanceId,
-                worldJoinSeq: liveStore.worldJoinSeq,
-                onSetWorldSessionState: liveStore.setWorldSessionState,
-                onIncrementWorldJoinSeq: liveStore.incrementWorldJoinSeq,
-                setIsMapTransitioning: liveStore.setIsMapTransitioning,
-                onClearPeers: () => liveStore.setOtherPlayers({}),
-                force: true,
-                transitionTimeoutMs: 600,
-              });
-            }
-            // Ensure transition state is cleared immediately so gameplay is completely fluid
-            liveStore.setIsMapTransitioning(false);
-            liveStore.setWorldSessionState('joined');
-            showToast(`Crossed into ${gate.targetMapId.replace(/_/g, ' ')}`);
-          });
-      };
-
-      finishWarp();
-      return;
-    }
-
-    if (result.type === 'MOVED') {
-      const dir = result.direction;
-      if (isDevEditorOpen) {
-        setPlayerPosition({ x: targetX, y: targetY }, dir, false);
-      } else {
-        // Phase 2: Client Prediction Enabled (instant local movement)
-        setPlayerPosition({ x: targetX, y: targetY }, dir, true);
-      }
-
-      const seq = store.incrementMoveSeq();
-      store.addPendingMove({ seq, direction: dir, predictedPos: { x: targetX, y: targetY } });
-      let vx = 0; let vy = 0;
-      if (dir === 'up') vy = -1;
-      else if (dir === 'down') vy = 1;
-      else if (dir === 'left') vx = -1;
-      else if (dir === 'right') vx = 1;
-
-      emitSocketEvent?.('input', { type: "MOVE_3D", direction: dir, sequence: seq, timestamp: Date.now(), x: targetX, y: targetY, z: 17, vx, vy, vz: 0 });
-      emitSocketEvent?.('player_move', { x: targetX, y: targetY, direction: dir, moving: true, seq });
-
-      // Handle Step Actions (suppressed during Studio create tools — bible 17)
-      if (result.stepAction && !suppressGameplay) {
-        const payload = result.stepPayload || {};
-        switch (result.stepAction) {
-          case 'ENCOUNTER':
-            emitSocketEvent?.('encounter_check', { mapId: currentMapId, x: targetX, y: targetY });
-            break;
-          case 'OPEN_SHOP':
-            showToast('Welcome to the Shop!');
-            useGameStore.getState().setGameMode('SHOP');
-            break;
-          case 'CLINIC_HEAL':
-            emitSocketEvent?.('clinic_heal', { mapId: currentMapId, x: targetX, y: targetY });
-            break;
-          case 'FISHING':
-            emitSocketEvent?.('fish_attempt', { mapId: currentMapId, x: targetX, y: targetY });
-            break;
-          case 'BANK':
-            showToast('Bank Terminal accessed!');
-            useGameStore.getState().setGameMode('BANK');
-            break;
-          case 'OPEN_CRAFTING':
-            showToast('Crafting Station accessed!');
-            useGameStore.getState().setGameMode('CRAFTING');
-            break;
-          case 'OPEN_BASE':
-            showToast('Base Terminal online!');
-            useGameStore.getState().setGameMode('BASE');
-            break;
-        }
-      }
-    }
+    globalGameplayInputController.tryMovePlayerTo(targetX, targetY, intentOptions);
   };
 
   const tryMoveDirection = (dx: number, dy: number) => {
-    const state = useGameStore.getState();
-    if (state.gameMode !== 'EXPLORING') return;
-    const currentPlayer = state.player;
-    const curX = currentPlayer.position?.x ?? 6;
-    const curY = currentPlayer.position?.y ?? 2;
-
-    const isSprinting = isShiftHeldRef.current && !currentPlayer.isExhausted;
-    const isJumping = isSpaceHeldRef.current && !currentPlayer.isExhausted;
-    
-    let moveDx = dx;
-    let moveDy = dy;
-    if (isSprinting) {
-      moveDx *= 2;
-      moveDy *= 2;
-    }
-
-    tryMovePlayerTo(curX + moveDx, curY + moveDy, { isSprinting, isJumping });
+    const isSprinting = isShiftHeldRef.current;
+    const isJumping = isSpaceHeldRef.current;
+    globalGameplayInputController.tryMoveDirection(dx, dy, isSprinting, isJumping);
   };
   tryMoveDirectionRef.current = tryMoveDirection;
 
   // Interact / Talk Handler
   const handleInteract = () => {
-    if (isDevEditorOpen) return;
-    const store = useGameStore.getState();
-    const currentPlayer = store.player;
-    const curX = currentPlayer.position?.x ?? 6;
-    const curY = currentPlayer.position?.y ?? 2;
-    const dir = currentPlayer.direction || 'down';
-
-    const worldState = {
-      currentMapId,
-      mapWidth,
-      mapHeight,
-      mapGrid: activeMap?.grid || [],
-      gates: normalizeGates(activeMap?.gates),
-      staticNpcs: activeMap?.entities || [],
-      dynamicEntities: store.mapEntities || [],
-      logicTiles: store.logicTiles,
-      playerPos: { x: curX, y: curY },
-      isDevEditorOpen
-    };
-
-    const result = WorldSimulation.tryInteract(worldState, dir);
-
-    if (result.type === 'LOGIC_INTERACT') {
-      if (result.action === 'BANK') {
-        showToast('Bank Terminal accessed!');
-        useGameStore.getState().setGameMode('BANK');
-        return;
-      }
-      if (result.action === 'OPEN_CRAFTING') {
-        showToast('Opened Crafting Station (Playtest Preview)');
-        useGameStore.setState({ gameMode: 'CRAFTING' });
-        return;
-      }
-      if (result.action === 'OPEN_SHOP') {
-        showToast('Opened Shop (Playtest Preview)');
-        return;
-      }
-      if (result.action === 'HEAL') {
-        showToast('Healed at Shrine (Playtest Preview)');
-        return;
-      }
-      if (result.action === 'OPEN_BANK') {
-        showToast('Opened Bank (Playtest Preview)');
-        return;
-      }
-
-      if (result.action === 'HARVEST_WOOD') {
-        soundSynth.playWoodcuttingSound();
-        showToast('Harvested Wood');
-      } else if (result.action === 'HARVEST_ORE') {
-        soundSynth.playMiningSound();
-        showToast('Harvested Ore');
-      }
-      
-      // Phase 5: Server Authority for Gathering
-      store.emitSocketEvent?.('gather_interact', {
-        mapId: currentMapId,
-        targetX: result.targetX,
-        targetY: result.targetY
-      });
-      return;
-    }
-
-    if (result.type === 'NPC_DIALOGUE') {
-      const rawId = String(result.npcId || '');
-      const dialogueNpcId =
-        rawId.includes('vance') || rawId.includes('marshal')
-          ? 'npc_marshal_vance'
-          : rawId;
-      // Server-authoritative dialogue (Vance grants / quest report)
-      store.emitSocketEvent?.('npc_interact', {
-        mapId: currentMapId,
-        targetId: dialogueNpcId,
-      });
-      return;
-    }
-    
-    if (result.type === 'NONE') {
-      showToast('Nothing to interact with here.');
-    }
+    globalGameplayInputController.handleInteract();
   };
   handleInteractRef.current = handleInteract;
 
@@ -777,6 +460,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     // Initialize 2.5D Babylon Engine
     const babylonEngine = new BabylonEngine(canvasRef.current);
     engineRef.current = babylonEngine;
+    globalGameplayInputController.setEngineRef(babylonEngine);
     if (typeof window !== 'undefined') {
       (window as any).__babylonEngine = babylonEngine;
       (window as any).__sg_babylon_engine = babylonEngine;
@@ -1219,6 +903,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       }
       babylonEngine.dispose();
       engineRef.current = null;
+      globalGameplayInputController.setEngineRef(null);
       lastLoadedMapDataRef.current = null;
       lastVisualFingerprintRef.current = '';
       if (typeof window !== 'undefined' && (window as any).__babylonEngine === babylonEngine) {

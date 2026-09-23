@@ -19,7 +19,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { listPublishSnapshots, restoreWorldRelease } from '@/app/actions/studio/publishing';
-import { createWorldRelease, deployWorldRelease } from '@/app/actions/studio/world-release';
+import { createWorldRelease, deployWorldRelease, getProjectMapsList } from '@/app/actions/studio/world-release';
 import type { WorldRelease } from '@prisma/client';
 import { useEditorStore } from '../editor-store';
 import { useGameStore } from '../../store';
@@ -48,6 +48,8 @@ export const WorldManagerPanel: React.FC = () => {
   const [versionInput, setVersionInput] = useState('');
   const [titleInput, setTitleInput] = useState('');
   const [descInput, setDescInput] = useState('');
+  const [spawnMapIdInput, setSpawnMapIdInput] = useState('');
+  const [projectMaps, setProjectMaps] = useState<{ id: string; title: string; type: string }[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -78,7 +80,14 @@ export const WorldManagerPanel: React.FC = () => {
   }, [dataVersion]);
 
   useEffect(() => {
-    const handleOpenCreate = () => setShowPublishModal(true);
+    const handleOpenCreate = async () => {
+      setShowPublishModal(true);
+      const maps = await getProjectMapsList('saints');
+      setProjectMaps(maps);
+      if (maps.length > 0 && !spawnMapIdInput) {
+        setSpawnMapIdInput(maps[0].id);
+      }
+    };
     const handleDeployLatest = () => {
       // Find the latest snapshot in the current snapshots list
       // Since it's sorted by id desc, index 0 is latest
@@ -106,7 +115,7 @@ export const WorldManagerPanel: React.FC = () => {
     setPublishing(true);
     setErrorMsg(null);
 
-    const res = await createWorldRelease('saints', titleInput, descInput);
+    const res = await createWorldRelease('saints', titleInput, descInput, spawnMapIdInput);
 
     if (res.success) {
       showToast('Release Published successfully!');
@@ -489,6 +498,19 @@ export const WorldManagerPanel: React.FC = () => {
                 />
               </label>
 
+
+              <label className="flex flex-col gap-1 text-[11px] font-bold text-slate-400">
+                Default Canonical Spawn Map *
+                <select
+                  value={spawnMapIdInput}
+                  onChange={(e) => setSpawnMapIdInput(e.target.value)}
+                  className="rounded bg-black/50 px-2.5 py-1.5 border border-[#806f47]/30 text-slate-200 text-xs"
+                >
+                  {projectMaps.map(m => (
+                    <option key={m.id} value={m.id}>{m.title} ({m.type})</option>
+                  ))}
+                </select>
+              </label>
 
               <label className="flex flex-col gap-1 text-[11px] font-bold text-slate-400">
                 Release Notes / Description

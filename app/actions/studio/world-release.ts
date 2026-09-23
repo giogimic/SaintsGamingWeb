@@ -41,9 +41,9 @@ async function deployCompiledWorldRelease(releaseId: string) {
   }
 }
 
-export async function compileAndDeployWorldRelease(projectId: string, title?: string, description?: string) {
+export async function compileAndDeployWorldRelease(projectId: string, title?: string, description?: string, defaultSpawnMapId?: string) {
   try {
-    const { releaseInfo } = await compileWorldRelease(projectId, title, description);
+    const { releaseInfo } = await compileWorldRelease(projectId, title, description, defaultSpawnMapId);
     const deployment = await deployCompiledWorldRelease(releaseInfo.releaseId);
     if (!deployment.success) return deployment;
 
@@ -59,11 +59,11 @@ export async function compileAndDeployWorldRelease(projectId: string, title?: st
   }
 }
 
-export async function createWorldRelease(projectId: string, title?: string, description?: string) {
+export async function createWorldRelease(projectId: string, title?: string, description?: string, defaultSpawnMapId?: string) {
   const isAdmin = await checkAdminPermission();
   if (!isAdmin) return { success: false, error: 'Unauthorized' };
 
-  return compileAndDeployWorldRelease(projectId, title, description);
+  return compileAndDeployWorldRelease(projectId, title, description, defaultSpawnMapId);
 }
 
 export async function deployWorldRelease(releaseId: string) {
@@ -103,3 +103,30 @@ export async function getActiveWorldRelease(projectIdOrSlug: string = 'saints') 
   }
 }
 
+
+export async function getProjectMapsList(projectIdOrSlug: string = 'saints') {
+  try {
+    const project = await prisma.worldProject.findFirst({
+      where: {
+        OR: [
+          { id: projectIdOrSlug },
+          { slug: projectIdOrSlug },
+        ],
+      },
+      select: { id: true, slug: true },
+    });
+
+    const targetProjectIds = project
+      ? Array.from(new Set([project.id, projectIdOrSlug, project.slug]))
+      : [projectIdOrSlug];
+
+    return await prisma.worldMap.findMany({
+      where: { projectId: { in: targetProjectIds } },
+      select: { id: true, title: true, type: true },
+      orderBy: { title: 'asc' }
+    });
+  } catch (err) {
+    console.error('[getProjectMapsList]', err);
+    return [];
+  }
+}

@@ -1,3 +1,6 @@
+## [2.1.963] - 2026-09-23
+- **Feature**: Moved Default Spawn Map selection from a global project setting to the World Manager Release window, allowing the explicit canonical spawn map to be chosen from a dropdown containing all Voxel, Tile, and Fractal maps during compilation. Removed legacy fallback configurations and the deprecated Spawn Editor tool.
+
 ## [2.1.944] - 2026-09-22
 - **Bugfix**: Fixed HTTP 401 Unauthorized errors between Next.js and the Go MMO during world-release syncing by adding robust string trimming (removing spaces and `"`/`'` quotes) when parsing the `AUTH_SECRET` environment variables. This resolves mismatches caused by Docker parsing `.env` files differently than Node.js (which can leave quotes intact).
 

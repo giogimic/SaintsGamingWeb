@@ -10,6 +10,7 @@ import { createMultiplayerSlice } from './store/multiplayerSlice';
 import { createUiSlice } from './store/uiSlice';
 import { createHudSlice } from './store/hudSlice';
 import { createMovementSlice } from './store/movementSlice';
+import { createClientSettingsSlice } from './store/clientSettingsSlice';
 
 export const useGameStore = create<GameState>()(
   subscribeWithSelector(
@@ -20,6 +21,7 @@ export const useGameStore = create<GameState>()(
       ...createUiSlice(...a),
       ...createHudSlice(...a),
       ...createMovementSlice(...a),
+      ...createClientSettingsSlice(...a),
     }))
   )
 );

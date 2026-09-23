@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../store';
 import { useEditorStore } from './editor-store';
+import { useStudioSettingsStore } from '../settings/studioSettingsStore';
 import {
   X,
   Settings,
@@ -54,32 +55,9 @@ export const StudioEscapeMenu: React.FC<StudioEscapeMenuProps> = ({
   const toggleCreationMode = useEditorStore((s) => s.toggleCreationMode);
   const resetLayout = useEditorStore((s) => s.resetLayout);
 
-  // Studio Audio
-  const [studioSfxMuted, setStudioSfxMuted] = useState(false);
-  const [studioSfxVolume, setStudioSfxVolume] = useState(80);
-
-  // Editor Guides state
-  const [showGrid, setShowGrid] = useState(true);
-  const [gridOpacity, setGridOpacity] = useState(30);
-  const [showSkirt, setShowSkirt] = useState(true);
-  const [showSpawns, setShowSpawns] = useState(true);
-
-  // Viewport / Camera settings
-  const [fov, setFov] = useState(45);
-  const [panSens, setPanSens] = useState(100);
-  const [orbitSens, setOrbitSens] = useState(100);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('saints_camera_settings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.fov) setFov(parsed.fov);
-        if (parsed.panSensitivity) setPanSens(parsed.panSensitivity);
-        if (parsed.orbitSensitivity) setOrbitSens(parsed.orbitSensitivity);
-      }
-    } catch {}
-  }, []);
+  // Studio Settings via Zustand
+  const { settings: studioSettings, updateAudio, updateGuides, updateCamera } = useStudioSettingsStore();
+  const { audio: { muted: studioSfxMuted, volume: studioSfxVolume }, guides: { showGrid, gridOpacity, showSkirt, showSpawns }, camera: { fov, panSensitivity: panSens, orbitSensitivity: orbitSens } } = studioSettings;
 
   const handleExportMapJson = () => {
     soundSynth?.playActionSound?.();
@@ -423,7 +401,7 @@ export const StudioEscapeMenu: React.FC<StudioEscapeMenuProps> = ({
                       max={200}
                       step={5}
                       value={panSens}
-                      onChange={(e) => setPanSens(parseInt(e.target.value))}
+                      onChange={(e) => updateCamera({ panSensitivity: parseInt(e.target.value) })}
                       className="w-full accent-primary h-1.5 cursor-pointer"
                     />
                   </div>
@@ -439,7 +417,7 @@ export const StudioEscapeMenu: React.FC<StudioEscapeMenuProps> = ({
                       max={200}
                       step={5}
                       value={orbitSens}
-                      onChange={(e) => setOrbitSens(parseInt(e.target.value))}
+                      onChange={(e) => updateCamera({ orbitSensitivity: parseInt(e.target.value) })}
                       className="w-full accent-primary h-1.5 cursor-pointer"
                     />
                   </div>
@@ -474,7 +452,7 @@ export const StudioEscapeMenu: React.FC<StudioEscapeMenuProps> = ({
                     <input
                       type="checkbox"
                       checked={showGrid}
-                      onChange={(e) => setShowGrid(e.target.checked)}
+                      onChange={(e) => updateGuides({ showGrid: e.target.checked })}
                       className="accent-primary rounded"
                     />
                   </label>
@@ -491,7 +469,7 @@ export const StudioEscapeMenu: React.FC<StudioEscapeMenuProps> = ({
                         max={100}
                         step={5}
                         value={gridOpacity}
-                        onChange={(e) => setGridOpacity(parseInt(e.target.value))}
+                        onChange={(e) => updateGuides({ gridOpacity: parseInt(e.target.value) })}
                         className="w-full accent-primary h-1.5 cursor-pointer"
                       />
                     </div>
@@ -502,7 +480,7 @@ export const StudioEscapeMenu: React.FC<StudioEscapeMenuProps> = ({
                     <input
                       type="checkbox"
                       checked={showSkirt}
-                      onChange={(e) => setShowSkirt(e.target.checked)}
+                      onChange={(e) => updateGuides({ showSkirt: e.target.checked })}
                       className="accent-primary rounded"
                     />
                   </label>
@@ -512,7 +490,7 @@ export const StudioEscapeMenu: React.FC<StudioEscapeMenuProps> = ({
                     <input
                       type="checkbox"
                       checked={showSpawns}
-                      onChange={(e) => setShowSpawns(e.target.checked)}
+                      onChange={(e) => updateGuides({ showSpawns: e.target.checked })}
                       className="accent-primary rounded"
                     />
                   </label>
@@ -536,7 +514,7 @@ export const StudioEscapeMenu: React.FC<StudioEscapeMenuProps> = ({
                     <input
                       type="checkbox"
                       checked={studioSfxMuted}
-                      onChange={(e) => setStudioSfxMuted(e.target.checked)}
+                      onChange={(e) => updateAudio({ muted: e.target.checked })}
                       className="accent-primary rounded"
                     />
                   </label>
@@ -554,7 +532,7 @@ export const StudioEscapeMenu: React.FC<StudioEscapeMenuProps> = ({
                         step={5}
                         value={studioSfxVolume}
                         onChange={(e) => {
-                          setStudioSfxVolume(parseInt(e.target.value));
+                          updateAudio({ volume: parseInt(e.target.value) });
                           soundSynth?.playUiClick?.();
                         }}
                         className="w-full accent-primary h-1.5 cursor-pointer"

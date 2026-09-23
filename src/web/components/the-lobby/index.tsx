@@ -186,7 +186,7 @@ export default function TheLobby({
   const [showSelector, setShowSelector] = useState(false);
   const [showCreator, setShowCreator] = useState(forceCreate || false);
   const [permissionLevel, setPermissionLevel] = useState(0);
-  const [isOptionsOpen, setIsOptionsOpen] = useState(false);
+  const isSystemMenuOpen = useGameStore((state) => state.isSystemMenuOpen);
   const isStaff = hasPermission(permissionLevel, PERMISSION_LEVELS.MODERATOR);
   const canStudio = canEnterStudio(permissionLevel);
 
@@ -315,8 +315,8 @@ export default function TheLobby({
 
       const safeSpawn = resolveSafePlayerSpawn({
         savedMapId: savedMap,
-        savedX: parsedState.position?.x,
-        savedY: parsedState.position?.y,
+        savedX: validPosition.x,
+        savedY: validPosition.y,
         availableMapIds: allKnownMaps,
         worldDefaultSpawn: { mapId: defaultSpawnMapId || loadedSpawn, x: DEFAULT_SPAWN.x, y: DEFAULT_SPAWN.y }
       });
@@ -1798,7 +1798,7 @@ export default function TheLobby({
   }, [hasEnteredMobile, isMobile, viewportReady]);
 
   useEffect(() => {
-    const handleOpenOptionsEvent = () => setIsOptionsOpen(true);
+    const handleOpenOptionsEvent = () => useGameStore.getState().openSystemMenu('keyboard');
     window.addEventListener('open_game_options', handleOpenOptionsEvent);
 
     // Standard game hotkeys (I, K, P, D, B) + ESC for Options / exit Viewfinder
@@ -1810,10 +1810,14 @@ export default function TheLobby({
       if (e.key === 'Escape') {
         e.preventDefault();
         const store = useGameStore.getState();
+        // System menu open: Escape closes it
+        if (store.isSystemMenuOpen) {
+          store.closeSystemMenu();
+          return;
+        }
         // Viewfinder edit mode: Escape exits without the Options modal
         if (store.isEditingInterface || store.isUiEditMode) {
           store.setIsEditingInterface(false);
-          setIsOptionsOpen(false);
           return;
         }
         // Close topmost floating window first
@@ -1831,7 +1835,11 @@ export default function TheLobby({
         if (store.combatTarget) {
           store.setCombatTarget(null);
         }
-        setIsOptionsOpen((open) => !open);
+        
+        // Dispatch event to release pointer lock if active
+        window.dispatchEvent(new CustomEvent('release_pointer_lock'));
+        
+        store.openSystemMenu('keyboard');
         return;
       }
       const key = e.key.toLowerCase();
@@ -2050,8 +2058,8 @@ export default function TheLobby({
 
         {studioToolsOpen ? (
           <StudioEscapeMenu
-            isOpen={isOptionsOpen}
-            onClose={() => setIsOptionsOpen(false)}
+            isOpen={isSystemMenuOpen}
+            onClose={() => useGameStore.getState().closeSystemMenu()}
             onExitStudio={() => {
               useEditorStore.getState().toggleCreationMode();
               useGameStore.getState().setGameMode('EXPLORING');
@@ -2059,9 +2067,9 @@ export default function TheLobby({
             }}
           />
         ) : (
-          <GameOptionsMenu 
-            isOpen={isOptionsOpen}
-            onClose={() => setIsOptionsOpen(false)}
+          <GameOptionsMenu
+            isOpen={isSystemMenuOpen}
+            onClose={() => useGameStore.getState().closeSystemMenu()}
             isFullscreen={isFullscreen}
             onToggleFullscreen={toggleFullscreen}
             isAdminUser={canStudio}

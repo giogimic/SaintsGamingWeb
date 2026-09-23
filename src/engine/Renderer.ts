@@ -11,6 +11,48 @@ export class Renderer {
   public engine: BabylonEngine;
   constructor(engine: BabylonEngine) {
     this.engine = engine;
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('client_settings_updated', (e: Event) => {
+        const detail = (e as CustomEvent).detail;
+        if (detail && detail.camera) {
+          const { profile, fov, smoothing, borderClamping, vignetteEnabled } = detail.camera;
+          if (profile) {
+            this.applyPlayerCameraStyle(profile);
+          }
+          if (fov !== undefined) {
+            this.setCameraSettings({ fov });
+          }
+          if (smoothing !== undefined) {
+            this.setCameraSettings({ playerFollowSmoothing: smoothing });
+          }
+          if (borderClamping !== undefined) {
+            this.setCameraSettings({ borderClamping });
+          }
+          if (vignetteEnabled !== undefined) {
+            this.setCameraSettings({ vignetteEnabled });
+          }
+        }
+        if (detail && detail.graphics) {
+          const { postProcessing, resolutionScale, shadows } = detail.graphics;
+          if (resolutionScale !== undefined) {
+            this.engine.engine.setHardwareScalingLevel(1 / resolutionScale);
+          }
+          if (postProcessing !== undefined && this.vignettePostProcess) {
+            this.vignettePostProcess.isEnabled = postProcessing;
+          }
+          if (shadows !== undefined) {
+            this.setCameraSettings({ shadowsEnabled: shadows });
+            // Immediately hide all if disabled
+            if (!shadows) {
+              this.engine.shadowMeshes.forEach((mesh) => {
+                mesh.isVisible = false;
+              });
+            }
+          }
+        }
+      });
+    }
   }
 
 public ambientLight?: HemisphericLight;
@@ -37,10 +79,11 @@ public cameraSettings = {
     isometricPitch: Math.PI / 4,
     isometricDistance: 14,
     playerFollowSmoothing: 0.35,
-    playerCameraStyle: 'isometric' as 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson' | 'dynamic',
+    playerCameraStyle: 'overview2_5d' as 'firstPerson' | 'thirdPerson' | 'overview2_5d' | 'adaptive' | 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson' | 'dynamic',
     borderClamping: true,
     vignetteEnabled: true,
     vignetteWeight: 1.5,
+    shadowsEnabled: true,
   };
 public updateCameraAspect = (orthoSize: number = 10) => {
     if (!this.engine || !this.camera) return;
@@ -457,7 +500,9 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
         // On-screen: ensure visible
         if (!mesh.isVisible) mesh.isVisible = true;
         const shadow = this.engine.shadowMeshes.get(entityId);
-        if (shadow && !shadow.isVisible) shadow.isVisible = true;
+        if (shadow && !shadow.isVisible && this.cameraSettings.shadowsEnabled !== false) {
+          shadow.isVisible = true;
+        }
 
         // 1. Movement Interpolation
         const dist = Vector3.Distance(mesh.position, state.targetPos);
@@ -731,9 +776,9 @@ public getCameraSettings() {
     return { ...this.cameraSettings };
   }
 
-public applyPlayerCameraStyle(style: 'dynamic' | 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson') {
+  public applyPlayerCameraStyle(style: 'firstPerson' | 'thirdPerson' | 'overview2_5d' | 'adaptive' | 'dynamic' | 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson') {
     this.cameraSettings.playerCameraStyle = style;
-    if (style === 'dynamic') {
+    if (style === 'dynamic' || style === 'adaptive') {
       this.updateDynamicCamera();
     } else {
       this.applyInternalCameraStyle(style);
@@ -741,33 +786,33 @@ public applyPlayerCameraStyle(style: 'dynamic' | 'isometric' | 'follow45' | 'top
   }
 
   public updateDynamicCamera() {
-    if (this.cameraSettings.playerCameraStyle !== 'dynamic') return;
+    if (this.cameraSettings.playerCameraStyle !== 'dynamic' && this.cameraSettings.playerCameraStyle !== 'adaptive') return;
     const ortho = this.camera.orthoTop || 10;
     
-    let targetMode: 'firstperson' | 'follow45' | 'isometric' = 'isometric';
+    let targetMode: 'firstPerson' | 'thirdPerson' | 'overview2_5d' = 'overview2_5d';
     if (ortho < 6.5) {
-      targetMode = 'firstperson';
+      targetMode = 'firstPerson';
     } else if (ortho < 9.0) {
-      targetMode = 'follow45';
+      targetMode = 'thirdPerson';
     }
     
     this.applyInternalCameraStyle(targetMode);
   }
 
-  private applyInternalCameraStyle(style: 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson') {
+  private applyInternalCameraStyle(style: 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson' | 'firstPerson' | 'thirdPerson' | 'overview2_5d') {
     if (style === 'topdown') {
       this.camera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
       this.cameraProfile.pitch = Math.PI / 2 - 0.01;
       this.cameraProfile.distance = 14;
       this.cameraYaw = 0;
       this.updateCameraAspect(this.camera.orthoTop || 10);
-    } else if (style === 'follow45') {
+    } else if (style === 'follow45' || style === 'thirdPerson') {
       this.camera.mode = FreeCamera.PERSPECTIVE_CAMERA;
       this.camera.fov = this.cameraSettings.fov || 0.8;
       this.cameraProfile.pitch = Math.PI / 4;
       this.cameraProfile.distance = 16;
       this.cameraYaw = 0;
-    } else if (style === 'firstperson') {
+    } else if (style === 'firstperson' || style === 'firstPerson') {
       this.camera.mode = FreeCamera.PERSPECTIVE_CAMERA;
       this.camera.fov = this.cameraSettings.fov || 1.0;
       this.cameraProfile.pitch = 0;
@@ -777,7 +822,7 @@ public applyPlayerCameraStyle(style: 'dynamic' | 'isometric' | 'follow45' | 'top
       this.camera.fov = this.cameraSettings.fov || 0.8;
       this.cameraProfile.pitch = this.cameraPitch || Math.PI / 4;
       this.cameraProfile.distance = this.cameraDistance || 18;
-    } else if (style === 'isometric') {
+    } else if (style === 'isometric' || style === 'overview2_5d') {
       this.camera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
       this.cameraProfile.pitch = this.cameraSettings.isometricPitch || Math.PI / 4;
       this.cameraProfile.distance = this.cameraSettings.isometricDistance || 14;

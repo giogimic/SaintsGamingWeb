@@ -7,7 +7,7 @@ import { INITIAL_SKILLS } from './types';
 
 type GameSlice<T> = StateCreator<GameState, [['zustand/immer', never]], [], T>;
 
-export const createUiSlice: GameSlice<Pick<GameState, "gameMode" | "isMapTransitioning" | "toasts" | "toastHistory" | "clearToastHistory" | "activeDialog" | "openWindows" | "toggleWindow" | "closeWindow" | "closeAllWindows" | "getTopmostWindow" | "setGameMode" | "activeAtlasNodeId" | "setActiveAtlasNodeId" | "setIsMapTransitioning" | "setActiveDialog" | "showToast" | "removeToast">> = (set, get) => ({
+export const createUiSlice: GameSlice<Pick<GameState, "gameMode" | "isMapTransitioning" | "toasts" | "toastHistory" | "clearToastHistory" | "activeDialog" | "openWindows" | "toggleWindow" | "closeWindow" | "closeAllWindows" | "getTopmostWindow" | "isSystemMenuOpen" | "systemMenuSource" | "openSystemMenu" | "closeSystemMenu" | "toggleSystemMenu" | "setGameMode" | "activeAtlasNodeId" | "setActiveAtlasNodeId" | "setIsMapTransitioning" | "setActiveDialog" | "showToast" | "removeToast">> = (set, get) => ({
 gameMode: 'TITLE_SCREEN',
 
 isMapTransitioning: false,
@@ -46,6 +46,16 @@ getTopmostWindow: () => {
         const wins = get().openWindows;
         return wins.length > 0 ? wins[wins.length - 1] : null;
       },
+
+isSystemMenuOpen: false,
+
+systemMenuSource: null,
+
+openSystemMenu: (source = 'keyboard') => set({ isSystemMenuOpen: true, systemMenuSource: source }),
+
+closeSystemMenu: () => set({ isSystemMenuOpen: false, systemMenuSource: null }),
+
+toggleSystemMenu: (source = 'keyboard') => set((state) => ({ isSystemMenuOpen: !state.isSystemMenuOpen, systemMenuSource: !state.isSystemMenuOpen ? source : null })),
 
 setGameMode: (mode) => set((state) => { state.gameMode = mode; }),
 

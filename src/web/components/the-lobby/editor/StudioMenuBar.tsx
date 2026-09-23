@@ -706,7 +706,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           <TopLevelMenu id="world" label="World">
             <MenuItem label="World Atlas (Spatial Grid)" shortcut="Ctrl+Shift+M" icon={Globe} onClick={() => { setStudioMode('atlas'); openPanel('atlas'); }} />
             <MenuItem label="Map Editor" icon={Globe} onClick={() => { setStudioMode('develop'); openPanel('mapEditor'); }} />
-            <MenuItem label="Spawn Editor" icon={MapPin} onClick={() => openPanel('spawnEditor')} />
+
             <MenuItem label="World Events" icon={Sparkles} onClick={() => openPanel('worldevent')} />
           </TopLevelMenu>
 
@@ -781,7 +781,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
                 <MenuItem label="Creature Studio" icon={panels.creature?.isOpen ? CheckCircle2 : PawPrint} onClick={() => togglePanel('creature')} />
                 <MenuItem label="Monster Spawner" icon={panels.spawner?.isOpen ? CheckCircle2 : Sword} onClick={() => togglePanel('spawner')} />
                 <MenuItem label="World Manager" icon={panels.worldManager?.isOpen ? CheckCircle2 : CloudUpload} onClick={() => togglePanel('worldManager')} />
-                <MenuItem label="Spawn Editor" icon={panels.spawnEditor?.isOpen ? CheckCircle2 : MapPin} onClick={() => togglePanel('spawnEditor')} />
+
                 <MenuItem label="Quest Studio" icon={panels.quest?.isOpen ? CheckCircle2 : ScrollText} onClick={() => togglePanel('quest')} />
                 <MenuItem label="Dialogue Editor" icon={panels.dialogue?.isOpen ? CheckCircle2 : MessageSquare} onClick={() => togglePanel('dialogue')} />
                 <MenuItem label="Item Studio" icon={panels.items?.isOpen ? CheckCircle2 : Package} onClick={() => togglePanel('items')} />

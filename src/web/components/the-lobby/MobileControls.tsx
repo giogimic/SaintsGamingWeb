@@ -217,11 +217,9 @@ function FloatingJoystick() {
 
 function ActionCluster({
   onToggleFullscreen,
-  onToggleOptions,
   onLeaveGame,
 }: {
   onToggleFullscreen?: () => void;
-  onToggleOptions?: () => void;
   onLeaveGame?: () => void;
 }) {
   const toggleInventory = () => {
@@ -259,7 +257,7 @@ function ActionCluster({
         <button
           onClick={() => {
             soundSynth?.playSelectSound?.();
-            onToggleOptions?.();
+            useGameStore.getState().openSystemMenu('touch');
           }}
           className="w-11 h-11 bg-black/80 border border-slate-700 rounded-xl flex flex-col items-center justify-center text-slate-300 active:bg-slate-700 active:text-white transition-all backdrop-blur-md cursor-pointer shadow-md"
           title="Options"
@@ -306,11 +304,9 @@ function ActionCluster({
 
 export default function MobileControls({
   onToggleFullscreen,
-  onToggleOptions,
   onLeaveGame,
 }: {
   onToggleFullscreen?: () => void;
-  onToggleOptions?: () => void;
   onLeaveGame?: () => void;
 }) {
   const [isTouchDevice, setIsTouchDevice] = useState(false);
@@ -337,7 +333,6 @@ export default function MobileControls({
       {controlMode === 'floating' ? <FloatingJoystick /> : <StaticDPad />}
       <ActionCluster
         onToggleFullscreen={onToggleFullscreen}
-        onToggleOptions={onToggleOptions}
         onLeaveGame={onLeaveGame}
       />
     </>

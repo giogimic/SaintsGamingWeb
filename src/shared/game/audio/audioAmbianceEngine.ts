@@ -130,3 +130,5 @@ export class AudioAmbianceEngine {
     };
   }
 }
+
+export const audioAmbiance = new AudioAmbianceEngine();

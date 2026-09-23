@@ -406,6 +406,13 @@ export interface GameState {
   /** Returns the topmost (last-opened) window id, or null */
   getTopmostWindow: () => string | null;
 
+  // System Menu
+  isSystemMenuOpen: boolean;
+  systemMenuSource: 'keyboard' | 'touch' | null;
+  openSystemMenu: (source?: 'keyboard' | 'touch') => void;
+  closeSystemMenu: () => void;
+  toggleSystemMenu: (source?: 'keyboard' | 'touch') => void;
+
   // Game Data
   gameRegistry: {
     registryVersion: string;
@@ -481,6 +488,12 @@ export interface GameState {
   addPartyMember: (member: PartyMember) => void;
   removePartyMember: (userId: string) => void;
   clearParty: () => void;
+
+  // Client Settings
+  clientSettings: import('../settings/clientSettingsSchema').ClientSettings;
+  updateClientSettings: (settings: import('../settings/clientSettingsSchema').ClientSettings) => void;
+  patchClientSettings: (category: keyof import('../settings/clientSettingsSchema').ClientSettings, partial: any) => void;
+  hydrateClientSettings: () => void;
 }
 
 /** Combat typings + gathering/artisan matrix (Title Case UI keys). */

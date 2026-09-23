@@ -15,7 +15,7 @@ import { validateRelease } from './ReleaseValidator';
  * 2. Immutable: Generates a monolithic JSON payload that is self-contained.
  * 3. Transitive: Packages exactly the required dependencies, no more, no less.
  */
-export async function compileWorldRelease(projectIdentifier: string, title?: string, description?: string): Promise<{ manifest: ReleaseManifest, releaseInfo: { releaseId: string, version: string } }> {
+export async function compileWorldRelease(projectIdentifier: string, title?: string, description?: string, defaultSpawnMapId?: string): Promise<{ manifest: ReleaseManifest, releaseInfo: { releaseId: string, version: string } }> {
   const project = await prisma.worldProject.findFirst({
     where: { 
       OR: [
@@ -45,89 +45,29 @@ export async function compileWorldRelease(projectIdentifier: string, title?: str
   }
 
   // 2. Resolve Canonical Spawn
-  const canonicalSpawnId = config?.defaultSpawnGateId;
-  let spawnMapId: string | null = null;
-  let spawnX = 0, spawnY = 0, spawnZ = 0;
-  let spawnFound = false;
-
-  if (canonicalSpawnId) {
-    for (const map of maps) {
-      try {
-        const entities = JSON.parse(map.entitiesData || "[]");
-        for (const ent of entities) {
-          if (ent.id === canonicalSpawnId) {
-            spawnMapId = map.id;
-            spawnX = ent.position?.x ?? 0;
-            spawnY = ent.position?.y ?? 0;
-            spawnZ = ent.position?.z ?? 0;
-            spawnFound = true;
-            break;
-          }
-        }
-      } catch (e) {}
-      if (spawnFound) break;
-      
-      try {
-        const parsedGates = JSON.parse(map.gatesData || "[]");
-        const gatesList = Array.isArray(parsedGates) ? parsedGates : (parsedGates.gates ? parsedGates.gates : Object.values(parsedGates));
-        for (const [idx, g] of Object.entries(gatesList)) {
-          const gate = g as any;
-          const gateId = gate.id || `legacy_gate_${idx}`;
-          if (gateId === canonicalSpawnId) {
-            spawnMapId = map.id;
-            spawnX = gate.spawnPoint?.x ?? gate.position?.x ?? 0;
-            spawnY = gate.spawnPoint?.y ?? gate.position?.y ?? 0;
-            spawnZ = gate.spawnPoint?.z ?? gate.position?.z ?? 0;
-            spawnFound = true;
-            break;
-          }
-        }
-      } catch (e) {}
-      if (spawnFound) break;
-    }
+  let spawnMapId: string = defaultSpawnMapId || maps[0]?.id || '';
+  let spawnX = 64, spawnY = 64, spawnZ = 16;
+  
+  if (!spawnMapId) {
+    throw new Error(`Project ${projectId} has no maps to compile.`);
   }
 
-  // Resilient fallback: If exact canonicalSpawnId is not found, search for any SPAWN category gate or explicit spawnPoint
-  if (!spawnFound || !spawnMapId) {
-    for (const map of maps) {
-      try {
-        const parsedGates = JSON.parse(map.gatesData || "[]");
-        const gatesList = Array.isArray(parsedGates) ? parsedGates : (parsedGates.gates ? parsedGates.gates : Object.values(parsedGates));
-        for (const g of Object.values(gatesList)) {
-          const gate = g as any;
-          if (gate && (gate.category === 'SPAWN' || gate.id === 'spawn' || gate.name?.toLowerCase().includes('spawn'))) {
-            spawnMapId = map.id;
-            spawnX = gate.spawnPoint?.x ?? gate.position?.x ?? 0;
-            spawnY = gate.spawnPoint?.y ?? gate.position?.y ?? 0;
-            spawnZ = gate.spawnPoint?.z ?? gate.position?.z ?? 0;
-            spawnFound = true;
-            break;
-          }
-        }
-        if (!spawnFound && parsedGates.spawnPoint) {
-          spawnMapId = map.id;
-          spawnX = typeof parsedGates.spawnPoint.x === 'number' ? parsedGates.spawnPoint.x : 0;
-          spawnY = typeof parsedGates.spawnPoint.y === 'number' ? parsedGates.spawnPoint.y : 0;
-          spawnZ = typeof parsedGates.spawnPoint.z === 'number' ? parsedGates.spawnPoint.z : 0;
-          spawnFound = true;
+  // Attempt to find a specific spawn gate in the chosen map
+  const targetMap = maps.find(m => m.id === spawnMapId);
+  if (targetMap) {
+    try {
+      const parsedGates = JSON.parse(targetMap.gatesData || "[]");
+      const gatesList = Array.isArray(parsedGates) ? parsedGates : (parsedGates.gates ? parsedGates.gates : Object.values(parsedGates));
+      for (const g of Object.values(gatesList)) {
+        const gate = g as any;
+        if (gate && (gate.category === 'SPAWN' || gate.id === 'spawn' || gate.name?.toLowerCase().includes('spawn'))) {
+          spawnX = gate.spawnPoint?.x ?? gate.position?.x ?? 64;
+          spawnY = gate.spawnPoint?.y ?? gate.position?.y ?? 64;
+          spawnZ = gate.spawnPoint?.z ?? gate.position?.z ?? 16;
           break;
         }
-      } catch (e) {}
-      if (spawnFound) break;
-    }
-  }
-
-  // Ultimate fallback: Use first available map rather than crashing compilation
-  if (!spawnFound || !spawnMapId) {
-    if (maps.length > 0) {
-      spawnMapId = maps[0].id;
-      spawnX = 64;
-      spawnY = 64;
-      spawnZ = 16;
-      spawnFound = true;
-    } else {
-      throw new Error(`Canonical World Spawn gate "${canonicalSpawnId}" not found in any Working World map. Publish aborted.`);
-    }
+      }
+    } catch (e) {}
   }
 
   const mapSnapshotsToCreate: any[] = [];
