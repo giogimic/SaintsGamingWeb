@@ -578,7 +578,6 @@ export default function GameOptionsMenu({
                       checked={inGameVignette}
                       onChange={(e) => {
                         const v = e.target.checked;
-                        setInGameVignette(v);
                         saveInGameCamera(inGameCameraStyle, inGameFollowSmoothing, inGameBorderClamping, v);
                       }}
                       className="accent-primary rounded"
