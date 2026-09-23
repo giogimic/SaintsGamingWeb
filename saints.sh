@@ -378,13 +378,13 @@ cmd_setup() {
   # --- Helper: inject depends_on ---
   inject_depends_on() {
       python3 -c "
-  with open('docker-compose.yml', 'r') as f:
-      c = f.read()
-  if 'depends_on:' not in c:
-      needle = 'container_name: ${WEB_CONTAINER_NAME}'
-      c = c.replace(needle, needle + '\n    depends_on:\n      db:\n        condition: service_started')
-      with open('docker-compose.yml', 'w') as f:
-          f.write(c)
+with open('docker-compose.yml', 'r') as f:
+    c = f.read()
+if 'depends_on:' not in c:
+    needle = 'container_name: ${WEB_CONTAINER_NAME}'
+    c = c.replace(needle, needle + '\n    depends_on:\n      db:\n        condition: service_started')
+    with open('docker-compose.yml', 'w') as f:
+        f.write(c)
   " 2>/dev/null || true
   }
   
@@ -497,37 +497,37 @@ cmd_setup() {
   
       if ! db_service_exists; then
           python3 -c "
-  with open('docker-compose.yml', 'r') as f:
-      lines = f.readlines()
-  out = []
-  inserted = False
-  db_block = '''
-    db:
-      image: mariadb:10.11
-      container_name: ${DB_CONTAINER_NAME}
-      restart: unless-stopped
-      environment:
-        MARIADB_DATABASE: saints_gaming
-        MARIADB_USER: saints
-        MARIADB_PASSWORD: ${DB_PASS}
-        MARIADB_ROOT_PASSWORD: ${DB_PASS}
-      volumes:
-        - ./mysql_data:/var/lib/mysql
-      healthcheck:
-        test: [\"CMD\", \"healthcheck.sh\", \"--connect\", \"--innodb_initialized\"]
-        interval: 10s
-        timeout: 5s
-        retries: 5
-  '''
-  for line in lines:
-      if line.startswith('networks:') and not inserted:
-          out.append(db_block)
-          inserted = True
-      out.append(line)
-  if not inserted:
-      out.append(db_block)
-  with open('docker-compose.yml', 'w') as f:
-      f.writelines(out)
+with open('docker-compose.yml', 'r') as f:
+    lines = f.readlines()
+out = []
+inserted = False
+db_block = '''
+  db:
+    image: mariadb:10.11
+    container_name: ${DB_CONTAINER_NAME}
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: saints_gaming
+      MARIADB_USER: saints
+      MARIADB_PASSWORD: ${DB_PASS}
+      MARIADB_ROOT_PASSWORD: ${DB_PASS}
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [\"CMD\", \"healthcheck.sh\", \"--connect\", \"--innodb_initialized\"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+'''
+for line in lines:
+    if line.startswith('networks:') and not inserted:
+        out.append(db_block)
+        inserted = True
+    out.append(line)
+if not inserted:
+    out.append(db_block)
+with open('docker-compose.yml', 'w') as f:
+    f.writelines(out)
   "
           inject_depends_on
       fi
@@ -1500,37 +1500,37 @@ cmd_update() {
           DB_PASS_ENV=$(grep '^DATABASE_URL=' .env 2>/dev/null | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
           DB_PASS_ENV=${DB_PASS_ENV:-changeme}
           python3 -c "
-  with open('docker-compose.yml', 'r') as f:
-      lines = f.readlines()
-  out = []
-  inserted = False
-  db_block = '''
-    db:
-      image: mariadb:10.11
-      container_name: ${DB_CN}
-      restart: unless-stopped
-      environment:
-        MARIADB_DATABASE: saints_gaming
-        MARIADB_USER: saints
-        MARIADB_PASSWORD: ${DB_PASS_ENV}
-        MARIADB_ROOT_PASSWORD: ${DB_PASS_ENV}
-      volumes:
-        - ./mysql_data:/var/lib/mysql
-      healthcheck:
-        test: [\"CMD\", \"healthcheck.sh\", \"--connect\", \"--innodb_initialized\"]
-        interval: 10s
-        timeout: 5s
-        retries: 5
-  '''
-  for line in lines:
-      if line.startswith('networks:') and not inserted:
-          out.append(db_block)
-          inserted = True
-      out.append(line)
-  if not inserted:
-      out.append(db_block)
-  with open('docker-compose.yml', 'w') as f:
-      f.writelines(out)
+with open('docker-compose.yml', 'r') as f:
+    lines = f.readlines()
+out = []
+inserted = False
+db_block = '''
+  db:
+    image: mariadb:10.11
+    container_name: ${DB_CN}
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: saints_gaming
+      MARIADB_USER: saints
+      MARIADB_PASSWORD: ${DB_PASS_ENV}
+      MARIADB_ROOT_PASSWORD: ${DB_PASS_ENV}
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [\"CMD\", \"healthcheck.sh\", \"--connect\", \"--innodb_initialized\"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+'''
+for line in lines:
+    if line.startswith('networks:') and not inserted:
+        out.append(db_block)
+        inserted = True
+    out.append(line)
+if not inserted:
+    out.append(db_block)
+with open('docker-compose.yml', 'w') as f:
+    f.writelines(out)
   "
       fi
       echo -e "${GREEN}[✓] docker-compose.yml repaired from clean base.${NC}"
