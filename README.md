@@ -38,16 +38,14 @@ Linux is the primary deployment target. Windows is supported for local developme
 git clone https://github.com/giogimic/SaintsGamingWeb.git
 cd SaintsGamingWeb
 
-# 2. Install dependencies and set up the local database
-npm run setup
+# 2. Run the unified setup script (builds Docker containers and boots the stack)
+bash saints.sh setup
 
-# 3. Start the local server
-npm run dev
+# 3. For future updates, simply run
+bash saints.sh update
 ```
 
 Once it's running, open [http://localhost:24001](http://localhost:24001) in your browser.
-
----
 
 ## 📜 Changelog
 
