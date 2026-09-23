@@ -610,6 +610,10 @@ ENVEOF
               if [ -n "$ADDITIVE_SUBDOMAIN" ]; then
                   bash "$ROOT/saints.sh" proxy add "$ADDITIVE_SUBDOMAIN" 127.0.0.1 "$WEB_PORT" -y || true
               fi
+          else
+              # They chose NO (fresh primary install) but Caddy is installed.
+              # We MUST set USE_CADDY=1 so it doesn't fall back to Nginx!
+              USE_CADDY=1
           fi
       fi
   
