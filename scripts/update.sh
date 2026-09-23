@@ -535,8 +535,12 @@ else
     if [ "$HAS_DB_SERVICE" = "1" ]; then
         DB_PASS_ENV=$(grep '^DATABASE_URL=' .env 2>/dev/null | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
         DB_PASS_ENV=${DB_PASS_ENV:-changeme}
-        cat >> docker-compose.yml <<DCEOF
-
+        python3 -c "
+with open('docker-compose.yml', 'r') as f:
+    lines = f.readlines()
+out = []
+inserted = False
+db_block = '''
   db:
     image: mariadb:10.11
     container_name: ${DB_CN}
@@ -549,11 +553,21 @@ else
     volumes:
       - ./mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: [\"CMD\", \"healthcheck.sh\", \"--connect\", \"--innodb_initialized\"]
       interval: 10s
       timeout: 5s
       retries: 5
-DCEOF
+'''
+for line in lines:
+    if line.startswith('networks:') and not inserted:
+        out.append(db_block)
+        inserted = True
+    out.append(line)
+if not inserted:
+    out.append(db_block)
+with open('docker-compose.yml', 'w') as f:
+    f.writelines(out)
+"
     fi
     echo -e "${GREEN}[✓] docker-compose.yml repaired from clean base.${NC}"
 fi

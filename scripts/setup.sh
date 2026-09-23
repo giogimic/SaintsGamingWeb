@@ -461,8 +461,12 @@ if [ "$DB_PROVIDER_OPT" = "1" ]; then
     DATABASE_URL="mysql://saints:${DB_PASS}@db:3306/saints_gaming"
 
     if ! db_service_exists; then
-        cat >> docker-compose.yml <<DCEOF
-
+        python3 -c "
+with open('docker-compose.yml', 'r') as f:
+    lines = f.readlines()
+out = []
+inserted = False
+db_block = '''
   db:
     image: mariadb:10.11
     container_name: ${DB_CONTAINER_NAME}
@@ -475,11 +479,21 @@ if [ "$DB_PROVIDER_OPT" = "1" ]; then
     volumes:
       - ./mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: [\"CMD\", \"healthcheck.sh\", \"--connect\", \"--innodb_initialized\"]
       interval: 10s
       timeout: 5s
       retries: 5
-DCEOF
+'''
+for line in lines:
+    if line.startswith('networks:') and not inserted:
+        out.append(db_block)
+        inserted = True
+    out.append(line)
+if not inserted:
+    out.append(db_block)
+with open('docker-compose.yml', 'w') as f:
+    f.writelines(out)
+"
         inject_depends_on
     fi
 
