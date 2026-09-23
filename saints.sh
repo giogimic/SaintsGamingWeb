@@ -129,12 +129,11 @@ cmd_setup() {
       fi
   elif [ "$SETUP_ACTION" = "3" ]; then
       echo -e "${CYAN}[*] Handing off to Domain & Proxy Manager...${NC}"
-      DEV_PROXY_SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/dev-proxy.sh"
-      if [ -f "$DEV_PROXY_SCRIPT" ]; then
-          chmod +x "$DEV_PROXY_SCRIPT"
-          exec "$DEV_PROXY_SCRIPT" ask
+      if [ -f "$ROOT/saints.sh" ]; then
+          chmod +x "$ROOT/saints.sh"
+          exec "$ROOT/saints.sh" proxy ui
       else
-          echo -e "${RED}[!] dev-proxy.sh not found.${NC}"
+          echo -e "${RED}[!] saints.sh not found.${NC}"
           exit 1
       fi
   elif [ "$SETUP_ACTION" = "4" ]; then
@@ -581,15 +580,10 @@ ENVEOF
   if [ "$EXISTING_CADDY_ADDITIVE" = "1" ]; then
       SSL_CHOICE="Existing Caddy (subdomain only)"
       echo -e "${YELLOW}[*] Existing Caddy — additive subdomain only (no primary rewrite, no Caddy install)...${NC}"
-      chmod +x "$DEV_PROXY_SCRIPT" 2>/dev/null || true
       ADDITIVE_SUBDOMAIN=$(whiptail --title "Subdomain for this install" --inputbox "Enter the subdomain this instance should serve\n(e.g. staging.$DOMAIN or go.$DOMAIN).\n\nPrimary site on Caddy will NOT be changed." 12 70 "staging.$DOMAIN" 3>&1 1>&2 2>&3) || true
       if [ -n "$ADDITIVE_SUBDOMAIN" ]; then
-          if [ -x "$DEV_PROXY_SCRIPT" ] || [ -f "$DEV_PROXY_SCRIPT" ]; then
-              bash "$DEV_PROXY_SCRIPT" add "$ADDITIVE_SUBDOMAIN" 127.0.0.1 "$WEB_PORT" -y || \
-                echo -e "${RED}[!] dev-proxy add failed — run manually: ./scripts/dev-proxy.sh add $ADDITIVE_SUBDOMAIN $WEB_PORT${NC}"
-          else
-              echo -e "${RED}[!] Missing scripts/dev-proxy.sh — add the subdomain manually later.${NC}"
-          fi
+          bash "$ROOT/saints.sh" proxy add "$ADDITIVE_SUBDOMAIN" 127.0.0.1 "$WEB_PORT" -y || \
+            echo -e "${RED}[!] proxy add failed — run manually: ./saints.sh proxy add $ADDITIVE_SUBDOMAIN $WEB_PORT${NC}"
       else
           echo -e "${YELLOW}[*] No subdomain entered — app will only be reachable on 127.0.0.1:$WEB_PORT${NC}"
       fi
@@ -601,7 +595,7 @@ ENVEOF
               EXISTING_CADDY_ADDITIVE=1
               ADDITIVE_SUBDOMAIN=$(whiptail --title "Subdomain" --inputbox "Subdomain (e.g. app.$DOMAIN):" 10 60 "app.$DOMAIN" 3>&1 1>&2 2>&3) || true
               if [ -n "$ADDITIVE_SUBDOMAIN" ]; then
-                  bash "$DEV_PROXY_SCRIPT" add "$ADDITIVE_SUBDOMAIN" 127.0.0.1 "$WEB_PORT" -y || true
+                  bash "$ROOT/saints.sh" proxy add "$ADDITIVE_SUBDOMAIN" 127.0.0.1 "$WEB_PORT" -y || true
               fi
           fi
       fi
@@ -614,7 +608,7 @@ ENVEOF
               SSL_CHOICE="Existing Caddy (subdomain only)"
               ADDITIVE_SUBDOMAIN=$(whiptail --title "Subdomain" --inputbox "Subdomain for this install:" 10 60 "$DOMAIN" 3>&1 1>&2 2>&3) || true
               if [ -n "$ADDITIVE_SUBDOMAIN" ]; then
-                  bash "$DEV_PROXY_SCRIPT" add "$ADDITIVE_SUBDOMAIN" 127.0.0.1 "$WEB_PORT" -y || true
+                  bash "$ROOT/saints.sh" proxy add "$ADDITIVE_SUBDOMAIN" 127.0.0.1 "$WEB_PORT" -y || true
               fi
           fi
       fi
