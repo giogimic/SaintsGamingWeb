@@ -839,10 +839,23 @@ fi
   echo ""
   
   if [ $SERVER_READY -eq 1 ]; then
-      curl -s -X POST http://localhost:$WEB_PORT/api/dev/setup-admin \
+      echo -e "\n${CYAN}[*] Creating admin account...${NC}"
+      JSON_PAYLOAD=$(ADMIN_USER="$ADMIN_USER" ADMIN_PASS="$ADMIN_PASS" ADMIN_EMAIL="$ADMIN_EMAIL" python3 -c 'import json, os; print(json.dumps({"username": os.environ.get("ADMIN_USER",""), "password": os.environ.get("ADMIN_PASS",""), "email": os.environ.get("ADMIN_EMAIL","")}))')
+      
+      ADMIN_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:$WEB_PORT/api/dev/setup-admin \
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $SECRET_VAL" \
-        -d "{\"username\":\"$ADMIN_USER\",\"password\":\"$ADMIN_PASS\",\"email\":\"$ADMIN_EMAIL\"}" >/dev/null
+        -d "$JSON_PAYLOAD")
+      
+      HTTP_CODE=$(echo "$ADMIN_RESPONSE" | tail -n1)
+      BODY=$(echo "$ADMIN_RESPONSE" | sed '$d')
+      
+      if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+          echo -e "${GREEN}[✓] Admin account successfully created!${NC}"
+      else
+          echo -e "${RED}[!] Failed to create admin account. (HTTP $HTTP_CODE)${NC}"
+          echo -e "${YELLOW}    Response: $BODY${NC}"
+      fi
   
       if [ "$RUN_CERTBOT" = "1" ]; then
           echo -e "\n${CYAN}[*] Running Certbot for SSL...${NC}"
