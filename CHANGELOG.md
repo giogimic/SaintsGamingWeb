@@ -1,3 +1,6 @@
+## [2.1.965] - 2026-09-23
+- **Bugfix**: Fixed TypeScript spread operator error in `clientSettingsSlice.ts` preventing Next.js production builds.
+
 ## [2.1.964] - 2026-09-23
 - **Feature**: Moved Default Spawn Map selection from a global project setting to the World Manager Release window, allowing the explicit canonical spawn map to be chosen from a dropdown containing all Voxel, Tile, and Fractal maps during compilation. Removed legacy fallback configurations and the deprecated Spawn Editor tool.
 

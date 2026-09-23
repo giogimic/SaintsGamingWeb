@@ -17,10 +17,11 @@ export const createClientSettingsSlice: GameSlice<Pick<GameState, "clientSetting
   }),
 
   patchClientSettings: (category, partial) => set((state) => {
+    if (category === 'version') return;
     // @ts-ignore
     state.clientSettings[category] = {
-      ...state.clientSettings[category],
-      ...partial
+      ...(state.clientSettings[category] as any),
+      ...(partial as any)
     };
     saveClientSettings(state.clientSettings);
     updateRuntimeSettings(state.clientSettings);
