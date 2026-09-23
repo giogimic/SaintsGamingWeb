@@ -617,123 +617,53 @@ ENVEOF
           fi
       fi
   
-      if [ "$EXISTING_CADDY_ADDITIVE" != "1" ] && [ "$IS_NUCLEAR_MODE" != "1" ]; then
-          if command -v nginx &>/dev/null; then
-              if whiptail --title "Web Server Upgrade" --yesno "Nginx is currently installed on this server.\n\nWe HIGHLY recommend using Caddy instead, because it handles SSL (HTTPS) automatically without needing Certbot.\n\nWould you like setup to automatically REMOVE Nginx and install Caddy?" 14 78 3>&1 1>&2 2>&3; then
-                  echo -e "${RED}[!] Stopping and purging Nginx...${NC}"
-                  sudo systemctl stop nginx || true
-                  sudo apt-get purge -y nginx nginx-common
-                  sudo apt-get autoremove -y
-                  USE_CADDY=1
-              fi
-          else
-              if whiptail --title "Web Server Selection" --yesno "Would you like to install Caddy? (Recommended — automatic SSL)\n\nIf NO, Nginx will be installed instead." 12 70 3>&1 1>&2 2>&3; then
-                  USE_CADDY=1
-              fi
-          fi
-      fi
-  
-      if [ "$USE_CADDY" = "1" ]; then
-          if ! command -v caddy &>/dev/null; then
-              echo -e "${CYAN}[*] Installing Caddy...${NC}"
-              sudo apt update
-              sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
-              curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-              curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-              sudo apt update && sudo apt install -y caddy
-          fi
-          SSL_CHOICE="Caddy (Automatic HTTPS)"
-          # Fresh primary site + empty managed proxy section for future dev-proxy adds.
-          cat <<CADDYEOF | sudo tee /etc/caddy/Caddyfile
-  $DOMAIN, www.$DOMAIN {
-      reverse_proxy 127.0.0.1:$WEB_PORT
-  }
-  
-  # SAINTS_PROXY_LIST_BEGIN
-  # SAINTS_PROXY_LIST_END
+if [ "$EXISTING_CADDY_ADDITIVE" != "1" ]; then
+        if command -v nginx &>/dev/null; then
+            echo -e "\033[0;31m[!] Stopping and purging Nginx (Saints Gaming uses Caddy exclusively)...\033[0m"
+            sudo systemctl stop nginx || true
+            sudo apt-get purge -y nginx nginx-common
+            sudo apt-get autoremove -y
+        fi
+
+        if ! command -v caddy &>/dev/null; then
+            echo -e "\033[0;36m[*] Installing Caddy...\033[0m"
+            sudo apt update
+            sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+            curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+            curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+            sudo apt update && sudo apt install -y caddy
+        fi
+        SSL_CHOICE="Caddy (Automatic HTTPS)"
+        cat <<CADDYEOF | sudo tee /etc/caddy/Caddyfile
+$DOMAIN, www.$DOMAIN {
+    reverse_proxy 127.0.0.1:$WEB_PORT
+}
+
+# SAINTS_PROXY_LIST_BEGIN
+# SAINTS_PROXY_LIST_END
 CADDYEOF
-          sudo systemctl unmask caddy 2>/dev/null || true
-          sudo systemctl enable caddy 2>/dev/null || true
-          sudo systemctl restart caddy || sudo systemctl start caddy || true
-      else
-          if ! command -v nginx &>/dev/null || ! command -v certbot &>/dev/null; then
-              echo -e "${YELLOW}[*] Installing Nginx and Certbot...${NC}"
-              sudo apt update && sudo apt install -y nginx certbot python3-certbot-nginx
-          fi
-          if whiptail --title "Networking" --yesno "Are you proxying through Cloudflare (Orange Cloud on DNS)?\n\nIf YES, Certbot will NOT be run (Cloudflare handles SSL)." 12 70 3>&1 1>&2 2>&3; then
-              SSL_CHOICE="Nginx (Cloudflare)"
-          else
-              SSL_CHOICE="Nginx (Let's Encrypt / Certbot)"
-          fi
-          if [ -f "/etc/nginx/sites-available/$DOMAIN" ] && grep -q "ssl_certificate" "/etc/nginx/sites-available/$DOMAIN"; then
-              echo -e "${YELLOW}[*] Preserving existing SSL Nginx config for $DOMAIN...${NC}"
-          else
-              cat <<NGINXEOF | sudo tee /etc/nginx/sites-available/$DOMAIN
-  server {
-      listen $HTTP_PORT;
-      server_name $DOMAIN www.$DOMAIN;
-      location / {
-          proxy_pass http://127.0.0.1:$WEB_PORT;
-          proxy_http_version 1.1;
-          proxy_set_header Upgrade \$http_upgrade;
-          proxy_set_header Connection 'upgrade';
-          proxy_set_header Host \$host;
-          proxy_cache_bypass \$http_upgrade;
-          proxy_set_header X-Real-IP \$remote_addr;
-          proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-          proxy_set_header X-Forwarded-Proto \$scheme;
-      }
-  }
-NGINXEOF
-          fi
-          sudo ln -sf /etc/nginx/sites-available/$DOMAIN /etc/nginx/sites-enabled/
-          sudo systemctl reload nginx || sudo systemctl restart nginx
-          if [ "$SSL_CHOICE" = "Nginx (Let's Encrypt / Certbot)" ] && [ "$HTTP_PORT" = "80" ]; then
-              RUN_CERTBOT=1
-          fi
-      fi
-  fi
-  
+        sudo systemctl unmask caddy 2>/dev/null || true
+        sudo systemctl enable caddy 2>/dev/null || true
+        sudo systemctl restart caddy || sudo systemctl start caddy || true
+    fi
   # --- Subdomain Proxies (Additive via dev-proxy when Caddy / Nginx) ---
   EXTRA_SUBDOMAINS=()
-  if [ "$EXISTING_CADDY_ADDITIVE" = "1" ] || [ "$USE_CADDY" = "1" ] || [ "$REVERSE_PROXY_MODE" = "1" ] || command -v caddy &>/dev/null || [ -f /etc/caddy/Caddyfile ]; then
-      while whiptail --title "Subdomain Setup" --yesno "Do you have any subdomains you want to add or reverse proxy on this server?\n\n(Examples: mmo.$DOMAIN, dev.$DOMAIN, panel.$DOMAIN, bot.$DOMAIN)\n\nYES = Add a subdomain proxy\nNO  = Continue setup" 14 74 3>&1 1>&2 2>&3; do
-          SUBDOMAIN=$(whiptail --title "Subdomain" --inputbox "Enter the full subdomain (e.g. mmo.$DOMAIN):" 10 60 "mmo.$DOMAIN" 3>&1 1>&2 2>&3)
-          if [ $? -ne 0 ] || [ -z "$SUBDOMAIN" ]; then break; fi
-          PROXY_PORT=$(whiptail --title "Local Port" --inputbox "Enter the internal port this subdomain forwards to:" 10 60 "24011" 3>&1 1>&2 2>&3)
-          if [ $? -ne 0 ] || [ -z "$PROXY_PORT" ]; then break; fi
-          PROXY_IP=$(whiptail --title "Target IP" --inputbox "Enter the internal target IP:" 10 60 "127.0.0.1" 3>&1 1>&2 2>&3)
-          if [ $? -ne 0 ] || [ -z "$PROXY_IP" ]; then break; fi
-  
-          if [ -f "$DEV_PROXY_SCRIPT" ] && { [ "$USE_CADDY" = "1" ] || [ "$EXISTING_CADDY_ADDITIVE" = "1" ] || command -v caddy &>/dev/null || [ -f /etc/caddy/Caddyfile ]; }; then
-              bash "$DEV_PROXY_SCRIPT" add "$SUBDOMAIN" "$PROXY_IP" "$PROXY_PORT" -y || true
-          else
-              cat <<NGINXEOF | sudo tee /etc/nginx/sites-available/$SUBDOMAIN
-  server {
-      listen ${HTTP_PORT:-80};
-      server_name $SUBDOMAIN;
-      location / {
-          proxy_pass http://$PROXY_IP:$PROXY_PORT;
-          proxy_http_version 1.1;
-          proxy_set_header Upgrade \$http_upgrade;
-          proxy_set_header Connection 'upgrade';
-          proxy_set_header Host \$host;
-          proxy_cache_bypass \$http_upgrade;
-          proxy_set_header X-Real-IP \$remote_addr;
-          proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-          proxy_set_header X-Forwarded-Proto \$scheme;
-      }
-  }
-NGINXEOF
-              sudo ln -sf /etc/nginx/sites-available/$SUBDOMAIN /etc/nginx/sites-enabled/
-              sudo systemctl reload nginx || sudo systemctl restart nginx
-          fi
-          EXTRA_SUBDOMAINS+=("$SUBDOMAIN")
-          whiptail --title "Subdomain Added" --msgbox "Subdomain $SUBDOMAIN -> $PROXY_IP:$PROXY_PORT has been configured!" 8 65
-      done
-  fi
-  
-  # --- Go MMO (destination realtime for lobby / Studio) ---
+if [ "$EXISTING_CADDY_ADDITIVE" = "1" ] || [ "$REVERSE_PROXY_MODE" = "1" ] || command -v caddy &>/dev/null || [ -f /etc/caddy/Caddyfile ]; then
+    while whiptail --title "Subdomain Setup" --yesno "Do you have any subdomains you want to add or reverse proxy on this server?\n\n(Examples: mmo.$DOMAIN, dev.$DOMAIN, panel.$DOMAIN, bot.$DOMAIN)\n\nYES = Add a subdomain proxy\nNO  = Continue setup" 14 74 3>&1 1>&2 2>&3; do
+        SUBDOMAIN=$(whiptail --title "Subdomain" --inputbox "Enter the full subdomain (e.g. mmo.$DOMAIN):" 10 60 "mmo.$DOMAIN" 3>&1 1>&2 2>&3)
+        if [ $? -ne 0 ] || [ -z "$SUBDOMAIN" ]; then break; fi
+        PROXY_PORT=$(whiptail --title "Local Port" --inputbox "Enter the internal port this subdomain forwards to:" 10 60 "24011" 3>&1 1>&2 2>&3)
+        if [ $? -ne 0 ] || [ -z "$PROXY_PORT" ]; then break; fi
+        PROXY_IP=$(whiptail --title "Target IP" --inputbox "Enter the internal target IP:" 10 60 "127.0.0.1" 3>&1 1>&2 2>&3)
+        if [ $? -ne 0 ] || [ -z "$PROXY_IP" ]; then break; fi
+
+        bash "$ROOT/saints.sh" proxy add "$SUBDOMAIN" "$PROXY_IP" "$PROXY_PORT" -y || true
+        EXTRA_SUBDOMAINS+=("$SUBDOMAIN")
+        whiptail --title "Subdomain Added" --msgbox "Subdomain $SUBDOMAIN -> $PROXY_IP:$PROXY_PORT has been configured!" 8 65
+    done
+fi
+
+# --- Go MMO (destination realtime for lobby / Studio) ---
   # Next keeps site APIs + /api/maps; game sockets move to Go when enabled.
   ENABLE_GO_MMO=1
   GO_MMO_PORT=24011
@@ -1255,8 +1185,7 @@ cmd_update() {
       if command -v systemctl &>/dev/null; then
           if systemctl list-unit-files | grep -q saints-lobby; then sudo systemctl restart saints-lobby 2>/dev/null; fi
           if systemctl is-active --quiet caddy; then sudo systemctl reload caddy 2>/dev/null; fi
-          if systemctl is-active --quiet nginx; then sudo systemctl reload nginx 2>/dev/null; fi
-      fi
+                fi
       echo -e "\n${GREEN}${BOLD}[✓] Services restarted successfully!${NC}"
       exit 0
   fi
@@ -1755,8 +1684,7 @@ NETEOF
       # Reload proxies
       if command -v systemctl &>/dev/null; then
           if systemctl is-active --quiet caddy; then sudo systemctl reload caddy 2>/dev/null; fi
-          if systemctl is-active --quiet nginx; then sudo systemctl reload nginx 2>/dev/null; fi
-      fi
+                fi
   
   else
       # --- Non-Docker Fallback (PM2 / Direct Node) ---
