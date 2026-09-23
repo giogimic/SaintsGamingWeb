@@ -254,7 +254,7 @@ export class GameplayInputController {
       store.emitSocketEvent?.('input', { type: "MOVE_3D", direction: dir, sequence: seq, timestamp: Date.now(), x: targetX, y: targetY, z: 17, vx, vy, vz: 0 });
       store.emitSocketEvent?.('player_move', { x: targetX, y: targetY, direction: dir, moving: true, seq });
 
-      const suppressGameplay = useEditorStore.getState().suppressGameplay;
+      const suppressGameplay = useEditorStore.getState().isCreationMode;
       if (result.stepAction && !suppressGameplay) {
         switch (result.stepAction) {
           case 'ENCOUNTER':
