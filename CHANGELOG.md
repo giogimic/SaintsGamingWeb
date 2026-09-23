@@ -1,3 +1,8 @@
+## [2.1.970] - 2026-09-23
+- **Bugfix**: Implemented the missing Pointer Lock `mousemove` event processing in `CameraManager.ts`. Mouse movement now actually updates the camera's yaw and pitch in `free` and `firstperson` modes, ensuring WASD moves relative to where the camera is facing.
+- **Bugfix**: Fixed `GameCanvas.tsx` to listen for browser `pointerlockchange` events and automatically open the system ESC menu if pointer lock is lost (e.g., when the user presses ESC).
+- **Bugfix**: Fixed `CameraManager.ts` incorrectly inverting the 3D Z-axis when following the player, aligning it with the fix previously applied to `EntityRenderer.ts`.
+
 ## [2.1.969] - 2026-09-23
 - **Bugfix**: Fixed `worldHandlers.ts` not populating the map manifest data on join in the decoupled client, which caused the physics engine and chunk streamer to fallback to 2D Tilemap logic (grid-locked movement and no streaming).
 - **Bugfix**: Fixed `LocalMovementSystem.ts` applying delta-time math incorrectly, which caused players to move at 250 units/frame and hit chunk walls instantly when 3D movement was active.

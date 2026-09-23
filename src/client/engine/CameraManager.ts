@@ -14,7 +14,9 @@
  */
 import * as BABYLON from '@babylonjs/core';
 import { usePlayerStore } from '../state/usePlayerStore';
+import { useWorldStore } from '../state/useWorldStore';
 import { mapMesher } from './MapMesher';
+import { inputManager } from './input/InputManager';
 
 export type CameraStyle = 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson' | 'dynamic';
 
@@ -320,11 +322,33 @@ export class CameraManager {
   private update = () => {
     if (!this.camera || !this.scene) return;
 
+    // Handle Mouse Look
+    if (this.canvas && document.pointerLockElement === this.canvas) {
+      const delta = inputManager.consumeMouseDelta();
+      if (delta.x !== 0 || delta.y !== 0) {
+        const sens = (this.settings.orbitSensitivity || 1.0) * 0.002;
+        this.yaw += delta.x * sens * (this.settings.invertOrbitX ? -1 : 1);
+        
+        // Only allow pitch to change in free/firstperson
+        const style = this.settings.playerCameraStyle;
+        if (style === 'free' || style === 'firstperson') {
+          this.pitch += delta.y * sens * (this.settings.invertOrbitY ? 1 : -1);
+          this.pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, this.pitch));
+          this.profile.pitch = this.pitch;
+        }
+      }
+    } else {
+      inputManager.consumeMouseDelta(); // discard delta when not locked
+    }
+
     // Follow local player position from store
     const player = usePlayerStore.getState().player;
     if (player && player.position) {
+      const activeMap = useWorldStore.getState().activeMapData;
+      const is3D = activeMap && (activeMap.mapType === 'VOXEL' || activeMap.mapType === 'FRACTAL' || activeMap.mapType === 'HYBRID');
+      
       const px = player.position.x;
-      const pz = -player.position.y; // Babylon Z is inverted 2D Y
+      const pz = is3D && player.position.z !== undefined ? player.position.z : -player.position.y;
 
       if (!this.snapped) {
         this.snapCameraTo(px, pz);

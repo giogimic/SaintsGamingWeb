@@ -6,10 +6,23 @@ export function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    const handlePointerLockChange = () => {
+      if (!document.pointerLockElement) {
+        try {
+          const { useGameStore } = require('@/web/components/the-lobby/store');
+          if (!useGameStore.getState().isSystemMenuOpen) {
+            useGameStore.getState().setIsSystemMenuOpen(true);
+          }
+        } catch (e) {}
+      }
+    };
+    document.addEventListener('pointerlockchange', handlePointerLockChange);
+
     if (canvasRef.current) {
       engineCore.initialize(canvasRef.current);
     }
     return () => {
+      document.removeEventListener('pointerlockchange', handlePointerLockChange);
       engineCore.dispose();
     };
   }, []);
