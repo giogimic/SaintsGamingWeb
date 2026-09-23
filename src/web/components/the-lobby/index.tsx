@@ -2029,7 +2029,6 @@ export default function TheLobby({
         <div className="pointer-events-none absolute inset-0 z-30">
           <MobileControls
             onToggleFullscreen={toggleFullscreen}
-            onToggleOptions={() => setIsOptionsOpen(true)}
             onLeaveGame={() => {
               window.location.href = '/';
             }}
