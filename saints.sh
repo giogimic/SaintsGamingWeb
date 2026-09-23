@@ -519,7 +519,7 @@ db_block = '''
       retries: 5
 '''
 for line in lines:
-    if line.startswith('networks:') and not inserted:
+    if (line.startswith('networks:') or line.startswith('volumes:')) and not inserted:
         out.append(db_block)
         inserted = True
     out.append(line)
@@ -1517,7 +1517,7 @@ db_block = '''
       retries: 5
 '''
 for line in lines:
-    if line.startswith('networks:') and not inserted:
+    if (line.startswith('networks:') or line.startswith('volumes:')) and not inserted:
         out.append(db_block)
         inserted = True
     out.append(line)
