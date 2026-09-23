@@ -646,6 +646,8 @@ CADDYEOF
         sudo systemctl enable caddy 2>/dev/null || true
         sudo systemctl restart caddy || sudo systemctl start caddy || true
     fi
+  fi
+  
   # --- Subdomain Proxies (Additive via dev-proxy when Caddy / Nginx) ---
   EXTRA_SUBDOMAINS=()
 if [ "$EXISTING_CADDY_ADDITIVE" = "1" ] || [ "$REVERSE_PROXY_MODE" = "1" ] || command -v caddy &>/dev/null || [ -f /etc/caddy/Caddyfile ]; then
