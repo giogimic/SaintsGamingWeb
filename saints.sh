@@ -153,9 +153,9 @@ cmd_setup() {
   
       # Wipe database volumes & reset environment
       sudo rm -rf ./mysql_data ./data ./uploads/scratch 2>/dev/null || true
-      rm -f ./prisma/db/dev.db ./prisma/db/dev.db-journal .env
+      sudo rm -f ./prisma/db/dev.db ./prisma/db/dev.db-journal .env
       mkdir -p ./data ./uploads ./mysql_data
-      chmod -R 777 ./data ./uploads ./mysql_data 2>/dev/null || true
+      sudo chmod -R 777 ./data ./uploads ./mysql_data 2>/dev/null || true
       echo -e "${GREEN}[✓] Data and containers completely purged.${NC}"
   fi
   
