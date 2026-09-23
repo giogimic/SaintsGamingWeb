@@ -742,23 +742,7 @@ if [ "$ENABLE_GO_MMO" = "1" ]; then
         echo -e "${GREEN}[✓] NEXT_PUBLIC_GO_MMO_URL=$GO_MMO_PUBLIC_URL${NC}"
     fi
 
-    if [ -f "$GO_MMO_SETUP_SCRIPT" ]; then
-        echo -e "${CYAN}[*] Setting up Go MMO (full stack beside Next)...${NC}"
-        chmod +x "$GO_MMO_SETUP_SCRIPT" 2>/dev/null || true
-        export GO_MMO_PORT
-        if [ -n "$GO_MMO_SUBDOMAIN_CHOSEN" ]; then
-            export GO_MMO_SUBDOMAIN="$GO_MMO_SUBDOMAIN_CHOSEN"
-        fi
-        # --full: do not fall back to proxy-only just because Caddy already exists
-        if GO_MMO_PORT="$GO_MMO_PORT" GO_MMO_SUBDOMAIN="${GO_MMO_SUBDOMAIN_CHOSEN}" \
-            bash "$GO_MMO_SETUP_SCRIPT" --non-interactive --docker --full; then
-            echo -e "${GREEN}[✓] Go MMO setup finished (port $GO_MMO_PORT).${NC}"
-        else
-            echo -e "${YELLOW}[!] Go MMO setup reported errors — Next will still build. Retry: ./the-lobby/scripts/setup-the-lobby.sh --full${NC}"
-        fi
-    else
-        echo -e "${YELLOW}[!] Missing $GO_MMO_SETUP_SCRIPT — URL written; run Go setup manually later.${NC}"
-    fi
+    echo -e "${CYAN}[*] Go MMO is integrated into the main stack. It will build automatically.${NC}"
 else
     echo -e "${YELLOW}[*] Skipping Go MMO — lobby/Studio will use TypeScript server.ts sockets.${NC}"
 fi

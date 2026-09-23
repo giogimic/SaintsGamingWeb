@@ -607,11 +607,11 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
     fi
 
     if [ "$NEED_BUILD" -eq 1 ]; then
-        echo -e "${CYAN}[*] Building web container (Next.js + MMO GameEngine)...${NC}"
+        echo -e "${CYAN}[*] Building containers (this may take a few minutes)...${NC}"
         > docker_build.log
-        ( docker compose build web > docker_build.log 2>&1 ) &
+        ( docker compose build > docker_build.log 2>&1 ) &
         BUILD_PID=$!
-        run_with_spinner "Compiling web container bundle" "docker_build.log" "$BUILD_PID"
+        run_with_spinner "Compiling container bundles" "docker_build.log" "$BUILD_PID"
         BUILD_STATUS=$?
 
         if [ $BUILD_STATUS -ne 0 ]; then
@@ -619,35 +619,29 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
             tail -n 25 docker_build.log
             exit 1
         fi
-        echo -e "${GREEN}[✓] Web container built successfully.${NC}\n"
+        echo -e "${GREEN}[✓] Containers built successfully.${NC}\n"
 
-        echo -e "${CYAN}[*] Starting web container in background...${NC}"
-        if grep -q "image: mariadb" docker-compose.yml 2>/dev/null; then
-            ( docker compose up -d db >> docker_build.log 2>&1 )
-        fi
-        ( docker compose up -d --no-deps web >> docker_build.log 2>&1 ) &
+        echo -e "${CYAN}[*] Starting containers in background...${NC}"
+        ( docker compose up -d --remove-orphans >> docker_build.log 2>&1 ) &
         UP_PID=$!
-        run_with_spinner "Launching updated web container" "docker_build.log" "$UP_PID"
+        run_with_spinner "Launching updated containers" "docker_build.log" "$UP_PID"
         if [ $? -ne 0 ]; then
-            echo -e "${RED}[!] Failed to start web container! (Check for port conflicts)${NC}\n"
+            echo -e "${RED}[!] Failed to start containers! (Check for port conflicts)${NC}\n"
             tail -n 25 docker_build.log
             exit 1
         fi
-        echo -e "${GREEN}[✓] Web container running.${NC}\n"
+        echo -e "${GREEN}[✓] Containers running.${NC}\n"
     else
         echo -e "${CYAN}[*] Performing fast container reload (~2s)...${NC}"
-        if grep -q "image: mariadb" docker-compose.yml 2>/dev/null; then
-            ( docker compose up -d db >> docker_build.log 2>&1 )
-        fi
-        ( docker compose restart web >> docker_build.log 2>&1 || docker compose up -d --no-deps web >> docker_build.log 2>&1 ) &
+        ( docker compose up -d --remove-orphans >> docker_build.log 2>&1 ) &
         RESTART_PID=$!
-        run_with_spinner "Reloading web services" "docker_build.log" "$RESTART_PID"
+        run_with_spinner "Reloading containers" "docker_build.log" "$RESTART_PID"
         if [ $? -ne 0 ]; then
-            echo -e "${RED}[!] Failed to reload web container! (Check for port conflicts)${NC}\n"
+            echo -e "${RED}[!] Failed to reload containers! (Check for port conflicts)${NC}\n"
             tail -n 25 docker_build.log
             exit 1
         fi
-        echo -e "${GREEN}[✓] Web services hot-reloaded.${NC}\n"
+        echo -e "${GREEN}[✓] Containers hot-reloaded.${NC}\n"
     fi
 
     echo -e "${CYAN}[*] Waiting for container initialization (Prisma client generation & migration)...${NC}"
@@ -774,10 +768,10 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
         fi
     else
         # Ensure Go container is running if it was stopped (e.g., during a wipe)
-        if docker ps -a --format '{{.Names}}' | grep -q '^saints-lobby$'; then
-            if ! docker ps --format '{{.Names}}' | grep -q '^saints-lobby$'; then
+        if docker ps -a --format '{{.Names}}' | grep -q '^saints-gaming-mmo-go$'; then
+            if ! docker ps --format '{{.Names}}' | grep -q '^saints-gaming-mmo-go$'; then
                 echo -e "${CYAN}[*] Restarting Go MMO container...${NC}"
-                docker start saints-lobby >/dev/null 2>&1 || true
+                docker start saints-gaming-mmo-go >/dev/null 2>&1 || true
             fi
         fi
     fi
