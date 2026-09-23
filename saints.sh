@@ -701,6 +701,7 @@ fi
               GO_MMO_SUBDOMAIN_CHOSEN=$(whiptail --title "Go MMO Subdomain" --inputbox "Subdomain for Go MMO sockets:" 10 60 "go.$DOMAIN" 3>&1 1>&2 2>&3) || true
               if [ -n "$GO_MMO_SUBDOMAIN_CHOSEN" ]; then
                   GO_MMO_PUBLIC_URL="https://$GO_MMO_SUBDOMAIN_CHOSEN"
+                  bash "$ROOT/saints.sh" proxy add "$GO_MMO_SUBDOMAIN_CHOSEN" 127.0.0.1 "$GO_MMO_PORT" -y || true
               fi
           fi
       else
