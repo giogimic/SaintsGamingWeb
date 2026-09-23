@@ -1,3 +1,6 @@
+## [2.1.968] - 2026-09-23
+- **Bugfix**: Fixed Next.js build failure in `GameUI.tsx` caused by a missing import path for `useGameStore`.
+
 ## [2.1.967] - 2026-09-23
 - **Feature**: Replaced discrete 1-tile grid hops with continuous floating-point camera-relative movement in 3D maps.
 - **Bugfix**: Fixed player sprite disappearing in 3D maps by correctly mapping the 3D Z depth to altitude instead of relying on the 2D Y coordinate.

@@ -8,7 +8,7 @@ import { ShopOverlay } from './overlays/ShopOverlay';
 import { CraftingOverlay } from './overlays/CraftingOverlay';
 import { SpiritGateDialer } from './windows/SpiritGateDialer';
 
-import { useGameStore } from '@/client/state/useGameStore';
+import { useGameStore } from '@/web/components/the-lobby/store';
 import { useSessionStore } from '@/client/state/useSessionStore';
 import GameOptionsMenu from '@/web/components/the-lobby/hud/GameOptionsMenu';
 
