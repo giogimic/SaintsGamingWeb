@@ -1,3 +1,8 @@
+## [2.1.969] - 2026-09-23
+- **Bugfix**: Fixed `worldHandlers.ts` not populating the map manifest data on join in the decoupled client, which caused the physics engine and chunk streamer to fallback to 2D Tilemap logic (grid-locked movement and no streaming).
+- **Bugfix**: Fixed `LocalMovementSystem.ts` applying delta-time math incorrectly, which caused players to move at 250 units/frame and hit chunk walls instantly when 3D movement was active.
+- **Bugfix**: Fixed `EntityRenderer.ts` inverting the Z-coordinate for 3D maps, which previously caused the player sprite to render backwards out of the camera's view instead of sitting on the voxel terrain.
+
 ## [2.1.968] - 2026-09-23
 - **Bugfix**: Fixed Next.js build failure in `GameUI.tsx` caused by a missing import path for `useGameStore`.
 

@@ -217,12 +217,15 @@ export class EntityRenderer {
         rect.addControl(text);
       }
 
+      const activeMap = useWorldStore.getState().activeMapData;
+      const is3D = activeMap && (activeMap.mapType === 'VOXEL' || activeMap.mapType === 'FRACTAL' || activeMap.mapType === 'HYBRID');
+
       sprite = {
         mesh,
         label: labelMesh,
         gui,
         targetX: data.x,
-        targetZ: -data.y,
+        targetZ: is3D ? data.y : -data.y,
         targetY: ENTITY_GROUND_CLEARANCE,
         lastSeen: now,
       };
@@ -230,14 +233,17 @@ export class EntityRenderer {
     }
 
     // Update target position (interpolation happens in update loop)
+    const activeMap = useWorldStore.getState().activeMapData;
+    const is3D = activeMap && (activeMap.mapType === 'VOXEL' || activeMap.mapType === 'FRACTAL' || activeMap.mapType === 'HYBRID');
+
     sprite.targetX = data.x;
-    sprite.targetZ = -data.y; // Babylon Z is inverted 2D Y
+    sprite.targetZ = is3D ? data.y : -data.y; // Babylon Z is inverted 2D Y only for 2D maps
     
     // Auto-resolve terrain height so sprites aren't trapped in the geometry floor
     let terrainY = 0;
     const world = mapMesher.getVoxelWorld();
     if (world) {
-      terrainY = world.getTopSolidVoxelY(data.x, -data.y) + world.originOffsetY;
+      terrainY = world.getTopSolidVoxelY(data.x, sprite.targetZ) + world.originOffsetY;
     }
     sprite.targetY = terrainY + ENTITY_GROUND_CLEARANCE;
     

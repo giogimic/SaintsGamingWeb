@@ -115,9 +115,10 @@ export class LocalMovementSystem {
         const moveX = normX * Math.cos(yaw) + normZ * Math.sin(yaw);
         const moveZ = -normX * Math.sin(yaw) + normZ * Math.cos(yaw);
         
-        // Convert to delta-time movement
-        dx = moveX * speed * dt;
-        dz = moveZ * speed * dt;
+        // Convert to delta-time movement (dt is in milliseconds)
+        const dtSec = dt / 1000.0;
+        dx = moveX * speed * dtSec;
+        dz = moveZ * speed * dtSec;
       } else {
         // Discrete 2D grid movement
         if (now - this.lastMoveCommandTime < this.MOVE_THROTTLE_MS) return;

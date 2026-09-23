@@ -43,6 +43,11 @@ export function onMapJoined(data: MapJoinedPayload): void {
     false,
   );
   useMultiplayerStore.getState().setOtherPlayers({});
+
+  // Ensure the client loads the map manifest so we have activeMapData for physics & rendering
+  loadMap(data.mapId).then((mapData: any) => {
+    useWorldStore.getState().setActiveMapData(mapData);
+  }).catch((err: any) => console.error('[worldHandlers] Failed to load map data on join:', err));
   worldStreamer.loadManifest(data.mapId).then(() => {
     return worldStreamer.requestSpawnRegion(data.x, data.y, data.z);
   }).catch((err) => {
