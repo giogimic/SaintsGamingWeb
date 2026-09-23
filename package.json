@@ -19,7 +19,7 @@
     "start:next": "next start",
     "lint": "eslint",
     "release": "node scripts/release.mjs",
-    "clean:disk": "bash scripts/cleanup-disk.sh",
+    "clean:disk": "node scripts/cleanup-disk.mjs",
     "test": "vitest run",
     "test:e2e": "vitest run test/e2e",
     "validate:hooks": "tsx scripts/validate-hooks.ts",
