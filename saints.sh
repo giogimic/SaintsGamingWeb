@@ -629,11 +629,12 @@ if [ "$EXISTING_CADDY_ADDITIVE" != "1" ]; then
             echo -e "\033[0;36m[*] Installing Caddy...\033[0m"
             sudo apt update
             sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
-            curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+            curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --batch --yes --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
             curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
             sudo apt update && sudo apt install -y caddy
         fi
         SSL_CHOICE="Caddy (Automatic HTTPS)"
+        sudo mkdir -p /etc/caddy
         cat <<CADDYEOF | sudo tee /etc/caddy/Caddyfile
 $DOMAIN, www.$DOMAIN {
     reverse_proxy 127.0.0.1:$WEB_PORT
