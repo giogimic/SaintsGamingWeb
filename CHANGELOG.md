@@ -1,3 +1,6 @@
+## [2.1.971] - 2026-09-23
+- **Bugfix**: Fixed a Next.js build failure caused by an incorrect import path for `InputManager` inside `CameraManager.ts`.
+
 ## [2.1.970] - 2026-09-23
 - **Bugfix**: Implemented the missing Pointer Lock `mousemove` event processing in `CameraManager.ts`. Mouse movement now actually updates the camera's yaw and pitch in `free` and `firstperson` modes, ensuring WASD moves relative to where the camera is facing.
 - **Bugfix**: Fixed `GameCanvas.tsx` to listen for browser `pointerlockchange` events and automatically open the system ESC menu if pointer lock is lost (e.g., when the user presses ESC).

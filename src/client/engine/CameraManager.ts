@@ -16,7 +16,7 @@ import * as BABYLON from '@babylonjs/core';
 import { usePlayerStore } from '../state/usePlayerStore';
 import { useWorldStore } from '../state/useWorldStore';
 import { mapMesher } from './MapMesher';
-import { inputManager } from './input/InputManager';
+import { inputManager } from '../input/InputManager';
 
 export type CameraStyle = 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson' | 'dynamic';
 
