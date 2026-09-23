@@ -39,7 +39,7 @@ export class Renderer {
             this.engine.engine.setHardwareScalingLevel(1 / resolutionScale);
           }
           if (postProcessing !== undefined && this.vignettePostProcess) {
-            this.vignettePostProcess.isEnabled = postProcessing;
+            this.vignettePostProcess.vignetteEnabled = postProcessing;
           }
           if (shadows !== undefined) {
             this.setCameraSettings({ shadowsEnabled: shadows });
