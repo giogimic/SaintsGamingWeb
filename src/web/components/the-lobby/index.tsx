@@ -2062,7 +2062,7 @@ export default function TheLobby({
             onExitStudio={() => {
               useEditorStore.getState().toggleCreationMode();
               useGameStore.getState().setGameMode('EXPLORING');
-              setIsOptionsOpen(false);
+              useGameStore.getState().closeSystemMenu();
             }}
           />
         ) : (
