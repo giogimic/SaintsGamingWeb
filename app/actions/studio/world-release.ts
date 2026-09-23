@@ -122,8 +122,8 @@ export async function getProjectMapsList(projectIdOrSlug: string = 'saints') {
 
     return await prisma.worldMap.findMany({
       where: { projectId: { in: targetProjectIds } },
-      select: { id: true, title: true, type: true },
-      orderBy: { title: 'asc' }
+      select: { id: true, name: true, mapType: true },
+      orderBy: { name: 'asc' }
     });
   } catch (err) {
     console.error('[getProjectMapsList]', err);

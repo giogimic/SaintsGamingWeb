@@ -49,7 +49,7 @@ export const WorldManagerPanel: React.FC = () => {
   const [titleInput, setTitleInput] = useState('');
   const [descInput, setDescInput] = useState('');
   const [spawnMapIdInput, setSpawnMapIdInput] = useState('');
-  const [projectMaps, setProjectMaps] = useState<{ id: string; title: string; type: string }[]>([]);
+  const [projectMaps, setProjectMaps] = useState<{ id: string; name: string; mapType: string }[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -507,7 +507,7 @@ export const WorldManagerPanel: React.FC = () => {
                   className="rounded bg-black/50 px-2.5 py-1.5 border border-[#806f47]/30 text-slate-200 text-xs"
                 >
                   {projectMaps.map(m => (
-                    <option key={m.id} value={m.id}>{m.title} ({m.type})</option>
+                    <option key={m.id} value={m.id}>{m.name} ({m.mapType})</option>
                   ))}
                 </select>
               </label>

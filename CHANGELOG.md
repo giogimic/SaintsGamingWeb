@@ -1,4 +1,4 @@
-## [2.1.963] - 2026-09-23
+## [2.1.964] - 2026-09-23
 - **Feature**: Moved Default Spawn Map selection from a global project setting to the World Manager Release window, allowing the explicit canonical spawn map to be chosen from a dropdown containing all Voxel, Tile, and Fractal maps during compilation. Removed legacy fallback configurations and the deprecated Spawn Editor tool.
 
 ## [2.1.944] - 2026-09-22
