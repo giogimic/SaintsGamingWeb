@@ -79,15 +79,16 @@ export const WorldManagerPanel: React.FC = () => {
     loadSnapshots();
   }, [dataVersion]);
 
+  const handleOpenCreate = async () => {
+    setShowPublishModal(true);
+    const maps = await getProjectMapsList('saints');
+    setProjectMaps(maps);
+    if (maps.length > 0 && !spawnMapIdInput) {
+      setSpawnMapIdInput(maps[0].id);
+    }
+  };
+
   useEffect(() => {
-    const handleOpenCreate = async () => {
-      setShowPublishModal(true);
-      const maps = await getProjectMapsList('saints');
-      setProjectMaps(maps);
-      if (maps.length > 0 && !spawnMapIdInput) {
-        setSpawnMapIdInput(maps[0].id);
-      }
-    };
     const handleDeployLatest = () => {
       // Find the latest snapshot in the current snapshots list
       // Since it's sorted by id desc, index 0 is latest
@@ -182,7 +183,7 @@ export const WorldManagerPanel: React.FC = () => {
             {
               label: 'Publish World Release',
               shortcut: 'Ctrl+Shift+P',
-              onClick: () => setShowPublishModal(true),
+              onClick: handleOpenCreate,
             },
             { divider: true, label: '' },
             {
@@ -201,7 +202,7 @@ export const WorldManagerPanel: React.FC = () => {
         <WindowMenuButton
           label="Publish World"
           icon={UploadCloud}
-          onClick={() => setShowPublishModal(true)}
+          onClick={handleOpenCreate}
           title="Publish the active world state as a new immutable release"
         />
         <WindowMenuButton

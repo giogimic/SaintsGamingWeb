@@ -1,3 +1,7 @@
+## [2.1.972] - 2026-09-23
+- **Bugfix**: Fixed a race condition in `MapMesher.ts` where joining a 3D/Fractal map would cause the newly streamed-in chunks to be immediately destroyed and cleared from memory when the active map data finished loading.
+- **Bugfix**: Fixed the "Publish World" buttons in the Studio Release Manager not firing the necessary data fetches to populate the Spawn Map dropdown.
+
 ## [2.1.971] - 2026-09-23
 - **Bugfix**: Fixed a Next.js build failure caused by an incorrect import path for `InputManager` inside `CameraManager.ts`.
 

@@ -58,10 +58,13 @@ export class MapMesher {
 
   private buildMap(mapData: any) {
     if (!this.scene || !this.tileRoot || !mapData) return;
-    this.clearMap();
     const mapType: string = (mapData.mapType || 'TILE').toUpperCase();
-    if (mapType === 'VOXEL' || mapType === 'FRACTAL' || mapType === 'HYBRID') this.buildVoxelMap(mapData);
-    else this.buildTileMap(mapData);
+    if (mapType === 'VOXEL' || mapType === 'FRACTAL' || mapType === 'HYBRID') {
+      this.buildVoxelMap(mapData);
+    } else {
+      this.clearMap();
+      this.buildTileMap(mapData);
+    }
   }
 
   private buildTileMap(mapData: any) {
