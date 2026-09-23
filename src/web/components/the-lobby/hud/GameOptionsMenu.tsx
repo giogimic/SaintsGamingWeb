@@ -170,7 +170,7 @@ export default function GameOptionsMenu({
   };
 
   const clientSettings = useGameStore((state) => state.clientSettings);
-  const updateClientSettings = useGameStore((state) => state.updateClientSettings);
+  const patchClientSettings = useGameStore((state) => state.patchClientSettings);
 
   // Audio Settings
   const masterVolume = Math.round((clientSettings?.audio?.masterVolume ?? 1.0) * 100);
@@ -200,14 +200,11 @@ export default function GameOptionsMenu({
   const inGameVignette = clientSettings?.camera?.vignetteEnabled ?? true;
 
   const saveInGameCamera = (style: any, smooth: number, clamp: boolean, vig: boolean) => {
-    updateClientSettings({
-      camera: {
-        ...clientSettings?.camera,
-        profile: style,
-        smoothing: smooth / 100,
-        borderClamping: clamp,
-        vignetteEnabled: vig,
-      }
+    patchClientSettings('camera', {
+      profile: style,
+      smoothing: smooth / 100,
+      borderClamping: clamp,
+      vignetteEnabled: vig,
     });
   };
 
@@ -611,7 +608,7 @@ export default function GameOptionsMenu({
                           type="button"
                           onClick={() => {
                             soundSynth?.playUiClick?.();
-                            updateClientSettings({ graphics: { ...clientSettings?.graphics, quality: q } });
+                            patchClientSettings('graphics', { quality: q });
                             showToast(`Graphics set to ${q.toUpperCase()}`);
                           }}
                           className={`py-1.5 rounded text-xs font-bold uppercase transition-all border cursor-pointer ${
@@ -635,7 +632,7 @@ export default function GameOptionsMenu({
                           type="button"
                           onClick={() => {
                             soundSynth?.playUiClick?.();
-                            updateClientSettings({ graphics: { ...clientSettings?.graphics, maxFps: fps === 'uncapped' ? 0 : parseInt(fps) } });
+                            patchClientSettings('graphics', { maxFps: fps === 'uncapped' ? 0 : parseInt(fps) });
                           }}
                           className={`py-1.5 rounded text-xs font-bold transition-all border cursor-pointer ${
                             targetFps === fps
@@ -654,7 +651,7 @@ export default function GameOptionsMenu({
                     <input
                       type="checkbox"
                       checked={showDamageNumbers}
-                      onChange={(e) => updateClientSettings({ gameplay: { ...clientSettings?.gameplay, damageNumbers: e.target.checked } })}
+                      onChange={(e) => patchClientSettings('gameplay', { damageNumbers: e.target.checked })}
                       className="accent-primary rounded"
                     />
                   </label>
@@ -698,7 +695,7 @@ export default function GameOptionsMenu({
                     <input
                       type="checkbox"
                       checked={isMuted}
-                      onChange={(e) => updateClientSettings({ audio: { ...clientSettings?.audio, masterVolume: e.target.checked ? 0 : 1.0 } })}
+                      onChange={(e) => patchClientSettings('audio', { masterVolume: e.target.checked ? 0 : 1.0 })}
                       className="accent-primary rounded"
                     />
                   </label>
@@ -716,7 +713,7 @@ export default function GameOptionsMenu({
                           max={100}
                           step={5}
                           value={masterVolume}
-                          onChange={(e) => updateClientSettings({ audio: { ...clientSettings?.audio, masterVolume: parseInt(e.target.value) / 100 } })}
+                          onChange={(e) => patchClientSettings('audio', { masterVolume: parseInt(e.target.value) / 100 })}
                           className="w-full accent-primary h-1.5 cursor-pointer"
                         />
                       </div>
@@ -733,7 +730,7 @@ export default function GameOptionsMenu({
                           step={5}
                           value={sfxVolume}
                           onChange={(e) => {
-                            updateClientSettings({ audio: { ...clientSettings?.audio, sfxVolume: parseInt(e.target.value) / 100 } });
+                            patchClientSettings('audio', { sfxVolume: parseInt(e.target.value) / 100 });
                             soundSynth?.playUiClick?.();
                           }}
                           className="w-full accent-primary h-1.5 cursor-pointer"
@@ -751,7 +748,7 @@ export default function GameOptionsMenu({
                           max={100}
                           step={5}
                           value={musicVolume}
-                          onChange={(e) => updateClientSettings({ audio: { ...clientSettings?.audio, musicVolume: parseInt(e.target.value) / 100 } })}
+                          onChange={(e) => patchClientSettings('audio', { musicVolume: parseInt(e.target.value) / 100 })}
                           className="w-full accent-primary h-1.5 cursor-pointer"
                         />
                       </div>
@@ -946,7 +943,7 @@ export default function GameOptionsMenu({
                     <input
                       type="checkbox"
                       checked={showPeerNameplates}
-                      onChange={(e) => updateClientSettings({ gameplay: { ...clientSettings?.gameplay, showNames: e.target.checked } })}
+                      onChange={(e) => patchClientSettings('gameplay', { showNames: e.target.checked })}
                       className="accent-primary rounded"
                     />
                   </label>
