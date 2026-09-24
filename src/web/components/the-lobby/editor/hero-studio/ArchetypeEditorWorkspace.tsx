@@ -547,8 +547,7 @@ export function ArchetypeEditorWorkspace() {
                 </div>
               </div>
 
-              </div>
-              
+
               <div className="pt-2 border-t border-white/5">
                  <button
                     onClick={() => f('isActive', !form.isActive)}

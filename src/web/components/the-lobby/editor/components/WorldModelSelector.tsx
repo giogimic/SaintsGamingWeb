@@ -124,7 +124,7 @@ export function WorldModelSelector({ value, onChange, label = "World Model", des
                 </div>
                 <Cuboid className="w-3 h-3 text-cyan-400 shrink-0" />
               </button>
-
+            </div>
           ) : (
             <div className="w-full p-2 bg-rose-950/20 border border-rose-500/30 rounded-lg flex items-center justify-between">
               <span className="text-[10px] font-bold text-rose-300">Asset Workflow WIP</span>
