@@ -6666,3 +6666,10 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 ## [v2.1.932] - 2026-09-21
 ### Fixed
 - Updated samp-sidecar Dockerfile to use ookworm-slim base image to resolve 404 errors during pt-get update caused by Debian 11 (Bullseye) repositories moving to archive.
+
+## [2.1.980] - 2026-09-24
+- Redesigned Asset Studio into Entity Studio Suite mapping Archetypes, Items, NPCs, Creatures, and Monsters into a unified sidebar layout.
+- Created visual InventoryPicker component for starting item loadouts.
+- Added 3D Model modular parameters (isModular, partOfSet, skeletonConnectionPoints) to WorldModelSelector and integrated it into the Item Studio.
+- Expanded NPC Studio to support Companion, Mercenary, and Trainer (with party builder) roles.
+- Added local fbx2gltf conversion script for 3D character pipeline.

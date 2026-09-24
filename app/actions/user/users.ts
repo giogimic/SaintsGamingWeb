@@ -108,6 +108,7 @@ export async function getPublicProfile(username: string) {
     gameCharacters,
     steamWishlist,
     profileImages,
+    sampSessions,
     likesReceived,
     sharesRes,
     commentsReceived
@@ -141,6 +142,21 @@ export async function getPublicProfile(username: string) {
           where: { userId: user.id },
           select: { id: true, url: true }
         }) 
+      : Promise.resolve([]),
+
+    canView(settings.sampVisibility)
+      ? prisma.sampPlayerSession.findMany({
+          where: { userId: user.id },
+          select: {
+            id: true,
+            playerName: true,
+            score: true,
+            isOnline: true,
+            lastSeen: true,
+            server: { select: { name: true } }
+          },
+          orderBy: { lastSeen: 'desc' }
+        })
       : Promise.resolve([]),
 
     prisma.socialReaction.count({ where: { post: { authorId: user.id } } }),
@@ -210,6 +226,96 @@ export async function getPublicProfile(username: string) {
     gameCharacters,
     steamWishlist,
     profileImages,
+    sampSessions,
     pinnedCreature
   };
+}
+
+export async function getProfileFriends(targetUserId: string, page = 1, limit = 20) {
+  const session = await auth();
+  const currentUserId = session?.user?.id;
+
+  const targetUser = await prisma.user.findUnique({
+    where: { id: targetUserId },
+    select: { profileSettings: true }
+  });
+
+  if (!targetUser) return { friends: [], hasMore: false };
+
+  let isModerator = false;
+  if (currentUserId) {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: { permissionLevel: true }
+    });
+    isModerator = currentUser ? currentUser.permissionLevel >= 50 : false;
+  }
+
+  const isOwner = currentUserId === targetUserId;
+
+  let friendshipStatus = null;
+  if (currentUserId && !isOwner) {
+    const friendship = await prisma.friendship.findFirst({
+      where: {
+        OR: [
+          { userId: currentUserId, friendId: targetUserId },
+          { userId: targetUserId, friendId: currentUserId }
+        ]
+      }
+    });
+    if (friendship) {
+      friendshipStatus = friendship.status;
+    }
+  }
+
+  const visibility = targetUser.profileSettings?.friendsVisibility || "HIDDEN";
+
+  let canView = false;
+  if (isOwner || isModerator) canView = true;
+  else if (visibility === "PUBLIC") canView = true;
+  else if (visibility === "FRIENDS" && friendshipStatus === "ACCEPTED") canView = true;
+
+  if (!canView) return { friends: [], hasMore: false };
+
+  const friendships = await prisma.friendship.findMany({
+    where: {
+      status: "ACCEPTED",
+      OR: [
+        { userId: targetUserId },
+        { friendId: targetUserId }
+      ]
+    },
+    orderBy: { createdAt: "desc" },
+    skip: (page - 1) * limit,
+    take: limit + 1,
+    include: {
+      user: { select: { id: true, username: true, displayName: true, image: true, level: true, isVIP: true } },
+      friend: { select: { id: true, username: true, displayName: true, image: true, level: true, isVIP: true } }
+    }
+  });
+
+  const hasMore = friendships.length > limit;
+  const itemsToReturn = friendships.slice(0, limit);
+
+  const friends = itemsToReturn.map(f => {
+    const otherUser = f.userId === targetUserId ? f.friend : f.user;
+    return {
+      id: otherUser.id,
+      username: otherUser.username,
+      displayName: otherUser.displayName,
+      image: otherUser.image,
+      level: otherUser.level,
+      isVIP: otherUser.isVIP,
+      friendsSince: f.createdAt
+    };
+  });
+
+  // Deterministic order by ID for ties in createdAt
+  friends.sort((a, b) => {
+    const dateDiff = b.friendsSince.getTime() - a.friendsSince.getTime();
+    if (dateDiff !== 0) return dateDiff;
+    return a.id.localeCompare(b.id);
+  });
+
+  return { friends, hasMore };
 }

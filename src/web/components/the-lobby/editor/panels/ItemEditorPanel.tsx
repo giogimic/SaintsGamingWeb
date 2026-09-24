@@ -14,6 +14,7 @@ import {
 import type { ItemTemplate } from '@prisma/client';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';
+import { WorldModelSelector, WorldModelValue } from '../components/WorldModelSelector';
 
 function itemResourceKey(form: ItemTemplateInput, activeSlug: string | null): string {
   if (!activeSlug || !form.slug) return 'item:new';
@@ -366,15 +367,18 @@ export const ItemEditorPanel: React.FC = () => {
           </label>
         </div>
 
-        <div>
-          <label className="block text-[10px] font-bold text-[#806f47] mb-1 uppercase tracking-wider">
-            Visual Data (JSON for 3D Models / 2D Assets)
-          </label>
-          <textarea
-            className="w-full h-16 bg-[#111a2a] border border-[#806f47]/40 rounded px-3 py-2 outline-none focus:border-[#cbb26a] font-mono text-[10px] text-[#e2d5b3] resize-none"
-            placeholder='e.g. {"type": "3D Model", "assetId": "SwordMesh01"}'
-            value={formData.visualData}
-            onChange={(e) => setFormData({ ...formData, visualData: e.target.value })}
+        <div className="bg-[#0a101b] border border-[#806f47]/20 rounded-xl p-4">
+          <WorldModelSelector
+            value={(() => {
+              try {
+                return JSON.parse(formData.visualData || '{"type":"2D Sprite", "assetId":""}');
+              } catch {
+                return { type: '2D Sprite', assetId: '' };
+              }
+            })()}
+            onChange={(val) => setFormData({ ...formData, visualData: JSON.stringify(val) })}
+            label="Item Asset Representation"
+            description="The 3D model or 2D sprite used when the item is dropped in the world."
           />
         </div>
 

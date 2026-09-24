@@ -20,6 +20,7 @@ export function NpcEditorPanel() {
   const [isNew, setIsNew] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   const fetchNpcs = async () => {
     setLoading(true);
@@ -131,64 +132,47 @@ export function NpcEditorPanel() {
     setComponent('appearance', { assetProfileId: val.type, assetId: val.assetId });
   };
 
-  const toggleCapability = (cap: 'shopkeeper' | 'banker' | 'questGiver', val: boolean) => {
+  const toggleCapability = (cap: 'shopkeeper' | 'banker' | 'questGiver' | 'mercenary' | 'companion' | 'trainer', val: boolean) => {
     setComponent('capabilities', { [cap]: val });
   };
 
   const inputCls = "w-full bg-[#050b14] border border-amber-900/50 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-amber-500 transition-colors";
   const labelCls = "block text-[9px] font-black text-amber-500/80 uppercase tracking-[0.15em] mb-1 mt-3";
 
-  const getCap = (cap: 'shopkeeper' | 'banker' | 'questGiver') => {
+  const getCap = (cap: 'shopkeeper' | 'banker' | 'questGiver' | 'mercenary' | 'companion' | 'trainer') => {
     return form.componentsData.capabilities?.[cap] || false;
   };
+
+  const filteredNpcs = npcs.filter(n => n.name.toLowerCase().includes(search.toLowerCase()) || n.slug.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="relative h-full min-h-0">
       <CatalogEditorShell
         title="NPC Studio"
-        blurb={loading ? 'Loading NPCs...' : `Catalog mode · ${npcs.length} global NPCs`}
-        dirty={isNew}
-        toolbar={
-          <button onClick={handleNew} className="rounded p-1.5 text-emerald-400 hover:bg-white/5"><Plus size={14} /></button>
-        }
-        list={
-          <div className="space-y-1">
-            {npcs.map((n) => (
-              <button
-                key={n.slug}
-                onClick={() => handleSelect(n)}
-                className={`w-full text-left px-2 py-1.5 rounded flex items-center gap-2 ${selected?.slug === n.slug && !isNew ? 'bg-amber-500/20 border border-amber-500/50 text-amber-100' : 'hover:bg-white/5 text-slate-300'}`}
-              >
-                <Smile size={14} className={selected?.slug === n.slug ? 'text-amber-400' : 'text-slate-500'} />
-                <div className="truncate text-[11px] font-bold">{n.name}</div>
-              </button>
-            ))}
-          </div>
-        }
+        items={filteredNpcs}
+        activeId={selected?.slug || null}
+        getItemId={(n) => n.slug}
+        getItemName={(n) => n.name}
+        isDirty={() => isNew}
+        search={search}
+        onSearchChange={setSearch}
+        onSelect={(slug) => { const n = npcs.find(x => x.slug === slug); if (n) handleSelect(n); }}
+        onCreateNew={handleNew}
+        onSave={handleSave}
+        onDelete={handleDelete}
+        saving={false}
+        validationError={status?.type === 'error' ? status.msg : null}
       >
-        {status && (
-          <div className={`mb-2 flex items-center gap-1 rounded px-2 py-1 text-[10px] ${status.type === 'success' ? 'bg-emerald-900/40 text-emerald-200' : 'bg-red-900/40 text-red-200'}`}>
-            {status.type === 'success' ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
+        {status?.type === 'success' && (
+          <div className="mb-2 flex items-center gap-1 rounded px-2 py-1 text-[10px] bg-emerald-900/40 text-emerald-200">
+            <CheckCircle2 size={12} />
             {status.msg}
           </div>
         )}
 
         {(selected || isNew) ? (
           <div className="flex flex-col h-full overflow-hidden">
-            <div className="flex items-center justify-between border-b border-amber-900/50 pb-2 mb-2">
-              <span className="text-[11px] font-bold text-amber-300">{isNew ? 'New NPC' : `Editing ${selected?.name}`}</span>
-              <div className="flex gap-2">
-                <button onClick={handleSave} className="px-3 py-1 bg-amber-600/50 text-amber-100 text-[10px] font-bold uppercase rounded hover:bg-amber-600 flex items-center gap-1">
-                  <Save size={12} /> Save
-                </button>
-                {selected && (
-                  <button onClick={handleDelete} className="px-2 py-1 text-red-400 hover:bg-red-900/30 rounded">
-                    <Trash2 size={12} />
-                  </button>
-                )}
-              </div>
-            </div>
-            
+
             <div className="flex-1 overflow-y-auto space-y-2 p-1">
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -254,6 +238,49 @@ export function NpcEditorPanel() {
                     <span className="text-[11px] text-amber-100 font-bold">Quest Giver</span>
                     <span className="text-[9px] text-slate-500 ml-1">— Interacts with the Quest system.</span>
                   </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={getCap('mercenary')} 
+                      onChange={e => toggleCapability('mercenary', e.target.checked)} 
+                      className="rounded bg-[#050b14] border-amber-900/50 text-amber-500 focus:ring-amber-500 focus:ring-offset-0"
+                    />
+                    <span className="text-[11px] text-amber-100 font-bold">Mercenary</span>
+                    <span className="text-[9px] text-slate-500 ml-1">— Combat follower for hire.</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={getCap('companion')} 
+                      onChange={e => toggleCapability('companion', e.target.checked)} 
+                      className="rounded bg-[#050b14] border-amber-900/50 text-amber-500 focus:ring-amber-500 focus:ring-offset-0"
+                    />
+                    <span className="text-[11px] text-amber-100 font-bold">Companion</span>
+                    <span className="text-[9px] text-slate-500 ml-1">— Non-combat follower.</span>
+                  </label>
+                  <div className="pt-2 border-t border-amber-900/20">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={getCap('trainer')} 
+                        onChange={e => toggleCapability('trainer', e.target.checked)} 
+                        className="rounded bg-[#050b14] border-amber-900/50 text-amber-500 focus:ring-amber-500 focus:ring-offset-0"
+                      />
+                      <span className="text-[11px] text-amber-100 font-bold">Trainer (Battle)</span>
+                      <span className="text-[9px] text-slate-500 ml-1">— Fights the player using a party of creatures.</span>
+                    </label>
+                    {getCap('trainer') && (
+                      <div className="mt-2 pl-6">
+                        <label className="block text-[9px] font-black text-amber-500/80 uppercase tracking-[0.15em] mb-1">Trainer Party (JSON Array)</label>
+                        <input 
+                          value={(form.componentsData as any).trainerParty || '[]'} 
+                          onChange={e => setForm(prev => ({ ...prev, componentsData: { ...prev.componentsData, trainerParty: e.target.value } }))} 
+                          className="w-full bg-[#050b14] border border-amber-900/50 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-amber-500 transition-colors"
+                          placeholder='e.g. ["creature_goblin", "creature_wolf"]'
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

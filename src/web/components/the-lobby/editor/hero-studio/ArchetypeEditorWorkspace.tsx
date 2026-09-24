@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { WorldModelSelector, WorldModelValue } from '../components/WorldModelSelector';
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
+import { InventoryPicker } from '../components/InventoryPicker';
 import { cn } from '@/shared/lib/utils';
 
 const EMPTY_HERO: StarterHeroData = {
@@ -374,36 +375,35 @@ export function ArchetypeEditorWorkspace() {
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* LEFT COLUMN: Identity & Visuals (5 cols) */}
-          <div className="lg:col-span-5 space-y-6">
+          {/* LEFT COLUMN: Archetype Details (6 cols) */}
+          <div className="lg:col-span-6 space-y-6">
             
-            {/* Box 1: Core Identity */}
+            {/* Box 1: Core Identity & Loadout */}
             <div className="bg-[#0a101b]/80 border border-slate-800/80 rounded-2xl p-5 space-y-5 backdrop-blur-xl shadow-lg">
-              <div className="flex items-center gap-2 border-b border-pink-500/10 pb-3">
-                <UserCircle className="text-pink-400/80" size={16} />
-                <h3 className="text-xs font-black text-pink-400/80 uppercase tracking-widest">Core Identity</h3>
+              <div className="flex items-center gap-2 border-b border-amber-500/10 pb-3">
+                <UserCircle className="text-amber-400/80" size={16} />
+                <h3 className="text-xs font-black text-amber-400/80 uppercase tracking-widest">Archetype Details</h3>
               </div>
 
               <div>
-                <label className={labelCls}>Display Name *</label>
-                <input value={form.name} onChange={e => f('name', e.target.value)} className={inputCls} placeholder="e.g. Beast Master" />
+                <label className={labelCls}>Archetype Name</label>
+                <input value={form.name} onChange={e => f('name', e.target.value)} className={inputCls} placeholder="e.g. Shadowstalker Rogue" />
               </div>
 
               <div>
-                <label className={labelCls}>System Slug *</label>
+                <label className={labelCls}>System Slug</label>
                 <input
                   value={form.slug}
                   onChange={e => f('slug', e.target.value.toLowerCase().replace(/\s+/g, '_'))}
                   className={inputCls}
-                  placeholder="e.g. beast_master"
+                  placeholder="e.g. shadowstalker_rogue"
                   disabled={!isNew}
                   style={{ opacity: isNew ? 1 : 0.6 }}
                 />
-                {!isNew && <p className="text-[9px] text-slate-500 mt-1">Slugs cannot be changed after creation.</p>}
               </div>
 
               <div>
-                <label className={labelCls}>Flavor Text</label>
+                <label className={labelCls}>Description</label>
                 <textarea
                   value={form.flavor}
                   onChange={e => f('flavor', e.target.value)}
@@ -411,77 +411,73 @@ export function ArchetypeEditorWorkspace() {
                   placeholder="A short lore-friendly description."
                   maxLength={120}
                 />
-                <p className="text-[9px] text-slate-500 mt-1 text-right">{form.flavor.length}/120</p>
+              </div>
+
+              <div className="pt-2">
+                <label className={labelCls}>Combat Class (Skill Tree)</label>
+                {classList.length === 0 ? (
+                  <p className="text-[10px] text-amber-500">No classes found in registry.</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {classList.map(cls => {
+                      const activeClasses = form.classId ? form.classId.split(',') : [];
+                      const isActive = activeClasses.includes(cls.classId);
+                      return (
+                        <button
+                          key={cls.slug}
+                          onClick={() => f('classId', isActive ? activeClasses.filter(c => c !== cls.classId).join(',') : [...activeClasses, cls.classId].join(','))}
+                          className="flex items-center justify-center p-2 rounded-xl border transition-all cursor-pointer"
+                          style={{
+                            background: isActive ? `rgba(245,158,11,0.15)` : 'rgba(255,255,255,0.02)',
+                            border: isActive ? `1px solid rgba(245,158,11,0.5)` : '1px solid rgba(255,255,255,0.05)',
+                          }}
+                        >
+                          <span className="text-xs font-black" style={{ color: isActive ? '#fbbf24' : 'rgba(255,255,255,0.4)' }}>{cls.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Box 2: Visual Representation */}
-            <div className="bg-[#0a101b]/80 border border-slate-800/80 rounded-2xl p-5 space-y-5 backdrop-blur-xl shadow-lg">
-              <div className="flex items-center gap-2 border-b border-pink-500/10 pb-3">
-                <ImageIcon className="text-pink-400/80" size={16} />
-                <h3 className="text-xs font-black text-pink-400/80 uppercase tracking-widest">Visual Model</h3>
-              </div>
-              <WorldModelSelector
-                value={getWorldModel()}
-                onChange={handleWorldModelChange}
-                label="Overworld & UI Representation"
+            {/* Box 2: Inventory */}
+            <div className="bg-[#0a101b]/80 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-xl shadow-lg">
+              <InventoryPicker 
+                value={form.startingInventory} 
+                onChange={(val) => f('startingInventory', val)} 
               />
             </div>
             
           </div>
 
-          {/* RIGHT COLUMN: Gameplay & Mechanics (7 cols) */}
-          <div className="lg:col-span-7 space-y-6">
+          {/* RIGHT COLUMN: Asset Selector & Engine Settings (6 cols) */}
+          <div className="lg:col-span-6 space-y-6">
             
-            {/* Box 3: Gameplay Settings */}
+            {/* Box 3: 3D Asset Selector */}
             <div className="bg-[#0a101b]/80 border border-slate-800/80 rounded-2xl p-5 space-y-5 backdrop-blur-xl shadow-lg">
-              <div className="flex items-center gap-2 border-b border-violet-500/10 pb-3">
-                <Swords className="text-violet-400/80" size={16} />
-                <h3 className="text-xs font-black text-violet-400/80 uppercase tracking-widest">Combat & Mechanics</h3>
+              <div className="flex items-center gap-2 border-b border-cyan-500/10 pb-3">
+                <ImageIcon className="text-cyan-400/80" size={16} />
+                <h3 className="text-xs font-black text-cyan-400/80 uppercase tracking-widest">Asset Selector</h3>
+              </div>
+              <WorldModelSelector
+                value={getWorldModel()}
+                onChange={handleWorldModelChange}
+                label="World Representation"
+              />
+            </div>
+
+            {/* Box 4: Spawn Rules & Metadata */}
+            <div className="bg-[#0a101b]/80 border border-slate-800/80 rounded-2xl p-5 space-y-5 backdrop-blur-xl shadow-lg">
+              <div className="flex items-center gap-2 border-b border-purple-500/10 pb-3">
+                <MapIcon className="text-purple-400/80" size={16} />
+                <h3 className="text-xs font-black text-purple-400/80 uppercase tracking-widest">Engine Rules</h3>
               </div>
 
-              <div className="grid grid-cols-2 gap-5">
-                {/* Combat Class */}
-                <div className="col-span-2">
-                  <label className={labelCls}>Combat Class (Skill Tree)</label>
-                  {classList.length === 0 ? (
-                    <p className="text-[10px] text-amber-500">No classes found in registry.</p>
-                  ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {classList.map(cls => {
-                        const activeClasses = form.classId ? form.classId.split(',') : [];
-                        const isActive = activeClasses.includes(cls.classId);
-                        
-                        const handleToggle = () => {
-                          if (isActive) {
-                            f('classId', activeClasses.filter(c => c !== cls.classId).join(','));
-                          } else {
-                            f('classId', [...activeClasses, cls.classId].join(','));
-                          }
-                        };
-                        
-                        return (
-                          <button
-                            key={cls.slug}
-                            onClick={handleToggle}
-                            className="flex flex-col items-center justify-center p-3 rounded-xl border transition-all cursor-pointer"
-                            style={{
-                              background: isActive ? `rgba(139,92,246,0.15)` : 'rgba(255,255,255,0.02)',
-                              border: isActive ? `1px solid rgba(139,92,246,0.5)` : '1px solid rgba(255,255,255,0.05)',
-                            }}
-                          >
-                            <span className="text-xs font-black" style={{ color: isActive ? '#a78bfa' : 'rgba(255,255,255,0.4)' }}>{cls.name}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                {/* Tags */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={labelCls}>Difficulty Tag Label</label>
-                  <input value={form.tag} onChange={e => f('tag', e.target.value)} className={inputCls} placeholder="e.g. Advanced" />
+                  <label className={labelCls}>Difficulty Tag</label>
+                  <input value={form.tag} onChange={e => f('tag', e.target.value)} className={inputCls} placeholder="e.g. Starter" />
                 </div>
                 <div>
                   <label className={labelCls}>Tag Color</label>
@@ -493,72 +489,39 @@ export function ArchetypeEditorWorkspace() {
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Box 4: Environment & Loadout */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              <div className="bg-[#0a101b]/80 border border-slate-800/80 rounded-2xl p-5 space-y-5 backdrop-blur-xl shadow-lg">
-                <div className="flex items-center gap-2 border-b border-emerald-500/10 pb-3">
-                  <MapIcon className="text-emerald-400/80" size={16} />
-                  <h3 className="text-xs font-black text-emerald-400/80 uppercase tracking-widest">Spawn Rules</h3>
-                </div>
-
-                <div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-3">
                   <label className={labelCls}>Initial Map</label>
                   <select value={form.startingMap} onChange={e => f('startingMap', e.target.value)} className={inputCls}>
-                    {mapList.length === 0 && <option value="">Default (Active Release Spawn)</option>}
+                    {mapList.length === 0 && <option value="">Default Realm</option>}
                     {mapList.map(map => <option key={map.id} value={map.id}>{map.name}</option>)}
                   </select>
                 </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={labelCls}>Spawn X</label>
-                    <input type="number" value={form.startingX} onChange={e => f('startingX', parseInt(e.target.value) || 0)} className={inputCls} />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Spawn Y</label>
-                    <input type="number" value={form.startingY} onChange={e => f('startingY', parseInt(e.target.value) || 0)} className={inputCls} />
-                  </div>
+                <div className="col-span-1">
+                  <label className={labelCls}>Spawn X</label>
+                  <input type="number" value={form.startingX} onChange={e => f('startingX', parseInt(e.target.value) || 0)} className={inputCls} />
                 </div>
-                
-                <div className="pt-2 border-t border-white/5">
-                   <label className={labelCls}>Catalog Visibility</label>
-                   <button
-                      onClick={() => f('isActive', !form.isActive)}
-                      className="w-full flex justify-between items-center px-4 py-2 rounded-lg text-xs font-bold transition-all"
-                      style={{
-                        background: form.isActive ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-                        border: form.isActive ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(239,68,68,0.3)',
-                        color: form.isActive ? '#6ee7b7' : '#fca5a5',
-                      }}
-                    >
-                      <span>{form.isActive ? 'Players can select this' : 'Hidden from character creator'}</span>
-                      {form.isActive ? <Eye size={14} /> : <EyeOff size={14} />}
-                    </button>
+                <div className="col-span-1">
+                  <label className={labelCls}>Spawn Y</label>
+                  <input type="number" value={form.startingY} onChange={e => f('startingY', parseInt(e.target.value) || 0)} className={inputCls} />
                 </div>
               </div>
-
-              <div className="bg-[#0a101b]/80 border border-slate-800/80 rounded-2xl p-5 space-y-5 backdrop-blur-xl shadow-lg flex flex-col">
-                <div className="flex items-center gap-2 border-b border-emerald-500/10 pb-3">
-                  <Package className="text-emerald-400/80" size={16} />
-                  <h3 className="text-xs font-black text-emerald-400/80 uppercase tracking-widest">Initial Loadout</h3>
-                </div>
-                <div className="flex-1 flex flex-col">
-                   <label className={labelCls}>Inventory Specification (JSON)</label>
-                   <textarea
-                     value={form.startingInventory}
-                     onChange={e => f('startingInventory', e.target.value)}
-                     className={cn(inputCls, "flex-1 resize-none font-mono text-[10px]")}
-                     placeholder='{"item_id": quantity}'
-                   />
-                   <p className="text-[9px] text-slate-500 mt-2">
-                     Standard items granted immediately upon spawning for the first time. Format: <code className="text-slate-400">{"{\"patch_kit\": 5}"}</code>
-                   </p>
-                </div>
+              
+              <div className="pt-2 border-t border-white/5">
+                 <button
+                    onClick={() => f('isActive', !form.isActive)}
+                    className="w-full flex justify-between items-center px-4 py-2 rounded-lg text-xs font-bold transition-all"
+                    style={{
+                      background: form.isActive ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                      border: form.isActive ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(239,68,68,0.3)',
+                      color: form.isActive ? '#6ee7b7' : '#fca5a5',
+                    }}
+                  >
+                    <span>{form.isActive ? 'Active in Studio' : 'Hidden from players'}</span>
+                    {form.isActive ? <Eye size={14} /> : <EyeOff size={14} />}
+                  </button>
               </div>
-
             </div>
 
           </div>

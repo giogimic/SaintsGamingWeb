@@ -14,6 +14,7 @@ import { CharactersTab } from "@/web/components/profile/tabs/CharactersTab";
 import { GamesTab } from "@/web/components/profile/tabs/GamesTab";
 import { GalleryTab } from "@/web/components/profile/tabs/GalleryTab";
 import { FriendsTab } from "@/web/components/profile/tabs/FriendsTab";
+import { SampTab } from "@/web/components/profile/tabs/SampTab";
 
 export async function generateMetadata(props: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const params = await props.params;
@@ -155,7 +156,9 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
                   <TabsTrigger value="characters" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[rgb(var(--profile-accent))] data-[state=active]:text-white rounded-none px-4 h-full text-white/60 hover:text-white/90">Characters</TabsTrigger>
                 )}
                 
-                {/* SA-MP Tab conditionally rendered - placeholder for now */}
+                {profile.sampSessions && profile.sampSessions.length > 0 && (
+                  <TabsTrigger value="samp" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[rgb(var(--profile-accent))] data-[state=active]:text-white rounded-none px-4 h-full text-white/60 hover:text-white/90">SA-MP</TabsTrigger>
+                )}
                 
                 {/* Friends Tab conditionally rendered */}
                 {profile.profileSettings.friendsVisibility !== "HIDDEN" && (
@@ -184,6 +187,11 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
           {profile.gameCharacters.length > 0 && (
             <TabsContent value="characters">
               <CharactersTab characters={profile.gameCharacters} isSelf={isSelf} profileId={profile.id} />
+            </TabsContent>
+          )}
+          {profile.sampSessions && profile.sampSessions.length > 0 && (
+            <TabsContent value="samp">
+              <SampTab sessions={profile.sampSessions} />
             </TabsContent>
           )}
           {profile.profileSettings.friendsVisibility !== "HIDDEN" && (

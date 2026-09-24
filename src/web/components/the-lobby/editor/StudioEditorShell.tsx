@@ -58,7 +58,7 @@ import { PasteOptionsToolbar } from './PasteOptionsToolbar';
 import { StudioOmnisearch } from './StudioOmnisearch';
 import { StudioFavoritesStrip } from './StudioFavoritesStrip';
 import { AssetStudioSuite } from './AssetStudioSuite';
-import { HeroStudioSuite } from './hero-studio/HeroStudioSuite';
+import { EntityStudioSuite } from './entity-studio/EntityStudioSuite';
 import { StudioContextMenu } from './StudioContextMenu';
 import { GateConnectModal } from './GateConnectModal';
 import { DestinationPlacementHUD } from './DestinationPlacementHUD';
@@ -715,8 +715,8 @@ export const StudioEditorShell: React.FC = () => {
             <AssetStudioSuite />
           </DraggablePanel>
 
-          <DraggablePanel id="hero_suite" icon={<UserCheck className="w-4 h-4" />} title="Hero Studio">
-            <HeroStudioSuite />
+          <DraggablePanel id="hero_suite" icon={<Settings2 className="w-4 h-4" />} title="Entity Studio">
+            <EntityStudioSuite />
           </DraggablePanel>
         </div>
 
