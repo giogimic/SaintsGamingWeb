@@ -81,6 +81,20 @@ interface GameCanvasBabylonProps {
   updateMapData?: (map: any) => void;
 }
 
+function getPresentationFromVisualData(visualDataStr?: string) {
+  if (!visualDataStr) return undefined;
+  try {
+    const parsed = JSON.parse(visualDataStr);
+    if (parsed.worldModel && parsed.worldModel.type === '3D Model') {
+      return {
+        mode: '3D' as const,
+        modelUrl: `/animations/Paragon/${parsed.worldModel.assetId}/Idle.glb`
+      };
+    }
+  } catch (e) {}
+  return undefined;
+}
+
 export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   onCanvasReady,
   activeBrushTileId = 17,
@@ -644,7 +658,8 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             chatMessage: liveStore.localChat || undefined,
             spriteConfig: freshPlayer.spriteConfig,
             hp: freshPlayer.hp,
-            maxHp: freshPlayer.maxHp
+            maxHp: freshPlayer.maxHp,
+            presentation: getPresentationFromVisualData(freshPlayer.visualData) as any
           });
           babylonEngine.setEntityVisible('player_main', true);
 
@@ -755,7 +770,8 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             chatMessage: other.chatMessage,
             spriteConfig: (other as any).spriteConfig,
             hp: other.hp,
-            maxHp: other.maxHp
+            maxHp: other.maxHp,
+            presentation: getPresentationFromVisualData(other.visualData) as any
           });
         }
       }

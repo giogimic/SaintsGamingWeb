@@ -645,7 +645,7 @@ public stopRenderLoop() {
     const pitch = this.cameraProfile.pitch ?? Math.PI / 4;
     const dist = this.cameraProfile.distance ?? 14;
     const yaw = this.cameraYaw || 0;
-    const camY = Math.max(1.5, dist * Math.sin(pitch));
+    const camY = Math.max(0.5, dist * Math.sin(pitch));
     const horizDist = dist * Math.cos(pitch);
     const offsetX = -horizDist * Math.sin(yaw);
     const offsetZ = -horizDist * Math.cos(yaw);
@@ -656,7 +656,7 @@ public stopRenderLoop() {
     this.camera.position = new Vector3(x + offsetX, y + camY, z + offsetZ);
     this.camera.setTarget(
       isFirstPerson 
-        ? new Vector3(x + Math.sin(yaw) * 10, targetYWithOffset, z + Math.cos(yaw) * 10)
+        ? new Vector3(x + Math.sin(yaw) * 10, targetYWithOffset + Math.tan(pitch) * 5, z + Math.cos(yaw) * 10)
         : new Vector3(x, y, z)
     );
     this.cameraSnapped = true;
@@ -699,7 +699,7 @@ public stopRenderLoop() {
     const yaw = this.cameraYaw || 0;
     const dist = this.cameraProfile.distance ?? 14;
 
-    const camY = Math.max(1.5, dist * Math.sin(pitch));
+    const camY = Math.max(0.5, dist * Math.sin(pitch));
     const horizDist = dist * Math.cos(pitch);
     const offsetX = -horizDist * Math.sin(yaw);
     const offsetZ = -horizDist * Math.cos(yaw);
@@ -717,7 +717,7 @@ public stopRenderLoop() {
     this.camera.setTarget(Vector3.Lerp(
       this.camera.getTarget(),
       isFirstPerson 
-        ? new Vector3(targetX + Math.sin(yaw) * 10, targetYWithOffset, targetZ + Math.cos(yaw) * 10)
+        ? new Vector3(targetX + Math.sin(yaw) * 10, targetYWithOffset + Math.tan(pitch) * 5, targetZ + Math.cos(yaw) * 10)
         : new Vector3(targetX, targetY, targetZ),
       smoothFactor
     ));
@@ -960,7 +960,9 @@ public rotateCamera(dxPx: number, dyPx: number) {
     
     const camStyle = this.cameraSettings.playerCameraStyle;
     if (camStyle === 'thirdPerson' || camStyle === 'firstPerson' || camStyle === 'firstperson') {
-      this.cameraProfile.pitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, (this.cameraProfile.pitch || 0) + pitchDelta));
+      // Allow looking from slightly below horizontal (-0.3 rad / ~17° down) up to ~75° up.
+      // Prevents the degenerate straight-down look-at matrix that causes camera lock.
+      this.cameraProfile.pitch = Math.max(-0.3, Math.min(Math.PI / 2.4, (this.cameraProfile.pitch ?? Math.PI / 4) + pitchDelta));
     } else {
       this.cameraPitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, this.cameraPitch + pitchDelta));
     }

@@ -1556,7 +1556,9 @@ model ItemTemplate {
   baseStats      String? // JSON: { "attackPower": 10, "gatherSpeed": 1.5 }
   stackable      Boolean @default(true)
   iconAssetId    String?
-
+  visualData     String  @default("[]") // JSON representation of 3D models or 2D sprites
+  enchantable    Boolean @default(false)
+  upgradable     Boolean @default(false)
   @@index([gameId])
   @@index([profileId])
 }

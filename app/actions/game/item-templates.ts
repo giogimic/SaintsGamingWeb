@@ -18,6 +18,9 @@ export type ItemTemplateInput = {
   baseStats?: string;
   stackable: boolean;
   iconAssetId?: string;
+  visualData?: string;
+  enchantable?: boolean;
+  upgradable?: boolean;
 };
 
 export async function listItemTemplates(searchQuery?: string) {
@@ -75,6 +78,9 @@ export async function upsertItemTemplate(input: ItemTemplateInput) {
         baseStats: input.baseStats,
         stackable: input.stackable,
         iconAssetId: input.iconAssetId,
+        visualData: input.visualData || "[]",
+        enchantable: input.enchantable || false,
+        upgradable: input.upgradable || false,
       },
       update: {
         gameId: input.gameId || "saints",
@@ -88,6 +94,9 @@ export async function upsertItemTemplate(input: ItemTemplateInput) {
         baseStats: input.baseStats,
         stackable: input.stackable,
         iconAssetId: input.iconAssetId,
+        visualData: input.visualData || "[]",
+        enchantable: input.enchantable || false,
+        upgradable: input.upgradable || false,
       },
     });
     revalidatePath("/lobby");

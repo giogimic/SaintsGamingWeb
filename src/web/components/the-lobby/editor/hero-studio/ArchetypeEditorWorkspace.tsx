@@ -449,11 +449,21 @@ export function ArchetypeEditorWorkspace() {
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {classList.map(cls => {
-                        const isActive = form.classId === cls.classId;
+                        const activeClasses = form.classId ? form.classId.split(',') : [];
+                        const isActive = activeClasses.includes(cls.classId);
+                        
+                        const handleToggle = () => {
+                          if (isActive) {
+                            f('classId', activeClasses.filter(c => c !== cls.classId).join(','));
+                          } else {
+                            f('classId', [...activeClasses, cls.classId].join(','));
+                          }
+                        };
+                        
                         return (
                           <button
                             key={cls.slug}
-                            onClick={() => f('classId', cls.classId)}
+                            onClick={handleToggle}
                             className="flex flex-col items-center justify-center p-3 rounded-xl border transition-all cursor-pointer"
                             style={{
                               background: isActive ? `rgba(139,92,246,0.15)` : 'rgba(255,255,255,0.02)',

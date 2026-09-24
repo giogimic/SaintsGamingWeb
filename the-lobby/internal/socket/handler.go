@@ -419,6 +419,9 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 			} else if req.AssetProfileID != "" {
 				prev.SpriteID = req.AssetProfileID
 			}
+			if req.VisualData != "" {
+				prev.VisualData = req.VisualData
+			}
 			if req.CharacterID != "" {
 				prev.CharacterID = req.CharacterID
 			}
@@ -488,8 +491,12 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 	if sprite == "" {
 		sprite = "player_default"
 	}
+	visualData := req.VisualData
+	if visualData == "" {
+		visualData = "[]"
+	}
 
-	p := h.eng.Players().CreateWithCharacter(accountID, req.CharacterID, sid, name, sprite, inst.InstanceID, base, x, y, z)
+	p := h.eng.Players().CreateWithCharacter(accountID, req.CharacterID, sid, name, sprite, visualData, inst.InstanceID, base, x, y, z)
 	if hot.OK && hot.Credits > 0 {
 		p.Credits = hot.Credits
 	}

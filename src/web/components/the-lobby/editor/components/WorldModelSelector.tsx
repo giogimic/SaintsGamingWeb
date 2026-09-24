@@ -4,12 +4,16 @@ import { Box, Image as ImageIcon, BoxSelect, Cuboid, MoreHorizontal } from 'luci
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 import SpriteBrowser from '../SpriteBrowser';
 import { cn } from '@/shared/lib/utils';
+import { ANIMATION_PROFILES } from '@/shared/game/animationProfiles';
 
 export type WorldModelType = '2D Sprite' | '2D Box Sprite' | '3D Model' | 'Other';
 
 export interface WorldModelValue {
   type: WorldModelType;
   assetId: string;
+  isModular?: boolean;
+  partOfSet?: string;
+  skeletonConnectionPoints?: string;
 }
 
 interface WorldModelSelectorProps {
@@ -22,7 +26,7 @@ interface WorldModelSelectorProps {
 const MODEL_OPTIONS: { id: WorldModelType; label: string; icon: any; isImplemented: boolean }[] = [
   { id: '2D Sprite', label: '2D Sprite', icon: ImageIcon, isImplemented: true },
   { id: '2D Box Sprite', label: '2D Box Sprite', icon: BoxSelect, isImplemented: false },
-  { id: '3D Model', label: '3D Model', icon: Cuboid, isImplemented: false },
+  { id: '3D Model', label: '3D Model', icon: Cuboid, isImplemented: true },
   { id: 'Other', label: 'Other', icon: MoreHorizontal, isImplemented: false },
 ];
 
@@ -97,6 +101,64 @@ export function WorldModelSelector({ value, onChange, label = "World Model", des
               </div>
               <ImageIcon className="w-3 h-3 text-cyan-400 shrink-0" />
             </button>
+          ) : value.type === '3D Model' ? (
+            <div className="w-full flex flex-col gap-2 p-3 bg-[#050b14] border border-cyan-500/30 rounded-lg transition text-left">
+              <div className="flex items-center justify-between min-w-0 mr-2 w-full">
+                <div className="flex flex-col min-w-0 flex-1">
+                  <select
+                    value={value.assetId || ''} 
+                    onChange={(e) => onChange({ ...value, assetId: e.target.value })}
+                    className="bg-black/50 text-[11px] font-bold text-cyan-300 outline-none w-full border border-cyan-500/20 rounded p-1 mb-1 cursor-pointer"
+                  >
+                    <option value="" disabled>Select 3D Animation Profile...</option>
+                    {ANIMATION_PROFILES.map(p => (
+                      <option key={p.id} value={p.id}>{p.displayName} ({p.id})</option>
+                    ))}
+                  </select>
+                  <span className="text-[9px] text-muted-foreground truncate">
+                    Maps to folder in Paragon_animations_glb.
+                  </span>
+                </div>
+                <Cuboid className="w-4 h-4 text-cyan-400 shrink-0 ml-2" />
+              </div>
+
+              <div className="border-t border-slate-800 my-1"></div>
+
+              <label className="flex items-center gap-2 cursor-pointer text-[10px] text-slate-300">
+                <input 
+                  type="checkbox" 
+                  checked={value.isModular || false} 
+                  onChange={(e) => onChange({ ...value, isModular: e.target.checked })}
+                  className="rounded bg-black border-slate-700"
+                />
+                Modular Character (Uses separate meshes)
+              </label>
+
+              {value.isModular && (
+                <div className="flex flex-col gap-2 mt-1 pl-4 border-l border-slate-800">
+                  <div>
+                    <span className="text-[9px] text-slate-500 uppercase font-bold block mb-1">Part of Set</span>
+                    <input 
+                      type="text" 
+                      value={value.partOfSet || ''} 
+                      onChange={(e) => onChange({ ...value, partOfSet: e.target.value })}
+                      placeholder="e.g. KnightArmorSet"
+                      className="bg-black/50 border border-slate-800 rounded px-2 py-1 text-[10px] text-slate-300 outline-none w-full"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-slate-500 uppercase font-bold block mb-1">Skeleton Connection Points</span>
+                    <input 
+                      type="text" 
+                      value={value.skeletonConnectionPoints || ''} 
+                      onChange={(e) => onChange({ ...value, skeletonConnectionPoints: e.target.value })}
+                      placeholder="e.g. Head,Torso,Legs,Hands"
+                      className="bg-black/50 border border-slate-800 rounded px-2 py-1 text-[10px] text-slate-300 outline-none w-full"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="w-full p-2 bg-rose-950/20 border border-rose-500/30 rounded-lg flex items-center justify-between">
               <span className="text-[10px] font-bold text-rose-300">Asset Workflow WIP</span>

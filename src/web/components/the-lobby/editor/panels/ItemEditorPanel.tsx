@@ -43,6 +43,9 @@ export const ItemEditorPanel: React.FC = () => {
     baseStats: '',
     stackable: false,
     iconAssetId: '',
+    visualData: '[]',
+    enchantable: false,
+    upgradable: false,
   });
   const [dependencies, setDependencies] = useState<{ type: string; id: string; name: string }[]>([]);
 
@@ -343,7 +346,39 @@ export const ItemEditorPanel: React.FC = () => {
             />
             Stackable Item
           </label>
+          <label className="flex items-center gap-2 text-[#a59981] cursor-pointer hover:text-[#cbb26a] transition-colors">
+            <input
+              type="checkbox"
+              checked={formData.enchantable}
+              onChange={(e) => setFormData({ ...formData, enchantable: e.target.checked })}
+              className="rounded bg-[#111a2a] border-[#806f47]/40 text-[#cbb26a] focus:ring-[#cbb26a]"
+            />
+            Enchantable
+          </label>
+          <label className="flex items-center gap-2 text-[#a59981] cursor-pointer hover:text-[#cbb26a] transition-colors">
+            <input
+              type="checkbox"
+              checked={formData.upgradable}
+              onChange={(e) => setFormData({ ...formData, upgradable: e.target.checked })}
+              className="rounded bg-[#111a2a] border-[#806f47]/40 text-[#cbb26a] focus:ring-[#cbb26a]"
+            />
+            Upgradable
+          </label>
+        </div>
 
+        <div>
+          <label className="block text-[10px] font-bold text-[#806f47] mb-1 uppercase tracking-wider">
+            Visual Data (JSON for 3D Models / 2D Assets)
+          </label>
+          <textarea
+            className="w-full h-16 bg-[#111a2a] border border-[#806f47]/40 rounded px-3 py-2 outline-none focus:border-[#cbb26a] font-mono text-[10px] text-[#e2d5b3] resize-none"
+            placeholder='e.g. {"type": "3D Model", "assetId": "SwordMesh01"}'
+            value={formData.visualData}
+            onChange={(e) => setFormData({ ...formData, visualData: e.target.value })}
+          />
+        </div>
+
+        <div className="flex gap-4 items-center">
           <div className="flex-1">
             <label className="block text-[10px] font-bold text-[#806f47] mb-1 uppercase tracking-wider">
               Base Durability (Null = Unbreakable)

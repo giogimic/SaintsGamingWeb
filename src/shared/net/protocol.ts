@@ -112,6 +112,7 @@ export interface JoinMapPayload {
   pie?: boolean;
   name?: string;
   assetProfileId?: string;
+  visualData?: string;
   spriteId?: string;
   neighborMapIds?: string[];
   x?: number;
@@ -138,6 +139,7 @@ export interface PlayerPublicSnapshot {
   accountId: string;
   name: string;
   assetProfileId: string;
+  visualData?: string;
   spriteId?: string;
   x: number;
   y: number;

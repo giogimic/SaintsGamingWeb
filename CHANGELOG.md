@@ -1,3 +1,13 @@
+## [2.1.977] - 2026-09-24
+- **Feature**: Added 3D Model parameter support (`isModular`, `partOfSet`, `skeletonConnectionPoints`) to the World Model Selector for Archetypes, NPCs, and Items.
+- **Feature**: Added `visualData`, `enchantable`, and `upgradable` fields to `ItemTemplate` database model to support 3D modular attachments.
+- **Feature**: Updated Character Creator UI to parse Archetype `visualData` and dynamically render 3D preview placeholders and updated flow options based on whether the 3D model is modular or fixed.
+- **Documentation**: Updated Saints Gaming Bible to reflect the switch from FBX to GLB/GLTF as the canonical 3D model formats.
+
+## [2.1.976] - 2026-09-24
+- **System**: Converted 5,300+ Paragon character animation FBX files to GLB format for dynamic engine loading.
+- **System**: Converted FabLibrary character models (Assassin & Modular sets) from FBX to GLB.
+
 ## [2.1.974] - 2026-09-23
 - **Feature**: Added jumping (Spacebar) and sprinting (Shift) to the 3D voxel engine.
 - **Feature**: Added gravity and vertical collision. The camera and player sprite now accurately track vertical position when falling or jumping.

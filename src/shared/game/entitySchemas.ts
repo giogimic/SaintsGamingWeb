@@ -84,6 +84,7 @@ const NPC_FIELDS: SchemaField[] = [
   { key: "destructible", label: "Destructible", type: "boolean", category: "Capabilities", defaultValue: false, description: "Can take damage and break in real-time" },
   { key: "interactable", label: "Interactable", type: "boolean", category: "Capabilities", defaultValue: true, description: "Responds to interact key / click" },
   { key: "assetProfileId", label: "Asset Profile", type: "string", category: "Appearance", defaultValue: "adventurer" },
+  { key: "visualData", label: "Visual Data (JSON)", type: "string", category: "Appearance", defaultValue: "[]" },
   { key: "scale", label: "Scale", type: "number", category: "Appearance", defaultValue: 1, min: 0.25, max: 4 },
   {
     key: "behaviour",

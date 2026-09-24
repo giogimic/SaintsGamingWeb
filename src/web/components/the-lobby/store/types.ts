@@ -220,6 +220,7 @@ export interface PlayerState {
   accountId?: string;
   name?: string;
   assetProfileId?: string;
+  visualData?: string;
   spriteConfig?: import('@/engine/BabylonEngine').SpriteSheetConfig;
   position: Point;
   direction?: 'up' | 'down' | 'left' | 'right';
@@ -335,8 +336,8 @@ export interface GameState {
   setActiveDialog: (dialog: { npcId: string; node?: string; text: string; options?: { label: string; nextNode: string }[] } | null) => void;
   acceptQuest: (questId: string) => void;
   completeQuest: (questId: string) => void;
-  setOtherPlayers: (players: Record<string, { accountId?: string; x: number; y: number; name: string; assetProfileId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; hp?: number; maxHp?: number; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string }; vx?: number; vy?: number; vz?: number; lastUpdateMs?: number }>) => void;
-  updateOtherPlayer: (socketId: string, data: { x?: number; y?: number; name?: string; assetProfileId?: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string }; hp?: number; maxHp?: number; vx?: number; vy?: number; vz?: number; lastUpdateMs?: number }) => void;
+  setOtherPlayers: (players: Record<string, { accountId?: string; x: number; y: number; name: string; assetProfileId: string; visualData?: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; hp?: number; maxHp?: number; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string }; vx?: number; vy?: number; vz?: number; lastUpdateMs?: number }>) => void;
+  updateOtherPlayer: (socketId: string, data: { x?: number; y?: number; name?: string; assetProfileId?: string; visualData?: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string }; hp?: number; maxHp?: number; vx?: number; vy?: number; vz?: number; lastUpdateMs?: number }) => void;
   updateEntityHp: (entityId: string, hp: number, maxHp?: number) => void;
   removeOtherPlayer: (socketId: string) => void;
   setPlayerChat: (message: string) => void;

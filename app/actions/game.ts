@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache';
 export async function createGameCharacter(data: {
   name: string;
   assetProfileId: string;
+  visualData?: string;
   classId: string;
   initialState: string;
 }) {
@@ -87,6 +88,9 @@ export async function createGameCharacter(data: {
         parsedState.position = { x: 14, y: 15 };
       }
 
+      parsedState.visualData = data.visualData || '[]';
+      parsedState.assetProfileId = cleanassetProfileId || 'human_base';
+
       sanitizedStateStr = JSON.stringify(parsedState);
     } catch (e) {
       console.warn('Failed to parse initialState for validation, continuing with raw string', e);
@@ -97,6 +101,7 @@ export async function createGameCharacter(data: {
         userId: session.user.id,
         name: cleanName,
         assetProfileId: cleanassetProfileId || 'human_base',
+        visualData: data.visualData || '[]',
         classId: validClass?.classId || normalizedClassId,
         stateData: sanitizedStateStr,
       }

@@ -175,6 +175,7 @@ export function CharacterCreator({
   const [step, setStep] = useState<CreatorStep>('HERO_PICK');
   const [name, setName] = useState('');
   const [assetProfileId, setassetProfileId] = useState('evil-berserker-bloodaxe-male');
+  const [visualData, setVisualData] = useState<string>('[]');
   const [selectedCape, setSelectedCape] = useState<string | null>(null);
   const [selectedHat, setSelectedHat] = useState<string | null>(null);
   const [selectedArmor, setSelectedArmor] = useState<string | null>(null);
@@ -226,6 +227,20 @@ export function CharacterCreator({
 
     return { dynamicBases: bases, dynamicCapes: capes, dynamicArmor: armor, dynamicHats: hats };
   }, [allSprites]);
+
+  // Parse visualData safely
+  const parsedVisualData = useMemo(() => {
+    try {
+      return JSON.parse(visualData);
+    } catch {
+      return null;
+    }
+  }, [visualData]);
+
+  const is3DModel = parsedVisualData?.type === '3D Model';
+  const isModular = parsedVisualData 
+    ? !!parsedVisualData.isModular 
+    : detectPresentationMode(assetProfileId, allSprites) === 'modular';
 
   // Computed multi-layer stack
   const activeLayers = [
@@ -306,6 +321,7 @@ export function CharacterCreator({
   const handleHeroPick = (hero: DbHero) => {
     soundSynth?.playSelectSound?.();
     setassetProfileId(hero.assetProfileId);
+    setVisualData(hero.visualData || '[]');
     setClassId(hero.classId);
     setSelectedHeroSlug(hero.slug);
     setStep('NAME');
@@ -495,6 +511,7 @@ export function CharacterCreator({
     const result = await createGameCharacter({
       name: name.trim(),
       assetProfileId,
+      visualData,
       classId,
       initialState: JSON.stringify(initialState),
     });
@@ -677,8 +694,24 @@ export function CharacterCreator({
                         </div>
 
                         {/* Character Sprite Preview */}
-                        <div className="w-20 h-20 rounded-xl bg-black/60 border border-border/50 mx-auto my-2.5 flex items-center justify-center shadow-inner group-hover:border-primary/60 transition-all overflow-hidden">
-                          <CharacterSpritePreview assetProfileId={hero.assetProfileId} size={32} scale={1.8} />
+                        <div className="w-20 h-20 rounded-xl bg-black/60 border border-border/50 mx-auto my-2.5 flex items-center justify-center shadow-inner group-hover:border-primary/60 transition-all overflow-hidden relative">
+                          {(() => {
+                            let is3D = false;
+                            try {
+                              if (hero.visualData) {
+                                const parsed = JSON.parse(hero.visualData);
+                                is3D = parsed.type === '3D Model';
+                              }
+                            } catch {}
+                            return is3D ? (
+                              <div className="flex flex-col items-center opacity-80">
+                                <Cuboid className="w-6 h-6 text-primary/50 mb-1" />
+                                <span className="text-[8px] font-mono text-muted-foreground uppercase">3D Model</span>
+                              </div>
+                            ) : (
+                              <CharacterSpritePreview assetProfileId={hero.assetProfileId} size={32} scale={1.8} />
+                            );
+                          })()}
                         </div>
 
                         {/* Name & Flavor */}
@@ -719,8 +752,15 @@ export function CharacterCreator({
             </div>
 
             {/* Avatar Preview */}
-            <div className="w-24 h-24 rounded-2xl bg-black/80 border-2 border-primary/60 flex items-center justify-center mb-6 shadow-[0_0_25px_rgba(234,179,8,0.2)]">
-              <CharacterSpritePreview layers={activeLayers} size={32} scale={2.2} />
+            <div className="w-24 h-24 rounded-2xl bg-black/80 border-2 border-primary/60 flex items-center justify-center mb-6 shadow-[0_0_25px_rgba(234,179,8,0.2)] overflow-hidden">
+              {is3DModel ? (
+                <div className="flex flex-col items-center">
+                  <Cuboid className="w-8 h-8 text-primary/60 mb-1" />
+                  <span className="text-[9px] font-mono text-muted-foreground">3D MODEL</span>
+                </div>
+              ) : (
+                <CharacterSpritePreview layers={activeLayers} size={32} scale={2.2} />
+              )}
             </div>
 
             {/* Input Form */}
@@ -756,13 +796,12 @@ export function CharacterCreator({
                   disabled={!name || name.trim().length < 3}
                   onClick={() => {
                     soundSynth?.playActionSound?.();
-                    const mode = detectPresentationMode(assetProfileId, allSprites);
-                    if (mode === 'modular') setStep('APPEARANCE');
+                    if (isModular) setStep('APPEARANCE');
                     else setStep('GIFT');
                   }}
                   className="flex items-center gap-2 px-6 py-3 rounded-xl font-mono font-bold text-xs uppercase tracking-wider bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_20px_rgba(234,179,8,0.25)] disabled:opacity-40 cursor-pointer transition-all"
                 >
-                  {detectPresentationMode(assetProfileId, allSprites) === 'modular' ? 'Proceed to Avatar' : 'Proceed to Perk'} <ArrowRight size={14} />
+                  {isModular ? 'Proceed to Avatar' : 'Proceed to Perk'} <ArrowRight size={14} />
                 </button>
               </div>
             </div>
@@ -792,8 +831,15 @@ export function CharacterCreator({
                   <span className="text-xs font-mono text-primary font-bold">{classId}</span>
                 </div>
 
-                <div className="w-32 h-32 rounded-2xl bg-black/80 border-2 border-primary/60 flex items-center justify-center my-3 shadow-[0_0_25px_rgba(234,179,8,0.2)]">
-                  <CharacterSpritePreview layers={activeLayers} size={32} scale={2.8} />
+                <div className="w-32 h-32 rounded-2xl bg-black/80 border-2 border-primary/60 flex items-center justify-center my-3 shadow-[0_0_25px_rgba(234,179,8,0.2)] overflow-hidden">
+                  {is3DModel ? (
+                    <div className="flex flex-col items-center text-center p-2">
+                      <Cuboid className="w-10 h-10 text-primary/60 mb-2" />
+                      <span className="text-[10px] font-mono text-muted-foreground leading-tight">3D Modular<br/>Preview</span>
+                    </div>
+                  ) : (
+                    <CharacterSpritePreview layers={activeLayers} size={32} scale={2.8} />
+                  )}
                 </div>
 
                 {/* Layer Badges */}

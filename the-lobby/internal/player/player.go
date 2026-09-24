@@ -25,6 +25,7 @@ type State struct {
 	SocketID    string
 	Name        string
 	SpriteID    string
+	VisualData  string
 	MapID       string // live instance id
 	BaseMapID   string
 	X, Y, Z      float64
@@ -156,12 +157,12 @@ func (m *Manager) ForEach(fn func(*State)) {
 }
 
 // Create registers a new seat. Caller handles session_replaced for prior socket.
-func (m *Manager) Create(accountID, socketID, name, spriteID, instanceID, baseMapID string, x, y, z float64) *State {
-	return m.CreateWithCharacter(accountID, "", socketID, name, spriteID, instanceID, baseMapID, x, y, z)
+func (m *Manager) Create(accountID, socketID, name, spriteID, visualData, instanceID, baseMapID string, x, y, z float64) *State {
+	return m.CreateWithCharacter(accountID, "", socketID, name, spriteID, visualData, instanceID, baseMapID, x, y, z)
 }
 
 // CreateWithCharacter registers a new seat with explicit character ownership.
-func (m *Manager) CreateWithCharacter(accountID, characterID, socketID, name, spriteID, instanceID, baseMapID string, x, y, z float64) *State {
+func (m *Manager) CreateWithCharacter(accountID, characterID, socketID, name, spriteID, visualData, instanceID, baseMapID string, x, y, z float64) *State {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -178,6 +179,7 @@ func (m *Manager) CreateWithCharacter(accountID, characterID, socketID, name, sp
 		SocketID:    socketID,
 		Name:        name,
 		SpriteID:    spriteID,
+		VisualData:  visualData,
 		MapID:       instanceID,
 		BaseMapID:   baseMapID,
 		X:           x,
@@ -267,9 +269,10 @@ func (m *Manager) SnapshotPeers(instanceID, excludeAccount string) map[string]pr
 			VY:        p.VY,
 			VZ:        p.VZ,
 			Direction: p.Direction,
-			Name:      p.Name,
-			SpriteID:  p.SpriteID,
-			IsMoving:  p.IsMoving,
+			Name:       p.Name,
+			SpriteID:   p.SpriteID,
+			VisualData: p.VisualData,
+			IsMoving:   p.IsMoving,
 			HP:        p.HP,
 			MaxHP:     p.MaxHP,
 		}

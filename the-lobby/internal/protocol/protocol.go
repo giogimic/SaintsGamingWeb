@@ -135,6 +135,7 @@ type JoinMapRequest struct {
 	Name           string   `json:"name"`
 	SpriteID       string   `json:"spriteId"`
 	AssetProfileID string   `json:"assetProfileId"`
+	VisualData     string   `json:"visualData"`
 	JoinSeq        uint64   `json:"joinSeq"`
 	Version        int      `json:"version"`
 }
@@ -179,9 +180,10 @@ type PeerSnapshot struct {
 	VY        float64 `json:"vy"`
 	VZ        float64 `json:"vz"`
 	Direction string  `json:"direction"`
-	Name      string  `json:"name"`
-	SpriteID  string  `json:"spriteId"`
-	IsMoving  bool    `json:"isMoving"`
+	Name       string  `json:"name"`
+	SpriteID   string  `json:"spriteId"`
+	VisualData string  `json:"visualData"`
+	IsMoving   bool    `json:"isMoving"`
 	HP        int     `json:"hp"`
 	MaxHP     int     `json:"maxHp"`
 }
