@@ -53,7 +53,10 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
   
   const [materialConfig, setMaterialConfig] = useState<Record<string, { tintable: boolean, slot: string }>>({});
   
-  // Mesh -> Component mapping
+  // Additional Items for the Modular Set
+  const [additionalItems, setAdditionalItems] = useState<Array<{ id: string, file: File; category: string }>>([]);
+
+  // Mesh -> Component mapping (for meshes inside the base file)
   const [modularComponents, setModularComponents] = useState<Record<string, string>>({}); // { meshName: componentCategory }
 
   // Modular Item (Single component GLB) state
@@ -220,6 +223,25 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
         throw new Error(data.error || 'Failed to upload asset');
       }
 
+      // Upload additional items
+      if (structure === 'Modular' && additionalItems.length > 0) {
+        for (const item of additionalItems) {
+          const itemFormData = new FormData();
+          itemFormData.append('file', item.file);
+          itemFormData.append('name', `${modularSetName || assetName} - ${item.file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ')}`);
+          itemFormData.append('type', 'MODEL');
+          itemFormData.append('createUsable', 'true');
+          itemFormData.append('visibility', visibility);
+          itemFormData.append('characterPresentationType', '3D_MODEL');
+          itemFormData.append('isModularComponent', 'true');
+          itemFormData.append('componentCategory', item.category);
+          itemFormData.append('baseBodyType', assetName); // It targets this base body!
+          itemFormData.append('tags', JSON.stringify(['3d', 'model', 'modular', item.category]));
+          
+          await fetch('/api/assets/upload', { method: 'POST', body: itemFormData });
+        }
+      }
+
       showToast?.(`3D Asset Published: ${assetName}`);
       AssetManager.getInstance().broadcastRefresh();
       onSuccess(data.gameAsset || data.usableAsset || data.asset || data);
@@ -321,7 +343,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
         <div className="col-span-7 bg-[#050b14] border border-slate-800 rounded flex flex-col overflow-hidden">
           {/* Tabs */}
           <div className="flex border-b border-slate-800 bg-[#0b1320]">
-            {['roles', 'skeleton', 'attachments', 'animations', 'materials', ...(structure === 'Modular' ? ['components'] : [])].map(tab => (
+            {['roles', 'skeleton', 'attachments', 'animations', 'materials', ...(structure === 'Modular' ? ['items'] : [])].map(tab => (
               <button 
                 key={tab} 
                 onClick={() => setActiveTab(tab as any)}
@@ -381,7 +403,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                       />
                     </div>
                     <div className="col-span-2 text-[9px] text-amber-200/60 leading-tight">
-                      To define the actual items in this modular set (like hair, torso, etc), click the new "Components" tab at the top.
+                      To add additional clothing or weapon GLBs to this modular set, click the "Items" tab at the top.
                     </div>
                   </div>
                 )}
@@ -565,27 +587,45 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
               </div>
             )}
             
-            {activeTab === 'components' && structure === 'Modular' && (
+            {activeTab === 'items' && structure === 'Modular' && (
               <div className="space-y-4">
-                <div className="text-amber-200 mb-2 font-bold">Modular Set Components</div>
+                <div className="text-amber-200 mb-2 font-bold">Modular Set Items</div>
                 <div className="text-[10px] text-slate-400 mb-4 leading-relaxed">
-                  Map the individual meshes inside this GLB to their component categories.
-                  When published, these will be treated as distinct equipable items within the {modularSetName || 'Modular Set'}.
+                  Add additional GLB files (hair, clothing, weapons) that belong to this modular set. They will be uploaded and linked to this Base Body automatically.
                 </div>
                 
-                <div className="space-y-2">
-                  {parsedGLB.meshes.map(mesh => (
-                    <div key={mesh.name} className="bg-slate-900 border border-slate-700 p-2 rounded flex items-center gap-4">
-                      <div className="flex-1 font-bold text-slate-300">
-                        Mesh: <span className="text-white">{mesh.name}</span>
+                <div className="bg-slate-900 border border-slate-700 border-dashed rounded p-4 text-center cursor-pointer hover:bg-slate-800 transition-colors relative">
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept=".glb,.gltf" 
+                    onChange={e => {
+                      if (!e.target.files) return;
+                      const newItems = Array.from(e.target.files).map(f => ({
+                        id: Math.random().toString(36).substr(2, 9),
+                        file: f,
+                        category: 'hair'
+                      }));
+                      setAdditionalItems(prev => [...prev, ...newItems]);
+                    }}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                  <div className="text-amber-500 font-bold">Click or Drag additional GLB files here</div>
+                  <div className="text-[10px] text-slate-400 mt-1">e.g., hair.glb, armor.glb</div>
+                </div>
+
+                <div className="space-y-2 mt-4">
+                  {additionalItems.map(item => (
+                    <div key={item.id} className="bg-black border border-slate-700 p-2 rounded flex items-center gap-4">
+                      <div className="flex-1 font-bold text-slate-300 text-[10px] truncate">
+                        {item.file.name}
                       </div>
                       <div className="w-48">
                         <select 
-                          value={modularComponents[mesh.name] || ''} 
-                          onChange={e => setModularComponents(prev => ({ ...prev, [mesh.name]: e.target.value }))}
-                          className="w-full bg-black border border-amber-900/50 rounded px-2 py-1 text-white text-[10px]"
+                          value={item.category} 
+                          onChange={e => setAdditionalItems(prev => prev.map(p => p.id === item.id ? { ...p, category: e.target.value } : p))}
+                          className="w-full bg-slate-900 border border-amber-900/50 rounded px-2 py-1 text-white text-[10px]"
                         >
-                          <option value="">(Not a Component Layer)</option>
                           <option value="head">Head</option>
                           <option value="hair">Hair</option>
                           <option value="torso">Torso</option>
@@ -594,12 +634,19 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                           <option value="accessory">Accessory</option>
                           <option value="hands">Hands</option>
                           <option value="face">Face</option>
+                          <option value="weapon">Weapon</option>
                         </select>
                       </div>
+                      <button 
+                        onClick={() => setAdditionalItems(prev => prev.filter(p => p.id !== item.id))}
+                        className="text-red-500 hover:text-red-400 font-bold px-2"
+                      >
+                        X
+                      </button>
                     </div>
                   ))}
-                  {parsedGLB.meshes.length === 0 && (
-                    <div className="text-slate-500 italic">No separate meshes found in this file.</div>
+                  {additionalItems.length === 0 && (
+                    <div className="text-slate-500 italic text-[10px]">No extra items added yet.</div>
                   )}
                 </div>
               </div>
