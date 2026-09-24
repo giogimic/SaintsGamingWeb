@@ -110,7 +110,10 @@ docker_build.log
 *.lnk
 *.zip
 /release/
-r u n _ s s h * . p y  
- c h e c k _ * . j s  
- r u n _ l o c a l _ * . j s  
+
+run_ssh*.py
+check_*.js
+run_local_*.js
 /samp-server/
+delete_system_maps.ts
+

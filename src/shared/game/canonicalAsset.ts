@@ -59,6 +59,7 @@ export interface PresentationDefinition {
   animationProfileId?: string;
   depthLayer?: number;
   modelUrl?: string;
+  modularModelUrls?: string[];
   materialIds?: string[];
   audioRefs?: {
     attack?: string;
