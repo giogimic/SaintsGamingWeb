@@ -28,7 +28,6 @@ For a complete and authoritative list of package licenses, refer to the `node_mo
 
 ## 3. Third-Party Software & SDKs
 
-- **SA-MP Server (San Andreas Multiplayer):** Closed-source proprietary binary. Requires adherence to its respective EULA/terms of use when deployed.
 - **FFmpeg (`ffmpeg-static`):** GNU GPL (with some parts LGPL). Distributed as a pre-compiled static binary.
 - **Redis:** Redis Source Available License (RSALv2) / Server Side Public License (SSPLv1). Used for pub/sub and caching.
 - **MySQL / SQLite:** GPLv2 / Public Domain. Used for relational database storage.

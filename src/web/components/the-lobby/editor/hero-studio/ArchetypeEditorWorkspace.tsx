@@ -28,10 +28,6 @@ const EMPTY_HERO: StarterHeroData = {
   tagColor: '#a78bfa',
   sortOrder: 0,
   isActive: true,
-  startingMap: '',
-  startingX: 14,
-  startingY: 15,
-  startingInventory: '{"patch_kit":5}',
   visualData: '[]',
 };
 
@@ -88,7 +84,6 @@ export function ArchetypeEditorWorkspace() {
       slug: hero.slug, gameId: hero.gameId || activeGameId, name: hero.name, classId: hero.classId,
       assetProfileId: hero.assetProfileId, assetBundleId: hero.assetBundleId || '', visualData: hero.visualData || '[]', flavor: hero.flavor, tag: hero.tag,
       tagColor: hero.tagColor, sortOrder: hero.sortOrder, isActive: hero.isActive,
-      startingMap: hero.startingMap, startingX: hero.startingX, startingY: hero.startingY,
       startingInventory: hero.startingInventory,
     });
     setIsNew(false);
@@ -552,22 +547,6 @@ export function ArchetypeEditorWorkspace() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-3">
-                  <label className={labelCls}>Initial Map</label>
-                  <select value={form.startingMap} onChange={e => f('startingMap', e.target.value)} className={inputCls}>
-                    {mapList.length === 0 && <option value="">Default Realm</option>}
-                    {mapList.map(map => <option key={map.id} value={map.id}>{map.name}</option>)}
-                  </select>
-                </div>
-                <div className="col-span-1">
-                  <label className={labelCls}>Spawn X</label>
-                  <input type="number" value={form.startingX} onChange={e => f('startingX', parseInt(e.target.value) || 0)} className={inputCls} />
-                </div>
-                <div className="col-span-1">
-                  <label className={labelCls}>Spawn Y</label>
-                  <input type="number" value={form.startingY} onChange={e => f('startingY', parseInt(e.target.value) || 0)} className={inputCls} />
-                </div>
               </div>
               
               <div className="pt-2 border-t border-white/5">

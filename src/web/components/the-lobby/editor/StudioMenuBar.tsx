@@ -885,6 +885,20 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
 
       {/* â”€â”€â”€ ZONE 3: Problems Badge, PIE Playtest, Theme & Settings â”€â”€â”€ */}
       <div className="flex items-center gap-2 [app-region:no-drag]">
+        {/* Studio Window Audit Check */}
+        <button
+          onClick={() => {
+            soundSynth?.playSelectSound?.();
+            window.dispatchEvent(new CustomEvent('studio_run_audit_check'));
+            showToast('Studio Coherence & Connectivity Audit started');
+          }}
+          className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-blue-900/40 border border-blue-500/40 hover:border-blue-400 text-[10px] text-blue-300 hover:text-white transition-all cursor-pointer"
+          title="Run Coherence & Connectivity Audit"
+        >
+          <Activity className="w-3.5 h-3.5 text-blue-400" />
+          <span className="font-bold hidden xl:inline">Audit Check</span>
+        </button>
+
         {/* Problems & Validation Counter Badge */}
         <button
           onClick={() => {

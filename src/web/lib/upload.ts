@@ -48,6 +48,14 @@ export const ALLOWED_MODEL_MIME_TYPES = [
   "model/gltf+json",
 ];
 
+export const ALLOWED_AUDIO_MIME_TYPES = [
+  "audio/mpeg",
+  "audio/wav",
+  "audio/ogg",
+  "audio/mp3",
+  "audio/x-wav",
+];
+
 export const ALLOWED_SOCIAL_MIME_TYPES = [
   ...ALLOWED_IMAGE_MIME_TYPES,
   ...ALLOWED_VIDEO_MIME_TYPES,
@@ -55,9 +63,9 @@ export const ALLOWED_SOCIAL_MIME_TYPES = [
 ];
 
 const MAX_FILE_SIZE = parseInt(
-  process.env.MAX_UPLOAD_SIZE || "5242880",
+  process.env.MAX_UPLOAD_SIZE || "52428800",
   10
-); // 5MB default
+); // 50MB default for models/assets
 
 const MAX_SOCIAL_FILE_SIZE = 250 * 1024 * 1024; // 250MB
 
@@ -142,13 +150,17 @@ async function persistUpload(input: {
 
 /** Upload a standard image or model file from a FormData File object */
 export async function uploadFile(file: File): Promise<UploadResult> {
+  const mimeType = inferMimeType(file.name, file.type);
+
   if (
-    !ALLOWED_IMAGE_MIME_TYPES.includes(file.type) &&
-    !ALLOWED_MODEL_MIME_TYPES.includes(file.type)
+    !ALLOWED_IMAGE_MIME_TYPES.includes(mimeType) &&
+    !ALLOWED_MODEL_MIME_TYPES.includes(mimeType) &&
+    !ALLOWED_AUDIO_MIME_TYPES.includes(mimeType) &&
+    !ALLOWED_ARCHIVE_MIME_TYPES.includes(mimeType)
   ) {
     return {
       success: false,
-      error: `Invalid file type: ${file.type}. Allowed: images, models`,
+      error: `Invalid file type: ${mimeType}. Allowed: images, models, audio, archives.`,
     };
   }
 
@@ -173,7 +185,7 @@ export async function uploadFile(file: File): Promise<UploadResult> {
   return persistUpload({
     uniqueName,
     buffer,
-    contentType: file.type,
+    contentType: mimeType,
     sanitizedName: sanitized,
     sizeBytes: file.size,
   });

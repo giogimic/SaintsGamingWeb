@@ -28,6 +28,16 @@ export function MainLayoutShell({
   const isStudio = pathname?.startsWith('/studio');
   const isLobby = pathname?.startsWith('/lobby');
   const isBarsHidden = useAppStore((s) => s.isBarsHidden);
+  const setBarsHidden = useAppStore((s) => s.setBarsHidden);
+
+  // Auto-hide bars when entering the lobby
+  useEffect(() => {
+    if (isLobby) {
+      setBarsHidden(true);
+    } else {
+      setBarsHidden(false);
+    }
+  }, [isLobby, setBarsHidden]);
 
   // Global Tab key toggle to hide/show navigation bars and interface elements
   useEffect(() => {
@@ -44,12 +54,17 @@ export function MainLayoutShell({
         }
         e.preventDefault();
         useAppStore.getState().toggleBars();
+      } else if (e.key === "Escape") {
+        // Only toggle bars on ESC if we are in the lobby
+        if (pathname?.startsWith('/lobby')) {
+           useAppStore.getState().toggleBars();
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [pathname]);
 
   // Studio route: absolute full-bleed with persistent layout, but hides website navbar and bottomBar to show studio tools
   if (isStudio) {
@@ -73,15 +88,19 @@ export function MainLayoutShell({
   if (isLobby) {
     return (
       <div className="fixed inset-0 w-screen h-screen overflow-hidden selection:bg-primary/30 z-[100] bg-[#0a0a0f] flex flex-col">
-        {navbar}
-        <main className="flex-1 w-full h-full relative overflow-hidden pt-14 sm:pt-16 pb-12">
+        <div className={`transition-all duration-300 ${isBarsHidden ? "-translate-y-full absolute top-0 w-full z-50 pointer-events-none" : "relative"}`}>
+          {navbar}
+        </div>
+        <main className={`flex-1 w-full h-full relative overflow-hidden transition-all duration-300 ${isBarsHidden ? "pt-0 pb-0" : "pt-14 sm:pt-16 pb-12"}`}>
           {children}
         </main>
         <div className={`transition-opacity duration-300 ${isBarsHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
           {commandPalette}
           {messengerPopup}
         </div>
-        {bottomBar}
+        <div className={`transition-all duration-300 ${isBarsHidden ? "translate-y-full absolute bottom-0 w-full z-50 pointer-events-none" : "relative"}`}>
+          {bottomBar}
+        </div>
         {toaster}
         <UserSettingsOverlayShell />
         <GlobalPostComposer />

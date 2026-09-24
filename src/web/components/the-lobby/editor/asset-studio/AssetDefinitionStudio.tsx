@@ -38,6 +38,10 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
   const [structure, setStructure] = useState<'Complete' | 'Modular'>('Complete');
   const [perspective, setPerspective] = useState<'Third Person' | 'First Person'>('Third Person');
   
+  // Modular Settings
+  const [modularSetName, setModularSetName] = useState('');
+  const [skeletonConnectionPoints, setSkeletonConnectionPoints] = useState('');
+  
   // Skeleton
   const [boneMap, setBoneMap] = useState<Record<string, string>>({}); // { standardBone: glbBoneName }
   
@@ -164,6 +168,8 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
         structure,
         perspective,
         animationProfileId,
+        modularSetName: structure === 'Modular' ? modularSetName : undefined,
+        skeletonConnectionPoints: structure === 'Modular' ? skeletonConnectionPoints : undefined,
         skeleton: {
           isSkinned: parsedGLB?.isSkinned,
           boneMap,
@@ -336,6 +342,30 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                     </select>
                   </div>
                 </div>
+                {structure === 'Modular' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] text-amber-400 mb-1">Modular Set Name</label>
+                      <input 
+                        type="text" 
+                        value={modularSetName} 
+                        onChange={e => setModularSetName(e.target.value)} 
+                        placeholder="e.g. KnightArmorSet" 
+                        className="w-full bg-black border border-amber-900/50 rounded px-2 py-1 text-white" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-amber-400 mb-1">Skeleton Connection Points</label>
+                      <input 
+                        type="text" 
+                        value={skeletonConnectionPoints} 
+                        onChange={e => setSkeletonConnectionPoints(e.target.value)} 
+                        placeholder="e.g. Head,Torso,Legs,Hands" 
+                        className="w-full bg-black border border-amber-900/50 rounded px-2 py-1 text-white" 
+                      />
+                    </div>
+                  </div>
+                )}
                 <div>
                   <label className="block text-[10px] text-slate-400 mb-1">Tags</label>
                   <input type="text" value={tagsInput} onChange={e => setTagsInput(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white" />

@@ -99,7 +99,7 @@ export type SoftLock = {
   expiresAt: string;
 };
 
-export type PanelId = StudioDockId | 'entityLibrary' | 'worldManager' | 'mapEditor' | 'spawnEditor';
+export type PanelId = StudioDockId | 'entityLibrary' | 'worldManager' | 'mapEditor' | 'spawnEditor' | 'assetBrowserSelector';
 
 export interface CustomTerrainSwatch {
   id: string;
@@ -1275,6 +1275,17 @@ const DEFAULT_PANELS = {
     width: 700,
     height: 600,
     zIndex: 10,
+  },
+  assetBrowserSelector: {
+    id: 'assetBrowserSelector',
+    title: 'Asset Selector',
+    isOpen: false,
+    isCollapsed: false,
+    x: 400,
+    y: 150,
+    width: 600,
+    height: 500,
+    zIndex: 1150,
   },
 } as Record<PanelId, FloatingPanelState>;
 

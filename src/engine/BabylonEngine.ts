@@ -4016,8 +4016,8 @@ export class BabylonEngine {
 
     if (!spriteMesh) {
       if (entity.presentation?.mode === '3D' && entity.presentation.modelUrl) {
-        spriteMesh = MeshBuilder.CreateBox(`entity_${entity.id}`, { size: 0.1 }, this.scene);
-        spriteMesh.isVisible = false;
+        spriteMesh = new Mesh(`entity_${entity.id}`, this.scene);
+        spriteMesh.isVisible = true;
         
         spriteMesh.metadata = {
           targetPos: targetPos,
@@ -4115,8 +4115,8 @@ export class BabylonEngine {
 
       // Skip sprite UV and material binding for 3D models
       if (!(entity.presentation?.mode === '3D' && entity.presentation.modelUrl)) {
-        // For orthographic 2.5D, fixed tilt is much more stable than billboarding
-        spriteMesh.rotation.x = Math.PI / 4;
+        // Use billboard mode so sprites always face the camera correctly in 1st/3rd person and 2.5D
+        spriteMesh.billboardMode = Mesh.BILLBOARDMODE_ALL;
         
         // Make entities pickable for combat targeting
         spriteMesh.isPickable = true;

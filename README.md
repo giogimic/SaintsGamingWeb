@@ -10,11 +10,11 @@ I'm building this for our community. This is a passion project I build for fun i
 
 ## 🎮 What is Saints Gaming?
 
-Saints Gaming started way back in 2007 as a chill group of friends hanging out on TeamSpeak, playing SA-MP, FiveM, sandbox builders, and whatever else sounded fun. Over the years, our motto has always been simple: *Time To Play* — just hang out, game together, and have a good time with zero drama.
+Saints Gaming started way back in 2007 as a chill group of friends hanging out on TeamSpeak, playing sandbox builders, and whatever else sounded fun. Over the years, our motto has always been simple: *Time To Play* — just hang out, game together, and have a good time with zero drama.
 
 This project brings our community hub together with an interactive multiplayer game:
 
-- **The Community Hub**: Forums to chat, news updates, game server status trackers (so you can see who's online on our servers), and a FiveM player portal.
+- **The Community Hub**: Forums to chat, news updates, and game server status trackers (so you can see who's online on our servers).
 - **The Lobby (The Game)**: A browser-based multiplayer world where you can explore, build a Saint from a playable Archetype and modular Classes, grow long-term skills, collect Creatures, and fight Monsters with friends.
 - **World Studio**: A built-in creator suite for Tile Maps, Voxel Maps, infinite procedural Fractal Domains, Archetypes, Classes, abilities, quests, dialogue, creatures, monsters, assets, and live world releases.
 - **Combat**: Creature Battles are turn-based and capture-focused. Monster Battles are real-time, open-world action combat.
@@ -25,12 +25,11 @@ This project brings our community hub together with an interactive multiplayer g
 
 The project is built on a modern, full-stack monorepo architecture:
 
-- **Web Frontend & API (Next.js)**: The core website, UCP (User Control Panel), Studio tools, and API routes are built with Next.js 15, React 19, and TailwindCSS.
+- **Web Frontend & API (Next.js)**: The core website, Studio tools, and API routes are built with Next.js 15, React 19, and TailwindCSS.
 - **Database (Prisma)**: We use Prisma ORM connected to either MySQL or SQLite to manage all persistence (users, forum posts, game releases, and world data).
 - **Game Engine (Babylon.js)**: The browser game client is powered by Babylon.js for rendering both 2.5D and 3D worlds, alongside a robust Redux/Zustand state layer.
 - **MMO Server (Go)**: The authoritative multiplayer game backend (`the-lobby`) is written in Go, featuring a high-performance TCP/WebSocket layer, deterministic map routing, and SQLite snapshots for seamless runtime syncing.
 - **Desktop App (Electron)**: A desktop wrapper wrapper located in `saints-app/` allowing standalone play.
-- **Legacy SA-MP Integration**: Sidecars and plugins for integrating our classic San Andreas Multiplayer servers with the web database.
 
 ---
 
@@ -43,7 +42,6 @@ The project is built on a modern, full-stack monorepo architecture:
 - `src/shared/` - Isomorphic types, constants, and utilities shared between client and server.
 - `the-lobby/` - Authoritative Go MMO backend source code.
 - `saints-app/` - Electron desktop application wrapper.
-- `samp-sidecar/` - NodeJS sidecar for communicating between SA-MP and the web API.
 - `public/` - Static web assets, game sprites, and UI images.
 - `prisma/` - Database schema (`schema.prisma`) and seed scripts.
 - `docker/` - Docker Compose configurations and environment definitions.
@@ -142,3 +140,10 @@ If you are looking for **deep technical breakdowns**, engine architecture, and c
 
 ## 💬 Community & Links
 Visit us at [saintsgaming.net](https://saintsgaming.net)
+
+## Changelog
+
+### v2.1.985
+- **Studio Audit & Menus:** Added Audit Check to StudioMenuBar; officially deprecated the 2D Animation Studio and Spawn Editor in favor of 3D GLB capabilities.
+- **UI Coherence:** The Navbar and Global Bottom Bar automatically hide when editing; integrated 3D empty Mesh placeholder rendering.
+- **Cleanup:** Purged legacy SA-MP/FiveM/UCP references across project.

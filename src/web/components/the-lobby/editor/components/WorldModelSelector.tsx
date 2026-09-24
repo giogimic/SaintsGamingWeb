@@ -4,7 +4,7 @@ import { Box, Image as ImageIcon, BoxSelect, Cuboid, MoreHorizontal } from 'luci
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 import SpriteBrowser from '../SpriteBrowser';
 import { cn } from '@/shared/lib/utils';
-import { ANIMATION_PROFILES } from '@/shared/game/animationProfiles';
+import { FloatingModal } from './FloatingModal';
 
 export type WorldModelType = '2D Sprite' | '2D Box Sprite' | '3D Model' | 'Other';
 
@@ -125,43 +125,6 @@ export function WorldModelSelector({ value, onChange, label = "World Model", des
                 <Cuboid className="w-3 h-3 text-cyan-400 shrink-0" />
               </button>
 
-              <div className="border-t border-slate-800 my-1"></div>
-
-              <label className="flex items-center gap-2 cursor-pointer text-[10px] text-slate-300">
-                <input 
-                  type="checkbox" 
-                  checked={value.isModular || false} 
-                  onChange={(e) => onChange({ ...value, isModular: e.target.checked })}
-                  className="rounded bg-black border-slate-700"
-                />
-                Modular Character (Uses separate meshes)
-              </label>
-
-              {value.isModular && (
-                <div className="flex flex-col gap-2 mt-1 pl-4 border-l border-slate-800">
-                  <div>
-                    <span className="text-[9px] text-slate-500 uppercase font-bold block mb-1">Part of Set</span>
-                    <input 
-                      type="text" 
-                      value={value.partOfSet || ''} 
-                      onChange={(e) => onChange({ ...value, partOfSet: e.target.value })}
-                      placeholder="e.g. KnightArmorSet"
-                      className="bg-black/50 border border-slate-800 rounded px-2 py-1 text-[10px] text-slate-300 outline-none w-full"
-                    />
-                  </div>
-                  <div>
-                    <span className="text-[9px] text-slate-500 uppercase font-bold block mb-1">Skeleton Connection Points</span>
-                    <input 
-                      type="text" 
-                      value={value.skeletonConnectionPoints || ''} 
-                      onChange={(e) => onChange({ ...value, skeletonConnectionPoints: e.target.value })}
-                      placeholder="e.g. Head,Torso,Legs,Hands"
-                      className="bg-black/50 border border-slate-800 rounded px-2 py-1 text-[10px] text-slate-300 outline-none w-full"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
           ) : (
             <div className="w-full p-2 bg-rose-950/20 border border-rose-500/30 rounded-lg flex items-center justify-between">
               <span className="text-[10px] font-bold text-rose-300">Asset Workflow WIP</span>
@@ -171,48 +134,33 @@ export function WorldModelSelector({ value, onChange, label = "World Model", des
       </div>
 
       {/* Sprite / Model Browser Modal */}
-      {mounted && showCatalogBrowser && createPortal(
-        <div
-          className="pointer-events-auto fixed inset-0 z-[1000] p-4 flex items-center justify-center animate-in fade-in duration-200"
-          style={{ background: 'rgba(5,0,15,0.96)', backdropFilter: 'blur(10px)' }}
+      {mounted && showCatalogBrowser && (
+        <FloatingModal
+          title={`Select World ${value.type} Asset`}
+          icon={value.type === '3D Model' ? <Cuboid /> : <ImageIcon />}
+          onClose={() => setShowCatalogBrowser(false)}
+          defaultWidth={700}
+          defaultHeight={600}
         >
-          <div className="w-full max-w-3xl h-[80vh] bg-[#0a051d] border border-cyan-500/40 rounded-2xl flex flex-col overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between p-4 border-b border-cyan-500/30 bg-[#050b14]/80">
-              <div className="flex items-center gap-2">
-                {value.type === '3D Model' ? <Cuboid className="w-4 h-4 text-cyan-400" /> : <ImageIcon className="w-4 h-4 text-cyan-400" />}
-                <h3 className="font-black text-cyan-200 text-sm">Select World {value.type} Asset</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowCatalogBrowser(false)}
-                className="text-slate-400 hover:text-white px-2 py-1 rounded bg-white/5 text-xs cursor-pointer"
-              >
-                ✕ Close
-              </button>
-            </div>
-            <div className="flex-1 overflow-hidden p-2">
-              <SpriteBrowser
-                filterType={value.type === '3D Model' ? 'MODEL' : 'CHARACTER'}
-                onSelect={(selectedAssets) => {
-                  const asset = selectedAssets[0];
-                  if (asset) {
-                    let id = asset.source;
-                    if (value.type === '3D Model') {
-                       // Keep full source or ID for models
-                       id = asset.id || asset.source;
-                    } else if (id.includes('sprites/characters/')) {
-                       id = id.split('sprites/characters/')[1].replace('.png', '');
-                    }
-                    onChange({ ...value, assetId: id });
-                  }
-                  setShowCatalogBrowser(false);
-                }}
-                onClose={() => setShowCatalogBrowser(false)}
-              />
-            </div>
-          </div>
-        </div>,
-        document.body
+          <SpriteBrowser
+            filterType={value.type === '3D Model' ? 'MODEL' : 'CHARACTER'}
+            onSelect={(selectedAssets) => {
+              const asset = selectedAssets[0];
+              if (asset) {
+                let id = asset.source;
+                if (value.type === '3D Model') {
+                   // Keep full source or ID for models
+                   id = asset.id || asset.source;
+                } else if (id.includes('sprites/characters/')) {
+                   id = id.split('sprites/characters/')[1].replace('.png', '');
+                }
+                onChange({ ...value, assetId: id });
+              }
+              setShowCatalogBrowser(false);
+            }}
+            onClose={() => setShowCatalogBrowser(false)}
+          />
+        </FloatingModal>
       )}
     </section>
   );
