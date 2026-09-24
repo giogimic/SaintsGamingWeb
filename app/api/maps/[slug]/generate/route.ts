@@ -88,6 +88,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     }
 
     if (generatedCount > 0) {
+      const newWidthChunks = (radius * 2) + 1;
+      if (!voxelDoc.dimensions) voxelDoc.dimensions = {};
+      if ((voxelDoc.dimensions.widthChunks || 1) < newWidthChunks) {
+        voxelDoc.dimensions.widthChunks = newWidthChunks;
+        voxelDoc.dimensions.depthChunks = newWidthChunks;
+      }
+      
+      if (voxelDoc.generationMetadata) {
+        voxelDoc.generationMetadata.fractalPregenRadius = radius;
+      }
+
       await prisma.worldMap.update({
         where: { id: slug },
         data: {
