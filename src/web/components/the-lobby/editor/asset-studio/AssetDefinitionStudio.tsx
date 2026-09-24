@@ -19,7 +19,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
   const [parsedGLB, setParsedGLB] = useState<ParsedGLB | null>(null);
   const [isParsing, setIsParsing] = useState(true);
   const [parseError, setParseError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'roles' | 'skeleton' | 'attachments' | 'animations' | 'materials'>('roles');
+  const [activeTab, setActiveTab] = useState<'roles' | 'skeleton' | 'attachments' | 'animations' | 'materials' | 'items'>('roles');
   
   // Model state
   const [activeAnimationIndex, setActiveAnimationIndex] = useState<number | undefined>(undefined);
