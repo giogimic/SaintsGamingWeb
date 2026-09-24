@@ -32,7 +32,7 @@ const EMPTY_HERO: StarterHeroData = {
   startingMap: '',
   startingX: 0,
   startingY: 0,
-  startingInventory: [],
+  startingInventory: '[]',
 };
 
 const inputCls = "w-full bg-[#050b14] border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono outline-none focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/20 transition-all placeholder:text-slate-700";
