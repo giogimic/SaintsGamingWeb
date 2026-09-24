@@ -25,13 +25,18 @@ import {
   Animation,
   ParticleSystem,
   GizmoManager,
+  SceneLoader,
+  AnimationGroup,
+  AbstractMesh,
 } from '@babylonjs/core';
+import '@babylonjs/loaders'; // Ensures glTF/glb loader is present
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
 import { TILESET_SIZES } from "../web/components/the-lobby/data/tileset-sizes";
 import { resolveEntitySpriteUrl } from "../shared/game/creatureCatalog";
 import { isTilePickTarget } from "../shared/game/tilePaint";
 import { type EdgeStripData } from "../shared/game/atlas/edgeStrip";
 import { type CardinalDirection } from "../shared/game/atlas/spatialAtlas";
+import { type PresentationDefinition } from "../shared/game/canonicalAsset";
 import {
   ENTITY_GROUND_CLEARANCE,
   clampCameraFocus,
@@ -211,6 +216,7 @@ export interface BabylonEntityData {
   spriteConfig?: SpriteSheetConfig;
   animationProfile?: SpriteAnimationProfile;
   spriteDef?: SpriteDefinition;
+  presentation?: PresentationDefinition;
 }
 
 export class BabylonEngine {
@@ -467,8 +473,8 @@ export class BabylonEngine {
     this.canvas.addEventListener('wheel', (e: WheelEvent) => {
       e.preventDefault();
       const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
-      
-      if (this.renderer.cameraStyle === 'thirdPerson' || this.renderer.cameraStyle === 'firstPerson') {
+      const camStyle = this.renderer.cameraSettings.playerCameraStyle;
+      if (camStyle === 'thirdPerson' || camStyle === 'firstPerson' || camStyle === 'firstperson') {
         const currentDist = this.renderer.cameraProfile.distance ?? 14;
         const newDist = Math.max(2, Math.min(60, currentDist * zoomFactor));
         this.renderer.cameraProfile.distance = newDist;
@@ -4009,45 +4015,92 @@ export class BabylonEngine {
     const singleFrame = resolvedConfig.columns <= 1 && resolvedConfig.rows <= 1;
 
     if (!spriteMesh) {
-      // Create 2.5D Billboard Sprite Plane — OW portraits use a slightly shorter plane
-      spriteMesh = MeshBuilder.CreatePlane(
-        `entity_${entity.id}`,
-        {
-          // OW portrait crops read huge on the old 1.5-tall plane — keep them compact.
-          width: this.currentTileSize * (singleFrame ? 0.7 : 1.0),
-          height: this.currentTileSize * (singleFrame ? 0.95 : 1.4),
-          // Required so setSpriteCellUVs can rewrite vertex UVs each anim frame.
-          updatable: true,
-        },
-        this.scene
-      );
+      if (entity.presentation?.mode === '3D' && entity.presentation.modelUrl) {
+        spriteMesh = MeshBuilder.CreateBox(`entity_${entity.id}`, { size: 0.1 }, this.scene);
+        spriteMesh.isVisible = false;
+        
+        spriteMesh.metadata = {
+          targetPos: targetPos,
+          isMoving: entity.isMoving || false,
+          animTime: 0,
+          direction: entity.direction || 'down',
+          isNpc: entity.isNpc || false,
+          isPlayer: entity.isPlayer || false,
+          isCreature: entity.isCreature || false,
+          isEditor: !!this.scene.onPointerDown,
+          spriteConfig: resolvedConfig,
+          spriteUrl: entity.spriteUrl || null,
+          spriteDimensions: null,
+          presentation: entity.presentation,
+        };
+        
+        spriteMesh.position = targetPos;
+        
+        SceneLoader.ImportMeshAsync("", entity.presentation.modelUrl, "", this.scene)
+          .then((result) => {
+            if (!this.entityMeshes.has(entity.id)) {
+              // Entity was deleted before load finished
+              result.meshes.forEach(m => m.dispose());
+              result.animationGroups?.forEach(a => a.dispose());
+              return;
+            }
+            const root = result.meshes[0];
+            const currentMesh = this.entityMeshes.get(entity.id)!;
+            root.parent = currentMesh;
+            // Align with babylon coordinates if needed
+            root.scaling = new Vector3(-1, 1, 1);
+            
+            if (result.animationGroups && result.animationGroups.length > 0) {
+              currentMesh.metadata.animationGroups = result.animationGroups;
+              // Play first anim (idle)
+              result.animationGroups[0].play(true);
+            }
+          })
+          .catch(err => console.error("Failed to load 3D model for entity", entity.id, err));
+          
+      } else {
+        // Create 2.5D Billboard Sprite Plane — OW portraits use a slightly shorter plane
+        spriteMesh = MeshBuilder.CreatePlane(
+          `entity_${entity.id}`,
+          {
+            // OW portrait crops read huge on the old 1.5-tall plane — keep them compact.
+            width: this.currentTileSize * (singleFrame ? 0.7 : 1.0),
+            height: this.currentTileSize * (singleFrame ? 0.95 : 1.4),
+            // Required so setSpriteCellUVs can rewrite vertex UVs each anim frame.
+            updatable: true,
+          },
+          this.scene
+        );
+
+        spriteMesh.metadata = {
+          targetPos: targetPos,
+          isMoving: entity.isMoving || false,
+          animTime: 0,
+          direction: entity.direction || 'down',
+          isNpc: entity.isNpc || false,
+          isPlayer: entity.isPlayer || false,
+          isCreature: entity.isCreature || false,
+          isEditor: !!this.scene.onPointerDown, // Simple heuristic: if tile picking is enabled, it's dev editor
+          spriteConfig: resolvedConfig,
+          spriteUrl: entity.spriteUrl || null,
+          spriteDimensions: null,
+        };
+        
+        // Initial position snap
+        spriteMesh.position = targetPos;
+      }
+
       const createdMesh = spriteMesh;
 
-      // Initialize Metadata for Animation & Movement
-      spriteMesh.metadata = {
-        targetPos: targetPos,
-        isMoving: entity.isMoving || false,
-        animTime: 0,
-        direction: entity.direction || 'down',
-        isNpc: entity.isNpc || false,
-        isPlayer: entity.isPlayer || false,
-        isCreature: entity.isCreature || false,
-        isEditor: !!this.scene.onPointerDown, // Simple heuristic: if tile picking is enabled, it's dev editor
-        spriteConfig: resolvedConfig,
-        spriteUrl: entity.spriteUrl || null,
-        spriteDimensions: null,
-      };
-      
-      // Initial position snap
-      spriteMesh.position = targetPos;
+      // Skip sprite UV and material binding for 3D models
+      if (!(entity.presentation?.mode === '3D' && entity.presentation.modelUrl)) {
+        // For orthographic 2.5D, fixed tilt is much more stable than billboarding
+        spriteMesh.rotation.x = Math.PI / 4;
+        
+        // Make entities pickable for combat targeting
+        spriteMesh.isPickable = true;
 
-      // For orthographic 2.5D, fixed tilt is much more stable than billboarding
-      spriteMesh.rotation.x = Math.PI / 4;
-      
-      // Make entities pickable for combat targeting
-      spriteMesh.isPickable = true;
-
-      const mat = new StandardMaterial(`entityMat_${entity.id}`, this.scene);
+        const mat = new StandardMaterial(`entityMat_${entity.id}`, this.scene);
       // Alpha-test + depth write so sprites sit above batched grass (P0 bury
       // fixed tileset mats; entity mats were still ALPHATESTANDBLEND and could
       // vanish under the ground mesh — "only grass" with no characters).
@@ -4142,7 +4195,8 @@ export class BabylonEngine {
         }
       }
 
-      spriteMesh.material = mat;
+        spriteMesh.material = mat;
+      }
       
       // Simple drop shadow
       const shadow = MeshBuilder.CreatePlane(`shadow_${entity.id}`, { size: this.currentTileSize * 0.8 }, this.scene);
@@ -4171,6 +4225,9 @@ export class BabylonEngine {
         spriteMesh.metadata.isNpc = entity.isNpc || false;
         spriteMesh.metadata.isPlayer = entity.isPlayer || false;
         spriteMesh.metadata.isCreature = entity.isCreature || false;
+        if (!spriteMesh.metadata.presentation && entity.presentation) {
+            spriteMesh.metadata.presentation = entity.presentation;
+        }
         if (!spriteMesh.metadata.spriteConfig || (entity.spriteUrl && spriteMesh.metadata.spriteUrl !== entity.spriteUrl)) {
           spriteMesh.metadata.spriteConfig = resolvedConfig;
         }

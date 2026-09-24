@@ -36,6 +36,30 @@ app.prepare().then(async () => {
         return;
       }
 
+      // Serve Paragon Animations from external directory
+      if (parsedUrl.pathname?.startsWith("/animations/Paragon/")) {
+        const fs = require("fs");
+        const path = require("path");
+        let suffix = parsedUrl.pathname.replace(/^\/animations\/Paragon\//, '');
+        suffix = path.normalize(suffix).replace(/^(\.\.[\/\\])+/, '');
+        const filePath = path.join("C:\\saints-gaming\\Paragon_animations_retargeted_to_Manny-e6de87b1\\fbx\\ParagonAnimationsRetargetedToManny", suffix);
+        
+        if (fs.existsSync(filePath)) {
+          const ext = path.extname(filePath).toLowerCase();
+          const mimeTypes: Record<string, string> = {
+            '.fbx': 'application/octet-stream',
+            '.glb': 'model/gltf-binary',
+          };
+          const contentType = mimeTypes[ext] || 'application/octet-stream';
+          res.setHeader('Content-Type', contentType);
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          const readStream = fs.createReadStream(filePath);
+          readStream.pipe(res);
+          return;
+        }
+      }
+
       // Serve dynamic uploads manually since Next.js caches public/ at build time
       if (parsedUrl.pathname?.startsWith("/uploads/")) {
         const fs = require("fs");
@@ -72,6 +96,8 @@ app.prepare().then(async () => {
             '.zip': 'application/zip',
             '.rar': 'application/vnd.rar',
             '.7z': 'application/x-7z-compressed',
+            '.fbx': 'application/octet-stream',
+            '.glb': 'model/gltf-binary',
           };
           const contentType = mimeTypes[ext] || 'application/octet-stream';
           const stat = fs.statSync(filePath);

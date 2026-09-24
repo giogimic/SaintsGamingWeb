@@ -563,6 +563,33 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
             }
           }
         }
+        
+        // 3. 3D Model Animations & Rotation
+        if (state.presentation?.mode === '3D' && state.animationGroups) {
+          const isEntityWalking = state.isMoving || dist > 0.01;
+          const groups = state.animationGroups;
+          const runAnim = groups.find((ag: any) => ag.name.toLowerCase().includes('run') || ag.name.toLowerCase().includes('walk'));
+          const idleAnim = groups.find((ag: any) => ag.name.toLowerCase().includes('idle'));
+          
+          if (isEntityWalking) {
+            if (runAnim && !runAnim.isPlaying) {
+              if (idleAnim) idleAnim.stop();
+              runAnim.play(true);
+            }
+          } else {
+            if (idleAnim && !idleAnim.isPlaying) {
+              if (runAnim) runAnim.stop();
+              idleAnim.play(true);
+            }
+          }
+          
+          // Rotate 3D mesh to face target position
+          if (isEntityWalking && dist > 0.01) {
+            const dir = state.targetPos.subtract(mesh.position).normalize();
+            // atan2(x, z) gives angle in XZ plane
+            mesh.rotation.y = Math.atan2(dir.x, dir.z);
+          }
+        }
       });
 
       // Real-time Combat & Focus Target Reticle Following
@@ -931,7 +958,8 @@ public rotateCamera(dxPx: number, dyPx: number) {
     const pitchDelta = -dyPx * 0.004 * (this.cameraSettings.orbitSensitivity || 1.0) * invY;
     this.cameraYaw += yawDelta;
     
-    if (this.cameraStyle === 'thirdPerson' || this.cameraStyle === 'firstPerson') {
+    const camStyle = this.cameraSettings.playerCameraStyle;
+    if (camStyle === 'thirdPerson' || camStyle === 'firstPerson' || camStyle === 'firstperson') {
       this.cameraProfile.pitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, (this.cameraProfile.pitch || 0) + pitchDelta));
     } else {
       this.cameraPitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, this.cameraPitch + pitchDelta));

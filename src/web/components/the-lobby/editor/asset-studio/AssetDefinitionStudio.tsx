@@ -50,6 +50,8 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
   // Materials
   const [materialConfig, setMaterialConfig] = useState<Record<string, { tintable: boolean, slot: string }>>({});
 
+  const [animationProfileId, setAnimationProfileId] = useState<string>('');
+
   const [isPublishing, setIsPublishing] = useState(false);
 
   useEffect(() => {
@@ -161,6 +163,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
         roles,
         structure,
         perspective,
+        animationProfileId,
         skeleton: {
           isSkinned: parsedGLB?.isSkinned,
           boneMap,
@@ -336,6 +339,50 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                 <div>
                   <label className="block text-[10px] text-slate-400 mb-1">Tags</label>
                   <input type="text" value={tagsInput} onChange={e => setTagsInput(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white" />
+                </div>
+                
+                {/* Animation Profile Selector */}
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1">Target Animation Profile (Optional)</label>
+                  <select 
+                    value={animationProfileId} 
+                    onChange={e => setAnimationProfileId(e.target.value)} 
+                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white"
+                  >
+                    <option value="">(None)</option>
+                    <option value="AuroraManny">Aurora (Manny)</option>
+                    <option value="BelicaManny">Belica (Manny)</option>
+                    <option value="CountessManny">Countess (Manny)</option>
+                    <option value="CrunchManny">Crunch (Manny)</option>
+                    <option value="DekkerManny">Dekker (Manny)</option>
+                    <option value="DrongoManny">Drongo (Manny)</option>
+                    <option value="FengMaoManny">Feng Mao (Manny)</option>
+                    <option value="FeyManny">The Fey (Manny)</option>
+                    <option value="GreystoneManny">Greystone (Manny)</option>
+                    <option value="GruxManny">Grux (Manny)</option>
+                    <option value="KallariManny">Kallari (Manny)</option>
+                    <option value="KhaimeraManny">Khaimera (Manny)</option>
+                    <option value="KwangManny">Kwang (Manny)</option>
+                    <option value="MurdockManny">Murdock (Manny)</option>
+                    <option value="MurielManny">Muriel (Manny)</option>
+                    <option value="NarbashManny">Narbash (Manny)</option>
+                    <option value="PhaseManny">Phase (Manny)</option>
+                    <option value="RevenantManny">Revenant (Manny)</option>
+                    <option value="RiktorManny">Riktor (Manny)</option>
+                    <option value="SerathManny">Serath (Manny)</option>
+                    <option value="SparrowManny">Sparrow (Manny)</option>
+                    <option value="TwinBlastManny">TwinBlast (Manny)</option>
+                    <option value="WraithManny">Wraith (Manny)</option>
+                    <option value="YinManny">Yin (Manny)</option>
+                    <option value="ZinxManny">Zinx (Manny)</option>
+                    <option value="gadgetManny">Gadget (Manny)</option>
+                    <option value="gideonManny">Gideon (Manny)</option>
+                    <option value="minionsManny">Minions (Manny)</option>
+                    <option value="morigoshManny">Morigesh (Manny)</option>
+                    <option value="steelmanny">Steel (Manny)</option>
+                    <option value="terramanny">Terra (Manny)</option>
+                    <option value="wukongManny">Wukong (Manny)</option>
+                  </select>
                 </div>
               </div>
             )}
