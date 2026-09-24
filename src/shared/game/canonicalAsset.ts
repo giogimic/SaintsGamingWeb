@@ -35,8 +35,25 @@ export type PreloadGroupId =
 
 export type PreloadPriority = "CRITICAL" | "HIGH" | "NORMAL" | "LOW" | "LAZY";
 
+export type CharacterPresentationType = "2D_SPRITE" | "2D_WRAPPED" | "3D_MODEL";
+
+export interface CharacterPresentationDef {
+  type: CharacterPresentationType;
+  
+  // Customization Support
+  isCustomizable?: boolean;
+  supportedComponents?: string[]; // e.g. ["face", "hair", "shirt"]
+  
+  // Attachments (for weapons etc.)
+  attachmentPoints?: string[]; // e.g. ["right_hand", "left_hand", "back"]
+}
+
 export interface PresentationDefinition {
   mode: "2D" | "2.5D" | "3D";
+  
+  // Character specific presentation details
+  character?: CharacterPresentationDef;
+
   spriteSheetUrl?: string;
   portraitUrl?: string;
   animationProfileId?: string;

@@ -118,6 +118,35 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Parse Character Presentation Configuration
+    let presentation: any = undefined;
+    const characterPresentationType = (formData.get("characterPresentationType") as string | null)?.trim() as any;
+    if (characterPresentationType && (type === 'CHARACTER' || type === 'MODEL')) {
+      const isCharacterCustomizable = formData.get("isCharacterCustomizable") === "true";
+      
+      let supportedComponents: string[] | undefined = undefined;
+      const supportedComponentsRaw = formData.get("supportedComponents") as string | null;
+      if (supportedComponentsRaw) {
+        supportedComponents = supportedComponentsRaw.split(",").map(s => s.trim()).filter(Boolean);
+      }
+
+      let attachmentPoints: string[] | undefined = undefined;
+      const attachmentPointsRaw = formData.get("attachmentPoints") as string | null;
+      if (attachmentPointsRaw) {
+        attachmentPoints = attachmentPointsRaw.split(",").map(s => s.trim()).filter(Boolean);
+      }
+
+      presentation = {
+        mode: characterPresentationType === '3D_MODEL' ? '3D' : '2D', // Default mode inference
+        character: {
+          type: characterPresentationType,
+          isCustomizable: isCharacterCustomizable,
+          supportedComponents,
+          attachmentPoints
+        }
+      };
+    }
+
     let importProfile: AssetImportProfileId | null = null;
     if (importProfileRaw) {
       if (!isValidAssetImportProfile(importProfileRaw)) {
@@ -181,6 +210,7 @@ export async function POST(req: NextRequest) {
         sourceModeRaw === "multi" || sourceModeRaw === "spritesheet" || sourceModeRaw === "single"
           ? sourceModeRaw
           : undefined,
+      presentation,
     });
 
     if (!result.success) {

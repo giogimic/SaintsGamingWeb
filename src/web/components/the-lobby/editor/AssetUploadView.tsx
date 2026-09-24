@@ -97,6 +97,12 @@ export function AssetUploadView({
   const [bodyTypeWarning, setBodyTypeWarning] = useState<string | null>(null);
   const [importProfile, setImportProfile] = useState<AssetImportProfileId | ''>(initialImportProfile || '');
 
+  // Character Presentation State
+  const [characterPresentationType, setCharacterPresentationType] = useState('2D_SPRITE');
+  const [isCharacterCustomizable, setIsCharacterCustomizable] = useState(false);
+  const [supportedComponents, setSupportedComponents] = useState('');
+  const [attachmentPoints, setAttachmentPoints] = useState('');
+
   useEffect(() => {
     if (initialAssetType) {
       setAssetType(initialAssetType);
@@ -377,6 +383,13 @@ export function AssetUploadView({
         if (hidesComponents.length > 0) formData.append('hidesComponents', JSON.stringify(hidesComponents));
       }
 
+      if (assetType === 'CHARACTER' || assetType === 'MODEL') {
+        formData.append('characterPresentationType', characterPresentationType);
+        formData.append('isCharacterCustomizable', String(isCharacterCustomizable));
+        if (supportedComponents.trim()) formData.append('supportedComponents', supportedComponents.trim());
+        if (attachmentPoints.trim()) formData.append('attachmentPoints', attachmentPoints.trim());
+      }
+
       if (tagsInput.trim()) {
         const tagList = tagsInput.split(',').map((t) => t.trim()).filter(Boolean);
         formData.append('tags', JSON.stringify(tagList));
@@ -498,6 +511,11 @@ export function AssetUploadView({
     setUnpackedZip(null);
     setUploadSuccess(null);
     setErrorMessage(null);
+    setErrorMessage(null);
+    setCharacterPresentationType('2D_SPRITE');
+    setIsCharacterCustomizable(false);
+    setSupportedComponents('');
+    setAttachmentPoints('');
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (zipInputRef.current) zipInputRef.current.value = '';
   };
@@ -694,16 +712,23 @@ export function AssetUploadView({
               ref={fileInputRef}
               type="file"
               onChange={handleFileChange}
-              accept="image/png,image/jpeg,image/webp,image/gif,application/zip,.zip,audio/mpeg,audio/wav,audio/ogg"
+              accept="image/png,image/jpeg,image/webp,image/gif,application/zip,.zip,audio/mpeg,audio/wav,audio/ogg,.fbx,.glb"
               className="hidden"
             />
             {previewUrl ? (
               <div className="flex flex-col items-center gap-2">
-                <img
-                  src={previewUrl}
-                  alt="Preview"
-                  className="max-h-28 max-w-full object-contain rounded border border-slate-700 bg-black/40 p-1"
-                />
+                {selectedFile?.name.match(/\.(fbx|glb)$/i) ? (
+                  <div className="w-24 h-24 bg-slate-900 rounded border border-slate-700 flex items-center justify-center flex-col gap-1">
+                    <span className="text-amber-500 font-bold text-lg">3D</span>
+                    <span className="text-[10px] text-slate-400">Model Asset</span>
+                  </div>
+                ) : (
+                  <img
+                    src={previewUrl}
+                    alt="Preview"
+                    className="max-h-28 max-w-full object-contain rounded border border-slate-700 bg-black/40 p-1"
+                  />
+                )}
                 <span className="text-[10px] text-amber-300 font-bold">
                   {selectedFile?.name} ({((selectedFile?.size || 0) / 1024).toFixed(1)} KB)
                 </span>
@@ -721,7 +746,7 @@ export function AssetUploadView({
                   Click or drag & drop asset file or Modular ZIP export here
                 </div>
                 <div className="text-[10px] text-slate-500">
-                  Supports PNG, Modular Spritesheet ZIP packages, WebP, GIF, MP3, WAV, OGG
+                  Supports PNG, Modular Spritesheet ZIP packages, WebP, GIF, MP3, WAV, OGG, FBX, GLB
                 </div>
               </div>
             )}
@@ -1000,6 +1025,71 @@ export function AssetUploadView({
                 />
               </div>
             </div>
+
+            {(assetType === 'CHARACTER' || assetType === 'MODEL') && (
+              <div className="col-span-2 border-t border-slate-800 pt-3 mt-2 space-y-3">
+                <div className="text-[11px] text-amber-300/90 font-bold uppercase tracking-wide flex items-center gap-1.5">
+                  <Wand2 className="w-3.5 h-3.5" />
+                  Character Capabilities & Presentation
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] text-slate-400 mb-1">Presentation Type</label>
+                    <select
+                      value={characterPresentationType}
+                      onChange={(e) => setCharacterPresentationType(e.target.value)}
+                      className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1.5 text-slate-200 text-[11px]"
+                    >
+                      <option value="2D_SPRITE">2D Sprite (Classic, Pre-rendered)</option>
+                      <option value="2D_WRAPPED">2D Wrapped (Voxel / Blocky Texture Mapping)</option>
+                      <option value="3D_MODEL">3D Model (FBX/GLB Rigged Character)</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center pt-4">
+                    <label className="flex items-center gap-2 cursor-pointer text-[11px] text-slate-300 select-none">
+                      <input
+                        type="checkbox"
+                        checked={isCharacterCustomizable}
+                        onChange={(e) => setIsCharacterCustomizable(e.target.checked)}
+                        className="rounded bg-[#0b1320] border-slate-700 text-amber-500 focus:ring-0"
+                      />
+                      <span>Supports dynamic customization (equipable parts/armor)</span>
+                    </label>
+                  </div>
+                </div>
+
+                {isCharacterCustomizable && (
+                  <div className="space-y-2">
+                    <div>
+                      <label className="block text-[10px] text-slate-400 mb-1">
+                        Supported Component Layers (comma-separated, e.g. "hair, armor, weapon")
+                      </label>
+                      <input
+                        type="text"
+                        value={supportedComponents}
+                        onChange={(e) => setSupportedComponents(e.target.value)}
+                        placeholder="e.g. head, torso, legs, weapon_right"
+                        className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1.5 text-white text-[11px]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-slate-400 mb-1">
+                        Attachment Points (comma-separated, e.g. "hand_r, hand_l, back")
+                      </label>
+                      <input
+                        type="text"
+                        value={attachmentPoints}
+                        onChange={(e) => setAttachmentPoints(e.target.value)}
+                        placeholder="e.g. hand_r, spine, head_top"
+                        className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1.5 text-white text-[11px]"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div>
               <label className="block text-[10px] text-slate-400 mb-1">Search Tags (comma-separated)</label>

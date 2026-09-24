@@ -222,6 +222,8 @@ export function ManualCharacterAssembler() {
       formData.append('animationProfile', 'multi_frame_directional');
       formData.append('sourceMode', 'spritesheet');
       formData.append('category', isModularComponent ? componentCategory : 'actor');
+      formData.append('characterPresentationType', '2D_SPRITE');
+      formData.append('isCharacterCustomizable', 'false');
 
       if (isModularComponent) {
         formData.append('componentCategory', componentCategory);

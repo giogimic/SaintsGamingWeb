@@ -16,6 +16,7 @@ import { useMultiplayerStore } from '../state/useMultiplayerStore';
 import { usePlayerStore } from '../state/usePlayerStore';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
 import { mapMesher } from './MapMesher';
+import { WrappedCharacterMesher } from './rendering/WrappedCharacterMesher';
 
 // Player is 2 blocks tall (like a classic voxel game character)
 const PLAYER_HEIGHT = 2.0;
@@ -81,6 +82,8 @@ export class EntityRenderer {
       spriteUrl: isModel ? undefined : resolvedUrl,
       modelUrl: isModel ? resolvedUrl : undefined,
       isPlayer: true,
+      // Default to 2D_SPRITE unless we have metadata indicating otherwise (todo: fetch from player store)
+      presentationType: player.assetProfileId?.includes('wrapped') ? '2D_WRAPPED' : '2D_SPRITE',
     }, now);
 
     // 2. Remote Players
@@ -112,6 +115,7 @@ export class EntityRenderer {
         modelUrl: isModel ? resolvedUrl : undefined,
         chatMessage: rp.chatMessage,
         isPlayer: true,
+        presentationType: rp.assetProfileId?.includes('wrapped') ? '2D_WRAPPED' : '2D_SPRITE',
       }, now);
     }
 
@@ -172,6 +176,7 @@ export class EntityRenderer {
       modelUrl?: string;
       chatMessage?: string;
       isPlayer?: boolean;
+      presentationType?: string;
     },
     now: number
   ) {
@@ -204,6 +209,9 @@ export class EntityRenderer {
           }
         }).catch(err => console.error('Failed to load 3D model:', data.modelUrl, err));
 
+      } else if (data.presentationType === '2D_WRAPPED' && data.spriteUrl) {
+        mesh = WrappedCharacterMesher.createCharacter(id, this.scene, data.spriteUrl);
+        mesh.parent = this.entityRoot;
       } else {
         // Create billboard mesh
         const plane = BABYLON.MeshBuilder.CreatePlane(`sprite_${id}`, {

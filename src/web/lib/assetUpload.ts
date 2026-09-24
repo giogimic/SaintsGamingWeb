@@ -52,6 +52,7 @@ export interface AssetIngestOptions {
   bundleId?: string;
   sourceMode?: "single" | "multi" | "spritesheet";
   moderationStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  presentation?: any;
 }
 
 export interface AssetIngestResult {
@@ -166,6 +167,7 @@ export async function ingestAsset(options: AssetIngestOptions): Promise<AssetIng
       visibility: options.visibility,
       moderationStatus: options.moderationStatus,
       fileSize: uploadRes.sizeBytes || file.size,
+      presentation: options.presentation,
     });
 
     const { sourceAsset, usableAsset, gameAsset } = await prisma.$transaction(async (tx) => {
