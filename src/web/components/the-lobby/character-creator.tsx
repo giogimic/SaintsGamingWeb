@@ -24,6 +24,7 @@ import {
   Package,
   Layers,
   Award,
+  Cuboid,
   LucideIcon,
 } from 'lucide-react';
 import { createGameCharacter } from '@/app/actions/game';
@@ -138,6 +139,7 @@ type DbHero = {
   startingX?: number;
   startingY?: number;
   startingInventory?: string | null;
+  visualData?: string | null;
 };
 
 export type CreatorStep = 'HERO_PICK' | 'NAME' | 'APPEARANCE' | 'GIFT' | 'REVIEW';

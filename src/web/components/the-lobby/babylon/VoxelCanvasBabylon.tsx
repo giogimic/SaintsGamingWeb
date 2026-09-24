@@ -771,7 +771,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             spriteConfig: (other as any).spriteConfig,
             hp: other.hp,
             maxHp: other.maxHp,
-            presentation: getPresentationFromVisualData(other.visualData) as any
+            presentation: getPresentationFromVisualData((other as any).visualData) as any
           });
         }
       }
