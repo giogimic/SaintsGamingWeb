@@ -35,7 +35,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
   
   // Roles
   const [roles, setRoles] = useState<string[]>(['Character']);
-  const [structure, setStructure] = useState<'Complete' | 'Modular'>('Complete');
+  const [structure, setStructure] = useState<'Complete' | 'Modular' | 'ModularItem'>('Complete');
   const [perspective, setPerspective] = useState<'Third Person' | 'First Person'>('Third Person');
   
   // Modular Settings
