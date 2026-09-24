@@ -924,17 +924,24 @@ public updateFreeCamPosition() {
     this.cameraSnapped = true;
   }
 
-public rotateFreeCam(dxPx: number, dyPx: number) {
+public rotateCamera(dxPx: number, dyPx: number) {
     const invX = this.cameraSettings.invertOrbitX ? -1 : 1;
     const invY = this.cameraSettings.invertOrbitY ? -1 : 1;
     const yawDelta = dxPx * 0.004 * (this.cameraSettings.orbitSensitivity || 1.0) * invX;
     const pitchDelta = -dyPx * 0.004 * (this.cameraSettings.orbitSensitivity || 1.0) * invY;
     this.cameraYaw += yawDelta;
-    this.cameraPitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, this.cameraPitch + pitchDelta));
+    
+    if (this.cameraStyle === 'thirdPerson' || this.cameraStyle === 'firstPerson') {
+      this.cameraProfile.pitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, (this.cameraProfile.pitch || 0) + pitchDelta));
+    } else {
+      this.cameraPitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, this.cameraPitch + pitchDelta));
+    }
     // Store velocity for momentum on release
     this.cameraVelocityYaw = yawDelta;
     this.cameraVelocityPitch = pitchDelta;
-    this.updateFreeCamPosition();
+    if (this.isFreeCam) {
+      this.updateFreeCamPosition();
+    }
   }
 
 public panFreeCamByScreenDelta(dxPx: number, dyPx: number) {

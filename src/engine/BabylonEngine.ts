@@ -467,6 +467,14 @@ export class BabylonEngine {
     this.canvas.addEventListener('wheel', (e: WheelEvent) => {
       e.preventDefault();
       const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
+      
+      if (this.renderer.cameraStyle === 'thirdPerson' || this.renderer.cameraStyle === 'firstPerson') {
+        const currentDist = this.renderer.cameraProfile.distance ?? 14;
+        const newDist = Math.max(2, Math.min(60, currentDist * zoomFactor));
+        this.renderer.cameraProfile.distance = newDist;
+        return;
+      }
+
       const currentOrtho = this.renderer.camera.orthoTop || 10;
       // Editor mode: max 120 (supports 128x128 full fit), Game mode: range 5.5 - 11.0 (limits zoom-out to maintain crisp immersion)
       const isStudioToolsOpen = Boolean((window as any)._isDevEditorOpen) || this.editorCameraMode;

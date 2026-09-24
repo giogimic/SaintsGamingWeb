@@ -125,7 +125,7 @@ export class WorldSimulation {
       (targetX === 0 && dir === 'left' && state.connections?.west) ||
       (targetX === mapWidth - 1 && dir === 'right' && state.connections?.east);
 
-    if (logicTile?.isSolid && !isConnectedSeam) {
+    if (!state.voxelWorld && logicTile?.isSolid && !isConnectedSeam) {
       return { type: 'BLOCKED', direction: dir, reason: 'WALL' };
     }
 

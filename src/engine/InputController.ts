@@ -129,7 +129,7 @@ public handleEditorPointerMove(e: PointerEvent) {
       if (isPan) {
         this.engine.renderer.panFreeCamByScreenDelta(dx, dy);
       } else {
-        this.engine.renderer.rotateFreeCam(dx, dy);
+        this.engine.renderer.rotateCamera(dx, dy);
       }
     } else {
       this.panEditorCameraByScreenDelta(dx, dy);
@@ -407,6 +407,7 @@ public enableTilePicking(
   ) {
     let isPainting = false;
     let isPanning = false;
+    let isOrbiting = false;
     let lastPointerX = 0;
     let lastPointerY = 0;
     let lastKey = '';
@@ -587,6 +588,15 @@ public enableTilePicking(
 
       // Ignore right click (button === 2) for painting; context menu owns right click
       if (button === 2) {
+        if (!this.engine.editorCameraMode && !this.engine.renderer.isFreeCam) {
+          isOrbiting = true;
+          lastPointerX = evt.clientX;
+          lastPointerY = evt.clientY;
+          if (this.engine.canvas) {
+            this.engine.canvas.style.cursor = 'grab';
+            try { this.engine.canvas.setPointerCapture(evt.pointerId); } catch {}
+          }
+        }
         return;
       }
 
@@ -604,6 +614,13 @@ public enableTilePicking(
         if (this.engine.canvas) this.engine.canvas.style.cursor = 'default';
         if (options?.onPanStateChange) options.onPanStateChange(false);
       }
+      if (isOrbiting) {
+        isOrbiting = false;
+        if (this.engine.canvas) {
+           this.engine.canvas.style.cursor = 'default';
+           try { this.engine.canvas.releasePointerCapture(evt.pointerId); } catch {}
+        }
+      }
       if (isPainting) {
         isPainting = false;
         lastKey = '';
@@ -613,6 +630,15 @@ public enableTilePicking(
     };
 
     this.engine.scene.onPointerMove = (evt) => {
+      if (isOrbiting) {
+        if (this.engine.canvas) this.engine.canvas.style.cursor = 'grabbing';
+        const deltaX = evt.clientX - lastPointerX;
+        const deltaY = evt.clientY - lastPointerY;
+        lastPointerX = evt.clientX;
+        lastPointerY = evt.clientY;
+        this.engine.renderer.rotateCamera(deltaX, deltaY);
+        return;
+      }
       if (isPanning) {
         if (this.engine.canvas) this.engine.canvas.style.cursor = 'grabbing';
         const currentOrtho = this.engine.renderer.camera.orthoTop || 10;
