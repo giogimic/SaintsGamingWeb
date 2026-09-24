@@ -17,8 +17,6 @@ services:
       - ./data:/app/prisma/db
       # Map the uploads directory so user images persist
       - ./uploads:/app/public/uploads
-      # Map the samp-server directory so gamemodes and binaries persist across updates
-      - ./samp-server:/app/samp-server
     env_file:
       - .env
     environment:
@@ -32,8 +30,6 @@ services:
       - NEXT_PUBLIC_DISCORD_INVITE=${NEXT_PUBLIC_DISCORD_INVITE}
       - GO_MMO_INTERNAL_URL=${GO_MMO_INTERNAL_URL:-http://game-server:24011}
       - GO_MMO_ADMIN_SECRET=${GO_MMO_ADMIN_SECRET:-${AUTH_SECRET}}
-      - SAMP_SIDECAR_URL=http://samp:24002/api
-      - SAMP_RCON_HOST=samp
 
     healthcheck:
       test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:24001/" ]
@@ -62,41 +58,6 @@ services:
       - GO_MMO_DATABASE_URL=file:/app/data/dev.db
       - NEXT_JS_URL=http://web:24001
       - GO_MMO_ADMIN_SECRET=${AUTH_SECRET}
-
-  samp:
-    build:
-      context: ./samp-sidecar
-      dockerfile: Dockerfile
-    container_name: saints-samp-server
-    restart: unless-stopped
-    ports:
-      - "7777:7777/udp"
-      - "7777:7777/tcp"
-      - "24002:24002"
-    volumes:
-      - ./samp-server:/samp-server
-    environment:
-      - SAMP_API_KEY=${AUTH_SECRET}
-    networks:
-      - saints_network
-
-  samp-db:
-    image: mariadb:10.5
-    container_name: saints_samp_db
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: saints
-      MYSQL_USER: saints
-      MYSQL_PASSWORD: password
-    volumes:
-      - samp_db_data:/var/lib/mysql
-      - ./samp-server/database:/docker-entrypoint-initdb.d
-    networks:
-      - saints_network
-
-volumes:
-  samp_db_data:
 
 networks:
   saints_network:
