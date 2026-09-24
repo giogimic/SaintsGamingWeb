@@ -51,8 +51,10 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
   // Animations
   const [animMap, setAnimMap] = useState<Record<string, string>>({}); // { standardAnim: glbAnimName }
   
-  // Materials
   const [materialConfig, setMaterialConfig] = useState<Record<string, { tintable: boolean, slot: string }>>({});
+  
+  // Mesh -> Component mapping
+  const [modularComponents, setModularComponents] = useState<Record<string, string>>({}); // { meshName: componentCategory }
 
   const [animationProfileId, setAnimationProfileId] = useState<string>('');
 
@@ -194,6 +196,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
         },
         materials: materialConfig,
         meshes: parsedGLB?.meshes.map(m => m.name) || [],
+        modularComponents: structure === 'Modular' ? modularComponents : undefined,
       };
       
       formData.append('assetDefinition', JSON.stringify(assetDefinition));
@@ -309,7 +312,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
         <div className="col-span-7 bg-[#050b14] border border-slate-800 rounded flex flex-col overflow-hidden">
           {/* Tabs */}
           <div className="flex border-b border-slate-800 bg-[#0b1320]">
-            {['roles', 'skeleton', 'attachments', 'animations', 'materials'].map(tab => (
+            {['roles', 'skeleton', 'attachments', 'animations', 'materials', ...(structure === 'Modular' ? ['components'] : [])].map(tab => (
               <button 
                 key={tab} 
                 onClick={() => setActiveTab(tab as any)}
@@ -367,18 +370,8 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                         className="w-full bg-black border border-amber-900/50 rounded px-2 py-1 text-white" 
                       />
                     </div>
-                    <div>
-                      <label className="block text-[10px] text-amber-400 mb-1">Supported Components</label>
-                      <input 
-                        type="text" 
-                        value={skeletonConnectionPoints} 
-                        onChange={e => setSkeletonConnectionPoints(e.target.value)} 
-                        placeholder="e.g. hair, torso, legs" 
-                        className="w-full bg-black border border-amber-900/50 rounded px-2 py-1 text-white" 
-                      />
-                    </div>
                     <div className="col-span-2 text-[9px] text-amber-200/60 leading-tight">
-                      Supported Components define what modular layers this base model can accept (e.g., hair, torso, legs). Players can equip items to these components. Use the "Attachments" tab to define bone mount points for weapons.
+                      To define the actual items in this modular set (like hair, torso, etc), click the new "Components" tab at the top.
                     </div>
                   </div>
                 )}
@@ -523,6 +516,46 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                     </select>
                   </div>
                 ))}
+              </div>
+            )}
+            
+            {activeTab === 'components' && structure === 'Modular' && (
+              <div className="space-y-4">
+                <div className="text-amber-200 mb-2 font-bold">Modular Set Components</div>
+                <div className="text-[10px] text-slate-400 mb-4 leading-relaxed">
+                  Map the individual meshes inside this GLB to their component categories.
+                  When published, these will be treated as distinct equipable items within the {modularSetName || 'Modular Set'}.
+                </div>
+                
+                <div className="space-y-2">
+                  {parsedGLB.meshes.map(mesh => (
+                    <div key={mesh.name} className="bg-slate-900 border border-slate-700 p-2 rounded flex items-center gap-4">
+                      <div className="flex-1 font-bold text-slate-300">
+                        Mesh: <span className="text-white">{mesh.name}</span>
+                      </div>
+                      <div className="w-48">
+                        <select 
+                          value={modularComponents[mesh.name] || ''} 
+                          onChange={e => setModularComponents(prev => ({ ...prev, [mesh.name]: e.target.value }))}
+                          className="w-full bg-black border border-amber-900/50 rounded px-2 py-1 text-white text-[10px]"
+                        >
+                          <option value="">(Not a Component Layer)</option>
+                          <option value="head">Head</option>
+                          <option value="hair">Hair</option>
+                          <option value="torso">Torso</option>
+                          <option value="legs">Legs</option>
+                          <option value="feet">Feet</option>
+                          <option value="accessory">Accessory</option>
+                          <option value="hands">Hands</option>
+                          <option value="face">Face</option>
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                  {parsedGLB.meshes.length === 0 && (
+                    <div className="text-slate-500 italic">No separate meshes found in this file.</div>
+                  )}
+                </div>
               </div>
             )}
             
