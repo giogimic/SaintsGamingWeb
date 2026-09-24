@@ -147,6 +147,29 @@ export async function POST(req: NextRequest) {
       };
     }
 
+    const assetDefRaw = formData.get("assetDefinition") as string | null;
+    if (assetDefRaw) {
+      try {
+        const parsedDef = JSON.parse(assetDefRaw);
+        presentation = presentation || {};
+        presentation.assetDefinition = parsedDef;
+      } catch (e) {
+        console.error("Failed to parse assetDefinition", e);
+      }
+    }
+
+    const thumbnailFile = formData.get("thumbnail") as File | null;
+    let thumbnailUrl: string | undefined = undefined;
+    if (thumbnailFile && thumbnailFile.size > 0) {
+      const { uploadFile } = await import("@/web/lib/upload");
+      const uploadRes = await uploadFile(thumbnailFile);
+      if (uploadRes.success && uploadRes.url) {
+        thumbnailUrl = uploadRes.url;
+        presentation = presentation || {};
+        presentation.portraitUrl = thumbnailUrl;
+      }
+    }
+
     let importProfile: AssetImportProfileId | null = null;
     if (importProfileRaw) {
       if (!isValidAssetImportProfile(importProfileRaw)) {

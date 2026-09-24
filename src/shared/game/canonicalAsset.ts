@@ -407,7 +407,7 @@ export function buildCanonicalAssetData(input: CanonicalAssetInput): CanonicalNo
     moderationStatus: input.moderationStatus || "APPROVED",
     version: 1,
     cdnUrl: sourceUrl,
-    thumbnailPath: sourceUrl,
+    thumbnailPath: (input.presentation as any)?.portraitUrl || sourceUrl,
   };
 
   return {

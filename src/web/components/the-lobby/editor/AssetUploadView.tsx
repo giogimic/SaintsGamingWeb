@@ -48,6 +48,7 @@ import {
   resolveSpriteDefinition,
 } from '@/shared/game/spriteDefinitions';
 import { convertFbxToGlb } from '@/web/lib/fbxConverter';
+import { AssetDefinitionStudio } from './asset-studio/AssetDefinitionStudio';
 
 const ASSET_TYPES = [
   { value: 'OBJECT', label: 'Object / Prop (Furniture, Trees, Rocks)', icon: Box },
@@ -695,6 +696,16 @@ export function AssetUploadView({
             )}
           </div>
         </div>
+      ) : selectedFile?.name.match(/\.(fbx|glb)$/i) && previewUrl ? (
+        <AssetDefinitionStudio 
+          file={selectedFile} 
+          previewUrl={previewUrl} 
+          onSuccess={(asset) => {
+            setUploadSuccess(asset);
+            if (onUploadComplete) onUploadComplete(asset);
+          }} 
+          onCancel={resetForm} 
+        />
       ) : (
         <form onSubmit={handleUploadSubmit} className="space-y-3">
           {/* DROPZONE */}
