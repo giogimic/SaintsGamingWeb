@@ -14,4 +14,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Developer Settings
   setCustomServer: (url) => ipcRenderer.send('set-custom-server', url),
+  
+  // FBX Converter
+  convertFbx: (inputPath) => ipcRenderer.invoke('convert-fbx', inputPath),
 });

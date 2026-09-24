@@ -1,3 +1,7 @@
+## [2.1.982] - 2026-09-24
+- **Feature**: Integrated native C++ \bx2gltf\ conversion into the Saints Gaming Electron client.
+- **Feature**: Updated \convertFbxToGlb\ browser utility to utilize Electron native IPC bridge when available, securely handling large model conversions.
+- **Refactor**: Rebuilt \MonsterEditorPanel\ and \CreatureDefEditorPanel\ to utilize the unified \CatalogEditorShell\ layout, standardizing the UI with the Archetypes, NPCs, and Items panels.
 ## [2.1.979] - 2026-09-24
 - **Bugfix**: Aligned all `@babylonjs` packages (`core`, `gui`, `loaders`) to version `^9.27.1` to fix a `flowGraphDelayRegistry.js` module not found error during Next.js build.
 
@@ -6680,4 +6684,5 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 - Added 3D Model modular parameters (isModular, partOfSet, skeletonConnectionPoints) to WorldModelSelector and integrated it into the Item Studio.
 - Expanded NPC Studio to support Companion, Mercenary, and Trainer (with party builder) roles.
 - Added local fbx2gltf conversion script for 3D character pipeline.
+
 

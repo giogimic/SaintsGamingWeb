@@ -291,6 +291,26 @@ ipcMain.on('open-external', (_event, url) => {
   if (url) shell.openExternal(url);
 });
 
+// FBX to GLB conversion
+ipcMain.handle('convert-fbx', async (event, inputPath) => {
+  let fbx2gltf;
+  try {
+    fbx2gltf = require('fbx2gltf');
+  } catch (e) {
+    return { success: false, error: 'fbx2gltf not installed in client.' };
+  }
+
+  const tempPath = path.join(app.getPath('temp'), `converted-${Date.now()}.glb`);
+  try {
+    await fbx2gltf(inputPath, tempPath, ['--khr-materials-unlit']);
+    const buffer = fs.readFileSync(tempPath);
+    try { fs.unlinkSync(tempPath); } catch (e) {}
+    return { success: true, buffer };
+  } catch (err) {
+    return { success: false, error: err.toString() };
+  }
+});
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();

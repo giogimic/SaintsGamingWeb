@@ -1,6 +1,6 @@
 {
   "name": "saints-app",
-  "version": "2.1.776",
+  "version": "2.1.777",
   "private": true,
   "description": "Saints Gaming - Time To Play",
   "type": "module",
@@ -32,5 +32,8 @@
   "devDependencies": {
     "electron": "^44.1.1",
     "electron-builder": "^26.15.3"
+  },
+  "dependencies": {
+    "fbx2gltf": "^0.9.7-p1"
   }
 }
