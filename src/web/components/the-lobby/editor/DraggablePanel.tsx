@@ -45,7 +45,7 @@ const DraggablePanelBase: React.FC<DraggablePanelProps> = ({ id, children, icon,
   if (!panelState?.isOpen || !mounted) return null;
 
   const { x, y, width, height, title, isCollapsed, isMaximized, zIndex } = panelState;
-  const blurb = STUDIO_DOCK_META[id]?.blurb;
+  const blurb = (STUDIO_DOCK_META as Record<string, { blurb: string }>)[id]?.blurb;
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (isMaximized) return;
