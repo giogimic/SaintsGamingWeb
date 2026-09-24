@@ -1956,7 +1956,7 @@ export const useEditorStore = create<EditorState>()(
           const preset = STUDIO_WORKSPACE_PRESETS.find((p) => p.id === presetId);
           if (!preset) return;
           (Object.keys(state.panels) as PanelId[]).forEach((id) => {
-            if (!preset.openDocks.includes(id)) {
+            if (!(preset.openDocks as string[]).includes(id)) {
               state.panels[id].isOpen = false;
             }
           });
