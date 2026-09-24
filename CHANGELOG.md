@@ -1,3 +1,7 @@
+## [2.1.983] - 2026-09-24
+- Overhauled Asset Studio to be 3D-First (GLB/GLTF modular attachments)
+- Added Modular Attachments UI to Archetype Workspace
+- Refined WorldModelSelector to cleanly support native 3D assets
 ## [2.1.982] - 2026-09-24
 - **Feature**: Integrated native C++ \bx2gltf\ conversion into the Saints Gaming Electron client.
 - **Feature**: Updated \convertFbxToGlb\ browser utility to utilize Electron native IPC bridge when available, securely handling large model conversions.

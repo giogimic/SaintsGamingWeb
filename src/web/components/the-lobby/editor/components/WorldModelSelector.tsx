@@ -24,10 +24,8 @@ interface WorldModelSelectorProps {
 }
 
 const MODEL_OPTIONS: { id: WorldModelType; label: string; icon: any; isImplemented: boolean }[] = [
-  { id: '2D Sprite', label: '2D Sprite', icon: ImageIcon, isImplemented: true },
-  { id: '2D Box Sprite', label: '2D Box Sprite', icon: BoxSelect, isImplemented: false },
   { id: '3D Model', label: '3D Model', icon: Cuboid, isImplemented: true },
-  { id: 'Other', label: 'Other', icon: MoreHorizontal, isImplemented: false },
+  { id: '2D Sprite', label: '2D Sprite', icon: ImageIcon, isImplemented: true },
 ];
 
 export function WorldModelSelector({ value, onChange, label = "World Model", description = "How this actor is represented in the physical game world." }: WorldModelSelectorProps) {
@@ -79,6 +77,12 @@ export function WorldModelSelector({ value, onChange, label = "World Model", des
             ) : (
               <ImageIcon className="w-4 h-4 text-slate-600" />
             )
+          ) : value.type === '3D Model' ? (
+            value.assetId ? (
+               <Cuboid className="w-5 h-5 text-cyan-400" />
+            ) : (
+               <Box className="w-4 h-4 text-slate-600" />
+            )
           ) : (
             <span className="text-[8px] text-slate-500 font-bold uppercase rotate-[-15deg]">WIP</span>
           )}
@@ -103,24 +107,23 @@ export function WorldModelSelector({ value, onChange, label = "World Model", des
             </button>
           ) : value.type === '3D Model' ? (
             <div className="w-full flex flex-col gap-2 p-3 bg-[#050b14] border border-cyan-500/30 rounded-lg transition text-left">
-              <div className="flex items-center justify-between min-w-0 mr-2 w-full">
-                <div className="flex flex-col min-w-0 flex-1">
-                  <select
-                    value={value.assetId || ''} 
-                    onChange={(e) => onChange({ ...value, assetId: e.target.value })}
-                    className="bg-black/50 text-[11px] font-bold text-cyan-300 outline-none w-full border border-cyan-500/20 rounded p-1 mb-1 cursor-pointer"
-                  >
-                    <option value="" disabled>Select 3D Animation Profile...</option>
-                    {ANIMATION_PROFILES.map(p => (
-                      <option key={p.id} value={p.id}>{p.displayName} ({p.id})</option>
-                    ))}
-                  </select>
-                  <span className="text-[9px] text-muted-foreground truncate">
-                    Maps to folder in Paragon_animations_glb.
+              
+              {/* Added native AssetId selector like 2D Sprite */}
+              <button
+                type="button"
+                onClick={() => setShowCatalogBrowser(true)}
+                className="w-full flex items-center justify-between p-2 bg-black/40 border border-slate-700 hover:border-cyan-400 rounded-lg transition text-left cursor-pointer mb-2"
+              >
+                <div className="flex flex-col min-w-0 mr-2">
+                  <span className="text-[11px] font-bold text-cyan-300 truncate">
+                    {value.assetId || 'Select 3D Model Asset...'}
+                  </span>
+                  <span className="text-[9px] text-muted-foreground mt-0.5 truncate">
+                    Uploaded GLB model file to use
                   </span>
                 </div>
-                <Cuboid className="w-4 h-4 text-cyan-400 shrink-0 ml-2" />
-              </div>
+                <Cuboid className="w-3 h-3 text-cyan-400 shrink-0" />
+              </button>
 
               <div className="border-t border-slate-800 my-1"></div>
 
@@ -167,8 +170,8 @@ export function WorldModelSelector({ value, onChange, label = "World Model", des
         </div>
       </div>
 
-      {/* 2D Sprite Browser Modal */}
-      {mounted && showCatalogBrowser && value.type === '2D Sprite' && createPortal(
+      {/* Sprite / Model Browser Modal */}
+      {mounted && showCatalogBrowser && createPortal(
         <div
           className="pointer-events-auto fixed inset-0 z-[1000] p-4 flex items-center justify-center animate-in fade-in duration-200"
           style={{ background: 'rgba(5,0,15,0.96)', backdropFilter: 'blur(10px)' }}
@@ -176,8 +179,8 @@ export function WorldModelSelector({ value, onChange, label = "World Model", des
           <div className="w-full max-w-3xl h-[80vh] bg-[#0a051d] border border-cyan-500/40 rounded-2xl flex flex-col overflow-hidden shadow-2xl">
             <div className="flex items-center justify-between p-4 border-b border-cyan-500/30 bg-[#050b14]/80">
               <div className="flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-cyan-400" />
-                <h3 className="font-black text-cyan-200 text-sm">Select World Model Asset</h3>
+                {value.type === '3D Model' ? <Cuboid className="w-4 h-4 text-cyan-400" /> : <ImageIcon className="w-4 h-4 text-cyan-400" />}
+                <h3 className="font-black text-cyan-200 text-sm">Select World {value.type} Asset</h3>
               </div>
               <button
                 type="button"
@@ -189,14 +192,16 @@ export function WorldModelSelector({ value, onChange, label = "World Model", des
             </div>
             <div className="flex-1 overflow-hidden p-2">
               <SpriteBrowser
-                filterType="CHARACTER"
+                filterType={value.type === '3D Model' ? 'MODEL' : 'CHARACTER'}
                 onSelect={(selectedAssets) => {
                   const asset = selectedAssets[0];
                   if (asset) {
-                    // Extracting just the profile ID from the source path if it's a known character
                     let id = asset.source;
-                    if (id.includes('sprites/characters/')) {
-                      id = id.split('sprites/characters/')[1].replace('.png', '');
+                    if (value.type === '3D Model') {
+                       // Keep full source or ID for models
+                       id = asset.id || asset.source;
+                    } else if (id.includes('sprites/characters/')) {
+                       id = id.split('sprites/characters/')[1].replace('.png', '');
                     }
                     onChange({ ...value, assetId: id });
                   }

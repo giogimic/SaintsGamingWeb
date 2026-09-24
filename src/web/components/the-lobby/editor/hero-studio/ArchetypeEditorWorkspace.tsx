@@ -165,7 +165,7 @@ export function ArchetypeEditorWorkspace() {
       const parsed = JSON.parse(form.visualData || '{}');
       if (parsed.worldModel) return parsed.worldModel;
     } catch {}
-    return { type: '2D Sprite', assetId: form.assetProfileId || '' };
+    return { type: '3D Model', assetId: form.assetProfileId || '' };
   };
 
   const handleWorldModelChange = (val: WorldModelValue) => {
@@ -180,6 +180,24 @@ export function ArchetypeEditorWorkspace() {
       visualData: JSON.stringify(parsed),
       assetProfileId: val.assetId // Sync for legacy compat
     }));
+  };
+
+  const getModularAttachments = (): WorldModelValue[] => {
+    try {
+      const parsed = JSON.parse(form.visualData || '{}');
+      if (Array.isArray(parsed.modularAttachments)) return parsed.modularAttachments;
+    } catch {}
+    return [];
+  };
+
+  const handleModularAttachmentsChange = (vals: WorldModelValue[]) => {
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(form.visualData || '{}');
+      if (Array.isArray(parsed)) parsed = {};
+    } catch {}
+    parsed.modularAttachments = vals;
+    setForm(prev => ({ ...prev, visualData: JSON.stringify(parsed) }));
   };
 
   const f = (key: keyof StarterHeroData, value: any) =>
@@ -463,8 +481,52 @@ export function ArchetypeEditorWorkspace() {
               <WorldModelSelector
                 value={getWorldModel()}
                 onChange={handleWorldModelChange}
-                label="World Representation"
+                label="Base World Representation"
               />
+
+              {getWorldModel().isModular && (
+                <div className="mt-4 pt-4 border-t border-cyan-500/10 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-[10px] font-bold text-cyan-500/60 uppercase">Modular Attachments (Sets)</h4>
+                    <button 
+                      onClick={() => handleModularAttachmentsChange([...getModularAttachments(), { type: '3D Model', assetId: '', isModular: true }])}
+                      className="px-2 py-1 bg-cyan-900/50 hover:bg-cyan-800 text-cyan-200 text-[10px] rounded border border-cyan-500/30"
+                    >
+                      + Add Attachment
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    {getModularAttachments().map((attachment, idx) => (
+                      <div key={idx} className="relative pl-3 border-l-2 border-cyan-900/50">
+                        <button 
+                          onClick={() => {
+                            const newArr = [...getModularAttachments()];
+                            newArr.splice(idx, 1);
+                            handleModularAttachmentsChange(newArr);
+                          }}
+                          className="absolute -right-2 -top-2 p-1 bg-rose-900/50 hover:bg-rose-800 text-rose-300 rounded-full border border-rose-500/30 z-10"
+                        >
+                          <Trash2 size={10} />
+                        </button>
+                        <WorldModelSelector
+                          value={attachment}
+                          onChange={(val) => {
+                            const newArr = [...getModularAttachments()];
+                            newArr[idx] = val;
+                            handleModularAttachmentsChange(newArr);
+                          }}
+                          label={`Attachment ${idx + 1}`}
+                        />
+                      </div>
+                    ))}
+                    {getModularAttachments().length === 0 && (
+                      <div className="text-[10px] text-slate-500 italic p-2 border border-dashed border-slate-800 rounded text-center">
+                        No base attachments added. Players will see a naked skeleton if not configured.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Box 4: Spawn Rules & Metadata */}

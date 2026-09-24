@@ -535,15 +535,15 @@ export function AssetUploadView({
       </div>
 
       {/* Modular SMART DETECTION / PRESETS BANNER */}
-      <div className="bg-[#07111c] border border-cyan-500/30 rounded p-3 space-y-3">
+      <div className="bg-[#07111c] border border-amber-500/30 rounded p-3 space-y-3">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="space-y-1 max-w-[44rem]">
-            <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-sm">
-              <Wand2 className="w-4 h-4 text-cyan-400" /> Universal Modular Character Studio Ingestion
+            <div className="flex items-center gap-1.5 text-amber-500 font-bold text-sm">
+              <Wand2 className="w-4 h-4 text-amber-500" /> Modular 3D Asset Pipeline
             </div>
             <p className="text-[11px] text-slate-300 leading-relaxed">
-              Drop any spritesheet PNG or Modular Generator export ZIP. Slices and modular layers are extracted
-              automatically with full author credits intact.
+              Upload base skeletons (GLB/FBX) or modular 3D attachments (hair, faces, clothing). 
+              Items are grouped into sets so players can customize characters dynamically on selection.
             </p>
           </div>
 
@@ -551,23 +551,23 @@ export function AssetUploadView({
             <button
               type="button"
               onClick={() => applyModularPreset('character')}
-              className="px-3 py-1.5 rounded bg-cyan-800 hover:bg-cyan-700 text-white font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-1.5 rounded bg-amber-800 hover:bg-amber-700 text-white font-bold transition-all flex items-center gap-1.5 cursor-pointer"
             >
-              <Wand2 className="w-3.5 h-3.5" /> Full Modular Preset
+              <Wand2 className="w-3.5 h-3.5" /> New Modular Set
             </button>
             <button
               type="button"
               onClick={() => applyModularPreset('walk')}
-              className="px-3 py-1.5 rounded bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200 font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-1.5 rounded bg-amber-900/80 hover:bg-amber-800 text-amber-200 font-bold transition-all flex items-center gap-1.5 cursor-pointer"
             >
-              Walk Cycle (4-Dir)
+              Base Skeleton
             </button>
             <button
               type="button"
               onClick={() => applyModularPreset('2.5d')}
-              className="px-3 py-1.5 rounded bg-amber-700/80 hover:bg-amber-600 text-amber-100 font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold transition-all flex items-center gap-1.5 cursor-pointer"
             >
-              Saints 2.5D (3x4)
+              Legacy 2.5D Mode
             </button>
           </div>
         </div>
