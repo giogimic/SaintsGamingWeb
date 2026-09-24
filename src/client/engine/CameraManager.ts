@@ -319,18 +319,21 @@ export class CameraManager {
     const currentPitch = this.profile.pitch ?? Math.PI / 4;
     const dist = this.profile.distance ?? 14;
     const currentYaw = this.yaw || 0;
-    const camY = Math.max(1.5, dist * Math.sin(currentPitch));
-    const horizDist = dist * Math.cos(currentPitch);
+    const isFirstPerson = this.profile.distance === 0;
+    
+    const camY = isFirstPerson ? PLAYER_EYE_HEIGHT : Math.max(1.0, dist * Math.sin(currentPitch));
+    const horizDist = isFirstPerson ? 0 : dist * Math.cos(currentPitch);
     const offsetX = -horizDist * Math.sin(currentYaw);
     const offsetZ = -horizDist * Math.cos(currentYaw);
-
-    const isFirstPerson = this.profile.distance === 0;
-    const targetYWithOffset = isFirstPerson ? y + PLAYER_EYE_HEIGHT : y;
 
     this.camera.position = new BABYLON.Vector3(x + offsetX, y + camY, z + offsetZ);
     this.camera.setTarget(
       isFirstPerson
-        ? new BABYLON.Vector3(x + Math.sin(currentYaw) * 10, targetYWithOffset, z + Math.cos(currentYaw) * 10)
+        ? new BABYLON.Vector3(
+            x + Math.sin(currentYaw) * Math.cos(currentPitch) * 10,
+            y + PLAYER_EYE_HEIGHT + Math.sin(currentPitch) * 10,
+            z + Math.cos(currentYaw) * Math.cos(currentPitch) * 10
+          )
         : new BABYLON.Vector3(x, y + PLAYER_CHEST_HEIGHT, z)
     );
     this.snapped = true;
@@ -367,8 +370,11 @@ export class CameraManager {
       const is3D = activeMap && (activeMap.mapType === 'VOXEL' || activeMap.mapType === 'FRACTAL' || activeMap.mapType === 'HYBRID');
       
       const px = player.position.x;
-      const pz = is3D && player.position.z !== undefined ? player.position.z : -player.position.y;
-      const py = is3D ? player.position.y : 0;
+      // If the map is 3D but the player position doesn't have a Z coordinate (e.g. legacy 2D protocol),
+      // we must map the 2D Y coordinate to Z in the exact same way EntityRenderer does.
+      // EntityRenderer: is3D ? data.y : -data.y. Since data.y gets player.position.y, targetZ = player.position.y.
+      const pz = is3D ? (player.position.z !== undefined ? player.position.z : player.position.y) : -player.position.y;
+      const py = is3D ? (player.position.z !== undefined ? player.position.y : 0) : 0;
 
       if (!this.snapped) {
         this.snapCameraTo(px, pz, py, is3D);
@@ -398,23 +404,29 @@ export class CameraManager {
       const currentPitch = this.profile.pitch ?? Math.PI / 4;
       const dist = this.profile.distance ?? 14;
       const currentYaw = this.yaw || 0;
-      const camY = Math.max(1.5, dist * Math.sin(currentPitch));
-      const horizDist = dist * Math.cos(currentPitch);
+      const isFirstPerson = this.settings.playerCameraStyle === 'firstperson';
+      
+      // If first person, camera is at eye level. Otherwise, compute offset.
+      const camY = isFirstPerson ? PLAYER_EYE_HEIGHT : Math.max(1.0, dist * Math.sin(currentPitch));
+      const horizDist = isFirstPerson ? 0 : dist * Math.cos(currentPitch);
       const offsetX = -horizDist * Math.sin(currentYaw);
       const offsetZ = -horizDist * Math.cos(currentYaw);
 
       const targetCamPos = new BABYLON.Vector3(px + offsetX, this.targetY + camY, pz + offsetZ);
-      const isFirstPerson = this.settings.playerCameraStyle === 'firstperson';
-      const targetYWithOffset = isFirstPerson ? this.targetY + PLAYER_EYE_HEIGHT : this.targetY;
 
+      // We don't want to lerp the target for first-person if it makes aiming mushy,
+      // but for now we apply the same smoothing to keep it simple, or bypass it.
       this.camera.position = BABYLON.Vector3.Lerp(this.camera.position, targetCamPos, smoothFactor);
-      this.camera.setTarget(BABYLON.Vector3.Lerp(
-        this.camera.getTarget(),
-        isFirstPerson
-          ? new BABYLON.Vector3(px + Math.sin(currentYaw) * 10, targetYWithOffset, pz + Math.cos(currentYaw) * 10)
-          : new BABYLON.Vector3(px, this.targetY + PLAYER_CHEST_HEIGHT, pz),
-        smoothFactor
-      ));
+      
+      const targetLookAt = isFirstPerson
+        ? new BABYLON.Vector3(
+            px + Math.sin(currentYaw) * Math.cos(currentPitch) * 10,
+            this.targetY + PLAYER_EYE_HEIGHT + Math.sin(currentPitch) * 10,
+            pz + Math.cos(currentYaw) * Math.cos(currentPitch) * 10
+          )
+        : new BABYLON.Vector3(px, this.targetY + PLAYER_CHEST_HEIGHT, pz);
+
+      this.camera.setTarget(BABYLON.Vector3.Lerp(this.camera.getTarget(), targetLookAt, smoothFactor));
     }
 
     // Keep ortho aspect in sync on every frame (resize-safe)
