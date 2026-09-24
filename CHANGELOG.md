@@ -6281,6 +6281,13 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 
 # Changelog
 
+## [2.1.981] - 2026-09-24
+### Added
+- Implemented the SA-MP profile tab to display linked San Andreas Multiplayer player sessions with safe fields (name, score, server, online status, last seen).
+- Implemented the Friends profile tab, showing accepted friendships in deterministic order with pagination.
+- Added \getProfileFriends\ server action to efficiently fetch and sort profile friends.
+- Added \SampTab\ and \FriendsTab\ client components to the user profile view.
+- Plumbed SA-MP data loading into \getPublicProfile\ query, adhering to the user's \sampVisibility\ profile setting.
 ## [2.1.756] - 2026-09-06
 ### Added
 - Implemented core Sprint and Jump movement mechanics across Grid and Voxel simulation engines.
@@ -6673,3 +6680,4 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 - Added 3D Model modular parameters (isModular, partOfSet, skeletonConnectionPoints) to WorldModelSelector and integrated it into the Item Studio.
 - Expanded NPC Studio to support Companion, Mercenary, and Trainer (with party builder) roles.
 - Added local fbx2gltf conversion script for 3D character pipeline.
+

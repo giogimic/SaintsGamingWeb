@@ -145,6 +145,9 @@ export interface ComponentCapabilities {
   shopkeeper?: boolean;
   banker?: boolean;
   questGiver?: boolean;
+  mercenary?: boolean;
+  companion?: boolean;
+  trainer?: boolean;
 }
 
 export interface ComponentMap {

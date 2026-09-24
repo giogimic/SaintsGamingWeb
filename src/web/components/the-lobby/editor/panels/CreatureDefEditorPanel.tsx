@@ -62,6 +62,7 @@ export function CreatureDefEditorPanel() {
   const [showCatalogBrowser, setShowCatalogBrowser] = useState(false);
   const [activeLayerPicker, setActiveLayerPicker] = useState<'overworld' | 'battle' | 'back' | null>(null);
   const [viewMode, setViewMode] = useState<'catalog' | 'cameras'>('catalog');
+  const [search, setSearch] = useState('');
   const isNewRef = useRef(isNew);
   isNewRef.current = isNew;
 
@@ -349,148 +350,60 @@ export function CreatureDefEditorPanel() {
           </div>
         )}
 
-        {viewMode === 'catalog' && (
-          <CatalogEditorShell
-      title="Creature Catalog"
-      blurb={`${list.length} defs · world ${activeGameId} · GameAsset + CreatureDef SoT · definition undo on blur`}
-      dirty={isNew || canUndoDefinition}
-      canUndoDefinition={canUndoDefinition}
-      canRedoDefinition={canRedoDefinition}
-      onUndoDefinition={() =>
-        applyHistory('undo', (value) => {
-          if (isCreatureForm(value)) setForm(value);
-        })
-      }
-      onRedoDefinition={() =>
-        applyHistory('redo', (value) => {
-          if (isCreatureForm(value)) setForm(value);
-        })
-      }
-      toolbar={
-        <div className="flex flex-wrap gap-1">
-          <button type="button" onClick={() => setShowJson((v) => !v)} className="flex items-center gap-1 rounded border border-[#806f47]/30 bg-transparent px-2 py-1 text-slate-300">
-            <FileJson size={10} /> JSON
-          </button>
-          <button type="button" onClick={handleNew} className="flex items-center gap-1 rounded bg-emerald-700 px-2 py-1 text-white">
-            <Plus size={10} /> New
-          </button>
-          <button type="button" onClick={() => void load()} className="rounded border border-[#806f47]/30 p-1 text-slate-400">
-            <RefreshCw size={12} />
-          </button>
-        </div>
-      }
-      list={
-        <div className="space-y-1">
-          {/* Category Filter Tabs */}
-          <div className="grid grid-cols-4 gap-1 p-1 bg-black/50/40 border-b border-slate-900 text-[9px] font-mono">
-            <button
-              type="button"
-              onClick={() => setCategoryFilter('all')}
-              className={`py-1 rounded text-center transition-all ${
-                categoryFilter === 'all'
-                  ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              All
-            </button>
-            <button
-              type="button"
-              onClick={() => setCategoryFilter('beast')}
-              className={`py-1 rounded text-center transition-all ${
-                categoryFilter === 'beast'
-                  ? 'bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Beasts
-            </button>
-            <button
-              type="button"
-              onClick={() => setCategoryFilter('monster')}
-              className={`py-1 rounded text-center transition-all ${
-                categoryFilter === 'monster'
-                  ? 'bg-rose-500/20 text-rose-300 font-bold border border-rose-500/40'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Monsters
-            </button>
-            <button
-              type="button"
-              onClick={() => setCategoryFilter('mercenary')}
-              className={`py-1 rounded text-center transition-all ${
-                categoryFilter === 'mercenary'
-                  ? 'bg-violet-500/20 text-violet-300 font-bold border border-violet-500/40'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Mercs
-            </button>
-          </div>
-
-          <div className="space-y-0.5">
-            {list
-              .filter((c) => categoryFilter === 'all' || (c.category || 'beast') === categoryFilter)
-              .map((c) => (
-                <div
-                  key={c.slug}
-                  onClick={() => handleSelect(c)}
-                  className={`cursor-pointer border-b border-slate-900 p-2 hover:bg-emerald-950/30 ${
-                    form.slug === c.slug ? 'bg-emerald-950/50' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={creatureAssetUrl(c.spriteOverworld)} alt="" className="h-6 w-6 object-contain" />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate font-bold text-[10px] text-slate-200 flex items-center gap-1.5">
-                        <span>{c.name}</span>
-                        <span className="text-[8px] uppercase tracking-wider px-1 rounded bg-black/50/20 text-slate-400 border border-[#806f47]/20">
-                          {c.category || 'beast'}
-                        </span>
-                      </div>
-                      <div className="truncate text-[9px] text-slate-500">
-                        {c.typePrimary}
-                        {c.typeSecondary !== 'None' ? `/${c.typeSecondary}` : ''}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="text-slate-500 hover:text-emerald-400"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void toggleCreatureDefActive(c.slug, !c.isActive).then(load);
-                      }}
-                    >
-                      {c.isActive ? <Eye size={10} /> : <EyeOff size={10} />}
-                    </button>
-                    <button
-                      type="button"
-                      className="text-slate-500 hover:text-red-400"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void handleDelete(c.slug);
-                      }}
-                    >
-                      <Trash2 size={10} />
-                    </button>
-                  </div>
+        {viewMode === 'catalog' && (() => {
+          const filteredList = list.filter((c) => {
+            const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.slug.toLowerCase().includes(search.toLowerCase());
+            const matchesCategory = categoryFilter === 'all' || (c.category || 'beast') === categoryFilter;
+            return matchesSearch && matchesCategory;
+          });
+          
+          return (
+            <CatalogEditorShell
+              title="Creature Catalog"
+              items={filteredList}
+              activeId={isNew ? null : form.slug}
+              getItemId={(c) => c.slug}
+              getItemName={(c) => c.name}
+              isDirty={() => isNew || canUndoDefinition}
+              search={search}
+              onSearchChange={setSearch}
+              onSelect={(slug) => { const c = list.find(x => x.slug === slug); if (c) handleSelect(c); }}
+              onCreateNew={handleNew}
+              onSave={() => handleSave()}
+              onDelete={() => handleDelete(form.slug)}
+              saving={loading}
+              validationError={status?.type === 'error' ? status.msg : null}
+              canUndoDefinition={canUndoDefinition}
+              canRedoDefinition={canRedoDefinition}
+              onUndoDefinition={() => applyHistory('undo', (value) => { if (isCreatureForm(value)) setForm(value); })}
+              onRedoDefinition={() => applyHistory('redo', (value) => { if (isCreatureForm(value)) setForm(value); })}
+              toolbar={
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    className="bg-black/40 border border-[#806f47]/30 rounded px-2 py-1 text-[9px] text-slate-300 font-bold uppercase"
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value as any)}
+                  >
+                    <option value="all">All Types</option>
+                    <option value="beast">Beasts</option>
+                    <option value="monster">Monsters</option>
+                    <option value="mercenary">Mercs</option>
+                  </select>
+                  <button type="button" onClick={() => setShowJson((v) => !v)} className="flex items-center gap-1 rounded border border-[#806f47]/30 bg-transparent px-2 py-1 text-slate-300">
+                    <FileJson size={10} /> JSON
+                  </button>
+                  <button type="button" onClick={() => void load()} className="rounded border border-[#806f47]/30 p-1 text-slate-400">
+                    <RefreshCw size={12} />
+                  </button>
                 </div>
-              ))}
-            {list.filter((c) => categoryFilter === 'all' || (c.category || 'beast') === categoryFilter).length === 0 && (
-              <p className="p-2 text-[10px] text-slate-500">No definitions found for this filter.</p>
-            )}
-          </div>
-        </div>
-      }
-    >
-      {status && (
-        <div className={`mb-2 flex items-center gap-1 px-1 text-[10px] ${status.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
-          {status.type === 'success' ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
-          {status.msg}
-        </div>
-      )}
+              }
+            >
+              {status?.type === 'success' && (
+                <div className="mb-2 flex items-center gap-1 rounded px-2 py-1 text-[10px] bg-emerald-900/40 text-emerald-200">
+                  <CheckCircle2 size={12} />
+                  {status.msg}
+                </div>
+              )}
 
       {showJson && (
         <div className="mb-3 space-y-2 border-b border-[#806f47]/20 pb-3">
@@ -1266,14 +1179,6 @@ export function CreatureDefEditorPanel() {
                   />{' '}
                   Active
                 </label>
-                <div className="flex-1" />
-                <button
-                  disabled={loading}
-                  onClick={() => void handleSave()}
-                  className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded flex items-center gap-1"
-                >
-                  <Save size={12} /> {loading ? 'Saving…' : 'Save Creature'}
-                </button>
               </div>
             </>
           )}
@@ -1282,7 +1187,8 @@ export function CreatureDefEditorPanel() {
           )}
         </div>
       </CatalogEditorShell>
-        )}
+          );
+        })()}
       </div>
     </div>
 
