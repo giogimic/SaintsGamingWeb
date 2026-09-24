@@ -1710,9 +1710,30 @@ model NpcDef {
   gameId         String   @default("saints")
   name           String
   description    String?
-  componentsData String // JSON containing BaseEntityDefinition components
+  componentsData String   @default("{}") // JSON containing BaseEntityDefinition components
+  visualData     String   @default("[]") // JSON representing 2D/3D model assets
+  roles          String   @default("[]") // JSON array: ["SHOP", "QUEST_GIVER", "MERCENARY", "COMPANION", "TRAINER"]
+  trainerParty   String   @default("[]") // JSON array of creature slugs if trainer
   version        Int      @default(1)
   isPublished    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([gameId])
+}
+
+model MonsterDef {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  gameId         String   @default("saints")
+  name           String
+  description    String?
+  visualData     String   @default("[]") // Shared asset setup with archetypes
+  elementType    String   @default("None") // Solar, Hydro, Bio, Volt, etc.
+  abilities      String   @default("[]") // JSON list of ability slugs
+  equipment      String   @default("[]") // JSON list of equipped item slugs
+  dropList       String   @default("[]") // JSON list of item slugs + chances
+  baseStats      String   @default("{}") // JSON: HP, Attack, Defense, etc.
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -1859,6 +1880,7 @@ model CreatureDef {
   spriteOverworld       String // e.g. "npc/rockitten" or "monster/battle/agnite-sheet"
   spriteBattle          String? // front / battle sheet
   spriteBack            String?
+  visualData            String   @default("[]") // Optional 3D world model, handled like archetypes/npcs
   // Shiny variant (easy Studio edit). Empty shiny sprites → use default look.
   shinyEnabled          Boolean  @default(true)
   shinyUseGlobalChance  Boolean  @default(true)
