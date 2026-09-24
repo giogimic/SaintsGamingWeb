@@ -43,6 +43,11 @@ export const ALLOWED_ARCHIVE_MIME_TYPES = [
   "application/gzip",
 ];
 
+export const ALLOWED_MODEL_MIME_TYPES = [
+  "model/gltf-binary",
+  "model/gltf+json",
+];
+
 export const ALLOWED_SOCIAL_MIME_TYPES = [
   ...ALLOWED_IMAGE_MIME_TYPES,
   ...ALLOWED_VIDEO_MIME_TYPES,
@@ -135,12 +140,15 @@ async function persistUpload(input: {
   };
 }
 
-/** Upload a standard image file from a FormData File object */
+/** Upload a standard image or model file from a FormData File object */
 export async function uploadFile(file: File): Promise<UploadResult> {
-  if (!ALLOWED_IMAGE_MIME_TYPES.includes(file.type)) {
+  if (
+    !ALLOWED_IMAGE_MIME_TYPES.includes(file.type) &&
+    !ALLOWED_MODEL_MIME_TYPES.includes(file.type)
+  ) {
     return {
       success: false,
-      error: `Invalid file type: ${file.type}. Allowed: ${ALLOWED_IMAGE_MIME_TYPES.join(", ")}`,
+      error: `Invalid file type: ${file.type}. Allowed: images, models`,
     };
   }
 
@@ -211,6 +219,10 @@ export function inferMimeType(fileName: string, providedType?: string): string {
       return 'application/gzip';
     case '.bz2':
       return 'application/x-bzip2';
+    case '.glb':
+      return 'model/gltf-binary';
+    case '.gltf':
+      return 'model/gltf+json';
     default:
       return providedType || 'application/octet-stream';
   }

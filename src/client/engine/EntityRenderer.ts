@@ -29,7 +29,7 @@ const ENTITY_WIDTH = 1.2;
 const INTERPOLATION_SPEED = 12; // Higher = snappier
 
 interface ManagedSprite {
-  mesh: BABYLON.Mesh;
+  mesh: BABYLON.TransformNode;
   label?: BABYLON.Mesh;
   gui?: AdvancedDynamicTexture;
   targetX: number;
@@ -69,13 +69,17 @@ export class EntityRenderer {
     // 1. Local Player
     const player = usePlayerStore.getState().player;
     const is3D = player.position.z !== undefined;
+    const isModel = player.assetProfileId?.endsWith('.glb') || player.assetProfileId?.endsWith('.gltf') || player.assetProfileId?.endsWith('.fbx');
+    const resolvedUrl = player.assetProfileId ? resolveEntitySpriteUrl(player.assetProfileId, { kind: 'player' }) : undefined;
+
     this.upsertSprite('local_player', {
       x: player.position.x,
       y: is3D ? (player.position.z as number) : player.position.y,
       z: is3D ? player.position.y : undefined,
       name: player.name || 'You',
       color: new BABYLON.Color3(0.2, 0.6, 1),
-      spriteUrl: player.assetProfileId ? resolveEntitySpriteUrl(player.assetProfileId, { kind: 'player' }) : undefined,
+      spriteUrl: isModel ? undefined : resolvedUrl,
+      modelUrl: isModel ? resolvedUrl : undefined,
       isPlayer: true,
     }, now);
 
@@ -95,13 +99,17 @@ export class EntityRenderer {
         }
       }
 
+      const isModel = rp.assetProfileId?.endsWith('.glb') || rp.assetProfileId?.endsWith('.gltf') || rp.assetProfileId?.endsWith('.fbx');
+      const resolvedUrl = rp.assetProfileId ? resolveEntitySpriteUrl(rp.assetProfileId, { kind: 'player' }) : undefined;
+
       this.upsertSprite(`remote_${id}`, {
         x: px,
         y: py,
         z: rp.y, // Remote players send vertical pos in y as well
         name: rp.name || 'Player',
         color: new BABYLON.Color3(1, 0.6, 0.2),
-        spriteUrl: rp.assetProfileId ? resolveEntitySpriteUrl(rp.assetProfileId, { kind: 'player' }) : undefined,
+        spriteUrl: isModel ? undefined : resolvedUrl,
+        modelUrl: isModel ? resolvedUrl : undefined,
         chatMessage: rp.chatMessage,
         isPlayer: true,
       }, now);
@@ -115,12 +123,15 @@ export class EntityRenderer {
         ? new BABYLON.Color3(0.2, 0.8, 0.3)
         : new BABYLON.Color3(0.8, 0.2, 0.2);
 
+      const isModel = ent.spriteKey?.endsWith('.glb') || ent.spriteKey?.endsWith('.gltf') || ent.spriteKey?.endsWith('.fbx');
+
       this.upsertSprite(`entity_${ent.id}`, {
         x: ent.position.x,
         y: ent.position.z !== undefined ? ent.position.z : ent.position.y,
         name: ent.name || ent.type,
         color: entityColor,
-        spriteUrl: entitySpriteUrl,
+        spriteUrl: isModel ? undefined : entitySpriteUrl,
+        modelUrl: isModel ? entitySpriteUrl : undefined,
       }, now);
     }
 
@@ -158,6 +169,7 @@ export class EntityRenderer {
       name?: string;
       color: BABYLON.Color3;
       spriteUrl?: string;
+      modelUrl?: string;
       chatMessage?: string;
       isPlayer?: boolean;
     },
@@ -171,43 +183,66 @@ export class EntityRenderer {
     const spriteH = data.isPlayer ? PLAYER_HEIGHT : ENTITY_HEIGHT;
 
     if (!sprite) {
-      // Create billboard mesh
-      const mesh = BABYLON.MeshBuilder.CreatePlane(`sprite_${id}`, {
-        width: spriteW,
-        height: spriteH,
-      }, this.scene);
-      mesh.parent = this.entityRoot;
-      mesh.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+      let mesh: BABYLON.TransformNode;
 
-      // Material
-      const mat = new BABYLON.StandardMaterial(`mat_${id}`, this.scene);
-      mat.emissiveColor = data.color.scale(0.3);
-      mat.specularColor = new BABYLON.Color3(0, 0, 0);
-      mat.backFaceCulling = false;
+      if (data.modelUrl) {
+        mesh = new BABYLON.TransformNode(`sprite_${id}`, this.scene);
+        mesh.parent = this.entityRoot;
 
-      // Try to load sprite texture
-      if (data.spriteUrl) {
-        const tex = this.getOrLoadTexture(data.spriteUrl);
-        if (tex) {
-          tex.hasAlpha = true;
-          // Apply foundational 3x4 sprite formatting abstraction (Idle, Facing Down)
-          // TODO: Read this dynamically from sprite definitions and action state
-          tex.uScale = 1 / 3;
-          tex.vScale = 1 / 4;
-          tex.uOffset = 1 / 3; // Idle frame (col 1)
-          tex.vOffset = 0;     // Facing down (row 0)
-          
-          mat.diffuseTexture = tex;
-          mat.transparencyMode = BABYLON.Material.MATERIAL_ALPHATEST;
-          mat.alphaCutOff = 0.3;
+        BABYLON.SceneLoader.ImportMeshAsync("", data.modelUrl, "", this.scene).then((result) => {
+          result.meshes.forEach((m) => {
+            if (!m.parent) {
+              m.parent = mesh;
+            }
+          });
+          // Ensure model scales appropriately, FBX/GLB might be big
+          // For now let's scale it so it roughly fits
+          mesh.scaling = new BABYLON.Vector3(0.8, 0.8, 0.8);
+
+          if (result.animationGroups.length > 0) {
+            result.animationGroups[0].play(true);
+          }
+        }).catch(err => console.error('Failed to load 3D model:', data.modelUrl, err));
+
+      } else {
+        // Create billboard mesh
+        const plane = BABYLON.MeshBuilder.CreatePlane(`sprite_${id}`, {
+          width: spriteW,
+          height: spriteH,
+        }, this.scene);
+        plane.parent = this.entityRoot;
+        plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+
+        // Material
+        const mat = new BABYLON.StandardMaterial(`mat_${id}`, this.scene);
+        mat.emissiveColor = data.color.scale(0.3);
+        mat.specularColor = new BABYLON.Color3(0, 0, 0);
+        mat.backFaceCulling = false;
+
+        // Try to load sprite texture
+        if (data.spriteUrl) {
+          const tex = this.getOrLoadTexture(data.spriteUrl);
+          if (tex) {
+            tex.hasAlpha = true;
+            // Apply foundational 3x4 sprite formatting abstraction (Idle, Facing Down)
+            // TODO: Read this dynamically from sprite definitions and action state
+            tex.uScale = 1 / 3;
+            tex.vScale = 1 / 4;
+            tex.uOffset = 1 / 3; // Idle frame (col 1)
+            tex.vOffset = 0;     // Facing down (row 0)
+            
+            mat.diffuseTexture = tex;
+            mat.transparencyMode = BABYLON.Material.MATERIAL_ALPHATEST;
+            mat.alphaCutOff = 0.3;
+          } else {
+            mat.diffuseColor = data.color;
+          }
         } else {
           mat.diffuseColor = data.color;
         }
-      } else {
-        mat.diffuseColor = data.color;
+        plane.material = mat;
+        mesh = plane;
       }
-
-      mesh.material = mat;
 
       // Name label (floating GUI above head)
       let labelMesh: BABYLON.Mesh | undefined;

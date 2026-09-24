@@ -47,6 +47,7 @@ import {
   SpriteAnimationProfile,
   resolveSpriteDefinition,
 } from '@/shared/game/spriteDefinitions';
+import { convertFbxToGlb } from '@/web/lib/fbxConverter';
 
 const ASSET_TYPES = [
   { value: 'OBJECT', label: 'Object / Prop (Furniture, Trees, Rocks)', icon: Box },
@@ -56,6 +57,7 @@ const ASSET_TYPES = [
   { value: 'ITEM', label: 'Inventory Item / Gear Icon', icon: Box },
   { value: 'UI', label: 'UI Element / Frame / Icon', icon: Box },
   { value: 'EFFECT', label: 'Visual Effect / Particle', icon: SparklesIcon },
+  { value: 'MODEL', label: '3D Model (FBX/GLB)', icon: Box },
   { value: 'AUDIO', label: 'Sound Effect / Music Track', icon: Music },
 ];
 
@@ -175,6 +177,34 @@ export function AssetUploadView({
     // If a ZIP package is dropped/selected (e.g. from Universal Modular Generator)
     if (file.name.toLowerCase().endsWith('.zip') || file.type.includes('zip')) {
       await handleZipUpload(file);
+      return;
+    }
+
+    if (file.name.toLowerCase().endsWith('.fbx')) {
+      try {
+        setErrorMessage(null);
+        showToast?.('Converting FBX to GLB for web compatibility...');
+        const glbFile = await convertFbxToGlb(file);
+        
+        setSelectedFile(glbFile);
+        const url = URL.createObjectURL(glbFile);
+        setPreviewUrl(url);
+        
+        if (!assetName) setAssetName(file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
+        setAssetType('MODEL');
+        return;
+      } catch (err: any) {
+        setErrorMessage(`FBX Conversion failed: ${err.message}`);
+        return;
+      }
+    }
+
+    if (file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf')) {
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      if (!assetName) setAssetName(file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
+      setAssetType('MODEL');
       return;
     }
 

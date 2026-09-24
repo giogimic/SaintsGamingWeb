@@ -184,14 +184,20 @@ export class CameraManager {
     if (this.settings.playerCameraStyle !== 'dynamic') return;
     const zoom = this.currentZoom || 10;
 
-    let targetMode: 'firstperson' | 'follow45' | 'isometric' = 'isometric';
+    let targetMode: Exclude<CameraStyle, 'dynamic'> = 'isometric';
     if (zoom < 6.5) {
       targetMode = 'firstperson';
-    } else if (zoom < 9.0) {
+    } else if (zoom < 12.0) {
       targetMode = 'follow45';
     }
 
     this.applyInternalStyle(targetMode);
+
+    if (targetMode === 'follow45') {
+      // Scale distance dynamically based on zoom (e.g. from 2 to 10)
+      this.profile.distance = (zoom - 6.5) * 1.5 + 2.0;
+      this.profile.pitch = Math.PI / 6; // Standard 3rd person pitch
+    }
   }
 
   private applyInternalStyle(style: Exclude<CameraStyle, 'dynamic'>) {
@@ -318,7 +324,7 @@ export class CameraManager {
     const offsetX = -horizDist * Math.sin(currentYaw);
     const offsetZ = -horizDist * Math.cos(currentYaw);
 
-    const isFirstPerson = this.settings.playerCameraStyle === 'firstperson';
+    const isFirstPerson = this.profile.distance === 0;
     const targetYWithOffset = isFirstPerson ? y + PLAYER_EYE_HEIGHT : y;
 
     this.camera.position = new BABYLON.Vector3(x + offsetX, y + camY, z + offsetZ);

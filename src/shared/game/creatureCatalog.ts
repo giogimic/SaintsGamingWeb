@@ -383,7 +383,10 @@ export function resolveEntitySpriteUrl(
     return `/${trimmed}`;
   }
   if (trimmed.startsWith('upload_') || trimmed.startsWith('asset_custom_')) {
-    return `/uploads/${trimmed.endsWith('.png') ? trimmed : `${trimmed}.png`}`;
+    if (trimmed.endsWith('.png') || trimmed.endsWith('.glb') || trimmed.endsWith('.gltf')) {
+      return `/uploads/${trimmed}`;
+    }
+    return `/uploads/${trimmed}.png`;
   }
 
   const key = raw.replace(/\.png$/i, "");

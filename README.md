@@ -221,6 +221,13 @@ Once it's running, open [http://localhost:24001](http://localhost:24001) in your
 ---
 
 ## Changelog
+
+### v2.1.975
+- Added FBX to GLB client-side conversion for Studio asset uploads.
+- Implemented dynamic scaling of 3D third-person (follow45) camera distance based on zoom level.
+- Extended upload validation and entity rendering to support loading .glb 3D meshes.
+- Adjusted Dynamic Camera mode to transition to follow45 further out.
+- Refined first-person camera physical height logic.
 - Fixed a fatal concurrent map read crash in 	he-lobby Go MMO backend during project release publishing (by safely iterating over manifest NPC list instead of unprotected map).
 
 ### v2.1.923 - Fix File Manager Drag & Drop and Expose SA-MP Ports
