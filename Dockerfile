@@ -2,8 +2,7 @@ FROM node:22-bookworm-slim
 
 # Install OS dependencies required for Prisma/native packages and healthchecks.
 # Debian/glibc avoids Alpine musl native-module mismatches in Ubuntu-like deployments.
-RUN dpkg --add-architecture i386 \
-    && apt-get update \
+RUN apt-get update \
     && apt-get install -y --no-install-recommends \
       ca-certificates \
       openssl \
@@ -14,18 +13,7 @@ RUN dpkg --add-architecture i386 \
       unzip \
       git \
       openssh-client \
-      libc6:i386 \
-      libncurses5:i386 \
-      libstdc++6:i386 \
-      libatomic1 \
-      libatomic1:i386 \
-      libssl3 \
-      libssl3:i386 \
     && rm -rf /var/lib/apt/lists/*
-
-# Add legacy MySQL dependency for SA-MP plugin
-COPY docker/deps/libmysqlclient.so.18 /usr/lib/i386-linux-gnu/libmysqlclient.so.18
-RUN chmod 755 /usr/lib/i386-linux-gnu/libmysqlclient.so.18
 
 WORKDIR /app
 
