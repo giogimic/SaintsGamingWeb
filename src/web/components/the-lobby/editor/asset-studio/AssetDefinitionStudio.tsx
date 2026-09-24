@@ -56,6 +56,10 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
   // Mesh -> Component mapping
   const [modularComponents, setModularComponents] = useState<Record<string, string>>({}); // { meshName: componentCategory }
 
+  // Modular Item (Single component GLB) state
+  const [componentCategory, setComponentCategory] = useState<string>('hair');
+  const [baseBodyType, setBaseBodyType] = useState<string>('HumanMale');
+
   const [animationProfileId, setAnimationProfileId] = useState<string>('');
 
   const [isPublishing, setIsPublishing] = useState(false);
@@ -167,8 +171,13 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
       // Append backend presentation fields for modularity
       if (structure === 'Modular') {
         formData.append('isCharacterCustomizable', 'true');
-        if (skeletonConnectionPoints.trim()) {
-          formData.append('supportedComponents', skeletonConnectionPoints.trim());
+      }
+      
+      if (structure === 'ModularItem') {
+        formData.append('isModularComponent', 'true');
+        formData.append('componentCategory', componentCategory);
+        if (baseBodyType.trim()) {
+          formData.append('baseBodyType', baseBodyType.trim());
         }
       }
       
@@ -347,7 +356,8 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                     <label className="block text-[10px] text-slate-400 mb-1">Structure</label>
                     <select value={structure} onChange={e => setStructure(e.target.value as any)} className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1">
                       <option value="Complete">Complete Model</option>
-                      <option value="Modular">Modular Component</option>
+                      <option value="Modular">Modular Base Character</option>
+                      <option value="ModularItem">Modular Item / Component</option>
                     </select>
                   </div>
                   <div>
@@ -372,6 +382,42 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                     </div>
                     <div className="col-span-2 text-[9px] text-amber-200/60 leading-tight">
                       To define the actual items in this modular set (like hair, torso, etc), click the new "Components" tab at the top.
+                    </div>
+                  </div>
+                )}
+                
+                {structure === 'ModularItem' && (
+                  <div className="col-span-2 grid grid-cols-2 gap-2 bg-amber-950/20 p-2 border border-amber-900/30 rounded mt-2">
+                    <div>
+                      <label className="block text-[10px] text-amber-400 mb-1">Component Category</label>
+                      <select 
+                        value={componentCategory} 
+                        onChange={e => setComponentCategory(e.target.value)}
+                        className="w-full bg-black border border-amber-900/50 rounded px-2 py-1 text-white"
+                      >
+                        <option value="head">Head</option>
+                        <option value="hair">Hair</option>
+                        <option value="torso">Torso</option>
+                        <option value="legs">Legs</option>
+                        <option value="feet">Feet</option>
+                        <option value="accessory">Accessory</option>
+                        <option value="hands">Hands</option>
+                        <option value="face">Face</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-amber-400 mb-1">Base Body Type (Target)</label>
+                      <input 
+                        type="text" 
+                        value={baseBodyType} 
+                        onChange={e => setBaseBodyType(e.target.value)} 
+                        placeholder="e.g. HumanMale" 
+                        className="w-full bg-black border border-amber-900/50 rounded px-2 py-1 text-white" 
+                      />
+                    </div>
+                    <div className="col-span-2 text-[9px] text-amber-200/60 leading-tight">
+                      This uploads a single GLB (e.g. just a piece of hair or armor) to be worn by a base character. 
+                      Set the Category (e.g., Hair) and the specific Base Body Type it was modeled to fit.
                     </div>
                   </div>
                 )}
