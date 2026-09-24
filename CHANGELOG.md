@@ -1,3 +1,6 @@
+## [2.1.978] - 2026-09-24
+- **Bugfix**: Installed missing `@babylonjs/loaders` package required for compiling Next.js and parsing `.glb` meshes in `BabylonEngine.ts`.
+
 ## [2.1.977] - 2026-09-24
 - **Feature**: Added 3D Model parameter support (`isModular`, `partOfSet`, `skeletonConnectionPoints`) to the World Model Selector for Archetypes, NPCs, and Items.
 - **Feature**: Added `visualData`, `enchantable`, and `upgradable` fields to `ItemTemplate` database model to support 3D modular attachments.
