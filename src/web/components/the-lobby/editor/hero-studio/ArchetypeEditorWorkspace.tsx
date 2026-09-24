@@ -88,7 +88,10 @@ export function ArchetypeEditorWorkspace() {
       slug: hero.slug, gameId: hero.gameId || activeGameId, name: hero.name, classId: hero.classId,
       assetProfileId: hero.assetProfileId, assetBundleId: hero.assetBundleId || '', visualData: hero.visualData || '[]', flavor: hero.flavor, tag: hero.tag,
       tagColor: hero.tagColor, sortOrder: hero.sortOrder, isActive: hero.isActive,
-      startingInventory: hero.startingInventory,
+      startingInventory: hero.startingInventory || '[]',
+      startingMap: hero.startingMap || '',
+      startingX: hero.startingX || 0,
+      startingY: hero.startingY || 0,
     });
     setIsNew(false);
     setViewState('edit');
