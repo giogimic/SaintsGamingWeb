@@ -42,7 +42,7 @@ app.prepare().then(async () => {
         const path = require("path");
         let suffix = parsedUrl.pathname.replace(/^\/animations\/Paragon\//, '');
         suffix = path.normalize(suffix).replace(/^(\.\.[\/\\])+/, '');
-        const filePath = path.join("C:\\saints-gaming\\Paragon_animations_retargeted_to_Manny-e6de87b1\\fbx\\ParagonAnimationsRetargetedToManny", suffix);
+        const filePath = path.join("C:\\saints-gaming\\Paragon_animations_glb", suffix);
         
         if (fs.existsSync(filePath)) {
           const ext = path.extname(filePath).toLowerCase();
