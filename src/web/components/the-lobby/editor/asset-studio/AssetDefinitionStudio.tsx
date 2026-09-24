@@ -122,7 +122,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
     // Role specific requirements
     const isActor = roles.includes('Character') || roles.includes('NPC') || roles.includes('Enemy') || roles.includes('Player');
     if (isActor) {
-      if (!animMap['Idle']) errors.push("Actor roles require an 'Idle' animation to be mapped.");
+      if (!animMap['Idle'] && !animationProfileId) errors.push("Actor roles require an 'Idle' animation to be mapped, or a Target Animation Profile selected.");
       if (!boneMap['Root'] && !boneMap['Pelvis']) warnings.push("Actor roles typically need a Root or Pelvis bone mapped for movement.");
     }
     
@@ -161,6 +161,19 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
       tagList.push(...roles.map(r => r.toLowerCase()));
       if (structure === 'Modular') tagList.push('modular');
       formData.append('tags', JSON.stringify(tagList));
+
+      // Append backend presentation fields for modularity
+      if (structure === 'Modular') {
+        formData.append('isCharacterCustomizable', 'true');
+        if (skeletonConnectionPoints.trim()) {
+          formData.append('supportedComponents', skeletonConnectionPoints.trim());
+        }
+      }
+      
+      const attachmentNames = attachments.map(a => a.name).filter(Boolean).join(',');
+      if (attachmentNames) {
+        formData.append('attachmentPoints', attachmentNames);
+      }
 
       // Construct Asset Definition
       const assetDefinition = {
@@ -343,7 +356,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                   </div>
                 </div>
                 {structure === 'Modular' && (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2 grid grid-cols-2 gap-2 bg-amber-950/20 p-2 border border-amber-900/30 rounded mt-2">
                     <div>
                       <label className="block text-[10px] text-amber-400 mb-1">Modular Set Name</label>
                       <input 
@@ -355,14 +368,17 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] text-amber-400 mb-1">Skeleton Connection Points</label>
+                      <label className="block text-[10px] text-amber-400 mb-1">Supported Components</label>
                       <input 
                         type="text" 
                         value={skeletonConnectionPoints} 
                         onChange={e => setSkeletonConnectionPoints(e.target.value)} 
-                        placeholder="e.g. Head,Torso,Legs,Hands" 
+                        placeholder="e.g. hair, torso, legs" 
                         className="w-full bg-black border border-amber-900/50 rounded px-2 py-1 text-white" 
                       />
+                    </div>
+                    <div className="col-span-2 text-[9px] text-amber-200/60 leading-tight">
+                      Supported Components define what modular layers this base model can accept (e.g., hair, torso, legs). Players can equip items to these components. Use the "Attachments" tab to define bone mount points for weapons.
                     </div>
                   </div>
                 )}
