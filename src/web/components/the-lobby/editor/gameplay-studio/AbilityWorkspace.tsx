@@ -349,8 +349,39 @@ export function AbilityWorkspace() {
                   </div>
                   {formData.vfxConfigJson.type === "sprite_row" ? (
                     <div>
-                      <label className="block text-xs text-muted-foreground mb-1">Animation Row Name</label>
-                      <input type="text" value={formData.vfxConfigJson.animationRow} onChange={e => setFormData({...formData, vfxConfigJson: {...formData.vfxConfigJson, animationRow: e.target.value}})} className="w-full bg-black/40 border border-border/50 rounded px-2.5 py-1 outline-none text-xs" placeholder="e.g. spellcast"/>
+                      <label className="block text-xs text-muted-foreground mb-1">Animation Action</label>
+                      <select 
+                        value={formData.vfxConfigJson.animationRow} 
+                        onChange={e => setFormData({...formData, vfxConfigJson: {...formData.vfxConfigJson, animationRow: e.target.value}})} 
+                        className="w-full bg-black/40 border border-border/50 rounded px-2.5 py-1.5 outline-none text-xs capitalize"
+                      >
+                        <optgroup label="2D Sprite Rows">
+                          <option value="spellcast">Spellcast</option>
+                          <option value="slash">Slash</option>
+                          <option value="thrust">Thrust</option>
+                          <option value="shoot">Shoot</option>
+                          <option value="hurt">Hurt</option>
+                          <option value="walk">Walk</option>
+                        </optgroup>
+                        <optgroup label="3D Model Slots">
+                          <option value="cast">Cast</option>
+                          <option value="attack_light">Attack Light</option>
+                          <option value="attack_heavy">Attack Heavy</option>
+                          <option value="idle_combat">Idle Combat</option>
+                          <option value="recall">Recall</option>
+                          <option value="stun">Stun</option>
+                        </optgroup>
+                      </select>
+                      <div className="mt-1">
+                        <label className="text-[10px] text-muted-foreground">Custom/Raw Action Override:</label>
+                        <input 
+                          type="text" 
+                          value={formData.vfxConfigJson.animationRow} 
+                          onChange={e => setFormData({...formData, vfxConfigJson: {...formData.vfxConfigJson, animationRow: e.target.value}})} 
+                          className="w-full bg-black/20 border border-border/30 rounded px-2 py-1 outline-none text-[10px] mt-0.5" 
+                          placeholder="e.g. custom_slash"
+                        />
+                      </div>
                     </div>
                   ) : (
                     <div>

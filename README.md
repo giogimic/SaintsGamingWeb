@@ -143,6 +143,10 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 
 ## Changelog
 
+### v2.1.986
+- **Setup Wizard:** Fixed a critical parsing bug where Windows CRLF line endings corrupted `.env` secrets during `saints.sh` setup, preventing Admin account creation.
+- **Studio Ability Workspace:** Upgraded the Animation Row string input field into an intuitive visual dropdown selector for standard 2D Sprite Actions and 3D Model Slots.
+
 ### v2.1.985
 - **Studio Audit & Menus:** Added Audit Check to StudioMenuBar; officially deprecated the 2D Animation Studio and Spawn Editor in favor of 3D GLB capabilities.
 - **UI Coherence:** The Navbar and Global Bottom Bar automatically hide when editing; integrated 3D empty Mesh placeholder rendering.

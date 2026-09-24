@@ -190,13 +190,13 @@ cmd_setup() {
               if [ "$MUST_REUSE_ENV" = "1" ]; then
                   echo -e "${CYAN}[*] Forcing credential preservation because mysql_data was kept.${NC}"
                   REUSE_ENV=1
-                  OLD_DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
-                  OLD_AUTH_SECRET=$(grep "^AUTH_SECRET=" .env | cut -d'=' -f2-)
+                  OLD_DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p' | tr -d '\r')
+                  OLD_AUTH_SECRET=$(grep "^AUTH_SECRET=" .env | cut -d'=' -f2- | tr -d '\r')
               else
                   if whiptail --title "Preserve Credentials" --yesno "Would you like to KEEP the existing database credentials from the current .env file?" 10 65; then
                       REUSE_ENV=1
-                      OLD_DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
-                      OLD_AUTH_SECRET=$(grep "^AUTH_SECRET=" .env | cut -d'=' -f2-)
+                      OLD_DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p' | tr -d '\r')
+                      OLD_AUTH_SECRET=$(grep "^AUTH_SECRET=" .env | cut -d'=' -f2- | tr -d '\r')
                   fi
               fi
           else
@@ -822,7 +822,7 @@ fi
   MAX_RETRIES=40
   RETRY_COUNT=0
   SERVER_READY=0
-  SECRET_VAL=$(grep "^AUTH_SECRET=" .env | cut -d'=' -f2-)
+  SECRET_VAL=$(grep "^AUTH_SECRET=" .env | cut -d'=' -f2- | tr -d '\r')
   
   while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
       HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:$WEB_PORT/api/dev/setup-admin \
@@ -1355,8 +1355,8 @@ cmd_update() {
           echo -e "${CYAN}[*] Performing automated database backup before schema migration...${NC}"
           mkdir -p backups
           TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-          DB_USER=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://\([^:]*\):.*|\1|p')
-          DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
+          DB_USER=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://\([^:]*\):.*|\1|p' | tr -d '\r')
+          DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p' | tr -d '\r')
           
           docker exec saints-gaming-db mariadb-dump -u "$DB_USER" -p"$DB_PASS" saints_gaming > "backups/db_backup_$TIMESTAMP.sql" 2>/dev/null
           if [ $? -eq 0 ]; then
@@ -1441,7 +1441,7 @@ cmd_update() {
       fi
   
       if [ "$HAS_DB_SERVICE" = "1" ]; then
-          DB_PASS_ENV=$(grep '^DATABASE_URL=' .env 2>/dev/null | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
+          DB_PASS_ENV=$(grep '^DATABASE_URL=' .env 2>/dev/null | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p' | tr -d '\r')
           DB_PASS_ENV=${DB_PASS_ENV:-changeme}
           python3 -c "
 with open('docker-compose.yml', 'r') as f:
@@ -1517,11 +1517,11 @@ NETEOF
               echo -e "${YELLOW}[!] Warning: DATABASE_URL expects 'db:3306' but no database container is running!${NC}"
           fi
           
-          DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
-          DB_USER=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://\([^:]*\):.*|\1|p')
+          DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p' | tr -d '\r')
+          DB_USER=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://\([^:]*\):.*|\1|p' | tr -d '\r')
           if [ -n "$DB_PASS" ] && [ -n "$DB_USER" ]; then
               if ! docker exec "$DB_CONTAINER" mariadb -u "$DB_USER" -p"$DB_PASS" -e "SELECT 1;" saints_gaming &>/dev/null; then
-                  ROOT_PASS=$(docker exec "$DB_CONTAINER" env | grep MARIADB_ROOT_PASSWORD= | cut -d= -f2-)
+                  ROOT_PASS=$(docker exec "$DB_CONTAINER" env | grep MARIADB_ROOT_PASSWORD= | cut -d= -f2- | tr -d '\r')
                   docker exec "$DB_CONTAINER" mariadb -u root -p"$ROOT_PASS" -e \
                       "ALTER USER '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}'; FLUSH PRIVILEGES;" 2>/dev/null || true
               fi
