@@ -1,3 +1,6 @@
+## [2.1.979] - 2026-09-24
+- **Bugfix**: Aligned all `@babylonjs` packages (`core`, `gui`, `loaders`) to version `^9.27.1` to fix a `flowGraphDelayRegistry.js` module not found error during Next.js build.
+
 ## [2.1.978] - 2026-09-24
 - **Bugfix**: Installed missing `@babylonjs/loaders` package required for compiling Next.js and parsing `.glb` meshes in `BabylonEngine.ts`.
 
