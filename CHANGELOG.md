@@ -1,3 +1,9 @@
+## [2.1.974] - 2026-09-23
+- **Feature**: Added jumping (Spacebar) and sprinting (Shift) to the 3D voxel engine.
+- **Feature**: Added gravity and vertical collision. The camera and player sprite now accurately track vertical position when falling or jumping.
+- **Feature**: Added auto-stepping over blocks less than 0.6 units tall. Taller walls now block horizontal movement.
+- **Improvement**: Set camera style to 'dynamic' by default. Scrolling the mouse wheel now smoothly transitions the game between first-person, third-person, and 2.5D isometric views instead of warping FOV.
+
 ## [2.1.973] - 2026-09-23
 - **Feature**: Scaled player character to 2 blocks tall (1×2 billboard) matching classic voxel game proportions. NPCs/creatures retain their original 1.2×1.2 size.
 - **Improvement**: First-person camera eye height raised to 1.62 blocks (natural eye level for a 2-block-tall character).

@@ -11,5 +11,7 @@ export const KEYBINDS = {
   INVENTORY: ['i'],
   SKILLS: ['k'],
   QUESTS: ['j'],
-  ATTACK: [' '], // Space
+  ATTACK: ['Click'],
+  JUMP: [' '], // Space
+  SPRINT: ['Shift'],
 };

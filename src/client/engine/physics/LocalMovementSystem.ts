@@ -14,6 +14,10 @@ export class LocalMovementSystem {
   private lastMoveCommandTime = 0;
   private readonly MOVE_THROTTLE_MS = 150; // Throttle socket emits
   
+  // 3D Physics State
+  private verticalVelocity = 0;
+  private isGrounded = true;
+  
   // Spirit Gate Physics Handoff
   private portalTransit = new PortalTransitSystem();
 
@@ -101,13 +105,14 @@ export class LocalMovementSystem {
       
       if (is3D) {
         // Continuous, camera-relative movement
-        const speed = 15.0; // units per second
+        const isSprinting = inputManager.isKeyPressed(KEYBINDS.SPRINT[0]);
+        const speed = isSprinting ? 22.0 : 15.0; // units per second
         const yaw = cameraManager.yaw;
         
         // Normalize input vector
         const length = Math.sqrt(inputX * inputX + inputZ * inputZ);
-        const normX = inputX / length;
-        const normZ = inputZ / length;
+        const normX = length > 0 ? inputX / length : 0;
+        const normZ = length > 0 ? inputZ / length : 0;
         
         // Rotate input by camera yaw. 
         // Babylon uses a left-handed coordinate system.
@@ -119,6 +124,16 @@ export class LocalMovementSystem {
         const dtSec = dt / 1000.0;
         dx = moveX * speed * dtSec;
         dz = moveZ * speed * dtSec;
+
+        // Jump
+        if (inputManager.isAnyKeyPressed(KEYBINDS.JUMP) && this.isGrounded) {
+          this.verticalVelocity = 12.0; // Jump force
+          this.isGrounded = false;
+        }
+
+        // Gravity
+        this.verticalVelocity -= 30.0 * dtSec; // Gravity acceleration
+        dy = this.verticalVelocity * dtSec;
       } else {
         // Discrete 2D grid movement
         if (now - this.lastMoveCommandTime < this.MOVE_THROTTLE_MS) return;
@@ -127,19 +142,49 @@ export class LocalMovementSystem {
         else if (inputManager.isAnyKeyPressed(KEYBINDS.MOVE_DOWN)) dy = 1;
       }
       
-      const targetX = currentPos.x + dx;
-      const targetY = currentPos.y + dy;
-      const targetZ = (currentPos.z || 0) + dz;
+      let targetX = currentPos.x + dx;
+      let targetY = currentPos.y + dy;
+      let targetZ = (currentPos.z || 0) + dz;
 
-      if (!this.isTileWalkable(targetX, is3D ? targetZ : targetY)) {
-        if (playerStore.player.direction !== newDirection) {
-            playerStore.setPlayerPosition(currentPos, newDirection as any, false);
-            if (now - this.lastMoveCommandTime > this.MOVE_THROTTLE_MS) {
-              socketManager.emit('player_move' as any, { x: currentPos.x, y: currentPos.y, z: currentPos.z, direction: newDirection });
-              this.lastMoveCommandTime = now;
-            }
+      // 3D Collision and Step Logic
+      if (is3D) {
+        const activeMapData = useWorldStore.getState().activeMapData;
+        const voxelWorld = activeMapData ? mapMesher.getVoxelWorld() : null;
+        
+        if (voxelWorld) {
+          // Horizontal collision: Check terrain height at target vs current feet (y)
+          const targetFloorY = voxelWorld.getTopSolidVoxelY(targetX, targetZ) + voxelWorld.originOffsetY;
+          
+          // Auto-step height is 0.6 blocks. If the target floor is higher than that, we are blocked.
+          if (targetFloorY > currentPos.y + 0.6) {
+             dx = 0;
+             dz = 0;
+             targetX = currentPos.x;
+             targetZ = currentPos.z || 0;
+          }
+
+          // Vertical collision (Ground check)
+          const currentFloorY = voxelWorld.getTopSolidVoxelY(targetX, targetZ) + voxelWorld.originOffsetY;
+          if (targetY <= currentFloorY) {
+            targetY = currentFloorY;
+            this.isGrounded = true;
+            this.verticalVelocity = 0;
+          } else {
+            this.isGrounded = false;
+          }
         }
-        return;
+      } else {
+        // 2D collision
+        if (!this.isTileWalkable(targetX, targetY)) {
+          if (playerStore.player.direction !== newDirection) {
+              playerStore.setPlayerPosition(currentPos, newDirection as any, false);
+              if (now - this.lastMoveCommandTime > this.MOVE_THROTTLE_MS) {
+                socketManager.emit('player_move' as any, { x: currentPos.x, y: currentPos.y, z: currentPos.z, direction: newDirection });
+                this.lastMoveCommandTime = now;
+              }
+          }
+          return;
+        }
       }
 
       // Update local position smoothly

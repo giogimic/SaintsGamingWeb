@@ -53,7 +53,7 @@ const DEFAULT_CAMERA_SETTINGS: CameraSettings = {
   isometricPitch: Math.PI / 4,
   isometricDistance: 14,
   playerFollowSmoothing: 0.35,
-  playerCameraStyle: 'isometric',
+  playerCameraStyle: 'dynamic',
   borderClamping: true,
   vignetteEnabled: true,
   vignetteWeight: 1.5,
@@ -182,12 +182,12 @@ export class CameraManager {
 
   public updateDynamicCamera() {
     if (this.settings.playerCameraStyle !== 'dynamic') return;
-    const ortho = this.camera?.orthoTop || 10;
+    const zoom = this.currentZoom || 10;
 
     let targetMode: 'firstperson' | 'follow45' | 'isometric' = 'isometric';
-    if (ortho < 6.5) {
+    if (zoom < 6.5) {
       targetMode = 'firstperson';
-    } else if (ortho < 9.0) {
+    } else if (zoom < 9.0) {
       targetMode = 'follow45';
     }
 
@@ -272,30 +272,38 @@ export class CameraManager {
     
     e.preventDefault();
 
-    if (this.camera?.mode === BABYLON.Camera.ORTHOGRAPHIC_CAMERA) {
-      // Zoom ortho
+    if (this.settings.playerCameraStyle === 'dynamic') {
+      // Dynamic mode transitions between first-person, third-person, and isometric based on zoom level
+      const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
+      const newZoom = Math.max(3, Math.min(30, this.currentZoom * zoomFactor));
+      this.updateOrthoSize(newZoom);
+      this.updateDynamicCamera();
+    } else if (this.camera?.mode === BABYLON.Camera.ORTHOGRAPHIC_CAMERA) {
+      // Zoom ortho for fixed 2.5d modes
       const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
       const newZoom = Math.max(3, Math.min(30, this.currentZoom * zoomFactor));
       this.updateOrthoSize(newZoom);
     } else {
-      // Zoom FOV for perspective
-      const fovFactor = e.deltaY > 0 ? 1.05 : 0.95;
-      this.currentFov = Math.max(0.2, Math.min(2.0, this.currentFov * fovFactor));
-      if (this.camera) {
-        this.camera.fov = this.currentFov;
+      // Zoom distance for fixed 3D modes (third-person/free)
+      if (this.settings.playerCameraStyle === 'follow45' || this.settings.playerCameraStyle === 'free') {
+        const distFactor = e.deltaY > 0 ? 1.1 : 0.9;
+        this.profile.distance = Math.max(2, Math.min(50, this.profile.distance * distFactor));
+        this.saveSettingsToStorage();
       }
     }
   };
 
   // ── Snap / Follow ──────────────────────────────────────────────────────────
 
-  public snapCameraTo(x: number, z: number, y: number = 0) {
+  public snapCameraTo(x: number, z: number, y: number = 0, is3D: boolean = false) {
     if (!this.camera) return;
 
     let terrainY = y;
-    const world = mapMesher.getVoxelWorld();
-    if (world) {
-      terrainY = world.getTopSolidVoxelY(x, z) + world.originOffsetY;
+    if (!is3D) {
+      const world = mapMesher.getVoxelWorld();
+      if (world) {
+        terrainY = world.getTopSolidVoxelY(x, z) + world.originOffsetY;
+      }
     }
     
     this.targetX = x;
@@ -354,9 +362,10 @@ export class CameraManager {
       
       const px = player.position.x;
       const pz = is3D && player.position.z !== undefined ? player.position.z : -player.position.y;
+      const py = is3D ? player.position.y : 0;
 
       if (!this.snapped) {
-        this.snapCameraTo(px, pz);
+        this.snapCameraTo(px, pz, py, is3D);
         return;
       }
 
@@ -367,9 +376,13 @@ export class CameraManager {
       const smoothFactor = 1.0 - Math.exp(-factor * 60 * dt);
 
       let terrainY = this.targetY;
-      const world = mapMesher.getVoxelWorld();
-      if (world) {
-        terrainY = world.getTopSolidVoxelY(px, pz) + world.originOffsetY;
+      if (is3D) {
+        terrainY = py;
+      } else {
+        const world = mapMesher.getVoxelWorld();
+        if (world) {
+          terrainY = world.getTopSolidVoxelY(px, pz) + world.originOffsetY;
+        }
       }
       
       this.targetX = px;

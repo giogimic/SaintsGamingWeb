@@ -72,6 +72,7 @@ export class EntityRenderer {
     this.upsertSprite('local_player', {
       x: player.position.x,
       y: is3D ? (player.position.z as number) : player.position.y,
+      z: is3D ? player.position.y : undefined,
       name: player.name || 'You',
       color: new BABYLON.Color3(0.2, 0.6, 1),
       spriteUrl: player.assetProfileId ? resolveEntitySpriteUrl(player.assetProfileId, { kind: 'player' }) : undefined,
@@ -97,6 +98,7 @@ export class EntityRenderer {
       this.upsertSprite(`remote_${id}`, {
         x: px,
         y: py,
+        z: rp.y, // Remote players send vertical pos in y as well
         name: rp.name || 'Player',
         color: new BABYLON.Color3(1, 0.6, 0.2),
         spriteUrl: rp.assetProfileId ? resolveEntitySpriteUrl(rp.assetProfileId, { kind: 'player' }) : undefined,
@@ -152,6 +154,7 @@ export class EntityRenderer {
     data: {
       x: number;
       y: number;
+      z?: number;
       name?: string;
       color: BABYLON.Color3;
       spriteUrl?: string;
@@ -253,10 +256,15 @@ export class EntityRenderer {
     sprite.targetZ = is3D ? data.y : -data.y; // Babylon Z is inverted 2D Y only for 2D maps
     
     // Auto-resolve terrain height so sprites aren't trapped in the geometry floor
+    // if a Z vertical position is provided by physics (e.g. jumping), use it instead
     let terrainY = 0;
-    const world = mapMesher.getVoxelWorld();
-    if (world) {
-      terrainY = world.getTopSolidVoxelY(data.x, sprite.targetZ) + world.originOffsetY;
+    if (data.z !== undefined) {
+      terrainY = data.z;
+    } else {
+      const world = mapMesher.getVoxelWorld();
+      if (world) {
+        terrainY = world.getTopSolidVoxelY(data.x, sprite.targetZ) + world.originOffsetY;
+      }
     }
     sprite.targetY = terrainY + spriteH / 2;
     
