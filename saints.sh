@@ -457,7 +457,7 @@ if 'depends_on:' not in c:
   
   # --- Build docker-compose.yml from base ---
   mkdir -p data uploads
-  chmod -R 777 data uploads
+  sudo chmod -R 777 data uploads 2>/dev/null || chmod -R 777 data uploads 2>/dev/null || true
   
   cp docker-compose.base.yml docker-compose.yml
   sed -i '/^\s*args:\s*$/d' docker-compose.yml 2>/dev/null || true
