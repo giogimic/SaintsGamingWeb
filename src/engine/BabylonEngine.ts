@@ -4036,24 +4036,45 @@ export class BabylonEngine {
         
         spriteMesh.position = targetPos;
         
-        SceneLoader.ImportMeshAsync("", entity.presentation.modelUrl, "", this.scene)
-          .then((result) => {
+        const urlsToLoad = [entity.presentation.modelUrl];
+        if (entity.presentation.modularModelUrls) {
+          urlsToLoad.push(...entity.presentation.modularModelUrls);
+        }
+        
+        Promise.all(urlsToLoad.map(url => SceneLoader.ImportMeshAsync("", url, "", this.scene)))
+          .then((results) => {
             if (!this.entityMeshes.has(entity.id)) {
               // Entity was deleted before load finished
-              result.meshes.forEach(m => m.dispose());
-              result.animationGroups?.forEach(a => a.dispose());
+              results.forEach(res => {
+                res.meshes.forEach(m => m.dispose());
+                res.animationGroups?.forEach(a => a.dispose());
+              });
               return;
             }
-            const root = result.meshes[0];
             const currentMesh = this.entityMeshes.get(entity.id)!;
-            root.parent = currentMesh;
-            // Align with babylon coordinates if needed
-            root.scaling = new Vector3(-1, 1, 1);
+            const allAnimationGroups: any[] = [];
             
-            if (result.animationGroups && result.animationGroups.length > 0) {
-              currentMesh.metadata.animationGroups = result.animationGroups;
-              // Play first anim (idle)
-              result.animationGroups[0].play(true);
+            results.forEach((result, idx) => {
+              const root = result.meshes[0];
+              root.parent = currentMesh;
+              // Align with babylon coordinates if needed
+              root.scaling = new Vector3(-1, 1, 1);
+              
+              if (result.animationGroups && result.animationGroups.length > 0) {
+                allAnimationGroups.push(...result.animationGroups);
+              }
+            });
+            
+            if (allAnimationGroups.length > 0) {
+              currentMesh.metadata.animationGroups = allAnimationGroups;
+              // Group animation play state is managed by the Renderer interpolation loop (run vs idle)
+              // We'll play idle by default for now
+              const idleAnim = allAnimationGroups.find((ag: any) => ag.name.toLowerCase().includes('idle'));
+              if (idleAnim) {
+                idleAnim.play(true);
+              } else {
+                allAnimationGroups[0].play(true);
+              }
             }
           })
           .catch(err => console.error("Failed to load 3D model for entity", entity.id, err));

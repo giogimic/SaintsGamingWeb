@@ -852,7 +852,7 @@ public getCameraSettings() {
     } else if (style === 'isometric' || style === 'overview2_5d') {
       this.camera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
       this.cameraProfile.pitch = this.cameraSettings.isometricPitch || Math.PI / 4;
-      this.cameraProfile.distance = this.cameraSettings.isometricDistance || 14;
+      this.cameraProfile.distance = this.cameraSettings.isometricDistance || 150;
       this.cameraYaw = 0;
       this.updateCameraAspect(this.camera.orthoTop || 10);
     }
@@ -958,13 +958,18 @@ public rotateCamera(dxPx: number, dyPx: number) {
     const pitchDelta = -dyPx * 0.004 * (this.cameraSettings.orbitSensitivity || 1.0) * invY;
     this.cameraYaw += yawDelta;
     
-    const camStyle = this.cameraSettings.playerCameraStyle;
-    if (camStyle === 'thirdPerson' || camStyle === 'firstPerson' || camStyle === 'firstperson') {
-      // Allow looking from slightly below horizontal (-0.3 rad / ~17° down) up to ~75° up.
-      // Prevents the degenerate straight-down look-at matrix that causes camera lock.
-      this.cameraProfile.pitch = Math.max(-0.3, Math.min(Math.PI / 2.4, (this.cameraProfile.pitch ?? Math.PI / 4) + pitchDelta));
-    } else {
+    if (this.isFreeCam) {
       this.cameraPitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, this.cameraPitch + pitchDelta));
+    } else {
+      const camStyle = this.cameraSettings.playerCameraStyle;
+      if (camStyle === 'thirdPerson' || camStyle === 'follow45' || camStyle === 'dynamic' || camStyle === 'adaptive' || camStyle === 'firstPerson' || camStyle === 'firstperson') {
+        // Allow looking from slightly below horizontal (-0.3 rad / ~17° down) up to ~75° up.
+        // Prevents the degenerate straight-down look-at matrix that causes camera lock.
+        this.cameraProfile.pitch = Math.max(-0.3, Math.min(Math.PI / 2.4, (this.cameraProfile.pitch ?? Math.PI / 4) + pitchDelta));
+      } else {
+        // Isometric / Topdown / 2.5D (Orthographic modes)
+        this.cameraProfile.pitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, (this.cameraProfile.pitch ?? Math.PI / 4) + pitchDelta));
+      }
     }
     // Store velocity for momentum on release
     this.cameraVelocityYaw = yawDelta;

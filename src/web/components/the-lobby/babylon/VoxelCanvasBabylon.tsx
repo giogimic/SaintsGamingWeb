@@ -85,11 +85,25 @@ function getPresentationFromVisualData(visualDataStr?: string) {
   if (!visualDataStr) return undefined;
   try {
     const parsed = JSON.parse(visualDataStr);
-    if (parsed.worldModel && parsed.worldModel.type === '3D Model') {
-      return {
-        mode: '3D' as const,
-        modelUrl: `/animations/Paragon/${parsed.worldModel.assetId}/Idle.glb`
-      };
+    if (parsed.worldModel && (parsed.worldModel.type === '3D Model' || parsed.worldModel.type === 'MODEL')) {
+      const urls: string[] = [];
+      const baseModel = resolveEntitySpriteUrl(parsed.worldModel.assetId);
+      if (baseModel) urls.push(baseModel);
+
+      if (Array.isArray(parsed.modularAttachments)) {
+        for (const attachment of parsed.modularAttachments) {
+          const u = resolveEntitySpriteUrl(attachment.assetId);
+          if (u) urls.push(u);
+        }
+      }
+
+      if (urls.length > 0) {
+        return {
+          mode: '3D' as const,
+          modelUrl: urls[0],
+          modularModelUrls: urls.slice(1)
+        };
+      }
     }
   } catch (e) {}
   return undefined;
@@ -665,9 +679,9 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
           const playerMesh = babylonEngine.getEntityMesh('player_main');
           if (playerMesh) {
-            babylonEngine.renderer.setCameraPosition(playerMesh.position.x, playerMesh.position.z, 0.35);
+            babylonEngine.renderer.setCameraPosition(playerMesh.position.x, playerMesh.position.z, 0.35, playerMesh.position.y);
           } else {
-            babylonEngine.renderer.setCameraPosition(worldX, worldZ, 0.35);
+            babylonEngine.renderer.setCameraPosition(worldX, worldZ, 0.35, py);
           }
         }
       } else {

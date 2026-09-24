@@ -41,6 +41,7 @@ import { HudErrorBoundary } from './hud/HudErrorBoundary';
 import { Suspense, useMemo } from 'react';
 import { TurnBattleOverlay } from './battle/TurnBattleOverlay';
 import { useGameStore } from './store';
+import { useAppStore } from '@/shared/store/useAppStore';
 import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
 import { canEnterStudio } from '@/shared/game/studioPermissions';
 import { getActiveWorldRelease } from '@/app/actions/studio/world-release';
