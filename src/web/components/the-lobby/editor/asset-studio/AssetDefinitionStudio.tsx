@@ -22,7 +22,7 @@ interface Props {
   onCancel: () => void;
 }
 
-type TabId = 'roles' | 'skeleton' | 'attachments' | 'animations' | 'materials' | 'items';
+type TabId = 'roles' | 'transform' | 'skeleton' | 'attachments' | 'animations' | 'materials' | 'items';
 type StructureType = 'Complete' | 'Modular' | 'ModularItem';
 
 interface StructureOption {
@@ -235,7 +235,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
         
         for (const sa of STANDARD_ANIMS) {
           const slotKey = sa.toLowerCase().replace(/ /g, '_') as any;
-          const mapping = profile.slotMap[slotKey] || (profile.slotMap as any)[sa.toLowerCase()];
+          const mapping = (profile.slotMap as any)[slotKey] || (profile.slotMap as any)[sa.toLowerCase()];
           if (mapping && availableClipNames.includes(mapping.clip) && !newMap[sa]) {
             newMap[sa] = mapping.clip;
             changed = true;
