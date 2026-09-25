@@ -720,7 +720,8 @@ public stopRenderLoop() {
         const ray = new Ray(headPos, rayDirection, actualDist);
         // Only pick meshes that are not the player, not decals/overlays
         const hit = this.engine.scene.pickWithRay(ray, (mesh) => {
-          if (!mesh.isPickable || mesh === this.engine.playerMesh) return false;
+          if (!mesh.isPickable) return false;
+          if (mesh.name.startsWith("entity-")) return false;
           if (mesh.name.includes("preview") || mesh.name.includes("overlay") || mesh.name.includes("decal")) return false;
           // Ignore water or transparent planes if desired, but for now we stop at pickable solid terrain
           return true;
