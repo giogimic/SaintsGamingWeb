@@ -45,41 +45,12 @@ export function GameIdentityStep({ data, onChange }: GameIdentityStepProps) {
               type="text"
               value={data.name}
               onChange={(e) => onChange({ name: e.target.value })}
-              placeholder="e.g. Saints Adventure, Realm of Elyria"
+              placeholder="The Lobby"
               className="w-full bg-[#050b14] border border-slate-700/80 focus:border-amber-400 rounded-lg px-3 py-2.5 text-white text-sm outline-none transition font-sans"
             />
           </div>
 
-          <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5 font-mono">
-              Core Genre & Ruleset
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { id: 'CREATURE_MMO', name: 'Creature Battler', icon: Sparkles },
-                { id: 'CLASSIC_MMO', name: 'Classic Hero MMO', icon: Swords },
-                { id: 'HYBRID_MMO', name: 'Hybrid / Custom', icon: Layers },
-              ].map((g) => {
-                const Icon = g.icon;
-                const isSelected = data.genre === g.id;
-                return (
-                  <button
-                    key={g.id}
-                    type="button"
-                    onClick={() => onChange({ genre: g.id as any })}
-                    className={`p-2 rounded-lg border text-center transition flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
-                      isSelected
-                        ? 'bg-amber-500/15 border-amber-400 text-white shadow-sm'
-                        : 'bg-[#050b14] border-slate-800 text-slate-400 hover:border-slate-700'
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-amber-400' : 'text-slate-500'}`} />
-                    <span className="text-[10px] font-semibold truncate w-full">{g.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+
         </div>
 
         {/* DESCRIPTION */}
@@ -90,7 +61,7 @@ export function GameIdentityStep({ data, onChange }: GameIdentityStepProps) {
           <textarea
             value={data.description}
             onChange={(e) => onChange({ description: e.target.value })}
-            placeholder="A brief overview of your world lore, game mechanics, and player objectives..."
+            placeholder="EARLY DEV"
             rows={4}
             className="w-full bg-[#050b14] border border-slate-700/80 focus:border-amber-400 rounded-lg px-3 py-2.5 text-white text-sm outline-none transition font-sans resize-none"
           />
