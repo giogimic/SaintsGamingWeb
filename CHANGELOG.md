@@ -1,3 +1,9 @@
+## [2.1.996] - 2026-09-25
+- **Bugfix**: Explicitly register Babylon glTF/GLB loaders in the active ClientApp runtime so in-game model loading does not depend on another engine bundle having loaded first.
+- **Improvement**: Model import failures now log the live asset response status, content type, and first bytes, helping distinguish broken upload URLs or server responses from model parsing errors.
+- **Bugfix**: A failed modular attachment no longer prevents the base character or other attachments from loading, and failed in-game model loads display a visible placeholder instead of an empty entity.
+- **Bugfix**: Ignore stale asynchronous model loads after an entity has been replaced, and observe both canvas and parent sizing for more reliable game viewport resizing.
+
 ## [2.1.994] - 2026-09-25
 - **Bugfix**: Fixed infinite 404 network request loop causing browser freezing when 3D models were missing/loading. AssetManager now caches missing models and tracks inflight requests.
 - **Bugfix**: Fixed 3D models sometimes rendering as 2D billboard sprites due to async load delays. EntityRenderer now tracks asset states and actively swaps sprites for meshes when the model becomes available.

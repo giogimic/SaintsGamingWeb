@@ -38,18 +38,22 @@ export async function POST(req: Request) {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const totalUsers = await prisma.user.count();
-    const isFirstUser = totalUsers === 0;
+    const newUser = await prisma.$transaction(async (tx) => {
+      const totalUsers = await tx.user.count();
+      const isFirstUser = totalUsers === 0;
 
-    const newUser = await prisma.user.create({
-      data: {
-        email,
-        username,
-        passwordHash,
-        permissionLevel: isFirstUser ? 1000 : 20, // First user is Developer/Owner (1000), subsequent default to USER (20)
-        isFounder: isFirstUser,
-      },
+      return await tx.user.create({
+        data: {
+          email,
+          username,
+          passwordHash,
+          permissionLevel: isFirstUser ? 1000 : 20, // First user is Developer/Owner (1000), subsequent default to USER (20)
+          isFounder: isFirstUser,
+        },
+      });
     });
+
+    const isFirstUser = newUser.permissionLevel >= 1000;
 
     // Send welcome email asynchronously without blocking the response
     sendWelcomeEmail(newUser.email, newUser.username).catch((err) => {

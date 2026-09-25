@@ -21,7 +21,7 @@ RUN mkdir -p /app/data
 ENV GO_MMO_HOST=0.0.0.0
 ENV GO_MMO_PORT=24011
 ENV GO_MMO_DATABASE_URL=file:/app/data/go-mmo.db
-ENV GO_MMO_DEV_AUTH=true
+ENV GO_MMO_DEV_AUTH=false
 
 EXPOSE 24011
 

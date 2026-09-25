@@ -224,6 +224,14 @@ export class EntityRenderer {
         const filename = data.modelUrl.substring(lastSlash + 1);
 
         BABYLON.SceneLoader.ImportMeshAsync("", rootUrl, filename, this.scene).then((result) => {
+          // Entity/model data can change while the network request is in flight.
+          // Never attach a stale result to a replacement entity.
+          const current = this.sprites.get(id);
+          if (!current || current.mesh !== mesh) {
+            result.meshes.forEach((loadedMesh) => loadedMesh.dispose());
+            result.animationGroups.forEach((animation) => animation.dispose());
+            return;
+          }
           result.meshes.forEach((m) => {
             if (!m.parent) {
               m.parent = mesh;
@@ -236,7 +244,47 @@ export class EntityRenderer {
           if (result.animationGroups.length > 0) {
             result.animationGroups[0].play(true);
           }
-        }).catch(err => console.error('Failed to load 3D model:', data.modelUrl, err));
+        }).catch(async (err) => {
+          let responseInfo: Record<string, unknown> = { url: data.modelUrl };
+          try {
+            const response = await fetch(data.modelUrl!, { cache: 'no-store' });
+            responseInfo = {
+              url: data.modelUrl,
+              status: response.status,
+              contentType: response.headers.get('content-type'),
+              contentLength: response.headers.get('content-length'),
+            };
+            if (response.body) {
+              const reader = response.body.getReader();
+              const { value } = await reader.read();
+              responseInfo.prefixBytes = value ? Array.from(value.slice(0, 16)) : [];
+              await reader.cancel();
+            }
+          } catch (diagnosticError) {
+            responseInfo.diagnosticFetchError = diagnosticError instanceof Error
+              ? diagnosticError.message
+              : String(diagnosticError);
+          }
+          console.error('[EntityRenderer] 3D model import failed; live asset response:', responseInfo, err);
+
+          // Keep a visible in-world placeholder when an asset URL is broken;
+          // an empty TransformNode makes the entity look as if it never spawned.
+          const current = this.sprites.get(id);
+          const loadedModelMeshes = mesh.getChildMeshes(false).filter((child) => !child.name.startsWith('label_'));
+          if (current?.mesh === mesh && loadedModelMeshes.length === 0 && this.scene) {
+            const fallback = BABYLON.MeshBuilder.CreatePlane(`model_error_${id}`, {
+              width: PLAYER_WIDTH,
+              height: PLAYER_HEIGHT,
+            }, this.scene);
+            fallback.parent = mesh;
+            fallback.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+            const material = new BABYLON.StandardMaterial(`model_error_mat_${id}`, this.scene);
+            material.diffuseColor = new BABYLON.Color3(0.8, 0.2, 0.2);
+            material.emissiveColor = new BABYLON.Color3(0.25, 0.03, 0.03);
+            material.backFaceCulling = false;
+            fallback.material = material;
+          }
+        });
 
       } else if (data.presentationType === '2D_WRAPPED' && data.spriteUrl) {
         mesh = WrappedCharacterMesher.createCharacter(id, this.scene, data.spriteUrl);

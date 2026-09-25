@@ -8,6 +8,10 @@
  * - InputManager (DOM event listeners)
  */
 import * as BABYLON from '@babylonjs/core';
+// The ClientApp is a separate runtime bundle from the legacy Babylon engine.
+// Register glTF/GLB loaders in this bundle explicitly so SceneLoader can parse
+// live model URLs in the game client, not only in Studio/upload previews.
+import '@babylonjs/loaders';
 import { cameraManager } from './CameraManager';
 import { mapMesher } from './MapMesher';
 import { entityRenderer } from './EntityRenderer';
@@ -81,6 +85,7 @@ export class EngineCore {
       this.engine?.resize();
     });
     this.resizeObserver.observe(canvas);
+    if (canvas.parentElement) this.resizeObserver.observe(canvas.parentElement);
     window.addEventListener('resize', this.onResize);
 
     this.isInitialized = true;

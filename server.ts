@@ -152,7 +152,7 @@ app.prepare().then(async () => {
   });
 
   // Initialize RealtimeService to route events to Go MMO server
-  const goMmoUrl = process.env.NEXT_PUBLIC_GO_MMO_URL || "http://127.0.0.1:24011";
+  const goMmoUrl = process.env.GO_MMO_INTERNAL_URL || process.env.NEXT_PUBLIC_GO_MMO_URL || "http://127.0.0.1:24011";
   _realtimeService = new RealtimeService(goMmoUrl);
   (globalThis as any).__sg_realtime_service = _realtimeService;
 

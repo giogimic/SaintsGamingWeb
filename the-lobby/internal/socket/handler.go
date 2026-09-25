@@ -276,10 +276,15 @@ func (h *Hub) onConnect(client *socket.Socket) {
 }
 
 func (h *Hub) authenticate(client *socket.Socket) string {
-	if h.cfg.DevAuthBypass {
-		if authData := client.Handshake().Auth; authData != nil {
-			if m, ok := authData.(map[string]any); ok {
-				if tok, ok := m["token"].(string); ok && tok != "" {
+	if authData := client.Handshake().Auth; authData != nil {
+		if m, ok := authData.(map[string]any); ok {
+			if tok, ok := m["token"].(string); ok && tok != "" {
+				// 1. Try to parse as a secure HMAC signed token (Production Flow)
+				if s, err := auth.ParseJWT(tok, h.cfg.AuthSecret); err == nil {
+					return s.UserID
+				}
+				// 2. Fallback to dev bypass if enabled
+				if h.cfg.DevAuthBypass {
 					if s := auth.DevBypassToken(tok); s != nil {
 						return s.UserID
 					}

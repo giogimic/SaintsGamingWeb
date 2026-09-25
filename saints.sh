@@ -471,6 +471,7 @@ if 'depends_on:' not in c:
       sed -i "s/- \"80:80\"/- \"$HTTP_PORT:80\"/g" docker-compose.yml
       sed -i "s/- \"443:443\"/- \"$HTTPS_PORT:443\"/g" docker-compose.yml
   fi
+  sed -i "s/- \"24011:24011\"/- \"${GO_MMO_PORT:-24011}:24011\"/g" docker-compose.yml
   sed -i '/^\s*args:\s*$/d' docker-compose.yml 2>/dev/null || true
   
   # --- Generate .env (pure bash, no Node.js required) ---
@@ -645,7 +646,10 @@ $DOMAIN, www.$DOMAIN {
 CADDYEOF
         sudo systemctl unmask caddy 2>/dev/null || true
         sudo systemctl enable caddy 2>/dev/null || true
-        sudo systemctl restart caddy || sudo systemctl start caddy || true
+        sudo systemctl restart caddy || sudo systemctl start caddy || {
+            echo -e "\033[0;31m[!] Failed to start Caddy. Please check 'systemctl status caddy'.\033[0m"
+            sleep 3
+        }
     fi
   fi
   
@@ -694,14 +698,22 @@ fi
       while ss -tuln 2>/dev/null | grep -q ":$GO_MMO_PORT " || [ "$GO_MMO_PORT" -eq "${WEB_PORT:-0}" ]; do
           GO_MMO_PORT=$((GO_MMO_PORT + 1))
       done
-      GO_MMO_PUBLIC_URL="http://127.0.0.1:$GO_MMO_PORT"
+      
+      if [[ "$SITE_URL" == https://* ]]; then
+          GO_MMO_PUBLIC_URL="https://go.$DOMAIN"
+      else
+          GO_MMO_PUBLIC_URL="http://127.0.0.1:$GO_MMO_PORT"
+      fi
   
       if [ "$USE_CADDY" = "1" ] || [ "$EXISTING_CADDY_ADDITIVE" = "1" ] || command -v caddy &>/dev/null || [ -f /etc/caddy/Caddyfile ]; then
           if whiptail --title "Go MMO Subdomain" --yesno "In order for remote players to connect to the multiplayer server securely (HTTPS), the Go MMO server needs its own subdomain.\n\nFor example, if your site is 'saintsgaming.net', you should enter 'go.saintsgaming.net' when prompted next.\n\nAdd a Caddy subdomain for Go MMO now?" 15 78; then
               GO_MMO_SUBDOMAIN_CHOSEN=$(whiptail --title "Go MMO Subdomain" --inputbox "Subdomain for Go MMO sockets:" 10 60 "go.$DOMAIN" 3>&1 1>&2 2>&3) || true
               if [ -n "$GO_MMO_SUBDOMAIN_CHOSEN" ]; then
                   GO_MMO_PUBLIC_URL="https://$GO_MMO_SUBDOMAIN_CHOSEN"
-                  bash "$ROOT/saints.sh" proxy add "$GO_MMO_SUBDOMAIN_CHOSEN" 127.0.0.1 "$GO_MMO_PORT" -y || true
+                  if ! bash "$ROOT/saints.sh" proxy add "$GO_MMO_SUBDOMAIN_CHOSEN" 127.0.0.1 "$GO_MMO_PORT" -y; then
+                      echo -e "\033[0;31m[!] Failed to add Go MMO proxy block to Caddy. You will need to add it manually.\033[0m"
+                      sleep 3
+                  fi
               fi
           fi
       else
@@ -844,9 +856,9 @@ fi
       
       JSON_PAYLOAD=$(cat <<EOF
 {
-  "username": "$ADMIN_USER",
-  "password": "$ADMIN_PASS",
-  "email": "$ADMIN_EMAIL"
+  "username": "${ADMIN_USER//\"/\\\"}",
+  "password": "${ADMIN_PASS//\"/\\\"}",
+  "email": "${ADMIN_EMAIL//\"/\\\"}"
 }
 EOF
 )

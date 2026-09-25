@@ -654,9 +654,23 @@ export default function TheLobby({
 
     let disconnectTimeout: any = null;
 
-    const setupSocket = (targetUrl?: string) => {
+    const setupSocket = async (targetUrl?: string) => {
+      let socketToken = session.user.id;
+      if (targetUrl) {
+        try {
+          const res = await fetch('/api/auth/socket-token');
+          if (res.ok) {
+            const data = await res.json();
+            socketToken = data.token;
+          }
+        } catch (e) {
+          console.warn('[lobby] Failed to fetch secure socket token', e);
+        }
+      }
+
       const opts = {
         ...socketOpts,
+        auth: { token: socketToken },
         reconnectionAttempts: targetUrl ? 2 : Infinity,
         timeout: targetUrl ? 3500 : 20000,
       };

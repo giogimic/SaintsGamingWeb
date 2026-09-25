@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
-# Compatibility wrapper for setup-the-lobby.sh
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec bash "$DIR/setup-the-lobby.sh" "$@"
+echo -e "\033[0;31m[!] The standalone Go MMO setup script has been deprecated.\033[0m"
+echo -e "\033[0;36m[*] Please run the main setup script in the root directory:\033[0m"
+echo -e "    cd ../../"
+echo -e "    ./saints.sh setup"
+exit 1

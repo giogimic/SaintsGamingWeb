@@ -1,6 +1,6 @@
 {
   "name": "saints-gaming-portal",
-  "version": "2.1.995",
+  "version": "2.1.996",
   "license": "BSL-1.1",
   "private": true,
   "engines": {
@@ -66,6 +66,7 @@
     "hls.js": "^1.7.1",
     "immer": "^11.1.15",
     "js-yaml": "^5.2.2",
+    "jsonwebtoken": "^9.0.3",
     "jszip": "^3.10.1",
     "lucide-react": "^1.21.0",
     "next": "^15.1.4",
@@ -113,6 +114,7 @@
     "@testing-library/user-event": "^14.6.7",
     "@types/gamedig": "^5.0.3",
     "@types/js-yaml": "^4.0.9",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/pako": "^2.0.4",
     "@types/react": "^19.0.0",

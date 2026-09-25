@@ -47,7 +47,7 @@ export function GameCanvas() {
     <canvas
       ref={canvasRef}
       className="w-full h-full block focus:outline-none"
-      style={{ touchAction: 'none' }}
+      style={{ width: '100%', height: '100%', minWidth: 0, minHeight: 0, touchAction: 'none' }}
       id="game-canvas"
       onClick={handleClick}
     />

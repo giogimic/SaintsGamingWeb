@@ -4062,13 +4062,47 @@ export class BabylonEngine {
           urlsToLoad.push(...entity.presentation.modularModelUrls);
         }
         
-        Promise.all(urlsToLoad.map(url => {
+        Promise.allSettled(urlsToLoad.map(url => {
           const lastSlash = url.lastIndexOf('/');
           const rootUrl = url.substring(0, lastSlash + 1);
           const filename = url.substring(lastSlash + 1);
-          return SceneLoader.ImportMeshAsync("", rootUrl, filename, this.scene);
+          return SceneLoader.ImportMeshAsync("", rootUrl, filename, this.scene).catch(async (error) => {
+            // Importer errors often hide the useful cause (for example, a live
+            // upload URL returning an HTML/JSON error page instead of GLB bytes).
+            // Inspect only a tiny prefix after failure so production logs tell us
+            // what the game actually received without dumping model data.
+            let responseInfo: Record<string, unknown> = { url };
+            try {
+              const response = await fetch(url, { method: 'GET', cache: 'no-store' });
+              responseInfo = {
+                url,
+                status: response.status,
+                contentType: response.headers.get('content-type'),
+                contentLength: response.headers.get('content-length'),
+              };
+              if (response.body) {
+                const reader = response.body.getReader();
+                const { value } = await reader.read();
+                responseInfo.prefixBytes = value ? Array.from(value.slice(0, 16)) : [];
+                await reader.cancel();
+              }
+            } catch (diagnosticError) {
+              responseInfo.diagnosticFetchError = diagnosticError instanceof Error
+                ? diagnosticError.message
+                : String(diagnosticError);
+            }
+            console.error('[BabylonEngine] Model import failed; live asset response:', responseInfo, error);
+            throw error;
+          });
         }))
-          .then((results) => {
+          .then((settledResults) => {
+            const results = settledResults.flatMap((result) => {
+              if (result.status === 'fulfilled') return [result.value];
+              return [];
+            });
+            if (results.length === 0) {
+              throw new Error(`No model files could be imported for entity ${entity.id}`);
+            }
             if (!this.entityMeshes.has(entity.id)) {
               // Entity was deleted before load finished
               results.forEach(res => {
@@ -4080,8 +4114,12 @@ export class BabylonEngine {
             const currentMesh = this.entityMeshes.get(entity.id)!;
             const allAnimationGroups: any[] = [];
             
-            results.forEach((result, idx) => {
-              const root = result.meshes[0];
+            results.forEach((result) => {
+              const root = result.meshes.find((mesh) => !mesh.parent) || result.meshes[0];
+              if (!root) {
+                console.warn('[BabylonEngine] Imported model had no meshes');
+                return;
+              }
               root.parent = currentMesh;
               // Align with babylon coordinates if needed
               root.scaling = new Vector3(-1, 1, 1);
