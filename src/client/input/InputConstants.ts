@@ -1,7 +1,7 @@
 /**
  * Default Keybind Constants
  */
-export const KEYBINDS = {
+export let KEYBINDS: Record<string, string[]> = {
   MOVE_UP: ['w', 'ArrowUp'],
   MOVE_DOWN: ['s', 'ArrowDown'],
   MOVE_LEFT: ['a', 'ArrowLeft'],

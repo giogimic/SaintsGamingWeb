@@ -110,7 +110,28 @@ export class CameraManager {
     if (this.canvas) {
       this.canvas.addEventListener('wheel', this.onWheel, { passive: false });
     }
+    // Listen for unified client settings updates
+    if (typeof window !== 'undefined') {
+      window.addEventListener('client_settings_updated', this.onUnifiedSettingsUpdated);
+    }
   }
+
+  private onUnifiedSettingsUpdated = (e: Event) => {
+    const customEvent = e as CustomEvent;
+    const settings = customEvent.detail;
+    if (settings && settings.camera) {
+       this.setCameraSettings({
+         fov: settings.camera.fov !== undefined ? settings.camera.fov * (Math.PI / 180) : this.settings.fov,
+         playerCameraStyle: settings.camera.profile || this.settings.playerCameraStyle,
+         playerFollowSmoothing: settings.camera.smoothing ?? this.settings.playerFollowSmoothing,
+         borderClamping: settings.camera.borderClamping ?? this.settings.borderClamping,
+         vignetteEnabled: settings.camera.vignetteEnabled ?? this.settings.vignetteEnabled
+       });
+       if (settings.camera.thirdPersonDistance && this.settings.playerCameraStyle === 'follow45') {
+          this.profile.distance = settings.camera.thirdPersonDistance;
+       }
+    }
+  };
 
   public dispose() {
     if (this.scene) {
@@ -118,6 +139,9 @@ export class CameraManager {
     }
     if (this.canvas) {
       this.canvas.removeEventListener('wheel', this.onWheel);
+    }
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('client_settings_updated', this.onUnifiedSettingsUpdated);
     }
     this.camera?.dispose();
     this.camera = null;

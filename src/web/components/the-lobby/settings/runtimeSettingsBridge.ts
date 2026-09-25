@@ -1,6 +1,7 @@
 import { ClientSettings } from './clientSettingsSchema';
 import { soundSynth } from '@/engine/sound-synth';
 import { audioAmbiance } from '@/shared/game/audio/audioAmbianceEngine';
+import { KEYBINDS } from '@/client/input/InputConstants';
 // The bridge pushes settings down to the active runtime engines.
 
 export function updateRuntimeSettings(settings: ClientSettings) {
@@ -19,6 +20,15 @@ export function updateRuntimeSettings(settings: ClientSettings) {
     audioAmbiance.setBusVolume('SFX', settings.audio.sfxVolume);
     audioAmbiance.setBusVolume('AMBIANCE', settings.audio.ambienceVolume);
     audioAmbiance.setBusVolume('UI', settings.audio.uiVolume);
+  }
+
+  // Update Keybinds
+  if (settings.controls && settings.controls.keybinds) {
+    for (const [action, key] of Object.entries(settings.controls.keybinds)) {
+      if (key && KEYBINDS[action]) {
+        KEYBINDS[action] = [key];
+      }
+    }
   }
 
   // We will dispatch a custom event to notify BabylonEngine and Renderer.
