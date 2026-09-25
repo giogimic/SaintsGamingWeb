@@ -56,7 +56,7 @@ export async function getAllCharacterClasses(profileId?: string) {
       orderBy: { sortOrder: 'asc' },
     });
     if (rows.length === 0) {
-      return { success: true, data: [] as ClassDefData[] };
+      return { success: true, data: DEFAULT_PLAYABLE_CLASSES as ClassDefData[] };
     }
     return { success: true, data: rows.map(classRowToData) };
   } catch (err) {
