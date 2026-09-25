@@ -100,6 +100,26 @@ const ANIMATION_PROFILE_OPTIONS = [
   { value: 'wukongManny', label: 'Wukong (Manny)' },
 ];
 
+function guessComponentInfo(filename: string): { structure: StructureType, category: string } {
+  const lower = filename.toLowerCase();
+  
+  if (lower.includes('body') || lower.includes('base') || lower.includes('skeleton')) {
+    return { structure: 'Modular', category: 'base' };
+  }
+  
+  let category = 'other';
+  if (lower.includes('hair') || lower.includes('beard') || lower.includes('moustache') || lower.includes('eyebrow')) category = 'hair';
+  else if (lower.includes('clown_nose') || lower.includes('pacifier') || lower.includes('emotion') || lower.includes('face') || lower.includes('head')) category = 'face';
+  else if (lower.includes('glass') || lower.includes('headphone') || lower.includes('mask')) category = 'head_accessory';
+  else if (lower.includes('hat') || lower.includes('helmet')) category = 'hat';
+  else if (lower.includes('costume') || lower.includes('outwear') || lower.includes('jacket') || lower.includes('shirt') || lower.includes('torso')) category = 'shirt';
+  else if (lower.includes('pant') || lower.includes('short') || lower.includes('leg')) category = 'pants';
+  else if (lower.includes('shoe') || lower.includes('sneaker') || lower.includes('slipper') || lower.includes('sock') || lower.includes('foot')) category = 'shoes';
+  else if (lower.includes('glove') || lower.includes('hand')) category = 'accessory';
+  
+  return { structure: 'ModularItem', category };
+}
+
 // ── Component ────────────────────────────────────────────────────────
 export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }: Props) {
   const showToast = useGameStore((s) => s.showToast);
@@ -108,6 +128,8 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
   const [parseError, setParseError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('roles');
   
+  const initialGuess = useMemo(() => guessComponentInfo(file.name), [file.name]);
+
   // Model viewport state
   const [activeAnimationIndex, setActiveAnimationIndex] = useState<number | undefined>(undefined);
   const [showSkeleton, setShowSkeleton] = useState(false);
@@ -122,7 +144,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
   
   // Roles
   const [roles, setRoles] = useState<string[]>(['Character']);
-  const [structure, setStructure] = useState<StructureType>('Complete');
+  const [structure, setStructure] = useState<StructureType>(initialGuess.structure);
   const [perspective, setPerspective] = useState<'Third Person' | 'First Person'>('Third Person');
   
   // Modular Settings
@@ -147,7 +169,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
   const [modularComponents, setModularComponents] = useState<Record<string, string>>({});
 
   // Modular Item state
-  const [componentCategory, setComponentCategory] = useState<string>('hair');
+  const [componentCategory, setComponentCategory] = useState<string>(initialGuess.category);
   const [baseBodyType, setBaseBodyType] = useState<string>('unspecified');
 
   const [animationProfileId, setAnimationProfileId] = useState<string>('');
