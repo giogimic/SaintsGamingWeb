@@ -1,3 +1,6 @@
+## [2.1.997] - 2026-09-25
+- **Bugfix**: Go MMO Socket.IO connections now exchange the authenticated browser session for a short-lived signed socket token on every handshake, including reconnects. This supports production auth without enabling the development account-ID bypass.
+
 ## [2.1.996] - 2026-09-25
 - **Bugfix**: Explicitly register Babylon glTF/GLB loaders in the active ClientApp runtime so in-game model loading does not depend on another engine bundle having loaded first.
 - **Improvement**: Model import failures now log the live asset response status, content type, and first bytes, helping distinguish broken upload URLs or server responses from model parsing errors.

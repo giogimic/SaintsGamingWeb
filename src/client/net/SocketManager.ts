@@ -54,7 +54,37 @@ export class SocketManager {
 
     // Use dynamic serverUrl if provided, otherwise fallback to env
     const goUrl = opts.serverUrl || goMmoPublicUrl();
-    const auth = opts.joinToken ? { token: opts.joinToken } : lobbySocketAuth(opts.accountId);
+    const auth = goUrl
+      ? (callback: (data: { token: string }) => void) => {
+          if (opts.joinToken) {
+            callback({ token: opts.joinToken });
+            return;
+          }
+
+          // Auth.js uses an encrypted session cookie, which Go cannot validate
+          // directly. Exchange the logged-in browser session for a short-lived
+          // HS256 ticket on every handshake (including automatic reconnects).
+          fetch('/api/auth/socket-token', {
+            credentials: 'same-origin',
+            cache: 'no-store',
+          })
+            .then(async (response) => {
+              if (!response.ok) throw new Error(`Socket token request failed (${response.status})`);
+              const payload = await response.json();
+              if (typeof payload.token !== 'string' || !payload.token) {
+                throw new Error('Socket token response did not contain a token');
+              }
+              return payload.token;
+            })
+            .then((token) => callback({ token }))
+            .catch((error) => {
+              console.error('[SocketManager] Could not obtain Go MMO socket token:', error);
+              callback({ token: '' });
+            });
+        }
+      : opts.joinToken
+        ? { token: opts.joinToken }
+        : lobbySocketAuth(opts.accountId);
 
     const connectOpts: any = {
       auth,
