@@ -42,7 +42,7 @@ export class GameplayInputController {
     const settings = state.clientSettings;
     if (settings && this.engineRef && this.engineRef.renderer) {
       const profile = settings.camera?.profile;
-      if (profile === 'firstPerson' || profile === 'thirdPerson') {
+      if (profile === 'firstperson' || profile === 'dynamic') {
          // Resolve relative to camera yaw
          const yaw = this.engineRef.renderer.cameraYaw || 0;
          // Rotate input vector by yaw

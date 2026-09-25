@@ -17,6 +17,7 @@ import { usePlayerStore } from '../state/usePlayerStore';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
 import { mapMesher } from './MapMesher';
 import { WrappedCharacterMesher } from './rendering/WrappedCharacterMesher';
+import { AssetManager } from '@/engine/assets/AssetManager';
 
 // Player is 2 blocks tall (like a classic voxel game character)
 const PLAYER_HEIGHT = 2.0;
@@ -75,7 +76,7 @@ export class EntityRenderer {
       if (profileId && profileId.length >= 20 && !profileId.includes('.')) {
         const asset = AssetManager.getInstance().getAssetSync(profileId);
         if (asset) {
-          isModel = asset.type === 'MODEL' || (asset.source && (asset.source.endsWith('.glb') || asset.source.endsWith('.gltf')));
+          isModel = asset.type === 'MODEL' || !!(asset.source && (asset.source.endsWith('.glb') || asset.source.endsWith('.gltf')));
           if (asset.source) resolvedUrl = asset.source;
           if (asset.presentation && (asset.presentation as any).characterPresentationType) {
             presentationType = (asset.presentation as any).characterPresentationType;
