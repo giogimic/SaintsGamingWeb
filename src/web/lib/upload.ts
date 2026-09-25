@@ -323,8 +323,59 @@ export async function uploadSocialMedia(file: File): Promise<UploadResult> {
 
 /** Validate file magic bytes match the MIME type */
 function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
-  if (buffer.length < 8) return false;
+  if (buffer.length < 4) return false;
 
+  // ── 3D Models ──────────────────────────────────────────────────────
+  // GLB (Binary glTF): magic = "glTF" (0x67 0x6C 0x54 0x46) at offset 0
+  if (mimeType === "model/gltf-binary") {
+    return (
+      buffer[0] === 0x67 &&
+      buffer[1] === 0x6C &&
+      buffer[2] === 0x54 &&
+      buffer[3] === 0x46
+    );
+  }
+
+  // GLTF (JSON glTF): valid JSON starting with '{' (after optional BOM / whitespace)
+  if (mimeType === "model/gltf+json") {
+    // Skip optional UTF-8 BOM (EF BB BF)
+    let start = 0;
+    if (buffer.length >= 3 && buffer[0] === 0xEF && buffer[1] === 0xBB && buffer[2] === 0xBF) {
+      start = 3;
+    }
+    // Find first non-whitespace byte
+    for (let i = start; i < Math.min(buffer.length, 64); i++) {
+      const c = buffer[i];
+      if (c === 0x20 || c === 0x09 || c === 0x0A || c === 0x0D) continue; // space, tab, newline, carriage return
+      return c === 0x7B; // '{'
+    }
+    return false;
+  }
+
+  // ── Audio ──────────────────────────────────────────────────────────
+  // MP3 (audio/mpeg, audio/mp3): ID3 tag header or MPEG sync word
+  if (mimeType === "audio/mpeg" || mimeType === "audio/mp3") {
+    // ID3v2 tag: "ID3" (0x49 0x44 0x33)
+    if (buffer[0] === 0x49 && buffer[1] === 0x44 && buffer[2] === 0x33) return true;
+    // MPEG frame sync: 0xFF followed by 0xE0+ (sync bits)
+    if (buffer[0] === 0xFF && (buffer[1] & 0xE0) === 0xE0) return true;
+    return false;
+  }
+
+  // WAV: RIFF....WAVE
+  if (mimeType === "audio/wav" || mimeType === "audio/x-wav") {
+    if (buffer.length < 12) return false;
+    const isRiff = buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46; // RIFF
+    const isWave = buffer[8] === 0x57 && buffer[9] === 0x41 && buffer[10] === 0x56 && buffer[11] === 0x45; // WAVE
+    return isRiff && isWave;
+  }
+
+  // OGG Audio: "OggS" (same as video/ogg)
+  if (mimeType === "audio/ogg") {
+    return buffer[0] === 0x4F && buffer[1] === 0x67 && buffer[2] === 0x67 && buffer[3] === 0x53;
+  }
+
+  // ── Images (WebP) ─────────────────────────────────────────────────
   // WebP: RIFF....WEBP
   if (mimeType === "image/webp") {
     if (buffer.length < 12) return false;
@@ -333,6 +384,7 @@ function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
     return isRiff && isWebp;
   }
 
+  // ── Video ──────────────────────────────────────────────────────────
   // MP4 & QuickTime MOV
   if (mimeType === "video/mp4" || mimeType === "video/quicktime") {
     if (buffer.length < 8) return false;
@@ -349,12 +401,12 @@ function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
     return buffer[0] === 0x1A && buffer[1] === 0x45 && buffer[2] === 0xDF && buffer[3] === 0xA3;
   }
 
-  // OGG Video / Audio
+  // OGG Video
   if (mimeType === "video/ogg" || mimeType === "application/ogg") {
     return buffer[0] === 0x4F && buffer[1] === 0x67 && buffer[2] === 0x67 && buffer[3] === 0x53; // OggS
   }
 
-  // Archives
+  // ── Archives ───────────────────────────────────────────────────────
   if (ALLOWED_ARCHIVE_MIME_TYPES.includes(mimeType)) {
     if (mimeType === "application/zip" || mimeType === "application/x-zip-compressed") {
       return buffer[0] === 0x50 && buffer[1] === 0x4B && buffer[2] === 0x03 && buffer[3] === 0x04;
@@ -380,6 +432,7 @@ function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
     return false;
   }
 
+  // ── Images (standard) ─────────────────────────────────────────────
   const signatures: Record<string, number[][]> = {
     "image/jpeg": [[0xff, 0xd8, 0xff]],
     "image/png": [[0x89, 0x50, 0x4e, 0x47]],

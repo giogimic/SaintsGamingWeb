@@ -1,3 +1,17 @@
+## [2.1.987] - 2026-09-25
+- **Bugfix**: Fixed 3D model uploads (GLB/GLTF) failing with "File content does not match its declared type". The `validateMagicBytes` function had no signatures for `model/gltf-binary` or `model/gltf+json`, causing all 3D asset uploads to be rejected.
+- **Bugfix**: Added missing magic byte validation for audio files (`audio/mpeg`, `audio/wav`, `audio/ogg`), preventing silent upload failures.
+- **Improvement**: Overhauled Asset Definition Studio UX for modular character workflows:
+  - Replaced plain `<select>` structure picker with visual card selectors (Complete / Modular Base / Modular Piece) with icons and descriptions.
+  - Replaced free-text "Base Body Type" input with a proper dropdown sourced from the canonical `CHARACTER_BASE_BODY_TYPES`.
+  - Added visual chip selectors with emoji icons for component categories (Hair, Hat, Torso, etc.).
+  - Added tab completeness dot indicators (green = complete, amber = partial) to show configuration progress at a glance.
+  - Replaced plain checkboxes with toggle-style role buttons for Supported Roles.
+  - Added toggle-style buttons for viewport controls (Bones, Bounds) instead of raw checkboxes.
+  - Added empty-state illustrations for Skeleton, Attachments, and Animations tabs when no data is detected.
+  - Improved Tintable material toggle to use visual toggle button instead of checkbox.
+  - Category selection for modular set items now uses inline chip buttons instead of dropdown.
+
 ## [2.1.983] - 2026-09-24
 - Overhauled Asset Studio to be 3D-First (GLB/GLTF modular attachments)
 - Added Modular Attachments UI to Archetype Workspace
