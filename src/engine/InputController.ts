@@ -102,7 +102,7 @@ public editorPanAnimFrameId: number | null = null;
 public handleEditorPointerDown(e: PointerEvent) {
     const isEditor = this.engine.editorCameraMode;
     const style = this.engine.renderer.cameraSettings.playerCameraStyle;
-    const isFpsTps = !isEditor && ((style as string) === 'firstperson' || (style as string) === 'firstPerson' || (style as string) === 'thirdperson' || (style as string) === 'thirdPerson' || style === 'free' || style === 'dynamic');
+    const isFpsTps = !isEditor && ((style as string) === 'firstperson' || (style as string) === 'firstPerson' || (style as string) === 'thirdperson' || (style as string) === 'thirdPerson' || style === 'follow45' || style === 'free' || style === 'dynamic' || style === 'adaptive');
     
     const validGameplayClick = isFpsTps && e.button === 2;
     const validEditorClick = isEditor && (e.button === 1 || (e.button === 2 && this.engine.renderer.isFreeCam) || (e.button === 0 && this.editorSpaceHeld));

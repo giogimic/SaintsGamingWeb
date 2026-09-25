@@ -1,3 +1,11 @@
+## [2.1.993] - 2026-09-25
+- **Bugfix**: 3D models now load in-game — `visualData` was not passed to `hydratePlayer` during character load, so the renderer never received the model URL.
+- **Bugfix**: Multi-class archetypes (e.g. WARRIOR,MAGE) no longer break character creation — class validation now splits on comma and validates the primary class.
+- **Bugfix**: Third Person camera (follow45) now supports right-click orbit — `isFpsTps` check was missing the `follow45` style.
+- **Bugfix**: Mouse-wheel zoom now correctly adjusts perspective distance (not orthographic zoom) when camera is in perspective mode (FPS/TPS/follow45).
+- **Bugfix**: Character creator now correctly detects 3D Model archetypes by checking `parsed.worldModel.type` instead of `parsed.type`.
+- **Bugfix**: Fixed background color mismatch between frame container, canvas wrapper, and loading screen — unified to `#050b14` matching the Babylon.js scene clear color, eliminating visible seams at world edges.
+
 ## [2.1.992] - 2026-09-25
 - **Bugfix**: Fixed 3D model icon preview falling back to malformed \.glb.png\ extension in CharacterSelect UI.
 - **Bugfix**: Fixed FPS camera offset anchoring at the player's feet and looking upwards.

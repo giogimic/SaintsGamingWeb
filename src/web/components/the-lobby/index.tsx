@@ -352,6 +352,7 @@ export default function TheLobby({
         currentMapId: validMapId,
         name: res.data.name,
         assetProfileId: res.data.assetProfileId || 'adventurer',
+        visualData: res.data.visualData || undefined,
         position: validPosition
       });
       useGameStore.setState({
@@ -1892,7 +1893,7 @@ export default function TheLobby({
 
   const frameClass = enableStudio
     ? 'fixed top-0 left-0 w-full h-[100dvh] z-30 touch-none select-none overflow-hidden bg-transparent'
-    : 'fixed top-0 left-0 w-full h-[100dvh] z-30 touch-none select-none overflow-hidden bg-[#0a0a0f]';
+    : 'fixed top-0 left-0 w-full h-[100dvh] z-30 touch-none select-none overflow-hidden bg-[#050b14]';
 
   if (isInitializing) {
     return (

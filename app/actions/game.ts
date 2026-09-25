@@ -37,21 +37,24 @@ export async function createGameCharacter(data: {
       return { success: false, error: 'You already have a character with this name.' };
     }
 
-    // 3. Class Validation
-    const normalizedClassId = String(data.classId || 'WARRIOR').toUpperCase().trim();
+    // 3. Class Validation — archetypes may have comma-separated multi-class (e.g. "WARRIOR,MAGE")
+    const rawClassId = String(data.classId || 'WARRIOR').toUpperCase().trim();
+    // Split multi-class and validate the primary (first) class
+    const classIds = rawClassId.split(',').map(c => c.trim()).filter(Boolean);
+    const primaryClassId = classIds[0] || 'WARRIOR';
     const validClass = await prisma.characterClass.findFirst({
       where: {
         OR: [
-          { classId: normalizedClassId },
-          { slug: normalizedClassId.toLowerCase() },
-          { name: { equals: normalizedClassId } },
+          { classId: primaryClassId },
+          { slug: primaryClassId.toLowerCase() },
+          { name: { equals: primaryClassId } },
         ],
       },
     });
     // Fallback allowed standard playable classes if DB is unseeded
     const standardPlayable = ['WARRIOR', 'MAGE', 'THIEF', 'RANGER', 'PRIEST', 'CLERIC', 'ROGUE', 'PALADIN'];
-    if (!validClass && !standardPlayable.includes(normalizedClassId)) {
-      return { success: false, error: `Invalid class selection: ${normalizedClassId}` };
+    if (!validClass && !standardPlayable.includes(primaryClassId)) {
+      return { success: false, error: `Invalid class selection: ${primaryClassId}` };
     }
 
     // 4. Sprite / Presentation Sanitization
@@ -102,7 +105,7 @@ export async function createGameCharacter(data: {
         name: cleanName,
         assetProfileId: cleanassetProfileId || 'human_base',
         visualData: data.visualData || '[]',
-        classId: validClass?.classId || normalizedClassId,
+        classId: validClass?.classId || rawClassId,
         stateData: sanitizedStateStr,
       }
     });

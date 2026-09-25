@@ -240,9 +240,9 @@ export function CharacterCreator({
     }
   }, [visualData]);
 
-  const is3DModel = parsedVisualData?.type === '3D Model';
+  const is3DModel = parsedVisualData?.worldModel?.type === '3D Model' || parsedVisualData?.type === '3D Model';
   const isModular = parsedVisualData 
-    ? !!parsedVisualData.isModular 
+    ? !!(parsedVisualData.worldModel?.isModular || parsedVisualData.isModular) 
     : detectPresentationMode(assetProfileId, allSprites) === 'modular';
 
   // Computed multi-layer stack
@@ -713,7 +713,7 @@ export function CharacterCreator({
                             try {
                               if (hero.visualData) {
                                 const parsed = JSON.parse(hero.visualData);
-                                is3D = parsed.type === '3D Model';
+                                is3D = parsed.worldModel?.type === '3D Model' || parsed.type === '3D Model';
                               }
                             } catch {}
                             return is3D ? (

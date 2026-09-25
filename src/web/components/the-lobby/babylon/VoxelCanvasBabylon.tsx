@@ -2211,10 +2211,10 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   }
 
   return (
-    <div className={`absolute inset-0 w-full h-full overflow-hidden select-none ${isDevEditorOpen ? 'bg-transparent' : 'bg-[#050508]'}`}>
+    <div className={`absolute inset-0 w-full h-full overflow-hidden select-none ${isDevEditorOpen ? 'bg-transparent' : 'bg-[#050b14]'}`}>
       {/* Loading screen while async map data is fetching */}
       {!mapData && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#050508]">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#050b14]">
           <div className="mb-4 h-12 w-12 animate-spin rounded-full border-2 border-lobby-soul/30 border-t-lobby-film" />
           <p className="animate-pulse font-mono text-sm text-lobby-fog">
             Loading {currentMapId.replace(/_/g, ' ')}...

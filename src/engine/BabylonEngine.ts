@@ -474,7 +474,8 @@ export class BabylonEngine {
       e.preventDefault();
       const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
       const camStyle = this.renderer.cameraSettings.playerCameraStyle;
-      if (camStyle === 'thirdPerson' || camStyle === 'firstPerson' || camStyle === 'firstperson') {
+      const isPerspective = this.renderer.camera.mode === 0; // PERSPECTIVE_CAMERA = 0
+      if (isPerspective) {
         const currentDist = this.renderer.cameraProfile.distance ?? 14;
         const newDist = Math.max(2, Math.min(60, currentDist * zoomFactor));
         this.renderer.cameraProfile.distance = newDist;
