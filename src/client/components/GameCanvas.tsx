@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { engineCore } from '../engine/EngineCore';
 import { useHudStore } from '../state/useHudStore';
+import { useGameStore } from '@/web/components/the-lobby/store';
+import { cameraManager } from '../engine/CameraManager';
 
 export function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -9,11 +11,10 @@ export function GameCanvas() {
     const handlePointerLockChange = () => {
       if (!document.pointerLockElement) {
         try {
-          const { useGameStore } = require('@/web/components/the-lobby/store');
           if (!useGameStore.getState().isSystemMenuOpen) {
-            useGameStore.getState().setIsSystemMenuOpen(true);
+            useGameStore.getState().openSystemMenu('keyboard');
           }
-        } catch (e) {}
+        } catch (_e) {}
       }
     };
     document.addEventListener('pointerlockchange', handlePointerLockChange);
@@ -34,14 +35,12 @@ export function GameCanvas() {
     // Check legacy system menu state
     let isSystemMenuOpen = false;
     try {
-      const { useGameStore } = require('@/web/components/the-lobby/store');
       isSystemMenuOpen = useGameStore.getState().isSystemMenuOpen;
     } catch (e) {}
 
     if (!isHudMenuOpen && !isSystemMenuOpen) {
       let isFirstPersonOrThirdPerson = false;
       try {
-        const { cameraManager } = require('../engine/CameraManager');
         const style = cameraManager.settings.playerCameraStyle;
         const currentZoom = cameraManager.currentZoom;
         
@@ -57,6 +56,7 @@ export function GameCanvas() {
       }
     }
   };
+
 
   return (
     <canvas

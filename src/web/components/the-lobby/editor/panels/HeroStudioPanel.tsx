@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Shield, Sparkles, User, Sword, Backpack } from 'lucide-react';
-import { useGameStore } from '../../store';
+import { Shield, Sparkles, Sword, Backpack } from 'lucide-react';
 import {
   WindowMenuBar,
   WindowMenuTabGroup,

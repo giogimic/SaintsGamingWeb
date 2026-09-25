@@ -8,9 +8,10 @@ import { inputManager } from './InputManager';
 import { KEYBINDS } from './InputConstants';
 import { useSessionStore } from '../state/useSessionStore';
 import { useHudStore } from '../state/useHudStore';
+import { useGameStore } from '@/web/components/the-lobby/store';
 
 export class InputController {
-  public update(deltaTime: number) {
+  public update(_deltaTime: number) {
     const scene = useSessionStore.getState().activeScene;
     
     // Only process player input if we're exploring
@@ -26,7 +27,6 @@ export class InputController {
       } else {
         // Fallback to legacy game store for the system menu until fully ported
         try {
-          const { useGameStore } = require('@/web/components/the-lobby/store');
           useGameStore.getState().toggleSystemMenu('keyboard');
           document.exitPointerLock?.();
         } catch (e) {}

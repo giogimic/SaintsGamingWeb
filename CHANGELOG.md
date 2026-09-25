@@ -1,3 +1,9 @@
+## [2.2.001] - 2026-09-25
+- **Maintenance**: Fixed IDE reported warnings and errors across several files (GameCanvas, InputController, AssetDefinitionStudio, character-creator).
+- **Maintenance**: Refactored `require()` inline imports to top-level `import` statements on client-side components to resolve ESLint and Next.js bundler warnings.
+- **Maintenance**: Regenerated local Prisma client to fix IDE type checking errors for newly added models (e.g. `StarterPerk`).
+- **Maintenance**: Fixed unescaped JSX quotes in AssetDefinitionStudio and removed unused React hooks and variables across the project.
+
 ## [2.2.000] - 2026-09-25
 - Fixed GameCanvas viewport clipping by adding absolute inset-0 to canvas and flex-1 to ExploringScene.
 - Fixed GLTF loader tree-shaking bug by explicitly registering GLTFFileLoader in EngineCore.ts, which should resolve the importMesh JSON parse error on live server.

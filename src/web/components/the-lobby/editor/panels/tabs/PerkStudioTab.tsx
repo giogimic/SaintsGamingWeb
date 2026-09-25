@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, LucideIcon, Zap, Feather, Shield, User, Sparkles, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Save } from 'lucide-react';
 import { getStarterPerks, upsertStarterPerk, deleteStarterPerk, StarterPerkData } from '@/app/actions/game/starter-perks';
 import { toast } from 'sonner';
 

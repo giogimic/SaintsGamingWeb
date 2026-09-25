@@ -22,7 +22,6 @@ import { AssetManager } from '@/engine/assets/AssetManager';
 // Player is 2 blocks tall (like a classic voxel game character)
 const PLAYER_HEIGHT = 2.0;
 const PLAYER_WIDTH = 1.0;
-const PLAYER_EYE_HEIGHT = 1.62; // ~81% of height, natural eye level
 
 // NPCs / creatures keep their original compact sizing
 const ENTITY_HEIGHT = 1.2;

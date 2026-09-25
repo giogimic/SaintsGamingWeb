@@ -16,14 +16,9 @@ import {
   ChevronLeft,
   Loader2,
   Crosshair,
-  Globe2,
   Dice5,
-  CheckCircle2,
   Flame,
   Search,
-  Package,
-  Layers,
-  Award,
   Cuboid,
   LucideIcon,
 } from 'lucide-react';
@@ -32,7 +27,6 @@ import { getStarterHeroes } from '@/app/actions/game/starter-heroes';
 import { getStarterPerks, StarterPerkData } from '@/app/actions/game/starter-perks';
 import { getActiveWorldRelease } from '@/app/actions/studio/world-release';
 import { getPlayableClasses } from '@/app/actions/game/character-classes';
-import { ensureWorldProfiles } from '@/app/actions/studio/world-profiles';
 import { toast } from 'sonner';
 import { INITIAL_SKILLS, useGameStore } from './store';
 import { soundSynth } from '@/engine/sound-synth';
@@ -43,7 +37,6 @@ import {
   resolveStartingSkills,
 } from '@/shared/game/classCatalog';
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
-import { AssetManager } from '@/engine/assets/AssetManager';
 import { MidnightTropicalBackground } from '@/client/ui/shared/MidnightTropicalBackground';
 import { useTheme } from 'next-themes';
 

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, Bounds, useBounds, Grid } from '@react-three/drei';
 import * as THREE from 'three';
 import { ParsedGLB } from './glbParser';

@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { parseGLB, ParsedGLB, ParsedAnimation } from './glbParser';
+import { parseGLB, ParsedGLB } from './glbParser';
 import { AssetInspector3D, AssetInspector3DRef } from './AssetInspector3D';
-import { Loader2, CheckCircle2, Box, Users, Puzzle, Eye, EyeOff, Bone, Maximize2, Play, Pause, AlertTriangle, ChevronDown } from 'lucide-react';
+import { Loader2, CheckCircle2, Box, Users, Puzzle, Bone, Maximize2, Play, AlertTriangle } from 'lucide-react';
 import { useGameStore } from '../../store';
 import { AssetManager } from '@/engine/assets/AssetManager';
 import {
@@ -140,7 +140,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
 
   // Form State
   const [assetName, setAssetName] = useState(file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
-  const [visibility, setVisibility] = useState('COMMUNITY');
+  const [visibility, _setVisibility] = useState('COMMUNITY');
   const [tagsInput, setTagsInput] = useState('3d, model');
   
   // Roles
@@ -150,7 +150,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
   
   // Modular Settings
   const [modularSetName, setModularSetName] = useState('');
-  const [skeletonConnectionPoints, setSkeletonConnectionPoints] = useState('');
+  const [skeletonConnectionPoints, _setSkeletonConnectionPoints] = useState('');
   
   // Skeleton
   const [boneMap, setBoneMap] = useState<Record<string, string>>({});
@@ -167,7 +167,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
   const [additionalItems, setAdditionalItems] = useState<Array<{ id: string, file: File; category: string }>>([]);
 
   // Mesh -> Component mapping
-  const [modularComponents, setModularComponents] = useState<Record<string, string>>({});
+  const [modularComponents, _setModularComponents] = useState<Record<string, string>>({});
 
   // Modular Item state
   const [componentCategory, setComponentCategory] = useState<string>(initialGuess.category);
@@ -246,7 +246,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
         }
       }
     }
-  }, [animationProfileId, availableClipNames]);
+  }, [animationProfileId, availableClipNames, animMap]);
 
   // ── GLB Parsing ────────────────────────────────────────────────────
   useEffect(() => {
@@ -668,7 +668,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                     </div>
                     <div className="text-[9px] text-amber-200/50 leading-tight flex items-start gap-1">
                       <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                      Add attachment pieces (hair, armor, weapons) in the "Items" tab at the top.
+                      Add attachment pieces (hair, armor, weapons) in the &quot;Items&quot; tab at the top.
                     </div>
                   </div>
                 )}
@@ -809,7 +809,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
             {activeTab === 'skeleton' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="text-amber-200 text-[11px]">Map standard Saints bones to this model's rig.</div>
+                  <div className="text-amber-200 text-[11px]">Map standard Saints bones to this model&apos;s rig.</div>
                   <div className="text-[10px] text-slate-500">
                     {mappedBoneCount} / {STANDARD_BONES.length} mapped
                   </div>
@@ -818,7 +818,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                   <div className="text-center py-8 text-slate-500">
                     <Bone className="w-8 h-8 mx-auto mb-2 opacity-30" />
                     <div className="font-bold">No bones detected</div>
-                    <div className="text-[10px] mt-1">This model doesn't have a skeleton. You can skip this tab.</div>
+                    <div className="text-[10px] mt-1">This model doesn&apos;t have a skeleton. You can skip this tab.</div>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
