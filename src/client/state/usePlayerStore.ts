@@ -50,6 +50,7 @@ export interface PlayerData {
   accountId?: string;
   name?: string;
   assetProfileId?: string;
+  visualData?: string;
   position: Point2D;
   direction: Direction;
   isMoving: boolean;

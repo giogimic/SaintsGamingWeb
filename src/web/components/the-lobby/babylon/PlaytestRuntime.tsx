@@ -19,6 +19,7 @@ import {
   resolveEntitySpriteUrl,
   getAssetAnimationProfile,
 } from "@/shared/game/creatureCatalog";
+import { getWorldModelPresentation } from "@/shared/game/worldModelPresentation";
 import { normalizeGates } from "@/shared/game/logicComponents";
 import type { GameMapData } from '@/shared/game/maps';
 import { LOBBY_TOUCH_INTERACT_EVENT, LOBBY_TOUCH_MOVE_EVENT } from "../MobileControls";
@@ -251,6 +252,7 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
                 position: { x: spawn.x, y: spawn.y },
                 name: p.name || "Player",
                 assetProfileId: p.assetProfileId || "adventurer",
+                visualData: p.visualData,
                 currentInstanceId: liveStore.instanceId,
                 worldJoinSeq: liveStore.worldJoinSeq,
                 onSetWorldSessionState: liveStore.setWorldSessionState,
@@ -643,6 +645,7 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
               fallback: "/game-assets/npc/adventurer.png",
             }),
             animationProfile: playerAnimationProfileRef.current as any,
+            presentation: getWorldModelPresentation(freshPlayer.visualData),
             isPlayer: true,
             direction: freshPlayer.direction,
             isMoving: freshPlayer.isMoving,
@@ -782,6 +785,7 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
             animationProfile: multiplayerAnimationProfilesRef.current.get(
               socketId,
             ) as any,
+            presentation: getWorldModelPresentation((other as any).visualData),
             isPlayer: true,
             direction: other.direction,
             isMoving: other.isMoving,
@@ -810,12 +814,17 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
           for (const npc of chunk.entities || chunk.entities || []) {
             const x = npc.components?.transform?.x ?? npc.x;
             const y = npc.components?.transform?.y ?? npc.y;
+            const appearance = npc.components?.appearance;
+            const presentation = getWorldModelPresentation(appearance)
+              || getWorldModelPresentation(npc.visualData)
+              || getWorldModelPresentation(npc.sprite);
             staticNpcs.push({
               id: isMain
                 ? `mapnpc_${npc.id}`
                 : `mapnpc_${chunk.mapId}_${npc.id}`,
               type: "NPC" as const,
-              spriteKey: npc.components?.appearance?.assetProfileId || npc.sprite || "adventurer",
+              spriteKey: presentation?.modelUrl || appearance?.assetProfileId || npc.sprite || "adventurer",
+              presentation,
               position: { x, y },
               worldX: x - cWidth / 2 + cOffsetX + offset.x,
               worldZ: cHeight / 2 - y + cOffsetZ - offset.y,
@@ -830,10 +839,15 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
         for (const npc of liveMapDoc?.entities || []) {
           const x = npc.components?.transform?.x ?? npc.x;
           const y = npc.components?.transform?.y ?? npc.y;
+          const appearance = npc.components?.appearance;
+          const presentation = getWorldModelPresentation(appearance)
+            || getWorldModelPresentation(npc.visualData)
+            || getWorldModelPresentation(npc.sprite);
           staticNpcs.push({
             id: `mapnpc_${npc.id}`,
             type: "NPC" as const,
-            spriteKey: npc.components?.appearance?.assetProfileId || npc.sprite || "adventurer",
+            spriteKey: presentation?.modelUrl || appearance?.assetProfileId || npc.sprite || "adventurer",
+            presentation,
             position: { x, y },
             worldX: x - liveW / 2 + offset.x,
             worldZ: liveH / 2 - y - offset.y,
@@ -906,7 +920,11 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
               : ent.type === "ANIMAL"
                 ? "animal"
                 : "monster";
-          const spriteUrl = resolveEntitySpriteUrl(ent.spriteKey, { kind });
+          const presentation = getWorldModelPresentation(ent.visualData)
+            || getWorldModelPresentation(ent.components?.appearance)
+            || getWorldModelPresentation(ent.spriteKey)
+            || ent.presentation;
+          const spriteUrl = resolveEntitySpriteUrl(presentation?.modelUrl || ent.spriteKey, { kind });
 
           // Fetch animationProfile if not cached (non-blocking)
           if (
@@ -926,6 +944,7 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
             x: ex,
             y: ez,
             spriteUrl,
+            presentation,
             animationProfile: entityAnimationProfilesRef.current.get(
               ent.id,
             ) as any,

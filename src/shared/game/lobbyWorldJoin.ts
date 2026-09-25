@@ -22,6 +22,7 @@ export interface JoinWorldOptions {
   position?: { x?: number; y?: number; z?: number };
   name?: string;
   assetProfileId?: string;
+  visualData?: string;
   neighborMapIds?: string[];
   worldSessionState: WorldSessionState;
   currentInstanceId?: string | null;
@@ -97,13 +98,14 @@ export function joinWorld(opts: JoinWorldOptions): JoinWorldResult {
     z: typeof opts.position?.z === 'number' ? opts.position.z : undefined,
     name: opts.name || 'Player',
     assetProfileId: opts.assetProfileId || 'adventurer',
+    visualData: opts.visualData || undefined,
     spriteId: opts.contract.pie ? undefined : opts.assetProfileId || undefined,
     neighborMapIds: opts.neighborMapIds,
     joinSeq: nextSeq,
 
   };
 
-  console.log(`[lobbyWorldJoin] Emitting 'join_map' for account=${opts.accountId} character=${opts.characterId} map=${baseMapId} seq=${nextSeq}`, payload);
+  console.log(`[lobbyWorldJoin] Emitting 'join_map' for account=${opts.accountId} character=${opts.characterId} map=${baseMapId} seq=${nextSeq}`);
   opts.socket.emit('join_map', payload);
 
   return {
@@ -169,4 +171,3 @@ export function startMapTransition(opts: StartMapTransitionOptions): JoinWorldRe
     cleanupTimeout,
   };
 }
-

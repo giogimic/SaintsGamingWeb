@@ -164,6 +164,7 @@ export function CharacterSelectScene() {
         accountId: accountId || undefined,
         name: char.name,
         assetProfileId,
+        visualData: char.visualData || persistedPlayer.visualData,
         position,
       };
       usePlayerStore.getState().hydratePlayer(playerSnapshot);
@@ -193,6 +194,7 @@ export function CharacterSelectScene() {
           position,
           name: char.name,
           assetProfileId,
+          visualData: char.visualData || persistedPlayer.visualData,
           worldSessionState: useWorldStore.getState().worldSessionState,
           currentInstanceId: useWorldStore.getState().instanceId,
           worldJoinSeq: useWorldStore.getState().worldJoinSeq,
@@ -332,4 +334,3 @@ export function CharacterSelectScene() {
     </div>
   );
 }
-

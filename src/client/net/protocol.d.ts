@@ -47,6 +47,7 @@ export interface PeerSnapshot {
   name: string;
   assetProfileId: string;
   spriteId?: string;
+  visualData?: string;
   isMoving?: boolean;
   hp?: number;
   maxHp?: number;
@@ -429,6 +430,7 @@ export interface JoinMapRequest {
   y?: number;
   name?: string;
   assetProfileId?: string;
+  visualData?: string;
   spriteId?: string;
   neighborMapIds?: string[];
   joinSeq?: number;

@@ -123,13 +123,13 @@ export function NpcEditorPanel() {
   const getWorldModel = (): WorldModelValue => {
     const app = form.componentsData.appearance;
     if (app && app.assetProfileId && app.assetId) {
-      return { type: app.assetProfileId as any, assetId: app.assetId };
+      return { type: app.assetProfileId as any, assetId: app.assetId, scale: app.scale };
     }
     return { type: '2D Sprite', assetId: 'adventurer' };
   };
 
   const handleWorldModelChange = (val: WorldModelValue) => {
-    setComponent('appearance', { assetProfileId: val.type, assetId: val.assetId });
+    setComponent('appearance', { assetProfileId: val.type, assetId: val.assetId, scale: val.scale });
   };
 
   const toggleCapability = (cap: 'shopkeeper' | 'banker' | 'questGiver' | 'mercenary' | 'companion' | 'trainer', val: boolean) => {

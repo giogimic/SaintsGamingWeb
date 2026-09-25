@@ -81,6 +81,7 @@ export interface InitializeGamePayload {
 }
 
 export async function POST(req: Request) {
+  let logger: SetupLogger | undefined;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -101,7 +102,7 @@ export async function POST(req: Request) {
 
     const body: InitializeGamePayload = await req.json();
     const initializationId = body.initializationId || 'init_unknown';
-    const logger = new SetupLogger(initializationId);
+    logger = new SetupLogger(initializationId);
 
     // 1. Validate Game Identity
     const gameName = body?.game?.name?.trim();
@@ -159,8 +160,11 @@ export async function POST(req: Request) {
     });
 
     if (!revision || revision.status !== 'COMPLETED') {
-      logger.log({ stageName: '08. Validate Bootstrap', stageCode: 'validate_bootstrap', status: 'FAILED', message: 'Invalid or incomplete bootstrap revision' });
-      return NextResponse.json({ error: 'Invalid or incomplete bootstrap revision', events: logger.getEvents() }, { status: 400 });
+      const message = !revision
+        ? `Bootstrap revision '${body.bootstrapRevisionId}' was not found.`
+        : `Bootstrap revision '${revision.id}' is ${revision.status}; it must be COMPLETED before publishing.`;
+      logger.log({ stageName: '08. Validate Bootstrap', stageCode: 'validate_bootstrap', status: 'FAILED', message, error: message });
+      return NextResponse.json({ error: message, events: logger.getEvents() }, { status: 400 });
     }
     logger.log({ stageName: '08. Validate Bootstrap', stageCode: 'validate_bootstrap', status: 'COMPLETED', message: 'Bootstrap revision valid' });
 
@@ -568,10 +572,11 @@ export async function POST(req: Request) {
     });
   } catch (error: any) {
     console.error('[api/setup/initialize-game] Initialization failed:', error);
-    // Use a logger if possible, but we don't have it in catch scope easily unless we hoisted it, but we did hoist it!
+    const message = error instanceof Error ? error.message : 'Failed to initialize game';
+    logger?.log({ stageName: 'Initialization', stageCode: 'initialize_failed', status: 'FAILED', message, error: message });
     return NextResponse.json(
-      { error: error.message || 'Failed to initialize game', stack: error.stack, events: [] },
-      { status: 400 }
+      { error: message, events: logger?.getEvents() || [] },
+      { status: 500 }
     );
   }
 }

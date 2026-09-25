@@ -4122,7 +4122,9 @@ export class BabylonEngine {
               }
               root.parent = currentMesh;
               // Align with babylon coordinates if needed
-              root.scaling = new Vector3(-1, 1, 1);
+              const modelScale = Number(entity.presentation?.modelScale);
+              const actorScale = Number.isFinite(modelScale) && modelScale > 0 ? modelScale : 1;
+              root.scaling = new Vector3(-actorScale, actorScale, actorScale);
               
               if (result.animationGroups && result.animationGroups.length > 0) {
                 allAnimationGroups.push(...result.animationGroups);

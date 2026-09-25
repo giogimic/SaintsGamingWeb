@@ -11,6 +11,8 @@ export type WorldModelType = '2D Sprite' | '2D Box Sprite' | '3D Model' | 'Other
 export interface WorldModelValue {
   type: WorldModelType;
   assetId: string;
+  /** Per-actor scale override; the shared asset remains unchanged. */
+  scale?: number;
   isModular?: boolean;
   partOfSet?: string;
   skeletonConnectionPoints?: string;
@@ -31,10 +33,15 @@ const MODEL_OPTIONS: { id: WorldModelType; label: string; icon: any; isImplement
 export function WorldModelSelector({ value, onChange, label = "World Model", description = "How this actor is represented in the physical game world." }: WorldModelSelectorProps) {
   const [showCatalogBrowser, setShowCatalogBrowser] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [scaleInput, setScaleInput] = useState(String(value.scale ?? 1));
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    setScaleInput(String(value.scale ?? 1));
+  }, [value.scale]);
 
   return (
     <section className="space-y-2">
@@ -124,6 +131,40 @@ export function WorldModelSelector({ value, onChange, label = "World Model", des
                 </div>
                 <Cuboid className="w-3 h-3 text-cyan-400 shrink-0" />
               </button>
+              <div className="grid grid-cols-[1fr_auto] gap-3 items-center">
+                <div>
+                  <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">Model scale</label>
+                  <p className="text-[9px] text-slate-500 mt-0.5">Applies to this archetype or entity only.</p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    min="0.01"
+                    max="100"
+                    step="0.01"
+                    value={scaleInput}
+                    onChange={(event) => {
+                      const rawValue = event.target.value;
+                      setScaleInput(rawValue);
+                      const nextScale = Number(rawValue);
+                      if (rawValue && Number.isFinite(nextScale) && nextScale > 0 && nextScale <= 100) {
+                        onChange({ ...value, scale: nextScale });
+                      }
+                    }}
+                    onBlur={() => {
+                      const parsedScale = Number(scaleInput);
+                      const nextScale = Number.isFinite(parsedScale) && parsedScale > 0
+                        ? Math.max(0.01, Math.min(100, parsedScale))
+                        : value.scale ?? 1;
+                      setScaleInput(String(nextScale));
+                      onChange({ ...value, scale: nextScale });
+                    }}
+                    aria-label="This actor's model scale"
+                    className="w-24 bg-black/40 border border-slate-700 rounded px-2 py-1.5 text-right text-[11px] text-white font-mono focus:border-cyan-400 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-slate-500">×</span>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="w-full p-2 bg-rose-950/20 border border-rose-500/30 rounded-lg flex items-center justify-between">

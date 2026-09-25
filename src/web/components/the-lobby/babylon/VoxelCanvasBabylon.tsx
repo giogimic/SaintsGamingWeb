@@ -18,6 +18,7 @@ import { globalGameplayInputController } from '../input/GameplayInputController'
 import CraftingOverlay from '../crafting-overlay';
 import { isSameBaseMap, toBaseMapId } from '@/shared/net/mapIds';
 import { resolveEntitySpriteUrl, getAssetAnimationProfile } from '@/shared/game/creatureCatalog';
+import { getWorldModelPresentation } from '@/shared/game/worldModelPresentation';
 import { normalizeGates, upsertWarpGate, type StudioWarpGate } from '@/shared/game/logicComponents';
 import { stripEditorOverlaysFromMapPayload } from '@/shared/game/mapLayers';
 import { invalidateMapCache } from '@/shared/game/mapCache';
@@ -79,34 +80,6 @@ interface GameCanvasBabylonProps {
   isolatedMapData?: any | null;
   isActive?: boolean;
   updateMapData?: (map: any) => void;
-}
-
-function getPresentationFromVisualData(visualDataStr?: string) {
-  if (!visualDataStr) return undefined;
-  try {
-    const parsed = JSON.parse(visualDataStr);
-    if (parsed.worldModel && (parsed.worldModel.type === '3D Model' || parsed.worldModel.type === 'MODEL')) {
-      const urls: string[] = [];
-      const baseModel = resolveEntitySpriteUrl(parsed.worldModel.assetId);
-      if (baseModel) urls.push(baseModel);
-
-      if (Array.isArray(parsed.modularAttachments)) {
-        for (const attachment of parsed.modularAttachments) {
-          const u = resolveEntitySpriteUrl(attachment.assetId);
-          if (u) urls.push(u);
-        }
-      }
-
-      if (urls.length > 0) {
-        return {
-          mode: '3D' as const,
-          modelUrl: urls[0],
-          modularModelUrls: urls.slice(1)
-        };
-      }
-    }
-  } catch (e) {}
-  return undefined;
 }
 
 export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
@@ -673,7 +646,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             spriteConfig: freshPlayer.spriteConfig,
             hp: freshPlayer.hp,
             maxHp: freshPlayer.maxHp,
-            presentation: getPresentationFromVisualData(freshPlayer.visualData) as any
+            presentation: getWorldModelPresentation(freshPlayer.visualData)
           });
           babylonEngine.setEntityVisible('player_main', true);
 
@@ -785,7 +758,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             spriteConfig: (other as any).spriteConfig,
             hp: other.hp,
             maxHp: other.maxHp,
-            presentation: getPresentationFromVisualData((other as any).visualData) as any
+            presentation: getWorldModelPresentation((other as any).visualData)
           });
         }
       }
@@ -888,7 +861,11 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               : ent.type === 'ANIMAL'
                 ? 'animal'
                 : 'monster';
-          const spriteUrl = resolveEntitySpriteUrl(ent.spriteKey, { kind });
+          const presentation = getWorldModelPresentation(ent.visualData)
+            || getWorldModelPresentation(ent.components?.appearance)
+            || getWorldModelPresentation(ent.spriteKey)
+            || ent.presentation;
+          const spriteUrl = resolveEntitySpriteUrl(presentation?.modelUrl || ent.spriteKey, { kind });
 
           // Fetch animationProfile if not cached (non-blocking)
           if (!entityAnimationProfilesRef.current.has(ent.id) && ent.spriteKey) {
@@ -904,6 +881,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             x: ex,
             y: ez,
             spriteUrl,
+            presentation,
             animationProfile: entityAnimationProfilesRef.current.get(ent.id) as any,
             isPlayer: false,
             isNpc: ent.type === 'NPC',
@@ -2046,7 +2024,11 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const liveH = engine.getMapHeight() || mapHeight;
     for (const npc of justNpcs) {
       if (!Number.isFinite(npc.x) || !Number.isFinite(npc.y)) continue;
-      const spriteUrl = resolveEntitySpriteUrl(npc.sprite || 'adventurer', {
+      const appearance = npc.components?.appearance;
+      const presentation = getWorldModelPresentation(appearance)
+        || getWorldModelPresentation(npc.visualData)
+        || getWorldModelPresentation(npc.sprite);
+      const spriteUrl = resolveEntitySpriteUrl(presentation?.modelUrl || appearance?.assetProfileId || npc.sprite || 'adventurer', {
         kind: 'npc',
       });
 
@@ -2065,6 +2047,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         x: npc.x - liveW / 2,
         y: liveH / 2 - npc.y,
         spriteUrl,
+        presentation,
         animationProfile: entityAnimationProfilesRef.current.get(npcId) as any,
         isPlayer: false,
         isNpc: true,

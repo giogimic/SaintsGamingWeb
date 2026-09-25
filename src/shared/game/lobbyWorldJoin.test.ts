@@ -67,6 +67,7 @@ describe('lobbyWorldJoin', () => {
     const opts = createMockOptions({
       socket: { connected: true, emit },
       contract: { mapId: 'DEMO_SANDBOX_ch2', lobby: true, isPrivate: false, pie: false },
+      visualData: '{"worldModel":{"type":"3D Model","assetId":"hero-model","scale":0.65}}',
       onSetWorldSessionState: onSetState,
       onIncrementWorldJoinSeq: onIncSeq,
       onUpdateLastJoinKey: onUpdateKey,
@@ -81,6 +82,7 @@ describe('lobbyWorldJoin', () => {
       accountId: 'acc_123',
       characterId: 'char_456',
       mapId: 'DEMO_SANDBOX', // Stripped _ch2
+      visualData: '{"worldModel":{"type":"3D Model","assetId":"hero-model","scale":0.65}}',
       lobby: true,
       joinSeq: 1,
     }));
@@ -90,7 +92,7 @@ describe('lobbyWorldJoin', () => {
     const opts = createMockOptions({
       contract: { mapId: 'DEMO_SANDBOX', lobby: true, isPrivate: false, pie: false },
       currentInstanceId: 'DEMO_SANDBOX_ch1',
-      lastJoinKey: 'DEMO_SANDBOX|lobby|pub|nopie',
+      lastJoinKey: 'DEMO_SANDBOX|lobby|pub|nopie|latest',
     });
 
     const res = joinWorld(opts);
@@ -105,7 +107,7 @@ describe('lobbyWorldJoin', () => {
       socket: { connected: true, emit },
       contract: { mapId: 'DEMO_SANDBOX', lobby: true, isPrivate: false, pie: false },
       currentInstanceId: 'DEMO_SANDBOX_ch1',
-      lastJoinKey: 'DEMO_SANDBOX|lobby|pub|nopie',
+      lastJoinKey: 'DEMO_SANDBOX|lobby|pub|nopie|latest',
       force: true,
     });
 
@@ -143,4 +145,3 @@ describe('lobbyWorldJoin', () => {
     transitionRes.cleanupTimeout?.();
   });
 });
-

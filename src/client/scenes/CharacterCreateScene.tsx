@@ -134,6 +134,7 @@ type DbHero = {
   name: string;
   classId: string;
   assetProfileId: string;
+  visualData?: string | null;
   spriteBundleId?: string | null;
   flavor: string;
   tag: string;
@@ -493,6 +494,7 @@ export function CharacterCreateScene() {
     const result = await createGameCharacter({
       name: name.trim(),
       assetProfileId,
+      visualData: hero?.assetProfileId === assetProfileId ? (hero.visualData || '[]') : '[]',
       classId,
       initialState: JSON.stringify(initialState),
     });

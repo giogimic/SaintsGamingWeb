@@ -1,3 +1,7 @@
+## [2.2.003] - 2026-09-25
+- **Studio**: Added per-archetype and per-entity 3D model scale overrides and apply them to character and NPC model presentation without changing shared assets. Scale data now travels with player joins so peers see the same size.
+- **Setup**: Prevented overlapping publish submissions and return clearer bootstrap or server failure details when onboarding cannot publish.
+
 ## [2.2.002] - 2026-09-25
 - **Feature**: Added a unified 3D animation clip catalog combining embedded model clips and registered set references, expanded action mapping to every engine animation slot, and saved the chosen source/clip path per action.
 

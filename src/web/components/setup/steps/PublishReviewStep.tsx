@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   CheckCircle2,
   Gamepad2,
@@ -38,8 +38,11 @@ export function PublishReviewStep({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
   const [persistedMapId, setPersistedMapId] = useState(startingMap.id || '');
+  const publishRequestInFlight = useRef(false);
 
   const handlePublishTransaction = async () => {
+    if (publishRequestInFlight.current) return;
+    publishRequestInFlight.current = true;
     try {
       setSubmitting(true);
       setErrorMessage(null);
@@ -82,7 +85,13 @@ export function PublishReviewStep({
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      const responseText = await res.text();
+      let data: any;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        data = { error: responseText || 'The server returned an unreadable response.' };
+      }
       if (data.events) {
         setDiagnosticEvents(prev => {
           // Merge events by ID to avoid duplicates just in case
@@ -97,7 +106,12 @@ export function PublishReviewStep({
       }
 
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Validation failed. Drafts not published.');
+        console.error('[Setup] Publish request failed', {
+          status: res.status,
+          error: data.error,
+          events: data.events,
+        });
+        throw new Error(`HTTP ${res.status}: ${data.error || 'Drafts were not published.'}`);
       }
 
       setCompleted(true);
@@ -110,6 +124,7 @@ export function PublishReviewStep({
     } catch (err: any) {
       setErrorMessage(err.message || 'An error occurred during final validation and publish.');
     } finally {
+      publishRequestInFlight.current = false;
       setSubmitting(false);
     }
   };

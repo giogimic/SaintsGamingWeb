@@ -60,6 +60,8 @@ export interface PresentationDefinition {
   depthLayer?: number;
   modelUrl?: string;
   modularModelUrls?: string[];
+  /** Multiplier applied by this actor over the model asset's import scale. */
+  modelScale?: number;
   materialIds?: string[];
   audioRefs?: {
     attack?: string;

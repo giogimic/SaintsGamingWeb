@@ -213,6 +213,7 @@ export class GameplayInputController {
                 position: { x: spawn.x, y: spawn.y },
                 name: p.name || 'Player',
                 assetProfileId: p.assetProfileId || 'adventurer',
+                visualData: p.visualData,
                 currentInstanceId: liveStore.instanceId,
                 worldJoinSeq: liveStore.worldJoinSeq,
                 onSetWorldSessionState: liveStore.setWorldSessionState,

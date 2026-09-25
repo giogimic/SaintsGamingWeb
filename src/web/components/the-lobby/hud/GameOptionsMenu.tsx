@@ -154,6 +154,7 @@ export default function GameOptionsMenu({
             position: { x: 32, y: 32 },
             name: store.player.name || 'Player',
             assetProfileId: store.player.assetProfileId || 'adventurer',
+            visualData: store.player.visualData,
             currentInstanceId: store.instanceId,
             worldJoinSeq: store.worldJoinSeq,
             onSetWorldSessionState: store.setWorldSessionState,

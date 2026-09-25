@@ -20,6 +20,7 @@ export interface RemotePlayer {
   mapId?: string;
   name: string;
   assetProfileId: string;
+  visualData?: string;
   direction?: Direction;
   isMoving?: boolean;
   chatMessage?: string;
@@ -110,6 +111,7 @@ export const useMultiplayerStore = create<MultiplayerState>()(
             y: data.y ?? 0,
             name: data.name || 'Unknown',
             assetProfileId: resolvedSprite || 'adventurer',
+            visualData: data.visualData,
             direction: data.direction,
             isMoving: data.isMoving,
             chatMessage: data.chatMessage,
@@ -121,6 +123,7 @@ export const useMultiplayerStore = create<MultiplayerState>()(
           if (data.y !== undefined) p.y = data.y;
           if (data.name !== undefined) p.name = data.name;
           if (resolvedSprite !== undefined) p.assetProfileId = resolvedSprite;
+          if (data.visualData !== undefined) p.visualData = data.visualData;
           if (data.direction !== undefined) p.direction = data.direction;
           if (data.isMoving !== undefined) p.isMoving = data.isMoving;
           if (data.customization !== undefined) p.customization = data.customization;

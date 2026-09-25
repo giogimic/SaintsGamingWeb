@@ -92,10 +92,27 @@ export class EntityRenderer {
       return { isModel: !!isModel, resolvedUrl, presentationType, transform };
     };
 
+    const getActorScale = (visualData?: unknown): number | undefined => {
+      try {
+        const parsed = typeof visualData === 'string' ? JSON.parse(visualData) : visualData;
+        const scale = Number((parsed as any)?.worldModel?.scale ?? (parsed as any)?.scale);
+        return Number.isFinite(scale) && scale > 0 ? Math.min(100, scale) : undefined;
+      } catch {
+        return undefined;
+      }
+    };
+
     // 1. Local Player
     const player = usePlayerStore.getState().player;
     const is3D = player.position.z !== undefined;
     const pAssetInfo = getEntityAssetInfo(player.assetProfileId, 'player');
+    const playerScale = getActorScale(player.visualData);
+    if (pAssetInfo.isModel && playerScale !== undefined) {
+      pAssetInfo.transform = {
+        ...(pAssetInfo.transform || {}),
+        scale: (pAssetInfo.transform?.scale ?? 0.8) * playerScale,
+      };
+    }
 
     this.upsertSprite('local_player', {
       x: player.position.x,
@@ -126,6 +143,13 @@ export class EntityRenderer {
       }
 
       const rpAssetInfo = getEntityAssetInfo(rp.assetProfileId, 'player');
+      const remoteScale = getActorScale(rp.visualData);
+      if (rpAssetInfo.isModel && remoteScale !== undefined) {
+        rpAssetInfo.transform = {
+          ...(rpAssetInfo.transform || {}),
+          scale: (rpAssetInfo.transform?.scale ?? 0.8) * remoteScale,
+        };
+      }
 
       this.upsertSprite(`remote_${id}`, {
         x: px,
@@ -146,6 +170,13 @@ export class EntityRenderer {
     const mapEntities = useWorldStore.getState().mapEntities as any[];
     for (const ent of mapEntities) {
       const entAssetInfo = getEntityAssetInfo(ent.spriteKey, 'npc');
+      const entityScale = getActorScale(ent.visualData ?? ent.components?.appearance);
+      if (entAssetInfo.isModel && entityScale !== undefined) {
+        entAssetInfo.transform = {
+          ...(entAssetInfo.transform || {}),
+          scale: (entAssetInfo.transform?.scale ?? 0.8) * entityScale,
+        };
+      }
       const entityColor = ent.type === 'NPC'
         ? new BABYLON.Color3(0.2, 0.8, 0.3)
         : new BABYLON.Color3(0.8, 0.2, 0.2);
