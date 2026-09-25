@@ -9,9 +9,10 @@ import {
   WindowMenuDivider,
 } from '../WindowMenuBar';
 import { DEFAULT_REALM_SETTINGS, RealmSettingsConfig } from '@/shared/game/realmSettings';
+import { PerkStudioTab } from './tabs/PerkStudioTab';
 
 export const HeroStudioPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'identity' | 'classes' | 'loadout'>('identity');
+  const [activeTab, setActiveTab] = useState<'identity' | 'classes' | 'loadout' | 'perks'>('identity');
   const [settings, setSettings] = useState<RealmSettingsConfig>(DEFAULT_REALM_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -57,6 +58,7 @@ export const HeroStudioPanel: React.FC = () => {
           tabs={[
             { id: 'identity', label: 'Identity', icon: Shield },
             { id: 'classes', label: 'Classes', icon: Sword },
+            { id: 'perks', label: 'Perks', icon: Sparkles },
             { id: 'loadout', label: 'Starter Loadout', icon: Backpack },
           ]}
           activeTab={activeTab}
@@ -145,6 +147,10 @@ export const HeroStudioPanel: React.FC = () => {
             <Sword className="w-8 h-8 opacity-20" />
             <div className="text-xs">Class editor coming soon...</div>
           </div>
+        )}
+
+        {activeTab === 'perks' && (
+          <PerkStudioTab />
         )}
 
         {/* ── LOADOUT ── */}

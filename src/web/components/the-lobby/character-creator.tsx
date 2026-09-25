@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { createGameCharacter } from '@/app/actions/game';
 import { getStarterHeroes } from '@/app/actions/game/starter-heroes';
+import { getStarterPerks, StarterPerkData } from '@/app/actions/game/starter-perks';
 import { getActiveWorldRelease } from '@/app/actions/studio/world-release';
 import { getPlayableClasses } from '@/app/actions/game/character-classes';
 import { ensureWorldProfiles } from '@/app/actions/studio/world-profiles';
@@ -48,48 +49,9 @@ import { useTheme } from 'next-themes';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const PERKS = [
-  {
-    id: 'SWIFT_TRAVELER',
-    name: 'Swift Traveler',
-    desc: '+25% Movement Speed across all maps and dungeons.',
-    icon: Zap,
-    color: '#fbbf24',
-    badge: 'AGILITY',
-  },
-  {
-    id: 'ACROBAT',
-    name: 'Acrobat',
-    desc: 'Perform 2-tile Double Jumps over obstacles and gaps.',
-    icon: Feather,
-    color: '#34d399',
-    badge: 'MOBILITY',
-  },
-  {
-    id: 'PACK_MULE',
-    name: 'Pack Mule',
-    desc: '+50% Inventory Carry Weight & pouch capacity.',
-    icon: Shield,
-    color: '#60a5fa',
-    badge: 'UTILITY',
-  },
-  {
-    id: 'MASTER_TAMER',
-    name: 'Master Saint',
-    desc: '+15% Capture Rate boost for wild Daemons & Beasts.',
-    icon: User,
-    color: '#cbb26a',
-    badge: 'MASTERY',
-  },
-  {
-    id: 'STAMINA_SURGE',
-    name: 'Stamina Surge',
-    desc: '+30 Base Health & accelerated health regeneration.',
-    icon: Sparkles,
-    color: '#f472b6',
-    badge: 'SURVIVAL',
-  },
-];
+const AVAILABLE_ICONS: Record<string, LucideIcon> = {
+  Zap, Feather, Shield, User, Sparkles
+};
 
 const RANDOM_NAMES = [
   'Valkyrie', 'ShadowFox', 'NeonKnight', 'Cipher', 'Vortex', 'Zephyr', 'Aegis', 'Blitz',
@@ -196,8 +158,9 @@ export function CharacterCreator({
   // Selected config
   const [classId, setClassId] = useState('WARRIOR');
   const [selectedHeroSlug, setSelectedHeroSlug] = useState<string | null>(null);
-  const [perkId, setPerkId] = useState(PERKS[0].id);
+  const [perkId, setPerkId] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [dbPerks, setDbPerks] = useState<StarterPerkData[]>([]);
 
   // Dynamic Asset Discovery
   const { dynamicBases, dynamicCapes, dynamicArmor, dynamicHats } = useMemo(() => {
@@ -258,12 +221,17 @@ export function CharacterCreator({
     async function loadData() {
       setHeroesLoading(true);
       try {
-        const [heroesRes, classesRes] = await Promise.all([
+        const [heroesRes, classesRes, perksRes] = await Promise.all([
           getStarterHeroes(),
           getPlayableClasses(),
+          getStarterPerks(),
         ]);
         if (heroesRes.success) setDbHeroes(heroesRes.data as DbHero[]);
         if (classesRes.success && classesRes.data.length > 0) setClassDefs(classesRes.data);
+        if (perksRes.success && perksRes.data.length > 0) {
+          setDbPerks(perksRes.data);
+          if (!perkId) setPerkId(perksRes.data[0].slug);
+        }
       } catch {
         /* ignore */
       } finally {
@@ -353,13 +321,13 @@ export function CharacterCreator({
     const hero = starterHeroes[Math.floor(Math.random() * starterHeroes.length)];
     const pick = RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
     const num = Math.floor(Math.random() * 90 + 10);
-    const randomPerk = PERKS[Math.floor(Math.random() * PERKS.length)];
+    const randomPerk = dbPerks.length > 0 ? dbPerks[Math.floor(Math.random() * dbPerks.length)] : null;
 
     setassetProfileId(hero.assetProfileId);
     setClassId(hero.classId);
     setSelectedHeroSlug(hero.slug);
     setName(`${pick}${num}`);
-    setPerkId(randomPerk.id);
+    if (randomPerk) setPerkId(randomPerk.slug);
 
     if (dynamicCapes.length > 1 && Math.random() > 0.5) {
       const cape = dynamicCapes[Math.floor(Math.random() * dynamicCapes.length)];
@@ -552,7 +520,7 @@ export function CharacterCreator({
   );
 
   const selectedDef = classDefs.find((c) => c.classId === classId);
-  const selectedPerk = PERKS.find((p) => p.id === perkId) || PERKS[0];
+  const selectedPerk = dbPerks.find((p) => p.slug === perkId) || dbPerks[0] || { name: 'None' };
 
   const { theme } = useTheme();
   const isLight = theme === 'light';
@@ -1147,16 +1115,16 @@ export function CharacterCreator({
             </div>
 
             <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-6">
-              {PERKS.map((perk) => {
-                const isSelected = perkId === perk.id;
-                const Icon = perk.icon;
+              {dbPerks.map((perk) => {
+                const isSelected = perkId === perk.slug;
+                const Icon = AVAILABLE_ICONS[perk.icon] || Zap;
 
                 return (
                   <div
-                    key={perk.id}
+                    key={perk.slug}
                     onClick={() => {
                       soundSynth?.playSelectSound?.();
-                      setPerkId(perk.id);
+                      setPerkId(perk.slug);
                     }}
                     className={`cursor-pointer rounded-xl p-4 border transition-all ${
                       isSelected

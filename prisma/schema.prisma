@@ -1834,6 +1834,21 @@ model GameMap {
 // Each row is one archetype card shown on the HERO_PICK step.
 // Managed entirely through Studio. No code changes needed to add heroes.
 
+model StarterPerk {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  gameId      String   @default("saints")
+  name        String
+  desc        String
+  icon        String   @default("Zap") // Lucide icon name
+  color       String   @default("#fbbf24")
+  badge       String   @default("UTILITY")
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+
+  @@index([gameId])
+}
+
 model StarterHero {
   id                String   @id @default(cuid())
   slug              String   @unique // e.g. "warrior", "mystic" — used as stable key
