@@ -175,7 +175,7 @@ export async function uploadFile(file: File): Promise<UploadResult> {
   const uniqueName = generateUniqueFilename(sanitized);
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  if (!validateMagicBytes(buffer, file.type)) {
+  if (!validateMagicBytes(buffer, mimeType)) {
     return {
       success: false,
       error: "File content does not match its declared type",
