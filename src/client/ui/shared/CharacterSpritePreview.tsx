@@ -25,15 +25,18 @@ export function resolveSpriteUrl(key: string): string {
     return `/${trimmed}`;
   }
   if (trimmed.startsWith('npc/') || trimmed.startsWith('monster/') || trimmed.startsWith('creatures/') || trimmed.startsWith('objects/')) {
-    return `/game-assets/${trimmed.endsWith('.png') ? trimmed : `${trimmed}.png`}`;
+    const cleanPath = trimmed.replace(/\.(png|glb|gltf|fbx|obj)$/i, '');
+    return `/game-assets/${cleanPath}.png`;
   }
   if (trimmed.startsWith('uploads/')) {
-    return `/${trimmed}`;
+    const cleanPath = trimmed.replace(/\.(png|glb|gltf|fbx|obj)$/i, '');
+    return `/${cleanPath}.png`;
   }
   if (trimmed.startsWith('upload_') || trimmed.startsWith('asset_custom_')) {
-    return `/uploads/${trimmed.endsWith('.png') ? trimmed : `${trimmed}.png`}`;
+    const cleanPath = trimmed.replace(/\.(png|glb|gltf|fbx|obj)$/i, '');
+    return `/uploads/${cleanPath}.png`;
   }
-  const clean = trimmed.replace(/\.png$/i, '');
+  const clean = trimmed.replace(/\.(png|glb|gltf|fbx|obj)$/i, '');
   return `/game-assets/npc/${clean}.png`;
 }
 

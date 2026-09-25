@@ -1,3 +1,9 @@
+## [2.1.992] - 2026-09-25
+- **Bugfix**: Fixed 3D model icon preview falling back to malformed \.glb.png\ extension in CharacterSelect UI.
+- **Bugfix**: Fixed FPS camera offset anchoring at the player's feet and looking upwards.
+- **Bugfix**: Fixed TPS camera pitch allowing rotation below the ground level, causing the camera to clip through the terrain.
+- **Improvement**: Tightened 2.5D Orthographic camera zoom from \10.0\ to \6.0\ to provide a better isometric view, fixing the "zoomed out" feeling.
+
 ## [2.1.987] - 2026-09-25
 - **Bugfix**: Fixed 3D model uploads (GLB/GLTF) failing with "File content does not match its declared type". The `validateMagicBytes` function had no signatures for `model/gltf-binary` or `model/gltf+json`, causing all 3D asset uploads to be rejected.
 - **Bugfix**: Added missing magic byte validation for audio files (`audio/mpeg`, `audio/wav`, `audio/ogg`), preventing silent upload failures.

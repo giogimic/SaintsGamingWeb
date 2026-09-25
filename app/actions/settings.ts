@@ -15,14 +15,14 @@ export async function getDiscordInviteUrl() {
 }
 
 export async function getSiteVersion(isStatic = false): Promise<string> {
-  if (isStatic) return process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.991";
+  if (isStatic) return process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.992";
 
   try {
     const setting = await prisma.siteSetting.findUnique({
       where: { key: 'SITE_VERSION' }
     });
-    return setting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.991";
+    return setting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.992";
   } catch (error) {
-    return process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.991";
+    return process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.992";
   }
 }

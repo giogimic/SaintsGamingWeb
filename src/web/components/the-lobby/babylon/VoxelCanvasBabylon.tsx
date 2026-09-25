@@ -2224,7 +2224,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
       <canvas
         ref={canvasRef}
-        className={`w-full h-full outline-none touch-none ${canvasCursor}`}
+        className={`block w-full h-full outline-none touch-none ${canvasCursor}`}
         tabIndex={0}
         onClick={(e) => (e.currentTarget as HTMLCanvasElement).focus()}
         onDragOver={(e) => {

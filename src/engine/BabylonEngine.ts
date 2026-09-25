@@ -4041,7 +4041,12 @@ export class BabylonEngine {
           urlsToLoad.push(...entity.presentation.modularModelUrls);
         }
         
-        Promise.all(urlsToLoad.map(url => SceneLoader.ImportMeshAsync("", url, "", this.scene)))
+        Promise.all(urlsToLoad.map(url => {
+          const lastSlash = url.lastIndexOf('/');
+          const rootUrl = url.substring(0, lastSlash + 1);
+          const filename = url.substring(lastSlash + 1);
+          return SceneLoader.ImportMeshAsync("", rootUrl, filename, this.scene);
+        }))
           .then((results) => {
             if (!this.entityMeshes.has(entity.id)) {
               // Entity was deleted before load finished

@@ -209,7 +209,11 @@ export class EntityRenderer {
         mesh = new BABYLON.TransformNode(`sprite_${id}`, this.scene);
         mesh.parent = this.entityRoot;
 
-        BABYLON.SceneLoader.ImportMeshAsync("", data.modelUrl, "", this.scene).then((result) => {
+        const lastSlash = data.modelUrl.lastIndexOf('/');
+        const rootUrl = data.modelUrl.substring(0, lastSlash + 1);
+        const filename = data.modelUrl.substring(lastSlash + 1);
+
+        BABYLON.SceneLoader.ImportMeshAsync("", rootUrl, filename, this.scene).then((result) => {
           result.meshes.forEach((m) => {
             if (!m.parent) {
               m.parent = mesh;

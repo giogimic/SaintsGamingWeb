@@ -97,7 +97,7 @@ public onResize = () => {
     if (!this.engine) return;
     this.engine.engine.resize();
     // Re-apply current ortho size on resize
-    const currentOrtho = this.camera.orthoTop || 10;
+    const currentOrtho = this.camera.orthoTop || 6.0;
     this.updateCameraAspect(currentOrtho);
   };
 public cameraProfile = { pitch: Math.PI / 4, distance: 14, lerpFactor: 0.15 };
@@ -461,7 +461,7 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
       }
 
       // Viewport bounds for screen-space culling (with a 4-tile margin for seamless transitions)
-      const orthoH = (this.camera.orthoTop || 10) + 4.0;
+      const orthoH = (this.camera.orthoTop || 6.0) + 4.0;
       const orthoW = (this.camera.orthoRight || 16) + 4.0;
       const camX = this.cameraTargetX;
       const camZ = this.cameraTargetZ;
@@ -699,25 +699,26 @@ public stopRenderLoop() {
     const yaw = this.cameraYaw || 0;
     const dist = this.cameraProfile.distance ?? 14;
 
-    const camY = Math.max(0.5, dist * Math.sin(pitch));
-    const horizDist = dist * Math.cos(pitch);
+    const isFirstPerson = this.cameraSettings.playerCameraStyle === 'firstperson' || this.cameraSettings.playerCameraStyle === 'firstPerson';
+    const targetYWithOffset = isFirstPerson ? targetY + 1.2 : targetY;
+
+    // First person camera should sit near eye level (targetY + 1.2). Third person uses distance and pitch.
+    const camY = isFirstPerson ? targetYWithOffset : Math.max(0.5, targetY + dist * Math.sin(pitch));
+    const horizDist = isFirstPerson ? 0 : dist * Math.cos(pitch);
     const offsetX = -horizDist * Math.sin(yaw);
     const offsetZ = -horizDist * Math.cos(yaw);
-    const targetCamPos = new Vector3(targetX + offsetX, targetY + camY, targetZ + offsetZ);
+    const targetCamPos = new Vector3(targetX + offsetX, camY, targetZ + offsetZ);
     
     // Spring damper / Decoupled Physics with snappy responsive follow
     const dt = this.engine.engine.getDeltaTime() / 1000.0;
     const factor = this.cameraSettings.playerFollowSmoothing ?? lerpFactor ?? this.cameraProfile.lerpFactor ?? 0.35;
     const smoothFactor = 1.0 - Math.exp(-factor * 60 * dt);
-    
-    const isFirstPerson = this.cameraSettings.playerCameraStyle === 'firstperson';
-    const targetYWithOffset = isFirstPerson ? targetY + 1.2 : targetY;
 
     this.camera.position = Vector3.Lerp(this.camera.position, targetCamPos, smoothFactor);
     this.camera.setTarget(Vector3.Lerp(
       this.camera.getTarget(),
       isFirstPerson 
-        ? new Vector3(targetX + Math.sin(yaw) * 10, targetYWithOffset + Math.tan(pitch) * 5, targetZ + Math.cos(yaw) * 10)
+        ? new Vector3(targetX + Math.sin(yaw) * 10, targetYWithOffset + Math.tan(pitch) * 10, targetZ + Math.cos(yaw) * 10)
         : new Vector3(targetX, targetY, targetZ),
       smoothFactor
     ));
@@ -737,7 +738,7 @@ public setEditorCameraMode(enabled: boolean) {
       this.editorCameraBookmark = {
         x: this.cameraTargetX,
         z: this.cameraTargetZ,
-        ortho: this.camera.orthoTop || 10,
+        ortho: this.camera.orthoTop || 6.0,
       };
       this.engine.canvas.addEventListener('pointerdown', this.engine.input.onEditorPointerDown);
       this.engine.canvas.addEventListener('dblclick', this.engine.input.onEditorDblClick);
@@ -778,7 +779,7 @@ public getCameraFocus(): { x: number; z: number; ortho: number } {
     return {
       x: this.cameraTargetX,
       z: this.cameraTargetZ,
-      ortho: this.camera.orthoTop || 10,
+      ortho: this.camera.orthoTop || 6.0,
     };
   }
 
@@ -792,7 +793,7 @@ public setFreeCam(enabled: boolean) {
       this.camera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
       this.cameraYaw = 0;
       this.cameraPitch = this.cameraSettings.isometricPitch || Math.PI / 4;
-      this.updateCameraAspect(this.camera.orthoTop || 10);
+      this.updateCameraAspect(this.camera.orthoTop || 6.0);
       this.camera.position = new Vector3(this.cameraTargetX, this.cameraSettings.isometricDistance || 14, this.cameraTargetZ - (this.cameraSettings.isometricDistance || 14));
       this.camera.setTarget(new Vector3(this.cameraTargetX, 0, this.cameraTargetZ));
       this.cameraSnapped = true;
@@ -814,7 +815,7 @@ public getCameraSettings() {
 
   public updateDynamicCamera() {
     if (this.cameraSettings.playerCameraStyle !== 'dynamic' && this.cameraSettings.playerCameraStyle !== 'adaptive') return;
-    const ortho = this.camera.orthoTop || 10;
+    const ortho = this.camera.orthoTop || 6.0;
     
     let targetMode: 'firstPerson' | 'thirdPerson' | 'overview2_5d' = 'overview2_5d';
     if (ortho < 6.5) {
@@ -832,7 +833,7 @@ public getCameraSettings() {
       this.cameraProfile.pitch = Math.PI / 2 - 0.01;
       this.cameraProfile.distance = 14;
       this.cameraYaw = 0;
-      this.updateCameraAspect(this.camera.orthoTop || 10);
+      this.updateCameraAspect(this.camera.orthoTop || 6.0);
     } else if (style === 'follow45' || style === 'thirdPerson') {
       this.camera.mode = FreeCamera.PERSPECTIVE_CAMERA;
       this.camera.fov = this.cameraSettings.fov || 0.8;
@@ -854,7 +855,7 @@ public getCameraSettings() {
       this.cameraProfile.pitch = this.cameraSettings.isometricPitch || Math.PI / 4;
       this.cameraProfile.distance = this.cameraSettings.isometricDistance || 150;
       this.cameraYaw = 0;
-      this.updateCameraAspect(this.camera.orthoTop || 10);
+      this.updateCameraAspect(this.camera.orthoTop || 6.0);
     }
     if (!this.engine.editorCameraMode) {
       this.snapCameraTo(this.cameraTargetX, this.cameraTargetZ);
@@ -962,10 +963,12 @@ public rotateCamera(dxPx: number, dyPx: number) {
       this.cameraPitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, this.cameraPitch + pitchDelta));
     } else {
       const camStyle = this.cameraSettings.playerCameraStyle;
-      if (camStyle === 'thirdPerson' || camStyle === 'follow45' || camStyle === 'dynamic' || camStyle === 'adaptive' || camStyle === 'firstPerson' || camStyle === 'firstperson') {
-        // Allow looking from slightly below horizontal (-0.3 rad / ~17° down) up to ~75° up.
-        // Prevents the degenerate straight-down look-at matrix that causes camera lock.
-        this.cameraProfile.pitch = Math.max(-0.3, Math.min(Math.PI / 2.4, (this.cameraProfile.pitch ?? Math.PI / 4) + pitchDelta));
+      if (camStyle === 'firstPerson' || camStyle === 'firstperson') {
+        // First person can look up and down freely
+        this.cameraProfile.pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, (this.cameraProfile.pitch ?? 0) + pitchDelta));
+      } else if (camStyle === 'thirdPerson' || camStyle === 'follow45' || camStyle === 'dynamic' || camStyle === 'adaptive') {
+        // Prevent third person camera from going below ground (min pitch ~5 degrees)
+        this.cameraProfile.pitch = Math.max(0.08, Math.min(Math.PI / 2.4, (this.cameraProfile.pitch ?? Math.PI / 4) + pitchDelta));
       } else {
         // Isometric / Topdown / 2.5D (Orthographic modes)
         this.cameraProfile.pitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, (this.cameraProfile.pitch ?? Math.PI / 4) + pitchDelta));
@@ -1051,11 +1054,11 @@ public resetCameraSnap() {
   }
 
 public zoomCamera(factor: number) {
-    const currentOrtho = this.camera.orthoTop || 10;
+    const currentOrtho = this.camera.orthoTop || 6.0;
     const maxZoom = this.engine.editorCameraMode ? 500 : 11.0;
     const newOrtho = Math.max(2.5, Math.min(maxZoom, currentOrtho * factor));
     this.updateCameraAspect(newOrtho);
-    const zoomPercent = Math.round((10 / newOrtho) * 100);
+    const zoomPercent = Math.round((6.0 / newOrtho) * 100);
     window.dispatchEvent(
       new CustomEvent('studio_zoom_changed', { detail: { ortho: newOrtho, percent: zoomPercent } })
     );
@@ -1063,9 +1066,9 @@ public zoomCamera(factor: number) {
 
 public setZoomPercent(percent: number) {
     const maxZoom = this.engine.editorCameraMode ? 500 : 11.0;
-    const newOrtho = Math.max(2.5, Math.min(maxZoom, 10 / (Math.max(5, percent) / 100)));
+    const newOrtho = Math.max(2.5, Math.min(maxZoom, 6.0 / (Math.max(5, percent) / 100)));
     this.updateCameraAspect(newOrtho);
-    const zoomPercent = Math.round((10 / newOrtho) * 100);
+    const zoomPercent = Math.round((6.0 / newOrtho) * 100);
     window.dispatchEvent(
       new CustomEvent('studio_zoom_changed', { detail: { ortho: newOrtho, percent: zoomPercent } })
     );

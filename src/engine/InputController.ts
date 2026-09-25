@@ -100,29 +100,46 @@ public editorSpaceHeld: boolean = false;
 public editorPanKeysHeld: Set<string> = new Set();
 public editorPanAnimFrameId: number | null = null;
 public handleEditorPointerDown(e: PointerEvent) {
-    if (!this.engine.editorCameraMode) return;
-    const middle = e.button === 1;
-    const right = e.button === 2 && this.engine.renderer.isFreeCam;
-    const spaceLeft = e.button === 0 && this.editorSpaceHeld;
-    if (!middle && !right && !spaceLeft) return;
+    const isEditor = this.engine.editorCameraMode;
+    const style = this.engine.renderer.cameraSettings.playerCameraStyle;
+    const isFpsTps = !isEditor && ((style as string) === 'firstperson' || (style as string) === 'firstPerson' || (style as string) === 'thirdperson' || (style as string) === 'thirdPerson' || style === 'free' || style === 'dynamic');
+    
+    const validGameplayClick = isFpsTps && e.button === 2;
+    const validEditorClick = isEditor && (e.button === 1 || (e.button === 2 && this.engine.renderer.isFreeCam) || (e.button === 0 && this.editorSpaceHeld));
+
+    if (!validGameplayClick && !validEditorClick) return;
+
     e.preventDefault();
     this.engine.renderer.killCameraMomentum();
     this.editorPanPointerId = e.pointerId;
     this.editorPanLastClientX = e.clientX;
     this.editorPanLastClientY = e.clientY;
-    try {
-      this.engine.canvas.setPointerCapture(e.pointerId);
-    } catch {
-      /* ignore */
+    
+    if (validGameplayClick && typeof this.engine.canvas.requestPointerLock === 'function') {
+      try {
+        this.engine.canvas.requestPointerLock();
+      } catch {}
+    } else {
+      try {
+        this.engine.canvas.setPointerCapture(e.pointerId);
+      } catch {}
     }
   }
 
 public handleEditorPointerMove(e: PointerEvent) {
-    if (!this.engine.editorCameraMode || this.editorPanPointerId !== e.pointerId) return;
-    const dx = e.clientX - this.editorPanLastClientX;
-    const dy = e.clientY - this.editorPanLastClientY;
+    if (this.editorPanPointerId !== e.pointerId) return;
+    
+    const useMovement = document.pointerLockElement === this.engine.canvas;
+    const dx = useMovement ? e.movementX : (e.clientX - this.editorPanLastClientX);
+    const dy = useMovement ? e.movementY : (e.clientY - this.editorPanLastClientY);
+    
     this.editorPanLastClientX = e.clientX;
     this.editorPanLastClientY = e.clientY;
+
+    if (!this.engine.editorCameraMode) {
+      this.engine.renderer.rotateCamera(dx, dy);
+      return;
+    }
 
     if (this.engine.renderer.isFreeCam) {
       const isPan = e.shiftKey || this.editorSpaceHeld;
@@ -139,6 +156,13 @@ public handleEditorPointerMove(e: PointerEvent) {
 public handleEditorPointerUp(e: PointerEvent) {
     if (this.editorPanPointerId !== e.pointerId) return;
     this.editorPanPointerId = null;
+    
+    if (document.pointerLockElement === this.engine.canvas) {
+      try {
+        document.exitPointerLock();
+      } catch {}
+    }
+    
     if (this.engine.canvas.hasPointerCapture(e.pointerId)) {
       try {
         this.engine.canvas.releasePointerCapture(e.pointerId);
