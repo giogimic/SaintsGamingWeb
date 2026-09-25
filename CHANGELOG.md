@@ -1,3 +1,6 @@
+## [2.1.998] - 2026-09-25
+- **Plan update**: Recorded live confirmation that GLB loading now works for the tested upload and documented the remaining runtime scale and disconnected 3D animation-profile/clip-mapping gaps.
+
 ## [2.1.997] - 2026-09-25
 - **Bugfix**: Go MMO Socket.IO connections now exchange the authenticated browser session for a short-lived signed socket token on every handshake, including reconnects. This supports production auth without enabling the development account-ID bypass.
 
