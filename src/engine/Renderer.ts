@@ -64,6 +64,7 @@ public cameraYaw: number = 0;
 public cameraPitch: number = Math.PI / 4;
 public cameraDistance: number = 20;
 public targetCameraDistance: number = 20;
+public continuousZoom: number = 10;
 public cameraVelocityYaw: number = 0;
 public cameraVelocityPitch: number = 0;
 public cameraVelocityPanX: number = 0;
@@ -700,7 +701,10 @@ public stopRenderLoop() {
     const dist = this.cameraProfile.distance ?? 14;
 
     const isFirstPerson = this.cameraSettings.playerCameraStyle === 'firstperson' || this.cameraSettings.playerCameraStyle === 'firstPerson';
-    const targetYWithOffset = isFirstPerson ? targetY + 1.2 : targetY;
+    
+    // Always raycast from eye/chest level, not the ground level, otherwise the ray hits the floor instantly
+    const headHeight = 1.2;
+    const targetYWithOffset = targetY + headHeight;
 
     // First person camera should sit near eye level (targetY + 1.2). Third person uses distance and pitch.
     const camY = isFirstPerson ? targetYWithOffset : Math.max(0.5, targetY + dist * Math.sin(pitch));
@@ -744,7 +748,7 @@ public stopRenderLoop() {
       this.camera.getTarget(),
       isFirstPerson 
         ? new Vector3(targetX + Math.sin(yaw) * 10, targetYWithOffset + Math.tan(pitch) * 10, targetZ + Math.cos(yaw) * 10)
-        : new Vector3(targetX, targetY, targetZ),
+        : new Vector3(targetX, targetYWithOffset, targetZ),
       smoothFactor
     ));
   }
@@ -840,16 +844,24 @@ public getCameraSettings() {
 
   public updateDynamicCamera() {
     if (this.cameraSettings.playerCameraStyle !== 'dynamic' && this.cameraSettings.playerCameraStyle !== 'adaptive') return;
-    const ortho = this.camera.orthoTop || 6.0;
     
     let targetMode: 'firstPerson' | 'thirdPerson' | 'overview2_5d' = 'overview2_5d';
-    if (ortho < 6.5) {
+    if (this.continuousZoom < 3.0) {
       targetMode = 'firstPerson';
-    } else if (ortho < 9.0) {
+    } else if (this.continuousZoom < 9.0) {
       targetMode = 'thirdPerson';
     }
     
     this.applyInternalCameraStyle(targetMode);
+    
+    // In third person, the distance scales from zoom 3.0 up to zoom 9.0
+    if (targetMode === 'thirdPerson') {
+      this.cameraProfile.distance = 2 + (this.continuousZoom - 3.0) * 1.5;
+    }
+    // In orthographic overview, update orthoTop
+    if (targetMode === 'overview2_5d') {
+      this.updateCameraAspect(this.continuousZoom);
+    }
   }
 
   private applyInternalCameraStyle(style: 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson' | 'firstPerson' | 'thirdPerson' | 'overview2_5d') {

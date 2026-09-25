@@ -474,6 +474,27 @@ export class BabylonEngine {
       e.preventDefault();
       const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
       const camStyle = this.renderer.cameraSettings.playerCameraStyle;
+      
+      const isStudioToolsOpen = Boolean((window as any)._isDevEditorOpen) || this.editorCameraMode;
+
+      if (camStyle === 'dynamic' || camStyle === 'adaptive') {
+        // Continuous hybrid zoom
+        const minZoom = isStudioToolsOpen ? 2.5 : 2.0; 
+        const maxZoom = isStudioToolsOpen ? 120 : 18.0;
+        
+        const newZoom = Math.max(minZoom, Math.min(maxZoom, this.renderer.continuousZoom * zoomFactor));
+        if (newZoom !== this.renderer.continuousZoom) {
+          this.renderer.continuousZoom = newZoom;
+          this.renderer.updateDynamicCamera();
+          
+          const zoomPercent = Math.round((10 / newZoom) * 100);
+          window.dispatchEvent(
+            new CustomEvent('studio_camera_zoom_changed', { detail: { zoom: zoomPercent } })
+          );
+        }
+        return;
+      }
+
       const isPerspective = this.renderer.camera.mode === 0; // PERSPECTIVE_CAMERA = 0
       if (isPerspective) {
         const currentDist = this.renderer.cameraProfile.distance ?? 14;
@@ -483,8 +504,7 @@ export class BabylonEngine {
       }
 
       const currentOrtho = this.renderer.camera.orthoTop || 10;
-      // Editor mode: max 120 (supports 128x128 full fit), Game mode: range 5.5 - 11.0 (limits zoom-out to maintain crisp immersion)
-      const isStudioToolsOpen = Boolean((window as any)._isDevEditorOpen) || this.editorCameraMode;
+      // Editor mode: max 120 (supports 128x128 full fit), Game mode: range 5.5 - 11.0
       const minOrtho = isStudioToolsOpen ? 2.5 : 5.5;
       const maxZoom = isStudioToolsOpen ? 120 : 11.0;
       const newOrtho = Math.max(minOrtho, Math.min(maxZoom, currentOrtho * zoomFactor));

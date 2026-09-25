@@ -841,7 +841,15 @@ fi
   
   if [ $SERVER_READY -eq 1 ]; then
       echo -e "\n${CYAN}[*] Creating admin account...${NC}"
-      JSON_PAYLOAD=$(ADMIN_USER="$ADMIN_USER" ADMIN_PASS="$ADMIN_PASS" ADMIN_EMAIL="$ADMIN_EMAIL" python3 -c 'import json, os; print(json.dumps({"username": os.environ.get("ADMIN_USER",""), "password": os.environ.get("ADMIN_PASS",""), "email": os.environ.get("ADMIN_EMAIL","")}))')
+      
+      JSON_PAYLOAD=$(cat <<EOF
+{
+  "username": "$ADMIN_USER",
+  "password": "$ADMIN_PASS",
+  "email": "$ADMIN_EMAIL"
+}
+EOF
+)
       
       ADMIN_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:$WEB_PORT/api/dev/setup-admin \
         -H "Content-Type: application/json" \
