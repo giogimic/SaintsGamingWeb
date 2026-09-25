@@ -4,7 +4,7 @@ import { GameUI } from '../ui/GameUI';
 
 export function ExploringScene() {
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full flex-1 relative">
       {/* Underlying 3D Canvas */}
       <GameCanvas />
 

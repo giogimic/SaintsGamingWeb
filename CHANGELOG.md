@@ -1,5 +1,9 @@
-## [2.1.998] - 2026-09-25
-- **Plan update**: Recorded live confirmation that GLB loading now works for the tested upload and documented the remaining runtime scale and disconnected 3D animation-profile/clip-mapping gaps.
+## [2.2.000] - 2026-09-25
+- Fixed GameCanvas viewport clipping by adding absolute inset-0 to canvas and flex-1 to ExploringScene.
+- Fixed GLTF loader tree-shaking bug by explicitly registering GLTFFileLoader in EngineCore.ts, which should resolve the importMesh JSON parse error on live server.
+
+## [2.1.999] - 2026-09-25
+- **Plan update**: Recorded live confirmation that GLB loading now works for the tested upload and documented the remaining runtime scale and disconnected 3D animation-profile/clip-mapping gaps; added the follow-up screenshot evidence and acceptance criteria for both.
 
 ## [2.1.997] - 2026-09-25
 - **Bugfix**: Go MMO Socket.IO connections now exchange the authenticated browser session for a short-lived signed socket token on every handshake, including reconnects. This supports production auth without enabling the development account-ID bypass.
@@ -6734,6 +6738,7 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 - Added 3D Model modular parameters (isModular, partOfSet, skeletonConnectionPoints) to WorldModelSelector and integrated it into the Item Studio.
 - Expanded NPC Studio to support Companion, Mercenary, and Trainer (with party builder) roles.
 - Added local fbx2gltf conversion script for 3D character pipeline.
+
 
 
 

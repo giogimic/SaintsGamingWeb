@@ -11,7 +11,12 @@ import * as BABYLON from '@babylonjs/core';
 // The ClientApp is a separate runtime bundle from the legacy Babylon engine.
 // Register glTF/GLB loaders in this bundle explicitly so SceneLoader can parse
 // live model URLs in the game client, not only in Studio/upload previews.
-import '@babylonjs/loaders';
+import { GLTFFileLoader } from '@babylonjs/loaders/glTF/glTFFileLoader';
+
+// Force bundler to keep the GLTF loader so it isn't tree-shaken
+if (GLTFFileLoader) {
+  BABYLON.SceneLoader.RegisterPlugin(new GLTFFileLoader());
+}
 import { cameraManager } from './CameraManager';
 import { mapMesher } from './MapMesher';
 import { entityRenderer } from './EntityRenderer';
