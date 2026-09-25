@@ -46,8 +46,17 @@ export async function convertFbxToGlb(fbxFile: File): Promise<File> {
                 const mapTypes = ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap', 'specularMap', 'alphaMap'];
                 for (const mapType of mapTypes) {
                   if (mat[mapType]) {
-                    // GLTFExporter throws if image is undefined or invalid
-                    if (!mat[mapType].image || mat[mapType].image.width === 0) {
+                    // GLTFExporter throws if image is undefined or invalid.
+                    // We must check if it's an HTMLImageElement with 0 naturalWidth (failed to load),
+                    // or a DataTexture with missing data, or just empty.
+                    const img = mat[mapType].image;
+                    const isInvalid = !img ||
+                                      (img.width === 0) ||
+                                      (img.height === 0) ||
+                                      (img instanceof HTMLImageElement && (img.naturalWidth === 0 || !img.complete)) ||
+                                      (img.data && img.data.length === 0);
+                                      
+                    if (isInvalid) {
                       console.warn(`Stripping invalid/missing external texture: ${mapType} on material ${mat.name}`);
                       mat[mapType] = null;
                     }
