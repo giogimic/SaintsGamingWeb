@@ -819,7 +819,7 @@ fi
   
   # --- Wait for Web Server & Create Admin ---
   echo -e "\n${CYAN}[*] Waiting for the web server to become healthy...${NC}"
-  MAX_RETRIES=40
+  MAX_RETRIES=150
   RETRY_COUNT=0
   SERVER_READY=0
   SECRET_VAL=$(grep "^AUTH_SECRET=" .env | cut -d'=' -f2- | tr -d '\r')
@@ -853,9 +853,12 @@ fi
       
       if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
           echo -e "${GREEN}[✓] Admin account successfully created!${NC}"
+          ADMIN_STATUS="${GREEN}Successfully created (Username: $ADMIN_USER)${NC}"
       else
           echo -e "${RED}[!] Failed to create admin account. (HTTP $HTTP_CODE)${NC}"
           echo -e "${YELLOW}    Response: $BODY${NC}"
+          ADMIN_STATUS="${RED}FAILED (Please register manually at /auth/register)${NC}"
+          sleep 5
       fi
   
       if [ "$RUN_CERTBOT" = "1" ]; then
@@ -882,7 +885,7 @@ fi
       echo -e "${GREEN}${BOLD}Setup Complete!${NC}\n"
       echo -e "============================================================"
       echo -e "${CYAN}URL:${NC}            ${SITE_URL}"
-      echo -e "${CYAN}Admin User:${NC}     ${ADMIN_USER}"
+      echo -e "${CYAN}Admin Status:${NC}   ${ADMIN_STATUS:-$ADMIN_USER}"
       echo -e "${CYAN}Admin Pass:${NC}     (Hidden for security)"
       if [ "$ENABLE_GO_MMO" = "1" ]; then
           echo -e "${CYAN}Go MMO:${NC}         ${GO_MMO_PUBLIC_URL}"
