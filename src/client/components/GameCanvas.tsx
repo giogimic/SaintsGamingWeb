@@ -39,7 +39,22 @@ export function GameCanvas() {
     } catch (e) {}
 
     if (!isHudMenuOpen && !isSystemMenuOpen) {
-      canvasRef.current.requestPointerLock?.();
+      let isFirstPersonOrThirdPerson = false;
+      try {
+        const { cameraManager } = require('../engine/CameraManager');
+        const style = cameraManager.settings.playerCameraStyle;
+        const currentZoom = cameraManager.currentZoom;
+        
+        isFirstPersonOrThirdPerson = 
+          style === 'firstperson' || 
+          style === 'follow45' || 
+          style === 'free' || 
+          (style === 'dynamic' && currentZoom < 12.0);
+      } catch (e) {}
+
+      if (isFirstPersonOrThirdPerson) {
+        canvasRef.current.requestPointerLock?.();
+      }
     }
   };
 

@@ -11,6 +11,9 @@ interface AssetInspector3DProps {
   activeAnimationIndex?: number;
   showSkeleton?: boolean;
   showBounds?: boolean;
+  modelScale?: number;
+  modelRotationY?: number;
+  modelGrounding?: number;
 }
 
 export interface AssetInspector3DRef {
@@ -27,7 +30,7 @@ function SceneControls({ showBounds }: { showBounds?: boolean }) {
   return null;
 }
 
-function Model({ parsedGLB, activeAnimationIndex, showSkeleton }: AssetInspector3DProps) {
+function Model({ parsedGLB, activeAnimationIndex, showSkeleton, modelScale = 1.0, modelRotationY = 0, modelGrounding = 0 }: AssetInspector3DProps) {
   const group = useRef<THREE.Group>(null);
   const { scene, rawAnimations } = parsedGLB;
   const mixer = useRef<THREE.AnimationMixer | null>(null);
@@ -71,7 +74,16 @@ function Model({ parsedGLB, activeAnimationIndex, showSkeleton }: AssetInspector
     };
   }, [scene, showSkeleton]);
 
-  return <primitive ref={group} object={scene} />;
+  return (
+    <group 
+      ref={group} 
+      scale={[modelScale, modelScale, modelScale]}
+      rotation={[0, (modelRotationY * Math.PI) / 180, 0]}
+      position={[0, modelGrounding, 0]}
+    >
+      <primitive object={scene} />
+    </group>
+  );
 }
 
 export const AssetInspector3D = forwardRef<AssetInspector3DRef, AssetInspector3DProps>(

@@ -174,6 +174,11 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
 
   const [animationProfileId, setAnimationProfileId] = useState<string>('');
 
+  // Model Transform
+  const [modelScale, setModelScale] = useState<number>(1.0);
+  const [modelRotationY, setModelRotationY] = useState<number>(0);
+  const [modelGrounding, setModelGrounding] = useState<number>(0);
+
   const [isPublishing, setIsPublishing] = useState(false);
 
   // ── Derived data ───────────────────────────────────────────────────
@@ -190,6 +195,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
   const tabStatus = useMemo(() => {
     const status: Record<TabId, 'empty' | 'partial' | 'complete'> = {
       roles: roles.length > 0 ? 'complete' : 'empty',
+      transform: 'complete',
       skeleton: Object.values(boneMap).filter(Boolean).length > 0 
         ? (boneMap['Pelvis'] || boneMap['Root'] ? 'complete' : 'partial') 
         : 'empty',
@@ -331,6 +337,11 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
         animationProfileId,
         modularSetName: structure === 'Modular' ? modularSetName : undefined,
         skeletonConnectionPoints: structure === 'Modular' ? skeletonConnectionPoints : undefined,
+        transform: {
+          scale: modelScale,
+          rotationY: modelRotationY,
+          grounding: modelGrounding
+        },
         skeleton: {
           isSkinned: parsedGLB?.isSkinned,
           boneMap,
@@ -418,7 +429,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
   }
 
   // ── Render ─────────────────────────────────────────────────────────
-  const availableTabs: TabId[] = ['roles', 'skeleton', 'attachments', 'animations', 'materials', ...(structure === 'Modular' ? ['items' as TabId] : [])];
+  const availableTabs: TabId[] = ['roles', 'transform', 'skeleton', 'attachments', 'animations', 'materials', ...(structure === 'Modular' ? ['items' as TabId] : [])];
 
   return (
     <div className="flex flex-col space-y-4 text-xs font-mono text-slate-300">
@@ -448,6 +459,9 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
               activeAnimationIndex={activeAnimationIndex} 
               showSkeleton={showSkeleton}
               showBounds={showBounds}
+              modelScale={modelScale}
+              modelRotationY={modelRotationY}
+              modelGrounding={modelGrounding}
             />
           </div>
           {/* View Controls */}
@@ -691,6 +705,63 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </select>
+                </div>
+              </div>
+            )}
+
+            {/* ═══════════════ TRANSFORM TAB ═══════════════ */}
+            {activeTab === 'transform' && (
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Scale ({modelScale.toFixed(2)}x)</label>
+                  <input 
+                    type="range" min="0.1" max="5.0" step="0.05" 
+                    value={modelScale} 
+                    onChange={e => setModelScale(parseFloat(e.target.value))} 
+                    className="w-full accent-amber-500" 
+                  />
+                  <div className="flex justify-between text-[9px] text-slate-500 mt-1">
+                    <span>Small (0.1x)</span>
+                    <span>Default (1.0x)</span>
+                    <span>Huge (5.0x)</span>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Default Orientation (Y Rotation: {modelRotationY}°)</label>
+                  <input 
+                    type="range" min="-180" max="180" step="5" 
+                    value={modelRotationY} 
+                    onChange={e => setModelRotationY(parseFloat(e.target.value))} 
+                    className="w-full accent-amber-500" 
+                  />
+                  <div className="flex justify-between text-[9px] text-slate-500 mt-1">
+                    <span>-180°</span>
+                    <span>0°</span>
+                    <span>+180°</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Grounding Offset Z ({modelGrounding.toFixed(2)}m)</label>
+                  <input 
+                    type="range" min="-2.0" max="2.0" step="0.05" 
+                    value={modelGrounding} 
+                    onChange={e => setModelGrounding(parseFloat(e.target.value))} 
+                    className="w-full accent-amber-500" 
+                  />
+                  <div className="text-[10px] text-slate-400 leading-relaxed mt-2">
+                    Adjust this if the model floats above or sinks into the ground by default.
+                  </div>
+                </div>
+                
+                <div className="flex gap-2 pt-2">
+                  <button 
+                    onClick={() => { setModelScale(1.0); setModelRotationY(0); setModelGrounding(0); }}
+                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded text-[10px] font-bold text-slate-300 transition-colors"
+                  >
+                    Reset to Defaults
+                  </button>
                 </div>
               </div>
             )}

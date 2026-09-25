@@ -209,11 +209,22 @@ export class CameraManager {
     if (this.settings.playerCameraStyle !== 'dynamic') return;
     const zoom = this.currentZoom || 10;
 
-    let targetMode: Exclude<CameraStyle, 'dynamic'> = 'isometric';
-    if (zoom < 6.5) {
-      targetMode = 'firstperson';
-    } else if (zoom < 12.0) {
-      targetMode = 'follow45';
+    // Determine current effective mode to apply hysteresis
+    let currentEffectiveMode: Exclude<CameraStyle, 'dynamic'> = 'isometric';
+    if (this.camera && this.camera.mode === BABYLON.Camera.PERSPECTIVE_CAMERA) {
+      currentEffectiveMode = this.profile.distance === 0 ? 'firstperson' : 'follow45';
+    }
+
+    let targetMode = currentEffectiveMode;
+
+    // Use hysteresis to prevent flicker around boundaries
+    if (currentEffectiveMode === 'firstperson') {
+      if (zoom > 7.0) targetMode = 'follow45';
+    } else if (currentEffectiveMode === 'follow45') {
+      if (zoom < 6.0) targetMode = 'firstperson';
+      else if (zoom > 12.5) targetMode = 'isometric';
+    } else if (currentEffectiveMode === 'isometric') {
+      if (zoom < 11.5) targetMode = 'follow45';
     }
 
     this.applyInternalStyle(targetMode);
@@ -233,7 +244,6 @@ export class CameraManager {
         this.camera.mode = BABYLON.Camera.ORTHOGRAPHIC_CAMERA;
         this.profile.pitch = Math.PI / 2 - 0.01;
         this.profile.distance = 14;
-        this.yaw = 0;
         this.updateOrthoSize(this.currentZoom);
         break;
 
@@ -263,7 +273,6 @@ export class CameraManager {
         this.camera.mode = BABYLON.Camera.ORTHOGRAPHIC_CAMERA;
         this.profile.pitch = this.settings.isometricPitch || Math.PI / 4;
         this.profile.distance = this.settings.isometricDistance || 14;
-        this.yaw = 0;
         this.updateOrthoSize(this.currentZoom);
         break;
     }
@@ -440,7 +449,31 @@ export class CameraManager {
       const offsetX = -horizDist * Math.sin(currentYaw);
       const offsetZ = -horizDist * Math.cos(currentYaw);
 
-      const targetCamPos = new BABYLON.Vector3(this.focusPoint.x + offsetX, this.focusPoint.y + camY, this.focusPoint.z + offsetZ);
+      let targetCamPos = new BABYLON.Vector3(this.focusPoint.x + offsetX, this.focusPoint.y + camY, this.focusPoint.z + offsetZ);
+      
+      // Raycast from player focus to ideal camera position to prevent clipping
+      if (!isFirstPerson && this.camera.mode === BABYLON.Camera.PERSPECTIVE_CAMERA) {
+        // Offset the origin slightly up (chest height) to avoid hitting the ground immediately
+        const origin = new BABYLON.Vector3(this.focusPoint.x, this.focusPoint.y + PLAYER_CHEST_HEIGHT, this.focusPoint.z);
+        const direction = targetCamPos.subtract(origin);
+        const maxDist = direction.length();
+        direction.normalize();
+        
+        // Use a raycast to detect terrain or walls (assuming meshes are pickable)
+        const ray = new BABYLON.Ray(origin, direction, maxDist);
+        const hit = this.scene.pickWithRay(ray, (mesh) => {
+          // Ignore player meshes or purely decorative meshes, include terrain/walls
+          return mesh.isPickable && mesh.isVisible && mesh.name !== 'skyBox';
+        });
+        
+        if (hit && hit.hit && hit.pickedPoint) {
+          // Back up slightly from the hit point to prevent clipping into the wall
+          const hitDist = hit.distance;
+          const safeDist = Math.max(0.5, hitDist - 0.5);
+          targetCamPos = origin.add(direction.scale(safeDist));
+        }
+      }
+
       this.camera.position = targetCamPos;
       
       const targetLookAt = isFirstPerson

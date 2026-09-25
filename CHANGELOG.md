@@ -6742,3 +6742,7 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 
 
 
+
+## [2.2.001]
+- **Studio Model Transform Controls**: Added scale, rotation, and grounding offset controls to the 3D Asset Studio UI. These are persisted within the presentation metadata and properly parsed by the engine so that large GLB models are scaled correctly in the world scene.
+

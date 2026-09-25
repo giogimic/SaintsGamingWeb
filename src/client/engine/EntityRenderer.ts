@@ -74,20 +74,23 @@ export class EntityRenderer {
       let isModel = profileId?.endsWith('.glb') || profileId?.endsWith('.gltf') || profileId?.endsWith('.fbx');
       let resolvedUrl = profileId ? resolveEntitySpriteUrl(profileId, { kind: defaultKind as any }) : undefined;
       let presentationType = profileId?.includes('wrapped') ? '2D_WRAPPED' : '2D_SPRITE';
+      let transform: any = undefined;
 
       if (profileId && profileId.length >= 20 && !profileId.includes('.')) {
         const asset = AssetManager.getInstance().getAssetSync(profileId);
         if (asset) {
           isModel = asset.type === 'MODEL' || !!(asset.source && (asset.source.endsWith('.glb') || asset.source.endsWith('.gltf')));
           if (asset.source) resolvedUrl = asset.source;
-          if (asset.presentation && (asset.presentation as any).characterPresentationType) {
-            presentationType = (asset.presentation as any).characterPresentationType;
+          if (asset.presentation) {
+            const pres = asset.presentation as any;
+            if (pres.characterPresentationType) presentationType = pres.characterPresentationType;
+            if (pres.transform) transform = pres.transform;
           } else if (isModel) {
             presentationType = '3D_MODEL';
           }
         }
       }
-      return { isModel: !!isModel, resolvedUrl, presentationType };
+      return { isModel: !!isModel, resolvedUrl, presentationType, transform };
     };
 
     // 1. Local Player
@@ -105,6 +108,7 @@ export class EntityRenderer {
       modelUrl: pAssetInfo.isModel ? pAssetInfo.resolvedUrl : undefined,
       isPlayer: true,
       presentationType: pAssetInfo.presentationType,
+      transform: pAssetInfo.transform,
     }, now);
 
     // 2. Remote Players
@@ -135,6 +139,7 @@ export class EntityRenderer {
         chatMessage: rp.chatMessage,
         isPlayer: true,
         presentationType: rpAssetInfo.presentationType,
+        transform: rpAssetInfo.transform,
       }, now);
     }
 
@@ -153,6 +158,7 @@ export class EntityRenderer {
         color: entityColor,
         spriteUrl: entAssetInfo.isModel ? undefined : entAssetInfo.resolvedUrl,
         modelUrl: entAssetInfo.isModel ? entAssetInfo.resolvedUrl : undefined,
+        transform: entAssetInfo.transform,
       }, now);
     }
 
@@ -194,6 +200,7 @@ export class EntityRenderer {
       chatMessage?: string;
       isPlayer?: boolean;
       presentationType?: string;
+      transform?: { scale?: number, rotationY?: number, grounding?: number };
     },
     now: number
   ) {
@@ -232,14 +239,21 @@ export class EntityRenderer {
             result.animationGroups.forEach((animation) => animation.dispose());
             return;
           }
+          const grounding = data.transform?.grounding ?? 0;
           result.meshes.forEach((m) => {
             if (!m.parent) {
               m.parent = mesh;
+              m.position.y += grounding;
             }
           });
-          // Ensure model scales appropriately, FBX/GLB might be big
-          // For now let's scale it so it roughly fits
-          mesh.scaling = new BABYLON.Vector3(0.8, 0.8, 0.8);
+          
+          const scale = data.transform?.scale ?? 0.8;
+          mesh.scaling = new BABYLON.Vector3(scale, scale, scale);
+          
+          const rotY = data.transform?.rotationY ?? 0;
+          if (rotY !== 0) {
+            mesh.rotationQuaternion = BABYLON.Quaternion.RotationAxis(BABYLON.Axis.Y, (rotY * Math.PI) / 180);
+          }
 
           if (result.animationGroups.length > 0) {
             result.animationGroups[0].play(true);
