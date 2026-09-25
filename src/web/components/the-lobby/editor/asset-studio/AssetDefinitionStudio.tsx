@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { parseGLB, ParsedGLB } from './glbParser';
 import { AssetInspector3D, AssetInspector3DRef } from './AssetInspector3D';
-import { Loader2, CheckCircle2, Box, Users, Puzzle, Bone, Maximize2, Play, AlertTriangle } from 'lucide-react';
+import { Loader2, CheckCircle2, Box, Users, Puzzle, Bone, Maximize2, AlertTriangle } from 'lucide-react';
 import { useGameStore } from '../../store';
 import { AssetManager } from '@/engine/assets/AssetManager';
 import {
@@ -12,7 +12,15 @@ import {
   CharacterComponentCategory,
   CharacterBaseBodyType,
 } from '@/shared/game/assetImportProfiles';
-import { getAnimationProfile } from '@/shared/game/animationProfiles';
+import { ANIMATION_PROFILES, getAnimationProfile, type AnimationSlot } from '@/shared/game/animationProfiles';
+import {
+  ANIMATION_ACTIONS,
+  animationSetChoiceId,
+  buildAnimationClipCatalog,
+  embeddedAnimationChoiceId,
+  getAnimationChoicesForSlot,
+  inferAnimationSlots,
+} from '@/shared/game/animationCatalog';
 
 // ── Types ────────────────────────────────────────────────────────────
 interface Props {
@@ -57,49 +65,12 @@ const STRUCTURE_OPTIONS: StructureOption[] = [
 ];
 
 const STANDARD_BONES = ['Root', 'Pelvis', 'Spine', 'Neck', 'Head', 'Clavicle_L', 'Arm_L', 'Hand_L', 'Clavicle_R', 'Arm_R', 'Hand_R', 'Leg_L', 'Foot_L', 'Leg_R', 'Foot_R'];
-const STANDARD_ANIMS = ['Idle', 'Walk', 'Run', 'Sprint', 'Jump', 'Fall', 'Land', 'Attack_Light', 'Attack_Heavy', 'Hit_React', 'Death', 'Interact'];
 
 const COMPONENT_CATEGORY_ICONS: Record<string, string> = {
   face: '😐', hair: '💇', hat: '🎩', head_accessory: '👓',
   clothing: '👔', shirt: '👕', jacket: '🧥', pants: '👖',
   shoes: '👟', accessory: '💍', other: '📦',
 };
-
-const ANIMATION_PROFILE_OPTIONS = [
-  { value: '', label: '(None)' },
-  { value: 'AuroraManny', label: 'Aurora (Manny)' },
-  { value: 'BelicaManny', label: 'Belica (Manny)' },
-  { value: 'CountessManny', label: 'Countess (Manny)' },
-  { value: 'CrunchManny', label: 'Crunch (Manny)' },
-  { value: 'DekkerManny', label: 'Dekker (Manny)' },
-  { value: 'DrongoManny', label: 'Drongo (Manny)' },
-  { value: 'FengMaoManny', label: 'Feng Mao (Manny)' },
-  { value: 'FeyManny', label: 'The Fey (Manny)' },
-  { value: 'GreystoneManny', label: 'Greystone (Manny)' },
-  { value: 'GruxManny', label: 'Grux (Manny)' },
-  { value: 'KallariManny', label: 'Kallari (Manny)' },
-  { value: 'KhaimeraManny', label: 'Khaimera (Manny)' },
-  { value: 'KwangManny', label: 'Kwang (Manny)' },
-  { value: 'MurdockManny', label: 'Murdock (Manny)' },
-  { value: 'MurielManny', label: 'Muriel (Manny)' },
-  { value: 'NarbashManny', label: 'Narbash (Manny)' },
-  { value: 'PhaseManny', label: 'Phase (Manny)' },
-  { value: 'RevenantManny', label: 'Revenant (Manny)' },
-  { value: 'RiktorManny', label: 'Riktor (Manny)' },
-  { value: 'SerathManny', label: 'Serath (Manny)' },
-  { value: 'SparrowManny', label: 'Sparrow (Manny)' },
-  { value: 'TwinBlastManny', label: 'TwinBlast (Manny)' },
-  { value: 'WraithManny', label: 'Wraith (Manny)' },
-  { value: 'YinManny', label: 'Yin (Manny)' },
-  { value: 'ZinxManny', label: 'Zinx (Manny)' },
-  { value: 'gadgetManny', label: 'Gadget (Manny)' },
-  { value: 'gideonManny', label: 'Gideon (Manny)' },
-  { value: 'minionsManny', label: 'Minions (Manny)' },
-  { value: 'morigoshManny', label: 'Morigesh (Manny)' },
-  { value: 'steelmanny', label: 'Steel (Manny)' },
-  { value: 'terramanny', label: 'Terra (Manny)' },
-  { value: 'wukongManny', label: 'Wukong (Manny)' },
-];
 
 function guessComponentInfo(filename: string): { structure: StructureType, category: string } {
   const lower = filename.toLowerCase();
@@ -159,7 +130,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
   const [attachments, setAttachments] = useState<Array<{ id: string, name: string, bone: string, position: [number,number,number], rotation: [number,number,number], scale: [number,number,number] }>>([]);
   
   // Animations
-  const [animMap, setAnimMap] = useState<Record<string, string>>({});
+  const [animMap, setAnimMap] = useState<Partial<Record<AnimationSlot, string>>>({});
   
   const [materialConfig, setMaterialConfig] = useState<Record<string, { tintable: boolean, slot: string }>>({});
   
@@ -202,7 +173,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
         : 'empty',
       attachments: attachments.length > 0 ? 'complete' : 'empty',
       animations: Object.values(animMap).filter(Boolean).length > 0
-        ? (animMap['Idle'] || animationProfileId ? 'complete' : 'partial')
+        ? (animMap['idle'] || animationProfileId ? 'complete' : 'partial')
         : (animationProfileId ? 'complete' : 'empty'),
       materials: Object.values(materialConfig).some(m => m.tintable) ? 'complete' : 'empty',
       items: additionalItems.length > 0 ? 'complete' : 'empty',
@@ -210,20 +181,16 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
     return status;
   }, [roles, boneMap, attachments, animMap, materialConfig, additionalItems, animationProfileId]);
 
-  // Compute available animation clip names
-  const availableClipNames = useMemo(() => {
-    const names = new Set<string>();
-    if (parsedGLB) {
-      parsedGLB.animations.forEach(a => names.add(a.name));
-    }
-    if (animationProfileId) {
-      const profile = getAnimationProfile(animationProfileId);
-      if (profile) {
-        profile.availableClips.forEach(c => names.add(c));
-      }
-    }
-    return Array.from(names).sort();
-  }, [parsedGLB, animationProfileId]);
+  // One browser catalog combines embedded model clips with clips referenced by every set.
+  const animationChoices = useMemo(
+    () => buildAnimationClipCatalog(parsedGLB?.animations || []),
+    [parsedGLB],
+  );
+  const animationChoiceById = useMemo(
+    () => new Map(animationChoices.map((choice) => [choice.id, choice])),
+    [animationChoices],
+  );
+  const hasEmbeddedAnimations = (parsedGLB?.animations.length || 0) > 0;
 
   // Handle automatic prepopulation of animation map based on selected profile
   useEffect(() => {
@@ -232,12 +199,13 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
       if (profile) {
         const newMap = { ...animMap };
         let changed = false;
-        
-        for (const sa of STANDARD_ANIMS) {
-          const slotKey = sa.toLowerCase().replace(/ /g, '_') as any;
-          const mapping = (profile.slotMap as any)[slotKey] || (profile.slotMap as any)[sa.toLowerCase()];
-          if (mapping && availableClipNames.includes(mapping.clip) && !newMap[sa]) {
-            newMap[sa] = mapping.clip;
+
+        for (const slot of Object.keys(profile.slotMap) as AnimationSlot[]) {
+          const mapping = profile.slotMap[slot];
+          if (!mapping) continue;
+          const choiceId = animationSetChoiceId(profile.id, mapping.clip);
+          if (animationChoiceById.has(choiceId) && !newMap[slot]) {
+            newMap[slot] = choiceId;
             changed = true;
           }
         }
@@ -246,7 +214,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
         }
       }
     }
-  }, [animationProfileId, availableClipNames, animMap]);
+  }, [animationProfileId, animationChoiceById, animMap]);
 
   // ── GLB Parsing ────────────────────────────────────────────────────
   useEffect(() => {
@@ -269,14 +237,12 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
         setBoneMap(autoMap);
         
         // Auto-detect animations
-        const autoAnimMap: Record<string, string> = {};
-        parsed.animations.forEach(a => {
-          const name = a.name.toLowerCase();
-          if (name.includes('idle')) autoAnimMap['Idle'] = a.name;
-          if (name.includes('walk')) autoAnimMap['Walk'] = a.name;
-          if (name.includes('run')) autoAnimMap['Run'] = a.name;
-          if (name.includes('attack')) autoAnimMap['Attack_Light'] = a.name;
-          if (name.includes('death') || name.includes('die')) autoAnimMap['Death'] = a.name;
+        const autoAnimMap: Partial<Record<AnimationSlot, string>> = {};
+        parsed.animations.forEach((animation) => {
+          const choiceId = embeddedAnimationChoiceId(animation.name);
+          inferAnimationSlots(animation.name).forEach((slot) => {
+            if (!autoAnimMap[slot]) autoAnimMap[slot] = choiceId;
+          });
         });
         setAnimMap(autoAnimMap);
         
@@ -312,7 +278,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
 
     const isActor = roles.includes('Character') || roles.includes('NPC') || roles.includes('Enemy') || roles.includes('Player');
     if (isActor) {
-      if (!animMap['Idle'] && !animationProfileId) errors.push("Actor roles require an 'Idle' animation to be mapped, or a Target Animation Profile selected.");
+      if (!animMap.idle && !animationProfileId) errors.push("Actor roles require an 'Idle' animation to be mapped, or a default Animation Set selected.");
       if (!boneMap['Root'] && !boneMap['Pelvis']) warnings.push("Actor roles typically need a Root or Pelvis bone mapped for movement.");
     }
     
@@ -369,6 +335,23 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
         formData.append('attachmentPoints', attachmentNames);
       }
 
+      const mappedAnimationChoices = Object.fromEntries(
+        Object.entries(animMap).flatMap(([slot, choiceId]) => {
+          const choice = animationChoiceById.get(choiceId);
+          if (!choice) return [];
+          return [[slot, {
+            clip: choice.clip,
+            sourceKind: choice.sourceKind,
+            sourceId: choice.sourceId,
+            sourceLabel: choice.sourceLabel,
+            sourcePath: choice.sourcePath,
+            rigFamily: choice.rigFamily,
+            loop: choice.loop,
+            speed: choice.speed,
+          }]];
+        }),
+      );
+
       const assetDefinition = {
         roles,
         structure,
@@ -388,7 +371,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
         attachments,
         animations: {
           available: parsedGLB?.animations.map(a => a.name) || [],
-          mapped: animMap,
+          mapped: mappedAnimationChoices,
         },
         materials: materialConfig,
         meshes: parsedGLB?.meshes.map(m => m.name) || [],
@@ -732,18 +715,40 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                   <input type="text" value={tagsInput} onChange={e => setTagsInput(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-white focus:border-amber-600/60 focus:outline-none transition-colors" />
                 </div>
                 
-                {/* Animation Profile */}
+                {/* Default animation set */}
                 <div>
-                  <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Target Animation Profile (Optional)</label>
+                  <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Default Animation Set (Optional)</label>
                   <select 
                     value={animationProfileId} 
-                    onChange={e => setAnimationProfileId(e.target.value)} 
+                    onChange={e => {
+                      const nextProfileId = e.target.value;
+                      const nextProfile = getAnimationProfile(nextProfileId);
+                      setAnimationProfileId(nextProfileId);
+                      if (!nextProfile) return;
+
+                      setAnimMap((previous) => {
+                        const next = { ...previous };
+                        for (const slot of Object.keys(nextProfile.slotMap) as AnimationSlot[]) {
+                          const mapping = nextProfile.slotMap[slot];
+                          if (!mapping) continue;
+                          const currentChoice = animationChoiceById.get(next[slot] || '');
+                          if (!next[slot] || currentChoice?.sourceId === animationProfileId) {
+                            next[slot] = animationSetChoiceId(nextProfile.id, mapping.clip);
+                          }
+                        }
+                        return next;
+                      });
+                    }}
                     className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-white cursor-pointer focus:border-amber-600/60 focus:outline-none transition-colors"
                   >
-                    {ANIMATION_PROFILE_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    <option value="">Browse all sets / assign manually</option>
+                    {ANIMATION_PROFILES.map(profile => (
+                      <option key={profile.id} value={profile.id}>{profile.displayName} · Manny rig</option>
                     ))}
                   </select>
+                  <div className="text-[9px] text-slate-500 mt-1">
+                    Choosing a set adds its suggested clips. Each action menu can still use clips from any registered set.
+                  </div>
                 </div>
               </div>
             )}
@@ -895,44 +900,69 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
             {activeTab === 'animations' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="text-amber-200 text-[11px]">Map standard animation triggers to imported clips.</div>
+                  <div className="text-amber-200 text-[11px]">Assign clips to actions. Each choice shows its source set.</div>
                   <div className="text-[10px] text-slate-500">
-                    {mappedAnimCount} / {STANDARD_ANIMS.length} mapped
+                    {mappedAnimCount} / {ANIMATION_ACTIONS.length} mapped
                   </div>
                 </div>
-                {parsedGLB.animations.length === 0 && !animationProfileId ? (
-                  <div className="text-center py-8 text-slate-500">
-                    <Play className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                    <div className="font-bold">No animations in this model</div>
-                    <div className="text-[10px] mt-1">Select a Target Animation Profile on the Roles tab to use shared animations.</div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    {STANDARD_ANIMS.map(sa => {
-                      const mapped = !!animMap[sa];
-                      return (
-                        <div key={sa} className={`flex flex-col rounded p-2 border transition-colors ${mapped ? 'bg-emerald-950/20 border-emerald-900/30' : 'bg-slate-900/30 border-slate-800'}`}>
-                          <label className={`text-[10px] mb-1 font-bold ${mapped ? 'text-emerald-400' : 'text-slate-400'}`}>
-                            {mapped && <span className="mr-1">▶</span>}
-                            {sa}
-                          </label>
-                          <select 
-                            value={animMap[sa] || ''} 
-                            onChange={e => {
-                              setAnimMap(prev => ({...prev, [sa]: e.target.value}));
-                              const index = parsedGLB.animations.findIndex(a => a.name === e.target.value);
-                              if (index !== -1) setActiveAnimationIndex(index);
-                            }}
-                            className="bg-black/50 border border-slate-700 rounded px-1.5 py-1 text-[10px] text-white cursor-pointer focus:border-amber-600/60 focus:outline-none"
-                          >
-                            <option value="">-- None --</option>
-                            {availableClipNames.map(name => <option key={name} value={name}>{name}</option>)}
-                          </select>
-                        </div>
-                      );
-                    })}
+                {!hasEmbeddedAnimations && (
+                  <div className="rounded border border-amber-700/40 bg-amber-950/20 px-3 py-2 text-[10px] text-amber-200">
+                    This model has no embedded clips. Animation Set choices below are catalog references; confirm their files are included in the project release. Only clips embedded in this model can preview in this upload window.
                   </div>
                 )}
+                {Object.values(animMap).some((choiceId) => choiceId && animationChoiceById.get(choiceId)?.sourceKind === 'animation-set') && (
+                  <div className="rounded border border-slate-700 bg-slate-900/60 px-3 py-2 text-[10px] text-slate-300">
+                    Animation Set assignments are saved with their source and clip path. External clip loading and playback still need to be connected to the live character renderer.
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-2">
+                  {ANIMATION_ACTIONS.map(action => {
+                    const selectedChoiceId = animMap[action.key] || '';
+                    const selectedChoice = animationChoiceById.get(selectedChoiceId);
+                    const choicesForAction = getAnimationChoicesForSlot(animationChoices, action.key);
+                    const mapped = !!selectedChoiceId;
+                    return (
+                      <div key={action.key} className={`flex flex-col rounded p-2 border transition-colors ${mapped ? 'bg-emerald-950/20 border-emerald-900/30' : 'bg-slate-900/30 border-slate-800'}`}>
+                        <label className={`text-[10px] mb-1 font-bold ${mapped ? 'text-emerald-400' : 'text-slate-400'}`}>
+                          {mapped && <span className="mr-1">▶</span>}
+                          {action.label}
+                        </label>
+                        <select
+                          value={selectedChoiceId}
+                          onChange={e => {
+                            const choiceId = e.target.value;
+                            setAnimMap(prev => {
+                              const next = { ...prev };
+                              if (choiceId) next[action.key] = choiceId;
+                              else delete next[action.key];
+                              return next;
+                            });
+                            const choice = animationChoiceById.get(choiceId);
+                            const index = choice?.sourceKind === 'embedded'
+                              ? parsedGLB.animations.findIndex(animation => animation.name === choice.clip)
+                              : -1;
+                            setActiveAnimationIndex(index >= 0 ? index : undefined);
+                          }}
+                          className="bg-black/50 border border-slate-700 rounded px-1.5 py-1 text-[10px] text-white cursor-pointer focus:border-amber-600/60 focus:outline-none"
+                        >
+                          <option value="">-- None --</option>
+                          {choicesForAction.map(choice => (
+                            <option key={choice.id} value={choice.id}>
+                              {choice.clip} — {choice.sourceLabel}
+                            </option>
+                          ))}
+                        </select>
+                        {selectedChoice && (
+                          <div className="mt-1 text-[9px] text-slate-500 truncate" title={selectedChoice.sourcePath || selectedChoice.sourceLabel}>
+                            {selectedChoice.sourceKind === 'embedded'
+                              ? `Embedded · ${selectedChoice.duration?.toFixed(2) ?? '?'}s`
+                              : `${selectedChoice.rigFamily} rig · ${selectedChoice.sourcePath}`}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 

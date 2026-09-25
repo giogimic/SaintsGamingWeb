@@ -1,3 +1,6 @@
+## [2.2.002] - 2026-09-25
+- **Feature**: Added a unified 3D animation clip catalog combining embedded model clips and registered set references, expanded action mapping to every engine animation slot, and saved the chosen source/clip path per action.
+
 ## [2.2.001] - 2026-09-25
 - **Maintenance**: Fixed IDE reported warnings and errors across several files (GameCanvas, InputController, AssetDefinitionStudio, character-creator).
 - **Maintenance**: Refactored `require()` inline imports to top-level `import` statements on client-side components to resolve ESLint and Next.js bundler warnings.
