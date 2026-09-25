@@ -599,7 +599,19 @@ public enableTilePicking(
     this.engine.scene.onPointerDown = (evt) => {
       if (!this.engine.scene) return;
       const button = evt.button;
-      const isPanTrigger = button === 1 || (button === 0 && options?.isPanActive?.());
+      const style = this.engine.renderer.cameraSettings.playerCameraStyle as string;
+      const isFpsTps = !this.engine.editorCameraMode && (style === 'firstperson' || style === 'firstPerson' || style === 'thirdperson' || style === 'thirdPerson' || style === 'follow45' || style === 'adaptive' || style === 'dynamic' || style === 'free');
+      const isOrthoMode = this.engine.renderer.camera.mode === 1; // ORTHOGRAPHIC_CAMERA
+
+      // Pointer lock request for FPS/TPS gameplay
+      if (isFpsTps && !isOrthoMode && this.engine.canvas && typeof this.engine.canvas.requestPointerLock === 'function') {
+        if (document.pointerLockElement !== this.engine.canvas) {
+          try { this.engine.canvas.requestPointerLock(); } catch {}
+        }
+      }
+
+      // If we are in Ortho (2.5D), right-click is pan
+      const isPanTrigger = button === 1 || (button === 2 && isOrthoMode) || (button === 0 && options?.isPanActive?.());
 
       if (isPanTrigger) {
         isPanning = true;
@@ -610,7 +622,7 @@ public enableTilePicking(
         return;
       }
 
-      // Ignore right click (button === 2) for painting; context menu owns right click
+      // Legacy fallback orbit if not locked (for editor or failed lock)
       if (button === 2) {
         if (!this.engine.editorCameraMode && !this.engine.renderer.isFreeCam) {
           isOrbiting = true;
@@ -654,15 +666,23 @@ public enableTilePicking(
     };
 
     this.engine.scene.onPointerMove = (evt) => {
-      if (isOrbiting) {
-        if (this.engine.canvas) this.engine.canvas.style.cursor = 'grabbing';
-        const deltaX = evt.clientX - lastPointerX;
-        const deltaY = evt.clientY - lastPointerY;
+      const isLocked = document.pointerLockElement === this.engine.canvas;
+
+      if (isLocked || isOrbiting) {
+        if (this.engine.canvas && !isLocked) this.engine.canvas.style.cursor = 'grabbing';
+        
+        const rawEvt = evt as any;
+        const deltaX = isLocked && rawEvt.movementX !== undefined ? rawEvt.movementX : (evt.clientX - lastPointerX);
+        const deltaY = isLocked && rawEvt.movementY !== undefined ? rawEvt.movementY : (evt.clientY - lastPointerY);
+        
         lastPointerX = evt.clientX;
         lastPointerY = evt.clientY;
+        
         this.engine.renderer.rotateCamera(deltaX, deltaY);
-        return;
+        
+        if (isLocked) return;
       }
+
       if (isPanning) {
         if (this.engine.canvas) this.engine.canvas.style.cursor = 'grabbing';
         const currentOrtho = this.engine.renderer.camera.orthoTop || 10;

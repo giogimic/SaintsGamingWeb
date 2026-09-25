@@ -38,6 +38,25 @@ export async function convertFbxToGlb(fbxFile: File): Promise<File> {
           const loader = new FBXLoader();
           const object = loader.parse(e.target.result as ArrayBuffer, '');
           
+          // Sanitize materials to prevent GLTFExporter crashes on missing external textures
+          object.traverse((child: any) => {
+            if (child.isMesh && child.material) {
+              const materials = Array.isArray(child.material) ? child.material : [child.material];
+              for (const mat of materials) {
+                const mapTypes = ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap', 'specularMap', 'alphaMap'];
+                for (const mapType of mapTypes) {
+                  if (mat[mapType]) {
+                    // GLTFExporter throws if image is undefined or invalid
+                    if (!mat[mapType].image || mat[mapType].image.width === 0) {
+                      console.warn(`Stripping invalid/missing external texture: ${mapType} on material ${mat.name}`);
+                      mat[mapType] = null;
+                    }
+                  }
+                }
+              }
+            }
+          });
+          
           const exporter = new GLTFExporter();
           exporter.parse(
             object,

@@ -1,7 +1,7 @@
 import { BabylonEngine, SpriteSheetConfig } from './BabylonEngine';
 import { clampCameraFocus } from './helpers/babylonViewHelpers';
 
-import { HemisphericLight, DirectionalLight, ImageProcessingPostProcess, Light, ShadowGenerator, Camera, TargetCamera, Vector3, Matrix, Color3, Color4, Texture, StandardMaterial } from '@babylonjs/core';
+import { HemisphericLight, DirectionalLight, ImageProcessingPostProcess, Light, ShadowGenerator, Camera, TargetCamera, Vector3, Matrix, Color3, Color4, Texture, StandardMaterial, Ray } from '@babylonjs/core';
 
 import { DynamicTexture, Scene, ParticleSystem, FreeCamera } from '@babylonjs/core';
 import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
@@ -707,7 +707,31 @@ public stopRenderLoop() {
     const horizDist = isFirstPerson ? 0 : dist * Math.cos(pitch);
     const offsetX = -horizDist * Math.sin(yaw);
     const offsetZ = -horizDist * Math.cos(yaw);
-    const targetCamPos = new Vector3(targetX + offsetX, camY, targetZ + offsetZ);
+    let targetCamPos = new Vector3(targetX + offsetX, camY, targetZ + offsetZ);
+    
+    // Check for terrain/world collisions between player head and targetCamPos
+    if (!isFirstPerson && this.engine.scene) {
+      const headPos = new Vector3(targetX, targetYWithOffset, targetZ);
+      const rayDirection = targetCamPos.subtract(headPos);
+      const actualDist = rayDirection.length();
+      
+      if (actualDist > 0.1) {
+        rayDirection.normalize();
+        const ray = new Ray(headPos, rayDirection, actualDist);
+        // Only pick meshes that are not the player, not decals/overlays
+        const hit = this.engine.scene.pickWithRay(ray, (mesh) => {
+          if (!mesh.isPickable || mesh === this.engine.playerMesh) return false;
+          if (mesh.name.includes("preview") || mesh.name.includes("overlay") || mesh.name.includes("decal")) return false;
+          // Ignore water or transparent planes if desired, but for now we stop at pickable solid terrain
+          return true;
+        });
+        
+        if (hit && hit.hit && hit.pickedPoint) {
+          // Snap camera slightly in front of the hit point to avoid clipping
+          targetCamPos = hit.pickedPoint.subtract(rayDirection.scale(0.3));
+        }
+      }
+    }
     
     // Spring damper / Decoupled Physics with snappy responsive follow
     const dt = this.engine.engine.getDeltaTime() / 1000.0;

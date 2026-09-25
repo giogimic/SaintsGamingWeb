@@ -77,6 +77,7 @@ export class CameraManager {
   public targetX: number = 0;
   public targetY: number = 0;
   public targetZ: number = 0;
+  private focusPoint: BABYLON.Vector3 = new BABYLON.Vector3(0, 0, 0);
   private snapped: boolean = false;
 
   // Active profile (computed from style)
@@ -338,6 +339,7 @@ export class CameraManager {
     this.targetX = x;
     this.targetY = terrainY;
     this.targetZ = z;
+    this.focusPoint.copyFromFloats(x, terrainY, z);
 
     const currentPitch = this.profile.pitch ?? Math.PI / 4;
     const dist = this.profile.distance ?? 14;
@@ -425,32 +427,31 @@ export class CameraManager {
       this.targetY = terrainY;
       this.targetZ = pz;
 
+      const idealFocus = new BABYLON.Vector3(px, terrainY, pz);
+      this.focusPoint = BABYLON.Vector3.Lerp(this.focusPoint, idealFocus, smoothFactor);
+
       const currentPitch = this.profile.pitch ?? Math.PI / 4;
       const dist = this.profile.distance ?? 14;
       const currentYaw = this.yaw || 0;
       const isFirstPerson = this.settings.playerCameraStyle === 'firstperson';
       
-      // If first person, camera is at eye level. Otherwise, compute offset.
       const camY = isFirstPerson ? PLAYER_EYE_HEIGHT : Math.max(1.0, dist * Math.sin(currentPitch));
       const horizDist = isFirstPerson ? 0 : dist * Math.cos(currentPitch);
       const offsetX = -horizDist * Math.sin(currentYaw);
       const offsetZ = -horizDist * Math.cos(currentYaw);
 
-      const targetCamPos = new BABYLON.Vector3(px + offsetX, this.targetY + camY, pz + offsetZ);
-
-      // We don't want to lerp the target for first-person if it makes aiming mushy,
-      // but for now we apply the same smoothing to keep it simple, or bypass it.
-      this.camera.position = BABYLON.Vector3.Lerp(this.camera.position, targetCamPos, smoothFactor);
+      const targetCamPos = new BABYLON.Vector3(this.focusPoint.x + offsetX, this.focusPoint.y + camY, this.focusPoint.z + offsetZ);
+      this.camera.position = targetCamPos;
       
       const targetLookAt = isFirstPerson
         ? new BABYLON.Vector3(
-            px + Math.sin(currentYaw) * Math.cos(currentPitch) * 10,
-            this.targetY + PLAYER_EYE_HEIGHT + Math.sin(currentPitch) * 10,
-            pz + Math.cos(currentYaw) * Math.cos(currentPitch) * 10
+            this.focusPoint.x + Math.sin(currentYaw) * Math.cos(currentPitch) * 10,
+            this.focusPoint.y + PLAYER_EYE_HEIGHT + Math.sin(currentPitch) * 10,
+            this.focusPoint.z + Math.cos(currentYaw) * Math.cos(currentPitch) * 10
           )
-        : new BABYLON.Vector3(px, this.targetY + PLAYER_CHEST_HEIGHT, pz);
+        : new BABYLON.Vector3(this.focusPoint.x, this.focusPoint.y + PLAYER_CHEST_HEIGHT, this.focusPoint.z);
 
-      this.camera.setTarget(BABYLON.Vector3.Lerp(this.camera.getTarget(), targetLookAt, smoothFactor));
+      this.camera.setTarget(targetLookAt);
     }
 
     // Keep ortho aspect in sync on every frame (resize-safe)

@@ -38,6 +38,8 @@ interface ManagedSprite {
   targetZ: number;
   targetY: number;
   lastSeen: number;
+  modelUrl?: string;
+  spriteUrl?: string;
 }
 
 export class EntityRenderer {
@@ -202,6 +204,14 @@ export class EntityRenderer {
     const spriteW = data.isPlayer ? PLAYER_WIDTH : ENTITY_WIDTH;
     const spriteH = data.isPlayer ? PLAYER_HEIGHT : ENTITY_HEIGHT;
 
+    if (sprite && (sprite.modelUrl !== data.modelUrl || sprite.spriteUrl !== data.spriteUrl)) {
+      sprite.mesh.dispose();
+      sprite.label?.dispose();
+      sprite.gui?.dispose();
+      this.sprites.delete(id);
+      sprite = undefined;
+    }
+
     if (!sprite) {
       let mesh: BABYLON.TransformNode;
 
@@ -306,6 +316,8 @@ export class EntityRenderer {
         targetZ: is3D ? data.y : -data.y,
         targetY: spriteH / 2,
         lastSeen: now,
+        modelUrl: data.modelUrl,
+        spriteUrl: data.spriteUrl,
       };
       this.sprites.set(id, sprite);
     }

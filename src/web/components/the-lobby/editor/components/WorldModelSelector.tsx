@@ -149,8 +149,8 @@ export function WorldModelSelector({ value, onChange, label = "World Model", des
               if (asset) {
                 let id = asset.source;
                 if (value.type === '3D Model') {
-                   // Keep full source or ID for models
-                   id = asset.id || asset.source;
+                   // Keep full source (URL) for models so resolveEntitySpriteUrl can load them
+                   id = asset.source;
                 } else if (id.includes('sprites/characters/')) {
                    id = id.split('sprites/characters/')[1].replace('.png', '');
                 }

@@ -66,7 +66,8 @@ export interface PaginatedResult<T> {
  */
 export class AssetManager {
   private static instance: AssetManager;
-  private cache: Map<string, GameAssetItem> = new Map();
+  private cache: Map<string, GameAssetItem | null> = new Map();
+  private inflight: Map<string, Promise<GameAssetItem | null>> = new Map();
 
   static getInstance(): AssetManager {
     if (!AssetManager.instance) {
@@ -163,8 +164,10 @@ export class AssetManager {
     if (this.cache.has(id)) {
       return this.cache.get(id)!;
     }
-    // Fire off async fetch if not in cache so it will be there soon
-    this.getAsset(id).catch(console.error);
+    if (!this.inflight.has(id)) {
+      // Fire off async fetch if not in cache so it will be there soon
+      this.getAsset(id).catch(console.error);
+    }
     return null;
   }
 
@@ -173,14 +176,35 @@ export class AssetManager {
       return this.cache.get(id)!;
     }
 
-    const res = await fetch(`/api/assets/${encodeURIComponent(id)}`);
-    if (res.status === 404) return null;
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!data.asset) return null;
-    const formatted = this.hydrate(data.asset);
-    this.cache.set(id, formatted);
-    return formatted;
+    if (this.inflight.has(id)) {
+      return this.inflight.get(id)!;
+    }
+
+    const promise = (async () => {
+      try {
+        const res = await fetch(`/api/assets/${encodeURIComponent(id)}`);
+        if (res.status === 404) {
+          this.cache.set(id, null);
+          return null;
+        }
+        if (!res.ok) {
+          return null; // Don't cache server errors, but don't loop immediately
+        }
+        const data = await res.json();
+        if (!data.asset) {
+          this.cache.set(id, null);
+          return null;
+        }
+        const formatted = this.hydrate(data.asset);
+        this.cache.set(id, formatted);
+        return formatted;
+      } finally {
+        this.inflight.delete(id);
+      }
+    })();
+
+    this.inflight.set(id, promise);
+    return promise;
   }
 
   async searchAssets(filters: AssetFilters, page = 0, limit = 50): Promise<PaginatedResult<GameAssetItem>> {

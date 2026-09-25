@@ -1,3 +1,9 @@
+## [2.1.994] - 2026-09-25
+- **Bugfix**: Fixed infinite 404 network request loop causing browser freezing when 3D models were missing/loading. AssetManager now caches missing models and tracks inflight requests.
+- **Bugfix**: Fixed 3D models sometimes rendering as 2D billboard sprites due to async load delays. EntityRenderer now tracks asset states and actively swaps sprites for meshes when the model becomes available.
+- **Bugfix**: Fixed erratic camera wobbling ("wonkiness") during movement. CameraManager now calculates a single smooth ocusPoint rather than interpolating both the position and look target simultaneously, preventing rotational jitter.
+- **Bugfix**: Fixed .fbx to .glb in-browser conversion crashing on external missing textures. The exporter now sanitizes and strips unresolvable image data so the mesh successfully uploads.
+
 ## [2.1.993] - 2026-09-25
 - **Bugfix**: 3D models now load in-game — `visualData` was not passed to `hydratePlayer` during character load, so the renderer never received the model URL.
 - **Bugfix**: Multi-class archetypes (e.g. WARRIOR,MAGE) no longer break character creation — class validation now splits on comma and validates the primary class.
@@ -6716,5 +6722,6 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 - Added 3D Model modular parameters (isModular, partOfSet, skeletonConnectionPoints) to WorldModelSelector and integrated it into the Item Studio.
 - Expanded NPC Studio to support Companion, Mercenary, and Trainer (with party builder) roles.
 - Added local fbx2gltf conversion script for 3D character pipeline.
+
 
 
