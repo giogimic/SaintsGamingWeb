@@ -405,10 +405,10 @@ if 'depends_on:' not in c:
   SITE_URL="https://$DOMAIN"
   
   # --- Admin Account ---
-  ADMIN_USER=$(whiptail --title "Admin Account" --inputbox "Enter Admin Username:" 10 60 "Admin" 3>&1 1>&2 2>&3)
+  export ADMIN_USER=$(whiptail --title "Admin Account" --inputbox "Enter Admin Username:" 10 60 "Admin" 3>&1 1>&2 2>&3)
   if [ $? -ne 0 ]; then exit 1; fi
   while true; do
-      ADMIN_PASS=$(whiptail --title "Admin Password" --passwordbox "Enter Admin Password (min 6 chars):" 10 60 3>&1 1>&2 2>&3)
+      export ADMIN_PASS=$(whiptail --title "Admin Password" --passwordbox "Enter Admin Password (min 6 chars):" 10 60 3>&1 1>&2 2>&3)
       if [ $? -ne 0 ]; then exit 1; fi
       if [ ${#ADMIN_PASS} -lt 6 ]; then
           whiptail --msgbox "Password must be at least 6 characters." 8 40
@@ -421,7 +421,7 @@ if 'depends_on:' not in c:
           whiptail --msgbox "Passwords do not match. Please try again." 8 40
       fi
   done
-  ADMIN_EMAIL=$(whiptail --title "Admin Email" --inputbox "Enter Admin Email:" 10 60 "noreply@$DOMAIN" 3>&1 1>&2 2>&3)
+  export ADMIN_EMAIL=$(whiptail --title "Admin Email" --inputbox "Enter Admin Email:" 10 60 "noreply@$DOMAIN" 3>&1 1>&2 2>&3)
   
   # --- Discord Auth (Optional) ---
   DISCORD_ID=""

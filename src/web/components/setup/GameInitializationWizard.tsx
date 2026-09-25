@@ -35,9 +35,9 @@ export function GameInitializationWizard({ isReinit = false }: { isReinit?: bool
   const [diagnosticEvents, setDiagnosticEvents] = useState<DiagnosticEvent[]>([]);
 
   const [gameDefinition, setGameDefinition] = useState<GameDefinitionData>({
-    name: 'Saints Adventure',
-    description: 'A 2.5D multiplayer 3D voxel MMO world filled with quests, monsters, and player creation.',
-    genre: 'CREATURE_MMO',
+    name: 'The Lobby',
+    description: 'EARLY DEV',
+    genre: 'HYBRID_MMO',
     style: 'SAINTS_HYBRID',
     defaultCameraMode: 'DYNAMIC',
     defaultBlockSizePx: 64,
