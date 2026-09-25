@@ -12,6 +12,7 @@ import {
   CharacterComponentCategory,
   CharacterBaseBodyType,
 } from '@/shared/game/assetImportProfiles';
+import { getAnimationProfile } from '@/shared/game/animationProfiles';
 
 // ── Types ────────────────────────────────────────────────────────────
 interface Props {
@@ -208,6 +209,44 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
     };
     return status;
   }, [roles, boneMap, attachments, animMap, materialConfig, additionalItems, animationProfileId]);
+
+  // Compute available animation clip names
+  const availableClipNames = useMemo(() => {
+    const names = new Set<string>();
+    if (parsedGLB) {
+      parsedGLB.animations.forEach(a => names.add(a.name));
+    }
+    if (animationProfileId) {
+      const profile = getAnimationProfile(animationProfileId);
+      if (profile) {
+        profile.availableClips.forEach(c => names.add(c));
+      }
+    }
+    return Array.from(names).sort();
+  }, [parsedGLB, animationProfileId]);
+
+  // Handle automatic prepopulation of animation map based on selected profile
+  useEffect(() => {
+    if (animationProfileId) {
+      const profile = getAnimationProfile(animationProfileId);
+      if (profile) {
+        const newMap = { ...animMap };
+        let changed = false;
+        
+        for (const sa of STANDARD_ANIMS) {
+          const slotKey = sa.toLowerCase().replace(/ /g, '_') as any;
+          const mapping = profile.slotMap[slotKey] || (profile.slotMap as any)[sa.toLowerCase()];
+          if (mapping && availableClipNames.includes(mapping.clip) && !newMap[sa]) {
+            newMap[sa] = mapping.clip;
+            changed = true;
+          }
+        }
+        if (changed) {
+          setAnimMap(newMap);
+        }
+      }
+    }
+  }, [animationProfileId, availableClipNames]);
 
   // ── GLB Parsing ────────────────────────────────────────────────────
   useEffect(() => {
@@ -887,7 +926,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                             className="bg-black/50 border border-slate-700 rounded px-1.5 py-1 text-[10px] text-white cursor-pointer focus:border-amber-600/60 focus:outline-none"
                           >
                             <option value="">-- None --</option>
-                            {parsedGLB.animations.map(a => <option key={a.name} value={a.name}>{a.name}</option>)}
+                            {availableClipNames.map(name => <option key={name} value={name}>{name}</option>)}
                           </select>
                         </div>
                       );
