@@ -67,11 +67,30 @@ export class EntityRenderer {
     const smoothFactor = 1.0 - Math.exp(-INTERPOLATION_SPEED * dt);
     const now = Date.now();
 
+    const getEntityAssetInfo = (profileId: string | undefined, defaultKind: string) => {
+      let isModel = profileId?.endsWith('.glb') || profileId?.endsWith('.gltf') || profileId?.endsWith('.fbx');
+      let resolvedUrl = profileId ? resolveEntitySpriteUrl(profileId, { kind: defaultKind as any }) : undefined;
+      let presentationType = profileId?.includes('wrapped') ? '2D_WRAPPED' : '2D_SPRITE';
+
+      if (profileId && profileId.length >= 20 && !profileId.includes('.')) {
+        const asset = AssetManager.getInstance().getAssetSync(profileId);
+        if (asset) {
+          isModel = asset.type === 'MODEL' || (asset.source && (asset.source.endsWith('.glb') || asset.source.endsWith('.gltf')));
+          if (asset.source) resolvedUrl = asset.source;
+          if (asset.presentation && (asset.presentation as any).characterPresentationType) {
+            presentationType = (asset.presentation as any).characterPresentationType;
+          } else if (isModel) {
+            presentationType = '3D_MODEL';
+          }
+        }
+      }
+      return { isModel: !!isModel, resolvedUrl, presentationType };
+    };
+
     // 1. Local Player
     const player = usePlayerStore.getState().player;
     const is3D = player.position.z !== undefined;
-    const isModel = player.assetProfileId?.endsWith('.glb') || player.assetProfileId?.endsWith('.gltf') || player.assetProfileId?.endsWith('.fbx');
-    const resolvedUrl = player.assetProfileId ? resolveEntitySpriteUrl(player.assetProfileId, { kind: 'player' }) : undefined;
+    const pAssetInfo = getEntityAssetInfo(player.assetProfileId, 'player');
 
     this.upsertSprite('local_player', {
       x: player.position.x,
@@ -79,11 +98,10 @@ export class EntityRenderer {
       z: is3D ? player.position.y : undefined,
       name: player.name || 'You',
       color: new BABYLON.Color3(0.2, 0.6, 1),
-      spriteUrl: isModel ? undefined : resolvedUrl,
-      modelUrl: isModel ? resolvedUrl : undefined,
+      spriteUrl: pAssetInfo.isModel ? undefined : pAssetInfo.resolvedUrl,
+      modelUrl: pAssetInfo.isModel ? pAssetInfo.resolvedUrl : undefined,
       isPlayer: true,
-      // Default to 2D_SPRITE unless we have metadata indicating otherwise (todo: fetch from player store)
-      presentationType: player.assetProfileId?.includes('wrapped') ? '2D_WRAPPED' : '2D_SPRITE',
+      presentationType: pAssetInfo.presentationType,
     }, now);
 
     // 2. Remote Players
@@ -96,46 +114,42 @@ export class EntityRenderer {
         const elapsed = (now - rp.lastUpdateMs) / 1000.0;
         if (elapsed > 0 && elapsed < 2) {
           px += rp.vx * elapsed;
-          // Note: if 3D, vz would be depth velocity. Assuming vy is used for depth if vz is undefined.
           const depthVel = rp.vz !== undefined ? rp.vz : rp.vy;
           py += depthVel * elapsed;
         }
       }
 
-      const isModel = rp.assetProfileId?.endsWith('.glb') || rp.assetProfileId?.endsWith('.gltf') || rp.assetProfileId?.endsWith('.fbx');
-      const resolvedUrl = rp.assetProfileId ? resolveEntitySpriteUrl(rp.assetProfileId, { kind: 'player' }) : undefined;
+      const rpAssetInfo = getEntityAssetInfo(rp.assetProfileId, 'player');
 
       this.upsertSprite(`remote_${id}`, {
         x: px,
         y: py,
-        z: rp.y, // Remote players send vertical pos in y as well
+        z: rp.y,
         name: rp.name || 'Player',
         color: new BABYLON.Color3(1, 0.6, 0.2),
-        spriteUrl: isModel ? undefined : resolvedUrl,
-        modelUrl: isModel ? resolvedUrl : undefined,
+        spriteUrl: rpAssetInfo.isModel ? undefined : rpAssetInfo.resolvedUrl,
+        modelUrl: rpAssetInfo.isModel ? rpAssetInfo.resolvedUrl : undefined,
         chatMessage: rp.chatMessage,
         isPlayer: true,
-        presentationType: rp.assetProfileId?.includes('wrapped') ? '2D_WRAPPED' : '2D_SPRITE',
+        presentationType: rpAssetInfo.presentationType,
       }, now);
     }
 
     // 3. Map Entities (NPCs, Creatures)
     const mapEntities = useWorldStore.getState().mapEntities as any[];
     for (const ent of mapEntities) {
-      const entitySpriteUrl = ent.spriteKey ? resolveEntitySpriteUrl(ent.spriteKey) : undefined;
+      const entAssetInfo = getEntityAssetInfo(ent.spriteKey, 'npc');
       const entityColor = ent.type === 'NPC'
         ? new BABYLON.Color3(0.2, 0.8, 0.3)
         : new BABYLON.Color3(0.8, 0.2, 0.2);
-
-      const isModel = ent.spriteKey?.endsWith('.glb') || ent.spriteKey?.endsWith('.gltf') || ent.spriteKey?.endsWith('.fbx');
 
       this.upsertSprite(`entity_${ent.id}`, {
         x: ent.position.x,
         y: ent.position.z !== undefined ? ent.position.z : ent.position.y,
         name: ent.name || ent.type,
         color: entityColor,
-        spriteUrl: isModel ? undefined : entitySpriteUrl,
-        modelUrl: isModel ? entitySpriteUrl : undefined,
+        spriteUrl: entAssetInfo.isModel ? undefined : entAssetInfo.resolvedUrl,
+        modelUrl: entAssetInfo.isModel ? entAssetInfo.resolvedUrl : undefined,
       }, now);
     }
 

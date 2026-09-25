@@ -194,7 +194,7 @@ export default function GameOptionsMenu({
   // Camera Settings
   
 
-  const inGameCameraStyle = clientSettings?.camera?.profile || 'adaptive';
+  const inGameCameraStyle = clientSettings?.camera?.profile || 'dynamic';
   const inGameFollowSmoothing = Math.round((clientSettings?.camera?.smoothing ?? 0.35) * 100);
   const inGameBorderClamping = clientSettings?.camera?.borderClamping ?? true;
   const inGameVignette = clientSettings?.camera?.vignetteEnabled ?? true;
@@ -505,10 +505,10 @@ export default function GameOptionsMenu({
 
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { id: 'adaptive', label: 'Dynamic (Auto)', desc: 'Auto-switches on zoom' },
-                      { id: 'firstPerson', label: 'First Person', desc: 'Locked immersive POV' },
-                      { id: 'thirdPerson', label: 'Third Person', desc: 'Locked over-shoulder view' },
-                      { id: 'overview2_5d', label: '2.5D Isometric', desc: 'Locked classic diagonal' },
+                      { id: 'dynamic', label: 'Dynamic (Auto)', desc: 'Auto-switches on zoom' },
+                      { id: 'firstperson', label: 'First Person', desc: 'Locked immersive POV' },
+                      { id: 'follow45', label: 'Third Person', desc: 'Locked over-shoulder view' },
+                      { id: 'isometric', label: '2.5D Isometric', desc: 'Locked classic diagonal' },
                     ].map((mode) => {
                       const isSelected = inGameCameraStyle === mode.id;
                       return (
@@ -773,14 +773,14 @@ export default function GameOptionsMenu({
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {[
-                      { key: 'W, A, S, D', action: 'Move Operative' },
+                      { key: 'W, A, S, D', action: 'Move Character' },
                       { key: 'Space / E', action: 'Interact / Talk' },
                       { key: '1 â€“ 8', action: 'Trigger Hotbar Action' },
                       { key: 'Tab', action: 'Target Nearest Enemy' },
                       { key: 'Q', action: 'Companion Pie Menu' },
                       { key: 'I', action: 'Inventory Dock' },
-                      { key: 'C', action: 'Character Vitals' },
-                      { key: 'M', action: 'World Map Radar' },
+                      { key: 'C', action: 'Character Stats' },
+                      { key: 'M', action: 'World Map' },
                       { key: 'Enter', action: 'Open Chat Window' },
                       { key: 'Escape', action: 'System Menu' },
                     ].map((b) => (

@@ -11,7 +11,7 @@ export const ClientSettingsSchema = z.object({
   }).default({}),
 
   camera: z.object({
-    profile: z.enum(['firstPerson', 'thirdPerson', 'overview2_5d', 'adaptive']).default('adaptive'),
+    profile: z.enum(['firstperson', 'follow45', 'isometric', 'dynamic']).default('dynamic'),
     fov: z.number().min(60).max(120).default(90),
     thirdPersonDistance: z.number().min(2).max(20).default(6),
     cameraShake: z.boolean().default(true),
@@ -69,7 +69,7 @@ export const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
     keybinds: {},
   },
   camera: {
-    profile: 'adaptive',
+    profile: 'dynamic',
     fov: 90,
     thirdPersonDistance: 6,
     cameraShake: true,

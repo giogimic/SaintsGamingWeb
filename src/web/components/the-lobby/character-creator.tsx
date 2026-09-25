@@ -204,6 +204,7 @@ export function CharacterCreator({
     if (allSprites.length === 0) return { dynamicBases: [], dynamicCapes: [], dynamicArmor: [], dynamicHats: [] };
 
     const formatLabel = (id: string, prefix: string = '') => {
+      if (spriteNames[id]) return spriteNames[id];
       let lbl = id.replace(prefix, '').replace(/-/g, ' ');
       return lbl.charAt(0).toUpperCase() + lbl.slice(1);
     };
@@ -272,14 +273,18 @@ export function CharacterCreator({
     void loadData();
   }, []);
 
+  const [spriteNames, setSpriteNames] = useState<Record<string, string>>({});
+
   // Load sprite catalog lazily
   const loadSprites = async () => {
     if (allSprites.length > 0) return;
     try {
       const { CHARACTER_SPRITES } = await import('./data/sprites');
       let customList: string[] = [];
+      let nameMap: Record<string, string> = {};
       try {
-        const res = await fetch('/api/assets?type=CHARACTER&showInCharacterCreation=true&limit=100');
+        // Fetch characters and modular components
+        const res = await fetch('/api/assets?limit=300');
         if (res.ok) {
           const data = await res.json();
           customList = (data.items || [])
@@ -287,14 +292,20 @@ export function CharacterCreator({
               const tags = Array.isArray(a.tags) ? a.tags : [];
               const isChar = a.type === 'CHARACTER' || a.type === 'SPRITE' || tags.includes('character') || tags.includes('hero');
               const isPlayable = a.isPlayable || a.showInCharacterCreation || tags.includes('playable') || tags.includes('player');
-              return isChar && isPlayable;
+              const isModular = a.isModularComponent || tags.includes('modular') || tags.includes('hair') || tags.includes('head');
+              return (isChar && isPlayable) || isModular;
             })
-            .map((a: any) => a.source || a.slug)
+            .map((a: any) => {
+              const id = a.source || a.slug;
+              if (id && a.name) nameMap[id] = a.name;
+              return id;
+            })
             .filter(Boolean);
         }
       } catch {
         /* ignore */
       }
+      setSpriteNames(nameMap);
       const combined = Array.from(new Set([...customList, ...CHARACTER_SPRITES]));
       setAllSprites(combined);
     } catch {

@@ -159,6 +159,15 @@ export class AssetManager {
     };
   }
 
+  getAssetSync(id: string): GameAssetItem | null {
+    if (this.cache.has(id)) {
+      return this.cache.get(id)!;
+    }
+    // Fire off async fetch if not in cache so it will be there soon
+    this.getAsset(id).catch(console.error);
+    return null;
+  }
+
   async getAsset(id: string): Promise<GameAssetItem | null> {
     if (this.cache.has(id)) {
       return this.cache.get(id)!;

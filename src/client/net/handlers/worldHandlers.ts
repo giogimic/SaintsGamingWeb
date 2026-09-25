@@ -96,6 +96,7 @@ export function onTileChanged(data: TileChangedPayload): void {
 export function onChunkData(data: ChunkDataPayload): void {
   if (data.data !== undefined) {
     mapMesher.loadEncodedChunk(data.data);
+    worldStreamer.setChunkResidency(data.cx, data.cy, data.cz, 'MESHED');
     return;
   }
   if (data.low !== undefined && data.high !== undefined) {

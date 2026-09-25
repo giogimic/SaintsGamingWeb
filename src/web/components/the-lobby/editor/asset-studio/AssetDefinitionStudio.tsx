@@ -887,10 +887,25 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                     accept=".glb,.gltf" 
                     onChange={e => {
                       if (!e.target.files) return;
+                      
+                      const guessCategory = (name: string): string => {
+                        const n = name.toLowerCase();
+                        if (n.includes('hair')) return 'hair';
+                        if (n.includes('head') || n.includes('helmet') || n.includes('hat') || n.includes('mask') || n.includes('face')) return 'head';
+                        if (n.includes('shirt') || n.includes('chest') || n.includes('torso') || n.includes('body') || n.includes('jacket') || n.includes('armor')) return 'chest';
+                        if (n.includes('leg') || n.includes('pant') || n.includes('trouser')) return 'legs';
+                        if (n.includes('foot') || n.includes('feet') || n.includes('shoe') || n.includes('boot')) return 'feet';
+                        if (n.includes('hand') || n.includes('glove') || n.includes('gauntlet')) return 'hands';
+                        if (n.includes('cape') || n.includes('back') || n.includes('cloak') || n.includes('wing')) return 'back';
+                        if (n.includes('weapon') || n.includes('sword') || n.includes('bow') || n.includes('staff') || n.includes('axe')) return 'weapon_main';
+                        if (n.includes('shield')) return 'weapon_off';
+                        return 'chest'; // default fallback
+                      };
+
                       const newItems = Array.from(e.target.files).map(f => ({
                         id: Math.random().toString(36).substr(2, 9),
                         file: f,
-                        category: 'hair'
+                        category: guessCategory(f.name)
                       }));
                       setAdditionalItems(prev => [...prev, ...newItems]);
                     }}

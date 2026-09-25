@@ -286,6 +286,9 @@ export class WorldStreamer {
       }
     }
   }
+  public setChunkResidency(cx: number, cy: number, cz: number, state: ChunkResidencyState) {
+    this.chunkResidency.set(this.getChunkKey(cx, cy, cz), state);
+  }
 }
 
 export const worldStreamer = WorldStreamer.getInstance();

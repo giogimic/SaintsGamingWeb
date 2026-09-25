@@ -151,3 +151,10 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 - **Studio Audit & Menus:** Added Audit Check to StudioMenuBar; officially deprecated the 2D Animation Studio and Spawn Editor in favor of 3D GLB capabilities.
 - **UI Coherence:** The Navbar and Global Bottom Bar automatically hide when editing; integrated 3D empty Mesh placeholder rendering.
 - **Cleanup:** Purged legacy SA-MP/FiveM/UCP references across project.
+
+### v2.1.991
+- **Settings Audit:** Cleaned up client settings schema to use correct camera profiles (dynamic, irstperson, ollow45, isometric).
+- **Jargon Removal:** Removed military/sci-fi jargon ("Move Operative", "World Map Radar") from the keybinds menu, strictly adhering to the Saints Gaming laid-back MMO theme.
+- **Procedural Generation Fix:** Fixed an issue where procedural/fractal maps would repeatedly request chunks on the client by correctly updating the `WorldStreamer` chunk residency state to `MESHED`.
+- **Character Creator:** Improved asset studio sorting to automatically categorize modular clothing/hair based on filenames and updated character creator to display human-readable names for custom modular items.
+- **Rendering & Viewport fixes:** Fixed mobile browser bottom cutoff by updating viewport scaling to `100dvh` and clamped max zoom out to 15 in dynamic/ortho modes.

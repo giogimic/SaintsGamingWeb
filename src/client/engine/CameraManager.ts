@@ -239,9 +239,8 @@ export class CameraManager {
       case 'follow45':
         this.camera.mode = BABYLON.Camera.PERSPECTIVE_CAMERA;
         this.camera.fov = this.currentFov;
-        this.profile.pitch = Math.PI / 4;
         this.profile.distance = 16;
-        this.yaw = 0;
+        // Don't reset yaw or pitch
         break;
 
       case 'firstperson':
@@ -305,13 +304,13 @@ export class CameraManager {
     if (this.settings.playerCameraStyle === 'dynamic') {
       // Dynamic mode transitions between first-person, third-person, and isometric based on zoom level
       const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
-      const newZoom = Math.max(3, Math.min(30, this.currentZoom * zoomFactor));
+      const newZoom = Math.max(3, Math.min(15, this.currentZoom * zoomFactor));
       this.updateOrthoSize(newZoom);
       this.updateDynamicCamera();
     } else if (this.camera?.mode === BABYLON.Camera.ORTHOGRAPHIC_CAMERA) {
       // Zoom ortho for fixed 2.5d modes
       const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
-      const newZoom = Math.max(3, Math.min(30, this.currentZoom * zoomFactor));
+      const newZoom = Math.max(3, Math.min(15, this.currentZoom * zoomFactor));
       this.updateOrthoSize(newZoom);
     } else {
       // Zoom distance for fixed 3D modes (third-person/free)
@@ -375,9 +374,10 @@ export class CameraManager {
         const sens = (this.settings.orbitSensitivity || 1.0) * 0.002;
         this.yaw += delta.x * sens * (this.settings.invertOrbitX ? -1 : 1);
         
-        // Only allow pitch to change in free/firstperson
+        // Only allow pitch to change when not in isometric mode
         const style = this.settings.playerCameraStyle;
-        if (style === 'free' || style === 'firstperson') {
+        const isIsometric = (style === 'dynamic' && this.currentZoom >= 12.0) || style === 'topdown' || style === 'isometric';
+        if (!isIsometric) {
           this.pitch += delta.y * sens * (this.settings.invertOrbitY ? 1 : -1);
           this.pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, this.pitch));
           this.profile.pitch = this.pitch;

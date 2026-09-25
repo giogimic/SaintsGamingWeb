@@ -77,10 +77,10 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-[100dvh] antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+      <body className="min-h-[100dvh] flex flex-col" suppressHydrationWarning>
         <JsonLd />
         <ThemeProvider
           attribute="class"
