@@ -6,6 +6,7 @@ import { AssetInspector3D, AssetInspector3DRef } from './AssetInspector3D';
 import { Loader2, CheckCircle2, Box, Users, Puzzle, Bone, Maximize2, AlertTriangle } from 'lucide-react';
 import { useGameStore } from '../../store';
 import { AssetManager } from '@/engine/assets/AssetManager';
+import { RegistryCombobox } from '../components/RegistryCombobox';
 import {
   CHARACTER_COMPONENT_CATEGORIES,
   CHARACTER_BASE_BODY_TYPES,
@@ -927,10 +928,9 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                           {mapped && <span className="mr-1">▶</span>}
                           {action.label}
                         </label>
-                        <select
+                        <RegistryCombobox
                           value={selectedChoiceId}
-                          onChange={e => {
-                            const choiceId = e.target.value;
+                          onChange={choiceId => {
                             setAnimMap(prev => {
                               const next = { ...prev };
                               if (choiceId) next[action.key] = choiceId;
@@ -943,15 +943,15 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                               : -1;
                             setActiveAnimationIndex(index >= 0 ? index : undefined);
                           }}
-                          className="bg-black/50 border border-slate-700 rounded px-1.5 py-1 text-[10px] text-white cursor-pointer focus:border-amber-600/60 focus:outline-none"
-                        >
-                          <option value="">-- None --</option>
-                          {choicesForAction.map(choice => (
-                            <option key={choice.id} value={choice.id}>
-                              {choice.clip} — {choice.sourceLabel}
-                            </option>
-                          ))}
-                        </select>
+                          options={[
+                            { value: '', label: '-- None --' },
+                            ...choicesForAction.map(choice => ({
+                              value: choice.id,
+                              label: `${choice.clip} — ${choice.sourceLabel}`
+                            }))
+                          ]}
+                          className="mt-1"
+                        />
                         {selectedChoice && (
                           <div className="mt-1 text-[9px] text-slate-500 truncate" title={selectedChoice.sourcePath || selectedChoice.sourceLabel}>
                             {selectedChoice.sourceKind === 'embedded'

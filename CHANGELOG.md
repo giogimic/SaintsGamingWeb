@@ -1,3 +1,6 @@
+## [2.2.011] - 2026-09-26
+- **Searchable Animations Dropdown**: Replaced the native HTML `<select>` dropdown in the Archetype/Asset Definition Studio with a custom searchable `RegistryCombobox`. When mapping animations to actions, you can now scroll through the list or type into the box to instantly filter and find the exact animation clip you want.
+
 ## [2.2.010] - 2026-09-26
 - **Dynamic Camera Heights**: `CameraManager.ts` now automatically queries the bounding box size of the local player's 3D mesh (imported in `EntityRenderer.ts`) to compute eye height and chest height. This prevents the camera from appearing to attach at the feet for custom imported Archetypes of different scales (like Paragon heroes).
 
