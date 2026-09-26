@@ -322,6 +322,8 @@ export class EntityRenderer {
           }
 
           mesh.computeWorldMatrix(true);
+          modelWrapper.computeWorldMatrix(true); // CRITICAL: Must compute wrapper matrix before children
+          
           const allMeshes = modelWrapper.getChildMeshes(false);
           allMeshes.forEach(m => {
             m.computeWorldMatrix(true);
@@ -400,6 +402,8 @@ export class EntityRenderer {
             const walkAnim = result.animationGroups.find(a => a.name.toLowerCase() === "run_fwd" || a.name.toLowerCase().includes("run") || a.name.toLowerCase().includes("walk"));
             const idleAnim = result.animationGroups.find(a => a.name.toLowerCase() === "idle" || a.name.toLowerCase().includes("idle"));
             const startAnim = data.isMoving ? (walkAnim || result.animationGroups[0]) : (idleAnim || result.animationGroups[0]);
+            
+            result.animationGroups.forEach(a => a.stop());
             if (startAnim) {
               startAnim.play(startAnim.loopAnimation ?? true);
             }

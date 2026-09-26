@@ -4133,6 +4133,7 @@ export class BabylonEngine {
               modelWrapper.scaling = new Vector3(-actorScale, actorScale, actorScale);
               
               root.parent = modelWrapper;
+              modelWrapper.computeWorldMatrix(true); // CRITICAL: Must compute wrapper matrix before bounds
               
               if (result.animationGroups && result.animationGroups.length > 0) {
                 allAnimationGroups.push(...result.animationGroups);
@@ -4142,6 +4143,7 @@ export class BabylonEngine {
             // --- Auto-detect model visual height for camera attachment ---
             // Force world matrices and bounding info to recompute after parenting + scaling
             currentMesh.computeWorldMatrix(true);
+            
             const allMeshes = currentMesh.getChildMeshes(false);
             allMeshes.forEach(m => {
               m.computeWorldMatrix(true);
