@@ -1,3 +1,6 @@
+## [2.2.009] - 2026-09-26
+- **Bugfix**: Fixed `CameraManager.ts` potentially undefined `y` coordinate crash during production build terrain height fallbacks.
+
 ## [2.2.008] - 2026-09-26
 - **Feature**: Integrated 32 Paragon Hero animation `.glb` sequences into the core `ANIMATION_PROFILES` engine registry.
 - **Feature**: Dynamically converted and integrated raw `FBX` Mocap Mobility Packs into `.glb` formats, explicitly mapping base movement, jogging, crouching, and jumping cycles to standard engine slots in `animationProfiles.ts`.

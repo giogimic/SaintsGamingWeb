@@ -369,14 +369,14 @@ export class CameraManager {
     const offsetX = -horizDist * Math.sin(currentYaw);
     const offsetZ = -horizDist * Math.cos(currentYaw);
 
-    this.camera.position = new BABYLON.Vector3(x + offsetX, y + camY, z + offsetZ);
+    this.camera.position = new BABYLON.Vector3(x + offsetX, terrainY + camY, z + offsetZ);
     
     const firstPersonTarget = new BABYLON.Vector3(
       x + Math.sin(currentYaw) * Math.cos(currentPitch) * 10,
-      y + PLAYER_EYE_HEIGHT + Math.sin(currentPitch) * 10,
+      terrainY + PLAYER_EYE_HEIGHT + Math.sin(currentPitch) * 10,
       z + Math.cos(currentYaw) * Math.cos(currentPitch) * 10
     );
-    const thirdPersonTarget = new BABYLON.Vector3(x, y + PLAYER_CHEST_HEIGHT, z);
+    const thirdPersonTarget = new BABYLON.Vector3(x, terrainY + PLAYER_CHEST_HEIGHT, z);
 
     const targetLookAt = BABYLON.Vector3.Lerp(thirdPersonTarget, firstPersonTarget, firstPersonWeight);
     this.camera.setTarget(targetLookAt);

@@ -44,7 +44,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "2.2.008",
+  siteVersion = "2.2.009",
   gameTitle = "The Lobby",
 }: {
   session: any | null;
