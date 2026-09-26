@@ -295,21 +295,26 @@ export class EntityRenderer {
             return;
           }
           const grounding = data.transform?.grounding ?? 0;
+          
+          // Use a modelWrapper to isolate the scale from glTF animation root nodes
+          const modelWrapper = new BABYLON.TransformNode(`modelWrapper_${id}`, this.scene);
+          modelWrapper.parent = mesh;
+          
           result.meshes.forEach((m) => {
             if (!m.parent) {
-              m.parent = mesh;
+              m.parent = modelWrapper;
               m.position.y += grounding;
             }
           });
           result.transformNodes.forEach((t) => {
             if (!t.parent) {
-              t.parent = mesh;
+              t.parent = modelWrapper;
               t.position.y += grounding;
             }
           });
           
           const scale = data.transform?.scale ?? 0.8;
-          mesh.scaling = new BABYLON.Vector3(scale, scale, scale);
+          modelWrapper.scaling = new BABYLON.Vector3(scale, scale, scale);
           
           const rotY = data.transform?.rotationY ?? 0;
           if (rotY !== 0) {
@@ -317,23 +322,88 @@ export class EntityRenderer {
           }
 
           mesh.computeWorldMatrix(true);
-          let localMaxY = 0;
-          result.meshes.forEach((m) => {
+          const allMeshes = modelWrapper.getChildMeshes(false);
+          allMeshes.forEach(m => {
             m.computeWorldMatrix(true);
-            const bbox = m.getBoundingInfo().boundingBox;
-            const maxY = bbox.maximumWorld.y - mesh.position.y;
-            if (maxY > localMaxY) {
-              localMaxY = maxY;
+            if (m.refreshBoundingInfo) {
+              m.refreshBoundingInfo({ applySkeleton: true });
+            }
+            const skeleton = (m as any).skeleton;
+            if (skeleton && skeleton.computeAbsoluteTransforms) {
+              skeleton.computeAbsoluteTransforms();
             }
           });
-          current.computedHeight = localMaxY > 0.1 ? localMaxY : 2.0;
+
+          let modelVisualHeight = 2.0;
+          let headBoneHeight: number | null = null;
+          
+          // 1. Try skeleton-based Head bone detection
+          for (const childMesh of allMeshes) {
+            const skeleton = (childMesh as any).skeleton;
+            if (skeleton && skeleton.bones) {
+              const headBone = skeleton.bones.find((b: any) => {
+                const name = b.name?.toLowerCase() || '';
+                return name === 'head' || name.includes('head') || name.includes('bip01 head');
+              });
+              if (headBone) {
+                try {
+                  const boneMatrix = headBone.getWorldMatrix();
+                  const boneWorldPos = BABYLON.Vector3.TransformCoordinates(BABYLON.Vector3.Zero(), boneMatrix);
+                  const entityWorldY = mesh.getAbsolutePosition().y;
+                  headBoneHeight = boneWorldPos.y - entityWorldY;
+                  if (headBoneHeight > 0.01) {
+                    modelVisualHeight = headBoneHeight;
+                  }
+                } catch {}
+              }
+            }
+          }
+          
+          // 2. Fallback to bounding box + Auto-grounding
+          if (headBoneHeight === null || headBoneHeight <= 0.01) {
+            let minY = Infinity;
+            let maxY = -Infinity;
+            for (const childMesh of allMeshes) {
+              if (!(childMesh as any).getBoundingInfo) continue;
+              try {
+                const bi = (childMesh as any).getBoundingInfo();
+                const worldMin = bi.boundingBox.minimumWorld;
+                const worldMax = bi.boundingBox.maximumWorld;
+                if (worldMin.y < minY) minY = worldMin.y;
+                if (worldMax.y > maxY) maxY = worldMax.y;
+              } catch {}
+            }
+            
+            if (minY < Infinity && maxY > -Infinity) {
+              const entityWorldY = mesh.getAbsolutePosition().y;
+              const totalHeight = maxY - minY;
+              const topOfModel = maxY - entityWorldY;
+              
+              modelVisualHeight = Math.max(0.1, topOfModel * 0.85);
+              
+              // Shift the wrapper so the feet actually touch the ground
+              const feetOffset = minY - entityWorldY;
+              if (Math.abs(feetOffset) > 0.01 && totalHeight > 0.01) {
+                modelWrapper.position.y -= feetOffset;
+              }
+            }
+          }
+          
+          current.computedHeight = modelVisualHeight;
           if (data.transform?.cameraYOffset) {
             current.cameraYOffset = data.transform.cameraYOffset;
           }
 
           if (result.animationGroups.length > 0) {
             current.animationGroups = result.animationGroups;
-            // The animation will be triggered by the next upsertSprite tick
+            // Play initial animation immediately, otherwise it stays in T-pose until the next movement update
+            const walkAnim = result.animationGroups.find(a => a.name.toLowerCase() === "run_fwd" || a.name.toLowerCase().includes("run") || a.name.toLowerCase().includes("walk"));
+            const idleAnim = result.animationGroups.find(a => a.name.toLowerCase() === "idle" || a.name.toLowerCase().includes("idle"));
+            const startAnim = data.isMoving ? (walkAnim || result.animationGroups[0]) : (idleAnim || result.animationGroups[0]);
+            if (startAnim) {
+              startAnim.play(startAnim.loopAnimation ?? true);
+            }
+            current.currentAnimationName = data.isMoving ? "run_fwd" : "idle";
           } else {
             current.animationGroups = [];
           }
