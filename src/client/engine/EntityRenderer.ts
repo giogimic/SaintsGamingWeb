@@ -93,7 +93,14 @@ export class EntityRenderer {
           if (asset.presentation) {
             const pres = asset.presentation as any;
             if (pres.characterPresentationType) presentationType = pres.characterPresentationType;
-            if (pres.transform) transform = pres.transform;
+            if (pres.modelScale || pres.grounding || pres.cameraHeightOffset) {
+              transform = {
+                scale: pres.modelScale ? Number(pres.modelScale) : undefined,
+                rotationY: pres.modelRotationY ? Number(pres.modelRotationY) : undefined,
+                grounding: pres.grounding ? Number(pres.grounding) : undefined,
+                cameraYOffset: pres.cameraHeightOffset ? Number(pres.cameraHeightOffset) : undefined
+              };
+            }
             if (pres.animations) animations = pres.animations;
           } else if (isModel) {
             presentationType = '3D_MODEL';
@@ -462,9 +469,14 @@ export class EntityRenderer {
             current.animationGroups.forEach(a => a.stop());
             if (nextAnim) {
               nextAnim.play(nextAnim.loopAnimation ?? true);
+              console.warn(`[EntityRenderer] Playing animation: ${nextAnim.name}`);
+            } else {
+              console.warn(`[EntityRenderer] No initial animation found for state: ${data.isMoving ? "moving" : "idle"}`);
             }
             current.currentAnimationName = targetAnimName;
           }
+          
+          console.warn(`[EntityRenderer] Final Sprite Stats -> Scale: ${scale}, VisualHeight: ${modelVisualHeight}, AnimCount: ${current.animationGroups?.length}`);
         }).catch(async (err) => {
           let responseInfo: Record<string, unknown> = { url: data.modelUrl };
           try {
