@@ -4147,13 +4147,13 @@ export class BabylonEngine {
             const allMeshes = currentMesh.getChildMeshes(false);
             allMeshes.forEach(m => {
               m.computeWorldMatrix(true);
-              if (m.refreshBoundingInfo) {
-                m.refreshBoundingInfo({ applySkeleton: true });
-              }
               // Force skeletons to update as well for accurate bone reading
               const skeleton = (m as any).skeleton;
               if (skeleton && skeleton.computeAbsoluteTransforms) {
                 skeleton.computeAbsoluteTransforms();
+              }
+              if (m.refreshBoundingInfo) {
+                m.refreshBoundingInfo({ applySkeleton: true });
               }
             });
             
@@ -4209,25 +4209,10 @@ export class BabylonEngine {
                 
                 if (minY < Infinity && maxY > -Infinity) {
                   const entityWorldY = currentMesh.getAbsolutePosition().y;
-                  const totalHeight = maxY - minY;
-                  const topOfModel = maxY - entityWorldY;
+                  const topOfModel = Math.abs(maxY - entityWorldY);
                   
                   // Camera targets ~85% of model height (approximate eye level)
-                  // This works regardless of scale: 0.003 or 1.0 or 100
-                  modelVisualHeight = Math.max(0.1, topOfModel * 0.85);
-                  
-                  // If the model's feet aren't at entity origin, shift the wrapper down
-                  // so feet touch the ground (prevents floating or buried models)
-                  const feetOffset = minY - entityWorldY;
-                  if (Math.abs(feetOffset) > 0.01 && totalHeight > 0.01) {
-                    // Only adjust if offset is significant relative to model size
-                    const wrappers = currentMesh.getChildren() as TransformNode[];
-                    wrappers.forEach(wrapper => {
-                      if (wrapper.name.startsWith("modelWrapper_")) {
-                        wrapper.position.y -= feetOffset;
-                      }
-                    });
-                  }
+                  modelVisualHeight = Math.max(1.2, topOfModel * 0.85);
                 }
               }
             }
