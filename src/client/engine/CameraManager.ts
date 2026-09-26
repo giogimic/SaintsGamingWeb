@@ -213,30 +213,25 @@ export class CameraManager {
     if (this.settings.playerCameraStyle !== 'dynamic') return;
     const zoom = this.currentZoom || 10;
 
-    // Determine current effective mode to apply hysteresis
-    let currentEffectiveMode: Exclude<CameraStyle, 'dynamic'> = 'isometric';
-    if (this.camera && this.camera.mode === BABYLON.Camera.PERSPECTIVE_CAMERA) {
-      currentEffectiveMode = this.profile.distance === 0 ? 'firstperson' : 'follow45';
+    if (this.camera && this.camera.mode !== BABYLON.Camera.PERSPECTIVE_CAMERA) {
+      this.camera.mode = BABYLON.Camera.PERSPECTIVE_CAMERA;
     }
 
-    let targetMode = currentEffectiveMode;
-
-    // Use hysteresis to prevent flicker around boundaries
-    if (currentEffectiveMode === 'firstperson') {
-      if (zoom > 7.0) targetMode = 'follow45';
-    } else if (currentEffectiveMode === 'follow45') {
-      if (zoom < 6.0) targetMode = 'firstperson';
-      else if (zoom > 12.5) targetMode = 'isometric';
-    } else if (currentEffectiveMode === 'isometric') {
-      if (zoom < 11.5) targetMode = 'follow45';
+    if (zoom < 5.0) {
+      this.profile.distance = 0;
+      this.profile.pitch = 0;
+    } else if (zoom <= 12.0) {
+      const t = (zoom - 5.0) / 7.0; // 0 to 1
+      this.profile.distance = t * 14.0;
+      this.profile.pitch = t * (Math.PI / 4);
+    } else {
+      const t = Math.min(1.0, (zoom - 12.0) / 3.0); // 0 to 1
+      this.profile.distance = 14.0 + t * 6.0;
+      this.profile.pitch = (Math.PI / 4) + t * (Math.PI / 8); 
     }
 
-    this.applyInternalStyle(targetMode, snap);
-
-    if (targetMode === 'follow45') {
-      // Scale distance dynamically based on zoom (e.g. from 2 to 10)
-      this.profile.distance = (zoom - 6.5) * 1.5 + 2.0;
-      this.profile.pitch = Math.PI / 6; // Standard 3rd person pitch
+    if (snap) {
+      this.snapCameraTo(this.targetX, this.targetZ, this.targetY);
     }
   }
 
@@ -255,7 +250,7 @@ export class CameraManager {
         this.camera.mode = BABYLON.Camera.PERSPECTIVE_CAMERA;
         this.camera.fov = this.currentFov;
         this.profile.distance = 16;
-        // Don't reset yaw or pitch
+        this.profile.pitch = Math.PI / 6;
         break;
 
       case 'firstperson':
@@ -340,11 +335,11 @@ export class CameraManager {
 
   // ── Snap / Follow ──────────────────────────────────────────────────────────
 
-  public snapCameraTo(x: number, z: number, y: number = 0, is3D: boolean = false) {
+  public snapCameraTo(x: number, z: number, y?: number) {
     if (!this.camera) return;
 
-    let terrainY = y;
-    if (!is3D) {
+    let terrainY = y ?? 0;
+    if (y === undefined) {
       const world = mapMesher.getVoxelWorld();
       if (world) {
         terrainY = world.getTopSolidVoxelY(x, z) + world.originOffsetY;
@@ -420,14 +415,11 @@ export class CameraManager {
       const is3D = activeMap && (activeMap.mapType === 'VOXEL' || activeMap.mapType === 'FRACTAL' || activeMap.mapType === 'HYBRID');
       
       const px = player.position.x;
-      // If the map is 3D but the player position doesn't have a Z coordinate (e.g. legacy 2D protocol),
-      // we must map the 2D Y coordinate to Z in the exact same way EntityRenderer does.
-      // EntityRenderer: is3D ? data.y : -data.y. Since data.y gets player.position.y, targetZ = player.position.y.
       const pz = is3D ? (player.position.z !== undefined ? player.position.z : player.position.y) : -player.position.y;
-      const py = is3D ? (player.position.z !== undefined ? player.position.y : 0) : 0;
+      const py = is3D ? (player.position.z !== undefined ? player.position.y : undefined) : undefined;
 
       if (!this.snapped) {
-        this.snapCameraTo(px, pz, py, is3D);
+        this.snapCameraTo(px, pz, py);
         return;
       }
 
@@ -438,7 +430,7 @@ export class CameraManager {
       const smoothFactor = 1.0 - Math.exp(-factor * 60 * dt);
 
       let terrainY = this.targetY;
-      if (is3D) {
+      if (py !== undefined) {
         terrainY = py;
       } else {
         const world = mapMesher.getVoxelWorld();

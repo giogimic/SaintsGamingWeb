@@ -45,6 +45,7 @@ export type StudioDockId =
   | "mapEditor"
   | "newTileMap"
   | "newVoxelMap"
+  | "perks"
   | "animations"
   | "interface"
   | "camera"
@@ -106,6 +107,7 @@ export const STUDIO_DOCK_MIN_LEVEL: Record<StudioDockId, number> = {
   mapEditor: STUDIO_ENTRY_LEVEL,
   newTileMap: STUDIO_ENTRY_LEVEL,
   newVoxelMap: STUDIO_ENTRY_LEVEL,
+  perks: STUDIO_ENTRY_LEVEL,
   animations: STUDIO_ENTRY_LEVEL,
   interface: STUDIO_ENTRY_LEVEL,
   camera: STUDIO_ENTRY_LEVEL,

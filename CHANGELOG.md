@@ -1,3 +1,13 @@
+## [2.2.008] - 2026-09-26
+- **Feature**: Integrated 32 Paragon Hero animation `.glb` sequences into the core `ANIMATION_PROFILES` engine registry.
+- **Feature**: Dynamically converted and integrated raw `FBX` Mocap Mobility Packs into `.glb` formats, explicitly mapping base movement, jogging, crouching, and jumping cycles to standard engine slots in `animationProfiles.ts`.
+
+## [2.2.007] - 2026-09-26
+- **Studio**: Completed Perk Studio panel implementation (AbilityStudioPanel, PerkEditorPanel) and synced StudioDockId in permissions.
+- **Bugfix**: Fixed CameraManager.ts hybrid mode terrain focus, resolving issues where the camera would stare at the ground level (y=0) while the character was rendered correctly on elevated voxel terrain.
+- **Feature**: Refined Dynamic mode camera transitions. CameraManager now interpolates First Person -> Third Person -> 2.5D Isometric seamlessly while maintaining PERSPECTIVE_CAMERA projection during transitions.
+- **Bugfix**: Bounded third person (`follow45`) style default pitch to resolve broken/wild camera angles when transitioning from other fixed modes.
+
 ## [2.2.006] - 2026-09-25
 - **Bugfix**: Fixed 3D model animations not updating by linking the active animation state to player movement, correctly transitioning between idle and run/walk states.
 - **Bugfix**: Fixed ghost duplicate characters rendering on map join by properly including the account ID in multiplayer state to filter out the local player's network reflection.

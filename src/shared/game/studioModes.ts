@@ -39,6 +39,7 @@ export type StudioDockId =
   | 'items'
   | 'professions'
   | 'recipes'
+  | 'perks'
   | 'dungeons'
   | 'spawner'
   | 'atlas'
@@ -246,6 +247,10 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   recipes: {
     label: 'Recipes',
     blurb: 'Manage crafting recipes',
+  },
+  perks: {
+    label: 'Perks',
+    blurb: 'Manage passive bonuses players select during character creation.',
   },
   dungeons: {
     label: 'Dungeon Studio',

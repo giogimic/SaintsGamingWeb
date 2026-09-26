@@ -57,7 +57,6 @@ export const HeroStudioPanel: React.FC = () => {
           tabs={[
             { id: 'identity', label: 'Identity', icon: Shield },
             { id: 'classes', label: 'Classes', icon: Sword },
-            { id: 'perks', label: 'Perks', icon: Sparkles },
             { id: 'loadout', label: 'Starter Loadout', icon: Backpack },
           ]}
           activeTab={activeTab}
@@ -148,9 +147,7 @@ export const HeroStudioPanel: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'perks' && (
-          <PerkStudioTab />
-        )}
+
 
         {/* ── LOADOUT ── */}
         {activeTab === 'loadout' && (

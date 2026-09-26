@@ -19,6 +19,7 @@ export function AbilityStudioPanel() {
         { id: 'classes', label: 'Classes', icon: Shield, desc: 'Design hero classes and skill trees' },
         { id: 'professions', label: 'Professions', icon: Hammer, desc: 'Configure crafting professions' },
         { id: 'recipes', label: 'Recipes', icon: ScrollText, desc: 'Manage crafting recipes' },
+        { id: 'perks', label: 'Starter Perks', icon: Crown, desc: 'Manage passive bonuses players select during character creation.' },
       ]
     }
   ];

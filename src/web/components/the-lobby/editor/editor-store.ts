@@ -846,6 +846,17 @@ const DEFAULT_PANELS = {
     height: 600,
     zIndex: 10,
   },
+  perks: {
+    id: 'perks',
+    title: 'Perk Studio',
+    isOpen: false,
+    isCollapsed: false,
+    x: 430,
+    y: 90,
+    width: 800,
+    height: 600,
+    zIndex: 10,
+  },
   dungeons: {
     id: 'dungeons',
     title: 'Dungeon Studio',

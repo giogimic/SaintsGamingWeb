@@ -81,6 +81,7 @@ const LootManagerPanel = lazy(() => import('./panels/LootManagerPanel').then((m)
 const ItemEditorPanel = lazy(() => import('./panels/ItemEditorPanel').then((m) => ({ default: m.ItemEditorPanel })));
 const ProfessionEditorPanel = lazy(() => import('./panels/ProfessionEditorPanel').then((m) => ({ default: m.ProfessionEditorPanel })));
 const RecipeEditorPanel = lazy(() => import('./panels/RecipeEditorPanel').then((m) => ({ default: m.RecipeEditorPanel })));
+const PerkEditorPanel = lazy(() => import('./panels/PerkEditorPanel').then((m) => ({ default: m.PerkEditorPanel })));
 const MonsterSpawnerPanel = lazy(() => import('./panels/MonsterSpawnerPanel').then((m) => ({ default: m.MonsterSpawnerPanel })));
 const WorldAtlasPanel = lazy(() => import('./panels/WorldAtlasPanel').then((m) => ({ default: m.WorldAtlasPanel })));
 const StudioSettingsPanel = lazy(() => import('./panels/StudioSettingsPanel').then((m) => ({ default: m.StudioSettingsPanel })));
@@ -556,6 +557,12 @@ export const StudioEditorShell: React.FC = () => {
           {canUseStudioDock(permissionLevel, 'classes') && (
             <DraggablePanel id="classes" icon={<UserCheck className="w-4 h-4" />} title="Professions">
               <Suspense fallback={<div>Loading...</div>}><ProfessionEditorPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'perks') && (
+            <DraggablePanel id="perks" icon={<Sparkles className="w-4 h-4 text-amber-400" />} title="Perk Studio">
+              <Suspense fallback={<div>Loading...</div>}><PerkEditorPanel /></Suspense>
             </DraggablePanel>
           )}
 
