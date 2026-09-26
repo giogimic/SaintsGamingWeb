@@ -1,3 +1,6 @@
+## [2.2.010] - 2026-09-26
+- **Dynamic Camera Heights**: `CameraManager.ts` now automatically queries the bounding box size of the local player's 3D mesh (imported in `EntityRenderer.ts`) to compute eye height and chest height. This prevents the camera from appearing to attach at the feet for custom imported Archetypes of different scales (like Paragon heroes).
+
 ## [2.2.009] - 2026-09-26
 - **Bugfix**: Fixed `CameraManager.ts` potentially undefined `y` coordinate crash during production build terrain height fallbacks.
 

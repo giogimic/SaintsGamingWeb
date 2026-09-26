@@ -42,6 +42,7 @@ interface ManagedSprite {
   spriteUrl?: string;
   animationGroups?: BABYLON.AnimationGroup[];
   currentAnimationName?: string;
+  computedHeight?: number;
 }
 
 export class EntityRenderer {
@@ -60,6 +61,10 @@ export class EntityRenderer {
 
     // Register render loop updates
     scene.onBeforeRenderObservable.add(this.update);
+  }
+
+  public getSprite(id: string) {
+    return this.sprites.get(id);
   }
 
   // ── Per-Frame Update ───────────────────────────────────────────────────────
@@ -295,6 +300,17 @@ export class EntityRenderer {
           if (rotY !== 0) {
             mesh.rotationQuaternion = BABYLON.Quaternion.RotationAxis(BABYLON.Axis.Y, (rotY * Math.PI) / 180);
           }
+
+          let localMaxY = 0;
+          result.meshes.forEach((m) => {
+            m.computeWorldMatrix(true);
+            const bbox = m.getBoundingInfo().boundingBox;
+            const maxY = bbox.maximumWorld.y - mesh.position.y;
+            if (maxY > localMaxY) {
+              localMaxY = maxY;
+            }
+          });
+          current.computedHeight = localMaxY > 0.1 ? localMaxY : 2.0;
 
           if (result.animationGroups.length > 0) {
             current.animationGroups = result.animationGroups;

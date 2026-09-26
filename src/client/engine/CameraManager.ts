@@ -17,13 +17,9 @@ import { usePlayerStore } from '../state/usePlayerStore';
 import { useWorldStore } from '../state/useWorldStore';
 import { mapMesher } from './MapMesher';
 import { inputManager } from '../input/InputManager';
+import { entityRenderer } from './EntityRenderer';
 
 export type CameraStyle = 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson' | 'dynamic';
-
-/** Eye level for a 2-block-tall player character (~81% of height) */
-const PLAYER_EYE_HEIGHT = 1.62;
-/** Chest height for third-person orbit target */
-const PLAYER_CHEST_HEIGHT = 1.0;
 
 export interface CameraSettings {
   fov: number;
@@ -362,8 +358,13 @@ export class CameraManager {
       ? 0.0
       : Math.max(0, Math.min(1.0, 1.0 - (dist / 2.0)));
     
-    const thirdPersonCamY = Math.max(1.0, dist * Math.sin(currentPitch));
-    const camY = BABYLON.Scalar.Lerp(thirdPersonCamY, PLAYER_EYE_HEIGHT, firstPersonWeight);
+    const sprite = entityRenderer.getSprite('local_player');
+    const playerHeight = sprite?.computedHeight ?? 2.0;
+    const playerEyeHeight = playerHeight * 0.81;
+    const playerChestHeight = playerHeight * 0.6;
+
+    const thirdPersonCamY = Math.max(playerChestHeight, dist * Math.sin(currentPitch));
+    const camY = BABYLON.Scalar.Lerp(thirdPersonCamY, playerEyeHeight, firstPersonWeight);
     
     const horizDist = BABYLON.Scalar.Lerp(dist * Math.cos(currentPitch), 0, firstPersonWeight);
     const offsetX = -horizDist * Math.sin(currentYaw);
@@ -373,10 +374,10 @@ export class CameraManager {
     
     const firstPersonTarget = new BABYLON.Vector3(
       x + Math.sin(currentYaw) * Math.cos(currentPitch) * 10,
-      terrainY + PLAYER_EYE_HEIGHT + Math.sin(currentPitch) * 10,
+      terrainY + playerEyeHeight + Math.sin(currentPitch) * 10,
       z + Math.cos(currentYaw) * Math.cos(currentPitch) * 10
     );
-    const thirdPersonTarget = new BABYLON.Vector3(x, terrainY + PLAYER_CHEST_HEIGHT, z);
+    const thirdPersonTarget = new BABYLON.Vector3(x, terrainY + playerChestHeight, z);
 
     const targetLookAt = BABYLON.Vector3.Lerp(thirdPersonTarget, firstPersonTarget, firstPersonWeight);
     this.camera.setTarget(targetLookAt);
@@ -460,8 +461,13 @@ export class CameraManager {
         ? 0.0
         : Math.max(0, Math.min(1.0, 1.0 - (dist / 2.0)));
       
-      const thirdPersonCamY = Math.max(1.0, dist * Math.sin(currentPitch));
-      const camY = BABYLON.Scalar.Lerp(thirdPersonCamY, PLAYER_EYE_HEIGHT, firstPersonWeight);
+      const sprite = entityRenderer.getSprite('local_player');
+      const playerHeight = sprite?.computedHeight ?? 2.0;
+      const playerEyeHeight = playerHeight * 0.81;
+      const playerChestHeight = playerHeight * 0.6;
+
+      const thirdPersonCamY = Math.max(playerChestHeight, dist * Math.sin(currentPitch));
+      const camY = BABYLON.Scalar.Lerp(thirdPersonCamY, playerEyeHeight, firstPersonWeight);
       
       const horizDist = BABYLON.Scalar.Lerp(dist * Math.cos(currentPitch), 0, firstPersonWeight);
       const offsetX = -horizDist * Math.sin(currentYaw);
@@ -472,7 +478,7 @@ export class CameraManager {
       // Raycast from player focus to ideal camera position to prevent clipping
       if (firstPersonWeight < 0.99 && this.camera.mode === BABYLON.Camera.PERSPECTIVE_CAMERA) {
         // Offset the origin slightly up (chest height) to avoid hitting the ground immediately
-        const origin = new BABYLON.Vector3(this.focusPoint.x, this.focusPoint.y + PLAYER_CHEST_HEIGHT, this.focusPoint.z);
+        const origin = new BABYLON.Vector3(this.focusPoint.x, this.focusPoint.y + playerChestHeight, this.focusPoint.z);
         const direction = targetCamPos.subtract(origin);
         const maxDist = direction.length();
         direction.normalize();
@@ -496,10 +502,10 @@ export class CameraManager {
       
       const firstPersonTarget = new BABYLON.Vector3(
         this.focusPoint.x + Math.sin(currentYaw) * Math.cos(currentPitch) * 10,
-        this.focusPoint.y + PLAYER_EYE_HEIGHT + Math.sin(currentPitch) * 10,
+        this.focusPoint.y + playerEyeHeight + Math.sin(currentPitch) * 10,
         this.focusPoint.z + Math.cos(currentYaw) * Math.cos(currentPitch) * 10
       );
-      const thirdPersonTarget = new BABYLON.Vector3(this.focusPoint.x, this.focusPoint.y + PLAYER_CHEST_HEIGHT, this.focusPoint.z);
+      const thirdPersonTarget = new BABYLON.Vector3(this.focusPoint.x, this.focusPoint.y + playerChestHeight, this.focusPoint.z);
 
       const targetLookAt = BABYLON.Vector3.Lerp(thirdPersonTarget, firstPersonTarget, firstPersonWeight);
 
