@@ -82,6 +82,7 @@ export class EntityRenderer {
       let resolvedUrl = profileId ? resolveEntitySpriteUrl(profileId, { kind: defaultKind as any }) : undefined;
       let presentationType = profileId?.includes('wrapped') ? '2D_WRAPPED' : '2D_SPRITE';
       let transform: any = undefined;
+      let animations: any = undefined;
 
       if (profileId && profileId.length >= 20 && !profileId.includes('.')) {
         const asset = AssetManager.getInstance().getAssetSync(profileId);
@@ -92,12 +93,13 @@ export class EntityRenderer {
             const pres = asset.presentation as any;
             if (pres.characterPresentationType) presentationType = pres.characterPresentationType;
             if (pres.transform) transform = pres.transform;
+            if (pres.animations) animations = pres.animations;
           } else if (isModel) {
             presentationType = '3D_MODEL';
           }
         }
       }
-      return { isModel: !!isModel, resolvedUrl, presentationType, transform };
+      return { isModel: !!isModel, resolvedUrl, presentationType, transform, animations };
     };
 
     const getActorScale = (visualData?: unknown): number | undefined => {
@@ -133,6 +135,7 @@ export class EntityRenderer {
       isPlayer: true,
       presentationType: pAssetInfo.presentationType,
       transform: pAssetInfo.transform,
+      animations: pAssetInfo.animations,
       isMoving: player.isMoving,
     }, now);
 
@@ -176,6 +179,7 @@ export class EntityRenderer {
         isPlayer: true,
         presentationType: rpAssetInfo.presentationType,
         transform: rpAssetInfo.transform,
+        animations: rpAssetInfo.animations,
         isMoving: rp.isMoving,
       }, now);
     }
@@ -203,6 +207,7 @@ export class EntityRenderer {
         spriteUrl: entAssetInfo.isModel ? undefined : entAssetInfo.resolvedUrl,
         modelUrl: entAssetInfo.isModel ? entAssetInfo.resolvedUrl : undefined,
         transform: entAssetInfo.transform,
+        animations: entAssetInfo.animations,
         isMoving: ent.isMoving,
       }, now);
     }
@@ -246,6 +251,7 @@ export class EntityRenderer {
       isPlayer?: boolean;
       presentationType?: string;
       transform?: { scale?: number, rotationY?: number, grounding?: number };
+      animations?: any;
       isMoving?: boolean;
     },
     now: number
@@ -283,6 +289,8 @@ export class EntityRenderer {
           if (!current || current.mesh !== mesh) {
             result.meshes.forEach((loadedMesh) => loadedMesh.dispose());
             result.animationGroups.forEach((animation) => animation.dispose());
+            result.transformNodes.forEach((t) => t.dispose());
+            if (result.skeletons) result.skeletons.forEach((s) => s.dispose());
             return;
           }
           const grounding = data.transform?.grounding ?? 0;
@@ -290,6 +298,12 @@ export class EntityRenderer {
             if (!m.parent) {
               m.parent = mesh;
               m.position.y += grounding;
+            }
+          });
+          result.transformNodes.forEach((t) => {
+            if (!t.parent) {
+              t.parent = mesh;
+              t.position.y += grounding;
             }
           });
           
@@ -315,6 +329,54 @@ export class EntityRenderer {
           if (result.animationGroups.length > 0) {
             current.animationGroups = result.animationGroups;
             // The animation will be triggered by the next upsertSprite tick
+          } else {
+            current.animationGroups = [];
+          }
+
+          if (data.animations && data.animations.mapped) {
+            const mapped = data.animations.mapped;
+            Object.entries(mapped).forEach(([slot, mapping]: [string, any]) => {
+              if (mapping.sourcePath) {
+                const lastSlash = mapping.sourcePath.lastIndexOf('/');
+                const aRoot = mapping.sourcePath.substring(0, lastSlash + 1);
+                const aFile = mapping.sourcePath.substring(lastSlash + 1);
+
+                BABYLON.SceneLoader.LoadAssetContainerAsync(aRoot, aFile, this.scene).then((container) => {
+                  const latest = this.sprites.get(id);
+                  if (!latest || latest.mesh !== mesh) {
+                    container.dispose();
+                    return;
+                  }
+                  
+                  container.animationGroups.forEach((ag) => {
+                    ag.name = slot; // Match the name to our slot (e.g. 'idle', 'run_fwd')
+                    ag.targetedAnimations.forEach((ta) => {
+                      const targetName = ta.target.name;
+                      const targetNode = result.transformNodes.find(n => n.name === targetName);
+                      if (targetNode) {
+                        ta.target = targetNode;
+                      }
+                    });
+                    
+                    ag.loopAnimation = mapping.loop !== false;
+                    if (mapping.speed) ag.speedRatio = mapping.speed;
+                    ag.stop();
+
+                    latest.animationGroups = latest.animationGroups || [];
+                    latest.animationGroups.push(ag);
+                    
+                    if (this.scene && !this.scene.animationGroups.includes(ag)) {
+                      this.scene.animationGroups.push(ag);
+                    }
+                  });
+
+                  // We only wanted the animationGroups; dispose the rest
+                  container.meshes.forEach(m => m.dispose());
+                  container.skeletons.forEach(s => s.dispose());
+                  container.transformNodes.forEach(t => t.dispose());
+                }).catch(e => console.error("[EntityRenderer] Failed to load external animation", mapping.sourcePath, e));
+              }
+            });
           }
         }).catch(async (err) => {
           let responseInfo: Record<string, unknown> = { url: data.modelUrl };
@@ -443,14 +505,16 @@ export class EntityRenderer {
     }
     
     if (sprite.animationGroups && sprite.animationGroups.length > 0) {
-      const targetAnimName = data.isMoving ? "Run" : "Idle";
+      const targetAnimName = data.isMoving ? "run_fwd" : "idle";
       if (sprite.currentAnimationName !== targetAnimName) {
-        const walkAnim = sprite.animationGroups.find(a => a.name.toLowerCase().includes("run") || a.name.toLowerCase().includes("walk"));
-        const idleAnim = sprite.animationGroups.find(a => a.name.toLowerCase().includes("idle"));
+        const walkAnim = sprite.animationGroups.find(a => a.name.toLowerCase() === "run_fwd" || a.name.toLowerCase().includes("run") || a.name.toLowerCase().includes("walk"));
+        const idleAnim = sprite.animationGroups.find(a => a.name.toLowerCase() === "idle" || a.name.toLowerCase().includes("idle"));
         const nextAnim = data.isMoving ? (walkAnim || sprite.animationGroups[0]) : (idleAnim || sprite.animationGroups[0]);
         
         sprite.animationGroups.forEach(a => a.stop());
-        nextAnim.play(true);
+        if (nextAnim) {
+          nextAnim.play(nextAnim.loopAnimation ?? true);
+        }
         sprite.currentAnimationName = targetAnimName;
       }
     }

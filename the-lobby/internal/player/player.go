@@ -483,6 +483,7 @@ func (p *State) Peer() protocol.PeerSnapshot {
 		Direction: p.Direction,
 		Name:      p.Name,
 		SpriteID:  p.SpriteID,
+		VisualData: p.VisualData,
 		IsMoving:  p.IsMoving,
 		HP:        p.HP,
 		MaxHP:     p.MaxHP,
