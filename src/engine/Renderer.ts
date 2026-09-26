@@ -569,17 +569,20 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
         if (state.presentation?.mode === '3D' && state.animationGroups) {
           const isEntityWalking = state.isMoving || dist > 0.01;
           const groups = state.animationGroups;
-          const runAnim = groups.find((ag: any) => ag.name.toLowerCase().includes('run') || ag.name.toLowerCase().includes('walk'));
-          const idleAnim = groups.find((ag: any) => ag.name.toLowerCase().includes('idle'));
+          let runAnim = groups.find((ag: any) => ag.name.toLowerCase().includes('run') || ag.name.toLowerCase().includes('walk'));
+          let idleAnim = groups.find((ag: any) => ag.name.toLowerCase().includes('idle'));
+          
+          if (!idleAnim && groups.length > 0) idleAnim = groups[0];
+          if (!runAnim && groups.length > 0) runAnim = groups.length > 1 ? groups[1] : groups[0];
           
           if (isEntityWalking) {
             if (runAnim && !runAnim.isPlaying) {
-              if (idleAnim) idleAnim.stop();
+              if (idleAnim && idleAnim !== runAnim) idleAnim.stop();
               runAnim.play(true);
             }
           } else {
             if (idleAnim && !idleAnim.isPlaying) {
-              if (runAnim) runAnim.stop();
+              if (runAnim && runAnim !== idleAnim) runAnim.stop();
               idleAnim.play(true);
             }
           }

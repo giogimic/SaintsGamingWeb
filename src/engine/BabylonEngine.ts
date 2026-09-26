@@ -4117,17 +4117,22 @@ export class BabylonEngine {
             const currentMesh = this.entityMeshes.get(entity.id)!;
             const allAnimationGroups: any[] = [];
             
-            results.forEach((result) => {
+            results.forEach((result, idx) => {
               const root = result.meshes.find((mesh) => !mesh.parent) || result.meshes[0];
               if (!root) {
                 console.warn('[BabylonEngine] Imported model had no meshes');
                 return;
               }
-              root.parent = currentMesh;
-              // Align with babylon coordinates if needed
+              
+              // Create a wrapper to hold our custom scale so glTF animations don't overwrite it
+              const modelWrapper = new TransformNode(`modelWrapper_${entity.id}_${idx}`, this.scene);
+              modelWrapper.parent = currentMesh;
+              
               const modelScale = Number(entity.presentation?.modelScale);
               const actorScale = Number.isFinite(modelScale) && modelScale > 0 ? modelScale : 1;
-              root.scaling = new Vector3(-actorScale, actorScale, actorScale);
+              modelWrapper.scaling = new Vector3(-actorScale, actorScale, actorScale);
+              
+              root.parent = modelWrapper;
               
               if (result.animationGroups && result.animationGroups.length > 0) {
                 allAnimationGroups.push(...result.animationGroups);
@@ -4135,9 +4140,20 @@ export class BabylonEngine {
             });
             
             // --- Auto-detect model visual height for camera attachment ---
-            // Force world matrices to recompute after parenting + scaling
+            // Force world matrices and bounding info to recompute after parenting + scaling
             currentMesh.computeWorldMatrix(true);
-            currentMesh.getChildMeshes(false).forEach(m => m.computeWorldMatrix(true));
+            const allMeshes = currentMesh.getChildMeshes(false);
+            allMeshes.forEach(m => {
+              m.computeWorldMatrix(true);
+              if (m.refreshBoundingInfo) {
+                m.refreshBoundingInfo({ applySkeleton: true });
+              }
+              // Force skeletons to update as well for accurate bone reading
+              const skeleton = (m as any).skeleton;
+              if (skeleton && skeleton.computeAbsoluteTransforms) {
+                skeleton.computeAbsoluteTransforms();
+              }
+            });
             
             let modelVisualHeight = 1.2; // Fallback: legacy hardcoded head height
             
@@ -4148,7 +4164,6 @@ export class BabylonEngine {
             } else {
               // 2. Try skeleton-based Head bone detection (most precise)
               let headBoneHeight: number | null = null;
-              const allMeshes = currentMesh.getChildMeshes(false);
               for (const childMesh of allMeshes) {
                 const skeleton = (childMesh as any).skeleton;
                 if (skeleton && skeleton.bones) {
@@ -4181,8 +4196,8 @@ export class BabylonEngine {
                   if (!(childMesh as any).getBoundingInfo) continue;
                   try {
                     const bi = (childMesh as any).getBoundingInfo();
-                    const worldMin = Vector3.TransformCoordinates(bi.boundingBox.minimumWorld, Matrix.Identity());
-                    const worldMax = Vector3.TransformCoordinates(bi.boundingBox.maximumWorld, Matrix.Identity());
+                    const worldMin = bi.boundingBox.minimumWorld;
+                    const worldMax = bi.boundingBox.maximumWorld;
                     if (worldMin.y < minY) minY = worldMin.y;
                     if (worldMax.y > maxY) maxY = worldMax.y;
                   } catch {
@@ -4199,15 +4214,17 @@ export class BabylonEngine {
                   // This works regardless of scale: 0.003 or 1.0 or 100
                   modelVisualHeight = Math.max(0.1, topOfModel * 0.85);
                   
-                  // If the model's feet aren't at entity origin, shift the root down
+                  // If the model's feet aren't at entity origin, shift the wrapper down
                   // so feet touch the ground (prevents floating or buried models)
                   const feetOffset = minY - entityWorldY;
                   if (Math.abs(feetOffset) > 0.01 && totalHeight > 0.01) {
                     // Only adjust if offset is significant relative to model size
-                    const rootChild = currentMesh.getChildren()[0] as TransformNode;
-                    if (rootChild) {
-                      rootChild.position.y -= feetOffset;
-                    }
+                    const wrappers = currentMesh.getChildren() as TransformNode[];
+                    wrappers.forEach(wrapper => {
+                      if (wrapper.name.startsWith("modelWrapper_")) {
+                        wrapper.position.y -= feetOffset;
+                      }
+                    });
                   }
                 }
               }
