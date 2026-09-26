@@ -62,6 +62,13 @@ export interface PresentationDefinition {
   modularModelUrls?: string[];
   /** Multiplier applied by this actor over the model asset's import scale. */
   modelScale?: number;
+  /**
+   * Manual camera height offset override (world units above entity origin).
+   * When set, the camera focuses at this height instead of auto-detecting
+   * from the model's bounding box. Useful for models whose bounding box
+   * doesn't represent head height well (e.g. wide hats, wings, tails).
+   */
+  cameraHeightOffset?: number;
   materialIds?: string[];
   audioRefs?: {
     attack?: string;

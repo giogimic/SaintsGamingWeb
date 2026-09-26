@@ -314,8 +314,11 @@ export class BabylonEngine {
     if (!mesh) return null;
     
     // Project 3D coordinate to screen coordinate (offset up for health bar)
+    // Use model's detected height + a small margin so the bar sits above the head
+    const modelHeight = mesh.metadata?.modelVisualHeight ?? 1.2;
+    const nameplateOffset = modelHeight * 1.3 + 0.3; // 30% above head + small margin
     const pos = Vector3.Project(
-      mesh.position.add(new Vector3(0, 1.8, 0)),
+      mesh.position.add(new Vector3(0, nameplateOffset, 0)),
       Matrix.Identity(),
       this.scene.getTransformMatrix(),
       this.renderer.camera.viewport.toGlobal(this.engine.getRenderWidth(), this.engine.getRenderHeight())
@@ -4131,10 +4134,90 @@ export class BabylonEngine {
               }
             });
             
+            // --- Auto-detect model visual height for camera attachment ---
+            // Force world matrices to recompute after parenting + scaling
+            currentMesh.computeWorldMatrix(true);
+            currentMesh.getChildMeshes(false).forEach(m => m.computeWorldMatrix(true));
+            
+            let modelVisualHeight = 1.2; // Fallback: legacy hardcoded head height
+            
+            // 1. Check for Studio-authored cameraHeightOffset override
+            const manualOffset = Number(entity.presentation?.cameraHeightOffset);
+            if (Number.isFinite(manualOffset) && manualOffset > 0) {
+              modelVisualHeight = manualOffset;
+            } else {
+              // 2. Try skeleton-based Head bone detection (most precise)
+              let headBoneHeight: number | null = null;
+              const allMeshes = currentMesh.getChildMeshes(false);
+              for (const childMesh of allMeshes) {
+                const skeleton = (childMesh as any).skeleton;
+                if (skeleton && skeleton.bones) {
+                  const headBone = skeleton.bones.find((b: any) => {
+                    const name = b.name?.toLowerCase() || '';
+                    return name === 'head' || name.includes('head') || name.includes('bip01 head');
+                  });
+                  if (headBone) {
+                    try {
+                      // Get head bone's world position relative to entity
+                      const boneMatrix = headBone.getWorldMatrix();
+                      const boneWorldPos = Vector3.TransformCoordinates(Vector3.Zero(), boneMatrix);
+                      const entityWorldY = currentMesh.getAbsolutePosition().y;
+                      headBoneHeight = boneWorldPos.y - entityWorldY;
+                      if (headBoneHeight > 0.01) {
+                        modelVisualHeight = headBoneHeight;
+                      }
+                    } catch {
+                      // Bone matrix not ready yet, fall through to bounding box
+                    }
+                  }
+                }
+              }
+              
+              // 3. Fallback: compute from bounding box (reliable for any model)
+              if (headBoneHeight === null || headBoneHeight <= 0.01) {
+                let minY = Infinity;
+                let maxY = -Infinity;
+                for (const childMesh of allMeshes) {
+                  if (!(childMesh as any).getBoundingInfo) continue;
+                  try {
+                    const bi = (childMesh as any).getBoundingInfo();
+                    const worldMin = Vector3.TransformCoordinates(bi.boundingBox.minimumWorld, Matrix.Identity());
+                    const worldMax = Vector3.TransformCoordinates(bi.boundingBox.maximumWorld, Matrix.Identity());
+                    if (worldMin.y < minY) minY = worldMin.y;
+                    if (worldMax.y > maxY) maxY = worldMax.y;
+                  } catch {
+                    // Skip meshes without valid bounding info
+                  }
+                }
+                
+                if (minY < Infinity && maxY > -Infinity) {
+                  const entityWorldY = currentMesh.getAbsolutePosition().y;
+                  const totalHeight = maxY - minY;
+                  const topOfModel = maxY - entityWorldY;
+                  
+                  // Camera targets ~85% of model height (approximate eye level)
+                  // This works regardless of scale: 0.003 or 1.0 or 100
+                  modelVisualHeight = Math.max(0.1, topOfModel * 0.85);
+                  
+                  // If the model's feet aren't at entity origin, shift the root down
+                  // so feet touch the ground (prevents floating or buried models)
+                  const feetOffset = minY - entityWorldY;
+                  if (Math.abs(feetOffset) > 0.01 && totalHeight > 0.01) {
+                    // Only adjust if offset is significant relative to model size
+                    const rootChild = currentMesh.getChildren()[0] as TransformNode;
+                    if (rootChild) {
+                      rootChild.position.y -= feetOffset;
+                    }
+                  }
+                }
+              }
+            }
+            
+            // Store computed height on metadata for camera system
+            currentMesh.metadata.modelVisualHeight = modelVisualHeight;
+            
             if (allAnimationGroups.length > 0) {
               currentMesh.metadata.animationGroups = allAnimationGroups;
-              // Group animation play state is managed by the Renderer interpolation loop (run vs idle)
-              // We'll play idle by default for now
               const idleAnim = allAnimationGroups.find((ag: any) => ag.name.toLowerCase().includes('idle'));
               if (idleAnim) {
                 idleAnim.play(true);

@@ -652,7 +652,9 @@ public stopRenderLoop() {
     const offsetZ = -horizDist * Math.cos(yaw);
 
     const isFirstPerson = this.cameraSettings.playerCameraStyle === 'firstperson';
-    const targetYWithOffset = isFirstPerson ? y + 1.2 : y;
+    const playerMesh = this.engine.entityMeshes.get('player_main');
+    const headHeight = playerMesh?.metadata?.modelVisualHeight ?? 1.2;
+    const targetYWithOffset = isFirstPerson ? y + headHeight : y;
 
     this.camera.position = new Vector3(x + offsetX, y + camY, z + offsetZ);
     this.camera.setTarget(
@@ -702,8 +704,10 @@ public stopRenderLoop() {
 
     const isFirstPerson = this.cameraSettings.playerCameraStyle === 'firstperson' || this.cameraSettings.playerCameraStyle === 'firstPerson';
     
-    // Always raycast from eye/chest level, not the ground level, otherwise the ray hits the floor instantly
-    const headHeight = 1.2;
+    // Use the model's computed visual height for camera focus (auto-detected from
+    // bounding box / Head bone after 3D model loads). Falls back to 1.2 for 2D sprites.
+    const playerMesh = this.engine.entityMeshes.get('player_main');
+    const headHeight = playerMesh?.metadata?.modelVisualHeight ?? 1.2;
     const targetYWithOffset = targetY + headHeight;
 
     // First person camera should sit near eye level (targetY + 1.2). Third person uses distance and pitch.

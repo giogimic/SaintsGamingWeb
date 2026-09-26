@@ -29,10 +29,13 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
     : [];
   const scale = Number(model.scale);
 
+  const camHeight = Number(model.cameraHeightOffset ?? data.cameraHeightOffset);
+
   return {
     mode: '3D',
     modelUrl,
     modularModelUrls,
     modelScale: Number.isFinite(scale) && scale > 0 ? Math.min(100, scale) : undefined,
+    cameraHeightOffset: Number.isFinite(camHeight) && camHeight > 0 ? camHeight : undefined,
   };
 }
