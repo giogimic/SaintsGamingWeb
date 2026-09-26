@@ -143,6 +143,12 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 
 ## Changelog
 
+### v2.2.014
+- **Embedded Animations Mapping Fix**: Fixed a critical issue where selecting embedded animations (inside the same `.glb` model) in the Asset Studio did not correctly map them to engine action slots (like `idle`, `run_fwd`). The engine now properly renames embedded animation clips on load so the animation state machine can find and trigger them.
+
+### v2.2.013
+- **Adjustable Camera Target Height**: Added an explicitly configurable `Camera Target Height Offset` parameter to the Asset Studio, solving the issue where cameras snapped to the ground or feet. The Engine now smoothly tracks the provided offset height rather than blindly using bounding boxes.
+
 ### v2.1.986
 - **Setup Wizard:** Fixed a critical parsing bug where Windows CRLF line endings corrupted `.env` secrets during `saints.sh` setup, preventing Admin account creation.
 - **Studio Ability Workspace:** Upgraded the Animation Row string input field into an intuitive visual dropdown selector for standard 2D Sprite Actions and 3D Model Slots.

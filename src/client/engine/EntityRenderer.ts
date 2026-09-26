@@ -340,7 +340,14 @@ export class EntityRenderer {
           if (data.animations && data.animations.mapped) {
             const mapped = data.animations.mapped;
             Object.entries(mapped).forEach(([slot, mapping]: [string, any]) => {
-              if (mapping.sourcePath) {
+              if (mapping.sourceKind === 'embedded' && mapping.clip) {
+                const embeddedAg = current.animationGroups?.find(ag => ag.name === mapping.clip);
+                if (embeddedAg) {
+                  embeddedAg.name = slot;
+                  embeddedAg.loopAnimation = mapping.loop !== false;
+                  if (mapping.speed) embeddedAg.speedRatio = mapping.speed;
+                }
+              } else if (mapping.sourcePath) {
                 const lastSlash = mapping.sourcePath.lastIndexOf('/');
                 const aRoot = mapping.sourcePath.substring(0, lastSlash + 1);
                 const aFile = mapping.sourcePath.substring(lastSlash + 1);
