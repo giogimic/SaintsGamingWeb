@@ -360,7 +360,7 @@ export class CameraManager {
     
     const sprite = entityRenderer.getSprite('local_player');
     const playerHeight = sprite?.computedHeight ?? 2.0;
-    const playerEyeHeight = sprite?.cameraYOffset ?? (playerHeight * 0.81);
+    const playerEyeHeight = sprite?.cameraYOffset || (playerHeight * 0.81);
     const playerChestHeight = sprite?.cameraYOffset ? sprite.cameraYOffset * 0.75 : (playerHeight * 0.6);
 
     const thirdPersonCamY = Math.max(playerChestHeight, dist * Math.sin(currentPitch));
@@ -463,7 +463,7 @@ export class CameraManager {
       
       const sprite = entityRenderer.getSprite('local_player');
       const playerHeight = sprite?.computedHeight ?? 2.0;
-      const playerEyeHeight = sprite?.cameraYOffset ?? (playerHeight * 0.81);
+      const playerEyeHeight = sprite?.cameraYOffset || (playerHeight * 0.81);
       const playerChestHeight = sprite?.cameraYOffset ? sprite.cameraYOffset * 0.75 : (playerHeight * 0.6);
 
       const thirdPersonCamY = Math.max(playerChestHeight, dist * Math.sin(currentPitch));

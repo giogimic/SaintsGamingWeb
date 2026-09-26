@@ -143,6 +143,10 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 
 ## Changelog
 
+### v2.2.015
+- **3D Render Fixes**: Fixed a critical bounding box calculation bug where parent mesh transforms (scale) weren't correctly applied before computing child meshes, causing 3D characters to have giant 0-height bounding boxes, driving the camera straight into the floor/feet.
+- **Embedded Animations Fix 2**: Forced animation loop state machine to automatically reset and play the mapped Idle/Walk targets immediately upon asynchronous model load, overriding Babylon's native default-play states that could leave the character in a T-pose.
+
 ### v2.2.014
 - **Embedded Animations Mapping Fix**: Fixed a critical issue where selecting embedded animations (inside the same `.glb` model) in the Asset Studio did not correctly map them to engine action slots (like `idle`, `run_fwd`). The engine now properly renames embedded animation clips on load so the animation state machine can find and trigger them.
 

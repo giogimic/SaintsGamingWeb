@@ -316,6 +316,7 @@ export class EntityRenderer {
             mesh.rotationQuaternion = BABYLON.Quaternion.RotationAxis(BABYLON.Axis.Y, (rotY * Math.PI) / 180);
           }
 
+          mesh.computeWorldMatrix(true);
           let localMaxY = 0;
           result.meshes.forEach((m) => {
             m.computeWorldMatrix(true);
@@ -388,6 +389,19 @@ export class EntityRenderer {
                 }).catch(e => console.error("[EntityRenderer] Failed to load external animation", mapping.sourcePath, e));
               }
             });
+          }
+          
+          if (current.animationGroups && current.animationGroups.length > 0) {
+            const targetAnimName = data.isMoving ? "run_fwd" : "idle";
+            const walkAnim = current.animationGroups.find(a => a.name.toLowerCase() === "run_fwd" || a.name.toLowerCase().includes("run") || a.name.toLowerCase().includes("walk"));
+            const idleAnim = current.animationGroups.find(a => a.name.toLowerCase() === "idle" || a.name.toLowerCase().includes("idle"));
+            const nextAnim = data.isMoving ? (walkAnim || current.animationGroups[0]) : (idleAnim || current.animationGroups[0]);
+            
+            current.animationGroups.forEach(a => a.stop());
+            if (nextAnim) {
+              nextAnim.play(nextAnim.loopAnimation ?? true);
+            }
+            current.currentAnimationName = targetAnimName;
           }
         }).catch(async (err) => {
           let responseInfo: Record<string, unknown> = { url: data.modelUrl };
