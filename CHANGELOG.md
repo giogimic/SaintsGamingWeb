@@ -1,3 +1,7 @@
+## [2.2.006] - 2026-09-25
+- **Bugfix**: Fixed 3D model animations not updating by linking the active animation state to player movement, correctly transitioning between idle and run/walk states.
+- **Bugfix**: Fixed ghost duplicate characters rendering on map join by properly including the account ID in multiplayer state to filter out the local player's network reflection.
+
 ## [2.2.005] - 2026-09-25
 - **Bugfix**: Fixed "Unsupported version: 2.0" BabylonJS error when loading `.glb` 3D models by correctly importing the complete GLTF loader bundle instead of just the base class in `EngineCore.ts`.
 
@@ -6764,4 +6768,5 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 
 ## [2.2.001]
 - **Studio Model Transform Controls**: Added scale, rotation, and grounding offset controls to the 3D Asset Studio UI. These are persisted within the presentation metadata and properly parsed by the engine so that large GLB models are scaled correctly in the world scene.
+
 

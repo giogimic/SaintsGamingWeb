@@ -107,6 +107,7 @@ export const useMultiplayerStore = create<MultiplayerState>()(
         const resolvedSprite = data.assetProfileId || (data as any).spriteId;
         if (!s.otherPlayers[socketId]) {
           s.otherPlayers[socketId] = {
+            accountId: data.accountId,
             x: data.x ?? 0,
             y: data.y ?? 0,
             name: data.name || 'Unknown',
@@ -116,9 +117,12 @@ export const useMultiplayerStore = create<MultiplayerState>()(
             isMoving: data.isMoving,
             chatMessage: data.chatMessage,
             customization: data.customization,
+            hp: data.hp,
+            maxHp: data.maxHp
           };
         } else {
           const p = s.otherPlayers[socketId];
+          if (data.accountId !== undefined) p.accountId = data.accountId;
           if (data.x !== undefined) p.x = data.x;
           if (data.y !== undefined) p.y = data.y;
           if (data.name !== undefined) p.name = data.name;

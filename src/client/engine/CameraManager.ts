@@ -82,6 +82,10 @@ export class CameraManager {
 
   // Active profile (computed from style)
   private profile = { pitch: Math.PI / 4, distance: 14, lerpFactor: 0.15 };
+  
+  // Smoothly interpolated actual values
+  private currentActualPitch: number = Math.PI / 4;
+  private currentActualDistance: number = 14;
 
   // Settings
   public settings: CameraSettings = { ...DEFAULT_CAMERA_SETTINGS };
@@ -199,13 +203,13 @@ export class CameraManager {
   public applyStyle(style: CameraStyle) {
     this.settings.playerCameraStyle = style;
     if (style === 'dynamic') {
-      this.updateDynamicCamera();
+      this.updateDynamicCamera(true);
     } else {
-      this.applyInternalStyle(style);
+      this.applyInternalStyle(style, true);
     }
   }
 
-  public updateDynamicCamera() {
+  public updateDynamicCamera(snap: boolean = false) {
     if (this.settings.playerCameraStyle !== 'dynamic') return;
     const zoom = this.currentZoom || 10;
 
@@ -227,7 +231,7 @@ export class CameraManager {
       if (zoom < 11.5) targetMode = 'follow45';
     }
 
-    this.applyInternalStyle(targetMode);
+    this.applyInternalStyle(targetMode, snap);
 
     if (targetMode === 'follow45') {
       // Scale distance dynamically based on zoom (e.g. from 2 to 10)
@@ -236,7 +240,7 @@ export class CameraManager {
     }
   }
 
-  private applyInternalStyle(style: Exclude<CameraStyle, 'dynamic'>) {
+  private applyInternalStyle(style: Exclude<CameraStyle, 'dynamic'>, snap: boolean = true) {
     if (!this.camera) return;
 
     switch (style) {
@@ -277,7 +281,9 @@ export class CameraManager {
         break;
     }
 
-    this.snapCameraTo(this.targetX, this.targetZ, this.targetY);
+    if (snap) {
+      this.snapCameraTo(this.targetX, this.targetZ, this.targetY);
+    }
   }
 
   // ── Ortho Sizing ──────────────────────────────────────────────────────────
@@ -316,7 +322,7 @@ export class CameraManager {
       const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
       const newZoom = Math.max(3, Math.min(15, this.currentZoom * zoomFactor));
       this.updateOrthoSize(newZoom);
-      this.updateDynamicCamera();
+      this.updateDynamicCamera(false);
     } else if (this.camera?.mode === BABYLON.Camera.ORTHOGRAPHIC_CAMERA) {
       // Zoom ortho for fixed 2.5d modes
       const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
@@ -350,26 +356,35 @@ export class CameraManager {
     this.targetZ = z;
     this.focusPoint.copyFromFloats(x, terrainY, z);
 
-    const currentPitch = this.profile.pitch ?? Math.PI / 4;
-    const dist = this.profile.distance ?? 14;
+    this.currentActualPitch = this.profile.pitch ?? Math.PI / 4;
+    this.currentActualDistance = this.profile.distance ?? 14;
+
+    const currentPitch = this.currentActualPitch;
+    const dist = this.currentActualDistance;
     const currentYaw = this.yaw || 0;
-    const isFirstPerson = this.profile.distance === 0;
     
-    const camY = isFirstPerson ? PLAYER_EYE_HEIGHT : Math.max(1.0, dist * Math.sin(currentPitch));
-    const horizDist = isFirstPerson ? 0 : dist * Math.cos(currentPitch);
+    const firstPersonWeight = this.settings.playerCameraStyle === 'isometric' || this.settings.playerCameraStyle === 'topdown'
+      ? 0.0
+      : Math.max(0, Math.min(1.0, 1.0 - (dist / 2.0)));
+    
+    const thirdPersonCamY = Math.max(1.0, dist * Math.sin(currentPitch));
+    const camY = BABYLON.Scalar.Lerp(thirdPersonCamY, PLAYER_EYE_HEIGHT, firstPersonWeight);
+    
+    const horizDist = BABYLON.Scalar.Lerp(dist * Math.cos(currentPitch), 0, firstPersonWeight);
     const offsetX = -horizDist * Math.sin(currentYaw);
     const offsetZ = -horizDist * Math.cos(currentYaw);
 
     this.camera.position = new BABYLON.Vector3(x + offsetX, y + camY, z + offsetZ);
-    this.camera.setTarget(
-      isFirstPerson
-        ? new BABYLON.Vector3(
-            x + Math.sin(currentYaw) * Math.cos(currentPitch) * 10,
-            y + PLAYER_EYE_HEIGHT + Math.sin(currentPitch) * 10,
-            z + Math.cos(currentYaw) * Math.cos(currentPitch) * 10
-          )
-        : new BABYLON.Vector3(x, y + PLAYER_CHEST_HEIGHT, z)
+    
+    const firstPersonTarget = new BABYLON.Vector3(
+      x + Math.sin(currentYaw) * Math.cos(currentPitch) * 10,
+      y + PLAYER_EYE_HEIGHT + Math.sin(currentPitch) * 10,
+      z + Math.cos(currentYaw) * Math.cos(currentPitch) * 10
     );
+    const thirdPersonTarget = new BABYLON.Vector3(x, y + PLAYER_CHEST_HEIGHT, z);
+
+    const targetLookAt = BABYLON.Vector3.Lerp(thirdPersonTarget, firstPersonTarget, firstPersonWeight);
+    this.camera.setTarget(targetLookAt);
     this.snapped = true;
   }
 
@@ -439,20 +454,31 @@ export class CameraManager {
       const idealFocus = new BABYLON.Vector3(px, terrainY, pz);
       this.focusPoint = BABYLON.Vector3.Lerp(this.focusPoint, idealFocus, smoothFactor);
 
-      const currentPitch = this.profile.pitch ?? Math.PI / 4;
-      const dist = this.profile.distance ?? 14;
+      // Smoothly interpolate pitch and distance
+      const pitchLerpFactor = Math.min(1.0, smoothFactor * 2.0); // Make camera distance/pitch respond a bit faster than follow
+      this.currentActualPitch = BABYLON.Scalar.Lerp(this.currentActualPitch, this.profile.pitch ?? Math.PI / 4, pitchLerpFactor);
+      this.currentActualDistance = BABYLON.Scalar.Lerp(this.currentActualDistance, this.profile.distance ?? 14, pitchLerpFactor);
+
+      const currentPitch = this.currentActualPitch;
+      const dist = this.currentActualDistance;
       const currentYaw = this.yaw || 0;
-      const isFirstPerson = this.settings.playerCameraStyle === 'firstperson';
       
-      const camY = isFirstPerson ? PLAYER_EYE_HEIGHT : Math.max(1.0, dist * Math.sin(currentPitch));
-      const horizDist = isFirstPerson ? 0 : dist * Math.cos(currentPitch);
+      // Smoothly blend to first-person when distance is small (< 2.0)
+      const firstPersonWeight = this.settings.playerCameraStyle === 'isometric' || this.settings.playerCameraStyle === 'topdown'
+        ? 0.0
+        : Math.max(0, Math.min(1.0, 1.0 - (dist / 2.0)));
+      
+      const thirdPersonCamY = Math.max(1.0, dist * Math.sin(currentPitch));
+      const camY = BABYLON.Scalar.Lerp(thirdPersonCamY, PLAYER_EYE_HEIGHT, firstPersonWeight);
+      
+      const horizDist = BABYLON.Scalar.Lerp(dist * Math.cos(currentPitch), 0, firstPersonWeight);
       const offsetX = -horizDist * Math.sin(currentYaw);
       const offsetZ = -horizDist * Math.cos(currentYaw);
 
       let targetCamPos = new BABYLON.Vector3(this.focusPoint.x + offsetX, this.focusPoint.y + camY, this.focusPoint.z + offsetZ);
       
       // Raycast from player focus to ideal camera position to prevent clipping
-      if (!isFirstPerson && this.camera.mode === BABYLON.Camera.PERSPECTIVE_CAMERA) {
+      if (firstPersonWeight < 0.99 && this.camera.mode === BABYLON.Camera.PERSPECTIVE_CAMERA) {
         // Offset the origin slightly up (chest height) to avoid hitting the ground immediately
         const origin = new BABYLON.Vector3(this.focusPoint.x, this.focusPoint.y + PLAYER_CHEST_HEIGHT, this.focusPoint.z);
         const direction = targetCamPos.subtract(origin);
@@ -476,13 +502,14 @@ export class CameraManager {
 
       this.camera.position = targetCamPos;
       
-      const targetLookAt = isFirstPerson
-        ? new BABYLON.Vector3(
-            this.focusPoint.x + Math.sin(currentYaw) * Math.cos(currentPitch) * 10,
-            this.focusPoint.y + PLAYER_EYE_HEIGHT + Math.sin(currentPitch) * 10,
-            this.focusPoint.z + Math.cos(currentYaw) * Math.cos(currentPitch) * 10
-          )
-        : new BABYLON.Vector3(this.focusPoint.x, this.focusPoint.y + PLAYER_CHEST_HEIGHT, this.focusPoint.z);
+      const firstPersonTarget = new BABYLON.Vector3(
+        this.focusPoint.x + Math.sin(currentYaw) * Math.cos(currentPitch) * 10,
+        this.focusPoint.y + PLAYER_EYE_HEIGHT + Math.sin(currentPitch) * 10,
+        this.focusPoint.z + Math.cos(currentYaw) * Math.cos(currentPitch) * 10
+      );
+      const thirdPersonTarget = new BABYLON.Vector3(this.focusPoint.x, this.focusPoint.y + PLAYER_CHEST_HEIGHT, this.focusPoint.z);
+
+      const targetLookAt = BABYLON.Vector3.Lerp(thirdPersonTarget, firstPersonTarget, firstPersonWeight);
 
       this.camera.setTarget(targetLookAt);
     }

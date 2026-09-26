@@ -14,6 +14,7 @@ import { AdvancedDynamicTexture, TextBlock, Rectangle } from '@babylonjs/gui';
 import { useWorldStore } from '../state/useWorldStore';
 import { useMultiplayerStore } from '../state/useMultiplayerStore';
 import { usePlayerStore } from '../state/usePlayerStore';
+import { useSessionStore } from '../state/useSessionStore';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
 import { mapMesher } from './MapMesher';
 import { WrappedCharacterMesher } from './rendering/WrappedCharacterMesher';
@@ -39,6 +40,8 @@ interface ManagedSprite {
   lastSeen: number;
   modelUrl?: string;
   spriteUrl?: string;
+  animationGroups?: BABYLON.AnimationGroup[];
+  currentAnimationName?: string;
 }
 
 export class EntityRenderer {
@@ -125,11 +128,16 @@ export class EntityRenderer {
       isPlayer: true,
       presentationType: pAssetInfo.presentationType,
       transform: pAssetInfo.transform,
+      isMoving: player.isMoving,
     }, now);
 
     // 2. Remote Players
     const remotePlayers = useMultiplayerStore.getState().otherPlayers as Record<string, any>;
+    const myAccountId = useSessionStore.getState().accountId;
+    
     for (const [id, rp] of Object.entries(remotePlayers)) {
+      if (rp.accountId && rp.accountId === myAccountId) continue;
+      
       // Dead reckoning: predict position based on velocity
       let px = rp.x ?? 0;
       let py = rp.z !== undefined ? rp.z : (rp.y ?? 0);
@@ -163,6 +171,7 @@ export class EntityRenderer {
         isPlayer: true,
         presentationType: rpAssetInfo.presentationType,
         transform: rpAssetInfo.transform,
+        isMoving: rp.isMoving,
       }, now);
     }
 
@@ -189,6 +198,7 @@ export class EntityRenderer {
         spriteUrl: entAssetInfo.isModel ? undefined : entAssetInfo.resolvedUrl,
         modelUrl: entAssetInfo.isModel ? entAssetInfo.resolvedUrl : undefined,
         transform: entAssetInfo.transform,
+        isMoving: ent.isMoving,
       }, now);
     }
 
@@ -231,6 +241,7 @@ export class EntityRenderer {
       isPlayer?: boolean;
       presentationType?: string;
       transform?: { scale?: number, rotationY?: number, grounding?: number };
+      isMoving?: boolean;
     },
     now: number
   ) {
@@ -286,7 +297,8 @@ export class EntityRenderer {
           }
 
           if (result.animationGroups.length > 0) {
-            result.animationGroups[0].play(true);
+            current.animationGroups = result.animationGroups;
+            // The animation will be triggered by the next upsertSprite tick
           }
         }).catch(async (err) => {
           let responseInfo: Record<string, unknown> = { url: data.modelUrl };
@@ -412,6 +424,19 @@ export class EntityRenderer {
         spriteUrl: data.spriteUrl,
       };
       this.sprites.set(id, sprite);
+    }
+    
+    if (sprite.animationGroups && sprite.animationGroups.length > 0) {
+      const targetAnimName = data.isMoving ? "Run" : "Idle";
+      if (sprite.currentAnimationName !== targetAnimName) {
+        const walkAnim = sprite.animationGroups.find(a => a.name.toLowerCase().includes("run") || a.name.toLowerCase().includes("walk"));
+        const idleAnim = sprite.animationGroups.find(a => a.name.toLowerCase().includes("idle"));
+        const nextAnim = data.isMoving ? (walkAnim || sprite.animationGroups[0]) : (idleAnim || sprite.animationGroups[0]);
+        
+        sprite.animationGroups.forEach(a => a.stop());
+        nextAnim.play(true);
+        sprite.currentAnimationName = targetAnimName;
+      }
     }
 
     // Update target position (interpolation happens in update loop)
