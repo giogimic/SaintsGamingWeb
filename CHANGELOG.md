@@ -1,3 +1,6 @@
+## [2.2.005] - 2026-09-25
+- **Bugfix**: Fixed "Unsupported version: 2.0" BabylonJS error when loading `.glb` 3D models by correctly importing the complete GLTF loader bundle instead of just the base class in `EngineCore.ts`.
+
 ## [2.2.004] - 2026-09-25
 - **Bugfix**: Fixed 3D models rendering as red-box placeholders by ensuring raw `.glb` asset source names are resolved to their full URLs via `resolveEntitySpriteUrl` before passing to the Babylon `ImportMeshAsync` loader.
 
