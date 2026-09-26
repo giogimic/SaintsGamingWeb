@@ -43,6 +43,7 @@ interface ManagedSprite {
   animationGroups?: BABYLON.AnimationGroup[];
   currentAnimationName?: string;
   computedHeight?: number;
+  cameraYOffset?: number;
 }
 
 export class EntityRenderer {
@@ -250,7 +251,7 @@ export class EntityRenderer {
       chatMessage?: string;
       isPlayer?: boolean;
       presentationType?: string;
-      transform?: { scale?: number, rotationY?: number, grounding?: number };
+      transform?: { scale?: number, rotationY?: number, grounding?: number, cameraYOffset?: number };
       animations?: any;
       isMoving?: boolean;
     },
@@ -325,6 +326,9 @@ export class EntityRenderer {
             }
           });
           current.computedHeight = localMaxY > 0.1 ? localMaxY : 2.0;
+          if (data.transform?.cameraYOffset) {
+            current.cameraYOffset = data.transform.cameraYOffset;
+          }
 
           if (result.animationGroups.length > 0) {
             current.animationGroups = result.animationGroups;

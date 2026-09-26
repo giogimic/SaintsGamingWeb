@@ -151,6 +151,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
   const [modelScale, setModelScale] = useState<number>(1.0);
   const [modelRotationY, setModelRotationY] = useState<number>(0);
   const [modelGrounding, setModelGrounding] = useState<number>(0);
+  const [modelCameraYOffset, setModelCameraYOffset] = useState<number>(0);
 
   const [isPublishing, setIsPublishing] = useState(false);
 
@@ -363,7 +364,8 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
         transform: {
           scale: modelScale,
           rotationY: modelRotationY,
-          grounding: modelGrounding
+          grounding: modelGrounding,
+          cameraYOffset: modelCameraYOffset
         },
         skeleton: {
           isSkinned: parsedGLB?.isSkinned,
@@ -485,6 +487,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
               modelScale={modelScale}
               modelRotationY={modelRotationY}
               modelGrounding={modelGrounding}
+              modelCameraYOffset={modelCameraYOffset}
             />
           </div>
           {/* View Controls */}
@@ -799,10 +802,23 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                     Adjust this if the model floats above or sinks into the ground by default.
                   </div>
                 </div>
+
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Camera Target Height Offset ({modelCameraYOffset.toFixed(2)}m)</label>
+                  <input 
+                    type="range" min="-2.0" max="4.0" step="0.05" 
+                    value={modelCameraYOffset} 
+                    onChange={e => setModelCameraYOffset(parseFloat(e.target.value))} 
+                    className="w-full accent-amber-500" 
+                  />
+                  <div className="text-[10px] text-slate-400 leading-relaxed mt-2">
+                    Adjust this to move the camera's focus point up (e.g. to the head) or down. 0 uses automatic bounding box height.
+                  </div>
+                </div>
                 
                 <div className="flex gap-2 pt-2">
                   <button 
-                    onClick={() => { setModelScale(1.0); setModelRotationY(0); setModelGrounding(0); }}
+                    onClick={() => { setModelScale(1.0); setModelRotationY(0); setModelGrounding(0); setModelCameraYOffset(0); }}
                     className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded text-[10px] font-bold text-slate-300 transition-colors"
                   >
                     Reset to Defaults

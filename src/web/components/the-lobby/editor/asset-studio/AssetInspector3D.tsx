@@ -14,6 +14,7 @@ interface AssetInspector3DProps {
   modelScale?: number;
   modelRotationY?: number;
   modelGrounding?: number;
+  modelCameraYOffset?: number;
 }
 
 export interface AssetInspector3DRef {

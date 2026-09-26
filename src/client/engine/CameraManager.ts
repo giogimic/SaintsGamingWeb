@@ -360,8 +360,8 @@ export class CameraManager {
     
     const sprite = entityRenderer.getSprite('local_player');
     const playerHeight = sprite?.computedHeight ?? 2.0;
-    const playerEyeHeight = playerHeight * 0.81;
-    const playerChestHeight = playerHeight * 0.6;
+    const playerEyeHeight = sprite?.cameraYOffset ?? (playerHeight * 0.81);
+    const playerChestHeight = sprite?.cameraYOffset ? sprite.cameraYOffset * 0.75 : (playerHeight * 0.6);
 
     const thirdPersonCamY = Math.max(playerChestHeight, dist * Math.sin(currentPitch));
     const camY = BABYLON.Scalar.Lerp(thirdPersonCamY, playerEyeHeight, firstPersonWeight);
@@ -463,8 +463,8 @@ export class CameraManager {
       
       const sprite = entityRenderer.getSprite('local_player');
       const playerHeight = sprite?.computedHeight ?? 2.0;
-      const playerEyeHeight = playerHeight * 0.81;
-      const playerChestHeight = playerHeight * 0.6;
+      const playerEyeHeight = sprite?.cameraYOffset ?? (playerHeight * 0.81);
+      const playerChestHeight = sprite?.cameraYOffset ? sprite.cameraYOffset * 0.75 : (playerHeight * 0.6);
 
       const thirdPersonCamY = Math.max(playerChestHeight, dist * Math.sin(currentPitch));
       const camY = BABYLON.Scalar.Lerp(thirdPersonCamY, playerEyeHeight, firstPersonWeight);
