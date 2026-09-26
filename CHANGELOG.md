@@ -1,3 +1,6 @@
+## [2.2.004] - 2026-09-25
+- **Bugfix**: Fixed 3D models rendering as red-box placeholders by ensuring raw `.glb` asset source names are resolved to their full URLs via `resolveEntitySpriteUrl` before passing to the Babylon `ImportMeshAsync` loader.
+
 ## [2.2.003] - 2026-09-25
 - **Studio**: Added per-archetype and per-entity 3D model scale overrides and apply them to character and NPC model presentation without changing shared assets. Scale data now travels with player joins so peers see the same size.
 - **Setup**: Prevented overlapping publish submissions and return clearer bootstrap or server failure details when onboarding cannot publish.

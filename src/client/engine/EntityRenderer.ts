@@ -79,7 +79,7 @@ export class EntityRenderer {
         const asset = AssetManager.getInstance().getAssetSync(profileId);
         if (asset) {
           isModel = asset.type === 'MODEL' || !!(asset.source && (asset.source.endsWith('.glb') || asset.source.endsWith('.gltf')));
-          if (asset.source) resolvedUrl = asset.source;
+          if (asset.source) resolvedUrl = resolveEntitySpriteUrl(asset.source);
           if (asset.presentation) {
             const pres = asset.presentation as any;
             if (pres.characterPresentationType) presentationType = pres.characterPresentationType;
