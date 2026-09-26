@@ -327,12 +327,12 @@ export class EntityRenderer {
           const allMeshes = modelWrapper.getChildMeshes(false);
           allMeshes.forEach(m => {
             m.computeWorldMatrix(true);
-            if (m.refreshBoundingInfo) {
-              m.refreshBoundingInfo({ applySkeleton: true });
-            }
             const skeleton = (m as any).skeleton;
             if (skeleton && skeleton.computeAbsoluteTransforms) {
               skeleton.computeAbsoluteTransforms();
+            }
+            if (m.refreshBoundingInfo) {
+              m.refreshBoundingInfo({ applySkeleton: true });
             }
           });
 
@@ -361,7 +361,7 @@ export class EntityRenderer {
             }
           }
           
-          // 2. Fallback to bounding box + Auto-grounding
+          // 2. Fallback to bounding box 
           if (headBoneHeight === null || headBoneHeight <= 0.01) {
             let minY = Infinity;
             let maxY = -Infinity;
@@ -378,16 +378,9 @@ export class EntityRenderer {
             
             if (minY < Infinity && maxY > -Infinity) {
               const entityWorldY = mesh.getAbsolutePosition().y;
-              const totalHeight = maxY - minY;
-              const topOfModel = maxY - entityWorldY;
+              const topOfModel = Math.abs(maxY - entityWorldY);
               
-              modelVisualHeight = Math.max(0.1, topOfModel * 0.85);
-              
-              // Shift the wrapper so the feet actually touch the ground
-              const feetOffset = minY - entityWorldY;
-              if (Math.abs(feetOffset) > 0.01 && totalHeight > 0.01) {
-                modelWrapper.position.y -= feetOffset;
-              }
+              modelVisualHeight = Math.max(1.2, topOfModel * 0.85); // Safe clamp
             }
           }
           
@@ -398,16 +391,6 @@ export class EntityRenderer {
 
           if (result.animationGroups.length > 0) {
             current.animationGroups = result.animationGroups;
-            // Play initial animation immediately, otherwise it stays in T-pose until the next movement update
-            const walkAnim = result.animationGroups.find(a => a.name.toLowerCase() === "run_fwd" || a.name.toLowerCase().includes("run") || a.name.toLowerCase().includes("walk"));
-            const idleAnim = result.animationGroups.find(a => a.name.toLowerCase() === "idle" || a.name.toLowerCase().includes("idle"));
-            const startAnim = data.isMoving ? (walkAnim || result.animationGroups[0]) : (idleAnim || result.animationGroups[0]);
-            
-            result.animationGroups.forEach(a => a.stop());
-            if (startAnim) {
-              startAnim.play(startAnim.loopAnimation ?? true);
-            }
-            current.currentAnimationName = data.isMoving ? "run_fwd" : "idle";
           } else {
             current.animationGroups = [];
           }
@@ -469,7 +452,12 @@ export class EntityRenderer {
             const targetAnimName = data.isMoving ? "run_fwd" : "idle";
             const walkAnim = current.animationGroups.find(a => a.name.toLowerCase() === "run_fwd" || a.name.toLowerCase().includes("run") || a.name.toLowerCase().includes("walk"));
             const idleAnim = current.animationGroups.find(a => a.name.toLowerCase() === "idle" || a.name.toLowerCase().includes("idle"));
-            const nextAnim = data.isMoving ? (walkAnim || current.animationGroups[0]) : (idleAnim || current.animationGroups[0]);
+            let nextAnim = undefined;
+            if (data.isMoving) {
+              nextAnim = walkAnim || (current.animationGroups.length > 1 ? current.animationGroups[1] : current.animationGroups[0]);
+            } else {
+              nextAnim = idleAnim || current.animationGroups[0];
+            }
             
             current.animationGroups.forEach(a => a.stop());
             if (nextAnim) {
@@ -608,7 +596,12 @@ export class EntityRenderer {
       if (sprite.currentAnimationName !== targetAnimName) {
         const walkAnim = sprite.animationGroups.find(a => a.name.toLowerCase() === "run_fwd" || a.name.toLowerCase().includes("run") || a.name.toLowerCase().includes("walk"));
         const idleAnim = sprite.animationGroups.find(a => a.name.toLowerCase() === "idle" || a.name.toLowerCase().includes("idle"));
-        const nextAnim = data.isMoving ? (walkAnim || sprite.animationGroups[0]) : (idleAnim || sprite.animationGroups[0]);
+        let nextAnim = undefined;
+        if (data.isMoving) {
+          nextAnim = walkAnim || (sprite.animationGroups.length > 1 ? sprite.animationGroups[1] : sprite.animationGroups[0]);
+        } else {
+          nextAnim = idleAnim || sprite.animationGroups[0];
+        }
         
         sprite.animationGroups.forEach(a => a.stop());
         if (nextAnim) {
