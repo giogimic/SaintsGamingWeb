@@ -175,7 +175,7 @@ export function AssetUploadView({
     } else {
       setIntentHint(intent);
       if (fileInputRef.current) {
-        fileInputRef.current.accept = '.fbx,.glb,.gltf,.obj,.vox,.dae,.stl,.ply,.zip,.png,.jpg,.jpeg,.webp,.tga,.dds,.bmp,.mtl';
+        fileInputRef.current.accept = '.fbx,.glb,.gltf,.obj,.vox,.dae,.stl,.ply,.zip,.png,.jpg,.jpeg,.webp,.tga,.dds,.bmp,.mtl,.bin';
         fileInputRef.current.click();
       }
     }
@@ -779,7 +779,7 @@ export function AssetUploadView({
                       onClick={() => {
                         soundSynth?.playUiClick?.();
                         if (fileInputRef.current) {
-                          fileInputRef.current.accept = '.fbx,.glb,.gltf,.obj,.vox,.dae,.stl,.ply,.zip,.png,.jpg,.jpeg,.webp,.tga,.dds,.bmp,.mtl';
+                          fileInputRef.current.accept = '.fbx,.glb,.gltf,.obj,.vox,.dae,.stl,.ply,.zip,.png,.jpg,.jpeg,.webp,.tga,.dds,.bmp,.mtl,.bin';
                           fileInputRef.current.click();
                         }
                       }}

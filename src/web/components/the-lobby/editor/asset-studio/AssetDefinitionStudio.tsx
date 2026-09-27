@@ -46,6 +46,7 @@ import {
   loadTextureFromFile,
   detectPbrChannel,
   convertObjToGlb,
+  convertGltfToGlb,
   convertVoxToGlb,
   convertDaeToGlb,
   convertStlToGlb,
@@ -54,7 +55,7 @@ import {
   attachTextureFilesToMaterials,
 } from '@/web/lib/modelPackage';
 import { convertFbxToGlb } from '@/web/lib/fbxConverter';
-import { RIG_FAMILIES, type CategorizedAnimationClip } from '@/shared/game/modelRigTaxonomy';
+import { RIG_FAMILIES, analyzeAnimationClip, classifySkeletonRig, type CategorizedAnimationClip } from '@/shared/game/modelRigTaxonomy';
 import { detectAssetTaxonomy, AssetTaxonomyResult, DetectedAssetCategory } from '@/web/lib/assetTaxonomy';
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -71,6 +72,128 @@ interface Props {
 
 type TabId = 'roles' | 'transform' | 'skeleton' | 'attachments' | 'animations' | 'materials' | 'items';
 type StructureType = 'Complete' | 'Modular' | 'ModularItem';
+
+interface AdditionalItem {
+  id: string;
+  file: File;
+  name?: string;
+  category: string;
+  scene?: THREE.Group;
+  animations?: THREE.AnimationClip[];
+  categorizedAnimations?: CategorizedAnimationClip[];
+  rigLabel?: string;
+  enabled: boolean;
+}
+
+const TEXTURE_CHANNELS = [
+  ['map', 'Albedo'],
+  ['normalMap', 'Normal'],
+  ['roughnessMap', 'Roughness'],
+  ['metalnessMap', 'Metallic'],
+  ['emissiveMap', 'Emissive'],
+  ['aoMap', 'AO'],
+] as const;
+
+function getAttachedTextureNames(object: THREE.Object3D | undefined): string[] {
+  if (!object) return [];
+  const names = new Set<string>();
+  object.traverse((child: any) => {
+    if (!child.isMesh || !child.material) return;
+    const materials = Array.isArray(child.material) ? child.material : [child.material];
+    for (const material of materials) {
+      for (const [channel, label] of TEXTURE_CHANNELS) {
+        const texture = material?.[channel];
+        if (!texture) continue;
+        const image = texture.image || texture.source?.data;
+        const imageName = image?.name || image?.currentSrc?.split('/').pop()?.split('?')[0] || image?.src?.split('/').pop()?.split('?')[0];
+        names.add(texture.name || imageName || `${label} texture`);
+      }
+    }
+  });
+  return Array.from(names);
+}
+
+function getAttachedTextureAssignments(object: THREE.Object3D | undefined): string[] {
+  if (!object) return [];
+  const assignments = new Set<string>();
+  object.traverse((child: any) => {
+    if (!child.isMesh || !child.material) return;
+    const materials = Array.isArray(child.material) ? child.material : [child.material];
+    for (const material of materials) {
+      for (const [channel, label] of TEXTURE_CHANNELS) {
+        const texture = material?.[channel];
+        if (!texture) continue;
+        const image = texture.image || texture.source?.data;
+        const imageName = image?.name || image?.currentSrc?.split('/').pop()?.split('?')[0] || image?.src?.split('/').pop()?.split('?')[0];
+        const textureName = texture.name || imageName || 'Attached texture';
+        assignments.add(`${material.name || child.name || 'Material'} · ${label}: ${textureName}`);
+      }
+    }
+  });
+  return Array.from(assignments);
+}
+
+function analyzeSceneAnimations(scene: THREE.Object3D, animations: THREE.AnimationClip[], fileName: string) {
+  const boneNames: string[] = [];
+  scene.traverse((child: any) => {
+    if (child.isBone && child.name) boneNames.push(child.name);
+  });
+  const rig = boneNames.length > 0 ? classifySkeletonRig(boneNames) : null;
+  const usedNames = new Set<string>();
+  const categorizedAnimations = animations.map((clip, index) => {
+    const baseName = clip.name?.trim() || `${fileName.replace(/\.[^/.]+$/, '')} Animation ${index + 1}`;
+    let name = baseName;
+    let duplicateIndex = 2;
+    while (usedNames.has(name)) name = `${baseName} (${duplicateIndex++})`;
+    usedNames.add(name);
+    clip.name = name;
+    return analyzeAnimationClip(
+      { name, duration: clip.duration, tracks: clip.tracks },
+      { fileName, modelBoneNames: boneNames, isSingleClipOnActor: animations.length === 1 },
+    );
+  });
+  return { rigLabel: rig?.label || 'Static / no skeleton', categorizedAnimations };
+}
+
+function appendParsedAnimations(base: ParsedGLB, extra: ParsedGLB): ParsedGLB {
+  const usedNames = new Set(base.animations.map(animation => animation.name));
+  const addedRawAnimations = extra.rawAnimations.map((clip, index) => {
+    const baseName = extra.animations[index]?.name || clip.name || `Animation ${index + 1}`;
+    let name = baseName;
+    let duplicateIndex = 2;
+    while (usedNames.has(name)) name = `${baseName} (${duplicateIndex++})`;
+    usedNames.add(name);
+    clip.name = name;
+    return clip;
+  });
+  const addedAnimations = extra.animations.map((animation, index) => ({
+    ...animation,
+    name: addedRawAnimations[index]?.name || animation.name,
+  }));
+  const addedCategories = extra.categorizedAnimations.map((animation, index) => ({
+    ...animation,
+    clipName: addedRawAnimations[index]?.name || animation.clipName,
+  }));
+  return {
+    ...base,
+    rawAnimations: [...base.rawAnimations, ...addedRawAnimations],
+    animations: [...base.animations, ...addedAnimations],
+    categorizedAnimations: [...base.categorizedAnimations, ...addedCategories],
+  };
+}
+
+async function exportSceneAsGlb(scene: THREE.Object3D, animations: THREE.AnimationClip[] = [], filename = 'asset.glb'): Promise<File> {
+  const exporter = new GLTFExporter();
+  const buffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+    exporter.parse(
+      scene,
+      (result) => result instanceof ArrayBuffer ? resolve(result) : reject(new Error('GLTFExporter did not return a GLB binary')),
+      (error) => reject(error),
+      { binary: true, embedImages: true, animations },
+    );
+  });
+  return new File([new Blob([buffer], { type: 'model/gltf-binary' })], filename, { type: 'model/gltf-binary' });
+}
 
 interface StructureOption {
   value: StructureType;
@@ -192,20 +315,14 @@ export function AssetDefinitionStudio({
   const [publishingMode, setPublishingMode] = useState<'COMPOSITE_MODEL' | 'MODULAR_SET'>('COMPOSITE_MODEL');
 
   // Additional Items for Modular Set & Live Composition
-  const [additionalItems, setAdditionalItems] = useState<Array<{
-    id: string;
-    file: File;
-    name?: string;
-    category: string;
-    scene?: THREE.Group;
-    enabled: boolean;
-  }>>([]);
+  const [additionalItems, setAdditionalItems] = useState<AdditionalItem[]>([]);
 
   const assignTextureToMaterialChannel = async (matName: string, channel: PbrChannel, textureFile: File) => {
     if (!parsedGLB) return;
     try {
       showToast?.(`Loading ${textureFile.name}...`);
       const texture = await loadTextureFromFile(textureFile);
+      texture.name = textureFile.name;
       parsedGLB.scene.traverse((child: any) => {
         if (child.isMesh && child.material) {
           const mats = Array.isArray(child.material) ? child.material : [child.material];
@@ -242,6 +359,7 @@ export function AssetDefinitionStudio({
         syncParsedMaterialsFromScene(parsedGLB.scene, parsedGLB.materials);
         setHasModifiedTextures(true);
         setMaterialConfig(prev => ({ ...prev }));
+        setAdditionalItems(prev => prev.map(item => ({ ...item })));
         showToast?.(`Auto-attached ${count} textures to model materials!`);
       } else {
         showToast?.('No matching materials found for dropped textures.');
@@ -249,6 +367,90 @@ export function AssetDefinitionStudio({
     } catch (err: any) {
       console.warn('Batch texture load failed:', err);
       showToast?.(`Texture attachment failed: ${err.message}`);
+    }
+  };
+
+  const handleAttachTexturesToItem = async (itemId: string, files: File[]) => {
+    const item = additionalItems.find(candidate => candidate.id === itemId);
+    if (!item?.scene || files.length === 0) return;
+    try {
+      const count = await attachTextureFilesToMaterials(item.scene, files);
+      setAdditionalItems(previous => previous.map(candidate => candidate.id === itemId ? { ...candidate } : candidate));
+      if (count > 0) {
+        showToast?.(`Attached ${count} texture channel(s) to ${item.name || item.file.name}.`);
+      } else {
+        showToast?.(`No matching material or empty texture channel found on ${item.name || item.file.name}.`);
+      }
+    } catch (error: any) {
+      showToast?.(`Texture attachment failed: ${error.message}`);
+    }
+  };
+
+  const handleAddModularFiles = async (files: File[]) => {
+    const localTextures = files.filter(candidate => /\.(png|jpe?g|webp|tga|dds|bmp)$/i.test(candidate.name));
+    const modelFiles = files.filter(candidate => /\.(glb|gltf|fbx|obj|vox|dae|stl|ply)$/i.test(candidate.name));
+    const bufferFiles = files.filter(candidate => /\.bin$/i.test(candidate.name));
+    const mtlFile = files.find(candidate => /\.mtl$/i.test(candidate.name));
+    const textureFiles = [...(companionTextureFiles || []), ...localTextures];
+
+    if (modelFiles.length === 0) {
+      if (localTextures.length > 0) await handleBatchAssignTextures(localTextures);
+      return;
+    }
+
+    const guessCategory = (name: string): string => {
+      const n = name.toLowerCase();
+      if (n.includes('hair')) return 'hair';
+      if (n.includes('head') || n.includes('helmet') || n.includes('hat') || n.includes('mask') || n.includes('face') || n.includes('cap')) return 'hat';
+      if (n.includes('shirt') || n.includes('chest') || n.includes('torso') || n.includes('jacket') || n.includes('armor') || n.includes('t_shirt') || n.includes('top')) return 'shirt';
+      if (n.includes('leg') || n.includes('pant') || n.includes('trouser') || n.includes('short')) return 'pants';
+      if (n.includes('foot') || n.includes('feet') || n.includes('shoe') || n.includes('boot') || n.includes('sneaker')) return 'shoes';
+      if (n.includes('hand') || n.includes('glove') || n.includes('gauntlet')) return 'accessory';
+      if (n.includes('cape') || n.includes('back') || n.includes('cloak') || n.includes('wing') || n.includes('weapon') || n.includes('sword') || n.includes('bow') || n.includes('staff') || n.includes('axe') || n.includes('shield')) return 'accessory';
+      return 'shirt';
+    };
+
+    const gltfLoader = new GLTFLoader();
+    for (const sourceFile of modelFiles) {
+      let itemFile = sourceFile;
+      const lower = sourceFile.name.toLowerCase();
+      try {
+        if (lower.endsWith('.fbx')) itemFile = await convertFbxToGlb(sourceFile, { textureFiles });
+        else if (lower.endsWith('.obj')) itemFile = await convertObjToGlb(sourceFile, { mtlFile, textureFiles });
+        else if (lower.endsWith('.gltf')) itemFile = await convertGltfToGlb(sourceFile, { companionFiles: bufferFiles, textureFiles });
+        else if (lower.endsWith('.vox')) itemFile = await convertVoxToGlb(sourceFile);
+        else if (lower.endsWith('.dae')) itemFile = await convertDaeToGlb(sourceFile, { textureFiles });
+        else if (lower.endsWith('.stl')) itemFile = await convertStlToGlb(sourceFile);
+        else if (lower.endsWith('.ply')) itemFile = await convertPlyToGlb(sourceFile);
+
+        const itemUrl = URL.createObjectURL(itemFile);
+        try {
+          const loaded = await new Promise<any>((resolve, reject) => gltfLoader.load(itemUrl, resolve, undefined, reject));
+          const scene = loaded.scene || loaded.scenes?.[0];
+          if (!scene) throw new Error(`No scene found in ${sourceFile.name}`);
+          if (textureFiles.length > 0) await attachTextureFilesToMaterials(scene, textureFiles);
+          const animationAnalysis = analyzeSceneAnimations(scene, loaded.animations || [], sourceFile.name);
+          const item: AdditionalItem = {
+            id: `item_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            file: itemFile,
+            name: sourceFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '),
+            category: guessCategory(sourceFile.name),
+            scene,
+            animations: loaded.animations || [],
+            categorizedAnimations: animationAnalysis.categorizedAnimations,
+            rigLabel: animationAnalysis.rigLabel,
+            enabled: true,
+          };
+          setAdditionalItems(previous => [...previous, item]);
+          const textureCount = getAttachedTextureNames(scene).length;
+          showToast?.(`Added ${item.name}: ${textureCount} texture${textureCount === 1 ? '' : 's'} attached, ${item.animations?.length || 0} animation clip${item.animations?.length === 1 ? '' : 's'} found.`);
+        } finally {
+          URL.revokeObjectURL(itemUrl);
+        }
+      } catch (error: any) {
+        console.warn('Failed to add modular item:', sourceFile.name, error);
+        showToast?.(`Could not load ${sourceFile.name}: ${error.message || 'unsupported model file'}`);
+      }
     }
   };
 
@@ -272,20 +474,20 @@ export function AssetDefinitionStudio({
         return;
       }
 
-      parsedGLB.rawAnimations.push(...extraParsed.rawAnimations);
-      parsedGLB.animations.push(...extraParsed.animations);
-      parsedGLB.categorizedAnimations.push(...extraParsed.categorizedAnimations);
+      const firstAddedAnimationIndex = parsedGLB.rawAnimations.length;
+      const updatedParsedGLB = appendParsedAnimations(parsedGLB, extraParsed);
 
       // Auto-assign suggested slots
       const nextAnimMap = { ...animMap };
-      extraParsed.categorizedAnimations.forEach((catAnim) => {
+      updatedParsedGLB.categorizedAnimations.slice(firstAddedAnimationIndex).forEach((catAnim) => {
         const choiceId = embeddedAnimationChoiceId(catAnim.clipName);
         catAnim.suggestedSlots.forEach((slot) => {
-          if (!nextAnimMap[slot]) nextAnimMap[slot] = choiceId;
+          if (catAnim.compatibilityWithModel?.isCompatible !== false && !nextAnimMap[slot]) nextAnimMap[slot] = choiceId;
         });
       });
       setAnimMap(nextAnimMap);
-      setParsedGLB({ ...parsedGLB });
+      setParsedGLB(updatedParsedGLB);
+      setActiveAnimationIndex(firstAddedAnimationIndex);
       setHasModifiedTextures(true); // Flag to ensure GLTFExporter bakes in the new clips!
       showToast?.(`Added ${extraParsed.rawAnimations.length} clips from ${animFile.name}!`);
     } catch (err: any) {
@@ -300,7 +502,7 @@ export function AssetDefinitionStudio({
     parsedGLB.categorizedAnimations.forEach((catAnim) => {
       const choiceId = embeddedAnimationChoiceId(catAnim.clipName);
       catAnim.suggestedSlots.forEach((slot) => {
-        if (!nextAnimMap[slot]) {
+        if (catAnim.compatibilityWithModel?.isCompatible !== false && !nextAnimMap[slot]) {
           nextAnimMap[slot] = choiceId;
           mappedCount++;
         }
@@ -365,6 +567,7 @@ export function AssetDefinitionStudio({
     [animationChoices],
   );
   const hasEmbeddedAnimations = (parsedGLB?.animations.length || 0) > 0;
+  const canUseHumanoidAnimationProfiles = parsedGLB?.rigAnalysis.family === 'HUMANOID_BIPED' || !!parsedGLB?.rigAnalysis.isHumanoid;
 
   // Handle automatic prepopulation of animation map based on selected profile
   useEffect(() => {
@@ -395,7 +598,7 @@ export function AssetDefinitionStudio({
     async function load() {
       try {
         setIsParsing(true);
-        const parsed = await parseGLB(previewUrl, { fileName: file.name, isSingleClipOnActor: true });
+        let parsed = await parseGLB(previewUrl, { fileName: file.name, isSingleClipOnActor: true });
 
         // Auto-assign companion textures if provided
         if (companionTextureFiles && companionTextureFiles.length > 0) {
@@ -424,9 +627,7 @@ export function AssetDefinitionStudio({
               URL.revokeObjectURL(animUrl);
 
               if (extraParsed.rawAnimations.length > 0) {
-                parsed.rawAnimations.push(...extraParsed.rawAnimations);
-                parsed.animations.push(...extraParsed.animations);
-                parsed.categorizedAnimations.push(...extraParsed.categorizedAnimations);
+                parsed = appendParsedAnimations(parsed, extraParsed);
                 addedClips += extraParsed.rawAnimations.length;
               }
             } catch (animErr) {
@@ -441,14 +642,8 @@ export function AssetDefinitionStudio({
 
         // Process companion modular wardrobe/armor pieces if provided (e.g. from modular zip or multi-file drop)
         if (companionModularFiles && companionModularFiles.length > 0) {
-          const loadedModularItems: Array<{
-            id: string;
-            file: File;
-            name?: string;
-            category: string;
-            scene?: THREE.Group;
-            enabled: boolean;
-          }> = [];
+          const loadedModularItems: AdditionalItem[] = [];
+          let recoveredAnimationClipCount = 0;
 
           const gltfLoader = new GLTFLoader();
 
@@ -470,6 +665,23 @@ export function AssetDefinitionStudio({
                 await attachTextureFilesToMaterials(modScene, companionTextureFiles);
               }
 
+              const embeddedItemAnimations = Array.isArray(loadedGltf.animations) ? loadedGltf.animations : [];
+              const looksLikeModularPiece = /hair|beard|hat|helmet|shirt|torso|jacket|armor|pant|trouser|shoe|boot|glove|gauntlet|cape|cloak|wing|weapon|sword|bow|shield|face|head|piece|wardrobe/i.test(modFile.name);
+              if (embeddedItemAnimations.length > 0 && !looksLikeModularPiece) {
+                const animationUrl = URL.createObjectURL(glbModFile);
+                try {
+                  const recovered = await parseGLB(animationUrl, {
+                    fileName: modFile.name,
+                    modelBoneNames: parsed.bones.map(bone => bone.name),
+                  });
+                  parsed = appendParsedAnimations(parsed, recovered);
+                  recoveredAnimationClipCount += recovered.rawAnimations.length;
+                } finally {
+                  URL.revokeObjectURL(animationUrl);
+                }
+                continue;
+              }
+
               // Guess category
               const n = modFile.name.toLowerCase();
               let cat = 'shirt';
@@ -481,12 +693,18 @@ export function AssetDefinitionStudio({
               else if (n.includes('glove') || n.includes('hand') || n.includes('wrist') || n.includes('gauntlet')) cat = 'accessory';
               else if (n.includes('weapon') || n.includes('sword') || n.includes('bow') || n.includes('axe') || n.includes('shield')) cat = 'accessory';
 
+              const animationAnalysis = modScene
+                ? analyzeSceneAnimations(modScene, loadedGltf.animations || [], modFile.name)
+                : { rigLabel: 'Static / no skeleton', categorizedAnimations: [] };
               loadedModularItems.push({
                 id: `mod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
                 file: glbModFile,
                 name: modFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '),
                 category: cat,
                 scene: modScene,
+                animations: loadedGltf.animations || [],
+                categorizedAnimations: animationAnalysis.categorizedAnimations,
+                rigLabel: animationAnalysis.rigLabel,
                 enabled: true,
               });
             } catch (modErr) {
@@ -499,6 +717,10 @@ export function AssetDefinitionStudio({
             setStructure('Modular');
             setActiveTab('items');
             showToast?.(`Assembled ${loadedModularItems.length} modular wardrobe pieces onto character!`);
+          }
+          if (recoveredAnimationClipCount > 0) {
+            setHasModifiedTextures(true);
+            showToast?.(`Recovered ${recoveredAnimationClipCount} animation clip(s) from companion model files.`);
           }
         }
 
@@ -536,16 +758,40 @@ export function AssetDefinitionStudio({
         parsed.categorizedAnimations.forEach((catAnim) => {
           const choiceId = embeddedAnimationChoiceId(catAnim.clipName);
           catAnim.suggestedSlots.forEach((slot) => {
-            if (!autoAnimMap[slot]) autoAnimMap[slot] = choiceId;
+            if (catAnim.compatibilityWithModel?.isCompatible !== false && !autoAnimMap[slot]) autoAnimMap[slot] = choiceId;
           });
         });
 
         // Fallback: If no slots were mapped and there is at least one clip, map the first to idle
         if (Object.keys(autoAnimMap).length === 0 && parsed.animations.length > 0) {
-          autoAnimMap['idle'] = embeddedAnimationChoiceId(parsed.animations[0].name);
+          const firstCompatibleClip = parsed.categorizedAnimations.find(catAnim => catAnim.compatibilityWithModel?.isCompatible !== false);
+          if (firstCompatibleClip) autoAnimMap['idle'] = embeddedAnimationChoiceId(firstCompatibleClip.clipName);
+        }
+
+        const isActorModel = taxonomy.suggestedRoles.some(role => ['Character', 'NPC', 'Enemy', 'Player'].includes(role));
+        const isHumanoidRig = parsed.rigAnalysis.family === 'HUMANOID_BIPED' || parsed.rigAnalysis.isHumanoid;
+        let recommendedProfileId = '';
+        if (parsed.animations.length === 0 && isActorModel && isHumanoidRig) {
+          const normalizedModelName = file.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const namedProfile = ANIMATION_PROFILES.find(profile =>
+            normalizedModelName.includes(profile.id.toLowerCase().replace(/manny$/i, '').replace(/[^a-z0-9]/g, ''))
+          );
+          const profile = namedProfile || getAnimationProfile('MocapMobility');
+          if (profile) {
+            recommendedProfileId = profile.id;
+            for (const slot of Object.keys(profile.slotMap) as AnimationSlot[]) {
+              const mapping = profile.slotMap[slot];
+              if (mapping) autoAnimMap[slot] = animationSetChoiceId(profile.id, mapping.clip);
+            }
+          }
         }
 
         setAnimMap(autoAnimMap);
+        setAnimationProfileId(recommendedProfileId);
+        setActiveAnimationIndex(parsed.rawAnimations.length > 0 ? 0 : undefined);
+        if (recommendedProfileId) {
+          showToast?.(`No embedded clips found. Assigned the ${getAnimationProfile(recommendedProfileId)?.displayName || 'compatible'} humanoid animation set.`);
+        }
         
         // Auto-materials
         const mats: Record<string, { tintable: boolean, slot: string }> = {};
@@ -635,6 +881,10 @@ export function AssetDefinitionStudio({
         }
 
         const exporter = new GLTFExporter();
+        const compositeAnimations = [
+          ...(parsedGLB!.rawAnimations || []),
+          ...additionalItems.filter(item => item.enabled).flatMap(item => item.animations || []),
+        ];
         const gltfBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
           exporter.parse(
             compositeGroup,
@@ -646,7 +896,7 @@ export function AssetDefinitionStudio({
             {
               binary: true,
               embedImages: true,
-              animations: parsedGLB!.rawAnimations || [],
+              animations: compositeAnimations,
             }
           );
         });
@@ -801,9 +1051,13 @@ export function AssetDefinitionStudio({
       // Upload additional items (only when publishing as dynamic Modular Set)
       if (finalStructure === 'Modular' && publishingMode === 'MODULAR_SET' && additionalItems.length > 0) {
         for (const item of additionalItems) {
+          const itemBaseName = item.name || item.file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+          const itemUploadFile = item.scene
+            ? await exportSceneAsGlb(item.scene, item.animations || [], `${itemBaseName.replace(/\s+/g, '_')}.glb`)
+            : item.file;
           const itemFormData = new FormData();
-          itemFormData.append('file', item.file);
-          itemFormData.append('name', `${modularSetName || assetName} - ${item.file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ')}`);
+          itemFormData.append('file', itemUploadFile);
+          itemFormData.append('name', `${modularSetName || assetName} - ${itemBaseName}`);
           itemFormData.append('type', 'MODEL');
           itemFormData.append('createUsable', 'true');
           itemFormData.append('visibility', visibility);
@@ -1039,7 +1293,13 @@ export function AssetDefinitionStudio({
               onChange={e => setActiveAnimationIndex(e.target.value === '' ? undefined : Number(e.target.value))}
               className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[10px] text-white cursor-pointer hover:border-slate-500 transition-colors"
             >
-              <option value="">(No Animation / Default Pose)</option>
+              <option value="">
+                {parsedGLB.animations.length > 0
+                  ? '(No Animation / Default Pose)'
+                  : animationProfileId
+                    ? '(No embedded clip · profile assigned below)'
+                    : '(No embedded clips found)'}
+              </option>
               {parsedGLB.animations.map((a, i) => (
                 <option key={i} value={i}>{a.name} ({a.duration.toFixed(2)}s)</option>
               ))}
@@ -1287,11 +1547,13 @@ export function AssetDefinitionStudio({
                   >
                     <option value="">Browse all sets / assign manually</option>
                     {ANIMATION_PROFILES.map(profile => (
-                      <option key={profile.id} value={profile.id}>{profile.displayName} · Manny rig</option>
+                      <option key={profile.id} value={profile.id} disabled={!canUseHumanoidAnimationProfiles}>{profile.displayName} · Humanoid (Manny) rig</option>
                     ))}
                   </select>
                   <div className="text-[9px] text-slate-500 mt-1">
-                    Choosing a set adds its suggested clips. Each action menu can still use clips from any registered set.
+                    {canUseHumanoidAnimationProfiles
+                      ? 'Humanoid profiles provide reusable clips for this rig. A compatible set was assigned automatically when the model had no embedded clips.'
+                      : `This model is ${parsedGLB.rigAnalysis.label}; the registered animation sets require a humanoid (Manny) rig.`}
                   </div>
                 </div>
               </div>
@@ -1652,7 +1914,7 @@ export function AssetDefinitionStudio({
               <div className="space-y-4">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="text-amber-200 text-[11px]">
-                    Assign clips to actions. Clips are analyzed for rig compatibility and requirements.
+                    Assign clips to actions. Each clip is labeled with its animation type and rig match for this model.
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -1679,6 +1941,13 @@ export function AssetDefinitionStudio({
                     </div>
                   </div>
                 </div>
+
+                {animationProfileId && (
+                  <div className="rounded border border-sky-700/50 bg-sky-950/25 px-3 py-2 text-[10px] text-sky-200 flex flex-wrap items-center gap-2">
+                    <strong>Animation profile: {getAnimationProfile(animationProfileId)?.displayName || animationProfileId}</strong>
+                    <span>· Humanoid (Manny) rig · {Object.values(animMap).filter(Boolean).length} actions assigned</span>
+                  </div>
+                )}
 
                 {/* Categorized Clips & Requirements Panel */}
                 {parsedGLB.categorizedAnimations && parsedGLB.categorizedAnimations.length > 0 && (
@@ -1720,6 +1989,12 @@ export function AssetDefinitionStudio({
                                 </span>
                               )}
 
+                              {catAnim.suggestedSlots.length > 0 && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] bg-indigo-950/40 border border-indigo-800/40 text-indigo-200">
+                                  Actions: {catAnim.suggestedSlots.join(', ').replace(/_/g, ' ')}
+                                </span>
+                              )}
+
                               {catAnim.compatibilityWithModel && (
                                 <span
                                   className={`px-1.5 py-0.5 rounded text-[9px] border ${
@@ -1728,7 +2003,9 @@ export function AssetDefinitionStudio({
                                       : 'bg-red-950/40 border-red-800/40 text-red-300'
                                   }`}
                                 >
-                                  {catAnim.compatibilityWithModel.score}% Rig Match
+                                  {catAnim.compatibilityWithModel.isCompatible
+                                    ? `Compatible · ${catAnim.compatibilityWithModel.score}% rig match`
+                                    : `Incompatible · ${catAnim.compatibilityWithModel.score}% rig match`}
                                 </span>
                               )}
                             </div>
@@ -1769,7 +2046,11 @@ export function AssetDefinitionStudio({
 
                 {!hasEmbeddedAnimations && (
                   <div className="rounded border border-amber-700/40 bg-amber-950/20 px-3 py-2 text-[10px] text-amber-200">
-                    This model has no embedded clips. You can upload companion .fbx/.glb clips above, or assign reusable Animation Sets below.
+                    This model has no embedded clips. {animationProfileId
+                      ? `The compatible ${getAnimationProfile(animationProfileId)?.displayName || 'humanoid'} profile and its action slots were assigned automatically.`
+                      : canUseHumanoidAnimationProfiles
+                        ? 'Choose a reusable Humanoid (Manny) profile below or upload companion .fbx/.glb clips.'
+                        : 'No registered animation profile matches this model rig. Add clips authored for this rig type.'}
                   </div>
                 )}
                 {Object.values(animMap).some((choiceId) => choiceId && animationChoiceById.get(choiceId)?.sourceKind === 'animation-set') && (
@@ -1912,6 +2193,14 @@ export function AssetDefinitionStudio({
                           </select>
                         </div>
                       </div>
+
+                      {Object.keys(mat.textureNames || {}).length > 0 && (
+                        <div className="text-[9px] text-emerald-300 bg-emerald-950/20 border border-emerald-900/40 rounded px-2 py-1">
+                          Attached textures: {Object.entries(mat.textureNames || {}).map(([channel, name]) =>
+                            `${channel.replace(/Map$/, '').replace(/^map$/, 'Albedo')}: ${name}`
+                          ).join(' · ')}
+                        </div>
+                      )}
 
                       {/* PBR Texture Channels */}
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2 pt-2 border-t border-slate-800/80">
@@ -2112,7 +2401,7 @@ export function AssetDefinitionStudio({
 
                 <div className="text-amber-200 mb-1 font-bold text-[11px]">Attach Modular Pieces (Live 3D Preview)</div>
                 <div className="text-[10px] text-slate-400 leading-relaxed">
-                  Add modular files (hair, clothing, boots, hats, weapons). They will automatically mount onto the base body in the 3D preview viewport!
+                  Add modular models with their texture images together. The importer will match textures, detect embedded animations, and report what was found for each item.
                 </div>
                 
                 {/* Drop zone */}
@@ -2120,85 +2409,16 @@ export function AssetDefinitionStudio({
                   <input 
                     type="file" 
                     multiple 
-                    accept=".glb,.gltf,.fbx,.obj,.vox,.dae,.stl,.ply" 
-                    onChange={async e => {
-                      if (!e.target.files) return;
-                      
-                      const guessCategory = (name: string): string => {
-                        const n = name.toLowerCase();
-                        if (n.includes('hair')) return 'hair';
-                        if (n.includes('head') || n.includes('helmet') || n.includes('hat') || n.includes('mask') || n.includes('face') || n.includes('cap')) return 'hat';
-                        if (n.includes('shirt') || n.includes('chest') || n.includes('torso') || n.includes('jacket') || n.includes('armor') || n.includes('t_shirt') || n.includes('top')) return 'shirt';
-                        if (n.includes('leg') || n.includes('pant') || n.includes('trouser') || n.includes('short')) return 'pants';
-                        if (n.includes('foot') || n.includes('feet') || n.includes('shoe') || n.includes('boot') || n.includes('sneaker')) return 'shoes';
-                        if (n.includes('hand') || n.includes('glove') || n.includes('gauntlet')) return 'accessory';
-                        if (n.includes('cape') || n.includes('back') || n.includes('cloak') || n.includes('wing')) return 'accessory';
-                        if (n.includes('weapon') || n.includes('sword') || n.includes('bow') || n.includes('staff') || n.includes('axe')) return 'accessory';
-                        if (n.includes('shield')) return 'accessory';
-                        return 'shirt';
-                      };
-
-                      const files = Array.from(e.target.files);
-                      const gltfLoader = new GLTFLoader();
-
-                      for (const f of files) {
-                        let finalFile = f;
-                        const lower = f.name.toLowerCase();
-                        try {
-                          if (lower.endsWith('.fbx')) {
-                            showToast?.(`Converting ${f.name} to GLB...`);
-                            finalFile = await convertFbxToGlb(f, { textureFiles: companionTextureFiles });
-                          } else if (lower.endsWith('.obj')) {
-                            showToast?.(`Converting ${f.name} to GLB...`);
-                            finalFile = await convertObjToGlb(f, { textureFiles: companionTextureFiles });
-                          } else if (lower.endsWith('.vox')) {
-                            showToast?.(`Converting ${f.name} to GLB...`);
-                            finalFile = await convertVoxToGlb(f);
-                          } else if (lower.endsWith('.dae')) {
-                            showToast?.(`Converting ${f.name} to GLB...`);
-                            finalFile = await convertDaeToGlb(f, { textureFiles: companionTextureFiles });
-                          } else if (lower.endsWith('.stl')) {
-                            showToast?.(`Converting ${f.name} to GLB...`);
-                            finalFile = await convertStlToGlb(f);
-                          } else if (lower.endsWith('.ply')) {
-                            showToast?.(`Converting ${f.name} to GLB...`);
-                            finalFile = await convertPlyToGlb(f);
-                          }
-                        } catch (err) {
-                          console.warn('Conversion failed for item:', f.name, err);
-                        }
-
-                        const itemUrl = URL.createObjectURL(finalFile);
-                        gltfLoader.load(
-                          itemUrl,
-                          (gltf) => {
-                            URL.revokeObjectURL(itemUrl);
-                            if (companionTextureFiles && companionTextureFiles.length > 0) {
-                              attachTextureFilesToMaterials(gltf.scene, companionTextureFiles);
-                            }
-                            setAdditionalItems(prev => [
-                              ...prev,
-                              {
-                                id: Math.random().toString(36).substring(2, 9),
-                                file: finalFile,
-                                name: finalFile.name,
-                                category: guessCategory(f.name),
-                                scene: gltf.scene,
-                                enabled: true,
-                              },
-                            ]);
-                            showToast?.(`Mounted ${finalFile.name} onto 3D character!`);
-                          },
-                          undefined,
-                          () => URL.revokeObjectURL(itemUrl)
-                        );
-                      }
+                    accept=".glb,.gltf,.fbx,.obj,.mtl,.bin,.vox,.dae,.stl,.ply,.png,.jpg,.jpeg,.webp,.tga,.dds,.bmp"
+                    onChange={e => {
+                      if (e.target.files) void handleAddModularFiles(Array.from(e.target.files));
+                      e.target.value = '';
                     }}
                     className="absolute inset-0 opacity-0 cursor-pointer"
                   />
                   <Puzzle className="w-6 h-6 text-slate-500 group-hover:text-amber-500 mx-auto mb-2 transition-colors" />
-                  <div className="text-amber-500 font-bold text-[11px] group-hover:text-amber-400">Click or Drag 3D Modular Pieces here (GLB/FBX/OBJ/VOX/DAE/STL)</div>
-                  <div className="text-[9px] text-slate-500 mt-1">e.g., Hat_010.glb, T-Shirt_009.glb, Pants_005.glb, Boot_002.glb, Hair_001.glb</div>
+                  <div className="text-amber-500 font-bold text-[11px] group-hover:text-amber-400">Click or drop modular models and textures</div>
+                  <div className="text-[9px] text-slate-500 mt-1">Models: GLB/GLTF/FBX/OBJ/VOX/DAE/STL/PLY · Companion files: BIN/MTL · Textures: PNG/JPG/WEBP/TGA/DDS/BMP</div>
                 </div>
 
                 {/* Items list */}
@@ -2230,6 +2450,26 @@ export function AssetDefinitionStudio({
                             {item.enabled ? 'Mounted in Preview' : 'Hidden'}
                           </span>
                         </div>
+                        <div className={`text-[9px] mt-0.5 break-words ${getAttachedTextureAssignments(item.scene).length > 0 ? 'text-emerald-300' : 'text-amber-300'}`}>
+                          {getAttachedTextureAssignments(item.scene).length > 0
+                            ? `Textures attached: ${getAttachedTextureAssignments(item.scene).join(' · ')}`
+                            : 'No textures attached'}
+                        </div>
+                        <div className="text-[9px] text-slate-500 mt-0.5">
+                          Rig: {item.rigLabel || 'Unclassified'} · Animation clips: {item.animations?.length || 0}
+                        </div>
+                        {item.categorizedAnimations && item.categorizedAnimations.length > 0 && (
+                          <div className="text-[9px] text-indigo-200 mt-0.5">
+                            Animation types: {item.categorizedAnimations.map(animation =>
+                              `${animation.clipName} → ${animation.suggestedSlots.length > 0 ? animation.suggestedSlots.join('/') : animation.category} · ${animation.compatibilityWithModel
+                                ? (animation.compatibilityWithModel.isCompatible ? 'compatible' : 'incompatible')
+                                : animation.targetRigLabel}`
+                            ).join(' · ')}
+                          </div>
+                        )}
+                        {(!item.categorizedAnimations || item.categorizedAnimations.length === 0) && (
+                          <div className="text-[9px] text-slate-500 mt-0.5">Animation types: no clips found</div>
+                        )}
                       </div>
 
                       <div className="flex gap-1 flex-wrap max-w-[280px]">
@@ -2251,6 +2491,21 @@ export function AssetDefinitionStudio({
                           );
                         })}
                       </div>
+
+                      <label className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[9px] text-slate-200 cursor-pointer whitespace-nowrap">
+                        + Textures
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/png,image/jpeg,image/webp,image/x-tga,.tga,.dds,.bmp"
+                          className="hidden"
+                          onChange={e => {
+                            const files = Array.from(e.target.files || []);
+                            if (files.length > 0) void handleAttachTexturesToItem(item.id, files);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
 
                       <button 
                         type="button"

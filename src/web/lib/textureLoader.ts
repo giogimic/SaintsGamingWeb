@@ -299,15 +299,19 @@ export async function attachTextureFilesToMaterials(
         });
       }
 
-      // 4. Fallback: Assign to the first material that lacks this PBR channel
-      if (!targetMat) {
-        targetMat = materialsList.find((m) => !(m as any)[channel]) || materialsList[0];
+      // Only use an unnamed fallback when the model has one material. Picking
+      // the first material on a multi-material model silently paints unrelated
+      // parts with the wrong texture and makes automatic matching look successful.
+      if (!targetMat && materialsList.length === 1) {
+        targetMat = materialsList[0];
       }
 
       if (targetMat) {
         (targetMat as any)[channel] = texture;
         targetMat.needsUpdate = true;
         attachedCount++;
+      } else {
+        texture.dispose();
       }
     } catch (err) {
       console.warn(`[textureLoader] Failed to load/attach texture ${tf.name}:`, err);

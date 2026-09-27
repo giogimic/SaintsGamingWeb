@@ -17,8 +17,22 @@ export interface ParsedMaterial {
   hasMetalnessMap?: boolean;
   hasEmissiveMap?: boolean;
   hasAoMap?: boolean;
+  textureNames?: Partial<Record<'map' | 'normalMap' | 'roughnessMap' | 'metalnessMap' | 'emissiveMap' | 'aoMap', string>>;
   roughness?: number;
   metalness?: number;
+}
+
+function getMaterialTextureNames(material: any): ParsedMaterial['textureNames'] {
+  const channels = ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap', 'aoMap'] as const;
+  const names: NonNullable<ParsedMaterial['textureNames']> = {};
+  for (const channel of channels) {
+    const texture = material?.[channel];
+    if (!texture) continue;
+    const image = texture.image || texture.source?.data;
+    const imageName = image?.name || image?.currentSrc?.split('/').pop()?.split('?')[0] || image?.src?.split('/').pop()?.split('?')[0];
+    names[channel] = texture.name || imageName || 'Attached texture';
+  }
+  return names;
 }
 
 export interface ParsedMesh {
@@ -89,6 +103,7 @@ export function syncParsedMaterialsFromScene(
           hasMetalnessMap: !!standardMat.metalnessMap,
           hasEmissiveMap: !!standardMat.emissiveMap,
           hasAoMap: !!standardMat.aoMap,
+          textureNames: getMaterialTextureNames(mat),
           roughness: typeof standardMat.roughness === 'number' ? standardMat.roughness : undefined,
           metalness: typeof standardMat.metalness === 'number' ? standardMat.metalness : undefined,
         };
@@ -107,10 +122,21 @@ export async function parseGLB(url: string, options?: ParseGlbOptions): Promise<
         const scene = gltf.scene;
         const rawAnimations = Array.isArray(gltf.animations) ? gltf.animations : [];
         
-        const animations: ParsedAnimation[] = rawAnimations.map(anim => ({
-          name: anim.name || 'Unnamed Anim',
+        const usedClipNames = new Set<string>();
+        const animations: ParsedAnimation[] = rawAnimations.map((anim, index) => {
+          const fileStem = options?.fileName?.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ').trim();
+          const baseName = anim.name?.trim() || (rawAnimations.length === 1 && fileStem ? fileStem : `Animation ${index + 1}`);
+          let name = baseName;
+          let duplicateIndex = 2;
+          while (usedClipNames.has(name)) name = `${baseName} (${duplicateIndex++})`;
+          usedClipNames.add(name);
+          // Keep the source clip, catalog entry, and categorized label on one stable name.
+          anim.name = name;
+          return {
+          name,
           duration: anim.duration || 0,
-        }));
+          };
+        });
 
         const meshes: ParsedMesh[] = [];
         const materials: Record<string, ParsedMaterial> = {};
@@ -136,6 +162,7 @@ export async function parseGLB(url: string, options?: ParseGlbOptions): Promise<
                   hasMetalnessMap: !!standardMat.metalnessMap,
                   hasEmissiveMap: !!standardMat.emissiveMap,
                   hasAoMap: !!standardMat.aoMap,
+                  textureNames: getMaterialTextureNames(mat),
                   roughness: typeof standardMat.roughness === 'number' ? standardMat.roughness : undefined,
                   metalness: typeof standardMat.metalness === 'number' ? standardMat.metalness : undefined,
                 };
