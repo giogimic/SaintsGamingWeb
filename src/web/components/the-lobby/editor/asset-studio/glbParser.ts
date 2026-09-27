@@ -38,6 +38,14 @@ export interface ParsedAnimation {
   duration: number;
 }
 
+export interface ModelDimensions {
+  width: number;
+  height: number;
+  depth: number;
+  maxDimension: number;
+  center: [number, number, number];
+}
+
 export interface ParsedGLB {
   scene: THREE.Group;
   animations: ParsedAnimation[];
@@ -48,6 +56,7 @@ export interface ParsedGLB {
   bones: ParsedBone[];
   isSkinned: boolean;
   rigAnalysis: RigAnalysisResult;
+  dimensions: ModelDimensions;
 }
 
 export interface ParseGlbOptions {
@@ -181,6 +190,20 @@ export async function parseGLB(url: string, options?: ParseGlbOptions): Promise<
           )
         );
 
+        // Compute model dimensions from bounding box
+        const bbox = new THREE.Box3().setFromObject(scene);
+        const size = new THREE.Vector3();
+        const center = new THREE.Vector3();
+        bbox.getSize(size);
+        bbox.getCenter(center);
+        const dimensions: ModelDimensions = {
+          width: Number(size.x.toFixed(3)),
+          height: Number(size.y.toFixed(3)),
+          depth: Number(size.z.toFixed(3)),
+          maxDimension: Number(Math.max(size.x, size.y, size.z).toFixed(3)),
+          center: [Number(center.x.toFixed(3)), Number(center.y.toFixed(3)), Number(center.z.toFixed(3))],
+        };
+
         resolve({
           scene,
           animations,
@@ -191,6 +214,7 @@ export async function parseGLB(url: string, options?: ParseGlbOptions): Promise<
           bones,
           isSkinned,
           rigAnalysis,
+          dimensions,
         });
       },
       undefined,

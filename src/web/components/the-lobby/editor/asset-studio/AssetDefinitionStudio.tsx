@@ -3,8 +3,27 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { parseGLB, ParsedGLB, syncParsedMaterialsFromScene } from './glbParser';
-import { AssetInspector3D, AssetInspector3DRef } from './AssetInspector3D';
-import { Loader2, CheckCircle2, Box, Users, Puzzle, Bone, Maximize2, AlertTriangle, Image as ImageIcon } from 'lucide-react';
+import { AssetInspector3D, AssetInspector3DRef, LightingPreset, AttachedSceneItem } from './AssetInspector3D';
+import {
+  Loader2,
+  CheckCircle2,
+  Box,
+  Users,
+  Puzzle,
+  Bone,
+  Maximize2,
+  AlertTriangle,
+  Image as ImageIcon,
+  Sun,
+  Moon,
+  Sparkles,
+  Layers,
+  Sliders,
+  Eye,
+  EyeOff,
+  Sparkle,
+  RefreshCw,
+} from 'lucide-react';
 import { useGameStore } from '../../store';
 import { AssetManager } from '@/engine/assets/AssetManager';
 import { RegistryCombobox } from '../components/RegistryCombobox';
@@ -22,7 +41,7 @@ import {
   embeddedAnimationChoiceId,
   getAnimationChoicesForSlot,
 } from '@/shared/game/animationCatalog';
-import { GLTFExporter } from 'three-stdlib';
+import { GLTFExporter, GLTFLoader } from 'three-stdlib';
 import {
   loadTextureFromFile,
   detectPbrChannel,
@@ -36,6 +55,7 @@ import {
 } from '@/web/lib/modelPackage';
 import { convertFbxToGlb } from '@/web/lib/fbxConverter';
 import { RIG_FAMILIES, type CategorizedAnimationClip } from '@/shared/game/modelRigTaxonomy';
+import { detectAssetTaxonomy, AssetTaxonomyResult } from '@/web/lib/assetTaxonomy';
 
 // ── Types ────────────────────────────────────────────────────────────
 interface Props {
@@ -158,9 +178,24 @@ export function AssetDefinitionStudio({
   
   const [materialConfig, setMaterialConfig] = useState<Record<string, { tintable: boolean, slot: string }>>({});
   const [hasModifiedTextures, setHasModifiedTextures] = useState(false);
-  
-  // Additional Items for Modular Set
-  const [additionalItems, setAdditionalItems] = useState<Array<{ id: string, file: File; category: string }>>([]);
+
+  // Modern Viewport & Taxonomy state
+  const [taxonomyResult, setTaxonomyResult] = useState<AssetTaxonomyResult | null>(null);
+  const [lightingPreset, setLightingPreset] = useState<LightingPreset>('studio');
+  const [wireframe, setWireframe] = useState<boolean>(false);
+  const [showHumanReference, setShowHumanReference] = useState<boolean>(true);
+  const [isDraggingOverViewport, setIsDraggingOverViewport] = useState<boolean>(false);
+  const [publishingMode, setPublishingMode] = useState<'COMPOSITE_MODEL' | 'MODULAR_SET'>('COMPOSITE_MODEL');
+
+  // Additional Items for Modular Set & Live Composition
+  const [additionalItems, setAdditionalItems] = useState<Array<{
+    id: string;
+    file: File;
+    name?: string;
+    category: string;
+    scene?: THREE.Group;
+    enabled: boolean;
+  }>>([]);
 
   const assignTextureToMaterialChannel = async (matName: string, channel: PbrChannel, textureFile: File) => {
     if (!parsedGLB) return;
@@ -191,50 +226,25 @@ export function AssetDefinitionStudio({
 
   const handleBatchAssignTextures = async (files: File[]) => {
     if (!parsedGLB || files.length === 0) return;
-    let assignedCount = 0;
-    const matKeys = Object.keys(parsedGLB.materials);
-
-    for (const tf of files) {
-      const channel = detectPbrChannel(tf.name);
-      if (!channel) continue;
-
-      let targetMatName = matKeys[0];
-      const fileLower = tf.name.toLowerCase();
-      for (const mk of matKeys) {
-        if (fileLower.includes(mk.toLowerCase())) {
-          targetMatName = mk;
-          break;
+    try {
+      showToast?.(`Attaching ${files.length} texture file(s)...`);
+      let count = await attachTextureFilesToMaterials(parsedGLB.scene, files);
+      for (const item of additionalItems) {
+        if (item.scene) {
+          count += await attachTextureFilesToMaterials(item.scene, files);
         }
       }
-
-      if (targetMatName) {
-        try {
-          const texture = await loadTextureFromFile(tf);
-          parsedGLB.scene.traverse((child: any) => {
-            if (child.isMesh && child.material) {
-              const mats = Array.isArray(child.material) ? child.material : [child.material];
-              mats.forEach((m: any) => {
-                if (m.name === targetMatName) {
-                  m[channel] = texture;
-                  m.needsUpdate = true;
-                }
-              });
-            }
-          });
-          assignedCount++;
-        } catch (err) {
-          console.warn('Batch texture load failed for:', tf.name, err);
-        }
+      if (count > 0) {
+        syncParsedMaterialsFromScene(parsedGLB.scene, parsedGLB.materials);
+        setHasModifiedTextures(true);
+        setMaterialConfig(prev => ({ ...prev }));
+        showToast?.(`Auto-attached ${count} textures to model materials!`);
+      } else {
+        showToast?.('No matching materials found for dropped textures.');
       }
-    }
-
-    if (assignedCount > 0) {
-      syncParsedMaterialsFromScene(parsedGLB.scene, parsedGLB.materials);
-      setHasModifiedTextures(true);
-      setMaterialConfig(prev => ({ ...prev }));
-      showToast?.(`Auto-assigned ${assignedCount} textures to model materials!`);
-    } else {
-      showToast?.('No matching texture channels found in selected files.');
+    } catch (err: any) {
+      console.warn('Batch texture load failed:', err);
+      showToast?.(`Texture attachment failed: ${err.message}`);
     }
   };
 
@@ -426,6 +436,23 @@ export function AssetDefinitionStudio({
         }
 
         setParsedGLB(parsed);
+
+        // Auto-detect asset taxonomy (character, modular base, modular piece, weapon, prop, creature)
+        const taxonomy = detectAssetTaxonomy(
+          file.name,
+          parsed.dimensions,
+          parsed.rigAnalysis,
+          parsed.meshes.length
+        );
+        setTaxonomyResult(taxonomy);
+        setStructure(taxonomy.structure);
+        setRoles(taxonomy.suggestedRoles);
+        if (taxonomy.modularSlot) {
+          setComponentCategory(taxonomy.modularSlot);
+        }
+        if (taxonomy.scaleSuggestion.recommendedScale !== 1.0) {
+          setModelScale(taxonomy.scaleSuggestion.recommendedScale);
+        }
         
         // Auto-detect bones using comprehensive rigAnalysis
         const autoMap: Record<string, string> = {};
@@ -468,6 +495,20 @@ export function AssetDefinitionStudio({
     load();
   }, [previewUrl, file.name, companionTextureFiles, companionAnimationFiles]);
 
+  const untexturedCount = useMemo(() => {
+    if (!parsedGLB) return 0;
+    return Object.values(parsedGLB.materials).filter((m) => !m.hasTexture).length;
+  }, [parsedGLB, materialConfig, hasModifiedTextures]);
+
+  const attachedModularScenes: AttachedSceneItem[] = useMemo(() => {
+    return additionalItems
+      .filter((item) => item.enabled && item.scene)
+      .map((item) => ({
+        id: item.id,
+        scene: item.scene!,
+      }));
+  }, [additionalItems]);
+
   // ── Handlers ───────────────────────────────────────────────────────
   const toggleRole = (role: string) => {
     setRoles(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
@@ -505,7 +546,51 @@ export function AssetDefinitionStudio({
       const thumbnailDataUrl = inspectorRef.current?.takeSnapshot();
 
       let uploadFile = file;
-      if (hasModifiedTextures && parsedGLB) {
+      let finalStructure = structure;
+      let finalRoles = [...roles];
+
+      // If user authored a modular character and chose "Publish as Pre-Assembled Composite Character":
+      if (
+        structure === 'Modular' &&
+        publishingMode === 'COMPOSITE_MODEL' &&
+        additionalItems.some((i) => i.enabled && i.scene)
+      ) {
+        showToast?.('Merging base body and modular pieces into single composite character GLB...');
+        const compositeGroup = new THREE.Group();
+        compositeGroup.name = `${assetName}_Composite`;
+        compositeGroup.add(parsedGLB!.scene.clone(true));
+
+        for (const item of additionalItems) {
+          if (item.enabled && item.scene) {
+            compositeGroup.add(item.scene.clone(true));
+          }
+        }
+
+        const exporter = new GLTFExporter();
+        const gltfBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+          exporter.parse(
+            compositeGroup,
+            (res) => {
+              if (res instanceof ArrayBuffer) resolve(res);
+              else reject(new Error('GLTFExporter did not return an ArrayBuffer'));
+            },
+            (err) => reject(err),
+            {
+              binary: true,
+              embedImages: true,
+              animations: parsedGLB!.rawAnimations || [],
+            }
+          );
+        });
+
+        uploadFile = new File(
+          [new Blob([gltfBuffer], { type: 'model/gltf-binary' })],
+          `${file.name.replace(/\.[^/.]+$/, '')}_Composite.glb`,
+          { type: 'model/gltf-binary' }
+        );
+        finalStructure = 'Complete';
+        if (!finalRoles.includes('Character')) finalRoles.push('Character');
+      } else if (hasModifiedTextures && parsedGLB) {
         showToast?.('Baking connected textures into GLB binary...');
         const exporter = new GLTFExporter();
         const gltfBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
@@ -546,15 +631,15 @@ export function AssetDefinitionStudio({
       }
 
       const tagList = tagsInput.split(',').map((t) => t.trim()).filter(Boolean);
-      tagList.push(...roles.map(r => r.toLowerCase()));
-      if (structure === 'Modular') tagList.push('modular');
+      tagList.push(...finalRoles.map(r => r.toLowerCase()));
+      if (finalStructure === 'Modular') tagList.push('modular');
       formData.append('tags', JSON.stringify(tagList));
 
-      if (structure === 'Modular') {
+      if (finalStructure === 'Modular') {
         formData.append('isCharacterCustomizable', 'true');
       }
       
-      if (structure === 'ModularItem') {
+      if (finalStructure === 'ModularItem') {
         formData.append('isModularComponent', 'true');
         formData.append('componentCategory', componentCategory);
         if (baseBodyType.trim()) {
@@ -585,12 +670,12 @@ export function AssetDefinitionStudio({
       );
 
       const assetDefinition = {
-        roles,
-        structure,
+        roles: finalRoles,
+        structure: finalStructure,
         perspective,
         animationProfileId,
-        modularSetName: structure === 'Modular' ? modularSetName : undefined,
-        skeletonConnectionPoints: structure === 'Modular' ? skeletonConnectionPoints : undefined,
+        modularSetName: finalStructure === 'Modular' ? modularSetName : undefined,
+        skeletonConnectionPoints: finalStructure === 'Modular' ? skeletonConnectionPoints : undefined,
         transform: {
           scale: modelScale,
           rotationY: modelRotationY,
@@ -630,7 +715,7 @@ export function AssetDefinitionStudio({
         },
         materials: materialConfig,
         meshes: parsedGLB?.meshes.map(m => m.name) || [],
-        modularComponents: structure === 'Modular' ? modularComponents : undefined,
+        modularComponents: finalStructure === 'Modular' ? modularComponents : undefined,
       };
       
       formData.append('assetDefinition', JSON.stringify(assetDefinition));
@@ -645,8 +730,8 @@ export function AssetDefinitionStudio({
         throw new Error(data.error || 'Failed to upload asset');
       }
 
-      // Upload additional items
-      if (structure === 'Modular' && additionalItems.length > 0) {
+      // Upload additional items (only when publishing as dynamic Modular Set)
+      if (finalStructure === 'Modular' && publishingMode === 'MODULAR_SET' && additionalItems.length > 0) {
         for (const item of additionalItems) {
           const itemFormData = new FormData();
           itemFormData.append('file', item.file);
@@ -726,63 +811,198 @@ export function AssetDefinitionStudio({
         </div>
       </div>
 
-      <div className="grid grid-cols-12 gap-4 h-[600px]">
-        {/* Left Side: 3D Preview */}
-        <div className="col-span-5 flex flex-col space-y-2 relative">
-          <div className="flex-1 rounded overflow-hidden">
-            <AssetInspector3D 
+      {/* Auto-Detection Vetting Bar */}
+      {taxonomyResult && (
+        <div className="bg-[#0b1320] border border-amber-600/40 rounded p-2.5 flex items-center justify-between flex-wrap gap-2 shadow-sm">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-600/20 text-amber-300 border border-amber-500/40">
+              ⚡ Auto-Detected: {taxonomyResult.label}
+            </span>
+            <span className="text-[10px] text-slate-300">
+              {taxonomyResult.reason}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-slate-400">
+              Confidence: <strong className={taxonomyResult.confidence === 'high' ? 'text-emerald-400' : 'text-amber-400'}>{taxonomyResult.confidence.toUpperCase()}</strong>
+            </span>
+            {parsedGLB?.dimensions && (
+              <span className="text-[10px] text-cyan-400 font-mono bg-cyan-950/40 border border-cyan-800/40 px-1.5 py-0.5 rounded">
+                Height: {parsedGLB.dimensions.height > 50 ? `${(parsedGLB.dimensions.height * 0.01).toFixed(2)}m (${parsedGLB.dimensions.height}cm)` : `${parsedGLB.dimensions.height}m`}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-12 gap-4 h-[720px] min-h-[640px]">
+        {/* Left Side: 3D Preview (Interactive Dropzone) */}
+        <div
+          className={`col-span-5 flex flex-col space-y-2 relative rounded overflow-hidden transition-all ${
+            isDraggingOverViewport ? 'ring-2 ring-amber-500 bg-amber-950/20' : ''
+          }`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDraggingOverViewport(true);
+          }}
+          onDragLeave={() => setIsDraggingOverViewport(false)}
+          onDrop={async (e) => {
+            e.preventDefault();
+            setIsDraggingOverViewport(false);
+            const files = Array.from(e.dataTransfer.files || []);
+            if (files.length > 0) {
+              const imgFiles = files.filter(f => /\.(png|jpe?g|webp|tga|dds|bmp)$/i.test(f.name));
+              if (imgFiles.length > 0) {
+                await handleBatchAssignTextures(imgFiles);
+              } else {
+                showToast?.('Please drop image/texture files (.png, .tga, .jpg, .dds)');
+              }
+            }
+          }}
+        >
+          {/* Viewport Canvas with missing-textures overlay */}
+          <div className="flex-1 rounded overflow-hidden relative">
+            {untexturedCount > 0 && (
+              <div className="absolute top-2 left-2 right-2 bg-amber-950/90 backdrop-blur-md border border-amber-600/60 rounded p-2 text-amber-200 text-[10px] flex items-center justify-between z-10 shadow-lg">
+                <div className="flex items-center gap-1.5 truncate">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="truncate">
+                    <strong>{untexturedCount} material{untexturedCount > 1 ? 's' : ''} untextured</strong> (white model). Drop textures here.
+                  </span>
+                </div>
+                <label className="px-2 py-0.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded cursor-pointer transition-colors text-[9px] shrink-0 ml-2">
+                  Browse Textures
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/png,image/jpeg,image/webp,image/x-tga,.tga,.dds,.bmp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = Array.from(e.target.files || []);
+                      if (f.length > 0) handleBatchAssignTextures(f);
+                    }}
+                  />
+                </label>
+              </div>
+            )}
+
+            <AssetInspector3D
               ref={inspectorRef}
-              parsedGLB={parsedGLB} 
-              activeAnimationIndex={activeAnimationIndex} 
+              parsedGLB={parsedGLB}
+              activeAnimationIndex={activeAnimationIndex}
               showSkeleton={showSkeleton}
               showBounds={showBounds}
+              showHumanReference={showHumanReference}
+              wireframe={wireframe}
+              lightingPreset={lightingPreset}
               modelScale={modelScale}
               modelRotationY={modelRotationY}
               modelGrounding={modelGrounding}
               modelCameraYOffset={modelCameraYOffset}
+              attachedScenes={attachedModularScenes}
             />
           </div>
-          {/* View Controls */}
-          <div className="flex items-center gap-2 bg-[#050b14] p-2 border border-slate-800 rounded">
-            <button 
-              onClick={() => setShowSkeleton(!showSkeleton)}
-              className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold transition-all ${
-                showSkeleton ? 'bg-amber-600/30 text-amber-300 border border-amber-600/50' : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-slate-300'
-              }`}
-            >
-              <Bone className="w-3 h-3" /> Bones
-            </button>
-            <button 
-              onClick={() => setShowBounds(!showBounds)}
-              className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold transition-all ${
-                showBounds ? 'bg-cyan-600/30 text-cyan-300 border border-cyan-600/50' : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-slate-300'
-              }`}
-            >
-              <Maximize2 className="w-3 h-3" /> Bounds
-            </button>
-            <select 
-              value={activeAnimationIndex ?? ''} 
+
+          {/* View Controls Toolbar */}
+          <div className="flex items-center justify-between gap-1.5 bg-[#050b14] p-1.5 border border-slate-800 rounded flex-wrap">
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setShowHumanReference(!showHumanReference)}
+                title="Toggle 1.75m Standard Humanoid Height Silhouette"
+                className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${
+                  showHumanReference ? 'bg-amber-600/30 text-amber-300 border border-amber-600/50' : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white'
+                }`}
+              >
+                🧍 1.75m Ref
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowSkeleton(!showSkeleton)}
+                className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${
+                  showSkeleton ? 'bg-amber-600/30 text-amber-300 border border-amber-600/50' : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white'
+                }`}
+              >
+                <Bone className="w-3 h-3 inline mr-1" /> Bones
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowBounds(!showBounds)}
+                className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${
+                  showBounds ? 'bg-cyan-600/30 text-cyan-300 border border-cyan-600/50' : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white'
+                }`}
+              >
+                <Maximize2 className="w-3 h-3 inline mr-1" /> Bounds
+              </button>
+              <button
+                type="button"
+                onClick={() => setWireframe(!wireframe)}
+                className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${
+                  wireframe ? 'bg-purple-600/30 text-purple-300 border border-purple-600/50' : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white'
+                }`}
+              >
+                Wireframe
+              </button>
+            </div>
+
+            {/* Lighting mode pills */}
+            <div className="flex items-center gap-1">
+              {(['studio', 'sunset', 'dramatic', 'night'] as LightingPreset[]).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setLightingPreset(mode)}
+                  title={`Lighting: ${mode}`}
+                  className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase transition-all ${
+                    lightingPreset === mode ? 'bg-amber-500 text-black' : 'bg-slate-800/80 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {mode === 'studio' ? '☀️ Studio' : mode === 'sunset' ? '🌅 Sun' : mode === 'dramatic' ? '✨ Rim' : '🌙 Night'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Animation selector */}
+          <div className="flex items-center gap-2 bg-[#050b14] px-2 py-1.5 border border-slate-800 rounded">
+            <span className="text-[10px] text-slate-400 shrink-0">Preview Clip:</span>
+            <select
+              value={activeAnimationIndex ?? ''}
               onChange={e => setActiveAnimationIndex(e.target.value === '' ? undefined : Number(e.target.value))}
-              className="ml-auto bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[10px] text-white cursor-pointer hover:border-slate-500 transition-colors"
+              className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[10px] text-white cursor-pointer hover:border-slate-500 transition-colors"
             >
-              <option value="">(No Animation)</option>
+              <option value="">(No Animation / Default Pose)</option>
               {parsedGLB.animations.map((a, i) => (
-                <option key={i} value={i}>{a.name}</option>
+                <option key={i} value={i}>{a.name} ({a.duration.toFixed(2)}s)</option>
               ))}
             </select>
           </div>
           
-          {/* Detected Specs */}
-          <div className="bg-[#050b14] p-2 border border-slate-800 rounded">
-            <div className="text-amber-400 font-bold mb-1 text-[11px]">Detected Specs</div>
-            <div className="text-[10px] grid grid-cols-2 gap-x-4 gap-y-1">
+          {/* Detected Specs & Height */}
+          <div className="bg-[#050b14] p-2.5 border border-slate-800 rounded space-y-1">
+            <div className="flex items-center justify-between">
+              <div className="text-amber-400 font-bold text-[11px] flex items-center gap-1.5">
+                <span>Model Specifications</span>
+                {taxonomyResult && (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] bg-amber-950/60 border border-amber-700/50 text-amber-300 font-normal">
+                    {taxonomyResult.label}
+                  </span>
+                )}
+              </div>
+              {parsedGLB.dimensions && (
+                <div className="text-[10px] text-cyan-400 font-mono font-bold">
+                  Height: {parsedGLB.dimensions.height > 50 ? `${(parsedGLB.dimensions.height * 0.01).toFixed(2)}m (${parsedGLB.dimensions.height}cm)` : `${parsedGLB.dimensions.height}m`}
+                </div>
+              )}
+            </div>
+            <div className="text-[10px] grid grid-cols-2 gap-x-4 gap-y-0.5">
               <div className="flex justify-between"><span className="text-slate-500">Meshes</span><span className="text-white">{parsedGLB.meshes.length}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Bones</span><span className="text-white">{parsedGLB.bones.length}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Animations</span><span className="text-white">{parsedGLB.animations.length}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Materials</span><span className="text-white">{Object.keys(parsedGLB.materials).length}</span></div>
               <div className="col-span-2 flex justify-between">
-                <span className="text-slate-500">Skinned</span>
-                <span className={parsedGLB.isSkinned ? 'text-emerald-400' : 'text-slate-400'}>{parsedGLB.isSkinned ? 'Yes' : 'No'}</span>
+                <span className="text-slate-500">Rig Classification</span>
+                <span className="text-emerald-400 font-mono">{parsedGLB.rigAnalysis?.label || (parsedGLB.isSkinned ? 'Skinned Rig' : 'Static Mesh')}</span>
               </div>
             </div>
           </div>
@@ -1012,6 +1232,59 @@ export function AssetDefinitionStudio({
             {/* ═══════════════ TRANSFORM TAB ═══════════════ */}
             {activeTab === 'transform' && (
               <div className="space-y-6">
+                {/* Scale Normalization Card */}
+                <div className="bg-[#0b1320] border border-amber-600/30 rounded-lg p-3 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-amber-300 font-bold text-[11px] flex items-center gap-1.5">
+                      <Sliders className="w-3.5 h-3.5" /> Scale Normalization (Debian & Live MMO Standard)
+                    </span>
+                    {parsedGLB.dimensions && (
+                      <span className="text-[10px] text-cyan-400 font-mono">
+                        Native Size: {parsedGLB.dimensions.width}m × {parsedGLB.dimensions.height}m × {parsedGLB.dimensions.depth}m
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[10px] text-slate-400 leading-relaxed">
+                    Saints Gaming standard player height is <strong>1.75 meters</strong>. If your asset was exported in centimeters (e.g. Unreal Engine), click below to normalize immediately.
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (parsedGLB.dimensions?.height) {
+                          const effectiveH = parsedGLB.dimensions.height > 50 ? parsedGLB.dimensions.height * 0.01 : parsedGLB.dimensions.height;
+                          const target = Number((1.75 / effectiveH).toFixed(3));
+                          setModelScale(target);
+                          showToast?.(`Normalized scale to ${target}x (1.75m standard human)`);
+                        }
+                      }}
+                      className="px-2.5 py-1 bg-amber-600/25 hover:bg-amber-600/40 border border-amber-500/50 text-amber-300 rounded text-[10px] font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                    >
+                      🎯 Normalize to 1.75m Human Height
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModelScale(0.01);
+                        showToast?.('Set scale to 0.01x (Unreal cm -> m)');
+                      }}
+                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded text-[10px] font-bold transition-colors"
+                    >
+                      0.01x (Unreal cm)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModelScale(1.0);
+                        showToast?.('Reset scale to 1.0x');
+                      }}
+                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded text-[10px] font-bold transition-colors"
+                    >
+                      1.0x (Original)
+                    </button>
+                  </div>
+                </div>
+
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Scale ({modelScale.toFixed(2)}x)</label>
@@ -1717,12 +1990,54 @@ export function AssetDefinitionStudio({
               </div>
             )}
             
-            {/* ═══════════════ ITEMS TAB ═══════════════ */}
+            {/* ═══════════════ ITEMS / MODULAR COMPOSITION TAB ═══════════════ */}
             {activeTab === 'items' && structure === 'Modular' && (
               <div className="space-y-4">
-                <div className="text-amber-200 mb-1 font-bold text-[11px]">Modular Set Items</div>
+                {/* Publishing Mode Selector */}
+                <div className="bg-[#0b1320] border border-amber-600/40 rounded-lg p-3 space-y-2">
+                  <div className="text-amber-300 font-bold text-[11px] flex items-center justify-between">
+                    <span>Modular Character Publishing Mode</span>
+                    <span className="text-[9px] text-slate-400">Choose how this assembled character is saved</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPublishingMode('COMPOSITE_MODEL')}
+                      className={`p-2.5 rounded border text-left transition-all ${
+                        publishingMode === 'COMPOSITE_MODEL'
+                          ? 'bg-amber-600/20 border-amber-500 text-amber-200 shadow-[0_0_10px_rgba(202,162,66,0.15)]'
+                          : 'bg-black/40 border-slate-700 text-slate-400 hover:border-slate-500'
+                      }`}
+                    >
+                      <div className="font-bold text-[11px] mb-1 flex items-center gap-1.5 text-amber-300">
+                        <span>⭐ Pre-Assembled Composite Character</span>
+                      </div>
+                      <div className="text-[9px] text-slate-400 leading-tight">
+                        Merges the base body + all active modular pieces into a single, unified GLB. Ready to assign immediately to Archetypes, NPCs, Monsters, or Creatures with zero runtime assembly!
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPublishingMode('MODULAR_SET')}
+                      className={`p-2.5 rounded border text-left transition-all ${
+                        publishingMode === 'MODULAR_SET'
+                          ? 'bg-amber-600/20 border-amber-500 text-amber-200 shadow-[0_0_10px_rgba(202,162,66,0.15)]'
+                          : 'bg-black/40 border-slate-700 text-slate-400 hover:border-slate-500'
+                      }`}
+                    >
+                      <div className="font-bold text-[11px] mb-1 flex items-center gap-1.5 text-amber-300">
+                        <span>📦 Dynamic Modular Character Set</span>
+                      </div>
+                      <div className="text-[9px] text-slate-400 leading-tight">
+                        Saves the base body and uploads each modular piece separately, linking them for dynamic player character creation and wardrobe swapping.
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="text-amber-200 mb-1 font-bold text-[11px]">Attach Modular Pieces (Live 3D Preview)</div>
                 <div className="text-[10px] text-slate-400 leading-relaxed">
-                  Add additional GLB files (hair, clothing, weapons) that belong to this modular set. They will be uploaded and linked to this Base Body automatically.
+                  Add modular files (hair, clothing, boots, hats, weapons). They will automatically mount onto the base body in the 3D preview viewport!
                 </div>
                 
                 {/* Drop zone */}
@@ -1737,19 +2052,19 @@ export function AssetDefinitionStudio({
                       const guessCategory = (name: string): string => {
                         const n = name.toLowerCase();
                         if (n.includes('hair')) return 'hair';
-                        if (n.includes('head') || n.includes('helmet') || n.includes('hat') || n.includes('mask') || n.includes('face')) return 'head';
-                        if (n.includes('shirt') || n.includes('chest') || n.includes('torso') || n.includes('body') || n.includes('jacket') || n.includes('armor')) return 'chest';
-                        if (n.includes('leg') || n.includes('pant') || n.includes('trouser')) return 'legs';
-                        if (n.includes('foot') || n.includes('feet') || n.includes('shoe') || n.includes('boot')) return 'feet';
-                        if (n.includes('hand') || n.includes('glove') || n.includes('gauntlet')) return 'hands';
-                        if (n.includes('cape') || n.includes('back') || n.includes('cloak') || n.includes('wing')) return 'back';
-                        if (n.includes('weapon') || n.includes('sword') || n.includes('bow') || n.includes('staff') || n.includes('axe')) return 'weapon_main';
-                        if (n.includes('shield')) return 'weapon_off';
-                        return 'chest'; // default fallback
+                        if (n.includes('head') || n.includes('helmet') || n.includes('hat') || n.includes('mask') || n.includes('face') || n.includes('cap')) return 'hat';
+                        if (n.includes('shirt') || n.includes('chest') || n.includes('torso') || n.includes('jacket') || n.includes('armor') || n.includes('t_shirt') || n.includes('top')) return 'shirt';
+                        if (n.includes('leg') || n.includes('pant') || n.includes('trouser') || n.includes('short')) return 'pants';
+                        if (n.includes('foot') || n.includes('feet') || n.includes('shoe') || n.includes('boot') || n.includes('sneaker')) return 'shoes';
+                        if (n.includes('hand') || n.includes('glove') || n.includes('gauntlet')) return 'accessory';
+                        if (n.includes('cape') || n.includes('back') || n.includes('cloak') || n.includes('wing')) return 'accessory';
+                        if (n.includes('weapon') || n.includes('sword') || n.includes('bow') || n.includes('staff') || n.includes('axe')) return 'accessory';
+                        if (n.includes('shield')) return 'accessory';
+                        return 'shirt';
                       };
 
                       const files = Array.from(e.target.files);
-                      const processed: Array<{ id: string; file: File; category: string }> = [];
+                      const gltfLoader = new GLTFLoader();
 
                       for (const f of files) {
                         let finalFile = f;
@@ -1778,41 +2093,82 @@ export function AssetDefinitionStudio({
                           console.warn('Conversion failed for item:', f.name, err);
                         }
 
-                        processed.push({
-                          id: Math.random().toString(36).substr(2, 9),
-                          file: finalFile,
-                          category: guessCategory(f.name),
-                        });
+                        const itemUrl = URL.createObjectURL(finalFile);
+                        gltfLoader.load(
+                          itemUrl,
+                          (gltf) => {
+                            URL.revokeObjectURL(itemUrl);
+                            if (companionTextureFiles && companionTextureFiles.length > 0) {
+                              attachTextureFilesToMaterials(gltf.scene, companionTextureFiles);
+                            }
+                            setAdditionalItems(prev => [
+                              ...prev,
+                              {
+                                id: Math.random().toString(36).substring(2, 9),
+                                file: finalFile,
+                                name: finalFile.name,
+                                category: guessCategory(f.name),
+                                scene: gltf.scene,
+                                enabled: true,
+                              },
+                            ]);
+                            showToast?.(`Mounted ${finalFile.name} onto 3D character!`);
+                          },
+                          undefined,
+                          () => URL.revokeObjectURL(itemUrl)
+                        );
                       }
-
-                      setAdditionalItems(prev => [...prev, ...processed]);
                     }}
                     className="absolute inset-0 opacity-0 cursor-pointer"
                   />
                   <Puzzle className="w-6 h-6 text-slate-500 group-hover:text-amber-500 mx-auto mb-2 transition-colors" />
-                  <div className="text-amber-500 font-bold text-[11px] group-hover:text-amber-400">Click or Drag 3D files here (GLB/FBX/OBJ/VOX/DAE/STL)</div>
-                  <div className="text-[9px] text-slate-500 mt-1">e.g., hair.fbx, armor.obj, hat.vox, weapon.glb</div>
+                  <div className="text-amber-500 font-bold text-[11px] group-hover:text-amber-400">Click or Drag 3D Modular Pieces here (GLB/FBX/OBJ/VOX/DAE/STL)</div>
+                  <div className="text-[9px] text-slate-500 mt-1">e.g., Hat_010.glb, T-Shirt_009.glb, Pants_005.glb, Boot_002.glb, Hair_001.glb</div>
                 </div>
 
                 {/* Items list */}
                 <div className="space-y-2">
                   {additionalItems.map(item => (
-                    <div key={item.id} className="bg-slate-900/50 border border-slate-700 p-3 rounded-lg flex items-center gap-3">
+                    <div key={item.id} className="bg-slate-900/60 border border-slate-700 p-2.5 rounded-lg flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAdditionalItems(prev => prev.map(p => p.id === item.id ? { ...p, enabled: !p.enabled } : p));
+                        }}
+                        title={item.enabled ? 'Hide piece in preview' : 'Show piece in preview'}
+                        className={`p-1.5 rounded transition-colors ${
+                          item.enabled ? 'bg-amber-600/30 text-amber-300' : 'bg-slate-800 text-slate-500'
+                        }`}
+                      >
+                        {item.enabled ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                      </button>
+
                       <div className="text-lg">{COMPONENT_CATEGORY_ICONS[item.category] || '📦'}</div>
-                      <div className="flex-1 font-bold text-slate-300 text-[10px] truncate">
-                        {item.file.name}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-slate-200 text-[11px] truncate">
+                          {item.name || item.file.name}
+                        </div>
+                        <div className="text-[9px] text-slate-400 flex items-center gap-1.5">
+                          <span>Slot: <strong className="text-amber-400">{item.category}</strong></span>
+                          <span>·</span>
+                          <span className={item.enabled ? 'text-emerald-400' : 'text-slate-500'}>
+                            {item.enabled ? 'Mounted in Preview' : 'Hidden'}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex gap-1.5 flex-wrap">
-                        {componentCategoryEntries.map(([key, meta]) => {
+
+                      <div className="flex gap-1 flex-wrap max-w-[280px]">
+                        {componentCategoryEntries.slice(0, 7).map(([key, meta]) => {
                           const active = item.category === key;
                           return (
                             <button
                               key={key}
+                              type="button"
                               onClick={() => setAdditionalItems(prev => prev.map(p => p.id === item.id ? { ...p, category: key } : p))}
-                              className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all border ${
+                              className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition-all border ${
                                 active 
-                                  ? 'bg-amber-600/20 border-amber-500/50 text-amber-300' 
-                                  : 'bg-slate-800/50 border-slate-700/50 text-slate-500 hover:text-slate-300'
+                                  ? 'bg-amber-600/25 border-amber-500/60 text-amber-300' 
+                                  : 'bg-slate-800/40 border-slate-700/40 text-slate-500 hover:text-slate-300'
                               }`}
                             >
                               {meta.label}
@@ -1820,16 +2176,20 @@ export function AssetDefinitionStudio({
                           );
                         })}
                       </div>
+
                       <button 
+                        type="button"
                         onClick={() => setAdditionalItems(prev => prev.filter(p => p.id !== item.id))}
-                        className="text-red-500 hover:text-red-400 font-bold px-2 rounded hover:bg-red-950/30 transition-colors"
+                        className="text-red-500 hover:text-red-400 font-bold px-2 py-1 rounded hover:bg-red-950/30 transition-colors"
                       >
                         ✕
                       </button>
                     </div>
                   ))}
                   {additionalItems.length === 0 && (
-                    <div className="text-slate-500 italic text-[10px] text-center py-2">No extra items added yet.</div>
+                    <div className="text-slate-500 italic text-[10px] text-center py-4 bg-slate-900/30 rounded border border-slate-800/80">
+                      No modular pieces added yet. Drop pieces like hats, shirts, pants, or boots above to dress and preview this base character.
+                    </div>
                   )}
                 </div>
               </div>

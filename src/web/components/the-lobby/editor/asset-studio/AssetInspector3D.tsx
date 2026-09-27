@@ -6,15 +6,29 @@ import { OrbitControls, Environment, Bounds, useBounds, Grid } from '@react-thre
 import * as THREE from 'three';
 import { ParsedGLB } from './glbParser';
 
-interface AssetInspector3DProps {
+export type LightingPreset = 'studio' | 'sunset' | 'dramatic' | 'night';
+
+export interface AttachedSceneItem {
+  id: string;
+  scene: THREE.Object3D;
+  position?: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: [number, number, number];
+}
+
+export interface AssetInspector3DProps {
   parsedGLB: ParsedGLB;
   activeAnimationIndex?: number;
   showSkeleton?: boolean;
   showBounds?: boolean;
+  showHumanReference?: boolean;
+  wireframe?: boolean;
+  lightingPreset?: LightingPreset;
   modelScale?: number;
   modelRotationY?: number;
   modelGrounding?: number;
   modelCameraYOffset?: number;
+  attachedScenes?: AttachedSceneItem[];
 }
 
 export interface AssetInspector3DRef {
@@ -31,10 +45,54 @@ function SceneControls({ showBounds }: { showBounds?: boolean }) {
   return null;
 }
 
-function Model({ parsedGLB, activeAnimationIndex, showSkeleton, modelScale = 0.8, modelRotationY = 0, modelGrounding = 0 }: AssetInspector3DProps) {
+function HumanHeightReference() {
+  return (
+    <group position={[1.1, 0, 0]}>
+      {/* 1.75m human reference column */}
+      <mesh position={[0, 0.875, 0]}>
+        <cylinderGeometry args={[0.2, 0.22, 1.75, 16]} />
+        <meshStandardMaterial color="#cbb26a" transparent opacity={0.25} wireframe />
+      </mesh>
+      {/* Head indicator sphere at 1.75m */}
+      <mesh position={[0, 1.62, 0]}>
+        <sphereGeometry args={[0.13, 16, 16]} />
+        <meshStandardMaterial color="#f59e0b" transparent opacity={0.35} />
+      </mesh>
+      {/* 1.75m Top line ring */}
+      <mesh position={[0, 1.75, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.22, 0.25, 24]} />
+        <meshBasicMaterial color="#f59e0b" side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  );
+}
+
+function Model({
+  parsedGLB,
+  activeAnimationIndex,
+  showSkeleton,
+  wireframe,
+  modelScale = 0.8,
+  modelRotationY = 0,
+  modelGrounding = 0,
+  attachedScenes = [],
+}: AssetInspector3DProps) {
   const group = useRef<THREE.Group>(null);
   const { scene, rawAnimations } = parsedGLB;
   const mixer = useRef<THREE.AnimationMixer | null>(null);
+
+  // Wireframe toggle
+  useEffect(() => {
+    if (!scene) return;
+    scene.traverse((child: any) => {
+      if (child.isMesh && child.material) {
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach((m: any) => {
+          m.wireframe = !!wireframe;
+        });
+      }
+    });
+  }, [scene, wireframe]);
 
   useEffect(() => {
     if (group.current && rawAnimations.length > 0) {
@@ -83,6 +141,20 @@ function Model({ parsedGLB, activeAnimationIndex, showSkeleton, modelScale = 0.8
       position={[0, modelGrounding, 0]}
     >
       <primitive object={scene} />
+      {/* Attached modular scenes (e.g. hair, armor, boots, hats) */}
+      {attachedScenes.map((item) => (
+        <primitive
+          key={item.id}
+          object={item.scene}
+          position={item.position ?? [0, 0, 0]}
+          rotation={
+            item.rotation
+              ? [(item.rotation[0] * Math.PI) / 180, (item.rotation[1] * Math.PI) / 180, (item.rotation[2] * Math.PI) / 180]
+              : [0, 0, 0]
+          }
+          scale={item.scale ?? [1, 1, 1]}
+        />
+      ))}
     </group>
   );
 }
@@ -90,6 +162,7 @@ function Model({ parsedGLB, activeAnimationIndex, showSkeleton, modelScale = 0.8
 export const AssetInspector3D = forwardRef<AssetInspector3DRef, AssetInspector3DProps>(
   (props, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const lighting = props.lightingPreset || 'studio';
 
     useImperativeHandle(ref, () => ({
       takeSnapshot: () => {
@@ -104,16 +177,50 @@ export const AssetInspector3D = forwardRef<AssetInspector3DRef, AssetInspector3D
     }));
 
     return (
-      <div className="w-full h-full bg-slate-900 rounded-md overflow-hidden border border-slate-700 relative">
+      <div className="w-full h-full bg-[#050b14] rounded-md overflow-hidden border border-slate-800 relative select-none">
         <Canvas
           ref={canvasRef}
-          camera={{ position: [0, 2, 5], fov: 45 }}
-          gl={{ preserveDrawingBuffer: true }} // required for takeSnapshot
+          camera={{ position: [0, 1.8, 4.5], fov: 45 }}
+          gl={{ preserveDrawingBuffer: true, antialias: true }}
         >
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[10, 10, 5]} intensity={1} />
-          <directionalLight position={[-10, 10, -5]} intensity={0.5} />
-          <Environment preset="city" />
+          {/* Lighting Presets */}
+          {lighting === 'studio' && (
+            <>
+              <ambientLight intensity={0.65} />
+              <directionalLight position={[8, 12, 6]} intensity={1.2} />
+              <directionalLight position={[-8, 6, -6]} intensity={0.4} />
+              <Environment preset="city" />
+            </>
+          )}
+
+          {lighting === 'sunset' && (
+            <>
+              <ambientLight intensity={0.35} color="#ffedd5" />
+              <directionalLight position={[10, 8, 6]} intensity={1.8} color="#f59e0b" />
+              <directionalLight position={[-8, 4, -6]} intensity={0.5} color="#60a5fa" />
+              <Environment preset="sunset" />
+            </>
+          )}
+
+          {lighting === 'dramatic' && (
+            <>
+              <ambientLight intensity={0.2} color="#0f172a" />
+              <directionalLight position={[0, 10, -7]} intensity={2.5} color="#38bdf8" />
+              <directionalLight position={[7, 4, 5]} intensity={1.0} color="#ec4899" />
+              <Environment preset="night" />
+            </>
+          )}
+
+          {lighting === 'night' && (
+            <>
+              <ambientLight intensity={0.18} color="#1e293b" />
+              <directionalLight position={[-6, 8, 6]} intensity={1.2} color="#93c5fd" />
+              <pointLight position={[0, 2, 2]} intensity={0.6} color="#38bdf8" />
+              <Environment preset="park" />
+            </>
+          )}
+
+          {props.showHumanReference && <HumanHeightReference />}
           
           <Bounds fit clip observe margin={1.2}>
             <Model {...props} />
@@ -122,12 +229,13 @@ export const AssetInspector3D = forwardRef<AssetInspector3DRef, AssetInspector3D
 
           <OrbitControls 
             makeDefault 
-            target={[0, (props.modelCameraYOffset && props.modelCameraYOffset > 0 ? props.modelCameraYOffset : 1.0 * (props.modelScale ?? 0.8)), 0]} 
+            target={[0, (props.modelCameraYOffset && props.modelCameraYOffset > 0 ? props.modelCameraYOffset : 0.9 * (props.modelScale ?? 0.8)), 0]} 
           />
-          <Grid infiniteGrid fadeDistance={20} sectionColor="#444" cellColor="#222" />
+          <Grid infiniteGrid fadeDistance={25} sectionColor="#334155" cellColor="#1e293b" sectionSize={1} cellSize={0.2} />
         </Canvas>
       </div>
     );
   }
 );
 AssetInspector3D.displayName = 'AssetInspector3D';
+

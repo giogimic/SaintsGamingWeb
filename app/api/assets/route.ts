@@ -167,6 +167,24 @@ export async function GET(req: NextRequest) {
             ],
           },
         ];
+      } else if (normalizedType === "MODEL" || normalizedType === "3D_MODEL" || normalizedType === "3D") {
+        whereClause.AND = [
+          ...(whereClause.AND || []),
+          {
+            OR: [
+              { type: "MODEL" },
+              { type: "3D_MODEL" },
+              { type: "model" },
+              { characterPresentationType: "3D_MODEL" },
+              { categories: { contains: "model" } },
+              { tags: { contains: "model" } },
+              { tags: { contains: "3d" } },
+              { source: { endsWith: ".glb" } },
+              { source: { endsWith: ".gltf" } },
+              { source: { contains: "/models/" } },
+            ],
+          },
+        ];
       } else {
         whereClause.type = normalizedType;
       }

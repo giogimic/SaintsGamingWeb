@@ -24,13 +24,21 @@ export interface Unpacked3DModelPackage {
   metadata?: Record<string, any>;
 }
 
-export type { PbrChannel, PbrChannel as PbrChannelType } from './textureLoader';
-export {
+import type { PbrChannel, PbrChannel as PbrChannelType } from './textureLoader';
+import {
   PBR_CHANNELS,
   loadTextureFromFile,
   detectPbrChannel,
   attachTextureFilesToMaterials,
 } from './textureLoader';
+
+export type { PbrChannel, PbrChannelType };
+export {
+  PBR_CHANNELS,
+  loadTextureFromFile,
+  detectPbrChannel,
+  attachTextureFilesToMaterials,
+};
 
 /**
  * Checks whether a given list of zip entries represents a 3D model archive (.fbx, .glb, .gltf, .obj, .vox, .dae, .stl, .ply)
@@ -142,6 +150,9 @@ export async function convertObjToGlb(
   }
 
   const object = objLoader.parse(objText);
+  if (options?.textureFiles && options.textureFiles.length > 0) {
+    await attachTextureFilesToMaterials(object, options.textureFiles);
+  }
   sanitizeObjectMaterials(object);
 
   return new Promise((resolve, reject) => {
@@ -244,6 +255,10 @@ export async function convertDaeToGlb(
   const validAnimations = (Array.isArray(rawAnimations) ? rawAnimations : []).filter(
     (clip: any) => clip && Array.isArray(clip.tracks) && clip.tracks.length > 0
   );
+
+  if (options?.textureFiles && options.textureFiles.length > 0) {
+    await attachTextureFilesToMaterials(object, options.textureFiles);
+  }
 
   sanitizeObjectMaterials(object);
 
