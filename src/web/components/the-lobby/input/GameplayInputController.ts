@@ -38,30 +38,22 @@ export class GameplayInputController {
     let moveDx = dx;
     let moveDy = dy;
 
-    // Apply camera rotation mapping here if needed (for First Person / Third Person profiles)
-    const settings = state.clientSettings;
-    if (settings && this.engineRef && this.engineRef.renderer) {
-      const profile = settings.camera?.profile;
-      if (profile === 'firstperson' || profile === 'dynamic') {
-         // Resolve relative to camera yaw
-         const yaw = this.engineRef.renderer.cameraYaw || 0;
-         // Rotate input vector by yaw
-         const cosY = Math.cos(yaw);
-         const sinY = Math.sin(yaw);
-         
-         // Z is inverted in Babylon for standard 2D mapping (Y is Z)
-         const mappedX = dx * cosY - dy * sinY;
-         const mappedY = dx * sinY + dy * cosY;
-         
-         // Convert back to grid stepping (we round or accumulate depending on movement type)
-         // For a grid based game, if WASD is pressed, we might just snap to nearest cardinal
-         if (Math.abs(mappedX) > Math.abs(mappedY)) {
-           moveDx = mappedX > 0 ? 1 : -1;
-           moveDy = 0;
-         } else if (Math.abs(mappedY) > 0) {
-           moveDx = 0;
-           moveDy = mappedY > 0 ? 1 : -1;
-         }
+    // Keyboard movement follows mouse-look in first/third person. The 2.5D
+    // overview keeps map-relative directions for click-to-move and keyboard.
+    const camera = this.engineRef?.renderer?.camera;
+    if (camera && camera.mode === 0) {
+      const yaw = this.engineRef.renderer.cameraYaw || 0;
+      const cosY = Math.cos(yaw);
+      const sinY = Math.sin(yaw);
+      const mappedX = dx * cosY - dy * sinY;
+      const mappedY = dx * sinY + dy * cosY;
+
+      if (Math.abs(mappedX) > Math.abs(mappedY)) {
+        moveDx = mappedX > 0 ? 1 : -1;
+        moveDy = 0;
+      } else if (Math.abs(mappedY) > 0) {
+        moveDx = 0;
+        moveDy = mappedY > 0 ? 1 : -1;
       }
     }
 

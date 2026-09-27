@@ -65,6 +65,7 @@ public cameraPitch: number = Math.PI / 4;
 public cameraDistance: number = 20;
 public targetCameraDistance: number = 20;
 public continuousZoom: number = 10;
+public activePlayerCameraStyle: 'firstPerson' | 'firstperson' | 'thirdPerson' | 'overview2_5d' | 'isometric' | 'follow45' | 'topdown' | 'free' = 'overview2_5d';
 public cameraVelocityYaw: number = 0;
 public cameraVelocityPitch: number = 0;
 public cameraVelocityPanX: number = 0;
@@ -654,20 +655,21 @@ public stopRenderLoop() {
     const offsetX = -horizDist * Math.sin(yaw);
     const offsetZ = -horizDist * Math.cos(yaw);
 
-    const isFirstPerson = this.cameraSettings.playerCameraStyle === 'firstperson';
+    const isFirstPerson = this.isFirstPersonCamera();
     const playerMesh = this.engine.entityMeshes.get('player_main');
     const headHeight = playerMesh?.metadata?.modelVisualHeight ?? 1.2;
     const targetEyeY = y + headHeight;
     const targetChestY = y + headHeight * 0.75;
-    const targetYWithOffset = isFirstPerson ? targetEyeY : targetChestY;
-
-    this.camera.position = new Vector3(x + offsetX, y + camY, z + offsetZ);
+    const cameraOrigin = new Vector3(x, targetChestY, z);
+    const desiredCameraPosition = new Vector3(x + offsetX, y + camY, z + offsetZ);
+    this.camera.position = this.resolveCameraCollision(cameraOrigin, desiredCameraPosition, isFirstPerson ? 0.12 : 0.24);
     this.camera.setTarget(
       isFirstPerson 
         ? new Vector3(x + Math.sin(yaw) * 10, targetEyeY + Math.tan(pitch) * 5, z + Math.cos(yaw) * 10)
         : new Vector3(x, targetChestY, z)
     );
     this.cameraSnapped = true;
+    this.updateCameraClipPlanes();
   }
 
   public setCameraPosition(targetX: number, targetZ: number, lerpFactor?: number, targetY: number = 0) {
@@ -707,7 +709,7 @@ public stopRenderLoop() {
     const yaw = this.cameraYaw || 0;
     const dist = this.cameraProfile.distance ?? 14;
 
-    const isFirstPerson = this.cameraSettings.playerCameraStyle === 'firstperson' || this.cameraSettings.playerCameraStyle === 'firstPerson';
+    const isFirstPerson = this.isFirstPersonCamera();
     
     // Use the model's computed visual height for camera focus (auto-detected from
     // bounding box / Head bone after 3D model loads). Falls back to 1.6 for default humanoid.
@@ -721,40 +723,18 @@ public stopRenderLoop() {
     const horizDist = isFirstPerson ? 0 : dist * Math.cos(pitch);
     const offsetX = -horizDist * Math.sin(yaw);
     const offsetZ = -horizDist * Math.cos(yaw);
-    let targetCamPos = new Vector3(targetX + offsetX, camY, targetZ + offsetZ);
-    
-    // Check for terrain/world collisions between player chest and targetCamPos
-    if (!isFirstPerson && this.engine.scene) {
-      const origin = new Vector3(targetX, targetChestY, targetZ);
-      const rayDirection = targetCamPos.subtract(origin);
-      const actualDist = rayDirection.length();
-      
-      if (actualDist > 0.1) {
-        rayDirection.normalize();
-        const ray = new Ray(origin, rayDirection, actualDist);
-        // Only pick meshes that are not the player, not decals/overlays
-        const hit = this.engine.scene.pickWithRay(ray, (mesh) => {
-          if (!mesh.isPickable || !mesh.isVisible || mesh.name === 'skyBox') return false;
-          if (mesh.name.startsWith("entity-") || mesh.name.startsWith("entityRoot") || mesh.name.startsWith("sprite_") || mesh.name.includes("modelWrapper")) return false;
-          if (mesh.name.includes("preview") || mesh.name.includes("overlay") || mesh.name.includes("decal") || mesh.name.includes("label")) return false;
-          if (mesh.parent && (mesh.parent.name?.includes("modelWrapper") || mesh.parent.name?.startsWith("sprite_") || mesh.parent.name?.startsWith("entity-"))) return false;
-          // Stop at pickable solid terrain and architecture
-          return true;
-        });
-        
-        if (hit && hit.hit && hit.pickedPoint) {
-          // Snap camera slightly in front of the hit point to avoid clipping
-          targetCamPos = hit.pickedPoint.subtract(rayDirection.scale(0.3));
-        }
-      }
-    }
+    const desiredCamPos = new Vector3(targetX + offsetX, camY, targetZ + offsetZ);
+    const cameraOrigin = new Vector3(targetX, targetChestY, targetZ);
     
     // Spring damper / Decoupled Physics with snappy responsive follow
     const dt = this.engine.engine.getDeltaTime() / 1000.0;
     const factor = this.cameraSettings.playerFollowSmoothing ?? lerpFactor ?? this.cameraProfile.lerpFactor ?? 0.35;
     const smoothFactor = 1.0 - Math.exp(-factor * 60 * dt);
 
-    this.camera.position = Vector3.Lerp(this.camera.position, targetCamPos, smoothFactor);
+    const smoothedCamPos = Vector3.Lerp(this.camera.position, desiredCamPos, smoothFactor);
+    const safeCamPos = this.resolveCameraCollision(cameraOrigin, smoothedCamPos, isFirstPerson ? 0.12 : 0.24);
+    const isCollisionLimited = Vector3.Distance(safeCamPos, smoothedCamPos) > 0.001;
+    this.camera.position = isCollisionLimited ? safeCamPos : smoothedCamPos;
     this.camera.setTarget(Vector3.Lerp(
       this.camera.getTarget(),
       isFirstPerson 
@@ -762,6 +742,74 @@ public stopRenderLoop() {
         : new Vector3(targetX, targetChestY, targetZ),
       smoothFactor
     ));
+    this.updateCameraClipPlanes();
+  }
+
+  private isFirstPersonCamera() {
+    return this.activePlayerCameraStyle === 'firstPerson' || this.activePlayerCameraStyle === 'firstperson';
+  }
+
+  private isCameraObstacle(mesh: any) {
+    if (!mesh.isPickable || !mesh.isVisible || !mesh.isEnabled?.() || mesh.name === 'skyBox') return false;
+    if (mesh.name.startsWith('entity-') || mesh.name.startsWith('entity_') || mesh.name.startsWith('entityRoot') || mesh.name.startsWith('sprite_')) return false;
+    if (mesh.name.toLowerCase().includes('preview') || mesh.name.toLowerCase().includes('overlay') || mesh.name.toLowerCase().includes('decal') || mesh.name.toLowerCase().includes('label')) return false;
+    let ancestor = mesh.parent;
+    while (ancestor) {
+      if (ancestor.name?.startsWith('entity-') || ancestor.name?.startsWith('entity_') || ancestor.name?.startsWith('entityRoot') || ancestor.name?.startsWith('sprite_') || ancestor.name?.includes('modelWrapper')) return false;
+      ancestor = ancestor.parent;
+    }
+    return true;
+  }
+
+  private resolveCameraCollision(origin: Vector3, desired: Vector3, radius: number) {
+    if (!this.engine.scene) return desired;
+    const delta = desired.subtract(origin);
+    const length = delta.length();
+    if (length <= 0.1) return desired;
+
+    const direction = delta.scale(1 / length);
+    let right = Vector3.Cross(direction, Vector3.Up());
+    if (right.lengthSquared() < 0.0001) right = Vector3.Cross(direction, new Vector3(0, 0, 1));
+    right.normalize();
+    const up = Vector3.Cross(right, direction).normalize();
+    const offsets = [
+      Vector3.Zero(),
+      right.scale(radius),
+      right.scale(-radius),
+      up.scale(radius),
+      up.scale(-radius),
+    ];
+    let nearestHitDistance = length;
+
+    for (const offset of offsets) {
+      const rayOrigin = origin.add(offset);
+      const rayTarget = desired.add(offset);
+      const rayDelta = rayTarget.subtract(rayOrigin);
+      const rayLength = rayDelta.length();
+      const hit = this.engine.scene.pickWithRay(
+        new Ray(rayOrigin, rayDelta.scale(1 / rayLength), rayLength),
+        (mesh) => this.isCameraObstacle(mesh)
+      );
+      if (hit?.hit && hit.pickedPoint) {
+        nearestHitDistance = Math.min(nearestHitDistance, Vector3.Distance(rayOrigin, hit.pickedPoint));
+      }
+    }
+
+    if (nearestHitDistance >= length) return desired;
+    const safeDistance = Math.max(0.02, nearestHitDistance - 0.35);
+    return origin.add(direction.scale(safeDistance));
+  }
+
+  private updateCameraClipPlanes() {
+    if (!this.camera) return;
+    const worldWidth = this.engine.currentMapWidth * (this.engine.currentTileSize || 1);
+    const worldHeight = this.engine.currentMapHeight * (this.engine.currentTileSize || 1);
+    const mapDiagonal = Math.hypot(worldWidth, worldHeight);
+    const focus = new Vector3(this.cameraTargetX, this.cameraTargetY, this.cameraTargetZ);
+    const viewDistance = Vector3.Distance(this.camera.position, focus);
+    const maxZ = Math.ceil(Math.max(1000, mapDiagonal * 4 + 100, viewDistance * 4 + 100) / 50) * 50;
+    if (this.camera.minZ !== 0.05) this.camera.minZ = 0.05;
+    if (Math.abs(this.camera.maxZ - maxZ) >= 50) this.camera.maxZ = maxZ;
   }
 
 public isEditorCameraMode(): boolean {
@@ -855,27 +903,36 @@ public getCameraSettings() {
 
   public updateDynamicCamera() {
     if (this.cameraSettings.playerCameraStyle !== 'dynamic' && this.cameraSettings.playerCameraStyle !== 'adaptive') return;
+
+    const targetMode = this.getDynamicCameraMode();
     
-    let targetMode: 'firstPerson' | 'thirdPerson' | 'overview2_5d' = 'overview2_5d';
-    if (this.continuousZoom < 3.0) {
-      targetMode = 'firstPerson';
-    } else if (this.continuousZoom < 9.0) {
-      targetMode = 'thirdPerson';
+    const targetIsPerspective = targetMode !== 'overview2_5d';
+    const cameraIsPerspective = this.camera?.mode === FreeCamera.PERSPECTIVE_CAMERA;
+    if (this.activePlayerCameraStyle !== targetMode || targetIsPerspective !== cameraIsPerspective) {
+      this.applyInternalCameraStyle(targetMode, false);
     }
-    
-    this.applyInternalCameraStyle(targetMode);
-    
-    // In third person, the distance scales from zoom 3.0 up to zoom 9.0
-    if (targetMode === 'thirdPerson') {
-      this.cameraProfile.distance = 2 + (this.continuousZoom - 3.0) * 1.5;
-    }
+
+    // Keep the camera boom moving through the 2.5D-to-third-person threshold
+    // so changing projection does not teleport the camera from a distant rig.
+    const boomZoom = Math.max(3, Math.min(9, this.continuousZoom));
+    this.cameraProfile.distance = 2 + (boomZoom - 3) * 1.5;
     // In orthographic overview, update orthoTop
     if (targetMode === 'overview2_5d') {
       this.updateCameraAspect(this.continuousZoom);
+      if (typeof document !== 'undefined' && document.pointerLockElement === this.engine.canvas) {
+        try { document.exitPointerLock(); } catch {}
+      }
     }
   }
 
-  private applyInternalCameraStyle(style: 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson' | 'firstPerson' | 'thirdPerson' | 'overview2_5d') {
+  public getDynamicCameraMode(): 'overview2_5d' | 'thirdPerson' | 'firstPerson' {
+    if (this.continuousZoom < 3.0) return 'firstPerson';
+    if (this.continuousZoom < 9.0) return 'thirdPerson';
+    return 'overview2_5d';
+  }
+
+  private applyInternalCameraStyle(style: 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson' | 'firstPerson' | 'thirdPerson' | 'overview2_5d', snap = true) {
+    this.activePlayerCameraStyle = style;
     if (style === 'topdown') {
       this.camera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
       this.cameraProfile.pitch = Math.PI / 2 - 0.01;
@@ -905,9 +962,10 @@ public getCameraSettings() {
       this.cameraYaw = 0;
       this.updateCameraAspect(this.camera.orthoTop || 6.0);
     }
-    if (!this.engine.editorCameraMode) {
+    if (snap && !this.engine.editorCameraMode) {
       this.snapCameraTo(this.cameraTargetX, this.cameraTargetZ);
     }
+    this.updateCameraClipPlanes();
   }
 
 public setCameraSettings(settings: Partial<typeof this.cameraSettings>) {
@@ -1010,11 +1068,11 @@ public rotateCamera(dxPx: number, dyPx: number) {
     if (this.isFreeCam) {
       this.cameraPitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, this.cameraPitch + pitchDelta));
     } else {
-      const camStyle = this.cameraSettings.playerCameraStyle;
+      const camStyle = this.activePlayerCameraStyle;
       if (camStyle === 'firstPerson' || camStyle === 'firstperson') {
         // First person can look up and down freely
         this.cameraProfile.pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, (this.cameraProfile.pitch ?? 0) + pitchDelta));
-      } else if (camStyle === 'thirdPerson' || camStyle === 'follow45' || camStyle === 'dynamic' || camStyle === 'adaptive') {
+      } else if (camStyle === 'thirdPerson' || camStyle === 'follow45') {
         // Prevent third person camera from going below ground (min pitch ~5 degrees)
         this.cameraProfile.pitch = Math.max(0.08, Math.min(Math.PI / 2.4, (this.cameraProfile.pitch ?? Math.PI / 4) + pitchDelta));
       } else {

@@ -13,6 +13,11 @@ export function loadClientSettings(): ClientSettings {
       // Validate and fill in defaults with zod
       const result = ClientSettingsSchema.safeParse(parsed);
       if (result.success) {
+        if (result.data.camera.profile === 'isometric') {
+          const migrated = { ...result.data, camera: { ...result.data.camera, profile: 'dynamic' as const } };
+          saveClientSettings(migrated);
+          return migrated;
+        }
         return result.data;
       } else {
         console.warn('Failed to parse client settings, falling back to migrated/default', result.error);
@@ -44,7 +49,7 @@ function migrateLegacySettings(): ClientSettings {
     if (legacyCamera) {
       const parsed = JSON.parse(legacyCamera);
       if (parsed.profile) {
-        settings.camera.profile = parsed.profile;
+        settings.camera.profile = parsed.profile === 'isometric' ? 'dynamic' : parsed.profile;
         hasMigrated = true;
       }
     }

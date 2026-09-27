@@ -205,6 +205,7 @@ export default function GameOptionsMenu({
 
   // Camera values
   const cameraProfile = clientSettings?.camera?.profile || 'dynamic';
+  const selectedCameraProfile = cameraProfile === 'isometric' ? 'dynamic' : cameraProfile;
   const cameraFov = clientSettings?.camera?.fov ?? 90;
   const cameraSmoothing = Math.round((clientSettings?.camera?.smoothing ?? 0.35) * 100);
   const cameraShake = clientSettings?.camera?.cameraShake ?? true;
@@ -814,14 +815,13 @@ export default function GameOptionsMenu({
                 {/* Camera Perspective Mode */}
                 <div className="p-4 rounded-xl bg-[#0a1628]/60 border border-white/10 space-y-3">
                   <span className="text-xs font-bold text-slate-300 block">Perspective Mode</span>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     {[
-                      { id: 'dynamic', label: 'Dynamic (Auto)', desc: 'Smoothly adapts on zoom' },
-                      { id: 'follow45', label: 'Third Person', desc: 'Over-the-shoulder action view' },
-                      { id: 'firstperson', label: 'First Person', desc: 'Immersive locked POV' },
-                      { id: 'isometric', label: '2.5D Isometric', desc: 'Classic classic diagonal view' },
+                      { id: 'firstperson', label: 'First Person', desc: 'Mouse-locked view at eye level' },
+                      { id: 'follow45', label: 'Third Person', desc: 'Mouse-locked follow camera' },
+                      { id: 'dynamic', label: '2.5D Mode', desc: 'Click to move; scroll in for 3rd and 1st person' },
                     ].map((mode) => {
-                      const isSelected = cameraProfile === mode.id;
+                      const isSelected = selectedCameraProfile === mode.id;
                       return (
                         <button
                           key={mode.id}

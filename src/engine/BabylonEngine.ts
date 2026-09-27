@@ -468,6 +468,8 @@ export class BabylonEngine {
 
     // 3D Perspective Volumetric Camera
     this.renderer.camera = new FreeCamera('camera3D', new Vector3(0, this.renderer.cameraProfile.distance, -this.renderer.cameraProfile.distance), this.scene);
+    this.renderer.camera.minZ = 0.05;
+    this.renderer.camera.maxZ = 1000;
     
     // Enable Vignette
     this.renderer.vignettePostProcess = new ImageProcessingPostProcess("vignette", 1.0, this.renderer.camera);
@@ -510,11 +512,25 @@ export class BabylonEngine {
         // Continuous hybrid zoom
         const minZoom = isStudioToolsOpen ? 2.5 : 2.0; 
         const maxZoom = isStudioToolsOpen ? 120 : 18.0;
+        const previousMode = this.renderer.getDynamicCameraMode();
         
         const newZoom = Math.max(minZoom, Math.min(maxZoom, this.renderer.continuousZoom * zoomFactor));
         if (newZoom !== this.renderer.continuousZoom) {
           this.renderer.continuousZoom = newZoom;
           this.renderer.updateDynamicCamera();
+          const nextMode = this.renderer.getDynamicCameraMode();
+
+          // Pointer lock follows the hybrid zoom only in gameplay: entering
+          // perspective locks mouse-look; returning to 2.5D restores the cursor.
+          if (!isStudioToolsOpen && !this.editorCameraMode && previousMode !== nextMode) {
+            if (previousMode === 'overview2_5d' && nextMode !== 'overview2_5d') {
+              try {
+                void Promise.resolve(this.canvas.requestPointerLock()).catch(() => {});
+              } catch {}
+            } else if (nextMode === 'overview2_5d' && document.pointerLockElement === this.canvas) {
+              try { document.exitPointerLock(); } catch {}
+            }
+          }
           
           const zoomPercent = Math.round((10 / newZoom) * 100);
           window.dispatchEvent(
