@@ -11,10 +11,24 @@ interface DockZoneProps {
   className?: string;
 }
 
+const ZONE_TRANSFORM_ORIGINS: Record<DockZoneId, string> = {
+  'top-left': 'top left',
+  'top-center': 'top center',
+  'top-right': 'top right',
+  'mid-left': 'left center',
+  'mid-right': 'right center',
+  'bottom-left': 'bottom left',
+  'bottom-center': 'bottom center',
+  'bottom-right': 'bottom right',
+  'floating': 'center center',
+};
+
 export function DockZone({ zoneId, children, className = '' }: DockZoneProps) {
   const isEditing = useGameStore((s) => s.isEditingInterface || s.isUiEditMode);
   const moveWidgetToZone = useGameStore((s) => s.moveWidgetToZone);
   const activePreset = useGameStore((s) => s.activeHudPreset);
+  const hudConfig = useGameStore((s) => s.hudConfig);
+  const hudScale = hudConfig?.scale ?? 1;
 
   const [isOver, setIsOver] = useState(false);
   const zoneDef = DOCK_ZONE_DEFINITIONS[zoneId] || {
@@ -61,6 +75,10 @@ export function DockZone({ zoneId, children, className = '' }: DockZoneProps) {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       data-dock-zone={zoneId}
+      style={{
+        transform: hudScale !== 1 ? `scale(${hudScale})` : undefined,
+        transformOrigin: ZONE_TRANSFORM_ORIGINS[zoneId] || 'top left',
+      }}
       className={`fixed z-40 transition-all duration-200 ${zoneDef.cssAnchor} ${
         isEditing
           ? `pointer-events-auto min-h-[60px] min-w-[120px] rounded-xl border-2 border-dashed p-1.5 backdrop-blur-[2px] ${

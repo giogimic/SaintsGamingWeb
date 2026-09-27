@@ -167,10 +167,7 @@ export default function Hotbar() {
       );
       if (potionKey) {
         soundSynth?.playLevelUpSound?.();
-        const socket = (window as any)._lobbySocket;
-        if (socket) {
-          socket.emit('use_item', { itemId: potionKey });
-        }
+        emitSocketEvent?.('use_item', { itemId: potionKey });
         setCooldown(slot.ability.id, timeNow + slot.ability.cooldownMs);
         setGlobalCooldown(timeNow + 1000);
       } else {

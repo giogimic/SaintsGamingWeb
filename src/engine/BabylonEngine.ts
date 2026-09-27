@@ -4607,8 +4607,12 @@ export class BabylonEngine {
       this.chatBubbles.delete(entity.id);
     }
 
-    // Multiplayer peers: always show a nameplate so they are not mistaken for NPCs.
+    // Multiplayer peers: show a nameplate if enabled in client settings so they are not mistaken for NPCs.
+    const showNames = typeof window !== 'undefined'
+      ? (window as any)._saintsClientSettings?.gameplay?.showNames !== false
+      : true;
     const wantsNameplate =
+      showNames &&
       !!entity.isPlayer &&
       entity.id.startsWith('multiplayer_') &&
       !!entity.name;

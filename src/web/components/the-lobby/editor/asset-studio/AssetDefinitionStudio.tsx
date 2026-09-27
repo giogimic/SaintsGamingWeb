@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import * as THREE from 'three';
 import { parseGLB, ParsedGLB } from './glbParser';
 import { AssetInspector3D, AssetInspector3DRef } from './AssetInspector3D';
-import { Loader2, CheckCircle2, Box, Users, Puzzle, Bone, Maximize2, AlertTriangle } from 'lucide-react';
+import { Loader2, CheckCircle2, Box, Users, Puzzle, Bone, Maximize2, AlertTriangle, Image as ImageIcon } from 'lucide-react';
 import { useGameStore } from '../../store';
 import { AssetManager } from '@/engine/assets/AssetManager';
 import { RegistryCombobox } from '../components/RegistryCombobox';
@@ -1057,7 +1058,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
             {/* ═══════════════ MATERIALS TAB ═══════════════ */}
             {activeTab === 'materials' && (
               <div className="space-y-4">
-                <div className="text-amber-200 text-[11px]">Configure how materials can be customized in-game.</div>
+                <div className="text-amber-200 text-[11px]">Configure how materials and textures are customized in-game.</div>
                 {Object.keys(parsedGLB.materials).length === 0 ? (
                   <div className="text-center py-8 text-slate-500">
                     <div className="w-8 h-8 mx-auto mb-2 rounded-full bg-slate-800 opacity-30" />
@@ -1065,34 +1066,82 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                   </div>
                 ) : (
                   Object.values(parsedGLB.materials).map(mat => (
-                    <div key={mat.name} className="bg-slate-900/50 border border-slate-700 p-3 rounded-lg flex items-center gap-4">
-                      <div className="flex-1 font-bold text-[11px] text-slate-200">{mat.name}</div>
-                      <button
-                        onClick={() => { 
-                          const m = {...materialConfig}; 
-                          m[mat.name].tintable = !m[mat.name].tintable; 
-                          setMaterialConfig(m); 
-                        }}
-                        className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all border ${
-                          materialConfig[mat.name]?.tintable 
-                            ? 'bg-emerald-600/20 border-emerald-500/40 text-emerald-300' 
-                            : 'bg-slate-800 border-slate-700 text-slate-500 hover:text-slate-300'
-                        }`}
-                      >
-                        {materialConfig[mat.name]?.tintable ? '✓ Tintable' : 'Tintable'}
-                      </button>
-                      <select 
-                        value={materialConfig[mat.name]?.slot || 'Base'} 
-                        onChange={e => { const m = {...materialConfig}; m[mat.name].slot = e.target.value; setMaterialConfig(m); }} 
-                        className="bg-black/50 border border-slate-700 rounded px-2 py-1 text-[10px] text-white cursor-pointer focus:border-amber-600/60 focus:outline-none"
-                      >
-                        <option value="Base">Base</option>
-                        <option value="Skin">Skin</option>
-                        <option value="Hair">Hair</option>
-                        <option value="Eyes">Eyes</option>
-                        <option value="ClothingPrimary">Clothing Primary</option>
-                        <option value="ClothingSecondary">Clothing Secondary</option>
-                      </select>
+                    <div key={mat.name} className="bg-slate-900/50 border border-slate-700 p-3 rounded-lg flex flex-col gap-2">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-[11px] text-slate-200">{mat.name}</span>
+                          {mat.hasTexture ? (
+                            <span className="text-[9px] text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-1.5 py-0.5 rounded font-mono">✓ Textured</span>
+                          ) : (
+                            <span className="text-[9px] text-amber-400 bg-amber-950/40 border border-amber-800/40 px-1.5 py-0.5 rounded font-mono">No Texture</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => { 
+                              const m = {...materialConfig}; 
+                              m[mat.name].tintable = !m[mat.name].tintable; 
+                              setMaterialConfig(m); 
+                            }}
+                            className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all border ${
+                              materialConfig[mat.name]?.tintable 
+                                ? 'bg-emerald-600/20 border-emerald-500/40 text-emerald-300' 
+                                : 'bg-slate-800 border-slate-700 text-slate-500 hover:text-slate-300'
+                            }`}
+                          >
+                            {materialConfig[mat.name]?.tintable ? '✓ Tintable' : 'Tintable'}
+                          </button>
+                          <select 
+                            value={materialConfig[mat.name]?.slot || 'Base'} 
+                            onChange={e => { const m = {...materialConfig}; m[mat.name].slot = e.target.value; setMaterialConfig(m); }} 
+                            className="bg-black/50 border border-slate-700 rounded px-2 py-1 text-[10px] text-white cursor-pointer focus:border-amber-600/60 focus:outline-none"
+                          >
+                            <option value="Base">Base</option>
+                            <option value="Skin">Skin</option>
+                            <option value="Hair">Hair</option>
+                            <option value="Eyes">Eyes</option>
+                            <option value="ClothingPrimary">Clothing Primary</option>
+                            <option value="ClothingSecondary">Clothing Secondary</option>
+                          </select>
+                        </div>
+                      </div>
+                      {/* Texture upload & link */}
+                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-800/60 text-[10px]">
+                        <span className="text-slate-500">Albedo / Diffuse Map:</span>
+                        <label className="text-[10px] text-amber-400/80 hover:text-amber-300 flex items-center gap-1 cursor-pointer transition-colors bg-amber-950/20 px-2 py-0.5 rounded border border-amber-800/30">
+                          <ImageIcon className="w-3.5 h-3.5" />
+                          <span>{mat.hasTexture ? 'Replace Texture' : '+ Connect External Texture'}</span>
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            className="hidden"
+                            onChange={(e) => {
+                              const imgFile = e.target.files?.[0];
+                              if (imgFile) {
+                                const url = URL.createObjectURL(imgFile);
+                                const textureLoader = new THREE.TextureLoader();
+                                textureLoader.load(url, (loadedTexture) => {
+                                  loadedTexture.flipY = false;
+                                  parsedGLB.scene.traverse((child: any) => {
+                                    if (child.isMesh && child.material) {
+                                      const mats = Array.isArray(child.material) ? child.material : [child.material];
+                                      mats.forEach((m: any) => {
+                                        if (m.name === mat.name) {
+                                          m.map = loadedTexture;
+                                          m.needsUpdate = true;
+                                        }
+                                      });
+                                    }
+                                  });
+                                  mat.hasTexture = true;
+                                  setMaterialConfig((prev) => ({ ...prev }));
+                                });
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
                     </div>
                   ))
                 )}

@@ -1,3 +1,33 @@
+## [2.2.027] - 2026-09-27
+- **3D Asset & Animation Import Pipeline Overhaul**:
+  - **Animation Preservation in GLTF Export**: Fixed `fbxConverter.ts` omitting `animations: object.animations` in `GLTFExporter.parse()`, ensuring all skeletal animations inside FBX files are properly preserved and baked into converted GLBs.
+  - **PBR Material Integrity**: Removed `--khr-materials-unlit` flag in Electron native conversion bridge (`saints-app/electron/main.cjs`), preserving roughness, metallic, normal maps, and standard lighting for imported FBX models.
+  - **External Texture Resolution**: Updated `fbxConverter.ts` with `THREE.LoadingManager` URL interception to resolve and bundle external textures (e.g. `_D`, `_Normal`, `_Roughness`) directly into the output GLB payload.
+  - **3D Model ZIP Packages & Multi-File Ingestion**: Added `modelPackage.ts` utility and updated `AssetUploadView.tsx` to detect and unpack 3D model archives (.zip) containing `.fbx`/`.glb` meshes, textures, and companion animation FBX clips. Enabled multi-file selection/drop for importing an FBX together with its texture maps.
+  - **Studio Material & Texture Manager**: Added real-time texture connection slots and texture status indicators (`✓ Textured` vs `No Texture`) to the Materials tab in `AssetDefinitionStudio.tsx`. Creators can now directly attach or replace texture maps for each material slot and immediately preview the textured model in the 3D viewport.
+  - **Saints Gaming Bible Update**: Added Section 45 ("Studio 3D Asset & Animation Pipeline Specification") codifying canonical runtime storage formats (GLB), PBR material integrity, standard humanoid animation action slots, external animation sets with runtime retargeting, and immutable release boundaries.
+
+## [2.2.026] - 2026-09-27
+- **Saints Gaming Gameplay Bible Documentation**:
+  - **HUD Studio Live Synchronization Architecture**: Documented the two-way relationship between Saints Studio's HUD authoring environment (`/studio/hud`) and the live game client (`The Lobby` / `BabylonEngine`). Added detailed specification for the 9-zone anchored docking system, viewport scaling with corner-anchored `transform-origin`, Studio Quick Menu bar customization (`quickMenuButtons`), authoritative `useGameStore` window hierarchy, and theme presets.
+  - **In-Game Options Menu & Unified Client Settings Architecture**: Documented the `FloatingWindow` obsidian glass design standards, community-first tone guidelines, 7-tab sidebar structure (Session & Character, Display & Graphics, Audio & Sound, Camera & View, Controls & Binds, Interface & HUD, Gameplay & Social), and the runtime client bridge with `ClientSettingsSchema` and `localStorage` persistence.
+
+## [2.2.025] - 2026-09-27
+- **In-Game HUD & Game Options Menu Overhaul**:
+  - **In-Game HUD Buttons & Windows Fix**: Fixed `ClassicPanel.tsx` importing from obsolete `useHudStore` instead of `useGameStore`. Clicking Inventory, Skills, Equipment, Quest Log, Marketplace (GTC), and Options now properly toggles their respective windows and system menu. Fixed keyboard shortcuts (`I`, `K`, `C`, `L`, `G`/`M`, `X`, `P`, `B`, `Esc`).
+  - **HUD Studio Live Dock Synchronization**: Connected `hudConfig.quickMenuButtons` to `ClassicPanel.tsx`'s favorites dock bar. Toggling shortcut buttons inside HUD Studio's "Dock" tab now directly updates the in-game quick menu bar.
+  - **HUD Viewport Scaling**: Wired `hudConfig.scale` into `DockZone.tsx` using corner-anchored `transformOrigin` and `scale(...)`, allowing the HUD viewport scaling slider (75% - 125%) to scale all docked HUD elements without distortion.
+  - **Game Options Menu Overhaul**: Redesigned `GameOptionsMenu.tsx` to match the authentic Saints Gaming window style (`FloatingWindow` obsidian glass, amber trims, and clean typography). Replaced cluttered duplicate ribbons and pseudo-military labels with a clean, spacious 7-tab interface:
+    - *Session & Character*: Live saint status, current map, instance, ping latency readout, emergency 5-second unstuck channel, character select, title screen return, and World Studio jump.
+    - *Display & Graphics*: Windowed/Fullscreen toggle, resolution scale (50%-150%), quality presets (Low/Med/High/Ultra), FPS targets (30/60/120/144/Uncapped), dynamic 3D shadows, post-processing pipeline, floating damage numbers, floating ground loot, and footstep dust FX.
+    - *Audio & Sound*: Master volume, music/jukebox (BGM), sound effects (SFX), world ambience, UI sounds, master mute, and background mute.
+    - *Camera & View*: Camera perspectives (Dynamic, Third Person, First Person, 2.5D Isometric), FOV slider (60°-110°), spring follow smoothness, camera shake toggle, edge clamping, and lens vignette.
+    - *Controls & Binds*: Mouse look sensitivity slider, invert Y-axis toggle, mobile control mode (floating joystick vs fixed D-pad), and structured keybinding reference table.
+    - *Interface & HUD*: HUD theme palette selector (with color swatch swatches), scale, glass opacity, frame corner style, radar minimap shape, vitality gauge formats, visual badges toggles, live HUD layout editor launcher, and factory default reset.
+    - *Gameplay & Social*: Player nameplates toggle, combat smart auto-targeting, auto-accept friend party invites, always auto-run, and chat timestamps.
+  - **Multiplayer Nameplates Setting**: Connected `showNames` client setting to `BabylonEngine.ts` to toggle player overhead nameplates.
+  - **Hotbar Consumable Cast Socket**: Updated `Hotbar.tsx` item consumption to use `emitSocketEvent` for reliable networked use of potions and consumables.
+
 ## [2.2.024] - 2026-09-27
 - **Fix (Animation Engine & Retargeting)**: Resolved persistent T-pose issue for 3D character models and archetypes when attaching external animation sets:
   - Created dedicated bone retargeting module (`animationRetarget.ts`) mapping bone hierarchies across Mixamo, Unreal Engine Manny/Quinn, Paragon, Blender, and Biped standards.

@@ -47,7 +47,9 @@ import {
   SpriteAnimationProfile,
   resolveSpriteDefinition,
 } from '@/shared/game/spriteDefinitions';
+import JSZip from 'jszip';
 import { convertFbxToGlb } from '@/web/lib/fbxConverter';
+import { isZip3DModelPackage, unpack3DModelZipPackage } from '@/web/lib/modelPackage';
 import { AssetDefinitionStudio } from './asset-studio/AssetDefinitionStudio';
 
 const ASSET_TYPES = [
@@ -174,14 +176,43 @@ export function AssetUploadView({
     };
   }, [isModularComponent, variantFamily, baseBodyType]);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const handleFiles = async (files: File[]) => {
+    if (!files || files.length === 0) return;
     setErrorMessage(null);
     setUploadSuccess(null);
 
-    // If a ZIP package is dropped/selected (e.g. from Universal Modular Generator)
+    // If multiple files dropped/selected: check for FBX/GLB + external textures
+    if (files.length > 1) {
+      const fbxFile = files.find(f => f.name.toLowerCase().endsWith('.fbx'));
+      const glbFile = files.find(f => f.name.toLowerCase().endsWith('.glb') || f.name.toLowerCase().endsWith('.gltf'));
+      const textureFiles = files.filter(f => /\.(png|jpe?g|webp)$/i.test(f.name));
+
+      if (fbxFile) {
+        try {
+          showToast?.(`Converting FBX with ${textureFiles.length} external textures...`);
+          const glb = await convertFbxToGlb(fbxFile, { textureFiles });
+          setSelectedFile(glb);
+          setPreviewUrl(URL.createObjectURL(glb));
+          if (!assetName) setAssetName(fbxFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
+          setAssetType('MODEL');
+          showToast?.(`FBX converted to GLB with ${textureFiles.length} textures connected!`);
+          return;
+        } catch (err: any) {
+          setErrorMessage(`FBX conversion failed: ${err.message}`);
+          return;
+        }
+      } else if (glbFile) {
+        setSelectedFile(glbFile);
+        setPreviewUrl(URL.createObjectURL(glbFile));
+        if (!assetName) setAssetName(glbFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
+        setAssetType('MODEL');
+        return;
+      }
+    }
+
+    const file = files[0];
+
+    // If a ZIP package is dropped/selected
     if (file.name.toLowerCase().endsWith('.zip') || file.type.includes('zip')) {
       await handleZipUpload(file);
       return;
@@ -267,10 +298,34 @@ export function AssetUploadView({
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      await handleFiles(files);
+    }
+  };
+
   const handleZipUpload = async (zipFile: File) => {
     setIsUnpackingZip(true);
     setErrorMessage(null);
     try {
+      // 1. Inspect if this is a 3D model archive (.fbx, .glb, textures, animations)
+      const zip = await JSZip.loadAsync(zipFile);
+      const entries = Object.keys(zip.files);
+
+      if (isZip3DModelPackage(entries)) {
+        showToast?.('Unpacking 3D asset archive (models, textures, animations)...');
+        const pkg3d = await unpack3DModelZipPackage(zipFile, (msg) => showToast?.(msg));
+        setSelectedFile(pkg3d.primaryModelFile);
+        setPreviewUrl(pkg3d.previewUrl);
+        if (!assetName) setAssetName(pkg3d.assetName);
+        setAssetType('MODEL');
+        setUnpackedZip(null);
+        showToast?.(`Loaded 3D Package: ${pkg3d.textureCount} textures, ${pkg3d.animationFiles.length} animations processed!`);
+        return;
+      }
+
+      // 2. Otherwise unpack as 2D modular pixel spritesheet package
       const pkg = await unpackModularZipPackage(zipFile);
       setUnpackedZip(pkg);
 
@@ -307,14 +362,14 @@ export function AssetUploadView({
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
+    const files = Array.from(e.dataTransfer.files || []);
+    if (files.length > 0) {
       if (fileInputRef.current) {
         const dt = new DataTransfer();
-        dt.items.add(file);
+        files.forEach(f => dt.items.add(f));
         fileInputRef.current.files = dt.files;
       }
-      void handleFileChange({ target: { files: [file] } } as any);
+      void handleFiles(files);
     }
   };
 
@@ -722,8 +777,9 @@ export function AssetUploadView({
             <input
               ref={fileInputRef}
               type="file"
+              multiple
               onChange={handleFileChange}
-              accept="image/png,image/jpeg,image/webp,image/gif,application/zip,.zip,audio/mpeg,audio/wav,audio/ogg,.fbx,.glb"
+              accept="image/png,image/jpeg,image/webp,image/gif,application/zip,.zip,audio/mpeg,audio/wav,audio/ogg,.fbx,.glb,.gltf"
               className="hidden"
             />
             {previewUrl ? (
@@ -754,10 +810,10 @@ export function AssetUploadView({
               <div className="flex flex-col items-center gap-2 py-2">
                 <Upload className="w-6 h-6 text-slate-400" />
                 <div className="text-slate-200 font-bold text-[11px]">
-                  Click or drag & drop asset file or Modular ZIP export here
+                  Click or drag & drop asset files, 3D ZIP packages, or FBX + textures here
                 </div>
                 <div className="text-[10px] text-slate-500">
-                  Supports PNG, Modular Spritesheet ZIP packages, WebP, GIF, MP3, WAV, OGG, FBX, GLB
+                  Supports 3D Packages (FBX + Textures/Animations ZIP), Multi-file FBX + PNG/JPG, GLB, Modular Spritesheets, Audio
                 </div>
               </div>
             )}

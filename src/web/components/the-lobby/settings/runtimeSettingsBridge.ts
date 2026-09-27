@@ -34,6 +34,7 @@ export function updateRuntimeSettings(settings: ClientSettings) {
   // We will dispatch a custom event to notify BabylonEngine and Renderer.
   // This avoids circular dependencies with the store and the engine.
   if (typeof window !== 'undefined') {
+    (window as any)._saintsClientSettings = settings;
     window.dispatchEvent(
       new CustomEvent('client_settings_updated', { detail: settings })
     );

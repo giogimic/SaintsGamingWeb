@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useGameStore } from './store';
-import { useHudStore } from '@/client/state/useHudStore';
 import {
   Backpack,
   Sword,
@@ -40,8 +39,9 @@ interface MenuItemDef {
 }
 
 export default function ClassicPanel() {
-  const toggleWindow = useHudStore((s) => s.toggleWindow);
-  const openWindows = useHudStore((s) => s.openWindows);
+  const toggleWindow = useGameStore((s) => s.toggleWindow);
+  const openWindows = useGameStore((s) => s.openWindows);
+  const toggleSystemMenu = useGameStore((s) => s.toggleSystemMenu);
   const inventory = useGameStore((s) => s.player.inventory);
   const activeQuests = useGameStore((s) => s.player.activeQuests);
   const skills = useGameStore((s) => s.player.skills);
@@ -142,6 +142,9 @@ export default function ClassicPanel() {
       } else if (key === 'l') {
         soundSynth?.playSelectSound?.();
         toggleWindow('quests');
+      } else if (key === 'g' || key === 'm') {
+        soundSynth?.playSelectSound?.();
+        toggleWindow('gtc');
       } else if (key === 'x') {
         soundSynth?.playSelectSound?.();
         setGameMode(gameMode === 'DEX' ? 'EXPLORING' : 'DEX');
@@ -205,6 +208,7 @@ export default function ClassicPanel() {
     {
       id: 'gtc',
       icon: Store,
+      hotkey: 'G',
       label: 'Marketplace',
       desc: 'Grand Exchange / GTC',
       isWindow: true,
@@ -231,16 +235,19 @@ export default function ClassicPanel() {
       label: 'World Studio',
       desc: 'Map & quest builder',
       action: () => {
-        window.location.href = '/studio';
+        if (typeof window !== 'undefined') {
+          window.location.href = '/studio';
+        }
       },
     },
     {
       id: 'options',
       icon: Settings,
+      hotkey: 'Esc',
       label: 'Options',
       desc: 'Game settings',
       action: () => {
-        toggleWindow('options');
+        toggleSystemMenu('keyboard');
       },
     },
   ];
@@ -256,11 +263,19 @@ export default function ClassicPanel() {
     }
   };
 
+  // Filter by HUD Studio configuration if defined
+  const isItemEnabledInHudStudio = (id: string) => {
+    if (!hudConfig?.quickMenuButtons) return true;
+    return (hudConfig.quickMenuButtons as any)[id] !== false;
+  };
+
   const favoriteItems = useMemo(() => {
-    return favorites
+    const activeFavs = favorites.filter((id) => isItemEnabledInHudStudio(id));
+    const fallbackList = activeFavs.length > 0 ? activeFavs : DEFAULT_FAVORITES.filter((id) => isItemEnabledInHudStudio(id));
+    return fallbackList
       .map((id) => menuItems.find((m) => m.id === id))
       .filter((m): m is MenuItemDef => !!m);
-  }, [favorites, menuItems]);
+  }, [favorites, menuItems, hudConfig?.quickMenuButtons]);
 
   const radiusClass =
     hudConfig?.borderRadius === 'compact'

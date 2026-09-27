@@ -49,6 +49,10 @@ export const ClientSettingsSchema = z.object({
     autoRun: z.boolean().default(false),
     showNames: z.boolean().default(true),
     damageNumbers: z.boolean().default(true),
+    showFloatingLoot: z.boolean().default(true),
+    footstepDust: z.boolean().default(true),
+    combatAutoTarget: z.boolean().default(true),
+    autoAcceptFriendParty: z.boolean().default(false),
   }).default({}),
 
   accessibility: z.object({
@@ -101,6 +105,10 @@ export const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
     autoRun: false,
     showNames: true,
     damageNumbers: true,
+    showFloatingLoot: true,
+    footstepDust: true,
+    combatAutoTarget: true,
+    autoAcceptFriendParty: false,
   },
   accessibility: {
     colorblindMode: 'none',

@@ -302,7 +302,8 @@ ipcMain.handle('convert-fbx', async (event, inputPath) => {
 
   const tempPath = path.join(app.getPath('temp'), `converted-${Date.now()}.glb`);
   try {
-    await fbx2gltf(inputPath, tempPath, ['--khr-materials-unlit']);
+    // Convert FBX to GLB with PBR material preservation
+    await fbx2gltf(inputPath, tempPath, ['--blend-shape-normals', '--blend-shape-tangents']);
     const buffer = fs.readFileSync(tempPath);
     try { fs.unlinkSync(tempPath); } catch (e) {}
     return { success: true, buffer };
