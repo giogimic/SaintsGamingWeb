@@ -143,6 +143,11 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 
 ## Changelog
 
+### v2.2.036
+- **Docker Build & Postinstall Patching Safeguards (Debian First)**:
+  - **Docker Build Layer Alignment**: Added `COPY scripts/patch-three-stdlib.js ./scripts/patch-three-stdlib.js` immediately before `RUN npm ci` in `Dockerfile`. Resolves fatal container build failure (`MODULE_NOT_FOUND: Cannot find module '/app/scripts/patch-three-stdlib.js'`) during production Docker builds where `npm ci` triggers `postinstall` before the application source tree is copied.
+  - **Defensive Postinstall Invocation**: Wrapped `postinstall` in `package.json` with an inline file existence check (`if (require('fs').existsSync(f)) ...`) to guarantee `npm install` and `npm ci` never abort when executed in partial build stages or minimal container caches.
+
 ### v2.2.029
 - **Equipment Sockets, Grip Calibration & Modular Loadout Compositor**:
   - **Comprehensive Socket Architecture**: Added full data contracts (`GripTransform`, `STANDARD_SOCKET_OPTIONS`, `HIDEABLE_COMPONENT_OPTIONS`) to `WorldModelSelector.tsx` for hand mounts (`RightHandMount`, `LeftHandMount`, `TwoHandedGrip`), mounted accessories (`HeadMount`, `ChestMount`), and sheathed mounts (`SheathedBack`, `SheathedHip_L`, `SheathedHip_R`).

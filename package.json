@@ -1,13 +1,13 @@
 {
   "name": "saints-gaming-portal",
-  "version": "2.2.035",
+  "version": "2.2.036",
   "license": "BSL-1.1",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
   },
   "scripts": {
-    "postinstall": "node scripts/patch-three-stdlib.js",
+    "postinstall": "node -e \"const f='scripts/patch-three-stdlib.js'; if (require('fs').existsSync(f)) require('child_process').spawnSync(process.execPath, [f], {stdio: 'inherit'});\"",
     "setup": "node -e \"const fs=require('fs'); if(!fs.existsSync('.env')) fs.copyFileSync('.env.example', '.env')\" && node scripts/prepare-prisma.js && prisma generate && prisma db push",
     "setup:app": "npm --prefix saints-app install",
     "build:app": "npm --prefix saints-app run build",

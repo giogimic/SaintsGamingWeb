@@ -22,6 +22,7 @@ ARG DB_PROVIDER=sqlite
 
 # Install dependencies using npm (respects trustedDependencies/ignoreScripts in package.json)
 COPY package.json package-lock.json ./
+COPY scripts/patch-three-stdlib.js ./scripts/patch-three-stdlib.js
 RUN npm ci
 
 # Copy the rest of the application code

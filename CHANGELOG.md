@@ -1,3 +1,8 @@
+## [2.2.036] - 2026-09-27
+- **Docker Build & Postinstall Patching Safeguards (Debian First)**:
+  - **Docker Build Layer Alignment**: Added `COPY scripts/patch-three-stdlib.js ./scripts/patch-three-stdlib.js` immediately before `RUN npm ci` in `Dockerfile`. Resolves fatal container build failure (`MODULE_NOT_FOUND: Cannot find module '/app/scripts/patch-three-stdlib.js'`) during production Docker builds where `npm ci` triggers `postinstall` before the application source tree is copied.
+  - **Defensive Postinstall Invocation**: Wrapped `postinstall` in `package.json` with an inline file existence check (`if (require('fs').existsSync(f)) ...`) to guarantee `npm install` and `npm ci` never abort when executed in partial build stages or minimal container caches.
+
 ## [2.2.035] - 2026-09-27
 - **Standalone Animation Retargeting, Separate glTF Binary Packaging & Universal PBR Texture Resolution**:
   - **Standalone Animation FBX Parser Safeguards & Postinstall Patching**: Implemented `scripts/patch-three-stdlib.js` wired to `package.json` `postinstall` to patch `three-stdlib/loaders/FBXLoader.js` (ESM) and `FBXLoader.cjs` (CJS). Fixes fatal crash (`TypeError: Cannot read properties of undefined (reading 'ID')`) when parsing standalone Unreal Engine / Mixamo / Fab animation files where orphan morph target curves lack parent geometry.
