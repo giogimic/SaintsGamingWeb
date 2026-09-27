@@ -104,6 +104,15 @@ export class LocalMovementSystem {
     const playerStore = usePlayerStore.getState();
     const currentPos = playerStore.player.position;
 
+    // A 3D map without streamed collision chunks is not safe to move through.
+    // Previously this path skipped physics and still applied horizontal input.
+    if (is3D && !voxelWorld) {
+      if (playerStore.player.isMoving) {
+        playerStore.setPlayerPosition(currentPos, undefined, false);
+      }
+      return;
+    }
+
     if (!isMoving && !simulate3DPhysics) {
       if (playerStore.player.isMoving) {
         playerStore.setPlayerPosition(currentPos, undefined, false);
@@ -178,14 +187,21 @@ export class LocalMovementSystem {
       // 3D Collision and Step Logic
       if (is3D) {
         if (voxelWorld) {
+          // Player positions are in rendered world space, whose Y origin is
+          // shifted (normally -16). Collision queries use voxel coordinates.
+          const voxelOriginOffsetY = voxelWorld.originOffsetY ?? 0;
           const collision = voxelMovementController.simulateMove(
             voxelWorld,
-            { x: currentPos.x, y: currentPos.y, z: currentPos.z || 0 },
+            {
+              x: currentPos.x,
+              y: currentPos.y - voxelOriginOffsetY,
+              z: currentPos.z || 0,
+            },
             { x: velocityX, y: velocityY, z: velocityZ },
             dtSec,
           );
           targetX = collision.position.x;
-          targetY = collision.position.y;
+          targetY = collision.position.y + voxelOriginOffsetY;
           targetZ = collision.position.z;
           velocityX = collision.velocity.x;
           velocityY = collision.velocity.y;

@@ -54,6 +54,19 @@ describe('WorldSimulation with 3D Voxel Collision', () => {
     }
   });
 
+  it('blocks voxel movement until collision data is available', () => {
+    const state = createMockWorldState({
+      voxelWorld: undefined,
+      voxelCollisionRequired: true,
+    });
+
+    const result = WorldSimulation.tryMove(state, 3, 2);
+    expect(result.type).toBe('BLOCKED');
+    if (result.type === 'BLOCKED') {
+      expect(result.reason).toBe('WALL');
+    }
+  });
+
   it('blocks movement when hitting solid voxel obstacle', () => {
     const state = createMockWorldState();
     const targetX = 3;
@@ -62,7 +75,7 @@ describe('WorldSimulation with 3D Voxel Collision', () => {
 
     // Place solid obstacle at target body level (y=16)
     const wallWord = packVoxel(VOXEL_MAT_STONE, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE, 0);
-    state.voxelWorld.setVoxel(targetX, 16, wz, wallWord);
+    state.voxelWorld.setVoxel(targetX, 16, wz, wallWord.low, wallWord.high);
 
     const result = WorldSimulation.tryMove(state, targetX, targetY);
     expect(result.type).toBe('BLOCKED');
@@ -79,14 +92,14 @@ describe('WorldSimulation with 3D Voxel Collision', () => {
 
     // Place walkable slope
     const slopeWord = packVoxel(VOXEL_MAT_GRASS, VoxelShape.SLOPE_45, VoxelOrientation.NORTH, 0, VoxelPhysics.WALKABLE_SLOPE, 0);
-    state.voxelWorld.setVoxel(targetX, 16, wz, slopeWord);
+    state.voxelWorld.setVoxel(targetX, 16, wz, slopeWord.low, slopeWord.high);
 
     const slopeResult = WorldSimulation.tryMove(state, targetX, targetY);
     expect(slopeResult.type).toBe('MOVED');
 
     // Place stairs
     const stairsWord = packVoxel(VOXEL_MAT_STONE, VoxelShape.STAIRS_STRAIGHT, VoxelOrientation.NORTH, 0, VoxelPhysics.SOLID_OBSTACLE, 0);
-    state.voxelWorld.setVoxel(targetX, 16, wz, stairsWord);
+    state.voxelWorld.setVoxel(targetX, 16, wz, stairsWord.low, stairsWord.high);
 
     const stairsResult = WorldSimulation.tryMove(state, targetX, targetY);
     expect(stairsResult.type).toBe('MOVED');
@@ -99,7 +112,7 @@ describe('WorldSimulation with 3D Voxel Collision', () => {
     const wz = state.mapHeight - 1 - targetY;
 
     const waterWord = packVoxel(VOXEL_MAT_WATER, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.SWIMMABLE_FLUID, 0);
-    state.voxelWorld.setVoxel(targetX, 15, wz, waterWord);
+    state.voxelWorld.setVoxel(targetX, 15, wz, waterWord.low, waterWord.high);
 
     const result = WorldSimulation.tryMove(state, targetX, targetY);
     expect(result.type).toBe('MOVED');
@@ -115,7 +128,7 @@ describe('WorldSimulation with 3D Voxel Collision', () => {
     const wz = state.mapHeight - 1 - targetY;
 
     const lavaWord = packVoxel(VOXEL_MAT_LAVA, VoxelShape.FULL_CUBE, VoxelOrientation.NORTH, 0, VoxelPhysics.HAZARD, 0);
-    state.voxelWorld.setVoxel(targetX, 15, wz, lavaWord);
+    state.voxelWorld.setVoxel(targetX, 15, wz, lavaWord.low, lavaWord.high);
 
     const result = WorldSimulation.tryMove(state, targetX, targetY);
     expect(result.type).toBe('MOVED');

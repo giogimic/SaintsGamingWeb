@@ -89,6 +89,16 @@ export class GameplayInputController {
     const currentMapId = store.currentMapId;
     const mapWidth = activeMap.width || activeMap.grid?.[0]?.length || 30;
     const mapHeight = activeMap.height || activeMap.grid?.length || 30;
+    const mapType = String(activeMap.mapType || '').toUpperCase();
+    const voxelCollisionRequired =
+      mapType === 'VOXEL' ||
+      mapType === 'FRACTAL' ||
+      mapType === 'HYBRID' ||
+      Boolean(activeMap.voxelDoc && mapType !== 'TILE');
+    const voxelWorld =
+      this.engineRef?.voxel?.voxelWorld ??
+      this.engineRef?.voxelWorld ??
+      (activeMap as any).__voxelWorldInstance;
 
     const worldState = {
       currentMapId,
@@ -103,7 +113,8 @@ export class GameplayInputController {
       isDevEditorOpen,
       connections: activeMap.connections,
       nodeConnections: activeMap.nodeConnections,
-      voxelWorld: this.engineRef?.voxelWorld,
+      voxelWorld,
+      voxelCollisionRequired,
     };
 
     const result = WorldSimulation.tryMove(worldState, targetX, targetY, intentOptions);

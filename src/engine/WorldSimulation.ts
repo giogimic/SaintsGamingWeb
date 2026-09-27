@@ -2,14 +2,11 @@ import { Point } from '@/web/components/the-lobby/store';
 import { isSameBaseMap } from '@/shared/net/mapIds';
 import { normalizeGatesToArray } from '@/shared/game/mapGates';
 import {
-  isVoxelSolid,
   isVoxelAir,
   extractPhysics,
-  extractShapeId,
   extractLogic,
   extractMaterialId,
   VoxelPhysics,
-  VoxelShape,
   VoxelLogic,
 } from '@/shared/game/voxel/VoxelWord';
 import { SweptAABBController } from '@/shared/game/voxel/VoxelCollision';
@@ -36,6 +33,7 @@ export interface WorldState {
     west?: string | any;
   };
   voxelWorld?: any;
+  voxelCollisionRequired?: boolean;
 }
 
 export type MoveSimulationResult = 
@@ -111,6 +109,12 @@ export class WorldSimulation {
     });
     if (gate?.targetMapId) {
       return { type: 'WARP', gate };
+    }
+
+    // Never fall back to tile-only checks while a voxel map's collision world
+    // is still loading.
+    if (state.voxelCollisionRequired && !state.voxelWorld) {
+      return { type: 'BLOCKED', direction: dir, reason: 'WALL' };
     }
 
     // Logic Grid Collision Check
