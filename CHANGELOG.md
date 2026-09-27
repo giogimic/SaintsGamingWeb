@@ -1,3 +1,20 @@
+## [2.2.033] - 2026-09-27
+- **Unified Asset Upload & Model Library Interior Overhaul with Model Intent Controls**:
+  - **Interior Redesign & Visual Tooling**: Rebuilt the interior of the Asset Upload window with modern Saints Gaming visual tooling, responsive cards, obsidian dark glass theme (`#050b14`), and warm gold/amber accents while maintaining the native window frame and `DraggablePanel` positioning.
+  - **8 Model Type & System Intent Cards**: Added 8 visual intent buttons to immediately direct upload processing and auto-tune scale, slot taxonomy, and rig rules:
+    - *Complete 3D Character*: Full rigged humanoid or creature with embedded/companion animations.
+    - *Modular Base Body*: Base naked mesh for attaching modular wardrobe & armor pieces.
+    - *Modular Wardrobe / Armor Piece*: Individual clothing, hair, helmet, chest, pants, or boots component.
+    - *Weapons & Equipment*: Handheld weapons, shields, tools, or sheathed items with socket grips.
+    - *Creatures & Mounts*: Turn-based battle creatures, wild monsters, or rideable mounts.
+    - *Props & Scenery*: Static or animated environment props, interactive chests, furniture, and world structures.
+    - *Animation Clips*: Companion skeletal animations for existing character skeletons.
+    - *2D Sprites & Sheets*: Classic 2D character sheets, creature battle sprites, icons, and UI textures.
+  - **Removed Legacy Form Input Clutter**: Completely removed the 10 obsolete legacy text boxes and dropdowns (Asset Name, modular checkbox, import profile dropdown, animation profile, slot role, asset classification, category, search tags, visibility, ingest button) that cluttered 3D uploads.
+  - **Unified Single-Window Model Selector Architecture**: Eliminated the separate "Select world 3d model asset" popup modal (`SpriteBrowser` in `FloatingModal`) that previously opened on top of Archetype, NPC, and Item editors. Clicking "Select 3D Model Asset..." now opens the unified `Asset Upload & Library` panel with an active picker mode, enabling 1-click model assignment or immediate model upload with automatic entity binding.
+  - **Integrated Model Catalog Browser**: Added instant tab switching between `[ ⚡ Upload Studio ]` and `[ 📦 Model & Asset Library ]` featuring category chips, live text search, 3D model cards, and direct assignment actions.
+  - **Native Viewport Scale & Coordinate Accuracy**: Removed outer parent CSS scaling transforms on the asset panel to ensure 1:1 canvas raycasting and viewport rendering accuracy.
+
 ## [2.2.032] - 2026-09-27
 - **Intelligent 3D Asset Detection, Viewport Texture Dropzone, Modular Compositor & 1.75m Scale Normalization**:
   - **Automated 3D Asset Taxonomy Engine**: Built `assetTaxonomy.ts` to automatically analyze incoming 3D models (FBX, OBJ, GLB, VOX, DAE, STL, PLY) on upload. Detects structure (`Complete Character`, `Modular Base Body`, `Modular Piece`, `Weapon`, `Environment Prop`, `Creature / Monster`), classifies modular attachment slots (`hair`, `hat`, `shirt`, `pants`, `shoes`, `accessory`), infers engine roles, and detects centimeter (Unreal Engine) vs meter scale mismatches.

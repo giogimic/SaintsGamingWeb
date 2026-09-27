@@ -55,7 +55,7 @@ import {
 } from '@/web/lib/modelPackage';
 import { convertFbxToGlb } from '@/web/lib/fbxConverter';
 import { RIG_FAMILIES, type CategorizedAnimationClip } from '@/shared/game/modelRigTaxonomy';
-import { detectAssetTaxonomy, AssetTaxonomyResult } from '@/web/lib/assetTaxonomy';
+import { detectAssetTaxonomy, AssetTaxonomyResult, DetectedAssetCategory } from '@/web/lib/assetTaxonomy';
 
 // ── Types ────────────────────────────────────────────────────────────
 interface Props {
@@ -65,6 +65,7 @@ interface Props {
   onCancel: () => void;
   companionAnimationFiles?: File[];
   companionTextureFiles?: File[];
+  intentHint?: DetectedAssetCategory;
 }
 
 type TabId = 'roles' | 'transform' | 'skeleton' | 'attachments' | 'animations' | 'materials' | 'items';
@@ -137,6 +138,7 @@ export function AssetDefinitionStudio({
   onCancel,
   companionAnimationFiles,
   companionTextureFiles,
+  intentHint,
 }: Props) {
   const showToast = useGameStore((s) => s.showToast);
   const [parsedGLB, setParsedGLB] = useState<ParsedGLB | null>(null);
@@ -442,7 +444,8 @@ export function AssetDefinitionStudio({
           file.name,
           parsed.dimensions,
           parsed.rigAnalysis,
-          parsed.meshes.length
+          parsed.meshes.length,
+          intentHint
         );
         setTaxonomyResult(taxonomy);
         setStructure(taxonomy.structure);

@@ -13,11 +13,9 @@ export const AssetUploadPanel: React.FC = () => {
 
   return (
     <DraggablePanel id="assetUpload" icon={<UploadCloud className="w-4 h-4" />} portalToBody={true}>
-      <div className="flex flex-col h-full bg-[#050b14]">
-        <div className="flex-1 overflow-auto bg-[#02050b]">
-          <div className="transform scale-[0.95] origin-top">
-            <AssetUploadView />
-          </div>
+      <div className="flex flex-col h-full bg-[#050b14] overflow-hidden">
+        <div className="flex-1 overflow-auto bg-[#02050b] p-3">
+          <AssetUploadView />
         </div>
       </div>
     </DraggablePanel>

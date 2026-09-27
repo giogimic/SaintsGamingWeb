@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Upload,
   Image as ImageIcon,
@@ -16,38 +16,34 @@ import {
   Sparkles,
   Info,
   ExternalLink,
+  Search,
+  RefreshCw,
+  Filter,
+  Cuboid,
+  User,
+  Users,
+  Shirt,
+  Sword,
+  Crosshair,
+  PawPrint,
+  Film,
+  Activity,
+  Check,
+  Plus,
+  Eye,
+  FileArchive,
+  Grid,
+  List,
+  ChevronRight,
+  Puzzle,
+  FileUp,
+  X,
+  Copy,
 } from 'lucide-react';
 import { useGameStore } from '../store';
+import { useEditorStore } from './editor-store';
 import { soundSynth } from '@/engine/sound-synth';
-import { AssetManager } from '@/engine/assets/AssetManager';
-import { ASSET_FORMAT_TAXONOMY, AssetFormatDefinition } from '@/shared/game/spriteDefinitions';
-import {
-  ASSET_IMPORT_PROFILE_META,
-  AssetImportProfileId,
-  CHARACTER_COMPONENT_CATEGORIES,
-  getDefaultSlotRole,
-  getDefaultZOrderHint,
-  inferCategoryForRole,
-  inferCharacterComponentLayerSlot,
-  inferTypeForProfile,
-  isCharacterComponentCategory,
-  isValidSlotRole,
-  listAssetImportProfiles,
-  listCharacterBaseBodyTypes,
-  listCharacterComponentCategories,
-  listSlotRolesForProfile,
-} from '@/shared/game/assetImportProfiles';
-import {
-  unpackModularZipPackage,
-  UnpackedModularPackage,
-  UnpackedModularLayer,
-} from '@/shared/game/modularSpritePackage';
-import {
-  ANIMATION_PROFILES,
-  SpriteAnimationProfile,
-  resolveSpriteDefinition,
-} from '@/shared/game/spriteDefinitions';
-import JSZip from 'jszip';
+import { AssetManager, GameAssetItem } from '@/engine/assets/AssetManager';
 import { convertFbxToGlb } from '@/web/lib/fbxConverter';
 import {
   isZip3DModelPackage,
@@ -58,1366 +54,1044 @@ import {
   convertStlToGlb,
   convertPlyToGlb,
 } from '@/web/lib/modelPackage';
+import JSZip from 'jszip';
+import {
+  unpackModularZipPackage,
+  UnpackedModularPackage,
+} from '@/shared/game/modularSpritePackage';
 import { AssetDefinitionStudio } from './asset-studio/AssetDefinitionStudio';
+import type { DetectedAssetCategory } from '@/web/lib/assetTaxonomy';
 
-const ASSET_TYPES = [
-  { value: 'OBJECT', label: 'Object / Prop (Furniture, Trees, Rocks)', icon: Box },
-  { value: 'CHARACTER', label: 'Character / Hero / NPC', icon: ImageIcon },
-  { value: 'CREATURE', label: 'Creature / Monster', icon: ImageIcon },
-  { value: 'TILE', label: 'Tile / Terrain Patch', icon: Box },
-  { value: 'ITEM', label: 'Inventory Item / Gear Icon', icon: Box },
-  { value: 'UI', label: 'UI Element / Frame / Icon', icon: Box },
-  { value: 'EFFECT', label: 'Visual Effect / Particle', icon: SparklesIcon },
-  { value: 'MODEL', label: '3D Model (GLB/FBX/OBJ/VOX/DAE/STL/PLY)', icon: Box },
-  { value: 'AUDIO', label: 'Sound Effect / Music Track', icon: Music },
-];
+export interface AssetUploadViewProps {
+  initialAssetType?: string;
+  initialImportProfile?: any;
+  initialSlotRole?: string;
+  initialTab?: 'upload' | 'library';
+  onSelectModel?: (assetId: string, asset?: any) => void;
+  onUploadComplete?: (asset: any) => void;
+  onOpenSlicer?: (asset: { id: string; filename: string; storagePath: string }) => void;
+}
 
-function SparklesIcon(props: any) {
-  return <ImageIcon {...props} />;
+function getAssetName(asset: GameAssetItem): string {
+  return (asset as any).name || asset.metadata?.name || asset.source?.split('/').pop()?.replace(/\.[^/.]+$/, '') || asset.id;
 }
 
 export function AssetUploadView({
   initialAssetType,
   initialImportProfile,
   initialSlotRole,
+  initialTab,
+  onSelectModel,
   onUploadComplete,
   onOpenSlicer,
-}: {
-  initialAssetType?: string;
-  initialImportProfile?: AssetImportProfileId | '';
-  initialSlotRole?: string;
-  onUploadComplete?: (asset: any) => void;
-  onOpenSlicer?: (asset: { id: string; filename: string; storagePath: string }) => void;
-}) {
+}: AssetUploadViewProps) {
   const showToast = useGameStore((s) => s.showToast);
+  const activeAssetPicker = useEditorStore((s) => s.activeAssetPicker);
+  const closeAssetPicker = useEditorStore((s) => s.closeAssetPicker);
+
+  // Active Tab: default to library if in picker mode or initialTab is library
+  const [activeTab, setActiveTab] = useState<'upload' | 'library'>(
+    initialTab || (activeAssetPicker ? 'library' : 'upload')
+  );
+
+  // When activeAssetPicker changes, switch to library mode
+  useEffect(() => {
+    if (activeAssetPicker) {
+      setActiveTab('library');
+    }
+  }, [activeAssetPicker]);
+
+  // File Inputs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const zipInputRef = useRef<HTMLInputElement>(null);
 
+  // Upload State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [assetName, setAssetName] = useState('');
-  const [assetType, setAssetType] = useState(initialAssetType || 'OBJECT');
-  const [category, setCategory] = useState(initialAssetType === 'CREATURE' || initialImportProfile === 'creature' ? 'creature' : '');
-  const [componentCategory, setComponentCategory] = useState('');
-  const [componentLayer, setComponentLayer] = useState('');
-  const [variantFamily, setVariantFamily] = useState('');
-  const [isModularComponent, setIsModularComponent] = useState(false);
-  const [zOrderHint, setZOrderHint] = useState('');
-  const [baseBodyType, setBaseBodyType] = useState('');
-  const [hidesComponents, setHidesComponents] = useState<string[]>([]);
-  const [bodyTypeWarning, setBodyTypeWarning] = useState<string | null>(null);
-  const [importProfile, setImportProfile] = useState<AssetImportProfileId | ''>(initialImportProfile || '');
-
-  // Character Presentation State
-  const [characterPresentationType, setCharacterPresentationType] = useState('2D_SPRITE');
-  const [isCharacterCustomizable, setIsCharacterCustomizable] = useState(false);
-  const [supportedComponents, setSupportedComponents] = useState('');
-  const [attachmentPoints, setAttachmentPoints] = useState('');
-
-  useEffect(() => {
-    if (initialAssetType) {
-      setAssetType(initialAssetType);
-      if (initialAssetType === 'CREATURE' && !category) setCategory('creature');
-    }
-  }, [initialAssetType, category]);
-
-  useEffect(() => {
-    if (initialImportProfile) {
-      setImportProfile(initialImportProfile);
-      if (initialImportProfile === 'creature' && !category) setCategory('creature');
-    }
-  }, [initialImportProfile, category]);
-
-  const [slotRole, setSlotRole] = useState(initialSlotRole || '');
-
-  useEffect(() => {
-    if (initialSlotRole !== undefined) setSlotRole(initialSlotRole);
-  }, [initialSlotRole]);
-  const [animationProfile, setAnimationProfile] = useState<SpriteAnimationProfile | ''>('');
-  const [tagsInput, setTagsInput] = useState('');
-  const [visibility, setVisibility] = useState('COMMUNITY');
-  const [createUsable, setCreateUsable] = useState(true);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState<any | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [companionAnimationFiles, setCompanionAnimationFiles] = useState<File[]>([]);
   const [companionTextureFiles, setCompanionTextureFiles] = useState<File[]>([]);
-
-  // Modular Detection & ZIP Package State
-  const [detectedFormat, setDetectedFormat] = useState<AssetFormatDefinition | null>(null);
+  const [intentHint, setIntentHint] = useState<DetectedAssetCategory | undefined>(undefined);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<any | null>(null);
   const [unpackedZip, setUnpackedZip] = useState<UnpackedModularPackage | null>(null);
-  const [isUnpackingZip, setIsUnpackingZip] = useState(false);
-  const [batchImportProgress, setBatchImportProgress] = useState<{ current: number; total: number } | null>(null);
 
-  // Warn when baseBodyType conflicts with other assets sharing the same variantFamily
-  useEffect(() => {
-    if (!isModularComponent || !variantFamily.trim() || !baseBodyType) {
-      setBodyTypeWarning(null);
-      return;
+  // Library State
+  const [libraryAssets, setLibraryAssets] = useState<GameAssetItem[]>([]);
+  const [isLoadingLibrary, setIsLoadingLibrary] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<'ALL' | 'CHARACTERS' | 'MODULAR' | 'WEAPONS' | 'CREATURES' | 'PROPS' | '2D'>('ALL');
+  const [totalLibraryCount, setTotalLibraryCount] = useState(0);
+  const [previewingAsset, setPreviewingAsset] = useState<GameAssetItem | null>(null);
+
+  // Fetch Library Assets
+  const fetchLibrary = async () => {
+    setIsLoadingLibrary(true);
+    try {
+      const typeFilter = activeAssetPicker?.filterType || (libraryCategoryFilter === '2D' ? 'CHARACTER' : 'MODEL');
+      const manager = AssetManager.getInstance();
+      const res = await manager.searchAssets(
+        {
+          type: typeFilter as any,
+          query: searchQuery || undefined,
+        },
+        0,
+        100
+      );
+      setLibraryAssets(res.items || []);
+      setTotalLibraryCount(res.total || res.items?.length || 0);
+    } catch (err) {
+      console.warn('Failed to fetch library assets:', err);
+    } finally {
+      setIsLoadingLibrary(false);
     }
+  };
 
-    let cancelled = false;
-    const timer = setTimeout(async () => {
-      try {
-        const manager = AssetManager.getInstance();
-        const { items } = await manager.searchAssets({ variantFamily: variantFamily.trim() }, 0, 25);
-        if (cancelled) return;
+  useEffect(() => {
+    if (activeTab === 'library') {
+      void fetchLibrary();
+    }
+  }, [activeTab, libraryCategoryFilter, activeAssetPicker?.filterType]);
 
-        const conflicting = items
-          .map((item) => (item.metadata?.baseBodyType || item.baseBodyType || '').toString().toLowerCase())
-          .filter((bt) => bt && bt !== baseBodyType.toLowerCase());
-
-        if (conflicting.length > 0) {
-          const uniqueTypes = Array.from(new Set(conflicting));
-          setBodyTypeWarning(
-            `⚠️ ${conflicting.length} existing asset(s) tagged "${variantFamily.trim()}" use a different body type (${uniqueTypes.join(', ')}). This piece is "${baseBodyType}" — sprites may not align.`
-          );
-        } else {
-          setBodyTypeWarning(null);
-        }
-      } catch {
-        // Non-critical check
+  // Handle Intent Button Clicks
+  const handleIntentClick = (intent: DetectedAssetCategory | '2d_sprite' | 'animation_pack') => {
+    soundSynth?.playUiClick?.();
+    if (intent === '2d_sprite') {
+      setIntentHint(undefined);
+      if (fileInputRef.current) {
+        fileInputRef.current.accept = '.png,.jpg,.jpeg,.webp,.zip';
+        fileInputRef.current.click();
       }
-    }, 400);
+    } else if (intent === 'animation_pack') {
+      setIntentHint('complete_character');
+      if (fileInputRef.current) {
+        fileInputRef.current.accept = '.fbx,.glb,.gltf';
+        fileInputRef.current.click();
+      }
+    } else {
+      setIntentHint(intent);
+      if (fileInputRef.current) {
+        fileInputRef.current.accept = '.fbx,.glb,.gltf,.obj,.vox,.dae,.stl,.ply,.zip';
+        fileInputRef.current.click();
+      }
+    }
+  };
 
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [isModularComponent, variantFamily, baseBodyType]);
-
+  // Main Multi-file / Single-file Ingestion Processor
   const handleFiles = async (files: File[]) => {
     if (!files || files.length === 0) return;
     setErrorMessage(null);
     setUploadSuccess(null);
+    setIsProcessing(true);
 
-    // If multiple files dropped/selected: check for 3D model + external textures/MTL
-    if (files.length > 1) {
-      const isAnimFileName = (name: string) => /anim|walk|run|idle|jump|turn|jog|mocap|atk|attack|die|death|hit|react|claw|bite|cast|roar/i.test(name);
-      const allFbx = files.filter(f => f.name.toLowerCase().endsWith('.fbx')).sort((a, b) => {
-        const aAnim = isAnimFileName(a.name);
-        const bAnim = isAnimFileName(b.name);
-        if (aAnim && !bAnim) return 1;
-        if (!aAnim && bAnim) return -1;
-        return 0;
-      });
-      const allGlb = files.filter(f => /\.(glb|gltf)$/i.test(f.name)).sort((a, b) => {
-        const aAnim = isAnimFileName(a.name);
-        const bAnim = isAnimFileName(b.name);
-        if (aAnim && !bAnim) return 1;
-        if (!aAnim && bAnim) return -1;
-        return 0;
-      });
-      const fbxFile = allFbx[0];
-      const glbFile = allGlb[0];
-      const objFile = files.find(f => f.name.toLowerCase().endsWith('.obj'));
-      const mtlFile = files.find(f => f.name.toLowerCase().endsWith('.mtl'));
-      const voxFile = files.find(f => f.name.toLowerCase().endsWith('.vox'));
-      const daeFile = files.find(f => f.name.toLowerCase().endsWith('.dae'));
-      const stlFile = files.find(f => f.name.toLowerCase().endsWith('.stl'));
-      const plyFile = files.find(f => f.name.toLowerCase().endsWith('.ply'));
-      const textureFiles = files.filter(f => /\.(png|jpe?g|webp|tga|dds|bmp)$/i.test(f.name));
-      const animFiles = files.filter(f => f !== fbxFile && f !== glbFile && /\.(fbx|glb)$/i.test(f.name));
-      setCompanionAnimationFiles(animFiles);
-      setCompanionTextureFiles(textureFiles);
+    try {
+      // 1. If single ZIP archive dropped
+      if (files.length === 1 && (files[0].name.toLowerCase().endsWith('.zip') || files[0].type.includes('zip'))) {
+        setProcessingStatus('Inspecting ZIP archive contents...');
+        const zipFile = files[0];
+        const zip = await JSZip.loadAsync(zipFile);
+        const entries = Object.keys(zip.files);
 
-      if (fbxFile) {
-        try {
-          showToast?.(`Converting FBX with ${textureFiles.length} external textures and ${animFiles.length} animations...`);
+        if (isZip3DModelPackage(entries)) {
+          setProcessingStatus('Unpacking 3D model archive with textures & animations...');
+          const unpacked = await unpack3DModelZipPackage(zipFile);
+          setSelectedFile(unpacked.primaryModelFile);
+          setPreviewUrl(unpacked.previewUrl);
+          setCompanionTextureFiles(unpacked.textureFiles || []);
+          setCompanionAnimationFiles(unpacked.animationFiles || []);
+          showToast?.(`Extracted 3D model with ${unpacked.textureCount} textures and ${unpacked.animationFiles.length} animations!`);
+          setIsProcessing(false);
+          setProcessingStatus(null);
+          return;
+        }
+
+        // Otherwise check for 2D modular sprite package
+        setProcessingStatus('Unpacking 2D modular sprite package...');
+        const modularPkg = await unpackModularZipPackage(zipFile);
+        if (modularPkg && modularPkg.layers.length > 0) {
+          setUnpackedZip(modularPkg);
+          showToast?.(`Unpacked modular package with ${modularPkg.layers.length} layers!`);
+          setIsProcessing(false);
+          setProcessingStatus(null);
+          return;
+        }
+      }
+
+      // 2. If multiple files dropped together (e.g. OBJ + MTL + Textures or FBX + Textures + Animations)
+      if (files.length > 1) {
+        setProcessingStatus(`Processing ${files.length} dropped asset files...`);
+        const isAnimFileName = (name: string) =>
+          /anim|walk|run|idle|jump|turn|jog|mocap|atk|attack|die|death|hit|react|claw|bite|cast|roar/i.test(name);
+
+        const allFbx = files.filter((f) => f.name.toLowerCase().endsWith('.fbx')).sort((a, b) => {
+          const aAnim = isAnimFileName(a.name);
+          const bAnim = isAnimFileName(b.name);
+          if (aAnim && !bAnim) return 1;
+          if (!aAnim && bAnim) return -1;
+          return 0;
+        });
+        const allGlb = files.filter((f) => /\.(glb|gltf)$/i.test(f.name)).sort((a, b) => {
+          const aAnim = isAnimFileName(a.name);
+          const bAnim = isAnimFileName(b.name);
+          if (aAnim && !bAnim) return 1;
+          if (!aAnim && bAnim) return -1;
+          return 0;
+        });
+
+        const fbxFile = allFbx[0];
+        const glbFile = allGlb[0];
+        const objFile = files.find((f) => f.name.toLowerCase().endsWith('.obj'));
+        const mtlFile = files.find((f) => f.name.toLowerCase().endsWith('.mtl'));
+        const voxFile = files.find((f) => f.name.toLowerCase().endsWith('.vox'));
+        const daeFile = files.find((f) => f.name.toLowerCase().endsWith('.dae'));
+        const stlFile = files.find((f) => f.name.toLowerCase().endsWith('.stl'));
+        const plyFile = files.find((f) => f.name.toLowerCase().endsWith('.ply'));
+        const textureFiles = files.filter((f) => /\.(png|jpe?g|webp|tga|dds|bmp)$/i.test(f.name));
+        const animFiles = files.filter((f) => f !== fbxFile && f !== glbFile && /\.(fbx|glb)$/i.test(f.name));
+
+        setCompanionAnimationFiles(animFiles);
+        setCompanionTextureFiles(textureFiles);
+
+        if (fbxFile) {
+          setProcessingStatus(`Converting FBX with ${textureFiles.length} textures and ${animFiles.length} animations...`);
           const glb = await convertFbxToGlb(fbxFile, { textureFiles });
           setSelectedFile(glb);
           setPreviewUrl(URL.createObjectURL(glb));
-          if (!assetName) setAssetName(fbxFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
-          setAssetType('MODEL');
-          showToast?.(`FBX converted to GLB with ${textureFiles.length} textures connected!`);
+          showToast?.(`FBX converted with ${textureFiles.length} textures connected!`);
+          setIsProcessing(false);
+          setProcessingStatus(null);
           return;
-        } catch (err: any) {
-          setErrorMessage(`FBX conversion failed: ${err.message}`);
-          return;
-        }
-      } else if (objFile) {
-        try {
-          showToast?.(`Converting OBJ with ${textureFiles.length} textures...`);
+        } else if (objFile) {
+          setProcessingStatus(`Converting Wavefront OBJ with ${textureFiles.length} textures...`);
           const glb = await convertObjToGlb(objFile, { mtlFile, textureFiles });
           setSelectedFile(glb);
           setPreviewUrl(URL.createObjectURL(glb));
-          if (!assetName) setAssetName(objFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
-          setAssetType('MODEL');
-          showToast?.(`OBJ converted to GLB with ${textureFiles.length} textures!`);
+          showToast?.(`OBJ converted with ${textureFiles.length} textures!`);
+          setIsProcessing(false);
+          setProcessingStatus(null);
           return;
-        } catch (err: any) {
-          setErrorMessage(`OBJ conversion failed: ${err.message}`);
-          return;
-        }
-      } else if (daeFile) {
-        try {
-          showToast?.(`Converting Collada DAE with ${textureFiles.length} textures...`);
+        } else if (daeFile) {
+          setProcessingStatus('Converting Collada DAE model...');
           const glb = await convertDaeToGlb(daeFile, { textureFiles });
           setSelectedFile(glb);
           setPreviewUrl(URL.createObjectURL(glb));
-          if (!assetName) setAssetName(daeFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
-          setAssetType('MODEL');
-          showToast?.('Collada model converted to GLB!');
+          setIsProcessing(false);
+          setProcessingStatus(null);
           return;
-        } catch (err: any) {
-          setErrorMessage(`Collada conversion failed: ${err.message}`);
-          return;
-        }
-      } else if (voxFile) {
-        try {
-          showToast?.('Converting MagicaVoxel model...');
+        } else if (voxFile) {
+          setProcessingStatus('Converting MagicaVoxel VOX model...');
           const glb = await convertVoxToGlb(voxFile);
           setSelectedFile(glb);
           setPreviewUrl(URL.createObjectURL(glb));
-          if (!assetName) setAssetName(voxFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
-          setAssetType('MODEL');
-          showToast?.('MagicaVoxel model converted to GLB!');
+          setIsProcessing(false);
+          setProcessingStatus(null);
           return;
-        } catch (err: any) {
-          setErrorMessage(`MagicaVoxel conversion failed: ${err.message}`);
-          return;
-        }
-      } else if (stlFile) {
-        try {
-          showToast?.('Converting STL model...');
+        } else if (stlFile) {
+          setProcessingStatus('Converting STL model...');
           const glb = await convertStlToGlb(stlFile);
           setSelectedFile(glb);
           setPreviewUrl(URL.createObjectURL(glb));
-          if (!assetName) setAssetName(stlFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
-          setAssetType('MODEL');
+          setIsProcessing(false);
+          setProcessingStatus(null);
           return;
-        } catch (err: any) {
-          setErrorMessage(`STL conversion failed: ${err.message}`);
-          return;
-        }
-      } else if (plyFile) {
-        try {
-          showToast?.('Converting PLY model...');
+        } else if (plyFile) {
+          setProcessingStatus('Converting PLY model...');
           const glb = await convertPlyToGlb(plyFile);
           setSelectedFile(glb);
           setPreviewUrl(URL.createObjectURL(glb));
-          if (!assetName) setAssetName(plyFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
-          setAssetType('MODEL');
+          setIsProcessing(false);
+          setProcessingStatus(null);
           return;
-        } catch (err: any) {
-          setErrorMessage(`PLY conversion failed: ${err.message}`);
+        } else if (glbFile) {
+          setSelectedFile(glbFile);
+          setPreviewUrl(URL.createObjectURL(glbFile));
+          setIsProcessing(false);
+          setProcessingStatus(null);
           return;
         }
-      } else if (glbFile) {
-        setSelectedFile(glbFile);
-        setPreviewUrl(URL.createObjectURL(glbFile));
-        if (!assetName) setAssetName(glbFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
-        setAssetType('MODEL');
-        return;
-      }
-    }
-
-    const file = files[0];
-
-    // If a ZIP package is dropped/selected
-    if (file.name.toLowerCase().endsWith('.zip') || file.type.includes('zip')) {
-      await handleZipUpload(file);
-      return;
-    }
-
-    if (file.name.toLowerCase().endsWith('.fbx')) {
-      try {
-        setErrorMessage(null);
-        showToast?.('Converting FBX to GLB for web compatibility...');
-        const glbFile = await convertFbxToGlb(file);
-        
-        setSelectedFile(glbFile);
-        const url = URL.createObjectURL(glbFile);
-        setPreviewUrl(url);
-        
-        if (!assetName) setAssetName(file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
-        setAssetType('MODEL');
-        return;
-      } catch (err: any) {
-        setErrorMessage(`FBX Conversion failed: ${err.message}`);
-        return;
-      }
-    }
-
-    if (file.name.toLowerCase().endsWith('.obj')) {
-      try {
-        setErrorMessage(null);
-        showToast?.('Converting OBJ to GLB...');
-        const glbFile = await convertObjToGlb(file);
-        setSelectedFile(glbFile);
-        const url = URL.createObjectURL(glbFile);
-        setPreviewUrl(url);
-        if (!assetName) setAssetName(file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
-        setAssetType('MODEL');
-        return;
-      } catch (err: any) {
-        setErrorMessage(`OBJ conversion failed: ${err.message}`);
-        return;
-      }
-    }
-
-    if (file.name.toLowerCase().endsWith('.vox')) {
-      try {
-        setErrorMessage(null);
-        showToast?.('Converting MagicaVoxel to GLB...');
-        const glbFile = await convertVoxToGlb(file);
-        setSelectedFile(glbFile);
-        const url = URL.createObjectURL(glbFile);
-        setPreviewUrl(url);
-        if (!assetName) setAssetName(file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
-        setAssetType('MODEL');
-        return;
-      } catch (err: any) {
-        setErrorMessage(`MagicaVoxel conversion failed: ${err.message}`);
-        return;
-      }
-    }
-
-    if (file.name.toLowerCase().endsWith('.dae')) {
-      try {
-        setErrorMessage(null);
-        showToast?.('Converting Collada to GLB...');
-        const glbFile = await convertDaeToGlb(file);
-        setSelectedFile(glbFile);
-        const url = URL.createObjectURL(glbFile);
-        setPreviewUrl(url);
-        if (!assetName) setAssetName(file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
-        setAssetType('MODEL');
-        return;
-      } catch (err: any) {
-        setErrorMessage(`Collada conversion failed: ${err.message}`);
-        return;
-      }
-    }
-
-    if (file.name.toLowerCase().endsWith('.stl')) {
-      try {
-        setErrorMessage(null);
-        showToast?.('Converting STL to GLB...');
-        const glbFile = await convertStlToGlb(file);
-        setSelectedFile(glbFile);
-        const url = URL.createObjectURL(glbFile);
-        setPreviewUrl(url);
-        if (!assetName) setAssetName(file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
-        setAssetType('MODEL');
-        return;
-      } catch (err: any) {
-        setErrorMessage(`STL conversion failed: ${err.message}`);
-        return;
-      }
-    }
-
-    if (file.name.toLowerCase().endsWith('.ply')) {
-      try {
-        setErrorMessage(null);
-        showToast?.('Converting PLY to GLB...');
-        const glbFile = await convertPlyToGlb(file);
-        setSelectedFile(glbFile);
-        const url = URL.createObjectURL(glbFile);
-        setPreviewUrl(url);
-        if (!assetName) setAssetName(file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
-        setAssetType('MODEL');
-        return;
-      } catch (err: any) {
-        setErrorMessage(`PLY conversion failed: ${err.message}`);
-        return;
-      }
-    }
-
-    if (file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf')) {
-      setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-      if (!assetName) setAssetName(file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
-      setAssetType('MODEL');
-      return;
-    }
-
-    setSelectedFile(file);
-    setUnpackedZip(null);
-
-    // Default asset name from file
-    const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
-    if (!assetName) {
-      setAssetName(cleanName);
-    }
-
-    // Auto-detect audio
-    if (!importProfile && file.type.startsWith('audio/')) {
-      setAssetType('AUDIO');
-    }
-
-    if (file.type.startsWith('image/')) {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-
-      // Measure dimensions to detect layout & animation profile
-      const img = new Image();
-      img.onload = () => {
-        let taxonomy = ASSET_FORMAT_TAXONOMY['custom-spritesheet'];
-        if (img.naturalWidth === 832 && img.naturalHeight === 1344) taxonomy = ASSET_FORMAT_TAXONOMY['modular-4dir-pixel'];
-        else if (img.naturalWidth === 576 && img.naturalHeight === 256) taxonomy = ASSET_FORMAT_TAXONOMY['modular-4dir-pixel'];
-        else if (img.naturalWidth % 3 === 0 && img.naturalHeight % 4 === 0) taxonomy = ASSET_FORMAT_TAXONOMY['classic-3x4-rpg'];
-        else if (img.naturalWidth === img.naturalHeight) taxonomy = ASSET_FORMAT_TAXONOMY['static-2d-image'];
-        setDetectedFormat(taxonomy);
-        
-        const resolved = resolveSpriteDefinition({
-          width: img.naturalWidth,
-          height: img.naturalHeight,
-          animationProfile: taxonomy.animationProfile,
-        });
-        setAnimationProfile(resolved.profile);
-
-        if (taxonomy.id !== 'custom-spritesheet') {
-          if (!importProfile) {
-            setImportProfile('character');
-            setSlotRole(taxonomy.supportedRoles[0] || 'walk');
-            setAssetType('CHARACTER');
-            setCategory('actor');
-          }
-        }
-      };
-      img.src = url;
-    } else {
-      setPreviewUrl(null);
-      setDetectedFormat(null);
-      setAnimationProfile('');
-    }
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      await handleFiles(files);
-    }
-  };
-
-  const handleZipUpload = async (zipFile: File) => {
-    setIsUnpackingZip(true);
-    setErrorMessage(null);
-    try {
-      // 1. Inspect if this is a 3D model archive (.fbx, .glb, textures, animations)
-      const zip = await JSZip.loadAsync(zipFile);
-      const entries = Object.keys(zip.files);
-
-      if (isZip3DModelPackage(entries)) {
-        showToast?.('Unpacking 3D asset archive (models, textures, animations)...');
-        const pkg3d = await unpack3DModelZipPackage(zipFile, (msg) => showToast?.(msg));
-        setSelectedFile(pkg3d.primaryModelFile);
-        setPreviewUrl(pkg3d.previewUrl);
-        setCompanionAnimationFiles(pkg3d.animationFiles || []);
-        setCompanionTextureFiles(pkg3d.textureFiles || []);
-        if (!assetName) setAssetName(pkg3d.assetName);
-        setAssetType('MODEL');
-        setUnpackedZip(null);
-        showToast?.(`Loaded 3D Package: ${pkg3d.textureCount} textures, ${pkg3d.animationFiles.length} animations processed!`);
-        return;
       }
 
-      // 2. Otherwise unpack as 2D modular pixel spritesheet package
-      const pkg = await unpackModularZipPackage(zipFile);
-      setUnpackedZip(pkg);
+      // 3. Single 3D file dropped / picked
+      const file = files[0];
+      const lower = file.name.toLowerCase();
 
-      if (pkg.compositeFile) {
-        setSelectedFile(pkg.compositeFile);
-        setPreviewUrl(pkg.compositePreviewUrl || null);
-        setAssetName(pkg.presetName || zipFile.name.replace(/\.zip$/i, ''));
-        setAssetType('CHARACTER');
-        setImportProfile('character');
-        setSlotRole('walk');
-        setCategory('actor');
-        setAnimationProfile('multi_frame_directional');
-        if (pkg.baseBodyType) {
-          setBaseBodyType(pkg.baseBodyType);
-        }
-
-        const tagList = ['modular', 'modular-studio-export', 'spritesheet', 'character', 'anim:modular-full'];
-        if (pkg.presetName) tagList.push(pkg.presetName.toLowerCase().replace(/\s+/g, '-'));
-        if (pkg.baseBodyType) tagList.push(`body:${pkg.baseBodyType}`);
-        setTagsInput(tagList.join(', '));
-
-        setDetectedFormat(ASSET_FORMAT_TAXONOMY['modular-4dir-pixel']);
-        showToast(`Unpacked Modular Character Package: ${pkg.layers.length} modular layers found!`);
+      if (lower.endsWith('.glb') || lower.endsWith('.gltf')) {
+        setSelectedFile(file);
+        setPreviewUrl(URL.createObjectURL(file));
+      } else if (lower.endsWith('.fbx')) {
+        setProcessingStatus('Converting FBX model to GLB binary...');
+        const glb = await convertFbxToGlb(file);
+        setSelectedFile(glb);
+        setPreviewUrl(URL.createObjectURL(glb));
+      } else if (lower.endsWith('.obj')) {
+        setProcessingStatus('Converting OBJ model to GLB binary...');
+        const glb = await convertObjToGlb(file);
+        setSelectedFile(glb);
+        setPreviewUrl(URL.createObjectURL(glb));
+      } else if (lower.endsWith('.vox')) {
+        setProcessingStatus('Converting MagicaVoxel model...');
+        const glb = await convertVoxToGlb(file);
+        setSelectedFile(glb);
+        setPreviewUrl(URL.createObjectURL(glb));
+      } else if (lower.endsWith('.dae')) {
+        setProcessingStatus('Converting Collada model...');
+        const glb = await convertDaeToGlb(file);
+        setSelectedFile(glb);
+        setPreviewUrl(URL.createObjectURL(glb));
+      } else if (lower.endsWith('.stl')) {
+        setProcessingStatus('Converting STL model...');
+        const glb = await convertStlToGlb(file);
+        setSelectedFile(glb);
+        setPreviewUrl(URL.createObjectURL(glb));
+      } else if (lower.endsWith('.ply')) {
+        setProcessingStatus('Converting PLY model...');
+        const glb = await convertPlyToGlb(file);
+        setSelectedFile(glb);
+        setPreviewUrl(URL.createObjectURL(glb));
+      } else if (/\.(png|jpe?g|webp|bmp)$/i.test(lower)) {
+        // Standard 2D sprite image: show 2D preview
+        setSelectedFile(file);
+        setPreviewUrl(URL.createObjectURL(file));
       } else {
-        showToast(`Unpacked ZIP: ${pkg.layers.length} layers found.`);
+        setErrorMessage(`Unsupported file format: ${file.name}`);
       }
     } catch (err: any) {
-      console.error('Failed to unpack Modular ZIP:', err);
-      setErrorMessage(`Failed to unpack Modular ZIP file: ${err.message || 'Invalid archive'}`);
+      console.error('File ingestion error:', err);
+      setErrorMessage(err.message || 'Failed to process asset file.');
     } finally {
-      setIsUnpackingZip(false);
+      setIsProcessing(false);
+      setProcessingStatus(null);
     }
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const files = Array.from(e.dataTransfer.files || []);
-    if (files.length > 0) {
-      if (fileInputRef.current) {
-        const dt = new DataTransfer();
-        files.forEach(f => dt.items.add(f));
-        fileInputRef.current.files = dt.files;
-      }
-      void handleFiles(files);
-    }
-  };
-
-  const applyModularPreset = (preset: 'character' | 'walk' | '2.5d') => {
-    setImportProfile('character');
-    setSlotRole('walk');
-    setAssetType('CHARACTER');
-    setCategory('actor');
-    setIsModularComponent(false);
-    setComponentCategory('');
-    setComponentLayer('');
-    setVariantFamily('');
-    setZOrderHint('');
-
-    const presetTags =
-      preset === 'walk'
-        ? ['modular', 'walk-cycle', 'spritesheet']
-        : preset === '2.5d'
-        ? ['modular', 'directional_3x4', 'walk-grid', 'spritesheet']
-        : ['modular', 'spritesheet', 'character-sheet', 'full-animation'];
-
-    setTagsInput((prev) => {
-      const tokens = prev.split(',').map((v) => v.trim()).filter(Boolean);
-      const next = Array.from(new Set([...tokens, ...presetTags]));
-      return next.join(', ');
-    });
-
-    soundSynth?.playSelectSound?.();
-    showToast(`Applied ${preset === '2.5d' ? 'Saints 2.5D' : 'Modular'} character preset!`);
-  };
-
-  const handleUploadSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedFile) {
-      setErrorMessage('Please select a file to upload.');
-      return;
-    }
-
-    setIsUploading(true);
-    setErrorMessage(null);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('name', assetName.trim() || selectedFile.name);
-      formData.append('type', assetType);
-      if (importProfile) formData.append('importProfile', importProfile);
-      if (slotRole) formData.append('slotRole', slotRole);
-      if (animationProfile) formData.append('animationProfile', animationProfile);
-      formData.append('sourceMode', detectedFormat?.id === 'modular-4dir-pixel' ? 'spritesheet' : 'single');
-      if (category.trim()) formData.append('category', category.trim().toLowerCase());
-
-      if (isModularComponent) {
-        const normalizedComponentCategory = componentCategory || category || 'other';
-        const normalizedComponentLayer =
-          componentLayer || inferCharacterComponentLayerSlot(normalizedComponentCategory) || 'full-body';
-        formData.append('componentCategory', normalizedComponentCategory.toLowerCase());
-        formData.append('componentLayer', normalizedComponentLayer.toLowerCase());
-        formData.append('isModularComponent', 'true');
-        if (variantFamily.trim()) formData.append('variantFamily', variantFamily.trim());
-        const effectiveZOrder =
-          zOrderHint.trim() !== '' ? Number(zOrderHint) : getDefaultZOrderHint(normalizedComponentCategory);
-        if (effectiveZOrder !== null && effectiveZOrder !== undefined && !Number.isNaN(effectiveZOrder)) {
-          formData.append('zOrderHint', String(effectiveZOrder));
-        }
-        if (baseBodyType) formData.append('baseBodyType', baseBodyType);
-        if (hidesComponents.length > 0) formData.append('hidesComponents', JSON.stringify(hidesComponents));
-      }
-
-      if (assetType === 'CHARACTER' || assetType === 'MODEL') {
-        formData.append('characterPresentationType', characterPresentationType);
-        formData.append('isCharacterCustomizable', String(isCharacterCustomizable));
-        if (supportedComponents.trim()) formData.append('supportedComponents', supportedComponents.trim());
-        if (attachmentPoints.trim()) formData.append('attachmentPoints', attachmentPoints.trim());
-      }
-
-      if (tagsInput.trim()) {
-        const tagList = tagsInput.split(',').map((t) => t.trim()).filter(Boolean);
-        formData.append('tags', JSON.stringify(tagList));
-      }
-
-      formData.append('visibility', visibility);
-      formData.append('createUsable', String(createUsable));
-
-      const res = await fetch('/api/assets/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to upload asset');
-      }
-
-      soundSynth?.playSelectSound?.();
-      showToast(`Asset ingested: ${assetName || selectedFile.name}`);
-      AssetManager.getInstance().broadcastRefresh();
-      const assetPayload = data.gameAsset || data.usableAsset || data.asset || data;
-      setUploadSuccess(data);
-      if (onUploadComplete) onUploadComplete(assetPayload);
-    } catch (err: any) {
-      console.error('Asset upload error:', err);
-      setErrorMessage(err.message || 'Asset upload failed.');
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  /** Ingests all unpacked modular layers from an Modular ZIP package as modular assets */
-  const handleBatchIngestLayers = async () => {
-    if (!unpackedZip || unpackedZip.layers.length === 0) return;
-
-    setIsUploading(true);
-    setErrorMessage(null);
-    let successCount = 0;
-    const total = unpackedZip.layers.length;
-
-    try {
-      for (let i = 0; i < total; i++) {
-        const layer = unpackedZip.layers[i];
-        setBatchImportProgress({ current: i + 1, total });
-
-        const formData = new FormData();
-        formData.append('file', layer.file);
-        formData.append('name', `${unpackedZip.presetName || 'Modular'} — ${layer.name}`);
-        formData.append('type', 'CHARACTER');
-        formData.append('importProfile', 'character');
-        formData.append('slotRole', layer.componentCategory);
-        formData.append('animationProfile', 'multi_frame_directional');
-        formData.append('category', layer.componentCategory);
-        formData.append('componentCategory', layer.componentCategory);
-        formData.append('componentLayer', layer.componentLayer);
-        formData.append('isModularComponent', 'true');
-        formData.append('variantFamily', unpackedZip.presetName || 'Modular Variant');
-        formData.append('zOrderHint', String(layer.zOrderHint));
-        if (layer.baseBodyType || unpackedZip.baseBodyType) {
-          formData.append('baseBodyType', (layer.baseBodyType || unpackedZip.baseBodyType)!);
-        }
-        formData.append(
-          'tags',
-          JSON.stringify([
-            'modular',
-            'modular',
-            'sprite-component',
-            'anim:modular-full',
-            `component:${layer.componentCategory}`,
-            `layer:${layer.componentLayer}`,
-          ])
-        );
-        formData.append('visibility', visibility);
-        formData.append('createUsable', 'true');
-
-        const res = await fetch('/api/assets/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (res.ok) {
-          successCount++;
-        }
-      }
-
-      soundSynth?.playSelectSound?.();
-      showToast(`Batch Ingested ${successCount}/${total} Modular Modular Layers!`);
-      AssetManager.getInstance().broadcastRefresh();
-      setUploadSuccess({
-        message: `Successfully ingested ${successCount} modular character layers into the asset library.`,
-      });
-    } catch (err: any) {
-      console.error('Batch layer upload failed:', err);
-      setErrorMessage(`Batch upload error: ${err.message}`);
-    } finally {
-      setIsUploading(false);
-      setBatchImportProgress(null);
-    }
-  };
-
-  const resetForm = () => {
+  const resetUpload = () => {
     setSelectedFile(null);
     setPreviewUrl(null);
-    setAssetName('');
-    setImportProfile('');
-    setSlotRole('');
-    setAnimationProfile('');
-    setCategory('');
-    setComponentCategory('');
-    setComponentLayer('');
-    setVariantFamily('');
-    setIsModularComponent(false);
-    setZOrderHint('');
-    setBaseBodyType('');
-    setHidesComponents([]);
-    setTagsInput('');
-    setDetectedFormat(null);
-    setUnpackedZip(null);
-    setUploadSuccess(null);
-    setErrorMessage(null);
     setCompanionAnimationFiles([]);
     setCompanionTextureFiles([]);
-    setCharacterPresentationType('2D_SPRITE');
-    setIsCharacterCustomizable(false);
-    setSupportedComponents('');
-    setAttachmentPoints('');
+    setIntentHint(undefined);
+    setErrorMessage(null);
+    setUploadSuccess(null);
+    setUnpackedZip(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (zipInputRef.current) zipInputRef.current.value = '';
   };
 
-  return (
-    <div className="space-y-4 text-xs font-mono text-slate-300">
-      {/* HEADER */}
-      <div className="bg-[#0b1320]/80 border border-[#cbb26a]/30 rounded p-3 space-y-1">
-        <div className="flex items-center gap-1.5 text-[#e2d5b3] font-bold text-sm">
-          <Upload className="w-4 h-4 text-amber-400" /> Asset Ingestion & Modular Studio Upload Pipeline
-        </div>
-        <p className="text-[11px] text-slate-400 leading-relaxed">
-          Upload individual sprites, Modular character generator outputs (PNG or ZIP packages with layers & credits),
-          tilesets, or audio files into the unified game library.
-        </p>
-      </div>
+  // Selection Handler
+  const handleSelectAsset = (asset: GameAssetItem) => {
+    soundSynth?.playSelectSound?.();
+    const sourceId = asset.source || asset.id;
+    const assetName = getAssetName(asset);
+    if (activeAssetPicker) {
+      activeAssetPicker.onSelect(sourceId, asset);
+      closeAssetPicker();
+      showToast?.(`Selected ${assetName} for entity!`);
+    } else if (onSelectModel) {
+      onSelectModel(sourceId, asset);
+      showToast?.(`Selected ${assetName}!`);
+    }
+  };
 
-      {/* Modular SMART DETECTION / PRESETS BANNER */}
-      <div className="bg-[#07111c] border border-amber-500/30 rounded p-3 space-y-3">
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div className="space-y-1 max-w-[44rem]">
-            <div className="flex items-center gap-1.5 text-amber-500 font-bold text-sm">
-              <Wand2 className="w-4 h-4 text-amber-500" /> Modular 3D Asset Pipeline
-            </div>
-            <p className="text-[11px] text-slate-300 leading-relaxed">
-              Upload base skeletons (GLB/FBX) or modular 3D attachments (hair, faces, clothing). 
-              Items are grouped into sets so players can customize characters dynamically on selection.
-            </p>
-          </div>
+  // Filtered Library Assets
+  const filteredLibraryAssets = useMemo(() => {
+    let list = libraryAssets;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (a) =>
+          getAssetName(a).toLowerCase().includes(q) ||
+          a.source.toLowerCase().includes(q) ||
+          (a.tags || []).some((t) => t.toLowerCase().includes(q))
+      );
+    }
+    if (libraryCategoryFilter === 'CHARACTERS') {
+      list = list.filter(
+        (a) =>
+          (a.tags || []).some((t) => /character|hero|npc|actor/i.test(t)) ||
+          (a.categories || []).some((c) => /character|npc/i.test(c))
+      );
+    } else if (libraryCategoryFilter === 'MODULAR') {
+      list = list.filter(
+        (a) =>
+          (a.tags || []).some((t) => /modular|piece|armor|hair|clothes/i.test(t)) ||
+          a.isModularComponent
+      );
+    } else if (libraryCategoryFilter === 'WEAPONS') {
+      list = list.filter(
+        (a) =>
+          (a.tags || []).some((t) => /weapon|sword|shield|bow|axe|tool/i.test(t)) ||
+          (a.categories || []).some((c) => /item|weapon/i.test(c))
+      );
+    } else if (libraryCategoryFilter === 'CREATURES') {
+      list = list.filter(
+        (a) =>
+          (a.tags || []).some((t) => /creature|monster|beast|dragon/i.test(t)) ||
+          (a.categories || []).some((c) => /creature|monster/i.test(c))
+      );
+    } else if (libraryCategoryFilter === 'PROPS') {
+      list = list.filter(
+        (a) =>
+          (a.tags || []).some((t) => /prop|scenery|object|tree|building|voxel/i.test(t)) ||
+          (a.categories || []).some((c) => /prop|scenery/i.test(c))
+      );
+    }
+    return list;
+  }, [libraryAssets, searchQuery, libraryCategoryFilter]);
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={() => applyModularPreset('character')}
-              className="px-3 py-1.5 rounded bg-amber-800 hover:bg-amber-700 text-white font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <Wand2 className="w-3.5 h-3.5" /> New Modular Set
-            </button>
-            <button
-              type="button"
-              onClick={() => applyModularPreset('walk')}
-              className="px-3 py-1.5 rounded bg-amber-900/80 hover:bg-amber-800 text-amber-200 font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              Base Skeleton
-            </button>
-            <button
-              type="button"
-              onClick={() => applyModularPreset('2.5d')}
-              className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              Legacy 2.5D Mode
-            </button>
-          </div>
-        </div>
-
-        {detectedFormat && detectedFormat.id !== 'custom-spritesheet' && (
-          <div className="bg-cyan-950/40 border border-cyan-500/40 rounded p-2.5 flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-start gap-2">
-              <Sparkles className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-              <div>
-                <div className="text-cyan-200 font-bold text-xs">Detected Format</div>
-                <div className="text-white font-bold text-sm">{detectedFormat.displayName}</div>
-                <div className="text-[11px] text-slate-300 mt-1">
-                  {detectedFormat.directionCount} directions - {detectedFormat.frameCount === 'variable' ? 'Variable' : detectedFormat.frameCount} frames {detectedFormat.modular ? '- Layered / modular' : ''}
-                </div>
-                {detectedFormat.aliases.length > 0 && (
-                  <div className="text-[10px] text-slate-400 mt-2">
-                    Common aliases: {detectedFormat.aliases.join(' - ')}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {uploadSuccess?.sourceAsset && onOpenSlicer && (
-              <button
-                type="button"
-                onClick={() => onOpenSlicer(uploadSuccess.sourceAsset)}
-                className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <Scissors className="w-3.5 h-3.5" /> Open in Slicer
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* UNPACKED ZIP PACKAGE SUMMARY */}
-        {unpackedZip && (
-          <div className="bg-black/50 border border-emerald-500/40 rounded p-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-emerald-300 font-bold text-xs">
-                <Package className="w-4 h-4 text-emerald-400" />
-                <span>
-                  Unpacked Modular Package: {unpackedZip.presetName} ({unpackedZip.layers.length} modular layers)
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={handleBatchIngestLayers}
-                disabled={isUploading}
-                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                {isUploading ? (
-                  <>
-                    <Loader2 className="w-3 h-3 animate-spin" /> Ingesting Layers...
-                  </>
-                ) : (
-                  <>
-                    <Layers className="w-3 h-3" /> Ingest All {unpackedZip.layers.length} Modular Layers
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* Layer preview thumbnails */}
-            <div className="flex items-center gap-2 overflow-x-auto py-1">
-              {unpackedZip.layers.map((layer, idx) => (
-                <div
-                  key={idx}
-                  className="bg-[#0b1320] border border-slate-700 rounded p-1.5 shrink-0 flex flex-col items-center gap-1 text-[10px] w-24"
-                >
-                  <img src={layer.previewUrl} alt={layer.name} className="w-12 h-12 object-contain bg-black/40 rounded" />
-                  <span className="truncate w-full text-center text-slate-300">{layer.name}</span>
-                  <span className="text-[9px] text-amber-400 font-bold uppercase">{layer.componentCategory}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Credits preview */}
-            {unpackedZip.credits.length > 0 && (
-              <div className="text-[10px] text-slate-400 border-t border-slate-800/80 pt-2 space-y-1">
-                <div className="text-slate-300 font-bold">Attributions ({unpackedZip.credits.length}):</div>
-                <div className="max-h-20 overflow-y-auto space-y-0.5 pr-1">
-                  {unpackedZip.credits.map((c, i) => (
-                    <div key={i} className="text-[9px] text-slate-400 truncate">
-                      • {c.fileName || 'Layer'}: {c.authors.join(', ')} ({c.licenses.join(', ')})
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {uploadSuccess ? (
-        <div className="bg-emerald-950/40 border border-emerald-500/40 rounded p-4 text-center space-y-3">
-          <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
-          <div className="text-emerald-200 font-bold text-sm">Asset Successfully Ingested!</div>
-          <div className="text-[11px] text-slate-300">
-            Source file recorded as{' '}
-            <span className="text-amber-300 font-bold">{uploadSuccess.sourceAsset?.filename}</span>
-            {uploadSuccess.usableAsset && (
-              <>
-                {' '}
-                and registered into library as{' '}
-                <span className="text-amber-300 font-bold">{uploadSuccess.usableAsset?.name}</span> (
-                {uploadSuccess.usableAsset?.type}).
-              </>
-            )}
-          </div>
-          <div className="flex items-center justify-center gap-2 pt-2">
-            <button
-              type="button"
-              onClick={resetForm}
-              className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded font-bold transition-all cursor-pointer"
-            >
-              Upload Another Asset
-            </button>
-            {uploadSuccess.sourceAsset && onOpenSlicer && (
-              <button
-                type="button"
-                onClick={() => onOpenSlicer(uploadSuccess.sourceAsset)}
-                className="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow"
-              >
-                <Scissors className="w-4 h-4" /> Open in Spritesheet Slicer
-              </button>
-            )}
-          </div>
-        </div>
-      ) : selectedFile?.name.match(/\.(fbx|glb|gltf|obj|vox|dae|stl|ply)$/i) && previewUrl ? (
-        <AssetDefinitionStudio 
-          file={selectedFile} 
+  // If a 3D model is loaded, immediately show AssetDefinitionStudio!
+  if (selectedFile?.name.match(/\.(fbx|glb|gltf|obj|vox|dae|stl|ply)$/i) && previewUrl) {
+    return (
+      <div className="h-full flex flex-col bg-[#050b14] text-slate-200 font-mono">
+        <AssetDefinitionStudio
+          file={selectedFile}
           previewUrl={previewUrl}
           companionAnimationFiles={companionAnimationFiles}
           companionTextureFiles={companionTextureFiles}
+          intentHint={intentHint}
           onSuccess={(asset) => {
-            setUploadSuccess(asset);
-            if (onUploadComplete) onUploadComplete(asset);
-          }} 
-          onCancel={resetForm} 
+            if (activeAssetPicker) {
+              activeAssetPicker.onSelect(asset.source || asset.id, asset);
+              closeAssetPicker();
+              showToast?.(`Selected ${asset.name} for entity!`);
+            } else {
+              setUploadSuccess(asset);
+              onUploadComplete?.(asset);
+            }
+          }}
+          onCancel={resetUpload}
         />
-      ) : (
-        <form onSubmit={handleUploadSubmit} className="space-y-3">
-          {/* DROPZONE */}
-          <div
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded p-4 text-center cursor-pointer transition-all ${
-              selectedFile
-                ? 'border-amber-500/60 bg-amber-950/20'
-                : 'border-slate-700 hover:border-amber-500/40 bg-[#050b14]/60'
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-[#050b14] text-slate-200 font-mono select-none">
+      {/* Hidden File Inputs */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files) void handleFiles(Array.from(e.target.files));
+        }}
+      />
+      <input
+        ref={zipInputRef}
+        type="file"
+        accept=".zip"
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files?.[0]) void handleFiles([e.target.files[0]]);
+        }}
+      />
+
+      {/* TOP UNIFIED NAVIGATION / TAB BAR */}
+      <div className="flex items-center justify-between px-3 py-2 bg-[#07111c] border-b border-amber-500/20 shrink-0">
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              setActiveTab('upload');
+            }}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'upload'
+                ? 'bg-amber-600/30 border border-amber-500/60 text-amber-300 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 border border-transparent'
             }`}
           >
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              onChange={handleFileChange}
-              accept="image/png,image/jpeg,image/webp,image/gif,image/x-tga,.tga,.dds,.bmp,application/zip,.zip,audio/mpeg,audio/wav,audio/ogg,.fbx,.glb,.gltf,.obj,.mtl,.vox,.dae,.stl,.ply"
-              className="hidden"
-            />
-            {previewUrl ? (
-              <div className="flex flex-col items-center gap-2">
-                {selectedFile?.name.match(/\.(fbx|glb|gltf|obj|vox|dae|stl|ply)$/i) ? (
-                  <div className="w-24 h-24 bg-slate-900 rounded border border-slate-700 flex items-center justify-center flex-col gap-1">
-                    <span className="text-amber-500 font-bold text-lg">3D</span>
-                    <span className="text-[10px] text-slate-400">Model Asset</span>
-                  </div>
-                ) : (
-                  <img
-                    src={previewUrl}
-                    alt="Preview"
-                    className="max-h-28 max-w-full object-contain rounded border border-slate-700 bg-black/40 p-1"
-                  />
-                )}
-                <span className="text-[10px] text-amber-300 font-bold">
-                  {selectedFile?.name} ({((selectedFile?.size || 0) / 1024).toFixed(1)} KB)
-                </span>
-              </div>
-            ) : selectedFile ? (
-              <div className="flex flex-col items-center gap-1.5">
-                <Music className="w-8 h-8 text-amber-400" />
-                <span className="text-[11px] text-white font-bold">{selectedFile.name}</span>
-                <span className="text-[10px] text-slate-400">{(selectedFile.size / 1024).toFixed(1)} KB</span>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-2 py-2">
-                <Upload className="w-6 h-6 text-slate-400" />
-                <div className="text-slate-200 font-bold text-[11px]">
-                  Click or drag & drop 3D models (FBX/GLB/OBJ/VOX/DAE/STL), ZIP packages, or models + textures
-                </div>
-                <div className="text-[10px] text-slate-500">
-                  Supports 3D Packages (FBX/OBJ/VOX/DAE/STL + Textures ZIP), Multi-file drops (OBJ+MTL, FBX+PNG/TGA/DDS), Modular Spritesheets, Audio
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* ASSET METADATA FIELDS */}
-          <div className="bg-[#050b14] border border-slate-800 rounded p-3 space-y-2.5">
-            <div>
-              <label className="block text-[10px] text-slate-400 mb-1">Asset Name</label>
-              <input
-                type="text"
-                value={assetName}
-                onChange={(e) => setAssetName(e.target.value)}
-                placeholder="e.g. Ancient Oak Tree or Paladin Hero"
-                className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-white text-xs"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div className="col-span-2">
-                <label className="flex items-center gap-2 text-[11px] text-slate-300 select-none cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={isModularComponent}
-                    onChange={(e) => {
-                      setIsModularComponent(e.target.checked);
-                      if (e.target.checked && !componentCategory && category) {
-                        setComponentCategory(category);
-                      }
-                    }}
-                    className="rounded bg-[#0b1320] border-slate-700 text-amber-500 focus:ring-0"
-                  />
-                  <span>Upload as modular character sprite component</span>
-                </label>
-              </div>
-
-              {isModularComponent && (
-                <>
-                  <div className="col-span-2">
-                    <label className="block text-[10px] text-slate-400 mb-1">Component Category</label>
-                    <select
-                      value={componentCategory || category || 'hair'}
-                      onChange={(e) => {
-                        const next = e.target.value;
-                        setComponentCategory(next);
-                        setCategory(next);
-                        setAssetType('CHARACTER');
-                      }}
-                      className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
-                    >
-                      {listCharacterComponentCategories().map((component) => (
-                        <option key={component} value={component}>
-                          {CHARACTER_COMPONENT_CATEGORIES[component].label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="col-span-2">
-                    <label className="block text-[10px] text-slate-400 mb-1">Body Layer</label>
-                    <select
-                      value={
-                        componentLayer ||
-                        inferCharacterComponentLayerSlot(componentCategory || category || 'other') ||
-                        'full-body'
-                      }
-                      onChange={(e) => setComponentLayer(e.target.value)}
-                      className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
-                    >
-                      {['head', 'torso', 'legs', 'feet', 'accessory', 'full-body'].map((layer) => (
-                        <option key={layer} value={layer}>
-                          {layer.replace('-', ' ')}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="col-span-2">
-                    <label className="block text-[10px] text-slate-400 mb-1">Variant / Family</label>
-                    <input
-                      type="text"
-                      value={variantFamily}
-                      onChange={(e) => setVariantFamily(e.target.value)}
-                      placeholder="e.g. Long Hair, Red, Wizard Hat"
-                      className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-white text-xs"
-                    />
-                  </div>
-
-                  {/* Compositing Rules */}
-                  <div className="col-span-2 border-t border-slate-800 pt-2 mt-1 space-y-2">
-                    <div className="text-[10px] text-amber-300/80 font-bold uppercase tracking-wide">
-                      Compositing Rules
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[10px] text-slate-400 mb-1">Z-Order (draw order)</label>
-                        <input
-                          type="number"
-                          value={zOrderHint}
-                          onChange={(e) => setZOrderHint(e.target.value)}
-                          placeholder={String(getDefaultZOrderHint(componentCategory || category || 'other') ?? 'auto')}
-                          className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-white text-xs"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] text-slate-400 mb-1">Base Body Type</label>
-                        <select
-                          value={baseBodyType}
-                          onChange={(e) => setBaseBodyType(e.target.value)}
-                          className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
-                        >
-                          <option value="">Unspecified / Any</option>
-                          {listCharacterBaseBodyTypes()
-                            .filter((bodyType) => bodyType !== 'unspecified')
-                            .map((bodyType) => (
-                              <option key={bodyType} value={bodyType}>
-                                {bodyType.charAt(0).toUpperCase() + bodyType.slice(1)}
-                              </option>
-                            ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] text-slate-400 mb-1">
-                        Hides these layers when equipped
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {listCharacterComponentCategories()
-                          .filter((c) => c !== (componentCategory || category))
-                          .map((c) => (
-                            <label
-                              key={c}
-                              className="flex items-center gap-1 text-[10px] text-slate-300 bg-[#0b1320] border border-slate-700 rounded px-2 py-1 cursor-pointer select-none"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={hidesComponents.includes(c)}
-                                onChange={(e) => {
-                                  setHidesComponents((prev) =>
-                                    e.target.checked ? [...prev, c] : prev.filter((v) => v !== c)
-                                  );
-                                }}
-                                className="rounded bg-[#0b1320] border-slate-700 text-amber-500 focus:ring-0"
-                              />
-                              {CHARACTER_COMPONENT_CATEGORIES[c].label}
-                            </label>
-                          ))}
-                      </div>
-                      <div className="text-[10px] text-slate-500 mt-1">
-                        e.g. a closed helm hides Hair, Hat, Head Accessory.
-                      </div>
-                    </div>
-
-                    {bodyTypeWarning && (
-                      <div className="flex items-start gap-1.5 bg-amber-950/40 border border-amber-500/40 rounded px-2 py-1.5 text-[10px] text-amber-200">
-                        <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                        <span>{bodyTypeWarning}</span>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-
-              <div>
-                <label className="block text-[10px] text-slate-400 mb-1">Import Profile</label>
-                <select
-                  value={importProfile}
-                  onChange={(e) => {
-                    const nextProfile = e.target.value as AssetImportProfileId | '';
-                    setImportProfile(nextProfile);
-                    if (!nextProfile) {
-                      setSlotRole('');
-                      return;
-                    }
-
-                    const inferredType = inferTypeForProfile(nextProfile);
-                    setAssetType(inferredType);
-                    const nextRole = getDefaultSlotRole(nextProfile);
-                    setSlotRole(nextRole);
-
-                    if (!category.trim()) {
-                      const inferredCategory = inferCategoryForRole(nextRole);
-                      if (inferredCategory) {
-                        setCategory(inferredCategory);
-                      }
-                    }
-                  }}
-                  className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
-                >
-                  <option value="">None (legacy/manual)</option>
-                  {listAssetImportProfiles().map((profile) => (
-                    <option key={profile} value={profile}>
-                      {ASSET_IMPORT_PROFILE_META[profile].label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[10px] text-slate-400 mb-1 flex items-center justify-between">
-                  <span>Animation Profile</span>
-                  {animationProfile && (
-                    <span className="text-cyan-400 text-[9px] font-bold">
-                      {ANIMATION_PROFILES[animationProfile as SpriteAnimationProfile]?.label || animationProfile}
-                    </span>
-                  )}
-                </label>
-                <select
-                  value={animationProfile}
-                  onChange={(e) => setAnimationProfile(e.target.value as SpriteAnimationProfile | '')}
-                  className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
-                >
-                  <option value="">Auto-Detect (from sheet format)</option>
-                  <option value="modular-full">Universal Modular Full Sheet (13x21 · 64x64)</option>
-                  <option value="directional_walk">Modular Walk Cycle (9x4 · 64x64)</option>
-                  <option value="directional_3x4">Classic Walk (3x4 · 32x32)</option>
-                  <option value="portrait-1x1">Single Frame Portrait / Billboard (1x1)</option>
-                  <option value="custom">Custom Grid</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[10px] text-slate-400 mb-1">Slot Role</label>
-                <select
-                  value={slotRole}
-                  onChange={(e) => {
-                    const nextRole = e.target.value;
-                    setSlotRole(nextRole);
-                    if (nextRole && !category.trim()) {
-                      const inferredCategory = inferCategoryForRole(nextRole);
-                      if (inferredCategory) {
-                        setCategory(inferredCategory);
-                      }
-                    }
-                  }}
-                  disabled={!importProfile}
-                  className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs disabled:opacity-50"
-                >
-                  {!importProfile && <option value="">Select profile first</option>}
-                  {importProfile &&
-                    listSlotRolesForProfile(importProfile).map((role) => (
-                      <option key={role} value={role}>
-                        {role}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[10px] text-slate-400 mb-1">Asset Classification</label>
-                <select
-                  value={assetType}
-                  onChange={(e) => setAssetType(e.target.value)}
-                  className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
-                >
-                  {ASSET_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[10px] text-slate-400 mb-1">Category / Sub-type</label>
-                <input
-                  type="text"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  placeholder="e.g. actor, vegetation, prop, weapon"
-                  className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-white text-xs"
-                />
-              </div>
-            </div>
-
-            {(assetType === 'CHARACTER' || assetType === 'MODEL') && (
-              <div className="col-span-2 border-t border-slate-800 pt-3 mt-2 space-y-3">
-                <div className="text-[11px] text-amber-300/90 font-bold uppercase tracking-wide flex items-center gap-1.5">
-                  <Wand2 className="w-3.5 h-3.5" />
-                  Character Capabilities & Presentation
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[10px] text-slate-400 mb-1">Presentation Type</label>
-                    <select
-                      value={characterPresentationType}
-                      onChange={(e) => setCharacterPresentationType(e.target.value)}
-                      className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1.5 text-slate-200 text-[11px]"
-                    >
-                      <option value="2D_SPRITE">2D Sprite (Classic, Pre-rendered)</option>
-                      <option value="2D_WRAPPED">2D Wrapped (Voxel / Blocky Texture Mapping)</option>
-                      <option value="3D_MODEL">3D Model (FBX/GLB Rigged Character)</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center pt-4">
-                    <label className="flex items-center gap-2 cursor-pointer text-[11px] text-slate-300 select-none">
-                      <input
-                        type="checkbox"
-                        checked={isCharacterCustomizable}
-                        onChange={(e) => setIsCharacterCustomizable(e.target.checked)}
-                        className="rounded bg-[#0b1320] border-slate-700 text-amber-500 focus:ring-0"
-                      />
-                      <span>Supports dynamic customization (equipable parts/armor)</span>
-                    </label>
-                  </div>
-                </div>
-
-                {isCharacterCustomizable && (
-                  <div className="space-y-2">
-                    <div>
-                      <label className="block text-[10px] text-slate-400 mb-1">
-                        Supported Component Layers (comma-separated, e.g. "hair, armor, weapon")
-                      </label>
-                      <input
-                        type="text"
-                        value={supportedComponents}
-                        onChange={(e) => setSupportedComponents(e.target.value)}
-                        placeholder="e.g. head, torso, legs, weapon_right"
-                        className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1.5 text-white text-[11px]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] text-slate-400 mb-1">
-                        Attachment Points (comma-separated, e.g. "hand_r, hand_l, back")
-                      </label>
-                      <input
-                        type="text"
-                        value={attachmentPoints}
-                        onChange={(e) => setAttachmentPoints(e.target.value)}
-                        placeholder="e.g. hand_r, spine, head_top"
-                        className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1.5 text-white text-[11px]"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div>
-              <label className="block text-[10px] text-slate-400 mb-1">Search Tags (comma-separated)</label>
-              <input
-                type="text"
-                value={tagsInput}
-                onChange={(e) => setTagsInput(e.target.value)}
-                placeholder="e.g. modular, character, hero, male, armor"
-                className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-white text-xs"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[10px] text-slate-400 mb-1">Visibility Level</label>
-                <select
-                  value={visibility}
-                  onChange={(e) => setVisibility(e.target.value)}
-                  className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
-                >
-                  <option value="COMMUNITY">🌐 Community (Shared)</option>
-                  <option value="PUBLIC">⭐ Public (Universal)</option>
-                  <option value="PROJECT">📁 Project / Realm Only</option>
-                  <option value="PERSONAL">🔒 Personal (Private)</option>
-                </select>
-              </div>
-
-              <div className="flex items-center pt-4">
-                <label className="flex items-center gap-2 cursor-pointer text-[11px] text-slate-300 select-none">
-                  <input
-                    type="checkbox"
-                    checked={createUsable}
-                    onChange={(e) => setCreateUsable(e.target.checked)}
-                    className="rounded bg-[#0b1320] border-slate-700 text-amber-500 focus:ring-0"
-                  />
-                  <span>Create usable library entry</span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {errorMessage && (
-            <div className="bg-rose-950/40 border border-rose-500/40 rounded p-2 text-rose-300 text-[11px] flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-              <span>{errorMessage}</span>
-            </div>
-          )}
+            <Upload className="w-3.5 h-3.5 text-amber-400" />
+            <span>⚡ Upload Studio</span>
+          </button>
 
           <button
-            type="submit"
-            disabled={isUploading || !selectedFile}
-            className={`w-full py-2 rounded font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-              isUploading || !selectedFile
-                ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                : 'bg-amber-600 hover:bg-amber-500 text-white shadow-[0_0_15px_rgba(217,119,6,0.3)]'
+            type="button"
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              setActiveTab('library');
+            }}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'library'
+                ? 'bg-amber-600/30 border border-amber-500/60 text-amber-300 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 border border-transparent'
             }`}
           >
-            {isUploading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Ingesting Asset...
-              </>
-            ) : (
-              <>
-                <Upload className="w-4 h-4" /> Ingest Asset to Library
-              </>
+            <Box className="w-3.5 h-3.5 text-cyan-400" />
+            <span>📦 Model & Asset Library</span>
+            {totalLibraryCount > 0 && (
+              <span className="text-[10px] px-1.5 py-0.2 bg-black/50 text-amber-400 rounded-full font-mono border border-amber-500/30">
+                {totalLibraryCount}
+              </span>
             )}
           </button>
-        </form>
-      )}
+        </div>
+
+        {/* Picker Mode Indicator or Quick Actions */}
+        {activeAssetPicker ? (
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-amber-300 bg-amber-950/40 border border-amber-500/40 px-2.5 py-1 rounded-md font-bold flex items-center gap-1.5">
+              <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" />
+              <span>{activeAssetPicker.title || 'Select Model for Entity'}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => closeAssetPicker()}
+              className="px-2 py-1 text-[10px] text-slate-400 hover:text-white bg-slate-800/60 rounded border border-slate-700 hover:bg-slate-700 transition cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <div className="text-[10px] text-slate-500 flex items-center gap-2">
+            <span>Saints 3D Asset Pipeline</span>
+            <span className="text-slate-600">·</span>
+            <span className="text-[#cbb26a]">v2.2.032</span>
+          </div>
+        )}
+      </div>
+
+      {/* BODY CONTENT */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* TAB 1: UPLOAD STUDIO */}
+        {activeTab === 'upload' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            {/* Header Banner */}
+            <div className="bg-[#0b1320]/80 border border-[#cbb26a]/30 rounded-xl p-3.5 flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-[#e2d5b3] font-bold text-sm">
+                  <Upload className="w-4 h-4 text-amber-400" />
+                  <span>3D Model & Modular Ingestion Studio</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed max-w-2xl">
+                  Choose a model type below or drop files directly into the viewport. Skinned rigs, animations, PBR texture maps,
+                  and modular attachments are automatically vetted, textured, and scaled.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('library')}
+                className="shrink-0 px-3 py-1.5 rounded-lg bg-black/40 border border-amber-500/30 text-amber-300 hover:border-amber-400 hover:bg-amber-950/20 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <Box className="w-3.5 h-3.5" />
+                <span>Browse Library</span>
+                <ChevronRight className="w-3 h-3 text-slate-400" />
+              </button>
+            </div>
+
+            {/* MODEL TYPE / SYSTEM INTENT BUTTONS */}
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-amber-400" />
+                <span>1. Select Model Type & Ingestion System</span>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                {/* 1: Complete Character */}
+                <button
+                  type="button"
+                  onClick={() => handleIntentClick('complete_character')}
+                  className="bg-[#07111c] border border-amber-500/30 hover:border-amber-400 hover:bg-[#0c1828] p-3 rounded-xl text-left transition-all hover:scale-[1.01] cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 group-hover:scale-105 transition-transform">
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <span className="font-bold text-xs text-amber-300">Complete Character</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-tight">
+                    Humanoids, heroes, NPCs, skeletons with skeletal rigs & animations.
+                  </p>
+                </button>
+
+                {/* 2: Modular Base Body */}
+                <button
+                  type="button"
+                  onClick={() => handleIntentClick('modular_base')}
+                  className="bg-[#07111c] border border-emerald-500/30 hover:border-emerald-400 hover:bg-[#071f1a] p-3 rounded-xl text-left transition-all hover:scale-[1.01] cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 group-hover:scale-105 transition-transform">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <span className="font-bold text-xs text-emerald-300">Modular Base Body</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-tight">
+                    Reference base mesh meant to mount modular wardrobe & armor pieces.
+                  </p>
+                </button>
+
+                {/* 3: Modular Wardrobe / Armor Piece */}
+                <button
+                  type="button"
+                  onClick={() => handleIntentClick('modular_piece')}
+                  className="bg-[#07111c] border border-cyan-500/30 hover:border-cyan-400 hover:bg-[#081e28] p-3 rounded-xl text-left transition-all hover:scale-[1.01] cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30 group-hover:scale-105 transition-transform">
+                      <Puzzle className="w-4 h-4" />
+                    </div>
+                    <span className="font-bold text-xs text-cyan-300">Modular Armor & Clothes</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-tight">
+                    Hair, hats/helmets, shirts, pants, boots, gloves, back accessories.
+                  </p>
+                </button>
+
+                {/* 4: Weapons & Tools */}
+                <button
+                  type="button"
+                  onClick={() => handleIntentClick('weapon')}
+                  className="bg-[#07111c] border border-purple-500/30 hover:border-purple-400 hover:bg-[#1a0e28] p-3 rounded-xl text-left transition-all hover:scale-[1.01] cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30 group-hover:scale-105 transition-transform">
+                      <Crosshair className="w-4 h-4" />
+                    </div>
+                    <span className="font-bold text-xs text-purple-300">Weapons & Equipment</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-tight">
+                    Swords, axes, shields, bows, staves with calibrated grip sockets.
+                  </p>
+                </button>
+
+                {/* 5: Creatures & Mounts */}
+                <button
+                  type="button"
+                  onClick={() => handleIntentClick('creature_monster')}
+                  className="bg-[#07111c] border border-orange-500/30 hover:border-orange-400 hover:bg-[#231208] p-3 rounded-xl text-left transition-all hover:scale-[1.01] cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-7 h-7 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center border border-orange-500/30 group-hover:scale-105 transition-transform">
+                      <PawPrint className="w-4 h-4" />
+                    </div>
+                    <span className="font-bold text-xs text-orange-300">Creatures & Mounts</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-tight">
+                    Turn-based capture creatures, quadruped beasts, flyers, monster bosses.
+                  </p>
+                </button>
+
+                {/* 6: Props & Scenery */}
+                <button
+                  type="button"
+                  onClick={() => handleIntentClick('prop')}
+                  className="bg-[#07111c] border border-blue-500/30 hover:border-blue-400 hover:bg-[#071628] p-3 rounded-xl text-left transition-all hover:scale-[1.01] cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center border border-blue-500/30 group-hover:scale-105 transition-transform">
+                      <Cuboid className="w-4 h-4" />
+                    </div>
+                    <span className="font-bold text-xs text-blue-300">Props & Voxel Scenery</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-tight">
+                    Chests, furniture, trees, buildings, MagicaVoxel (.vox) models.
+                  </p>
+                </button>
+
+                {/* 7: Animation Clips */}
+                <button
+                  type="button"
+                  onClick={() => handleIntentClick('animation_pack')}
+                  className="bg-[#07111c] border border-rose-500/30 hover:border-rose-400 hover:bg-[#280c14] p-3 rounded-xl text-left transition-all hover:scale-[1.01] cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center border border-rose-500/30 group-hover:scale-105 transition-transform">
+                      <Film className="w-4 h-4" />
+                    </div>
+                    <span className="font-bold text-xs text-rose-300">Animation Clips</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-tight">
+                    Companion FBX/GLB animation files to bind to existing rigs.
+                  </p>
+                </button>
+
+                {/* 8: 2D Sprites & Sheets */}
+                <button
+                  type="button"
+                  onClick={() => handleIntentClick('2d_sprite')}
+                  className="bg-[#07111c] border border-slate-700 hover:border-slate-500 hover:bg-slate-900/60 p-3 rounded-xl text-left transition-all hover:scale-[1.01] cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-7 h-7 rounded-lg bg-slate-800 text-slate-300 flex items-center justify-center border border-slate-700 group-hover:scale-105 transition-transform">
+                      <ImageIcon className="w-4 h-4" />
+                    </div>
+                    <span className="font-bold text-xs text-slate-300">2D Sprites & Sheets</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-tight">
+                    Classic 2D sprites, directional sheets, tilesets, or audio.
+                  </p>
+                </button>
+              </div>
+            </div>
+
+            {/* INTERACTIVE DRAG & DROP ZONE */}
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                <FileUp className="w-3 h-3 text-cyan-400" />
+                <span>2. Drag & Drop 3D Models, Textures, or Archives</span>
+              </div>
+
+              <div
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const files = Array.from(e.dataTransfer.files || []);
+                  if (files.length > 0) void handleFiles(files);
+                }}
+                className="border-2 border-dashed border-amber-500/40 hover:border-amber-400 bg-[#07111c]/70 hover:bg-[#0c1828]/90 rounded-xl p-8 text-center transition-all group"
+              >
+                <div className="max-w-xl mx-auto space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
+                    <Upload className="w-6 h-6 animate-pulse" />
+                  </div>
+
+                  <div>
+                    <div className="text-white font-bold text-sm">
+                      Click or drag & drop 3D models (FBX, GLB, OBJ, VOX, DAE, STL, PLY) or ZIP packages here
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                      Multi-file drops supported: drop OBJ+MTL, FBX+Textures (PNG/JPG/TGA/DDS), or animation clips together.
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center justify-center gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        soundSynth?.playUiClick?.();
+                        if (fileInputRef.current) {
+                          fileInputRef.current.accept = '.fbx,.glb,.gltf,.obj,.vox,.dae,.stl,.ply,.zip,.png,.jpg,.jpeg,.webp';
+                          fileInputRef.current.click();
+                        }
+                      }}
+                      className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition-all shadow-md shadow-amber-950/40 flex items-center gap-2 cursor-pointer"
+                    >
+                      <Cuboid className="w-4 h-4" />
+                      <span>Browse 3D Model / Multi-Files...</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        soundSynth?.playUiClick?.();
+                        if (zipInputRef.current) zipInputRef.current.click();
+                      }}
+                      className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 transition-all flex items-center gap-2 cursor-pointer"
+                    >
+                      <Package className="w-4 h-4 text-emerald-400" />
+                      <span>Browse ZIP Archive...</span>
+                    </button>
+                  </div>
+
+                  {/* Format Pills */}
+                  <div className="pt-4 border-t border-slate-800/80 flex items-center justify-center gap-1.5 flex-wrap text-[9px] font-mono text-slate-400">
+                    <span className="px-2 py-0.5 rounded bg-black/40 border border-slate-800 text-amber-300">FBX (Skinned & Rigs)</span>
+                    <span className="px-2 py-0.5 rounded bg-black/40 border border-slate-800 text-cyan-300">GLB / GLTF</span>
+                    <span className="px-2 py-0.5 rounded bg-black/40 border border-slate-800 text-emerald-300">OBJ + MTL</span>
+                    <span className="px-2 py-0.5 rounded bg-black/40 border border-slate-800 text-purple-300">VOX (MagicaVoxel)</span>
+                    <span className="px-2 py-0.5 rounded bg-black/40 border border-slate-800 text-orange-300">Collada DAE</span>
+                    <span className="px-2 py-0.5 rounded bg-black/40 border border-slate-800 text-blue-300">STL / PLY</span>
+                    <span className="px-2 py-0.5 rounded bg-black/40 border border-slate-800 text-rose-300">ZIP Packages</span>
+                    <span className="px-2 py-0.5 rounded bg-black/40 border border-slate-800 text-slate-300">PBR Textures (PNG/JPG/TGA/DDS)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* PROCESSING SPINNER */}
+            {isProcessing && (
+              <div className="bg-[#0b1320] border border-amber-500/40 rounded-xl p-4 flex items-center gap-3 animate-pulse">
+                <Loader2 className="w-5 h-5 text-amber-400 animate-spin shrink-0" />
+                <div className="text-xs text-amber-300 font-bold">
+                  {processingStatus || 'Processing asset files...'}
+                </div>
+              </div>
+            )}
+
+            {/* ERROR BANNER */}
+            {errorMessage && (
+              <div className="bg-rose-950/40 border border-rose-500/40 rounded-xl p-3 flex items-center justify-between text-rose-300 text-xs">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>{errorMessage}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setErrorMessage(null)}
+                  className="text-rose-400 hover:text-white px-2 py-0.5 rounded"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {/* 2D UNPACKED MODULAR ZIP PREVIEW */}
+            {unpackedZip && (
+              <div className="bg-black/50 border border-emerald-500/40 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-emerald-300 font-bold text-xs">
+                    <Package className="w-4 h-4 text-emerald-400" />
+                    <span>Unpacked 2D Modular Package: {unpackedZip.presetName} ({unpackedZip.layers.length} layers)</span>
+                  </div>
+                  {onOpenSlicer && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenSlicer({ id: 'unpacked', filename: unpackedZip.presetName || 'modular_package', storagePath: '' })}
+                      className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold text-xs flex items-center gap-1.5"
+                    >
+                      <Scissors className="w-3.5 h-3.5" />
+                      <span>Open in Spritesheet Slicer</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 overflow-x-auto py-1">
+                  {unpackedZip.layers.map((layer, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-[#0b1320] border border-slate-700 rounded p-1.5 shrink-0 flex flex-col items-center gap-1 text-[10px] w-24"
+                    >
+                      <img src={layer.previewUrl} alt={layer.name} className="w-12 h-12 object-contain bg-black/40 rounded" />
+                      <span className="truncate w-full text-center text-slate-300">{layer.name}</span>
+                      <span className="text-[9px] text-amber-400 font-bold uppercase">{layer.componentCategory}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* SUCCESS BANNER */}
+            {uploadSuccess && (
+              <div className="bg-emerald-950/40 border border-emerald-500/40 rounded-xl p-4 text-center space-y-3">
+                <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
+                <div className="text-emerald-200 font-bold text-sm">Asset Successfully Ingested!</div>
+                <div className="text-xs text-slate-300">
+                  Registered as <span className="text-amber-300 font-bold">{uploadSuccess.usableAsset?.name || uploadSuccess.name}</span> in the game library.
+                </div>
+                <div className="flex items-center justify-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={resetUpload}
+                    className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold text-xs transition cursor-pointer"
+                  >
+                    Upload Another Asset
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetUpload();
+                      setActiveTab('library');
+                    }}
+                    className="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-bold text-xs transition cursor-pointer shadow"
+                  >
+                    View in Asset Library
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 2: ASSET LIBRARY & MODEL SELECTOR */}
+        {activeTab === 'library' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            {/* Search & Filter Toolbar */}
+            <div className="bg-[#07111c] border border-amber-500/30 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
+              <div className="relative flex-1 min-w-[240px]">
+                <Search className="w-4 h-4 text-amber-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search 3D models and assets by name, tag, or path..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-[#050b14] border border-amber-500/30 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 font-mono"
+                />
+              </div>
+
+              {/* Category Filter Chips */}
+              <div className="flex items-center gap-1 flex-wrap">
+                {(
+                  [
+                    { id: 'ALL', label: 'All Models' },
+                    { id: 'CHARACTERS', label: 'Characters' },
+                    { id: 'MODULAR', label: 'Modular' },
+                    { id: 'WEAPONS', label: 'Weapons' },
+                    { id: 'CREATURES', label: 'Creatures' },
+                    { id: 'PROPS', label: 'Props' },
+                    { id: '2D', label: '2D Sprites' },
+                  ] as const
+                ).map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => {
+                      soundSynth?.playUiClick?.();
+                      setLibraryCategoryFilter(cat.id);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer border ${
+                      libraryCategoryFilter === cat.id
+                        ? 'bg-amber-600/30 border-amber-500 text-amber-300'
+                        : 'bg-black/30 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void fetchLibrary()}
+                  title="Refresh library"
+                  className="p-1.5 bg-[#050b14] hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 rounded-lg transition cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingLibrary ? 'animate-spin text-amber-400' : ''}`} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundSynth?.playUiClick?.();
+                    setActiveTab('upload');
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-600/25 hover:bg-emerald-600/35 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Upload New Asset</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Model Catalog Grid */}
+            {isLoadingLibrary ? (
+              <div className="flex flex-col items-center justify-center py-20 text-slate-500 text-xs gap-3">
+                <Loader2 className="w-6 h-6 animate-spin text-amber-400" />
+                <span>Loading 3D model catalog...</span>
+              </div>
+            ) : filteredLibraryAssets.length === 0 ? (
+              <div className="bg-[#07111c]/60 border border-slate-800 rounded-xl p-12 text-center space-y-3">
+                <Cuboid className="w-8 h-8 text-slate-600 mx-auto" />
+                <div className="text-white font-bold text-sm">No 3D Models Found</div>
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  {searchQuery
+                    ? `No assets matched "${searchQuery}". Try adjusting your search query or filters.`
+                    : 'No models found in this category. Upload your first 3D model using the Upload Studio!'}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('upload')}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-bold text-xs transition cursor-pointer shadow"
+                >
+                  + Upload 3D Model Now
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center justify-between text-[10px] text-slate-400 mb-2 font-mono">
+                  <span>Showing <strong className="text-amber-400">{filteredLibraryAssets.length}</strong> assets</span>
+                  <span>Click "Select Model" to assign directly to entity</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {filteredLibraryAssets.map((asset) => {
+                    const is3D = asset.type === 'MODEL' || asset.source?.endsWith('.glb') || asset.source?.endsWith('.fbx');
+                    const rigFamily = asset.metadata?.rigAnalysis?.family || asset.metadata?.rigFamily;
+                    const structure = asset.metadata?.structure || (asset.isModularComponent ? 'Modular' : 'Complete');
+
+                    return (
+                      <div
+                        key={asset.id}
+                        className="bg-[#07111c] border border-slate-800 hover:border-amber-500/50 rounded-xl p-3 flex flex-col justify-between transition-all group hover:bg-[#0c1828]"
+                      >
+                        <div>
+                          {/* Card Header & Visual Thumbnail */}
+                          <div className="flex items-start gap-3 mb-2">
+                            <div className="w-12 h-12 rounded-lg bg-black/50 border border-slate-700 flex items-center justify-center shrink-0 overflow-hidden group-hover:border-amber-500/50 transition-colors">
+                              {is3D ? (
+                                <Cuboid className="w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
+                              ) : (
+                                <ImageIcon className="w-6 h-6 text-amber-400" />
+                              )}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="font-bold text-xs text-white truncate group-hover:text-amber-300 transition-colors">
+                                {getAssetName(asset)}
+                              </div>
+                              <div className="text-[10px] text-slate-400 font-mono truncate mt-0.5">
+                                {asset.source?.split('/').pop() || asset.id}
+                              </div>
+
+                              {/* Badges */}
+                              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                <span className="px-1.5 py-0.2 rounded text-[8.5px] font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60">
+                                  {is3D ? '3D MODEL' : '2D SPRITE'}
+                                </span>
+                                {structure && (
+                                  <span className="px-1.5 py-0.2 rounded text-[8.5px] font-bold bg-amber-950/60 text-amber-300 border border-amber-800/60">
+                                    {structure}
+                                  </span>
+                                )}
+                                {rigFamily && (
+                                  <span className="px-1.5 py-0.2 rounded text-[8.5px] font-bold bg-purple-950/60 text-purple-300 border border-purple-800/60">
+                                    {rigFamily.replace('_', ' ')}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Card Action Buttons */}
+                        <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2 mt-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(asset.source || asset.id);
+                              showToast?.('Copied model asset path to clipboard!');
+                            }}
+                            title="Copy asset path"
+                            className="p-1 text-slate-500 hover:text-slate-300 rounded hover:bg-slate-800 transition cursor-pointer"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Primary Select Action */}
+                          {(activeAssetPicker || onSelectModel) ? (
+                            <button
+                              type="button"
+                              onClick={() => handleSelectAsset(asset)}
+                              className="flex-1 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-amber-950/40"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Select Model</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleSelectAsset(asset);
+                              }}
+                              className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold transition cursor-pointer"
+                            >
+                              Use Asset
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -497,6 +497,17 @@ interface EditorState {
   enterDevelopmentMode: () => void;
   exitPlaytest: () => void;
   setStudioMode: (mode: StudioMode) => void;
+  activeAssetPicker: {
+    filterType?: string;
+    title?: string;
+    onSelect: (assetId: string, asset?: any) => void;
+  } | null;
+  openAssetPicker: (picker: {
+    filterType?: string;
+    title?: string;
+    onSelect: (assetId: string, asset?: any) => void;
+  }) => void;
+  closeAssetPicker: () => void;
   openPanel: (id: PanelId) => void;
   closePanel: (id: PanelId) => void;
   resetLayout: () => void;
@@ -1278,13 +1289,13 @@ const DEFAULT_PANELS = {
   },
   assetUpload: {
     id: 'assetUpload',
-    title: 'Asset Upload',
+    title: 'Asset Upload & Library',
     isOpen: false,
     isCollapsed: false,
-    x: 350,
-    y: 150,
-    width: 700,
-    height: 600,
+    x: 300,
+    y: 90,
+    width: 880,
+    height: 680,
     zIndex: 10,
   },
   assetBrowserSelector: {
@@ -1864,6 +1875,25 @@ export const useEditorStore = create<EditorState>()(
           if (!wasEditor) queueMicrotask(() => emitPieChanged(false));
         }),
 
+      activeAssetPicker: null,
+      openAssetPicker: (picker) => {
+        set((state) => {
+          state.activeAssetPicker = picker;
+          if (state.panels['assetUpload']) {
+            state.panels['assetUpload'].isOpen = true;
+            state.panels['assetUpload'].title = picker.title || 'Asset Upload & Library';
+            state.highestZIndex += 1;
+            state.panels['assetUpload'].zIndex = state.highestZIndex;
+            state.activePanel = 'assetUpload';
+          }
+        });
+      },
+      closeAssetPicker: () => {
+        set((state) => {
+          state.activeAssetPicker = null;
+        });
+      },
+
       openPanel: (id) => {
         set((state) => {
           if (state.panels[id]) {
@@ -1909,7 +1939,12 @@ export const useEditorStore = create<EditorState>()(
 
       closePanel: (id) =>
         set((state) => {
-          state.panels[id].isOpen = false;
+          if (state.panels[id]) {
+            state.panels[id].isOpen = false;
+          }
+          if (id === 'assetUpload') {
+            state.activeAssetPicker = null;
+          }
           if (state.activePanel === id) state.activePanel = null;
         }),
 

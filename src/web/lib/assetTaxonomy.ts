@@ -34,7 +34,8 @@ export function detectAssetTaxonomy(
   filename: string,
   dimensions?: ModelDimensions,
   rigAnalysis?: RigAnalysisResult,
-  meshCount: number = 1
+  meshCount: number = 1,
+  intentHint?: DetectedAssetCategory
 ): AssetTaxonomyResult {
   const lower = filename.toLowerCase().replace(/[^a-z0-9_]/g, '_');
   const height = dimensions?.height ?? 1.75;
@@ -59,6 +60,69 @@ export function detectAssetTaxonomy(
     recommendedScale = 1.0;
     scaleType = 'COMPACT_ITEM';
     scaleExplanation = `Compact model (${effectiveHeight.toFixed(2)}m). Kept at 1.0x native scale.`;
+  }
+
+  // If the user explicitly clicked an upload intent button, honor it directly
+  if (intentHint === 'modular_base') {
+    return {
+      category: 'modular_base',
+      structure: 'Modular',
+      label: 'Modular Base Character',
+      suggestedRoles: ['Character', 'Player', 'NPC'],
+      confidence: 'high',
+      reason: 'User selected Modular Base Body upload mode.',
+      scaleSuggestion: { recommendedScale, scaleType, explanation: scaleExplanation, detectedHeight: height, normalizedHeight: 1.75 },
+    };
+  } else if (intentHint === 'modular_piece') {
+    return {
+      category: 'modular_piece',
+      structure: 'ModularItem',
+      label: 'Modular Equipment / Piece',
+      suggestedRoles: ['Item', 'Equipment', 'Armor'],
+      confidence: 'high',
+      reason: 'User selected Modular Wardrobe & Armor upload mode.',
+      scaleSuggestion: { recommendedScale: isLargeCentimeters ? 0.01 : 1.0, scaleType: isLargeCentimeters ? 'UNREAL_CENTIMETERS' : 'COMPACT_ITEM', explanation: 'Preserved native modular piece scale.', detectedHeight: height, normalizedHeight: height },
+    };
+  } else if (intentHint === 'weapon') {
+    return {
+      category: 'weapon',
+      structure: 'Complete',
+      label: 'Weapon / Tool Model',
+      suggestedRoles: ['Weapon', 'Tool', 'Item'],
+      confidence: 'high',
+      reason: 'User selected Weapons & Equipment upload mode.',
+      scaleSuggestion: { recommendedScale: isLargeCentimeters ? 0.01 : 1.0, scaleType: isLargeCentimeters ? 'UNREAL_CENTIMETERS' : 'COMPACT_ITEM', explanation: 'Preserved weapon scale.', detectedHeight: height, normalizedHeight: height },
+    };
+  } else if (intentHint === 'creature_monster') {
+    return {
+      category: 'creature_monster',
+      structure: 'Complete',
+      label: 'Creature / Monster Model',
+      suggestedRoles: ['Creature', 'Enemy', 'NPC'],
+      confidence: 'high',
+      reason: 'User selected Creature & Mount upload mode.',
+      scaleSuggestion: { recommendedScale, scaleType, explanation: scaleExplanation, detectedHeight: height, normalizedHeight: 1.75 },
+    };
+  } else if (intentHint === 'prop') {
+    return {
+      category: 'prop',
+      structure: 'Complete',
+      label: 'Environment Prop / Scenery',
+      suggestedRoles: ['Prop'],
+      confidence: 'high',
+      reason: 'User selected Props & Scenery upload mode.',
+      scaleSuggestion: { recommendedScale: isLargeCentimeters ? 0.01 : 1.0, scaleType: isLargeCentimeters ? 'UNREAL_CENTIMETERS' : 'STANDARD_METERS', explanation: 'Kept at native prop scale.', detectedHeight: height, normalizedHeight: height },
+    };
+  } else if (intentHint === 'complete_character') {
+    return {
+      category: 'complete_character',
+      structure: 'Complete',
+      label: 'Complete Humanoid Character',
+      suggestedRoles: ['Character', 'NPC', 'Enemy'],
+      confidence: 'high',
+      reason: 'User selected Complete Character upload mode.',
+      scaleSuggestion: { recommendedScale, scaleType, explanation: scaleExplanation, detectedHeight: height, normalizedHeight: 1.75 },
+    };
   }
 
   // Check 1: Modular Base Character

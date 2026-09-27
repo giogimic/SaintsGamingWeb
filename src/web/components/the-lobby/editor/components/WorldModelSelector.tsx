@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { Box, Image as ImageIcon, BoxSelect, Cuboid, MoreHorizontal, Crosshair, ChevronDown, ChevronUp, Layers, EyeOff, Shield } from 'lucide-react';
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
-import SpriteBrowser from '../SpriteBrowser';
 import { cn } from '@/shared/lib/utils';
-import { FloatingModal } from './FloatingModal';
+import { useEditorStore } from '../editor-store';
 
 export type WorldModelType = '2D Sprite' | '2D Box Sprite' | '3D Model' | 'Other';
 
@@ -73,7 +71,6 @@ export function WorldModelSelector({
   allowSocketConfig = false,
   allowModularConfig = false,
 }: WorldModelSelectorProps) {
-  const [showCatalogBrowser, setShowCatalogBrowser] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [scaleInput, setScaleInput] = useState(String(value.scale ?? 1));
   const [showSocketDetails, setShowSocketDetails] = useState(Boolean(value.socket || value.attachmentMode));
@@ -142,7 +139,19 @@ export function WorldModelSelector({
           {value.type === '2D Sprite' ? (
             <button
               type="button"
-              onClick={() => setShowCatalogBrowser(true)}
+              onClick={() => {
+                useEditorStore.getState().openAssetPicker({
+                  filterType: 'CHARACTER',
+                  title: 'Select World 2D Sprite',
+                  onSelect: (selectedId) => {
+                    let cleanId = selectedId;
+                    if (cleanId.includes('sprites/characters/')) {
+                      cleanId = cleanId.split('sprites/characters/')[1].replace('.png', '');
+                    }
+                    onChange({ ...value, assetId: cleanId });
+                  },
+                });
+              }}
               className="w-full flex items-center justify-between p-2 bg-[#050b14] border border-cyan-500/30 hover:border-cyan-400 rounded-lg transition text-left cursor-pointer"
             >
               <div className="flex flex-col min-w-0 mr-2">
@@ -161,7 +170,15 @@ export function WorldModelSelector({
               {/* Added native AssetId selector like 2D Sprite */}
               <button
                 type="button"
-                onClick={() => setShowCatalogBrowser(true)}
+                onClick={() => {
+                  useEditorStore.getState().openAssetPicker({
+                    filterType: 'MODEL',
+                    title: 'Select World 3D Model',
+                    onSelect: (selectedId) => {
+                      onChange({ ...value, assetId: selectedId });
+                    },
+                  });
+                }}
                 className="w-full flex items-center justify-between p-2 bg-black/40 border border-slate-700 hover:border-cyan-400 rounded-lg transition text-left cursor-pointer mb-2"
               >
                 <div className="flex flex-col min-w-0 mr-2">
@@ -441,36 +458,6 @@ export function WorldModelSelector({
           )}
         </div>
       </div>
-
-      {/* Sprite / Model Browser Modal */}
-      {mounted && showCatalogBrowser && (
-        <FloatingModal
-          title={`Select World ${value.type} Asset`}
-          icon={value.type === '3D Model' ? <Cuboid /> : <ImageIcon />}
-          onClose={() => setShowCatalogBrowser(false)}
-          defaultWidth={700}
-          defaultHeight={600}
-        >
-          <SpriteBrowser
-            filterType={value.type === '3D Model' ? 'MODEL' : 'CHARACTER'}
-            onSelect={(selectedAssets) => {
-              const asset = selectedAssets[0];
-              if (asset) {
-                let id = asset.source;
-                if (value.type === '3D Model') {
-                   // Keep full source (URL) for models so resolveEntitySpriteUrl can load them
-                   id = asset.source;
-                } else if (id.includes('sprites/characters/')) {
-                   id = id.split('sprites/characters/')[1].replace('.png', '');
-                }
-                onChange({ ...value, assetId: id });
-              }
-              setShowCatalogBrowser(false);
-            }}
-            onClose={() => setShowCatalogBrowser(false)}
-          />
-        </FloatingModal>
-      )}
     </section>
   );
 }
