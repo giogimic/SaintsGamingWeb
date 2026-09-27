@@ -30,6 +30,7 @@ import { RegistryCombobox } from '../components/RegistryCombobox';
 import { DroppableAssetInput } from '../components/DroppableAssetInput';
 import { WorldModelSelector, WorldModelValue } from '../components/WorldModelSelector';
 import { ModelWardrobeEditor } from '../components/ModelWardrobeEditor';
+import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
 import { useCreatureDefs } from '@/web/hooks/studio-data';
 
 const inputCls =
@@ -82,7 +83,7 @@ export function CreatureDefEditorPanel() {
     f('spriteOverworld', JSON.stringify(parsed));
   };
 
-  const getModularAttachments = (): WorldModelValue[] => {
+  const getModularAttachments = (): ModelWardrobeItem[] => {
     try {
       const parsed = JSON.parse(form.spriteOverworld || '{}');
       if (Array.isArray(parsed.modularAttachments)) return parsed.modularAttachments;
@@ -92,7 +93,7 @@ export function CreatureDefEditorPanel() {
     }
   };
 
-  const handleModularAttachmentsChange = (items: WorldModelValue[]) => {
+  const handleModularAttachmentsChange = (items: ModelWardrobeItem[]) => {
     let parsed: any = {};
     try {
       parsed = JSON.parse(form.spriteOverworld || '{}');

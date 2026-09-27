@@ -12,6 +12,7 @@ import { useEditorStore } from '../editor-store';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { WorldModelSelector, WorldModelValue } from '../components/WorldModelSelector';
 import { ModelWardrobeEditor } from '../components/ModelWardrobeEditor';
+import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
 
 export function MonsterEditorPanel() {
   const activeGameId = useEditorStore((state) => state.activeGameId);
@@ -98,7 +99,7 @@ export function MonsterEditorPanel() {
     f('spriteOverworld', JSON.stringify(parsed));
   };
 
-  const getModularAttachments = (): WorldModelValue[] => {
+  const getModularAttachments = (): ModelWardrobeItem[] => {
     try {
       const parsed = JSON.parse(form.spriteOverworld || '{}');
       if (Array.isArray(parsed.modularAttachments)) return parsed.modularAttachments;
@@ -108,7 +109,7 @@ export function MonsterEditorPanel() {
     }
   };
 
-  const handleModularAttachmentsChange = (items: WorldModelValue[]) => {
+  const handleModularAttachmentsChange = (items: ModelWardrobeItem[]) => {
     let parsed: any = {};
     try {
       parsed = JSON.parse(form.spriteOverworld || '{}');

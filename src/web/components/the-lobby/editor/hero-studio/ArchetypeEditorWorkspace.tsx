@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { WorldModelSelector, WorldModelValue } from '../components/WorldModelSelector';
 import { ModelWardrobeEditor } from '../components/ModelWardrobeEditor';
+import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 import { InventoryPicker } from '../components/InventoryPicker';
 import { ArchetypeModelPreview3D } from './ArchetypeModelPreview3D';
@@ -186,7 +187,7 @@ export function ArchetypeEditorWorkspace() {
     }));
   };
 
-  const getModularAttachments = (): WorldModelValue[] => {
+  const getModularAttachments = (): ModelWardrobeItem[] => {
     try {
       const parsed = JSON.parse(form.visualData || '{}');
       if (Array.isArray(parsed.modularAttachments)) return parsed.modularAttachments;
@@ -195,7 +196,7 @@ export function ArchetypeEditorWorkspace() {
     return [];
   };
 
-  const handleModularAttachmentsChange = (vals: WorldModelValue[]) => {
+  const handleModularAttachmentsChange = (vals: ModelWardrobeItem[]) => {
     let parsed: any = {};
     try {
       parsed = JSON.parse(form.visualData || '{}');
@@ -513,7 +514,12 @@ export function ArchetypeEditorWorkspace() {
                   <ArchetypeModelPreview3D
                     baseAssetId={getWorldModel().assetId}
                     modelScale={getWorldModel().scale ?? 0.8}
-                    modularAttachments={getModularAttachments().filter((attachment) => attachment.defaultVisible !== false)}
+                    modularAttachments={getModularAttachments()
+                      .filter((attachment) => attachment.defaultVisible !== false)
+                      .map((attachment) => ({
+                        ...attachment,
+                        type: attachment.type === '3D Sprite' ? '3D Model' : attachment.type || '3D Model',
+                      }))}
                     className="h-80"
                   />
                 </div>
@@ -529,7 +535,7 @@ export function ArchetypeEditorWorkspace() {
                 <ModelWardrobeEditor
                   modelAssetId={getWorldModel().assetId}
                   value={getModularAttachments()}
-                  onChange={(items) => handleModularAttachmentsChange(items as WorldModelValue[])}
+                  onChange={handleModularAttachmentsChange}
                   allowCharacterCreationOptions
                   title="Clothing & Creator Options"
                 />

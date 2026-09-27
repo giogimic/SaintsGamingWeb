@@ -1,5 +1,5 @@
 export interface ModelWardrobeItem {
-  type?: '3D Model' | '3D Sprite' | '2D Sprite' | 'Other';
+  type?: '3D Model' | '3D Sprite' | '2D Sprite' | '2D Box Sprite' | 'Other';
   assetId: string;
   label?: string;
   category?: string;

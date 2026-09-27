@@ -5,6 +5,7 @@ import { Plus, Save, Trash2, Smile, AlertCircle, CheckCircle2 } from 'lucide-rea
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { WorldModelSelector, WorldModelValue } from '../components/WorldModelSelector';
 import { ModelWardrobeEditor } from '../components/ModelWardrobeEditor';
+import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
 import { listNpcDefs, upsertNpcDef, deleteNpcDef } from '@/app/actions/studio/npc-def';
 import { ComponentMap } from '@/shared/game/entities/types';
 
@@ -133,10 +134,10 @@ export function NpcEditorPanel() {
     setComponent('appearance', { assetProfileId: val.type, assetId: val.assetId, scale: val.scale });
   };
 
-  const getModularAttachments = (): WorldModelValue[] =>
-    (form.componentsData.appearance?.modularAttachments || []) as WorldModelValue[];
+  const getModularAttachments = (): ModelWardrobeItem[] =>
+    (form.componentsData.appearance?.modularAttachments || []) as ModelWardrobeItem[];
 
-  const handleModularAttachmentsChange = (items: WorldModelValue[]) => {
+  const handleModularAttachmentsChange = (items: ModelWardrobeItem[]) => {
     setComponent('appearance', { modularAttachments: items });
   };
 
