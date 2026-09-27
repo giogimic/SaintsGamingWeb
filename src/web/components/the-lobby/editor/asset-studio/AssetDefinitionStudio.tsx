@@ -148,7 +148,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
   const [animationProfileId, setAnimationProfileId] = useState<string>('');
 
   // Model Transform
-  const [modelScale, setModelScale] = useState<number>(1.0);
+  const [modelScale, setModelScale] = useState<number>(0.8);
   const [modelRotationY, setModelRotationY] = useState<number>(0);
   const [modelGrounding, setModelGrounding] = useState<number>(0);
   const [modelCameraYOffset, setModelCameraYOffset] = useState<number>(0);
@@ -761,22 +761,51 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
             {activeTab === 'transform' && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Scale ({modelScale.toFixed(2)}x)</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Scale ({modelScale.toFixed(2)}x)</label>
+                    <input 
+                      type="number" 
+                      min="0.01" 
+                      max="10.0" 
+                      step="0.01" 
+                      value={modelScale} 
+                      onChange={e => {
+                        const val = parseFloat(e.target.value);
+                        if (!isNaN(val) && val > 0) setModelScale(val);
+                      }} 
+                      className="w-16 px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-right text-[11px] text-amber-300 font-mono focus:border-amber-500 focus:outline-none" 
+                    />
+                  </div>
                   <input 
-                    type="range" min="0.1" max="5.0" step="0.05" 
+                    type="range" min="0.05" max="3.0" step="0.01" 
                     value={modelScale} 
                     onChange={e => setModelScale(parseFloat(e.target.value))} 
                     className="w-full accent-amber-500" 
                   />
                   <div className="flex justify-between text-[9px] text-slate-500 mt-1">
-                    <span>Small (0.1x)</span>
-                    <span>Default (1.0x)</span>
-                    <span>Huge (5.0x)</span>
+                    <span>Tiny (0.05x)</span>
+                    <span>Standard (0.8x)</span>
+                    <span>Original (1.0x)</span>
+                    <span>Large (3.0x)</span>
                   </div>
                 </div>
                 
                 <div>
-                  <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Default Orientation (Y Rotation: {modelRotationY}°)</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Default Orientation (Y Rotation: {modelRotationY}°)</label>
+                    <input 
+                      type="number" 
+                      min="-360" 
+                      max="360" 
+                      step="1" 
+                      value={modelRotationY} 
+                      onChange={e => {
+                        const val = parseFloat(e.target.value);
+                        if (!isNaN(val)) setModelRotationY(val);
+                      }} 
+                      className="w-16 px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-right text-[11px] text-amber-300 font-mono focus:border-amber-500 focus:outline-none" 
+                    />
+                  </div>
                   <input 
                     type="range" min="-180" max="180" step="5" 
                     value={modelRotationY} 
@@ -791,37 +820,80 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Grounding Offset Z ({modelGrounding.toFixed(2)}m)</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Grounding Offset Z/Y ({modelGrounding.toFixed(2)}m)</label>
+                    <input 
+                      type="number" 
+                      min="-10.0" 
+                      max="10.0" 
+                      step="0.05" 
+                      value={modelGrounding} 
+                      onChange={e => {
+                        const val = parseFloat(e.target.value);
+                        if (!isNaN(val)) setModelGrounding(val);
+                      }} 
+                      className="w-16 px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-right text-[11px] text-amber-300 font-mono focus:border-amber-500 focus:outline-none" 
+                    />
+                  </div>
                   <input 
                     type="range" min="-2.0" max="2.0" step="0.05" 
                     value={modelGrounding} 
                     onChange={e => setModelGrounding(parseFloat(e.target.value))} 
                     className="w-full accent-amber-500" 
                   />
-                  <div className="text-[10px] text-slate-400 leading-relaxed mt-2">
+                  <div className="text-[10px] text-slate-400 leading-relaxed mt-1">
                     Adjust this if the model floats above or sinks into the ground by default.
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Camera Target Height Offset ({modelCameraYOffset.toFixed(2)}m)</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Camera Target Height Override ({modelCameraYOffset.toFixed(2)}m)</label>
+                    <input 
+                      type="number" 
+                      min="-5.0" 
+                      max="10.0" 
+                      step="0.05" 
+                      value={modelCameraYOffset} 
+                      onChange={e => {
+                        const val = parseFloat(e.target.value);
+                        if (!isNaN(val)) setModelCameraYOffset(val);
+                      }} 
+                      className="w-16 px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-right text-[11px] text-amber-300 font-mono focus:border-amber-500 focus:outline-none" 
+                    />
+                  </div>
                   <input 
                     type="range" min="-2.0" max="4.0" step="0.05" 
                     value={modelCameraYOffset} 
                     onChange={e => setModelCameraYOffset(parseFloat(e.target.value))} 
                     className="w-full accent-amber-500" 
                   />
-                  <div className="text-[10px] text-slate-400 leading-relaxed mt-2">
-                    Adjust this to move the camera's focus point up (e.g. to the head) or down. 0 uses automatic bounding box height.
+                  <div className="text-[10px] text-slate-400 leading-relaxed mt-1">
+                    Manual camera focus height. Set to 0 to use automatic skeleton head / bounding box height.
                   </div>
                 </div>
                 
-                <div className="flex gap-2 pt-2">
+                <div className="flex flex-wrap gap-2 pt-2">
                   <button 
-                    onClick={() => { setModelScale(1.0); setModelRotationY(0); setModelGrounding(0); setModelCameraYOffset(0); }}
-                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded text-[10px] font-bold text-slate-300 transition-colors"
+                    type="button"
+                    onClick={() => setModelScale(0.8)}
+                    className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 rounded text-[10px] font-bold text-amber-300 transition-colors"
                   >
-                    Reset to Defaults
+                    Standard Scale (0.8x)
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setModelScale(0.5)}
+                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded text-[10px] font-bold text-slate-300 transition-colors"
+                  >
+                    Half Scale (0.5x)
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => { setModelScale(0.8); setModelRotationY(0); setModelGrounding(0); setModelCameraYOffset(0); }}
+                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded text-[10px] font-bold text-slate-300 transition-colors"
+                  >
+                    Reset Defaults
                   </button>
                 </div>
               </div>

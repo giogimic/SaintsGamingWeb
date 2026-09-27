@@ -153,6 +153,15 @@ export async function POST(req: NextRequest) {
         const parsedDef = JSON.parse(assetDefRaw);
         presentation = presentation || {};
         presentation.assetDefinition = parsedDef;
+        if (parsedDef.transform) {
+          if (parsedDef.transform.scale !== undefined) presentation.modelScale = parsedDef.transform.scale;
+          if (parsedDef.transform.rotationY !== undefined) presentation.modelRotationY = parsedDef.transform.rotationY;
+          if (parsedDef.transform.grounding !== undefined) presentation.grounding = parsedDef.transform.grounding;
+          if (parsedDef.transform.cameraYOffset !== undefined) presentation.cameraHeightOffset = parsedDef.transform.cameraYOffset;
+        }
+        if (parsedDef.animations) {
+          presentation.animations = parsedDef.animations;
+        }
       } catch (e) {
         console.error("Failed to parse assetDefinition", e);
       }

@@ -143,6 +143,22 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 
 ## Changelog
 
+### v2.2.024
+- **Animation Engine & Retargeting (T-Pose Fix)**:
+  - **Bone Retargeting Engine**: Implemented `animationRetarget.ts` with cross-standard bone mapping between Mixamo, Unreal Engine Manny/Quinn, Paragon, Blender, and Biped skeletons.
+  - **Safe Container Disposal**: Eliminated disposed-node crashes in Babylon.js by cloning targeted animations into isolated `AnimationGroup` instances bound exclusively to destination skeleton nodes before releasing source GLB containers.
+  - **Multi-Runtime External Clip Loading**: Connected external animation clip loading, bone retargeting, and automatic state playback to both `BabylonEngine.ts` (Lobby, Studio, Playtest) and `EntityRenderer.ts` (MMO Client).
+  - **Actor VisualData Model Resolution**: Resolved 3D character models, transforms, and mapped animation profiles directly from `visualData` when characters spawn with default or unmapped `assetProfileId`.
+  - **Linux / Debian First Path Routing**: Updated `server.ts` animation route with URI decoding and Debian Linux server path priority.
+
+### v2.2.023
+- **3D Model Scale & Camera Fixes**:
+  - **Scale Default & Range**: Set default 3D model scale to `0.8x` (humanoid scale in voxel coordinates) in Asset Studio and renderers. Added precise numeric inputs and slider range down to `0.05x` with quick scale preset buttons.
+  - **Camera Chest Pivot**: Fixed camera orbit pivot calculation to rotate around the player's chest height (`pivotY = terrainY + playerChestHeight`) rather than ground/feet level (`terrainY`), preventing the camera from descending into the player's feet when zoomed in or when models are scaled down.
+  - **Skeleton Head Bone World Space**: Fixed head bone world-space coordinate calculation across both client and lobby Babylon engines using `headBone.getAbsolutePosition(childMesh)` rather than raw skeleton matrix, eliminating the 4.5cm ankle height false positive.
+  - **Camera Raycast Collision Exclusions**: Explicitly filtered all entity and model meshes (`sprite_`, `modelWrapper_`, `entity_`) from camera raycast occlusion checks and set `isPickable = false` on imported GLB meshes, preventing the camera from jamming inside the player's body at 0.5m distance.
+  - **Asset Definition Transform Persistence**: Promoted `transform` properties (`modelScale`, `modelRotationY`, `grounding`, `cameraHeightOffset`) to top-level presentation fields during asset upload for full forward and backward compatibility.
+
 ### v2.2.015
 - **3D Render Fixes**: Fixed a critical bounding box calculation bug where parent mesh transforms (scale) weren't correctly applied before computing child meshes, causing 3D characters to have giant 0-height bounding boxes, driving the camera straight into the floor/feet.
 - **Embedded Animations Fix 2**: Forced animation loop state machine to automatically reset and play the mapped Idle/Walk targets immediately upon asynchronous model load, overriding Babylon's native default-play states that could leave the character in a T-pose.

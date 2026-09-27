@@ -27,15 +27,19 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
       .map((attachment: any) => attachment?.assetId ? resolveEntitySpriteUrl(attachment.assetId) : undefined)
       .filter((url: string | undefined): url is string => !!url)
     : [];
-  const scale = Number(model.scale);
+  const scale = Number(model.scale ?? model.modelScale ?? data.scale ?? data.modelScale ?? (data.assetDefinition?.transform?.scale));
 
-  const camHeight = Number(model.cameraHeightOffset ?? data.cameraHeightOffset);
+  const camHeight = Number(model.cameraHeightOffset ?? model.cameraYOffset ?? data.cameraHeightOffset ?? data.cameraYOffset ?? (data.assetDefinition?.transform?.cameraYOffset));
+
+  const animations = model.animations ?? data.animations ?? data.assetDefinition?.animations;
 
   return {
     mode: '3D',
+    assetId: model.assetId,
     modelUrl,
     modularModelUrls,
     modelScale: Number.isFinite(scale) && scale > 0 ? Math.min(100, scale) : undefined,
     cameraHeightOffset: Number.isFinite(camHeight) && camHeight > 0 ? camHeight : undefined,
+    animations,
   };
 }

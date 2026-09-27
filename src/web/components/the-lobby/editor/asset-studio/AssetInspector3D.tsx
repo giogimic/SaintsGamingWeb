@@ -31,7 +31,7 @@ function SceneControls({ showBounds }: { showBounds?: boolean }) {
   return null;
 }
 
-function Model({ parsedGLB, activeAnimationIndex, showSkeleton, modelScale = 1.0, modelRotationY = 0, modelGrounding = 0 }: AssetInspector3DProps) {
+function Model({ parsedGLB, activeAnimationIndex, showSkeleton, modelScale = 0.8, modelRotationY = 0, modelGrounding = 0 }: AssetInspector3DProps) {
   const group = useRef<THREE.Group>(null);
   const { scene, rawAnimations } = parsedGLB;
   const mixer = useRef<THREE.AnimationMixer | null>(null);
@@ -120,7 +120,10 @@ export const AssetInspector3D = forwardRef<AssetInspector3DRef, AssetInspector3D
             <SceneControls showBounds={props.showBounds} />
           </Bounds>
 
-          <OrbitControls makeDefault />
+          <OrbitControls 
+            makeDefault 
+            target={[0, (props.modelCameraYOffset && props.modelCameraYOffset > 0 ? props.modelCameraYOffset : 1.0 * (props.modelScale ?? 0.8)), 0]} 
+          />
           <Grid infiniteGrid fadeDistance={20} sectionColor="#444" cellColor="#222" />
         </Canvas>
       </div>

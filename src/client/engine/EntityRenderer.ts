@@ -19,6 +19,7 @@ import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
 import { mapMesher } from './MapMesher';
 import { WrappedCharacterMesher } from './rendering/WrappedCharacterMesher';
 import { AssetManager } from '@/engine/assets/AssetManager';
+import { loadAndRetargetAnimation } from '@/engine/animationRetarget';
 
 // Player is 2 blocks tall (like a classic voxel game character)
 const PLAYER_HEIGHT = 2.0;
@@ -78,30 +79,57 @@ export class EntityRenderer {
     const smoothFactor = 1.0 - Math.exp(-INTERPOLATION_SPEED * dt);
     const now = Date.now();
 
-    const getEntityAssetInfo = (profileId: string | undefined, defaultKind: string) => {
-      let isModel = profileId?.endsWith('.glb') || profileId?.endsWith('.gltf') || profileId?.endsWith('.fbx');
-      let resolvedUrl = profileId ? resolveEntitySpriteUrl(profileId, { kind: defaultKind as any }) : undefined;
-      let presentationType = profileId?.includes('wrapped') ? '2D_WRAPPED' : '2D_SPRITE';
-      let transform: any = undefined;
-      let animations: any = undefined;
+    const getEntityAssetInfo = (profileId: string | undefined, defaultKind: string, visualData?: unknown) => {
+      let effectiveProfileId = profileId;
+      let visualTransform: any = undefined;
+      let visualAnimations: any = undefined;
 
-      if (profileId && profileId.length >= 20 && !profileId.includes('.')) {
-        const asset = AssetManager.getInstance().getAssetSync(profileId);
+      if (visualData) {
+        try {
+          const parsed = typeof visualData === 'string' ? JSON.parse(visualData) : visualData;
+          const wm = (parsed as any)?.worldModel || parsed;
+          if (wm?.assetId && (wm.type === '3D Model' || wm.type === 'MODEL')) {
+            effectiveProfileId = wm.assetId;
+          }
+          if (wm?.animations) visualAnimations = wm.animations;
+          if (wm?.transform) visualTransform = wm.transform;
+        } catch {}
+      }
+
+      let isModel = effectiveProfileId?.endsWith('.glb') || effectiveProfileId?.endsWith('.gltf') || effectiveProfileId?.endsWith('.fbx');
+      let resolvedUrl = effectiveProfileId ? resolveEntitySpriteUrl(effectiveProfileId, { kind: defaultKind as any }) : undefined;
+      let presentationType = effectiveProfileId?.includes('wrapped') ? '2D_WRAPPED' : (isModel ? '3D_MODEL' : '2D_SPRITE');
+      let transform: any = visualTransform;
+      let animations: any = visualAnimations;
+
+      if (effectiveProfileId && effectiveProfileId.length >= 20 && !effectiveProfileId.includes('.')) {
+        const asset = AssetManager.getInstance().getAssetSync(effectiveProfileId);
         if (asset) {
           isModel = asset.type === 'MODEL' || !!(asset.source && (asset.source.endsWith('.glb') || asset.source.endsWith('.gltf')));
           if (asset.source) resolvedUrl = resolveEntitySpriteUrl(asset.source);
           if (asset.presentation) {
             const pres = asset.presentation as any;
             if (pres.characterPresentationType) presentationType = pres.characterPresentationType;
-            if (pres.modelScale || pres.grounding || pres.cameraHeightOffset) {
+            else if (isModel) presentationType = '3D_MODEL';
+            
+            // Search in assetDefinition.transform, transform, and direct properties
+            const t = pres.assetDefinition?.transform || pres.transform || pres;
+            const parsedScale = t.scale !== undefined ? Number(t.scale) : (pres.modelScale !== undefined ? Number(pres.modelScale) : undefined);
+            const parsedRotY = t.rotationY !== undefined ? Number(t.rotationY) : (pres.modelRotationY !== undefined ? Number(pres.modelRotationY) : undefined);
+            const parsedGrounding = t.grounding !== undefined ? Number(t.grounding) : (pres.grounding !== undefined ? Number(pres.grounding) : undefined);
+            const parsedCamOffset = t.cameraYOffset !== undefined ? Number(t.cameraYOffset) : (t.cameraHeightOffset !== undefined ? Number(t.cameraHeightOffset) : (pres.cameraHeightOffset !== undefined ? Number(pres.cameraHeightOffset) : undefined));
+
+            if (parsedScale !== undefined || parsedRotY !== undefined || parsedGrounding !== undefined || parsedCamOffset !== undefined) {
               transform = {
-                scale: pres.modelScale ? Number(pres.modelScale) : undefined,
-                rotationY: pres.modelRotationY ? Number(pres.modelRotationY) : undefined,
-                grounding: pres.grounding ? Number(pres.grounding) : undefined,
-                cameraYOffset: pres.cameraHeightOffset ? Number(pres.cameraHeightOffset) : undefined
+                scale: parsedScale !== undefined && Number.isFinite(parsedScale) && parsedScale > 0 ? parsedScale : transform?.scale,
+                rotationY: parsedRotY !== undefined && Number.isFinite(parsedRotY) ? parsedRotY : transform?.rotationY,
+                grounding: parsedGrounding !== undefined && Number.isFinite(parsedGrounding) ? parsedGrounding : transform?.grounding,
+                cameraYOffset: parsedCamOffset !== undefined && Number.isFinite(parsedCamOffset) && parsedCamOffset > 0 ? parsedCamOffset : transform?.cameraYOffset
               };
             }
-            if (pres.animations) animations = pres.animations;
+            if (pres.assetDefinition?.animations || pres.animations || asset.metadata?.animations) {
+              animations = pres.assetDefinition?.animations || pres.animations || asset.metadata?.animations;
+            }
           } else if (isModel) {
             presentationType = '3D_MODEL';
           }
@@ -113,7 +141,7 @@ export class EntityRenderer {
     const getActorScale = (visualData?: unknown): number | undefined => {
       try {
         const parsed = typeof visualData === 'string' ? JSON.parse(visualData) : visualData;
-        const scale = Number((parsed as any)?.worldModel?.scale ?? (parsed as any)?.scale);
+        const scale = Number((parsed as any)?.worldModel?.scale ?? (parsed as any)?.scale ?? (parsed as any)?.modelScale);
         return Number.isFinite(scale) && scale > 0 ? Math.min(100, scale) : undefined;
       } catch {
         return undefined;
@@ -123,12 +151,12 @@ export class EntityRenderer {
     // 1. Local Player
     const player = usePlayerStore.getState().player;
     const is3D = player.position.z !== undefined;
-    const pAssetInfo = getEntityAssetInfo(player.assetProfileId, 'player');
+    const pAssetInfo = getEntityAssetInfo(player.assetProfileId, 'player', player.visualData);
     const playerScale = getActorScale(player.visualData);
     if (pAssetInfo.isModel && playerScale !== undefined) {
       pAssetInfo.transform = {
         ...(pAssetInfo.transform || {}),
-        scale: (pAssetInfo.transform?.scale ?? 0.8) * playerScale,
+        scale: (pAssetInfo.transform?.scale ?? 0.75) * playerScale,
       };
     }
 
@@ -166,12 +194,12 @@ export class EntityRenderer {
         }
       }
 
-      const rpAssetInfo = getEntityAssetInfo(rp.assetProfileId, 'player');
+      const rpAssetInfo = getEntityAssetInfo(rp.assetProfileId, 'player', rp.visualData);
       const remoteScale = getActorScale(rp.visualData);
       if (rpAssetInfo.isModel && remoteScale !== undefined) {
         rpAssetInfo.transform = {
           ...(rpAssetInfo.transform || {}),
-          scale: (rpAssetInfo.transform?.scale ?? 0.8) * remoteScale,
+          scale: (rpAssetInfo.transform?.scale ?? 0.75) * remoteScale,
         };
       }
 
@@ -195,12 +223,12 @@ export class EntityRenderer {
     // 3. Map Entities (NPCs, Creatures)
     const mapEntities = useWorldStore.getState().mapEntities as any[];
     for (const ent of mapEntities) {
-      const entAssetInfo = getEntityAssetInfo(ent.spriteKey, 'npc');
+      const entAssetInfo = getEntityAssetInfo(ent.spriteKey, 'npc', ent.visualData ?? ent.components?.appearance);
       const entityScale = getActorScale(ent.visualData ?? ent.components?.appearance);
       if (entAssetInfo.isModel && entityScale !== undefined) {
         entAssetInfo.transform = {
           ...(entAssetInfo.transform || {}),
-          scale: (entAssetInfo.transform?.scale ?? 0.8) * entityScale,
+          scale: (entAssetInfo.transform?.scale ?? 0.75) * entityScale,
         };
       }
       const entityColor = ent.type === 'NPC'
@@ -308,6 +336,7 @@ export class EntityRenderer {
           modelWrapper.parent = mesh;
           
           result.meshes.forEach((m) => {
+            m.isPickable = false; // Never block camera raycast or cursor selection
             if (!m.parent) {
               m.parent = modelWrapper;
               m.position.y += grounding;
@@ -333,20 +362,21 @@ export class EntityRenderer {
           
           const allMeshes = modelWrapper.getChildMeshes(false);
           allMeshes.forEach(m => {
+            m.isPickable = false;
             m.computeWorldMatrix(true);
             const skeleton = (m as any).skeleton;
             if (skeleton && skeleton.computeAbsoluteTransforms) {
               skeleton.computeAbsoluteTransforms();
             }
-            if (m.refreshBoundingInfo) {
-              m.refreshBoundingInfo({ applySkeleton: true });
+            if ((m as any).refreshBoundingInfo) {
+              (m as any).refreshBoundingInfo({ applySkeleton: true });
             }
           });
 
-          let modelVisualHeight = 2.0;
+          let modelVisualHeight = 1.6;
           let headBoneHeight: number | null = null;
           
-          // 1. Try skeleton-based Head bone detection
+          // 1. Try skeleton-based Head bone detection using world coords relative to entity
           for (const childMesh of allMeshes) {
             const skeleton = (childMesh as any).skeleton;
             if (skeleton && skeleton.bones) {
@@ -356,12 +386,17 @@ export class EntityRenderer {
               });
               if (headBone) {
                 try {
-                  const boneMatrix = headBone.getWorldMatrix();
-                  const boneWorldPos = BABYLON.Vector3.TransformCoordinates(BABYLON.Vector3.Zero(), boneMatrix);
-                  const entityWorldY = mesh.getAbsolutePosition().y;
-                  headBoneHeight = boneWorldPos.y - entityWorldY;
-                  if (headBoneHeight > 0.01) {
-                    modelVisualHeight = headBoneHeight;
+                  if (skeleton.computeAbsoluteTransforms) {
+                    skeleton.computeAbsoluteTransforms();
+                  }
+                  // getAbsolutePosition(childMesh) takes mesh rotation and wrapper scaling into account
+                  const headWorldPos = headBone.getAbsolutePosition(childMesh);
+                  const entityWorldPos = mesh.getAbsolutePosition();
+                  const heightDiff = headWorldPos.y - entityWorldPos.y;
+                  if (Number.isFinite(heightDiff) && heightDiff > 0.05) {
+                    headBoneHeight = heightDiff;
+                    modelVisualHeight = heightDiff;
+                    break;
                   }
                 } catch {}
               }
@@ -369,12 +404,15 @@ export class EntityRenderer {
           }
           
           // 2. Fallback to bounding box 
-          if (headBoneHeight === null || headBoneHeight <= 0.01) {
+          if (headBoneHeight === null || headBoneHeight <= 0.05) {
             let minY = Infinity;
             let maxY = -Infinity;
             for (const childMesh of allMeshes) {
               if (!(childMesh as any).getBoundingInfo) continue;
               try {
+                if ((childMesh as any).refreshBoundingInfo) {
+                  (childMesh as any).refreshBoundingInfo({ applySkeleton: true });
+                }
                 const bi = (childMesh as any).getBoundingInfo();
                 const worldMin = bi.boundingBox.minimumWorld;
                 const worldMax = bi.boundingBox.maximumWorld;
@@ -384,15 +422,15 @@ export class EntityRenderer {
             }
             
             if (minY < Infinity && maxY > -Infinity) {
-              const entityWorldY = mesh.getAbsolutePosition().y;
-              const topOfModel = Math.abs(maxY - entityWorldY);
-              
-              modelVisualHeight = Math.max(1.2, topOfModel * 0.85); // Safe clamp
+              const totalHeight = maxY - minY;
+              if (totalHeight > 0.05) {
+                modelVisualHeight = totalHeight * 0.85; // Eye level ~85% of total height
+              }
             }
           }
           
           current.computedHeight = modelVisualHeight;
-          if (data.transform?.cameraYOffset) {
+          if (data.transform?.cameraYOffset && data.transform.cameraYOffset > 0) {
             current.cameraYOffset = data.transform.cameraYOffset;
           }
 
@@ -413,43 +451,34 @@ export class EntityRenderer {
                   if (mapping.speed) embeddedAg.speedRatio = mapping.speed;
                 }
               } else if (mapping.sourcePath) {
-                const lastSlash = mapping.sourcePath.lastIndexOf('/');
-                const aRoot = mapping.sourcePath.substring(0, lastSlash + 1);
-                const aFile = mapping.sourcePath.substring(lastSlash + 1);
-
-                BABYLON.SceneLoader.LoadAssetContainerAsync(aRoot, aFile, this.scene).then((container) => {
+                loadAndRetargetAnimation(
+                  mapping.sourcePath,
+                  slot,
+                  result.transformNodes,
+                  this.scene!,
+                  { loop: mapping.loop !== false, speed: mapping.speed }
+                ).then((ag) => {
+                  if (!ag) return;
                   const latest = this.sprites.get(id);
                   if (!latest || latest.mesh !== mesh) {
-                    container.dispose();
+                    ag.dispose();
                     return;
                   }
-                  
-                  container.animationGroups.forEach((ag) => {
-                    ag.name = slot; // Match the name to our slot (e.g. 'idle', 'run_fwd')
-                    ag.targetedAnimations.forEach((ta) => {
-                      const targetName = ta.target.name;
-                      const targetNode = result.transformNodes.find(n => n.name === targetName);
-                      if (targetNode) {
-                        ta.target = targetNode;
-                      }
-                    });
-                    
-                    ag.loopAnimation = mapping.loop !== false;
-                    if (mapping.speed) ag.speedRatio = mapping.speed;
-                    ag.stop();
+                  latest.animationGroups = latest.animationGroups || [];
+                  latest.animationGroups = latest.animationGroups.filter(g => g.name !== slot);
+                  latest.animationGroups.push(ag);
 
-                    latest.animationGroups = latest.animationGroups || [];
-                    latest.animationGroups.push(ag);
-                    
-                    if (this.scene && !this.scene.animationGroups.includes(ag)) {
-                      this.scene.animationGroups.push(ag);
-                    }
-                  });
+                  // Auto-start check: if active movement state matches this slot, or no clip is running
+                  const isMoving = data.isMoving;
+                  const isRunSlot = slot.includes('run') || slot.includes('walk');
+                  const isIdleSlot = slot.includes('idle');
+                  const shouldPlay = (isMoving && isRunSlot) || (!isMoving && isIdleSlot) || !latest.animationGroups.some(g => g.isPlaying);
 
-                  // We only wanted the animationGroups; dispose the rest
-                  container.meshes.forEach(m => m.dispose());
-                  container.skeletons.forEach(s => s.dispose());
-                  container.transformNodes.forEach(t => t.dispose());
+                  if (shouldPlay) {
+                    latest.animationGroups.forEach(g => { if (g !== ag) g.stop(); });
+                    ag.play(ag.loopAnimation);
+                    latest.currentAnimationName = isMoving ? "run_fwd" : "idle";
+                  }
                 }).catch(e => console.error("[EntityRenderer] Failed to load external animation", mapping.sourcePath, e));
               }
             });
@@ -528,6 +557,7 @@ export class EntityRenderer {
           width: spriteW,
           height: spriteH,
         }, this.scene);
+        plane.isPickable = false;
         plane.parent = this.entityRoot;
         plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
 
@@ -567,6 +597,7 @@ export class EntityRenderer {
       let gui: AdvancedDynamicTexture | undefined;
       if (data.name && id !== 'local_player') {
         labelMesh = BABYLON.MeshBuilder.CreatePlane(`label_${id}`, { width: 2, height: 0.4 }, this.scene);
+        labelMesh.isPickable = false;
         labelMesh.parent = mesh;
         labelMesh.position.y = spriteH / 2 + 0.3;
         labelMesh.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
@@ -588,6 +619,7 @@ export class EntityRenderer {
 
       const activeMap = useWorldStore.getState().activeMapData;
       const is3D = activeMap && (activeMap.mapType === 'VOXEL' || activeMap.mapType === 'FRACTAL' || activeMap.mapType === 'HYBRID');
+      const is3DModel = Boolean(data.modelUrl || data.presentationType === '3D_MODEL');
 
       sprite = {
         mesh,
@@ -595,7 +627,7 @@ export class EntityRenderer {
         gui,
         targetX: data.x,
         targetZ: is3D ? data.y : -data.y,
-        targetY: spriteH / 2,
+        targetY: is3DModel ? 0 : spriteH / 2,
         lastSeen: now,
         modelUrl: data.modelUrl,
         spriteUrl: data.spriteUrl,
@@ -605,18 +637,15 @@ export class EntityRenderer {
     
     if (sprite.animationGroups && sprite.animationGroups.length > 0) {
       const targetAnimName = data.isMoving ? "run_fwd" : "idle";
-      if (sprite.currentAnimationName !== targetAnimName) {
-        const walkAnim = sprite.animationGroups.find(a => a.name.toLowerCase() === "run_fwd" || a.name.toLowerCase().includes("run") || a.name.toLowerCase().includes("walk"));
-        const idleAnim = sprite.animationGroups.find(a => a.name.toLowerCase() === "idle" || a.name.toLowerCase().includes("idle"));
-        let nextAnim = undefined;
-        if (data.isMoving) {
-          nextAnim = walkAnim || (sprite.animationGroups.length > 1 ? sprite.animationGroups[1] : sprite.animationGroups[0]);
-        } else {
-          nextAnim = idleAnim || sprite.animationGroups[0];
-        }
-        
-        sprite.animationGroups.forEach(a => a.stop());
-        if (nextAnim) {
+      const walkAnim = sprite.animationGroups.find(a => a.name.toLowerCase() === "run_fwd" || a.name.toLowerCase().includes("run") || a.name.toLowerCase().includes("walk"));
+      const idleAnim = sprite.animationGroups.find(a => a.name.toLowerCase() === "idle" || a.name.toLowerCase().includes("idle"));
+      let nextAnim = data.isMoving ? (walkAnim || (sprite.animationGroups.length > 1 ? sprite.animationGroups[1] : sprite.animationGroups[0])) : (idleAnim || sprite.animationGroups[0]);
+
+      if (sprite.currentAnimationName !== targetAnimName || (nextAnim && !nextAnim.isPlaying)) {
+        sprite.animationGroups.forEach(a => {
+          if (a !== nextAnim) a.stop();
+        });
+        if (nextAnim && !nextAnim.isPlaying) {
           nextAnim.play(nextAnim.loopAnimation ?? true);
         }
         sprite.currentAnimationName = targetAnimName;
@@ -641,7 +670,9 @@ export class EntityRenderer {
         terrainY = world.getTopSolidVoxelY(data.x, sprite.targetZ) + world.originOffsetY;
       }
     }
-    sprite.targetY = terrainY + spriteH / 2;
+    // 3D models have origin at feet, so they rest directly on terrainY; 2D billboards center on origin
+    const isModelEntity = Boolean(data.modelUrl || data.presentationType === '3D_MODEL');
+    sprite.targetY = isModelEntity ? terrainY : terrainY + spriteH / 2;
     
     sprite.lastSeen = now;
   }

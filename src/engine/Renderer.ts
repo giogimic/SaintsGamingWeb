@@ -657,13 +657,15 @@ public stopRenderLoop() {
     const isFirstPerson = this.cameraSettings.playerCameraStyle === 'firstperson';
     const playerMesh = this.engine.entityMeshes.get('player_main');
     const headHeight = playerMesh?.metadata?.modelVisualHeight ?? 1.2;
-    const targetYWithOffset = isFirstPerson ? y + headHeight : y;
+    const targetEyeY = y + headHeight;
+    const targetChestY = y + headHeight * 0.75;
+    const targetYWithOffset = isFirstPerson ? targetEyeY : targetChestY;
 
     this.camera.position = new Vector3(x + offsetX, y + camY, z + offsetZ);
     this.camera.setTarget(
       isFirstPerson 
-        ? new Vector3(x + Math.sin(yaw) * 10, targetYWithOffset + Math.tan(pitch) * 5, z + Math.cos(yaw) * 10)
-        : new Vector3(x, y, z)
+        ? new Vector3(x + Math.sin(yaw) * 10, targetEyeY + Math.tan(pitch) * 5, z + Math.cos(yaw) * 10)
+        : new Vector3(x, targetChestY, z)
     );
     this.cameraSnapped = true;
   }
@@ -708,33 +710,35 @@ public stopRenderLoop() {
     const isFirstPerson = this.cameraSettings.playerCameraStyle === 'firstperson' || this.cameraSettings.playerCameraStyle === 'firstPerson';
     
     // Use the model's computed visual height for camera focus (auto-detected from
-    // bounding box / Head bone after 3D model loads). Falls back to 1.2 for 2D sprites.
+    // bounding box / Head bone after 3D model loads). Falls back to 1.6 for default humanoid.
     const playerMesh = this.engine.entityMeshes.get('player_main');
-    const headHeight = playerMesh?.metadata?.modelVisualHeight ?? 1.2;
-    const targetYWithOffset = targetY + headHeight;
+    const headHeight = playerMesh?.metadata?.modelVisualHeight ?? 1.6;
+    const targetEyeY = targetY + headHeight;
+    const targetChestY = targetY + headHeight * 0.75;
 
-    // First person camera should sit near eye level (targetY + 1.2). Third person uses distance and pitch.
-    const camY = isFirstPerson ? targetYWithOffset : Math.max(0.5, targetY + dist * Math.sin(pitch));
+    // First person camera should sit near eye level. Third person camera uses distance and pitch above chest.
+    const camY = isFirstPerson ? targetEyeY : Math.max(targetChestY, targetChestY + dist * Math.sin(pitch));
     const horizDist = isFirstPerson ? 0 : dist * Math.cos(pitch);
     const offsetX = -horizDist * Math.sin(yaw);
     const offsetZ = -horizDist * Math.cos(yaw);
     let targetCamPos = new Vector3(targetX + offsetX, camY, targetZ + offsetZ);
     
-    // Check for terrain/world collisions between player head and targetCamPos
+    // Check for terrain/world collisions between player chest and targetCamPos
     if (!isFirstPerson && this.engine.scene) {
-      const headPos = new Vector3(targetX, targetYWithOffset, targetZ);
-      const rayDirection = targetCamPos.subtract(headPos);
+      const origin = new Vector3(targetX, targetChestY, targetZ);
+      const rayDirection = targetCamPos.subtract(origin);
       const actualDist = rayDirection.length();
       
       if (actualDist > 0.1) {
         rayDirection.normalize();
-        const ray = new Ray(headPos, rayDirection, actualDist);
+        const ray = new Ray(origin, rayDirection, actualDist);
         // Only pick meshes that are not the player, not decals/overlays
         const hit = this.engine.scene.pickWithRay(ray, (mesh) => {
-          if (!mesh.isPickable) return false;
-          if (mesh.name.startsWith("entity-")) return false;
-          if (mesh.name.includes("preview") || mesh.name.includes("overlay") || mesh.name.includes("decal")) return false;
-          // Ignore water or transparent planes if desired, but for now we stop at pickable solid terrain
+          if (!mesh.isPickable || !mesh.isVisible || mesh.name === 'skyBox') return false;
+          if (mesh.name.startsWith("entity-") || mesh.name.startsWith("entityRoot") || mesh.name.startsWith("sprite_") || mesh.name.includes("modelWrapper")) return false;
+          if (mesh.name.includes("preview") || mesh.name.includes("overlay") || mesh.name.includes("decal") || mesh.name.includes("label")) return false;
+          if (mesh.parent && (mesh.parent.name?.includes("modelWrapper") || mesh.parent.name?.startsWith("sprite_") || mesh.parent.name?.startsWith("entity-"))) return false;
+          // Stop at pickable solid terrain and architecture
           return true;
         });
         
@@ -754,8 +758,8 @@ public stopRenderLoop() {
     this.camera.setTarget(Vector3.Lerp(
       this.camera.getTarget(),
       isFirstPerson 
-        ? new Vector3(targetX + Math.sin(yaw) * 10, targetYWithOffset + Math.tan(pitch) * 10, targetZ + Math.cos(yaw) * 10)
-        : new Vector3(targetX, targetYWithOffset, targetZ),
+        ? new Vector3(targetX + Math.sin(yaw) * 10, targetEyeY + Math.tan(pitch) * 10, targetZ + Math.cos(yaw) * 10)
+        : new Vector3(targetX, targetChestY, targetZ),
       smoothFactor
     ));
   }

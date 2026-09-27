@@ -57,6 +57,8 @@ export interface PresentationDefinition {
   spriteSheetUrl?: string;
   portraitUrl?: string;
   animationProfileId?: string;
+  assetId?: string;
+  animations?: any;
   depthLayer?: number;
   modelUrl?: string;
   modularModelUrls?: string[];

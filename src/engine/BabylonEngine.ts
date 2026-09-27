@@ -95,6 +95,8 @@ import { InputController } from './InputController';
 import { Renderer } from './Renderer';
 import { SpiritGateRenderer } from '../client/engine/rendering/SpiritGateRenderer';
 import { EntityController } from './EntityController';
+import { loadAndRetargetAnimation } from './animationRetarget';
+import { AssetManager } from './assets/AssetManager';
 
 export interface RenderedChunk {
   mapId?: string;
@@ -4128,8 +4130,11 @@ export class BabylonEngine {
               const modelWrapper = new TransformNode(`modelWrapper_${entity.id}_${idx}`, this.scene);
               modelWrapper.parent = currentMesh;
               
-              const modelScale = Number(entity.presentation?.modelScale);
-              const actorScale = Number.isFinite(modelScale) && modelScale > 0 ? modelScale : 1;
+              const pres = entity.presentation as any;
+              const t = pres?.assetDefinition?.transform || pres?.transform || pres;
+              const rawScale = t?.scale ?? pres?.modelScale;
+              const modelScale = Number(rawScale);
+              const actorScale = Number.isFinite(modelScale) && modelScale > 0 ? modelScale : 0.8;
               modelWrapper.scaling = new Vector3(-actorScale, actorScale, actorScale);
               
               root.parent = modelWrapper;
@@ -4146,6 +4151,7 @@ export class BabylonEngine {
             
             const allMeshes = currentMesh.getChildMeshes(false);
             allMeshes.forEach(m => {
+              m.isPickable = false; // Never block camera raycast or cursor selection
               m.computeWorldMatrix(true);
               // Force skeletons to update as well for accurate bone reading
               const skeleton = (m as any).skeleton;
@@ -4157,14 +4163,16 @@ export class BabylonEngine {
               }
             });
             
-            let modelVisualHeight = 1.2; // Fallback: legacy hardcoded head height
+            let modelVisualHeight = 1.6; // Default human height
             
             // 1. Check for Studio-authored cameraHeightOffset override
-            const manualOffset = Number(entity.presentation?.cameraHeightOffset);
+            const pres = entity.presentation as any;
+            const t = pres?.assetDefinition?.transform || pres?.transform || pres;
+            const manualOffset = Number(t?.cameraYOffset ?? t?.cameraHeightOffset ?? pres?.cameraHeightOffset);
             if (Number.isFinite(manualOffset) && manualOffset > 0) {
               modelVisualHeight = manualOffset;
             } else {
-              // 2. Try skeleton-based Head bone detection (most precise)
+              // 2. Try skeleton-based Head bone detection using world coords relative to entity
               let headBoneHeight: number | null = null;
               for (const childMesh of allMeshes) {
                 const skeleton = (childMesh as any).skeleton;
@@ -4175,13 +4183,17 @@ export class BabylonEngine {
                   });
                   if (headBone) {
                     try {
-                      // Get head bone's world position relative to entity
-                      const boneMatrix = headBone.getWorldMatrix();
-                      const boneWorldPos = Vector3.TransformCoordinates(Vector3.Zero(), boneMatrix);
-                      const entityWorldY = currentMesh.getAbsolutePosition().y;
-                      headBoneHeight = boneWorldPos.y - entityWorldY;
-                      if (headBoneHeight > 0.01) {
-                        modelVisualHeight = headBoneHeight;
+                      if (skeleton.computeAbsoluteTransforms) {
+                        skeleton.computeAbsoluteTransforms();
+                      }
+                      // getAbsolutePosition(childMesh) takes mesh rotation and wrapper scaling into account
+                      const headWorldPos = headBone.getAbsolutePosition(childMesh);
+                      const entityWorldPos = currentMesh.getAbsolutePosition();
+                      const heightDiff = headWorldPos.y - entityWorldPos.y;
+                      if (Number.isFinite(heightDiff) && heightDiff > 0.05) {
+                        headBoneHeight = heightDiff;
+                        modelVisualHeight = heightDiff;
+                        break;
                       }
                     } catch {
                       // Bone matrix not ready yet, fall through to bounding box
@@ -4191,12 +4203,15 @@ export class BabylonEngine {
               }
               
               // 3. Fallback: compute from bounding box (reliable for any model)
-              if (headBoneHeight === null || headBoneHeight <= 0.01) {
+              if (headBoneHeight === null || headBoneHeight <= 0.05) {
                 let minY = Infinity;
                 let maxY = -Infinity;
                 for (const childMesh of allMeshes) {
                   if (!(childMesh as any).getBoundingInfo) continue;
                   try {
+                    if ((childMesh as any).refreshBoundingInfo) {
+                      (childMesh as any).refreshBoundingInfo(true);
+                    }
                     const bi = (childMesh as any).getBoundingInfo();
                     const worldMin = bi.boundingBox.minimumWorld;
                     const worldMax = bi.boundingBox.maximumWorld;
@@ -4208,11 +4223,10 @@ export class BabylonEngine {
                 }
                 
                 if (minY < Infinity && maxY > -Infinity) {
-                  const entityWorldY = currentMesh.getAbsolutePosition().y;
-                  const topOfModel = Math.abs(maxY - entityWorldY);
-                  
-                  // Camera targets ~85% of model height (approximate eye level)
-                  modelVisualHeight = Math.max(1.2, topOfModel * 0.85);
+                  const totalHeight = maxY - minY;
+                  if (totalHeight > 0.05) {
+                    modelVisualHeight = totalHeight * 0.85; // Camera targets ~85% of model height (approximate eye level)
+                  }
                 }
               }
             }
@@ -4220,13 +4234,68 @@ export class BabylonEngine {
             // Store computed height on metadata for camera system
             currentMesh.metadata.modelVisualHeight = modelVisualHeight;
             
+            // Collect all transform nodes across loaded model results for bone retargeting
+            const allTransformNodes = results.flatMap(r => r.transformNodes);
+
+            // Check if animations are mapped
+            let animConfig = pres?.animations || pres?.assetDefinition?.animations;
+            if (!animConfig && pres?.assetId) {
+              const asset = AssetManager.getInstance().getAssetSync(pres.assetId);
+              const assetPres = (asset?.presentation as any);
+              animConfig = assetPres?.animations || assetPres?.assetDefinition?.animations || asset?.metadata?.animations;
+            }
+
+            if (animConfig && animConfig.mapped) {
+              const mapped = animConfig.mapped;
+              Object.entries(mapped).forEach(([slot, mapping]: [string, any]) => {
+                if (mapping.sourceKind === 'embedded' && mapping.clip) {
+                  const embeddedAg = allAnimationGroups.find(ag => ag.name === mapping.clip);
+                  if (embeddedAg) {
+                    embeddedAg.name = slot;
+                    embeddedAg.loopAnimation = mapping.loop !== false;
+                    if (mapping.speed) embeddedAg.speedRatio = mapping.speed;
+                  }
+                } else if (mapping.sourcePath) {
+                  loadAndRetargetAnimation(
+                    mapping.sourcePath,
+                    slot,
+                    allTransformNodes,
+                    this.scene,
+                    { loop: mapping.loop !== false, speed: mapping.speed }
+                  ).then((retargetedAg) => {
+                    if (!retargetedAg) return;
+                    if (!this.entityMeshes.has(entity.id)) {
+                      retargetedAg.dispose();
+                      return;
+                    }
+                    const mesh = this.entityMeshes.get(entity.id)!;
+                    mesh.metadata = mesh.metadata || {};
+                    mesh.metadata.animationGroups = mesh.metadata.animationGroups || [];
+                    mesh.metadata.animationGroups = mesh.metadata.animationGroups.filter((g: any) => g.name !== slot);
+                    mesh.metadata.animationGroups.push(retargetedAg);
+
+                    const isMoving = mesh.metadata.isMoving;
+                    const isRunSlot = slot.includes('run') || slot.includes('walk');
+                    const isIdleSlot = slot.includes('idle');
+                    const shouldPlay = (isMoving && isRunSlot) || (!isMoving && isIdleSlot) || !mesh.metadata.animationGroups.some((g: any) => g.isPlaying);
+
+                    if (shouldPlay) {
+                      mesh.metadata.animationGroups.forEach((g: any) => { if (g !== retargetedAg) g.stop(); });
+                      retargetedAg.play(retargetedAg.loopAnimation);
+                    }
+                  }).catch(e => console.error("[BabylonEngine] Failed to load external animation", mapping.sourcePath, e));
+                }
+              });
+            }
+
+            currentMesh.metadata.animationGroups = allAnimationGroups;
             if (allAnimationGroups.length > 0) {
-              currentMesh.metadata.animationGroups = allAnimationGroups;
+              const isMoving = currentMesh.metadata.isMoving;
+              const runAnim = allAnimationGroups.find((ag: any) => ag.name.toLowerCase().includes('run') || ag.name.toLowerCase().includes('walk'));
               const idleAnim = allAnimationGroups.find((ag: any) => ag.name.toLowerCase().includes('idle'));
-              if (idleAnim) {
-                idleAnim.play(true);
-              } else {
-                allAnimationGroups[0].play(true);
+              const initialAnim = isMoving ? (runAnim || idleAnim || allAnimationGroups[0]) : (idleAnim || allAnimationGroups[0]);
+              if (initialAnim) {
+                initialAnim.play(true);
               }
             }
           })

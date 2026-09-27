@@ -359,18 +359,19 @@ export class CameraManager {
       : Math.max(0, Math.min(1.0, 1.0 - (dist / 2.0)));
     
     const sprite = entityRenderer.getSprite('local_player');
-    const playerHeight = sprite?.computedHeight ?? 2.0;
-    const playerEyeHeight = sprite?.cameraYOffset || (playerHeight * 0.81);
-    const playerChestHeight = sprite?.cameraYOffset ? sprite.cameraYOffset * 0.75 : (playerHeight * 0.6);
+    const playerHeight = sprite?.computedHeight ?? 1.6;
+    const playerEyeHeight = sprite?.cameraYOffset ? sprite.cameraYOffset : (playerHeight * 0.88);
+    const playerChestHeight = sprite?.cameraYOffset ? sprite.cameraYOffset * 0.75 : (playerHeight * 0.65);
 
-    const thirdPersonCamY = Math.max(playerChestHeight, dist * Math.sin(currentPitch));
-    const camY = BABYLON.Scalar.Lerp(thirdPersonCamY, playerEyeHeight, firstPersonWeight);
-    
+    const targetHeight = BABYLON.Scalar.Lerp(playerChestHeight, playerEyeHeight, firstPersonWeight);
+    const pivotY = terrainY + targetHeight;
+
+    const camY = pivotY + dist * Math.sin(currentPitch) * (1.0 - firstPersonWeight);
     const horizDist = BABYLON.Scalar.Lerp(dist * Math.cos(currentPitch), 0, firstPersonWeight);
     const offsetX = -horizDist * Math.sin(currentYaw);
     const offsetZ = -horizDist * Math.cos(currentYaw);
 
-    this.camera.position = new BABYLON.Vector3(x + offsetX, terrainY + camY, z + offsetZ);
+    this.camera.position = new BABYLON.Vector3(x + offsetX, camY, z + offsetZ);
     
     const firstPersonTarget = new BABYLON.Vector3(
       x + Math.sin(currentYaw) * Math.cos(currentPitch) * 10,
@@ -462,39 +463,54 @@ export class CameraManager {
         : Math.max(0, Math.min(1.0, 1.0 - (dist / 2.0)));
       
       const sprite = entityRenderer.getSprite('local_player');
-      const playerHeight = sprite?.computedHeight ?? 2.0;
-      const playerEyeHeight = sprite?.cameraYOffset || (playerHeight * 0.81);
-      const playerChestHeight = sprite?.cameraYOffset ? sprite.cameraYOffset * 0.75 : (playerHeight * 0.6);
+      const playerHeight = sprite?.computedHeight ?? 1.6;
+      const playerEyeHeight = sprite?.cameraYOffset ? sprite.cameraYOffset : (playerHeight * 0.88);
+      const playerChestHeight = sprite?.cameraYOffset ? sprite.cameraYOffset * 0.75 : (playerHeight * 0.65);
 
-      const thirdPersonCamY = Math.max(playerChestHeight, dist * Math.sin(currentPitch));
-      const camY = BABYLON.Scalar.Lerp(thirdPersonCamY, playerEyeHeight, firstPersonWeight);
-      
+      const targetHeight = BABYLON.Scalar.Lerp(playerChestHeight, playerEyeHeight, firstPersonWeight);
+      const pivotY = this.focusPoint.y + targetHeight;
+
+      const camY = pivotY + dist * Math.sin(currentPitch) * (1.0 - firstPersonWeight);
       const horizDist = BABYLON.Scalar.Lerp(dist * Math.cos(currentPitch), 0, firstPersonWeight);
       const offsetX = -horizDist * Math.sin(currentYaw);
       const offsetZ = -horizDist * Math.cos(currentYaw);
 
-      let targetCamPos = new BABYLON.Vector3(this.focusPoint.x + offsetX, this.focusPoint.y + camY, this.focusPoint.z + offsetZ);
+      let targetCamPos = new BABYLON.Vector3(this.focusPoint.x + offsetX, camY, this.focusPoint.z + offsetZ);
       
       // Raycast from player focus to ideal camera position to prevent clipping
       if (firstPersonWeight < 0.99 && this.camera.mode === BABYLON.Camera.PERSPECTIVE_CAMERA) {
-        // Offset the origin slightly up (chest height) to avoid hitting the ground immediately
-        const origin = new BABYLON.Vector3(this.focusPoint.x, this.focusPoint.y + playerChestHeight, this.focusPoint.z);
+        // Offset the origin to chest height (pivot point) to avoid hitting the ground immediately
+        const origin = new BABYLON.Vector3(this.focusPoint.x, pivotY, this.focusPoint.z);
         const direction = targetCamPos.subtract(origin);
         const maxDist = direction.length();
-        direction.normalize();
-        
-        // Use a raycast to detect terrain or walls (assuming meshes are pickable)
-        const ray = new BABYLON.Ray(origin, direction, maxDist);
-        const hit = this.scene.pickWithRay(ray, (mesh) => {
-          // Ignore player meshes or purely decorative meshes, include terrain/walls
-          return mesh.isPickable && mesh.isVisible && mesh.name !== 'skyBox';
-        });
-        
-        if (hit && hit.hit && hit.pickedPoint) {
-          // Back up slightly from the hit point to prevent clipping into the wall
-          const hitDist = hit.distance;
-          const safeDist = Math.max(0.5, hitDist - 0.5);
-          targetCamPos = origin.add(direction.scale(safeDist));
+        if (maxDist > 0.1) {
+          direction.normalize();
+          
+          // Use a raycast to detect terrain or walls (ignoring player and entity meshes)
+          const ray = new BABYLON.Ray(origin, direction, maxDist);
+          const hit = this.scene.pickWithRay(ray, (mesh) => {
+            if (!mesh.isPickable || !mesh.isVisible || mesh.name === 'skyBox') return false;
+            // Ignore player and entity meshes so camera collision only tests terrain and obstacles
+            if (
+              mesh.name.startsWith('sprite_') ||
+              mesh.name.startsWith('modelWrapper_') ||
+              mesh.name.startsWith('entity_') ||
+              mesh.name.startsWith('label_') ||
+              mesh.name.startsWith('entity-') ||
+              mesh.name.startsWith('model_error_mat_') ||
+              (mesh.parent && (mesh.parent.name?.startsWith('modelWrapper_') || mesh.parent.name?.startsWith('sprite_') || mesh.parent.name?.startsWith('entity_')))
+            ) {
+              return false;
+            }
+            return true;
+          });
+          
+          if (hit && hit.hit && hit.pickedPoint) {
+            // Back up slightly from the hit point to prevent clipping into the wall
+            const hitDist = hit.distance;
+            const safeDist = Math.max(0.5, hitDist - 0.5);
+            targetCamPos = origin.add(direction.scale(safeDist));
+          }
         }
       }
 

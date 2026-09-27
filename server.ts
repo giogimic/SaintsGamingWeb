@@ -36,25 +36,67 @@ app.prepare().then(async () => {
         return;
       }
 
-      // Serve Paragon Animations from external directory
-      if (parsedUrl.pathname?.startsWith("/animations/Paragon/")) {
+      // Serve Animations from external or public directories (cross-platform Linux/Debian + Windows)
+      if (parsedUrl.pathname?.startsWith("/animations/")) {
         const fs = require("fs");
         const path = require("path");
-        let suffix = parsedUrl.pathname.replace(/^\/animations\/Paragon\//, '');
-        suffix = path.normalize(suffix).replace(/^(\.\.[\/\\])+/, '');
-        const filePath = path.join("C:\\saints-gaming\\Paragon_animations_glb", suffix);
+        const isParagon = parsedUrl.pathname.startsWith("/animations/Paragon/");
+        const rawSuffix = isParagon
+          ? parsedUrl.pathname.replace(/^\/animations\/Paragon\//, '')
+          : parsedUrl.pathname.replace(/^\/animations\//, '');
+        let decodedSuffix = '';
+        try {
+          decodedSuffix = decodeURIComponent(rawSuffix);
+        } catch {
+          decodedSuffix = rawSuffix;
+        }
+        decodedSuffix = path.normalize(decodedSuffix).replace(/^(\.\.[\/\\])+/, '');
         
-        if (fs.existsSync(filePath)) {
-          const ext = path.extname(filePath).toLowerCase();
+        // Search potential animation directory roots (Debian/Linux priority, env var, local public, Windows)
+        const possibleRoots = isParagon ? [
+          process.env.PARAGON_ANIMATIONS_DIR,
+          "/var/saints-gaming/Paragon_animations_glb",
+          "/var/www/saints-gaming/Paragon_animations_glb",
+          "/opt/saints-gaming/Paragon_animations_glb",
+          path.join(process.cwd(), "public", "animations", "Paragon"),
+          path.join(process.cwd(), "public", "animations"),
+          "C:\\saints-gaming\\Paragon_animations_glb",
+        ].filter(Boolean) as string[] : [
+          path.join(process.cwd(), "public", "animations"),
+          path.join(process.cwd(), "public"),
+          process.env.ANIMATIONS_DIR,
+          "/var/saints-gaming/animations",
+          "/opt/saints-gaming/animations",
+          "C:\\saints-gaming\\animations",
+        ].filter(Boolean) as string[];
+
+        let targetFile: string | null = null;
+        for (const root of possibleRoots) {
+          const testPath = path.join(root, decodedSuffix);
+          try {
+            if (fs.existsSync(testPath) && fs.statSync(testPath).isFile()) {
+              targetFile = testPath;
+              break;
+            }
+            if (!decodedSuffix.endsWith('.glb') && fs.existsSync(testPath + '.glb')) {
+              targetFile = testPath + '.glb';
+              break;
+            }
+          } catch {}
+        }
+        
+        if (targetFile) {
+          const ext = path.extname(targetFile).toLowerCase();
           const mimeTypes: Record<string, string> = {
             '.fbx': 'application/octet-stream',
             '.glb': 'model/gltf-binary',
+            '.gltf': 'model/gltf+json',
           };
           const contentType = mimeTypes[ext] || 'application/octet-stream';
           res.setHeader('Content-Type', contentType);
           res.setHeader('Access-Control-Allow-Origin', '*');
           res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-          const readStream = fs.createReadStream(filePath);
+          const readStream = fs.createReadStream(targetFile);
           readStream.pipe(res);
           return;
         }

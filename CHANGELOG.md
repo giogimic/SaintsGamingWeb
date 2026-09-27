@@ -1,3 +1,11 @@
+## [2.2.024] - 2026-09-27
+- **Fix (Animation Engine & Retargeting)**: Resolved persistent T-pose issue for 3D character models and archetypes when attaching external animation sets:
+  - Created dedicated bone retargeting module (`animationRetarget.ts`) mapping bone hierarchies across Mixamo, Unreal Engine Manny/Quinn, Paragon, Blender, and Biped standards.
+  - Eliminated disposed-node crashes in Babylon.js by building isolated `AnimationGroup` instances bound exclusively to destination skeleton nodes before releasing source GLB containers.
+  - Added external animation clip loading and automatic idle/movement playback hooks to `BabylonEngine.ts` (Lobby, World Studio, Playtest) and `EntityRenderer.ts` (MMO exploration runtime).
+  - Resolved 3D character model and animation mapping definitions directly from actor `visualData` when `assetProfileId` is default/unmapped.
+  - Extended `server.ts` static animation routing with URI decoding and cross-platform Debian/Linux path resolution.
+
 ## [2.2.011] - 2026-09-26
 - **Searchable Animations Dropdown**: Replaced the native HTML `<select>` dropdown in the Archetype/Asset Definition Studio with a custom searchable `RegistryCombobox`. When mapping animations to actions, you can now scroll through the list or type into the box to instantly filter and find the exact animation clip you want.
 
