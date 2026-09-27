@@ -27,6 +27,10 @@ export interface WorldModelValue {
   attachmentMode?: 'RIGID_SOCKET' | 'SKINNED';
   hidesComponents?: string[];
   bodyType?: string;
+  label?: string;
+  category?: string;
+  defaultVisible?: boolean;
+  availableInCharacterCreation?: boolean;
 }
 
 export const STANDARD_SOCKET_OPTIONS = [

@@ -48,6 +48,9 @@ import { useTheme } from 'next-themes';
 import { ArchetypePicker } from './character-create/ArchetypePicker';
 import { IdentityForm } from './character-create/IdentityForm';
 import { AppearanceCustomizer } from './character-create/AppearanceCustomizer';
+import type { AppearanceTab } from './character-create/AppearanceCustomizer';
+import { applyCharacterCreationWardrobe, parseModelWardrobeItems } from '@/shared/game/modelWardrobe';
+import type { WorldModelValue } from '@/web/components/the-lobby/editor/components/WorldModelSelector';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -170,10 +173,12 @@ export function CharacterCreateScene() {
   const [step, setStep] = useState<CreatorStep>('HERO_PICK');
   const [name, setName] = useState('');
   const [assetProfileId, setassetProfileId] = useState('evil-berserker-bloodaxe-male');
+  const [visualData, setVisualData] = useState<string>('[]');
+  const [selectedWardrobeAssetIds, setSelectedWardrobeAssetIds] = useState<string[]>([]);
   const [selectedCape, setSelectedCape] = useState<string | null>(null);
   const [selectedHat, setSelectedHat] = useState<string | null>(null);
   const [selectedArmor, setSelectedArmor] = useState<string | null>(null);
-  const [appearanceTab, setAppearanceTab] = useState<'BASE' | 'CAPE' | 'HEAD' | 'ARMOR' | 'CATALOG'>('BASE');
+  const [appearanceTab, setAppearanceTab] = useState<AppearanceTab>('BASE');
 
   const [dbHeroes, setDbHeroes] = useState<DbHero[]>([]);
   const [classDefs, setClassDefs] = useState<ClassDefData[]>([]);
@@ -229,6 +234,25 @@ export function CharacterCreateScene() {
     selectedArmor,
     selectedHat,
   ].filter(Boolean) as string[];
+
+  const parsedVisualData = useMemo(() => {
+    try {
+      return JSON.parse(visualData);
+    } catch {
+      return null;
+    }
+  }, [visualData]);
+  const wardrobeItems = useMemo(() => parseModelWardrobeItems(visualData), [visualData]);
+  const wardrobeOptions = wardrobeItems.filter((item) => item.availableInCharacterCreation === true);
+  const hasCreatorWardrobe = wardrobeOptions.length > 0;
+  const modelAssetId = parsedVisualData?.worldModel?.type === '3D Model'
+    ? parsedVisualData.worldModel.assetId
+    : parsedVisualData?.type === '3D Model' ? parsedVisualData.assetId : undefined;
+  const wardrobePreviewAttachments = useMemo(() => wardrobeItems.filter((item) =>
+    item.availableInCharacterCreation === true
+      ? selectedWardrobeAssetIds.includes(item.assetId)
+      : item.defaultVisible !== false,
+  ) as WorldModelValue[], [wardrobeItems, selectedWardrobeAssetIds]);
 
   // Load database starter heroes & class defs
   useEffect(() => {
@@ -300,7 +324,10 @@ export function CharacterCreateScene() {
 
   const handleHeroPick = (hero: DbHero) => {
     soundSynth?.playSelectSound?.();
+    setAppearanceTab('BASE');
     setassetProfileId(hero.assetProfileId);
+    setVisualData(hero.visualData || '[]');
+    setSelectedWardrobeAssetIds(parseModelWardrobeItems(hero.visualData).filter((item) => item.availableInCharacterCreation && item.defaultVisible !== false).map((item) => item.assetId));
     setClassId(hero.classId);
     setSelectedHeroSlug(hero.slug);
     setStep('NAME');
@@ -321,7 +348,10 @@ export function CharacterCreateScene() {
     const num = Math.floor(Math.random() * 90 + 10);
     const randomPerk = PERKS[Math.floor(Math.random() * PERKS.length)];
 
+    setAppearanceTab('BASE');
     setassetProfileId(hero.assetProfileId);
+    setVisualData(hero.visualData || '[]');
+    setSelectedWardrobeAssetIds(parseModelWardrobeItems(hero.visualData).filter((item) => item.availableInCharacterCreation && item.defaultVisible !== false).map((item) => item.assetId));
     setClassId(hero.classId);
     setSelectedHeroSlug(hero.slug);
     setName(`${pick}${num}`);
@@ -494,7 +524,11 @@ export function CharacterCreateScene() {
     const result = await createGameCharacter({
       name: name.trim(),
       assetProfileId,
-      visualData: hero?.assetProfileId === assetProfileId ? (hero.visualData || '[]') : '[]',
+      visualData: hero
+        ? hasCreatorWardrobe
+          ? applyCharacterCreationWardrobe(visualData || hero.visualData || '{}', selectedWardrobeAssetIds)
+          : (visualData || hero.visualData || '[]')
+        : '[]',
       classId,
       initialState: JSON.stringify(initialState),
     });
@@ -546,7 +580,7 @@ export function CharacterCreateScene() {
             } else if (step === 'NAME') setStep('HERO_PICK');
             else if (step === 'APPEARANCE') setStep('NAME');
             else if (step === 'GIFT') {
-              if (detectPresentationMode(assetProfileId, allSprites) === 'modular') setStep('APPEARANCE');
+              if (detectPresentationMode(assetProfileId, allSprites) === 'modular' || hasCreatorWardrobe) setStep('APPEARANCE');
               else setStep('NAME');
             }
             else if (step === 'REVIEW') setStep('GIFT');
@@ -560,7 +594,7 @@ export function CharacterCreateScene() {
         {/* Steps Breadcrumb */}
         <div className="flex items-center gap-2 font-mono text-xs">
           {(['HERO_PICK', 'NAME', 'APPEARANCE', 'GIFT', 'REVIEW'] as CreatorStep[])
-            .filter(s => s !== 'APPEARANCE' || detectPresentationMode(assetProfileId, allSprites) === 'modular')
+            .filter(s => s !== 'APPEARANCE' || detectPresentationMode(assetProfileId, allSprites) === 'modular' || hasCreatorWardrobe)
             .map((s, i, arr) => {
             const isDone = stepToNum[step] > stepToNum[s];
             const isCur = step === s;
@@ -632,10 +666,10 @@ export function CharacterCreateScene() {
             onProceed={() => {
               soundSynth?.playActionSound?.();
               const mode = detectPresentationMode(assetProfileId, allSprites);
-              if (mode === 'modular') setStep('APPEARANCE');
+              if (mode === 'modular' || hasCreatorWardrobe) setStep('APPEARANCE');
               else setStep('GIFT');
             }}
-            presentationMode={detectPresentationMode(assetProfileId, allSprites)}
+            presentationMode={hasCreatorWardrobe ? 'modular' : detectPresentationMode(assetProfileId, allSprites)}
           />
         )}
 
@@ -669,6 +703,11 @@ export function CharacterCreateScene() {
             setSpritePage={setSpritePage}
             totalSpritePages={totalSpritePages}
             currentSprites={currentSprites}
+            wardrobeOptions={wardrobeOptions}
+            selectedWardrobeAssetIds={selectedWardrobeAssetIds}
+            setSelectedWardrobeAssetIds={setSelectedWardrobeAssetIds}
+            modelAssetId={modelAssetId}
+            wardrobePreviewAttachments={wardrobePreviewAttachments}
           />
         )}
 

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Save, Trash2, Smile, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { WorldModelSelector, WorldModelValue } from '../components/WorldModelSelector';
+import { ModelWardrobeEditor } from '../components/ModelWardrobeEditor';
 import { listNpcDefs, upsertNpcDef, deleteNpcDef } from '@/app/actions/studio/npc-def';
 import { ComponentMap } from '@/shared/game/entities/types';
 
@@ -132,6 +133,13 @@ export function NpcEditorPanel() {
     setComponent('appearance', { assetProfileId: val.type, assetId: val.assetId, scale: val.scale });
   };
 
+  const getModularAttachments = (): WorldModelValue[] =>
+    (form.componentsData.appearance?.modularAttachments || []) as WorldModelValue[];
+
+  const handleModularAttachmentsChange = (items: WorldModelValue[]) => {
+    setComponent('appearance', { modularAttachments: items });
+  };
+
   const toggleCapability = (cap: 'shopkeeper' | 'banker' | 'questGiver' | 'mercenary' | 'companion' | 'trainer', val: boolean) => {
     setComponent('capabilities', { [cap]: val });
   };
@@ -190,6 +198,14 @@ export function NpcEditorPanel() {
                 onChange={handleWorldModelChange}
                 label="NPC World Model"
               />
+              {getWorldModel().type === '3D Model' && (
+                <ModelWardrobeEditor
+                  modelAssetId={getWorldModel().assetId}
+                  value={getModularAttachments()}
+                  onChange={handleModularAttachmentsChange}
+                  title="NPC Items & Equipment"
+                />
+              )}
 
               <div className="mt-4 p-3 bg-black/40 border border-amber-900/30 rounded-lg">
                 <div className="text-[10px] font-black uppercase text-amber-500/70 mb-3 pb-1 border-b border-amber-900/30">

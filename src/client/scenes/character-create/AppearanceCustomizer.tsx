@@ -2,6 +2,11 @@ import React from 'react';
 import { ArrowRight, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 import { soundSynth } from '@/engine/sound-synth';
+import { ArchetypeModelPreview3D } from '@/web/components/the-lobby/editor/hero-studio/ArchetypeModelPreview3D';
+import type { WorldModelValue } from '@/web/components/the-lobby/editor/components/WorldModelSelector';
+import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
+
+export type AppearanceTab = 'BASE' | 'CAPE' | 'HEAD' | 'ARMOR' | 'CATALOG' | 'WARDROBE';
 
 export interface AppearanceCustomizerProps {
   name: string;
@@ -15,8 +20,8 @@ export interface AppearanceCustomizerProps {
   dynamicCapes: any[];
   dynamicHats: any[];
   dynamicArmor: any[];
-  appearanceTab: 'BASE' | 'CAPE' | 'HEAD' | 'ARMOR' | 'CATALOG';
-  setAppearanceTab: (tab: 'BASE' | 'CAPE' | 'HEAD' | 'ARMOR' | 'CATALOG') => void;
+  appearanceTab: AppearanceTab;
+  setAppearanceTab: (tab: AppearanceTab) => void;
   setAssetProfileId: (id: string) => void;
   setSelectedCape: (id: string | null) => void;
   setSelectedHat: (id: string | null) => void;
@@ -28,6 +33,11 @@ export interface AppearanceCustomizerProps {
   setSpritePage: (page: number | ((p: number) => number)) => void;
   totalSpritePages: number;
   currentSprites: string[];
+  wardrobeOptions: ModelWardrobeItem[];
+  selectedWardrobeAssetIds: string[];
+  setSelectedWardrobeAssetIds: (assetIds: string[]) => void;
+  modelAssetId?: string;
+  wardrobePreviewAttachments: WorldModelValue[];
 }
 
 export function AppearanceCustomizer({
@@ -55,6 +65,11 @@ export function AppearanceCustomizer({
   setSpritePage,
   totalSpritePages,
   currentSprites,
+  wardrobeOptions,
+  selectedWardrobeAssetIds,
+  setSelectedWardrobeAssetIds,
+  modelAssetId,
+  wardrobePreviewAttachments,
 }: AppearanceCustomizerProps) {
   return (
     <div className="w-full flex flex-col items-center">
@@ -78,9 +93,19 @@ export function AppearanceCustomizer({
             <span className="text-xs font-mono text-primary font-bold">{classId}</span>
           </div>
 
-          <div className="w-32 h-32 rounded-2xl bg-black/80 border-2 border-primary/60 flex items-center justify-center my-3 shadow-[0_0_25px_rgba(234,179,8,0.2)]">
-            <CharacterSpritePreview layers={activeLayers} size={32} scale={2.8} />
-          </div>
+          {modelAssetId ? (
+            <div className="w-full my-3 overflow-hidden rounded-2xl border border-primary/50 shadow-[0_0_25px_rgba(234,179,8,0.2)]">
+              <ArchetypeModelPreview3D
+                baseAssetId={modelAssetId}
+                modularAttachments={wardrobePreviewAttachments}
+                className="h-56"
+              />
+            </div>
+          ) : (
+            <div className="w-32 h-32 rounded-2xl bg-black/80 border-2 border-primary/60 flex items-center justify-center my-3 shadow-[0_0_25px_rgba(234,179,8,0.2)]">
+              <CharacterSpritePreview layers={activeLayers} size={32} scale={2.8} />
+            </div>
+          )}
 
           {/* Layer Badges */}
           <div className="flex flex-wrap gap-1.5 justify-center mb-3">
@@ -118,15 +143,14 @@ export function AppearanceCustomizer({
         <div className="lg:col-span-8 bg-[#050b14]/95 border border-border/50 rounded-2xl p-4 flex flex-col justify-between">
           {/* Category Tabs */}
           <div className="flex items-center gap-1.5 border-b border-border/40 pb-3 mb-3 overflow-x-auto">
-            {(
-              [
+            {([
                 { id: 'BASE', label: '1. Body Base' },
                 { id: 'CAPE', label: '2. Cape' },
                 { id: 'HEAD', label: '3. Headgear' },
                 { id: 'ARMOR', label: '4. Armor & Gear' },
                 { id: 'CATALOG', label: '5. All Sprites' },
-              ] as const
-            ).map((tab) => {
+                ...(wardrobeOptions.length > 0 ? [{ id: 'WARDROBE' as const, label: '6. Clothing & Items' }] : []),
+              ] as Array<{ id: AppearanceTab; label: string }>).map((tab) => {
               const isTabCur = appearanceTab === tab.id;
               return (
                 <button
@@ -346,6 +370,34 @@ export function AppearanceCustomizer({
                     );
                   })}
                 </div>
+              </div>
+            )}
+
+            {appearanceTab === 'WARDROBE' && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">Choose the clothing and gear this archetype allows you to customize.</p>
+                {wardrobeOptions.map((item) => {
+                  const checked = selectedWardrobeAssetIds.includes(item.assetId);
+                  return (
+                    <label key={item.assetId} className="flex cursor-pointer items-center gap-3 rounded-xl border border-border/50 bg-card/50 p-3 hover:border-primary/50">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) => setSelectedWardrobeAssetIds(
+                          event.target.checked
+                            ? [...selectedWardrobeAssetIds, item.assetId]
+                            : selectedWardrobeAssetIds.filter((id) => id !== item.assetId),
+                        )}
+                        className="rounded border-border bg-black text-primary focus:ring-primary"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold text-foreground">{item.label || item.assetId}</span>
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{item.category || 'Equipment'}</span>
+                      </span>
+                      <span className={`text-[10px] font-bold uppercase ${checked ? 'text-primary' : 'text-muted-foreground'}`}>{checked ? 'Worn' : 'Not worn'}</span>
+                    </label>
+                  );
+                })}
               </div>
             )}
           </div>

@@ -11,6 +11,7 @@ import { Plus, Save, Trash2, RefreshCw, Skull, AlertCircle, CheckCircle2 } from 
 import { useEditorStore } from '../editor-store';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { WorldModelSelector, WorldModelValue } from '../components/WorldModelSelector';
+import { ModelWardrobeEditor } from '../components/ModelWardrobeEditor';
 
 export function MonsterEditorPanel() {
   const activeGameId = useEditorStore((state) => state.activeGameId);
@@ -97,6 +98,29 @@ export function MonsterEditorPanel() {
     f('spriteOverworld', JSON.stringify(parsed));
   };
 
+  const getModularAttachments = (): WorldModelValue[] => {
+    try {
+      const parsed = JSON.parse(form.spriteOverworld || '{}');
+      if (Array.isArray(parsed.modularAttachments)) return parsed.modularAttachments;
+      return Array.isArray(parsed.worldModel?.modularAttachments) ? parsed.worldModel.modularAttachments : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const handleModularAttachmentsChange = (items: WorldModelValue[]) => {
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(form.spriteOverworld || '{}');
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) parsed = {};
+    } catch {}
+    parsed.modularAttachments = items;
+    if (parsed.worldModel && Array.isArray(parsed.worldModel.modularAttachments)) {
+      parsed.worldModel = { ...parsed.worldModel, modularAttachments: items };
+    }
+    f('spriteOverworld', JSON.stringify(parsed));
+  };
+
   const inputCls = "w-full bg-[#050b14] border border-rose-900/50 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-rose-500 transition-colors";
   const labelCls = "block text-[9px] font-black text-rose-500/80 uppercase tracking-[0.15em] mb-1 mt-3";
 
@@ -147,6 +171,14 @@ export function MonsterEditorPanel() {
                 onChange={handleWorldModelChange}
                 label="Monster World Model"
               />
+              {getWorldModel().type === '3D Model' && (
+                <ModelWardrobeEditor
+                  modelAssetId={getWorldModel().assetId}
+                  value={getModularAttachments()}
+                  onChange={handleModularAttachmentsChange}
+                  title="Monster Equipment Loadout"
+                />
+              )}
 
               <div className="mt-4 p-3 bg-black/40 border border-rose-900/30 rounded-lg">
                 <div className="text-[10px] font-black uppercase text-rose-500/70 mb-2 pb-1 border-b border-rose-900/30">

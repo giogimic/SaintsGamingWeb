@@ -57,6 +57,17 @@ export interface ComponentAppearance {
   frameIndex?: number;
   scale?: number;
   tint?: string;
+  modularAttachments?: Array<{
+    assetId: string;
+    label?: string;
+    category?: string;
+    attachmentMode?: 'RIGID_SOCKET' | 'SKINNED';
+    socket?: string;
+    defaultVisible?: boolean;
+    availableInCharacterCreation?: boolean;
+    hidesComponents?: string[];
+    [key: string]: unknown;
+  }>;
 }
 
 export interface ComponentInteract {

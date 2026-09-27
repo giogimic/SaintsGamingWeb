@@ -29,6 +29,7 @@ import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';
 import { RegistryCombobox } from '../components/RegistryCombobox';
 import { DroppableAssetInput } from '../components/DroppableAssetInput';
 import { WorldModelSelector, WorldModelValue } from '../components/WorldModelSelector';
+import { ModelWardrobeEditor } from '../components/ModelWardrobeEditor';
 import { useCreatureDefs } from '@/web/hooks/studio-data';
 
 const inputCls =
@@ -78,6 +79,29 @@ export function CreatureDefEditorPanel() {
       if (typeof parsed !== 'object') parsed = {};
     } catch {}
     parsed.worldModel = val;
+    f('spriteOverworld', JSON.stringify(parsed));
+  };
+
+  const getModularAttachments = (): WorldModelValue[] => {
+    try {
+      const parsed = JSON.parse(form.spriteOverworld || '{}');
+      if (Array.isArray(parsed.modularAttachments)) return parsed.modularAttachments;
+      return Array.isArray(parsed.worldModel?.modularAttachments) ? parsed.worldModel.modularAttachments : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const handleModularAttachmentsChange = (items: WorldModelValue[]) => {
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(form.spriteOverworld || '{}');
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) parsed = {};
+    } catch {}
+    parsed.modularAttachments = items;
+    if (parsed.worldModel && Array.isArray(parsed.worldModel.modularAttachments)) {
+      parsed.worldModel = { ...parsed.worldModel, modularAttachments: items };
+    }
     f('spriteOverworld', JSON.stringify(parsed));
   };
 
@@ -639,6 +663,14 @@ export function CreatureDefEditorPanel() {
                 onChange={handleWorldModelChange}
                 label="Creature World Model"
               />
+              {getWorldModel().type === '3D Model' && (
+                <ModelWardrobeEditor
+                  modelAssetId={getWorldModel().assetId}
+                  value={getModularAttachments()}
+                  onChange={handleModularAttachmentsChange}
+                  title="Creature Character Items"
+                />
+              )}
 
               {/* ── Battle Appearance ── */}
               <section className="mt-4 p-3 bg-black/40 rounded-lg border border-cyan-500/10">

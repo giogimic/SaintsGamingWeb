@@ -39,6 +39,9 @@ import {
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 import { MidnightTropicalBackground } from '@/client/ui/shared/MidnightTropicalBackground';
 import { useTheme } from 'next-themes';
+import { applyCharacterCreationWardrobe, parseModelWardrobeItems } from '@/shared/game/modelWardrobe';
+import type { WorldModelValue } from './editor/components/WorldModelSelector';
+import { ArchetypeModelPreview3D } from './editor/hero-studio/ArchetypeModelPreview3D';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -133,10 +136,11 @@ export function CharacterCreator({
   const [name, setName] = useState('');
   const [assetProfileId, setassetProfileId] = useState('evil-berserker-bloodaxe-male');
   const [visualData, setVisualData] = useState<string>('[]');
+  const [selectedWardrobeAssetIds, setSelectedWardrobeAssetIds] = useState<string[]>([]);
   const [selectedCape, setSelectedCape] = useState<string | null>(null);
   const [selectedHat, setSelectedHat] = useState<string | null>(null);
   const [selectedArmor, setSelectedArmor] = useState<string | null>(null);
-  const [appearanceTab, setAppearanceTab] = useState<'BASE' | 'CAPE' | 'HEAD' | 'ARMOR' | 'CATALOG'>('BASE');
+  const [appearanceTab, setAppearanceTab] = useState<'BASE' | 'CAPE' | 'HEAD' | 'ARMOR' | 'CATALOG' | 'WARDROBE'>('BASE');
 
   const [dbHeroes, setDbHeroes] = useState<DbHero[]>([]);
   const [classDefs, setClassDefs] = useState<ClassDefData[]>([]);
@@ -197,8 +201,18 @@ export function CharacterCreator({
   }, [visualData]);
 
   const is3DModel = parsedVisualData?.worldModel?.type === '3D Model' || parsedVisualData?.type === '3D Model';
+  const wardrobeItems = useMemo(() => parseModelWardrobeItems(visualData), [visualData]);
+  const wardrobeOptions = wardrobeItems.filter((item) => item.availableInCharacterCreation === true);
+  const modelAssetId = parsedVisualData?.worldModel?.type === '3D Model'
+    ? parsedVisualData.worldModel.assetId
+    : parsedVisualData?.type === '3D Model' ? parsedVisualData.assetId : undefined;
+  const wardrobePreviewAttachments = useMemo(() => wardrobeItems.filter((item) =>
+    item.availableInCharacterCreation === true
+      ? selectedWardrobeAssetIds.includes(item.assetId)
+      : item.defaultVisible !== false,
+  ) as WorldModelValue[], [wardrobeItems, selectedWardrobeAssetIds]);
   const isModular = parsedVisualData 
-    ? !!(parsedVisualData.worldModel?.isModular || parsedVisualData.isModular) 
+    ? !!(parsedVisualData.worldModel?.isModular || parsedVisualData.isModular) || wardrobeOptions.length > 0
     : detectPresentationMode(assetProfileId, allSprites) === 'modular';
 
   // Computed multi-layer stack
@@ -294,8 +308,10 @@ export function CharacterCreator({
 
   const handleHeroPick = (hero: DbHero) => {
     soundSynth?.playSelectSound?.();
+    setAppearanceTab('BASE');
     setassetProfileId(hero.assetProfileId);
     setVisualData(hero.visualData || '[]');
+    setSelectedWardrobeAssetIds(parseModelWardrobeItems(hero.visualData).filter((item) => item.availableInCharacterCreation && item.defaultVisible !== false).map((item) => item.assetId));
     setClassId(hero.classId);
     setSelectedHeroSlug(hero.slug);
     setStep('NAME');
@@ -316,7 +332,10 @@ export function CharacterCreator({
     const num = Math.floor(Math.random() * 90 + 10);
     const randomPerk = dbPerks.length > 0 ? dbPerks[Math.floor(Math.random() * dbPerks.length)] : null;
 
+    setAppearanceTab('BASE');
     setassetProfileId(hero.assetProfileId);
+    setVisualData(hero.visualData || '[]');
+    setSelectedWardrobeAssetIds(parseModelWardrobeItems(hero.visualData).filter((item) => item.availableInCharacterCreation && item.defaultVisible !== false).map((item) => item.assetId));
     setClassId(hero.classId);
     setSelectedHeroSlug(hero.slug);
     setName(`${pick}${num}`);
@@ -485,7 +504,9 @@ export function CharacterCreator({
     const result = await createGameCharacter({
       name: name.trim(),
       assetProfileId,
-      visualData,
+      visualData: wardrobeOptions.length > 0
+        ? applyCharacterCreationWardrobe(visualData, selectedWardrobeAssetIds)
+        : visualData,
       classId,
       initialState: JSON.stringify(initialState),
     });
@@ -538,7 +559,7 @@ export function CharacterCreator({
             } else if (step === 'NAME') setStep('HERO_PICK');
             else if (step === 'APPEARANCE') setStep('NAME');
             else if (step === 'GIFT') {
-              if (detectPresentationMode(assetProfileId, allSprites) === 'modular') setStep('APPEARANCE');
+              if (detectPresentationMode(assetProfileId, allSprites) === 'modular' || wardrobeOptions.length > 0) setStep('APPEARANCE');
               else setStep('NAME');
             }
             else if (step === 'REVIEW') setStep('GIFT');
@@ -552,7 +573,7 @@ export function CharacterCreator({
         {/* Steps Breadcrumb */}
         <div className="flex items-center gap-2 font-mono text-xs">
           {(['HERO_PICK', 'NAME', 'APPEARANCE', 'GIFT', 'REVIEW'] as CreatorStep[])
-            .filter(s => s !== 'APPEARANCE' || detectPresentationMode(assetProfileId, allSprites) === 'modular')
+            .filter(s => s !== 'APPEARANCE' || detectPresentationMode(assetProfileId, allSprites) === 'modular' || wardrobeOptions.length > 0)
             .map((s, i, arr) => {
             const isDone = stepToNum[step] > stepToNum[s];
             const isCur = step === s;
@@ -770,12 +791,12 @@ export function CharacterCreator({
                   disabled={!name || name.trim().length < 3}
                   onClick={() => {
                     soundSynth?.playActionSound?.();
-                    if (isModular) setStep('APPEARANCE');
+                    if (isModular || wardrobeOptions.length > 0) setStep('APPEARANCE');
                     else setStep('GIFT');
                   }}
                   className="flex items-center gap-2 px-6 py-3 rounded-xl font-mono font-bold text-xs uppercase tracking-wider bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_20px_rgba(234,179,8,0.25)] disabled:opacity-40 cursor-pointer transition-all"
                 >
-                  {isModular ? 'Proceed to Avatar' : 'Proceed to Perk'} <ArrowRight size={14} />
+                  {isModular || wardrobeOptions.length > 0 ? 'Proceed to Avatar' : 'Proceed to Perk'} <ArrowRight size={14} />
                 </button>
               </div>
             </div>
@@ -805,16 +826,15 @@ export function CharacterCreator({
                   <span className="text-xs font-mono text-primary font-bold">{classId}</span>
                 </div>
 
-                <div className="w-32 h-32 rounded-2xl bg-black/80 border-2 border-primary/60 flex items-center justify-center my-3 shadow-[0_0_25px_rgba(234,179,8,0.2)] overflow-hidden">
-                  {is3DModel ? (
-                    <div className="flex flex-col items-center text-center p-2">
-                      <Cuboid className="w-10 h-10 text-primary/60 mb-2" />
-                      <span className="text-[10px] font-mono text-muted-foreground leading-tight">3D Modular<br/>Preview</span>
-                    </div>
-                  ) : (
+                {is3DModel && modelAssetId ? (
+                  <div className="w-full my-3 overflow-hidden rounded-2xl border border-primary/50 shadow-[0_0_25px_rgba(234,179,8,0.2)]">
+                    <ArchetypeModelPreview3D baseAssetId={modelAssetId} modularAttachments={wardrobePreviewAttachments} className="h-56" />
+                  </div>
+                ) : (
+                  <div className="w-32 h-32 rounded-2xl bg-black/80 border-2 border-primary/60 flex items-center justify-center my-3 shadow-[0_0_25px_rgba(234,179,8,0.2)] overflow-hidden">
                     <CharacterSpritePreview layers={activeLayers} size={32} scale={2.8} />
-                  )}
-                </div>
+                  </div>
+                )}
 
                 {/* Layer Badges */}
                 <div className="flex flex-wrap gap-1.5 justify-center mb-3">
@@ -855,15 +875,14 @@ export function CharacterCreator({
               <div className="lg:col-span-8 bg-[#050b14]/95 border border-border/50 rounded-2xl p-4 flex flex-col justify-between">
                 {/* Category Tabs */}
                 <div className="flex items-center gap-1.5 border-b border-border/40 pb-3 mb-3 overflow-x-auto">
-                  {(
-                    [
+                  {([
                       { id: 'BASE', label: '1. Body Base' },
                       { id: 'CAPE', label: '2. Cape' },
                       { id: 'HEAD', label: '3. Headgear' },
                       { id: 'ARMOR', label: '4. Armor & Gear' },
                       { id: 'CATALOG', label: '5. All Sprites' },
-                    ] as const
-                  ).map((tab) => {
+                      ...(wardrobeOptions.length > 0 ? [{ id: 'WARDROBE' as const, label: '6. Clothing & Items' }] : []),
+                    ] as Array<{ id: 'BASE' | 'CAPE' | 'HEAD' | 'ARMOR' | 'CATALOG' | 'WARDROBE'; label: string }>).map((tab) => {
                     const isTabCur = appearanceTab === tab.id;
                     return (
                       <button
@@ -1083,6 +1102,34 @@ export function CharacterCreator({
                           );
                         })}
                       </div>
+                    </div>
+                  )}
+
+                  {appearanceTab === 'WARDROBE' && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">Choose the clothing and gear this archetype allows you to customize.</p>
+                      {wardrobeOptions.map((item) => {
+                        const checked = selectedWardrobeAssetIds.includes(item.assetId);
+                        return (
+                          <label key={item.assetId} className="flex cursor-pointer items-center gap-3 rounded-xl border border-border/50 bg-card/50 p-3 hover:border-primary/50">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(event) => setSelectedWardrobeAssetIds(
+                                event.target.checked
+                                  ? [...selectedWardrobeAssetIds, item.assetId]
+                                  : selectedWardrobeAssetIds.filter((id) => id !== item.assetId),
+                              )}
+                              className="rounded border-border bg-black text-primary focus:ring-primary"
+                            />
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-semibold text-foreground">{item.label || item.assetId}</span>
+                              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{item.category || 'Equipment'}</span>
+                            </span>
+                            <span className={`text-[10px] font-bold uppercase ${checked ? 'text-primary' : 'text-muted-foreground'}`}>{checked ? 'Worn' : 'Not worn'}</span>
+                          </label>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

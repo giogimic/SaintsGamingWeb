@@ -22,8 +22,13 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
   const modelUrl = resolveEntitySpriteUrl(model.assetId);
   if (!modelUrl) return undefined;
 
-  const modularAttachments: ModularAttachmentDef[] = Array.isArray(data.modularAttachments)
+  const configuredAttachments = Array.isArray(data.modularAttachments)
     ? data.modularAttachments
+    : Array.isArray(model.modularAttachments)
+      ? model.modularAttachments
+      : [];
+  const modularAttachments: ModularAttachmentDef[] = configuredAttachments
+      .filter((att: any) => att?.defaultVisible !== false)
       .map((att: any): ModularAttachmentDef | undefined => {
         const rawId = typeof att === 'string' ? att : att?.assetId;
         if (!rawId) return undefined;
@@ -41,8 +46,7 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
           scale: Number(att?.scale) || undefined,
         };
       })
-      .filter((a: ModularAttachmentDef | undefined): a is ModularAttachmentDef => !!a)
-    : [];
+      .filter((a: ModularAttachmentDef | undefined): a is ModularAttachmentDef => !!a);
 
   const modularModelUrls = modularAttachments.map((a: ModularAttachmentDef) => a.modelUrl);
   const scale = Number(model.scale ?? model.modelScale ?? data.scale ?? data.modelScale ?? (data.assetDefinition?.transform?.scale));
