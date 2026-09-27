@@ -41,7 +41,7 @@ import {
   embeddedAnimationChoiceId,
   getAnimationChoicesForSlot,
 } from '@/shared/game/animationCatalog';
-import { GLTFExporter, GLTFLoader } from 'three-stdlib';
+import { GLTFExporter, GLTFLoader, SkeletonUtils } from 'three-stdlib';
 import {
   loadTextureFromFile,
   detectPbrChannel,
@@ -55,7 +55,7 @@ import {
   attachTextureFilesToMaterials,
 } from '@/web/lib/modelPackage';
 import { convertFbxToGlb } from '@/web/lib/fbxConverter';
-import { RIG_FAMILIES, analyzeAnimationClip, classifySkeletonRig, type CategorizedAnimationClip } from '@/shared/game/modelRigTaxonomy';
+import { RIG_FAMILIES, STANDARD_BONE_NAMES, analyzeAnimationClip, classifySkeletonRig, type CategorizedAnimationClip } from '@/shared/game/modelRigTaxonomy';
 import { detectAssetTaxonomy, AssetTaxonomyResult, DetectedAssetCategory } from '@/web/lib/assetTaxonomy';
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -192,6 +192,10 @@ async function exportSceneAsGlb(scene: THREE.Object3D, animations: THREE.Animati
       { binary: true, embedImages: true, animations },
     );
   });
+  const loader = new GLTFLoader();
+  await new Promise<void>((resolve, reject) => {
+    loader.parse(buffer, '', () => resolve(), reject);
+  });
   return new File([new Blob([buffer], { type: 'model/gltf-binary' })], filename, { type: 'model/gltf-binary' });
 }
 
@@ -226,7 +230,7 @@ const STRUCTURE_OPTIONS: StructureOption[] = [
   },
 ];
 
-const STANDARD_BONES = ['Root', 'Pelvis', 'Spine', 'Neck', 'Head', 'Clavicle_L', 'Arm_L', 'Hand_L', 'Clavicle_R', 'Arm_R', 'Hand_R', 'Leg_L', 'Foot_L', 'Leg_R', 'Foot_R'];
+const STANDARD_BONES = STANDARD_BONE_NAMES;
 
 const COMPONENT_CATEGORY_ICONS: Record<string, string> = {
   face: '😐', hair: '💇', hat: '🎩', head_accessory: '👓',
@@ -482,7 +486,10 @@ export function AssetDefinitionStudio({
       updatedParsedGLB.categorizedAnimations.slice(firstAddedAnimationIndex).forEach((catAnim) => {
         const choiceId = embeddedAnimationChoiceId(catAnim.clipName);
         catAnim.suggestedSlots.forEach((slot) => {
-          if (catAnim.compatibilityWithModel?.isCompatible !== false && !nextAnimMap[slot]) nextAnimMap[slot] = choiceId;
+          const currentChoice = animationChoiceById.get(nextAnimMap[slot] || '');
+          if (catAnim.compatibilityWithModel?.isCompatible !== false && (!nextAnimMap[slot] || currentChoice?.sourceKind === 'animation-set')) {
+            nextAnimMap[slot] = choiceId;
+          }
         });
       });
       setAnimMap(nextAnimMap);
@@ -502,7 +509,8 @@ export function AssetDefinitionStudio({
     parsedGLB.categorizedAnimations.forEach((catAnim) => {
       const choiceId = embeddedAnimationChoiceId(catAnim.clipName);
       catAnim.suggestedSlots.forEach((slot) => {
-        if (catAnim.compatibilityWithModel?.isCompatible !== false && !nextAnimMap[slot]) {
+        const currentChoice = animationChoiceById.get(nextAnimMap[slot] || '');
+        if (catAnim.compatibilityWithModel?.isCompatible !== false && (!nextAnimMap[slot] || currentChoice?.sourceKind === 'animation-set')) {
           nextAnimMap[slot] = choiceId;
           mappedCount++;
         }
@@ -545,7 +553,7 @@ export function AssetDefinitionStudio({
       roles: roles.length > 0 ? 'complete' : 'empty',
       transform: 'complete',
       skeleton: Object.values(boneMap).filter(Boolean).length > 0 
-        ? (boneMap['Pelvis'] || boneMap['Root'] ? 'complete' : 'partial') 
+        ? (boneMap['Hips'] || boneMap['Root'] ? 'complete' : 'partial')
         : 'empty',
       attachments: attachments.length > 0 ? 'complete' : 'empty',
       animations: Object.values(animMap).filter(Boolean).length > 0
@@ -568,6 +576,15 @@ export function AssetDefinitionStudio({
   );
   const hasEmbeddedAnimations = (parsedGLB?.animations.length || 0) > 0;
   const canUseHumanoidAnimationProfiles = parsedGLB?.rigAnalysis.family === 'HUMANOID_BIPED' || !!parsedGLB?.rigAnalysis.isHumanoid;
+
+  useEffect(() => {
+    const clipCount = parsedGLB?.rawAnimations.length || 0;
+    if (clipCount > 0 && (activeAnimationIndex === undefined || activeAnimationIndex >= clipCount)) {
+      setActiveAnimationIndex(0);
+    }
+    // Only reset when the clip list changes; preserve the user's explicit "No Animation" choice.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parsedGLB?.rawAnimations.length]);
 
   // Handle automatic prepopulation of animation map based on selected profile
   useEffect(() => {
@@ -762,7 +779,16 @@ export function AssetDefinitionStudio({
           });
         });
 
-        // Fallback: If no slots were mapped and there is at least one clip, map the first to idle
+        // Prefer a real idle or locomotion clip for the default idle action.
+        if (!autoAnimMap.idle && parsed.animations.length > 0) {
+          const idleFallback = parsed.categorizedAnimations.find((catAnim) =>
+            catAnim.compatibilityWithModel?.isCompatible !== false &&
+            (catAnim.suggestedSlots.includes('idle') || catAnim.suggestedSlots.some((slot) => slot.startsWith('walk_') || slot.startsWith('run_') || slot === 'sprint')),
+          );
+          if (idleFallback) autoAnimMap.idle = embeddedAnimationChoiceId(idleFallback.clipName);
+        }
+
+        // Fallback: If no slots were mapped and there is at least one clip, map the first compatible clip to idle.
         if (Object.keys(autoAnimMap).length === 0 && parsed.animations.length > 0) {
           const firstCompatibleClip = parsed.categorizedAnimations.find(catAnim => catAnim.compatibilityWithModel?.isCompatible !== false);
           if (firstCompatibleClip) autoAnimMap['idle'] = embeddedAnimationChoiceId(firstCompatibleClip.clipName);
@@ -839,8 +865,8 @@ export function AssetDefinitionStudio({
 
     const isActor = roles.includes('Character') || roles.includes('NPC') || roles.includes('Enemy') || roles.includes('Player');
     if (isActor) {
-      if (!animMap.idle && !animationProfileId) errors.push("Actor roles require an 'Idle' animation to be mapped, or a default Animation Set selected.");
-      if (!boneMap['Root'] && !boneMap['Pelvis']) warnings.push("Actor roles typically need a Root or Pelvis bone mapped for movement.");
+      if (!animMap.idle && !animationProfileId) warnings.push("No 'Idle' action is mapped. The model can still publish, but it may not animate while standing.");
+      if (!boneMap['Root'] && !boneMap['Hips']) warnings.push("Actor roles typically need a Root or Hips bone mapped for movement.");
     }
     
     if (roles.includes('Weapon')) {
@@ -872,65 +898,43 @@ export function AssetDefinitionStudio({
         showToast?.('Merging base body and modular pieces into single composite character GLB...');
         const compositeGroup = new THREE.Group();
         compositeGroup.name = `${assetName}_Composite`;
-        compositeGroup.add(parsedGLB!.scene.clone(true));
+        compositeGroup.add(SkeletonUtils.clone(parsedGLB!.scene));
 
         for (const item of additionalItems) {
           if (item.enabled && item.scene) {
-            compositeGroup.add(item.scene.clone(true));
+            compositeGroup.add(SkeletonUtils.clone(item.scene));
           }
         }
 
-        const exporter = new GLTFExporter();
         const compositeAnimations = [
           ...(parsedGLB!.rawAnimations || []),
           ...additionalItems.filter(item => item.enabled).flatMap(item => item.animations || []),
         ];
-        const gltfBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
-          exporter.parse(
-            compositeGroup,
-            (res) => {
-              if (res instanceof ArrayBuffer) resolve(res);
-              else reject(new Error('GLTFExporter did not return an ArrayBuffer'));
-            },
-            (err) => reject(err),
-            {
-              binary: true,
-              embedImages: true,
-              animations: compositeAnimations,
-            }
-          );
-        });
-
-        uploadFile = new File(
-          [new Blob([gltfBuffer], { type: 'model/gltf-binary' })],
+        uploadFile = await exportSceneAsGlb(
+          compositeGroup,
+          compositeAnimations,
           `${file.name.replace(/\.[^/.]+$/, '')}_Composite.glb`,
-          { type: 'model/gltf-binary' }
         );
         finalStructure = 'Complete';
         if (!finalRoles.includes('Character')) finalRoles.push('Character');
       } else if (hasModifiedTextures && parsedGLB) {
         showToast?.('Baking connected textures into GLB binary...');
-        const exporter = new GLTFExporter();
-        const gltfBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
-          exporter.parse(
-            parsedGLB.scene,
-            (res) => {
-              if (res instanceof ArrayBuffer) resolve(res);
-              else reject(new Error('GLTFExporter did not return an ArrayBuffer'));
-            },
-            (err) => reject(err),
-            {
-              binary: true,
-              embedImages: true,
-              animations: parsedGLB.rawAnimations || [],
-            }
-          );
-        });
-        uploadFile = new File(
-          [new Blob([gltfBuffer], { type: 'model/gltf-binary' })],
+        uploadFile = await exportSceneAsGlb(
+          parsedGLB.scene,
+          parsedGLB.rawAnimations || [],
           file.name.replace(/\.[^/.]+$/, '.glb'),
-          { type: 'model/gltf-binary' }
         );
+      }
+
+      const preparedModularItemUploads: Array<{ item: AdditionalItem; file: File; name: string }> = [];
+      if (finalStructure === 'Modular' && publishingMode === 'MODULAR_SET') {
+        for (const item of additionalItems.filter((candidate) => candidate.enabled)) {
+          const itemBaseName = item.name || item.file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+          const itemUploadFile = item.scene
+            ? await exportSceneAsGlb(item.scene, item.animations || [], `${itemBaseName.replace(/\s+/g, '_')}.glb`)
+            : item.file;
+          preparedModularItemUploads.push({ item, file: itemUploadFile, name: itemBaseName });
+        }
       }
       
       const formData = new FormData();
@@ -1049,12 +1053,8 @@ export function AssetDefinitionStudio({
       }
 
       // Upload additional items (only when publishing as dynamic Modular Set)
-      if (finalStructure === 'Modular' && publishingMode === 'MODULAR_SET' && additionalItems.length > 0) {
-        for (const item of additionalItems) {
-          const itemBaseName = item.name || item.file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
-          const itemUploadFile = item.scene
-            ? await exportSceneAsGlb(item.scene, item.animations || [], `${itemBaseName.replace(/\s+/g, '_')}.glb`)
-            : item.file;
+      if (preparedModularItemUploads.length > 0) {
+        for (const { item, file: itemUploadFile, name: itemBaseName } of preparedModularItemUploads) {
           const itemFormData = new FormData();
           itemFormData.append('file', itemUploadFile);
           itemFormData.append('name', `${modularSetName || assetName} - ${itemBaseName}`);
@@ -1067,7 +1067,11 @@ export function AssetDefinitionStudio({
           itemFormData.append('baseBodyType', assetName);
           itemFormData.append('tags', JSON.stringify(['3d', 'model', 'modular', item.category]));
           
-          await fetch('/api/assets/upload', { method: 'POST', body: itemFormData });
+          const itemRes = await fetch('/api/assets/upload', { method: 'POST', body: itemFormData });
+          const itemData = await itemRes.json().catch(() => ({}));
+          if (!itemRes.ok || !itemData.success) {
+            throw new Error(`Base model published, but modular item "${itemBaseName}" failed to upload: ${itemData.error || itemRes.statusText || 'unknown error'}`);
+          }
         }
       }
 

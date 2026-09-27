@@ -175,7 +175,6 @@ export async function GET(req: NextRequest) {
               { type: "MODEL" },
               { type: "3D_MODEL" },
               { type: "model" },
-              { characterPresentationType: "3D_MODEL" },
               { categories: { contains: "model" } },
               { tags: { contains: "model" } },
               { tags: { contains: "3d" } },

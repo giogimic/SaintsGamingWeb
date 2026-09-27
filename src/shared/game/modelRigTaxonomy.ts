@@ -39,7 +39,7 @@ export const RIG_FAMILIES: Record<ModelRigFamily, RigFamilyDefinition> = {
     family: 'QUADRUPED_BEAST',
     label: 'Quadruped (Beast / Mount)',
     description: 'Four-legged creatures, wolves, mounts, dogs, cats, horses, and beasts.',
-    essentialBones: ['Pelvis', 'Spine', 'Head', 'FrontLeg_L', 'FrontLeg_R', 'HindLeg_L', 'HindLeg_R'],
+    essentialBones: ['Hips', 'Spine', 'Head', 'FrontLeg_L', 'FrontLeg_R', 'HindLeg_L', 'HindLeg_R'],
     recommendedBones: ['Neck', 'Tail', 'Jaw', 'FrontFoot_L', 'FrontFoot_R', 'HindFoot_L', 'HindFoot_R'],
   },
   WINGED_FLYER: {
@@ -84,6 +84,10 @@ export const RIG_FAMILIES: Record<ModelRigFamily, RigFamilyDefinition> = {
  * Unity Humanoid, 3ds Max / Bip01, VRoid, and Blender Rigify naming schemes.
  */
 const BONE_ALIAS_PATTERNS: Record<string, RegExp[]> = {
+  Root: [
+    /(^|_|:)root(_|$)/i,
+    /(^|_|:)armature(_|$)/i,
+  ],
   // Humanoid
   Hips: [
     /(^|_|:)hips(_|$)/i,
@@ -226,6 +230,40 @@ const BONE_ALIAS_PATTERNS: Record<string, RegExp[]> = {
   ],
 };
 
+/** Standardized map labels shared by rig detection and the model skeleton editor. */
+export const STANDARD_BONE_NAMES = Object.keys(BONE_ALIAS_PATTERNS);
+
+/**
+ * Animation track targets can be plain node names, namespaced Mixamo names,
+ * or paths such as `Armature.bones[Hips]`. Reduce them to useful candidates
+ * before comparing aliases so equivalent rigs do not fail on naming prefixes.
+ */
+function getBoneNameCandidates(name: string): string[] {
+  const candidates = new Set<string>();
+  const trimmed = name.trim();
+  if (!trimmed) return [];
+
+  const bracketTarget = trimmed.match(/(?:bones|skeleton)\[([^\]]+)\]/i)?.[1];
+  const propertyStripped = trimmed.replace(/\.(?:position|quaternion|rotation|scale)$/i, '');
+  const leaf = (bracketTarget || propertyStripped).split(/[|/]/).at(-1)?.trim() || '';
+  if (leaf) {
+    candidates.add(leaf);
+    candidates.add(
+      leaf
+        .replace(/^(?:mixamorig|mixamo|armature|skeleton|rig)[_.:| -]*/i, '')
+        .replace(/^mixamorig(?=[A-Z])/i, ''),
+    );
+  }
+  return [...candidates].filter(Boolean);
+}
+
+function getBoneAliases(name: string): string[] {
+  const candidates = getBoneNameCandidates(name);
+  return Object.entries(BONE_ALIAS_PATTERNS)
+    .filter(([, patterns]) => candidates.some((candidate) => patterns.some((pattern) => pattern.test(candidate))))
+    .map(([alias]) => alias);
+}
+
 export interface RigAnalysisResult {
   family: ModelRigFamily;
   label: string;
@@ -267,7 +305,7 @@ export function classifySkeletonRig(boneNames: string[] = []): RigAnalysisResult
   // Map each standard bone alias to a matching bone in the model
   for (const [standardBone, patterns] of Object.entries(BONE_ALIAS_PATTERNS)) {
     for (const boneName of boneNames) {
-      if (patterns.some((pattern) => pattern.test(boneName))) {
+      if (getBoneNameCandidates(boneName).some((candidate) => patterns.some((pattern) => pattern.test(candidate)))) {
         detectedStandardBones[standardBone] = boneName;
         break;
       }
@@ -360,8 +398,9 @@ export interface CategorizedAnimationClip {
 export function extractBoneNamesFromTracks(trackNames: string[] = []): string[] {
   const bones = new Set<string>();
   for (const track of trackNames) {
+    const bracketTarget = track.match(/(?:bones|skeleton)\[([^\]]+)\]/i)?.[1];
     const dotIdx = track.indexOf('.');
-    const rawBone = dotIdx > 0 ? track.substring(0, dotIdx) : track;
+    const rawBone = bracketTarget || (dotIdx > 0 ? track.substring(0, dotIdx) : track);
     if (rawBone) bones.add(rawBone);
   }
   return Array.from(bones);
@@ -547,18 +586,30 @@ export function analyzeAnimationClip(
   // Compute model compatibility if model's skeleton is provided
   let compatibilityWithModel: CategorizedAnimationClip['compatibilityWithModel'] = undefined;
   if (options?.modelBoneNames && options.modelBoneNames.length > 0) {
-    const modelBonesLower = new Set(options.modelBoneNames.map((b) => b.toLowerCase()));
+    const modelBoneNames = new Set(
+      options.modelBoneNames.flatMap((bone) => getBoneNameCandidates(bone).map((candidate) => candidate.toLowerCase())),
+    );
+    const modelAliases = new Set(options.modelBoneNames.flatMap(getBoneAliases));
     const missing: string[] = [];
+    const hasRecognizedAnimationBones = animatedBoneNames.some((bone) => getBoneAliases(bone).length > 0);
+    let evaluatedCount = 0;
+    let matchedCount = 0;
 
     for (const animBone of animatedBoneNames) {
-      if (!modelBonesLower.has(animBone.toLowerCase())) {
+      const exactMatch = getBoneNameCandidates(animBone).some((candidate) => modelBoneNames.has(candidate.toLowerCase()));
+      const animationAliases = getBoneAliases(animBone);
+      const aliasMatch = animationAliases.some((alias) => modelAliases.has(alias));
+      const isRecognizedBone = animationAliases.length > 0 || exactMatch;
+
+      if (!hasRecognizedAnimationBones || isRecognizedBone) evaluatedCount++;
+      if (exactMatch || aliasMatch) matchedCount++;
+      if (!exactMatch && !aliasMatch) {
         missing.push(animBone);
       }
     }
 
-    const matchedCount = animatedBoneNames.length - missing.length;
-    const score = animatedBoneNames.length > 0
-      ? Math.round((matchedCount / animatedBoneNames.length) * 100)
+    const score = evaluatedCount > 0
+      ? Math.round((matchedCount / evaluatedCount) * 100)
       : 100;
 
     compatibilityWithModel = {
