@@ -1,3 +1,14 @@
+## [2.2.034] - 2026-09-27
+- **Modular Character Package Ingestion, Multi-DCC Texture Healing & Searchable Bone Sockets**:
+  - **Modular Character Archive Ingestion**: Upgraded `unpack3DModelZipPackage` and multi-file drag-and-drop to deconstruct archives containing base body meshes, modular wardrobe/armor pieces, companion animations, and textures. Modular pieces (`hair`, `shirt`, `pants`, `shoes`, `armor`) are accurately separated from skeletal animations and mounted automatically in `AssetDefinitionStudio` with live 3D preview.
+  - **TGA Format GPU DataTexture Parsing**: Resolved critical issue where models with TGA textures loaded completely white. `TGALoader.parse()` data buffers are now wrapped in `THREE.DataTexture(..., THREE.RGBAFormat)` with mipmap generation and GPU upload flag enabled.
+  - **Anatomical Material Heuristics**: Added body-part heuristics (`head/skin/face`, `torso/chest`, `pant/leg`, `glove/wrist`, `boot/shoe`) to `textureLoader.ts` to map companion textures when DCC exports use generic material identifiers (e.g. `Material.001`).
+  - **FBX PSD/TIFF Texture URL Interception**: Added URL modifier interception in `fbxConverter.ts` for internal Photoshop `.psd` and `.tif` texture references, resolving them to companion textures or 1x1 neutral fallbacks to prevent Three.js `FBXLoader` crashes.
+  - **Searchable Autocomplete Bone & Socket Pickers**: Replaced native HTML select menus for bone mapping and weapon sockets in `AssetDefinitionStudio.tsx` with searchable `<RegistryCombobox>` components, allowing creators to type and filter through 50+ skeletal bones instantly.
+  - **Expanded Ingestion Formats**: Updated file input dialogs across the studio to accept `.png`, `.jpg`, `.jpeg`, `.webp`, `.tga`, `.dds`, `.bmp`, and `.mtl`.
+  - **Creature Editor Unified Picker**: Replaced legacy floating `SpriteBrowser` popup modal in `CreatureDefEditorPanel.tsx` with the unified single-window asset library flow.
+  - **Saints Gaming Bible Section 48**: Codified modular character deconstruction, multi-DCC texture healing, and single-window asset workflows in `.docs/Saints_Gaming_Bible.md`.
+
 ## [2.2.033] - 2026-09-27
 - **Unified Asset Upload & Model Library Interior Overhaul with Model Intent Controls**:
   - **Interior Redesign & Visual Tooling**: Rebuilt the interior of the Asset Upload window with modern Saints Gaming visual tooling, responsive cards, obsidian dark glass theme (`#050b14`), and warm gold/amber accents while maintaining the native window frame and `DraggablePanel` positioning.

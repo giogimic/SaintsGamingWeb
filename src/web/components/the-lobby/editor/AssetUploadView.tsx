@@ -110,6 +110,7 @@ export function AssetUploadView({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [companionAnimationFiles, setCompanionAnimationFiles] = useState<File[]>([]);
   const [companionTextureFiles, setCompanionTextureFiles] = useState<File[]>([]);
+  const [companionModularFiles, setCompanionModularFiles] = useState<File[]>([]);
   const [intentHint, setIntentHint] = useState<DetectedAssetCategory | undefined>(undefined);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
@@ -172,7 +173,7 @@ export function AssetUploadView({
     } else {
       setIntentHint(intent);
       if (fileInputRef.current) {
-        fileInputRef.current.accept = '.fbx,.glb,.gltf,.obj,.vox,.dae,.stl,.ply,.zip';
+        fileInputRef.current.accept = '.fbx,.glb,.gltf,.obj,.vox,.dae,.stl,.ply,.zip,.png,.jpg,.jpeg,.webp,.tga,.dds,.bmp,.mtl';
         fileInputRef.current.click();
       }
     }
@@ -194,13 +195,14 @@ export function AssetUploadView({
         const entries = Object.keys(zip.files);
 
         if (isZip3DModelPackage(entries)) {
-          setProcessingStatus('Unpacking 3D model archive with textures & animations...');
+          setProcessingStatus('Unpacking 3D model archive with textures, modular items & animations...');
           const unpacked = await unpack3DModelZipPackage(zipFile);
           setSelectedFile(unpacked.primaryModelFile);
           setPreviewUrl(unpacked.previewUrl);
           setCompanionTextureFiles(unpacked.textureFiles || []);
           setCompanionAnimationFiles(unpacked.animationFiles || []);
-          showToast?.(`Extracted 3D model with ${unpacked.textureCount} textures and ${unpacked.animationFiles.length} animations!`);
+          setCompanionModularFiles(unpacked.modularPieceFiles || []);
+          showToast?.(`Extracted 3D model with ${unpacked.textureCount} textures, ${unpacked.modularPieceFiles?.length || 0} modular pieces, and ${unpacked.animationFiles.length} animations!`);
           setIsProcessing(false);
           setProcessingStatus(null);
           return;
@@ -218,94 +220,91 @@ export function AssetUploadView({
         }
       }
 
-      // 2. If multiple files dropped together (e.g. OBJ + MTL + Textures or FBX + Textures + Animations)
+      // 2. If multiple files dropped together (e.g. OBJ + MTL + Textures or FBX + Modular Pieces + Textures)
       if (files.length > 1) {
         setProcessingStatus(`Processing ${files.length} dropped asset files...`);
         const isAnimFileName = (name: string) =>
-          /anim|walk|run|idle|jump|turn|jog|mocap|atk|attack|die|death|hit|react|claw|bite|cast|roar/i.test(name);
+          /anim|walk|run|idle|jump|turn|jog|mocap|atk|attack|die|death|hit|react|claw|bite|cast|roar|crouch|stand/i.test(name);
 
-        const allFbx = files.filter((f) => f.name.toLowerCase().endsWith('.fbx')).sort((a, b) => {
-          const aAnim = isAnimFileName(a.name);
-          const bAnim = isAnimFileName(b.name);
-          if (aAnim && !bAnim) return 1;
-          if (!aAnim && bAnim) return -1;
-          return 0;
-        });
-        const allGlb = files.filter((f) => /\.(glb|gltf)$/i.test(f.name)).sort((a, b) => {
-          const aAnim = isAnimFileName(a.name);
-          const bAnim = isAnimFileName(b.name);
-          if (aAnim && !bAnim) return 1;
-          if (!aAnim && bAnim) return -1;
-          return 0;
-        });
+        const isModularPieceName = (name: string) =>
+          /hair|beard|hat|helmet|shirt|t_shirt|top|torso|jacket|armor|pant|leg|short|shoe|boot|sneaker|slipper|glove|hand|gauntlet|glass|face|emotion|cloth|cape|cloak|wing|weapon|sword|shield/i.test(name);
 
-        const fbxFile = allFbx[0];
-        const glbFile = allGlb[0];
-        const objFile = files.find((f) => f.name.toLowerCase().endsWith('.obj'));
-        const mtlFile = files.find((f) => f.name.toLowerCase().endsWith('.mtl'));
-        const voxFile = files.find((f) => f.name.toLowerCase().endsWith('.vox'));
-        const daeFile = files.find((f) => f.name.toLowerCase().endsWith('.dae'));
-        const stlFile = files.find((f) => f.name.toLowerCase().endsWith('.stl'));
-        const plyFile = files.find((f) => f.name.toLowerCase().endsWith('.ply'));
+        const isPrimaryBodyName = (name: string) =>
+          /body|base|character|hero|full|creative_character|skeleton/i.test(name) && !isModularPieceName(name);
+
+        const all3dFiles = files.filter((f) => /\.(fbx|glb|gltf|obj|vox|dae|stl|ply)$/i.test(f.name));
         const textureFiles = files.filter((f) => /\.(png|jpe?g|webp|tga|dds|bmp)$/i.test(f.name));
-        const animFiles = files.filter((f) => f !== fbxFile && f !== glbFile && /\.(fbx|glb)$/i.test(f.name));
+        const mtlFile = files.find((f) => f.name.toLowerCase().endsWith('.mtl'));
+
+        let primaryFile = all3dFiles.find((f) => isPrimaryBodyName(f.name));
+        if (!primaryFile) {
+          const nonAnims = all3dFiles.filter((f) => !isAnimFileName(f.name));
+          primaryFile = nonAnims[0] || all3dFiles[0];
+        }
+
+        const animFiles = all3dFiles.filter((f) => f !== primaryFile && isAnimFileName(f.name));
+        const rawModularFiles = all3dFiles.filter((f) => f !== primaryFile && !isAnimFileName(f.name));
+
+        // Convert modular pieces with textures attached
+        const convertedModularFiles: File[] = [];
+        for (const rawMod of rawModularFiles) {
+          const lower = rawMod.name.toLowerCase();
+          try {
+            if (lower.endsWith('.fbx')) {
+              convertedModularFiles.push(await convertFbxToGlb(rawMod, { textureFiles }));
+            } else if (lower.endsWith('.obj')) {
+              convertedModularFiles.push(await convertObjToGlb(rawMod, { mtlFile, textureFiles }));
+            } else if (lower.endsWith('.dae')) {
+              convertedModularFiles.push(await convertDaeToGlb(rawMod, { textureFiles }));
+            } else {
+              convertedModularFiles.push(rawMod);
+            }
+          } catch {
+            convertedModularFiles.push(rawMod);
+          }
+        }
 
         setCompanionAnimationFiles(animFiles);
         setCompanionTextureFiles(textureFiles);
+        setCompanionModularFiles(convertedModularFiles);
 
-        if (fbxFile) {
-          setProcessingStatus(`Converting FBX with ${textureFiles.length} textures and ${animFiles.length} animations...`);
-          const glb = await convertFbxToGlb(fbxFile, { textureFiles });
-          setSelectedFile(glb);
-          setPreviewUrl(URL.createObjectURL(glb));
-          showToast?.(`FBX converted with ${textureFiles.length} textures connected!`);
-          setIsProcessing(false);
-          setProcessingStatus(null);
-          return;
-        } else if (objFile) {
-          setProcessingStatus(`Converting Wavefront OBJ with ${textureFiles.length} textures...`);
-          const glb = await convertObjToGlb(objFile, { mtlFile, textureFiles });
-          setSelectedFile(glb);
-          setPreviewUrl(URL.createObjectURL(glb));
-          showToast?.(`OBJ converted with ${textureFiles.length} textures!`);
-          setIsProcessing(false);
-          setProcessingStatus(null);
-          return;
-        } else if (daeFile) {
-          setProcessingStatus('Converting Collada DAE model...');
-          const glb = await convertDaeToGlb(daeFile, { textureFiles });
-          setSelectedFile(glb);
-          setPreviewUrl(URL.createObjectURL(glb));
-          setIsProcessing(false);
-          setProcessingStatus(null);
-          return;
-        } else if (voxFile) {
-          setProcessingStatus('Converting MagicaVoxel VOX model...');
-          const glb = await convertVoxToGlb(voxFile);
-          setSelectedFile(glb);
-          setPreviewUrl(URL.createObjectURL(glb));
-          setIsProcessing(false);
-          setProcessingStatus(null);
-          return;
-        } else if (stlFile) {
-          setProcessingStatus('Converting STL model...');
-          const glb = await convertStlToGlb(stlFile);
-          setSelectedFile(glb);
-          setPreviewUrl(URL.createObjectURL(glb));
-          setIsProcessing(false);
-          setProcessingStatus(null);
-          return;
-        } else if (plyFile) {
-          setProcessingStatus('Converting PLY model...');
-          const glb = await convertPlyToGlb(plyFile);
-          setSelectedFile(glb);
-          setPreviewUrl(URL.createObjectURL(glb));
-          setIsProcessing(false);
-          setProcessingStatus(null);
-          return;
-        } else if (glbFile) {
-          setSelectedFile(glbFile);
-          setPreviewUrl(URL.createObjectURL(glbFile));
+        if (primaryFile) {
+          const lower = primaryFile.name.toLowerCase();
+          if (lower.endsWith('.fbx')) {
+            setProcessingStatus(`Converting FBX with ${textureFiles.length} textures...`);
+            const glb = await convertFbxToGlb(primaryFile, { textureFiles });
+            setSelectedFile(glb);
+            setPreviewUrl(URL.createObjectURL(glb));
+          } else if (lower.endsWith('.obj')) {
+            setProcessingStatus(`Converting OBJ with ${textureFiles.length} textures...`);
+            const glb = await convertObjToGlb(primaryFile, { mtlFile, textureFiles });
+            setSelectedFile(glb);
+            setPreviewUrl(URL.createObjectURL(glb));
+          } else if (lower.endsWith('.dae')) {
+            setProcessingStatus('Converting Collada DAE model...');
+            const glb = await convertDaeToGlb(primaryFile, { textureFiles });
+            setSelectedFile(glb);
+            setPreviewUrl(URL.createObjectURL(glb));
+          } else if (lower.endsWith('.vox')) {
+            setProcessingStatus('Converting MagicaVoxel VOX model...');
+            const glb = await convertVoxToGlb(primaryFile);
+            setSelectedFile(glb);
+            setPreviewUrl(URL.createObjectURL(glb));
+          } else if (lower.endsWith('.stl')) {
+            setProcessingStatus('Converting STL model...');
+            const glb = await convertStlToGlb(primaryFile);
+            setSelectedFile(glb);
+            setPreviewUrl(URL.createObjectURL(glb));
+          } else if (lower.endsWith('.ply')) {
+            setProcessingStatus('Converting PLY model...');
+            const glb = await convertPlyToGlb(primaryFile);
+            setSelectedFile(glb);
+            setPreviewUrl(URL.createObjectURL(glb));
+          } else {
+            setSelectedFile(primaryFile);
+            setPreviewUrl(URL.createObjectURL(primaryFile));
+          }
+          showToast?.(`Processed 3D model with ${textureFiles.length} textures and ${convertedModularFiles.length} modular pieces!`);
           setIsProcessing(false);
           setProcessingStatus(null);
           return;
@@ -370,6 +369,7 @@ export function AssetUploadView({
     setPreviewUrl(null);
     setCompanionAnimationFiles([]);
     setCompanionTextureFiles([]);
+    setCompanionModularFiles([]);
     setIntentHint(undefined);
     setErrorMessage(null);
     setUploadSuccess(null);
@@ -448,6 +448,7 @@ export function AssetUploadView({
           previewUrl={previewUrl}
           companionAnimationFiles={companionAnimationFiles}
           companionTextureFiles={companionTextureFiles}
+          companionModularFiles={companionModularFiles}
           intentHint={intentHint}
           onSuccess={(asset) => {
             if (activeAssetPicker) {
@@ -764,7 +765,7 @@ export function AssetUploadView({
                       onClick={() => {
                         soundSynth?.playUiClick?.();
                         if (fileInputRef.current) {
-                          fileInputRef.current.accept = '.fbx,.glb,.gltf,.obj,.vox,.dae,.stl,.ply,.zip,.png,.jpg,.jpeg,.webp';
+                          fileInputRef.current.accept = '.fbx,.glb,.gltf,.obj,.vox,.dae,.stl,.ply,.zip,.png,.jpg,.jpeg,.webp,.tga,.dds,.bmp,.mtl';
                           fileInputRef.current.click();
                         }
                       }}

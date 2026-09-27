@@ -51,8 +51,16 @@ export async function loadTextureFromFile(file: File): Promise<THREE.Texture> {
   if (lower.endsWith('.tga')) {
     const buffer = await file.arrayBuffer();
     const loader = new TGALoader();
-    const tex = loader.parse(buffer);
+    const tgaData = loader.parse(buffer) as any;
+    const tex = new THREE.DataTexture(
+      tgaData.data,
+      tgaData.width,
+      tgaData.height,
+      THREE.RGBAFormat,
+      THREE.UnsignedByteType
+    );
     tex.flipY = false;
+    tex.generateMipmaps = true;
     tex.needsUpdate = true;
     return tex;
   }
@@ -271,6 +279,24 @@ export async function attachTextureFilesToMaterials(
             break;
           }
         }
+      }
+
+      // 3b. Anatomical Body-Part Matching (e.g. HEAD.png -> Head/Skin, PANT -> Pants, TORSO -> Torso/Chest, WRIST -> Wrist/Hand)
+      if (!targetMat) {
+        const tfLower = tf.name.toLowerCase();
+        const isHead = /head|face|skin/i.test(tfLower);
+        const isTorso = /torso|chest|body|shirt/i.test(tfLower);
+        const isPants = /pant|leg|boot|shoe/i.test(tfLower);
+        const isWrist = /wrist|glove|hand|arm/i.test(tfLower);
+
+        targetMat = materialsList.find((m) => {
+          const mName = (m.name || '').toLowerCase();
+          if (isHead && /head|face|skin/i.test(mName)) return true;
+          if (isTorso && /torso|chest|body|shirt/i.test(mName)) return true;
+          if (isPants && /pant|leg|boot|shoe/i.test(mName)) return true;
+          if (isWrist && /wrist|glove|hand|arm/i.test(mName)) return true;
+          return false;
+        });
       }
 
       // 4. Fallback: Assign to the first material that lacks this PBR channel

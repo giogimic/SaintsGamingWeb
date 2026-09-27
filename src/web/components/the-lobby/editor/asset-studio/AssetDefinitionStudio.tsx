@@ -65,6 +65,7 @@ interface Props {
   onCancel: () => void;
   companionAnimationFiles?: File[];
   companionTextureFiles?: File[];
+  companionModularFiles?: File[];
   intentHint?: DetectedAssetCategory;
 }
 
@@ -138,6 +139,7 @@ export function AssetDefinitionStudio({
   onCancel,
   companionAnimationFiles,
   companionTextureFiles,
+  companionModularFiles,
   intentHint,
 }: Props) {
   const showToast = useGameStore((s) => s.showToast);
@@ -434,6 +436,69 @@ export function AssetDefinitionStudio({
           if (addedClips > 0) {
             setHasModifiedTextures(true); // Flag to ensure GLTFExporter bakes companion animation clips!
             showToast?.(`Loaded ${addedClips} companion animation clips!`);
+          }
+        }
+
+        // Process companion modular wardrobe/armor pieces if provided (e.g. from modular zip or multi-file drop)
+        if (companionModularFiles && companionModularFiles.length > 0) {
+          const loadedModularItems: Array<{
+            id: string;
+            file: File;
+            name?: string;
+            category: string;
+            scene?: THREE.Group;
+            enabled: boolean;
+          }> = [];
+
+          const gltfLoader = new GLTFLoader();
+
+          for (const modFile of companionModularFiles) {
+            try {
+              let glbModFile = modFile;
+              const lower = modFile.name.toLowerCase();
+              if (lower.endsWith('.fbx')) {
+                glbModFile = await convertFbxToGlb(modFile, { textureFiles: companionTextureFiles });
+              } else if (lower.endsWith('.obj')) {
+                glbModFile = await convertObjToGlb(modFile, { textureFiles: companionTextureFiles });
+              }
+              const modUrl = URL.createObjectURL(glbModFile);
+              const loadedGltf = await new Promise<any>((res, rej) => gltfLoader.load(modUrl, res, undefined, rej));
+              URL.revokeObjectURL(modUrl);
+
+              const modScene = loadedGltf.scene || loadedGltf.scenes?.[0];
+              if (modScene && companionTextureFiles && companionTextureFiles.length > 0) {
+                await attachTextureFilesToMaterials(modScene, companionTextureFiles);
+              }
+
+              // Guess category
+              const n = modFile.name.toLowerCase();
+              let cat = 'shirt';
+              if (n.includes('hair') || n.includes('beard') || n.includes('moustache')) cat = 'hair';
+              else if (n.includes('hat') || n.includes('helmet') || n.includes('mask') || n.includes('head')) cat = 'hat';
+              else if (n.includes('shirt') || n.includes('torso') || n.includes('jacket') || n.includes('armor') || n.includes('costume') || n.includes('outwear')) cat = 'shirt';
+              else if (n.includes('pant') || n.includes('leg') || n.includes('short')) cat = 'pants';
+              else if (n.includes('shoe') || n.includes('boot') || n.includes('sneaker') || n.includes('slipper') || n.includes('foot') || n.includes('sock')) cat = 'shoes';
+              else if (n.includes('glove') || n.includes('hand') || n.includes('wrist') || n.includes('gauntlet')) cat = 'accessory';
+              else if (n.includes('weapon') || n.includes('sword') || n.includes('bow') || n.includes('axe') || n.includes('shield')) cat = 'accessory';
+
+              loadedModularItems.push({
+                id: `mod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                file: glbModFile,
+                name: modFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '),
+                category: cat,
+                scene: modScene,
+                enabled: true,
+              });
+            } catch (modErr) {
+              console.warn('Failed to load companion modular piece:', modFile.name, modErr);
+            }
+          }
+
+          if (loadedModularItems.length > 0) {
+            setAdditionalItems(loadedModularItems);
+            setStructure('Modular');
+            setActiveTab('items');
+            showToast?.(`Assembled ${loadedModularItems.length} modular wardrobe pieces onto character!`);
           }
         }
 
@@ -1514,14 +1579,16 @@ export function AssetDefinitionStudio({
                             {mapped && <span className="mr-1">●</span>}
                             {sb}
                           </label>
-                          <select 
-                            value={boneMap[sb] || ''} 
-                            onChange={e => setBoneMap(prev => ({...prev, [sb]: e.target.value}))}
-                            className="bg-black/50 border border-slate-700 rounded px-1.5 py-1 text-[10px] text-white cursor-pointer focus:border-amber-600/60 focus:outline-none"
-                          >
-                            <option value="">-- None --</option>
-                            {parsedGLB.bones.map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
-                          </select>
+                          <RegistryCombobox
+                            value={boneMap[sb] || ''}
+                            onChange={val => setBoneMap(prev => ({ ...prev, [sb]: val }))}
+                            options={[
+                              { value: '', label: '-- None --' },
+                              ...parsedGLB.bones.map(b => ({ value: b.name, label: b.name }))
+                            ]}
+                            placeholder="-- Select Bone --"
+                            className="mt-1"
+                          />
                         </div>
                       );
                     })}
@@ -1557,13 +1624,18 @@ export function AssetDefinitionStudio({
                           className="flex-1 bg-black/50 border border-slate-700 rounded px-2 py-1 text-white text-[11px] focus:border-amber-600/60 focus:outline-none" 
                           placeholder="e.g. RightHandMount" 
                         />
-                        <select 
-                          value={att.bone} 
-                          onChange={e => { const a = [...attachments]; a[i].bone = e.target.value; setAttachments(a); }} 
-                          className="flex-1 bg-black/50 border border-slate-700 rounded px-2 py-1 text-[11px] text-white cursor-pointer focus:border-amber-600/60 focus:outline-none"
-                        >
-                          {parsedGLB.bones.map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
-                        </select>
+                        <div className="flex-1">
+                          <RegistryCombobox
+                            value={att.bone}
+                            onChange={val => {
+                              const a = [...attachments];
+                              a[i].bone = val;
+                              setAttachments(a);
+                            }}
+                            options={parsedGLB.bones.map(b => ({ value: b.name, label: b.name }))}
+                            placeholder="Select bone..."
+                          />
+                        </div>
                         <button 
                           onClick={() => setAttachments(prev => prev.filter(x => x.id !== att.id))} 
                           className="text-red-500 hover:text-red-400 px-2 py-1 rounded hover:bg-red-950/30 transition-colors font-bold"
@@ -2075,16 +2147,16 @@ export function AssetDefinitionStudio({
                         try {
                           if (lower.endsWith('.fbx')) {
                             showToast?.(`Converting ${f.name} to GLB...`);
-                            finalFile = await convertFbxToGlb(f);
+                            finalFile = await convertFbxToGlb(f, { textureFiles: companionTextureFiles });
                           } else if (lower.endsWith('.obj')) {
                             showToast?.(`Converting ${f.name} to GLB...`);
-                            finalFile = await convertObjToGlb(f);
+                            finalFile = await convertObjToGlb(f, { textureFiles: companionTextureFiles });
                           } else if (lower.endsWith('.vox')) {
                             showToast?.(`Converting ${f.name} to GLB...`);
                             finalFile = await convertVoxToGlb(f);
                           } else if (lower.endsWith('.dae')) {
                             showToast?.(`Converting ${f.name} to GLB...`);
-                            finalFile = await convertDaeToGlb(f);
+                            finalFile = await convertDaeToGlb(f, { textureFiles: companionTextureFiles });
                           } else if (lower.endsWith('.stl')) {
                             showToast?.(`Converting ${f.name} to GLB...`);
                             finalFile = await convertStlToGlb(f);

@@ -55,8 +55,10 @@ export async function convertFbxToGlb(
           manager.addHandler(/\.tga$/i, new TGALoader(manager));
           manager.addHandler(/\.dds$/i, new DDSLoader());
 
+          const DUMMY_PNG_1X1 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+          const textureMap = new Map<string, string>();
+
           if (options?.textureFiles && options.textureFiles.length > 0) {
-            const textureMap = new Map<string, string>();
             for (const tf of options.textureFiles) {
               const url = URL.createObjectURL(tf);
               objectUrlsToRevoke.push(url);
@@ -67,27 +69,31 @@ export async function convertFbxToGlb(
                 textureMap.set(baseName, url);
               }
             }
-
-            manager.setURLModifier((rawUrl: string) => {
-              if (!rawUrl) return rawUrl;
-              const clean = decodeURIComponent(rawUrl).replace(/\\/g, '/');
-              const filename = clean.substring(clean.lastIndexOf('/') + 1).toLowerCase();
-              if (textureMap.has(filename)) {
-                return textureMap.get(filename)!;
-              }
-              const base = filename.replace(/\.[^/.]+$/, '');
-              if (base.length > 2 && textureMap.has(base)) {
-                return textureMap.get(base)!;
-              }
-              // Fuzzy suffix match (e.g. Diffuse, BaseColor, Normal)
-              for (const [key, url] of textureMap.entries()) {
-                if (key.length > 3 && (filename.includes(key) || key.includes(filename))) {
-                  return url;
-                }
-              }
-              return rawUrl;
-            });
           }
+
+          manager.setURLModifier((rawUrl: string) => {
+            if (!rawUrl) return rawUrl;
+            const clean = decodeURIComponent(rawUrl).replace(/\\/g, '/');
+            const filename = clean.substring(clean.lastIndexOf('/') + 1).toLowerCase();
+            if (textureMap.has(filename)) {
+              return textureMap.get(filename)!;
+            }
+            const base = filename.replace(/\.[^/.]+$/, '');
+            if (base.length > 2 && textureMap.has(base)) {
+              return textureMap.get(base)!;
+            }
+            // Fuzzy suffix match (e.g. Diffuse, BaseColor, Normal)
+            for (const [key, url] of textureMap.entries()) {
+              if (key.length > 3 && (filename.includes(key) || key.includes(filename))) {
+                return url;
+              }
+            }
+            // If the FBX requests an unsupported PSD or TIF/TIFF, fallback to neutral 1x1 to prevent FBXLoader crashes
+            if (/\.(psd|tif|tiff)$/i.test(filename)) {
+              return DUMMY_PNG_1X1;
+            }
+            return rawUrl;
+          });
 
           let pendingLoads = 0;
           manager.onStart = () => {

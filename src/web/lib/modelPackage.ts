@@ -21,6 +21,7 @@ export interface Unpacked3DModelPackage {
   textureCount: number;
   textureFiles?: File[];
   animationFiles: File[];
+  modularPieceFiles?: File[];
   metadata?: Record<string, any>;
 }
 
@@ -421,22 +422,36 @@ export async function unpack3DModelZipPackage(
     });
   }
 
-  // 3. Separate primary mesh from animation clips
+  // 3. Separate primary mesh, modular piece meshes, and animation clips
+  const isAnimFileName = (name: string) =>
+    /anim|walk|run|idle|jump|turn|jog|mocap|atk|attack|die|death|hit|react|claw|bite|cast|roar|crouch|stand/i.test(name);
+
+  const isModularPieceName = (name: string) =>
+    /hair|beard|hat|helmet|shirt|t_shirt|top|torso|jacket|armor|pant|leg|short|shoe|boot|sneaker|slipper|glove|hand|gauntlet|glass|face|emotion|cloth|cape|cloak|wing|weapon|sword|shield/i.test(name);
+
+  const isPrimaryBodyName = (name: string) =>
+    /body|base|character|hero|full|creative_character|skeleton/i.test(name) && !isModularPieceName(name);
+
   let primaryEntry = modelEntries[0];
   const animationEntries: string[] = [];
+  const modularPieceEntries: string[] = [];
 
   if (modelEntries.length > 1) {
-    const candidates = [...modelEntries].sort((a, b) => {
-      const aIsAnim = /anim|walk|run|idle|jump|turn|jog|mocap/i.test(a);
-      const bIsAnim = /anim|walk|run|idle|jump|turn|jog|mocap/i.test(b);
-      if (aIsAnim && !bIsAnim) return 1;
-      if (!aIsAnim && bIsAnim) return -1;
-      return 0;
-    });
-    primaryEntry = candidates[0];
+    const primaryCandidate = modelEntries.find((p) => isPrimaryBodyName(p.split('/').pop() || ''));
+    if (primaryCandidate) {
+      primaryEntry = primaryCandidate;
+    } else {
+      // Pick the non-animation mesh that isn't a modular piece or the largest file
+      const nonAnims = modelEntries.filter((p) => !isAnimFileName(p));
+      primaryEntry = nonAnims[0] || modelEntries[0];
+    }
+
     for (const other of modelEntries) {
-      if (other !== primaryEntry) {
+      if (other === primaryEntry) continue;
+      if (isAnimFileName(other)) {
         animationEntries.push(other);
+      } else {
+        modularPieceEntries.push(other);
       }
     }
   }
@@ -448,7 +463,7 @@ export async function unpack3DModelZipPackage(
     type: 'application/octet-stream',
   });
 
-  // 4. Convert to GLB based on format
+  // 4. Convert primary model to GLB based on format
   let finalGlbFile: File;
   const lowerExt = primaryFilename.toLowerCase();
 
@@ -474,7 +489,35 @@ export async function unpack3DModelZipPackage(
     finalGlbFile = rawModelFile;
   }
 
-  // 5. Convert any companion animation FBXs to GLB
+  // 5. Convert companion modular piece meshes to GLB with textures attached
+  const modularPieceFiles: File[] = [];
+  if (modularPieceEntries.length > 0) {
+    onProgress?.(`Converting ${modularPieceEntries.length} modular attachment pieces...`);
+    for (const modEntry of modularPieceEntries) {
+      try {
+        const modBlob = await zip.files[modEntry].async('blob');
+        const modName = modEntry.split('/').pop() || 'piece.fbx';
+        const rawMod = new File([modBlob], modName, { type: 'application/octet-stream' });
+        const lowerMod = modName.toLowerCase();
+        if (lowerMod.endsWith('.fbx')) {
+          const convertedMod = await convertFbxToGlb(rawMod, { textureFiles });
+          modularPieceFiles.push(convertedMod);
+        } else if (lowerMod.endsWith('.obj')) {
+          const convertedMod = await convertObjToGlb(rawMod, { mtlFile, textureFiles });
+          modularPieceFiles.push(convertedMod);
+        } else if (lowerMod.endsWith('.dae')) {
+          const convertedMod = await convertDaeToGlb(rawMod, { textureFiles });
+          modularPieceFiles.push(convertedMod);
+        } else {
+          modularPieceFiles.push(rawMod);
+        }
+      } catch (e) {
+        console.warn('Failed to convert modular piece:', modEntry, e);
+      }
+    }
+  }
+
+  // 6. Convert any companion animation FBXs to GLB
   const animationFiles: File[] = [];
   for (const animEntry of animationEntries) {
     const animBlob = await zip.files[animEntry].async('blob');
@@ -502,5 +545,6 @@ export async function unpack3DModelZipPackage(
     textureCount: textureFiles.length,
     textureFiles,
     animationFiles,
+    modularPieceFiles,
   };
 }
