@@ -107,7 +107,31 @@ export async function convertFbxToGlb(
           };
 
           const loader = new FBXLoader(manager);
-          const object = loader.parse(e.target.result as ArrayBuffer, '');
+          let object: any;
+          try {
+            if (typeof Object.defineProperty === 'function') {
+              try {
+                Object.defineProperty(Object.prototype, 'Colors', {
+                  value: { a: [] },
+                  configurable: true,
+                  writable: true,
+                });
+              } catch {}
+              try {
+                Object.defineProperty(Object.prototype, 'ColorIndex', {
+                  value: { a: [] },
+                  configurable: true,
+                  writable: true,
+                });
+              } catch {}
+            }
+            object = loader.parse(e.target.result as ArrayBuffer, '');
+          } finally {
+            try {
+              delete (Object.prototype as any).Colors;
+              delete (Object.prototype as any).ColorIndex;
+            } catch {}
+          }
 
           // Wait for any async texture loads initiated by FBXLoader
           await new Promise<void>((res) => {
@@ -227,9 +251,28 @@ export async function convertFbxToGlb(
           });
 
           // Filter animations to ensure only valid clips with populated tracks are exported
+          const isGenericClipName = (name?: string) => {
+            if (!name) return true;
+            const trimmed = name.trim().toLowerCase();
+            return /^(take\s*\d+|unreal\s*take|animstack|default\s*take|mixamo\.com|scene|untitled)$/i.test(trimmed);
+          };
+
+          const rawBase = fbxFile.name.replace(/\.[^/.]+$/, '').trim();
+          const semanticBase = rawBase
+            .replace(/^([0-9]+[_\s-])+/, '')
+            .replace(/[_-]+/g, ' ')
+            .trim() || rawBase;
+
           const rawAnimations = Array.isArray(object.animations) ? object.animations : [];
           const validAnimations = rawAnimations.filter((clip: any) => {
             return clip && Array.isArray(clip.tracks) && clip.tracks.length > 0;
+          });
+
+          // Rename generic clips (e.g. Take 001, Unreal Take) using file semantics so slots map correctly
+          validAnimations.forEach((clip: any, idx: number) => {
+            if (isGenericClipName(clip.name) || validAnimations.length === 1) {
+              clip.name = validAnimations.length === 1 ? semanticBase : `${semanticBase} ${idx + 1}`;
+            }
           });
 
           const exporter = new GLTFExporter();

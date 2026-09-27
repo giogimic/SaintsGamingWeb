@@ -32,9 +32,9 @@ export function extractCoreToken(str: string): string {
   let s = str.replace(/\.[a-zA-Z0-9]+$/, ''); // strip extension
   // strip engine/asset prefixes (e.g. T_, M_, MI_, TX_, MAT_, SKM_, SM_, S_, TEXTURE_, MATERIAL_)
   s = s.replace(/^(t|m|mi|tx|mat|skm|sm|s|texture|material)_/i, '');
-  // strip channel suffixes (e.g. _alb, _albedo, _basecolor, _col, _diff, _d, _c, _nrm, _norm, _normal, _n, _arm, _orm, _rough, _r, _metal, _m, _ao, _occ, _emissive, _e, _glow)
+  // strip channel suffixes (e.g. _alb, _albedo, _basecolor, _col, _diff, _d, _c, _bc, _nrm, _norm, _normal, _n, _nm, _arm, _orm, _mtsm, _metallicroughness, _met_rough, _roughness, _rough, _r, _metallic, _metal, _m, _ao, _occ, _emissive, _e, _glow, _h)
   s = s.replace(
-    /(_alb|_albedo|_basecolor|_col|_diff|_d|_c|_nrm|_norm|_normal|_n|_nm|_arm|_orm|_rough|_r|_metal|_m|_ao|_occ|_emissive|_e|_glow)$/i,
+    /(_alb|_albedo|_basecolor|_col|_diff|_d|_c|_bc|_nrm|_norm|_normal|_n|_nm|_arm|_orm|_mtsm|_metallicroughness|_met_rough|_roughness|_rough|_r|_metallic|_metal|_m|_ao|_occ|_emissive|_e|_glow|_h)$/i,
     ''
   );
   // return lowercase alphanumeric
@@ -106,8 +106,8 @@ export function detectPbrChannel(filename: string): PbrChannel {
   // 1. Normal Map
   if (/(normal|nrm|_norm\b|_n\b|_nm\b)/i.test(lower)) return 'normalMap';
 
-  // 2. Packed Roughness-Metallic-AO (ARM / ORM)
-  if (/(_orm\b|_arm\b)/i.test(lower)) return 'roughnessMap';
+  // 2. Packed Roughness-Metallic-AO (ARM / ORM / MTSM / MetallicRoughness)
+  if (/(_orm\b|_arm\b|_mtsm\b|mtsm|metallicroughness|met_rough)/i.test(lower)) return 'roughnessMap';
 
   // 3. Roughness
   if (/(roughness|_rough\b|_r\b)/i.test(lower)) return 'roughnessMap';
@@ -122,7 +122,7 @@ export function detectPbrChannel(filename: string): PbrChannel {
   if (/(ao\b|occlusion|_occ\b|ambient)/i.test(lower)) return 'aoMap';
 
   // 7. Base Color / Albedo / Diffuse
-  if (/(base_?color|albedo|_alb\b|diffuse|_col\b|_diff\b|_d\b|_c\b|color)/i.test(lower)) return 'map';
+  if (/(base_?color|_bc\b|albedo|_alb\b|diffuse|_col\b|_diff\b|_d\b|_c\b|color)/i.test(lower)) return 'map';
 
   // Default: Any generic image file (e.g. HEAD.png, PANT BASE.png, Textures_4.png) is Base Color!
   return 'map';

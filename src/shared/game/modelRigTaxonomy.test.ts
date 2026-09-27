@@ -4,6 +4,7 @@ import {
   extractBoneNamesFromTracks,
   inferExpandedAnimationSlots,
   analyzeAnimationClip,
+  isAnimationFileName,
 } from './modelRigTaxonomy';
 
 describe('modelRigTaxonomy', () => {
@@ -123,5 +124,26 @@ describe('modelRigTaxonomy', () => {
     expect(inferExpandedAnimationSlots('Heavy_Claw_Combo')).toContain('attack_heavy');
     expect(inferExpandedAnimationSlots('Dragon_Roar')).toContain('cast');
     expect(inferExpandedAnimationSlots('Take 001', 'DireWolf_Walk.fbx')).toContain('walk_fwd');
+  });
+
+  it('infers extended action slots (jog, bound, crouch, ability, cardcast, deflect, stumble)', () => {
+    expect(inferExpandedAnimationSlots('Jog_Fwd')).toContain('run_fwd');
+    expect(inferExpandedAnimationSlots('Hero_Bound')).toContain('bound');
+    expect(inferExpandedAnimationSlots('Crouch_Walk_Fwd')).toContain('crouch_walk');
+    expect(inferExpandedAnimationSlots('Crouch_Idle')).toContain('crouch_idle');
+    expect(inferExpandedAnimationSlots('CardCast_Fireball')).toContain('cast');
+    expect(inferExpandedAnimationSlots('Hero_Deflect')).toContain('attack_light');
+    expect(inferExpandedAnimationSlots('Hit_Stumble_Bwd')).toContain('hit_react_back');
+    expect(inferExpandedAnimationSlots('Level_Start_Intro')).toContain('level_start');
+  });
+
+  it('correctly validates animation filenames with isAnimationFileName', () => {
+    expect(isAnimationFileName('Jump_Melee.FBX')).toBe(true);
+    expect(isAnimationFileName('Attack_A_Fast.FBX')).toBe(true);
+    expect(isAnimationFileName('01_04_001_Jog.fbx')).toBe(true);
+    expect(isAnimationFileName('CardCast.fbx')).toBe(true);
+    expect(isAnimationFileName('Deflect.fbx')).toBe(true);
+    expect(isAnimationFileName('SKM_DKM_Armor.obj')).toBe(false);
+    expect(isAnimationFileName('Basemesh.fbx')).toBe(false);
   });
 });

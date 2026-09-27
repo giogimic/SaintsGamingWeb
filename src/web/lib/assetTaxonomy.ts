@@ -225,7 +225,7 @@ export function detectAssetTaxonomy(
   }
 
   // Check 4: Creature / Monster / Animal
-  const isCreatureName = /(creature|monster|dragon|beast|bat|wolf|spider|spider_model|animal|dog|cat|horse|bird|fish|golem|demon|fiend)/i.test(lower);
+  const isCreatureName = /(creature|monster|dragon|beast|bat|wolf|spider|spider_model|animal|dog|cat|horse|bird|fish|golem|demon|fiend|bear|tiger|deer|chicken|kitty|pinguin|penguin|lion)/i.test(lower);
   const isCreatureRig = rigAnalysis?.isQuadruped || rigAnalysis?.isFlyer || rigAnalysis?.family === 'QUADRUPED_BEAST' || rigAnalysis?.family === 'WINGED_FLYER';
 
   if (isCreatureName || isCreatureRig) {
@@ -247,7 +247,7 @@ export function detectAssetTaxonomy(
   }
 
   // Check 5: Environment Prop / Scenery
-  const isPropName = /(chest|chair|table|barrel|crate|tree|rock|building|lamp|door|cart|fence|pillar|bench|wagon|sign|fountain|altar)/i.test(lower);
+  const isPropName = /(chest|chair|table|barrel|crate|tree|rock|building|lamp|door|cart|fence|pillar|bench|wagon|sign|fountain|altar|book|bookcase|bed|couch|pot|shelf|carpet|clock|mirror|fireplace|radio|telescope|scroll|woodlog|bath|toilet|kitchen|fridge|closet|plate|jug|log|cloud|clouds|mushroom)/i.test(lower);
   if (isPropName) {
     return {
       category: 'prop',

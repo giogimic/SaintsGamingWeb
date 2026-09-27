@@ -368,6 +368,14 @@ export function extractBoneNamesFromTracks(trackNames: string[] = []): string[] 
 }
 
 /**
+ * Common regex tester for animation files based on naming conventions across
+ * Unreal, Mixamo, Fab, Unity, and custom DCC packages.
+ */
+export function isAnimationFileName(fileName: string): boolean {
+  return /anim|walk|run|idle|jump|turn|jog|mocap|atk|attack|die|death|hit|react|claw|bite|cast|roar|crouch|stand|bound|deflect|cardcast|ability|recovery|targeting|dodge|roll|stumble|sprint/i.test(fileName);
+}
+
+/**
  * Enhanced heuristic for inferring semantic engine animation slots from clip name,
  * companion filename, and animated tracks.
  */
@@ -405,8 +413,15 @@ export function inferExpandedAnimationSlots(
   if (has(/(^|_)sprint|dash|rush/)) {
     slots.add('sprint');
   }
+  if (has(/crouch/)) {
+    if (has(/walk|move/)) slots.add('crouch_walk');
+    else slots.add('crouch_idle');
+  }
 
-  // Jump / Aerial
+  // Jump / Aerial / Bound
+  if (has(/(^|_)bound(_|$)/)) {
+    slots.add('bound');
+  }
   if (has(/(^|_)jump|leap/)) {
     if (has(/start|takeoff|begin/)) slots.add('jump_start');
     else if (has(/land|impact/)) slots.add('jump_land');
@@ -417,14 +432,14 @@ export function inferExpandedAnimationSlots(
   }
 
   // Combat (Humanoid + Creature/Monster abilities)
-  if (has(/(^|_)(attack|atk|strike|slash|punch|kick|hit_enemy|bite|claw|tail_whip|pounce|horn|sting)(_|$)/)) {
+  if (has(/(^|_)(attack|atk|strike|slash|punch|kick|hit_enemy|bite|claw|tail_whip|pounce|horn|sting|deflect|block|parry)(_|$)/)) {
     if (has(/heavy|strong|combo|slam|special|ult/)) {
       slots.add('attack_heavy');
     } else {
       slots.add('attack_light');
     }
   }
-  if (has(/cast|magic|spell|shoot|fire|breath|roar|howl|channel/)) {
+  if (has(/cast|magic|spell|shoot|fire|breath|roar|howl|channel|ability|cardcast|targeting/)) {
     slots.add('cast');
   }
 
@@ -432,8 +447,8 @@ export function inferExpandedAnimationSlots(
   if (has(/(^|_)(death|die|dead|faint|collapse)(_|$)/)) {
     slots.add('death');
   }
-  if (has(/hit.?react|hurt|damage|take_hit|impact/)) {
-    slots.add(has(/back|rear/) ? 'hit_react_back' : 'hit_react_front');
+  if (has(/hit.?react|hurt|damage|take_hit|impact|stumble/)) {
+    slots.add(has(/back|rear|bwd/) ? 'hit_react_back' : 'hit_react_front');
   }
   if (has(/stun|daze|freeze|sleep|sleep_idle/)) {
     slots.add('stun');
@@ -448,6 +463,9 @@ export function inferExpandedAnimationSlots(
   }
   if (has(/select|hero_select|menu/)) {
     slots.add('select_screen');
+  }
+  if (has(/level_start|spawn|intro/)) {
+    slots.add('level_start');
   }
 
   // If this was the only animation embedded in the file and nothing matched, default to idle

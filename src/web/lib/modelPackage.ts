@@ -8,11 +8,13 @@ import {
   ColladaLoader,
   STLLoader,
   PLYLoader,
+  GLTFLoader,
   GLTFExporter,
   TGALoader,
   DDSLoader,
 } from 'three-stdlib';
 import { convertFbxToGlb } from './fbxConverter';
+import { isAnimationFileName } from '@/shared/game/modelRigTaxonomy';
 
 export interface Unpacked3DModelPackage {
   primaryModelFile: File;
@@ -359,6 +361,81 @@ export async function convertPlyToGlb(plyFile: File): Promise<File> {
 }
 
 /**
+ * Converts a non-binary glTF package (.gltf + companion .bin + companion textures) into a self-contained GLB binary.
+ */
+export async function convertGltfToGlb(
+  gltfFile: File,
+  options?: { companionFiles?: File[]; textureFiles?: File[] }
+): Promise<File> {
+  const manager = new THREE.LoadingManager();
+  const fileMap = new Map<string, string>();
+  const objectUrlsToRevoke: string[] = [];
+
+  const allCompanions = [
+    ...(options?.companionFiles || []),
+    ...(options?.textureFiles || []),
+  ];
+
+  for (const f of allCompanions) {
+    const url = URL.createObjectURL(f);
+    objectUrlsToRevoke.push(url);
+    const cleanName = f.name.toLowerCase();
+    fileMap.set(cleanName, url);
+    const baseName = cleanName.replace(/\.[^/.]+$/, '');
+    fileMap.set(baseName, url);
+  }
+
+  manager.setURLModifier((rawUrl: string) => {
+    if (!rawUrl) return rawUrl;
+    const clean = decodeURIComponent(rawUrl).replace(/\\/g, '/');
+    const filename = clean.substring(clean.lastIndexOf('/') + 1).toLowerCase();
+    if (fileMap.has(filename)) return fileMap.get(filename)!;
+    const base = filename.replace(/\.[^/.]+$/, '');
+    if (fileMap.has(base)) return fileMap.get(base)!;
+    for (const [key, url] of fileMap.entries()) {
+      if (filename.includes(key) || key.includes(filename)) return url;
+    }
+    return rawUrl;
+  });
+
+  const gltfText = await gltfFile.text();
+  const loader = new GLTFLoader(manager);
+
+  return new Promise((resolve, reject) => {
+    loader.parse(
+      gltfText,
+      '',
+      (gltf) => {
+        sanitizeObjectMaterials(gltf.scene);
+        const exporter = new GLTFExporter();
+        exporter.parse(
+          gltf.scene,
+          (glb) => {
+            objectUrlsToRevoke.forEach((u) => URL.revokeObjectURL(u));
+            if (glb instanceof ArrayBuffer) {
+              const blob = new Blob([glb], { type: 'model/gltf-binary' });
+              const newName = gltfFile.name.replace(/\.gltf$/i, '.glb');
+              resolve(new File([blob], newName, { type: 'model/gltf-binary' }));
+            } else {
+              reject(new Error('GLTFExporter did not return an ArrayBuffer.'));
+            }
+          },
+          (err) => {
+            objectUrlsToRevoke.forEach((u) => URL.revokeObjectURL(u));
+            reject(err);
+          },
+          { binary: true, embedImages: true, animations: gltf.animations || [] }
+        );
+      },
+      (err) => {
+        objectUrlsToRevoke.forEach((u) => URL.revokeObjectURL(u));
+        reject(err);
+      }
+    );
+  });
+}
+
+/**
  * Unpacks a 3D model package ZIP containing an FBX, OBJ, VOX, DAE, STL, PLY, or GLB model,
  * companion textures, and optional companion animation FBX clips.
  */
@@ -413,6 +490,14 @@ export async function unpack3DModelZipPackage(
     textureFiles.push(new File([blob], filename, { type: blob.type || 'image/png' }));
   }
 
+  const binEntries = entries.filter((p) => p.toLowerCase().endsWith('.bin'));
+  const binFiles: File[] = [];
+  for (const bPath of binEntries) {
+    const blob = await zip.files[bPath].async('blob');
+    const filename = bPath.split('/').pop() || 'buffer.bin';
+    binFiles.push(new File([blob], filename, { type: 'application/octet-stream' }));
+  }
+
   const mtlEntry = entries.find((p) => p.toLowerCase().endsWith('.mtl'));
   let mtlFile: File | undefined;
   if (mtlEntry) {
@@ -423,8 +508,7 @@ export async function unpack3DModelZipPackage(
   }
 
   // 3. Separate primary mesh, modular piece meshes, and animation clips
-  const isAnimFileName = (name: string) =>
-    /anim|walk|run|idle|jump|turn|jog|mocap|atk|attack|die|death|hit|react|claw|bite|cast|roar|crouch|stand/i.test(name);
+  const isAnimFileName = (name: string) => isAnimationFileName(name);
 
   const isModularPieceName = (name: string) =>
     /hair|beard|hat|helmet|shirt|t_shirt|top|torso|jacket|armor|pant|leg|short|shoe|boot|sneaker|slipper|glove|hand|gauntlet|glass|face|emotion|cloth|cape|cloak|wing|weapon|sword|shield/i.test(name);
@@ -485,6 +569,9 @@ export async function unpack3DModelZipPackage(
   } else if (lowerExt.endsWith('.ply')) {
     onProgress?.('Converting PLY model...');
     finalGlbFile = await convertPlyToGlb(rawModelFile);
+  } else if (lowerExt.endsWith('.gltf')) {
+    onProgress?.(`Bundling GLTF model with binary buffers and ${textureFiles.length} textures...`);
+    finalGlbFile = await convertGltfToGlb(rawModelFile, { companionFiles: binFiles, textureFiles });
   } else {
     finalGlbFile = rawModelFile;
   }
@@ -507,6 +594,9 @@ export async function unpack3DModelZipPackage(
           modularPieceFiles.push(convertedMod);
         } else if (lowerMod.endsWith('.dae')) {
           const convertedMod = await convertDaeToGlb(rawMod, { textureFiles });
+          modularPieceFiles.push(convertedMod);
+        } else if (lowerMod.endsWith('.gltf')) {
+          const convertedMod = await convertGltfToGlb(rawMod, { companionFiles: binFiles, textureFiles });
           modularPieceFiles.push(convertedMod);
         } else {
           modularPieceFiles.push(rawMod);

@@ -49,6 +49,7 @@ import {
   isZip3DModelPackage,
   unpack3DModelZipPackage,
   convertObjToGlb,
+  convertGltfToGlb,
   convertVoxToGlb,
   convertDaeToGlb,
   convertStlToGlb,
@@ -61,6 +62,7 @@ import {
 } from '@/shared/game/modularSpritePackage';
 import { AssetDefinitionStudio } from './asset-studio/AssetDefinitionStudio';
 import type { DetectedAssetCategory } from '@/web/lib/assetTaxonomy';
+import { isAnimationFileName } from '@/shared/game/modelRigTaxonomy';
 
 export interface AssetUploadViewProps {
   initialAssetType?: string;
@@ -223,8 +225,7 @@ export function AssetUploadView({
       // 2. If multiple files dropped together (e.g. OBJ + MTL + Textures or FBX + Modular Pieces + Textures)
       if (files.length > 1) {
         setProcessingStatus(`Processing ${files.length} dropped asset files...`);
-        const isAnimFileName = (name: string) =>
-          /anim|walk|run|idle|jump|turn|jog|mocap|atk|attack|die|death|hit|react|claw|bite|cast|roar|crouch|stand/i.test(name);
+        const isAnimFileName = (name: string) => isAnimationFileName(name);
 
         const isModularPieceName = (name: string) =>
           /hair|beard|hat|helmet|shirt|t_shirt|top|torso|jacket|armor|pant|leg|short|shoe|boot|sneaker|slipper|glove|hand|gauntlet|glass|face|emotion|cloth|cape|cloak|wing|weapon|sword|shield/i.test(name);
@@ -235,6 +236,7 @@ export function AssetUploadView({
         const all3dFiles = files.filter((f) => /\.(fbx|glb|gltf|obj|vox|dae|stl|ply)$/i.test(f.name));
         const textureFiles = files.filter((f) => /\.(png|jpe?g|webp|tga|dds|bmp)$/i.test(f.name));
         const mtlFile = files.find((f) => f.name.toLowerCase().endsWith('.mtl'));
+        const binFiles = files.filter((f) => f.name.toLowerCase().endsWith('.bin'));
 
         let primaryFile = all3dFiles.find((f) => isPrimaryBodyName(f.name));
         if (!primaryFile) {
@@ -256,6 +258,8 @@ export function AssetUploadView({
               convertedModularFiles.push(await convertObjToGlb(rawMod, { mtlFile, textureFiles }));
             } else if (lower.endsWith('.dae')) {
               convertedModularFiles.push(await convertDaeToGlb(rawMod, { textureFiles }));
+            } else if (lower.endsWith('.gltf')) {
+              convertedModularFiles.push(await convertGltfToGlb(rawMod, { companionFiles: binFiles, textureFiles }));
             } else {
               convertedModularFiles.push(rawMod);
             }
@@ -300,6 +304,11 @@ export function AssetUploadView({
             const glb = await convertPlyToGlb(primaryFile);
             setSelectedFile(glb);
             setPreviewUrl(URL.createObjectURL(glb));
+          } else if (lower.endsWith('.gltf')) {
+            setProcessingStatus(`Bundling GLTF model with binary buffers and ${textureFiles.length} textures...`);
+            const glb = await convertGltfToGlb(primaryFile, { companionFiles: binFiles, textureFiles });
+            setSelectedFile(glb);
+            setPreviewUrl(URL.createObjectURL(glb));
           } else {
             setSelectedFile(primaryFile);
             setPreviewUrl(URL.createObjectURL(primaryFile));
@@ -315,9 +324,14 @@ export function AssetUploadView({
       const file = files[0];
       const lower = file.name.toLowerCase();
 
-      if (lower.endsWith('.glb') || lower.endsWith('.gltf')) {
+      if (lower.endsWith('.glb')) {
         setSelectedFile(file);
         setPreviewUrl(URL.createObjectURL(file));
+      } else if (lower.endsWith('.gltf')) {
+        setProcessingStatus('Bundling GLTF model into binary GLB...');
+        const glb = await convertGltfToGlb(file);
+        setSelectedFile(glb);
+        setPreviewUrl(URL.createObjectURL(glb));
       } else if (lower.endsWith('.fbx')) {
         setProcessingStatus('Converting FBX model to GLB binary...');
         const glb = await convertFbxToGlb(file);

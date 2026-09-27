@@ -82,6 +82,7 @@ fix*.js
 fix*.mjs
 fix*.sh
 patch*.js
+!scripts/patch-three-stdlib.js
 temp.*
 .scripts/
 docker_build.log
