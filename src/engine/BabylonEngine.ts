@@ -98,6 +98,30 @@ import { EntityController } from './EntityController';
 import { loadAndRetargetAnimation } from './animationRetarget';
 import { AssetManager } from './assets/AssetManager';
 
+function findBabylonBone(skeleton: any, socketName: string) {
+  if (!skeleton || !skeleton.bones) return null;
+  const s = socketName.toLowerCase();
+  const matchers: Record<string, string[]> = {
+    righthandmount: ['righthand', 'hand_r', 'hand.r', 'r_hand', 'r-hand', 'wrist_r', 'bip01 r hand', 'mixamorigrighthand'],
+    lefthandmount: ['lefthand', 'hand_l', 'hand.l', 'l_hand', 'l-hand', 'wrist_l', 'bip01 l hand', 'mixamoriglefthand'],
+    twohandedgrip: ['righthand', 'hand_r', 'hand.r', 'r_hand', 'wrist_r', 'mixamorigrighthand'],
+    headmount: ['head', 'bip01 head', 'mixamorighead'],
+    chestmount: ['spine2', 'spine1', 'chest', 'spine', 'mixamorigspine2', 'mixamorigchest'],
+    sheathedback: ['spine2', 'chest', 'spine1', 'spine', 'mixamorigspine2'],
+    sheathedhip_l: ['leftupleg', 'thigh_l', 'pelvis', 'hips', 'mixamorigleftupleg'],
+    sheathedhip_r: ['rightupleg', 'thigh_r', 'pelvis', 'hips', 'mixamorigrightupleg'],
+  };
+  const patterns = matchers[s] || [s];
+  for (const pat of patterns) {
+    const found = skeleton.bones.find((b: any) => {
+      const bn = (b.name || '').toLowerCase().replace(/[^a-z0-9_.]/g, '');
+      return bn.includes(pat);
+    });
+    if (found) return found;
+  }
+  return null;
+}
+
 export interface RenderedChunk {
   mapId?: string;
   mapType?: string;
@@ -4118,6 +4142,8 @@ export class BabylonEngine {
             }
             const currentMesh = this.entityMeshes.get(entity.id)!;
             const allAnimationGroups: any[] = [];
+            let baseRoot: any = null;
+            let baseSkeleton: any = null;
             
             results.forEach((result, idx) => {
               const root = result.meshes.find((mesh) => !mesh.parent) || result.meshes[0];
@@ -4125,20 +4151,83 @@ export class BabylonEngine {
                 console.warn('[BabylonEngine] Imported model had no meshes');
                 return;
               }
-              
-              // Create a wrapper to hold our custom scale so glTF animations don't overwrite it
-              const modelWrapper = new TransformNode(`modelWrapper_${entity.id}_${idx}`, this.scene);
-              modelWrapper.parent = currentMesh;
-              
+
               const pres = entity.presentation as any;
-              const t = pres?.assetDefinition?.transform || pres?.transform || pres;
-              const rawScale = t?.scale ?? pres?.modelScale;
-              const modelScale = Number(rawScale);
-              const actorScale = Number.isFinite(modelScale) && modelScale > 0 ? modelScale : 0.8;
-              modelWrapper.scaling = new Vector3(-actorScale, actorScale, actorScale);
-              
-              root.parent = modelWrapper;
-              modelWrapper.computeWorldMatrix(true); // CRITICAL: Must compute wrapper matrix before bounds
+
+              if (idx === 0) {
+                baseRoot = root;
+                baseSkeleton = result.skeletons?.[0] || baseRoot.getChildMeshes(false).find((m: any) => m.skeleton)?.skeleton;
+
+                // Create a wrapper to hold our custom scale so glTF animations don't overwrite it
+                const modelWrapper = new TransformNode(`modelWrapper_${entity.id}_0`, this.scene);
+                modelWrapper.parent = currentMesh;
+                
+                const t = pres?.assetDefinition?.transform || pres?.transform || pres;
+                const rawScale = t?.scale ?? pres?.modelScale;
+                const modelScale = Number(rawScale);
+                const actorScale = Number.isFinite(modelScale) && modelScale > 0 ? modelScale : 0.8;
+                modelWrapper.scaling = new Vector3(-actorScale, actorScale, actorScale);
+                
+                root.parent = modelWrapper;
+                modelWrapper.computeWorldMatrix(true); // CRITICAL: Must compute wrapper matrix before bounds
+              } else {
+                // Modular attachment or socketed weapon/tool
+                const att = (pres?.modularAttachments || [])[idx - 1];
+                const isSkinned = att?.attachmentMode === 'SKINNED' || att?.isModular;
+
+                if (isSkinned && baseSkeleton) {
+                  result.meshes.forEach((m) => {
+                    (m as any).skeleton = baseSkeleton;
+                    if (!m.parent && baseRoot) {
+                      m.parent = baseRoot;
+                    }
+                  });
+                } else {
+                  const socketName = att?.socket || 'RightHandMount';
+                  const targetBone = findBabylonBone(baseSkeleton, socketName);
+                  const modelWrapper = new TransformNode(`modelWrapper_${entity.id}_${idx}`, this.scene);
+                  const boneNode = targetBone?.getTransformNode?.();
+
+                  if (boneNode) {
+                    modelWrapper.parent = boneNode;
+                  } else if (targetBone && baseRoot) {
+                    const skinnedMesh = baseRoot.getChildMeshes(false).find((m: any) => m.skeleton) || baseRoot;
+                    root.attachToBone(targetBone, skinnedMesh);
+                    modelWrapper.parent = currentMesh;
+                  } else {
+                    modelWrapper.parent = currentMesh;
+                  }
+
+                  const posX = att?.attachOffset?.position?.[0] ?? 0;
+                  const posY = att?.attachOffset?.position?.[1] ?? 0;
+                  const posZ = att?.attachOffset?.position?.[2] ?? 0;
+
+                  const rotX = ((att?.attachOffset?.rotation?.[0] ?? 0) * Math.PI) / 180;
+                  const rotY = ((att?.attachOffset?.rotation?.[1] ?? 0) * Math.PI) / 180;
+                  const rotZ = ((att?.attachOffset?.rotation?.[2] ?? 0) * Math.PI) / 180;
+
+                  const attScale = Number(att?.scale ?? att?.attachOffset?.scale ?? 1);
+                  modelWrapper.position = new Vector3(posX, posY, posZ);
+                  modelWrapper.rotation = new Vector3(rotX, rotY, rotZ);
+                  modelWrapper.scaling = new Vector3(attScale, attScale, attScale);
+
+                  root.parent = modelWrapper;
+                  modelWrapper.computeWorldMatrix(true);
+                }
+
+                // Anti-clipping: hide base components if specified
+                if (att?.hidesComponents && att.hidesComponents.length > 0 && baseRoot) {
+                  att.hidesComponents.forEach((hideWord: string) => {
+                    const hw = hideWord.toLowerCase();
+                    baseRoot.getChildMeshes(false).forEach((bm: any) => {
+                      const mn = (bm.name || '').toLowerCase();
+                      if (mn.includes(hw)) {
+                        bm.setEnabled(false);
+                      }
+                    });
+                  });
+                }
+              }
               
               if (result.animationGroups && result.animationGroups.length > 0) {
                 allAnimationGroups.push(...result.animationGroups);

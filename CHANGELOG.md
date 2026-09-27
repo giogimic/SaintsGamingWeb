@@ -1,3 +1,12 @@
+## [2.2.029] - 2026-09-27
+- **Equipment Sockets, Grip Calibration & Modular Loadout Compositor**:
+  - **Comprehensive Socket Architecture**: Added full data contracts (`GripTransform`, `STANDARD_SOCKET_OPTIONS`, `HIDEABLE_COMPONENT_OPTIONS`) to `WorldModelSelector.tsx` for hand mounts (`RightHandMount`, `LeftHandMount`, `TwoHandedGrip`), mounted accessories (`HeadMount`, `ChestMount`), and sheathed mounts (`SheathedBack`, `SheathedHip_L`, `SheathedHip_R`).
+  - **Studio Grip Calibration Viewport**: Built `ItemModelPreview3D.tsx` and integrated it directly into `ItemEditorPanel.tsx`. Creators can now calibrate XYZ position offsets (meters) and XYZ rotation offsets (degrees) in real time while viewing an interactive Three.js 3D viewport with OrbitControls and a toggleable RGB bone socket origin gizmo (`AxesHelper`).
+  - **Composite Character 3D Studio Preview**: Built `ArchetypeModelPreview3D.tsx` and integrated it into `ArchetypeEditorWorkspace.tsx`. Creators can now view full composite 3D characters with base body meshes, modular attachments (clothing and armor sets), equipped starting weapons, live animation testing (with clip selector, play/pause, and turntable rotation), and skeleton bone helpers.
+  - **Skinned Mesh & Rigid Socket Engine Integration**: Upgraded `BabylonEngine.ts` to dynamically handle both skinned attachments (sharing the base character skeleton for clothing/armor deformation) and rigid bone sockets (mounting weapons/tools/helmets to bones with calibrated offsets via `attachToBone` and bone transform nodes).
+  - **Anti-Clipping Component Hiding**: Added component suppression matrix (`hair`, `beard`, `head_accessory`, `torso`, `legs`, `feet`) in Studio and runtime renderer, automatically hiding base body meshes when covered by armor or helmets to prevent clipping.
+  - **Saints Gaming Bible Expansion**: Documented Section 46 ("Equipment Sockets, Grip Calibration & Modular Loadout Compositor") codifying socket contracts, attachment modes, anti-clipping matrices, and runtime bone retargeting rules.
+
 ## [2.2.028] - 2026-09-27
 - **Expanded 3D Model Format Pipeline & PBR Texture Suite**:
   - **Comprehensive 3D Format Converters**: Added native client-side GLB conversion for popular 3D game asset formats: FBX, Wavefront OBJ (+ MTL), MagicaVoxel VOX (preserving voxel vertex colors for Cube World / Minecraft style voxel assets), Collada DAE, Stereolithography STL, and Stanford PLY.

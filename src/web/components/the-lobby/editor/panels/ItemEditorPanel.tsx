@@ -15,6 +15,7 @@ import type { ItemTemplate } from '@prisma/client';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';
 import { WorldModelSelector, WorldModelValue } from '../components/WorldModelSelector';
+import { ItemModelPreview3D } from '../components/ItemModelPreview3D';
 
 function itemResourceKey(form: ItemTemplateInput, activeSlug: string | null): string {
   if (!activeSlug || !form.slug) return 'item:new';
@@ -367,20 +368,36 @@ export const ItemEditorPanel: React.FC = () => {
           </label>
         </div>
 
-        <div className="bg-[#0a101b] border border-[#806f47]/20 rounded-xl p-4">
-          <WorldModelSelector
-            value={(() => {
-              try {
-                return JSON.parse(formData.visualData || '{"type":"2D Sprite", "assetId":""}');
-              } catch {
-                return { type: '2D Sprite', assetId: '' };
-              }
-            })()}
-            onChange={(val) => setFormData({ ...formData, visualData: JSON.stringify(val) })}
-            label="Item Asset Representation"
-            description="The 3D model or 2D sprite used when the item is dropped in the world."
-          />
-        </div>
+        {(() => {
+          let currentVisual: WorldModelValue = { type: '2D Sprite', assetId: '' };
+          try {
+            currentVisual = JSON.parse(formData.visualData || '{"type":"2D Sprite", "assetId":""}');
+          } catch {}
+
+          return (
+            <div className="bg-[#0a101b] border border-[#806f47]/20 rounded-xl p-4 space-y-4">
+              <WorldModelSelector
+                value={currentVisual}
+                onChange={(val) => setFormData({ ...formData, visualData: JSON.stringify(val) })}
+                label="Item Asset Representation"
+                description="The 3D model or 2D sprite used when the item is dropped or equipped in the world."
+                allowSocketConfig={true}
+              />
+
+              {currentVisual.type === '3D Model' && currentVisual.assetId && (
+                <div className="pt-3 border-t border-[#806f47]/20">
+                  <ItemModelPreview3D
+                    assetId={currentVisual.assetId}
+                    socket={currentVisual.socket}
+                    attachOffset={currentVisual.attachOffset}
+                    modelScale={currentVisual.scale}
+                    className="h-60"
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         <div className="flex gap-4 items-center">
           <div className="flex-1">

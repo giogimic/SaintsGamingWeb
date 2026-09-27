@@ -10,11 +10,12 @@ import { getAllCharacterClasses } from '@/app/actions/game/character-classes';
 import { useEditorStore } from '../editor-store';
 import {
   Plus, Trash2, Save, RefreshCw, Eye, EyeOff, CheckCircle2, AlertCircle,
-  FileJson, Copy, Check, Users, ImageIcon, ChevronLeft, Swords, Map as MapIcon, Package, UserCircle
+  FileJson, Copy, Check, Users, ImageIcon, ChevronLeft, Swords, Map as MapIcon, Package, UserCircle, Cuboid
 } from 'lucide-react';
 import { WorldModelSelector, WorldModelValue } from '../components/WorldModelSelector';
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 import { InventoryPicker } from '../components/InventoryPicker';
+import { ArchetypeModelPreview3D } from './ArchetypeModelPreview3D';
 import { cn } from '@/shared/lib/utils';
 
 const EMPTY_HERO: StarterHeroData = {
@@ -280,22 +281,43 @@ export function ArchetypeEditorWorkspace() {
                   {/* Character Preview */}
                   <div className="flex justify-center items-center h-28 mb-4 relative z-0">
                     <div className="absolute inset-0 bg-gradient-to-t from-white/5 to-transparent rounded-xl" />
-                    {hero.assetProfileId ? (
-                      <CharacterSpritePreview
-                        assetProfileId={hero.assetProfileId}
-                        assetBundleId={hero.assetBundleId}
-                        layers={(() => {
-                          try {
-                            const arr = JSON.parse(hero.visualData || '[]');
-                            return arr.length > 0 ? [hero.assetProfileId, ...arr.map((l: any) => l.assetProfileId)] : undefined;
-                          } catch { return undefined; }
-                        })()}
-                        size={48}
-                        scale={1.8}
-                      />
-                    ) : (
-                      <Users size={32} className="text-slate-700" />
-                    )}
+                    {(() => {
+                      let is3D = false;
+                      try {
+                        const parsed = JSON.parse(hero.visualData || '{}');
+                        if (parsed.worldModel?.type === '3D Model' || (!Array.isArray(parsed) && parsed.type === '3D Model')) {
+                          is3D = true;
+                        }
+                      } catch {}
+
+                      if (is3D) {
+                        return (
+                          <div className="flex flex-col items-center justify-center gap-1.5 z-10">
+                            <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+                              <Cuboid size={24} />
+                            </div>
+                            <span className="text-[9px] font-bold text-cyan-400/80 uppercase tracking-widest">3D Model</span>
+                          </div>
+                        );
+                      }
+
+                      return hero.assetProfileId ? (
+                        <CharacterSpritePreview
+                          assetProfileId={hero.assetProfileId}
+                          assetBundleId={hero.assetBundleId}
+                          layers={(() => {
+                            try {
+                              const arr = JSON.parse(hero.visualData || '[]');
+                              return arr.length > 0 ? [hero.assetProfileId, ...arr.map((l: any) => l.assetProfileId)] : undefined;
+                            } catch { return undefined; }
+                          })()}
+                          size={48}
+                          scale={1.8}
+                        />
+                      ) : (
+                        <Users size={32} className="text-slate-700" />
+                      );
+                    })()}
                   </div>
 
                   {/* Details */}
@@ -480,16 +502,29 @@ export function ArchetypeEditorWorkspace() {
                 <ImageIcon className="text-cyan-400/80" size={16} />
                 <h3 className="text-xs font-black text-cyan-400/80 uppercase tracking-widest">Asset Selector</h3>
               </div>
+              {/* 3D Composite Character Live Preview */}
+              {getWorldModel().type === '3D Model' && getWorldModel().assetId && (
+                <div className="pb-2">
+                  <ArchetypeModelPreview3D
+                    baseAssetId={getWorldModel().assetId}
+                    modelScale={getWorldModel().scale ?? 0.8}
+                    modularAttachments={getModularAttachments()}
+                    className="h-80"
+                  />
+                </div>
+              )}
+
               <WorldModelSelector
                 value={getWorldModel()}
                 onChange={handleWorldModelChange}
                 label="Base World Representation"
+                allowSocketConfig={true}
               />
 
               {getWorldModel().isModular && (
                 <div className="mt-4 pt-4 border-t border-cyan-500/10 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-[10px] font-bold text-cyan-500/60 uppercase">Modular Attachments (Sets)</h4>
+                    <h4 className="text-[10px] font-bold text-cyan-500/60 uppercase">Modular Attachments (Sets & Equipment)</h4>
                     <button 
                       onClick={() => handleModularAttachmentsChange([...getModularAttachments(), { type: '3D Model', assetId: '', isModular: true }])}
                       className="px-2 py-1 bg-cyan-900/50 hover:bg-cyan-800 text-cyan-200 text-[10px] rounded border border-cyan-500/30"
@@ -518,6 +553,7 @@ export function ArchetypeEditorWorkspace() {
                             handleModularAttachmentsChange(newArr);
                           }}
                           label={`Attachment ${idx + 1}`}
+                          allowSocketConfig={true}
                         />
                       </div>
                     ))}

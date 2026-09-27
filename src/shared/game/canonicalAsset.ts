@@ -48,6 +48,24 @@ export interface CharacterPresentationDef {
   attachmentPoints?: string[]; // e.g. ["right_hand", "left_hand", "back"]
 }
 
+export interface GripTransform {
+  position?: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: number;
+}
+
+export interface ModularAttachmentDef {
+  modelUrl: string;
+  assetId?: string;
+  socket?: string;
+  attachOffset?: GripTransform;
+  sheathedSocket?: string;
+  sheathedOffset?: GripTransform;
+  attachmentMode?: 'RIGID_SOCKET' | 'SKINNED';
+  hidesComponents?: string[];
+  scale?: number;
+}
+
 export interface PresentationDefinition {
   mode: "2D" | "2.5D" | "3D";
   
@@ -62,6 +80,7 @@ export interface PresentationDefinition {
   depthLayer?: number;
   modelUrl?: string;
   modularModelUrls?: string[];
+  modularAttachments?: ModularAttachmentDef[];
   /** Multiplier applied by this actor over the model asset's import scale. */
   modelScale?: number;
   /**
