@@ -964,8 +964,9 @@ export function AssetDefinitionStudio({
       if (finalStructure === 'ModularItem') {
         formData.append('isModularComponent', 'true');
         formData.append('componentCategory', componentCategory);
-        if (baseBodyType.trim()) {
-          formData.append('baseBodyType', baseBodyType.trim());
+        const selectedBodyType = baseBodyType.trim().toLowerCase();
+        if (selectedBodyType && selectedBodyType !== 'unspecified') {
+          formData.append('baseBodyType', selectedBodyType);
         }
       }
       
@@ -1064,7 +1065,10 @@ export function AssetDefinitionStudio({
           itemFormData.append('characterPresentationType', '3D_MODEL');
           itemFormData.append('isModularComponent', 'true');
           itemFormData.append('componentCategory', item.category);
-          itemFormData.append('baseBodyType', assetName);
+          const selectedBodyType = baseBodyType.trim().toLowerCase();
+          if (selectedBodyType && selectedBodyType !== 'unspecified') {
+            itemFormData.append('baseBodyType', selectedBodyType);
+          }
           itemFormData.append('tags', JSON.stringify(['3d', 'model', 'modular', item.category]));
           
           const itemRes = await fetch('/api/assets/upload', { method: 'POST', body: itemFormData });
@@ -1456,6 +1460,19 @@ export function AssetDefinitionStudio({
                         placeholder="e.g. KnightArmorSet" 
                         className="w-full bg-black/50 border border-amber-900/40 rounded px-2 py-1.5 text-white placeholder:text-slate-600 focus:border-amber-600/60 focus:outline-none" 
                       />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-amber-200/70 mb-1">Base Body Type for Included Pieces</label>
+                      <select
+                        value={baseBodyType}
+                        onChange={e => setBaseBodyType(e.target.value)}
+                        className="w-full bg-black/50 border border-amber-900/40 rounded px-2 py-1.5 text-white cursor-pointer focus:border-amber-600/60 focus:outline-none"
+                      >
+                        {bodyTypeEntries.map(([key, meta]) => (
+                          <option key={key} value={key}>{meta.label}</option>
+                        ))}
+                      </select>
+                      <div className="text-[9px] text-slate-500 mt-1">Included modular items inherit this fit type. Choose Unspecified / Any when the fit is not limited to one body type.</div>
                     </div>
                     <div className="text-[9px] text-amber-200/50 leading-tight flex items-start gap-1">
                       <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" />
