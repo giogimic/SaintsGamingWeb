@@ -43,7 +43,7 @@ export function onMoveAck(data: MoveAckPayload): void {
  */
 export function onPositionCorrection(data: PositionCorrectionPayload): void {
   usePlayerStore.getState().setPlayerPosition(
-    { x: data.x, y: data.y },
+    { x: data.x, y: data.y, ...(data.z !== undefined ? { z: data.z } : {}) },
     data.direction,
     false,
   );

@@ -9,6 +9,9 @@ import { PortalTransitSystem } from './PortalTransitSystem';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { mapMesher } from '../MapMesher';
 import { cameraManager } from '../CameraManager';
+import { SweptAABBController } from '@/shared/game/voxel/VoxelCollision';
+
+const voxelMovementController = new SweptAABBController();
 
 export class LocalMovementSystem {
   private lastMoveCommandTime = 0;
@@ -76,7 +79,10 @@ export class LocalMovementSystem {
     let newDirection = '';
 
     const activeMapData = useWorldStore.getState().activeMapData;
-    const is3D = activeMapData && (activeMapData.mapType === 'VOXEL' || activeMapData.mapType === 'FRACTAL' || activeMapData.mapType === 'HYBRID');
+    const mapType = String(activeMapData?.mapType || 'TILE').toUpperCase();
+    const is3D = mapType === 'VOXEL' || mapType === 'FRACTAL' || mapType === 'HYBRID';
+    const voxelWorld = is3D ? mapMesher.getVoxelWorld() : null;
+    const simulate3DPhysics = is3D && !!voxelWorld;
 
     if (inputManager.isAnyKeyPressed(KEYBINDS.MOVE_UP)) {
       inputZ = 1;
@@ -98,7 +104,27 @@ export class LocalMovementSystem {
     const playerStore = usePlayerStore.getState();
     const currentPos = playerStore.player.position;
 
-    if (isMoving) {
+    if (!isMoving && !simulate3DPhysics) {
+      if (playerStore.player.isMoving) {
+        playerStore.setPlayerPosition(currentPos, undefined, false);
+        socketManager.emit('player_move' as any, {
+          x: currentPos.x,
+          y: currentPos.y,
+          z: currentPos.z,
+          direction: playerStore.player.direction,
+        });
+        this.lastMoveCommandTime = now;
+      }
+      return;
+    }
+
+    let velocityX = 0;
+    let velocityY = 0;
+    let velocityZ = 0;
+    const dtSec = Math.max(0, dt / 1000.0);
+    const wasGrounded = this.isGrounded;
+
+    {
       let dx = 0;
       let dz = 0;
       let dy = 0;
@@ -121,19 +147,22 @@ export class LocalMovementSystem {
         const moveZ = -normX * Math.sin(yaw) + normZ * Math.cos(yaw);
         
         // Convert to delta-time movement (dt is in milliseconds)
-        const dtSec = dt / 1000.0;
         dx = moveX * speed * dtSec;
         dz = moveZ * speed * dtSec;
 
         // Jump
-        if (inputManager.isAnyKeyPressed(KEYBINDS.JUMP) && this.isGrounded) {
+        if (simulate3DPhysics && inputManager.isAnyKeyPressed(KEYBINDS.JUMP) && this.isGrounded) {
           this.verticalVelocity = 12.0; // Jump force
           this.isGrounded = false;
         }
 
-        // Gravity
-        this.verticalVelocity -= 30.0 * dtSec; // Gravity acceleration
-        dy = this.verticalVelocity * dtSec;
+        if (simulate3DPhysics) {
+          this.verticalVelocity -= 30.0 * dtSec; // Gravity acceleration
+          dy = this.verticalVelocity * dtSec;
+        }
+        velocityX = moveX * speed;
+        velocityY = this.verticalVelocity;
+        velocityZ = moveZ * speed;
       } else {
         // Discrete 2D grid movement
         if (now - this.lastMoveCommandTime < this.MOVE_THROTTLE_MS) return;
@@ -148,30 +177,21 @@ export class LocalMovementSystem {
 
       // 3D Collision and Step Logic
       if (is3D) {
-        const activeMapData = useWorldStore.getState().activeMapData;
-        const voxelWorld = activeMapData ? mapMesher.getVoxelWorld() : null;
-        
         if (voxelWorld) {
-          // Horizontal collision: Check terrain height at target vs current feet (y)
-          const targetFloorY = voxelWorld.getTopSolidVoxelY(targetX, targetZ) + voxelWorld.originOffsetY;
-          
-          // Auto-step height is 0.6 blocks. If the target floor is higher than that, we are blocked.
-          if (targetFloorY > currentPos.y + 0.6) {
-             dx = 0;
-             dz = 0;
-             targetX = currentPos.x;
-             targetZ = currentPos.z || 0;
-          }
-
-          // Vertical collision (Ground check)
-          const currentFloorY = voxelWorld.getTopSolidVoxelY(targetX, targetZ) + voxelWorld.originOffsetY;
-          if (targetY <= currentFloorY) {
-            targetY = currentFloorY;
-            this.isGrounded = true;
-            this.verticalVelocity = 0;
-          } else {
-            this.isGrounded = false;
-          }
+          const collision = voxelMovementController.simulateMove(
+            voxelWorld,
+            { x: currentPos.x, y: currentPos.y, z: currentPos.z || 0 },
+            { x: velocityX, y: velocityY, z: velocityZ },
+            dtSec,
+          );
+          targetX = collision.position.x;
+          targetY = collision.position.y;
+          targetZ = collision.position.z;
+          velocityX = collision.velocity.x;
+          velocityY = collision.velocity.y;
+          velocityZ = collision.velocity.z;
+          this.verticalVelocity = collision.velocity.y;
+          this.isGrounded = collision.isGrounded;
         }
       } else {
         // 2D collision
@@ -188,15 +208,20 @@ export class LocalMovementSystem {
       }
 
       // Update local position smoothly
-      playerStore.setPlayerPosition({ x: targetX, y: targetY, z: targetZ }, newDirection as any, true);
+      const direction = newDirection || playerStore.player.direction;
+      playerStore.setPlayerPosition({ x: targetX, y: targetY, z: targetZ }, direction as any, isMoving);
 
       // Throttle network broadcast
-      if (now - this.lastMoveCommandTime > this.MOVE_THROTTLE_MS) {
+      const isAirborne = simulate3DPhysics && !this.isGrounded;
+      const verticalPositionChanged = simulate3DPhysics && Math.abs(targetY - currentPos.y) > 1e-4;
+      const groundStateChanged = simulate3DPhysics && wasGrounded !== this.isGrounded;
+      const shouldBroadcast = isMoving || isAirborne || verticalPositionChanged || groundStateChanged;
+      if (shouldBroadcast && now - this.lastMoveCommandTime > this.MOVE_THROTTLE_MS) {
         this.lastMoveCommandTime = now;
         
         const multiStore = useMultiplayerStore.getState();
         const seq = multiStore.incrementMoveSeq();
-        multiStore.addPendingMove({
+        if (!is3D) multiStore.addPendingMove({
             seq,
             direction: newDirection as any,
             predictedPos: { x: targetX, y: targetY, z: targetZ }
@@ -218,25 +243,28 @@ export class LocalMovementSystem {
 
         if (this.portalTransit.activeTransit) {
           this.portalTransit.broadcastMovement(targetPos3D, newDirection);
+        } else if (is3D) {
+          socketManager.emit('input' as any, {
+            type: 'MOVE_3D',
+            sequence: seq,
+            x: targetX,
+            y: targetY,
+            z: targetZ,
+            vx: velocityX,
+            vy: velocityY,
+            vz: velocityZ,
+            direction,
+            timestamp: now,
+          });
         } else {
           socketManager.emit('player_move' as any, {
             x: targetX,
             y: targetY,
-            z: targetZ,
             direction: newDirection,
             seq
           });
         }
       }
-    } else if (!isMoving && playerStore.player.isMoving) {
-      playerStore.setPlayerPosition(currentPos, undefined, false);
-      socketManager.emit('player_move' as any, {
-        x: currentPos.x,
-        y: currentPos.y,
-        z: currentPos.z,
-        direction: playerStore.player.direction
-      });
-      this.lastMoveCommandTime = now;
     }
   }
 }

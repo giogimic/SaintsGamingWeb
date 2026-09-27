@@ -338,7 +338,7 @@ export class CameraManager {
     if (y === undefined) {
       const world = mapMesher.getVoxelWorld();
       if (world) {
-        terrainY = world.getTopSolidVoxelY(x, z) + world.originOffsetY;
+        terrainY = world.getTopSolidVoxelY(x, z) + 1 + world.originOffsetY;
       }
     }
     
@@ -414,14 +414,16 @@ export class CameraManager {
     const player = usePlayerStore.getState().player;
     if (player && player.position) {
       const activeMap = useWorldStore.getState().activeMapData;
-      const is3D = activeMap && (activeMap.mapType === 'VOXEL' || activeMap.mapType === 'FRACTAL' || activeMap.mapType === 'HYBRID');
+      const mapType = String(activeMap?.mapType || 'TILE').toUpperCase();
+      const is3D = mapType === 'VOXEL' || mapType === 'FRACTAL' || mapType === 'HYBRID';
       
       const px = player.position.x;
       const pz = is3D ? (player.position.z !== undefined ? player.position.z : player.position.y) : -player.position.y;
       const py = is3D ? (player.position.z !== undefined ? player.position.y : undefined) : undefined;
 
       if (!this.snapped) {
-        this.snapCameraTo(px, pz, py);
+        const world = mapMesher.getVoxelWorld();
+        this.snapCameraTo(px, pz, py !== undefined && world ? py + world.originOffsetY : py);
         return;
       }
 
@@ -433,11 +435,12 @@ export class CameraManager {
 
       let terrainY = this.targetY;
       if (py !== undefined) {
-        terrainY = py;
+        const world = mapMesher.getVoxelWorld();
+        terrainY = py + (world?.originOffsetY ?? 0);
       } else {
         const world = mapMesher.getVoxelWorld();
         if (world) {
-          terrainY = world.getTopSolidVoxelY(px, pz) + world.originOffsetY;
+          terrainY = world.getTopSolidVoxelY(px, pz) + 1 + world.originOffsetY;
         }
       }
       

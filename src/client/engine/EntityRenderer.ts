@@ -618,7 +618,8 @@ export class EntityRenderer {
       }
 
       const activeMap = useWorldStore.getState().activeMapData;
-      const is3D = activeMap && (activeMap.mapType === 'VOXEL' || activeMap.mapType === 'FRACTAL' || activeMap.mapType === 'HYBRID');
+      const mapType = String(activeMap?.mapType || 'TILE').toUpperCase();
+      const is3D = mapType === 'VOXEL' || mapType === 'FRACTAL' || mapType === 'HYBRID';
       const is3DModel = Boolean(data.modelUrl || data.presentationType === '3D_MODEL');
 
       sprite = {
@@ -654,7 +655,8 @@ export class EntityRenderer {
 
     // Update target position (interpolation happens in update loop)
     const activeMap = useWorldStore.getState().activeMapData;
-    const is3D = activeMap && (activeMap.mapType === 'VOXEL' || activeMap.mapType === 'FRACTAL' || activeMap.mapType === 'HYBRID');
+    const mapType = String(activeMap?.mapType || 'TILE').toUpperCase();
+    const is3D = mapType === 'VOXEL' || mapType === 'FRACTAL' || mapType === 'HYBRID';
 
     sprite.targetX = data.x;
     sprite.targetZ = is3D ? data.y : -data.y; // Babylon Z is inverted 2D Y only for 2D maps
@@ -662,13 +664,11 @@ export class EntityRenderer {
     // Auto-resolve terrain height so sprites aren't trapped in the geometry floor
     // if a Z vertical position is provided by physics (e.g. jumping), use it instead
     let terrainY = 0;
+    const world = mapMesher.getVoxelWorld();
     if (data.z !== undefined) {
-      terrainY = data.z;
-    } else {
-      const world = mapMesher.getVoxelWorld();
-      if (world) {
-        terrainY = world.getTopSolidVoxelY(data.x, sprite.targetZ) + world.originOffsetY;
-      }
+      terrainY = data.z + (is3D ? (world?.originOffsetY ?? 0) : 0);
+    } else if (world) {
+      terrainY = world.getTopSolidVoxelY(data.x, sprite.targetZ) + 1 + world.originOffsetY;
     }
     // 3D models have origin at feet, so they rest directly on terrainY; 2D billboards center on origin
     const isModelEntity = Boolean(data.modelUrl || data.presentationType === '3D_MODEL');
