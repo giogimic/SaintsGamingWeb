@@ -23,6 +23,18 @@ import {
   getAnimationChoicesForSlot,
   inferAnimationSlots,
 } from '@/shared/game/animationCatalog';
+import { GLTFExporter } from 'three-stdlib';
+import {
+  loadTextureFromFile,
+  detectPbrChannel,
+  convertObjToGlb,
+  convertVoxToGlb,
+  convertDaeToGlb,
+  convertStlToGlb,
+  convertPlyToGlb,
+  PbrChannel,
+} from '@/web/lib/modelPackage';
+import { convertFbxToGlb } from '@/web/lib/fbxConverter';
 
 // ── Types ────────────────────────────────────────────────────────────
 interface Props {
@@ -135,9 +147,103 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
   const [animMap, setAnimMap] = useState<Partial<Record<AnimationSlot, string>>>({});
   
   const [materialConfig, setMaterialConfig] = useState<Record<string, { tintable: boolean, slot: string }>>({});
+  const [hasModifiedTextures, setHasModifiedTextures] = useState(false);
   
   // Additional Items for Modular Set
   const [additionalItems, setAdditionalItems] = useState<Array<{ id: string, file: File; category: string }>>([]);
+
+  const assignTextureToMaterialChannel = async (matName: string, channel: PbrChannel, textureFile: File) => {
+    if (!parsedGLB) return;
+    try {
+      showToast?.(`Loading ${textureFile.name}...`);
+      const texture = await loadTextureFromFile(textureFile);
+      parsedGLB.scene.traverse((child: any) => {
+        if (child.isMesh && child.material) {
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach((m: any) => {
+            if (m.name === matName) {
+              m[channel] = texture;
+              m.needsUpdate = true;
+            }
+          });
+        }
+      });
+
+      const parsedMat = parsedGLB.materials[matName];
+      if (parsedMat) {
+        if (channel === 'map') parsedMat.hasTexture = true;
+        if (channel === 'normalMap') parsedMat.hasNormalMap = true;
+        if (channel === 'roughnessMap') parsedMat.hasRoughnessMap = true;
+        if (channel === 'metalnessMap') parsedMat.hasMetalnessMap = true;
+        if (channel === 'emissiveMap') parsedMat.hasEmissiveMap = true;
+        if (channel === 'aoMap') parsedMat.hasAoMap = true;
+      }
+      setHasModifiedTextures(true);
+      setMaterialConfig(prev => ({ ...prev }));
+      showToast?.(`Connected ${channel} to material ${matName}`);
+    } catch (err: any) {
+      console.error(`Failed to load texture for ${matName} (${channel}):`, err);
+      showToast?.(`Failed to load texture: ${err.message}`);
+    }
+  };
+
+  const handleBatchAssignTextures = async (files: File[]) => {
+    if (!parsedGLB || files.length === 0) return;
+    let assignedCount = 0;
+    const matKeys = Object.keys(parsedGLB.materials);
+
+    for (const tf of files) {
+      const channel = detectPbrChannel(tf.name);
+      if (!channel) continue;
+
+      let targetMatName = matKeys[0];
+      const fileLower = tf.name.toLowerCase();
+      for (const mk of matKeys) {
+        if (fileLower.includes(mk.toLowerCase())) {
+          targetMatName = mk;
+          break;
+        }
+      }
+
+      if (targetMatName) {
+        try {
+          const texture = await loadTextureFromFile(tf);
+          parsedGLB.scene.traverse((child: any) => {
+            if (child.isMesh && child.material) {
+              const mats = Array.isArray(child.material) ? child.material : [child.material];
+              mats.forEach((m: any) => {
+                if (m.name === targetMatName) {
+                  m[channel] = texture;
+                  m.needsUpdate = true;
+                }
+              });
+            }
+          });
+
+          const parsedMat = parsedGLB.materials[targetMatName];
+          if (parsedMat) {
+            if (channel === 'map') parsedMat.hasTexture = true;
+            if (channel === 'normalMap') parsedMat.hasNormalMap = true;
+            if (channel === 'roughnessMap') parsedMat.hasRoughnessMap = true;
+            if (channel === 'metalnessMap') parsedMat.hasMetalnessMap = true;
+            if (channel === 'emissiveMap') parsedMat.hasEmissiveMap = true;
+            if (channel === 'aoMap') parsedMat.hasAoMap = true;
+          }
+          assignedCount++;
+        } catch (err) {
+          console.warn('Batch texture load failed for:', tf.name, err);
+        }
+      }
+    }
+
+    if (assignedCount > 0) {
+      setHasModifiedTextures(true);
+      setMaterialConfig(prev => ({ ...prev }));
+      showToast?.(`Auto-assigned ${assignedCount} textures to model materials!`);
+    } else {
+      showToast?.('No matching texture channels found in selected files.');
+    }
+  };
 
   // Mesh -> Component mapping
   const [modularComponents, _setModularComponents] = useState<Record<string, string>>({});
@@ -300,9 +406,35 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
     setIsPublishing(true);
     try {
       const thumbnailDataUrl = inspectorRef.current?.takeSnapshot();
+
+      let uploadFile = file;
+      if (hasModifiedTextures && parsedGLB) {
+        showToast?.('Baking connected textures into GLB binary...');
+        const exporter = new GLTFExporter();
+        const gltfBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+          exporter.parse(
+            parsedGLB.scene,
+            (res) => {
+              if (res instanceof ArrayBuffer) resolve(res);
+              else reject(new Error('GLTFExporter did not return an ArrayBuffer'));
+            },
+            (err) => reject(err),
+            {
+              binary: true,
+              embedImages: true,
+              animations: parsedGLB.rawAnimations || [],
+            }
+          );
+        });
+        uploadFile = new File(
+          [new Blob([gltfBuffer], { type: 'model/gltf-binary' })],
+          file.name.replace(/\.[^/.]+$/, '.glb'),
+          { type: 'model/gltf-binary' }
+        );
+      }
       
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', uploadFile);
       formData.append('name', assetName);
       formData.append('type', 'MODEL');
       formData.append('createUsable', 'true');
@@ -1058,7 +1190,33 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
             {/* ═══════════════ MATERIALS TAB ═══════════════ */}
             {activeTab === 'materials' && (
               <div className="space-y-4">
-                <div className="text-amber-200 text-[11px]">Configure how materials and textures are customized in-game.</div>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="text-amber-200 text-[11px]">
+                    Configure material properties and connect PBR textures (Albedo, Normal, Roughness, Metallic, Emissive, AO).
+                  </div>
+                  <label className="px-3 py-1 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 rounded text-[10px] font-bold text-amber-300 transition-colors cursor-pointer flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    <span>Batch Auto-Assign Textures</span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/png,image/jpeg,image/webp,image/x-tga,.tga,.dds,.bmp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        if (files.length > 0) handleBatchAssignTextures(files);
+                      }}
+                    />
+                  </label>
+                </div>
+
+                {hasModifiedTextures && (
+                  <div className="bg-emerald-950/20 border border-emerald-500/40 rounded px-3 py-1.5 text-[10px] text-emerald-300 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>External textures connected. These will be baked into the saved GLB automatically when published.</span>
+                  </div>
+                )}
+
                 {Object.keys(parsedGLB.materials).length === 0 ? (
                   <div className="text-center py-8 text-slate-500">
                     <div className="w-8 h-8 mx-auto mb-2 rounded-full bg-slate-800 opacity-30" />
@@ -1066,21 +1224,24 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                   </div>
                 ) : (
                   Object.values(parsedGLB.materials).map(mat => (
-                    <div key={mat.name} className="bg-slate-900/50 border border-slate-700 p-3 rounded-lg flex flex-col gap-2">
-                      <div className="flex items-center justify-between gap-4">
+                    <div key={mat.name} className="bg-slate-900/50 border border-slate-700 p-3 rounded-lg flex flex-col gap-3">
+                      <div className="flex items-center justify-between gap-4 flex-wrap">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-[11px] text-slate-200">{mat.name}</span>
-                          {mat.hasTexture ? (
-                            <span className="text-[9px] text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-1.5 py-0.5 rounded font-mono">✓ Textured</span>
-                          ) : (
-                            <span className="text-[9px] text-amber-400 bg-amber-950/40 border border-amber-800/40 px-1.5 py-0.5 rounded font-mono">No Texture</span>
+                          {mat.color && (
+                            <span
+                              className="w-3.5 h-3.5 rounded-full border border-slate-600 inline-block shrink-0 shadow-sm"
+                              style={{ backgroundColor: `#${mat.color}` }}
+                            />
                           )}
+                          <span className="font-bold text-[11px] text-slate-200">{mat.name}</span>
+                          <span className="text-[9px] text-slate-500">({mat.type})</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => { 
                               const m = {...materialConfig}; 
+                              m[mat.name] = m[mat.name] || { tintable: false, slot: 'Base' };
                               m[mat.name].tintable = !m[mat.name].tintable; 
                               setMaterialConfig(m); 
                             }}
@@ -1094,7 +1255,12 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                           </button>
                           <select 
                             value={materialConfig[mat.name]?.slot || 'Base'} 
-                            onChange={e => { const m = {...materialConfig}; m[mat.name].slot = e.target.value; setMaterialConfig(m); }} 
+                            onChange={e => {
+                              const m = {...materialConfig};
+                              m[mat.name] = m[mat.name] || { tintable: false, slot: 'Base' };
+                              m[mat.name].slot = e.target.value;
+                              setMaterialConfig(m);
+                            }} 
                             className="bg-black/50 border border-slate-700 rounded px-2 py-1 text-[10px] text-white cursor-pointer focus:border-amber-600/60 focus:outline-none"
                           >
                             <option value="Base">Base</option>
@@ -1106,41 +1272,152 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                           </select>
                         </div>
                       </div>
-                      {/* Texture upload & link */}
-                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-800/60 text-[10px]">
-                        <span className="text-slate-500">Albedo / Diffuse Map:</span>
-                        <label className="text-[10px] text-amber-400/80 hover:text-amber-300 flex items-center gap-1 cursor-pointer transition-colors bg-amber-950/20 px-2 py-0.5 rounded border border-amber-800/30">
-                          <ImageIcon className="w-3.5 h-3.5" />
-                          <span>{mat.hasTexture ? 'Replace Texture' : '+ Connect External Texture'}</span>
-                          <input
-                            type="file"
-                            accept="image/png,image/jpeg,image/webp"
-                            className="hidden"
-                            onChange={(e) => {
-                              const imgFile = e.target.files?.[0];
-                              if (imgFile) {
-                                const url = URL.createObjectURL(imgFile);
-                                const textureLoader = new THREE.TextureLoader();
-                                textureLoader.load(url, (loadedTexture) => {
-                                  loadedTexture.flipY = false;
-                                  parsedGLB.scene.traverse((child: any) => {
-                                    if (child.isMesh && child.material) {
-                                      const mats = Array.isArray(child.material) ? child.material : [child.material];
-                                      mats.forEach((m: any) => {
-                                        if (m.name === mat.name) {
-                                          m.map = loadedTexture;
-                                          m.needsUpdate = true;
-                                        }
-                                      });
-                                    }
-                                  });
-                                  mat.hasTexture = true;
-                                  setMaterialConfig((prev) => ({ ...prev }));
-                                });
-                              }
-                            }}
-                          />
-                        </label>
+
+                      {/* PBR Texture Channels */}
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 pt-2 border-t border-slate-800/80">
+                        {/* 1. Albedo / BaseColor */}
+                        <div className="bg-black/40 border border-slate-800 rounded p-2 flex flex-col justify-between gap-1.5">
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-slate-400 font-semibold">Albedo / Base</span>
+                            {mat.hasTexture ? (
+                              <span className="text-[9px] text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-1 py-0.5 rounded font-mono">✓ Active</span>
+                            ) : (
+                              <span className="text-[9px] text-slate-500 bg-slate-800/40 px-1 py-0.5 rounded font-mono">None</span>
+                            )}
+                          </div>
+                          <label className="w-full text-center py-1 text-[10px] bg-amber-950/30 hover:bg-amber-900/40 border border-amber-800/40 text-amber-300 rounded cursor-pointer transition-colors">
+                            <span>{mat.hasTexture ? 'Replace' : '+ Connect'}</span>
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp,image/x-tga,.tga,.dds,.bmp"
+                              className="hidden"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) assignTextureToMaterialChannel(mat.name, 'map', f);
+                              }}
+                            />
+                          </label>
+                        </div>
+
+                        {/* 2. Normal Map */}
+                        <div className="bg-black/40 border border-slate-800 rounded p-2 flex flex-col justify-between gap-1.5">
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-slate-400 font-semibold">Normal Map</span>
+                            {mat.hasNormalMap ? (
+                              <span className="text-[9px] text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-1 py-0.5 rounded font-mono">✓ Active</span>
+                            ) : (
+                              <span className="text-[9px] text-slate-500 bg-slate-800/40 px-1 py-0.5 rounded font-mono">None</span>
+                            )}
+                          </div>
+                          <label className="w-full text-center py-1 text-[10px] bg-amber-950/30 hover:bg-amber-900/40 border border-amber-800/40 text-amber-300 rounded cursor-pointer transition-colors">
+                            <span>{mat.hasNormalMap ? 'Replace' : '+ Connect'}</span>
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp,image/x-tga,.tga,.dds,.bmp"
+                              className="hidden"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) assignTextureToMaterialChannel(mat.name, 'normalMap', f);
+                              }}
+                            />
+                          </label>
+                        </div>
+
+                        {/* 3. Roughness Map */}
+                        <div className="bg-black/40 border border-slate-800 rounded p-2 flex flex-col justify-between gap-1.5">
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-slate-400 font-semibold">Roughness</span>
+                            {mat.hasRoughnessMap ? (
+                              <span className="text-[9px] text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-1 py-0.5 rounded font-mono">✓ Active</span>
+                            ) : (
+                              <span className="text-[9px] text-slate-500 bg-slate-800/40 px-1 py-0.5 rounded font-mono">None</span>
+                            )}
+                          </div>
+                          <label className="w-full text-center py-1 text-[10px] bg-amber-950/30 hover:bg-amber-900/40 border border-amber-800/40 text-amber-300 rounded cursor-pointer transition-colors">
+                            <span>{mat.hasRoughnessMap ? 'Replace' : '+ Connect'}</span>
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp,image/x-tga,.tga,.dds,.bmp"
+                              className="hidden"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) assignTextureToMaterialChannel(mat.name, 'roughnessMap', f);
+                              }}
+                            />
+                          </label>
+                        </div>
+
+                        {/* 4. Metallic Map */}
+                        <div className="bg-black/40 border border-slate-800 rounded p-2 flex flex-col justify-between gap-1.5">
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-slate-400 font-semibold">Metallic</span>
+                            {mat.hasMetalnessMap ? (
+                              <span className="text-[9px] text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-1 py-0.5 rounded font-mono">✓ Active</span>
+                            ) : (
+                              <span className="text-[9px] text-slate-500 bg-slate-800/40 px-1 py-0.5 rounded font-mono">None</span>
+                            )}
+                          </div>
+                          <label className="w-full text-center py-1 text-[10px] bg-amber-950/30 hover:bg-amber-900/40 border border-amber-800/40 text-amber-300 rounded cursor-pointer transition-colors">
+                            <span>{mat.hasMetalnessMap ? 'Replace' : '+ Connect'}</span>
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp,image/x-tga,.tga,.dds,.bmp"
+                              className="hidden"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) assignTextureToMaterialChannel(mat.name, 'metalnessMap', f);
+                              }}
+                            />
+                          </label>
+                        </div>
+
+                        {/* 5. Emissive Map */}
+                        <div className="bg-black/40 border border-slate-800 rounded p-2 flex flex-col justify-between gap-1.5">
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-slate-400 font-semibold">Emissive / Glow</span>
+                            {mat.hasEmissiveMap ? (
+                              <span className="text-[9px] text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-1 py-0.5 rounded font-mono">✓ Active</span>
+                            ) : (
+                              <span className="text-[9px] text-slate-500 bg-slate-800/40 px-1 py-0.5 rounded font-mono">None</span>
+                            )}
+                          </div>
+                          <label className="w-full text-center py-1 text-[10px] bg-amber-950/30 hover:bg-amber-900/40 border border-amber-800/40 text-amber-300 rounded cursor-pointer transition-colors">
+                            <span>{mat.hasEmissiveMap ? 'Replace' : '+ Connect'}</span>
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp,image/x-tga,.tga,.dds,.bmp"
+                              className="hidden"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) assignTextureToMaterialChannel(mat.name, 'emissiveMap', f);
+                              }}
+                            />
+                          </label>
+                        </div>
+
+                        {/* 6. AO Map */}
+                        <div className="bg-black/40 border border-slate-800 rounded p-2 flex flex-col justify-between gap-1.5">
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-slate-400 font-semibold">Ambient Occlusion</span>
+                            {mat.hasAoMap ? (
+                              <span className="text-[9px] text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-1 py-0.5 rounded font-mono">✓ Active</span>
+                            ) : (
+                              <span className="text-[9px] text-slate-500 bg-slate-800/40 px-1 py-0.5 rounded font-mono">None</span>
+                            )}
+                          </div>
+                          <label className="w-full text-center py-1 text-[10px] bg-amber-950/30 hover:bg-amber-900/40 border border-amber-800/40 text-amber-300 rounded cursor-pointer transition-colors">
+                            <span>{mat.hasAoMap ? 'Replace' : '+ Connect'}</span>
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp,image/x-tga,.tga,.dds,.bmp"
+                              className="hidden"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) assignTextureToMaterialChannel(mat.name, 'aoMap', f);
+                              }}
+                            />
+                          </label>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -1161,8 +1438,8 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                   <input 
                     type="file" 
                     multiple 
-                    accept=".glb,.gltf" 
-                    onChange={e => {
+                    accept=".glb,.gltf,.fbx,.obj,.vox,.dae,.stl,.ply" 
+                    onChange={async e => {
                       if (!e.target.files) return;
                       
                       const guessCategory = (name: string): string => {
@@ -1179,18 +1456,50 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
                         return 'chest'; // default fallback
                       };
 
-                      const newItems = Array.from(e.target.files).map(f => ({
-                        id: Math.random().toString(36).substr(2, 9),
-                        file: f,
-                        category: guessCategory(f.name)
-                      }));
-                      setAdditionalItems(prev => [...prev, ...newItems]);
+                      const files = Array.from(e.target.files);
+                      const processed: Array<{ id: string; file: File; category: string }> = [];
+
+                      for (const f of files) {
+                        let finalFile = f;
+                        const lower = f.name.toLowerCase();
+                        try {
+                          if (lower.endsWith('.fbx')) {
+                            showToast?.(`Converting ${f.name} to GLB...`);
+                            finalFile = await convertFbxToGlb(f);
+                          } else if (lower.endsWith('.obj')) {
+                            showToast?.(`Converting ${f.name} to GLB...`);
+                            finalFile = await convertObjToGlb(f);
+                          } else if (lower.endsWith('.vox')) {
+                            showToast?.(`Converting ${f.name} to GLB...`);
+                            finalFile = await convertVoxToGlb(f);
+                          } else if (lower.endsWith('.dae')) {
+                            showToast?.(`Converting ${f.name} to GLB...`);
+                            finalFile = await convertDaeToGlb(f);
+                          } else if (lower.endsWith('.stl')) {
+                            showToast?.(`Converting ${f.name} to GLB...`);
+                            finalFile = await convertStlToGlb(f);
+                          } else if (lower.endsWith('.ply')) {
+                            showToast?.(`Converting ${f.name} to GLB...`);
+                            finalFile = await convertPlyToGlb(f);
+                          }
+                        } catch (err) {
+                          console.warn('Conversion failed for item:', f.name, err);
+                        }
+
+                        processed.push({
+                          id: Math.random().toString(36).substr(2, 9),
+                          file: finalFile,
+                          category: guessCategory(f.name),
+                        });
+                      }
+
+                      setAdditionalItems(prev => [...prev, ...processed]);
                     }}
                     className="absolute inset-0 opacity-0 cursor-pointer"
                   />
                   <Puzzle className="w-6 h-6 text-slate-500 group-hover:text-amber-500 mx-auto mb-2 transition-colors" />
-                  <div className="text-amber-500 font-bold text-[11px] group-hover:text-amber-400">Click or Drag GLB files here</div>
-                  <div className="text-[9px] text-slate-500 mt-1">e.g., hair.glb, armor.glb, helmet.glb</div>
+                  <div className="text-amber-500 font-bold text-[11px] group-hover:text-amber-400">Click or Drag 3D files here (GLB/FBX/OBJ/VOX/DAE/STL)</div>
+                  <div className="text-[9px] text-slate-500 mt-1">e.g., hair.fbx, armor.obj, hat.vox, weapon.glb</div>
                 </div>
 
                 {/* Items list */}

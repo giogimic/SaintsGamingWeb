@@ -143,6 +143,16 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 
 ## Changelog
 
+### v2.2.028
+- **Expanded 3D Model Format Pipeline & PBR Texture Suite**:
+  - **Comprehensive 3D Format Converters**: Added native client-side GLB conversion for popular 3D game asset formats: FBX, Wavefront OBJ (+ MTL), MagicaVoxel VOX (preserving voxel vertex colors for Cube World / Minecraft style voxel assets), Collada DAE, Stereolithography STL, and Stanford PLY.
+  - **Multi-File & Direct Drag-and-Drop Ingestion**: Enhanced `AssetUploadView.tsx` to accept direct drops and multi-file selections of all 7 formats along with companion textures and `.mtl` material definitions.
+  - **Expanded Texture Format Support**: Integrated Three.js `TGALoader` and `DDSLoader` to handle `.tga`, `.dds`, and `.bmp` files seamlessly alongside standard `.png`, `.jpg`, and `.webp` images.
+  - **Full PBR Material Channels in Studio**: Upgraded `AssetDefinitionStudio.tsx` Materials tab with dedicated slots for Albedo/BaseColor, Normal Map, Roughness, Metallic, Emissive, and Ambient Occlusion. Added **Batch Auto-Assign Textures** that infers material channels by filename suffixes (`_BaseColor`, `_Normal`, `_Roughness`, `_Metallic`, `_ORM`, `_Emissive`, `_AO`).
+  - **GLB Scene Re-Export on Publish**: Connected external textures in `AssetDefinitionStudio.tsx` are baked directly into the GLB binary via `GLTFExporter` upon publishing, ensuring zero missing texture references in the live runtime.
+  - **Multi-Format Modular Items**: Creators can now drop FBX, OBJ, VOX, DAE, STL, and PLY attachments (e.g. hair, armor, hats, weapons) directly into the Modular Set Items tab, converting them on the fly to GLB.
+  - **Saints Gaming Bible Expansion**: Updated Section 45.5 with formal specification for multi-format 3D ingestion, PBR texture naming conventions, and client-side conversion rules.
+
 ### v2.2.027
 - **3D Asset & Animation Import Pipeline Overhaul**:
   - **Animation Preservation in GLTF Export**: Fixed `fbxConverter.ts` omitting `animations: object.animations` in `GLTFExporter.parse()`, ensuring all skeletal animations inside FBX files are properly preserved and baked into converted GLBs.

@@ -1,6 +1,5 @@
 import * as THREE from 'three';
-import { FBXLoader } from 'three-stdlib';
-import { GLTFExporter } from 'three-stdlib';
+import { FBXLoader, GLTFExporter, TGALoader, DDSLoader } from 'three-stdlib';
 
 export interface FbxConversionOptions {
   textureFiles?: File[];
@@ -52,6 +51,8 @@ export async function convertFbxToGlb(
 
           // Build LoadingManager to intercept and supply external textures
           const manager = new THREE.LoadingManager();
+          manager.addHandler(/\.tga$/i, new TGALoader(manager));
+          manager.addHandler(/\.dds$/i, new DDSLoader());
 
           if (options?.textureFiles && options.textureFiles.length > 0) {
             const textureMap = new Map<string, string>();
@@ -110,29 +111,47 @@ export async function convertFbxToGlb(
             }
           });
 
-          // Sanitize materials to prevent GLTFExporter crashes on missing/corrupted external textures
+          const ALL_MAP_TYPES = [
+            'map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap',
+            'specularMap', 'specularColorMap', 'specularIntensityMap', 'alphaMap',
+            'bumpMap', 'displacementMap', 'aoMap', 'lightMap', 'envMap',
+            'gradientMap', 'clearcoatMap', 'clearcoatNormalMap', 'clearcoatRoughnessMap',
+            'transmissionMap', 'thicknessMap', 'sheenColorMap', 'sheenRoughnessMap'
+          ];
+
+          // Sanitize materials and mesh properties to prevent GLTFExporter crashes on missing/corrupted textures
           object.traverse((child: any) => {
-            if (child.isMesh && child.material) {
-              const materials = Array.isArray(child.material) ? child.material : [child.material];
-              for (const mat of materials) {
-                const mapTypes = ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap', 'specularMap', 'alphaMap'];
-                for (const mapType of mapTypes) {
-                  if (mat[mapType]) {
-                    const img = mat[mapType].image;
-                    const isInvalid = !img ||
-                                      (img.width === 0) ||
-                                      (img.height === 0) ||
-                                      (img instanceof HTMLImageElement && (img.naturalWidth === 0 || !img.complete)) ||
-                                      (img.data && img.data.length === 0);
-                                      
-                    if (isInvalid) {
-                      console.warn(`[FBXConverter] Stripping unresolved external texture: ${mapType} on material ${mat.name}`);
-                      mat[mapType] = null;
+            if (child.isMesh) {
+              if (child.morphTargetDictionary && !child.morphTargetInfluences) {
+                child.morphTargetInfluences = [];
+              }
+              if (child.material) {
+                const materials = Array.isArray(child.material) ? child.material : [child.material];
+                for (const mat of materials) {
+                  for (const mapType of ALL_MAP_TYPES) {
+                    if (mat[mapType]) {
+                      const tex = mat[mapType];
+                      const img = tex?.image;
+                      const isInvalid = !img ||
+                                        (typeof img.width === 'number' && img.width === 0) ||
+                                        (typeof img.height === 'number' && img.height === 0) ||
+                                        (img instanceof HTMLImageElement && (!img.complete || img.naturalWidth === 0)) ||
+                                        (img.data && img.data.length === 0);
+
+                      if (isInvalid) {
+                        mat[mapType] = null;
+                      }
                     }
                   }
                 }
               }
             }
+          });
+
+          // Filter animations to ensure only valid clips with populated tracks are exported
+          const rawAnimations = Array.isArray(object.animations) ? object.animations : [];
+          const validAnimations = rawAnimations.filter((clip: any) => {
+            return clip && Array.isArray(clip.tracks) && clip.tracks.length > 0;
           });
 
           const exporter = new GLTFExporter();
@@ -157,7 +176,7 @@ export async function convertFbxToGlb(
             },
             {
               binary: true,
-              animations: (object.animations && object.animations.length > 0) ? object.animations : undefined,
+              animations: validAnimations,
               embedImages: true,
             }
           );

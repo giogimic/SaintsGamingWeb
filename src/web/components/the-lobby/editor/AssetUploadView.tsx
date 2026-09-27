@@ -49,7 +49,15 @@ import {
 } from '@/shared/game/spriteDefinitions';
 import JSZip from 'jszip';
 import { convertFbxToGlb } from '@/web/lib/fbxConverter';
-import { isZip3DModelPackage, unpack3DModelZipPackage } from '@/web/lib/modelPackage';
+import {
+  isZip3DModelPackage,
+  unpack3DModelZipPackage,
+  convertObjToGlb,
+  convertVoxToGlb,
+  convertDaeToGlb,
+  convertStlToGlb,
+  convertPlyToGlb,
+} from '@/web/lib/modelPackage';
 import { AssetDefinitionStudio } from './asset-studio/AssetDefinitionStudio';
 
 const ASSET_TYPES = [
@@ -60,7 +68,7 @@ const ASSET_TYPES = [
   { value: 'ITEM', label: 'Inventory Item / Gear Icon', icon: Box },
   { value: 'UI', label: 'UI Element / Frame / Icon', icon: Box },
   { value: 'EFFECT', label: 'Visual Effect / Particle', icon: SparklesIcon },
-  { value: 'MODEL', label: '3D Model (FBX/GLB)', icon: Box },
+  { value: 'MODEL', label: '3D Model (GLB/FBX/OBJ/VOX/DAE/STL/PLY)', icon: Box },
   { value: 'AUDIO', label: 'Sound Effect / Music Track', icon: Music },
 ];
 
@@ -181,11 +189,17 @@ export function AssetUploadView({
     setErrorMessage(null);
     setUploadSuccess(null);
 
-    // If multiple files dropped/selected: check for FBX/GLB + external textures
+    // If multiple files dropped/selected: check for 3D model + external textures/MTL
     if (files.length > 1) {
       const fbxFile = files.find(f => f.name.toLowerCase().endsWith('.fbx'));
       const glbFile = files.find(f => f.name.toLowerCase().endsWith('.glb') || f.name.toLowerCase().endsWith('.gltf'));
-      const textureFiles = files.filter(f => /\.(png|jpe?g|webp)$/i.test(f.name));
+      const objFile = files.find(f => f.name.toLowerCase().endsWith('.obj'));
+      const mtlFile = files.find(f => f.name.toLowerCase().endsWith('.mtl'));
+      const voxFile = files.find(f => f.name.toLowerCase().endsWith('.vox'));
+      const daeFile = files.find(f => f.name.toLowerCase().endsWith('.dae'));
+      const stlFile = files.find(f => f.name.toLowerCase().endsWith('.stl'));
+      const plyFile = files.find(f => f.name.toLowerCase().endsWith('.ply'));
+      const textureFiles = files.filter(f => /\.(png|jpe?g|webp|tga|dds|bmp)$/i.test(f.name));
 
       if (fbxFile) {
         try {
@@ -199,6 +213,74 @@ export function AssetUploadView({
           return;
         } catch (err: any) {
           setErrorMessage(`FBX conversion failed: ${err.message}`);
+          return;
+        }
+      } else if (objFile) {
+        try {
+          showToast?.(`Converting OBJ with ${textureFiles.length} textures...`);
+          const glb = await convertObjToGlb(objFile, { mtlFile, textureFiles });
+          setSelectedFile(glb);
+          setPreviewUrl(URL.createObjectURL(glb));
+          if (!assetName) setAssetName(objFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
+          setAssetType('MODEL');
+          showToast?.(`OBJ converted to GLB with ${textureFiles.length} textures!`);
+          return;
+        } catch (err: any) {
+          setErrorMessage(`OBJ conversion failed: ${err.message}`);
+          return;
+        }
+      } else if (daeFile) {
+        try {
+          showToast?.(`Converting Collada DAE with ${textureFiles.length} textures...`);
+          const glb = await convertDaeToGlb(daeFile, { textureFiles });
+          setSelectedFile(glb);
+          setPreviewUrl(URL.createObjectURL(glb));
+          if (!assetName) setAssetName(daeFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
+          setAssetType('MODEL');
+          showToast?.('Collada model converted to GLB!');
+          return;
+        } catch (err: any) {
+          setErrorMessage(`Collada conversion failed: ${err.message}`);
+          return;
+        }
+      } else if (voxFile) {
+        try {
+          showToast?.('Converting MagicaVoxel model...');
+          const glb = await convertVoxToGlb(voxFile);
+          setSelectedFile(glb);
+          setPreviewUrl(URL.createObjectURL(glb));
+          if (!assetName) setAssetName(voxFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
+          setAssetType('MODEL');
+          showToast?.('MagicaVoxel model converted to GLB!');
+          return;
+        } catch (err: any) {
+          setErrorMessage(`MagicaVoxel conversion failed: ${err.message}`);
+          return;
+        }
+      } else if (stlFile) {
+        try {
+          showToast?.('Converting STL model...');
+          const glb = await convertStlToGlb(stlFile);
+          setSelectedFile(glb);
+          setPreviewUrl(URL.createObjectURL(glb));
+          if (!assetName) setAssetName(stlFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
+          setAssetType('MODEL');
+          return;
+        } catch (err: any) {
+          setErrorMessage(`STL conversion failed: ${err.message}`);
+          return;
+        }
+      } else if (plyFile) {
+        try {
+          showToast?.('Converting PLY model...');
+          const glb = await convertPlyToGlb(plyFile);
+          setSelectedFile(glb);
+          setPreviewUrl(URL.createObjectURL(glb));
+          if (!assetName) setAssetName(plyFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
+          setAssetType('MODEL');
+          return;
+        } catch (err: any) {
+          setErrorMessage(`PLY conversion failed: ${err.message}`);
           return;
         }
       } else if (glbFile) {
@@ -233,6 +315,91 @@ export function AssetUploadView({
         return;
       } catch (err: any) {
         setErrorMessage(`FBX Conversion failed: ${err.message}`);
+        return;
+      }
+    }
+
+    if (file.name.toLowerCase().endsWith('.obj')) {
+      try {
+        setErrorMessage(null);
+        showToast?.('Converting OBJ to GLB...');
+        const glbFile = await convertObjToGlb(file);
+        setSelectedFile(glbFile);
+        const url = URL.createObjectURL(glbFile);
+        setPreviewUrl(url);
+        if (!assetName) setAssetName(file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
+        setAssetType('MODEL');
+        return;
+      } catch (err: any) {
+        setErrorMessage(`OBJ conversion failed: ${err.message}`);
+        return;
+      }
+    }
+
+    if (file.name.toLowerCase().endsWith('.vox')) {
+      try {
+        setErrorMessage(null);
+        showToast?.('Converting MagicaVoxel to GLB...');
+        const glbFile = await convertVoxToGlb(file);
+        setSelectedFile(glbFile);
+        const url = URL.createObjectURL(glbFile);
+        setPreviewUrl(url);
+        if (!assetName) setAssetName(file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
+        setAssetType('MODEL');
+        return;
+      } catch (err: any) {
+        setErrorMessage(`MagicaVoxel conversion failed: ${err.message}`);
+        return;
+      }
+    }
+
+    if (file.name.toLowerCase().endsWith('.dae')) {
+      try {
+        setErrorMessage(null);
+        showToast?.('Converting Collada to GLB...');
+        const glbFile = await convertDaeToGlb(file);
+        setSelectedFile(glbFile);
+        const url = URL.createObjectURL(glbFile);
+        setPreviewUrl(url);
+        if (!assetName) setAssetName(file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
+        setAssetType('MODEL');
+        return;
+      } catch (err: any) {
+        setErrorMessage(`Collada conversion failed: ${err.message}`);
+        return;
+      }
+    }
+
+    if (file.name.toLowerCase().endsWith('.stl')) {
+      try {
+        setErrorMessage(null);
+        showToast?.('Converting STL to GLB...');
+        const glbFile = await convertStlToGlb(file);
+        setSelectedFile(glbFile);
+        const url = URL.createObjectURL(glbFile);
+        setPreviewUrl(url);
+        if (!assetName) setAssetName(file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
+        setAssetType('MODEL');
+        return;
+      } catch (err: any) {
+        setErrorMessage(`STL conversion failed: ${err.message}`);
+        return;
+      }
+    }
+
+    if (file.name.toLowerCase().endsWith('.ply')) {
+      try {
+        setErrorMessage(null);
+        showToast?.('Converting PLY to GLB...');
+        const glbFile = await convertPlyToGlb(file);
+        setSelectedFile(glbFile);
+        const url = URL.createObjectURL(glbFile);
+        setPreviewUrl(url);
+        if (!assetName) setAssetName(file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
+        setAssetType('MODEL');
+        return;
+      } catch (err: any) {
+        setErrorMessage(`PLY conversion failed: ${err.message}`);
         return;
       }
     }
@@ -751,7 +918,7 @@ export function AssetUploadView({
             )}
           </div>
         </div>
-      ) : selectedFile?.name.match(/\.(fbx|glb)$/i) && previewUrl ? (
+      ) : selectedFile?.name.match(/\.(fbx|glb|gltf|obj|vox|dae|stl|ply)$/i) && previewUrl ? (
         <AssetDefinitionStudio 
           file={selectedFile} 
           previewUrl={previewUrl} 
@@ -779,12 +946,12 @@ export function AssetUploadView({
               type="file"
               multiple
               onChange={handleFileChange}
-              accept="image/png,image/jpeg,image/webp,image/gif,application/zip,.zip,audio/mpeg,audio/wav,audio/ogg,.fbx,.glb,.gltf"
+              accept="image/png,image/jpeg,image/webp,image/gif,image/x-tga,.tga,.dds,.bmp,application/zip,.zip,audio/mpeg,audio/wav,audio/ogg,.fbx,.glb,.gltf,.obj,.mtl,.vox,.dae,.stl,.ply"
               className="hidden"
             />
             {previewUrl ? (
               <div className="flex flex-col items-center gap-2">
-                {selectedFile?.name.match(/\.(fbx|glb)$/i) ? (
+                {selectedFile?.name.match(/\.(fbx|glb|gltf|obj|vox|dae|stl|ply)$/i) ? (
                   <div className="w-24 h-24 bg-slate-900 rounded border border-slate-700 flex items-center justify-center flex-col gap-1">
                     <span className="text-amber-500 font-bold text-lg">3D</span>
                     <span className="text-[10px] text-slate-400">Model Asset</span>
@@ -810,10 +977,10 @@ export function AssetUploadView({
               <div className="flex flex-col items-center gap-2 py-2">
                 <Upload className="w-6 h-6 text-slate-400" />
                 <div className="text-slate-200 font-bold text-[11px]">
-                  Click or drag & drop asset files, 3D ZIP packages, or FBX + textures here
+                  Click or drag & drop 3D models (FBX/GLB/OBJ/VOX/DAE/STL), ZIP packages, or models + textures
                 </div>
                 <div className="text-[10px] text-slate-500">
-                  Supports 3D Packages (FBX + Textures/Animations ZIP), Multi-file FBX + PNG/JPG, GLB, Modular Spritesheets, Audio
+                  Supports 3D Packages (FBX/OBJ/VOX/DAE/STL + Textures ZIP), Multi-file drops (OBJ+MTL, FBX+PNG/TGA/DDS), Modular Spritesheets, Audio
                 </div>
               </div>
             )}

@@ -6,6 +6,13 @@ export interface ParsedMaterial {
   type: string;
   color?: string;
   hasTexture: boolean;
+  hasNormalMap?: boolean;
+  hasRoughnessMap?: boolean;
+  hasMetalnessMap?: boolean;
+  hasEmissiveMap?: boolean;
+  hasAoMap?: boolean;
+  roughness?: number;
+  metalness?: number;
 }
 
 export interface ParsedMesh {
@@ -43,11 +50,11 @@ export async function parseGLB(url: string): Promise<ParsedGLB> {
       url,
       (gltf) => {
         const scene = gltf.scene;
-        const rawAnimations = gltf.animations;
+        const rawAnimations = Array.isArray(gltf.animations) ? gltf.animations : [];
         
         const animations: ParsedAnimation[] = rawAnimations.map(anim => ({
           name: anim.name || 'Unnamed Anim',
-          duration: anim.duration,
+          duration: anim.duration || 0,
         }));
 
         const meshes: ParsedMesh[] = [];
@@ -69,6 +76,13 @@ export async function parseGLB(url: string): Promise<ParsedGLB> {
                   type: mat.type,
                   color: standardMat.color ? standardMat.color.getHexString() : undefined,
                   hasTexture: !!standardMat.map,
+                  hasNormalMap: !!standardMat.normalMap,
+                  hasRoughnessMap: !!standardMat.roughnessMap,
+                  hasMetalnessMap: !!standardMat.metalnessMap,
+                  hasEmissiveMap: !!standardMat.emissiveMap,
+                  hasAoMap: !!standardMat.aoMap,
+                  roughness: typeof standardMat.roughness === 'number' ? standardMat.roughness : undefined,
+                  metalness: typeof standardMat.metalness === 'number' ? standardMat.metalness : undefined,
                 };
               }
               return safeName;

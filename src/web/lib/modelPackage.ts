@@ -1,4 +1,17 @@
+import * as THREE from 'three';
 import JSZip from 'jszip';
+import {
+  OBJLoader,
+  MTLLoader,
+  VOXLoader,
+  VOXMesh,
+  ColladaLoader,
+  STLLoader,
+  PLYLoader,
+  GLTFExporter,
+  TGALoader,
+  DDSLoader,
+} from 'three-stdlib';
 import { convertFbxToGlb } from './fbxConverter';
 
 export interface Unpacked3DModelPackage {
@@ -10,23 +23,389 @@ export interface Unpacked3DModelPackage {
   metadata?: Record<string, any>;
 }
 
+export type PbrChannel =
+  | 'map'
+  | 'normalMap'
+  | 'roughnessMap'
+  | 'metalnessMap'
+  | 'emissiveMap'
+  | 'aoMap';
+
 /**
- * Checks whether a given list of zip entries represents a 3D model archive (.fbx, .glb, .gltf)
+ * Checks whether a given list of zip entries represents a 3D model archive (.fbx, .glb, .gltf, .obj, .vox, .dae, .stl, .ply)
  */
 export function isZip3DModelPackage(entries: string[]): boolean {
   return entries.some((p) => {
     const lower = p.toLowerCase();
     return (
       !lower.startsWith('__macosx') &&
-      (lower.endsWith('.fbx') || lower.endsWith('.glb') || lower.endsWith('.gltf'))
+      (lower.endsWith('.fbx') ||
+        lower.endsWith('.glb') ||
+        lower.endsWith('.gltf') ||
+        lower.endsWith('.obj') ||
+        lower.endsWith('.vox') ||
+        lower.endsWith('.dae') ||
+        lower.endsWith('.stl') ||
+        lower.endsWith('.ply'))
     );
   });
 }
 
 /**
- * Unpacks a 3D model package ZIP containing an FBX/GLB model, sibling textures,
- * and optional animation FBX clips. Converts everything to a self-contained GLB
- * with textures and animations properly connected.
+ * Loads a texture from a local File object, supporting Web images (.png, .jpg, .webp),
+ * Targa (.tga), DirectDraw Surface (.dds), and Bitmaps (.bmp).
+ */
+export async function loadTextureFromFile(file: File): Promise<THREE.Texture> {
+  const lower = file.name.toLowerCase();
+
+  if (lower.endsWith('.tga')) {
+    const buffer = await file.arrayBuffer();
+    const loader = new TGALoader();
+    const tex = loader.parse(buffer);
+    tex.flipY = false;
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  if (lower.endsWith('.dds')) {
+    const buffer = await file.arrayBuffer();
+    const loader = new DDSLoader();
+    const dds = loader.parse(buffer, true);
+    const tex = new THREE.CompressedTexture(
+      dds.mipmaps as any,
+      dds.width,
+      dds.height,
+      dds.format as any
+    );
+    tex.flipY = false;
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  const url = URL.createObjectURL(file);
+  return new Promise((resolve, reject) => {
+    const loader = new THREE.TextureLoader();
+    loader.load(
+      url,
+      (tex) => {
+        tex.flipY = false;
+        tex.needsUpdate = true;
+        resolve(tex);
+      },
+      undefined,
+      (err) => reject(err)
+    );
+  });
+}
+
+/**
+ * Detects the target PBR material channel for a texture based on filename conventions.
+ */
+export function detectPbrChannel(filename: string): PbrChannel | null {
+  const lower = filename.toLowerCase();
+  if (/(base_?color|albedo|diffuse|_col|_diff|_d\b|_c\b)/i.test(lower)) return 'map';
+  if (/(normal|nrm|_norm|_n\b|_nm\b)/i.test(lower)) return 'normalMap';
+  if (/(roughness|_rough|_r\b)/i.test(lower)) return 'roughnessMap';
+  if (/(metalness|metallic|_metal|_m\b)/i.test(lower)) return 'metalnessMap';
+  if (/(_orm|_arm)/i.test(lower)) return 'roughnessMap'; // Packed ORM
+  if (/(emissive|emission|_emit|_glow|_e\b)/i.test(lower)) return 'emissiveMap';
+  if (/(ao|occlusion|_occ\b|ambient)/i.test(lower)) return 'aoMap';
+  return null;
+}
+
+/**
+ * Sanitizes Three.js materials to prevent GLTFExporter crashes caused by unresolved texture references.
+ */
+function sanitizeObjectMaterials(object: THREE.Object3D) {
+  const ALL_MAP_TYPES = [
+    'map',
+    'normalMap',
+    'roughnessMap',
+    'metalnessMap',
+    'emissiveMap',
+    'specularMap',
+    'alphaMap',
+    'bumpMap',
+    'displacementMap',
+    'aoMap',
+    'lightMap',
+  ];
+
+  object.traverse((child: any) => {
+    if (child.isMesh && child.material) {
+      const mats = Array.isArray(child.material) ? child.material : [child.material];
+      mats.forEach((m: any) => {
+        for (const mapKey of ALL_MAP_TYPES) {
+          if (m[mapKey]) {
+            const img = m[mapKey].image;
+            const isInvalid =
+              !img ||
+              (typeof img.width === 'number' && img.width === 0) ||
+              (typeof img.height === 'number' && img.height === 0) ||
+              (img instanceof HTMLImageElement && (!img.complete || img.naturalWidth === 0)) ||
+              (img.data && img.data.length === 0);
+
+            if (isInvalid) {
+              m[mapKey] = null;
+            }
+          }
+        }
+      });
+    }
+  });
+}
+
+/**
+ * Converts an OBJ model (and optional companion MTL / textures) into a self-contained GLB file.
+ */
+export async function convertObjToGlb(
+  objFile: File,
+  options?: { mtlFile?: File; textureFiles?: File[] }
+): Promise<File> {
+  const manager = new THREE.LoadingManager();
+  manager.addHandler(/\.tga$/i, new TGALoader(manager));
+  manager.addHandler(/\.dds$/i, new DDSLoader());
+
+  const objectUrlsToRevoke: string[] = [];
+  if (options?.textureFiles && options.textureFiles.length > 0) {
+    const textureMap = new Map<string, string>();
+    for (const tf of options.textureFiles) {
+      const url = URL.createObjectURL(tf);
+      objectUrlsToRevoke.push(url);
+      const cleanName = tf.name.toLowerCase();
+      textureMap.set(cleanName, url);
+      const baseName = cleanName.replace(/\.[^/.]+$/, '');
+      textureMap.set(baseName, url);
+    }
+    manager.setURLModifier((rawUrl: string) => {
+      if (!rawUrl) return rawUrl;
+      const clean = decodeURIComponent(rawUrl).replace(/\\/g, '/');
+      const filename = clean.substring(clean.lastIndexOf('/') + 1).toLowerCase();
+      if (textureMap.has(filename)) return textureMap.get(filename)!;
+      const base = filename.replace(/\.[^/.]+$/, '');
+      if (textureMap.has(base)) return textureMap.get(base)!;
+      for (const [key, url] of textureMap.entries()) {
+        if (filename.includes(key) || key.includes(filename)) return url;
+      }
+      return rawUrl;
+    });
+  }
+
+  const objText = await objFile.text();
+  const objLoader = new OBJLoader(manager);
+
+  if (options?.mtlFile) {
+    const mtlText = await options.mtlFile.text();
+    const mtlLoader = new MTLLoader(manager);
+    const materials = mtlLoader.parse(mtlText, '');
+    materials.preload();
+    objLoader.setMaterials(materials);
+  }
+
+  const object = objLoader.parse(objText);
+  sanitizeObjectMaterials(object);
+
+  return new Promise((resolve, reject) => {
+    const exporter = new GLTFExporter();
+    exporter.parse(
+      object,
+      (gltf) => {
+        objectUrlsToRevoke.forEach((u) => URL.revokeObjectURL(u));
+        if (gltf instanceof ArrayBuffer) {
+          const blob = new Blob([gltf], { type: 'model/gltf-binary' });
+          const newFilename = objFile.name.replace(/\.obj$/i, '.glb');
+          resolve(new File([blob], newFilename, { type: 'model/gltf-binary' }));
+        } else {
+          reject(new Error('GLTFExporter did not return an ArrayBuffer.'));
+        }
+      },
+      (err) => {
+        objectUrlsToRevoke.forEach((u) => URL.revokeObjectURL(u));
+        reject(err);
+      },
+      { binary: true, embedImages: true, animations: [] }
+    );
+  });
+}
+
+/**
+ * Converts a MagicaVoxel (.vox) file into a standard GLB mesh with voxel vertex colors.
+ */
+export async function convertVoxToGlb(voxFile: File): Promise<File> {
+  const arrayBuffer = await voxFile.arrayBuffer();
+  const loader = new VOXLoader();
+  const chunks = loader.parse(arrayBuffer);
+
+  const group = new THREE.Group();
+  for (const chunk of chunks) {
+    const mesh = new VOXMesh(chunk as any);
+    group.add(mesh);
+  }
+
+  return new Promise((resolve, reject) => {
+    const exporter = new GLTFExporter();
+    exporter.parse(
+      group,
+      (gltf) => {
+        if (gltf instanceof ArrayBuffer) {
+          const blob = new Blob([gltf], { type: 'model/gltf-binary' });
+          const newFilename = voxFile.name.replace(/\.vox$/i, '.glb');
+          resolve(new File([blob], newFilename, { type: 'model/gltf-binary' }));
+        } else {
+          reject(new Error('GLTFExporter did not return an ArrayBuffer.'));
+        }
+      },
+      (err) => reject(err),
+      { binary: true, embedImages: true, animations: [] }
+    );
+  });
+}
+
+/**
+ * Converts a Collada (.dae) file into a standard GLB file.
+ */
+export async function convertDaeToGlb(
+  daeFile: File,
+  options?: { textureFiles?: File[] }
+): Promise<File> {
+  const manager = new THREE.LoadingManager();
+  manager.addHandler(/\.tga$/i, new TGALoader(manager));
+  manager.addHandler(/\.dds$/i, new DDSLoader());
+
+  const objectUrlsToRevoke: string[] = [];
+  if (options?.textureFiles && options.textureFiles.length > 0) {
+    const textureMap = new Map<string, string>();
+    for (const tf of options.textureFiles) {
+      const url = URL.createObjectURL(tf);
+      objectUrlsToRevoke.push(url);
+      const cleanName = tf.name.toLowerCase();
+      textureMap.set(cleanName, url);
+      const baseName = cleanName.replace(/\.[^/.]+$/, '');
+      textureMap.set(baseName, url);
+    }
+    manager.setURLModifier((rawUrl: string) => {
+      if (!rawUrl) return rawUrl;
+      const clean = decodeURIComponent(rawUrl).replace(/\\/g, '/');
+      const filename = clean.substring(clean.lastIndexOf('/') + 1).toLowerCase();
+      if (textureMap.has(filename)) return textureMap.get(filename)!;
+      const base = filename.replace(/\.[^/.]+$/, '');
+      if (textureMap.has(base)) return textureMap.get(base)!;
+      for (const [key, url] of textureMap.entries()) {
+        if (filename.includes(key) || key.includes(filename)) return url;
+      }
+      return rawUrl;
+    });
+  }
+
+  const daeText = await daeFile.text();
+  const colladaLoader = new ColladaLoader(manager);
+  const collada = colladaLoader.parse(daeText, '');
+  const object = collada.scene;
+  const rawAnimations = (collada as any).animations || [];
+  const validAnimations = (Array.isArray(rawAnimations) ? rawAnimations : []).filter(
+    (clip: any) => clip && Array.isArray(clip.tracks) && clip.tracks.length > 0
+  );
+
+  sanitizeObjectMaterials(object);
+
+  return new Promise((resolve, reject) => {
+    const exporter = new GLTFExporter();
+    exporter.parse(
+      object,
+      (gltf) => {
+        objectUrlsToRevoke.forEach((u) => URL.revokeObjectURL(u));
+        if (gltf instanceof ArrayBuffer) {
+          const blob = new Blob([gltf], { type: 'model/gltf-binary' });
+          const newFilename = daeFile.name.replace(/\.dae$/i, '.glb');
+          resolve(new File([blob], newFilename, { type: 'model/gltf-binary' }));
+        } else {
+          reject(new Error('GLTFExporter did not return an ArrayBuffer.'));
+        }
+      },
+      (err) => {
+        objectUrlsToRevoke.forEach((u) => URL.revokeObjectURL(u));
+        reject(err);
+      },
+      { binary: true, embedImages: true, animations: validAnimations }
+    );
+  });
+}
+
+/**
+ * Converts a Stereolithography (.stl) file into a standard GLB mesh.
+ */
+export async function convertStlToGlb(stlFile: File): Promise<File> {
+  const arrayBuffer = await stlFile.arrayBuffer();
+  const loader = new STLLoader();
+  const geometry = loader.parse(arrayBuffer);
+  geometry.computeVertexNormals();
+
+  const material = new THREE.MeshStandardMaterial({
+    color: 0xd4af37, // warm Saints gold / neutral
+    roughness: 0.5,
+    metalness: 0.1,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+
+  return new Promise((resolve, reject) => {
+    const exporter = new GLTFExporter();
+    exporter.parse(
+      mesh,
+      (gltf) => {
+        if (gltf instanceof ArrayBuffer) {
+          const blob = new Blob([gltf], { type: 'model/gltf-binary' });
+          const newFilename = stlFile.name.replace(/\.stl$/i, '.glb');
+          resolve(new File([blob], newFilename, { type: 'model/gltf-binary' }));
+        } else {
+          reject(new Error('GLTFExporter did not return an ArrayBuffer.'));
+        }
+      },
+      (err) => reject(err),
+      { binary: true, embedImages: true, animations: [] }
+    );
+  });
+}
+
+/**
+ * Converts a Stanford Triangle (.ply) file into a standard GLB mesh with vertex color preservation.
+ */
+export async function convertPlyToGlb(plyFile: File): Promise<File> {
+  const arrayBuffer = await plyFile.arrayBuffer();
+  const loader = new PLYLoader();
+  const geometry = loader.parse(arrayBuffer);
+  geometry.computeVertexNormals();
+
+  const hasVertexColors = !!geometry.attributes.color;
+  const material = new THREE.MeshStandardMaterial({
+    vertexColors: hasVertexColors,
+    color: hasVertexColors ? 0xffffff : 0xd4af37,
+    roughness: 0.5,
+    metalness: 0.1,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+
+  return new Promise((resolve, reject) => {
+    const exporter = new GLTFExporter();
+    exporter.parse(
+      mesh,
+      (gltf) => {
+        if (gltf instanceof ArrayBuffer) {
+          const blob = new Blob([gltf], { type: 'model/gltf-binary' });
+          const newFilename = plyFile.name.replace(/\.ply$/i, '.glb');
+          resolve(new File([blob], newFilename, { type: 'model/gltf-binary' }));
+        } else {
+          reject(new Error('GLTFExporter did not return an ArrayBuffer.'));
+        }
+      },
+      (err) => reject(err),
+      { binary: true, embedImages: true, animations: [] }
+    );
+  });
+}
+
+/**
+ * Unpacks a 3D model package ZIP containing an FBX, OBJ, VOX, DAE, STL, PLY, or GLB model,
+ * companion textures, and optional companion animation FBX clips.
  */
 export async function unpack3DModelZipPackage(
   zipFile: File,
@@ -40,21 +419,35 @@ export async function unpack3DModelZipPackage(
   // 1. Identify 3D files
   const modelEntries = entries.filter((p) => {
     const l = p.toLowerCase();
-    return l.endsWith('.fbx') || l.endsWith('.glb') || l.endsWith('.gltf');
+    return (
+      l.endsWith('.fbx') ||
+      l.endsWith('.glb') ||
+      l.endsWith('.gltf') ||
+      l.endsWith('.obj') ||
+      l.endsWith('.vox') ||
+      l.endsWith('.dae') ||
+      l.endsWith('.stl') ||
+      l.endsWith('.ply')
+    );
   });
 
   if (modelEntries.length === 0) {
-    throw new Error('No 3D model files (.fbx, .glb, .gltf) found in ZIP archive.');
+    throw new Error(
+      'No supported 3D model files (.fbx, .glb, .gltf, .obj, .vox, .dae, .stl, .ply) found in ZIP archive.'
+    );
   }
 
-  // 2. Identify textures
+  // 2. Identify textures and materials
   const textureEntries = entries.filter((p) => {
     const l = p.toLowerCase();
     return (
       l.endsWith('.png') ||
       l.endsWith('.jpg') ||
       l.endsWith('.jpeg') ||
-      l.endsWith('.webp')
+      l.endsWith('.webp') ||
+      l.endsWith('.tga') ||
+      l.endsWith('.dds') ||
+      l.endsWith('.bmp')
     );
   });
 
@@ -63,6 +456,15 @@ export async function unpack3DModelZipPackage(
     const blob = await zip.files[tPath].async('blob');
     const filename = tPath.split('/').pop() || 'texture.png';
     textureFiles.push(new File([blob], filename, { type: blob.type || 'image/png' }));
+  }
+
+  const mtlEntry = entries.find((p) => p.toLowerCase().endsWith('.mtl'));
+  let mtlFile: File | undefined;
+  if (mtlEntry) {
+    const mtlBlob = await zip.files[mtlEntry].async('blob');
+    mtlFile = new File([mtlBlob], mtlEntry.split('/').pop() || 'material.mtl', {
+      type: 'text/plain',
+    });
   }
 
   // 3. Separate primary mesh from animation clips
@@ -92,11 +494,28 @@ export async function unpack3DModelZipPackage(
     type: 'application/octet-stream',
   });
 
-  // 4. Convert FBX to GLB if needed, passing all extracted textures
+  // 4. Convert to GLB based on format
   let finalGlbFile: File;
-  if (primaryFilename.toLowerCase().endsWith('.fbx')) {
+  const lowerExt = primaryFilename.toLowerCase();
+
+  if (lowerExt.endsWith('.fbx')) {
     onProgress?.(`Converting FBX with ${textureFiles.length} textures...`);
     finalGlbFile = await convertFbxToGlb(rawModelFile, { textureFiles });
+  } else if (lowerExt.endsWith('.obj')) {
+    onProgress?.(`Converting OBJ with ${textureFiles.length} textures...`);
+    finalGlbFile = await convertObjToGlb(rawModelFile, { mtlFile, textureFiles });
+  } else if (lowerExt.endsWith('.vox')) {
+    onProgress?.('Converting MagicaVoxel model...');
+    finalGlbFile = await convertVoxToGlb(rawModelFile);
+  } else if (lowerExt.endsWith('.dae')) {
+    onProgress?.(`Converting Collada DAE with ${textureFiles.length} textures...`);
+    finalGlbFile = await convertDaeToGlb(rawModelFile, { textureFiles });
+  } else if (lowerExt.endsWith('.stl')) {
+    onProgress?.('Converting STL model...');
+    finalGlbFile = await convertStlToGlb(rawModelFile);
+  } else if (lowerExt.endsWith('.ply')) {
+    onProgress?.('Converting PLY model...');
+    finalGlbFile = await convertPlyToGlb(rawModelFile);
   } else {
     finalGlbFile = rawModelFile;
   }
