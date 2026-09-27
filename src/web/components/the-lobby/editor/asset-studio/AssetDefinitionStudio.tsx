@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import * as THREE from 'three';
-import { parseGLB, ParsedGLB } from './glbParser';
+import { parseGLB, ParsedGLB, syncParsedMaterialsFromScene } from './glbParser';
 import { AssetInspector3D, AssetInspector3DRef } from './AssetInspector3D';
 import { Loader2, CheckCircle2, Box, Users, Puzzle, Bone, Maximize2, AlertTriangle, Image as ImageIcon } from 'lucide-react';
 import { useGameStore } from '../../store';
@@ -21,7 +21,6 @@ import {
   buildAnimationClipCatalog,
   embeddedAnimationChoiceId,
   getAnimationChoicesForSlot,
-  inferAnimationSlots,
 } from '@/shared/game/animationCatalog';
 import { GLTFExporter } from 'three-stdlib';
 import {
@@ -33,8 +32,10 @@ import {
   convertStlToGlb,
   convertPlyToGlb,
   PbrChannel,
+  attachTextureFilesToMaterials,
 } from '@/web/lib/modelPackage';
 import { convertFbxToGlb } from '@/web/lib/fbxConverter';
+import { RIG_FAMILIES, type CategorizedAnimationClip } from '@/shared/game/modelRigTaxonomy';
 
 // ── Types ────────────────────────────────────────────────────────────
 interface Props {
@@ -42,6 +43,8 @@ interface Props {
   previewUrl: string;
   onSuccess: (asset: any) => void;
   onCancel: () => void;
+  companionAnimationFiles?: File[];
+  companionTextureFiles?: File[];
 }
 
 type TabId = 'roles' | 'transform' | 'skeleton' | 'attachments' | 'animations' | 'materials' | 'items';
@@ -107,7 +110,14 @@ function guessComponentInfo(filename: string): { structure: StructureType, categ
 }
 
 // ── Component ────────────────────────────────────────────────────────
-export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }: Props) {
+export function AssetDefinitionStudio({
+  file,
+  previewUrl,
+  onSuccess,
+  onCancel,
+  companionAnimationFiles,
+  companionTextureFiles,
+}: Props) {
   const showToast = useGameStore((s) => s.showToast);
   const [parsedGLB, setParsedGLB] = useState<ParsedGLB | null>(null);
   const [isParsing, setIsParsing] = useState(true);
@@ -169,15 +179,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
         }
       });
 
-      const parsedMat = parsedGLB.materials[matName];
-      if (parsedMat) {
-        if (channel === 'map') parsedMat.hasTexture = true;
-        if (channel === 'normalMap') parsedMat.hasNormalMap = true;
-        if (channel === 'roughnessMap') parsedMat.hasRoughnessMap = true;
-        if (channel === 'metalnessMap') parsedMat.hasMetalnessMap = true;
-        if (channel === 'emissiveMap') parsedMat.hasEmissiveMap = true;
-        if (channel === 'aoMap') parsedMat.hasAoMap = true;
-      }
+      syncParsedMaterialsFromScene(parsedGLB.scene, parsedGLB.materials);
       setHasModifiedTextures(true);
       setMaterialConfig(prev => ({ ...prev }));
       showToast?.(`Connected ${channel} to material ${matName}`);
@@ -219,16 +221,6 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
               });
             }
           });
-
-          const parsedMat = parsedGLB.materials[targetMatName];
-          if (parsedMat) {
-            if (channel === 'map') parsedMat.hasTexture = true;
-            if (channel === 'normalMap') parsedMat.hasNormalMap = true;
-            if (channel === 'roughnessMap') parsedMat.hasRoughnessMap = true;
-            if (channel === 'metalnessMap') parsedMat.hasMetalnessMap = true;
-            if (channel === 'emissiveMap') parsedMat.hasEmissiveMap = true;
-            if (channel === 'aoMap') parsedMat.hasAoMap = true;
-          }
           assignedCount++;
         } catch (err) {
           console.warn('Batch texture load failed for:', tf.name, err);
@@ -237,12 +229,71 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
     }
 
     if (assignedCount > 0) {
+      syncParsedMaterialsFromScene(parsedGLB.scene, parsedGLB.materials);
       setHasModifiedTextures(true);
       setMaterialConfig(prev => ({ ...prev }));
       showToast?.(`Auto-assigned ${assignedCount} textures to model materials!`);
     } else {
       showToast?.('No matching texture channels found in selected files.');
     }
+  };
+
+  const handleAddCompanionAnimation = async (animFile: File) => {
+    if (!parsedGLB) return;
+    try {
+      showToast?.(`Processing companion animation ${animFile.name}...`);
+      let glbFile = animFile;
+      if (animFile.name.toLowerCase().endsWith('.fbx')) {
+        glbFile = await convertFbxToGlb(animFile);
+      }
+      const url = URL.createObjectURL(glbFile);
+      const extraParsed = await parseGLB(url, {
+        fileName: animFile.name,
+        modelBoneNames: parsedGLB.bones.map((b) => b.name),
+      });
+      URL.revokeObjectURL(url);
+
+      if (extraParsed.rawAnimations.length === 0) {
+        showToast?.(`No animation tracks found in ${animFile.name}`);
+        return;
+      }
+
+      parsedGLB.rawAnimations.push(...extraParsed.rawAnimations);
+      parsedGLB.animations.push(...extraParsed.animations);
+      parsedGLB.categorizedAnimations.push(...extraParsed.categorizedAnimations);
+
+      // Auto-assign suggested slots
+      const nextAnimMap = { ...animMap };
+      extraParsed.categorizedAnimations.forEach((catAnim) => {
+        const choiceId = embeddedAnimationChoiceId(catAnim.clipName);
+        catAnim.suggestedSlots.forEach((slot) => {
+          if (!nextAnimMap[slot]) nextAnimMap[slot] = choiceId;
+        });
+      });
+      setAnimMap(nextAnimMap);
+      setParsedGLB({ ...parsedGLB });
+      setHasModifiedTextures(true); // Flag to ensure GLTFExporter bakes in the new clips!
+      showToast?.(`Added ${extraParsed.rawAnimations.length} clips from ${animFile.name}!`);
+    } catch (err: any) {
+      showToast?.(`Failed to add animation: ${err.message}`);
+    }
+  };
+
+  const handleAutoMapAllAnimations = () => {
+    if (!parsedGLB?.categorizedAnimations || parsedGLB.categorizedAnimations.length === 0) return;
+    const nextAnimMap = { ...animMap };
+    let mappedCount = 0;
+    parsedGLB.categorizedAnimations.forEach((catAnim) => {
+      const choiceId = embeddedAnimationChoiceId(catAnim.clipName);
+      catAnim.suggestedSlots.forEach((slot) => {
+        if (!nextAnimMap[slot]) {
+          nextAnimMap[slot] = choiceId;
+          mappedCount++;
+        }
+      });
+    });
+    setAnimMap(nextAnimMap);
+    showToast?.(`Auto-mapped ${mappedCount} animation action slots!`);
   };
 
   // Mesh -> Component mapping
@@ -330,29 +381,75 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
     async function load() {
       try {
         setIsParsing(true);
-        const parsed = await parseGLB(previewUrl);
+        const parsed = await parseGLB(previewUrl, { fileName: file.name, isSingleClipOnActor: true });
+
+        // Auto-assign companion textures if provided
+        if (companionTextureFiles && companionTextureFiles.length > 0) {
+          const count = await attachTextureFilesToMaterials(parsed.scene, companionTextureFiles);
+          if (count > 0) {
+            syncParsedMaterialsFromScene(parsed.scene, parsed.materials);
+            setHasModifiedTextures(true);
+            showToast?.(`Auto-attached ${count} companion textures to model!`);
+          }
+        }
+
+        // Process companion animation files if provided
+        if (companionAnimationFiles && companionAnimationFiles.length > 0) {
+          let addedClips = 0;
+          for (const animFile of companionAnimationFiles) {
+            try {
+              let glbAnimFile = animFile;
+              if (animFile.name.toLowerCase().endsWith('.fbx')) {
+                glbAnimFile = await convertFbxToGlb(animFile);
+              }
+              const animUrl = URL.createObjectURL(glbAnimFile);
+              const extraParsed = await parseGLB(animUrl, {
+                fileName: animFile.name,
+                modelBoneNames: parsed.bones.map((b) => b.name),
+              });
+              URL.revokeObjectURL(animUrl);
+
+              if (extraParsed.rawAnimations.length > 0) {
+                parsed.rawAnimations.push(...extraParsed.rawAnimations);
+                parsed.animations.push(...extraParsed.animations);
+                parsed.categorizedAnimations.push(...extraParsed.categorizedAnimations);
+                addedClips += extraParsed.rawAnimations.length;
+              }
+            } catch (animErr) {
+              console.warn("Failed to load companion animation:", animFile.name, animErr);
+            }
+          }
+          if (addedClips > 0) {
+            setHasModifiedTextures(true); // Flag to ensure GLTFExporter bakes companion animation clips!
+            showToast?.(`Loaded ${addedClips} companion animation clips!`);
+          }
+        }
+
         setParsedGLB(parsed);
         
-        // Auto-detect bones
+        // Auto-detect bones using comprehensive rigAnalysis
         const autoMap: Record<string, string> = {};
-        parsed.bones.forEach(b => {
-          const name = b.name.toLowerCase();
-          if (name.includes('hips') || name.includes('pelvis')) autoMap['Pelvis'] = b.name;
-          if (name.includes('spine')) autoMap['Spine'] = b.name;
-          if (name.includes('head')) autoMap['Head'] = b.name;
-          if (name.includes('hand') && name.includes('l')) autoMap['Hand_L'] = b.name;
-          if (name.includes('hand') && name.includes('r')) autoMap['Hand_R'] = b.name;
-        });
+        if (parsed.rigAnalysis && parsed.rigAnalysis.detectedStandardBones) {
+          Object.entries(parsed.rigAnalysis.detectedStandardBones).forEach(([standardBone, actualBone]) => {
+            autoMap[standardBone] = actualBone;
+          });
+        }
         setBoneMap(autoMap);
         
-        // Auto-detect animations
+        // Auto-detect animations using categorizedAnimations
         const autoAnimMap: Partial<Record<AnimationSlot, string>> = {};
-        parsed.animations.forEach((animation) => {
-          const choiceId = embeddedAnimationChoiceId(animation.name);
-          inferAnimationSlots(animation.name).forEach((slot) => {
+        parsed.categorizedAnimations.forEach((catAnim) => {
+          const choiceId = embeddedAnimationChoiceId(catAnim.clipName);
+          catAnim.suggestedSlots.forEach((slot) => {
             if (!autoAnimMap[slot]) autoAnimMap[slot] = choiceId;
           });
         });
+
+        // Fallback: If no slots were mapped and there is at least one clip, map the first to idle
+        if (Object.keys(autoAnimMap).length === 0 && parsed.animations.length > 0) {
+          autoAnimMap['idle'] = embeddedAnimationChoiceId(parsed.animations[0].name);
+        }
+
         setAnimMap(autoAnimMap);
         
         // Auto-materials
@@ -369,7 +466,7 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
       }
     }
     load();
-  }, [previewUrl]);
+  }, [previewUrl, file.name, companionTextureFiles, companionAnimationFiles]);
 
   // ── Handlers ───────────────────────────────────────────────────────
   const toggleRole = (role: string) => {
@@ -503,11 +600,33 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
         skeleton: {
           isSkinned: parsedGLB?.isSkinned,
           boneMap,
+          rigFamily: parsedGLB?.rigAnalysis?.family,
+          detectedBones: parsedGLB?.rigAnalysis?.detectedStandardBones,
+          missingBones: parsedGLB?.rigAnalysis?.missingEssentialBones,
+        },
+        rigAnalysis: parsedGLB?.rigAnalysis,
+        categorizedAnimations: parsedGLB?.categorizedAnimations,
+        skeletonRequirements: {
+          family: parsedGLB?.rigAnalysis?.family,
+          label: parsedGLB?.rigAnalysis?.label,
+          essentialBones: parsedGLB?.rigAnalysis?.family
+            ? RIG_FAMILIES[parsedGLB.rigAnalysis.family]?.essentialBones || []
+            : [],
+          recommendedBones: parsedGLB?.rigAnalysis?.family
+            ? RIG_FAMILIES[parsedGLB.rigAnalysis.family]?.recommendedBones || []
+            : [],
+          missingEssentialBones: parsedGLB?.rigAnalysis?.missingEssentialBones || [],
+          detectedBones: parsedGLB?.rigAnalysis?.detectedStandardBones || {},
+          totalBones: parsedGLB?.rigAnalysis?.totalBones || 0,
+          isHumanoid: parsedGLB?.rigAnalysis?.isHumanoid,
+          isQuadruped: parsedGLB?.rigAnalysis?.isQuadruped,
+          isFlyer: parsedGLB?.rigAnalysis?.isFlyer,
         },
         attachments,
         animations: {
           available: parsedGLB?.animations.map(a => a.name) || [],
           mapped: mappedAnimationChoices,
+          categorized: parsedGLB?.categorizedAnimations || [],
         },
         materials: materialConfig,
         meshes: parsedGLB?.meshes.map(m => m.name) || [],
@@ -1035,10 +1154,72 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
             {/* ═══════════════ SKELETON TAB ═══════════════ */}
             {activeTab === 'skeleton' && (
               <div className="space-y-4">
+                {/* Rig Family Analysis Card */}
+                {parsedGLB.rigAnalysis && (
+                  <div className="bg-slate-900/60 border border-slate-700/80 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">
+                          {parsedGLB.rigAnalysis.label}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {Math.round(parsedGLB.rigAnalysis.confidence * 100)}% match confidence
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {parsedGLB.isSkinned && (
+                          <span className="px-1.5 py-0.5 text-[9px] rounded bg-emerald-950/40 border border-emerald-800/40 text-emerald-300">
+                            ✓ Skinned Mesh
+                          </span>
+                        )}
+                        {parsedGLB.rigAnalysis.hasTail && (
+                          <span className="px-1.5 py-0.5 text-[9px] rounded bg-purple-950/40 border border-purple-800/40 text-purple-300">
+                            Tail
+                          </span>
+                        )}
+                        {parsedGLB.rigAnalysis.hasWings && (
+                          <span className="px-1.5 py-0.5 text-[9px] rounded bg-sky-950/40 border border-sky-800/40 text-sky-300">
+                            Wings
+                          </span>
+                        )}
+                        <span className="px-1.5 py-0.5 text-[9px] rounded bg-slate-800 border border-slate-700 text-slate-400">
+                          {parsedGLB.bones.length} Bones
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      {parsedGLB.rigAnalysis.description}
+                    </div>
+                    {parsedGLB.rigAnalysis.missingEssentialBones.length > 0 && (
+                      <div className="bg-amber-950/20 border border-amber-700/40 rounded p-2 text-[10px] text-amber-300 flex items-start gap-2">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold">Missing standard bones: </span>
+                          <span>{parsedGLB.rigAnalysis.missingEssentialBones.join(', ')}. Some animations may need retargeting or fallbacks.</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between">
                   <div className="text-amber-200 text-[11px]">Map standard Saints bones to this model&apos;s rig.</div>
-                  <div className="text-[10px] text-slate-500">
-                    {mappedBoneCount} / {STANDARD_BONES.length} mapped
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (parsedGLB.rigAnalysis?.detectedStandardBones) {
+                          setBoneMap(prev => ({ ...prev, ...parsedGLB.rigAnalysis.detectedStandardBones }));
+                          showToast?.('Auto-mapped detected standard bones!');
+                        }
+                      }}
+                      className="px-2 py-0.5 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 text-amber-300 rounded text-[10px] font-bold transition-colors cursor-pointer"
+                    >
+                      ⚡ Auto-Map All
+                    </button>
+                    <div className="text-[10px] text-slate-500">
+                      {mappedBoneCount} / {STANDARD_BONES.length} mapped
+                    </div>
                   </div>
                 </div>
                 {parsedGLB.bones.length === 0 ? (
@@ -1121,15 +1302,126 @@ export function AssetDefinitionStudio({ file, previewUrl, onSuccess, onCancel }:
             {/* ═══════════════ ANIMATIONS TAB ═══════════════ */}
             {activeTab === 'animations' && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-amber-200 text-[11px]">Assign clips to actions. Each choice shows its source set.</div>
-                  <div className="text-[10px] text-slate-500">
-                    {mappedAnimCount} / {ANIMATION_ACTIONS.length} mapped
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="text-amber-200 text-[11px]">
+                    Assign clips to actions. Clips are analyzed for rig compatibility and requirements.
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleAutoMapAllAnimations}
+                      className="px-2.5 py-1 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 rounded text-[10px] font-bold text-amber-300 transition-colors cursor-pointer"
+                    >
+                      ⚡ Auto-Map All
+                    </button>
+                    <label className="px-2.5 py-1 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 rounded text-[10px] font-bold text-amber-300 transition-colors cursor-pointer flex items-center gap-1">
+                      <span>+ Add Companion Clip (.fbx / .glb)</span>
+                      <input
+                        type="file"
+                        accept=".fbx,.glb"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleAddCompanionAnimation(f);
+                        }}
+                      />
+                    </label>
+                    <div className="text-[10px] text-slate-500">
+                      {mappedAnimCount} / {ANIMATION_ACTIONS.length} mapped
+                    </div>
                   </div>
                 </div>
+
+                {/* Categorized Clips & Requirements Panel */}
+                {parsedGLB.categorizedAnimations && parsedGLB.categorizedAnimations.length > 0 && (
+                  <div className="bg-slate-900/60 border border-slate-700/80 rounded-lg p-3 space-y-2">
+                    <div className="text-[11px] font-semibold text-amber-300 flex items-center justify-between">
+                      <span>Detected Clips & Model Requirements ({parsedGLB.categorizedAnimations.length})</span>
+                      <span className="text-[9px] text-slate-400 font-normal">Auto-categorized by rig tracks & motion</span>
+                    </div>
+
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                      {parsedGLB.categorizedAnimations.map((catAnim, idx) => {
+                        const isSelectedForPreview = activeAnimationIndex === idx;
+                        const isMapped = Object.values(animMap).includes(embeddedAnimationChoiceId(catAnim.clipName));
+
+                        return (
+                          <div
+                            key={catAnim.clipName + idx}
+                            className={`p-2 rounded border transition-colors flex items-center justify-between gap-2 flex-wrap ${
+                              isSelectedForPreview
+                                ? 'bg-amber-950/30 border-amber-500/50'
+                                : 'bg-black/40 border-slate-800'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 flex-wrap min-w-[200px]">
+                              <span className="font-bold text-[11px] text-white font-mono">{catAnim.clipName}</span>
+                              <span className="text-[9px] text-slate-400 font-mono">({catAnim.duration.toFixed(2)}s)</span>
+                              
+                              <span className="px-1.5 py-0.5 rounded text-[9px] bg-slate-800 border border-slate-700 text-slate-300">
+                                {catAnim.category}
+                              </span>
+
+                              <span className="px-1.5 py-0.5 rounded text-[9px] bg-amber-950/40 border border-amber-800/40 text-amber-300 font-mono">
+                                {catAnim.targetRigLabel}
+                              </span>
+
+                              {catAnim.isRootMotion && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] bg-sky-950/40 border border-sky-800/40 text-sky-300">
+                                  Root Motion
+                                </span>
+                              )}
+
+                              {catAnim.compatibilityWithModel && (
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[9px] border ${
+                                    catAnim.compatibilityWithModel.isCompatible
+                                      ? 'bg-emerald-950/40 border-emerald-800/40 text-emerald-300'
+                                      : 'bg-red-950/40 border-red-800/40 text-red-300'
+                                  }`}
+                                >
+                                  {catAnim.compatibilityWithModel.score}% Rig Match
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setActiveAnimationIndex(idx)}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors ${
+                                  isSelectedForPreview
+                                    ? 'bg-amber-500 text-black'
+                                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                                }`}
+                              >
+                                {isSelectedForPreview ? '■ Playing' : '▶ Preview'}
+                              </button>
+
+                              {catAnim.suggestedSlots.length > 0 && !isMapped && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const slot = catAnim.suggestedSlots[0];
+                                    setAnimMap(prev => ({ ...prev, [slot]: embeddedAnimationChoiceId(catAnim.clipName) }));
+                                    showToast?.(`Mapped to ${slot}!`);
+                                  }}
+                                  className="px-2 py-0.5 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 rounded text-[10px] font-bold transition-colors cursor-pointer"
+                                >
+                                  ⚡ Map ({catAnim.suggestedSlots[0]})
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {!hasEmbeddedAnimations && (
                   <div className="rounded border border-amber-700/40 bg-amber-950/20 px-3 py-2 text-[10px] text-amber-200">
-                    This model has no embedded clips. Animation Set choices below are catalog references; confirm their files are included in the project release. Only clips embedded in this model can preview in this upload window.
+                    This model has no embedded clips. You can upload companion .fbx/.glb clips above, or assign reusable Animation Sets below.
                   </div>
                 )}
                 {Object.values(animMap).some((choiceId) => choiceId && animationChoiceById.get(choiceId)?.sourceKind === 'animation-set') && (

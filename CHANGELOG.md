@@ -1,3 +1,26 @@
+## [2.2.031] - 2026-09-27
+- **Bible Section 47 & 3D Asset Pipeline Integration Polish**:
+  - **Saints Gaming Bible Expansion**: Added authoritative **Section 47 ("3D Model Rig Taxonomy, Bone Requirement Contracts & Animation Categorization Engine")** codifying the 7 rig families, essential vs recommended bone requirement contracts, multi-DCC bone alias normalization, functional action categories, root motion authority contracts, 70% playability compatibility threshold, PBR texture detection, and Studio ingestion release boundaries.
+  - **Live Material-Scene Synchronization**: Built and integrated `syncParsedMaterialsFromScene()` in `glbParser.ts` and `AssetDefinitionStudio.tsx`. When external companion textures or batch PBR maps are attached, live Three.js materials are immediately synchronized with the Studio UI and canonical asset metadata, showing active status indicators for Albedo, Normal, Roughness, Metallic, Emissive, and AO.
+  - **Target Model Skeleton Evaluation for Companion Animations**: Upgraded `parseGLB()` to accept `modelBoneNames`, ensuring companion animation files evaluate exact bone compatibility percentages and missing bones against the character's skeleton instead of relying on empty/sparse bones from standalone animation files.
+  - **Animation Re-Baking on Publish**: Fixed companion animations not triggering the GLTFExporter bake flag upon initial upload, guaranteeing that all imported companion clips are bundled directly into the published GLB binary.
+  - **1-Click ⚡ Auto-Map All Animations**: Added an interactive **⚡ Auto-Map All** button to the Animations tab header in `AssetDefinitionStudio.tsx` to automatically bind all suggested slots for detected clips in a single click.
+  - **Smart Multi-File Ingestion Prioritization**: Enhanced `AssetUploadView.tsx` drag-and-drop ingestion to rank geometry meshes above action clips (filtering out names with `walk`, `run`, `idle`, `atk`, `die`, etc.), ensuring multi-file uploads cleanly separate the primary character mesh from companion animation files.
+  - **Fixed Skeleton Requirements Payload**: Corrected essential/recommended bone payload mapping in `AssetDefinitionStudio.tsx` to pull authoritative definitions from `RIG_FAMILIES`.
+
+## [2.2.030] - 2026-09-27
+- **3D Asset Pipeline Overhaul — PBR Texturing, Model Rig Taxonomy & Animation Requirements**:
+  - **PBR Texture Preservation & Intelligent Channel Slotting**: Fixed FBX texture degradation where materials were exported without PBR properties. Upgraded `fbxConverter.ts` to convert meshes to `MeshStandardMaterial`, safely await asynchronous image decodes, and auto-slot external/embedded textures (Albedo, Normal, Roughness, Metallic, Emissive, AO) into PBR channels via `attachTextureFilesToMaterials`.
+  - **3D Model Rig Taxonomy Engine**: Built `modelRigTaxonomy.ts` to automatically inspect 3D model bone hierarchies and classify rig families (`HUMANOID_BIPED`, `QUADRUPED_BEAST`, `WINGED_FLYER`, `SERPENTINE`, `FLOATING_ELEMENTAL`, `MECHANICAL_PROP`). Extracts standard bone matches (Mixamo, UE Manny, Unity, Rigify, Bip01) and flags missing essential bones.
+  - **Animation Requirements & Rig Compatibility Analyzer**: Added track inspection for animation clips, calculating target rig families, required bones, and exact compatibility scores against the uploaded model's skeleton. Detects root motion versus in-place movement.
+  - **Expanded Semantic Action Slot Mapping**: Enhanced slot inference to detect creature/monster actions (`bite`, `claw`, `tail_whip`, `pounce`, `roar`, `breath`, `cast`), directional locomotion, reaction/damage hits, and fallback single-clip actor mappings (`idle`).
+  - **Studio UI Upgrades**:
+    - *Skeleton Tab*: Displays detected Rig Family banner with match confidence percentage, tail/wings indicators, missing bone warnings, and a 1-click **⚡ Auto-Map All** button.
+    - *Animations Tab*: Added an interactive **Detected Clips & Model Requirements** panel showing category tags (`Locomotion`, `Combat`, `Reactions`, `Emotes`, `Jump`), rig compatibility scores, root motion badges, 3D viewport previewing, and quick-map buttons. Added a **+ Add Companion Clip (.fbx / .glb)** button for uploading additional clips on the fly.
+    - *Materials Tab*: Provides interactive per-channel PBR texture connections with individual file pickers and real-time GLB re-baking.
+  - **Archive & Multi-File Drag-and-Drop Ingestion**: Connected `AssetUploadView.tsx` multi-file and ZIP extraction pipelines so companion animation FBXs/GLBs and texture maps are seamlessly forwarded directly into `AssetDefinitionStudio`.
+  - **Canonical Metadata Persistence**: Updated `canonicalAsset.ts`, `assetUpload.ts`, `worldModelPresentation.ts`, and `/api/assets/upload` to structure and persist `rigAnalysis`, `categorizedAnimations`, `skeletonRequirements`, and PBR `materials` in database asset records.
+
 ## [2.2.029] - 2026-09-27
 - **Equipment Sockets, Grip Calibration & Modular Loadout Compositor**:
   - **Comprehensive Socket Architecture**: Added full data contracts (`GripTransform`, `STANDARD_SOCKET_OPTIONS`, `HIDEABLE_COMPONENT_OPTIONS`) to `WorldModelSelector.tsx` for hand mounts (`RightHandMount`, `LeftHandMount`, `TwoHandedGrip`), mounted accessories (`HeadMount`, `ChestMount`), and sheathed mounts (`SheathedBack`, `SheathedHip_L`, `SheathedHip_R`).

@@ -193,6 +193,10 @@ export async function ingestAsset(options: AssetIngestOptions): Promise<AssetIng
             body: baseBodyType || undefined,
             bundle: options.bundleId || undefined,
             mode: sourceMode,
+            rigAnalysis: options.presentation?.rigAnalysis || options.presentation?.assetDefinition?.rigAnalysis || undefined,
+            categorizedAnimations: options.presentation?.categorizedAnimations || options.presentation?.assetDefinition?.categorizedAnimations || undefined,
+            skeletonRequirements: options.presentation?.skeletonRequirements || options.presentation?.assetDefinition?.skeletonRequirements || undefined,
+            materials: options.presentation?.materials || options.presentation?.assetDefinition?.materials || undefined,
           }),
         },
       });

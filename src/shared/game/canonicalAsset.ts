@@ -99,6 +99,10 @@ export interface PresentationDefinition {
     [key: string]: string | undefined;
   };
   particleEffects?: string[];
+  rigAnalysis?: any;
+  categorizedAnimations?: any[];
+  skeletonRequirements?: any;
+  materials?: any;
 }
 
 export interface CanonicalAssetInput {

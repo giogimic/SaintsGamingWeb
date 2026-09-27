@@ -19,17 +19,18 @@ export interface Unpacked3DModelPackage {
   previewUrl: string;
   assetName: string;
   textureCount: number;
+  textureFiles?: File[];
   animationFiles: File[];
   metadata?: Record<string, any>;
 }
 
-export type PbrChannel =
-  | 'map'
-  | 'normalMap'
-  | 'roughnessMap'
-  | 'metalnessMap'
-  | 'emissiveMap'
-  | 'aoMap';
+export type { PbrChannel, PbrChannel as PbrChannelType } from './textureLoader';
+export {
+  PBR_CHANNELS,
+  loadTextureFromFile,
+  detectPbrChannel,
+  attachTextureFilesToMaterials,
+} from './textureLoader';
 
 /**
  * Checks whether a given list of zip entries represents a 3D model archive (.fbx, .glb, .gltf, .obj, .vox, .dae, .stl, .ply)
@@ -49,68 +50,6 @@ export function isZip3DModelPackage(entries: string[]): boolean {
         lower.endsWith('.ply'))
     );
   });
-}
-
-/**
- * Loads a texture from a local File object, supporting Web images (.png, .jpg, .webp),
- * Targa (.tga), DirectDraw Surface (.dds), and Bitmaps (.bmp).
- */
-export async function loadTextureFromFile(file: File): Promise<THREE.Texture> {
-  const lower = file.name.toLowerCase();
-
-  if (lower.endsWith('.tga')) {
-    const buffer = await file.arrayBuffer();
-    const loader = new TGALoader();
-    const tex = loader.parse(buffer);
-    tex.flipY = false;
-    tex.needsUpdate = true;
-    return tex;
-  }
-
-  if (lower.endsWith('.dds')) {
-    const buffer = await file.arrayBuffer();
-    const loader = new DDSLoader();
-    const dds = loader.parse(buffer, true);
-    const tex = new THREE.CompressedTexture(
-      dds.mipmaps as any,
-      dds.width,
-      dds.height,
-      dds.format as any
-    );
-    tex.flipY = false;
-    tex.needsUpdate = true;
-    return tex;
-  }
-
-  const url = URL.createObjectURL(file);
-  return new Promise((resolve, reject) => {
-    const loader = new THREE.TextureLoader();
-    loader.load(
-      url,
-      (tex) => {
-        tex.flipY = false;
-        tex.needsUpdate = true;
-        resolve(tex);
-      },
-      undefined,
-      (err) => reject(err)
-    );
-  });
-}
-
-/**
- * Detects the target PBR material channel for a texture based on filename conventions.
- */
-export function detectPbrChannel(filename: string): PbrChannel | null {
-  const lower = filename.toLowerCase();
-  if (/(base_?color|albedo|diffuse|_col|_diff|_d\b|_c\b)/i.test(lower)) return 'map';
-  if (/(normal|nrm|_norm|_n\b|_nm\b)/i.test(lower)) return 'normalMap';
-  if (/(roughness|_rough|_r\b)/i.test(lower)) return 'roughnessMap';
-  if (/(metalness|metallic|_metal|_m\b)/i.test(lower)) return 'metalnessMap';
-  if (/(_orm|_arm)/i.test(lower)) return 'roughnessMap'; // Packed ORM
-  if (/(emissive|emission|_emit|_glow|_e\b)/i.test(lower)) return 'emissiveMap';
-  if (/(ao|occlusion|_occ\b|ambient)/i.test(lower)) return 'aoMap';
-  return null;
 }
 
 /**
@@ -546,6 +485,7 @@ export async function unpack3DModelZipPackage(
     previewUrl,
     assetName,
     textureCount: textureFiles.length,
+    textureFiles,
     animationFiles,
   };
 }

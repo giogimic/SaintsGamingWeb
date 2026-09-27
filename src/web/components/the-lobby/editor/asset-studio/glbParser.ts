@@ -1,5 +1,11 @@
 import { GLTFLoader } from 'three-stdlib';
 import * as THREE from 'three';
+import {
+  classifySkeletonRig,
+  analyzeAnimationClip,
+  RigAnalysisResult,
+  CategorizedAnimationClip,
+} from '@/shared/game/modelRigTaxonomy';
 
 export interface ParsedMaterial {
   name: string;
@@ -36,13 +42,53 @@ export interface ParsedGLB {
   scene: THREE.Group;
   animations: ParsedAnimation[];
   rawAnimations: THREE.AnimationClip[];
+  categorizedAnimations: CategorizedAnimationClip[];
   meshes: ParsedMesh[];
   materials: Record<string, ParsedMaterial>;
   bones: ParsedBone[];
   isSkinned: boolean;
+  rigAnalysis: RigAnalysisResult;
 }
 
-export async function parseGLB(url: string): Promise<ParsedGLB> {
+export interface ParseGlbOptions {
+  fileName?: string;
+  isSingleClipOnActor?: boolean;
+  modelBoneNames?: string[];
+}
+
+/**
+ * Synchronizes parsed material descriptors with live Three.js materials on a scene object,
+ * ensuring connected PBR textures are immediately reflected in UI and metadata.
+ */
+export function syncParsedMaterialsFromScene(
+  scene: THREE.Object3D,
+  materials: Record<string, ParsedMaterial>
+): void {
+  scene.traverse((child: any) => {
+    if (child.isMesh && child.material) {
+      const meshMaterials = Array.isArray(child.material) ? child.material : [child.material];
+      meshMaterials.forEach((mat: any) => {
+        const safeName = mat.name || 'Unnamed Material';
+        const standardMat = mat as THREE.MeshStandardMaterial;
+        materials[safeName] = {
+          name: safeName,
+          type: mat.type,
+          color: standardMat.color ? standardMat.color.getHexString() : undefined,
+          hasTexture: !!standardMat.map,
+          hasNormalMap: !!standardMat.normalMap,
+          hasRoughnessMap: !!standardMat.roughnessMap,
+          hasMetalnessMap: !!standardMat.metalnessMap,
+          hasEmissiveMap: !!standardMat.emissiveMap,
+          hasAoMap: !!standardMat.aoMap,
+          roughness: typeof standardMat.roughness === 'number' ? standardMat.roughness : undefined,
+          metalness: typeof standardMat.metalness === 'number' ? standardMat.metalness : undefined,
+        };
+      });
+    }
+  });
+}
+
+export async function parseGLB(url: string, options?: ParseGlbOptions): Promise<ParsedGLB> {
   const loader = new GLTFLoader();
   
   return new Promise((resolve, reject) => {
@@ -110,14 +156,41 @@ export async function parseGLB(url: string): Promise<ParsedGLB> {
           }
         });
 
+        // Bone analysis & Rig classification
+        const boneNames = bones.map((b) => b.name);
+        const rigAnalysis = classifySkeletonRig(boneNames);
+
+        // Analyze and categorize all animations against the model's skeleton
+        const targetBoneNames =
+          options?.modelBoneNames && options.modelBoneNames.length > 0
+            ? options.modelBoneNames
+            : boneNames;
+
+        const categorizedAnimations = rawAnimations.map((clip) =>
+          analyzeAnimationClip(
+            {
+              name: clip.name,
+              duration: clip.duration,
+              tracks: clip.tracks,
+            },
+            {
+              fileName: options?.fileName,
+              modelBoneNames: targetBoneNames,
+              isSingleClipOnActor: options?.isSingleClipOnActor ?? (rawAnimations.length === 1),
+            }
+          )
+        );
+
         resolve({
           scene,
           animations,
           rawAnimations,
+          categorizedAnimations,
           meshes,
           materials,
           bones,
           isSkinned,
+          rigAnalysis,
         });
       },
       undefined,

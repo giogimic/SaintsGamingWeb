@@ -162,6 +162,18 @@ export async function POST(req: NextRequest) {
         if (parsedDef.animations) {
           presentation.animations = parsedDef.animations;
         }
+        if (parsedDef.rigAnalysis) {
+          presentation.rigAnalysis = parsedDef.rigAnalysis;
+        }
+        if (parsedDef.categorizedAnimations) {
+          presentation.categorizedAnimations = parsedDef.categorizedAnimations;
+        }
+        if (parsedDef.skeletonRequirements) {
+          presentation.skeletonRequirements = parsedDef.skeletonRequirements;
+        }
+        if (parsedDef.materials) {
+          presentation.materials = parsedDef.materials;
+        }
       } catch (e) {
         console.error("Failed to parse assetDefinition", e);
       }

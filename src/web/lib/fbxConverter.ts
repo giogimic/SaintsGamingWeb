@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { FBXLoader, GLTFExporter, TGALoader, DDSLoader } from 'three-stdlib';
+import { attachTextureFilesToMaterials, loadTextureFromFile, detectPbrChannel } from './textureLoader';
 
 export interface FbxConversionOptions {
   textureFiles?: File[];
@@ -62,7 +63,9 @@ export async function convertFbxToGlb(
               const cleanName = tf.name.toLowerCase();
               textureMap.set(cleanName, url);
               const baseName = cleanName.replace(/\.[^/.]+$/, '');
-              textureMap.set(baseName, url);
+              if (baseName.length > 2) {
+                textureMap.set(baseName, url);
+              }
             }
 
             manager.setURLModifier((rawUrl: string) => {
@@ -73,12 +76,12 @@ export async function convertFbxToGlb(
                 return textureMap.get(filename)!;
               }
               const base = filename.replace(/\.[^/.]+$/, '');
-              if (textureMap.has(base)) {
+              if (base.length > 2 && textureMap.has(base)) {
                 return textureMap.get(base)!;
               }
               // Fuzzy suffix match (e.g. Diffuse, BaseColor, Normal)
               for (const [key, url] of textureMap.entries()) {
-                if (filename.includes(key) || key.includes(filename)) {
+                if (key.length > 3 && (filename.includes(key) || key.includes(filename))) {
                   return url;
                 }
               }
@@ -104,20 +107,90 @@ export async function convertFbxToGlb(
           await new Promise<void>((res) => {
             if (pendingLoads > 0) {
               manager.onLoad = () => res();
-              // Safety timeout in case an unresolvable asset hangs
-              setTimeout(() => res(), 1500);
+              setTimeout(() => res(), 3000);
             } else {
               setTimeout(() => res(), 100);
             }
           });
 
+          // Convert materials to MeshStandardMaterial (PBR)
+          const standardMaterials = new Map<any, THREE.MeshStandardMaterial>();
+          object.traverse((child: any) => {
+            if (child.isMesh && child.material) {
+              const origMaterials = Array.isArray(child.material) ? child.material : [child.material];
+              const newMaterials = origMaterials.map((origMat: any) => {
+                if (origMat.isMeshStandardMaterial) return origMat;
+                if (standardMaterials.has(origMat)) return standardMaterials.get(origMat)!;
+
+                const stdMat = new THREE.MeshStandardMaterial({
+                  name: origMat.name || 'Material',
+                  color: origMat.color ? origMat.color.clone() : new THREE.Color(1, 1, 1),
+                  map: origMat.map || null,
+                  normalMap: origMat.normalMap || (origMat.bumpMap ? origMat.bumpMap : null),
+                  aoMap: origMat.aoMap || null,
+                  emissive: origMat.emissive ? origMat.emissive.clone() : new THREE.Color(0, 0, 0),
+                  emissiveMap: origMat.emissiveMap || null,
+                  roughness: 0.5,
+                  metalness: 0.1,
+                  transparent: origMat.transparent || false,
+                  opacity: typeof origMat.opacity === 'number' ? origMat.opacity : 1.0,
+                });
+
+                if (stdMat.map) {
+                  stdMat.map.flipY = false;
+                  stdMat.map.needsUpdate = true;
+                }
+                if (stdMat.normalMap) {
+                  stdMat.normalMap.flipY = false;
+                  stdMat.normalMap.needsUpdate = true;
+                }
+
+                standardMaterials.set(origMat, stdMat);
+                return stdMat;
+              });
+
+              child.material = Array.isArray(child.material) ? newMaterials : newMaterials[0];
+            }
+          });
+
+          // If external texture files were provided, intelligently attach them to PBR channels
+          if (options?.textureFiles && options.textureFiles.length > 0) {
+            await attachTextureFilesToMaterials(object, options.textureFiles);
+          }
+
+          // Await any pending image decodes
+          const pendingImages: Promise<void>[] = [];
           const ALL_MAP_TYPES = [
             'map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap',
-            'specularMap', 'specularColorMap', 'specularIntensityMap', 'alphaMap',
-            'bumpMap', 'displacementMap', 'aoMap', 'lightMap', 'envMap',
-            'gradientMap', 'clearcoatMap', 'clearcoatNormalMap', 'clearcoatRoughnessMap',
-            'transmissionMap', 'thicknessMap', 'sheenColorMap', 'sheenRoughnessMap'
+            'specularMap', 'alphaMap', 'bumpMap', 'displacementMap', 'aoMap',
+            'lightMap', 'envMap', 'clearcoatMap', 'clearcoatNormalMap', 'clearcoatRoughnessMap',
           ];
+
+          object.traverse((child: any) => {
+            if (child.isMesh && child.material) {
+              const materials = Array.isArray(child.material) ? child.material : [child.material];
+              for (const mat of materials) {
+                for (const mapType of ALL_MAP_TYPES) {
+                  const tex = mat[mapType];
+                  if (tex && tex.image instanceof HTMLImageElement && !tex.image.complete) {
+                    pendingImages.push(
+                      new Promise<void>((res) => {
+                        tex.image.onload = () => res();
+                        tex.image.onerror = () => res();
+                      })
+                    );
+                  }
+                }
+              }
+            }
+          });
+
+          if (pendingImages.length > 0) {
+            await Promise.race([
+              Promise.all(pendingImages),
+              new Promise((res) => setTimeout(res, 4000)),
+            ]);
+          }
 
           // Sanitize materials and mesh properties to prevent GLTFExporter crashes on missing/corrupted textures
           object.traverse((child: any) => {
@@ -133,10 +206,9 @@ export async function convertFbxToGlb(
                       const tex = mat[mapType];
                       const img = tex?.image;
                       const isInvalid = !img ||
-                                        (typeof img.width === 'number' && img.width === 0) ||
-                                        (typeof img.height === 'number' && img.height === 0) ||
-                                        (img instanceof HTMLImageElement && (!img.complete || img.naturalWidth === 0)) ||
-                                        (img.data && img.data.length === 0);
+                        (typeof img.width === 'number' && img.width === 0) ||
+                        (typeof img.height === 'number' && img.height === 0) ||
+                        (img.data && img.data.length === 0);
 
                       if (isInvalid) {
                         mat[mapType] = null;

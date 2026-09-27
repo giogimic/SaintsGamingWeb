@@ -140,6 +140,8 @@ export function AssetUploadView({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState<any | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [companionAnimationFiles, setCompanionAnimationFiles] = useState<File[]>([]);
+  const [companionTextureFiles, setCompanionTextureFiles] = useState<File[]>([]);
 
   // Modular Detection & ZIP Package State
   const [detectedFormat, setDetectedFormat] = useState<AssetFormatDefinition | null>(null);
@@ -191,8 +193,23 @@ export function AssetUploadView({
 
     // If multiple files dropped/selected: check for 3D model + external textures/MTL
     if (files.length > 1) {
-      const fbxFile = files.find(f => f.name.toLowerCase().endsWith('.fbx'));
-      const glbFile = files.find(f => f.name.toLowerCase().endsWith('.glb') || f.name.toLowerCase().endsWith('.gltf'));
+      const isAnimFileName = (name: string) => /anim|walk|run|idle|jump|turn|jog|mocap|atk|attack|die|death|hit|react|claw|bite|cast|roar/i.test(name);
+      const allFbx = files.filter(f => f.name.toLowerCase().endsWith('.fbx')).sort((a, b) => {
+        const aAnim = isAnimFileName(a.name);
+        const bAnim = isAnimFileName(b.name);
+        if (aAnim && !bAnim) return 1;
+        if (!aAnim && bAnim) return -1;
+        return 0;
+      });
+      const allGlb = files.filter(f => /\.(glb|gltf)$/i.test(f.name)).sort((a, b) => {
+        const aAnim = isAnimFileName(a.name);
+        const bAnim = isAnimFileName(b.name);
+        if (aAnim && !bAnim) return 1;
+        if (!aAnim && bAnim) return -1;
+        return 0;
+      });
+      const fbxFile = allFbx[0];
+      const glbFile = allGlb[0];
       const objFile = files.find(f => f.name.toLowerCase().endsWith('.obj'));
       const mtlFile = files.find(f => f.name.toLowerCase().endsWith('.mtl'));
       const voxFile = files.find(f => f.name.toLowerCase().endsWith('.vox'));
@@ -200,10 +217,13 @@ export function AssetUploadView({
       const stlFile = files.find(f => f.name.toLowerCase().endsWith('.stl'));
       const plyFile = files.find(f => f.name.toLowerCase().endsWith('.ply'));
       const textureFiles = files.filter(f => /\.(png|jpe?g|webp|tga|dds|bmp)$/i.test(f.name));
+      const animFiles = files.filter(f => f !== fbxFile && f !== glbFile && /\.(fbx|glb)$/i.test(f.name));
+      setCompanionAnimationFiles(animFiles);
+      setCompanionTextureFiles(textureFiles);
 
       if (fbxFile) {
         try {
-          showToast?.(`Converting FBX with ${textureFiles.length} external textures...`);
+          showToast?.(`Converting FBX with ${textureFiles.length} external textures and ${animFiles.length} animations...`);
           const glb = await convertFbxToGlb(fbxFile, { textureFiles });
           setSelectedFile(glb);
           setPreviewUrl(URL.createObjectURL(glb));
@@ -485,6 +505,8 @@ export function AssetUploadView({
         const pkg3d = await unpack3DModelZipPackage(zipFile, (msg) => showToast?.(msg));
         setSelectedFile(pkg3d.primaryModelFile);
         setPreviewUrl(pkg3d.previewUrl);
+        setCompanionAnimationFiles(pkg3d.animationFiles || []);
+        setCompanionTextureFiles(pkg3d.textureFiles || []);
         if (!assetName) setAssetName(pkg3d.assetName);
         setAssetType('MODEL');
         setUnpackedZip(null);
@@ -734,7 +756,8 @@ export function AssetUploadView({
     setUnpackedZip(null);
     setUploadSuccess(null);
     setErrorMessage(null);
-    setErrorMessage(null);
+    setCompanionAnimationFiles([]);
+    setCompanionTextureFiles([]);
     setCharacterPresentationType('2D_SPRITE');
     setIsCharacterCustomizable(false);
     setSupportedComponents('');
@@ -921,7 +944,9 @@ export function AssetUploadView({
       ) : selectedFile?.name.match(/\.(fbx|glb|gltf|obj|vox|dae|stl|ply)$/i) && previewUrl ? (
         <AssetDefinitionStudio 
           file={selectedFile} 
-          previewUrl={previewUrl} 
+          previewUrl={previewUrl}
+          companionAnimationFiles={companionAnimationFiles}
+          companionTextureFiles={companionTextureFiles}
           onSuccess={(asset) => {
             setUploadSuccess(asset);
             if (onUploadComplete) onUploadComplete(asset);

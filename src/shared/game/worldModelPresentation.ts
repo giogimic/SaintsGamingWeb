@@ -50,6 +50,10 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
   const camHeight = Number(model.cameraHeightOffset ?? model.cameraYOffset ?? data.cameraHeightOffset ?? data.cameraYOffset ?? (data.assetDefinition?.transform?.cameraYOffset));
 
   const animations = model.animations ?? data.animations ?? data.assetDefinition?.animations;
+  const rigAnalysis = model.rigAnalysis ?? data.rigAnalysis ?? data.assetDefinition?.rigAnalysis;
+  const categorizedAnimations = model.categorizedAnimations ?? data.categorizedAnimations ?? data.assetDefinition?.categorizedAnimations;
+  const skeletonRequirements = model.skeletonRequirements ?? data.skeletonRequirements ?? data.assetDefinition?.skeletonRequirements;
+  const materials = model.materials ?? data.materials ?? data.assetDefinition?.materials;
 
   return {
     mode: '3D',
@@ -60,5 +64,9 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
     modelScale: Number.isFinite(scale) && scale > 0 ? Math.min(100, scale) : undefined,
     cameraHeightOffset: Number.isFinite(camHeight) && camHeight > 0 ? camHeight : undefined,
     animations,
+    rigAnalysis,
+    categorizedAnimations,
+    skeletonRequirements,
+    materials,
   };
 }
