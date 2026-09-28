@@ -73,6 +73,7 @@ import {
 } from '@/shared/game/studioEvents';
 import { resolveSafePlayerSpawn } from '@/shared/game/worldSpawns';
 import { savePlayerLocationSnapshot } from '@/shared/game/playerLocationSync';
+import { CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z } from '@/shared/game/voxel/VoxelChunk';
 
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
 import { fetchAllMaps } from '@/app/actions/admin/game-admin';
@@ -268,8 +269,9 @@ export default function TheLobby({
 
   const defaultSpawnMapId = releaseManifest?.world?.spawnMap || '';
   const DEFAULT_SPAWN = { 
-    x: releaseManifest?.world?.spawnX || 15, 
-    y: releaseManifest?.world?.spawnY || 15 
+    x: releaseManifest?.world?.spawnX ?? 15,
+    y: releaseManifest?.world?.spawnY ?? 15,
+    z: releaseManifest?.world?.spawnZ ?? 14,
   };
 
   const selectAndLoadCharacter = async (charId: string) => {
@@ -285,7 +287,11 @@ export default function TheLobby({
       
       let validPosition = parsedState.position || { ...DEFAULT_SPAWN };
       if (typeof res.data.lastX === 'number' && typeof res.data.lastY === 'number') {
-        validPosition = { x: res.data.lastX, y: res.data.lastY, z: res.data.lastZ ?? 14 };
+        validPosition = {
+          x: res.data.lastX,
+          y: res.data.lastY,
+          z: typeof res.data.lastZ === 'number' ? res.data.lastZ : validPosition.z ?? DEFAULT_SPAWN.z,
+        };
       }
 
       // Query available world maps to verify map existence
@@ -327,16 +333,50 @@ export default function TheLobby({
       if (!validMapId) {
         validMapId = defaultSpawnMapId || loadedSpawn || allKnownMaps[0] || 'genesis';
       }
-      validPosition = { x: safeSpawn.x, y: safeSpawn.y };
+      const normalizedSavedMap = savedMap.replace(/_ch\d+$/, '');
+      const isRestoringSavedMap = normalizedSavedMap === validMapId;
+      validPosition = {
+        x: safeSpawn.x,
+        y: safeSpawn.y,
+        // Keep the saved voxel depth only when the saved map itself is being restored.
+        // A map fallback must use the active world's authored spawn depth.
+        z: isRestoringSavedMap && Number.isFinite(validPosition.z) ? validPosition.z! : DEFAULT_SPAWN.z,
+      };
+
+      const clampToExtent = (value: number, extent: number, fallback: number) =>
+        Math.max(0, Math.min(Math.max(0, extent - 1), Number.isFinite(value) ? value : fallback));
+      const clampPositionForMap = (position: { x: number; y: number; z?: number }, map: Awaited<ReturnType<typeof loadMap>>) => {
+        const voxelDoc = map.voxelDoc;
+        if (map.mapType === 'VOXEL' || voxelDoc) {
+          const dimensions = voxelDoc?.dimensions;
+          const width = dimensions?.widthChunks
+            ? dimensions.widthChunks * CHUNK_SIZE_X
+            : voxelDoc?.mapWidth || map.width || map.grid?.[0]?.length || CHUNK_SIZE_X;
+          const depth = dimensions?.depthChunks
+            ? dimensions.depthChunks * CHUNK_SIZE_Z
+            : voxelDoc?.mapHeight || map.height || map.grid?.length || CHUNK_SIZE_Z;
+          const height = dimensions?.heightChunks
+            ? dimensions.heightChunks * CHUNK_SIZE_Y
+            : CHUNK_SIZE_Y;
+          return {
+            x: clampToExtent(position.x, width, DEFAULT_SPAWN.x),
+            y: clampToExtent(position.y, height, DEFAULT_SPAWN.y),
+            z: clampToExtent(position.z ?? DEFAULT_SPAWN.z, depth, DEFAULT_SPAWN.z),
+          };
+        }
+
+        const width = map.width || map.grid?.[0]?.length || 30;
+        const height = map.height || map.grid?.length || 30;
+        return {
+          ...position,
+          x: Math.max(1, Math.min(width - 2, position.x ?? DEFAULT_SPAWN.x)),
+          y: Math.max(1, Math.min(height - 2, position.y ?? DEFAULT_SPAWN.y)),
+        };
+      };
 
       try {
         const loaded = ensureMapHasStudioTilesets(await loadMap(validMapId));
-        const mw = loaded.width || loaded.grid?.[0]?.length || 30;
-        const mh = loaded.height || loaded.grid?.length || 30;
-        validPosition = {
-          x: Math.max(1, Math.min(mw - 2, validPosition.x ?? 15)),
-          y: Math.max(1, Math.min(mh - 2, validPosition.y ?? 15)),
-        };
+        validPosition = clampPositionForMap(validPosition, loaded);
         useGameStore.getState().setActiveMapData(loaded);
         preloadAdjacentMaps(validMapId).catch(console.error);
       } catch {
@@ -344,6 +384,7 @@ export default function TheLobby({
         validPosition = { ...DEFAULT_SPAWN };
         try {
           const loadedFallback = ensureMapHasStudioTilesets(await loadMap(validMapId));
+          validPosition = clampPositionForMap(validPosition, loadedFallback);
           useGameStore.getState().setActiveMapData(loadedFallback);
         } catch {}
       }
@@ -447,12 +488,13 @@ export default function TheLobby({
       validPosition = {
         x: Math.max(1, Math.min(mw - 2, DEFAULT_SPAWN.x)),
         y: Math.max(1, Math.min(mh - 2, DEFAULT_SPAWN.y)),
+        z: DEFAULT_SPAWN.z,
       };
       useGameStore.getState().setActiveMapData(loaded);
       preloadAdjacentMaps(validMapId).catch(console.error);
     } catch {
       validMapId = spawnMapId;
-      validPosition = { x: 15, y: 15 };
+      validPosition = { x: 15, y: 15, z: DEFAULT_SPAWN.z };
       try {
         const loadedFallback = ensureMapHasStudioTilesets(await loadMap(spawnMapId));
         useGameStore.getState().setActiveMapData(loadedFallback);
