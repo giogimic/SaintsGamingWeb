@@ -4432,7 +4432,7 @@ export class BabylonEngine {
               || rigAnalysis.isHumanoid === true;
             const animationConfig = applyAnimationProfileFallback(
               mergedAnimationConfig,
-              isHumanoidRig ? profileId : undefined,
+              isHumanoidRig ? (profileId || 'MocapMobility') : undefined,
             );
 
             if (animationConfig?.mapped) {
