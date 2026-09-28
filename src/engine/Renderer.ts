@@ -567,9 +567,9 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
         }
         
         // 3. 3D Model Animations & Rotation
-        if (state.presentation?.mode === '3D' && state.animationGroups) {
+        if (state.presentation?.mode === '3D' && mesh.metadata?.animationGroups) {
           const isEntityWalking = state.isMoving || dist > 0.01;
-          const groups = state.animationGroups;
+          const groups = mesh.metadata.animationGroups;
           let runAnim = groups.find((ag: any) => ag.name.toLowerCase().includes('run') || ag.name.toLowerCase().includes('walk'));
           let idleAnim = groups.find((ag: any) => ag.name.toLowerCase().includes('idle'));
           
