@@ -154,9 +154,9 @@ export function detectAssetTaxonomy(
   }
 
   // Check 2: Standalone Weapon / Shield
-  const isWeaponName = /(sword|axe|dagger|staff|mace|hammer|spear|bow|crossbow|wand|shield|gun|rifle|blade|halberd|scythe|weapon)/i.test(lower);
+  const isWeaponName = /(sword|swords|axe|axes|dagger|daggers|staff|staffs|staves|mace|maces|hammer|hammers|spear|spears|bow|bows|crossbow|crossbows|wand|wands|shield|shields|gun|guns|pistol|pistols|rifle|rifles|blade|blades|halberd|halberds|scythe|scythes|weapon|weapons|katana|greatsword|claymore|rapier|saber|sabre|scepter|sceptre|flail|club|morningstar|scimitar|falchion|broadsword|longsword|shortsword|zweihander|shotgun|blunderbuss|revolver|musket|buckler|offhand|tome|spellbook|grimoire|lantern|orb)/i.test(lower);
   if (isWeaponName && !/(knight|paladin|warrior|character|hero)/i.test(lower)) {
-    const isShield = /shield/i.test(lower);
+    const isShield = /(shield|shields|buckler|bucklers|offhand|tome|tomes|spellbook|spellbooks|grimoire|grimoires|lantern|lanterns|orb|orbs|relic|chalice)/i.test(lower);
     return {
       category: 'weapon',
       structure: 'ModularItem',
@@ -180,25 +180,25 @@ export function detectAssetTaxonomy(
   let pieceLabel = 'Modular Piece';
 
   // Specific facial accessories must precede generic face/head base meshes so face_glasses or face_mask do not map to face
-  if (/(glasses|sunglasses|shades|goggles|spectacles|monocle|eyepatch|eyewear|headphone|headphones|face_?accessories|face_?accessory|visor|visors|specs|cat_?ears|bunny_?ears|fox_?ears|wolf_?ears|animal_?ears|horns|ram_?horns|demon_?horns|dragon_?horns|halo|antenna|antennae)/i.test(lower)) {
+  if (/(glasses|sunglasses|sunglass|shades|shade|goggles|goggle|spectacles|spectacle|monocle|eyepatch|eyepatches|eyewear|headphone|headphones|headset|headsets|face_?accessories|face_?accessory|visor|visors|specs|blindfold|blindfolds|cat_?ears|bunny_?ears|fox_?ears|wolf_?ears|animal_?ears|horns|ram_?horns|demon_?horns|dragon_?horns|halo|halos|antenna|antennae)/i.test(lower)) {
     modularSlot = 'head_accessory';
     pieceLabel = 'Head Accessory / Glasses';
-  } else if (/(earring|earrings|jewelry|jewellery|ring|necklace|necklaces|amulet|amulets|pendant|pendants|bracelet|bracelets|badge|badges|choker|chokers|scarf|scarves|necktie|collar|brooch|pin)/i.test(lower)) {
+  } else if (/(earring|earrings|piercing|piercings|nose_?ring|nose_?stud|lip_?ring|lip_?stud|septum|eyebrow_?ring|cigar|cigars|cigarette|cigarettes|pipe|smoking_?pipe|jewelry|jewellery|ring|rings|necklace|necklaces|amulet|amulets|pendant|pendants|bracelet|bracelets|badge|badges|choker|chokers|scarf|scarves|necktie|collar|brooch|pin)/i.test(lower)) {
     modularSlot = 'accessory';
     pieceLabel = 'Modular Accessory / Jewelry';
-  } else if (/(mask|masks|bandana|bandanas|respirator|respirators|veil|veils|facemask|face_?cover|face_?mask|balaclava|balaclavas|mouth_?cover|gas_?mask)/i.test(lower)) {
+  } else if (/(mask|masks|bandana|bandanas|respirator|respirators|veil|veils|facemask|face_?cover|face_?mask|balaclava|balaclavas|mouth_?cover|gas_?mask|face_?shield)/i.test(lower)) {
     modularSlot = 'mask';
     pieceLabel = 'Face Mask / Bandana';
   } else if (/(beard|beards|mustache|mustaches|moustache|moustaches|goatee|goatees|whiskers|facial_?hair|stubble|sideburns|muttonchops)/i.test(lower)) {
     modularSlot = 'beard';
     pieceLabel = 'Modular Beard / Facial Hair';
-  } else if (/(hair|wig|wigs|ponytail|braids|dreads|afro|fade|buzzcut|curls|bun|buns|pigtails|bangs|topknot|undercut|dreadlocks|cornrows|locks|mohawk|pompadour)/i.test(lower)) {
+  } else if (/(hair|wig|wigs|ponytail|braids|dreads|afro|fade|buzzcut|curls|bun|buns|pigtails|bangs|topknot|undercut|dreadlocks|cornrows|locks|mohawk|pompadour|eyebrow|eyebrows)/i.test(lower)) {
     modularSlot = 'hair';
     pieceLabel = 'Modular Hairstyle';
-  } else if (/(hat|hats|helmet|helmets|cap|caps|hood|crown|crowns|headband|tiara|beret|fedora|beanie|sombrero|turban|circlet|cowl)/i.test(lower)) {
+  } else if (/(hat|hats|helmet|helmets|cap|caps|hood|crown|crowns|headband|tiara|tiaras|beret|berets|fedora|fedoras|beanie|beanies|sombrero|sombreros|turban|turbans|circlet|circlets|cowl|cowls)/i.test(lower)) {
     modularSlot = 'hat';
     pieceLabel = 'Modular Headwear / Helmet';
-  } else if (/(face|faces|head_base|eye_color|eyes|eyeball|mouth|teeth|tongue|lips|nose|head_skin|facial_features|(\b|_)ears(\b|_))/i.test(lower) && !/(earring|cat_?ears|bunny_?ears)/i.test(lower)) {
+  } else if (/(face|faces|head_base|eye_color|eyes|eyeball|mouth|teeth|tongue|lips|nose|head_skin|facial_features|(\b|_)ears(\b|_))/i.test(lower) && !/(earring|cat_?ears|bunny_?ears|fox_?ears|wolf_?ears|animal_?ears|piercing|nose_?ring|lip_?ring|septum)/i.test(lower)) {
     modularSlot = 'face';
     pieceLabel = 'Modular Face / Head';
   } else if (/(boot|boots|shoe|shoes|sneaker|sneakers|foot|feet|slippers|sabaton|sabatons|sandals|loafers|heels|cleats|foot_armor)/i.test(lower)) {
@@ -207,19 +207,19 @@ export function detectAssetTaxonomy(
   } else if (/(glove|gloves|gauntlet|gauntlets|wrist|bracelet|hands|bracer|bracers|mittens|hand_armor|vambrace|vambraces)/i.test(lower)) {
     modularSlot = 'gloves';
     pieceLabel = 'Modular Gloves / Hands';
-  } else if (/(pants|pant|trousers|shorts|skirt|skirts|jeans|legs|greaves|kilt|kilts|sweatpants|chaps|leggings|tights|slacks|breeches|leg_armor)/i.test(lower)) {
+  } else if (/(pants|pant|trousers|shorts|skirt|skirts|jeans|legs|greaves|kilt|kilts|sweatpants|chaps|leggings|tights|slacks|breeches|leg_armor|loincloth|loincloths|underwear|boxers|briefs)/i.test(lower)) {
     modularSlot = 'pants';
     pieceLabel = 'Modular Pants / Legs';
-  } else if (/(cape|capes|cloak|backpack|backpacks|wings|wing|quiver|quivers|back_?item|back|scabbard|scabbards|tail|tails|cat_?tail|fox_?tail|wolf_?tail|devil_?tail|dragon_?tail|jetpack)/i.test(lower)) {
+  } else if (/(cape|capes|backpack|backpacks|wings|wing|quiver|quivers|back_?item|back|scabbard|scabbards|sheath|sheaths|tail|tails|cat_?tail|fox_?tail|wolf_?tail|devil_?tail|dragon_?tail|jetpack|banner|war_?banner|back_?banner)/i.test(lower)) {
     modularSlot = 'back';
     pieceLabel = 'Modular Cape / Back Item';
   } else if (/(belt|belts|waist|sash|sashes|buckle|girdle|holster|holsters|hip_?pouch|fanny_?pack|toolbelt)/i.test(lower)) {
     modularSlot = 'belt';
     pieceLabel = 'Modular Belt / Waist';
-  } else if (/(jacket|jackets|coat|coats|hoodie|hoodies|vest|vests|robe|robes|blazer|cardigan|parka|overcoat|sweater|sweaters|windbreaker|duster|trenchcoat|poncho|pauldron|pauldrons|spaulder|spaulders|shoulder_?pad|shoulder_?armor|mantle)/i.test(lower)) {
+  } else if (/(jacket|jackets|coat|coats|hoodie|hoodies|vest|vests|robe|robes|waistcoat|waistcoats|blazer|cardigan|parka|overcoat|sweater|sweaters|windbreaker|duster|trenchcoat|poncho|pauldron|pauldrons|spaulder|spaulders|shoulder_?pad|shoulder_?armor|mantle|tabard|tabards|surcoat|surcoats|cloak|cloaks)/i.test(lower)) {
     modularSlot = 'jacket';
     pieceLabel = 'Modular Jacket / Outerwear';
-  } else if (/(t_?shirt|shirt|shirts|chest|torso|top_|(\b|_)?top(\b|_|\d)|tunic|undershirt|tank|corset|chestplate|breastplate|cuirass|hauberk|crop_?top|polo|jersey|jerseys|blouse|singlet)/i.test(lower)) {
+  } else if (/(t_?shirt|shirt|shirts|chest|torso|top_|(\b|_)?top(\b|_|\d)|tunic|undershirt|tank|corset|corsets|chestplate|chestplates|breastplate|breastplates|cuirass|cuirasses|hauberk|crop_?top|polo|jersey|jerseys|blouse|singlet)/i.test(lower)) {
     modularSlot = 'shirt';
     pieceLabel = 'Modular Shirt / Torso';
   } else if (/(clothing|outfit|outfits|costume|costumes|suit|suits|fullbody|overall|overalls|jumpsuit|jumpsuits|armor_set)/i.test(lower)) {

@@ -104,7 +104,7 @@ export function ModelWardrobeEditor({
         : [];
       const visibleCatalog = matched.length > 0 ? matched : modelItems;
       if (cancelled) return;
-      setCatalog(visibleCatalog.sort((a, b) => displayName(a).localeCompare(displayName(b))));
+      setCatalog(visibleCatalog.sort((a, b) => displayName(a).localeCompare(displayName(b), undefined, { numeric: true, sensitivity: 'base' })));
       setRelatedIds(matched.map((asset) => asset.id));
       setIsLoading(false);
     };
@@ -315,28 +315,28 @@ export function ModelWardrobeEditor({
               <button
                 type="button"
                 onClick={() => setCategoryFilter('ALL')}
-                className={`rounded px-2 py-0.5 font-semibold transition-colors ${categoryFilter === 'ALL' ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200'}`}
+                className={`rounded px-2 py-0.5 font-semibold transition-colors ${categoryFilter === 'ALL' ? 'bg-primary/20 text-primary border border-primary/40' : 'text-slate-400 hover:text-slate-200'}`}
               >
                 All
               </button>
               <button
                 type="button"
                 onClick={() => setCategoryFilter('HEAD_FACE')}
-                className={`rounded px-2 py-0.5 font-semibold transition-colors ${categoryFilter === 'HEAD_FACE' ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200'}`}
+                className={`rounded px-2 py-0.5 font-semibold transition-colors ${categoryFilter === 'HEAD_FACE' ? 'bg-primary/20 text-primary border border-primary/40' : 'text-slate-400 hover:text-slate-200'}`}
               >
                 Head / Face
               </button>
               <button
                 type="button"
                 onClick={() => setCategoryFilter('CLOTHING')}
-                className={`rounded px-2 py-0.5 font-semibold transition-colors ${categoryFilter === 'CLOTHING' ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200'}`}
+                className={`rounded px-2 py-0.5 font-semibold transition-colors ${categoryFilter === 'CLOTHING' ? 'bg-primary/20 text-primary border border-primary/40' : 'text-slate-400 hover:text-slate-200'}`}
               >
                 Clothing
               </button>
               <button
                 type="button"
                 onClick={() => setCategoryFilter('GEAR')}
-                className={`rounded px-2 py-0.5 font-semibold transition-colors ${categoryFilter === 'GEAR' ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200'}`}
+                className={`rounded px-2 py-0.5 font-semibold transition-colors ${categoryFilter === 'GEAR' ? 'bg-primary/20 text-primary border border-primary/40' : 'text-slate-400 hover:text-slate-200'}`}
               >
                 Gear / Weapons
               </button>
@@ -346,7 +346,7 @@ export function ModelWardrobeEditor({
               <button
                 type="button"
                 onClick={() => setShowAddedOnly((current) => !current)}
-                className={`rounded border px-2 py-0.5 font-semibold ${showAddedOnly ? 'border-cyan-500/60 text-cyan-200 bg-cyan-950/20' : 'border-slate-700 text-slate-400 hover:text-slate-200'}`}
+                className={`rounded border px-2 py-0.5 font-semibold ${showAddedOnly ? 'border-primary/60 text-primary bg-primary/20' : 'border-slate-700 text-slate-400 hover:text-slate-200'}`}
               >
                 {showAddedOnly ? 'Show all' : 'Added only'}
               </button>
@@ -360,7 +360,7 @@ export function ModelWardrobeEditor({
             return (
               <div key={asset.id} className="rounded border border-slate-800 bg-black/25 p-2">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={!!configured} onChange={(event) => toggleIncluded(asset, event.target.checked)} className="rounded border-slate-600 bg-black text-cyan-500 focus:ring-0" />
+                  <input type="checkbox" checked={!!configured} onChange={(event) => toggleIncluded(asset, event.target.checked)} className="rounded border-slate-600 bg-black text-primary focus:ring-0" />
                   <span className="min-w-0 flex-1 truncate text-[10px] font-semibold text-slate-200">{label}</span>
                   <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[8px] uppercase text-slate-400">
                     {getModelWardrobeCategory({ assetId: asset.id, label, category: asset.componentCategory || asset.metadata?.componentCategory || asset.metadata?.cat || undefined }).replace(/_/g, ' ')}
@@ -370,12 +370,12 @@ export function ModelWardrobeEditor({
                   <div className="ml-6 mt-1.5 space-y-2">
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
                     <label className="flex items-center gap-1.5 text-[9px] text-slate-300">
-                      <input type="checkbox" checked={configured.defaultVisible !== false} onChange={(event) => updateItem(asset.id, { defaultVisible: event.target.checked })} className="rounded border-slate-600 bg-black text-cyan-500 focus:ring-0" />
+                      <input type="checkbox" checked={configured.defaultVisible !== false} onChange={(event) => updateItem(asset.id, { defaultVisible: event.target.checked })} className="rounded border-slate-600 bg-black text-primary focus:ring-0" />
                       Show by default
                     </label>
                     {allowCharacterCreationOptions && (
                       <label className="flex items-center gap-1.5 text-[9px] text-slate-300">
-                        <input type="checkbox" checked={configured.availableInCharacterCreation === true} onChange={(event) => updateItem(asset.id, { availableInCharacterCreation: event.target.checked })} className="rounded border-slate-600 bg-black text-cyan-500 focus:ring-0" />
+                        <input type="checkbox" checked={configured.availableInCharacterCreation === true} onChange={(event) => updateItem(asset.id, { availableInCharacterCreation: event.target.checked })} className="rounded border-slate-600 bg-black text-primary focus:ring-0" />
                         Offer during creation
                       </label>
                     )}
@@ -440,18 +440,18 @@ export function ModelWardrobeEditor({
           {orphanedItems.map((item) => (
             <div key={item.assetId} className="rounded border border-slate-800 bg-black/25 p-2">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked onChange={() => onChange(value.filter((current) => current.assetId !== item.assetId))} className="rounded border-slate-600 bg-black text-cyan-500 focus:ring-0" />
+                <input type="checkbox" checked onChange={() => onChange(value.filter((current) => current.assetId !== item.assetId))} className="rounded border-slate-600 bg-black text-primary focus:ring-0" />
                 <span className="min-w-0 flex-1 truncate text-[10px] font-semibold text-slate-200">{item.label || item.assetId}</span>
                 <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[8px] uppercase text-slate-400">{item.category || 'item'}</span>
               </label>
               <div className="ml-6 mt-1.5 flex flex-wrap gap-x-4 gap-y-1.5">
                 <label className="flex items-center gap-1.5 text-[9px] text-slate-300">
-                  <input type="checkbox" checked={item.defaultVisible !== false} onChange={(event) => updateItem(item.assetId, { defaultVisible: event.target.checked })} className="rounded border-slate-600 bg-black text-cyan-500 focus:ring-0" />
+                  <input type="checkbox" checked={item.defaultVisible !== false} onChange={(event) => updateItem(item.assetId, { defaultVisible: event.target.checked })} className="rounded border-slate-600 bg-black text-primary focus:ring-0" />
                   Show by default
                 </label>
                 {allowCharacterCreationOptions && (
                   <label className="flex items-center gap-1.5 text-[9px] text-slate-300">
-                    <input type="checkbox" checked={item.availableInCharacterCreation === true} onChange={(event) => updateItem(item.assetId, { availableInCharacterCreation: event.target.checked })} className="rounded border-slate-600 bg-black text-cyan-500 focus:ring-0" />
+                    <input type="checkbox" checked={item.availableInCharacterCreation === true} onChange={(event) => updateItem(item.assetId, { availableInCharacterCreation: event.target.checked })} className="rounded border-slate-600 bg-black text-primary focus:ring-0" />
                     Offer during creation
                   </label>
                 )}

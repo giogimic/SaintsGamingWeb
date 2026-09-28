@@ -24,14 +24,21 @@ export interface ModelWardrobeItem {
 const CATEGORY_ALIASES: Record<string, CharacterComponentCategory> = {
   glasses: 'head_accessory',
   sunglasses: 'head_accessory',
+  sunglass: 'head_accessory',
   shades: 'head_accessory',
+  shade: 'head_accessory',
   eyewear: 'head_accessory',
   goggles: 'head_accessory',
+  goggle: 'head_accessory',
   spectacles: 'head_accessory',
   monocle: 'head_accessory',
   eyepatch: 'head_accessory',
   headphone: 'head_accessory',
   headphones: 'head_accessory',
+  headset: 'head_accessory',
+  headsets: 'head_accessory',
+  blindfold: 'head_accessory',
+  blindfolds: 'head_accessory',
   head_accessories: 'head_accessory',
   face_accessory: 'head_accessory',
   face_accessories: 'head_accessory',
@@ -107,6 +114,12 @@ const CATEGORY_ALIASES: Record<string, CharacterComponentCategory> = {
   pauldrons: 'jacket',
   spaulder: 'jacket',
   spaulders: 'jacket',
+  waistcoat: 'jacket',
+  waistcoats: 'jacket',
+  tabard: 'jacket',
+  tabards: 'jacket',
+  surcoat: 'jacket',
+  surcoats: 'jacket',
   armor: 'clothing',
   armour: 'clothing',
   clothing: 'clothing',
@@ -121,6 +134,8 @@ const CATEGORY_ALIASES: Record<string, CharacterComponentCategory> = {
   skirt: 'pants',
   greaves: 'pants',
   leggings: 'pants',
+  loincloth: 'pants',
+  loincloths: 'pants',
   boots: 'shoes',
   boot: 'shoes',
   shoes: 'shoes',
@@ -141,13 +156,19 @@ const CATEGORY_ALIASES: Record<string, CharacterComponentCategory> = {
   wings: 'back',
   wing: 'back',
   quiver: 'back',
+  quivers: 'back',
   tail: 'back',
   tails: 'back',
+  scabbard: 'back',
+  sheath: 'back',
+  banner: 'back',
+  jetpack: 'back',
   back: 'back',
   belt: 'belt',
   waist: 'belt',
   sash: 'belt',
   holster: 'belt',
+  holsters: 'belt',
   weapon: 'weapon_main',
   weapons: 'weapon_main',
   sword: 'weapon_main',
@@ -161,6 +182,8 @@ const CATEGORY_ALIASES: Record<string, CharacterComponentCategory> = {
   buckler: 'weapon_off',
   offhand: 'weapon_off',
   tome: 'weapon_off',
+  spellbook: 'weapon_off',
+  grimoire: 'weapon_off',
   orb: 'weapon_off',
   lantern: 'weapon_off',
   jewelry: 'accessory',
@@ -169,6 +192,13 @@ const CATEGORY_ALIASES: Record<string, CharacterComponentCategory> = {
   ring: 'accessory',
   earring: 'accessory',
   earrings: 'accessory',
+  piercing: 'accessory',
+  piercings: 'accessory',
+  nose_ring: 'accessory',
+  lip_ring: 'accessory',
+  septum: 'accessory',
+  cigar: 'accessory',
+  pipe: 'accessory',
   bracelet: 'accessory',
   scarf: 'accessory',
   choker: 'accessory',
@@ -212,15 +242,15 @@ export function getModelWardrobeCategory(item: ModelWardrobeItem): CharacterComp
   // Specific pieces evaluate before broad sets (e.g. shoes, pants, shirts before fullbody clothing)
   const patterns: Array<[RegExp, CharacterComponentCategory]> = [
     // Eyewear / Glasses (check face accessory, headphones, and costume ears here so they don't get swallowed by face)
-    [/\b(glasses|sunglasses|shades|eyewear|goggles|spectacles|monocle|eyepatch|face accessory|face accessories|headphone|headphones|visor|visors|specs|cat ears|bunny ears|fox ears|wolf ears|animal ears|horns|ram horns|demon horns|dragon horns|halo|antenna|antennae)\b/, 'head_accessory'],
-    // Jewelry & Small Accessories (evaluated before face so earrings aren't trapped in face)
-    [/\b(earring|earrings|necklace|necklaces|amulet|amulets|pendant|pendants|bracelet|bracelets|ring|rings|jewelry|jewellery|badge|badges|choker|chokers|scarf|scarves|necktie|collar|brooch|pin)\b/, 'accessory'],
+    [/\b(glasses|sunglasses|sunglass|shades|shade|eyewear|goggles|goggle|spectacles|spectacle|monocle|eyepatch|eyepatches|face accessory|face accessories|headphone|headphones|headset|headsets|visor|visors|specs|blindfold|blindfolds|cat ears|bunny ears|fox ears|wolf ears|animal ears|horns|ram horns|demon horns|dragon horns|halo|halos|antenna|antennae)\b/, 'head_accessory'],
+    // Jewelry & Small Accessories (evaluated before face so earrings and piercings aren't trapped in face)
+    [/\b(earring|earrings|piercing|piercings|nose ring|nose stud|lip ring|lip stud|septum|eyebrow ring|cigar|cigars|cigarette|cigarettes|pipe|smoking pipe|necklace|necklaces|amulet|amulets|pendant|pendants|bracelet|bracelets|ring|rings|jewelry|jewellery|badge|badges|choker|chokers|scarf|scarves|necktie|collar|brooch|pin)\b/, 'accessory'],
     // Masks & Face Covers
-    [/\b(mask|masks|bandana|bandanas|respirator|respirators|veil|veils|facemask|facemasks|face mask|face cover|balaclava|balaclavas|mouth cover|gas mask|gasmask)\b/, 'mask'],
+    [/\b(mask|masks|bandana|bandanas|respirator|respirators|veil|veils|facemask|facemasks|face mask|face cover|balaclava|balaclavas|mouth cover|gas mask|gasmask|face shield)\b/, 'mask'],
     // Facial Hair / Beard
     [/\b(beard|beards|mustache|mustaches|moustache|moustaches|goatee|goatees|whiskers|facial hair|stubble|sideburns|muttonchops)\b/, 'beard'],
     // Hair / Hairstyles
-    [/\b(hair|wig|wigs|ponytail|ponytails|braids|dreads|afro|fade|buzzcut|curls|bun|buns|pigtails|bangs|topknot|undercut|dreadlocks|cornrows|locks|mohawk|pompadour)\b/, 'hair'],
+    [/\b(hair|wig|wigs|ponytail|ponytails|braids|dreads|afro|fade|buzzcut|curls|bun|buns|pigtails|bangs|topknot|undercut|dreadlocks|cornrows|locks|mohawk|pompadour|eyebrow|eyebrows)\b/, 'hair'],
     // Headwear / Hats
     [/\b(helmet|helmets|hat|hats|cap|caps|crown|crowns|hood|hoods|beanie|beanies|headband|headbands|tiara|tiaras|beret|berets|fedora|fedoras|sombrero|turban|turbans|circlet|circlets|cowl)\b/, 'hat'],
     // Face Mesh / Features (tested after glasses, earrings, mask, and beard)
@@ -230,17 +260,17 @@ export function getModelWardrobeCategory(item: ModelWardrobeItem): CharacterComp
     // Gloves / Hands
     [/\b(glove|gloves|gauntlet|gauntlets|bracer|bracers|mittens|hand armor|wrist|wristband|wristbands|vambrace|vambraces)\b/, 'gloves'],
     // Pants / Legs
-    [/\b(pants|pant|trousers|leggings|shorts|skirt|skirts|jeans|bottoms|greaves|kilt|kilts|sweatpants|chaps|tights|slacks|breeches|leg armor)\b/, 'pants'],
+    [/\b(pants|pant|trousers|leggings|shorts|skirt|skirts|jeans|bottoms|greaves|kilt|kilts|sweatpants|chaps|tights|slacks|breeches|leg armor|loincloth|loincloths|underwear|boxers|briefs)\b/, 'pants'],
     // Back / Cape / Backpack / Wings / Tails
-    [/\b(cape|capes|backpack|backpacks|wings|wing|quiver|quivers|back item|back mount|scabbard|scabbards|tail|tails|cat tail|fox tail|wolf tail|devil tail|dragon tail|jetpack)\b/, 'back'],
+    [/\b(cape|capes|backpack|backpacks|wings|wing|quiver|quivers|back item|back mount|scabbard|scabbards|sheath|sheaths|tail|tails|cat tail|fox tail|wolf tail|devil tail|dragon tail|jetpack|banner|war banner|back banner)\b/, 'back'],
     // Belts / Waist / Holster
     [/\b(belt|belts|waist|sash|sashes|buckle|buckles|girdle|girdles|holster|holsters|hip pouch|fanny pack|toolbelt)\b/, 'belt'],
     // Weapons / Offhand
-    [/\b(shield|shields|buckler|bucklers|offhand|off hand|tome|tomes|orb|orbs|lantern|lanterns|grimoire|grimoires|parrying dagger)\b/, 'weapon_off'],
+    [/\b(shield|shields|buckler|bucklers|offhand|off hand|tome|tomes|orb|orbs|lantern|lanterns|grimoire|grimoires|spellbook|spellbooks|relic|relics|chalice|parrying dagger)\b/, 'weapon_off'],
     // Weapons / Main Hand
-    [/\b(weapon|weapons|sword|swords|blade|blades|axe|axes|mace|maces|hammer|hammers|staff|staffs|staves|wand|wands|bow|bows|dagger|daggers|gun|guns|pistol|pistols|rifle|rifles|spear|spears|halberd|halberds|scythe|scythes|crossbow|crossbows|katana|greatsword|claymore|rapier|saber|sabre)\b/, 'weapon_main'],
+    [/\b(weapon|weapons|sword|swords|blade|blades|axe|axes|mace|maces|hammer|hammers|staff|staffs|staves|wand|wands|bow|bows|dagger|daggers|gun|guns|pistol|pistols|rifle|rifles|spear|spears|halberd|halberds|scythe|scythes|crossbow|crossbows|katana|greatsword|claymore|rapier|saber|sabre|scepter|sceptre|flail|club|morningstar|scimitar|falchion|broadsword|longsword|shortsword|zweihander|shotgun|blunderbuss|revolver|musket)\b/, 'weapon_main'],
     // Outerwear / Jackets / Robes / Pauldrons
-    [/\b(jacket|jackets|coat|coats|outerwear|cloak|cloaks|robe|robes|vest|vests|blazer|blazers|cardigan|cardigans|hoodie|hoodies|parka|parkas|overcoat|overcoats|sweater|sweaters|windbreaker|windbreakers|duster|dusters|trenchcoat|trenchcoats|poncho|ponchos|pauldron|pauldrons|spaulder|spaulders|shoulderpad|shoulderpads|shoulder armor|mantle)\b/, 'jacket'],
+    [/\b(jacket|jackets|coat|coats|outerwear|cloak|cloaks|robe|robes|vest|vests|waistcoat|waistcoats|blazer|blazers|cardigan|cardigans|hoodie|hoodies|parka|parkas|overcoat|overcoats|sweater|sweaters|windbreaker|windbreakers|duster|dusters|trenchcoat|trenchcoats|poncho|ponchos|pauldron|pauldrons|spaulder|spaulders|shoulderpad|shoulderpads|shoulder armor|mantle|tabard|tabards|surcoat|surcoats)\b/, 'jacket'],
     // Shirts / Tops / Chest Armor
     [/\b(shirt|shirts|t shirt|tshirt|tshirts|top|tops|tunic|tunics|undershirt|undershirts|blouse|blouses|tank|tank top|corset|corsets|chest|chestplate|chestplates|breastplate|breastplates|cuirass|cuirasses|hauberk|crop top|croptop|polo|jersey|jerseys|singlet)\b/, 'shirt'],
     // Full Outfits / Armor Sets (evaluated after individual clothing pieces)

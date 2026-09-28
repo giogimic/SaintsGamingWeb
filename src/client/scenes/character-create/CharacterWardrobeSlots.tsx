@@ -156,8 +156,17 @@ export function CharacterWardrobeSlots({
     groupedItems.set(slotId, slotItems);
   }
 
+  const knownSlotIds = new Set(SLOTS.map((s) => s.id));
+  const extraItems: ModelWardrobeItem[] = [];
+  groupedItems.forEach((items, slotId) => {
+    if (!knownSlotIds.has(slotId)) {
+      extraItems.push(...items);
+    }
+  });
+
   const chooseItem = (slotId: string, itemId: string) => {
-    const slotIds = new Set((groupedItems.get(slotId) || []).map((item) => item.assetId));
+    const slotItems = slotId === 'other' ? extraItems : (groupedItems.get(slotId) || []);
+    const slotIds = new Set(slotItems.map((item) => item.assetId));
     const next = selectedWardrobeAssetIds.filter((selectedId) => !slotIds.has(selectedId));
     if (itemId) next.push(itemId);
     setSelectedWardrobeAssetIds(next);
@@ -166,14 +175,6 @@ export function CharacterWardrobeSlots({
   const headFaceSlots = SLOTS.filter((s) => s.group === 'head_face' && (groupedItems.get(s.id)?.length || 0) > 0);
   const clothingSlots = SLOTS.filter((s) => s.group === 'clothing' && (groupedItems.get(s.id)?.length || 0) > 0);
   const gearSlots = SLOTS.filter((s) => s.group === 'gear' && (groupedItems.get(s.id)?.length || 0) > 0);
-
-  const knownSlotIds = new Set(SLOTS.map((s) => s.id));
-  const extraItems: ModelWardrobeItem[] = [];
-  groupedItems.forEach((items, slotId) => {
-    if (!knownSlotIds.has(slotId)) {
-      extraItems.push(...items);
-    }
-  });
 
   const showHead = activeFilter === 'all' || activeFilter === 'head_face';
   const showClothing = activeFilter === 'all' || activeFilter === 'clothing';

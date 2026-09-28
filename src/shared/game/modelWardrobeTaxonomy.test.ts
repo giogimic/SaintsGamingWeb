@@ -159,11 +159,29 @@ describe('modelWardrobeTaxonomy & Slot Separation', () => {
       expect(getModelWardrobeCategory({ assetId: 'sunglasses_test', category: 'sunglasses' })).toBe('head_accessory');
     });
 
-    it('resolves animal ears to head_accessory and earrings to accessory without colliding with face', () => {
+    it('resolves animal ears to head_accessory and earrings and piercings to accessory without colliding with face', () => {
       expect(getModelWardrobeCategory({ assetId: 'cat_ears_01', label: 'Cat Ears Headband' })).toBe('head_accessory');
       expect(getModelWardrobeCategory({ assetId: 'bunny_ears_pink', label: 'Bunny Ears' })).toBe('head_accessory');
       expect(getModelWardrobeCategory({ assetId: 'gold_earrings', label: 'Gold Hoop Earrings' })).toBe('accessory');
       expect(getModelWardrobeCategory({ assetId: 'silver_earring_left', label: 'Silver Stud' })).toBe('accessory');
+      // Piercings mention facial features like "nose" or "lip" but must resolve to accessory, NOT face mesh!
+      expect(getModelWardrobeCategory({ assetId: 'gold_nose_ring', label: 'Gold Nose Ring' })).toBe('accessory');
+      expect(getModelWardrobeCategory({ assetId: 'lip_ring_silver', label: 'Silver Lip Stud' })).toBe('accessory');
+      expect(getModelWardrobeCategory({ assetId: 'septum_piercing', label: 'Tribal Septum Ring' })).toBe('accessory');
+      expect(getModelWardrobeCategory({ assetId: 'cigar_item', label: 'Classic Cigar' })).toBe('accessory');
+    });
+
+    it('resolves expanded gear types like tabards, spellbooks, banners, and loincloths', () => {
+      expect(getModelWardrobeCategory({ assetId: 'crusader_tabard', label: 'Crusader Tabard' })).toBe('jacket');
+      expect(getModelWardrobeCategory({ assetId: 'royal_surcoat', label: 'Royal Surcoat' })).toBe('jacket');
+      expect(getModelWardrobeCategory({ assetId: 'barbarian_loincloth', label: 'Leather Loincloth' })).toBe('pants');
+      expect(getModelWardrobeCategory({ assetId: 'clan_war_banner', label: 'Clan War Banner' })).toBe('back');
+      expect(getModelWardrobeCategory({ assetId: 'sword_sheath', label: 'Back Sheath' })).toBe('back');
+      expect(getModelWardrobeCategory({ assetId: 'ancient_spellbook', label: 'Ancient Spellbook' })).toBe('weapon_off');
+      expect(getModelWardrobeCategory({ assetId: 'holy_relic', label: 'Holy Relic' })).toBe('weapon_off');
+      expect(getModelWardrobeCategory({ assetId: 'royal_scepter', label: 'Royal Scepter' })).toBe('weapon_main');
+      expect(getModelWardrobeCategory({ assetId: 'iron_flail', label: 'Heavy Flail' })).toBe('weapon_main');
+      expect(getModelWardrobeCategory({ assetId: 'pirate_blunderbuss', label: 'Pirate Blunderbuss' })).toBe('weapon_main');
     });
 
     it('allows simultaneous equipping across all 17 canonical slots without any collisions', () => {
