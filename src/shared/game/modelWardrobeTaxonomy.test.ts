@@ -4,6 +4,7 @@ import {
   getModelWardrobeSlotId,
   getDefaultModelWardrobeAttachmentMode,
   getDefaultModelWardrobeSocket,
+  groupModelWardrobeItems,
 } from './modelWardrobe';
 
 describe('modelWardrobeTaxonomy & Slot Separation', () => {
@@ -211,6 +212,33 @@ describe('modelWardrobeTaxonomy & Slot Separation', () => {
         'accessory',
       ]);
     });
+
+    it('groups and sorts wardrobe items deterministically without lumping faces and glasses', () => {
+      const items = [
+        { assetId: 'face_02', label: 'Male Face 02', defaultVisible: false },
+        { assetId: 'face_01', label: 'Male Face 01', defaultVisible: true },
+        { assetId: 'face_10', label: 'Male Face 10', defaultVisible: false },
+        { assetId: 'glasses_01', label: 'Classic Aviators', defaultVisible: false },
+        { assetId: 'glasses_02', label: 'Gold Wire Spectacles', defaultVisible: true },
+      ];
+
+      const groups = groupModelWardrobeItems(items);
+      expect(groups.length).toBe(2);
+
+      const faceGroup = groups.find((g) => g.category === 'face');
+      const glassesGroup = groups.find((g) => g.category === 'head_accessory');
+
+      expect(faceGroup).toBeDefined();
+      expect(faceGroup?.icon).toBe('😐');
+      // Face 01 is defaultVisible, so it comes first; then natural numeric: Face 02 before Face 10
+      expect(faceGroup?.items.map((i) => i.assetId)).toEqual(['face_01', 'face_02', 'face_10']);
+
+      expect(glassesGroup).toBeDefined();
+      expect(glassesGroup?.icon).toBe('👓');
+      // Glasses 02 is defaultVisible, so it comes first
+      expect(glassesGroup?.items.map((i) => i.assetId)).toEqual(['glasses_02', 'glasses_01']);
+    });
   });
 });
+
 

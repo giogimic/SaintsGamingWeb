@@ -63,9 +63,10 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
 
   const model = data.worldModel || data;
   const modelType = model.type || model.assetProfileId;
-  if (!model.assetId || (modelType !== '3D Model' && modelType !== 'MODEL')) return undefined;
-
   const candidateBaseUrl = model.modelUrl || model.source || (typeof model === 'object' && model?.url);
+  const rawId = model.assetId || candidateBaseUrl;
+  if (!rawId || (modelType !== '3D Model' && modelType !== 'MODEL')) return undefined;
+
   const modelUrl = candidateBaseUrl || resolveModelAssetUrl(model.assetId) || resolveEntitySpriteUrl(model.assetId);
   if (!modelUrl) return undefined;
 

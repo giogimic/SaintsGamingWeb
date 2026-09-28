@@ -368,17 +368,16 @@ export function ArchetypeModelPreview3D({
     let cancelled = false;
     AssetManager.getInstance().getAsset(baseAssetId).then((asset) => {
       if (!cancelled && asset?.source) {
-        setResolvedBaseUrl(asset.source);
-      } else if (!cancelled) {
-        setResolvedBaseUrl(resolveEntitySpriteUrl(baseAssetId));
+        const assetUrl = resolveModelAssetUrl(asset.source) || asset.source;
+        setResolvedBaseUrl(assetUrl);
       }
     }).catch(() => {
-      if (!cancelled) setResolvedBaseUrl(resolveEntitySpriteUrl(baseAssetId));
+      // Do not assign 2D sprite URLs to a 3D GLTF renderer
     });
     return () => { cancelled = true; };
   }, [baseAssetId, baseModelUrl]);
 
-  const effectiveBaseUrl = resolvedBaseUrl || (baseAssetId ? resolveEntitySpriteUrl(baseAssetId) : null);
+  const effectiveBaseUrl = resolvedBaseUrl || (baseAssetId ? resolveModelAssetUrl(baseAssetId) : null);
 
   const handleLoadedAnimations = (loaded: { name: string; duration: number }[]) => {
     setAnimations(loaded);

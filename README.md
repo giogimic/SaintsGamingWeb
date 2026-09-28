@@ -143,6 +143,14 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 
 ## Changelog
 
+### v2.2.050
+- **Deterministic Wardrobe Group Sorting, Category Icons, Model URL Fallbacks & 3D Preview Guardrails**:
+  - **Deterministic Wardrobe Group Sorting (`modelWardrobe.ts`)**: Upgraded `groupModelWardrobeItems` to sort all items within their respective category groups with default-visible items first (`defaultVisible !== false`), followed alphabetically by label using natural numeric collation (`numeric: true`), eliminating erratic item ordering across all creator and customizer interfaces.
+  - **Universal Wardrobe Category Icons (`modelWardrobe.ts`, `character-creator.tsx`, `AppearanceCustomizer.tsx`)**: Exported canonical `WARDROBE_CATEGORY_ICONS` across all 18 component categories (`face: 😐`, `head_accessory: 👓`, `beard: 🧔`, `hat: 🎩`, `mask: 😷`, `shirt: 👕`, `jacket: 🧥`, `clothing: 👔`, `pants: 👖`, `shoes: 👟`, etc.). Integrated category icons, item count badges, and per-category "Clear" buttons into both `character-creator.tsx` and `AppearanceCustomizer.tsx`.
+  - **Model URL Fallbacks & Presentation Safety (`worldModelPresentation.ts`, `CharacterCreateScene.tsx`, `character-creator.tsx`)**: In `worldModelPresentation.ts`, relaxed the strict `model.assetId` check by accepting `model.modelUrl`, `model.source`, or `model.url` as fallback identifiers, ensuring 3D archetypes configured with direct URLs resolve cleanly. Added URL fallbacks to `modelAssetId` in `character-creator.tsx` and `CharacterCreateScene.tsx`.
+  - **3D Preview Sprite Rejection Guardrail (`ArchetypeModelPreview3D.tsx`)**: Fixed a runtime error where non-3D entity keys fell back to 2D sprite paths (`/game-assets/npc/adventurer.png`), causing Three.js `GLTFLoader` to throw JSON parse errors. `effectiveBaseUrl` now strictly validates 3D model formats.
+  - **Unit Testing Expansion (`modelWardrobeTaxonomy.test.ts`)**: Added unit tests verifying `groupModelWardrobeItems` provides category icons and natural sorting without lumping faces and glasses together (12/12 passing).
+
 ### v2.2.049
 - **Universal Wardrobe Slot Healing, Face & Eyewear Disambiguation, Taxonomy Expansion & Category Filtering**:
   - **Universal Slot Healing & Broad Tag Refinement (`modelWardrobe.ts`, `assetTaxonomy.ts`)**: Resolved a core limitation where `getModelWardrobeSlotId` previously bypassed categorization if `item.slot` was already an explicit valid category name (such as `face` or `clothing`). This caused items stored in the database with broad legacy tags to permanently stick to `'face'`, preventing glasses/eyewear from being unbundled. `getModelWardrobeSlotId` now directly delegates to `getModelWardrobeCategory(item)` so broad slot tags (`face`, `clothing`, `accessory`, `hair`, `hat`, `shirt`, `other`) are continuously healed and refined by semantic keyword matching.

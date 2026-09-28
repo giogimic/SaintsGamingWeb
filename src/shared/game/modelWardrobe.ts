@@ -311,6 +311,27 @@ export function getDefaultModelWardrobeSocket(item: ModelWardrobeItem): string {
   return 'RightHandMount';
 }
 
+export const WARDROBE_CATEGORY_ICONS: Record<CharacterComponentCategory, string> = {
+  face: '😐',
+  hair: '💇',
+  beard: '🧔',
+  head_accessory: '👓',
+  mask: '😷',
+  hat: '🎩',
+  shirt: '👕',
+  jacket: '🧥',
+  clothing: '👔',
+  pants: '👖',
+  shoes: '👟',
+  gloves: '🧤',
+  back: '🎒',
+  belt: '🥋',
+  weapon_main: '⚔️',
+  weapon_off: '🛡️',
+  accessory: '💍',
+  other: '📦',
+};
+
 const WARDROBE_CATEGORY_ORDER: CharacterComponentCategory[] = [
   'face', 'hair', 'beard', 'head_accessory', 'mask', 'hat', 'shirt', 'jacket', 'clothing', 'pants', 'shoes', 'gloves', 'back', 'belt', 'weapon_main', 'weapon_off', 'accessory', 'other',
 ];
@@ -318,6 +339,7 @@ const WARDROBE_CATEGORY_ORDER: CharacterComponentCategory[] = [
 export function groupModelWardrobeItems(items: ModelWardrobeItem[]): Array<{
   category: CharacterComponentCategory;
   label: string;
+  icon: string;
   items: ModelWardrobeItem[];
 }> {
   const groups = new Map<CharacterComponentCategory, ModelWardrobeItem[]>();
@@ -329,11 +351,25 @@ export function groupModelWardrobeItems(items: ModelWardrobeItem[]): Array<{
   }
   return WARDROBE_CATEGORY_ORDER
     .filter((category) => groups.has(category))
-    .map((category) => ({
-      category,
-      label: CHARACTER_COMPONENT_CATEGORIES[category].label,
-      items: groups.get(category)!,
-    }));
+    .map((category) => {
+      const groupItems = groups.get(category)!;
+      const sorted = [...groupItems].sort((a, b) => {
+        const aDef = a.defaultVisible !== false ? 0 : 1;
+        const bDef = b.defaultVisible !== false ? 0 : 1;
+        if (aDef !== bDef) return aDef - bDef;
+        return getModelWardrobeItemLabel(a).localeCompare(
+          getModelWardrobeItemLabel(b),
+          undefined,
+          { numeric: true, sensitivity: 'base' }
+        );
+      });
+      return {
+        category,
+        label: CHARACTER_COMPONENT_CATEGORIES[category].label,
+        icon: WARDROBE_CATEGORY_ICONS[category] || '📦',
+        items: sorted,
+      };
+    });
 }
 
 export function getModelWardrobeItemLabel(item: ModelWardrobeItem): string {

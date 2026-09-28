@@ -215,8 +215,10 @@ export function CharacterCreateScene() {
     [explicitCreationItems, wardrobeItems]
   );
   const modelAssetId = parsedVisualData?.worldModel?.type === '3D Model'
-    ? parsedVisualData.worldModel.assetId
-    : parsedVisualData?.type === '3D Model' ? parsedVisualData.assetId : undefined;
+    ? (parsedVisualData.worldModel.assetId || parsedVisualData.worldModel.modelUrl || parsedVisualData.worldModel.url)
+    : parsedVisualData?.type === '3D Model'
+    ? (parsedVisualData.assetId || parsedVisualData.modelUrl || parsedVisualData.url)
+    : undefined;
   const isModelArchetype = Boolean(modelAssetId);
   const hasCreatorWardrobe = isModelArchetype || wardrobeOptions.length > 0;
   const wardrobePreviewAttachments = useMemo(() => {
