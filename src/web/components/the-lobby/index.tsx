@@ -1032,8 +1032,7 @@ export default function TheLobby({
         }, 7000);
       }
 
-      const state = useGameStore.getState();
-      const op = data.socketId ? state.otherPlayers[data.socketId] : undefined;
+      const op = peerKey ? state.otherPlayers[peerKey] : undefined;
       dispatchChatEvent({
         id: Date.now().toString() + Math.random(),
         sender: data.sender || op?.name || 'Saint',
