@@ -1,4 +1,4 @@
-## [2.2.038] - 2026-09-28
+## [2.2.039] - 2026-09-28
 - **Animation System Fixes for 3D Models**:
   - **Fallback Animation Profile**: Added missing fallback to the `MocapMobility` animation profile for humanoid characters that do not explicitly specify an animation profile. This prevents default player models from being stuck in a T-pose when spawned, ensuring core movement animations (run, idle, walk, jump) are bound properly.
 

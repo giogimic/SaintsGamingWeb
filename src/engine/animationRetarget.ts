@@ -119,40 +119,39 @@ for (const group of BONE_EQUIVALENCE_GROUPS) {
 }
 
 /**
- * Finds the corresponding destination node for a given source bone name.
+ * Finds ALL corresponding destination nodes for a given source bone name.
+ * Essential for modular avatars where clothing pieces have their own TransformNodes.
  */
-export function findMatchingTargetNode(
+export function findAllMatchingTargetNodes(
   sourceName: string,
   targetNodes: BABYLON.TransformNode[]
-): BABYLON.TransformNode | undefined {
-  if (!sourceName || !targetNodes || targetNodes.length === 0) return undefined;
+): BABYLON.TransformNode[] {
+  if (!sourceName || !targetNodes || targetNodes.length === 0) return [];
 
   // 1. Direct exact match
-  const exact = targetNodes.find(n => n.name === sourceName);
-  if (exact) return exact;
+  const exact = targetNodes.filter(n => n.name === sourceName);
+  if (exact.length > 0) return exact;
 
   const normSource = normalizeBoneName(sourceName);
-  if (!normSource) return undefined;
+  if (!normSource) return [];
 
   // 2. Direct normalized match
-  const directNorm = targetNodes.find(n => normalizeBoneName(n.name) === normSource);
-  if (directNorm) return directNorm;
+  const directNorm = targetNodes.filter(n => normalizeBoneName(n.name) === normSource);
+  if (directNorm.length > 0) return directNorm;
 
   // 3. Equivalence group match
   const aliases = ALIAS_LOOKUP.get(normSource);
   if (aliases) {
-    const aliasMatch = targetNodes.find(n => aliases.has(normalizeBoneName(n.name)));
-    if (aliasMatch) return aliasMatch;
+    const aliasMatches = targetNodes.filter(n => aliases.has(normalizeBoneName(n.name)));
+    if (aliasMatches.length > 0) return aliasMatches;
   }
 
   // 4. Substring / suffix match
-  const suffixMatch = targetNodes.find(n => {
+  const suffixMatches = targetNodes.filter(n => {
     const normTarget = normalizeBoneName(n.name);
     return normTarget.endsWith(normSource) || normSource.endsWith(normTarget);
   });
-  if (suffixMatch) return suffixMatch;
-
-  return undefined;
+  return suffixMatches;
 }
 
 export interface RetargetOptions {
@@ -191,9 +190,9 @@ export function retargetAnimationGroup(
     const targetName = sourceTarget?.name;
     if (!targetName) continue;
 
-    const destNode = findMatchingTargetNode(targetName, targetNodes);
-    if (destNode) {
-      newAg.addTargetedAnimation(ta.animation, destNode);
+    const destNodes = findAllMatchingTargetNodes(targetName, targetNodes);
+    for (const destNode of destNodes) {
+      newAg.addTargetedAnimation(ta.animation.clone(), destNode);
       matchedBones++;
     }
   }

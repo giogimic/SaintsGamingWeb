@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeBoneName, findMatchingTargetNode } from './animationRetarget';
+import { normalizeBoneName, findAllMatchingTargetNodes } from './animationRetarget';
 
 describe('animationRetarget', () => {
   it('normalizes bone names correctly across namespaces and prefixes', () => {
@@ -35,19 +35,19 @@ describe('animationRetarget', () => {
     ] as any[];
 
     // Mixamo source names
-    expect(findMatchingTargetNode('mixamorig:Hips', unrealNodes)?.name).toBe('pelvis');
-    expect(findMatchingTargetNode('mixamorig:Spine', unrealNodes)?.name).toBe('spine_01');
-    expect(findMatchingTargetNode('mixamorig:Spine1', unrealNodes)?.name).toBe('spine_02');
-    expect(findMatchingTargetNode('mixamorig:Neck', unrealNodes)?.name).toBe('neck_01');
-    expect(findMatchingTargetNode('mixamorig:Head', unrealNodes)?.name).toBe('head');
-    expect(findMatchingTargetNode('mixamorig:LeftShoulder', unrealNodes)?.name).toBe('clavicle_l');
-    expect(findMatchingTargetNode('mixamorig:LeftArm', unrealNodes)?.name).toBe('upperarm_l');
-    expect(findMatchingTargetNode('mixamorig:LeftForeArm', unrealNodes)?.name).toBe('lowerarm_l');
-    expect(findMatchingTargetNode('mixamorig:LeftHand', unrealNodes)?.name).toBe('hand_l');
-    expect(findMatchingTargetNode('mixamorig:LeftUpLeg', unrealNodes)?.name).toBe('thigh_l');
-    expect(findMatchingTargetNode('mixamorig:LeftLeg', unrealNodes)?.name).toBe('calf_l');
-    expect(findMatchingTargetNode('mixamorig:LeftFoot', unrealNodes)?.name).toBe('foot_l');
-    expect(findMatchingTargetNode('mixamorig:LeftToeBase', unrealNodes)?.name).toBe('ball_l');
+    expect(findAllMatchingTargetNodes('mixamorig:Hips', unrealNodes)[0]?.name).toBe('pelvis');
+    expect(findAllMatchingTargetNodes('mixamorig:Spine', unrealNodes)[0]?.name).toBe('spine_01');
+    expect(findAllMatchingTargetNodes('mixamorig:Spine1', unrealNodes)[0]?.name).toBe('spine_02');
+    expect(findAllMatchingTargetNodes('mixamorig:Neck', unrealNodes)[0]?.name).toBe('neck_01');
+    expect(findAllMatchingTargetNodes('mixamorig:Head', unrealNodes)[0]?.name).toBe('head');
+    expect(findAllMatchingTargetNodes('mixamorig:LeftShoulder', unrealNodes)[0]?.name).toBe('clavicle_l');
+    expect(findAllMatchingTargetNodes('mixamorig:LeftArm', unrealNodes)[0]?.name).toBe('upperarm_l');
+    expect(findAllMatchingTargetNodes('mixamorig:LeftForeArm', unrealNodes)[0]?.name).toBe('lowerarm_l');
+    expect(findAllMatchingTargetNodes('mixamorig:LeftHand', unrealNodes)[0]?.name).toBe('hand_l');
+    expect(findAllMatchingTargetNodes('mixamorig:LeftUpLeg', unrealNodes)[0]?.name).toBe('thigh_l');
+    expect(findAllMatchingTargetNodes('mixamorig:LeftLeg', unrealNodes)[0]?.name).toBe('calf_l');
+    expect(findAllMatchingTargetNodes('mixamorig:LeftFoot', unrealNodes)[0]?.name).toBe('foot_l');
+    expect(findAllMatchingTargetNodes('mixamorig:LeftToeBase', unrealNodes)[0]?.name).toBe('ball_l');
   });
 
   it('matches Unreal bone names to Mixamo destination nodes', () => {
@@ -61,11 +61,11 @@ describe('animationRetarget', () => {
       { name: 'mixamorig:RightUpLeg' },
     ] as any[];
 
-    expect(findMatchingTargetNode('pelvis', mixamoNodes)?.name).toBe('mixamorig:Hips');
-    expect(findMatchingTargetNode('spine_01', mixamoNodes)?.name).toBe('mixamorig:Spine');
-    expect(findMatchingTargetNode('upperarm_l', mixamoNodes)?.name).toBe('mixamorig:LeftArm');
-    expect(findMatchingTargetNode('lowerarm_l', mixamoNodes)?.name).toBe('mixamorig:LeftForeArm');
-    expect(findMatchingTargetNode('hand_l', mixamoNodes)?.name).toBe('mixamorig:LeftHand');
-    expect(findMatchingTargetNode('thigh_r', mixamoNodes)?.name).toBe('mixamorig:RightUpLeg');
+    expect(findAllMatchingTargetNodes('pelvis', mixamoNodes)[0]?.name).toBe('mixamorig:Hips');
+    expect(findAllMatchingTargetNodes('spine_01', mixamoNodes)[0]?.name).toBe('mixamorig:Spine');
+    expect(findAllMatchingTargetNodes('upperarm_l', mixamoNodes)[0]?.name).toBe('mixamorig:LeftArm');
+    expect(findAllMatchingTargetNodes('lowerarm_l', mixamoNodes)[0]?.name).toBe('mixamorig:LeftForeArm');
+    expect(findAllMatchingTargetNodes('hand_l', mixamoNodes)[0]?.name).toBe('mixamorig:LeftHand');
+    expect(findAllMatchingTargetNodes('thigh_r', mixamoNodes)[0]?.name).toBe('mixamorig:RightUpLeg');
   });
 });

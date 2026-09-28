@@ -1326,7 +1326,7 @@ export default function GameOptionsMenu({
             <span>&bull;</span>
             <span className="text-amber-400/80 font-bold">Time To Play</span>
             <span>&bull;</span>
-            <span className="font-mono text-slate-500">v2.2.038</span>
+            <span className="font-mono text-slate-500">v2.2.039</span>
           </div>
 
           <div className="flex items-center gap-2">

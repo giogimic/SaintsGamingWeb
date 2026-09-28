@@ -4229,10 +4229,32 @@ export class BabylonEngine {
 
                 if (isSkinned) {
                   if (baseSkeleton) {
-                    result.meshes.forEach((m) => {
-                      if ((m as any).skeleton) (m as any).skeleton = baseSkeleton;
-                      if (!m.parent && baseRoot) m.parent = baseRoot;
-                    });
+                    const clothingSkeletons = result.skeletons || [];
+                    if (clothingSkeletons.length > 0) {
+                      // Industry standard modular sync: link clothing bones to base transform nodes by name
+                      clothingSkeletons.forEach((clothingSkeleton) => {
+                        clothingSkeleton.bones.forEach((clothingBone) => {
+                          const baseBone = baseSkeleton.bones.find((b: any) => 
+                            b.name === clothingBone.name || b.id === clothingBone.id || b.name === clothingBone.id
+                          );
+                          if (baseBone) {
+                            const baseNode = baseBone.getTransformNode();
+                            if (baseNode) {
+                              clothingBone.linkTransformNode(baseNode);
+                            }
+                          }
+                        });
+                      });
+                      result.meshes.forEach((m) => {
+                        if (!m.parent && baseRoot) m.parent = baseRoot;
+                      });
+                    } else {
+                      // Fallback if no skeleton exists in the container
+                      result.meshes.forEach((m) => {
+                        if ((m as any).skeleton) (m as any).skeleton = baseSkeleton;
+                        if (!m.parent && baseRoot) m.parent = baseRoot;
+                      });
+                    }
                   } else {
                     console.warn(`[BabylonEngine] Wearable ${att?.assetId || idx} has no base skeleton to bind to; keeping it in the model's local space.`);
                     if (root && baseRoot && !root.parent) root.parent = baseRoot;

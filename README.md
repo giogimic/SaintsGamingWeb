@@ -143,7 +143,7 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 
 ## Changelog
 
-### v2.2.038
+### v2.2.039
 - **Animation System Fixes for 3D Models**:
   - **Fallback Animation Profile**: Added missing fallback to the `MocapMobility` animation profile for humanoid characters that do not explicitly specify an animation profile. This prevents default player models from being stuck in a T-pose when spawned, ensuring core movement animations (run, idle, walk, jump) are bound properly.
 
