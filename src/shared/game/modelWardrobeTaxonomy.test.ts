@@ -109,5 +109,11 @@ describe('modelWardrobeTaxonomy & Slot Separation', () => {
       expect(getDefaultModelWardrobeSocket({ assetId: 'sword_01' })).toBe('RightHandMount');
       expect(getDefaultModelWardrobeSocket({ assetId: 'backpack_01' })).toBe('ChestMount');
     });
+
+    it('resolves sunglasses and shades aliases correctly to head_accessory', () => {
+      expect(getModelWardrobeCategory({ assetId: 'shades_test', category: 'shades' })).toBe('head_accessory');
+      expect(getModelWardrobeCategory({ assetId: 'sunglasses_test', category: 'sunglasses' })).toBe('head_accessory');
+    });
   });
 });
+

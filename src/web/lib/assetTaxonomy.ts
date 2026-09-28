@@ -179,45 +179,49 @@ export function detectAssetTaxonomy(
   let modularSlot: string | undefined = undefined;
   let pieceLabel = 'Modular Piece';
 
-  if (/(face|head_base|eyes|eyeball|mouth|teeth|tongue)/i.test(lower)) {
-    modularSlot = 'face';
-    pieceLabel = 'Modular Face / Head';
-  } else if (/(beard|mustache|moustache|goatee|whiskers|facial_hair|stubble)/i.test(lower)) {
+  // Specific facial accessories must precede generic face/head base meshes so face_glasses or face_mask do not map to face
+  if (/(glasses|sunglasses|shades|goggles|spectacles|monocle|eyepatch|eyewear|headphone|headphones|face_?accessories|face_?accessory)/i.test(lower)) {
+    modularSlot = 'head_accessory';
+    pieceLabel = 'Head Accessory / Glasses';
+  } else if (/(mask|masks|bandana|respirator|veil|facemask|face_?cover|face_?mask)/i.test(lower)) {
+    modularSlot = 'mask';
+    pieceLabel = 'Face Mask / Bandana';
+  } else if (/(beard|mustache|moustache|goatee|whiskers|facial_?hair|stubble|sideburns)/i.test(lower)) {
     modularSlot = 'beard';
     pieceLabel = 'Modular Beard / Facial Hair';
   } else if (/(hair|wig|ponytail|braids|dreads|afro|fade|buzzcut|curls)/i.test(lower)) {
     modularSlot = 'hair';
     pieceLabel = 'Modular Hairstyle';
-  } else if (/(glasses|sunglasses|goggles|spectacles|monocle|eyepatch|eyewear|headphone|face_accessory)/i.test(lower)) {
-    modularSlot = 'head_accessory';
-    pieceLabel = 'Head Accessory / Glasses';
-  } else if (/(mask|bandana|respirator|veil|facemask|face_cover)/i.test(lower)) {
-    modularSlot = 'mask';
-    pieceLabel = 'Face Mask / Bandana';
   } else if (/(hat|helmet|cap|hood|crown|horns|headband|tiara|beret)/i.test(lower)) {
-    modularSlot = 'head';
+    modularSlot = 'hat';
     pieceLabel = 'Modular Headwear / Helmet';
-  } else if (/(jacket|coat|hoodie|vest|robe|blazer|cardigan|parka)/i.test(lower)) {
+  } else if (/(face|head_base|eye_color|eyes|eyeball|mouth|teeth|tongue|lips|nose)/i.test(lower)) {
+    modularSlot = 'face';
+    pieceLabel = 'Modular Face / Head';
+  } else if (/(jacket|coat|hoodie|vest|robe|blazer|cardigan|parka|cloak)/i.test(lower)) {
     modularSlot = 'jacket';
     pieceLabel = 'Modular Jacket / Outerwear';
   } else if (/(t_?shirt|shirt|chest|torso|top_|tunic|undershirt|tank|corset|chestplate|breastplate|cuirass|hauberk)/i.test(lower)) {
-    modularSlot = 'chest';
+    modularSlot = 'shirt';
     pieceLabel = 'Modular Shirt / Torso';
   } else if (/(pants|pant|trousers|shorts|skirt|jeans|legs|greaves|kilt)/i.test(lower)) {
-    modularSlot = 'legs';
+    modularSlot = 'pants';
     pieceLabel = 'Modular Pants / Legs';
   } else if (/(boot|boots|shoe|shoes|sneaker|sneakers|foot|feet|slippers|sabaton)/i.test(lower)) {
-    modularSlot = 'feet';
+    modularSlot = 'shoes';
     pieceLabel = 'Modular Boots / Shoes';
-  } else if (/(glove|gloves|gauntlet|gauntlets|wrist|bracelet|hands|bracer|bracers)/i.test(lower)) {
-    modularSlot = 'hands';
+  } else if (/(glove|gloves|gauntlet|gauntlets|wrist|bracelet|hands|bracer|bracers|mittens)/i.test(lower)) {
+    modularSlot = 'gloves';
     pieceLabel = 'Modular Gloves / Hands';
-  } else if (/(cape|cloak|backpack|wings|quiver|back)/i.test(lower)) {
+  } else if (/(cape|cloak|backpack|wings|quiver|back_?item|back)/i.test(lower)) {
     modularSlot = 'back';
     pieceLabel = 'Modular Cape / Back Item';
   } else if (/(belt|waist|sash|buckle)/i.test(lower)) {
     modularSlot = 'belt';
     pieceLabel = 'Modular Belt / Waist';
+  } else if (/(ring|necklace|amulet|pendant|earring|earrings|jewelry|jewellery|accessory|accessories)/i.test(lower)) {
+    modularSlot = 'accessory';
+    pieceLabel = 'Modular Accessory / Jewelry';
   }
 
   if (modularSlot) {

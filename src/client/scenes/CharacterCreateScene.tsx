@@ -206,16 +206,27 @@ export function CharacterCreateScene() {
     }
   }, [visualData]);
   const wardrobeItems = useMemo(() => parseModelWardrobeItems(visualData), [visualData]);
-  const wardrobeOptions = wardrobeItems.filter((item) => item.availableInCharacterCreation === true);
-  const hasCreatorWardrobe = wardrobeOptions.length > 0;
+  const explicitCreationItems = useMemo(
+    () => wardrobeItems.filter((item) => item.availableInCharacterCreation === true),
+    [wardrobeItems]
+  );
+  const wardrobeOptions = useMemo(
+    () => (explicitCreationItems.length > 0 ? explicitCreationItems : wardrobeItems.filter((item) => item.availableInCharacterCreation !== false)),
+    [explicitCreationItems, wardrobeItems]
+  );
   const modelAssetId = parsedVisualData?.worldModel?.type === '3D Model'
     ? parsedVisualData.worldModel.assetId
     : parsedVisualData?.type === '3D Model' ? parsedVisualData.assetId : undefined;
-  const wardrobePreviewAttachments = useMemo(() => wardrobeItems.filter((item) =>
-    item.availableInCharacterCreation === true
-      ? selectedWardrobeAssetIds.includes(item.assetId)
-      : item.defaultVisible !== false,
-  ) as WorldModelValue[], [wardrobeItems, selectedWardrobeAssetIds]);
+  const isModelArchetype = Boolean(modelAssetId);
+  const hasCreatorWardrobe = isModelArchetype || wardrobeOptions.length > 0;
+  const wardrobePreviewAttachments = useMemo(() => {
+    const selected = new Set(selectedWardrobeAssetIds);
+    const anyExplicit = wardrobeItems.some((item) => item.availableInCharacterCreation === true);
+    return wardrobeItems.filter((item) => {
+      const isOffered = anyExplicit ? item.availableInCharacterCreation === true : item.availableInCharacterCreation !== false;
+      return isOffered ? selected.has(item.assetId) : item.defaultVisible !== false;
+    }) as WorldModelValue[];
+  }, [wardrobeItems, selectedWardrobeAssetIds]);
 
   // Load database starter heroes & class defs
   useEffect(() => {
@@ -299,7 +310,11 @@ export function CharacterCreateScene() {
     setAppearanceTab(heroHasModel ? 'WARDROBE' : 'BASE');
     setassetProfileId(hero.assetProfileId);
     setVisualData(hero.visualData || '[]');
-    setSelectedWardrobeAssetIds(parseModelWardrobeItems(hero.visualData).filter((item) => item.availableInCharacterCreation && item.defaultVisible !== false).map((item) => item.assetId));
+    setSelectedWardrobeAssetIds(
+      parseModelWardrobeItems(hero.visualData)
+        .filter((item) => item.defaultVisible !== false)
+        .map((item) => item.assetId)
+    );
     setClassId(hero.classId);
     setSelectedHeroSlug(hero.slug);
     setStep('NAME');
@@ -325,7 +340,11 @@ export function CharacterCreateScene() {
     setAppearanceTab(heroHasModel ? 'WARDROBE' : 'BASE');
     setassetProfileId(hero.assetProfileId);
     setVisualData(hero.visualData || '[]');
-    setSelectedWardrobeAssetIds(parseModelWardrobeItems(hero.visualData).filter((item) => item.availableInCharacterCreation && item.defaultVisible !== false).map((item) => item.assetId));
+    setSelectedWardrobeAssetIds(
+      parseModelWardrobeItems(hero.visualData)
+        .filter((item) => item.defaultVisible !== false)
+        .map((item) => item.assetId)
+    );
     setClassId(hero.classId);
     setSelectedHeroSlug(hero.slug);
     setName(`${pick}${num}`);

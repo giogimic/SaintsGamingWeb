@@ -23,11 +23,15 @@ export interface ModelWardrobeItem {
 
 const CATEGORY_ALIASES: Record<string, CharacterComponentCategory> = {
   glasses: 'head_accessory',
+  sunglasses: 'head_accessory',
+  shades: 'head_accessory',
   eyewear: 'head_accessory',
   goggles: 'head_accessory',
   spectacles: 'head_accessory',
   monocle: 'head_accessory',
   eyepatch: 'head_accessory',
+  headphone: 'head_accessory',
+  headphones: 'head_accessory',
   head_accessories: 'head_accessory',
   face_accessory: 'head_accessory',
   face_accessories: 'head_accessory',
@@ -339,8 +343,12 @@ export function applyCharacterCreationWardrobe(
 
   const selected = new Set(selectedAssetIds);
   const attachments = parseModelWardrobeItems(data);
+  const anyExplicitCreation = attachments.some((item) => item.availableInCharacterCreation === true);
   const nextAttachments = attachments.map((item) => {
-    if (!item.availableInCharacterCreation) return item;
+    const isOffered = anyExplicitCreation
+      ? item.availableInCharacterCreation === true
+      : item.availableInCharacterCreation !== false;
+    if (!isOffered) return item;
     return { ...item, defaultVisible: selected.has(item.assetId) };
   });
 

@@ -143,6 +143,13 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 
 ## Changelog
 
+### v2.2.045
+- **Modular Asset Taxonomy Heuristics & Default Outfit Retention**:
+  - **Asset Taxonomy Precedence Alignment (`assetTaxonomy.ts`)**: Reordered modular piece classification heuristics so that specific facial attachments (`glasses`, `sunglasses`, `shades`, `goggles`, `masks`, `bandanas`, `beards`, `facial_hair`) are strictly evaluated before generic face/head base meshes. Files named `face_glasses.glb`, `face_mask.glb`, or `face_beard.glb` are now properly mapped to `head_accessory`, `mask`, or `beard` instead of being incorrectly captured as `face`.
+  - **Default Outfit Preservation in Character Creation (`CharacterCreateScene.tsx` & `modelWardrobe.ts`)**: Fixed an issue where hero archetypes without explicit `availableInCharacterCreation: true` flags had their default outfits unselected (`selectedWardrobeAssetIds = []`), causing characters to load without clothes. Default outfits now preserve all `defaultVisible !== false` pieces automatically on hero pick or roll, while ensuring 3D model archetypes always open the Avatar Appearance customizer.
+  - **Category Alias Expansion (`modelWardrobe.ts`)**: Added canonical category aliases for `sunglasses`, `shades`, `headphone`, and `headphones` mapping to `head_accessory`.
+  - **Unit Testing (`modelWardrobeTaxonomy.test.ts`)**: Added tests covering `sunglasses` and `shades` category resolution and default wardrobe outfit fallback handling.
+
 ### v2.2.044
 - **Modular Clothing Taxonomy, Granular Slot Separation & Character Select 3D Preview**:
   - **Granular Slot Separation & Multi-Category Mixing (`modelWardrobe.ts`, `assetTaxonomy.ts`, `assetImportProfiles.ts`)**: Expanded wardrobe categories into discrete canonical slots: `face`, `hair`, `beard`, `head_accessory` (eyewear/glasses), `mask`, `hat` (headwear), `shirt`, `jacket` (outerwear/robes), `pants` (legs), `shoes` (feet), `gloves`, `back` (capes/backpacks), `belt`, `weapon_main`, `weapon_off`, and `accessory`. Eliminated slot collisions between faces, glasses/shades, beards, and masks so players can customize and wear each simultaneously.
