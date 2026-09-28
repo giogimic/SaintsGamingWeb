@@ -4229,11 +4229,18 @@ export class BabylonEngine {
 
                 if (isSkinned) {
                   if (baseSkeleton) {
-                    const clothingSkeletons = result.skeletons || [];
+                    const clothingSkeletons = [...(result.skeletons || [])];
+                    if (clothingSkeletons.length === 0) {
+                      result.meshes.forEach((m: any) => {
+                        if (m.skeleton && !clothingSkeletons.includes(m.skeleton)) {
+                          clothingSkeletons.push(m.skeleton);
+                        }
+                      });
+                    }
                     if (clothingSkeletons.length > 0) {
                       // Industry standard modular sync: link clothing bones to base transform nodes by name
                       clothingSkeletons.forEach((clothingSkeleton) => {
-                        clothingSkeleton.bones.forEach((clothingBone) => {
+                        clothingSkeleton.bones.forEach((clothingBone: any) => {
                           const baseBone = baseSkeleton.bones.find((b: any) => 
                             b.name === clothingBone.name || b.id === clothingBone.id || b.name === clothingBone.id
                           );
@@ -4249,7 +4256,7 @@ export class BabylonEngine {
                         if (!m.parent && baseRoot) m.parent = baseRoot;
                       });
                     } else {
-                      // Fallback if no skeleton exists in the container
+                      // Fallback if absolutely no skeleton exists in the container or meshes
                       result.meshes.forEach((m) => {
                         if ((m as any).skeleton) (m as any).skeleton = baseSkeleton;
                         if (!m.parent && baseRoot) m.parent = baseRoot;

@@ -911,9 +911,12 @@ export default function TheLobby({
     });
 
     socket.on('map_players', (players) => {
+      const state = useGameStore.getState();
       const filtered = { ...(players || {}) };
       if (socket.id) delete filtered[socket.id];
-      const state = useGameStore.getState();
+      if (state.player?.accountId) delete filtered[state.player.accountId];
+      if ((state.player as any)?.id) delete filtered[(state.player as any).id];
+      
       const incomingCount = Object.keys(filtered).length;
       const existingCount = Object.keys(state.otherPlayers || {}).length;
       if (
@@ -943,8 +946,12 @@ export default function TheLobby({
     });
     
     socket.on('player_joined', (data) => {
-      if (data.socketId !== socket.id) {
-        useGameStore.getState().updateOtherPlayer(data.socketId, data);
+      const state = useGameStore.getState();
+      const peerKey = data.accountId || data.socketId || data.id;
+      const isLocal = peerKey === socket.id || peerKey === state.player?.accountId || peerKey === (state.player as any)?.id;
+      
+      if (!isLocal && peerKey) {
+        useGameStore.getState().updateOtherPlayer(peerKey, data);
         // Visible confirmation that the peer store received the join (helps
         // separate "not on shard" from "sprite not rendering").
         if (!enableStudio && data?.name) {
@@ -979,41 +986,48 @@ export default function TheLobby({
         }
       }
 
-      if (!data?.socketId) return;
+      const peerKey = data?.accountId || data?.socketId || data?.id;
+      if (!peerKey) return;
 
-      if (data.socketId === socket.id) {
+      const state = useGameStore.getState();
+      const isLocal = peerKey === socket.id || peerKey === state.player?.accountId || peerKey === (state.player as any)?.id;
+
+      if (isLocal) {
         // Phase 2: Client Prediction enabled. We ignore movement deltas for ourselves
         // because we strictly reconcile using 'move_ack' and 'position_correction' to prevent judder.
         // However, we MUST accept HP updates if we took damage.
         if (data.hp !== undefined) {
-           useGameStore.setState((state) => {
-              state.player.hp = data.hp;
-              if (data.maxHp !== undefined) state.player.maxHp = data.maxHp;
+           useGameStore.setState((s) => {
+              s.player.hp = data.hp;
+              if (data.maxHp !== undefined) s.player.maxHp = data.maxHp;
            });
         }
       } else {
-        useGameStore.getState().updateOtherPlayer(data.socketId, { ...data, lastUpdateMs: Date.now() });
+        useGameStore.getState().updateOtherPlayer(peerKey, { ...data, lastUpdateMs: Date.now() });
       }
     });
 
     socket.on('player_left', (data: any) => {
-      const targetSocketId = typeof data === 'string' ? data : data?.socketId;
+      const targetSocketId = typeof data === 'string' ? data : (data?.accountId || data?.socketId || data?.id);
       if (targetSocketId) {
         useGameStore.getState().removeOtherPlayer(targetSocketId);
       }
     });
     
     socket.on('player_chat', (data) => {
-      if (data.socketId === socket.id) return;
+      const peerKey = data?.accountId || data?.socketId || data?.id;
+      const state = useGameStore.getState();
+      const isLocal = peerKey === socket.id || peerKey === state.player?.accountId || peerKey === (state.player as any)?.id;
+      if (isLocal) return;
 
-      const isStaffMsg = data.socketId === 'STAFF' || String(data.sender || '').startsWith('[STAFF]');
-      if (!isStaffMsg && data.socketId) {
-        useGameStore.getState().updateOtherPlayer(data.socketId, { chatMessage: data.message });
+      const isStaffMsg = peerKey === 'STAFF' || String(data.sender || '').startsWith('[STAFF]');
+      if (!isStaffMsg && peerKey) {
+        useGameStore.getState().updateOtherPlayer(peerKey, { chatMessage: data.message });
         setTimeout(() => {
           const store = useGameStore.getState();
-          const currentOp = store.otherPlayers[data.socketId];
+          const currentOp = store.otherPlayers[peerKey];
           if (currentOp && currentOp.chatMessage === data.message) {
-            store.updateOtherPlayer(data.socketId, { chatMessage: undefined });
+            store.updateOtherPlayer(peerKey, { chatMessage: undefined });
           }
         }, 7000);
       }

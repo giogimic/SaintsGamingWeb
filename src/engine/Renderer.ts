@@ -588,11 +588,24 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
             }
           }
           
-          // Rotate 3D mesh to face target position
+          // Rotate 3D mesh to face target position or explicit direction
           if (isEntityWalking && dist > 0.01) {
             const dir = state.targetPos.subtract(mesh.position).normalize();
-            // atan2(x, z) gives angle in XZ plane
-            mesh.rotation.y = Math.atan2(dir.x, dir.z);
+            // atan2(-x, z) because the modelWrapper scales X by -1 (inverts X axis)
+            mesh.rotation.y = Math.atan2(-dir.x, dir.z);
+            // Save the exact angle for when the entity stops moving
+            mesh.metadata.lastRotationY = mesh.rotation.y;
+          } else if (state.direction) {
+            // Apply explicit direction when standing still or if network sends a pivot
+            let angle = mesh.metadata.lastRotationY || 0;
+            switch(state.direction) {
+              case 'down': angle = Math.PI; break;
+              case 'up': angle = 0; break;
+              case 'left': angle = Math.PI / 2; break; // Inverted X: left is Math.PI/2 (90 deg)
+              case 'right': angle = -Math.PI / 2; break;
+            }
+            // Smoothly rotate towards the angle if we want, or just snap
+            mesh.rotation.y = angle;
           }
         }
       });
