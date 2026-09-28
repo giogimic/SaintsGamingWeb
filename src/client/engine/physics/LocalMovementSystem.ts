@@ -67,16 +67,17 @@ export class LocalMovementSystem {
       safeSpawn = resolveSafeVoxelSpawnInWorld(world, spawnX, spawnZ, 32);
     }
     if (!safeSpawn.isSafe) {
-      console.warn('[LocalMovementSystem] Void recovery could not find safe center ground:', safeSpawn.reason);
-      return;
+      console.warn('[LocalMovementSystem] Void recovery found no safe ground; dropping at world center:', safeSpawn.reason);
     }
 
+    const fallbackX = Math.max(0, Math.min(width - 1, Math.floor(width / 2)));
+    const fallbackZ = Math.max(0, Math.min(depth - 1, Math.floor(depth / 2)));
     const dropPosition = {
-      x: safeSpawn.position.x + 0.5,
+      x: (safeSpawn.isSafe ? safeSpawn.position.x : fallbackX) + 0.5,
       // Player state and collision use voxel-space height. Rendering applies
       // the world's origin offset, so this appears above the visible map top.
       y: world.totalHeightBlocks + 2,
-      z: safeSpawn.position.z + 0.5,
+      z: (safeSpawn.isSafe ? safeSpawn.position.z : fallbackZ) + 0.5,
     };
     this.verticalVelocity = 0;
     this.isGrounded = false;
