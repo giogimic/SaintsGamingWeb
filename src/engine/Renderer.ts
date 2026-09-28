@@ -570,27 +570,45 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
         if (state.presentation?.mode === '3D' && mesh.metadata?.animationGroups) {
           const isEntityWalking = state.isMoving || dist > 0.01;
           const groups = mesh.metadata.animationGroups;
-          const runAnims = groups.filter((ag: any) => ag.name.toLowerCase().includes('run') || ag.name.toLowerCase().includes('walk'));
-          const idleAnims = groups.filter((ag: any) => ag.name.toLowerCase().includes('idle'));
           
-          if (idleAnims.length === 0 && groups.length > 0) idleAnims.push(groups[0]);
-          if (runAnims.length === 0 && groups.length > 0) runAnims.push(groups.length > 1 ? groups[1] : groups[0]);
-          
-          if (isEntityWalking) {
-            runAnims.forEach((anim: any) => {
-              if (!anim.isPlaying) anim.play(true);
-            });
-            idleAnims.forEach((anim: any) => {
-              if (!runAnims.includes(anim)) anim.stop();
-            });
-          } else {
-            idleAnims.forEach((anim: any) => {
-              if (!anim.isPlaying) anim.play(true);
-            });
-            runAnims.forEach((anim: any) => {
-              if (!idleAnims.includes(anim)) anim.stop();
-            });
+          if (!mesh.metadata._resolvedAnims || mesh.metadata._resolvedAnims.groups !== groups) {
+            const isRunClip = (name: string) => /run|walk|jog|sprint|locomotion|move|forward|fwd/i.test(name);
+            const isIdleClip = (name: string) => /idle|stand|wait|breath|rest|still|default/i.test(name);
+            const isActionClip = (name: string) => /attack|hit|punch|slash|cast|shoot|death|die|dead|hurt|damage|jump|fall|climb/i.test(name);
+
+            let runAnims = groups.filter((ag: any) => isRunClip(ag.name || ''));
+            let idleAnims = groups.filter((ag: any) => isIdleClip(ag.name || ''));
+
+            // If neither matched, look for non-action clips before falling back to arbitrary indices
+            const nonActionGroups = groups.filter((ag: any) => !isActionClip(ag.name || ''));
+            const pool = nonActionGroups.length > 0 ? nonActionGroups : groups;
+
+            if (idleAnims.length === 0 && pool.length > 0) {
+              idleAnims.push(pool[0]);
+            }
+            if (runAnims.length === 0 && pool.length > 0) {
+              runAnims.push(pool.length > 1 ? pool[1] : pool[0]);
+            }
+
+            mesh.metadata._resolvedAnims = {
+              groups,
+              runAnims,
+              idleAnims,
+            };
           }
+
+          const { runAnims, idleAnims } = mesh.metadata._resolvedAnims;
+          const targetAnims = isEntityWalking ? runAnims : idleAnims;
+          const stopAnims = isEntityWalking ? idleAnims : runAnims;
+
+          targetAnims.forEach((anim: any) => {
+            if (!anim.isPlaying) anim.play(true);
+          });
+          stopAnims.forEach((anim: any) => {
+            if (!targetAnims.includes(anim) && anim.isPlaying) {
+              anim.stop();
+            }
+          });
           
           // Rotate 3D mesh to face target position or explicit direction
           if (isEntityWalking && dist > 0.01) {

@@ -15,6 +15,8 @@ export interface GripTransform {
 export interface WorldModelValue {
   type: WorldModelType;
   assetId: string;
+  modelUrl?: string | null;
+  source?: string | null;
   /** Per-actor scale override; the shared asset remains unchanged. */
   scale?: number;
   isModular?: boolean;

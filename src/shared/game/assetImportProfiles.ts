@@ -8,6 +8,26 @@ export type AssetImportProfileId =
 
 export type AssetSlotRole = string;
 
+export type CharacterComponentCategory =
+  | "face"
+  | "hair"
+  | "beard"
+  | "hat"
+  | "head_accessory"
+  | "mask"
+  | "clothing"
+  | "shirt"
+  | "jacket"
+  | "pants"
+  | "shoes"
+  | "gloves"
+  | "back"
+  | "belt"
+  | "weapon_main"
+  | "weapon_off"
+  | "accessory"
+  | "other";
+
 export type AssetCategoryHint =
   | "actor"
   | "creature"
@@ -18,17 +38,7 @@ export type AssetCategoryHint =
   | "vfx"
   | "icon"
   | "misc"
-  | "face"
-  | "hair"
-  | "hat"
-  | "head_accessory"
-  | "clothing"
-  | "shirt"
-  | "jacket"
-  | "pants"
-  | "shoes"
-  | "accessory"
-  | "other";
+  | CharacterComponentCategory;
 
 export type AssetTypeHint =
   | "CHARACTER"
@@ -48,19 +58,6 @@ export interface AssetImportRoleMeta {
   categoryHint?: AssetCategoryHint;
   typeHint?: AssetTypeHint;
 }
-
-export type CharacterComponentCategory =
-  | "face"
-  | "hair"
-  | "hat"
-  | "head_accessory"
-  | "clothing"
-  | "shirt"
-  | "jacket"
-  | "pants"
-  | "shoes"
-  | "accessory"
-  | "other";
 
 export type CharacterComponentLayer =
   | "head"
@@ -95,14 +92,21 @@ export const CHARACTER_BASE_BODY_TYPES: Record<CharacterBaseBodyType, { label: s
 /** Baseline Z-order for stacking modular character layers (lower draws first). */
 export const CHARACTER_COMPONENT_DEFAULT_Z_ORDER: Record<CharacterComponentCategory, number> = {
   face: 20,
+  beard: 25,
   hair: 30,
-  hat: 60,
   head_accessory: 55,
-  clothing: 40,
+  mask: 58,
+  hat: 60,
   shirt: 40,
+  clothing: 40,
   jacket: 45,
+  belt: 38,
   pants: 35,
   shoes: 25,
+  gloves: 48,
+  back: 15,
+  weapon_main: 65,
+  weapon_off: 65,
   accessory: 50,
   other: 45,
 };
@@ -115,15 +119,22 @@ export interface AssetImportProfileMeta {
 }
 
 export const CHARACTER_COMPONENT_CATEGORIES: Record<CharacterComponentCategory, { label: string; layer: CharacterComponentLayer }> = {
-  face: { label: "Face", layer: "head" },
+  face: { label: "Face / Features", layer: "head" },
   hair: { label: "Hair", layer: "head" },
-  hat: { label: "Hat", layer: "head" },
-  head_accessory: { label: "Head Accessory", layer: "head" },
-  clothing: { label: "Clothing", layer: "torso" },
+  beard: { label: "Facial Hair / Beard", layer: "head" },
+  hat: { label: "Hat / Headwear", layer: "head" },
+  head_accessory: { label: "Glasses / Head Accessory", layer: "head" },
+  mask: { label: "Face Mask / Bandana", layer: "head" },
+  clothing: { label: "Clothing / Outfit", layer: "torso" },
   shirt: { label: "Shirt / Top", layer: "torso" },
   jacket: { label: "Jacket / Outerwear", layer: "torso" },
   pants: { label: "Pants / Bottoms", layer: "legs" },
   shoes: { label: "Shoes / Footwear", layer: "feet" },
+  gloves: { label: "Gloves / Hands", layer: "torso" },
+  back: { label: "Cape / Back Item", layer: "torso" },
+  belt: { label: "Belt / Waist", layer: "legs" },
+  weapon_main: { label: "Main Hand Weapon", layer: "accessory" },
+  weapon_off: { label: "Offhand / Shield", layer: "accessory" },
   accessory: { label: "Accessory", layer: "accessory" },
   other: { label: "Other Component", layer: "full-body" },
 };
@@ -151,13 +162,20 @@ export const ASSET_IMPORT_PROFILE_META: Record<AssetImportProfileId, AssetImport
       shadow: { required: false, categoryHint: "misc", typeHint: "EFFECT" },
       face: { required: false, categoryHint: "face", typeHint: "CHARACTER" },
       hair: { required: false, categoryHint: "hair", typeHint: "CHARACTER" },
+      beard: { required: false, categoryHint: "hair", typeHint: "CHARACTER" },
       hat: { required: false, categoryHint: "hat", typeHint: "CHARACTER" },
       head_accessory: { required: false, categoryHint: "head_accessory", typeHint: "CHARACTER" },
+      mask: { required: false, categoryHint: "head_accessory", typeHint: "CHARACTER" },
       clothing: { required: false, categoryHint: "clothing", typeHint: "CHARACTER" },
       shirt: { required: false, categoryHint: "shirt", typeHint: "CHARACTER" },
       jacket: { required: false, categoryHint: "jacket", typeHint: "CHARACTER" },
       pants: { required: false, categoryHint: "pants", typeHint: "CHARACTER" },
       shoes: { required: false, categoryHint: "shoes", typeHint: "CHARACTER" },
+      gloves: { required: false, categoryHint: "accessory", typeHint: "CHARACTER" },
+      back: { required: false, categoryHint: "accessory", typeHint: "CHARACTER" },
+      belt: { required: false, categoryHint: "accessory", typeHint: "CHARACTER" },
+      weapon_main: { required: false, categoryHint: "equipment", typeHint: "CHARACTER" },
+      weapon_off: { required: false, categoryHint: "equipment", typeHint: "CHARACTER" },
       accessory: { required: false, categoryHint: "accessory", typeHint: "CHARACTER" },
       other: { required: false, categoryHint: "other", typeHint: "CHARACTER" },
     },

@@ -503,14 +503,20 @@ export class EntityRenderer {
           }
           
           if (current.animationGroups && current.animationGroups.length > 0) {
+            const isRunClip = (name: string) => /run|walk|jog|sprint|locomotion|move|forward|fwd/i.test(name);
+            const isIdleClip = (name: string) => /idle|stand|wait|breath|rest|still|default/i.test(name);
+            const isActionClip = (name: string) => /attack|hit|punch|slash|cast|shoot|death|die|dead|hurt|damage|jump|fall|climb/i.test(name);
+
             const targetAnimName = data.isMoving ? "run_fwd" : "idle";
-            const walkAnim = current.animationGroups.find(a => a.name.toLowerCase() === "run_fwd" || a.name.toLowerCase().includes("run") || a.name.toLowerCase().includes("walk"));
-            const idleAnim = current.animationGroups.find(a => a.name.toLowerCase() === "idle" || a.name.toLowerCase().includes("idle"));
+            const walkAnim = current.animationGroups.find(a => isRunClip(a.name || ''));
+            const idleAnim = current.animationGroups.find(a => isIdleClip(a.name || ''));
+            const nonAction = current.animationGroups.find(a => !isActionClip(a.name || ''));
+
             let nextAnim = undefined;
             if (data.isMoving) {
-              nextAnim = walkAnim || (current.animationGroups.length > 1 ? current.animationGroups[1] : current.animationGroups[0]);
+              nextAnim = walkAnim || (current.animationGroups.length > 1 ? current.animationGroups[1] : nonAction || current.animationGroups[0]);
             } else {
-              nextAnim = idleAnim || current.animationGroups[0];
+              nextAnim = idleAnim || nonAction || current.animationGroups[0];
             }
             
             current.animationGroups.forEach(a => a.stop());
@@ -655,10 +661,18 @@ export class EntityRenderer {
     }
     
     if (sprite.animationGroups && sprite.animationGroups.length > 0) {
+      const isRunClip = (name: string) => /run|walk|jog|sprint|locomotion|move|forward|fwd/i.test(name);
+      const isIdleClip = (name: string) => /idle|stand|wait|breath|rest|still|default/i.test(name);
+      const isActionClip = (name: string) => /attack|hit|punch|slash|cast|shoot|death|die|dead|hurt|damage|jump|fall|climb/i.test(name);
+
       const targetAnimName = data.isMoving ? "run_fwd" : "idle";
-      const walkAnim = sprite.animationGroups.find(a => a.name.toLowerCase() === "run_fwd" || a.name.toLowerCase().includes("run") || a.name.toLowerCase().includes("walk"));
-      const idleAnim = sprite.animationGroups.find(a => a.name.toLowerCase() === "idle" || a.name.toLowerCase().includes("idle"));
-      let nextAnim = data.isMoving ? (walkAnim || (sprite.animationGroups.length > 1 ? sprite.animationGroups[1] : sprite.animationGroups[0])) : (idleAnim || sprite.animationGroups[0]);
+      const walkAnim = sprite.animationGroups.find(a => isRunClip(a.name || ''));
+      const idleAnim = sprite.animationGroups.find(a => isIdleClip(a.name || ''));
+      const nonAction = sprite.animationGroups.find(a => !isActionClip(a.name || ''));
+
+      let nextAnim = data.isMoving 
+        ? (walkAnim || (sprite.animationGroups.length > 1 ? sprite.animationGroups[1] : nonAction || sprite.animationGroups[0])) 
+        : (idleAnim || nonAction || sprite.animationGroups[0]);
 
       if (sprite.currentAnimationName !== targetAnimName || (nextAnim && !nextAnim.isPlaying)) {
         sprite.animationGroups.forEach(a => {

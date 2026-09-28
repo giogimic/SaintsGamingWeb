@@ -22,17 +22,32 @@ interface CharacterWardrobeSlotsProps {
 interface SlotDefinition {
   id: string;
   label: string;
+  group: 'head_face' | 'clothing' | 'gear';
 }
 
 const SLOTS: SlotDefinition[] = [
-  { id: 'headwear', label: 'Hat / Headwear' },
-  { id: 'eyewear', label: 'Glasses / Head Accessories' },
-  { id: 'hair', label: 'Hair' },
-  { id: 'face', label: 'Face' },
-  { id: 'upper-body', label: 'Torso / Clothing' },
-  { id: 'legs', label: 'Legs' },
-  { id: 'feet', label: 'Footwear' },
-  { id: 'accessory', label: 'Accessories / Equipment' },
+  // Head & Face Group (Left Column)
+  { id: 'face', label: 'Face / Features', group: 'head_face' },
+  { id: 'hair', label: 'Hair / Style', group: 'head_face' },
+  { id: 'beard', label: 'Facial Hair / Beard', group: 'head_face' },
+  { id: 'eyewear', label: 'Glasses / Eyewear', group: 'head_face' },
+  { id: 'mask', label: 'Face Mask / Bandana', group: 'head_face' },
+  { id: 'headwear', label: 'Hat / Headwear', group: 'head_face' },
+
+  // Clothing Group (Right Column)
+  { id: 'shirt', label: 'Shirt / Torso', group: 'clothing' },
+  { id: 'jacket', label: 'Jacket / Outerwear', group: 'clothing' },
+  { id: 'upper-body', label: 'Outfit / Clothing', group: 'clothing' },
+  { id: 'legs', label: 'Legs / Pants', group: 'clothing' },
+  { id: 'feet', label: 'Shoes / Footwear', group: 'clothing' },
+
+  // Gear & Accessories (Right Column)
+  { id: 'gloves', label: 'Gloves / Hands', group: 'gear' },
+  { id: 'back', label: 'Cape / Back Item', group: 'gear' },
+  { id: 'belt', label: 'Belt / Waist', group: 'gear' },
+  { id: 'weapon_main', label: 'Main Weapon / Tool', group: 'gear' },
+  { id: 'weapon_off', label: 'Offhand / Shield', group: 'gear' },
+  { id: 'accessory', label: 'Accessories', group: 'gear' },
 ];
 
 function WardrobeSlot({
@@ -81,7 +96,7 @@ function WardrobeSlot({
                 key={item.assetId}
                 type="button"
                 aria-pressed={selected}
-                onClick={() => onChoose(slot.id, item.assetId)}
+                onClick={() => onChoose(slot.id, selected ? '' : item.assetId)}
                 className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition-colors ${
                   selected
                     ? 'border-primary/70 bg-primary/15 text-primary'
@@ -129,9 +144,9 @@ export function CharacterWardrobeSlots({
     setSelectedWardrobeAssetIds(next);
   };
 
-  const headwearSlot = SLOTS[0];
-  const eyewearSlot = SLOTS[1];
-  const otherSlots = SLOTS.slice(2).filter((slot) => (groupedItems.get(slot.id)?.length || 0) > 0);
+  const headFaceSlots = SLOTS.filter((s) => s.group === 'head_face' && (groupedItems.get(s.id)?.length || 0) > 0);
+  const clothingSlots = SLOTS.filter((s) => s.group === 'clothing' && (groupedItems.get(s.id)?.length || 0) > 0);
+  const gearSlots = SLOTS.filter((s) => s.group === 'gear' && (groupedItems.get(s.id)?.length || 0) > 0);
   const extraItems = groupedItems.get('other') || [];
 
   return (
@@ -139,7 +154,7 @@ export function CharacterWardrobeSlots({
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div className="text-center sm:text-left">
           <h2 className="text-lg font-black uppercase tracking-wider text-foreground">Choose clothing by slot</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Choose one item in a slot. Your outfit updates on the model preview as you select.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Select your appearance and gear. Each slot updates the 3D model in real time.</p>
         </div>
         <button
           type="button"
@@ -150,53 +165,101 @@ export function CharacterWardrobeSlots({
         </button>
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(210px,1fr)_minmax(420px,1.7fr)_minmax(210px,1fr)]">
+      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(250px,1.1fr)_minmax(380px,1.5fr)_minmax(250px,1.1fr)]">
+        {/* Left Column: Head & Appearance */}
         <div className="order-2 space-y-3 xl:order-1">
-          <WardrobeSlot slot={headwearSlot} items={groupedItems.get(headwearSlot.id) || []} selectedIds={selectedIds} onChoose={chooseItem} />
+          <div className="flex items-center gap-1.5 px-1 text-[11px] font-black uppercase tracking-wider text-primary">
+            <span>Head & Appearance</span>
+          </div>
+          {headFaceSlots.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-border/40 p-4 text-center text-[10px] text-muted-foreground">
+              No head or face options configured for this archetype.
+            </p>
+          ) : (
+            headFaceSlots.map((slot) => (
+              <WardrobeSlot
+                key={slot.id}
+                slot={slot}
+                items={groupedItems.get(slot.id) || []}
+                selectedIds={selectedIds}
+                onChoose={chooseItem}
+              />
+            ))
+          )}
         </div>
 
-        <div className="order-1 min-w-0 xl:order-2">
-          <div className="mb-2 flex items-center justify-between gap-3 rounded-xl border border-primary/40 bg-primary/10 px-3 py-2">
+        {/* Center Column: 3D Model Viewport */}
+        <div className="order-1 min-w-0 xl:order-2 space-y-2">
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-primary/40 bg-primary/10 px-3 py-2">
             <div className="min-w-0">
               <span className="block text-[9px] font-black uppercase tracking-[0.16em] text-primary">Body / Base</span>
               <span className="block truncate text-xs font-bold text-foreground">{name || 'Character'} · {classId}</span>
             </div>
-            <span className="shrink-0 text-[9px] text-muted-foreground">Base model</span>
+            <span className="shrink-0 text-[9px] text-muted-foreground font-mono">Base model</span>
           </div>
           <div className="overflow-hidden rounded-2xl border border-primary/50 bg-[#050b14] shadow-[0_0_28px_rgba(234,179,8,0.18)]">
             <ArchetypeModelPreview3D
-              key={`${modelAssetId}:${wardrobePreviewAttachments.map((item) => item.assetId).sort().join('|')}`}
+              key={modelAssetId}
               baseAssetId={modelAssetId}
               modularAttachments={wardrobePreviewAttachments}
               modelScale={modelScale}
-              className="h-[420px]"
+              className="h-[440px]"
             />
           </div>
         </div>
 
+        {/* Right Column: Clothing & Gear */}
         <div className="order-3 space-y-3">
-          <WardrobeSlot slot={eyewearSlot} items={groupedItems.get(eyewearSlot.id) || []} selectedIds={selectedIds} onChoose={chooseItem} />
+          <div className="flex items-center gap-1.5 px-1 text-[11px] font-black uppercase tracking-wider text-primary">
+            <span>Clothing & Gear</span>
+          </div>
+          {clothingSlots.length === 0 && gearSlots.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-border/40 p-4 text-center text-[10px] text-muted-foreground">
+              No clothing or gear options configured for this archetype.
+            </p>
+          ) : (
+            <>
+              {clothingSlots.map((slot) => (
+                <WardrobeSlot
+                  key={slot.id}
+                  slot={slot}
+                  items={groupedItems.get(slot.id) || []}
+                  selectedIds={selectedIds}
+                  onChoose={chooseItem}
+                />
+              ))}
+              {gearSlots.map((slot) => (
+                <WardrobeSlot
+                  key={slot.id}
+                  slot={slot}
+                  items={groupedItems.get(slot.id) || []}
+                  selectedIds={selectedIds}
+                  onChoose={chooseItem}
+                />
+              ))}
+            </>
+          )}
         </div>
       </div>
 
-      {wardrobeOptions.length === 0 ? (
+      {extraItems.length > 0 && (
+        <div className="pt-2">
+          <div className="mb-2 px-1 text-[11px] font-black uppercase tracking-wider text-primary">
+            <span>Additional Items</span>
+          </div>
+          <WardrobeSlot
+            slot={{ id: 'other', label: 'Other Items', group: 'gear' }}
+            items={extraItems}
+            selectedIds={selectedIds}
+            onChoose={chooseItem}
+          />
+        </div>
+      )}
+
+      {wardrobeOptions.length === 0 && (
         <p className="rounded-xl border border-dashed border-border/50 p-5 text-center text-xs text-muted-foreground">
           No clothing slots are offered for this archetype yet. Add clothing options in Archetype Studio.
         </p>
-      ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {otherSlots.map((slot) => (
-            <WardrobeSlot key={slot.id} slot={slot} items={groupedItems.get(slot.id) || []} selectedIds={selectedIds} onChoose={chooseItem} />
-          ))}
-          {extraItems.length > 0 && (
-            <WardrobeSlot
-              slot={{ id: 'other', label: 'Other Items' }}
-              items={extraItems}
-              selectedIds={selectedIds}
-              onChoose={chooseItem}
-            />
-          )}
-        </div>
       )}
 
       <div className="flex justify-end border-t border-border/40 pt-3">

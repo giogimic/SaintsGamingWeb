@@ -6,20 +6,30 @@ import { OrbitControls, Environment, Grid } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three-stdlib';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
+import { resolveModelAssetUrl } from '@/shared/game/worldModelPresentation';
+import { getDefaultModelWardrobeAttachmentMode, getDefaultModelWardrobeSocket } from '@/shared/game/modelWardrobe';
+import { normalizeBoneName } from '@/engine/animationRetarget';
+import { AssetManager } from '@/engine/assets/AssetManager';
+import type { ModularAttachmentDef } from '@/shared/game/canonicalAsset';
 import { WorldModelValue, STANDARD_SOCKET_OPTIONS } from '../components/WorldModelSelector';
 import { Play, Pause, RotateCw, Bone, Layers, EyeOff, Shield } from 'lucide-react';
+
+export type ArchetypePreviewAttachment = WorldModelValue | ModularAttachmentDef;
 
 interface ArchetypeModelPreview3DProps {
   baseAssetId?: string;
   baseModelUrl?: string;
   modelScale?: number;
-  modularAttachments?: WorldModelValue[];
+  modularAttachments?: ArchetypePreviewAttachment[];
   className?: string;
+  hideToolbar?: boolean;
+  autoRotateDefault?: boolean;
+  showHint?: boolean;
 }
 
 interface LoadedSubModel {
   scene: THREE.Group;
-  attachment: WorldModelValue;
+  attachment: ArchetypePreviewAttachment;
 }
 
 function findBone(scene: THREE.Group, socketName?: string): THREE.Bone | null {
@@ -38,13 +48,15 @@ function findBone(scene: THREE.Group, socketName?: string): THREE.Bone | null {
   };
 
   const patterns = matchers[s] || [s];
+  const normPatterns = patterns.map(p => normalizeBoneName(p));
   let found: THREE.Bone | null = null;
 
   scene.traverse((child) => {
     if (found) return;
     if ((child as THREE.Bone).isBone) {
       const bn = child.name.toLowerCase().replace(/[^a-z0-9_.]/g, '');
-      if (patterns.some((pat) => bn.includes(pat))) {
+      const normBn = normalizeBoneName(child.name);
+      if (patterns.some((pat) => bn.includes(pat)) || normPatterns.some((pat) => normBn.includes(pat))) {
         found = child as THREE.Bone;
       }
     }
@@ -65,7 +77,7 @@ function CompositeCharacter({
 }: {
   baseUrl: string;
   modelScale?: number;
-  modularAttachments?: WorldModelValue[];
+  modularAttachments?: ArchetypePreviewAttachment[];
   activeAnimationIndex: number;
   isPlaying: boolean;
   showSkeleton: boolean;
@@ -115,29 +127,49 @@ function CompositeCharacter({
     let isCancelled = false;
     let resolvedAttachments: LoadedSubModel[] = [];
     const loader = new GLTFLoader();
-    const promises = modularAttachments.map((att) => {
-      const url = resolveEntitySpriteUrl(att.assetId);
-      if (!url) return Promise.resolve(null);
 
-      return new Promise<LoadedSubModel | null>((resolve) => {
-        loader.load(
-          url,
-          (gltf) => {
-            if (isCancelled) resolve(null);
-            else resolve({ scene: gltf.scene, attachment: att });
-          },
-          undefined,
-          () => resolve(null)
-        );
+    const resolveAndLoad = async () => {
+      const assetManager = AssetManager.getInstance();
+      const promises = modularAttachments.map(async (att) => {
+        let url = att.modelUrl || ('source' in att ? (att as any).source : undefined);
+        if (!url && att.assetId) {
+          url = resolveModelAssetUrl(att.assetId);
+          if (!url) {
+            try {
+              const asset = await assetManager.getAsset(att.assetId);
+              if (asset?.source) url = asset.source;
+            } catch {}
+          }
+        }
+        if (!url && att.assetId && /\.(glb|gltf)$/i.test(att.assetId)) {
+          url = resolveEntitySpriteUrl(att.assetId);
+        }
+        if (!url) return null;
+
+        return new Promise<LoadedSubModel | null>((resolve) => {
+          loader.load(
+            url,
+            (gltf) => {
+              if (isCancelled) resolve(null);
+              else resolve({ scene: gltf.scene, attachment: att });
+            },
+            undefined,
+            (err) => {
+              console.warn('[ArchetypeModelPreview3D] Failed to load modular attachment:', url, err);
+              resolve(null);
+            }
+          );
+        });
       });
-    });
 
-    Promise.all(promises).then((results) => {
+      const results = await Promise.all(promises);
       if (!isCancelled) {
         resolvedAttachments = results.filter((r): r is LoadedSubModel => r !== null);
         setLoadedAttachments(resolvedAttachments);
       }
-    });
+    };
+
+    void resolveAndLoad();
 
     return () => {
       isCancelled = true;
@@ -222,22 +254,27 @@ function CompositeCharacter({
     // Wearables share the base rig; rigid props attach to the configured socket.
     loadedAttachments.forEach((sub) => {
       const { scene: attScene, attachment } = sub;
-      if (attachment.attachmentMode === 'SKINNED' || attachment.isModular) {
+      const attachmentMode = attachment.attachmentMode || getDefaultModelWardrobeAttachmentMode(attachment as any);
+      if (attachmentMode === 'SKINNED' || ('isModular' in attachment && Boolean((attachment as any).isModular))) {
         attScene.traverse((child) => {
           if ((child as THREE.SkinnedMesh).isSkinnedMesh && baseSkeleton) {
             const clothingMesh = child as THREE.SkinnedMesh;
             const newBones = clothingMesh.skeleton.bones.map((clothingBone) => {
-              const baseBone = baseSkeleton!.bones.find((b) => b.name === clothingBone.name);
+              const normClothing = normalizeBoneName(clothingBone.name);
+              const baseBone = baseSkeleton!.bones.find(
+                (b) => normalizeBoneName(b.name) === normClothing || b.name === clothingBone.name
+              );
               return baseBone || clothingBone;
             });
-            clothingMesh.skeleton = new THREE.Skeleton(newBones, clothingMesh.skeleton.boneInverses);
+            const newSkeleton = new THREE.Skeleton(newBones, clothingMesh.skeleton.boneInverses);
+            clothingMesh.bind(newSkeleton, clothingMesh.bindMatrix);
           }
         });
         baseScene.add(attScene);
         return;
       }
 
-      const socket = attachment.socket || 'RightHandMount';
+      const socket = attachment.socket || getDefaultModelWardrobeSocket(attachment as any);
       const targetBone = findBone(baseScene, socket);
 
       if (targetBone) {
@@ -287,87 +324,121 @@ export function ArchetypeModelPreview3D({
   modelScale = 0.8,
   modularAttachments = [],
   className = 'h-72',
+  hideToolbar = false,
+  autoRotateDefault = false,
+  showHint = false,
 }: ArchetypeModelPreview3DProps) {
   const [animations, setAnimations] = useState<{ name: string; duration: number }[]>([]);
   const [activeAnimIndex, setActiveAnimIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
-  const [autoRotate, setAutoRotate] = useState(false);
+  const [autoRotate, setAutoRotate] = useState(autoRotateDefault);
 
-  const effectiveBaseUrl = useMemo(() => {
+  const [resolvedBaseUrl, setResolvedBaseUrl] = useState<string | null>(() => {
     if (baseModelUrl) return baseModelUrl;
-    if (baseAssetId) return resolveEntitySpriteUrl(baseAssetId);
+    if (baseAssetId) return resolveModelAssetUrl(baseAssetId) || null;
     return null;
+  });
+
+  useEffect(() => {
+    if (baseModelUrl) {
+      setResolvedBaseUrl(baseModelUrl);
+      return;
+    }
+    if (!baseAssetId) {
+      setResolvedBaseUrl(null);
+      return;
+    }
+    const syncUrl = resolveModelAssetUrl(baseAssetId);
+    if (syncUrl) {
+      setResolvedBaseUrl(syncUrl);
+      return;
+    }
+    let cancelled = false;
+    AssetManager.getInstance().getAsset(baseAssetId).then((asset) => {
+      if (!cancelled && asset?.source) {
+        setResolvedBaseUrl(asset.source);
+      } else if (!cancelled) {
+        setResolvedBaseUrl(resolveEntitySpriteUrl(baseAssetId));
+      }
+    }).catch(() => {
+      if (!cancelled) setResolvedBaseUrl(resolveEntitySpriteUrl(baseAssetId));
+    });
+    return () => { cancelled = true; };
   }, [baseAssetId, baseModelUrl]);
+
+  const effectiveBaseUrl = resolvedBaseUrl || (baseAssetId ? resolveEntitySpriteUrl(baseAssetId) : null);
 
   if (!effectiveBaseUrl) {
     return null;
   }
 
   return (
-    <div className={`w-full ${className} bg-[#050b14] border border-pink-500/20 rounded-2xl overflow-hidden relative shadow-2xl flex flex-col`}>
+    <div className={`w-full ${className} bg-[#050b14] border border-primary/30 rounded-2xl overflow-hidden relative shadow-2xl flex flex-col`}>
       {/* Top Header Controls */}
-      <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-none">
-        <div className="flex items-center gap-2 pointer-events-auto bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
-          <span className="text-[10px] font-black text-pink-400 uppercase tracking-widest">
-            3D Compositor
-          </span>
-          {modularAttachments.length > 0 && (
-            <span className="text-[9px] font-mono bg-pink-950/80 text-pink-300 border border-pink-500/30 px-1.5 py-0.5 rounded">
-              +{modularAttachments.length} attachments
+      {!hideToolbar && (
+        <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-none">
+          <div className="flex items-center gap-2 pointer-events-auto bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
+            <span className="text-[10px] font-black text-primary uppercase tracking-widest">
+              3D Compositor
             </span>
-          )}
-        </div>
+            {modularAttachments.length > 0 && (
+              <span className="text-[9px] font-mono bg-primary/20 text-primary border border-primary/40 px-1.5 py-0.5 rounded">
+                +{modularAttachments.length} attachments
+              </span>
+            )}
+          </div>
 
-        <div className="flex items-center gap-1.5 pointer-events-auto bg-black/70 backdrop-blur-md p-1.5 rounded-xl border border-white/10">
-          {/* Animation Selector */}
-          {animations.length > 0 && (
-            <select
-              value={activeAnimIndex}
-              onChange={(e) => setActiveAnimIndex(parseInt(e.target.value, 10))}
-              className="bg-black/60 border border-slate-700 text-white text-[10px] font-mono px-2 py-1 rounded outline-none focus:border-pink-400"
-            >
-              {animations.map((anim, idx) => (
-                <option key={idx} value={idx}>
-                  {anim.name} ({anim.duration.toFixed(1)}s)
-                </option>
-              ))}
-            </select>
-          )}
+          <div className="flex items-center gap-1.5 pointer-events-auto bg-black/70 backdrop-blur-md p-1.5 rounded-xl border border-white/10">
+            {/* Animation Selector */}
+            {animations.length > 0 && (
+              <select
+                value={activeAnimIndex}
+                onChange={(e) => setActiveAnimIndex(parseInt(e.target.value, 10))}
+                className="bg-black/60 border border-slate-700 text-white text-[10px] font-mono px-2 py-1 rounded outline-none focus:border-primary"
+              >
+                {animations.map((anim, idx) => (
+                  <option key={idx} value={idx}>
+                    {anim.name} ({anim.duration.toFixed(1)}s)
+                  </option>
+                ))}
+              </select>
+            )}
 
-          {/* Play / Pause */}
-          {animations.length > 0 && (
+            {/* Play / Pause */}
+            {animations.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsPlaying(!isPlaying)}
+                className={`p-1.5 rounded transition-colors ${isPlaying ? 'bg-primary text-primary-foreground' : 'bg-white/10 text-slate-400 hover:text-white'}`}
+                title={isPlaying ? 'Pause Animation' : 'Play Animation'}
+              >
+                {isPlaying ? <Pause size={12} /> : <Play size={12} />}
+              </button>
+            )}
+
+            {/* Skeleton Helper */}
             <button
               type="button"
-              onClick={() => setIsPlaying(!isPlaying)}
-              className={`p-1.5 rounded transition-colors ${isPlaying ? 'bg-pink-600 text-white' : 'bg-white/10 text-slate-400 hover:text-white'}`}
-              title={isPlaying ? 'Pause Animation' : 'Play Animation'}
+              onClick={() => setShowSkeleton(!showSkeleton)}
+              className={`p-1.5 rounded transition-colors ${showSkeleton ? 'bg-cyan-500 text-black' : 'bg-white/10 text-slate-400 hover:text-white'}`}
+              title="Toggle Skeleton Bones"
             >
-              {isPlaying ? <Pause size={12} /> : <Play size={12} />}
+              <Bone size={12} />
             </button>
-          )}
 
-          {/* Skeleton Helper */}
-          <button
-            type="button"
-            onClick={() => setShowSkeleton(!showSkeleton)}
-            className={`p-1.5 rounded transition-colors ${showSkeleton ? 'bg-cyan-500 text-black' : 'bg-white/10 text-slate-400 hover:text-white'}`}
-            title="Toggle Skeleton Bones"
-          >
-            <Bone size={12} />
-          </button>
-
-          {/* Turntable Auto Rotate */}
-          <button
-            type="button"
-            onClick={() => setAutoRotate(!autoRotate)}
-            className={`p-1.5 rounded transition-colors ${autoRotate ? 'bg-amber-500 text-black' : 'bg-white/10 text-slate-400 hover:text-white'}`}
-            title="Toggle Turntable Rotation"
-          >
-            <RotateCw size={12} className={autoRotate ? 'animate-spin' : ''} />
-          </button>
+            {/* Turntable Auto Rotate */}
+            <button
+              type="button"
+              onClick={() => setAutoRotate(!autoRotate)}
+              className={`p-1.5 rounded transition-colors ${autoRotate ? 'bg-amber-500 text-black' : 'bg-white/10 text-slate-400 hover:text-white'}`}
+              title="Toggle Turntable Rotation"
+            >
+              <RotateCw size={12} className={autoRotate ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 3D Canvas */}
       <div className="flex-1 w-full h-full">
@@ -389,15 +460,17 @@ export function ArchetypeModelPreview3D({
           />
 
           <OrbitControls makeDefault target={[0, 0.9 * modelScale, 0]} maxPolarAngle={Math.PI / 2 + 0.1} />
-          <Grid infiniteGrid sectionColor="#ec4899" cellColor="#1e293b" fadeDistance={12} />
+          <Grid infiniteGrid sectionColor="#eab308" cellColor="#1e293b" fadeDistance={12} />
         </Canvas>
       </div>
 
       {/* Bottom Hint */}
-      <div className="absolute bottom-2 left-3 right-3 flex justify-between items-center pointer-events-none text-[9px] text-slate-500">
-        <span>Full 3D character composite with live bone attachment & anti-clipping</span>
-        <span>Left-click drag: Rotate • Right-click drag: Pan • Scroll: Zoom</span>
-      </div>
+      {showHint && (
+        <div className="absolute bottom-2 left-3 right-3 flex justify-between items-center pointer-events-none text-[9px] text-slate-500">
+          <span>Full 3D character composite with live bone attachment & anti-clipping</span>
+          <span>Left-click drag: Rotate • Right-click drag: Pan • Scroll: Zoom</span>
+        </div>
+      )}
     </div>
   );
 }

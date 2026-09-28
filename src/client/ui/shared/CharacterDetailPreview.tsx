@@ -31,6 +31,8 @@ import {
   Plus,
 } from 'lucide-react';
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
+import { ArchetypeModelPreview3D } from '@/web/components/the-lobby/editor/hero-studio/ArchetypeModelPreview3D';
+import { getWorldModelPresentation } from '@/shared/game/worldModelPresentation';
 import { ITEM_DB } from '@/shared/game/items';
 import { soundSynth } from '@/engine/sound-synth';
 
@@ -182,6 +184,16 @@ export function CharacterDetailPreview({
       </div>
     );
   }
+
+  const modelPresentation = useMemo(() => {
+    if (!character?.visualData) return null;
+    try {
+      const v = typeof character.visualData === 'string' ? JSON.parse(character.visualData) : character.visualData;
+      return getWorldModelPresentation(v);
+    } catch {
+      return null;
+    }
+  }, [character?.visualData]);
 
   const spriteId = character.assetProfileId || character.spriteId || 'adventurer';
   const charLevel = state.level || character.level || 1;
@@ -335,28 +347,43 @@ export function CharacterDetailPreview({
             </span>
           </div>
 
-          {/* Centered Pedestal & Sprite */}
-          <div className="flex flex-col items-center justify-center my-auto relative py-3">
-            {/* Pedestal Platform */}
-            <div
-              className="w-32 h-7 rounded-[50%] border border-primary/40 bg-black/80 flex items-center justify-center relative shadow-inner mb-[-14px]"
-              style={{
-                boxShadow: `0 0 16px ${palette.glow}`,
-              }}
-            >
-              <div className="w-20 h-3 rounded-[50%] border border-primary/30 bg-primary/20 animate-pulse" />
-            </div>
-
-            {/* Character Sprite */}
-            <div className="relative z-10 w-24 h-24 flex items-center justify-center">
-              <CharacterSpritePreview
-                layers={charLayers}
-                assetProfileId={spriteId}
-                size={32}
-                scale={2.6}
+          {/* Centered Pedestal & Model/Sprite Showcase */}
+          {modelPresentation?.mode === '3D' && (modelPresentation.assetId || modelPresentation.modelUrl) ? (
+            <div className="relative z-10 w-full h-56 my-auto overflow-hidden rounded-xl border border-primary/40 shadow-lg bg-black/60">
+              <ArchetypeModelPreview3D
+                key={character.id}
+                baseAssetId={modelPresentation.assetId}
+                baseModelUrl={modelPresentation.modelUrl}
+                modularAttachments={modelPresentation.modularAttachments}
+                modelScale={modelPresentation.modelScale || 0.8}
+                hideToolbar
+                autoRotateDefault
+                className="h-full w-full border-0"
               />
             </div>
-          </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center my-auto relative py-3">
+              {/* Pedestal Platform */}
+              <div
+                className="w-32 h-7 rounded-[50%] border border-primary/40 bg-black/80 flex items-center justify-center relative shadow-inner mb-[-14px]"
+                style={{
+                  boxShadow: `0 0 16px ${palette.glow}`,
+                }}
+              >
+                <div className="w-20 h-3 rounded-[50%] border border-primary/30 bg-primary/20 animate-pulse" />
+              </div>
+
+              {/* Character Sprite */}
+              <div className="relative z-10 w-24 h-24 flex items-center justify-center">
+                <CharacterSpritePreview
+                  layers={charLayers}
+                  assetProfileId={spriteId}
+                  size={32}
+                  scale={2.6}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Character Identity & Vitals */}
           <div className="w-full space-y-2 mt-1">

@@ -137,11 +137,14 @@ export function ModelWardrobeEditor({
       label: displayName(asset),
       category: asset.componentCategory || asset.metadata?.componentCategory || asset.metadata?.cat || undefined,
     });
+    const modelUrl = asset.source || asset.cdnUrl || (asset.id.startsWith('/') || asset.id.startsWith('upload_') ? `/uploads/${asset.id}` : undefined);
     onChange([
       ...value,
       {
         type: '3D Model',
         assetId: asset.id,
+        modelUrl,
+        source: asset.source || asset.cdnUrl,
         label: displayName(asset),
         category,
         isModular: true,
@@ -161,9 +164,12 @@ export function ModelWardrobeEditor({
     const nextById = new Map(value.map((item) => [item.assetId, item]));
     for (const asset of bulkAssets) {
       const existing = nextById.get(asset.id);
+      const modelUrl = asset.source || asset.cdnUrl || (asset.id.startsWith('/') || asset.id.startsWith('upload_') ? `/uploads/${asset.id}` : undefined);
       if (existing) {
         nextById.set(asset.id, {
           ...existing,
+          modelUrl: existing.modelUrl || modelUrl,
+          source: existing.source || asset.source || asset.cdnUrl,
           availableInCharacterCreation: allowCharacterCreationOptions
             ? true
             : existing.availableInCharacterCreation,
@@ -172,6 +178,8 @@ export function ModelWardrobeEditor({
         nextById.set(asset.id, {
           type: '3D Model',
           assetId: asset.id,
+          modelUrl,
+          source: asset.source || asset.cdnUrl,
           label: displayName(asset),
           category: getModelWardrobeCategory({
             assetId: asset.id,
@@ -312,6 +320,32 @@ export function ModelWardrobeEditor({
                     )}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
+                      <label className="flex items-center gap-1.5 text-[9px] text-slate-300">
+                        <span className="text-[8px] uppercase tracking-wider text-slate-500">Slot</span>
+                        <select
+                          value={configured.category || getModelWardrobeCategory(configured)}
+                          onChange={(event) => updateItem(asset.id, { category: event.target.value, slot: event.target.value })}
+                          className="rounded border border-slate-700 bg-slate-950 px-1.5 py-1 text-[9px] text-slate-200"
+                        >
+                          <option value="face">Face / Features</option>
+                          <option value="hair">Hair</option>
+                          <option value="beard">Facial Hair / Beard</option>
+                          <option value="head_accessory">Glasses / Eyewear</option>
+                          <option value="mask">Face Mask / Bandana</option>
+                          <option value="hat">Hat / Headwear</option>
+                          <option value="shirt">Shirt / Torso</option>
+                          <option value="jacket">Jacket / Outerwear</option>
+                          <option value="clothing">Full Outfit / Armor</option>
+                          <option value="pants">Pants / Bottoms</option>
+                          <option value="shoes">Shoes / Footwear</option>
+                          <option value="gloves">Gloves / Hands</option>
+                          <option value="back">Cape / Back Item</option>
+                          <option value="belt">Belt / Waist</option>
+                          <option value="weapon_main">Main Hand Weapon</option>
+                          <option value="weapon_off">Offhand / Shield</option>
+                          <option value="accessory">Other Accessory</option>
+                        </select>
+                      </label>
                       <label className="text-[8px] uppercase tracking-wider text-slate-500">Attachment</label>
                       <select
                         value={configured.attachmentMode || 'SKINNED'}
@@ -360,6 +394,32 @@ export function ModelWardrobeEditor({
                     Offer during creation
                   </label>
                 )}
+                <label className="flex items-center gap-1.5 text-[9px] text-slate-300">
+                  <span className="text-[8px] uppercase tracking-wider text-slate-500">Slot</span>
+                  <select
+                    value={item.category || getModelWardrobeCategory(item)}
+                    onChange={(event) => updateItem(item.assetId, { category: event.target.value, slot: event.target.value })}
+                    className="rounded border border-slate-700 bg-slate-950 px-1.5 py-1 text-[9px] text-slate-200"
+                  >
+                    <option value="face">Face / Features</option>
+                    <option value="hair">Hair</option>
+                    <option value="beard">Facial Hair / Beard</option>
+                    <option value="head_accessory">Glasses / Eyewear</option>
+                    <option value="mask">Face Mask / Bandana</option>
+                    <option value="hat">Hat / Headwear</option>
+                    <option value="shirt">Shirt / Torso</option>
+                    <option value="jacket">Jacket / Outerwear</option>
+                    <option value="clothing">Full Outfit / Armor</option>
+                    <option value="pants">Pants / Bottoms</option>
+                    <option value="shoes">Shoes / Footwear</option>
+                    <option value="gloves">Gloves / Hands</option>
+                    <option value="back">Cape / Back Item</option>
+                    <option value="belt">Belt / Waist</option>
+                    <option value="weapon_main">Main Hand Weapon</option>
+                    <option value="weapon_off">Offhand / Shield</option>
+                    <option value="accessory">Other Accessory</option>
+                  </select>
+                </label>
                 <label className="flex items-center gap-1.5 text-[9px] text-slate-300">
                   <span>Attachment</span>
                   <select

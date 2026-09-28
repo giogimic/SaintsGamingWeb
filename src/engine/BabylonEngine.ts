@@ -95,7 +95,7 @@ import { InputController } from './InputController';
 import { Renderer } from './Renderer';
 import { SpiritGateRenderer } from '../client/engine/rendering/SpiritGateRenderer';
 import { EntityController } from './EntityController';
-import { loadAndRetargetAnimation } from './animationRetarget';
+import { loadAndRetargetAnimation, normalizeBoneName } from './animationRetarget';
 import { AssetManager } from './assets/AssetManager';
 import { applyAnimationProfileFallback } from '../shared/game/animationProfiles';
 
@@ -113,10 +113,14 @@ function findBabylonBone(skeleton: any, socketName: string) {
     sheathedhip_r: ['rightupleg', 'thigh_r', 'pelvis', 'hips', 'mixamorigrightupleg'],
   };
   const patterns = matchers[s] || [s];
-  for (const pat of patterns) {
+  const normPatterns = patterns.map(p => normalizeBoneName(p));
+  for (let i = 0; i < patterns.length; i++) {
+    const pat = patterns[i];
+    const normPat = normPatterns[i];
     const found = skeleton.bones.find((b: any) => {
       const bn = (b.name || '').toLowerCase().replace(/[^a-z0-9_.]/g, '');
-      return bn.includes(pat);
+      const normBn = normalizeBoneName(b.name || '');
+      return bn.includes(pat) || normBn.includes(normPat);
     });
     if (found) return found;
   }
@@ -4130,8 +4134,18 @@ export class BabylonEngine {
         spriteMesh.position = targetPos;
         
         const urlsToLoad = [entity.presentation.modelUrl];
-        if (entity.presentation.modularModelUrls) {
-          urlsToLoad.push(...entity.presentation.modularModelUrls);
+        if (entity.presentation.modularAttachments) {
+          entity.presentation.modularAttachments.forEach((att) => {
+            if (att.modelUrl && !urlsToLoad.includes(att.modelUrl)) {
+              urlsToLoad.push(att.modelUrl);
+            }
+          });
+        } else if (entity.presentation.modularModelUrls) {
+          entity.presentation.modularModelUrls.forEach((url) => {
+            if (url && !urlsToLoad.includes(url)) {
+              urlsToLoad.push(url);
+            }
+          });
         }
         const modelEntityMesh = spriteMesh;
         
@@ -4196,6 +4210,7 @@ export class BabylonEngine {
             const allAnimationGroups: any[] = [];
             let baseRoot: any = null;
             let baseSkeleton: any = null;
+            let baseModelWrapper: TransformNode | null = null;
             
             results.forEach(({ imported: result, index: idx }) => {
               const root = result.meshes.find((mesh) => !mesh.parent) || result.meshes[0];
@@ -4213,6 +4228,7 @@ export class BabylonEngine {
                 // Create a wrapper to hold our custom scale so glTF animations don't overwrite it
                 const modelWrapper = new TransformNode(`modelWrapper_${entity.id}_0`, this.scene);
                 modelWrapper.parent = currentMesh;
+                baseModelWrapper = modelWrapper;
                 
                 const t = pres?.assetDefinition?.transform || pres?.transform || pres;
                 const rawScale = t?.scale ?? pres?.modelScale;
@@ -4229,6 +4245,13 @@ export class BabylonEngine {
 
                 if (isSkinned) {
                   if (baseSkeleton) {
+                    const targetWrapper = baseModelWrapper || currentMesh;
+                    root.parent = targetWrapper;
+                    root.position = Vector3.Zero();
+                    root.rotation = Vector3.Zero();
+                    root.scaling = Vector3.One();
+                    root.computeWorldMatrix(true);
+
                     const clothingSkeletons = [...(result.skeletons || [])];
                     if (clothingSkeletons.length === 0) {
                       result.meshes.forEach((m: any) => {
@@ -4238,33 +4261,33 @@ export class BabylonEngine {
                       });
                     }
                     if (clothingSkeletons.length > 0) {
-                      // Industry standard modular sync: link clothing bones to base transform nodes by name
+                      // Industry standard modular sync: link clothing bones to base transform nodes by normalized name
                       clothingSkeletons.forEach((clothingSkeleton) => {
                         clothingSkeleton.bones.forEach((clothingBone: any) => {
+                          const normClothing = normalizeBoneName(clothingBone.name);
                           const baseBone = baseSkeleton.bones.find((b: any) => 
-                            b.name === clothingBone.name || b.id === clothingBone.id || b.name === clothingBone.id
+                            normalizeBoneName(b.name) === normClothing || b.name === clothingBone.name || b.id === clothingBone.id
                           );
                           if (baseBone) {
-                            const baseNode = baseBone.getTransformNode();
-                            if (baseNode) {
-                              clothingBone.linkTransformNode(baseNode);
+                            let baseNode = baseBone.getTransformNode();
+                            if (!baseNode) {
+                              baseNode = new TransformNode(`boneNode_${baseBone.name}`, this.scene);
+                              baseNode.parent = targetWrapper;
+                              baseBone.linkTransformNode(baseNode);
                             }
+                            clothingBone.linkTransformNode(baseNode);
                           }
                         });
-                      });
-                      result.meshes.forEach((m) => {
-                        if (!m.parent && baseRoot) m.parent = baseRoot;
                       });
                     } else {
                       // Fallback if absolutely no skeleton exists in the container or meshes
                       result.meshes.forEach((m) => {
                         if ((m as any).skeleton) (m as any).skeleton = baseSkeleton;
-                        if (!m.parent && baseRoot) m.parent = baseRoot;
                       });
                     }
                   } else {
                     console.warn(`[BabylonEngine] Wearable ${att?.assetId || idx} has no base skeleton to bind to; keeping it in the model's local space.`);
-                    if (root && baseRoot && !root.parent) root.parent = baseRoot;
+                    if (root && baseModelWrapper && !root.parent) root.parent = baseModelWrapper;
                   }
                 } else {
                   const socketName = att?.socket || 'RightHandMount';
@@ -4279,7 +4302,7 @@ export class BabylonEngine {
                     root.attachToBone(targetBone, skinnedMesh);
                     modelWrapper.parent = currentMesh;
                   } else {
-                    modelWrapper.parent = currentMesh;
+                    modelWrapper.parent = baseModelWrapper || currentMesh;
                   }
 
                   const posX = att?.attachOffset?.position?.[0] ?? 0;
@@ -4313,8 +4336,15 @@ export class BabylonEngine {
                 }
               }
               
-              if (result.animationGroups && result.animationGroups.length > 0) {
-                allAnimationGroups.push(...result.animationGroups);
+              if (idx === 0) {
+                if (result.animationGroups && result.animationGroups.length > 0) {
+                  allAnimationGroups.push(...result.animationGroups);
+                }
+              } else {
+                // Wearable attachments are driven by the base skeleton; stop accessory animations
+                if (result.animationGroups && result.animationGroups.length > 0) {
+                  result.animationGroups.forEach((ag: any) => ag.stop());
+                }
               }
             });
             
@@ -4510,9 +4540,17 @@ export class BabylonEngine {
             currentMesh.metadata.animationGroups = allAnimationGroups;
             if (allAnimationGroups.length > 0) {
               const isMoving = currentMesh.metadata.isMoving;
-              const runAnim = allAnimationGroups.find((ag: any) => ag.name.toLowerCase().includes('run') || ag.name.toLowerCase().includes('walk'));
-              const idleAnim = allAnimationGroups.find((ag: any) => ag.name.toLowerCase().includes('idle'));
-              const initialAnim = isMoving ? (runAnim || idleAnim || allAnimationGroups[0]) : (idleAnim || allAnimationGroups[0]);
+              const isRunClip = (name: string) => /run|walk|jog|sprint|locomotion|move|forward|fwd/i.test(name);
+              const isIdleClip = (name: string) => /idle|stand|wait|breath|rest|still|default/i.test(name);
+              const isActionClip = (name: string) => /attack|hit|punch|slash|cast|shoot|death|die|dead|hurt|damage|jump|fall|climb/i.test(name);
+
+              const runAnim = allAnimationGroups.find((ag: any) => isRunClip(ag.name || ''));
+              const idleAnim = allAnimationGroups.find((ag: any) => isIdleClip(ag.name || ''));
+              const nonAction = allAnimationGroups.find((ag: any) => !isActionClip(ag.name || ''));
+
+              const initialAnim = isMoving 
+                ? (runAnim || idleAnim || nonAction || allAnimationGroups[0]) 
+                : (idleAnim || nonAction || allAnimationGroups[0]);
               if (initialAnim) {
                 initialAnim.play(true);
               }

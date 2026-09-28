@@ -5,6 +5,48 @@ import {
   getDefaultModelWardrobeSocket,
 } from './modelWardrobe';
 
+/** Safely resolve a 3D model asset string to its GLB/GLTF model URL without falling back to 2D png sprites. */
+export function resolveModelAssetUrl(raw?: string | null): string | undefined {
+  if (!raw) return undefined;
+  const trimmed = String(raw).trim();
+  if (!trimmed) return undefined;
+
+  // Direct URLs or web assets
+  if (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('blob:') ||
+    trimmed.startsWith('data:')
+  ) {
+    return trimmed;
+  }
+
+  // Files in uploads folder
+  if (trimmed.startsWith('/uploads/') || trimmed.startsWith('uploads/')) {
+    return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  }
+
+  // Upload identifiers
+  if (trimmed.startsWith('upload_') || trimmed.startsWith('asset_custom_')) {
+    if (/\.(glb|gltf|fbx|obj)$/i.test(trimmed)) {
+      return `/uploads/${trimmed}`;
+    }
+    return `/uploads/${trimmed}.glb`;
+  }
+
+  // Explicit model file extensions
+  if (/\.(glb|gltf|fbx|obj)$/i.test(trimmed)) {
+    return trimmed.startsWith('/') ? trimmed : `/game-assets/models/${trimmed}`;
+  }
+
+  // Explicit absolute paths that do not end in 2D raster image extensions
+  if (trimmed.startsWith('/') && !/\.(png|jpg|jpeg|webp|gif|svg)$/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  return undefined;
+}
+
 /** Resolve the per-actor world model config stored by Studio's shared model selector. */
 export function getWorldModelPresentation(value?: unknown): PresentationDefinition | undefined {
   if (!value) return undefined;
@@ -23,7 +65,8 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
   const modelType = model.type || model.assetProfileId;
   if (!model.assetId || (modelType !== '3D Model' && modelType !== 'MODEL')) return undefined;
 
-  const modelUrl = resolveEntitySpriteUrl(model.assetId);
+  const candidateBaseUrl = model.modelUrl || model.source || (typeof model === 'object' && model?.url);
+  const modelUrl = candidateBaseUrl || resolveModelAssetUrl(model.assetId) || resolveEntitySpriteUrl(model.assetId);
   if (!modelUrl) return undefined;
 
   const configuredAttachments = Array.isArray(data.modularAttachments)
@@ -35,10 +78,10 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
       .filter((att: any) => att?.defaultVisible !== false)
       .map((att: any): ModularAttachmentDef | undefined => {
         const rawId = typeof att === 'string' ? att : att?.assetId;
-        if (!rawId) return undefined;
-        const url = resolveEntitySpriteUrl(rawId);
+        const candidateUrl = typeof att === 'object' && att ? (att.modelUrl || att.source || att.url) : undefined;
+        const url = candidateUrl || resolveModelAssetUrl(rawId) || (rawId && /\.(glb|gltf)$/i.test(rawId) ? resolveEntitySpriteUrl(rawId) : undefined);
         if (!url) return undefined;
-        const wardrobeItem = typeof att === 'string' ? { assetId: rawId } : { ...att, assetId: rawId };
+        const wardrobeItem = typeof att === 'string' ? { assetId: rawId, modelUrl: url } : { ...att, assetId: rawId, modelUrl: url };
         const attachmentMode = getDefaultModelWardrobeAttachmentMode(wardrobeItem);
         return {
           modelUrl: url,
