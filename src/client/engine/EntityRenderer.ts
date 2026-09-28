@@ -20,6 +20,7 @@ import { mapMesher } from './MapMesher';
 import { WrappedCharacterMesher } from './rendering/WrappedCharacterMesher';
 import { AssetManager } from '@/engine/assets/AssetManager';
 import { loadAndRetargetAnimation } from '@/engine/animationRetarget';
+import { applyAnimationProfileFallback } from '@/shared/game/animationProfiles';
 
 // Player is 2 blocks tall (like a classic voxel game character)
 const PLAYER_HEIGHT = 2.0;
@@ -83,6 +84,7 @@ export class EntityRenderer {
       let effectiveProfileId = profileId;
       let visualTransform: any = undefined;
       let visualAnimations: any = undefined;
+      let visualAnimationProfileId: string | undefined;
 
       if (visualData) {
         try {
@@ -92,6 +94,7 @@ export class EntityRenderer {
             effectiveProfileId = wm.assetId;
           }
           if (wm?.animations) visualAnimations = wm.animations;
+          if (typeof wm?.animationProfileId === 'string') visualAnimationProfileId = wm.animationProfileId;
           if (wm?.transform) visualTransform = wm.transform;
         } catch {}
       }
@@ -127,13 +130,28 @@ export class EntityRenderer {
                 cameraYOffset: parsedCamOffset !== undefined && Number.isFinite(parsedCamOffset) && parsedCamOffset > 0 ? parsedCamOffset : transform?.cameraYOffset
               };
             }
-            if (pres.assetDefinition?.animations || pres.animations || asset.metadata?.animations) {
-              animations = pres.assetDefinition?.animations || pres.animations || asset.metadata?.animations;
+            const assetAnimations = pres.animations || pres.assetDefinition?.animations || asset.metadata?.animations;
+            const actorAnimationProfileId = visualAnimationProfileId
+              || pres.animationProfileId
+              || pres.assetDefinition?.animationProfileId
+              || asset.metadata?.animationProfileId
+              || asset.metadata?.assetDefinition?.animationProfileId;
+            if (assetAnimations || animations || actorAnimationProfileId) {
+              const baseMappings = assetAnimations?.mapped || {};
+              const actorMappings = animations?.mapped || {};
+              animations = applyAnimationProfileFallback({
+                ...(assetAnimations || {}),
+                ...(animations || {}),
+                mapped: { ...baseMappings, ...actorMappings },
+              }, actorAnimationProfileId);
             }
           } else if (isModel) {
             presentationType = '3D_MODEL';
           }
         }
+      }
+      if (visualAnimationProfileId && !animations) {
+        animations = applyAnimationProfileFallback(undefined, visualAnimationProfileId);
       }
       return { isModel: !!isModel, resolvedUrl, presentationType, transform, animations };
     };

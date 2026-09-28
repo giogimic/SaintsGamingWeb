@@ -62,6 +62,7 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
   return {
     mode: '3D',
     assetId: model.assetId,
+    animationProfileId: model.animationProfileId ?? data.animationProfileId ?? data.assetDefinition?.animationProfileId,
     modelUrl,
     modularModelUrls,
     modularAttachments,

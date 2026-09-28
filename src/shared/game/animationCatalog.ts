@@ -1,4 +1,4 @@
-import { ANIMATION_PROFILES } from './animationProfiles';
+import { ANIMATION_PROFILES, resolveAnimationClipPath } from './animationProfiles';
 import type { AnimationProfile, AnimationSlot } from './animationProfiles';
 
 export const ANIMATION_ACTIONS: ReadonlyArray<{ key: AnimationSlot; label: string; group: string }> = [
@@ -151,7 +151,7 @@ export function buildAnimationClipCatalog(
         sourceKind: 'animation-set',
         sourceId: profile.id,
         sourceLabel: profile.displayName,
-        sourcePath: `${profile.basePath}${encodeURIComponent(clip)}.glb`,
+        sourcePath: resolveAnimationClipPath(profile.basePath, clip),
         rigFamily: 'Manny',
         slots: inferredSlots,
         loop: metadata.loop,

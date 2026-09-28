@@ -387,13 +387,62 @@ export function getAnimationProfile(profileId: string): AnimationProfile | undef
   return ANIMATION_PROFILES.find(p => p.id === profileId);
 }
 
+/** Encode each folder/name segment while preserving clip folders in the URL. */
+export function resolveAnimationClipPath(basePath: string, clip: string): string {
+  const encodedClipPath = clip.split('/').map((segment) => encodeURIComponent(segment)).join('/');
+  return `${basePath}${encodedClipPath}.glb`;
+}
+
+/** Build runtime-ready mappings for the default clips in a selected profile. */
+export function getProfileAnimationMappings(profileId: string): Record<string, {
+  clip: string;
+  sourceKind: 'animation-set';
+  sourceId: string;
+  sourcePath: string;
+  loop: boolean;
+  speed?: number;
+}> {
+  const profile = getAnimationProfile(profileId);
+  if (!profile) return {};
+
+  return Object.fromEntries(
+    Object.entries(profile.slotMap).flatMap(([slot, mapping]) => mapping
+      ? [[slot, {
+          clip: mapping.clip,
+          sourceKind: 'animation-set' as const,
+          sourceId: profile.id,
+          sourcePath: resolveAnimationClipPath(profile.basePath, mapping.clip),
+          loop: mapping.loop,
+          speed: mapping.speed,
+        }]]
+      : []),
+  );
+}
+
+/** Use profile defaults for unmapped slots while preserving authored overrides. */
+export function applyAnimationProfileFallback(
+  animationConfig: Record<string, any> | null | undefined,
+  profileId?: string | null,
+): Record<string, any> | undefined {
+  const profileMappings = profileId ? getProfileAnimationMappings(profileId) : {};
+  const authoredMappings = animationConfig?.mapped || {};
+  if (Object.keys(profileMappings).length === 0 && Object.keys(authoredMappings).length === 0) {
+    return animationConfig || undefined;
+  }
+
+  return {
+    ...(animationConfig || {}),
+    mapped: { ...profileMappings, ...authoredMappings },
+  };
+}
+
 /** Resolve the full URL for a specific animation slot in a profile */
 export function resolveAnimationUrl(profileId: string, slot: AnimationSlot): string | null {
   const profile = getAnimationProfile(profileId);
   if (!profile) return null;
   const mapping = profile.slotMap[slot];
   if (!mapping) return null;
-  return `${profile.basePath}${mapping.clip}.glb`;
+  return resolveAnimationClipPath(profile.basePath, mapping.clip);
 }
 
 /** Get all available slot URLs for a profile (for preloading) */
@@ -403,7 +452,7 @@ export function getProfileSlotUrls(profileId: string): Record<string, string> {
   const urls: Record<string, string> = {};
   for (const [slot, mapping] of Object.entries(profile.slotMap)) {
     if (mapping) {
-      urls[slot] = `${profile.basePath}${mapping.clip}.glb`;
+      urls[slot] = resolveAnimationClipPath(profile.basePath, mapping.clip);
     }
   }
   return urls;

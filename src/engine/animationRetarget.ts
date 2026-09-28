@@ -227,6 +227,10 @@ export async function loadAndRetargetAnimation(
   scene: BABYLON.Scene,
   options?: RetargetOptions
 ): Promise<BABYLON.AnimationGroup | null> {
+  // Older Studio builds encoded an entire nested clip path as one segment
+  // (for example `Jog%2FJog_Fwd.glb`). Restore separators so static hosts and
+  // CDNs resolve nested animation files consistently.
+  sourcePath = sourcePath.replace(/%2f/gi, '/');
   const lastSlash = sourcePath.lastIndexOf('/');
   const aRoot = lastSlash >= 0 ? sourcePath.substring(0, lastSlash + 1) : '';
   const aFile = lastSlash >= 0 ? sourcePath.substring(lastSlash + 1) : sourcePath;

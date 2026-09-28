@@ -97,6 +97,7 @@ import { SpiritGateRenderer } from '../client/engine/rendering/SpiritGateRendere
 import { EntityController } from './EntityController';
 import { loadAndRetargetAnimation } from './animationRetarget';
 import { AssetManager } from './assets/AssetManager';
+import { applyAnimationProfileFallback } from '../shared/game/animationProfiles';
 
 function findBabylonBone(skeleton: any, socketName: string) {
   if (!skeleton || !skeleton.bones) return null;
@@ -4140,7 +4141,7 @@ export class BabylonEngine {
             throw error;
           });
         }))
-          .then((settledResults) => {
+          .then(async (settledResults) => {
             const results = settledResults.flatMap((result) => {
               if (result.status === 'fulfilled') return [result.value];
               return [];
@@ -4342,16 +4343,59 @@ export class BabylonEngine {
             // Collect all transform nodes across loaded model results for bone retargeting
             const allTransformNodes = results.flatMap(r => r.transformNodes);
 
-            // Check if animations are mapped
-            let animConfig = pres?.animations || pres?.assetDefinition?.animations;
-            if (!animConfig && pres?.assetId) {
-              const asset = AssetManager.getInstance().getAssetSync(pres.assetId);
-              const assetPres = (asset?.presentation as any);
-              animConfig = assetPres?.animations || assetPres?.assetDefinition?.animations || asset?.metadata?.animations;
+            // Character/world-model selections usually persist only the asset ID.
+            // Fetch that asset's Studio animation table before choosing a fallback;
+            // getAssetSync() can return null on first entry and used to leave the
+            // imported skinned model permanently in its bind pose.
+            const assetManager = AssetManager.getInstance();
+            let sourceAsset: Awaited<ReturnType<typeof assetManager.getAsset>> = null;
+            const sourceAssetId = pres?.assetId || pres?.assetDefinition?.assetId;
+            if (sourceAssetId) {
+              try {
+                sourceAsset = await assetManager.getAsset(String(sourceAssetId));
+              } catch (error) {
+                console.warn('[BabylonEngine] Could not load model animation metadata', sourceAssetId, error);
+              }
+            }
+            if (this.entityMeshes.get(entity.id) !== currentMesh) {
+              allAnimationGroups.forEach((group) => group.dispose());
+              return;
             }
 
-            if (animConfig && animConfig.mapped) {
-              const mapped = animConfig.mapped;
+            const sourceAssetPresentation = sourceAsset?.presentation as any;
+            const sourceAssetAnimations = sourceAssetPresentation?.animations
+              || sourceAssetPresentation?.assetDefinition?.animations
+              || sourceAsset?.metadata?.animations;
+            const actorAnimations = pres?.animations || pres?.assetDefinition?.animations;
+            const profileId = pres?.animationProfileId
+              || pres?.assetDefinition?.animationProfileId
+              || sourceAssetPresentation?.animationProfileId
+              || sourceAssetPresentation?.assetDefinition?.animationProfileId
+              || sourceAsset?.metadata?.animationProfileId
+              || sourceAsset?.metadata?.assetDefinition?.animationProfileId;
+            const mergedAnimationConfig = {
+              ...(sourceAssetAnimations || {}),
+              ...(actorAnimations || {}),
+              mapped: {
+                ...(sourceAssetAnimations?.mapped || {}),
+                ...(actorAnimations?.mapped || {}),
+              },
+            };
+            const rigAnalysis = pres?.rigAnalysis
+              || pres?.assetDefinition?.rigAnalysis
+              || sourceAssetPresentation?.rigAnalysis
+              || sourceAssetPresentation?.assetDefinition?.rigAnalysis
+              || sourceAsset?.metadata?.rigAnalysis;
+            const isHumanoidRig = !rigAnalysis?.family
+              || rigAnalysis.family === 'HUMANOID_BIPED'
+              || rigAnalysis.isHumanoid === true;
+            const animationConfig = applyAnimationProfileFallback(
+              mergedAnimationConfig,
+              isHumanoidRig ? profileId : undefined,
+            );
+
+            if (animationConfig?.mapped) {
+              const mapped = animationConfig.mapped;
               Object.entries(mapped).forEach(([slot, mapping]: [string, any]) => {
                 if (mapping.sourceKind === 'embedded' && mapping.clip) {
                   const embeddedAg = allAnimationGroups.find(ag => ag.name === mapping.clip);
