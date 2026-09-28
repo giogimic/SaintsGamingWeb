@@ -9,6 +9,40 @@ export interface SpawnValidationResult {
   headroom: number;
 }
 
+/** True when the standard player capsule can occupy the supplied voxel-space point. */
+export function isVoxelCharacterPositionClear(
+  world: VoxelWorld,
+  position: { x: number; y: number; z: number },
+  width = 0.6,
+  height = 1.8,
+  depth = 0.6,
+): boolean {
+  if (
+    !Number.isFinite(position.x) || !Number.isFinite(position.y) || !Number.isFinite(position.z) ||
+    position.x - width / 2 < 0 || position.x + width / 2 > world.totalWidthBlocks ||
+    position.z - depth / 2 < 0 || position.z + depth / 2 > world.totalDepthBlocks ||
+    position.y < 0 || position.y + height > world.totalHeightBlocks
+  ) {
+    return false;
+  }
+
+  const minX = Math.floor(position.x - width / 2);
+  const maxX = Math.floor(position.x + width / 2 - 1e-6);
+  const minY = Math.floor(position.y);
+  const maxY = Math.floor(position.y + height - 1e-6);
+  const minZ = Math.floor(position.z - depth / 2);
+  const maxZ = Math.floor(position.z + depth / 2 - 1e-6);
+  for (let y = minY; y <= maxY; y++) {
+    for (let z = minZ; z <= maxZ; z++) {
+      for (let x = minX; x <= maxX; x++) {
+        const voxel = world.getVoxel(x, y, z);
+        if (!isVoxelAir(voxel.low) && isVoxelSolid(voxel.high)) return false;
+      }
+    }
+  }
+  return true;
+}
+
 /**
  * Finds a column with solid, non-hazardous ground and two clear blocks for the
  * player capsule. Coordinates and the returned Y are voxel-space values.

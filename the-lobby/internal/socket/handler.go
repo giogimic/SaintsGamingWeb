@@ -3,6 +3,7 @@ package socket
 import (
 	"encoding/json"
 	"log"
+	"math"
 	"strings"
 	"sync"
 	"time"
@@ -484,6 +485,54 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 	}
 	if req.Z != nil {
 		z = *req.Z
+	}
+	if def != nil && def.Voxel != nil {
+		const playerWidth, playerHeight, playerDepth = 0.6, 1.8, 0.6
+		if math.IsNaN(x) || math.IsInf(x, 0) {
+			x = def.SpawnX
+		}
+		if math.IsNaN(y) || math.IsInf(y, 0) {
+			y = def.SpawnY
+		}
+		if math.IsNaN(z) || math.IsInf(z, 0) {
+			z = def.SpawnZ
+		}
+		requested := world.Vector3D{X: x, Y: y, Z: z}
+		positionSafe := def.Voxel.IsSafePlayerPosition(requested, playerWidth, playerHeight, playerDepth)
+		if positionSafe {
+			columnSpawn, found := def.Voxel.ResolveSafePlayerSpawn(x, z, 0, playerWidth, playerHeight, playerDepth)
+			if found && y+0.1 < columnSpawn.Y {
+				positionSafe = false
+			}
+		}
+		if !positionSafe {
+			safeSpawn, found := def.Voxel.ResolveSafePlayerSpawn(
+				def.SpawnX, def.SpawnZ, 32, playerWidth, playerHeight, playerDepth,
+			)
+			if !found {
+				safeSpawn, found = def.Voxel.ResolveSafePlayerSpawn(
+					float64(def.Voxel.WidthChunks*world.ChunkSizeX)/2,
+					float64(def.Voxel.DepthChunks*world.ChunkSizeZ)/2,
+					32, playerWidth, playerHeight, playerDepth,
+				)
+			}
+			if found {
+				x, y, z = safeSpawn.X, safeSpawn.Y, safeSpawn.Z
+			} else {
+				// A map with no walkable column still needs a recoverable entry
+				// point; the client will drop the player onto generated terrain.
+				x, z = def.SpawnX, def.SpawnZ
+				fallbackHeight := def.Voxel.HeightChunks * world.ChunkSizeY
+				if fallbackHeight <= 0 {
+					// Published region-backed maps currently do not carry dimensions
+					// in the Go release manifest.
+					fallbackHeight = 256
+				}
+				y = float64(fallbackHeight) + 2
+			}
+			log.Printf("[socket] JOIN_SPAWN_ADJUST account=%s map=%s from=(%.2f,%.2f,%.2f) to=(%.2f,%.2f,%.2f)",
+				accountID, base, requested.X, requested.Y, requested.Z, x, y, z)
+		}
 	}
 	name := req.Name
 	if name == "" {

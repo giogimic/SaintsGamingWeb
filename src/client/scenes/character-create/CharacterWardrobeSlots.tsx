@@ -4,7 +4,7 @@ import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import type { WorldModelValue } from '@/web/components/the-lobby/editor/components/WorldModelSelector';
 import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
-import { getModelWardrobeItemLabel } from '@/shared/game/modelWardrobe';
+import { getModelWardrobeItemLabel, getModelWardrobeSlotId } from '@/shared/game/modelWardrobe';
 import { ArchetypeModelPreview3D } from '@/web/components/the-lobby/editor/hero-studio/ArchetypeModelPreview3D';
 
 interface CharacterWardrobeSlotsProps {
@@ -22,29 +22,18 @@ interface CharacterWardrobeSlotsProps {
 interface SlotDefinition {
   id: string;
   label: string;
-  matches: RegExp;
 }
 
 const SLOTS: SlotDefinition[] = [
-  { id: 'headwear', label: 'Hat / Headwear', matches: /hat|helmet|headwear|head|cap|crown|hood/ },
-  { id: 'eyewear', label: 'Glasses / Head Accessories', matches: /glasses|goggles|eyewear|head_accessory|headphone|earring/ },
-  { id: 'hair', label: 'Hair', matches: /hair|beard|moustache|eyebrow/ },
-  { id: 'face', label: 'Face', matches: /face|mask|nose/ },
-  { id: 'upper-body', label: 'Torso / Clothing', matches: /body|torso|chest|shirt|jacket|coat|clothing|top|armor/ },
-  { id: 'hands', label: 'Hands / Gloves', matches: /hands|glove|gauntlet|wrist/ },
-  { id: 'legs', label: 'Legs', matches: /legs|pants|trousers|shorts|skirt/ },
-  { id: 'feet', label: 'Footwear', matches: /feet|shoes|boots|sneaker|slipper|sock/ },
-  { id: 'back', label: 'Back / Cape', matches: /back|cape|cloak|wing|quiver|backpack/ },
-  { id: 'accessory', label: 'Accessories / Equipment', matches: /weapon|sword|bow|shield|accessory|jewelry|other/ },
+  { id: 'headwear', label: 'Hat / Headwear' },
+  { id: 'eyewear', label: 'Glasses / Head Accessories' },
+  { id: 'hair', label: 'Hair' },
+  { id: 'face', label: 'Face' },
+  { id: 'upper-body', label: 'Torso / Clothing' },
+  { id: 'legs', label: 'Legs' },
+  { id: 'feet', label: 'Footwear' },
+  { id: 'accessory', label: 'Accessories / Equipment' },
 ];
-
-function getSlotId(item: ModelWardrobeItem): string {
-  const category = String(item.category || '').toLowerCase().replace(/[\s-]+/g, '_');
-  const text = `${category} ${item.label || ''} ${item.assetId}`.toLowerCase();
-  const eyewear = SLOTS.find((slot) => slot.id === 'eyewear');
-  if (eyewear?.matches.test(text)) return eyewear.id;
-  return SLOTS.find((slot) => slot.matches.test(text))?.id || 'other';
-}
 
 function WardrobeSlot({
   slot,
@@ -127,7 +116,7 @@ export function CharacterWardrobeSlots({
   const selectedIds = new Set(selectedWardrobeAssetIds);
   const groupedItems = new Map<string, ModelWardrobeItem[]>();
   for (const item of wardrobeOptions) {
-    const slotId = getSlotId(item);
+    const slotId = getModelWardrobeSlotId(item);
     const slotItems = groupedItems.get(slotId) || [];
     slotItems.push(item);
     groupedItems.set(slotId, slotItems);
@@ -201,7 +190,7 @@ export function CharacterWardrobeSlots({
           ))}
           {extraItems.length > 0 && (
             <WardrobeSlot
-              slot={{ id: 'other', label: 'Other Items', matches: /.*/ }}
+              slot={{ id: 'other', label: 'Other Items' }}
               items={extraItems}
               selectedIds={selectedIds}
               onChoose={chooseItem}

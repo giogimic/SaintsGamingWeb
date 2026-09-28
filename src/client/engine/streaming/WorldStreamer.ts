@@ -117,12 +117,28 @@ export class WorldStreamer {
     console.log(`[WorldStreamer] Requesting spawn region R(${region.rx}, ${region.rz}) for Chunk(${chunk.cx}, ${chunk.cy}, ${chunk.cz})...`);
 
     const activeMap = useWorldStore.getState().activeMapData;
-    if (activeMap?.mapType === 'FRACTAL') {
+    if (String(activeMap?.mapType || '').toUpperCase() === 'FRACTAL') {
       console.log(`[WorldStreamer] Fractal map detected. Requesting JIT spawn chunks directly...`);
+      const heightChunks = Math.max(1, Math.min(64, Number(this.manifest?.dimensions?.heightChunks) || 1));
       for (let dx = -1; dx <= 1; dx++) {
         for (let dz = -1; dz <= 1; dz++) {
-          socketManager.emit('request_chunk' as any, { cx: chunk.cx + dx, cy: chunk.cy, cz: chunk.cz + dz });
+          for (let cy = 0; cy < heightChunks; cy++) {
+            socketManager.emit('request_chunk' as any, { cx: chunk.cx + dx, cy, cz: chunk.cz + dz });
+          }
         }
+      }
+
+      // A fractal map has no baked region to await. Keep the player locked
+      // until at least the requested vertical spawn column has arrived.
+      const deadline = Date.now() + 2500;
+      while (Date.now() < deadline && mapMesher.getVoxelWorld()) {
+        const voxelWorld = mapMesher.getVoxelWorld();
+        if (!voxelWorld) break;
+        const loadedLevels = Array.from({ length: heightChunks }, (_, cy) =>
+          voxelWorld.getChunk(chunk.cx, chunk.cz, cy),
+        ).filter(Boolean).length;
+        if (loadedLevels >= heightChunks) break;
+        await new Promise((resolve) => setTimeout(resolve, 50));
       }
       
       useSessionStore.getState().setBootState('VALIDATE_SPAWN');
@@ -157,7 +173,7 @@ export class WorldStreamer {
     if (residentChunk && !residentChunk.isEmpty()) return;
 
     const activeMap = useWorldStore.getState().activeMapData;
-    if (activeMap?.mapType === 'FRACTAL') {
+    if (String(activeMap?.mapType || '').toUpperCase() === 'FRACTAL') {
       this.chunkResidency.set(this.getChunkKey(chunk.cx, chunk.cy, chunk.cz), 'REQUESTED');
       socketManager.emit('request_chunk' as any, { cx: chunk.cx, cy: chunk.cy, cz: chunk.cz });
 

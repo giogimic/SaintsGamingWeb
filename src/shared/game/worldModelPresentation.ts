@@ -1,5 +1,9 @@
 import { resolveEntitySpriteUrl } from './creatureCatalog';
 import type { PresentationDefinition, ModularAttachmentDef } from './canonicalAsset';
+import {
+  getDefaultModelWardrobeAttachmentMode,
+  getDefaultModelWardrobeSocket,
+} from './modelWardrobe';
 
 /** Resolve the per-actor world model config stored by Studio's shared model selector. */
 export function getWorldModelPresentation(value?: unknown): PresentationDefinition | undefined {
@@ -34,14 +38,16 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
         if (!rawId) return undefined;
         const url = resolveEntitySpriteUrl(rawId);
         if (!url) return undefined;
+        const wardrobeItem = typeof att === 'string' ? { assetId: rawId } : { ...att, assetId: rawId };
+        const attachmentMode = getDefaultModelWardrobeAttachmentMode(wardrobeItem);
         return {
           modelUrl: url,
           assetId: rawId,
-          socket: att?.socket || (att?.attachmentMode === 'SKINNED' ? undefined : 'RightHandMount'),
+          socket: att?.socket || (attachmentMode === 'SKINNED' ? undefined : getDefaultModelWardrobeSocket(wardrobeItem)),
           attachOffset: att?.attachOffset,
           sheathedSocket: att?.sheathedSocket,
           sheathedOffset: att?.sheathedOffset,
-          attachmentMode: att?.attachmentMode || (att?.isModular ? 'SKINNED' : 'RIGID_SOCKET'),
+          attachmentMode,
           hidesComponents: Array.isArray(att?.hidesComponents) ? att.hidesComponents : [],
           scale: Number(att?.scale) || undefined,
         };

@@ -107,4 +107,33 @@ describe('SweptAABBController — 3D Voxel Collision Resolution', () => {
     expect(res.velocity.x).toBe(0); // zeroed along collision normal
     expect(res.velocity.z).toBe(5.0); // slide along Z
   });
+
+  it('safely depenetrates and ejects entity if initially placed inside a solid block', () => {
+    // Solid block at x = 10, y = 1, z = 0
+    const world: VoxelWorldCollisionQuery = {
+      getVoxel: (wx, wy, wz) => {
+        if (wx === 10 && wy === 1 && wz === 0) {
+          return { low: VOXEL_WORD_GUNMETAL_LOW, high: VOXEL_WORD_GUNMETAL_HIGH };
+        }
+        if (wy === 0) return { low: VOXEL_WORD_GUNMETAL_LOW, high: VOXEL_WORD_GUNMETAL_HIGH };
+        return { low: VOXEL_WORD_AIR_LOW, high: VOXEL_WORD_AIR_HIGH };
+      },
+    };
+
+    const controller = new SweptAABBController();
+    // Placed slightly inside the block at x = 10.1, y = 1.0, z = 0.5
+    const insidePos = { x: 10.1, y: 1.0, z: 0.5 };
+    const ejected = controller.depenetrate(world, insidePos);
+
+    // Ejected position must no longer overlap any obstacle box
+    const obstacles = controller.queryObstacleBoxes(world, controller.getAABB(ejected));
+    const overlaps = obstacles.some((box) => SweptAABBController.aabbOverlaps(controller.getAABB(ejected), box));
+    expect(overlaps).toBe(false);
+
+    // simulateMove should also immediately clear the penetration without getting stuck
+    const res = controller.simulateMove(world, insidePos, { x: 1, y: 0, z: 0 }, 1 / 60);
+    const simObstacles = controller.queryObstacleBoxes(world, controller.getAABB(res.position));
+    const simOverlaps = simObstacles.some((box) => SweptAABBController.aabbOverlaps(controller.getAABB(res.position), box));
+    expect(simOverlaps).toBe(false);
+  });
 });

@@ -143,6 +143,15 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 
 ## Changelog
 
+### v2.2.037
+- **Client-Trust Movement Synchronization, Speed Envelopes & Wall Penetration Prevention (Debian First)**:
+  - **Authoritative Speed Envelopes & Latency Headroom (`the-lobby` Go Server)**: Replaced the fixed 2-meter divergence check (`distSq > 4.0`) with a physical speed envelope ($\Delta d_{\text{max}} = 40.0 \times \max(\Delta t, 0.15) \times 1.5 + 4.0\text{m}$). Allows players to sprint (22+ m/s), dash, leap, and ride mounts without false-positive rubber-banding caused by network packet arrival jitter.
+  - **Wall Penetration Interception & Safe Contact Clamping**: The Go MMO server (`engine.go`) now validates destination coordinates against solid obstacle AABBs. If a player moving fast strikes a wall, the server no longer snaps them backwards across the map or into blind velocity projections. It resolves continuous swept collision along the displacement vector and smoothly clamps the player to the safe outer contact surface of the wall with depenetration.
+  - **Collision Skin Margins (`VoxelCollision.ts` & `voxel.go`)**: Introduced a 1mm skin margin (`1e-3`) to axis-separated obstacle clamping on both client and Go server. Prevents floating-point rounding from settling bounding boxes inside obstacle boxes, eliminating wall sticking and enabling smooth wall-sliding.
+  - **Minimum Translation Vector (MTV) Depenetration (`pushOutOfBlocks`)**: Implemented `Depenetrate` in `voxel.go` and `SweptAABBController.depenetrate` in `VoxelCollision.ts`. If an entity ever overlaps solid voxels (due to chunk streaming, knockback, or sudden geometry changes), it immediately ejects to the nearest open air boundary.
+  - **Client Reconciliation Epsilon Smoothing (`MovementPrediction.ts`)**: Increased client-side reconciliation tolerance from 5cm to 25cm (`RECONCILIATION_EPSILON = 0.25`), eliminating micro-stutters and jitter while preserving full server authority over impossible movements.
+  - **Saints Gaming Bible Section 50**: Codified the Client-Trust Movement Synchronization, Speed Envelopes & Wall Penetration Prevention policy in `.docs/Saints_Gaming_Bible.md`.
+
 ### v2.2.036
 - **Docker Build & Postinstall Patching Safeguards (Debian First)**:
   - **Docker Build Layer Alignment**: Added `COPY scripts/patch-three-stdlib.js ./scripts/patch-three-stdlib.js` immediately before `RUN npm ci` in `Dockerfile`. Resolves fatal container build failure (`MODULE_NOT_FOUND: Cannot find module '/app/scripts/patch-three-stdlib.js'`) during production Docker builds where `npm ci` triggers `postinstall` before the application source tree is copied.

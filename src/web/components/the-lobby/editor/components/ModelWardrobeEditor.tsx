@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Search, Shirt, Sparkles } from 'lucide-react';
 import { AssetManager, type GameAssetItem } from '@/engine/assets/AssetManager';
+import { getModelWardrobeCategory } from '@/shared/game/modelWardrobe';
 import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
 import { STANDARD_SOCKET_OPTIONS } from './WorldModelSelector';
 
@@ -131,7 +132,11 @@ export function ModelWardrobeEditor({
       onChange(value.filter((item) => item.assetId !== asset.id));
       return;
     }
-    const category = asset.componentCategory || 'other';
+    const category = getModelWardrobeCategory({
+      assetId: asset.id,
+      label: displayName(asset),
+      category: asset.componentCategory || asset.metadata?.componentCategory || asset.metadata?.cat || undefined,
+    });
     onChange([
       ...value,
       {
@@ -168,7 +173,11 @@ export function ModelWardrobeEditor({
           type: '3D Model',
           assetId: asset.id,
           label: displayName(asset),
-          category: asset.componentCategory || 'other',
+          category: getModelWardrobeCategory({
+            assetId: asset.id,
+            label: displayName(asset),
+            category: asset.componentCategory || asset.metadata?.componentCategory || asset.metadata?.cat || undefined,
+          }),
           isModular: true,
           attachmentMode: 'SKINNED',
           defaultVisible: !allowCharacterCreationOptions,
@@ -284,7 +293,9 @@ export function ModelWardrobeEditor({
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={!!configured} onChange={(event) => toggleIncluded(asset, event.target.checked)} className="rounded border-slate-600 bg-black text-cyan-500 focus:ring-0" />
                   <span className="min-w-0 flex-1 truncate text-[10px] font-semibold text-slate-200">{label}</span>
-                  <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[8px] uppercase text-slate-400">{asset.componentCategory || 'item'}</span>
+                  <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[8px] uppercase text-slate-400">
+                    {getModelWardrobeCategory({ assetId: asset.id, label, category: asset.componentCategory || asset.metadata?.componentCategory || asset.metadata?.cat || undefined }).replace(/_/g, ' ')}
+                  </span>
                 </label>
                 {configured && (
                   <div className="ml-6 mt-1.5 space-y-2">

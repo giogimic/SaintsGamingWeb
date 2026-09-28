@@ -81,7 +81,7 @@ func TestHubLifecycleAndIdempotentJoin(t *testing.T) {
 		t.Fatalf("join failed: %v", err)
 	}
 
-	p := pm.CreateWithCharacter(accountID, charID, socketID, "Hero", "adventurer", inst.InstanceID, "STARTING_MEADOW", 14, 15, 0)
+	p := pm.CreateWithCharacter(accountID, charID, socketID, "Hero", "adventurer", "", inst.InstanceID, "STARTING_MEADOW", 14, 15, 0)
 	if p == nil || p.CharacterID != charID {
 		t.Fatalf("expected player with character ID %s", charID)
 	}
@@ -106,7 +106,7 @@ func TestHubLifecycleAndIdempotentJoin(t *testing.T) {
 	// 5. Switching character on same account cleanly replaces seat
 	newCharID := "char_hero_2"
 	pm.Remove(socketID)
-	p2 := pm.CreateWithCharacter(accountID, newCharID, socketID, "Mage", "mage_default", inst.InstanceID, "STARTING_MEADOW", 14, 15, 0)
+	p2 := pm.CreateWithCharacter(accountID, newCharID, socketID, "Mage", "mage_default", "", inst.InstanceID, "STARTING_MEADOW", 14, 15, 0)
 	if p2.CharacterID != newCharID {
 		t.Fatalf("expected new character %s", newCharID)
 	}
@@ -156,7 +156,7 @@ func TestFishPersistence(t *testing.T) {
 
 	inst, _ := wm.JoinMap("STARTING_MEADOW", accountID, false, false)
 	// Player at 10,10
-	pm.CreateWithCharacter(accountID, charID, socketID, "Hero", "adventurer", inst.InstanceID, "STARTING_MEADOW", 10, 10, 0)
+	pm.CreateWithCharacter(accountID, charID, socketID, "Hero", "adventurer", "", inst.InstanceID, "STARTING_MEADOW", 10, 10, 0)
 
 	// Attempt fishing exactly on top of player (within 3 tiles)
 	datas := []any{map[string]any{"x": 10.0, "y": 10.0}}

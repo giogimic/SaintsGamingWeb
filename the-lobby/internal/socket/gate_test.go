@@ -50,7 +50,7 @@ func TestGateTransitionSpoofing(t *testing.T) {
 	defB.Gates = []world.GateDef{{ID: "gate2", X: 5, Y: 5}}
 
 	// 2. Setup Player in mapA
-	p := pm.CreateWithCharacter("acc1", "char1", "sock1", "Bob", "sprite", "instA", "mapA", 0, 0, 0)
+	p := pm.CreateWithCharacter("acc1", "char1", "sock1", "Bob", "sprite", "", "instA", "mapA", 0, 0, 0)
 	
 	// Test Spoofing: player in mapA requests connection that doesn't exist
 	h.handlePortalDial(nil, "acc1", "invalid_conn")

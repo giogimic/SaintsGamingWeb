@@ -23,6 +23,7 @@ export class LocalMovementSystem {
   private verticalVelocity = 0;
   private isGrounded = true;
   private voidRecoveryPending = false;
+  private spawnReady = true;
   
   // Spirit Gate Physics Handoff
   private portalTransit = new PortalTransitSystem();
@@ -31,6 +32,11 @@ export class LocalMovementSystem {
   public resetAfterTeleport() {
     this.verticalVelocity = 0;
     this.isGrounded = true;
+  }
+
+  /** Prevent gravity/input from advancing an unvalidated join position. */
+  public setSpawnReady(ready: boolean) {
+    this.spawnReady = ready;
   }
 
   private dropPlayerBackOntoWorld(world: NonNullable<ReturnType<typeof mapMesher.getVoxelWorld>>) {
@@ -102,7 +108,7 @@ export class LocalMovementSystem {
     const scene = useSessionStore.getState().activeScene;
     
     // Only process player movement input if we're exploring
-    if (scene !== 'exploring') return;
+    if (scene !== 'exploring' || !this.spawnReady) return;
     
     this.processMovement(dt);
   }

@@ -4075,6 +4075,31 @@ export class BabylonEngine {
 
   public updateEntity(entity: BabylonEntityData) {
     let spriteMesh = this.entityMeshes.get(entity.id);
+    const presentation = entity.presentation;
+    const presentationSignature = JSON.stringify({
+      spriteUrl: entity.spriteUrl || '',
+      mode: presentation?.mode,
+      modelUrl: presentation?.modelUrl,
+      modelScale: presentation?.modelScale,
+      modularAttachments: presentation?.modularAttachments?.map((attachment) => ({
+        assetId: attachment.assetId,
+        modelUrl: attachment.modelUrl,
+        attachmentMode: attachment.attachmentMode,
+        socket: attachment.socket,
+        attachOffset: attachment.attachOffset,
+        scale: attachment.scale,
+        hidesComponents: attachment.hidesComponents,
+      })),
+    });
+    if (spriteMesh && spriteMesh.metadata?.presentationSignature !== presentationSignature) {
+      // A character can change outfit when the selected character or its saved
+      // wardrobe changes. Rebuild the composite so the new attachment list is
+      // loaded instead of leaving the first outfit cached on the entity.
+      spriteMesh.dispose(false, false);
+      this.entityMeshes.delete(entity.id);
+      this.shadowMeshes.delete(entity.id);
+      spriteMesh = undefined;
+    }
     const elevation = this.voxel.getVoxelSurfaceY(entity.x, entity.y);
     const targetPos = new Vector3(entity.x, elevation + ENTITY_GROUND_CLEARANCE, entity.y);
     const existingDims = spriteMesh?.metadata?.spriteDimensions as { width: number; height: number } | undefined;
@@ -4087,6 +4112,7 @@ export class BabylonEngine {
         spriteMesh.isVisible = true;
         
         spriteMesh.metadata = {
+          presentationSignature,
           targetPos: targetPos,
           isMoving: entity.isMoving || false,
           animTime: 0,
@@ -4107,6 +4133,7 @@ export class BabylonEngine {
         if (entity.presentation.modularModelUrls) {
           urlsToLoad.push(...entity.presentation.modularModelUrls);
         }
+        const modelEntityMesh = spriteMesh;
         
         Promise.allSettled(urlsToLoad.map(url => {
           const lastSlash = url.lastIndexOf('/');
@@ -4142,27 +4169,35 @@ export class BabylonEngine {
           });
         }))
           .then(async (settledResults) => {
-            const results = settledResults.flatMap((result) => {
-              if (result.status === 'fulfilled') return [result.value];
+            const results = settledResults.flatMap((result, index) => {
+              if (result.status === 'fulfilled') return [{ imported: result.value, index }];
               return [];
             });
+            const disposeImportedResults = () => results.forEach(({ imported }) => {
+              imported.meshes.forEach((mesh) => mesh.dispose(false, false));
+              imported.animationGroups?.forEach((animation) => animation.dispose());
+            });
+            if (settledResults[0]?.status !== 'fulfilled') {
+              disposeImportedResults();
+              throw new Error(`Base model could not be imported for entity ${entity.id}`);
+            }
             if (results.length === 0) {
               throw new Error(`No model files could be imported for entity ${entity.id}`);
             }
-            if (!this.entityMeshes.has(entity.id)) {
+            if (
+              this.entityMeshes.get(entity.id) !== modelEntityMesh
+              || modelEntityMesh.metadata?.presentationSignature !== presentationSignature
+            ) {
               // Entity was deleted before load finished
-              results.forEach(res => {
-                res.meshes.forEach(m => m.dispose());
-                res.animationGroups?.forEach(a => a.dispose());
-              });
+              disposeImportedResults();
               return;
             }
-            const currentMesh = this.entityMeshes.get(entity.id)!;
+            const currentMesh = modelEntityMesh;
             const allAnimationGroups: any[] = [];
             let baseRoot: any = null;
             let baseSkeleton: any = null;
             
-            results.forEach((result, idx) => {
+            results.forEach(({ imported: result, index: idx }) => {
               const root = result.meshes.find((mesh) => !mesh.parent) || result.meshes[0];
               if (!root) {
                 console.warn('[BabylonEngine] Imported model had no meshes');
@@ -4192,13 +4227,16 @@ export class BabylonEngine {
                 const att = (pres?.modularAttachments || [])[idx - 1];
                 const isSkinned = att?.attachmentMode === 'SKINNED' || att?.isModular;
 
-                if (isSkinned && baseSkeleton) {
-                  result.meshes.forEach((m) => {
-                    (m as any).skeleton = baseSkeleton;
-                    if (!m.parent && baseRoot) {
-                      m.parent = baseRoot;
-                    }
-                  });
+                if (isSkinned) {
+                  if (baseSkeleton) {
+                    result.meshes.forEach((m) => {
+                      if ((m as any).skeleton) (m as any).skeleton = baseSkeleton;
+                      if (!m.parent && baseRoot) m.parent = baseRoot;
+                    });
+                  } else {
+                    console.warn(`[BabylonEngine] Wearable ${att?.assetId || idx} has no base skeleton to bind to; keeping it in the model's local space.`);
+                    if (root && baseRoot && !root.parent) root.parent = baseRoot;
+                  }
                 } else {
                   const socketName = att?.socket || 'RightHandMount';
                   const targetBone = findBabylonBone(baseSkeleton, socketName);
@@ -4341,7 +4379,7 @@ export class BabylonEngine {
             currentMesh.metadata.modelVisualHeight = modelVisualHeight;
             
             // Collect all transform nodes across loaded model results for bone retargeting
-            const allTransformNodes = results.flatMap(r => r.transformNodes);
+            const allTransformNodes = results.flatMap(({ imported }) => imported.transformNodes);
 
             // Character/world-model selections usually persist only the asset ID.
             // Fetch that asset's Studio animation table before choosing a fallback;
@@ -4357,7 +4395,10 @@ export class BabylonEngine {
                 console.warn('[BabylonEngine] Could not load model animation metadata', sourceAssetId, error);
               }
             }
-            if (this.entityMeshes.get(entity.id) !== currentMesh) {
+            if (
+              this.entityMeshes.get(entity.id) !== currentMesh
+              || currentMesh.metadata?.presentationSignature !== presentationSignature
+            ) {
               allAnimationGroups.forEach((group) => group.dispose());
               return;
             }
@@ -4465,6 +4506,7 @@ export class BabylonEngine {
         );
 
         spriteMesh.metadata = {
+          presentationSignature,
           targetPos: targetPos,
           isMoving: entity.isMoving || false,
           animTime: 0,
@@ -4610,6 +4652,7 @@ export class BabylonEngine {
     } else {
       // Update Metadata — keep existing spriteConfig if dimensions were already measured
       if (spriteMesh.metadata) {
+        spriteMesh.metadata.presentationSignature = presentationSignature;
         spriteMesh.metadata.targetPos = targetPos;
         spriteMesh.metadata.isMoving = entity.isMoving || false;
         spriteMesh.metadata.direction = entity.direction || spriteMesh.metadata.direction;

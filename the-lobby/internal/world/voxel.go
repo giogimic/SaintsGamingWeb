@@ -781,6 +781,94 @@ func (w *VoxelWorld) QueryObstacleBoxes(query AABB) []AABB {
 	return boxes
 }
 
+// IsSafePlayerPosition rejects positions outside the voxel volume or whose
+// player capsule overlaps solid terrain. Player Y is the feet position.
+func (w *VoxelWorld) IsSafePlayerPosition(pos Vector3D, width, height, depth float64) bool {
+	if w == nil || width <= 0 || height <= 0 || depth <= 0 {
+		return false
+	}
+	if math.IsNaN(pos.X) || math.IsInf(pos.X, 0) || math.IsNaN(pos.Y) || math.IsInf(pos.Y, 0) ||
+		math.IsNaN(pos.Z) || math.IsInf(pos.Z, 0) {
+		return false
+	}
+	if pos.Y < 0 || (w.HeightChunks > 0 && pos.Y+height > float64(w.HeightChunks*ChunkSizeY)) {
+		return false
+	}
+	if w.WidthChunks > 0 && (pos.X-width/2 < 0 || pos.X+width/2 > float64(w.WidthChunks*ChunkSizeX)) {
+		return false
+	}
+	if w.DepthChunks > 0 && (pos.Z-depth/2 < 0 || pos.Z+depth/2 > float64(w.DepthChunks*ChunkSizeZ)) {
+		return false
+	}
+	body := AABB{
+		MinX: pos.X - width/2, MinY: pos.Y, MinZ: pos.Z - depth/2,
+		MaxX: pos.X + width/2, MaxY: pos.Y + height, MaxZ: pos.Z + depth/2,
+	}
+	return len(w.QueryObstacleBoxes(body)) == 0
+}
+
+// ResolveSafePlayerSpawn searches down through a nearby column for walkable
+// ground with enough clear space for a player. It returns voxel-space coords.
+func (w *VoxelWorld) ResolveSafePlayerSpawn(desiredX, desiredZ float64, maxRadius int, width, height, depth float64) (Vector3D, bool) {
+	if w == nil || math.IsNaN(desiredX) || math.IsInf(desiredX, 0) || math.IsNaN(desiredZ) || math.IsInf(desiredZ, 0) {
+		return Vector3D{}, false
+	}
+	if maxRadius < 0 {
+		maxRadius = 0
+	}
+	centerX := int(math.Floor(desiredX))
+	centerZ := int(math.Floor(desiredZ))
+	worldHeight := w.HeightChunks * ChunkSizeY
+	if worldHeight <= 0 {
+		// Release manifests currently omit voxel dimensions. Region-backed maps
+		// are sparse and unbounded in X/Z, so scan a conservative vertical range
+		// and let the loaded region provide the actual ground surface.
+		worldHeight = 256
+	}
+	for radius := 0; radius <= maxRadius; radius++ {
+		for dx := -radius; dx <= radius; dx++ {
+			for dz := -radius; dz <= radius; dz++ {
+				if maxInt(absInt(dx), absInt(dz)) != radius {
+					continue
+				}
+				x, z := centerX+dx, centerZ+dz
+				if (w.WidthChunks > 0 && (x < 0 || x >= w.WidthChunks*ChunkSizeX)) ||
+					(w.DepthChunks > 0 && (z < 0 || z >= w.DepthChunks*ChunkSizeZ)) {
+					continue
+				}
+				for y := worldHeight - 1; y >= 0; y-- {
+					ground := w.GetVoxel(x, y, z)
+					physics := VoxelPhysics(ground)
+					if !IsVoxelSolid(ground) || physics == PhysicsHazard || physics == PhysicsSwimmableFluid {
+						continue
+					}
+					candidate := Vector3D{X: float64(x) + 0.5, Y: float64(y) + 1, Z: float64(z) + 0.5}
+					if w.IsSafePlayerPosition(candidate, width, height, depth) {
+						return candidate, true
+					}
+					// Higher surfaces in this column cannot yield a better spawn.
+					break
+				}
+			}
+		}
+	}
+	return Vector3D{}, false
+}
+
+func absInt(value int) int {
+	if value < 0 {
+		return -value
+	}
+	return value
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
 // Depenetrate inspects whether pos overlaps any solid voxel obstacle boxes and pushes it out
 // towards the nearest open air boundary (Minecraft pushOutOfBlocks style).
 func (w *VoxelWorld) Depenetrate(pos Vector3D, width, height, depth float64) Vector3D {
