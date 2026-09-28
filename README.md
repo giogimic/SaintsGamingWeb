@@ -143,6 +143,13 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 
 ## Changelog
 
+### v2.2.040
+- **Ghost Entity & Player Sync Fixes**:
+  - **Local Player Duplicate Filtering (`index.tsx`)**: The `map_players` event index key was corrected to filter by `accountId` and `id` in addition to `socket.id`. This prevents the MMO server's authoritative state broadcast from spawning a visual "ghost" clone of the local player with a duplicate nameplate at the spawn location.
+  - **3D Model Rotation Fix (`Renderer.ts`)**: The mesh rotation vector `Math.atan2(-dir.x, dir.z)` now correctly inverts the X-axis for `modelWrapper` glTF scaled meshes. Characters now smoothly rotate to face their true walking direction rather than pivoting backwards.
+  - **Idle Direction Snapping**: When a 3D character is blocked by an obstacle or pivots in place (`dist <= 0.01`), `Renderer.ts` now intercepts the `state.direction` string and snaps the entity rotation cleanly to the requested vector, preventing visual desync when bumping into walls.
+  - **Modular Clothing Skeleton Extraction (`BabylonEngine.ts`)**: Fixed an issue where clothing items exported without explicit `result.skeletons` arrays would trigger a destructive `skeleton = baseSkeleton` override. The engine now manually extracts embedded skeletons from the imported meshes before fallback, ensuring wearable meshes no longer explode or disappear in-game.
+
 ### v2.2.039
 - **Animation System Fixes for 3D Models**:
   - **Fallback Animation Profile**: Added missing fallback to the `MocapMobility` animation profile for humanoid characters that do not explicitly specify an animation profile. This prevents default player models from being stuck in a T-pose when spawned, ensuring core movement animations (run, idle, walk, jump) are bound properly.
