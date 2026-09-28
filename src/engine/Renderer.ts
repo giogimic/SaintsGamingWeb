@@ -570,22 +570,26 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
         if (state.presentation?.mode === '3D' && mesh.metadata?.animationGroups) {
           const isEntityWalking = state.isMoving || dist > 0.01;
           const groups = mesh.metadata.animationGroups;
-          let runAnim = groups.find((ag: any) => ag.name.toLowerCase().includes('run') || ag.name.toLowerCase().includes('walk'));
-          let idleAnim = groups.find((ag: any) => ag.name.toLowerCase().includes('idle'));
+          const runAnims = groups.filter((ag: any) => ag.name.toLowerCase().includes('run') || ag.name.toLowerCase().includes('walk'));
+          const idleAnims = groups.filter((ag: any) => ag.name.toLowerCase().includes('idle'));
           
-          if (!idleAnim && groups.length > 0) idleAnim = groups[0];
-          if (!runAnim && groups.length > 0) runAnim = groups.length > 1 ? groups[1] : groups[0];
+          if (idleAnims.length === 0 && groups.length > 0) idleAnims.push(groups[0]);
+          if (runAnims.length === 0 && groups.length > 0) runAnims.push(groups.length > 1 ? groups[1] : groups[0]);
           
           if (isEntityWalking) {
-            if (runAnim && !runAnim.isPlaying) {
-              if (idleAnim && idleAnim !== runAnim) idleAnim.stop();
-              runAnim.play(true);
-            }
+            runAnims.forEach((anim: any) => {
+              if (!anim.isPlaying) anim.play(true);
+            });
+            idleAnims.forEach((anim: any) => {
+              if (!runAnims.includes(anim)) anim.stop();
+            });
           } else {
-            if (idleAnim && !idleAnim.isPlaying) {
-              if (runAnim && runAnim !== idleAnim) runAnim.stop();
-              idleAnim.play(true);
-            }
+            idleAnims.forEach((anim: any) => {
+              if (!anim.isPlaying) anim.play(true);
+            });
+            runAnims.forEach((anim: any) => {
+              if (!idleAnims.includes(anim)) anim.stop();
+            });
           }
           
           // Rotate 3D mesh to face target position or explicit direction

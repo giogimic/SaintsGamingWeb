@@ -143,6 +143,10 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 
 ## Changelog
 
+### v2.2.042
+- **Character Creator Preview Fix**: Fixed an issue in `ArchetypeModelPreview3D.tsx` where modular clothing attachments would break the Three.js preview because they attempted to force the base skeleton onto a mesh with a different bone array size/indices. The system now maps bones by name and constructs a valid matched skeleton, making clothing visible during creation.
+- **Modular Clothing Animations**: Fixed a bug in `Renderer.ts` where only the base mesh's `idle`/`run` animation was played, leaving modular clothing attachments stuck in a static T-pose (or invisible). The loop now plays the matched animation state across *all* loaded animation groups.
+
 ### v2.2.041
 - **Critical Animation Fix**: Fixed a bug in `Renderer.ts` where the animation loop was checking `state.animationGroups` (which is always undefined, as it comes from the network) instead of `mesh.metadata.animationGroups`. Animations will now actually play in-game.
 

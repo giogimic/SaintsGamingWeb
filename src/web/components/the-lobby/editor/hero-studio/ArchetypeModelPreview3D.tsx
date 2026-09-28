@@ -225,7 +225,12 @@ function CompositeCharacter({
       if (attachment.attachmentMode === 'SKINNED' || attachment.isModular) {
         attScene.traverse((child) => {
           if ((child as THREE.SkinnedMesh).isSkinnedMesh && baseSkeleton) {
-            (child as THREE.SkinnedMesh).skeleton = baseSkeleton;
+            const clothingMesh = child as THREE.SkinnedMesh;
+            const newBones = clothingMesh.skeleton.bones.map((clothingBone) => {
+              const baseBone = baseSkeleton!.bones.find((b) => b.name === clothingBone.name);
+              return baseBone || clothingBone;
+            });
+            clothingMesh.skeleton = new THREE.Skeleton(newBones, clothingMesh.skeleton.boneInverses);
           }
         });
         baseScene.add(attScene);
