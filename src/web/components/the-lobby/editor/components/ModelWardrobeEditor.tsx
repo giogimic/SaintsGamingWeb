@@ -3,7 +3,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Search, Shirt, Sparkles } from 'lucide-react';
 import { AssetManager, type GameAssetItem } from '@/engine/assets/AssetManager';
-import { getModelWardrobeCategory } from '@/shared/game/modelWardrobe';
+import {
+  getModelWardrobeCategory,
+  getDefaultModelWardrobeAttachmentMode,
+  getDefaultModelWardrobeSocket,
+} from '@/shared/game/modelWardrobe';
 import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
 import { STANDARD_SOCKET_OPTIONS } from './WorldModelSelector';
 
@@ -137,6 +141,10 @@ export function ModelWardrobeEditor({
       label: displayName(asset),
       category: asset.componentCategory || asset.metadata?.componentCategory || asset.metadata?.cat || undefined,
     });
+    const attachmentMode = getDefaultModelWardrobeAttachmentMode({ assetId: asset.id, label: displayName(asset), category });
+    const socket = attachmentMode === 'RIGID_SOCKET'
+      ? getDefaultModelWardrobeSocket({ assetId: asset.id, label: displayName(asset), category })
+      : undefined;
     const modelUrl = asset.source || asset.cdnUrl || (asset.id.startsWith('/') || asset.id.startsWith('upload_') ? `/uploads/${asset.id}` : undefined);
     onChange([
       ...value,
@@ -147,8 +155,10 @@ export function ModelWardrobeEditor({
         source: asset.source || asset.cdnUrl,
         label: displayName(asset),
         category,
+        slot: category,
         isModular: true,
-        attachmentMode: 'SKINNED',
+        attachmentMode,
+        socket,
         defaultVisible: true,
         availableInCharacterCreation: allowCharacterCreationOptions,
         hidesComponents: asset.hidesComponents || [],
@@ -175,19 +185,26 @@ export function ModelWardrobeEditor({
             : existing.availableInCharacterCreation,
         });
       } else {
+        const category = getModelWardrobeCategory({
+          assetId: asset.id,
+          label: displayName(asset),
+          category: asset.componentCategory || asset.metadata?.componentCategory || asset.metadata?.cat || undefined,
+        });
+        const attachmentMode = getDefaultModelWardrobeAttachmentMode({ assetId: asset.id, label: displayName(asset), category });
+        const socket = attachmentMode === 'RIGID_SOCKET'
+          ? getDefaultModelWardrobeSocket({ assetId: asset.id, label: displayName(asset), category })
+          : undefined;
         nextById.set(asset.id, {
           type: '3D Model',
           assetId: asset.id,
           modelUrl,
           source: asset.source || asset.cdnUrl,
           label: displayName(asset),
-          category: getModelWardrobeCategory({
-            assetId: asset.id,
-            label: displayName(asset),
-            category: asset.componentCategory || asset.metadata?.componentCategory || asset.metadata?.cat || undefined,
-          }),
+          category,
+          slot: category,
           isModular: true,
-          attachmentMode: 'SKINNED',
+          attachmentMode,
+          socket,
           defaultVisible: !allowCharacterCreationOptions,
           availableInCharacterCreation: allowCharacterCreationOptions,
           hidesComponents: asset.hidesComponents || [],

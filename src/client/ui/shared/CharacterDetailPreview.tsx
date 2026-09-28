@@ -186,14 +186,15 @@ export function CharacterDetailPreview({
   }
 
   const modelPresentation = useMemo(() => {
-    if (!character?.visualData) return null;
+    const rawVisual = character?.visualData || character?.archetype?.visualData || character?.archetypeVisualData;
+    if (!rawVisual) return null;
     try {
-      const v = typeof character.visualData === 'string' ? JSON.parse(character.visualData) : character.visualData;
+      const v = typeof rawVisual === 'string' ? JSON.parse(rawVisual) : rawVisual;
       return getWorldModelPresentation(v);
     } catch {
       return null;
     }
-  }, [character?.visualData]);
+  }, [character?.visualData, character?.archetype?.visualData, character?.archetypeVisualData]);
 
   const spriteId = character.assetProfileId || character.spriteId || 'adventurer';
   const charLevel = state.level || character.level || 1;

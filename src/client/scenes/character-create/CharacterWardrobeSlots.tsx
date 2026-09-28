@@ -153,7 +153,14 @@ export function CharacterWardrobeSlots({
   const headFaceSlots = SLOTS.filter((s) => s.group === 'head_face' && (groupedItems.get(s.id)?.length || 0) > 0);
   const clothingSlots = SLOTS.filter((s) => s.group === 'clothing' && (groupedItems.get(s.id)?.length || 0) > 0);
   const gearSlots = SLOTS.filter((s) => s.group === 'gear' && (groupedItems.get(s.id)?.length || 0) > 0);
-  const extraItems = groupedItems.get('other') || [];
+
+  const knownSlotIds = new Set(SLOTS.map((s) => s.id));
+  const extraItems: ModelWardrobeItem[] = [];
+  groupedItems.forEach((items, slotId) => {
+    if (!knownSlotIds.has(slotId)) {
+      extraItems.push(...items);
+    }
+  });
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-4">

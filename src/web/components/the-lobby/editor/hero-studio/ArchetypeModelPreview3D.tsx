@@ -374,6 +374,16 @@ export function ArchetypeModelPreview3D({
 
   const effectiveBaseUrl = resolvedBaseUrl || (baseAssetId ? resolveEntitySpriteUrl(baseAssetId) : null);
 
+  const handleLoadedAnimations = (loaded: { name: string; duration: number }[]) => {
+    setAnimations(loaded);
+    const idleIdx = loaded.findIndex((a) => /idle|stand|wait|breath|rest/i.test(a.name));
+    if (idleIdx >= 0) {
+      setActiveAnimIndex(idleIdx);
+    } else {
+      setActiveAnimIndex(0);
+    }
+  };
+
   if (!effectiveBaseUrl) {
     return null;
   }
@@ -461,7 +471,7 @@ export function ArchetypeModelPreview3D({
             isPlaying={isPlaying}
             showSkeleton={showSkeleton}
             autoRotate={autoRotate}
-            onLoadedAnimations={setAnimations}
+            onLoadedAnimations={handleLoadedAnimations}
           />
 
           <OrbitControls makeDefault target={[0, 0.9 * modelScale, 0]} maxPolarAngle={Math.PI / 2 + 0.1} />

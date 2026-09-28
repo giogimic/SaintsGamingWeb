@@ -143,6 +143,13 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 
 ## Changelog
 
+### v2.2.047
+- **Studio Wardrobe Attachment Auto-Assignment, Idle Animation Auto-Selection & Dynamic Slot Safety**:
+  - **Studio Wardrobe Attachment & Socket Auto-Detection (`ModelWardrobeEditor.tsx`)**: Upgraded single-item toggles and bulk additions in the Studio wardrobe manager to automatically detect and assign `attachmentMode` (`SKINNED` for wearables vs. `RIGID_SOCKET` for weapons, shields, and props) and canonical sockets (`RightHandMount`, `LeftHandMount`, `ChestMount`) via `getDefaultModelWardrobeAttachmentMode` and `getDefaultModelWardrobeSocket`, eliminating manual configuration mistakes.
+  - **Dynamic Unmapped Slot Catch-All (`CharacterWardrobeSlots.tsx`)**: Replaced rigid single-category `other` filtering with a dynamic catch-all that collects all items with custom or unmapped slot IDs into the "Additional Items" section, ensuring no wardrobe piece is ever hidden or lost during character creation.
+  - **3D Preview Idle Animation Auto-Selection (`ArchetypeModelPreview3D.tsx`)**: Implemented `handleLoadedAnimations` in the 3D model compositor to automatically detect and select `idle`, `stand`, or `rest` clips upon loading, preventing characters from being stuck in action, death, or T-pose clips when opened in Character Creation, the Vault, or Archetype Studio.
+  - **Archetype Visual Data Fallback (`CharacterDetailPreview.tsx`)**: Added relational fallback to `character.archetype.visualData` and `character.archetypeVisualData` in the Character Select Vault preview, guaranteeing characters created from 3D archetypes display their full 3D interactive models even if custom instance overrides are empty.
+
 ### v2.2.046
 - **Wardrobe Slot Granularity, Face & Eyewear Mixing, Studio Auto-Mapping & Rigid Mesh Socket Fallbacks**:
   - **Face vs. Eyewear Slot Disambiguation & Mixing (`modelWardrobe.ts`, `CharacterWardrobeSlots.tsx`)**: Completely eliminated slot collisions where glasses, shades, and goggles were lumped together with face meshes or hats. Reordered semantic classification heuristics so specific facial attachment keywords override broad legacy database tags (`face`, `hair`, `hat`, `clothing`, `accessory`), allowing players to freely equip and mix face options, glasses/shades, beards, and masks simultaneously.
