@@ -898,7 +898,11 @@ export default function TheLobby({
         });
       }
       if (typeof data.x === 'number' && typeof data.y === 'number') {
-        state.setPlayerPosition({ x: data.x, y: data.y }, state.player.direction || 'down', false);
+        state.setPlayerPosition(
+          { x: data.x, y: data.y, ...(typeof data.z === 'number' ? { z: data.z } : {}) },
+          state.player.direction || 'down',
+          false,
+        );
       }
     });
 
@@ -1358,7 +1362,7 @@ export default function TheLobby({
       // Server rejected our move or we're desynced — rubber-band back
       // data = { seq, x, y, direction, reason }
       const store = useGameStore.getState();
-      store.applyServerCorrection(data.x, data.y, data.direction);
+      store.applyServerCorrection(data.x, data.y, data.direction, data.z);
       if (data.reason === 'invalid_distance') {
         console.warn('[Net] Server rejected move: teleport attempt detected');
       }

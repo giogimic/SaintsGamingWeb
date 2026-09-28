@@ -2,6 +2,7 @@ package engine
 
 import (
 	"log"
+	"math"
 	"sync"
 	"time"
 
@@ -22,12 +23,12 @@ type Emitter interface {
 
 // Engine runs sim + net ticks.
 type Engine struct {
-	cfg      config.Config
-	world    *world.Manager
-	players  *player.Manager
-	creatures *creature.Manager
+	cfg         config.Config
+	world       *world.Manager
+	players     *player.Manager
+	creatures   *creature.Manager
 	projectiles *ProjectileManager
-	emit     Emitter
+	emit        Emitter
 
 	mu      sync.Mutex
 	running bool
@@ -47,8 +48,8 @@ func New(cfg config.Config, wm *world.Manager, pm *player.Manager, cm *creature.
 	}
 }
 
-func (e *Engine) World() *world.Manager     { return e.world }
-func (e *Engine) Players() *player.Manager  { return e.players }
+func (e *Engine) World() *world.Manager        { return e.world }
+func (e *Engine) Players() *player.Manager     { return e.players }
 func (e *Engine) Creatures() *creature.Manager { return e.creatures }
 
 func (e *Engine) Start() {
@@ -190,49 +191,102 @@ func (e *Engine) processMove3DInput(accountID string, in protocol.PlayerInput) {
 
 	clientX, clientY, clientZ := *in.X, *in.Y, *in.Z
 	clientVX, clientVY, clientVZ := *in.VX, *in.VY, *in.VZ
-
-	now := time.Now()
-	dt := now.Sub(p.LastMoveAt).Seconds()
-	if dt > 1.0 {
-		dt = 1.0 // cap dt to prevent massive jumps
+	if math.IsNaN(clientX) || math.IsInf(clientX, 0) ||
+		math.IsNaN(clientY) || math.IsInf(clientY, 0) ||
+		math.IsNaN(clientZ) || math.IsInf(clientZ, 0) ||
+		math.IsNaN(clientVX) || math.IsInf(clientVX, 0) ||
+		math.IsNaN(clientVY) || math.IsInf(clientVY, 0) ||
+		math.IsNaN(clientVZ) || math.IsInf(clientVZ, 0) {
+		return
 	}
 
 	startPos := world.Vector3D{X: p.X, Y: p.Y, Z: p.Z}
-	velocity := world.Vector3D{X: clientVX, Y: clientVY, Z: clientVZ}
+	targetPos := world.Vector3D{X: clientX, Y: clientY, Z: clientZ}
 
 	// standard human dimensions
 	width, height, depth := 0.6, 1.8, 0.6
 	stepHeight := 0.5
 
 	mapDef, err := e.world.GetDef(p.BaseMapID)
-	if err != nil || mapDef == nil || mapDef.Voxel == nil {
+	if in.VoidRecovery {
+		updated, ok := e.players.ApplyMove3D(accountID, clientX, clientY, clientZ, 0, 0, 0, in.Sequence)
+		if ok && updated != nil {
+			e.emit.EmitToSocket(p.SocketID, protocol.EvPositionCorrection, map[string]any{
+				"seq": in.Sequence, "x": clientX, "y": clientY, "z": clientZ, "reason": "void_recovery",
+			})
+		}
+	} else if err != nil || mapDef == nil || mapDef.Voxel == nil {
 		// Fallback to basic movement if no voxel world
 		e.players.ApplyMove3D(accountID, clientX, clientY, clientZ, clientVX, clientVY, clientVZ, in.Sequence)
 		return
-	}
-
-	result := mapDef.Voxel.ResolveSweptAABB(startPos, velocity, dt, width, height, depth, stepHeight)
-
-	// Calculate divergence
-	distSq := (clientX-result.Position.X)*(clientX-result.Position.X) +
-		(clientY-result.Position.Y)*(clientY-result.Position.Y) +
-		(clientZ-result.Position.Z)*(clientZ-result.Position.Z)
-
-	if distSq > 4.0 {
-		// Egregious divergence, rubber-band to server position
-		updated, ok := e.players.ApplyMove3D(accountID, result.Position.X, result.Position.Y, result.Position.Z, clientVX, clientVY, clientVZ, in.Sequence)
-		if ok && updated != nil {
+	} else {
+		dx := targetPos.X - startPos.X
+		dy := targetPos.Y - startPos.Y
+		dz := targetPos.Z - startPos.Z
+		horizontalDistance := math.Hypot(dx, dz)
+		elapsed := time.Since(p.LastMoveAt).Seconds()
+		if elapsed < 0.15 {
+			elapsed = 0.15 // Client movement packets are throttled to 150 ms.
+		} else if elapsed > 1.0 {
+			elapsed = 1.0
+		}
+		maxHorizontalDistance := 22.0*elapsed + 0.65
+		maxUpwardDistance := 12.0*elapsed + 0.45
+		maxDownwardDistance := 60.0*elapsed + 1.0
+		if horizontalDistance > maxHorizontalDistance || dy > maxUpwardDistance || dy < -maxDownwardDistance {
 			e.emit.EmitToSocket(p.SocketID, protocol.EvPositionCorrection, map[string]any{
-				"seq": in.Sequence, "x": result.Position.X, "y": result.Position.Y, "z": result.Position.Z, "reason": "desync",
+				"seq": in.Sequence, "x": p.X, "y": p.Y, "z": p.Z, "reason": "speed_limit",
+			})
+			return
+		}
+
+		// Sweep the reported displacement through collision, then accept the client's
+		// exact position only when the sweep reaches it without hitting geometry.
+		disp := world.Vector3D{X: dx, Y: dy, Z: dz}
+		swept := mapDef.Voxel.ResolveSweptAABB(startPos, disp, 1.0, width, height, depth, stepHeight)
+		targetAABB := world.AABB{
+			MinX: targetPos.X - width/2.0, MinY: targetPos.Y, MinZ: targetPos.Z - depth/2.0,
+			MaxX: targetPos.X + width/2.0, MaxY: targetPos.Y + height, MaxZ: targetPos.Z + depth/2.0,
+		}
+		targetObstacles := mapDef.Voxel.QueryObstacleBoxes(targetAABB)
+		targetInsideWall := false
+		for _, box := range targetObstacles {
+			if targetAABB.Overlaps(box, 1e-3) {
+				targetInsideWall = true
+				break
+			}
+		}
+
+		dxCorrection := targetPos.X - swept.Position.X
+		dyCorrection := targetPos.Y - swept.Position.Y
+		dzCorrection := targetPos.Z - swept.Position.Z
+		sweptDistSq := dxCorrection*dxCorrection + dyCorrection*dyCorrection + dzCorrection*dzCorrection
+		resolvedX, resolvedY, resolvedZ := targetPos.X, targetPos.Y, targetPos.Z
+		resolvedVX, resolvedVY, resolvedVZ := clientVX, clientVY, clientVZ
+
+		if targetInsideWall || sweptDistSq > 1e-4 {
+			resolvedX, resolvedY, resolvedZ = swept.Position.X, swept.Position.Y, swept.Position.Z
+			if math.Abs(dxCorrection) > 0.01 {
+				resolvedVX = 0
+			}
+			if math.Abs(dyCorrection) > 0.01 {
+				resolvedVY = 0
+			}
+			if math.Abs(dzCorrection) > 0.01 {
+				resolvedVZ = 0
+			}
+		}
+
+		updated, ok := e.players.ApplyMove3D(accountID, resolvedX, resolvedY, resolvedZ, resolvedVX, resolvedVY, resolvedVZ, in.Sequence)
+		if ok && updated != nil && (targetInsideWall || sweptDistSq > 1e-4) {
+			e.emit.EmitToSocket(p.SocketID, protocol.EvPositionCorrection, map[string]any{
+				"seq": in.Sequence, "x": resolvedX, "y": resolvedY, "z": resolvedZ, "reason": "wall_collision",
 			})
 		}
-	} else {
-		// Trust client for UX
-		e.players.ApplyMove3D(accountID, clientX, clientY, clientZ, clientVX, clientVY, clientVZ, in.Sequence)
 	}
 
 	// Just-In-Time Fractal Chunk Generation Check
-	if e.world.Jit != nil {
+	if e.world.Jit != nil && mapDef != nil && mapDef.Voxel != nil {
 		cx := int(clientX / 32)
 		if clientX < 0 && int(clientX)%32 != 0 {
 			cx--
@@ -241,7 +295,7 @@ func (e *Engine) processMove3DInput(accountID string, in protocol.PlayerInput) {
 		if clientZ < 0 && int(clientZ)%32 != 0 {
 			cz--
 		}
-		
+
 		// If player is hitting the boundary or close to it, generate adjacent chunks
 		// Sweep a 3x3 around the player's current chunk
 		for dx := -1; dx <= 1; dx++ {

@@ -82,8 +82,11 @@ export class LocalMovementSystem {
     this.verticalVelocity = 0;
     this.isGrounded = false;
     usePlayerStore.getState().setPlayerPosition(dropPosition, player.direction, false);
+    const sequence = useMultiplayerStore.getState().incrementMoveSeq();
     socketManager.emit('input' as any, {
       type: 'MOVE_3D',
+      sequence,
+      voidRecovery: true,
       x: dropPosition.x,
       y: dropPosition.y,
       z: dropPosition.z,
@@ -237,7 +240,7 @@ export class LocalMovementSystem {
         }
 
         if (simulate3DPhysics) {
-          this.verticalVelocity -= 30.0 * dtSec; // Gravity acceleration
+          this.verticalVelocity = Math.max(-60.0, this.verticalVelocity - 30.0 * dtSec);
           dy = this.verticalVelocity * dtSec;
         }
         velocityX = moveX * speed;

@@ -305,14 +305,13 @@ func DeserializeVoxelDelta(data []byte) (*VoxelDeltaPacket, error) {
 	}, nil
 }
 
-
 // VoxelDocJSON mirrors the TypeScript VoxelWorldDocV3 schema.
 type VoxelDocJSON struct {
-	FormatVersion int                 `json:"formatVersion"`
-	ID            string              `json:"id"`
-	Name          string              `json:"name"`
-	MapWidth      *int                `json:"mapWidth,omitempty"`
-	MapHeight     *int                `json:"mapHeight,omitempty"`
+	FormatVersion int    `json:"formatVersion"`
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	MapWidth      *int   `json:"mapWidth,omitempty"`
+	MapHeight     *int   `json:"mapHeight,omitempty"`
 	Dimensions    struct {
 		WidthChunks  int `json:"widthChunks"`
 		DepthChunks  int `json:"depthChunks"`
@@ -323,16 +322,16 @@ type VoxelDocJSON struct {
 
 // VoxelWorld manages volumetric chunks for a region in server memory.
 type VoxelWorld struct {
-	mu           sync.RWMutex
-	ID           string
-	WidthChunks  int
-	DepthChunks  int
-	HeightChunks int
-	MapWidth     int
-	MapHeight     int
-	Chunks        map[string]*VoxelChunk
-	RM            *RegionManager
-	ActiveVersion int
+	mu             sync.RWMutex
+	ID             string
+	WidthChunks    int
+	DepthChunks    int
+	HeightChunks   int
+	MapWidth       int
+	MapHeight      int
+	Chunks         map[string]*VoxelChunk
+	RM             *RegionManager
+	ActiveVersion  int
 	ProceduralSeed uint32
 }
 
@@ -398,7 +397,7 @@ func ParseVoxelDoc(data []byte) (*VoxelWorld, error) {
 		for i, v := range rle {
 			bin[i] = byte(v)
 		}
-		
+
 		chunk, err := DecodePaletteRLEBinary(bin)
 		if err == nil {
 			chunk.CX = cx
@@ -650,7 +649,7 @@ func (w *VoxelWorld) IsTraversableAt(wx, wy, wz int) bool {
 
 	groundPhys := VoxelPhysics(groundWord)
 	groundShape := VoxelShape(groundWord)
-	
+
 	def := ShapeRegistry[groundShape]
 	isTraversableElevation := def.GetSurfaceHeight != nil && def.GetSurfaceHeight(VoxelOrientation(groundWord), 0.5, 0.5) > -1.0
 
@@ -658,7 +657,7 @@ func (w *VoxelWorld) IsTraversableAt(wx, wy, wz int) bool {
 	if (groundWord == 0 || IsVoxelAir(groundWord)) && !isTraversableElevation {
 		return false
 	}
-	
+
 	// A non-solid ground block that isn't a traversable elevation (like air) also doesn't support the player.
 	if groundPhys != PhysicsSolidObstacle && groundPhys != PhysicsWalkableSlope && !isTraversableElevation {
 		return false
@@ -667,12 +666,12 @@ func (w *VoxelWorld) IsTraversableAt(wx, wy, wz int) bool {
 	return true
 }
 
-// GetSurfaceHeightAt returns the walkable surface height (Y-coordinate) at a given point, 
+// GetSurfaceHeightAt returns the walkable surface height (Y-coordinate) at a given point,
 // or math.MinInt64 if there is no walkable surface.
 func (w *VoxelWorld) GetSurfaceHeightAt(wx, wy, wz int, localX, localZ float64) float64 {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
-	
+
 	word := w.getVoxelLocked(wx, wy, wz)
 	if word == 0 || IsVoxelAir(word) {
 		return float64(math.MinInt64)
@@ -782,8 +781,75 @@ func (w *VoxelWorld) QueryObstacleBoxes(query AABB) []AABB {
 	return boxes
 }
 
+// Depenetrate inspects whether pos overlaps any solid voxel obstacle boxes and pushes it out
+// towards the nearest open air boundary (Minecraft pushOutOfBlocks style).
+func (w *VoxelWorld) Depenetrate(pos Vector3D, width, height, depth float64) Vector3D {
+	halfW := width / 2.0
+	halfD := depth / 2.0
+	currAABB := AABB{
+		MinX: pos.X - halfW, MinY: pos.Y, MinZ: pos.Z - halfD,
+		MaxX: pos.X + halfW, MaxY: pos.Y + height, MaxZ: pos.Z + halfD,
+	}
+	obstacles := w.QueryObstacleBoxes(currAABB)
+	if len(obstacles) == 0 {
+		return pos
+	}
+
+	res := pos
+	const skin = 0.002
+	for _, box := range obstacles {
+		boxAABB := AABB{
+			MinX: res.X - halfW, MinY: res.Y, MinZ: res.Z - halfD,
+			MaxX: res.X + halfW, MaxY: res.Y + height, MaxZ: res.Z + halfD,
+		}
+
+		if !boxAABB.Overlaps(box, 1e-4) {
+			continue
+		}
+
+		// Calculate penetrations along axes
+		pushOuts := []struct {
+			dist float64
+			axis int // 0: +X, 1: -X, 2: +Z, 3: -Z, 4: +Y, 5: -Y
+		}{
+			{dist: math.Abs((box.MaxX + halfW + skin) - res.X), axis: 0},
+			{dist: math.Abs(res.X - (box.MinX - halfW - skin)), axis: 1},
+			{dist: math.Abs((box.MaxZ + halfD + skin) - res.Z), axis: 2},
+			{dist: math.Abs(res.Z - (box.MinZ - halfD - skin)), axis: 3},
+			{dist: math.Abs(box.MaxY + skin - res.Y), axis: 4}, // push up onto block top
+			{dist: math.Abs(box.MinY - height - skin - res.Y), axis: 5},
+		}
+
+		minIdx := 0
+		minDist := pushOuts[0].dist
+		for i := 1; i < len(pushOuts); i++ {
+			if pushOuts[i].dist < minDist {
+				minDist = pushOuts[i].dist
+				minIdx = i
+			}
+		}
+
+		switch pushOuts[minIdx].axis {
+		case 0:
+			res.X = box.MaxX + halfW + skin
+		case 1:
+			res.X = box.MinX - halfW - skin
+		case 2:
+			res.Z = box.MaxZ + halfD + skin
+		case 3:
+			res.Z = box.MinZ - halfD - skin
+		case 4:
+			res.Y = box.MaxY + skin
+		case 5:
+			res.Y = box.MinY - height - skin
+		}
+	}
+	return res
+}
+
 // ResolveSweptAABB calculates continuous collision response with axis-separated sliding and 0.5m step-up.
 func (w *VoxelWorld) ResolveSweptAABB(startPos, velocity Vector3D, dt, width, height, depth, stepHeight float64) SweptCollisionResult {
+	safeStart := w.Depenetrate(startPos, width, height, depth)
 	halfW := width / 2.0
 	halfD := depth / 2.0
 
@@ -801,7 +867,7 @@ func (w *VoxelWorld) ResolveSweptAABB(startPos, velocity Vector3D, dt, width, he
 	subDispY := totalDispY / float64(numSubSteps)
 	subDispZ := totalDispZ / float64(numSubSteps)
 
-	curX, curY, curZ := startPos.X, startPos.Y, startPos.Z
+	curX, curY, curZ := safeStart.X, safeStart.Y, safeStart.Z
 	curVx, curVy, curVz := velocity.X, velocity.Y, velocity.Z
 	isGrounded, hitCeiling, hitWall, steppedUp := false, false, false, false
 
@@ -877,6 +943,7 @@ func (w *VoxelWorld) ResolveSweptAABB(startPos, velocity Vector3D, dt, width, he
 			xBlocked := false
 			zBlocked := false
 
+			const skinMargin = 0.001
 			if subDispX != 0 {
 				aabbX := AABB{
 					MinX: math.Min(curX, directX) - halfW, MinY: curY, MinZ: curZ - halfD,
@@ -888,9 +955,9 @@ func (w *VoxelWorld) ResolveSweptAABB(startPos, velocity Vector3D, dt, width, he
 						xBlocked = true
 						hitWall = true
 						if subDispX > 0 {
-							directX = math.Min(directX, box.MinX-halfW)
+							directX = math.Min(directX, box.MinX-halfW-skinMargin)
 						} else {
-							directX = math.Max(directX, box.MaxX+halfW)
+							directX = math.Max(directX, box.MaxX+halfW+skinMargin)
 						}
 					}
 				}
@@ -907,9 +974,9 @@ func (w *VoxelWorld) ResolveSweptAABB(startPos, velocity Vector3D, dt, width, he
 						zBlocked = true
 						hitWall = true
 						if subDispZ > 0 {
-							directZ = math.Min(directZ, box.MinZ-halfD)
+							directZ = math.Min(directZ, box.MinZ-halfD-skinMargin)
 						} else {
-							directZ = math.Max(directZ, box.MaxZ+halfD)
+							directZ = math.Max(directZ, box.MaxZ+halfD+skinMargin)
 						}
 					}
 				}
@@ -1002,8 +1069,10 @@ func (w *VoxelWorld) ResolveSweptAABB(startPos, velocity Vector3D, dt, width, he
 		}
 	}
 
+	finalPos := w.Depenetrate(Vector3D{X: curX, Y: curY, Z: curZ}, width, height, depth)
+
 	return SweptCollisionResult{
-		Position:   Vector3D{X: curX, Y: curY, Z: curZ},
+		Position:   finalPos,
 		Velocity:   Vector3D{X: curVx, Y: curVy, Z: curVz},
 		IsGrounded: isGrounded,
 		HitCeiling: hitCeiling,
@@ -1011,7 +1080,6 @@ func (w *VoxelWorld) ResolveSweptAABB(startPos, velocity Vector3D, dt, width, he
 		SteppedUp:  steppedUp,
 	}
 }
-
 
 // BuildDemoVoxelWorld generates an authoritative 32³ demo world.
 func BuildDemoVoxelWorld(widthBlocks, depthBlocks int) *VoxelWorld {

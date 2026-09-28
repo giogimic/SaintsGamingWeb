@@ -139,7 +139,7 @@ export class ClientReconciliationEngine {
 
   /**
    * Reconciles server authoritative state.
-   * If error exceeds 0.05m, snaps to server position and replays unacknowledged inputs.
+   * If error exceeds 0.05m, snaps to server position (safely depenetrated) and replays unacknowledged inputs.
    */
   public onServerAuthoritativeState(
     serverState: AuthoritativeServerState,
@@ -162,12 +162,13 @@ export class ClientReconciliationEngine {
     }
 
     if (errorDist > ClientReconciliationEngine.RECONCILIATION_EPSILON) {
-      // 1. Snap to authoritative server state
-      let replayPos: Vector3D = {
+      // 1. Snap to authoritative server state with depenetration safety
+      const safeServerPos = controller.depenetrate(world, {
         x: serverState.position[0],
         y: serverState.position[1],
         z: serverState.position[2],
-      };
+      });
+      let replayPos: Vector3D = safeServerPos;
       let replayVel: Vector3D = {
         x: serverState.velocity[0],
         y: serverState.velocity[1],

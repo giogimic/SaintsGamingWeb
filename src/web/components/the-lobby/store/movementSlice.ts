@@ -42,15 +42,20 @@ clearPendingMovesUpTo: (seq, serverX, serverY) => set((state) => {
                  py += delta.dy;
               }
            }
-           state.player.position = { x: px, y: py };
+           state.player.position = { ...state.player.position, x: px, y: py };
         }
         
         state.pendingMoves = remainingMoves;
       }),
 
-applyServerCorrection: (x, y, direction) => set((state) => {
-        state.player.position = { x, y };
-        state.player.direction = direction;
+applyServerCorrection: (x, y, direction, z) => set((state) => {
+        state.player.position = {
+          ...state.player.position,
+          x,
+          y,
+          ...(typeof z === 'number' ? { z } : {}),
+        };
+        if (direction) state.player.direction = direction;
         state.player.isMoving = false;
         // Clear all pending moves since the server corrected us
         state.pendingMoves = [];

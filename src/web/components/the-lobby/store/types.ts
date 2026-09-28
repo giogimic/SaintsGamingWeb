@@ -52,7 +52,7 @@ export interface MapLogicTile {
   onStepPayload: string | null;
 }
 
-export type Point = { x: number; y: number };
+export type Point = { x: number; y: number; z?: number };
 
 export type MobileControlMode = 'floating' | 'dpad';
 
@@ -352,7 +352,7 @@ export interface GameState {
   incrementMoveSeq: () => number;
   addPendingMove: (move: PendingMove) => void;
   clearPendingMovesUpTo: (seq: number, serverX?: number, serverY?: number) => void;
-  applyServerCorrection: (x: number, y: number, direction: 'up' | 'down' | 'left' | 'right') => void;
+  applyServerCorrection: (x: number, y: number, direction?: 'up' | 'down' | 'left' | 'right', z?: number) => void;
   
   // UI Customization — Viewfinder Edit Mode & Modular Dock Presets
   /** @deprecated Prefer isEditingInterface — kept for existing subscribers */

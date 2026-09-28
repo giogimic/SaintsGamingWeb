@@ -151,7 +151,8 @@ type PlayerInput struct {
 	Z         *float64 `json:"z,omitempty"`
 	VX        *float64 `json:"vx,omitempty"`
 	VY        *float64 `json:"vy,omitempty"`
-	VZ        *float64 `json:"vz,omitempty"`
+	VZ           *float64 `json:"vz,omitempty"`
+	VoidRecovery bool     `json:"voidRecovery,omitempty"`
 	TargetID  string   `json:"targetId,omitempty"`
 	AbilityID string   `json:"abilityId,omitempty"`
 	ItemID    string   `json:"itemId,omitempty"`

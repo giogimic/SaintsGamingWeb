@@ -447,6 +447,7 @@ export interface PlayerInputPayload {
   vx?: number;
   vy?: number;
   vz?: number;
+  voidRecovery?: boolean;
   targetId?: string;
   abilityId?: string;
   itemId?: string;

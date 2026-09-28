@@ -182,6 +182,88 @@ export class SweptAABBController {
   }
 
   /**
+   * Ejects an entity from any solid voxel obstacles it overlaps (Minecraft pushOutOfBlocks style).
+   */
+  public depenetrate(
+    world: VoxelWorldCollisionQuery,
+    pos: Vector3D,
+    customWidth?: number,
+    customHeight?: number,
+    customDepth?: number
+  ): Vector3D {
+    const halfW = (customWidth ?? this.width) / 2;
+    const halfD = (customDepth ?? this.depth) / 2;
+    const h = customHeight ?? this.height;
+
+    const queryBox: AABB = {
+      minX: pos.x - halfW,
+      minY: pos.y,
+      minZ: pos.z - halfD,
+      maxX: pos.x + halfW,
+      maxY: pos.y + h,
+      maxZ: pos.z + halfD,
+    };
+
+    const obstacles = this.queryObstacleBoxes(world, queryBox);
+    if (obstacles.length === 0) return pos;
+
+    let resX = pos.x;
+    let resY = pos.y;
+    let resZ = pos.z;
+    const skin = 0.002;
+
+    for (const box of obstacles) {
+      const boxAABB: AABB = {
+        minX: resX - halfW,
+        minY: resY,
+        minZ: resZ - halfD,
+        maxX: resX + halfW,
+        maxY: resY + h,
+        maxZ: resZ + halfD,
+      };
+
+      if (!SweptAABBController.aabbOverlaps(boxAABB, box, 1e-4)) {
+        continue;
+      }
+
+      const pushOuts = [
+        { dist: Math.abs(box.maxX + halfW + skin - resX), axis: 0 },
+        { dist: Math.abs(resX - (box.minX - halfW - skin)), axis: 1 },
+        { dist: Math.abs(box.maxZ + halfD + skin - resZ), axis: 2 },
+        { dist: Math.abs(resZ - (box.minZ - halfD - skin)), axis: 3 },
+        { dist: Math.abs(box.maxY + skin - resY), axis: 4 }, // push up onto surface
+        { dist: Math.abs(box.minY - h - skin - resY), axis: 5 },
+      ];
+
+      pushOuts.sort((a, b) => a.dist - b.dist);
+      const chosen = pushOuts[0];
+
+      switch (chosen.axis) {
+        case 0:
+          resX = box.maxX + halfW + skin;
+          break;
+        case 1:
+          resX = box.minX - halfW - skin;
+          break;
+        case 2:
+          resZ = box.maxZ + halfD + skin;
+          break;
+        case 3:
+          resZ = box.minZ - halfD - skin;
+          break;
+        case 4:
+          resY = box.maxY + skin;
+          break;
+        case 5:
+          resY = box.minY - h - skin;
+          break;
+      }
+    }
+
+    return { x: resX, y: resY, z: resZ };
+  }
+
+  /**
    * Simulates a continuous movement step with sub-stepping, swept AABB collision,
    * axis separation, wall-sliding, and automatic step-up logic.
    */
@@ -210,9 +292,10 @@ export class SweptAABBController {
     const subDispY = totalDispY / numSubSteps;
     const subDispZ = totalDispZ / numSubSteps;
 
-    let curX = startPos.x;
-    let curY = startPos.y;
-    let curZ = startPos.z;
+    const safeStart = this.depenetrate(world, startPos);
+    let curX = safeStart.x;
+    let curY = safeStart.y;
+    let curZ = safeStart.z;
     let curVx = velocity.x;
     let curVy = velocity.y;
     let curVz = velocity.z;
@@ -333,15 +416,16 @@ export class SweptAABBController {
             minZ: curZ - this.halfD,
             maxZ: curZ + this.halfD,
           };
+          const SKIN_MARGIN = 0.001;
           const xObstacles = this.queryObstacleBoxes(world, aabbX);
           for (const box of xObstacles) {
             if (SweptAABBController.aabbOverlaps(aabbX, box)) {
               xBlocked = true;
               hitWall = true;
               if (subDispX > 0) {
-                directX = Math.min(directX, box.minX - this.halfW);
+                directX = Math.min(directX, box.minX - this.halfW - SKIN_MARGIN);
               } else {
-                directX = Math.max(directX, box.maxX + this.halfW);
+                directX = Math.max(directX, box.maxX + this.halfW + SKIN_MARGIN);
               }
             }
           }
@@ -357,15 +441,16 @@ export class SweptAABBController {
             minZ: Math.min(curZ, directZ) - this.halfD,
             maxZ: Math.max(curZ, directZ) + this.halfD,
           };
+          const SKIN_MARGIN = 0.001;
           const zObstacles = this.queryObstacleBoxes(world, aabbZ);
           for (const box of zObstacles) {
             if (SweptAABBController.aabbOverlaps(aabbZ, box)) {
               zBlocked = true;
               hitWall = true;
               if (subDispZ > 0) {
-                directZ = Math.min(directZ, box.minZ - this.halfD);
+                directZ = Math.min(directZ, box.minZ - this.halfD - SKIN_MARGIN);
               } else {
-                directZ = Math.max(directZ, box.maxZ + this.halfD);
+                directZ = Math.max(directZ, box.maxZ + this.halfD + SKIN_MARGIN);
               }
             }
           }
@@ -471,8 +556,10 @@ export class SweptAABBController {
       }
     }
 
+    const finalPos = this.depenetrate(world, { x: curX, y: curY, z: curZ });
+
     return {
-      position: { x: curX, y: curY, z: curZ },
+      position: finalPos,
       velocity: { x: curVx, y: curVy, z: curVz },
       isGrounded,
       hitCeiling,
