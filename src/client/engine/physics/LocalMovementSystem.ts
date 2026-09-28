@@ -9,7 +9,9 @@ import { PortalTransitSystem } from './PortalTransitSystem';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { mapMesher } from '../MapMesher';
 import { cameraManager } from '../CameraManager';
+import { worldStreamer } from '../streaming/WorldStreamer';
 import { SweptAABBController } from '@/shared/game/voxel/VoxelCollision';
+import { resolveSafeVoxelSpawnInWorld } from '@/shared/game/voxel/SpawnResolver';
 
 const voxelMovementController = new SweptAABBController();
 
@@ -20,9 +22,77 @@ export class LocalMovementSystem {
   // 3D Physics State
   private verticalVelocity = 0;
   private isGrounded = true;
+  private voidRecoveryPending = false;
   
   // Spirit Gate Physics Handoff
   private portalTransit = new PortalTransitSystem();
+
+  /** Clear stale fall velocity after an authoritative join or teleport. */
+  public resetAfterTeleport() {
+    this.verticalVelocity = 0;
+    this.isGrounded = true;
+  }
+
+  private dropPlayerBackOntoWorld(world: NonNullable<ReturnType<typeof mapMesher.getVoxelWorld>>) {
+    if (this.voidRecoveryPending) return;
+    this.voidRecoveryPending = true;
+    void this.recoverPlayerOntoWorld(world).finally(() => {
+      this.voidRecoveryPending = false;
+    });
+  }
+
+  private async recoverPlayerOntoWorld(world: NonNullable<ReturnType<typeof mapMesher.getVoxelWorld>>) {
+    const player = usePlayerStore.getState().player;
+    const mapData = useWorldStore.getState().activeMapData || {};
+    const spawn = mapData.spawnPoint || mapData.gates?.spawnPoint || {};
+    const width = world.totalWidthBlocks;
+    const depth = world.totalDepthBlocks;
+    const spawnX = Number.isFinite(spawn.x) ? spawn.x : Math.floor(width / 2);
+    const spawnZ = Number.isFinite(spawn.z)
+      ? spawn.z
+      : Number.isFinite(spawn.y)
+        ? depth - 1 - spawn.y
+        : Math.floor(depth / 2);
+    let safeSpawn = resolveSafeVoxelSpawnInWorld(world, spawnX, spawnZ, 32);
+    if (!safeSpawn.isSafe) {
+      // The canonical spawn can be in another baked region if this character
+      // entered through a remote gate. Load that region before declaring it
+      // unavailable; fractal worlds request the matching generated chunk.
+      await worldStreamer.ensureSpawnRegionLoaded(
+        spawnX,
+        Number.isFinite(spawn.y) ? spawn.y : 16,
+        spawnZ,
+      );
+      if (mapMesher.getVoxelWorld() !== world) return;
+      safeSpawn = resolveSafeVoxelSpawnInWorld(world, spawnX, spawnZ, 32);
+    }
+    if (!safeSpawn.isSafe) {
+      console.warn('[LocalMovementSystem] Void recovery could not find safe center ground:', safeSpawn.reason);
+      return;
+    }
+
+    const dropPosition = {
+      x: safeSpawn.position.x + 0.5,
+      // Player state and collision use voxel-space height. Rendering applies
+      // the world's origin offset, so this appears above the visible map top.
+      y: world.totalHeightBlocks + 2,
+      z: safeSpawn.position.z + 0.5,
+    };
+    this.verticalVelocity = 0;
+    this.isGrounded = false;
+    usePlayerStore.getState().setPlayerPosition(dropPosition, player.direction, false);
+    socketManager.emit('input' as any, {
+      type: 'MOVE_3D',
+      x: dropPosition.x,
+      y: dropPosition.y,
+      z: dropPosition.z,
+      vx: 0,
+      vy: 0,
+      vz: 0,
+      direction: player.direction,
+      timestamp: Date.now(),
+    });
+  }
 
   public update(dt: number) {
     const scene = useSessionStore.getState().activeScene;
@@ -187,27 +257,32 @@ export class LocalMovementSystem {
       // 3D Collision and Step Logic
       if (is3D) {
         if (voxelWorld) {
-          // Player positions are in rendered world space, whose Y origin is
-          // shifted (normally -16). Collision queries use voxel coordinates.
-          const voxelOriginOffsetY = voxelWorld.originOffsetY ?? 0;
+          // Player state and collision both use voxel-space coordinates. The
+          // renderer alone applies the world's vertical origin offset.
           const collision = voxelMovementController.simulateMove(
             voxelWorld,
             {
               x: currentPos.x,
-              y: currentPos.y - voxelOriginOffsetY,
+              y: currentPos.y,
               z: currentPos.z || 0,
             },
             { x: velocityX, y: velocityY, z: velocityZ },
             dtSec,
           );
           targetX = collision.position.x;
-          targetY = collision.position.y + voxelOriginOffsetY;
+          targetY = collision.position.y;
           targetZ = collision.position.z;
           velocityX = collision.velocity.x;
           velocityY = collision.velocity.y;
           velocityZ = collision.velocity.z;
           this.verticalVelocity = collision.velocity.y;
           this.isGrounded = collision.isGrounded;
+          // Falling below the voxel floor returns the player to the configured
+          // world-center spawn, high above its surface so they visibly drop in.
+          if (collision.position.y < -4) {
+            this.dropPlayerBackOntoWorld(voxelWorld);
+            return;
+          }
         }
       } else {
         // 2D collision

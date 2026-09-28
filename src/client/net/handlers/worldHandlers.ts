@@ -20,6 +20,7 @@ import { useSessionStore } from '../../state/useSessionStore';
 import { useMultiplayerStore } from '../../state/useMultiplayerStore';
 import { useToastStore } from '../../state/useToastStore';
 import { mapMesher } from '../../engine/MapMesher';
+import { localMovementSystem } from '../../engine/physics/LocalMovementSystem';
 import { worldStreamer } from '../../engine/streaming/WorldStreamer';
 import { loadMap } from '@/shared/game/maps';
 
@@ -38,10 +39,11 @@ export function onMapJoined(data: MapJoinedPayload): void {
   useWorldStore.getState().setInstanceId(data.instanceId);
   useWorldStore.getState().setWorldSessionState('joined');
   usePlayerStore.getState().setPlayerPosition(
-    { x: data.x, y: data.y, z: data.z },
+    { x: data.x, y: data.y, ...(typeof data.z === 'number' ? { z: data.z } : {}) },
     'down',
     false,
   );
+  localMovementSystem.resetAfterTeleport();
   useMultiplayerStore.getState().setOtherPlayers({});
 
   // Ensure the client loads the map manifest so we have activeMapData for physics & rendering
@@ -49,7 +51,7 @@ export function onMapJoined(data: MapJoinedPayload): void {
     useWorldStore.getState().setActiveMapData(mapData);
   }).catch((err: any) => console.error('[worldHandlers] Failed to load map data on join:', err));
   worldStreamer.loadManifest(data.mapId).then(() => {
-    return worldStreamer.requestSpawnRegion(data.x, data.y, data.z);
+    return worldStreamer.requestSpawnRegion(data.x, data.y, data.z ?? 0);
   }).catch((err) => {
     console.error(`[worldHandlers] Fatal streaming error:`, err);
     useSessionStore.getState().setFatalError(err.message || 'Unknown streaming error');

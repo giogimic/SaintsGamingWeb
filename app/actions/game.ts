@@ -126,12 +126,31 @@ export async function saveGameState(characterId: string, stateData: string) {
       return { success: false, error: 'Unauthorized' };
     }
 
+    let stateDataToSave = stateData;
+    const locationUpdate: Record<string, any> = {};
+    try {
+      const parsed = JSON.parse(stateData);
+      const position = parsed?.position;
+      if (position && Number.isFinite(position.x) && Number.isFinite(position.y)) {
+        parsed.lastLocationSyncAt = Date.now();
+        stateDataToSave = JSON.stringify(parsed);
+        if (typeof parsed.currentMapId === 'string' && parsed.currentMapId.trim()) {
+          locationUpdate.lastMapId = parsed.currentMapId.trim();
+        }
+        locationUpdate.lastX = position.x;
+        locationUpdate.lastY = position.y;
+        locationUpdate.lastZ = Number.isFinite(position.z) ? position.z : null;
+      }
+    } catch {
+      // Preserve legacy or non-JSON state blobs; location columns stay untouched.
+    }
+
     await prisma.gameCharacter.update({
       where: { 
         id: characterId,
         userId: session.user.id // Security check
       },
-      data: { stateData }
+      data: { stateData: stateDataToSave, ...locationUpdate }
     });
 
     return { success: true };

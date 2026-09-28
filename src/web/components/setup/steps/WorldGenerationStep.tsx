@@ -7,6 +7,9 @@ import { DiagnosticConsole } from '../DiagnosticConsole';
 import type { GameDefinitionData } from './GameIdentityStep';
 import type { SetupStartingMapData } from './StartingMapStep';
 import type { DiagnosticEvent } from '@/server/diagnostics/SetupLogger';
+import { CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z } from '@/shared/game/voxel/VoxelChunk';
+import { generateVoxelWorldDoc } from '@/shared/game/voxel/VoxelWorldGenerator';
+import { resolveSafeVoxelSpawn } from '@/shared/game/voxel/SpawnResolver';
 
 interface WorldGenerationStepProps {
   gameDefinition: GameDefinitionData;
@@ -72,26 +75,57 @@ export function WorldGenerationStep({
   // Handle successful sync
   useEffect(() => {
     if (status === 'READY' && bootstrapRevisionId && startingMap.bootstrapRevisionId !== bootstrapRevisionId) {
+      const widthChunks = 4;
+      const depthChunks = 4;
+      const heightChunks = startingMap.heightChunks || 1;
+      const centerX = Math.floor((widthChunks * CHUNK_SIZE_X) / 2);
+      const centerZ = Math.floor((depthChunks * CHUNK_SIZE_Z) / 2);
+      // Match /api/setup/generate-draft so the spawn is resolved against the
+      // exact terrain seed and dimensions that were just baked.
+      const generatedWorld = generateVoxelWorldDoc({
+        id: startingMap.id || 'genesis',
+        name: gameDefinition.name || 'The Lobby',
+        widthChunks,
+        depthChunks,
+        heightChunks,
+        blockSizePx: gameDefinition.defaultBlockSizePx || 64,
+        mode: 'procedural',
+        seed: gameDefinition.name || 'The Lobby',
+        baseMaterial: 2,
+        baseElevation: 16,
+        mapWidth: widthChunks * CHUNK_SIZE_X,
+        mapHeight: depthChunks * CHUNK_SIZE_Z,
+      });
+      const safeSpawn = resolveSafeVoxelSpawn(generatedWorld, centerX, centerZ);
+      const spawnPoint = safeSpawn.isSafe
+        ? safeSpawn.position
+        : {
+            x: centerX,
+            y: heightChunks * CHUNK_SIZE_Y + 1,
+            z: centerZ,
+          };
+
       onChange({
         ...startingMap,
-        widthChunks: 4,
-        depthChunks: 4,
-        spawnPoint: { x: 32, y: 32, z: 32 },
-        width: 4 * 64, // CHUNK_SIZE_X = 64
-        height: 4 * 64, // CHUNK_SIZE_Z = 64
+        widthChunks,
+        depthChunks,
+        heightChunks,
+        spawnPoint,
+        width: widthChunks * CHUNK_SIZE_X,
+        height: depthChunks * CHUNK_SIZE_Z,
         gates: [
           {
             id: 'spawn',
             name: 'Genesis Gate',
             category: 'SPAWN',
-            position: { x: 32, y: 32, z: 32 },
+            position: spawnPoint,
             interactPrompt: 'Respawn',
           }
         ],
         bootstrapRevisionId,
       });
     }
-  }, [status, bootstrapRevisionId, onChange, startingMap]);
+  }, [status, bootstrapRevisionId, onChange, startingMap, gameDefinition]);
 
 
   return (

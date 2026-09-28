@@ -118,6 +118,9 @@ export function ModelWardrobeEditor({
     const query = search.trim().toLowerCase();
     return catalog.filter((asset) => !query || `${displayName(asset)} ${asset.componentCategory || ''}`.toLowerCase().includes(query));
   }, [catalog, search]);
+  const bulkCreatorAssets = relatedIds.length > 0
+    ? catalog.filter((asset) => relatedIds.includes(asset.id))
+    : search.trim() ? filteredCatalog : [];
 
   const toggleIncluded = (asset: WardrobeAsset, included: boolean) => {
     if (!included) {
@@ -145,6 +148,31 @@ export function ModelWardrobeEditor({
     onChange(value.map((item) => item.assetId === assetId ? { ...item, ...patch } : item));
   };
 
+  const addAndOfferAll = () => {
+    const nextById = new Map(value.map((item) => [item.assetId, item]));
+    for (const asset of bulkCreatorAssets) {
+      const existing = nextById.get(asset.id);
+      if (existing) {
+        nextById.set(asset.id, { ...existing, availableInCharacterCreation: true });
+      } else {
+        nextById.set(asset.id, {
+          type: '3D Model',
+          assetId: asset.id,
+          label: displayName(asset),
+          category: asset.componentCategory || 'other',
+          isModular: true,
+          attachmentMode: 'SKINNED',
+          defaultVisible: false,
+          availableInCharacterCreation: true,
+          hidesComponents: asset.hidesComponents || [],
+        });
+      }
+    }
+    onChange(Array.from(nextById.values()));
+  };
+
+  const clearCreationOptions = () => onChange(value.map((item) => ({ ...item, availableInCharacterCreation: false })));
+
   const catalogIds = new Set(catalog.map((asset) => asset.id));
   const orphanedItems = value.filter((item) => !catalogIds.has(item.assetId));
 
@@ -167,6 +195,29 @@ export function ModelWardrobeEditor({
           <Search size={11} className="text-slate-500" />
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find clothing or equipment..." className="w-full bg-transparent text-[10px] text-slate-200 outline-none placeholder:text-slate-600" />
           {relatedIds.length > 0 && <span className="whitespace-nowrap text-[8px] text-emerald-400"><Sparkles size={10} className="inline" /> linked set</span>}
+        </div>
+      )}
+      {allowCharacterCreationOptions && (bulkCreatorAssets.length > 0 || value.some((item) => item.availableInCharacterCreation)) && (
+        <div className="flex flex-wrap items-center gap-2 rounded border border-cyan-900/40 bg-cyan-950/10 px-2 py-1.5">
+          {bulkCreatorAssets.length > 0 && (
+            <button
+              type="button"
+              onClick={addAndOfferAll}
+              className="rounded bg-cyan-500/15 px-2.5 py-1 text-[9px] font-bold text-cyan-200 hover:bg-cyan-500/25"
+            >
+              Add and offer all {relatedIds.length > 0 ? 'matching' : 'search-matched'} items ({bulkCreatorAssets.length})
+            </button>
+          )}
+          {value.some((item) => item.availableInCharacterCreation) && (
+            <button
+              type="button"
+              onClick={clearCreationOptions}
+              className="rounded border border-slate-700 px-2.5 py-1 text-[9px] font-semibold text-slate-300 hover:border-slate-500"
+            >
+              Clear creator options
+            </button>
+          )}
+          <span className="text-[8px] text-slate-500">New options stay off the default outfit until you choose them below.</span>
         </div>
       )}
       {catalog.length > 0 && relatedIds.length === 0 && (

@@ -3,10 +3,11 @@ import { useWorldStore } from '../../state/useWorldStore';
 import { mapMesher } from '../MapMesher';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { socketManager } from '../../net/SocketManager';
+import { CHUNK_SIZE as CONTRACT_CHUNK_SIZE, CHUNKS_PER_REGION as CONTRACT_CHUNKS_PER_REGION } from '@/shared/game/voxel/WorldStreamingContracts';
 const pako = require('pako');
 
-export const CHUNK_SIZE = 32;
-export const CHUNKS_PER_REGION = 16;
+export const CHUNK_SIZE = CONTRACT_CHUNK_SIZE;
+export const CHUNKS_PER_REGION = CONTRACT_CHUNKS_PER_REGION;
 export const REGION_SIZE = CHUNK_SIZE * CHUNKS_PER_REGION;
 
 export interface ChunkCoordinate {
@@ -95,7 +96,7 @@ export class WorldStreamer {
       console.log(`[WorldStreamer] Manifest loaded: version ${this.manifest.version}`);
 
       // Initialize the mesher for streaming instead of fallback ground
-      mapMesher.startVoxelStreaming();
+      mapMesher.startVoxelStreaming(this.manifest?.dimensions);
     } catch (e) {
       console.error(`[WorldStreamer] Manifest error`, e);
       throw e;
@@ -144,6 +145,37 @@ export class WorldStreamer {
     
     useSessionStore.getState().setBootState('READY');
     useSessionStore.getState().setScene('exploring');
+  }
+
+  /** Ensure the collision region for a world-space spawn column is resident. */
+  public async ensureSpawnRegionLoaded(x: number, y: number, z: number): Promise<void> {
+    const chunk = this.worldToChunk(new Vector3(x, y, z));
+    const voxelWorld = mapMesher.getVoxelWorld();
+    if (!voxelWorld) return;
+
+    const residentChunk = voxelWorld.getChunk(chunk.cx, chunk.cz, chunk.cy);
+    if (residentChunk && !residentChunk.isEmpty()) return;
+
+    const activeMap = useWorldStore.getState().activeMapData;
+    if (activeMap?.mapType === 'FRACTAL') {
+      this.chunkResidency.set(this.getChunkKey(chunk.cx, chunk.cy, chunk.cz), 'REQUESTED');
+      socketManager.emit('request_chunk' as any, { cx: chunk.cx, cy: chunk.cy, cz: chunk.cz });
+
+      // Fractal chunks arrive over the socket. Let the caller re-check the
+      // surface after the requested center chunk has been installed.
+      const deadline = Date.now() + 2500;
+      while (Date.now() < deadline && mapMesher.getVoxelWorld() === voxelWorld) {
+        if (voxelWorld.getChunk(chunk.cx, chunk.cz, chunk.cy)) return;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      return;
+    }
+
+    const region = this.chunkToRegion(chunk.cx, chunk.cz);
+    await this.fetchRegionArtifact(region.rx, region.rz);
+    if (mapMesher.getVoxelWorld() === voxelWorld) {
+      this.extractAndMeshChunk(chunk.cx, chunk.cy, chunk.cz);
+    }
   }
 
   /**

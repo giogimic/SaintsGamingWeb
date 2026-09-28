@@ -39,7 +39,8 @@ import {
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 import { MidnightTropicalBackground } from '@/client/ui/shared/MidnightTropicalBackground';
 import { useTheme } from 'next-themes';
-import { applyCharacterCreationWardrobe, parseModelWardrobeItems } from '@/shared/game/modelWardrobe';
+import { applyCharacterCreationWardrobe, getModelWardrobeCategoryLabel, getModelWardrobeItemLabel, parseModelWardrobeItems } from '@/shared/game/modelWardrobe';
+import { getStarterPerkEffectId } from '@/shared/game/starterPerks';
 import type { WorldModelValue } from './editor/components/WorldModelSelector';
 import { ArchetypeModelPreview3D } from './editor/hero-studio/ArchetypeModelPreview3D';
 
@@ -308,7 +309,12 @@ export function CharacterCreator({
 
   const handleHeroPick = (hero: DbHero) => {
     soundSynth?.playSelectSound?.();
-    setAppearanceTab('BASE');
+    let heroHas3DModel = false;
+    try {
+      const visual = JSON.parse(hero.visualData || '{}');
+      heroHas3DModel = visual.worldModel?.type === '3D Model' || visual.type === '3D Model';
+    } catch {}
+    setAppearanceTab(heroHas3DModel ? 'WARDROBE' : 'BASE');
     setassetProfileId(hero.assetProfileId);
     setVisualData(hero.visualData || '[]');
     setSelectedWardrobeAssetIds(parseModelWardrobeItems(hero.visualData).filter((item) => item.availableInCharacterCreation && item.defaultVisible !== false).map((item) => item.assetId));
@@ -332,7 +338,12 @@ export function CharacterCreator({
     const num = Math.floor(Math.random() * 90 + 10);
     const randomPerk = dbPerks.length > 0 ? dbPerks[Math.floor(Math.random() * dbPerks.length)] : null;
 
-    setAppearanceTab('BASE');
+    let heroHas3DModel = false;
+    try {
+      const visual = JSON.parse(hero.visualData || '{}');
+      heroHas3DModel = visual.worldModel?.type === '3D Model' || visual.type === '3D Model';
+    } catch {}
+    setAppearanceTab(heroHas3DModel ? 'WARDROBE' : 'BASE');
     setassetProfileId(hero.assetProfileId);
     setVisualData(hero.visualData || '[]');
     setSelectedWardrobeAssetIds(parseModelWardrobeItems(hero.visualData).filter((item) => item.availableInCharacterCreation && item.defaultVisible !== false).map((item) => item.assetId));
@@ -371,7 +382,8 @@ export function CharacterCreator({
       ? resolveStartingSkills(selectedDef)
       : JSON.parse(JSON.stringify(INITIAL_SKILLS));
     const sheet = selectedDef ? resolveClassStats(selectedDef) : { hp: 100 };
-    const hpBase = sheet.hp + (perkId === 'STAMINA_SURGE' ? 30 : 0);
+    const perkEffect = getStarterPerkEffectId(perkId);
+    const hpBase = sheet.hp + (perkEffect === 'STAMINA_SURGE' ? 30 : 0);
     const hpFromSkills = (initialSkills['Hitpoints']?.level || 1) * 5;
 
     const hero =
@@ -381,6 +393,7 @@ export function CharacterCreator({
     let startMap = hero?.startingMap && hero.startingMap !== 'DEMO_SANDBOX' && hero.startingMap !== 'spawn' ? hero.startingMap : '';
     let startX = hero?.startingX;
     let startY = hero?.startingY;
+    let startZ: number | undefined;
 
     if (!startMap || startMap === 'spawn') {
       startMap = defaultSpawnMapId && defaultSpawnMapId !== 'spawn' ? defaultSpawnMapId : '';
@@ -399,6 +412,9 @@ export function CharacterCreator({
           }
           if (startY === undefined && typeof manifest.world?.spawnY === 'number') {
             startY = manifest.world.spawnY;
+          }
+          if (startZ === undefined && typeof manifest.world?.spawnZ === 'number') {
+            startZ = manifest.world.spawnZ;
           }
         }
       } catch (err) {
@@ -435,17 +451,18 @@ export function CharacterCreator({
       startMap = 'genesis';
     }
 
-    if (startX === undefined || startY === undefined) {
+    if (startX === undefined || startY === undefined || startZ === undefined) {
       try {
         const mapRes = await fetch(`/api/maps/${startMap}`);
         if (mapRes.ok) {
           const mapInfo = await mapRes.json();
           if (mapInfo?.spawnPoint && typeof mapInfo.spawnPoint.x === 'number') {
-            startX = mapInfo.spawnPoint.x;
-            startY = mapInfo.spawnPoint.y;
+            if (startX === undefined) startX = mapInfo.spawnPoint.x;
+            if (startY === undefined) startY = mapInfo.spawnPoint.y;
+            if (startZ === undefined && typeof mapInfo.spawnPoint.z === 'number') startZ = mapInfo.spawnPoint.z;
           } else if (mapInfo?.width && mapInfo?.height) {
-            startX = Math.floor(mapInfo.width / 2);
-            startY = Math.floor(mapInfo.height / 2);
+            if (startX === undefined) startX = Math.floor(mapInfo.width / 2);
+            if (startY === undefined) startY = Math.floor(mapInfo.height / 2);
           }
         }
       } catch {
@@ -459,7 +476,7 @@ export function CharacterCreator({
     const isSpyder = selectedHeroSlug === 'spyder_tamer' || startMap === 'AZURE_TOWN';
     const initialState = {
       currentMapId: startMap,
-      position: { x: startX, y: startY },
+      position: { x: startX, y: startY, ...(startZ !== undefined ? { z: startZ } : {}) },
       level: 1,
       xp: 0,
       hp: hpBase + hpFromSkills,
@@ -494,8 +511,8 @@ export function CharacterCreator({
       saintRank: 'Rookie',
       caughtDaemons: ['d-001'],
       assignedBeasts: { furnace: null, farm: null, fishing_hut: null },
-      perk: perkId,
-      maxWeight: perkId === 'PACK_MULE' ? 150 : 100,
+      perk: perkId || null,
+      maxWeight: perkEffect === 'PACK_MULE' ? 150 : 100,
       maxPartySize: 4,
       unlockedAbilities: selectedDef?.abilities || [],
       equippedAbilities: (selectedDef?.abilities || []).slice(0, 5),
@@ -535,6 +552,12 @@ export function CharacterCreator({
 
   const selectedDef = classDefs.find((c) => c.classId === classId);
   const selectedPerk = dbPerks.find((p) => p.slug === perkId) || dbPerks[0] || { name: 'None' };
+  const selectedPerkEffect = getStarterPerkEffectId(perkId);
+  const reviewHp = selectedDef
+    ? resolveClassStats(selectedDef).hp
+      + (selectedPerkEffect === 'STAMINA_SURGE' ? 30 : 0)
+      + ((resolveStartingSkills(selectedDef)['Hitpoints']?.level || 1) * 5)
+    : 100 + (selectedPerkEffect === 'STAMINA_SURGE' ? 30 : 0);
 
   const { theme } = useTheme();
   const isLight = theme === 'light';
@@ -811,7 +834,7 @@ export function CharacterCreator({
                 <span className="sg-text-gradient">Hero Customization</span>
               </h2>
               <p className="text-muted-foreground text-xs font-mono tracking-wide">
-                Modular Sprite System: Customize base body, capes, headgear & armor
+                {is3DModel ? 'Preview this 3D model and choose its clothing and gear.' : 'Customize the body base, capes, headgear and armor.'}
               </p>
             </div>
 
@@ -820,7 +843,7 @@ export function CharacterCreator({
               <div className="lg:col-span-4 bg-[#050b14]/95 border border-border/50 rounded-2xl p-5 flex flex-col items-center justify-between text-center">
                 <div>
                   <span className="px-3 py-1 rounded-full bg-primary/20 border border-primary/40 text-primary text-[10px] font-mono font-bold uppercase tracking-wider">
-                    Hero Preview
+                    {is3DModel ? '3D Archetype Preview' : 'Hero Preview'}
                   </span>
                   <h3 className="text-lg font-bold font-mono text-foreground mt-2">{name || 'Hero'}</h3>
                   <span className="text-xs font-mono text-primary font-bold">{classId}</span>
@@ -839,7 +862,7 @@ export function CharacterCreator({
                 {/* Layer Badges */}
                 <div className="flex flex-wrap gap-1.5 justify-center mb-3">
                   <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-card border border-border text-foreground">
-                    Base: {dynamicBases.find((b: any) => b.id === assetProfileId)?.label || assetProfileId}
+                    Base: {is3DModel ? modelAssetId : dynamicBases.find((b: any) => b.id === assetProfileId)?.label || assetProfileId}
                   </span>
                   {selectedCape && (
                     <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-card border border-border text-foreground">
@@ -875,7 +898,9 @@ export function CharacterCreator({
               <div className="lg:col-span-8 bg-[#050b14]/95 border border-border/50 rounded-2xl p-4 flex flex-col justify-between">
                 {/* Category Tabs */}
                 <div className="flex items-center gap-1.5 border-b border-border/40 pb-3 mb-3 overflow-x-auto">
-                  {([
+                  {(is3DModel ? [
+                    { id: 'WARDROBE' as const, label: 'Clothing & Items' },
+                  ] : [
                       { id: 'BASE', label: '1. Body Base' },
                       { id: 'CAPE', label: '2. Cape' },
                       { id: 'HEAD', label: '3. Headgear' },
@@ -1107,7 +1132,19 @@ export function CharacterCreator({
 
                   {appearanceTab === 'WARDROBE' && (
                     <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground">Choose the clothing and gear this archetype allows you to customize.</p>
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs text-muted-foreground">Choose the clothing and gear to wear.</p>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedWardrobeAssetIds(wardrobeOptions.filter((item) => item.defaultVisible !== false).map((item) => item.assetId))}
+                          className="shrink-0 rounded-lg border border-border/50 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:border-primary/50 hover:text-primary"
+                        >
+                          Reset to default outfit
+                        </button>
+                      </div>
+                      {wardrobeOptions.length === 0 && (
+                        <p className="rounded-lg border border-dashed border-border/50 p-4 text-center text-xs text-muted-foreground">No clothing options are configured for this model yet.</p>
+                      )}
                       {wardrobeOptions.map((item) => {
                         const checked = selectedWardrobeAssetIds.includes(item.assetId);
                         return (
@@ -1123,8 +1160,8 @@ export function CharacterCreator({
                               className="rounded border-border bg-black text-primary focus:ring-primary"
                             />
                             <span className="min-w-0 flex-1">
-                              <span className="block truncate text-sm font-semibold text-foreground">{item.label || item.assetId}</span>
-                              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{item.category || 'Equipment'}</span>
+                              <span className="block truncate text-sm font-semibold text-foreground">{getModelWardrobeItemLabel(item)}</span>
+                              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{getModelWardrobeCategoryLabel(item)}</span>
                             </span>
                             <span className={`text-[10px] font-bold uppercase ${checked ? 'text-primary' : 'text-muted-foreground'}`}>{checked ? 'Worn' : 'Not worn'}</span>
                           </label>
@@ -1224,9 +1261,17 @@ export function CharacterCreator({
             <div className="w-full bg-[#050b14]/95 border-2 border-primary/50 rounded-2xl p-6 shadow-[0_0_35px_rgba(234,179,8,0.15)] flex flex-col gap-5">
               {/* Profile Card */}
               <div className="flex items-center gap-5 border-b border-border/40 pb-4">
-                <div className="w-20 h-20 rounded-2xl bg-black/80 border border-primary/50 flex items-center justify-center shrink-0 shadow-inner overflow-hidden">
-                  <CharacterSpritePreview layers={activeLayers} size={32} scale={2} />
-                </div>
+                {modelAssetId ? (
+                  <ArchetypeModelPreview3D
+                    baseAssetId={modelAssetId}
+                    modularAttachments={wardrobePreviewAttachments}
+                    className="h-44 w-36 shrink-0"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-2xl bg-black/80 border border-primary/50 flex items-center justify-center shrink-0 shadow-inner overflow-hidden">
+                    <CharacterSpritePreview layers={activeLayers} size={32} scale={2} />
+                  </div>
+                )}
                 <div>
                   <h3 className="text-2xl font-black font-mono text-foreground">{name}</h3>
                   <div className="flex items-center gap-2 mt-1">
@@ -1243,7 +1288,7 @@ export function CharacterCreator({
                 <div className="p-3 rounded-xl bg-card/60 border border-border/40">
                   <span className="text-muted-foreground text-[10px] block font-bold">HEALTH</span>
                   <strong className="text-rose-400 text-sm">
-                    {100 + (perkId === 'STAMINA_SURGE' ? 30 : 0)} HP
+                    {reviewHp} HP
                   </strong>
                 </div>
                 <div className="p-3 rounded-xl bg-card/60 border border-border/40">
@@ -1257,7 +1302,7 @@ export function CharacterCreator({
                 <div className="p-3 rounded-xl bg-card/60 border border-border/40">
                   <span className="text-muted-foreground text-[10px] block font-bold">CARRY CAPACITY</span>
                   <strong className="text-foreground text-sm">
-                    {perkId === 'PACK_MULE' ? '150 KG' : '100 KG'}
+                    {selectedPerkEffect === 'PACK_MULE' ? '150 KG' : '100 KG'}
                   </strong>
                 </div>
               </div>

@@ -22,6 +22,7 @@ import { FloatingWindow } from './FloatingWindow';
 import { socketManager } from '../../net/SocketManager';
 
 import { ITEM_DB } from '@/shared/game/items';
+import { getStarterPerkEffectId } from '@/shared/game/starterPerks';
 
 const INVENTORY_CAPACITY = 28; // Standard 4x7 grid (28 slots)
 
@@ -117,7 +118,7 @@ export function InventoryWindow({ isOpen, onClose }: InventoryWindowProps) {
     if (inventory[itemId] <= 1) setActiveItem(null);
   };
 
-  const maxWeight = playerMaxWeight || (playerPerk === 'PACK_MULE' ? 150 : 100);
+  const maxWeight = playerMaxWeight || (getStarterPerkEffectId(playerPerk) === 'PACK_MULE' ? 150 : 100);
   const currentWeight = Object.values(inventory).reduce((sum, qty) => sum + qty, 0);
 
   // Filter & sort entries

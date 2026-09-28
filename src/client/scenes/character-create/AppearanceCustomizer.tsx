@@ -4,6 +4,7 @@ import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePrevie
 import { soundSynth } from '@/engine/sound-synth';
 import { ArchetypeModelPreview3D } from '@/web/components/the-lobby/editor/hero-studio/ArchetypeModelPreview3D';
 import type { WorldModelValue } from '@/web/components/the-lobby/editor/components/WorldModelSelector';
+import { getModelWardrobeCategoryLabel, getModelWardrobeItemLabel } from '@/shared/game/modelWardrobe';
 import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
 
 export type AppearanceTab = 'BASE' | 'CAPE' | 'HEAD' | 'ARMOR' | 'CATALOG' | 'WARDROBE';
@@ -71,6 +72,18 @@ export function AppearanceCustomizer({
   modelAssetId,
   wardrobePreviewAttachments,
 }: AppearanceCustomizerProps) {
+  const isModelArchetype = Boolean(modelAssetId);
+  const appearanceTabs: Array<{ id: AppearanceTab; label: string }> = isModelArchetype
+    ? (wardrobeOptions.length > 0 ? [{ id: 'WARDROBE', label: 'Clothing & Items' }] : [])
+    : [
+        { id: 'BASE', label: '1. Body Base' },
+        { id: 'CAPE', label: '2. Cape' },
+        { id: 'HEAD', label: '3. Headgear' },
+        { id: 'ARMOR', label: '4. Armor & Gear' },
+        { id: 'CATALOG', label: '5. All Sprites' },
+        ...(wardrobeOptions.length > 0 ? [{ id: 'WARDROBE' as const, label: '6. Clothing & Items' }] : []),
+      ];
+
   return (
     <div className="w-full flex flex-col items-center">
       <div className="text-center mb-4">
@@ -78,7 +91,9 @@ export function AppearanceCustomizer({
           <span className="sg-text-gradient">Hero Customization</span>
         </h2>
         <p className="text-muted-foreground text-xs font-mono tracking-wide">
-          Modular Sprite System: Customize base body, capes, headgear & armor
+          {isModelArchetype
+            ? 'Preview the selected 3D archetype and choose its available clothing and gear.'
+            : 'Customize the body base, capes, headgear and armor.'}
         </p>
       </div>
 
@@ -87,7 +102,7 @@ export function AppearanceCustomizer({
         <div className="lg:col-span-4 bg-[#050b14]/95 border border-border/50 rounded-2xl p-5 flex flex-col items-center justify-between text-center">
           <div>
             <span className="px-3 py-1 rounded-full bg-primary/20 border border-primary/40 text-primary text-[10px] font-mono font-bold uppercase tracking-wider">
-              Hero Preview
+              {isModelArchetype ? '3D Archetype Preview' : 'Hero Preview'}
             </span>
             <h3 className="text-lg font-bold font-mono text-foreground mt-2">{name || 'Hero'}</h3>
             <span className="text-xs font-mono text-primary font-bold">{classId}</span>
@@ -110,7 +125,9 @@ export function AppearanceCustomizer({
           {/* Layer Badges */}
           <div className="flex flex-wrap gap-1.5 justify-center mb-3">
             <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-card border border-border text-foreground">
-              Base: {dynamicBases.find((b: any) => b.id === assetProfileId)?.label || assetProfileId}
+              Base: {isModelArchetype
+                ? modelAssetId
+                : dynamicBases.find((b: any) => b.id === assetProfileId)?.label || assetProfileId}
             </span>
             {selectedCape && (
               <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-card border border-border text-foreground">
@@ -143,14 +160,7 @@ export function AppearanceCustomizer({
         <div className="lg:col-span-8 bg-[#050b14]/95 border border-border/50 rounded-2xl p-4 flex flex-col justify-between">
           {/* Category Tabs */}
           <div className="flex items-center gap-1.5 border-b border-border/40 pb-3 mb-3 overflow-x-auto">
-            {([
-                { id: 'BASE', label: '1. Body Base' },
-                { id: 'CAPE', label: '2. Cape' },
-                { id: 'HEAD', label: '3. Headgear' },
-                { id: 'ARMOR', label: '4. Armor & Gear' },
-                { id: 'CATALOG', label: '5. All Sprites' },
-                ...(wardrobeOptions.length > 0 ? [{ id: 'WARDROBE' as const, label: '6. Clothing & Items' }] : []),
-              ] as Array<{ id: AppearanceTab; label: string }>).map((tab) => {
+            {appearanceTabs.map((tab) => {
               const isTabCur = appearanceTab === tab.id;
               return (
                 <button
@@ -375,7 +385,16 @@ export function AppearanceCustomizer({
 
             {appearanceTab === 'WARDROBE' && (
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">Choose the clothing and gear this archetype allows you to customize.</p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs text-muted-foreground">Choose the clothing and gear to wear.</p>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedWardrobeAssetIds(wardrobeOptions.filter((item) => item.defaultVisible !== false).map((item) => item.assetId))}
+                    className="shrink-0 rounded-lg border border-border/50 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:border-primary/50 hover:text-primary"
+                  >
+                    Reset to default outfit
+                  </button>
+                </div>
                 {wardrobeOptions.map((item) => {
                   const checked = selectedWardrobeAssetIds.includes(item.assetId);
                   return (
@@ -391,8 +410,8 @@ export function AppearanceCustomizer({
                         className="rounded border-border bg-black text-primary focus:ring-primary"
                       />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold text-foreground">{item.label || item.assetId}</span>
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{item.category || 'Equipment'}</span>
+                        <span className="block truncate text-sm font-semibold text-foreground">{getModelWardrobeItemLabel(item)}</span>
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{getModelWardrobeCategoryLabel(item)}</span>
                       </span>
                       <span className={`text-[10px] font-bold uppercase ${checked ? 'text-primary' : 'text-muted-foreground'}`}>{checked ? 'Worn' : 'Not worn'}</span>
                     </label>

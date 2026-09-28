@@ -72,6 +72,7 @@ import {
   type StudioPieChangedDetail,
 } from '@/shared/game/studioEvents';
 import { resolveSafePlayerSpawn } from '@/shared/game/worldSpawns';
+import { savePlayerLocationSnapshot } from '@/shared/game/playerLocationSync';
 
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
 import { fetchAllMaps } from '@/app/actions/admin/game-admin';
@@ -1763,6 +1764,20 @@ export default function TheLobby({
   useEffect(() => {
     if (!activeCharacterId || showCreator || showSelector || isInitializing) return;
 
+    const persistLocation = () => {
+      const state = useGameStore.getState();
+      savePlayerLocationSnapshot({
+        characterId: activeCharacterId,
+        mapId: state.currentMapId,
+        position: state.player.position,
+      }, true);
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') persistLocation();
+    };
+    window.addEventListener('pagehide', persistLocation);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     const interval = setInterval(async () => {
       const state = useGameStore.getState();
       const stateDataToSave = {
@@ -1779,7 +1794,12 @@ export default function TheLobby({
       }
     }, 15000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('pagehide', persistLocation);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      persistLocation();
+    };
   }, [activeCharacterId, showCreator, showSelector, isInitializing]);
 
   const toggleFullscreen = () => {

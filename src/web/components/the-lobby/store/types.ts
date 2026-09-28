@@ -278,7 +278,7 @@ export interface PlayerState {
     quarry: string | null;
   };
   lastBaseCollection: number;
-  perk?: 'SWIFT_TRAVELER' | 'ACROBAT' | 'PACK_MULE' | 'MASTER_TAMER' | 'STAMINA_SURGE';
+  perk?: string | null;
   maxWeight?: number;
   maxPartySize?: number;
   // Creature system

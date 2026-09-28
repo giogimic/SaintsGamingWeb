@@ -150,12 +150,14 @@ export class ShardManager {
     x: number,
     y: number,
     direction: string,
-    moving: boolean
+    moving: boolean,
+    z?: number
   ): ConnectedPlayer | null {
     const player = this.playerMap.get(socketId);
     if (!player) return null;
     player.x = x;
     player.y = y;
+    if (typeof z === 'number' && Number.isFinite(z)) player.z = z;
     player.direction = direction;
     player.moving = moving;
     return player;

@@ -30,6 +30,7 @@ import { createGameCharacter } from '@/app/actions/game';
 import { getStarterHeroes } from '@/app/actions/game/starter-heroes';
 import { getActiveWorldRelease } from '@/app/actions/studio/world-release';
 import { getPlayableClasses } from '@/app/actions/game/character-classes';
+import { getStarterPerks, type StarterPerkData } from '@/app/actions/game/starter-perks';
 import { ensureWorldProfiles } from '@/app/actions/studio/world-profiles';
 import { toast } from 'sonner';
 import { INITIAL_SKILLS } from '@/web/components/the-lobby/store';
@@ -49,53 +50,14 @@ import { ArchetypePicker } from './character-create/ArchetypePicker';
 import { IdentityForm } from './character-create/IdentityForm';
 import { AppearanceCustomizer } from './character-create/AppearanceCustomizer';
 import type { AppearanceTab } from './character-create/AppearanceCustomizer';
+import { ArchetypeModelPreview3D } from '@/web/components/the-lobby/editor/hero-studio/ArchetypeModelPreview3D';
 import { applyCharacterCreationWardrobe, parseModelWardrobeItems } from '@/shared/game/modelWardrobe';
+import { getStarterPerkEffectId } from '@/shared/game/starterPerks';
 import type { WorldModelValue } from '@/web/components/the-lobby/editor/components/WorldModelSelector';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const PERKS = [
-  {
-    id: 'SWIFT_TRAVELER',
-    name: 'Swift Traveler',
-    desc: '+25% Movement Speed across all maps and dungeons.',
-    icon: Zap,
-    color: '#fbbf24',
-    badge: 'AGILITY',
-  },
-  {
-    id: 'ACROBAT',
-    name: 'Acrobat',
-    desc: 'Perform 2-tile Double Jumps over obstacles and gaps.',
-    icon: Feather,
-    color: '#34d399',
-    badge: 'MOBILITY',
-  },
-  {
-    id: 'PACK_MULE',
-    name: 'Pack Mule',
-    desc: '+50% Inventory Carry Weight & pouch capacity.',
-    icon: Shield,
-    color: '#60a5fa',
-    badge: 'UTILITY',
-  },
-  {
-    id: 'MASTER_TAMER',
-    name: 'Master Saint',
-    desc: '+15% Capture Rate boost for wild Daemons & Beasts.',
-    icon: User,
-    color: '#cbb26a',
-    badge: 'MASTERY',
-  },
-  {
-    id: 'STAMINA_SURGE',
-    name: 'Stamina Surge',
-    desc: '+30 Base Health & accelerated health regeneration.',
-    icon: Sparkles,
-    color: '#f472b6',
-    badge: 'SURVIVAL',
-  },
-];
+const PERK_ICONS: Record<string, LucideIcon> = { Zap, Feather, Shield, User, Sparkles };
 
 const RANDOM_NAMES = [
   'Valkyrie', 'ShadowFox', 'NeonKnight', 'Cipher', 'Vortex', 'Zephyr', 'Aegis', 'Blitz',
@@ -193,7 +155,8 @@ export function CharacterCreateScene() {
   // Selected config
   const [classId, setClassId] = useState('WARRIOR');
   const [selectedHeroSlug, setSelectedHeroSlug] = useState<string | null>(null);
-  const [perkId, setPerkId] = useState(PERKS[0].id);
+  const [starterPerks, setStarterPerks] = useState<StarterPerkData[]>([]);
+  const [perkId, setPerkId] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Dynamic Asset Discovery
@@ -259,12 +222,19 @@ export function CharacterCreateScene() {
     async function loadData() {
       setHeroesLoading(true);
       try {
-        const [heroesRes, classesRes] = await Promise.all([
+        const [heroesRes, classesRes, perksRes] = await Promise.all([
           getStarterHeroes(),
           getPlayableClasses(),
+          getStarterPerks(),
         ]);
         if (heroesRes.success) setDbHeroes(heroesRes.data as DbHero[]);
         if (classesRes.success && classesRes.data.length > 0) setClassDefs(classesRes.data);
+        if (perksRes.success) {
+          setStarterPerks(perksRes.data);
+          setPerkId((current) => perksRes.data.some((perk) => perk.slug === current)
+            ? current
+            : perksRes.data[0]?.slug || '');
+        }
       } catch {
         /* ignore */
       } finally {
@@ -324,7 +294,9 @@ export function CharacterCreateScene() {
 
   const handleHeroPick = (hero: DbHero) => {
     soundSynth?.playSelectSound?.();
-    setAppearanceTab('BASE');
+    const heroVisual = (() => { try { return JSON.parse(hero.visualData || '{}'); } catch { return {}; } })();
+    const heroHasModel = heroVisual.worldModel?.type === '3D Model' || heroVisual.type === '3D Model';
+    setAppearanceTab(heroHasModel ? 'WARDROBE' : 'BASE');
     setassetProfileId(hero.assetProfileId);
     setVisualData(hero.visualData || '[]');
     setSelectedWardrobeAssetIds(parseModelWardrobeItems(hero.visualData).filter((item) => item.availableInCharacterCreation && item.defaultVisible !== false).map((item) => item.assetId));
@@ -346,16 +318,18 @@ export function CharacterCreateScene() {
     const hero = starterHeroes[Math.floor(Math.random() * starterHeroes.length)];
     const pick = RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
     const num = Math.floor(Math.random() * 90 + 10);
-    const randomPerk = PERKS[Math.floor(Math.random() * PERKS.length)];
+    const randomPerk = starterPerks[Math.floor(Math.random() * starterPerks.length)];
 
-    setAppearanceTab('BASE');
+    const heroVisual = (() => { try { return JSON.parse(hero.visualData || '{}'); } catch { return {}; } })();
+    const heroHasModel = heroVisual.worldModel?.type === '3D Model' || heroVisual.type === '3D Model';
+    setAppearanceTab(heroHasModel ? 'WARDROBE' : 'BASE');
     setassetProfileId(hero.assetProfileId);
     setVisualData(hero.visualData || '[]');
     setSelectedWardrobeAssetIds(parseModelWardrobeItems(hero.visualData).filter((item) => item.availableInCharacterCreation && item.defaultVisible !== false).map((item) => item.assetId));
     setClassId(hero.classId);
     setSelectedHeroSlug(hero.slug);
     setName(`${pick}${num}`);
-    setPerkId(randomPerk.id);
+    setPerkId(randomPerk?.slug || '');
 
     if (dynamicCapes.length > 1 && Math.random() > 0.5) {
       const cape = dynamicCapes[Math.floor(Math.random() * dynamicCapes.length)];
@@ -387,7 +361,8 @@ export function CharacterCreateScene() {
       ? resolveStartingSkills(selectedDef)
       : JSON.parse(JSON.stringify(INITIAL_SKILLS));
     const sheet = selectedDef ? resolveClassStats(selectedDef) : { hp: 100 };
-    const hpBase = sheet.hp + (perkId === 'STAMINA_SURGE' ? 30 : 0);
+    const perkEffect = getStarterPerkEffectId(perkId);
+    const hpBase = sheet.hp + (perkEffect === 'STAMINA_SURGE' ? 30 : 0);
     const hpFromSkills = (initialSkills['Hitpoints']?.level || 1) * 5;
 
     const hero =
@@ -397,6 +372,7 @@ export function CharacterCreateScene() {
     let startMap = hero?.startingMap && hero.startingMap !== 'DEMO_SANDBOX' && hero.startingMap !== 'spawn' ? hero.startingMap : '';
     let startX = hero?.startingX;
     let startY = hero?.startingY;
+    let startZ: number | undefined;
 
     // 1. Try active release manifest
     if (!startMap || startMap === 'spawn') {
@@ -412,6 +388,9 @@ export function CharacterCreateScene() {
           }
           if (startY === undefined && typeof manifest.world?.spawnY === 'number') {
             startY = manifest.world.spawnY;
+          }
+          if (startZ === undefined && typeof manifest.world?.spawnZ === 'number') {
+            startZ = manifest.world.spawnZ;
           }
         }
       } catch (err) {
@@ -455,17 +434,18 @@ export function CharacterCreateScene() {
       startMap = 'genesis';
     }
 
-    if (startX === undefined || startY === undefined) {
+    if (startX === undefined || startY === undefined || startZ === undefined) {
       try {
         const mapRes = await fetch(`/api/maps/${startMap}`);
         if (mapRes.ok) {
           const mapInfo = await mapRes.json();
           if (mapInfo?.spawnPoint && typeof mapInfo.spawnPoint.x === 'number') {
-            startX = mapInfo.spawnPoint.x;
-            startY = mapInfo.spawnPoint.y;
+            if (startX === undefined) startX = mapInfo.spawnPoint.x;
+            if (startY === undefined) startY = mapInfo.spawnPoint.y;
+            if (startZ === undefined && typeof mapInfo.spawnPoint.z === 'number') startZ = mapInfo.spawnPoint.z;
           } else if (mapInfo?.width && mapInfo?.height) {
-            startX = Math.floor(mapInfo.width / 2);
-            startY = Math.floor(mapInfo.height / 2);
+            if (startX === undefined) startX = Math.floor(mapInfo.width / 2);
+            if (startY === undefined) startY = Math.floor(mapInfo.height / 2);
           }
         }
       } catch {
@@ -479,7 +459,7 @@ export function CharacterCreateScene() {
     const isSpyder = selectedHeroSlug === 'spyder_tamer' || startMap === 'AZURE_TOWN';
     const initialState = {
       currentMapId: startMap,
-      position: { x: startX, y: startY },
+      position: { x: startX, y: startY, ...(startZ !== undefined ? { z: startZ } : {}) },
       level: 1,
       xp: 0,
       hp: hpBase + hpFromSkills,
@@ -514,8 +494,8 @@ export function CharacterCreateScene() {
       saintRank: 'Rookie',
       caughtDaemons: ['d-001'],
       assignedBeasts: { furnace: null, farm: null, fishing_hut: null },
-      perk: perkId,
-      maxWeight: perkId === 'PACK_MULE' ? 150 : 100,
+      perk: perkId || null,
+      maxWeight: perkEffect === 'PACK_MULE' ? 150 : 100,
       maxPartySize: 4,
       unlockedAbilities: selectedDef?.abilities || [],
       equippedAbilities: (selectedDef?.abilities || []).slice(0, 5),
@@ -556,7 +536,13 @@ export function CharacterCreateScene() {
   );
 
   const selectedDef = classDefs.find((c) => c.classId === classId);
-  const selectedPerk = PERKS.find((p) => p.id === perkId) || PERKS[0];
+  const selectedPerk = starterPerks.find((perk) => perk.slug === perkId) || { name: 'None' };
+  const selectedPerkEffect = getStarterPerkEffectId(perkId);
+  const reviewHp = selectedDef
+    ? resolveClassStats(selectedDef).hp
+      + (selectedPerkEffect === 'STAMINA_SURGE' ? 30 : 0)
+      + ((resolveStartingSkills(selectedDef)['Hitpoints']?.level || 1) * 5)
+    : 100 + (selectedPerkEffect === 'STAMINA_SURGE' ? 30 : 0);
 
   const { theme } = useTheme();
   const isLight = theme === 'light';
@@ -724,16 +710,21 @@ export function CharacterCreateScene() {
             </div>
 
             <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-6">
-              {PERKS.map((perk) => {
-                const isSelected = perkId === perk.id;
-                const Icon = perk.icon;
+              {starterPerks.length === 0 && (
+                <div className="col-span-full rounded-xl border border-dashed border-border/50 p-5 text-center text-xs text-muted-foreground">
+                  No active starter perks are configured. Add perks in Perk Studio to offer them here.
+                </div>
+              )}
+              {starterPerks.map((perk) => {
+                const isSelected = perkId === perk.slug;
+                const Icon = PERK_ICONS[perk.icon] || Award;
 
                 return (
                   <div
-                    key={perk.id}
+                    key={perk.slug}
                     onClick={() => {
                       soundSynth?.playSelectSound?.();
-                      setPerkId(perk.id);
+                      setPerkId(perk.slug);
                     }}
                     className={`cursor-pointer rounded-xl p-4 border transition-all ${
                       isSelected
@@ -793,9 +784,17 @@ export function CharacterCreateScene() {
             <div className="w-full bg-[#050b14]/95 border-2 border-primary/50 rounded-2xl p-6 shadow-[0_0_35px_rgba(234,179,8,0.15)] flex flex-col gap-5">
               {/* Profile Card */}
               <div className="flex items-center gap-5 border-b border-border/40 pb-4">
-                <div className="w-20 h-20 rounded-2xl bg-black/80 border border-primary/50 flex items-center justify-center shrink-0 shadow-inner overflow-hidden">
-                  <CharacterSpritePreview layers={activeLayers} size={32} scale={2} />
-                </div>
+                {modelAssetId ? (
+                  <ArchetypeModelPreview3D
+                    baseAssetId={modelAssetId}
+                    modularAttachments={wardrobePreviewAttachments}
+                    className="h-44 w-36 shrink-0"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-2xl bg-black/80 border border-primary/50 flex items-center justify-center shrink-0 shadow-inner overflow-hidden">
+                    <CharacterSpritePreview layers={activeLayers} size={32} scale={2} />
+                  </div>
+                )}
                 <div>
                   <h3 className="text-2xl font-black font-mono text-foreground">{name}</h3>
                   <div className="flex items-center gap-2 mt-1">
@@ -812,7 +811,7 @@ export function CharacterCreateScene() {
                 <div className="p-3 rounded-xl bg-card/60 border border-border/40">
                   <span className="text-muted-foreground text-[10px] block font-bold">HEALTH</span>
                   <strong className="text-rose-400 text-sm">
-                    {100 + (perkId === 'STAMINA_SURGE' ? 30 : 0)} HP
+                    {reviewHp} HP
                   </strong>
                 </div>
                 <div className="p-3 rounded-xl bg-card/60 border border-border/40">
@@ -826,7 +825,7 @@ export function CharacterCreateScene() {
                 <div className="p-3 rounded-xl bg-card/60 border border-border/40">
                   <span className="text-muted-foreground text-[10px] block font-bold">CARRY CAPACITY</span>
                   <strong className="text-foreground text-sm">
-                    {perkId === 'PACK_MULE' ? '150 KG' : '100 KG'}
+                    {selectedPerkEffect === 'PACK_MULE' ? '150 KG' : '100 KG'}
                   </strong>
                 </div>
               </div>

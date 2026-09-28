@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Save } from 'lucide-react';
-import { getStarterPerks, upsertStarterPerk, deleteStarterPerk, StarterPerkData } from '@/app/actions/game/starter-perks';
+import { getAllStarterPerks, seedDefaultStarterPerks, upsertStarterPerk, deleteStarterPerk, StarterPerkData } from '@/app/actions/game/starter-perks';
 import { toast } from 'sonner';
 
 const AVAILABLE_ICONS = ['Zap', 'Feather', 'Shield', 'User', 'Sparkles'];
@@ -18,7 +18,11 @@ export const PerkStudioTab: React.FC = () => {
 
   async function load() {
     setLoading(true);
-    const res = await getStarterPerks();
+    let res = await getAllStarterPerks();
+    if (res.success && res.data.length === 0) {
+      const seedResult = await seedDefaultStarterPerks();
+      if (seedResult.success) res = await getAllStarterPerks();
+    }
     if (res.success && res.data) {
       setPerks(res.data);
     }
@@ -64,7 +68,8 @@ export const PerkStudioTab: React.FC = () => {
       if (res.success) successCount++;
     }
     setSaving(false);
-    toast.success(`Saved ${successCount} perks!`);
+    if (successCount === perks.length) toast.success(`Saved ${successCount} perks.`);
+    else toast.error(`Saved ${successCount} of ${perks.length} perks. Check Studio permissions and try again.`);
     load();
   };
 
@@ -167,6 +172,15 @@ export const PerkStudioTab: React.FC = () => {
                 </div>
               </div>
               <div className="flex flex-col gap-2 items-center justify-center pt-5">
+                <label className="flex max-w-24 items-center gap-1.5 text-center text-[9px] leading-tight text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={perk.isActive}
+                    onChange={(e) => handleUpdate(i, 'isActive', e.target.checked)}
+                    className="rounded border-border bg-black text-primary focus:ring-primary"
+                  />
+                  In character creation
+                </label>
                 <button
                   onClick={() => handleDelete(i)}
                   className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/30 rounded transition-colors"

@@ -143,6 +143,7 @@ export interface PlayerPublicSnapshot {
   spriteId?: string;
   x: number;
   y: number;
+  z?: number;
   direction: string;
   moving?: boolean;
   hp?: number;
@@ -154,6 +155,7 @@ export interface PlayerMovedPayload {
   socketId: string;
   x: number;
   y: number;
+  z?: number;
   direction: string;
   moving: boolean;
   seq?: number;
@@ -162,6 +164,7 @@ export interface PlayerMovedPayload {
 export interface MoveCommand {
   x: number;
   y: number;
+  z?: number;
   direction?: string;
   moving?: boolean;
   mapId?: string;
@@ -172,6 +175,7 @@ export interface MoveCommand {
 export interface MoveAckPayload {
   x: number;
   y: number;
+  z?: number;
   seq?: number;
   requestId?: string;
 }

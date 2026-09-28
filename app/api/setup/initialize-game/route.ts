@@ -179,35 +179,7 @@ export async function POST(req: Request) {
     let finalSpawnMapId = mapId;
     let finalSpawnX = spawnX;
     let finalSpawnY = spawnY;
-    let finalSpawnZ = 16;
-    
-    const activeProject = await prisma.worldProject.findUnique({
-      where: { slug: 'saints' }
-    });
-    if (activeProject?.activeVersion) {
-      const activeVersionStr = `v1.0.${activeProject.activeVersion}`;
-      const release = await prisma.worldRelease.findFirst({
-        where: {
-          OR: [
-            { projectId: activeProject.id, version: activeVersionStr },
-            { projectId: 'saints', version: activeVersionStr },
-          ],
-        },
-      });
-      if (release) {
-        try {
-          const manifest = JSON.parse(release.manifestData);
-          if (manifest.world) {
-            finalSpawnMapId = manifest.world.spawnMap || finalSpawnMapId;
-            finalSpawnX = typeof manifest.world.spawnX === 'number' ? manifest.world.spawnX : finalSpawnX;
-            finalSpawnY = typeof manifest.world.spawnY === 'number' ? manifest.world.spawnY : finalSpawnY;
-            finalSpawnZ = typeof manifest.world.spawnZ === 'number' ? manifest.world.spawnZ : finalSpawnZ;
-          }
-        } catch (e) {
-          console.error("Failed to parse release manifest for spawn extraction", e);
-        }
-      }
-    }
+    let finalSpawnZ = typeof map.spawnPoint?.z === 'number' ? map.spawnPoint.z : 16;
 
     const userGates = Array.isArray(map.gates) && map.gates.length > 0
       ? map.gates.map((g: any, idx: number) => ({
@@ -478,9 +450,9 @@ export async function POST(req: Request) {
         { key: SETUP_SETTING_KEYS.GAME_CAMERA, value: gameCamera },
         { key: SETUP_SETTING_KEYS.DEFAULT_MAP_ID, value: mapId },
         { key: 'SPAWN_MAP_ID', value: mapId },
-        { key: 'DEFAULT_SPAWN_X', value: String(spawnX) },
-        { key: 'DEFAULT_SPAWN_Y', value: String(spawnY) },
-        { key: 'DEFAULT_SPAWN_Z', value: String(map.spawnPoint?.z ?? 16) },
+        { key: 'DEFAULT_SPAWN_X', value: String(finalSpawnX) },
+        { key: 'DEFAULT_SPAWN_Y', value: String(finalSpawnY) },
+        { key: 'DEFAULT_SPAWN_Z', value: String(finalSpawnZ) },
         { key: 'DEFAULT_BLOCK_SIZE_PX', value: String(blockSizePx) },
         // Legacy keys for backward compatibility
         { key: SETUP_SETTING_KEYS.SETUP_COMPLETED, value: 'true' },

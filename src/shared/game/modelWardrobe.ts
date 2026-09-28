@@ -12,6 +12,18 @@ export interface ModelWardrobeItem {
   [key: string]: unknown;
 }
 
+export function getModelWardrobeItemLabel(item: ModelWardrobeItem): string {
+  const label = item.label?.trim();
+  if (label) return label;
+  const fileName = item.assetId.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') || item.assetId;
+  return fileName.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+export function getModelWardrobeCategoryLabel(item: ModelWardrobeItem): string {
+  const category = item.category?.trim();
+  return category ? category.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ') : 'Equipment';
+}
+
 export function parseModelWardrobeItems(value: unknown): ModelWardrobeItem[] {
   let data: any = value;
   if (typeof value === 'string') {

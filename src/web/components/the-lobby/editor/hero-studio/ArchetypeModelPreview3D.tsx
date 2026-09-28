@@ -113,6 +113,7 @@ function CompositeCharacter({
     }
 
     let isCancelled = false;
+    let resolvedAttachments: LoadedSubModel[] = [];
     const loader = new GLTFLoader();
     const promises = modularAttachments.map((att) => {
       const url = resolveEntitySpriteUrl(att.assetId);
@@ -133,12 +134,14 @@ function CompositeCharacter({
 
     Promise.all(promises).then((results) => {
       if (!isCancelled) {
-        setLoadedAttachments(results.filter((r): r is LoadedSubModel => r !== null));
+        resolvedAttachments = results.filter((r): r is LoadedSubModel => r !== null);
+        setLoadedAttachments(resolvedAttachments);
       }
     });
 
     return () => {
       isCancelled = true;
+      resolvedAttachments.forEach(({ scene }) => scene.parent?.remove(scene));
     };
   }, [modularAttachments]);
 
@@ -209,9 +212,26 @@ function CompositeCharacter({
       });
     }
 
-    // Attach rigid sockets to character bones
+    let baseSkeleton: THREE.Skeleton | null = null;
+    baseScene.traverse((child) => {
+      if (!baseSkeleton && (child as THREE.SkinnedMesh).isSkinnedMesh) {
+        baseSkeleton = (child as THREE.SkinnedMesh).skeleton;
+      }
+    });
+
+    // Wearables share the base rig; rigid props attach to the configured socket.
     loadedAttachments.forEach((sub) => {
       const { scene: attScene, attachment } = sub;
+      if (attachment.attachmentMode === 'SKINNED' || attachment.isModular) {
+        attScene.traverse((child) => {
+          if ((child as THREE.SkinnedMesh).isSkinnedMesh && baseSkeleton) {
+            (child as THREE.SkinnedMesh).skeleton = baseSkeleton;
+          }
+        });
+        baseScene.add(attScene);
+        return;
+      }
+
       const socket = attachment.socket || 'RightHandMount';
       const targetBone = findBone(baseScene, socket);
 

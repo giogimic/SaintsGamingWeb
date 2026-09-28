@@ -9,7 +9,10 @@ import { localMovementSystem } from '../engine/physics/LocalMovementSystem';
 import { remoteMovementSystem } from '../engine/physics/RemoteMovementSystem';
 import { worldStreamer } from '../engine/streaming/WorldStreamer';
 import { usePlayerStore } from '../state/usePlayerStore';
+import { useSessionStore } from '../state/useSessionStore';
+import { useWorldStore } from '../state/useWorldStore';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { savePlayerLocationSnapshot } from '@/shared/game/playerLocationSync';
 
 export class GameLoop {
   private isRunning = false;
@@ -20,10 +23,15 @@ export class GameLoop {
   private accumulator = 0;
   private readonly TICK_RATE = 60; // 60 ticks per second
   private readonly TICK_MS = 1000 / 60;
+  private lastLocationSaveAt = 0;
 
   public start() {
     if (this.isRunning) return;
     this.isRunning = true;
+    if (typeof window !== 'undefined') {
+      window.addEventListener('pagehide', this.handlePageHide);
+      document.addEventListener('visibilitychange', this.handleVisibilityChange);
+    }
     this.lastTime = performance.now();
     this.rafId = requestAnimationFrame(this.loop);
     console.log('[GameLoop] Started');
@@ -32,6 +40,11 @@ export class GameLoop {
   public stop() {
     if (!this.isRunning) return;
     this.isRunning = false;
+    this.persistCurrentLocation(true);
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('pagehide', this.handlePageHide);
+      document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+    }
     if (this.rafId !== null) {
       cancelAnimationFrame(this.rafId);
       this.rafId = null;
@@ -74,6 +87,12 @@ export class GameLoop {
     localMovementSystem.update(dt);
     remoteMovementSystem.update(dt);
 
+    const now = Date.now();
+    if (useSessionStore.getState().activeScene === 'exploring' && now - this.lastLocationSaveAt >= 5000) {
+      this.lastLocationSaveAt = now;
+      this.persistCurrentLocation(false);
+    }
+
     // 3. Process Combat/Game Logic Systems
     // combatSystem.update(dt);
 
@@ -82,6 +101,24 @@ export class GameLoop {
     const pos = playerStore.player.position;
     if (pos && pos.z !== undefined) {
        worldStreamer.updateStreamingForPosition(new Vector3(pos.x, pos.y, pos.z));
+    }
+  }
+
+  private handlePageHide = () => this.persistCurrentLocation(true);
+  private handleVisibilityChange = () => {
+    if (document.visibilityState === 'hidden') this.persistCurrentLocation(true);
+  };
+
+  private persistCurrentLocation(keepalive: boolean) {
+    const session = useSessionStore.getState();
+    const player = usePlayerStore.getState().player;
+    const mapId = useWorldStore.getState().currentMapId;
+    if (session.characterId && mapId && player.position) {
+      savePlayerLocationSnapshot({
+        characterId: session.characterId,
+        mapId,
+        position: player.position,
+      }, keepalive);
     }
   }
 

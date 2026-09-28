@@ -2,6 +2,7 @@
 
 import { useGameStore } from './store';
 import { ITEM_DB } from '@/shared/game/items';
+import { getStarterPerkEffectId } from '@/shared/game/starterPerks';
 import { useState, useMemo } from 'react';
 import {
   Package,
@@ -112,7 +113,7 @@ export default function InventoryOverlay() {
     if (inventory[itemId] <= 1) setActiveItem(null);
   };
 
-  const maxWeight = playerMaxWeight || (playerPerk === 'PACK_MULE' ? 150 : 100);
+  const maxWeight = playerMaxWeight || (getStarterPerkEffectId(playerPerk) === 'PACK_MULE' ? 150 : 100);
   const currentWeight = Object.values(inventory).reduce((sum, qty) => sum + qty, 0);
 
   // Filter & sort entries

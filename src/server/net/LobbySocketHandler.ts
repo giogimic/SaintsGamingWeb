@@ -33,6 +33,7 @@ export interface ConnectedPlayer {
   mapId: string;
   x: number;
   y: number;
+  z?: number;
   direction: string;
   moving: boolean;
   hp: number;
@@ -117,6 +118,7 @@ export class LobbySocketHandler {
             mapId: baseMapId,
             x: typeof data?.x === "number" ? data.x : existingPlayer?.x ?? 14,
             y: typeof data?.y === "number" ? data.y : existingPlayer?.y ?? 15,
+            z: typeof data?.z === "number" ? data.z : existingPlayer?.z,
             direction: String(data?.direction || existingPlayer?.direction || "down"),
             moving: false,
             hp: typeof data?.hp === "number" ? data.hp : existingPlayer?.hp ?? 100,
@@ -160,6 +162,7 @@ export class LobbySocketHandler {
             mapId: baseMapId,
             x: player.x,
             y: player.y,
+            z: player.z ?? 0,
             revision: this.studio.getRevision(baseMapId),
             protocolVersion: REALTIME_PROTOCOL_VERSION,
           });
@@ -178,6 +181,7 @@ export class LobbySocketHandler {
               mapId: player.mapId,
               x: player.x,
               y: player.y,
+              z: player.z,
               direction: player.direction,
               hp: player.hp,
               maxHp: player.maxHp,
@@ -194,6 +198,7 @@ export class LobbySocketHandler {
           const current = this.shards.getPlayer(socket.id);
           let x = typeof data?.x === "number" ? data.x : (current?.x ?? 0);
           let y = typeof data?.y === "number" ? data.y : (current?.y ?? 0);
+          const z = typeof data?.z === "number" ? data.z : current?.z;
           let direction = typeof data?.direction === "string" ? data.direction : (current?.direction || "down");
           let moving = data?.moving !== undefined ? Boolean(data?.moving) : true;
 
@@ -207,7 +212,7 @@ export class LobbySocketHandler {
             moving = true;
           }
 
-          const player = this.shards.updatePlayerPosition(socket.id, x, y, direction, moving);
+          const player = this.shards.updatePlayerPosition(socket.id, x, y, direction, moving, z);
           if (!player) return;
 
           socket.to(player.instanceId).emit(RealtimeEvents.PLAYER_MOVED, {
@@ -215,6 +220,7 @@ export class LobbySocketHandler {
             mapId: player.mapId,
             x: player.x,
             y: player.y,
+            z: player.z,
             direction: player.direction,
             moving: player.moving,
             seq: data?.seq || data?.sequence,

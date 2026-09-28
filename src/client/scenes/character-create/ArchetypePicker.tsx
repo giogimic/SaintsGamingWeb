@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2, Dice5, ChevronRight } from 'lucide-react';
+import { Loader2, Dice5, ChevronRight, Cuboid } from 'lucide-react';
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 
 interface ArchetypePickerProps {
@@ -57,6 +57,13 @@ export function ArchetypePicker({
         <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto p-1 scrollbar-thin">
           {starterHeroes.map((hero) => {
             const isSelected = selectedHeroSlug === hero.slug;
+            let has3DModel = false;
+            try {
+              const visual = JSON.parse(hero.visualData || '{}');
+              has3DModel = visual.worldModel?.type === '3D Model' || visual.type === '3D Model';
+            } catch {
+              // Keep the legacy sprite preview when visual data is malformed.
+            }
             return (
               <div
                 key={hero.slug}
@@ -82,9 +89,16 @@ export function ArchetypePicker({
                   </div>
 
                   {/* Character Sprite Preview */}
-                  <div className="w-20 h-20 rounded-xl bg-black/60 border border-border/50 mx-auto my-2.5 flex items-center justify-center shadow-inner group-hover:border-primary/60 transition-all overflow-hidden">
-                    <CharacterSpritePreview assetProfileId={hero.assetProfileId} size={32} scale={1.8} />
-                  </div>
+                  {has3DModel ? (
+                    <div className="w-20 h-20 rounded-xl bg-black/60 border border-border/50 mx-auto my-2.5 flex flex-col items-center justify-center gap-1 text-cyan-300 shadow-inner group-hover:border-primary/60 transition-all">
+                      <Cuboid size={25} />
+                      <span className="text-[8px] font-mono uppercase tracking-wider">3D Model</span>
+                    </div>
+                  ) : (
+                    <div className="w-20 h-20 rounded-xl bg-black/60 border border-border/50 mx-auto my-2.5 flex items-center justify-center shadow-inner group-hover:border-primary/60 transition-all overflow-hidden">
+                      <CharacterSpritePreview assetProfileId={hero.assetProfileId} size={32} scale={1.8} />
+                    </div>
+                  )}
 
                   {/* Name & Flavor */}
                   <div className="text-center mt-2">

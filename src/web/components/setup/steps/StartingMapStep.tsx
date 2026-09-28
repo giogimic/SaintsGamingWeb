@@ -19,7 +19,9 @@ import {
 } from 'lucide-react';
 import type { SetupEnvironmentData } from './EnvironmentSetupStep';
 import type { GameDefinitionData } from './GameDefinitionStep';
-import { CHUNK_SIZE_X, CHUNK_SIZE_Z } from '@/shared/game/voxel/VoxelChunk';
+import { CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z } from '@/shared/game/voxel/VoxelChunk';
+import { generateVoxelWorldDoc } from '@/shared/game/voxel/VoxelWorldGenerator';
+import { resolveSafeVoxelSpawn } from '@/shared/game/voxel/SpawnResolver';
 import { useSetupWorldSession } from '../hooks/useSetupWorldSession';
 
 export interface SetupGateDefinition {
@@ -97,11 +99,33 @@ export function StartingMapStep({
     if (status === 'READY') {
       const centerX = Math.floor((previewSizeChunks * CHUNK_SIZE_X) / 2);
       const centerZ = Math.floor((previewSizeChunks * CHUNK_SIZE_Z) / 2);
+      // Generate the same deterministic terrain inputs as the server bake, then
+      // put the first spawn on a validated surface instead of treating map Z as
+      // vertical Y. The previous centerZ assignment could request a chunk above
+      // the world's height and leave the player falling through empty space.
+      const spawnWorld = generateVoxelWorldDoc({
+        id: 'setup-spawn-validation',
+        name: gameDefinition.name || 'The Lobby',
+        widthChunks: previewSizeChunks,
+        depthChunks: previewSizeChunks,
+        heightChunks: startingMap.heightChunks || 1,
+        blockSizePx: startingMap.blockSizePx || 64,
+        mode: 'procedural',
+        seed: gameDefinition.name || 'The Lobby',
+        baseMaterial: environment.foundationMaterial === 'gunmetal' ? 1 : 2,
+        baseElevation: 16,
+        mapWidth: previewSizeChunks * CHUNK_SIZE_X,
+        mapHeight: previewSizeChunks * CHUNK_SIZE_Z,
+      });
+      const safeSpawn = resolveSafeVoxelSpawn(spawnWorld, centerX, centerZ);
+      const spawnPoint = safeSpawn.isSafe
+        ? safeSpawn.position
+        : { x: centerX, y: (startingMap.heightChunks || 1) * CHUNK_SIZE_Y + 1, z: centerZ };
       onChange({
         ...startingMap,
         widthChunks: previewSizeChunks,
         depthChunks: previewSizeChunks,
-        spawnPoint: { x: centerX, y: centerZ, z: 32 },
+        spawnPoint,
         width: previewSizeChunks * CHUNK_SIZE_X,
         height: previewSizeChunks * CHUNK_SIZE_Z,
         gates: [
@@ -109,14 +133,22 @@ export function StartingMapStep({
             id: 'spawn',
             name: 'Genesis Gate',
             category: 'SPAWN',
-            position: { x: centerX, y: centerZ, z: 32 },
+            position: spawnPoint,
             interactPrompt: 'Respawn',
           }
         ],
         bootstrapRevisionId: bootstrapRevisionId || undefined
       });
     }
-  }, [status, bootstrapRevisionId, previewSizeChunks]);
+  }, [
+    status,
+    bootstrapRevisionId,
+    previewSizeChunks,
+    environment.foundationMaterial,
+    gameDefinition.name,
+    startingMap.heightChunks,
+    startingMap.blockSizePx,
+  ]);
 
   const totalBlocks = (previewSizeChunks * CHUNK_SIZE_X) * (previewSizeChunks * CHUNK_SIZE_Z);
 

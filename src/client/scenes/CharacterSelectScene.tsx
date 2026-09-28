@@ -13,6 +13,7 @@ import { soundSynth } from '@/engine/sound-synth';
 import { useTheme } from 'next-themes';
 import { useRealmSettings } from '@/web/hooks/studio-data';
 import { useAuth } from '@/web/hooks/use-auth';
+import { loadMap } from '@/shared/game/maps';
 
 import {
   Gamepad2, Plus, Trash2, Shield, Sparkles, Zap, Wrench, User, Swords, Heart,
@@ -136,6 +137,7 @@ export function CharacterSelectScene() {
       let persistedPlayer: Partial<PlayerData> = {};
       let position: { x: number; y: number; z?: number } = { x: 15, y: 15 };
       let charMapId = '';
+      let hasPersistedPosition = false;
 
       try {
         if (char.stateData) {
@@ -144,19 +146,93 @@ export function CharacterSelectScene() {
             persistedPlayer = parsed as Partial<PlayerData>;
             if (parsed.position && typeof parsed.position.x === 'number' && typeof parsed.position.y === 'number') {
               position = parsed.position;
+              hasPersistedPosition = true;
             }
             if (typeof parsed.currentMapId === 'string') {
               charMapId = parsed.currentMapId;
             }
           }
         }
-        if (!charMapId && typeof char.lastMapId === 'string') {
-          charMapId = char.lastMapId;
+        if (typeof char.lastMapId === 'string' && char.lastMapId.trim()) {
+          charMapId = char.lastMapId.trim();
         }
         if (typeof char.lastX === 'number' && typeof char.lastY === 'number') {
           position = { x: char.lastX, y: char.lastY, z: typeof char.lastZ === 'number' ? char.lastZ : undefined };
+          hasPersistedPosition = true;
         }
       } catch {}
+      const hasPersistedMapId = Boolean(charMapId);
+
+      // A new/legacy character can have no saved map yet. Resolve the configured
+      // starting map and its authored spawn before joining; otherwise the socket
+      // server falls back to DEMO_SANDBOX at hard-coded coordinates.
+      if (!charMapId) {
+        try {
+          const setupRes = await fetch('/api/setup/status');
+          if (setupRes.ok) {
+            const setup = await setupRes.json();
+            const configuredMapId = setup?.status?.defaultMapId;
+            if (
+              typeof configuredMapId === 'string' &&
+              configuredMapId.trim() &&
+              configuredMapId !== 'STARTING_MAP' &&
+              configuredMapId !== 'spawn'
+            ) {
+              charMapId = configuredMapId.trim();
+            }
+          }
+        } catch (error) {
+          console.warn('[CharacterSelect] Could not resolve the configured starting map:', error);
+        }
+        if (!charMapId) {
+          try {
+            const mapsRes = await fetch('/api/maps');
+            if (mapsRes.ok) {
+              const mapsJson = await mapsRes.json();
+              charMapId = mapsJson?.maps?.[0]?.id || (Array.isArray(mapsJson) ? mapsJson[0]?.id : '') || '';
+            }
+          } catch (error) {
+            console.warn('[CharacterSelect] Could not find an available starting map:', error);
+          }
+        }
+      }
+
+      if (
+        charMapId &&
+        (!hasPersistedPosition || !hasPersistedMapId || !Number.isFinite(position.z))
+      ) {
+        try {
+          const mapInfo: any = await loadMap(charMapId);
+          const mapSpawn = mapInfo?.spawnPoint || mapInfo?.gates?.spawnPoint;
+          const mapType = String(mapInfo?.mapType || '').toUpperCase();
+          const isVoxelMap = mapType === 'VOXEL' || mapType === 'FRACTAL' || mapType === 'HYBRID';
+          const needsMapSpawn =
+            !hasPersistedPosition ||
+            !hasPersistedMapId ||
+            (isVoxelMap && !Number.isFinite(position.z));
+          if (needsMapSpawn && mapSpawn && Number.isFinite(mapSpawn.x) && Number.isFinite(mapSpawn.y)) {
+            position = {
+              x: mapSpawn.x,
+              y: mapSpawn.y,
+              ...(Number.isFinite(mapSpawn.z)
+                ? { z: mapSpawn.z }
+                : isVoxelMap
+                  ? { z: Math.floor((mapInfo.height || 32) / 2) }
+                  : {}),
+            };
+          } else if (needsMapSpawn && isVoxelMap) {
+            position = {
+              x: Math.floor((mapInfo.width || 32) / 2),
+              y: 16,
+              z: Math.floor((mapInfo.height || 32) / 2),
+            };
+          } else if (needsMapSpawn && mapInfo?.width && mapInfo?.height) {
+            position = { x: Math.floor(mapInfo.width / 2), y: Math.floor(mapInfo.height / 2) };
+          }
+        } catch (error) {
+          console.warn('[CharacterSelect] Could not load the configured spawn point:', error);
+        }
+      }
 
       const assetProfileId = char.assetProfileId || 'adventurer';
       const playerSnapshot: Partial<PlayerData> = {

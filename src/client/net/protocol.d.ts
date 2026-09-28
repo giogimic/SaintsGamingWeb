@@ -22,7 +22,7 @@ export interface MapJoinedPayload {
   mapId: string;
   x: number;
   y: number;
-  z: number;
+  z?: number;
   serverTime: number;
   joinSeq?: number;
 }

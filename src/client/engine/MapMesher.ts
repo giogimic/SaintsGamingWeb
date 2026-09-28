@@ -129,9 +129,9 @@ export class MapMesher {
     console.log(`[MapMesher] buildVoxelMap called for ${mapData.id}. Awaiting WorldStreamer.`);
   }
 
-  public startVoxelStreaming() {
+  public startVoxelStreaming(dimensions?: { widthChunks?: number; depthChunks?: number; heightChunks?: number }) {
     this.clearMap();
-    this.voxelWorld = new VoxelWorld({ id: 'streamed' });
+    this.voxelWorld = new VoxelWorld({ id: 'streamed', dimensions });
     console.log(`[MapMesher] Started voxel streaming mode. Waiting for chunks...`);
   }
 
