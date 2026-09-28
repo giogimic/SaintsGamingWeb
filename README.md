@@ -143,6 +143,9 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 
 ## Changelog
 
+### v2.2.041
+- **Critical Animation Fix**: Fixed a bug in `Renderer.ts` where the animation loop was checking `state.animationGroups` (which is always undefined, as it comes from the network) instead of `mesh.metadata.animationGroups`. Animations will now actually play in-game.
+
 ### v2.2.040
 - **Ghost Entity & Player Sync Fixes**:
   - **Local Player Duplicate Filtering (`index.tsx`)**: The `map_players` event index key was corrected to filter by `accountId` and `id` in addition to `socket.id`. This prevents the MMO server's authoritative state broadcast from spawning a visual "ghost" clone of the local player with a duplicate nameplate at the spawn location.
