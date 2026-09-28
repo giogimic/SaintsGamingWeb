@@ -22,32 +22,33 @@ interface CharacterWardrobeSlotsProps {
 interface SlotDefinition {
   id: string;
   label: string;
+  icon: string;
   group: 'head_face' | 'clothing' | 'gear';
 }
 
 const SLOTS: SlotDefinition[] = [
   // Head & Face Group (Left Column)
-  { id: 'face', label: 'Face / Features', group: 'head_face' },
-  { id: 'beard', label: 'Facial Hair / Beard', group: 'head_face' },
-  { id: 'head_accessory', label: 'Glasses / Eyewear', group: 'head_face' },
-  { id: 'mask', label: 'Face Mask / Bandana', group: 'head_face' },
-  { id: 'hair', label: 'Hair / Style', group: 'head_face' },
-  { id: 'hat', label: 'Hat / Headwear', group: 'head_face' },
+  { id: 'face', label: 'Face / Features', icon: '😐', group: 'head_face' },
+  { id: 'beard', label: 'Facial Hair / Beard', icon: '🧔', group: 'head_face' },
+  { id: 'head_accessory', label: 'Glasses / Eyewear', icon: '👓', group: 'head_face' },
+  { id: 'mask', label: 'Face Mask / Bandana', icon: '😷', group: 'head_face' },
+  { id: 'hair', label: 'Hair / Style', icon: '💇', group: 'head_face' },
+  { id: 'hat', label: 'Hat / Headwear', icon: '🎩', group: 'head_face' },
 
   // Clothing Group (Right Column)
-  { id: 'shirt', label: 'Shirt / Torso', group: 'clothing' },
-  { id: 'jacket', label: 'Jacket / Outerwear', group: 'clothing' },
-  { id: 'clothing', label: 'Outfit / Clothing', group: 'clothing' },
-  { id: 'pants', label: 'Legs / Pants', group: 'clothing' },
-  { id: 'shoes', label: 'Shoes / Footwear', group: 'clothing' },
+  { id: 'shirt', label: 'Shirt / Torso', icon: '👕', group: 'clothing' },
+  { id: 'jacket', label: 'Jacket / Outerwear', icon: '🧥', group: 'clothing' },
+  { id: 'clothing', label: 'Outfit / Clothing', icon: '👔', group: 'clothing' },
+  { id: 'pants', label: 'Legs / Pants', icon: '👖', group: 'clothing' },
+  { id: 'shoes', label: 'Shoes / Footwear', icon: '👟', group: 'clothing' },
 
   // Gear & Accessories (Right Column)
-  { id: 'belt', label: 'Belt / Waist', group: 'gear' },
-  { id: 'gloves', label: 'Gloves / Hands', group: 'gear' },
-  { id: 'back', label: 'Cape / Back Item', group: 'gear' },
-  { id: 'weapon_main', label: 'Main Weapon / Tool', group: 'gear' },
-  { id: 'weapon_off', label: 'Offhand / Shield', group: 'gear' },
-  { id: 'accessory', label: 'Accessories', group: 'gear' },
+  { id: 'belt', label: 'Belt / Waist', icon: '🥋', group: 'gear' },
+  { id: 'gloves', label: 'Gloves / Hands', icon: '🧤', group: 'gear' },
+  { id: 'back', label: 'Cape / Back Item', icon: '🎒', group: 'gear' },
+  { id: 'weapon_main', label: 'Main Weapon / Tool', icon: '⚔️', group: 'gear' },
+  { id: 'weapon_off', label: 'Offhand / Shield', icon: '🛡️', group: 'gear' },
+  { id: 'accessory', label: 'Accessories', icon: '💍', group: 'gear' },
 ];
 
 function WardrobeSlot({
@@ -66,23 +67,32 @@ function WardrobeSlot({
     const aDef = a.defaultVisible !== false ? 0 : 1;
     const bDef = b.defaultVisible !== false ? 0 : 1;
     if (aDef !== bDef) return aDef - bDef;
-    return getModelWardrobeItemLabel(a).localeCompare(getModelWardrobeItemLabel(b));
+    return getModelWardrobeItemLabel(a).localeCompare(getModelWardrobeItemLabel(b), undefined, { numeric: true, sensitivity: 'base' });
   });
 
   return (
     <section className="rounded-xl border border-border/50 bg-[#07111c]/95 p-3 text-left shadow-lg">
       <div className="mb-2 flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="truncate text-[11px] font-black uppercase tracking-wider text-foreground">{slot.label}</h3>
-          <p className="truncate text-[9px] text-muted-foreground">
-            {selectedItems.length > 0 ? selectedItems.map(getModelWardrobeItemLabel).join(', ') : 'Nothing selected'}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs">{slot.icon}</span>
+            <h3 className="truncate text-[11px] font-black uppercase tracking-wider text-foreground">
+              {slot.label} <span className="font-mono text-[9px] text-muted-foreground font-normal">({sortedItems.length})</span>
+            </h3>
+          </div>
+          <p className="truncate text-[9px] text-muted-foreground mt-0.5">
+            {selectedItems.length > 0 ? (
+              <span className="text-primary font-semibold">{selectedItems.map(getModelWardrobeItemLabel).join(', ')}</span>
+            ) : (
+              'Nothing selected'
+            )}
           </p>
         </div>
         {selectedItems.length > 0 && (
           <button
             type="button"
             onClick={() => onChoose(slot.id, '')}
-            className="shrink-0 rounded border border-border/60 px-2 py-1 text-[9px] font-semibold text-muted-foreground hover:text-foreground"
+            className="shrink-0 rounded border border-border/60 px-2 py-0.5 text-[9px] font-semibold text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
           >
             Clear
           </button>
@@ -90,7 +100,7 @@ function WardrobeSlot({
       </div>
 
       {sortedItems.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-border/40 px-2 py-3 text-center text-[9px] text-muted-foreground">
+        <p className="rounded-lg border border-dashed border-border/40 px-2 py-2.5 text-center text-[9px] text-muted-foreground">
           No options in this slot
         </p>
       ) : (
@@ -103,17 +113,17 @@ function WardrobeSlot({
                 type="button"
                 aria-pressed={selected}
                 onClick={() => onChoose(slot.id, selected ? '' : item.assetId)}
-                className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition-colors ${
+                className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-colors cursor-pointer ${
                   selected
-                    ? 'border-primary/70 bg-primary/15 text-primary'
-                    : 'border-border/40 bg-black/25 text-foreground hover:border-primary/40'
+                    ? 'border-primary/70 bg-primary/15 text-primary shadow-sm'
+                    : 'border-border/40 bg-black/25 text-foreground hover:border-primary/40 hover:bg-black/40'
                 }`}
               >
-                <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[9px] ${selected ? 'border-primary bg-primary text-primary-foreground' : 'border-slate-500'}`}>
+                <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[9px] ${selected ? 'border-primary bg-primary text-primary-foreground font-bold' : 'border-slate-500'}`}>
                   {selected ? '✓' : ''}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-[10px] font-semibold">{getModelWardrobeItemLabel(item)}</span>
-                {selected && <span className="text-[8px] font-bold uppercase">On</span>}
+                {selected && <span className="text-[8px] font-bold uppercase text-primary">Equipped</span>}
               </button>
             );
           })}
@@ -122,6 +132,8 @@ function WardrobeSlot({
     </section>
   );
 }
+
+type SlotFilter = 'all' | 'head_face' | 'clothing' | 'gear';
 
 export function CharacterWardrobeSlots({
   name,
@@ -134,6 +146,7 @@ export function CharacterWardrobeSlots({
   wardrobePreviewAttachments,
   onProceed,
 }: CharacterWardrobeSlotsProps) {
+  const [activeFilter, setActiveFilter] = React.useState<SlotFilter>('all');
   const selectedIds = new Set(selectedWardrobeAssetIds);
   const groupedItems = new Map<string, ModelWardrobeItem[]>();
   for (const item of wardrobeOptions) {
@@ -162,44 +175,103 @@ export function CharacterWardrobeSlots({
     }
   });
 
+  const showHead = activeFilter === 'all' || activeFilter === 'head_face';
+  const showClothing = activeFilter === 'all' || activeFilter === 'clothing';
+  const showGear = activeFilter === 'all' || activeFilter === 'gear';
+
   return (
     <div className="mx-auto w-full max-w-7xl space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-center sm:text-left">
           <h2 className="text-lg font-black uppercase tracking-wider text-foreground">Choose clothing by slot</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Select your appearance and gear. Each slot updates the 3D model in real time.</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Select your appearance and gear. Each slot updates the 3D model in real time.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => setSelectedWardrobeAssetIds(wardrobeOptions.filter((item) => item.defaultVisible !== false).map((item) => item.assetId))}
-          className="rounded-lg border border-border/50 px-3 py-1.5 text-[10px] font-semibold text-muted-foreground hover:border-primary/50 hover:text-primary"
-        >
-          Reset to default outfit
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Category Filter Pills */}
+          <div className="flex items-center gap-1 rounded-xl border border-border/50 bg-black/40 p-1">
+            <button
+              type="button"
+              onClick={() => setActiveFilter('all')}
+              className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase transition-all ${
+                activeFilter === 'all'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              All Slots
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveFilter('head_face')}
+              className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase transition-all ${
+                activeFilter === 'head_face'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Head & Face ({headFaceSlots.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveFilter('clothing')}
+              className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase transition-all ${
+                activeFilter === 'clothing'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Clothing ({clothingSlots.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveFilter('gear')}
+              className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase transition-all ${
+                activeFilter === 'gear'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Weapons & Gear ({gearSlots.length})
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSelectedWardrobeAssetIds(wardrobeOptions.filter((item) => item.defaultVisible !== false).map((item) => item.assetId))}
+            className="rounded-lg border border-border/50 px-3 py-1.5 text-[10px] font-semibold text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+          >
+            Reset
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(250px,1.1fr)_minmax(380px,1.5fr)_minmax(250px,1.1fr)]">
-        {/* Left Column: Head & Appearance */}
-        <div className="order-2 space-y-3 xl:order-1">
-          <div className="flex items-center gap-1.5 px-1 text-[11px] font-black uppercase tracking-wider text-primary">
-            <span>Head & Appearance</span>
+      <div className={`grid grid-cols-1 items-start gap-4 ${
+        activeFilter === 'all'
+          ? 'xl:grid-cols-[minmax(250px,1.1fr)_minmax(380px,1.5fr)_minmax(250px,1.1fr)]'
+          : 'lg:grid-cols-[minmax(320px,1.2fr)_minmax(420px,1.8fr)]'
+      }`}>
+        {/* Left Column: Head & Appearance (or active section when filtered) */}
+        {showHead && (
+          <div className="order-2 space-y-3 xl:order-1">
+            <div className="flex items-center gap-1.5 px-1 text-[11px] font-black uppercase tracking-wider text-primary">
+              <span>Head & Appearance ({headFaceSlots.length})</span>
+            </div>
+            {headFaceSlots.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-border/40 p-4 text-center text-[10px] text-muted-foreground">
+                No head or face options configured for this archetype.
+              </p>
+            ) : (
+              headFaceSlots.map((slot) => (
+                <WardrobeSlot
+                  key={slot.id}
+                  slot={slot}
+                  items={groupedItems.get(slot.id) || []}
+                  selectedIds={selectedIds}
+                  onChoose={chooseItem}
+                />
+              ))
+            )}
           </div>
-          {headFaceSlots.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border/40 p-4 text-center text-[10px] text-muted-foreground">
-              No head or face options configured for this archetype.
-            </p>
-          ) : (
-            headFaceSlots.map((slot) => (
-              <WardrobeSlot
-                key={slot.id}
-                slot={slot}
-                items={groupedItems.get(slot.id) || []}
-                selectedIds={selectedIds}
-                onChoose={chooseItem}
-              />
-            ))
-          )}
-        </div>
+        )}
 
         {/* Center Column: 3D Model Viewport */}
         <div className="order-1 min-w-0 xl:order-2 space-y-2">
@@ -208,7 +280,9 @@ export function CharacterWardrobeSlots({
               <span className="block text-[9px] font-black uppercase tracking-[0.16em] text-primary">Body / Base</span>
               <span className="block truncate text-xs font-bold text-foreground">{name || 'Character'} · {classId}</span>
             </div>
-            <span className="shrink-0 text-[9px] text-muted-foreground font-mono">Base model</span>
+            <span className="shrink-0 text-[9px] text-muted-foreground font-mono">
+              {selectedWardrobeAssetIds.length} items equipped
+            </span>
           </div>
           <div className="overflow-hidden rounded-2xl border border-primary/50 bg-[#050b14] shadow-[0_0_28px_rgba(234,179,8,0.18)]">
             <ArchetypeModelPreview3D
@@ -222,46 +296,58 @@ export function CharacterWardrobeSlots({
         </div>
 
         {/* Right Column: Clothing & Gear */}
-        <div className="order-3 space-y-3">
-          <div className="flex items-center gap-1.5 px-1 text-[11px] font-black uppercase tracking-wider text-primary">
-            <span>Clothing & Gear</span>
+        {(showClothing || showGear) && (
+          <div className="order-3 space-y-3">
+            {showClothing && clothingSlots.length > 0 && (
+              <>
+                <div className="flex items-center gap-1.5 px-1 text-[11px] font-black uppercase tracking-wider text-primary">
+                  <span>Clothing ({clothingSlots.length})</span>
+                </div>
+                {clothingSlots.map((slot) => (
+                  <WardrobeSlot
+                    key={slot.id}
+                    slot={slot}
+                    items={groupedItems.get(slot.id) || []}
+                    selectedIds={selectedIds}
+                    onChoose={chooseItem}
+                  />
+                ))}
+              </>
+            )}
+
+            {showGear && gearSlots.length > 0 && (
+              <>
+                <div className="flex items-center gap-1.5 px-1 text-[11px] font-black uppercase tracking-wider text-primary pt-2">
+                  <span>Weapons & Gear ({gearSlots.length})</span>
+                </div>
+                {gearSlots.map((slot) => (
+                  <WardrobeSlot
+                    key={slot.id}
+                    slot={slot}
+                    items={groupedItems.get(slot.id) || []}
+                    selectedIds={selectedIds}
+                    onChoose={chooseItem}
+                  />
+                ))}
+              </>
+            )}
+
+            {clothingSlots.length === 0 && gearSlots.length === 0 && (
+              <p className="rounded-xl border border-dashed border-border/40 p-4 text-center text-[10px] text-muted-foreground">
+                No clothing or gear options configured for this archetype.
+              </p>
+            )}
           </div>
-          {clothingSlots.length === 0 && gearSlots.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border/40 p-4 text-center text-[10px] text-muted-foreground">
-              No clothing or gear options configured for this archetype.
-            </p>
-          ) : (
-            <>
-              {clothingSlots.map((slot) => (
-                <WardrobeSlot
-                  key={slot.id}
-                  slot={slot}
-                  items={groupedItems.get(slot.id) || []}
-                  selectedIds={selectedIds}
-                  onChoose={chooseItem}
-                />
-              ))}
-              {gearSlots.map((slot) => (
-                <WardrobeSlot
-                  key={slot.id}
-                  slot={slot}
-                  items={groupedItems.get(slot.id) || []}
-                  selectedIds={selectedIds}
-                  onChoose={chooseItem}
-                />
-              ))}
-            </>
-          )}
-        </div>
+        )}
       </div>
 
       {extraItems.length > 0 && (
         <div className="pt-2">
           <div className="mb-2 px-1 text-[11px] font-black uppercase tracking-wider text-primary">
-            <span>Additional Items</span>
+            <span>Additional Items ({extraItems.length})</span>
           </div>
           <WardrobeSlot
-            slot={{ id: 'other', label: 'Other Items', group: 'gear' }}
+            slot={{ id: 'other', label: 'Other Items', icon: '📦', group: 'gear' }}
             items={extraItems}
             selectedIds={selectedIds}
             onChoose={chooseItem}
@@ -279,7 +365,7 @@ export function CharacterWardrobeSlots({
         <button
           type="button"
           onClick={onProceed}
-          className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-[0_0_18px_rgba(234,179,8,0.2)] hover:bg-primary/90"
+          className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-[0_0_18px_rgba(234,179,8,0.2)] hover:bg-primary/90 cursor-pointer transition-all"
         >
           Confirm Appearance <ArrowRight size={14} />
         </button>

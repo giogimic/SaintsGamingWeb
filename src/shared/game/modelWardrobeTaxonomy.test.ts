@@ -120,9 +120,26 @@ describe('modelWardrobeTaxonomy & Slot Separation', () => {
     it('maps legacy slot aliases to canonical CharacterComponentCategory', () => {
       expect(getModelWardrobeSlotId({ assetId: 'item1', slot: 'eyewear' })).toBe('head_accessory');
       expect(getModelWardrobeSlotId({ assetId: 'item2', slot: 'headwear' })).toBe('hat');
-      expect(getModelWardrobeSlotId({ assetId: 'item3', slot: 'upper_body' })).toBe('clothing');
+      expect(getModelWardrobeSlotId({ assetId: 'item3', slot: 'upper_body' })).toBe('shirt');
       expect(getModelWardrobeSlotId({ assetId: 'item4', slot: 'legs' })).toBe('pants');
       expect(getModelWardrobeSlotId({ assetId: 'item5', slot: 'feet' })).toBe('shoes');
+    });
+
+    it('heals items even when explicit slot was assigned a broad category in legacy records', () => {
+      // An item stored with slot: 'face' that is actually sunglasses
+      expect(getModelWardrobeSlotId({ assetId: 'upload_01', source: '/uploads/sunglasses.glb', slot: 'face' })).toBe('head_accessory');
+      // An item stored with slot: 'face' that is actually a beard
+      expect(getModelWardrobeSlotId({ assetId: 'upload_02', label: 'Lumberjack Beard', slot: 'face' })).toBe('beard');
+      // An item stored with slot: 'clothing' that is actually a leather jacket
+      expect(getModelWardrobeSlotId({ assetId: 'upload_03', source: '/models/leather_jacket.glb', slot: 'clothing' })).toBe('jacket');
+      // An item stored with slot: 'clothing' that is actually boots
+      expect(getModelWardrobeSlotId({ assetId: 'upload_04', label: 'Steel Sabatons', slot: 'clothing' })).toBe('shoes');
+      // An item stored with slot: 'accessory' that is actually a wooden shield
+      expect(getModelWardrobeSlotId({ assetId: 'upload_05', source: '/uploads/wooden_shield.glb', slot: 'accessory' })).toBe('weapon_off');
+      // An item stored with slot: 'clothing' that is pauldrons / shoulder armor
+      expect(getModelWardrobeSlotId({ assetId: 'upload_06', label: 'Dragon Pauldrons', slot: 'clothing' })).toBe('jacket');
+      // An item stored with slot: 'accessory' that is a wolf tail
+      expect(getModelWardrobeSlotId({ assetId: 'upload_07', source: '/uploads/wolf_tail.glb', slot: 'accessory' })).toBe('back');
     });
 
     it('defaults wearable modular clothing to SKINNED and weapons/offhand to sockets', () => {
@@ -146,6 +163,53 @@ describe('modelWardrobeTaxonomy & Slot Separation', () => {
       expect(getModelWardrobeCategory({ assetId: 'bunny_ears_pink', label: 'Bunny Ears' })).toBe('head_accessory');
       expect(getModelWardrobeCategory({ assetId: 'gold_earrings', label: 'Gold Hoop Earrings' })).toBe('accessory');
       expect(getModelWardrobeCategory({ assetId: 'silver_earring_left', label: 'Silver Stud' })).toBe('accessory');
+    });
+
+    it('allows simultaneous equipping across all 17 canonical slots without any collisions', () => {
+      const fullOutfit = [
+        { assetId: 'char_face', label: 'Hero Face' },
+        { assetId: 'char_beard', label: 'Bushy Beard' },
+        { assetId: 'char_glasses', label: 'Sun Glasses' },
+        { assetId: 'char_mask', label: 'Bandana Mask' },
+        { assetId: 'char_hair', label: 'Messy Hair' },
+        { assetId: 'char_hat', label: 'Wizard Hat' },
+        { assetId: 'char_shirt', label: 'Linen Shirt' },
+        { assetId: 'char_jacket', label: 'Leather Coat' },
+        { assetId: 'char_clothing', label: 'Adventurer Suit' },
+        { assetId: 'char_pants', label: 'Denim Pants' },
+        { assetId: 'char_shoes', label: 'Leather Boots' },
+        { assetId: 'char_gloves', label: 'Riding Gloves' },
+        { assetId: 'char_back', label: 'Traveler Backpack' },
+        { assetId: 'char_belt', label: 'Sword Belt' },
+        { assetId: 'char_weapon_main', label: 'Iron Sword' },
+        { assetId: 'char_weapon_off', label: 'Kite Shield' },
+        { assetId: 'char_accessory', label: 'Gold Ring' },
+      ];
+
+      const resolvedSlots = fullOutfit.map(getModelWardrobeSlotId);
+      const uniqueSlots = new Set(resolvedSlots);
+
+      // Verify that every single piece gets its own distinct, non-overlapping slot
+      expect(uniqueSlots.size).toBe(17);
+      expect(resolvedSlots).toEqual([
+        'face',
+        'beard',
+        'head_accessory',
+        'mask',
+        'hair',
+        'hat',
+        'shirt',
+        'jacket',
+        'clothing',
+        'pants',
+        'shoes',
+        'gloves',
+        'back',
+        'belt',
+        'weapon_main',
+        'weapon_off',
+        'accessory',
+      ]);
     });
   });
 });

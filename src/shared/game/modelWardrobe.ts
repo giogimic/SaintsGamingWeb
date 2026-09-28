@@ -35,15 +35,29 @@ const CATEGORY_ALIASES: Record<string, CharacterComponentCategory> = {
   head_accessories: 'head_accessory',
   face_accessory: 'head_accessory',
   face_accessories: 'head_accessory',
+  cat_ears: 'head_accessory',
+  bunny_ears: 'head_accessory',
+  fox_ears: 'head_accessory',
+  wolf_ears: 'head_accessory',
+  animal_ears: 'head_accessory',
+  horns: 'head_accessory',
+  halo: 'head_accessory',
   mask: 'mask',
+  masks: 'mask',
   facemask: 'mask',
+  facemasks: 'mask',
   bandana: 'mask',
+  bandanas: 'mask',
   respirator: 'mask',
   veil: 'mask',
   face_cover: 'mask',
+  balaclava: 'mask',
   beard: 'beard',
+  beards: 'beard',
   mustache: 'beard',
+  mustaches: 'beard',
   moustache: 'beard',
+  moustaches: 'beard',
   goatee: 'beard',
   facial_hair: 'beard',
   stubble: 'beard',
@@ -52,18 +66,21 @@ const CATEGORY_ALIASES: Record<string, CharacterComponentCategory> = {
   head_base: 'face',
   skin: 'face',
   helmet: 'hat',
+  helmets: 'hat',
   cap: 'hat',
+  caps: 'hat',
   head: 'hat',
   headwear: 'hat',
   headgear: 'hat',
   crown: 'hat',
-  horns: 'hat',
   headband: 'hat',
   tiara: 'hat',
   hood: 'hat',
+  beanie: 'hat',
   wig: 'hair',
   hair: 'hair',
   hairstyle: 'hair',
+  hairstyles: 'hair',
   top: 'shirt',
   tops: 'shirt',
   upper_body: 'shirt',
@@ -77,12 +94,19 @@ const CATEGORY_ALIASES: Record<string, CharacterComponentCategory> = {
   tunic: 'shirt',
   undershirt: 'shirt',
   jacket: 'jacket',
+  jackets: 'jacket',
   coat: 'jacket',
+  coats: 'jacket',
   outerwear: 'jacket',
   cloak: 'jacket',
   robe: 'jacket',
+  robes: 'jacket',
   vest: 'jacket',
   hoodie: 'jacket',
+  pauldron: 'jacket',
+  pauldrons: 'jacket',
+  spaulder: 'jacket',
+  spaulders: 'jacket',
   armor: 'clothing',
   armour: 'clothing',
   clothing: 'clothing',
@@ -96,6 +120,7 @@ const CATEGORY_ALIASES: Record<string, CharacterComponentCategory> = {
   shorts: 'pants',
   skirt: 'pants',
   greaves: 'pants',
+  leggings: 'pants',
   boots: 'shoes',
   boot: 'shoes',
   shoes: 'shoes',
@@ -114,25 +139,39 @@ const CATEGORY_ALIASES: Record<string, CharacterComponentCategory> = {
   cape: 'back',
   backpack: 'back',
   wings: 'back',
+  wing: 'back',
   quiver: 'back',
+  tail: 'back',
+  tails: 'back',
   back: 'back',
   belt: 'belt',
   waist: 'belt',
   sash: 'belt',
+  holster: 'belt',
   weapon: 'weapon_main',
   weapons: 'weapon_main',
   sword: 'weapon_main',
   blade: 'weapon_main',
   axe: 'weapon_main',
   bow: 'weapon_main',
+  dagger: 'weapon_main',
+  staff: 'weapon_main',
   shield: 'weapon_off',
+  shields: 'weapon_off',
+  buckler: 'weapon_off',
   offhand: 'weapon_off',
+  tome: 'weapon_off',
+  orb: 'weapon_off',
+  lantern: 'weapon_off',
   jewelry: 'accessory',
   jewellery: 'accessory',
   necklace: 'accessory',
   ring: 'accessory',
   earring: 'accessory',
   earrings: 'accessory',
+  bracelet: 'accessory',
+  scarf: 'accessory',
+  choker: 'accessory',
 };
 
 function normalizeCategoryCandidate(value: unknown): CharacterComponentCategory | undefined {
@@ -148,52 +187,70 @@ export function getModelWardrobeCategory(item: ModelWardrobeItem): CharacterComp
     || normalizeCategoryCandidate(item.componentCategory)
     || normalizeCategoryCandidate(item.slot);
 
+  // Gather descriptive text from label, name, assetId, source, modelUrl, and metadata name/label
+  // Do NOT include item.slot or item.category here so broad category tags don't self-match in pattern testing!
+  const textSources = [
+    typeof item.label === 'string' ? item.label : '',
+    typeof item.name === 'string' ? item.name : '',
+    typeof item.assetId === 'string' ? item.assetId : '',
+    typeof item.source === 'string' ? item.source : '',
+    typeof item.modelUrl === 'string' ? item.modelUrl : '',
+    typeof item.metadata === 'object' && item.metadata
+      ? [
+          (item.metadata as any).name,
+          (item.metadata as any).label,
+        ].filter(Boolean).join(' ')
+      : '',
+  ].filter(Boolean).join(' ');
+
   // Sanitize non-alphanumeric characters into spaces so \b word boundaries match underscored identifiers (e.g. male_face_01 -> male face 01)
-  const descriptiveText = ` ${item.label || ''} ${item.assetId || ''} ${item.slot || ''} `
+  const descriptiveText = ` ${textSources} `
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ');
 
   // 1. High-specificity semantic pattern matching
+  // Specific pieces evaluate before broad sets (e.g. shoes, pants, shirts before fullbody clothing)
   const patterns: Array<[RegExp, CharacterComponentCategory]> = [
-    // Eyewear / Glasses (check face accessory and costume ears here so they don't get swallowed by face)
-    [/\b(glasses|sunglasses|shades|eyewear|goggles|spectacles|monocle|eyepatch|face accessory|face accessories|headphone|headphones|visor|specs|cat ears|bunny ears|fox ears|wolf ears|animal ears)\b/, 'head_accessory'],
+    // Eyewear / Glasses (check face accessory, headphones, and costume ears here so they don't get swallowed by face)
+    [/\b(glasses|sunglasses|shades|eyewear|goggles|spectacles|monocle|eyepatch|face accessory|face accessories|headphone|headphones|visor|visors|specs|cat ears|bunny ears|fox ears|wolf ears|animal ears|horns|ram horns|demon horns|dragon horns|halo|antenna|antennae)\b/, 'head_accessory'],
     // Jewelry & Small Accessories (evaluated before face so earrings aren't trapped in face)
-    [/\b(earring|earrings|necklace|amulet|pendant|bracelet|ring|jewelry|jewellery|badge)\b/, 'accessory'],
+    [/\b(earring|earrings|necklace|necklaces|amulet|amulets|pendant|pendants|bracelet|bracelets|ring|rings|jewelry|jewellery|badge|badges|choker|chokers|scarf|scarves|necktie|collar|brooch|pin)\b/, 'accessory'],
     // Masks & Face Covers
-    [/\b(mask|masks|bandana|respirator|veil|facemask|face mask|face cover|balaclava|mouth cover)\b/, 'mask'],
+    [/\b(mask|masks|bandana|bandanas|respirator|respirators|veil|veils|facemask|facemasks|face mask|face cover|balaclava|balaclavas|mouth cover|gas mask|gasmask)\b/, 'mask'],
     // Facial Hair / Beard
-    [/\b(beard|mustache|moustache|goatee|whiskers|facial hair|stubble|sideburns)\b/, 'beard'],
+    [/\b(beard|beards|mustache|mustaches|moustache|moustaches|goatee|goatees|whiskers|facial hair|stubble|sideburns|muttonchops)\b/, 'beard'],
     // Hair / Hairstyles
-    [/\b(hair|wig|ponytail|braids|dreads|afro|fade|buzzcut|curls|bun|pigtails|bangs|topknot)\b/, 'hair'],
+    [/\b(hair|wig|wigs|ponytail|ponytails|braids|dreads|afro|fade|buzzcut|curls|bun|buns|pigtails|bangs|topknot|undercut|dreadlocks|cornrows|locks|mohawk|pompadour)\b/, 'hair'],
     // Headwear / Hats
-    [/\b(helmet|hat|cap|crown|hood|beanie|headband|tiara|beret|fedora|sombrero|turban|circlet)\b/, 'hat'],
+    [/\b(helmet|helmets|hat|hats|cap|caps|crown|crowns|hood|hoods|beanie|beanies|headband|headbands|tiara|tiaras|beret|berets|fedora|fedoras|sombrero|turban|turbans|circlet|circlets|cowl)\b/, 'hat'],
     // Face Mesh / Features (tested after glasses, earrings, mask, and beard)
-    [/\b(face|head base|eye color|eyes|eyeballs?|nose|mouth|teeth|tongue|lips|ears|head skin|facial features)\b/, 'face'],
-    // Outerwear / Jackets / Robes
-    [/\b(jacket|coat|outerwear|cloak|robe|vest|blazer|cardigan|hoodie|parka|overcoat|sweater|windbreaker|duster|trenchcoat)\b/, 'jacket'],
-    // Shirts / Tops / Chest Armor
-    [/\b(shirt|t shirt|top|tunic|undershirt|blouse|tank|corset|chest|chestplate|breastplate|cuirass|hauberk|crop top|polo|jersey)\b/, 'shirt'],
-    // Full Outfits / Armor
-    [/\b(clothing|outfit|costume|suit|fullbody|overalls?|jumpsuit|armor|armour|body)\b/, 'clothing'],
-    // Pants / Legs
-    [/\b(pants|pant|trousers|leggings|shorts|skirt|jeans|bottoms|greaves|kilt|sweatpants|chaps)\b/, 'pants'],
+    [/\b(face|faces|head base|eye color|eyes|eyeballs?|nose|mouth|teeth|tongue|lips|head skin|facial features)\b/, 'face'],
     // Shoes / Footwear
-    [/\b(shoe|shoes|boot|boots|sandal|sandals|sneaker|sneakers|footwear|slippers|sabaton|sabatons|loafers|heels)\b/, 'shoes'],
+    [/\b(shoe|shoes|boot|boots|sandal|sandals|sneaker|sneakers|footwear|slippers|sabaton|sabatons|loafers|heels|cleats|foot armor)\b/, 'shoes'],
     // Gloves / Hands
-    [/\b(glove|gloves|gauntlet|gauntlets|bracer|bracers|mittens|hand armor|wrist)\b/, 'gloves'],
-    // Back / Cape / Backpack
-    [/\b(cape|backpack|wings|quiver|back item|back mount|scabbard)\b/, 'back'],
-    // Belts / Waist
-    [/\b(belt|waist|sash|buckle|girdle)\b/, 'belt'],
+    [/\b(glove|gloves|gauntlet|gauntlets|bracer|bracers|mittens|hand armor|wrist|wristband|wristbands|vambrace|vambraces)\b/, 'gloves'],
+    // Pants / Legs
+    [/\b(pants|pant|trousers|leggings|shorts|skirt|skirts|jeans|bottoms|greaves|kilt|kilts|sweatpants|chaps|tights|slacks|breeches|leg armor)\b/, 'pants'],
+    // Back / Cape / Backpack / Wings / Tails
+    [/\b(cape|capes|backpack|backpacks|wings|wing|quiver|quivers|back item|back mount|scabbard|scabbards|tail|tails|cat tail|fox tail|wolf tail|devil tail|dragon tail|jetpack)\b/, 'back'],
+    // Belts / Waist / Holster
+    [/\b(belt|belts|waist|sash|sashes|buckle|buckles|girdle|girdles|holster|holsters|hip pouch|fanny pack|toolbelt)\b/, 'belt'],
     // Weapons / Offhand
-    [/\b(shield|offhand|buckler|tome|orb|lantern)\b/, 'weapon_off'],
-    [/\b(weapon|sword|blade|axe|mace|hammer|staff|wand|bow|dagger|gun|pistol|rifle|spear|halberd|scythe|crossbow)\b/, 'weapon_main'],
-    // Accessories / Jewelry
-    [/\b(accessory|accessories|jewelry|jewellery|ring|necklace|amulet|earring|earrings|pendant|bracelet|badge)\b/, 'accessory'],
+    [/\b(shield|shields|buckler|bucklers|offhand|off hand|tome|tomes|orb|orbs|lantern|lanterns|grimoire|grimoires|parrying dagger)\b/, 'weapon_off'],
+    // Weapons / Main Hand
+    [/\b(weapon|weapons|sword|swords|blade|blades|axe|axes|mace|maces|hammer|hammers|staff|staffs|staves|wand|wands|bow|bows|dagger|daggers|gun|guns|pistol|pistols|rifle|rifles|spear|spears|halberd|halberds|scythe|scythes|crossbow|crossbows|katana|greatsword|claymore|rapier|saber|sabre)\b/, 'weapon_main'],
+    // Outerwear / Jackets / Robes / Pauldrons
+    [/\b(jacket|jackets|coat|coats|outerwear|cloak|cloaks|robe|robes|vest|vests|blazer|blazers|cardigan|cardigans|hoodie|hoodies|parka|parkas|overcoat|overcoats|sweater|sweaters|windbreaker|windbreakers|duster|dusters|trenchcoat|trenchcoats|poncho|ponchos|pauldron|pauldrons|spaulder|spaulders|shoulderpad|shoulderpads|shoulder armor|mantle)\b/, 'jacket'],
+    // Shirts / Tops / Chest Armor
+    [/\b(shirt|shirts|t shirt|tshirt|tshirts|top|tops|tunic|tunics|undershirt|undershirts|blouse|blouses|tank|tank top|corset|corsets|chest|chestplate|chestplates|breastplate|breastplates|cuirass|cuirasses|hauberk|crop top|croptop|polo|jersey|jerseys|singlet)\b/, 'shirt'],
+    // Full Outfits / Armor Sets (evaluated after individual clothing pieces)
+    [/\b(clothing|outfit|outfits|costume|costumes|suit|suits|fullbody|overalls?|jumpsuit|jumpsuits|armor set)\b/, 'clothing'],
+    // Accessories / Jewelry fallback
+    [/\b(accessory|accessories|jewelry|jewellery|ring|rings|necklace|necklaces|amulet|amulets|earring|earrings|pendant|pendants|bracelet|bracelets|badge|badges)\b/, 'accessory'],
   ];
 
-  // If explicitCategory is broad/generic (e.g. legacy tag like 'face', 'hair', 'shirt', 'accessory', or 'other'),
-  // let high-specificity keywords override it so glasses aren't trapped in 'face', beards in 'hair', etc.
+  // If explicitCategory is broad/generic (e.g. legacy tag like 'face', 'hair', 'hat', 'shirt', 'clothing', 'accessory', or 'other'),
+  // let high-specificity keywords override it so glasses aren't trapped in 'face', beards in 'hair', jackets in 'clothing', etc.
   const isBroadCategory = !explicitCategory
     || explicitCategory === 'other'
     || explicitCategory === 'face'
@@ -220,17 +277,8 @@ export function getModelWardrobeCategory(item: ModelWardrobeItem): CharacterComp
   return 'other';
 }
 
+/** Resolves an item to its authoritative visual slot ID. */
 export function getModelWardrobeSlotId(item: ModelWardrobeItem): CharacterComponentCategory {
-  if (item.slot) {
-    const norm = item.slot.trim().toLowerCase().replace(/[\s-]+/g, '_');
-    if (norm === 'eyewear') return 'head_accessory';
-    if (norm === 'headwear') return 'hat';
-    if (norm === 'upper_body' || norm === 'upper-body') return 'clothing';
-    if (norm === 'legs') return 'pants';
-    if (norm === 'feet') return 'shoes';
-    if (isCharacterComponentCategory(norm)) return norm;
-  }
-
   return getModelWardrobeCategory(item);
 }
 

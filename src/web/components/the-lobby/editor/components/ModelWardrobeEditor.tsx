@@ -61,6 +61,7 @@ export function ModelWardrobeEditor({
   const [isLoading, setIsLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [showAddedOnly, setShowAddedOnly] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'HEAD_FACE' | 'CLOTHING' | 'GEAR'>('ALL');
 
   useEffect(() => {
     let cancelled = false;
@@ -123,10 +124,21 @@ export function ModelWardrobeEditor({
   const filteredCatalog = useMemo(() => {
     const query = search.trim().toLowerCase();
     return catalog.filter((asset) => {
-      const matchesSearch = !query || `${displayName(asset)} ${asset.componentCategory || ''}`.toLowerCase().includes(query);
-      return matchesSearch && (!showAddedOnly || configuredById.has(asset.id));
+      const cat = getModelWardrobeCategory({
+        assetId: asset.id,
+        label: displayName(asset),
+        category: asset.componentCategory || asset.metadata?.componentCategory || asset.metadata?.cat || undefined,
+      });
+      const slotGroup = ['face', 'hair', 'beard', 'head_accessory', 'mask', 'hat'].includes(cat)
+        ? 'HEAD_FACE'
+        : ['shirt', 'jacket', 'clothing', 'pants', 'shoes'].includes(cat)
+          ? 'CLOTHING'
+          : 'GEAR';
+      const matchesGroup = categoryFilter === 'ALL' || slotGroup === categoryFilter;
+      const matchesSearch = !query || `${displayName(asset)} ${asset.componentCategory || ''} ${cat}`.toLowerCase().includes(query);
+      return matchesGroup && matchesSearch && (!showAddedOnly || configuredById.has(asset.id));
     });
-  }, [catalog, search, showAddedOnly, configuredById]);
+  }, [catalog, search, showAddedOnly, configuredById, categoryFilter]);
   const bulkAssets = relatedIds.length > 0
     ? catalog.filter((asset) => relatedIds.includes(asset.id))
     : search.trim() ? filteredCatalog : [];
@@ -298,15 +310,47 @@ export function ModelWardrobeEditor({
       ) : (
         <>
         {catalog.length > 0 && (
-          <div className="flex items-center justify-between gap-2 text-[9px] text-slate-400">
-            <span>{filteredCatalog.length} compatible items shown · {value.length} added to this archetype</span>
-            <button
-              type="button"
-              onClick={() => setShowAddedOnly((current) => !current)}
-              className={`rounded border px-2 py-1 font-semibold ${showAddedOnly ? 'border-cyan-500/60 text-cyan-200' : 'border-slate-700 text-slate-400 hover:text-slate-200'}`}
-            >
-              {showAddedOnly ? 'Show all compatible' : 'Show added only'}
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[9px] text-slate-400">
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setCategoryFilter('ALL')}
+                className={`rounded px-2 py-0.5 font-semibold transition-colors ${categoryFilter === 'ALL' ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200'}`}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                onClick={() => setCategoryFilter('HEAD_FACE')}
+                className={`rounded px-2 py-0.5 font-semibold transition-colors ${categoryFilter === 'HEAD_FACE' ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200'}`}
+              >
+                Head / Face
+              </button>
+              <button
+                type="button"
+                onClick={() => setCategoryFilter('CLOTHING')}
+                className={`rounded px-2 py-0.5 font-semibold transition-colors ${categoryFilter === 'CLOTHING' ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200'}`}
+              >
+                Clothing
+              </button>
+              <button
+                type="button"
+                onClick={() => setCategoryFilter('GEAR')}
+                className={`rounded px-2 py-0.5 font-semibold transition-colors ${categoryFilter === 'GEAR' ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200'}`}
+              >
+                Gear / Weapons
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>{filteredCatalog.length} compatible items</span>
+              <button
+                type="button"
+                onClick={() => setShowAddedOnly((current) => !current)}
+                className={`rounded border px-2 py-0.5 font-semibold ${showAddedOnly ? 'border-cyan-500/60 text-cyan-200 bg-cyan-950/20' : 'border-slate-700 text-slate-400 hover:text-slate-200'}`}
+              >
+                {showAddedOnly ? 'Show all' : 'Added only'}
+              </button>
+            </div>
           </div>
         )}
         <div className="max-h-72 space-y-1 overflow-y-auto pr-1">
