@@ -180,9 +180,12 @@ export function detectAssetTaxonomy(
   let pieceLabel = 'Modular Piece';
 
   // Specific facial accessories must precede generic face/head base meshes so face_glasses or face_mask do not map to face
-  if (/(glasses|sunglasses|shades|goggles|spectacles|monocle|eyepatch|eyewear|headphone|headphones|face_?accessories|face_?accessory|visor|specs)/i.test(lower)) {
+  if (/(glasses|sunglasses|shades|goggles|spectacles|monocle|eyepatch|eyewear|headphone|headphones|face_?accessories|face_?accessory|visor|specs|cat_?ears|bunny_?ears|fox_?ears|wolf_?ears|animal_?ears)/i.test(lower)) {
     modularSlot = 'head_accessory';
     pieceLabel = 'Head Accessory / Glasses';
+  } else if (/(earring|earrings|jewelry|jewellery|ring|necklace|amulet|pendant|badge)/i.test(lower)) {
+    modularSlot = 'accessory';
+    pieceLabel = 'Modular Accessory / Jewelry';
   } else if (/(mask|masks|bandana|respirator|veil|facemask|face_?cover|face_?mask|balaclava|mouth_?cover)/i.test(lower)) {
     modularSlot = 'mask';
     pieceLabel = 'Face Mask / Bandana';
@@ -195,7 +198,7 @@ export function detectAssetTaxonomy(
   } else if (/(hat|helmet|cap|hood|crown|horns|headband|tiara|beret|fedora|beanie|sombrero|turban|circlet)/i.test(lower)) {
     modularSlot = 'hat';
     pieceLabel = 'Modular Headwear / Helmet';
-  } else if (/(face|head_base|eye_color|eyes|eyeball|mouth|teeth|tongue|lips|nose|ears|head_skin|facial_features)/i.test(lower)) {
+  } else if (/(face|head_base|eye_color|eyes|eyeball|mouth|teeth|tongue|lips|nose|head_skin|facial_features|(\b|_)ears(\b|_))/i.test(lower) && !/(earring|cat_?ears|bunny_?ears)/i.test(lower)) {
     modularSlot = 'face';
     pieceLabel = 'Modular Face / Head';
   } else if (/(jacket|coat|hoodie|vest|robe|blazer|cardigan|parka|cloak|overcoat|sweater|windbreaker|duster|trenchcoat)/i.test(lower)) {

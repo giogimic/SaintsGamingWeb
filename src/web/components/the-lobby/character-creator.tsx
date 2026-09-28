@@ -1194,11 +1194,15 @@ export function CharacterCreator({
                                   <input
                                     type="checkbox"
                                     checked={checked}
-                                    onChange={(event) => setSelectedWardrobeAssetIds(
-                                      event.target.checked
-                                        ? [...selectedWardrobeAssetIds, item.assetId]
-                                        : selectedWardrobeAssetIds.filter((id) => id !== item.assetId),
-                                    )}
+                                    onChange={(event) => {
+                                      const groupItemIds = new Set(group.items.map((i) => i.assetId));
+                                      const baseIds = selectedWardrobeAssetIds.filter((id) => !groupItemIds.has(id));
+                                      setSelectedWardrobeAssetIds(
+                                        event.target.checked
+                                          ? [...baseIds, item.assetId]
+                                          : baseIds
+                                      );
+                                    }}
                                     className="rounded border-border bg-black text-primary focus:ring-primary"
                                   />
                                   <span className="min-w-0 flex-1">

@@ -303,6 +303,12 @@ function CompositeCharacter({
         baseScene.add(attScene);
       }
     });
+
+    return () => {
+      loadedAttachments.forEach(({ scene: attScene }) => {
+        attScene.parent?.remove(attScene);
+      });
+    };
   }, [baseScene, loadedAttachments]);
 
   useFrame((_, delta) => {

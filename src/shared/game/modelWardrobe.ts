@@ -155,8 +155,10 @@ export function getModelWardrobeCategory(item: ModelWardrobeItem): CharacterComp
 
   // 1. High-specificity semantic pattern matching
   const patterns: Array<[RegExp, CharacterComponentCategory]> = [
-    // Eyewear / Glasses (check face accessory here so it doesn't get swallowed by face)
-    [/\b(glasses|sunglasses|shades|eyewear|goggles|spectacles|monocle|eyepatch|face accessory|face accessories|headphone|headphones|visor|specs)\b/, 'head_accessory'],
+    // Eyewear / Glasses (check face accessory and costume ears here so they don't get swallowed by face)
+    [/\b(glasses|sunglasses|shades|eyewear|goggles|spectacles|monocle|eyepatch|face accessory|face accessories|headphone|headphones|visor|specs|cat ears|bunny ears|fox ears|wolf ears|animal ears)\b/, 'head_accessory'],
+    // Jewelry & Small Accessories (evaluated before face so earrings aren't trapped in face)
+    [/\b(earring|earrings|necklace|amulet|pendant|bracelet|ring|jewelry|jewellery|badge)\b/, 'accessory'],
     // Masks & Face Covers
     [/\b(mask|masks|bandana|respirator|veil|facemask|face mask|face cover|balaclava|mouth cover)\b/, 'mask'],
     // Facial Hair / Beard
@@ -165,7 +167,7 @@ export function getModelWardrobeCategory(item: ModelWardrobeItem): CharacterComp
     [/\b(hair|wig|ponytail|braids|dreads|afro|fade|buzzcut|curls|bun|pigtails|bangs|topknot)\b/, 'hair'],
     // Headwear / Hats
     [/\b(helmet|hat|cap|crown|hood|beanie|headband|tiara|beret|fedora|sombrero|turban|circlet)\b/, 'hat'],
-    // Face Mesh / Features (tested after glasses, mask, and beard)
+    // Face Mesh / Features (tested after glasses, earrings, mask, and beard)
     [/\b(face|head base|eye color|eyes|eyeballs?|nose|mouth|teeth|tongue|lips|ears|head skin|facial features)\b/, 'face'],
     // Outerwear / Jackets / Robes
     [/\b(jacket|coat|outerwear|cloak|robe|vest|blazer|cardigan|hoodie|parka|overcoat|sweater|windbreaker|duster|trenchcoat)\b/, 'jacket'],

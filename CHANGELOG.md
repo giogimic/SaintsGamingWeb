@@ -1,3 +1,10 @@
+## [2.2.048] - 2026-09-28
+- **Category Mutual Exclusion, Jewelry & Costume Ear Taxonomy Disambiguation & Sub-Model Cleanup**:
+  - **Category Mutual Exclusion in 2D Creator Views (`character-creator.tsx` & `AppearanceCustomizer.tsx`)**: Fixed a multi-selection bug where checking a wardrobe option in 2D fallback mode appended the new item without evicting other selections from the same category. Selecting an item now deterministically deselects conflicting items in that category, preventing multi-face, multi-hair, or multi-pants mesh clipping.
+  - **Jewelry & Costume Ear Taxonomy Disambiguation (`assetTaxonomy.ts`, `modelWardrobe.ts`)**: Resolved a taxonomy flaw where items like `gold_earrings` and costume headwear like `cat_ears` / `bunny_ears` were incorrectly captured as human face meshes due to substring matching on `ears`. Jewelry and earrings are now evaluated into `accessory` before face meshes, and costume animal ears are mapped to `head_accessory`.
+  - **3D Attachment Cleanup Lifecycle (`ArchetypeModelPreview3D.tsx`)**: Added a cleanup return function to the Three.js sub-model attachment effect, guaranteeing previously attached sockets and skinned sub-models are completely unparented when switching equipment or toggling visibility.
+  - **Unit Testing Expansion (`modelWardrobeTaxonomy.test.ts`)**: Added unit tests verifying that animal ears resolve to `head_accessory` and earrings resolve to `accessory` without colliding with the `face` slot.
+
 ## [2.2.047] - 2026-09-28
 - **Studio Wardrobe Attachment Auto-Assignment, Idle Animation Auto-Selection & Dynamic Slot Safety**:
   - **Studio Wardrobe Attachment & Socket Auto-Detection (`ModelWardrobeEditor.tsx`)**: Upgraded single-item toggles and bulk additions in the Studio wardrobe manager to automatically detect and assign `attachmentMode` (`SKINNED` for wearables vs. `RIGID_SOCKET` for weapons, shields, and props) and canonical sockets (`RightHandMount`, `LeftHandMount`, `ChestMount`) via `getDefaultModelWardrobeAttachmentMode` and `getDefaultModelWardrobeSocket`, eliminating manual configuration mistakes.

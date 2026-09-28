@@ -140,6 +140,13 @@ describe('modelWardrobeTaxonomy & Slot Separation', () => {
       expect(getModelWardrobeCategory({ assetId: 'shades_test', category: 'shades' })).toBe('head_accessory');
       expect(getModelWardrobeCategory({ assetId: 'sunglasses_test', category: 'sunglasses' })).toBe('head_accessory');
     });
+
+    it('resolves animal ears to head_accessory and earrings to accessory without colliding with face', () => {
+      expect(getModelWardrobeCategory({ assetId: 'cat_ears_01', label: 'Cat Ears Headband' })).toBe('head_accessory');
+      expect(getModelWardrobeCategory({ assetId: 'bunny_ears_pink', label: 'Bunny Ears' })).toBe('head_accessory');
+      expect(getModelWardrobeCategory({ assetId: 'gold_earrings', label: 'Gold Hoop Earrings' })).toBe('accessory');
+      expect(getModelWardrobeCategory({ assetId: 'silver_earring_left', label: 'Silver Stud' })).toBe('accessory');
+    });
   });
 });
 
