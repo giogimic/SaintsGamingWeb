@@ -39,7 +39,7 @@ import {
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 import { MidnightTropicalBackground } from '@/client/ui/shared/MidnightTropicalBackground';
 import { useTheme } from 'next-themes';
-import { applyCharacterCreationWardrobe, getModelWardrobeCategoryLabel, getModelWardrobeItemLabel, parseModelWardrobeItems } from '@/shared/game/modelWardrobe';
+import { applyCharacterCreationWardrobe, getModelWardrobeCategoryLabel, getModelWardrobeItemLabel, groupModelWardrobeItems, parseModelWardrobeItems } from '@/shared/game/modelWardrobe';
 import { getStarterPerkEffectId } from '@/shared/game/starterPerks';
 import type { WorldModelValue } from './editor/components/WorldModelSelector';
 import { ArchetypeModelPreview3D } from './editor/hero-studio/ArchetypeModelPreview3D';
@@ -204,15 +204,24 @@ export function CharacterCreator({
 
   const is3DModel = parsedVisualData?.worldModel?.type === '3D Model' || parsedVisualData?.type === '3D Model';
   const wardrobeItems = useMemo(() => parseModelWardrobeItems(visualData), [visualData]);
-  const wardrobeOptions = wardrobeItems.filter((item) => item.availableInCharacterCreation === true);
+  const explicitWardrobeOptions = useMemo(
+    () => wardrobeItems.filter((item) => item.availableInCharacterCreation === true),
+    [wardrobeItems]
+  );
+  const wardrobeOptions = explicitWardrobeOptions.length > 0 ? explicitWardrobeOptions : wardrobeItems;
   const modelAssetId = parsedVisualData?.worldModel?.type === '3D Model'
     ? parsedVisualData.worldModel.assetId
     : parsedVisualData?.type === '3D Model' ? parsedVisualData.assetId : undefined;
-  const wardrobePreviewAttachments = useMemo(() => wardrobeItems.filter((item) =>
-    item.availableInCharacterCreation === true
-      ? selectedWardrobeAssetIds.includes(item.assetId)
-      : item.defaultVisible !== false,
-  ) as WorldModelValue[], [wardrobeItems, selectedWardrobeAssetIds]);
+  const wardrobePreviewAttachments = useMemo(() => {
+    const hasCreationTagged = wardrobeItems.some((item) => item.availableInCharacterCreation === true);
+    const activeIds = new Set(selectedWardrobeAssetIds);
+    return wardrobeItems.filter((item) => {
+      if (hasCreationTagged && item.availableInCharacterCreation === false) {
+        return item.defaultVisible !== false;
+      }
+      return activeIds.has(item.assetId);
+    }) as WorldModelValue[];
+  }, [wardrobeItems, selectedWardrobeAssetIds]);
   const isModular = parsedVisualData 
     ? !!(parsedVisualData.worldModel?.isModular || parsedVisualData.isModular) || wardrobeOptions.length > 0
     : detectPresentationMode(assetProfileId, allSprites) === 'modular';
@@ -318,7 +327,12 @@ export function CharacterCreator({
     setAppearanceTab(heroHas3DModel ? 'WARDROBE' : 'BASE');
     setassetProfileId(hero.assetProfileId);
     setVisualData(hero.visualData || '[]');
-    setSelectedWardrobeAssetIds(parseModelWardrobeItems(hero.visualData).filter((item) => item.availableInCharacterCreation && item.defaultVisible !== false).map((item) => item.assetId));
+    const initialWardrobe = parseModelWardrobeItems(hero.visualData);
+    const hasCreationTagged = initialWardrobe.some((item) => item.availableInCharacterCreation);
+    const defaultVisibleIds = initialWardrobe
+      .filter((item) => (hasCreationTagged ? item.availableInCharacterCreation : true) && item.defaultVisible !== false)
+      .map((item) => item.assetId);
+    setSelectedWardrobeAssetIds(defaultVisibleIds);
     setClassId(hero.classId);
     setSelectedHeroSlug(hero.slug);
     setStep('NAME');
@@ -347,7 +361,12 @@ export function CharacterCreator({
     setAppearanceTab(heroHas3DModel ? 'WARDROBE' : 'BASE');
     setassetProfileId(hero.assetProfileId);
     setVisualData(hero.visualData || '[]');
-    setSelectedWardrobeAssetIds(parseModelWardrobeItems(hero.visualData).filter((item) => item.availableInCharacterCreation && item.defaultVisible !== false).map((item) => item.assetId));
+    const rolledWardrobe = parseModelWardrobeItems(hero.visualData);
+    const hasRolledCreationTagged = rolledWardrobe.some((item) => item.availableInCharacterCreation);
+    const rolledVisibleIds = rolledWardrobe
+      .filter((item) => (hasRolledCreationTagged ? item.availableInCharacterCreation : true) && item.defaultVisible !== false)
+      .map((item) => item.assetId);
+    setSelectedWardrobeAssetIds(rolledVisibleIds);
     setClassId(hero.classId);
     setSelectedHeroSlug(hero.slug);
     setName(`${pick}${num}`);
@@ -1148,7 +1167,7 @@ export function CharacterCreator({
                   )}
 
                   {appearanceTab === 'WARDROBE' && (
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-xs text-muted-foreground">Choose the clothing and gear to wear.</p>
                         <button
@@ -1162,28 +1181,36 @@ export function CharacterCreator({
                       {wardrobeOptions.length === 0 && (
                         <p className="rounded-lg border border-dashed border-border/50 p-4 text-center text-xs text-muted-foreground">No clothing options are configured for this model yet.</p>
                       )}
-                      {wardrobeOptions.map((item) => {
-                        const checked = selectedWardrobeAssetIds.includes(item.assetId);
-                        return (
-                          <label key={item.assetId} className="flex cursor-pointer items-center gap-3 rounded-xl border border-border/50 bg-card/50 p-3 hover:border-primary/50">
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={(event) => setSelectedWardrobeAssetIds(
-                                event.target.checked
-                                  ? [...selectedWardrobeAssetIds, item.assetId]
-                                  : selectedWardrobeAssetIds.filter((id) => id !== item.assetId),
-                              )}
-                              className="rounded border-border bg-black text-primary focus:ring-primary"
-                            />
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate text-sm font-semibold text-foreground">{getModelWardrobeItemLabel(item)}</span>
-                              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{getModelWardrobeCategoryLabel(item)}</span>
-                            </span>
-                            <span className={`text-[10px] font-bold uppercase ${checked ? 'text-primary' : 'text-muted-foreground'}`}>{checked ? 'Worn' : 'Not worn'}</span>
-                          </label>
-                        );
-                      })}
+                      {groupModelWardrobeItems(wardrobeOptions).map((group) => (
+                        <div key={group.category} className="space-y-1.5 rounded-xl border border-border/40 bg-black/30 p-2.5">
+                          <div className="px-1 text-[10px] font-black uppercase tracking-wider text-primary">
+                            {group.label}
+                          </div>
+                          <div className="space-y-1">
+                            {group.items.map((item) => {
+                              const checked = selectedWardrobeAssetIds.includes(item.assetId);
+                              return (
+                                <label key={item.assetId} className="flex cursor-pointer items-center gap-3 rounded-lg border border-border/40 bg-card/40 p-2 hover:border-primary/50 transition-colors">
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={(event) => setSelectedWardrobeAssetIds(
+                                      event.target.checked
+                                        ? [...selectedWardrobeAssetIds, item.assetId]
+                                        : selectedWardrobeAssetIds.filter((id) => id !== item.assetId),
+                                    )}
+                                    className="rounded border-border bg-black text-primary focus:ring-primary"
+                                  />
+                                  <span className="min-w-0 flex-1">
+                                    <span className="block truncate text-xs font-semibold text-foreground">{getModelWardrobeItemLabel(item)}</span>
+                                  </span>
+                                  <span className={`text-[9px] font-bold uppercase ${checked ? 'text-primary' : 'text-muted-foreground'}`}>{checked ? 'Worn' : 'Off'}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>

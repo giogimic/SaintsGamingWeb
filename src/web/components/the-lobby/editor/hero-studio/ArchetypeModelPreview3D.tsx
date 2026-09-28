@@ -255,9 +255,12 @@ function CompositeCharacter({
     loadedAttachments.forEach((sub) => {
       const { scene: attScene, attachment } = sub;
       const attachmentMode = attachment.attachmentMode || getDefaultModelWardrobeAttachmentMode(attachment as any);
+      let attachedToSkeleton = false;
+
       if (attachmentMode === 'SKINNED' || ('isModular' in attachment && Boolean((attachment as any).isModular))) {
         attScene.traverse((child) => {
           if ((child as THREE.SkinnedMesh).isSkinnedMesh && baseSkeleton) {
+            attachedToSkeleton = true;
             const clothingMesh = child as THREE.SkinnedMesh;
             const newBones = clothingMesh.skeleton.bones.map((clothingBone) => {
               const normClothing = normalizeBoneName(clothingBone.name);
@@ -270,8 +273,10 @@ function CompositeCharacter({
             clothingMesh.bind(newSkeleton, clothingMesh.bindMatrix);
           }
         });
-        baseScene.add(attScene);
-        return;
+        if (attachedToSkeleton) {
+          baseScene.add(attScene);
+          return;
+        }
       }
 
       const socket = attachment.socket || getDefaultModelWardrobeSocket(attachment as any);

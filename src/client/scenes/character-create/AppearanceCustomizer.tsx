@@ -5,7 +5,7 @@ import { soundSynth } from '@/engine/sound-synth';
 import { ArchetypeModelPreview3D } from '@/web/components/the-lobby/editor/hero-studio/ArchetypeModelPreview3D';
 import { CharacterWardrobeSlots } from './CharacterWardrobeSlots';
 import type { WorldModelValue } from '@/web/components/the-lobby/editor/components/WorldModelSelector';
-import { getModelWardrobeCategoryLabel, getModelWardrobeItemLabel } from '@/shared/game/modelWardrobe';
+import { getModelWardrobeCategoryLabel, getModelWardrobeItemLabel, groupModelWardrobeItems } from '@/shared/game/modelWardrobe';
 import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
 
 export type AppearanceTab = 'BASE' | 'CAPE' | 'HEAD' | 'ARMOR' | 'CATALOG' | 'WARDROBE';
@@ -400,7 +400,7 @@ export function AppearanceCustomizer({
             )}
 
             {appearanceTab === 'WARDROBE' && (
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-xs text-muted-foreground">Choose the clothing and gear to wear.</p>
                   <button
@@ -411,28 +411,39 @@ export function AppearanceCustomizer({
                     Reset to default
                   </button>
                 </div>
-                {wardrobeOptions.map((item) => {
-                  const checked = selectedWardrobeAssetIds.includes(item.assetId);
-                  return (
-                    <label key={item.assetId} className="flex cursor-pointer items-center gap-3 rounded-xl border border-border/50 bg-card/50 p-3 hover:border-primary/50">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(event) => setSelectedWardrobeAssetIds(
-                          event.target.checked
-                            ? [...selectedWardrobeAssetIds, item.assetId]
-                            : selectedWardrobeAssetIds.filter((id) => id !== item.assetId),
-                        )}
-                        className="rounded border-border bg-black text-primary focus:ring-primary"
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold text-foreground">{getModelWardrobeItemLabel(item)}</span>
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{getModelWardrobeCategoryLabel(item)}</span>
-                      </span>
-                      <span className={`text-[10px] font-bold uppercase ${checked ? 'text-primary' : 'text-muted-foreground'}`}>{checked ? 'Worn' : 'Not worn'}</span>
-                    </label>
-                  );
-                })}
+                {wardrobeOptions.length === 0 && (
+                  <p className="rounded-lg border border-dashed border-border/50 p-4 text-center text-xs text-muted-foreground">No clothing options are configured for this model yet.</p>
+                )}
+                {groupModelWardrobeItems(wardrobeOptions).map((group) => (
+                  <div key={group.category} className="space-y-1.5 rounded-xl border border-border/40 bg-black/30 p-2.5">
+                    <div className="px-1 text-[10px] font-black uppercase tracking-wider text-primary">
+                      {group.label}
+                    </div>
+                    <div className="space-y-1">
+                      {group.items.map((item) => {
+                        const checked = selectedWardrobeAssetIds.includes(item.assetId);
+                        return (
+                          <label key={item.assetId} className="flex cursor-pointer items-center gap-3 rounded-lg border border-border/40 bg-card/40 p-2 hover:border-primary/50 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(event) => setSelectedWardrobeAssetIds(
+                                event.target.checked
+                                  ? [...selectedWardrobeAssetIds, item.assetId]
+                                  : selectedWardrobeAssetIds.filter((id) => id !== item.assetId),
+                              )}
+                              className="rounded border-border bg-black text-primary focus:ring-primary"
+                            />
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-xs font-semibold text-foreground">{getModelWardrobeItemLabel(item)}</span>
+                            </span>
+                            <span className={`text-[9px] font-bold uppercase ${checked ? 'text-primary' : 'text-muted-foreground'}`}>{checked ? 'Worn' : 'Off'}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

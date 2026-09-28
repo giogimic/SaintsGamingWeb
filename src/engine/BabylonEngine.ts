@@ -98,6 +98,7 @@ import { EntityController } from './EntityController';
 import { loadAndRetargetAnimation, normalizeBoneName } from './animationRetarget';
 import { AssetManager } from './assets/AssetManager';
 import { applyAnimationProfileFallback } from '../shared/game/animationProfiles';
+import { getDefaultModelWardrobeSocket } from '../shared/game/modelWardrobe';
 
 function findBabylonBone(skeleton: any, socketName: string) {
   if (!skeleton || !skeleton.bones) return null;
@@ -4241,7 +4242,24 @@ export class BabylonEngine {
               } else {
                 // Modular attachment or socketed weapon/tool
                 const att = (pres?.modularAttachments || [])[idx - 1];
-                const isSkinned = att?.attachmentMode === 'SKINNED' || att?.isModular;
+                let isSkinned = att?.attachmentMode === 'SKINNED' || att?.isModular;
+
+                const clothingSkeletons = [...(result.skeletons || [])];
+                if (clothingSkeletons.length === 0) {
+                  result.meshes.forEach((m: any) => {
+                    if (m.skeleton && !clothingSkeletons.includes(m.skeleton)) {
+                      clothingSkeletons.push(m.skeleton);
+                    }
+                  });
+                }
+
+                // If marked skinned/modular but the model is completely rigid (no skeletons or bone weights), treat as socket attachment
+                if (isSkinned && clothingSkeletons.length === 0) {
+                  const hasRiggedMesh = result.meshes.some((m: any) => m.skeleton || (m.numBoneInfluencers && m.numBoneInfluencers > 0));
+                  if (!hasRiggedMesh) {
+                    isSkinned = false;
+                  }
+                }
 
                 if (isSkinned) {
                   if (baseSkeleton) {
@@ -4252,14 +4270,6 @@ export class BabylonEngine {
                     root.scaling = Vector3.One();
                     root.computeWorldMatrix(true);
 
-                    const clothingSkeletons = [...(result.skeletons || [])];
-                    if (clothingSkeletons.length === 0) {
-                      result.meshes.forEach((m: any) => {
-                        if (m.skeleton && !clothingSkeletons.includes(m.skeleton)) {
-                          clothingSkeletons.push(m.skeleton);
-                        }
-                      });
-                    }
                     if (clothingSkeletons.length > 0) {
                       // Industry standard modular sync: link clothing bones to base transform nodes by normalized name
                       clothingSkeletons.forEach((clothingSkeleton) => {
@@ -4290,7 +4300,7 @@ export class BabylonEngine {
                     if (root && baseModelWrapper && !root.parent) root.parent = baseModelWrapper;
                   }
                 } else {
-                  const socketName = att?.socket || 'RightHandMount';
+                  const socketName = att?.socket || getDefaultModelWardrobeSocket(att as any);
                   const targetBone = findBabylonBone(baseSkeleton, socketName);
                   const modelWrapper = new TransformNode(`modelWrapper_${entity.id}_${idx}`, this.scene);
                   const boneNode = targetBone?.getTransformNode?.();

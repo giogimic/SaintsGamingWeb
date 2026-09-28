@@ -28,23 +28,23 @@ interface SlotDefinition {
 const SLOTS: SlotDefinition[] = [
   // Head & Face Group (Left Column)
   { id: 'face', label: 'Face / Features', group: 'head_face' },
-  { id: 'hair', label: 'Hair / Style', group: 'head_face' },
   { id: 'beard', label: 'Facial Hair / Beard', group: 'head_face' },
-  { id: 'eyewear', label: 'Glasses / Eyewear', group: 'head_face' },
+  { id: 'head_accessory', label: 'Glasses / Eyewear', group: 'head_face' },
   { id: 'mask', label: 'Face Mask / Bandana', group: 'head_face' },
-  { id: 'headwear', label: 'Hat / Headwear', group: 'head_face' },
+  { id: 'hair', label: 'Hair / Style', group: 'head_face' },
+  { id: 'hat', label: 'Hat / Headwear', group: 'head_face' },
 
   // Clothing Group (Right Column)
   { id: 'shirt', label: 'Shirt / Torso', group: 'clothing' },
   { id: 'jacket', label: 'Jacket / Outerwear', group: 'clothing' },
-  { id: 'upper-body', label: 'Outfit / Clothing', group: 'clothing' },
-  { id: 'legs', label: 'Legs / Pants', group: 'clothing' },
-  { id: 'feet', label: 'Shoes / Footwear', group: 'clothing' },
+  { id: 'clothing', label: 'Outfit / Clothing', group: 'clothing' },
+  { id: 'pants', label: 'Legs / Pants', group: 'clothing' },
+  { id: 'shoes', label: 'Shoes / Footwear', group: 'clothing' },
 
   // Gear & Accessories (Right Column)
+  { id: 'belt', label: 'Belt / Waist', group: 'gear' },
   { id: 'gloves', label: 'Gloves / Hands', group: 'gear' },
   { id: 'back', label: 'Cape / Back Item', group: 'gear' },
-  { id: 'belt', label: 'Belt / Waist', group: 'gear' },
   { id: 'weapon_main', label: 'Main Weapon / Tool', group: 'gear' },
   { id: 'weapon_off', label: 'Offhand / Shield', group: 'gear' },
   { id: 'accessory', label: 'Accessories', group: 'gear' },
@@ -62,6 +62,12 @@ function WardrobeSlot({
   onChoose: (slotId: string, itemId: string) => void;
 }) {
   const selectedItems = items.filter((item) => selectedIds.has(item.assetId));
+  const sortedItems = [...items].sort((a, b) => {
+    const aDef = a.defaultVisible !== false ? 0 : 1;
+    const bDef = b.defaultVisible !== false ? 0 : 1;
+    if (aDef !== bDef) return aDef - bDef;
+    return getModelWardrobeItemLabel(a).localeCompare(getModelWardrobeItemLabel(b));
+  });
 
   return (
     <section className="rounded-xl border border-border/50 bg-[#07111c]/95 p-3 text-left shadow-lg">
@@ -83,13 +89,13 @@ function WardrobeSlot({
         )}
       </div>
 
-      {items.length === 0 ? (
+      {sortedItems.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border/40 px-2 py-3 text-center text-[9px] text-muted-foreground">
           No options in this slot
         </p>
       ) : (
         <div className="max-h-44 space-y-1 overflow-y-auto pr-1">
-          {items.map((item) => {
+          {sortedItems.map((item) => {
             const selected = selectedIds.has(item.assetId);
             return (
               <button

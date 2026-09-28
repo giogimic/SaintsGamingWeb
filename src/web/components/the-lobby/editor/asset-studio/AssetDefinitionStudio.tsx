@@ -31,6 +31,7 @@ import {
   CharacterComponentCategory,
   CharacterBaseBodyType,
 } from '@/shared/game/assetImportProfiles';
+import { getModelWardrobeCategory } from '@/shared/game/modelWardrobe';
 import { ANIMATION_PROFILES, getAnimationProfile, type AnimationSlot } from '@/shared/game/animationProfiles';
 import {
   ANIMATION_ACTIONS,
@@ -258,28 +259,20 @@ const STRUCTURE_OPTIONS: StructureOption[] = [
 const STANDARD_BONES = STANDARD_BONE_NAMES;
 
 const COMPONENT_CATEGORY_ICONS: Record<string, string> = {
-  face: '😐', hair: '💇', hat: '🎩', head_accessory: '👓',
-  clothing: '👔', shirt: '👕', jacket: '🧥', pants: '👖',
-  shoes: '👟', accessory: '💍', other: '📦',
+  face: '😐', hair: '💇', beard: '🧔', hat: '🎩', head_accessory: '👓', mask: '😷',
+  clothing: '👔', shirt: '👕', jacket: '🧥', pants: '👖', shoes: '👟',
+  gloves: '🧤', back: '🎒', belt: '🥋', weapon_main: '⚔️', weapon_off: '🛡️',
+  accessory: '💍', other: '📦',
 };
 
 function guessComponentInfo(filename: string): { structure: StructureType, category: string } {
   const lower = filename.toLowerCase();
   
-  if (lower.includes('body') || lower.includes('base') || lower.includes('skeleton')) {
+  if (/(body|basemesh|base_?body|character_?base|skeleton)/i.test(lower)) {
     return { structure: 'Modular', category: 'base' };
   }
   
-  let category = 'other';
-  if (lower.includes('hair') || lower.includes('beard') || lower.includes('moustache') || lower.includes('eyebrow')) category = 'hair';
-  else if (lower.includes('clown_nose') || lower.includes('pacifier') || lower.includes('emotion') || lower.includes('face') || lower.includes('head')) category = 'face';
-  else if (lower.includes('glass') || lower.includes('headphone') || lower.includes('mask')) category = 'head_accessory';
-  else if (lower.includes('hat') || lower.includes('helmet')) category = 'hat';
-  else if (lower.includes('costume') || lower.includes('outwear') || lower.includes('jacket') || lower.includes('shirt') || lower.includes('torso')) category = 'shirt';
-  else if (lower.includes('pant') || lower.includes('short') || lower.includes('leg')) category = 'pants';
-  else if (lower.includes('shoe') || lower.includes('sneaker') || lower.includes('slipper') || lower.includes('sock') || lower.includes('foot')) category = 'shoes';
-  else if (lower.includes('glove') || lower.includes('hand')) category = 'accessory';
-  
+  const category = getModelWardrobeCategory({ assetId: filename, label: filename });
   return { structure: 'ModularItem', category };
 }
 
@@ -429,15 +422,7 @@ export function AssetDefinitionStudio({
     }
 
     const guessCategory = (name: string): string => {
-      const n = name.toLowerCase();
-      if (n.includes('hair')) return 'hair';
-      if (n.includes('head') || n.includes('helmet') || n.includes('hat') || n.includes('mask') || n.includes('face') || n.includes('cap')) return 'hat';
-      if (n.includes('shirt') || n.includes('chest') || n.includes('torso') || n.includes('jacket') || n.includes('armor') || n.includes('t_shirt') || n.includes('top')) return 'shirt';
-      if (n.includes('leg') || n.includes('pant') || n.includes('trouser') || n.includes('short')) return 'pants';
-      if (n.includes('foot') || n.includes('feet') || n.includes('shoe') || n.includes('boot') || n.includes('sneaker')) return 'shoes';
-      if (n.includes('hand') || n.includes('glove') || n.includes('gauntlet')) return 'accessory';
-      if (n.includes('cape') || n.includes('back') || n.includes('cloak') || n.includes('wing') || n.includes('weapon') || n.includes('sword') || n.includes('bow') || n.includes('staff') || n.includes('axe') || n.includes('shield')) return 'accessory';
-      return 'shirt';
+      return getModelWardrobeCategory({ assetId: name, label: name });
     };
 
     const gltfLoader = new GLTFLoader();
@@ -728,16 +713,8 @@ export function AssetDefinitionStudio({
                 continue;
               }
 
-              // Guess category
-              const n = modFile.name.toLowerCase();
-              let cat = 'shirt';
-              if (n.includes('hair') || n.includes('beard') || n.includes('moustache')) cat = 'hair';
-              else if (n.includes('hat') || n.includes('helmet') || n.includes('mask') || n.includes('head')) cat = 'hat';
-              else if (n.includes('shirt') || n.includes('torso') || n.includes('jacket') || n.includes('armor') || n.includes('costume') || n.includes('outwear')) cat = 'shirt';
-              else if (n.includes('pant') || n.includes('leg') || n.includes('short')) cat = 'pants';
-              else if (n.includes('shoe') || n.includes('boot') || n.includes('sneaker') || n.includes('slipper') || n.includes('foot') || n.includes('sock')) cat = 'shoes';
-              else if (n.includes('glove') || n.includes('hand') || n.includes('wrist') || n.includes('gauntlet')) cat = 'accessory';
-              else if (n.includes('weapon') || n.includes('sword') || n.includes('bow') || n.includes('axe') || n.includes('shield')) cat = 'accessory';
+              // Guess category accurately using unified wardrobe taxonomy
+              const cat = getModelWardrobeCategory({ assetId: modFile.name, label: modFile.name });
 
               const animationAnalysis = modScene
                 ? analyzeSceneAnimations(modScene, loadedGltf.animations || [], modFile.name)

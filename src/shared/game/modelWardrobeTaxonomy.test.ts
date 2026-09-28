@@ -47,12 +47,12 @@ describe('modelWardrobeTaxonomy & Slot Separation', () => {
       const hatSlot = getModelWardrobeSlotId(hatItem);
 
       expect(faceSlot).toBe('face');
-      expect(glassesSlot).toBe('eyewear');
+      expect(glassesSlot).toBe('head_accessory');
       expect(beardSlot).toBe('beard');
       expect(hairSlot).toBe('hair');
-      expect(hatSlot).toBe('headwear');
+      expect(hatSlot).toBe('hat');
 
-      // All 5 head/facial slots are mutually unique!
+      // All 5 head/facial slots are mutually unique so they never collide!
       const uniqueSlots = new Set([faceSlot, glassesSlot, beardSlot, hairSlot, hatSlot]);
       expect(uniqueSlots.size).toBe(5);
     });
@@ -79,8 +79,8 @@ describe('modelWardrobeTaxonomy & Slot Separation', () => {
       const sword = { assetId: 'iron_sword', label: 'Iron Sword' };
       const shield = { assetId: 'wooden_shield', label: 'Wooden Shield' };
 
-      expect(getModelWardrobeSlotId(pants)).toBe('legs');
-      expect(getModelWardrobeSlotId(boots)).toBe('feet');
+      expect(getModelWardrobeSlotId(pants)).toBe('pants');
+      expect(getModelWardrobeSlotId(boots)).toBe('shoes');
       expect(getModelWardrobeSlotId(gloves)).toBe('gloves');
       expect(getModelWardrobeSlotId(cape)).toBe('back');
       expect(getModelWardrobeSlotId(belt)).toBe('belt');
@@ -88,15 +88,41 @@ describe('modelWardrobeTaxonomy & Slot Separation', () => {
       expect(getModelWardrobeSlotId(shield)).toBe('weapon_off');
     });
 
-    it('gives explicit item category precedence over ambiguous name guessing', () => {
-      // Even if the name contains "face", an explicit category of "head_accessory" wins
-      const itemWithExplicitCat = {
-        assetId: 'custom_item_face_prop',
-        label: 'Prop',
-        category: 'head_accessory',
+    it('heals legacy broad tags when item keywords clearly indicate a more specific slot', () => {
+      // Legacy item in DB was tagged broad category 'face' but is actually glasses
+      const legacyGlasses = {
+        assetId: 'face_glasses_aviator',
+        label: 'Aviator Glasses',
+        category: 'face',
       };
-      expect(getModelWardrobeCategory(itemWithExplicitCat)).toBe('head_accessory');
-      expect(getModelWardrobeSlotId(itemWithExplicitCat)).toBe('eyewear');
+      expect(getModelWardrobeCategory(legacyGlasses)).toBe('head_accessory');
+      expect(getModelWardrobeSlotId(legacyGlasses)).toBe('head_accessory');
+
+      // Legacy item in DB was tagged broad category 'hair' but is actually a beard
+      const legacyBeard = {
+        assetId: 'hair_dwarf_beard',
+        label: 'Braided Dwarf Beard',
+        category: 'hair',
+      };
+      expect(getModelWardrobeCategory(legacyBeard)).toBe('beard');
+      expect(getModelWardrobeSlotId(legacyBeard)).toBe('beard');
+
+      // Legacy item in DB was tagged broad category 'hat' but is actually a ninja mask
+      const legacyMask = {
+        assetId: 'hat_ninja_mask',
+        label: 'Black Ninja Mask',
+        category: 'hat',
+      };
+      expect(getModelWardrobeCategory(legacyMask)).toBe('mask');
+      expect(getModelWardrobeSlotId(legacyMask)).toBe('mask');
+    });
+
+    it('maps legacy slot aliases to canonical CharacterComponentCategory', () => {
+      expect(getModelWardrobeSlotId({ assetId: 'item1', slot: 'eyewear' })).toBe('head_accessory');
+      expect(getModelWardrobeSlotId({ assetId: 'item2', slot: 'headwear' })).toBe('hat');
+      expect(getModelWardrobeSlotId({ assetId: 'item3', slot: 'upper_body' })).toBe('clothing');
+      expect(getModelWardrobeSlotId({ assetId: 'item4', slot: 'legs' })).toBe('pants');
+      expect(getModelWardrobeSlotId({ assetId: 'item5', slot: 'feet' })).toBe('shoes');
     });
 
     it('defaults wearable modular clothing to SKINNED and weapons/offhand to sockets', () => {

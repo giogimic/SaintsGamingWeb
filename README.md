@@ -143,6 +143,14 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 
 ## Changelog
 
+### v2.2.046
+- **Wardrobe Slot Granularity, Face & Eyewear Mixing, Studio Auto-Mapping & Rigid Mesh Socket Fallbacks**:
+  - **Face vs. Eyewear Slot Disambiguation & Mixing (`modelWardrobe.ts`, `CharacterWardrobeSlots.tsx`)**: Completely eliminated slot collisions where glasses, shades, and goggles were lumped together with face meshes or hats. Reordered semantic classification heuristics so specific facial attachment keywords override broad legacy database tags (`face`, `hair`, `hat`, `clothing`, `accessory`), allowing players to freely equip and mix face options, glasses/shades, beards, and masks simultaneously.
+  - **Unified Studio Category Auto-Mapping (`AssetDefinitionStudio.tsx`)**: Replaced fragmented legacy heuristics across multi-file drops, single imports, and ZIP companion archives with centralized `getModelWardrobeCategory` and `detectAssetTaxonomy`. Added icons and explicit mappings for all 17 canonical component categories (`beard`, `mask`, `gloves`, `back`, `belt`, `weapon_main`, `weapon_off`, etc.).
+  - **Deterministic Wardrobe Sorting & Creator Grouping (`CharacterWardrobeSlots.tsx`, `character-creator.tsx`, `AppearanceCustomizer.tsx`)**: Replaced unorganized checkbox lists with categorized wardrobe groupings across both 3D and 2D/fallback appearance customizers using `groupModelWardrobeItems`. Wardrobe slot options now sort deterministically with default-visible items first, followed alphabetically by label.
+  - **Rigid Mesh Socket Fallbacks (`ArchetypeModelPreview3D.tsx` & `BabylonEngine.ts`)**: Resolved an issue where modular accessories marked `SKINNED` or modular that lack bone weights or skeletons (such as static glasses, rigid hats, or weapons) were dumped at origin `(0, 0, 0)` on the ground. Both Three.js preview and Babylon in-game engine now dynamically detect unskinned geometry and gracefully fall back to socket parenting using `getDefaultModelWardrobeSocket` (`HeadMount`, `RightHandMount`, `ChestMount`).
+  - **Comprehensive Unit Testing (`modelWardrobeTaxonomy.test.ts`)**: Added 8 comprehensive test suites verifying non-colliding slot assignments, legacy tag overrides, slot alias normalization, and default socket mapping.
+
 ### v2.2.045
 - **Modular Asset Taxonomy Heuristics & Default Outfit Retention**:
   - **Asset Taxonomy Precedence Alignment (`assetTaxonomy.ts`)**: Reordered modular piece classification heuristics so that specific facial attachments (`glasses`, `sunglasses`, `shades`, `goggles`, `masks`, `bandanas`, `beards`, `facial_hair`) are strictly evaluated before generic face/head base meshes. Files named `face_glasses.glb`, `face_mask.glb`, or `face_beard.glb` are now properly mapped to `head_accessory`, `mask`, or `beard` instead of being incorrectly captured as `face`.
