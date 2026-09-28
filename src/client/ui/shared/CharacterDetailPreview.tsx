@@ -175,6 +175,18 @@ export function CharacterDetailPreview({
     };
   }, [character]);
 
+  const modelPresentation = useMemo(() => {
+    if (!character) return null;
+    const rawVisual = character.visualData || character.archetype?.visualData || character.archetypeVisualData;
+    if (!rawVisual) return null;
+    try {
+      const v = typeof rawVisual === 'string' ? JSON.parse(rawVisual) : rawVisual;
+      return getWorldModelPresentation(v);
+    } catch {
+      return null;
+    }
+  }, [character?.visualData, character?.archetype?.visualData, character?.archetypeVisualData]);
+
   if (!character) {
     return (
       <div className={`flex flex-col items-center justify-center p-8 rounded-2xl border border-dashed border-white/15 bg-black/40 text-center ${className}`}>
@@ -184,17 +196,6 @@ export function CharacterDetailPreview({
       </div>
     );
   }
-
-  const modelPresentation = useMemo(() => {
-    const rawVisual = character?.visualData || character?.archetype?.visualData || character?.archetypeVisualData;
-    if (!rawVisual) return null;
-    try {
-      const v = typeof rawVisual === 'string' ? JSON.parse(rawVisual) : rawVisual;
-      return getWorldModelPresentation(v);
-    } catch {
-      return null;
-    }
-  }, [character?.visualData, character?.archetype?.visualData, character?.archetypeVisualData]);
 
   const spriteId = character.assetProfileId || character.spriteId || 'adventurer';
   const charLevel = state.level || character.level || 1;

@@ -143,6 +143,13 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 
 ## Changelog
 
+### v2.2.052
+- **Resolve React Error #310 Hook Order Violation, Direct Asset 404s & In-Game Model Resolution**:
+  - **React Error #310 Elimination (`CharacterDetailPreview.tsx`)**: Fixed a critical React Rules of Hooks violation where `modelPresentation = useMemo(...)` was positioned after an early return guard (`if (!character) return (...)`), preventing application crashes during character selection and game transitions.
+  - **Direct Upload URL & Path Bypass (`AssetManager.ts`)**: Direct upload paths and model URLs now immediately return synthetic `GameAssetItem` instances (`type: 'MODEL'` / `'SPRITE'`) rather than querying `/api/assets/%2Fuploads%2F...` which previously resulted in 404s.
+  - **In-Game 3D Avatar & Model URL Resolution (`EntityRenderer.ts`)**: Integrated `getWorldModelPresentation` into `getEntityAssetInfo`, ensuring player avatars and remote entities with direct GLB URLs load in-game models and animations properly.
+  - **Site Version Synchronization**: Bumped site version to `2.2.052` across all designated configuration and layout files.
+
 ### v2.2.051
 - **Expanded Wardrobe Taxonomy, Piercing & Face Feature Collision Prevention, Design System Alignment & Slot Clearing**:
   - **Facial Piercings & Small Jewelry Disambiguation (`modelWardrobe.ts`, `assetTaxonomy.ts`)**: Resolved a critical taxonomy collision where facial piercings (`nose_ring`, `lip_ring`, `septum`, `eyebrow_ring`), cigars, and pipes were swallowed by the `face` slot due to matching anatomical facial keywords (`nose`, `lip`, `mouth`). Piercings and jewelry are now evaluated in `accessory` ahead of face meshes with negative lookaheads, allowing players and creators to equip faces, piercings, and glasses simultaneously with zero slot collisions.

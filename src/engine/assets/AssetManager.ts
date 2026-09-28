@@ -160,9 +160,48 @@ export class AssetManager {
     };
   }
 
+  private isDirectAssetPath(id: string): boolean {
+    return (
+      id.startsWith('/') ||
+      id.startsWith('uploads/') ||
+      id.startsWith('http://') ||
+      id.startsWith('https://') ||
+      id.startsWith('blob:') ||
+      id.startsWith('data:')
+    );
+  }
+
+  private createSyntheticAsset(id: string): GameAssetItem {
+    const isModel = /\.(glb|gltf|fbx|obj)$/i.test(id);
+    const source = id.startsWith('uploads/') ? `/${id}` : id;
+    return {
+      id,
+      gameId: null,
+      type: isModel ? 'MODEL' : 'SPRITE',
+      source,
+      atlasSource: null,
+      atlasFrame: null,
+      tags: [],
+      categories: [],
+      metadata: {},
+      customLabels: null,
+      isActive: true,
+      usageCount: 0,
+      fileSize: 0,
+      cdnUrl: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
+
   getAssetSync(id: string): GameAssetItem | null {
     if (this.cache.has(id)) {
       return this.cache.get(id)!;
+    }
+    if (this.isDirectAssetPath(id)) {
+      const synthetic = this.createSyntheticAsset(id);
+      this.cache.set(id, synthetic);
+      return synthetic;
     }
     if (!this.inflight.has(id)) {
       // Fire off async fetch if not in cache so it will be there soon
@@ -172,8 +211,16 @@ export class AssetManager {
   }
 
   async getAsset(id: string): Promise<GameAssetItem | null> {
+    if (!id) return null;
+
     if (this.cache.has(id)) {
       return this.cache.get(id)!;
+    }
+
+    if (this.isDirectAssetPath(id)) {
+      const synthetic = this.createSyntheticAsset(id);
+      this.cache.set(id, synthetic);
+      return synthetic;
     }
 
     if (this.inflight.has(id)) {

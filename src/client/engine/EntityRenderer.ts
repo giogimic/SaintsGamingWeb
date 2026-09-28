@@ -16,6 +16,7 @@ import { useMultiplayerStore } from '../state/useMultiplayerStore';
 import { usePlayerStore } from '../state/usePlayerStore';
 import { useSessionStore } from '../state/useSessionStore';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
+import { getWorldModelPresentation } from '@/shared/game/worldModelPresentation';
 import { mapMesher } from './MapMesher';
 import { WrappedCharacterMesher } from './rendering/WrappedCharacterMesher';
 import { AssetManager } from '@/engine/assets/AssetManager';
@@ -86,12 +87,25 @@ export class EntityRenderer {
       let visualAnimations: any = undefined;
       let visualAnimationProfileId: string | undefined;
 
-      if (visualData) {
+      const worldPresentation = getWorldModelPresentation(visualData);
+
+      if (worldPresentation && worldPresentation.mode === '3D') {
+        effectiveProfileId = worldPresentation.modelUrl || worldPresentation.assetId || effectiveProfileId;
+        if (worldPresentation.animations) visualAnimations = worldPresentation.animations;
+        if (worldPresentation.animationProfileId) visualAnimationProfileId = worldPresentation.animationProfileId;
+        if (worldPresentation.modelScale || worldPresentation.cameraHeightOffset) {
+          visualTransform = {
+            scale: worldPresentation.modelScale,
+            cameraYOffset: worldPresentation.cameraHeightOffset,
+          };
+        }
+      } else if (visualData) {
         try {
           const parsed = typeof visualData === 'string' ? JSON.parse(visualData) : visualData;
           const wm = (parsed as any)?.worldModel || parsed;
-          if (wm?.assetId && (wm.type === '3D Model' || wm.type === 'MODEL')) {
-            effectiveProfileId = wm.assetId;
+          const candidateModelUrl = wm?.modelUrl || wm?.source || wm?.url;
+          if (wm?.type === '3D Model' || wm?.type === 'MODEL' || (candidateModelUrl && /\.(glb|gltf|fbx)(\?.*)?$/i.test(candidateModelUrl))) {
+            effectiveProfileId = candidateModelUrl || wm?.assetId || effectiveProfileId;
           }
           if (wm?.animations) visualAnimations = wm.animations;
           if (typeof wm?.animationProfileId === 'string') visualAnimationProfileId = wm.animationProfileId;
@@ -99,7 +113,7 @@ export class EntityRenderer {
         } catch {}
       }
 
-      let isModel = effectiveProfileId?.endsWith('.glb') || effectiveProfileId?.endsWith('.gltf') || effectiveProfileId?.endsWith('.fbx');
+      let isModel = (worldPresentation?.mode === '3D') || (effectiveProfileId ? /\.(glb|gltf|fbx)(\?.*)?$/i.test(effectiveProfileId) : false);
       let resolvedUrl = effectiveProfileId ? resolveEntitySpriteUrl(effectiveProfileId, { kind: defaultKind as any }) : undefined;
       let presentationType = effectiveProfileId?.includes('wrapped') ? '2D_WRAPPED' : (isModel ? '3D_MODEL' : '2D_SPRITE');
       let transform: any = visualTransform;
@@ -108,7 +122,7 @@ export class EntityRenderer {
       if (effectiveProfileId && effectiveProfileId.length >= 20 && !effectiveProfileId.includes('.')) {
         const asset = AssetManager.getInstance().getAssetSync(effectiveProfileId);
         if (asset) {
-          isModel = asset.type === 'MODEL' || !!(asset.source && (asset.source.endsWith('.glb') || asset.source.endsWith('.gltf')));
+          isModel = asset.type === 'MODEL' || !!(asset.source && /\.(glb|gltf|fbx)(\?.*)?$/i.test(asset.source));
           if (asset.source) resolvedUrl = resolveEntitySpriteUrl(asset.source);
           if (asset.presentation) {
             const pres = asset.presentation as any;
