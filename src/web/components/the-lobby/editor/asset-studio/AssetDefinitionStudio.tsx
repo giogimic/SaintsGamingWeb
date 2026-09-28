@@ -19,8 +19,6 @@ import {
   Sparkles,
   Layers,
   Sliders,
-  Eye,
-  EyeOff,
   Sparkle,
   RefreshCw,
 } from 'lucide-react';
@@ -2444,31 +2442,54 @@ export function AssetDefinitionStudio({
 
                 {/* Items list */}
                 <div className="space-y-2">
+                  {additionalItems.length > 0 && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-950/15 px-3 py-2">
+                      <div>
+                        <div className="text-[10px] font-black uppercase tracking-wider text-amber-200">Clothing & equipment</div>
+                        <div className="text-[9px] text-slate-400">
+                          {additionalItems.filter(item => item.enabled).length} of {additionalItems.length} selected for live preview and publishing
+                        </div>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setAdditionalItems(prev => prev.map(item => ({ ...item, enabled: true })))}
+                          className="rounded border border-emerald-500/40 bg-emerald-950/30 px-2.5 py-1 text-[9px] font-bold text-emerald-200 hover:bg-emerald-900/40"
+                        >
+                          Select all
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAdditionalItems(prev => prev.map(item => ({ ...item, enabled: false })))}
+                          className="rounded border border-slate-700 px-2.5 py-1 text-[9px] font-semibold text-slate-300 hover:border-slate-500"
+                        >
+                          Clear selection
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {additionalItems.map(item => (
-                    <div key={item.id} className="bg-slate-900/60 border border-slate-700 p-2.5 rounded-lg flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAdditionalItems(prev => prev.map(p => p.id === item.id ? { ...p, enabled: !p.enabled } : p));
-                        }}
-                        title={item.enabled ? 'Hide piece in preview' : 'Show piece in preview'}
-                        className={`p-1.5 rounded transition-colors ${
-                          item.enabled ? 'bg-amber-600/30 text-amber-300' : 'bg-slate-800 text-slate-500'
-                        }`}
-                      >
-                        {item.enabled ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                      </button>
+                    <div key={item.id} className={`grid grid-cols-[auto_auto_minmax(0,1fr)] items-start gap-3 rounded-lg border p-3 ${item.enabled ? 'border-emerald-800/70 bg-slate-900/70' : 'border-slate-800 bg-slate-950/50 opacity-75'}`}>
+                      <input
+                        type="checkbox"
+                        checked={item.enabled}
+                        onChange={() => setAdditionalItems(prev => prev.map(p => p.id === item.id ? { ...p, enabled: !p.enabled } : p))}
+                        aria-label={`${item.enabled ? 'Remove' : 'Add'} ${item.name || item.file.name} ${item.enabled ? 'from' : 'to'} preview and publishing`}
+                        title={item.enabled ? 'Selected for preview and publishing' : 'Not selected'}
+                        className="mt-1 h-4 w-4 cursor-pointer rounded border-slate-600 bg-black text-emerald-500 focus:ring-emerald-500"
+                      />
 
-                      <div className="text-lg">{COMPONENT_CATEGORY_ICONS[item.category] || '📦'}</div>
-                      <div className="flex-1 min-w-0">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-700 bg-black/50 text-2xl" aria-hidden="true">
+                        {COMPONENT_CATEGORY_ICONS[item.category] || '📦'}
+                      </div>
+                      <div className="min-w-0">
                         <div className="font-bold text-slate-200 text-[11px] truncate">
                           {item.name || item.file.name}
                         </div>
                         <div className="text-[9px] text-slate-400 flex items-center gap-1.5">
-                          <span>Slot: <strong className="text-amber-400">{item.category}</strong></span>
-                          <span>·</span>
+                          <span className="rounded bg-amber-950/50 px-1.5 py-0.5 uppercase text-amber-300">{item.category}</span>
                           <span className={item.enabled ? 'text-emerald-400' : 'text-slate-500'}>
-                            {item.enabled ? 'Mounted in Preview' : 'Hidden'}
+                            {item.enabled ? 'Selected · shown in preview' : 'Not selected'}
                           </span>
                         </div>
                         <div className={`text-[9px] mt-0.5 break-words ${getAttachedTextureAssignments(item.scene).length > 0 ? 'text-emerald-300' : 'text-amber-300'}`}>
@@ -2493,7 +2514,8 @@ export function AssetDefinitionStudio({
                         )}
                       </div>
 
-                      <div className="flex gap-1 flex-wrap max-w-[280px]">
+                      <div className="col-span-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-800 pt-2">
+                        <div className="flex gap-1 flex-wrap">
                         {componentCategoryEntries.slice(0, 7).map(([key, meta]) => {
                           const active = item.category === key;
                           return (
@@ -2511,30 +2533,34 @@ export function AssetDefinitionStudio({
                             </button>
                           );
                         })}
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <label className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[9px] text-slate-200 cursor-pointer whitespace-nowrap">
+                            + Textures
+                            <input
+                              type="file"
+                              multiple
+                              accept="image/png,image/jpeg,image/webp,image/x-tga,.tga,.dds,.bmp"
+                              className="hidden"
+                              onChange={e => {
+                                const files = Array.from(e.target.files || []);
+                                if (files.length > 0) void handleAttachTexturesToItem(item.id, files);
+                                e.target.value = '';
+                              }}
+                            />
+                          </label>
+
+                          <button
+                            type="button"
+                            onClick={() => setAdditionalItems(prev => prev.filter(p => p.id !== item.id))}
+                            className="text-red-400 hover:text-red-300 font-bold px-2 py-1 rounded hover:bg-red-950/30 transition-colors"
+                            aria-label={`Remove ${item.name || item.file.name}`}
+                          >
+                            Remove
+                          </button>
+                        </div>
                       </div>
-
-                      <label className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[9px] text-slate-200 cursor-pointer whitespace-nowrap">
-                        + Textures
-                        <input
-                          type="file"
-                          multiple
-                          accept="image/png,image/jpeg,image/webp,image/x-tga,.tga,.dds,.bmp"
-                          className="hidden"
-                          onChange={e => {
-                            const files = Array.from(e.target.files || []);
-                            if (files.length > 0) void handleAttachTexturesToItem(item.id, files);
-                            e.target.value = '';
-                          }}
-                        />
-                      </label>
-
-                      <button 
-                        type="button"
-                        onClick={() => setAdditionalItems(prev => prev.filter(p => p.id !== item.id))}
-                        className="text-red-500 hover:text-red-400 font-bold px-2 py-1 rounded hover:bg-red-950/30 transition-colors"
-                      >
-                        ✕
-                      </button>
                     </div>
                   ))}
                   {additionalItems.length === 0 && (

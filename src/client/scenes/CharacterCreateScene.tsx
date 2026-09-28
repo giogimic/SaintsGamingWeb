@@ -693,6 +693,7 @@ export function CharacterCreateScene() {
             selectedWardrobeAssetIds={selectedWardrobeAssetIds}
             setSelectedWardrobeAssetIds={setSelectedWardrobeAssetIds}
             modelAssetId={modelAssetId}
+            modelScale={parsedVisualData?.worldModel?.scale ?? parsedVisualData?.scale ?? 0.8}
             wardrobePreviewAttachments={wardrobePreviewAttachments}
           />
         )}

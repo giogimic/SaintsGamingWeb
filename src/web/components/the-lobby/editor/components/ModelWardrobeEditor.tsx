@@ -55,6 +55,7 @@ export function ModelWardrobeEditor({
   const [relatedIds, setRelatedIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [showAddedOnly, setShowAddedOnly] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -116,9 +117,12 @@ export function ModelWardrobeEditor({
   const configuredById = useMemo(() => new Map(value.map((item) => [item.assetId, item])), [value]);
   const filteredCatalog = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return catalog.filter((asset) => !query || `${displayName(asset)} ${asset.componentCategory || ''}`.toLowerCase().includes(query));
-  }, [catalog, search]);
-  const bulkCreatorAssets = relatedIds.length > 0
+    return catalog.filter((asset) => {
+      const matchesSearch = !query || `${displayName(asset)} ${asset.componentCategory || ''}`.toLowerCase().includes(query);
+      return matchesSearch && (!showAddedOnly || configuredById.has(asset.id));
+    });
+  }, [catalog, search, showAddedOnly, configuredById]);
+  const bulkAssets = relatedIds.length > 0
     ? catalog.filter((asset) => relatedIds.includes(asset.id))
     : search.trim() ? filteredCatalog : [];
 
@@ -148,12 +152,17 @@ export function ModelWardrobeEditor({
     onChange(value.map((item) => item.assetId === assetId ? { ...item, ...patch } : item));
   };
 
-  const addAndOfferAll = () => {
+  const addAllMatching = () => {
     const nextById = new Map(value.map((item) => [item.assetId, item]));
-    for (const asset of bulkCreatorAssets) {
+    for (const asset of bulkAssets) {
       const existing = nextById.get(asset.id);
       if (existing) {
-        nextById.set(asset.id, { ...existing, availableInCharacterCreation: true });
+        nextById.set(asset.id, {
+          ...existing,
+          availableInCharacterCreation: allowCharacterCreationOptions
+            ? true
+            : existing.availableInCharacterCreation,
+        });
       } else {
         nextById.set(asset.id, {
           type: '3D Model',
@@ -162,8 +171,8 @@ export function ModelWardrobeEditor({
           category: asset.componentCategory || 'other',
           isModular: true,
           attachmentMode: 'SKINNED',
-          defaultVisible: false,
-          availableInCharacterCreation: true,
+          defaultVisible: !allowCharacterCreationOptions,
+          availableInCharacterCreation: allowCharacterCreationOptions,
           hidesComponents: asset.hidesComponents || [],
         });
       }
@@ -172,6 +181,8 @@ export function ModelWardrobeEditor({
   };
 
   const clearCreationOptions = () => onChange(value.map((item) => ({ ...item, availableInCharacterCreation: false })));
+  const setDefaultVisibilityForAll = (defaultVisible: boolean) =>
+    onChange(value.map((item) => ({ ...item, defaultVisible })));
 
   const catalogIds = new Set(catalog.map((asset) => asset.id));
   const orphanedItems = value.filter((item) => !catalogIds.has(item.assetId));
@@ -182,7 +193,7 @@ export function ModelWardrobeEditor({
         <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-cyan-300">
           <Shirt size={12} /> {title}
         </div>
-        <span className="text-[9px] text-slate-500">{value.length} selected</span>
+        <span className="text-[9px] text-slate-400">{value.length} added · {value.filter((item) => item.defaultVisible !== false).length} in default outfit</span>
       </div>
       <p className="text-[9px] text-slate-400">
         {allowCharacterCreationOptions
@@ -197,18 +208,36 @@ export function ModelWardrobeEditor({
           {relatedIds.length > 0 && <span className="whitespace-nowrap text-[8px] text-emerald-400"><Sparkles size={10} className="inline" /> linked set</span>}
         </div>
       )}
-      {allowCharacterCreationOptions && (bulkCreatorAssets.length > 0 || value.some((item) => item.availableInCharacterCreation)) && (
+      {(bulkAssets.length > 0 || value.length > 0) && (
         <div className="flex flex-wrap items-center gap-2 rounded border border-cyan-900/40 bg-cyan-950/10 px-2 py-1.5">
-          {bulkCreatorAssets.length > 0 && (
+          {bulkAssets.length > 0 && (
             <button
               type="button"
-              onClick={addAndOfferAll}
+              onClick={addAllMatching}
               className="rounded bg-cyan-500/15 px-2.5 py-1 text-[9px] font-bold text-cyan-200 hover:bg-cyan-500/25"
             >
-              Add and offer all {relatedIds.length > 0 ? 'matching' : 'search-matched'} items ({bulkCreatorAssets.length})
+              Add all {relatedIds.length > 0 ? 'matching' : 'filtered'} clothing ({bulkAssets.length})
             </button>
           )}
-          {value.some((item) => item.availableInCharacterCreation) && (
+          {value.length > 0 && (
+            <>
+              <button
+                type="button"
+                onClick={() => setDefaultVisibilityForAll(true)}
+                className="rounded border border-slate-700 px-2.5 py-1 text-[9px] font-semibold text-slate-300 hover:border-emerald-500/60 hover:text-emerald-300"
+              >
+                Show all by default
+              </button>
+              <button
+                type="button"
+                onClick={() => setDefaultVisibilityForAll(false)}
+                className="rounded border border-slate-700 px-2.5 py-1 text-[9px] font-semibold text-slate-300 hover:border-slate-500"
+              >
+                Hide all by default
+              </button>
+            </>
+          )}
+          {allowCharacterCreationOptions && value.some((item) => item.availableInCharacterCreation) && (
             <button
               type="button"
               onClick={clearCreationOptions}
@@ -217,7 +246,9 @@ export function ModelWardrobeEditor({
               Clear creator options
             </button>
           )}
-          <span className="text-[8px] text-slate-500">New options stay off the default outfit until you choose them below.</span>
+          {allowCharacterCreationOptions && bulkAssets.length > 0 && (
+            <span className="text-[8px] text-slate-500">New pieces are offered during creation and start out of the default outfit; existing pieces keep their default setting.</span>
+          )}
         </div>
       )}
       {catalog.length > 0 && relatedIds.length === 0 && (
@@ -231,6 +262,19 @@ export function ModelWardrobeEditor({
           {modelAssetId ? 'No modular model items found yet. Upload modular clothing or equipment, then reselect this model.' : 'Select a model to find compatible clothing and equipment.'}
         </div>
       ) : (
+        <>
+        {catalog.length > 0 && (
+          <div className="flex items-center justify-between gap-2 text-[9px] text-slate-400">
+            <span>{filteredCatalog.length} compatible items shown · {value.length} added to this archetype</span>
+            <button
+              type="button"
+              onClick={() => setShowAddedOnly((current) => !current)}
+              className={`rounded border px-2 py-1 font-semibold ${showAddedOnly ? 'border-cyan-500/60 text-cyan-200' : 'border-slate-700 text-slate-400 hover:text-slate-200'}`}
+            >
+              {showAddedOnly ? 'Show all compatible' : 'Show added only'}
+            </button>
+          </div>
+        )}
         <div className="max-h-72 space-y-1 overflow-y-auto pr-1">
           {filteredCatalog.map((asset) => {
             const configured = configuredById.get(asset.id);
@@ -336,6 +380,7 @@ export function ModelWardrobeEditor({
             </div>
           ))}
         </div>
+        </>
       )}
     </section>
   );

@@ -43,6 +43,7 @@ import { applyCharacterCreationWardrobe, getModelWardrobeCategoryLabel, getModel
 import { getStarterPerkEffectId } from '@/shared/game/starterPerks';
 import type { WorldModelValue } from './editor/components/WorldModelSelector';
 import { ArchetypeModelPreview3D } from './editor/hero-studio/ArchetypeModelPreview3D';
+import { CharacterWardrobeSlots } from '@/client/scenes/character-create/CharacterWardrobeSlots';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -838,6 +839,22 @@ export function CharacterCreator({
               </p>
             </div>
 
+            {is3DModel && modelAssetId ? (
+              <CharacterWardrobeSlots
+                name={name}
+                classId={classId}
+                modelAssetId={modelAssetId}
+                modelScale={parsedVisualData?.worldModel?.scale ?? parsedVisualData?.scale ?? 0.8}
+                wardrobeOptions={wardrobeOptions}
+                selectedWardrobeAssetIds={selectedWardrobeAssetIds}
+                setSelectedWardrobeAssetIds={setSelectedWardrobeAssetIds}
+                wardrobePreviewAttachments={wardrobePreviewAttachments}
+                onProceed={() => {
+                  soundSynth?.playActionSound?.();
+                  setStep('GIFT');
+                }}
+              />
+            ) : (
             <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
               {/* Selected Preview Stage */}
               <div className="lg:col-span-4 bg-[#050b14]/95 border border-border/50 rounded-2xl p-5 flex flex-col items-center justify-between text-center">
@@ -1134,22 +1151,13 @@ export function CharacterCreator({
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-xs text-muted-foreground">Choose the clothing and gear to wear.</p>
-                        <div className="flex shrink-0 gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedWardrobeAssetIds(wardrobeOptions.map((item) => item.assetId))}
-                            className="rounded-lg border border-primary/40 px-2.5 py-1 text-[10px] font-semibold text-primary hover:bg-primary/10"
-                          >
-                            Select all
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedWardrobeAssetIds(wardrobeOptions.filter((item) => item.defaultVisible !== false).map((item) => item.assetId))}
-                            className="rounded-lg border border-border/50 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:border-primary/50 hover:text-primary"
-                          >
-                            Default outfit
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedWardrobeAssetIds(wardrobeOptions.filter((item) => item.defaultVisible !== false).map((item) => item.assetId))}
+                          className="shrink-0 rounded-lg border border-border/50 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:border-primary/50 hover:text-primary"
+                        >
+                          Reset to default
+                        </button>
                       </div>
                       {wardrobeOptions.length === 0 && (
                         <p className="rounded-lg border border-dashed border-border/50 p-4 text-center text-xs text-muted-foreground">No clothing options are configured for this model yet.</p>
@@ -1185,6 +1193,7 @@ export function CharacterCreator({
                 </div>
               </div>
             </div>
+            )}
           </div>
         )}
 

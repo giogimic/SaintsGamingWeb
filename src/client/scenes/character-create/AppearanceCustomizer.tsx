@@ -3,6 +3,7 @@ import { ArrowRight, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 import { soundSynth } from '@/engine/sound-synth';
 import { ArchetypeModelPreview3D } from '@/web/components/the-lobby/editor/hero-studio/ArchetypeModelPreview3D';
+import { CharacterWardrobeSlots } from './CharacterWardrobeSlots';
 import type { WorldModelValue } from '@/web/components/the-lobby/editor/components/WorldModelSelector';
 import { getModelWardrobeCategoryLabel, getModelWardrobeItemLabel } from '@/shared/game/modelWardrobe';
 import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
@@ -38,6 +39,7 @@ export interface AppearanceCustomizerProps {
   selectedWardrobeAssetIds: string[];
   setSelectedWardrobeAssetIds: (assetIds: string[]) => void;
   modelAssetId?: string;
+  modelScale?: number;
   wardrobePreviewAttachments: WorldModelValue[];
 }
 
@@ -70,6 +72,7 @@ export function AppearanceCustomizer({
   selectedWardrobeAssetIds,
   setSelectedWardrobeAssetIds,
   modelAssetId,
+  modelScale,
   wardrobePreviewAttachments,
 }: AppearanceCustomizerProps) {
   const isModelArchetype = Boolean(modelAssetId);
@@ -97,6 +100,19 @@ export function AppearanceCustomizer({
         </p>
       </div>
 
+      {isModelArchetype && modelAssetId ? (
+        <CharacterWardrobeSlots
+          name={name}
+          classId={classId}
+          modelAssetId={modelAssetId}
+          modelScale={modelScale}
+          wardrobeOptions={wardrobeOptions}
+          selectedWardrobeAssetIds={selectedWardrobeAssetIds}
+          setSelectedWardrobeAssetIds={setSelectedWardrobeAssetIds}
+          wardrobePreviewAttachments={wardrobePreviewAttachments}
+          onProceed={onProceed}
+        />
+      ) : (
       <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         {/* Selected Preview Stage */}
         <div className="lg:col-span-4 bg-[#050b14]/95 border border-border/50 rounded-2xl p-5 flex flex-col items-center justify-between text-center">
@@ -387,22 +403,13 @@ export function AppearanceCustomizer({
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-xs text-muted-foreground">Choose the clothing and gear to wear.</p>
-                  <div className="flex shrink-0 gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedWardrobeAssetIds(wardrobeOptions.map((item) => item.assetId))}
-                      className="rounded-lg border border-primary/40 px-2.5 py-1 text-[10px] font-semibold text-primary hover:bg-primary/10"
-                    >
-                      Select all
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedWardrobeAssetIds(wardrobeOptions.filter((item) => item.defaultVisible !== false).map((item) => item.assetId))}
-                      className="rounded-lg border border-border/50 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:border-primary/50 hover:text-primary"
-                    >
-                      Default outfit
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedWardrobeAssetIds(wardrobeOptions.filter((item) => item.defaultVisible !== false).map((item) => item.assetId))}
+                    className="shrink-0 rounded-lg border border-border/50 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:border-primary/50 hover:text-primary"
+                  >
+                    Reset to default
+                  </button>
                 </div>
                 {wardrobeOptions.map((item) => {
                   const checked = selectedWardrobeAssetIds.includes(item.assetId);
@@ -435,6 +442,7 @@ export function AppearanceCustomizer({
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
