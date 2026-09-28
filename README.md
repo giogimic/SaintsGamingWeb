@@ -143,6 +143,10 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 
 ## Changelog
 
+### v2.2.038
+- **Animation System Fixes for 3D Models**:
+  - **Fallback Animation Profile**: Added missing fallback to the `MocapMobility` animation profile for humanoid characters that do not explicitly specify an animation profile. This prevents default player models from being stuck in a T-pose when spawned, ensuring core movement animations (run, idle, walk, jump) are bound properly.
+
 ### v2.2.037
 - **Client-Trust Movement Synchronization, Speed Envelopes & Wall Penetration Prevention (Debian First)**:
   - **Authoritative Speed Envelopes & Latency Headroom (`the-lobby` Go Server)**: Replaced the fixed 2-meter divergence check (`distSq > 4.0`) with a physical speed envelope ($\Delta d_{\text{max}} = 40.0 \times \max(\Delta t, 0.15) \times 1.5 + 4.0\text{m}$). Allows players to sprint (22+ m/s), dash, leap, and ride mounts without false-positive rubber-banding caused by network packet arrival jitter.
