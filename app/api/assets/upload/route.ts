@@ -10,6 +10,7 @@ import {
 } from "@/shared/game/assetImportProfiles";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 /**
  * POST /api/assets/upload — Ingest a SourceAsset (and optional UsableAsset)

@@ -64,6 +64,161 @@ export interface SocialUploadResponse {
   height?: number;
 }
 
+/** Upload multipart data while keeping upload progress separate from server processing. */
+export function uploadFormDataWithProgress<T = any>(
+  file: File,
+  formData: FormData,
+  endpoint: string,
+  onProgress?: (state: UploadProgressState) => void,
+  timeoutMs = 30 * 60 * 1000,
+): { promise: Promise<T>; cancel: () => void } {
+  const xhr = new XMLHttpRequest();
+  const startedAt = Date.now();
+  let lastLoaded = 0;
+  let lastTime = startedAt;
+  let isCancelled = false;
+  let rejectUpload: ((reason?: unknown) => void) | null = null;
+
+  const initialState: UploadProgressState = {
+    progress: 0,
+    loadedBytes: 0,
+    totalBytes: file.size,
+    speedBytesPerSec: 0,
+    formattedSpeed: '0 KB/s',
+    formattedEta: 'Preparing upload...',
+    formattedLoaded: formatFileSize(0),
+    formattedTotal: formatFileSize(file.size),
+    fileName: file.name,
+    fileType: getFileCategory(file),
+    stage: 'preparing',
+  };
+  let lastProgress = initialState;
+
+  const emitError = (error: string) => onProgress?.({
+    ...initialState,
+    formattedSpeed: 'Failed',
+    formattedEta: '',
+    stage: isCancelled ? 'aborted' : 'error',
+    error,
+  });
+
+  const cancel = () => {
+    if (isCancelled) return;
+    isCancelled = true;
+    xhr.abort();
+    emitError('Upload cancelled.');
+    rejectUpload?.(new Error('Upload cancelled.'));
+  };
+
+  onProgress?.(initialState);
+
+  const promise = new Promise<T>((resolve, reject) => {
+    rejectUpload = reject;
+    xhr.upload.onprogress = (event) => {
+      if (isCancelled || !event.lengthComputable) return;
+      const now = Date.now();
+      const elapsed = Math.max((now - lastTime) / 1000, 0.001);
+      const speed = (event.loaded - lastLoaded) / elapsed;
+      lastLoaded = event.loaded;
+      lastTime = now;
+      const totalBytes = event.total || file.size;
+      const loadedBytes = Math.min(event.loaded, totalBytes);
+      const complete = loadedBytes >= totalBytes;
+
+      lastProgress = {
+        progress: Math.min(100, Math.round((loadedBytes / totalBytes) * 100)),
+        loadedBytes,
+        totalBytes,
+        speedBytesPerSec: speed,
+        formattedSpeed: formatSpeed(speed),
+        formattedEta: complete
+          ? 'Received by server; waiting for asset registration...'
+          : formatEta((totalBytes - loadedBytes) / Math.max(speed, 0)),
+        formattedLoaded: formatFileSize(loadedBytes),
+        formattedTotal: formatFileSize(totalBytes),
+        fileName: file.name,
+        fileType: getFileCategory(file),
+        stage: complete ? 'processing' : 'uploading',
+      };
+      onProgress?.(lastProgress);
+    };
+
+    xhr.upload.onload = () => {
+      if (isCancelled) return;
+      lastProgress = {
+        ...lastProgress,
+        progress: 100,
+        loadedBytes: lastProgress.totalBytes || file.size,
+        formattedEta: 'File received; saving and registering asset...',
+        stage: 'processing',
+      };
+      onProgress?.(lastProgress);
+    };
+
+    xhr.onload = () => {
+      if (isCancelled) return;
+      let response: any;
+      try {
+        response = JSON.parse(xhr.responseText);
+      } catch {
+        const error = `Invalid server response (HTTP ${xhr.status}).`;
+        emitError(error);
+        reject(new Error(error));
+        return;
+      }
+
+      if (xhr.status < 200 || xhr.status >= 300 || response?.success === false) {
+        const error = response?.error || response?.message || `Upload failed (HTTP ${xhr.status}).`;
+        emitError(error);
+        reject(new Error(error));
+        return;
+      }
+
+      onProgress?.({
+        progress: 100,
+        loadedBytes: file.size,
+        totalBytes: file.size,
+        speedBytesPerSec: 0,
+        formattedSpeed: 'Complete',
+        formattedEta: 'Registered',
+        formattedLoaded: formatFileSize(file.size),
+        formattedTotal: formatFileSize(file.size),
+        fileName: file.name,
+        fileType: getFileCategory(file),
+        stage: 'completed',
+      });
+      resolve(response as T);
+    };
+
+    xhr.onerror = () => {
+      if (isCancelled) return;
+      const error = 'Network error during asset upload. Check your connection and try again.';
+      emitError(error);
+      reject(new Error(error));
+    };
+
+    xhr.ontimeout = () => {
+      if (isCancelled) return;
+      const error = 'Asset upload timed out while sending or registering the file.';
+      emitError(error);
+      reject(new Error(error));
+    };
+
+    xhr.onabort = () => {
+      if (isCancelled) return;
+      const error = 'Asset upload was interrupted.';
+      emitError(error);
+      reject(new Error(error));
+    };
+
+    xhr.open('POST', endpoint, true);
+    xhr.timeout = timeoutMs;
+    xhr.send(formData);
+  });
+
+  return { promise, cancel };
+}
+
 export function uploadSocialFileWithProgress(
   file: File,
   endpoint: string = '/api/upload/social',

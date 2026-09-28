@@ -63,9 +63,9 @@ export const ALLOWED_SOCIAL_MIME_TYPES = [
 ];
 
 const MAX_FILE_SIZE = parseInt(
-  process.env.MAX_UPLOAD_SIZE || "52428800",
+  process.env.MAX_UPLOAD_SIZE || "262144000",
   10
-); // 50MB default for models/assets
+); // 250MB default for models/assets; override with MAX_UPLOAD_SIZE when needed.
 
 const MAX_SOCIAL_FILE_SIZE = 250 * 1024 * 1024; // 250MB
 

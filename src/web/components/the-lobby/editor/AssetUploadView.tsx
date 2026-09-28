@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   Upload,
   Image as ImageIcon,
@@ -127,9 +127,11 @@ export function AssetUploadView({
   const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<'ALL' | 'CHARACTERS' | 'MODULAR' | 'WEAPONS' | 'CREATURES' | 'PROPS' | '2D'>('ALL');
   const [totalLibraryCount, setTotalLibraryCount] = useState(0);
   const [previewingAsset, setPreviewingAsset] = useState<GameAssetItem | null>(null);
+  const libraryRequestId = useRef(0);
 
   // Fetch Library Assets
-  const fetchLibrary = async () => {
+  const fetchLibrary = useCallback(async () => {
+    const requestId = ++libraryRequestId.current;
     setIsLoadingLibrary(true);
     try {
       const typeFilter = activeAssetPicker?.filterType || (libraryCategoryFilter === '2D' ? 'CHARACTER' : 'MODEL');
@@ -142,20 +144,29 @@ export function AssetUploadView({
         0,
         100
       );
-      setLibraryAssets(res.items || []);
-      setTotalLibraryCount(res.total || res.items?.length || 0);
+      if (requestId === libraryRequestId.current) {
+        setLibraryAssets(res.items || []);
+        setTotalLibraryCount(res.total || res.items?.length || 0);
+      }
     } catch (err) {
       console.warn('Failed to fetch library assets:', err);
     } finally {
-      setIsLoadingLibrary(false);
+      if (requestId === libraryRequestId.current) setIsLoadingLibrary(false);
     }
-  };
+  }, [activeAssetPicker?.filterType, libraryCategoryFilter, searchQuery]);
 
   useEffect(() => {
-    if (activeTab === 'library') {
-      void fetchLibrary();
-    }
-  }, [activeTab, libraryCategoryFilter, activeAssetPicker?.filterType]);
+    if (activeTab !== 'library') return;
+    const timeout = window.setTimeout(() => void fetchLibrary(), searchQuery ? 200 : 0);
+    return () => window.clearTimeout(timeout);
+  }, [activeTab, fetchLibrary, searchQuery]);
+
+  useEffect(() => {
+    if (activeTab !== 'library') return;
+    const handleAssetsRefreshed = () => void fetchLibrary();
+    window.addEventListener('assets:refreshed', handleAssetsRefreshed);
+    return () => window.removeEventListener('assets:refreshed', handleAssetsRefreshed);
+  }, [activeTab, fetchLibrary]);
 
   // Handle Intent Button Clicks
   const handleIntentClick = (intent: DetectedAssetCategory | '2d_sprite' | 'animation_pack') => {
@@ -464,6 +475,11 @@ export function AssetUploadView({
           companionTextureFiles={companionTextureFiles}
           companionModularFiles={companionModularFiles}
           intentHint={intentHint}
+          onViewLibrary={() => {
+            resetUpload();
+            setSearchQuery('');
+            setActiveTab('library');
+          }}
           onSuccess={(asset) => {
             if (activeAssetPicker) {
               activeAssetPicker.onSelect(asset.source || asset.id, asset);

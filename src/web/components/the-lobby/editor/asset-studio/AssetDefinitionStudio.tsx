@@ -55,6 +55,12 @@ import {
 import { convertFbxToGlb } from '@/web/lib/fbxConverter';
 import { RIG_FAMILIES, STANDARD_BONE_NAMES, analyzeAnimationClip, classifySkeletonRig, type CategorizedAnimationClip } from '@/shared/game/modelRigTaxonomy';
 import { detectAssetTaxonomy, AssetTaxonomyResult, DetectedAssetCategory } from '@/web/lib/assetTaxonomy';
+import {
+  formatFileSize,
+  getFileCategory,
+  uploadFormDataWithProgress,
+  type UploadProgressState,
+} from '@/web/lib/upload-client';
 
 // ── Types ────────────────────────────────────────────────────────────
 interface Props {
@@ -62,6 +68,7 @@ interface Props {
   previewUrl: string;
   onSuccess: (asset: any) => void;
   onCancel: () => void;
+  onViewLibrary?: () => void;
   companionAnimationFiles?: File[];
   companionTextureFiles?: File[];
   companionModularFiles?: File[];
@@ -81,6 +88,26 @@ interface AdditionalItem {
   categorizedAnimations?: CategorizedAnimationClip[];
   rigLabel?: string;
   enabled: boolean;
+}
+
+function createUploadProgress(
+  file: File,
+  stage: UploadProgressState['stage'],
+  message: string,
+): UploadProgressState {
+  return {
+    progress: 0,
+    loadedBytes: 0,
+    totalBytes: file.size,
+    speedBytesPerSec: 0,
+    formattedSpeed: stage === 'preparing' ? 'Preparing' : '0 KB/s',
+    formattedEta: message,
+    formattedLoaded: formatFileSize(0),
+    formattedTotal: formatFileSize(file.size),
+    fileName: file.name,
+    fileType: getFileCategory(file),
+    stage,
+  };
 }
 
 const TEXTURE_CHANNELS = [
@@ -262,6 +289,7 @@ export function AssetDefinitionStudio({
   previewUrl,
   onSuccess,
   onCancel,
+  onViewLibrary,
   companionAnimationFiles,
   companionTextureFiles,
   companionModularFiles,
@@ -534,6 +562,9 @@ export function AssetDefinitionStudio({
   const [modelCameraYOffset, setModelCameraYOffset] = useState<number>(0);
 
   const [isPublishing, setIsPublishing] = useState(false);
+  const [publishProgress, setPublishProgress] = useState<UploadProgressState | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [publishedAsset, setPublishedAsset] = useState<any | null>(null);
 
   // ── Derived data ───────────────────────────────────────────────────
   const componentCategoryEntries = useMemo(() => 
@@ -880,6 +911,9 @@ export function AssetDefinitionStudio({
     }
 
     setIsPublishing(true);
+    setPublishedAsset(null);
+    setPublishError(null);
+    setPublishProgress(createUploadProgress(file, 'preparing', 'Preparing model, textures, and metadata...'));
     try {
       const thumbnailDataUrl = inspectorRef.current?.takeSnapshot();
 
@@ -1041,19 +1075,22 @@ export function AssetDefinitionStudio({
       
       formData.append('assetDefinition', JSON.stringify(assetDefinition));
 
-      const res = await fetch('/api/assets/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to upload asset');
-      }
+      const mainUpload = uploadFormDataWithProgress(
+        uploadFile,
+        formData,
+        '/api/assets/upload',
+        setPublishProgress,
+      );
+      const data = await mainUpload.promise;
 
       // Upload additional items (only when publishing as dynamic Modular Set)
       if (preparedModularItemUploads.length > 0) {
-        for (const { item, file: itemUploadFile, name: itemBaseName } of preparedModularItemUploads) {
+        for (const [index, { item, file: itemUploadFile, name: itemBaseName }] of preparedModularItemUploads.entries()) {
+          setPublishProgress(createUploadProgress(
+            itemUploadFile,
+            'preparing',
+            `Preparing modular item ${index + 1} of ${preparedModularItemUploads.length}...`,
+          ));
           const itemFormData = new FormData();
           itemFormData.append('file', itemUploadFile);
           itemFormData.append('name', `${modularSetName || assetName} - ${itemBaseName}`);
@@ -1069,19 +1106,40 @@ export function AssetDefinitionStudio({
           }
           itemFormData.append('tags', JSON.stringify(['3d', 'model', 'modular', item.category]));
           
-          const itemRes = await fetch('/api/assets/upload', { method: 'POST', body: itemFormData });
-          const itemData = await itemRes.json().catch(() => ({}));
-          if (!itemRes.ok || !itemData.success) {
-            throw new Error(`Base model published, but modular item "${itemBaseName}" failed to upload: ${itemData.error || itemRes.statusText || 'unknown error'}`);
+          const itemUpload = uploadFormDataWithProgress(
+            itemUploadFile,
+            itemFormData,
+            '/api/assets/upload',
+            (progress) => setPublishProgress({
+              ...progress,
+              fileName: `${index + 1}/${preparedModularItemUploads.length} · ${itemBaseName}`,
+            }),
+          );
+          try {
+            await itemUpload.promise;
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Base model published, but modular item "${itemBaseName}" failed to upload: ${message}`);
           }
         }
       }
 
+      const registeredAsset = data.gameAsset || data.usableAsset || data.asset || data;
       showToast?.(`3D Asset Published: ${assetName}`);
       AssetManager.getInstance().broadcastRefresh();
-      onSuccess(data.gameAsset || data.usableAsset || data.asset || data);
+      setPublishedAsset(registeredAsset);
+      onSuccess(registeredAsset);
     } catch (err: any) {
       console.error(err);
+      const message = err?.message || 'Failed to publish asset.';
+      setPublishError(message);
+      setPublishProgress((current) => current ? {
+        ...current,
+        stage: 'error',
+        formattedSpeed: 'Failed',
+        formattedEta: '',
+        error: message,
+      } : null);
       showToast?.(`Error: ${err.message}`);
     } finally {
       setIsPublishing(false);
@@ -1132,12 +1190,86 @@ export function AssetDefinitionStudio({
         </div>
         <div className="flex gap-2">
           <button onClick={onCancel} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded text-white font-bold transition-all">Cancel</button>
-          <button onClick={handlePublish} disabled={isPublishing} className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded text-white font-bold transition-all flex items-center gap-2">
+          <button onClick={handlePublish} disabled={isPublishing || !!publishedAsset} className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded text-white font-bold transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
             {isPublishing ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
-            Publish Asset
+            {publishedAsset ? 'Published' : isPublishing ? 'Publishing...' : 'Publish Asset'}
           </button>
         </div>
       </div>
+
+      {publishProgress && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`rounded border p-3 ${publishProgress.stage === 'error'
+            ? 'border-rose-500/40 bg-rose-950/30'
+            : publishProgress.stage === 'completed'
+              ? 'border-emerald-500/40 bg-emerald-950/25'
+              : 'border-cyan-500/35 bg-cyan-950/20'}`}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2 font-bold">
+              {publishProgress.stage === 'completed' ? (
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+              ) : publishProgress.stage === 'error' ? (
+                <AlertTriangle className="h-4 w-4 shrink-0 text-rose-400" />
+              ) : (
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin text-cyan-300" />
+              )}
+              <span className={publishProgress.stage === 'error' ? 'text-rose-200' : publishProgress.stage === 'completed' ? 'text-emerald-200' : 'text-cyan-100'}>
+                {publishProgress.stage === 'preparing' && 'Preparing asset'}
+                {publishProgress.stage === 'uploading' && 'Uploading asset'}
+                {publishProgress.stage === 'processing' && 'Upload sent · saving and registering asset'}
+                {publishProgress.stage === 'completed' && 'Asset upload complete'}
+                {publishProgress.stage === 'error' && 'Asset upload did not complete'}
+                {publishProgress.stage === 'aborted' && 'Asset upload cancelled'}
+              </span>
+            </div>
+            <span className="shrink-0 text-[11px] font-bold text-white">{publishProgress.progress}%</span>
+          </div>
+          <div
+            className="mt-2 h-2 overflow-hidden rounded-full bg-black/50"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={publishProgress.progress}
+            aria-label={`Upload progress for ${publishProgress.fileName}`}
+          >
+            <div
+              className={`h-full rounded-full transition-[width] duration-200 ${publishProgress.stage === 'error' ? 'bg-rose-500' : publishProgress.stage === 'completed' ? 'bg-emerald-400' : 'bg-cyan-400'}`}
+              style={{ width: `${publishProgress.progress}%` }}
+            />
+          </div>
+          <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[10px] text-slate-300">
+            <span className="min-w-0 truncate" title={publishProgress.fileName}>{publishProgress.fileName}</span>
+            <span>{publishProgress.formattedLoaded} / {publishProgress.formattedTotal}</span>
+            <span>{publishProgress.stage === 'uploading'
+              ? `${publishProgress.formattedSpeed} · ${publishProgress.formattedEta}`
+              : publishProgress.formattedEta}</span>
+          </div>
+          {publishError && <div className="mt-1 text-[10px] text-rose-200">{publishError}</div>}
+        </div>
+      )}
+
+      {publishedAsset && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded border border-emerald-500/40 bg-emerald-950/25 p-3">
+          <div className="flex items-center gap-2 text-emerald-100">
+            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
+            <div>
+              <div className="font-bold">{publishedAsset.name || assetName} is in the asset library.</div>
+              <div className="text-[10px] text-emerald-100/70">The server finished saving and registering this asset.</div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button type="button" onClick={onCancel} className="rounded bg-slate-700 px-3 py-1.5 text-[10px] font-bold text-white hover:bg-slate-600">
+              Upload another
+            </button>
+            <button type="button" onClick={onViewLibrary || onCancel} className="rounded bg-emerald-600 px-3 py-1.5 text-[10px] font-bold text-white hover:bg-emerald-500">
+              View asset library
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Auto-Detection Vetting Bar */}
       {taxonomyResult && (
