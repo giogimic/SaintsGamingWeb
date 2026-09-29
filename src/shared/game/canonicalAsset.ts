@@ -614,8 +614,17 @@ export function formatCanonicalGameAsset(asset: any) {
       metadata.cat
   );
 
+  const assetName =
+    metadata.name ||
+    customLabels?.name ||
+    customLabels?.en ||
+    (asset as any).name ||
+    asset.source?.split("/").pop()?.replace(/\.[^/.]+$/, "") ||
+    asset.id;
+
   return {
     ...asset,
+    name: assetName,
     tags,
     categories,
     metadata,

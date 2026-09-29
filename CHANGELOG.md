@@ -1,3 +1,20 @@
+## [2.2.058] - 2026-09-29
+- **Canonical 3D Model Ingestion & Asset Library Discovery for Archetypes & Wardrobe**:
+  - **Asset Library Database Synchronization (`canonicalAssetsSync.ts`)**:
+    - Created `syncCanonicalGameAssets` which automatically registers all 4 foundational 3D models (`Citizen`, `Brute`, `Adventurer`, `Golem`) and all 30 modular citizen wardrobe pieces (`Body_010`, `Hat_010`, `T-Shirt_009`, `Shoe_Sneakers_009`, etc.) into the `GameAsset` database table with complete PBR, rig, and animation metadata.
+  - **API Catalog Integration (`app/api/assets/route.ts`, `app/api/assets/[id]/route.ts`)**:
+    - Wired self-healing database synchronization into `GET /api/assets`, allowing the 3D model browser and picker to immediately list all bundled models when creating Archetypes in `ArchetypeEditorWorkspace` or selecting wardrobe loadouts in `ModelWardrobeEditor`.
+    - Added fallback identifier and path resolution for individual asset retrieval (`GET /api/assets/[id]`) supporting both canonical keys and direct URLs.
+    - Updated `formatCanonicalGameAsset` in `canonicalAsset.ts` to cleanly project normalized asset names from metadata and custom labels.
+  - **Asset Manager Synthetic Resolution (`AssetManager.ts`)**:
+    - Updated `isDirectAssetPath` and `createSyntheticAsset` to recognize canonical model IDs (`citizen`, `brute`, `adventurer`, `golem`, `builtin-*`), immediately synthesizing rich `MODEL` assets with presentation metadata without network stalls.
+  - **Modular Mesh Filename Alignment (`worldModelPresentation.ts`)**:
+    - Corrected mesh name mismatches for `T-Shirt_009`, `Outwear_029`, and `Outwear_036` to guarantee 100% 1-to-1 correspondence with files on disk (30/30 verified).
+  - **Unit Testing Suite (`canonicalAssetsSync.test.ts`)**:
+    - Added comprehensive unit test coverage for canonical record generation and database synchronization (11/11 tests passing across suites).
+  - **Strict Version Alignment**:
+    - Synchronized `SITE_VERSION` defaults to `2.2.058` across `package.json`, `app/actions/settings.ts`, `app/(main)/admin/settings/page.tsx`, `app/(main)/layout.tsx`, `app/(ucp)/layout.tsx`, `src/web/components/shared/navbar.tsx`, `src/web/components/shared/global-bottom-bar.tsx`, and `app/(main)/admin/dev/system/page.tsx`.
+
 ## [2.2.057] - 2026-09-29
 - **Creative Characters Bundling & Mixamo Animation Integration (`citizen.glb`)**:
   - **Animation Rig Forensics & Compatibility**:

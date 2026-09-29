@@ -1,4 +1,5 @@
 export type { SpriteFrame } from './SpriteSheetSlicer';
+import { getCanonicalModelDef } from '@/shared/game/worldModelPresentation';
 
 export interface GameAssetItem {
   id: string;
@@ -167,13 +168,16 @@ export class AssetManager {
       id.startsWith('http://') ||
       id.startsWith('https://') ||
       id.startsWith('blob:') ||
-      id.startsWith('data:')
+      id.startsWith('data:') ||
+      id.startsWith('builtin-') ||
+      Boolean(getCanonicalModelDef(id))
     );
   }
 
   private createSyntheticAsset(id: string): GameAssetItem {
-    const isModel = /\.(glb|gltf|fbx|obj)$/i.test(id);
-    const source = id.startsWith('uploads/') ? `/${id}` : id;
+    const canonical = getCanonicalModelDef(id);
+    const source = canonical ? canonical.modelUrl : (id.startsWith('uploads/') ? `/${id}` : id);
+    const isModel = canonical ? true : /\.(glb|gltf|fbx|obj)$/i.test(source);
     return {
       id,
       gameId: null,
@@ -181,14 +185,27 @@ export class AssetManager {
       source,
       atlasSource: null,
       atlasFrame: null,
-      tags: [],
-      categories: [],
-      metadata: {},
-      customLabels: null,
+      tags: canonical ? ['model', '3d', canonical.category, canonical.skeleton, 'canonical'] : [],
+      categories: canonical ? ['model', canonical.category] : [],
+      metadata: canonical
+        ? {
+            name: canonical.name,
+            anim: canonical.defaultAnimationProfileId,
+            skeleton: canonical.skeleton,
+            profile: canonical.category,
+            role: canonical.category === 'monster' ? 'monster' : 'humanoid',
+            presentation: {
+              mode: '3D',
+              modelUrl: canonical.modelUrl,
+              animationProfileId: canonical.defaultAnimationProfileId,
+            },
+          }
+        : {},
+      customLabels: canonical ? { en: canonical.name } : null,
       isActive: true,
       usageCount: 0,
       fileSize: 0,
-      cdnUrl: null,
+      cdnUrl: source,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

@@ -75,7 +75,14 @@ export interface AssetUploadViewProps {
 }
 
 function getAssetName(asset: GameAssetItem): string {
-  return (asset as any).name || asset.metadata?.name || asset.source?.split('/').pop()?.replace(/\.[^/.]+$/, '') || asset.id;
+  return (
+    (asset as any).name ||
+    asset.metadata?.name ||
+    asset.customLabels?.name ||
+    asset.customLabels?.en ||
+    asset.source?.split('/').pop()?.replace(/\.[^/.]+$/, '') ||
+    asset.id
+  );
 }
 
 export function AssetUploadView({

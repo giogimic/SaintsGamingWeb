@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { canWriteStudioContent } from "@/shared/game/studioPermissions";
 import { formatCanonicalGameAsset } from "@/shared/game/canonicalAsset";
 import { AuditService } from "@/server/audit/AuditService";
-
+import { syncCanonicalGameAssets } from "@/server/assets/canonicalAssetsSync";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +31,7 @@ function formatAsset(asset: any) {
  */
 export async function GET(req: NextRequest) {
   try {
+    await syncCanonicalGameAssets(prisma);
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type");
     const gameId = searchParams.get("gameId");

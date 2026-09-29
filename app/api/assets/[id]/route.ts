@@ -20,7 +20,20 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const asset = await prisma.gameAsset.findUnique({ where: { id } });
+    let asset = await prisma.gameAsset.findUnique({ where: { id } });
+    if (!asset) {
+      asset = await prisma.gameAsset.findFirst({
+        where: {
+          OR: [
+            { id: `builtin-model-${id}` },
+            { id: `builtin-piece-${id}` },
+            { source: id },
+            { source: `/game-assets/models/${id}.glb` },
+            { source: `/game-assets/models/citizen/${id}.glb` },
+          ],
+        },
+      });
+    }
     if (!asset || !asset.isActive) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }

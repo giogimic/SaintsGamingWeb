@@ -11,12 +11,14 @@ import { getAllProfessionDefs } from "@/shared/game/professions/professionRegist
 import { getSkillGuide } from "@/shared/game/skillGuideData";
 import { getAllAbilityDefs } from "@/shared/game/combat/abilityRegistry";
 import { seedElements } from "./seedElements";
+import { syncCanonicalGameAssets } from "./assets/canonicalAssetsSync";
 
 export async function bootstrapDynamicStarterContent(gameId: string = "saints", profileId: string = "default") {
   console.log("[StarterContentBootstrap] Seeding dynamic RPG definitions…");
 
   try {
     await seedElements();
+    await syncCanonicalGameAssets(prisma);
     
     // ── 0. ITEM TEMPLATES ──────────────────────────────────────────────────
     const starterItems = [

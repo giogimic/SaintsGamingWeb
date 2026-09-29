@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { DEMO_LOGIC_TILES } from '../src/shared/game/setup/logicTilesSeed';
+import { syncCanonicalGameAssets } from '../src/server/assets/canonicalAssetsSync';
 
 const prisma = new PrismaClient();
 
@@ -831,6 +832,9 @@ async function main() {
     }).catch((e: any) => console.warn(`[Setup] Logic tile ${tile.id} skip:`, e.message));
   }
   console.log("Seeded Map Logic Tiles.");
+
+  await syncCanonicalGameAssets(prisma);
+  console.log("Seeded Canonical 3D Models and Modular Pieces.");
 }
 
 main()
