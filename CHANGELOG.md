@@ -1,3 +1,23 @@
+## [2.2.060] - 2026-09-29
+- **Multiplayer Duplicate Character Ghosting Elimination & Local Player Self-Filtering**:
+  - **Local Player Hydration Integrity (`index.tsx`)**:
+    - Ensured `accountId` (`session.user.id || charId`) and `id` (`charId`) are explicitly populated in `hydratePlayer` when a character is loaded, preventing unassigned local account identities that bypassed peer filters.
+  - **Socket Event Ingress Self-Filtering (`index.tsx`)**:
+    - Fixed `map_players`, `player_joined`, and `player_moved` socket handlers to comprehensively check against the local player by `socket.id`, `accountId`, character `id`, and case-insensitive `name`.
+    - Prevented local player echo packets from creating duplicate peer records in `otherPlayers`.
+    - Added automated pruning of matching entities from `otherPlayers` if any legacy or reconnect echo packet is received.
+  - **Multiplayer Store Ingestion Protection (`multiplayerSlice.ts`)**:
+    - Enforced strict self-filtering in both `setOtherPlayers` and `updateOtherPlayer`.
+    - Any incoming socket updates or peer dictionary snapshots matching the local player's `socket.id`, `accountId`, `id`, or `name` are immediately discarded and pruned.
+  - **3D & 2D Canvas Render Loop Safety (`VoxelCanvasBabylon.tsx`, `TileCanvasBabylon.tsx`, `PlaytestRuntime.tsx`)**:
+    - Added defense-in-depth checks within the Babylon multiplayer entity render loops in both Voxel and Tile canvases.
+    - If any peer entity matches the active player (`socketId === localSocketId`, `accountId === localPlayer.accountId`, or `name === localPlayer.name`), the engine immediately purges any existing `multiplayer_${socketId}` Babylon mesh and skips rendering, eliminating ghost clone duplicates.
+  - **Go MMO Backend Broadcast Sanitization (`the-lobby/internal/engine/engine.go`, `the-lobby/internal/socket/handler.go`)**:
+    - Included `accountId` in the `player_moved` payload emitted by `netTick()` in `engine.go`.
+    - Implemented `EmitToRoomExcept(room, exceptSid, event, payload)` in `handler.go` and used it for `EvPlayerJoined` so the joining player never receives their own join event.
+  - **Global Version Synchronization**:
+    - Synchronized `SITE_VERSION` defaults to `2.2.060` across all 8 tracking files (`package.json`, `app/actions/settings.ts`, `app/(main)/admin/settings/page.tsx`, `app/(main)/layout.tsx`, `app/(ucp)/layout.tsx`, `src/web/components/shared/navbar.tsx`, `src/web/components/shared/global-bottom-bar.tsx`, `app/(main)/admin/dev/system/page.tsx`).
+
 ## [2.2.059] - 2026-09-29
 - **Modular Archetype Builds, Character Base vs Clothing Taxonomy, and Anti-Clipping 3D Previews**:
   - **Archetype Base vs Modular Clothing Filtering (`AssetUploadView.tsx`)**:

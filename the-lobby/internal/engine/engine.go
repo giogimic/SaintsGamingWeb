@@ -319,6 +319,7 @@ func (e *Engine) netTick() {
 		payload := map[string]any{
 			"socketId":  p.SocketID,
 			"entityId":  p.EntityID,
+			"accountId": p.AccountID,
 			"x":         p.X,
 			"y":         p.Y,
 			"z":         p.Z,

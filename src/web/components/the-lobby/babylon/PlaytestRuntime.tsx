@@ -734,7 +734,30 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
           }
         });
 
+        const localPlayer = liveStore.player;
+        const localSocketId = liveStore.socket?.id;
+        const localName = localPlayer?.name?.trim().toLowerCase();
+        const localAcc = localPlayer?.accountId;
+        const localId = (localPlayer as any)?.id;
+
         for (const [socketId, other] of Object.entries(freshOtherPlayers)) {
+          if (!other) continue;
+
+          // STRICT SELF-FILTER: Never render local player as a multiplayer peer
+          const isSelf =
+            (localSocketId && socketId === localSocketId) ||
+            (localAcc && (other.accountId === localAcc || socketId === localAcc)) ||
+            (localId && (socketId === localId || (other as any).id === localId || (other as any).characterId === localId)) ||
+            (localName && other.name && String(other.name).trim().toLowerCase() === localName);
+
+          if (isSelf) {
+            if (engine._renderedSockets.has(socketId)) {
+              engine.removeEntity(`multiplayer_${socketId}`);
+              engine._renderedSockets.delete(socketId);
+            }
+            continue;
+          }
+
           engine._renderedSockets.add(socketId);
           // Prefer ?? so tile (0,0) is not remapped to demo defaults.
           const targetX = other.x ?? 6;

@@ -584,7 +584,7 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 		JoinSeq:    req.JoinSeq,
 	})
 	h.EmitToSocket(sid, protocol.EvMapPlayers, h.eng.Players().SnapshotPeers(inst.InstanceID, accountID))
-	h.EmitToRoom(inst.InstanceID, protocol.EvPlayerJoined, p.Peer())
+	h.EmitToRoomExcept(inst.InstanceID, sid, protocol.EvPlayerJoined, p.Peer())
 	for _, c := range h.eng.Creatures().List(inst.InstanceID) {
 		h.EmitToSocket(sid, protocol.EvCreatureSpawned, c)
 	}
@@ -961,6 +961,37 @@ func (h *Hub) EmitToRoom(room, event string, payload any) {
 		}
 	}
 	h.emitRoomRaw(room, event, payload)
+}
+
+func (h *Hub) EmitToRoomExcept(room, exceptSid, event string, payload any) {
+	if strings.HasPrefix(room, "aoi-broadcast:") {
+		parts := strings.Split(room, ":")
+		if len(parts) == 4 {
+			inst := parts[1]
+			zx := atoi(parts[2])
+			zy := atoi(parts[3])
+			for _, r := range aoi.NeighborRooms(inst, zx, zy) {
+				h.emitRoomRawExcept(r, exceptSid, event, payload)
+			}
+			return
+		}
+	}
+	h.emitRoomRawExcept(room, exceptSid, event, payload)
+}
+
+func (h *Hub) emitRoomRawExcept(room, exceptSid, event string, payload any) {
+	h.mu.RLock()
+	members := h.rooms[room]
+	ids := make([]string, 0, len(members))
+	for id := range members {
+		if id != exceptSid {
+			ids = append(ids, id)
+		}
+	}
+	h.mu.RUnlock()
+	for _, id := range ids {
+		h.EmitToSocket(id, event, payload)
+	}
 }
 
 func (h *Hub) emitRoomRaw(room, event string, payload any) {

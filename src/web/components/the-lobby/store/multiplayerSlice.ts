@@ -22,8 +22,18 @@ setPlayerChat: (message) => {
 
 setOtherPlayers: (players) => set((state) => {
         const normalized: typeof state.otherPlayers = {};
+        const localName = state.player?.name?.trim().toLowerCase();
+        const localAcc = state.player?.accountId;
+        const localId = (state.player as any)?.id;
+        const localSocketId = state.socket?.id;
+
         for (const [id, p] of Object.entries(players || {})) {
           if (!p) continue;
+          if (localSocketId && id === localSocketId) continue;
+          if (localAcc && (id === localAcc || p.accountId === localAcc)) continue;
+          if (localId && (id === localId || (p as any).id === localId || (p as any).characterId === localId)) continue;
+          if (localName && p.name && p.name.trim().toLowerCase() === localName) continue;
+
           normalized[id] = {
             ...p,
             assetProfileId: (p as any).assetProfileId || (p as any).spriteId || 'adventurer',
@@ -33,6 +43,24 @@ setOtherPlayers: (players) => set((state) => {
       }),
 
 updateOtherPlayer: (socketId, data: any) => set((state) => {
+        const localName = state.player?.name?.trim().toLowerCase();
+        const localAcc = state.player?.accountId;
+        const localId = (state.player as any)?.id;
+        const localSocketId = state.socket?.id;
+
+        const isSelf =
+          (localSocketId && socketId === localSocketId) ||
+          (localAcc && (socketId === localAcc || data?.accountId === localAcc)) ||
+          (localId && (socketId === localId || data?.id === localId || data?.characterId === localId)) ||
+          (localName && data?.name && data.name.trim().toLowerCase() === localName);
+
+        if (isSelf) {
+          if (state.otherPlayers[socketId]) {
+            delete state.otherPlayers[socketId];
+          }
+          return;
+        }
+
         const resolvedSprite = data.assetProfileId || data.spriteId;
         if (!state.otherPlayers[socketId]) {
           state.otherPlayers[socketId] = {

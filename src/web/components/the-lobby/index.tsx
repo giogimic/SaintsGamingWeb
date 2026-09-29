@@ -389,8 +389,11 @@ export default function TheLobby({
         } catch {}
       }
 
+      const effectiveAccountId = session?.user?.id || charId;
       useGameStore.getState().hydratePlayer({ 
         ...parsedState,
+        accountId: effectiveAccountId,
+        id: charId,
         currentMapId: validMapId,
         name: res.data.name,
         assetProfileId: res.data.assetProfileId || 'adventurer',
@@ -912,10 +915,20 @@ export default function TheLobby({
 
     socket.on('map_players', (players) => {
       const state = useGameStore.getState();
-      const filtered = { ...(players || {}) };
-      if (socket.id) delete filtered[socket.id];
-      if (state.player?.accountId) delete filtered[state.player.accountId];
-      if ((state.player as any)?.id) delete filtered[(state.player as any).id];
+      const localName = state.player?.name?.trim().toLowerCase();
+      const localAcc = state.player?.accountId || session?.user?.id;
+      const localId = (state.player as any)?.id || activeCharacterId;
+      const localSocketId = socket.id;
+
+      const filtered: Record<string, any> = {};
+      for (const [key, p] of Object.entries(players || {})) {
+        if (!p) continue;
+        if (localSocketId && key === localSocketId) continue;
+        if (localAcc && (key === localAcc || (p as any).accountId === localAcc)) continue;
+        if (localId && (key === localId || (p as any).id === localId || (p as any).characterId === localId)) continue;
+        if (localName && (p as any).name && String((p as any).name).trim().toLowerCase() === localName) continue;
+        filtered[key] = p;
+      }
       
       const incomingCount = Object.keys(filtered).length;
       const existingCount = Object.keys(state.otherPlayers || {}).length;
@@ -948,9 +961,26 @@ export default function TheLobby({
     socket.on('player_joined', (data) => {
       const state = useGameStore.getState();
       const peerKey = data.accountId || data.socketId || data.id;
-      const isLocal = peerKey === socket.id || peerKey === state.player?.accountId || peerKey === (state.player as any)?.id;
+      const localName = state.player?.name?.trim().toLowerCase();
+      const localAcc = state.player?.accountId || session?.user?.id;
+      const localId = (state.player as any)?.id || activeCharacterId;
+      const isLocal =
+        (socket.id && (peerKey === socket.id || data.socketId === socket.id)) ||
+        (localAcc && (peerKey === localAcc || data.accountId === localAcc)) ||
+        (localId && (peerKey === localId || data.id === localId || data.characterId === localId)) ||
+        (localName && data.name && String(data.name).trim().toLowerCase() === localName);
       
-      if (!isLocal && peerKey) {
+      if (isLocal) {
+        if (peerKey && state.otherPlayers[peerKey]) {
+          useGameStore.getState().removeOtherPlayer(peerKey);
+        }
+        if (data.socketId && state.otherPlayers[data.socketId]) {
+          useGameStore.getState().removeOtherPlayer(data.socketId);
+        }
+        return;
+      }
+
+      if (peerKey) {
         useGameStore.getState().updateOtherPlayer(peerKey, data);
         // Visible confirmation that the peer store received the join (helps
         // separate "not on shard" from "sprite not rendering").
@@ -990,7 +1020,14 @@ export default function TheLobby({
       if (!peerKey) return;
 
       const state = useGameStore.getState();
-      const isLocal = peerKey === socket.id || peerKey === state.player?.accountId || peerKey === (state.player as any)?.id;
+      const localName = state.player?.name?.trim().toLowerCase();
+      const localAcc = state.player?.accountId || session?.user?.id;
+      const localId = (state.player as any)?.id || activeCharacterId;
+      const isLocal =
+        (socket.id && (peerKey === socket.id || data?.socketId === socket.id)) ||
+        (localAcc && (peerKey === localAcc || data?.accountId === localAcc)) ||
+        (localId && (peerKey === localId || data?.id === localId || data?.characterId === localId)) ||
+        (localName && data?.name && String(data.name).trim().toLowerCase() === localName);
 
       if (isLocal) {
         // Phase 2: Client Prediction enabled. We ignore movement deltas for ourselves
@@ -1001,6 +1038,12 @@ export default function TheLobby({
               s.player.hp = data.hp;
               if (data.maxHp !== undefined) s.player.maxHp = data.maxHp;
            });
+        }
+        if (state.otherPlayers[peerKey]) {
+          useGameStore.getState().removeOtherPlayer(peerKey);
+        }
+        if (data?.socketId && state.otherPlayers[data.socketId]) {
+          useGameStore.getState().removeOtherPlayer(data.socketId);
         }
       } else {
         useGameStore.getState().updateOtherPlayer(peerKey, { ...data, lastUpdateMs: Date.now() });
