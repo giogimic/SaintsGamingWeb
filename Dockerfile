@@ -44,8 +44,10 @@ ENV NODE_ENV=production
 
 # Ensure directories exist and have proper permissions for runtime
 RUN mkdir -p public/uploads
+RUN mkdir -p public/animations
 RUN mkdir -p prisma/db
 RUN chmod -R 755 public/uploads
+RUN chmod -R 755 public/animations
 RUN chmod -R 755 prisma/db
 
 EXPOSE 24001

@@ -17,6 +17,9 @@ services:
       - ./data:/app/prisma/db
       # Map the uploads directory so user images persist
       - ./uploads:/app/public/uploads
+      # Map the animations directory so 3D character animations load in production
+      - ./public/animations:/app/public/animations
+      - /var/saints-gaming/Paragon_animations_glb:/var/saints-gaming/Paragon_animations_glb:ro
     env_file:
       - .env
     environment:

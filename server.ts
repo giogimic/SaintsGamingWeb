@@ -52,21 +52,25 @@ app.prepare().then(async () => {
         }
         decodedSuffix = path.normalize(decodedSuffix).replace(/^(\.\.[\/\\])+/, '');
         
-        // Search potential animation directory roots (Debian/Linux priority, env var, local public, Windows)
+        // Search potential animation directory roots (local public bundles first, then Debian/Linux external mounts, then Windows)
         const possibleRoots = isParagon ? [
+          path.join(process.cwd(), "public", "animations", "Paragon"),
+          path.join(process.cwd(), "public", "animations"),
+          path.join(process.cwd(), "public"),
           process.env.PARAGON_ANIMATIONS_DIR,
           "/var/saints-gaming/Paragon_animations_glb",
           "/var/www/saints-gaming/Paragon_animations_glb",
           "/opt/saints-gaming/Paragon_animations_glb",
-          path.join(process.cwd(), "public", "animations", "Paragon"),
-          path.join(process.cwd(), "public", "animations"),
           "C:\\saints-gaming\\Paragon_animations_glb",
         ].filter(Boolean) as string[] : [
+          path.join(process.cwd(), "public", "animations", "Paragon"),
           path.join(process.cwd(), "public", "animations"),
           path.join(process.cwd(), "public"),
           process.env.ANIMATIONS_DIR,
+          "/var/saints-gaming/Paragon_animations_glb",
           "/var/saints-gaming/animations",
           "/opt/saints-gaming/animations",
+          "C:\\saints-gaming\\Paragon_animations_glb",
           "C:\\saints-gaming\\animations",
         ].filter(Boolean) as string[];
 
@@ -90,11 +94,16 @@ app.prepare().then(async () => {
             try {
               if (!fs.existsSync(root)) continue;
 
-              // 1. Direct path check
+              // 1. Direct path check (both direct and inside Paragon/ subfolder)
               const directPath = path.join(root, suffix);
               if (fs.existsSync(directPath) && fs.statSync(directPath).isFile()) {
                 animCache.set(cacheKey, directPath);
                 return directPath;
+              }
+              const paragonSub = path.join(root, 'Paragon', suffix);
+              if (fs.existsSync(paragonSub) && fs.statSync(paragonSub).isFile()) {
+                animCache.set(cacheKey, paragonSub);
+                return paragonSub;
               }
               if (!suffix.endsWith('.glb') && fs.existsSync(directPath + '.glb') && fs.statSync(directPath + '.glb').isFile()) {
                 animCache.set(cacheKey, directPath + '.glb');
@@ -110,6 +119,9 @@ app.prepare().then(async () => {
 
                 // Case-insensitive profile folder match (critical on Linux ext4)
                 let profileDir = path.join(root, profileName);
+                if (!fs.existsSync(profileDir)) {
+                  profileDir = path.join(root, 'Paragon', profileName);
+                }
                 if (!fs.existsSync(profileDir)) {
                   try {
                     const entries = fs.readdirSync(root, { withFileTypes: true });
@@ -127,20 +139,20 @@ app.prepare().then(async () => {
                       'Jog/Idle.glb', 'Idle_Combat.glb', 'IDleAO/Idle_Pose.glb', 'Idle_Combat_Pose.glb',
                       'Steel_Idle.glb', 'Idle.glb', 'idle.glb', '01_02_001_Start jogging.glb'
                     );
-                  } else if (baseName === 'run_fwd' || baseName === 'jog_fwd' || baseName.includes('run') || baseName.includes('jog')) {
+                  } else if (baseName === 'run_fwd' || baseName === 'jog_fwd' || baseName === 'walk_fwd' || baseName.includes('run') || baseName.includes('jog') || baseName.includes('walk')) {
                     candidateSubpaths.push(
                       'Jog/Jog_Fwd.glb', 'Jog/jog_fwd.glb', 'Jog_Fwd.glb', 'Walk_Fwd.glb',
                       'Run_Fwd.glb', 'run_fwd.glb', 'Sprint/Sprint_Fwd.glb', '01_02_006_jogging.glb'
                     );
-                  } else if (baseName === 'run_bwd' || baseName === 'jog_bwd') {
+                  } else if (baseName === 'run_bwd' || baseName === 'jog_bwd' || baseName === 'walk_bwd') {
                     candidateSubpaths.push(
                       'Jog/Jog_Bwd.glb', 'Jog_Bwd.glb', 'Walk_Bwd.glb', 'Run_Bwd.glb', '01_02_003_180 turn jogging.glb'
                     );
-                  } else if (baseName === 'run_left' || baseName === 'jog_left') {
+                  } else if (baseName === 'run_left' || baseName === 'jog_left' || baseName === 'walk_left') {
                     candidateSubpaths.push(
                       'Jog/Jog_Left.glb', 'Jog_Left.glb', 'Jog/Jog_Lft.glb', 'Walk_Left.glb', 'Run_Left.glb', '01_02_004_90 turn jogging_L.glb'
                     );
-                  } else if (baseName === 'run_right' || baseName === 'jog_right') {
+                  } else if (baseName === 'run_right' || baseName === 'jog_right' || baseName === 'walk_right') {
                     candidateSubpaths.push(
                       'Jog/Jog_Right.glb', 'Jog_Right.glb', 'Jog/Jog_Rt.glb', 'Walk_Right.glb', 'Run_Right.glb', '01_02_005_90 turn jogging_R.glb'
                     );
@@ -196,6 +208,7 @@ app.prepare().then(async () => {
         }
 
         const targetFile = resolveAnimationTarget(possibleRoots, decodedSuffix);
+        console.log(`[Animations] ${parsedUrl.pathname} -> ${targetFile ? 'SERVED (' + targetFile + ')' : 'NOT RESOLVED (checked roots: ' + possibleRoots.length + ')'}`);
         
         if (targetFile) {
           const ext = path.extname(targetFile).toLowerCase();
