@@ -10,6 +10,10 @@ export function GameCanvas() {
   useEffect(() => {
     const handlePointerLockChange = () => {
       if (!document.pointerLockElement) {
+        if ((window as any).__intentionalPointerLockExit) {
+          (window as any).__intentionalPointerLockExit = false;
+          return;
+        }
         try {
           if (!useGameStore.getState().isSystemMenuOpen) {
             useGameStore.getState().openSystemMenu('keyboard');

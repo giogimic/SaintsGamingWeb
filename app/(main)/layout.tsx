@@ -44,10 +44,10 @@ export default async function MainLayout({
   let gameTitle = "The Lobby";
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.2.052";
+    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.2.054";
   } catch (error) {
     console.error("Failed to fetch site version from database, using env/default:", error);
-    siteVersion = process.env.NEXT_PUBLIC_SITE_VERSION || "2.2.052";
+    siteVersion = process.env.NEXT_PUBLIC_SITE_VERSION || "2.2.054";
   }
   try {
     const ucpNavSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_in_nav" } });

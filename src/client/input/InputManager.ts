@@ -118,6 +118,7 @@ export class InputManager {
   private onMouseUp = (e: MouseEvent) => {
     if (e.button === 0) this.mouseDown = false;
     if (e.button === 2) {
+      (window as any).__intentionalPointerLockExit = true;
       document.exitPointerLock?.();
     }
   };

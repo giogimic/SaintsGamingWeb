@@ -143,6 +143,15 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 
 ## Changelog
 
+### v2.2.053
+- **In-Game Modular Wardrobe, Outfit & Accessory Attachment Architecture**:
+  - **In-Game Modular Mesh & Socket Attachment (`EntityRenderer.ts`, `BabylonEngine.ts`, `babylonAttachmentHelpers.ts`)**: Implemented runtime attachment handling in Babylon.js for equipped outfits, clothing pieces, armor, hats, masks, eyewear, weapons, and accessories. Characters now load their full modular wardrobe in-game across both the live game client (`ExploringScene` / `GameCanvas.tsx` / `EntityRenderer.ts`) and Studio playtest canvas (`BabylonEngine.ts`), matching character creation 3D preview.
+  - **Skinned Retargeting & Bone Linking (`babylonAttachmentHelpers.ts`)**: Built `attachModularComponent` which detects skinned vs rigid modular pieces. For skinned wearables (shirts, jackets, pants, shoes, full outfits), it synchronizes clothing bones to base skeleton transform nodes by normalized bone names (`normalizeBoneName`) using `clothingBone.linkTransformNode(baseNode)`, keeping them perfectly aligned during locomotion and actions. Independent accessory animation groups are automatically stopped to prevent fighting the base skeleton.
+  - **Rigid Socket Parenting & Offsets (`babylonAttachmentHelpers.ts`)**: For rigid socket accessories (weapons, shields, hats, back items), resolves canonical sockets (`RightHandMount`, `LeftHandMount`, `HeadMount`, `ChestMount`, `SheathedBack`, etc.) to target bones via `findBabylonBone`, wrapping attachments in isolated transform nodes with custom position, rotation, and scale offsets.
+  - **Anti-Clipping Component Hiding (`hidesComponents`)**: Automatically evaluates `attachment.hidesComponents` to hide base character submeshes matching keyword patterns (e.g., hiding base body/legs/feet underneath heavy armor, robes, or full outfits).
+  - **Dynamic Outfit Invalidation & Asset Resolution (`EntityRenderer.ts`, `worldModelPresentation.ts`)**: Included `presentationSignature` and `modularAttachments` in sprite cache evaluation so equipping wardrobe changes dynamically rebuilds entity composites without stale cached meshes. Added `cdnUrl` fallback to attachment resolution.
+  - **Site Version Synchronization**: Bumped site version to `2.2.053` across all designated configuration and layout files.
+
 ### v2.2.052
 - **Resolve React Error #310 Hook Order Violation, Direct Asset 404s & In-Game Model Resolution**:
   - **React Error #310 Elimination (`CharacterDetailPreview.tsx`)**: Fixed a critical React Rules of Hooks violation where `modelPresentation = useMemo(...)` was positioned after an early return guard (`if (!character) return (...)`), preventing application crashes during character selection and game transitions.

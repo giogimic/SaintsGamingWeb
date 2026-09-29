@@ -436,9 +436,9 @@ export function parseModelWardrobeItems(value: unknown): ModelWardrobeItem[] {
         modelUrl: item.modelUrl || item.source || undefined,
         category: getModelWardrobeCategory(item),
       };
-      normalized.attachmentMode = getDefaultModelWardrobeAttachmentMode(normalized);
+      normalized.attachmentMode = item.attachmentMode || (item.isModular ? 'SKINNED' : getDefaultModelWardrobeAttachmentMode(normalized));
       if (normalized.attachmentMode === 'RIGID_SOCKET') {
-        normalized.socket = getDefaultModelWardrobeSocket(normalized);
+        normalized.socket = item.socket || getDefaultModelWardrobeSocket(normalized);
       }
       return normalized;
     });
@@ -468,12 +468,9 @@ export function applyCharacterCreationWardrobe(
     return { ...item, defaultVisible: selected.has(item.assetId) };
   });
 
-  if (Array.isArray(data.modularAttachments)) data.modularAttachments = nextAttachments;
-  if (data.worldModel && Array.isArray(data.worldModel.modularAttachments)) {
-    data.worldModel = { ...data.worldModel, modularAttachments: nextAttachments };
-  }
-  if (!Array.isArray(data.modularAttachments) && !Array.isArray(data.worldModel?.modularAttachments)) {
-    data.modularAttachments = nextAttachments;
+  data.modularAttachments = nextAttachments;
+  if (data.worldModel && typeof data.worldModel === 'object' && !Array.isArray(data.worldModel)) {
+    data.worldModel.modularAttachments = nextAttachments;
   }
   return JSON.stringify(data);
 }

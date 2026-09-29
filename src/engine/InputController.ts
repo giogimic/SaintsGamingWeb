@@ -158,6 +158,7 @@ public handleEditorPointerUp(e: PointerEvent) {
     
     if (document.pointerLockElement === this.engine.canvas) {
       try {
+        (window as any).__intentionalPointerLockExit = true;
         document.exitPointerLock();
       } catch {}
     }

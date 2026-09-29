@@ -99,34 +99,9 @@ import { loadAndRetargetAnimation, normalizeBoneName } from './animationRetarget
 import { AssetManager } from './assets/AssetManager';
 import { applyAnimationProfileFallback } from '../shared/game/animationProfiles';
 import { getDefaultModelWardrobeSocket } from '../shared/game/modelWardrobe';
-
-function findBabylonBone(skeleton: any, socketName: string) {
-  if (!skeleton || !skeleton.bones) return null;
-  const s = socketName.toLowerCase();
-  const matchers: Record<string, string[]> = {
-    righthandmount: ['righthand', 'hand_r', 'hand.r', 'r_hand', 'r-hand', 'wrist_r', 'bip01 r hand', 'mixamorigrighthand'],
-    lefthandmount: ['lefthand', 'hand_l', 'hand.l', 'l_hand', 'l-hand', 'wrist_l', 'bip01 l hand', 'mixamoriglefthand'],
-    twohandedgrip: ['righthand', 'hand_r', 'hand.r', 'r_hand', 'wrist_r', 'mixamorigrighthand'],
-    headmount: ['head', 'bip01 head', 'mixamorighead', 'neck', 'bip01 neck', 'mixamorigneck'],
-    chestmount: ['spine2', 'upperchest', 'mixamorigupperchest', 'spine1', 'chest', 'spine', 'mixamorigspine2', 'mixamorigchest', 'pelvis'],
-    sheathedback: ['spine2', 'upperchest', 'chest', 'spine1', 'spine', 'mixamorigspine2'],
-    sheathedhip_l: ['leftupleg', 'thigh_l', 'pelvis', 'hips', 'mixamorigleftupleg'],
-    sheathedhip_r: ['rightupleg', 'thigh_r', 'pelvis', 'hips', 'mixamorigrightupleg'],
-  };
-  const patterns = matchers[s] || [s];
-  const normPatterns = patterns.map(p => normalizeBoneName(p));
-  for (let i = 0; i < patterns.length; i++) {
-    const pat = patterns[i];
-    const normPat = normPatterns[i];
-    const found = skeleton.bones.find((b: any) => {
-      const bn = (b.name || '').toLowerCase().replace(/[^a-z0-9_.]/g, '');
-      const normBn = normalizeBoneName(b.name || '');
-      return bn.includes(pat) || normBn.includes(normPat);
-    });
-    if (found) return found;
-  }
-  return null;
-}
+import { attachModularComponent, findBabylonBone } from './helpers/babylonAttachmentHelpers';
+import { resolveModelAssetUrl } from '../shared/game/worldModelPresentation';
+import type { ModularAttachmentDef } from '../shared/game/canonicalAsset';
 
 export interface RenderedChunk {
   mapId?: string;
@@ -534,7 +509,10 @@ export class BabylonEngine {
                 void Promise.resolve(this.canvas.requestPointerLock()).catch(() => {});
               } catch {}
             } else if (nextMode === 'overview2_5d' && document.pointerLockElement === this.canvas) {
-              try { document.exitPointerLock(); } catch {}
+              try { 
+                (window as any).__intentionalPointerLockExit = true;
+                document.exitPointerLock(); 
+              } catch {}
             }
           }
           
@@ -4100,6 +4078,8 @@ export class BabylonEngine {
       // A character can change outfit when the selected character or its saved
       // wardrobe changes. Rebuild the composite so the new attachment list is
       // loaded instead of leaving the first outfit cached on the entity.
+      spriteMesh.metadata?.attachmentAnimationGroups?.forEach((ag: any) => ag.dispose());
+      spriteMesh.metadata?.attachmentSkeletons?.forEach((s: any) => s.dispose());
       spriteMesh.dispose(false, false);
       this.entityMeshes.delete(entity.id);
       this.shadowMeshes.delete(entity.id);
@@ -4134,234 +4114,154 @@ export class BabylonEngine {
         
         spriteMesh.position = targetPos;
         
-        const urlsToLoad = [entity.presentation.modelUrl];
-        if (entity.presentation.modularAttachments) {
-          entity.presentation.modularAttachments.forEach((att) => {
-            if (att.modelUrl && !urlsToLoad.includes(att.modelUrl)) {
-              urlsToLoad.push(att.modelUrl);
-            }
-          });
-        } else if (entity.presentation.modularModelUrls) {
-          entity.presentation.modularModelUrls.forEach((url) => {
-            if (url && !urlsToLoad.includes(url)) {
-              urlsToLoad.push(url);
-            }
-          });
-        }
         const modelEntityMesh = spriteMesh;
-        
-        Promise.allSettled(urlsToLoad.map(url => {
-          const lastSlash = url.lastIndexOf('/');
-          const rootUrl = url.substring(0, lastSlash + 1);
-          const filename = url.substring(lastSlash + 1);
-          return SceneLoader.ImportMeshAsync("", rootUrl, filename, this.scene).catch(async (error) => {
-            // Importer errors often hide the useful cause (for example, a live
-            // upload URL returning an HTML/JSON error page instead of GLB bytes).
-            // Inspect only a tiny prefix after failure so production logs tell us
-            // what the game actually received without dumping model data.
-            let responseInfo: Record<string, unknown> = { url };
-            try {
-              const response = await fetch(url, { method: 'GET', cache: 'no-store' });
-              responseInfo = {
-                url,
-                status: response.status,
-                contentType: response.headers.get('content-type'),
-                contentLength: response.headers.get('content-length'),
-              };
-              if (response.body) {
-                const reader = response.body.getReader();
-                const { value } = await reader.read();
-                responseInfo.prefixBytes = value ? Array.from(value.slice(0, 16)) : [];
-                await reader.cancel();
-              }
-            } catch (diagnosticError) {
-              responseInfo.diagnosticFetchError = diagnosticError instanceof Error
-                ? diagnosticError.message
-                : String(diagnosticError);
+        const baseModelUrl = entity.presentation.modelUrl;
+        const lastSlash = baseModelUrl.lastIndexOf('/');
+        const rootUrl = baseModelUrl.substring(0, lastSlash + 1);
+        const filename = baseModelUrl.substring(lastSlash + 1);
+
+        SceneLoader.ImportMeshAsync("", rootUrl, filename, this.scene).catch(async (error) => {
+          let responseInfo: Record<string, unknown> = { url: baseModelUrl };
+          try {
+            const response = await fetch(baseModelUrl, { method: 'GET', cache: 'no-store' });
+            responseInfo = {
+              url: baseModelUrl,
+              status: response.status,
+              contentType: response.headers.get('content-type'),
+              contentLength: response.headers.get('content-length'),
+            };
+            if (response.body) {
+              const reader = response.body.getReader();
+              const { value } = await reader.read();
+              responseInfo.prefixBytes = value ? Array.from(value.slice(0, 16)) : [];
+              await reader.cancel();
             }
-            console.error('[BabylonEngine] Model import failed; live asset response:', responseInfo, error);
-            throw error;
-          });
-        }))
-          .then(async (settledResults) => {
-            const results = settledResults.flatMap((result, index) => {
-              if (result.status === 'fulfilled') return [{ imported: result.value, index }];
-              return [];
-            });
-            const disposeImportedResults = () => results.forEach(({ imported }) => {
-              imported.meshes.forEach((mesh) => mesh.dispose(false, false));
-              imported.animationGroups?.forEach((animation) => animation.dispose());
-            });
-            if (settledResults[0]?.status !== 'fulfilled') {
-              disposeImportedResults();
-              throw new Error(`Base model could not be imported for entity ${entity.id}`);
-            }
-            if (results.length === 0) {
-              throw new Error(`No model files could be imported for entity ${entity.id}`);
-            }
+          } catch (diagnosticError) {
+            responseInfo.diagnosticFetchError = diagnosticError instanceof Error
+              ? diagnosticError.message
+              : String(diagnosticError);
+          }
+          console.error('[BabylonEngine] Model import failed; live asset response:', responseInfo, error);
+          throw error;
+        })
+          .then(async (result) => {
             if (
               this.entityMeshes.get(entity.id) !== modelEntityMesh
               || modelEntityMesh.metadata?.presentationSignature !== presentationSignature
             ) {
-              // Entity was deleted before load finished
-              disposeImportedResults();
+              result.meshes.forEach((mesh) => mesh.dispose(false, false));
+              result.animationGroups?.forEach((animation) => animation.dispose());
+              result.transformNodes.forEach((t) => t.dispose());
+              if (result.skeletons) result.skeletons.forEach((s) => s.dispose());
               return;
             }
+
             const currentMesh = modelEntityMesh;
             const allAnimationGroups: any[] = [];
-            let baseRoot: any = null;
-            let baseSkeleton: any = null;
-            let baseModelWrapper: TransformNode | null = null;
-            
-            results.forEach(({ imported: result, index: idx }) => {
-              const root = result.meshes.find((mesh) => !mesh.parent) || result.meshes[0];
-              if (!root) {
-                console.warn('[BabylonEngine] Imported model had no meshes');
-                return;
-              }
+            const allTransformNodes: TransformNode[] = [...result.transformNodes];
+            const attachmentAnimationGroups: any[] = [];
+            const attachmentSkeletons: any[] = [];
 
-              const pres = entity.presentation as any;
+            const root = result.meshes.find((mesh) => !mesh.parent) || result.meshes[0];
+            if (!root) {
+              console.warn('[BabylonEngine] Imported base model had no meshes');
+              return;
+            }
 
-              if (idx === 0) {
-                baseRoot = root;
-                baseSkeleton = result.skeletons?.[0] || baseRoot.getChildMeshes(false).find((m: any) => m.skeleton)?.skeleton;
+            const pres = entity.presentation as any;
+            const baseRoot = root;
+            const baseSkeleton = result.skeletons?.[0] || baseRoot.getChildMeshes(false).find((m: any) => m.skeleton)?.skeleton;
 
-                // Create a wrapper to hold our custom scale so glTF animations don't overwrite it
-                const modelWrapper = new TransformNode(`modelWrapper_${entity.id}_0`, this.scene);
-                modelWrapper.parent = currentMesh;
-                baseModelWrapper = modelWrapper;
-                
-                const t = pres?.assetDefinition?.transform || pres?.transform || pres;
-                const rawScale = t?.scale ?? pres?.modelScale;
-                const modelScale = Number(rawScale);
-                const actorScale = Number.isFinite(modelScale) && modelScale > 0 ? modelScale : 0.8;
-                modelWrapper.scaling = new Vector3(-actorScale, actorScale, actorScale);
-                
-                root.parent = modelWrapper;
-                modelWrapper.computeWorldMatrix(true); // CRITICAL: Must compute wrapper matrix before bounds
-              } else {
-                // Modular attachment or socketed weapon/tool
-                const att = (pres?.modularAttachments || [])[idx - 1];
-                let isSkinned = att?.attachmentMode === 'SKINNED' || att?.isModular;
+            // Create a wrapper to hold our custom scale so glTF animations don't overwrite it
+            const modelWrapper = new TransformNode(`modelWrapper_${entity.id}_0`, this.scene);
+            modelWrapper.parent = currentMesh;
+            const baseModelWrapper = modelWrapper;
 
-                const clothingSkeletons = [...(result.skeletons || [])];
-                if (clothingSkeletons.length === 0) {
-                  result.meshes.forEach((m: any) => {
-                    if (m.skeleton && !clothingSkeletons.includes(m.skeleton)) {
-                      clothingSkeletons.push(m.skeleton);
-                    }
+            const t = pres?.assetDefinition?.transform || pres?.transform || pres;
+            const rawScale = t?.scale ?? pres?.modelScale;
+            const modelScale = Number(rawScale);
+            const actorScale = Number.isFinite(modelScale) && modelScale > 0 ? modelScale : 0.8;
+            modelWrapper.scaling = new Vector3(-actorScale, actorScale, actorScale);
+
+            root.parent = modelWrapper;
+            modelWrapper.computeWorldMatrix(true);
+
+            if (result.animationGroups && result.animationGroups.length > 0) {
+              allAnimationGroups.push(...result.animationGroups);
+            }
+
+            // Attach modular components (clothing, armor, hats, weapons, etc.)
+            const modularAttachments: ModularAttachmentDef[] = (entity.presentation?.modularAttachments && entity.presentation.modularAttachments.length > 0)
+              ? entity.presentation.modularAttachments
+              : (entity.presentation?.modularModelUrls ? entity.presentation.modularModelUrls.map((url: string) => ({ modelUrl: url, isModular: true, attachmentMode: 'SKINNED' })) : []);
+
+            if (modularAttachments.length > 0) {
+              for (let attIdx = 0; attIdx < modularAttachments.length; attIdx++) {
+                const att = modularAttachments[attIdx];
+                let attUrl = att.modelUrl || att.cdnUrl;
+                if (!attUrl && att.assetId) {
+                  attUrl = resolveModelAssetUrl(att.assetId);
+                  if (!attUrl) {
+                    const cached = AssetManager.getInstance().getAssetSync(att.assetId);
+                    if (cached?.source) attUrl = cached.source;
+                  }
+                }
+                if (!attUrl) continue;
+
+                if (
+                  this.entityMeshes.get(entity.id) !== currentMesh
+                  || currentMesh.metadata?.presentationSignature !== presentationSignature
+                ) {
+                  break;
+                }
+
+                const lastAttSlash = attUrl.lastIndexOf('/');
+                const attRootUrl = attUrl.substring(0, lastAttSlash + 1);
+                const attFilename = attUrl.substring(lastAttSlash + 1);
+
+                try {
+                  const attResult = await SceneLoader.ImportMeshAsync("", attRootUrl, attFilename, this.scene);
+                  if (
+                    this.entityMeshes.get(entity.id) !== currentMesh
+                    || currentMesh.metadata?.presentationSignature !== presentationSignature
+                  ) {
+                    attResult.meshes.forEach((m) => m.dispose(false, false));
+                    attResult.animationGroups?.forEach((ag) => ag.dispose());
+                    attResult.transformNodes.forEach((t) => t.dispose());
+                    attResult.skeletons?.forEach((s) => s.dispose());
+                    break;
+                  }
+
+                  if (attResult.animationGroups) {
+                    attachmentAnimationGroups.push(...attResult.animationGroups);
+                  }
+                  if (attResult.skeletons) {
+                    attachmentSkeletons.push(...attResult.skeletons);
+                  }
+                  allTransformNodes.push(...attResult.transformNodes);
+
+                  attachModularComponent({
+                    scene: this.scene,
+                    id: entity.id,
+                    attIndex: attIdx,
+                    attachment: att,
+                    importedResult: attResult,
+                    modelWrapper: baseModelWrapper,
+                    baseSkeleton,
                   });
-                }
-
-                // If marked skinned/modular but the model is completely rigid (no skeletons or bone weights), treat as socket attachment
-                if (isSkinned && clothingSkeletons.length === 0) {
-                  const hasRiggedMesh = result.meshes.some((m: any) => m.skeleton || (m.numBoneInfluencers && m.numBoneInfluencers > 0));
-                  if (!hasRiggedMesh) {
-                    isSkinned = false;
-                  }
-                }
-
-                if (isSkinned) {
-                  if (baseSkeleton) {
-                    const targetWrapper = baseModelWrapper || currentMesh;
-                    root.parent = targetWrapper;
-                    root.position = Vector3.Zero();
-                    root.rotation = Vector3.Zero();
-                    root.scaling = Vector3.One();
-                    root.computeWorldMatrix(true);
-
-                    if (clothingSkeletons.length > 0) {
-                      // Industry standard modular sync: link clothing bones to base transform nodes by normalized name
-                      clothingSkeletons.forEach((clothingSkeleton) => {
-                        clothingSkeleton.bones.forEach((clothingBone: any) => {
-                          const normClothing = normalizeBoneName(clothingBone.name);
-                          const baseBone = baseSkeleton.bones.find((b: any) => 
-                            normalizeBoneName(b.name) === normClothing || b.name === clothingBone.name || b.id === clothingBone.id
-                          );
-                          if (baseBone) {
-                            let baseNode = baseBone.getTransformNode();
-                            if (!baseNode) {
-                              baseNode = new TransformNode(`boneNode_${baseBone.name}`, this.scene);
-                              baseNode.parent = targetWrapper;
-                              baseBone.linkTransformNode(baseNode);
-                            }
-                            clothingBone.linkTransformNode(baseNode);
-                          }
-                        });
-                      });
-                    } else {
-                      // Fallback if absolutely no skeleton exists in the container or meshes
-                      result.meshes.forEach((m) => {
-                        if ((m as any).skeleton) (m as any).skeleton = baseSkeleton;
-                      });
-                    }
-                  } else {
-                    console.warn(`[BabylonEngine] Wearable ${att?.assetId || idx} has no base skeleton to bind to; keeping it in the model's local space.`);
-                    if (root && baseModelWrapper && !root.parent) root.parent = baseModelWrapper;
-                  }
-                } else {
-                  const socketName = att?.socket || getDefaultModelWardrobeSocket(att as any);
-                  const targetBone = findBabylonBone(baseSkeleton, socketName);
-                  const modelWrapper = new TransformNode(`modelWrapper_${entity.id}_${idx}`, this.scene);
-                  const boneNode = targetBone?.getTransformNode?.();
-
-                  if (boneNode) {
-                    modelWrapper.parent = boneNode;
-                  } else if (targetBone && baseRoot) {
-                    const skinnedMesh = baseRoot.getChildMeshes(false).find((m: any) => m.skeleton) || baseRoot;
-                    root.attachToBone(targetBone, skinnedMesh);
-                    modelWrapper.parent = currentMesh;
-                  } else {
-                    modelWrapper.parent = baseModelWrapper || currentMesh;
-                  }
-
-                  const posX = att?.attachOffset?.position?.[0] ?? 0;
-                  const posY = att?.attachOffset?.position?.[1] ?? 0;
-                  const posZ = att?.attachOffset?.position?.[2] ?? 0;
-
-                  const rotX = ((att?.attachOffset?.rotation?.[0] ?? 0) * Math.PI) / 180;
-                  const rotY = ((att?.attachOffset?.rotation?.[1] ?? 0) * Math.PI) / 180;
-                  const rotZ = ((att?.attachOffset?.rotation?.[2] ?? 0) * Math.PI) / 180;
-
-                  const attScale = Number(att?.scale ?? att?.attachOffset?.scale ?? 1);
-                  modelWrapper.position = new Vector3(posX, posY, posZ);
-                  modelWrapper.rotation = new Vector3(rotX, rotY, rotZ);
-                  modelWrapper.scaling = new Vector3(attScale, attScale, attScale);
-
-                  root.parent = modelWrapper;
-                  modelWrapper.computeWorldMatrix(true);
-                }
-
-                // Anti-clipping: hide base components if specified
-                if (att?.hidesComponents && att.hidesComponents.length > 0 && baseRoot) {
-                  att.hidesComponents.forEach((hideWord: string) => {
-                    const hw = hideWord.toLowerCase();
-                    baseRoot.getChildMeshes(false).forEach((bm: any) => {
-                      const mn = (bm.name || '').toLowerCase();
-                      if (mn.includes(hw)) {
-                        bm.setEnabled(false);
-                      }
-                    });
-                  });
+                } catch (attErr) {
+                  console.warn(`[BabylonEngine] Failed to load modular attachment: ${attUrl}`, attErr);
                 }
               }
-              
-              if (idx === 0) {
-                if (result.animationGroups && result.animationGroups.length > 0) {
-                  allAnimationGroups.push(...result.animationGroups);
-                }
-              } else {
-                // Wearable attachments are driven by the base skeleton; stop accessory animations
-                if (result.animationGroups && result.animationGroups.length > 0) {
-                  result.animationGroups.forEach((ag: any) => ag.stop());
-                }
-              }
-            });
-            
+            }
+
+            currentMesh.metadata.attachmentAnimationGroups = attachmentAnimationGroups;
+            currentMesh.metadata.attachmentSkeletons = attachmentSkeletons;
+
             // --- Auto-detect model visual height for camera attachment ---
             // Force world matrices and bounding info to recompute after parenting + scaling
             currentMesh.computeWorldMatrix(true);
-            
+
             const allMeshes = currentMesh.getChildMeshes(false);
             allMeshes.forEach(m => {
               m.isPickable = false; // Never block camera raycast or cursor selection
@@ -4375,12 +4275,10 @@ export class BabylonEngine {
                 m.refreshBoundingInfo({ applySkeleton: true });
               }
             });
-            
+
             let modelVisualHeight = 1.6; // Default human height
-            
+
             // 1. Check for Studio-authored cameraHeightOffset override
-            const pres = entity.presentation as any;
-            const t = pres?.assetDefinition?.transform || pres?.transform || pres;
             const manualOffset = Number(t?.cameraYOffset ?? t?.cameraHeightOffset ?? pres?.cameraHeightOffset);
             if (Number.isFinite(manualOffset) && manualOffset > 0) {
               modelVisualHeight = manualOffset;
@@ -4414,7 +4312,7 @@ export class BabylonEngine {
                   }
                 }
               }
-              
+
               // 3. Fallback: compute from bounding box (reliable for any model)
               if (headBoneHeight === null || headBoneHeight <= 0.05) {
                 let minY = Infinity;
@@ -4434,7 +4332,7 @@ export class BabylonEngine {
                     // Skip meshes without valid bounding info
                   }
                 }
-                
+
                 if (minY < Infinity && maxY > -Infinity) {
                   const totalHeight = maxY - minY;
                   if (totalHeight > 0.05) {
@@ -4443,12 +4341,9 @@ export class BabylonEngine {
                 }
               }
             }
-            
+
             // Store computed height on metadata for camera system
             currentMesh.metadata.modelVisualHeight = modelVisualHeight;
-            
-            // Collect all transform nodes across loaded model results for bone retargeting
-            const allTransformNodes = results.flatMap(({ imported }) => imported.transformNodes);
 
             // Character/world-model selections usually persist only the asset ID.
             // Fetch that asset's Studio animation table before choosing a fallback;
@@ -5239,6 +5134,8 @@ export class BabylonEngine {
   public removeEntity(id: string) {
     const mesh = this.entityMeshes.get(id);
     if (mesh) {
+      mesh.metadata?.attachmentAnimationGroups?.forEach((ag: any) => ag.dispose());
+      mesh.metadata?.attachmentSkeletons?.forEach((s: any) => s.dispose());
       mesh.dispose();
       this.entityMeshes.delete(id);
     }

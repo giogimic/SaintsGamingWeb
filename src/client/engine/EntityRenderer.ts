@@ -16,12 +16,14 @@ import { useMultiplayerStore } from '../state/useMultiplayerStore';
 import { usePlayerStore } from '../state/usePlayerStore';
 import { useSessionStore } from '../state/useSessionStore';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
-import { getWorldModelPresentation } from '@/shared/game/worldModelPresentation';
+import { getWorldModelPresentation, resolveModelAssetUrl } from '@/shared/game/worldModelPresentation';
 import { mapMesher } from './MapMesher';
 import { WrappedCharacterMesher } from './rendering/WrappedCharacterMesher';
 import { AssetManager } from '@/engine/assets/AssetManager';
 import { loadAndRetargetAnimation } from '@/engine/animationRetarget';
 import { applyAnimationProfileFallback } from '@/shared/game/animationProfiles';
+import { attachModularComponent } from '@/engine/helpers/babylonAttachmentHelpers';
+import type { ModularAttachmentDef } from '@/shared/game/canonicalAsset';
 
 // Player is 2 blocks tall (like a classic voxel game character)
 const PLAYER_HEIGHT = 2.0;
@@ -43,10 +45,13 @@ interface ManagedSprite {
   lastSeen: number;
   modelUrl?: string;
   spriteUrl?: string;
+  presentationSignature?: string;
   animationGroups?: BABYLON.AnimationGroup[];
   currentAnimationName?: string;
   computedHeight?: number;
   cameraYOffset?: number;
+  attachmentAnimationGroups?: BABYLON.AnimationGroup[];
+  attachmentSkeletons?: BABYLON.Skeleton[];
 }
 
 export class EntityRenderer {
@@ -59,12 +64,24 @@ export class EntityRenderer {
   // Sprite texture cache (avoid re-loading the same URLs)
   private textureCache: Map<string, BABYLON.Texture> = new Map();
 
+  private _diagnosticKeydown?: (e: KeyboardEvent) => void;
+
   public initialize(scene: BABYLON.Scene) {
     this.scene = scene;
     this.entityRoot = new BABYLON.TransformNode('entityRoot', scene);
 
     // Register render loop updates
     scene.onBeforeRenderObservable.add(this.update);
+
+    this._diagnosticKeydown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'f' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        const state = usePlayerStore.getState();
+        if (state.player.animationState !== 'attack_light') {
+          state.hydratePlayer({ animationState: 'attack_light' });
+        }
+      }
+    };
+    window.addEventListener('keydown', this._diagnosticKeydown);
   }
 
   public getSprite(id: string) {
@@ -88,6 +105,7 @@ export class EntityRenderer {
       let visualAnimationProfileId: string | undefined;
 
       const worldPresentation = getWorldModelPresentation(visualData);
+      const modularAttachments: ModularAttachmentDef[] = worldPresentation?.modularAttachments || [];
 
       if (worldPresentation && worldPresentation.mode === '3D') {
         effectiveProfileId = worldPresentation.modelUrl || worldPresentation.assetId || effectiveProfileId;
@@ -167,7 +185,31 @@ export class EntityRenderer {
       if (visualAnimationProfileId && !animations) {
         animations = applyAnimationProfileFallback(undefined, visualAnimationProfileId);
       }
-      return { isModel: !!isModel, resolvedUrl, presentationType, transform, animations };
+
+      const presentationSignature = JSON.stringify({
+        isModel,
+        resolvedUrl,
+        transform,
+        modularAttachments: modularAttachments.map((att) => ({
+          assetId: att.assetId,
+          modelUrl: att.modelUrl,
+          attachmentMode: att.attachmentMode,
+          socket: att.socket,
+          attachOffset: att.attachOffset,
+          scale: att.scale,
+          hidesComponents: att.hidesComponents,
+        })),
+      });
+
+      return {
+        isModel: !!isModel,
+        resolvedUrl,
+        presentationType,
+        transform,
+        animations,
+        modularAttachments,
+        presentationSignature,
+      };
     };
 
     const getActorScale = (visualData?: unknown): number | undefined => {
@@ -205,6 +247,9 @@ export class EntityRenderer {
       transform: pAssetInfo.transform,
       animations: pAssetInfo.animations,
       isMoving: player.isMoving,
+      animationState: player.animationState,
+      modularAttachments: pAssetInfo.modularAttachments,
+      presentationSignature: pAssetInfo.presentationSignature,
     }, now);
 
     // 2. Remote Players
@@ -249,6 +294,8 @@ export class EntityRenderer {
         transform: rpAssetInfo.transform,
         animations: rpAssetInfo.animations,
         isMoving: rp.isMoving,
+        modularAttachments: rpAssetInfo.modularAttachments,
+        presentationSignature: rpAssetInfo.presentationSignature,
       }, now);
     }
 
@@ -277,6 +324,8 @@ export class EntityRenderer {
         transform: entAssetInfo.transform,
         animations: entAssetInfo.animations,
         isMoving: ent.isMoving,
+        modularAttachments: entAssetInfo.modularAttachments,
+        presentationSignature: entAssetInfo.presentationSignature,
       }, now);
     }
 
@@ -295,6 +344,8 @@ export class EntityRenderer {
 
     for (const [id, sprite] of this.sprites.entries()) {
       if (!activeIds.has(id) || (now - sprite.lastSeen > 5000)) {
+        sprite.attachmentAnimationGroups?.forEach((ag) => ag.dispose());
+        sprite.attachmentSkeletons?.forEach((s) => s.dispose());
         sprite.mesh.dispose();
         sprite.label?.dispose();
         sprite.gui?.dispose();
@@ -321,6 +372,9 @@ export class EntityRenderer {
       transform?: { scale?: number, rotationY?: number, grounding?: number, cameraYOffset?: number };
       animations?: any;
       isMoving?: boolean;
+      animationState?: string;
+      modularAttachments?: ModularAttachmentDef[];
+      presentationSignature?: string;
     },
     now: number
   ) {
@@ -331,8 +385,15 @@ export class EntityRenderer {
     const spriteW = data.isPlayer ? PLAYER_WIDTH : ENTITY_WIDTH;
     const spriteH = data.isPlayer ? PLAYER_HEIGHT : ENTITY_HEIGHT;
 
-    if (sprite && (sprite.modelUrl !== data.modelUrl || sprite.spriteUrl !== data.spriteUrl)) {
-      sprite.mesh.dispose();
+    if (
+      sprite &&
+      (sprite.modelUrl !== data.modelUrl ||
+       sprite.spriteUrl !== data.spriteUrl ||
+       (data.presentationSignature && sprite.presentationSignature !== data.presentationSignature))
+    ) {
+      sprite.attachmentAnimationGroups?.forEach((ag) => ag.dispose());
+      sprite.attachmentSkeletons?.forEach((s) => s.dispose());
+      sprite.mesh.dispose(false, true);
       sprite.label?.dispose();
       sprite.gui?.dispose();
       this.sprites.delete(id);
@@ -350,7 +411,7 @@ export class EntityRenderer {
         const rootUrl = data.modelUrl.substring(0, lastSlash + 1);
         const filename = data.modelUrl.substring(lastSlash + 1);
 
-        BABYLON.SceneLoader.ImportMeshAsync("", rootUrl, filename, this.scene).then((result) => {
+        BABYLON.SceneLoader.ImportMeshAsync("", rootUrl, filename, this.scene).then(async (result) => {
           // Entity/model data can change while the network request is in flight.
           // Never attach a stale result to a replacement entity.
           const current = this.sprites.get(id);
@@ -391,6 +452,65 @@ export class EntityRenderer {
 
           mesh.computeWorldMatrix(true);
           modelWrapper.computeWorldMatrix(true); // CRITICAL: Must compute wrapper matrix before children
+
+          const baseSkeleton = result.skeletons?.[0] || modelWrapper.getChildMeshes(false).find((m: any) => m.skeleton)?.skeleton;
+
+          // Attach modular components (clothing, armor, hats, weapons, etc.)
+          if (data.modularAttachments && data.modularAttachments.length > 0) {
+            current.attachmentAnimationGroups = current.attachmentAnimationGroups || [];
+            current.attachmentSkeletons = current.attachmentSkeletons || [];
+
+            for (let attIdx = 0; attIdx < data.modularAttachments.length; attIdx++) {
+              const att = data.modularAttachments[attIdx];
+              let attUrl: string | undefined = att.modelUrl || att.cdnUrl;
+              if (!attUrl && att.assetId) {
+                attUrl = resolveModelAssetUrl(att.assetId);
+                if (!attUrl) {
+                  const cachedAsset = AssetManager.getInstance().getAssetSync(att.assetId);
+                  if (cachedAsset?.source) attUrl = cachedAsset.source;
+                }
+              }
+              if (!attUrl) continue;
+
+              const activeSprite = this.sprites.get(id);
+              if (!activeSprite || activeSprite.mesh !== mesh || !this.scene) break;
+
+              const lastAttSlash = attUrl.lastIndexOf('/');
+              const attRootUrl = attUrl.substring(0, lastAttSlash + 1);
+              const attFilename = attUrl.substring(lastAttSlash + 1);
+
+              try {
+                const attResult = await BABYLON.SceneLoader.ImportMeshAsync("", attRootUrl, attFilename, this.scene);
+                const stillActive = this.sprites.get(id);
+                if (!stillActive || stillActive.mesh !== mesh || !this.scene) {
+                  attResult.meshes.forEach((m) => m.dispose());
+                  attResult.animationGroups?.forEach((ag) => ag.dispose());
+                  attResult.transformNodes.forEach((t) => t.dispose());
+                  attResult.skeletons?.forEach((s) => s.dispose());
+                  break;
+                }
+
+                if (attResult.animationGroups) {
+                  stillActive.attachmentAnimationGroups?.push(...attResult.animationGroups);
+                }
+                if (attResult.skeletons) {
+                  stillActive.attachmentSkeletons?.push(...attResult.skeletons);
+                }
+
+                attachModularComponent({
+                  scene: this.scene,
+                  id,
+                  attIndex: attIdx,
+                  attachment: att,
+                  importedResult: attResult,
+                  modelWrapper,
+                  baseSkeleton,
+                });
+              } catch (attErr) {
+                console.warn(`[EntityRenderer] Failed to load modular attachment: ${attUrl}`, attErr);
+              }
+            }
+          }
           
           const allMeshes = modelWrapper.getChildMeshes(false);
           allMeshes.forEach(m => {
@@ -504,12 +624,21 @@ export class EntityRenderer {
                   const isMoving = data.isMoving;
                   const isRunSlot = slot.includes('run') || slot.includes('walk');
                   const isIdleSlot = slot.includes('idle');
-                  const shouldPlay = (isMoving && isRunSlot) || (!isMoving && isIdleSlot) || !latest.animationGroups.some(g => g.isPlaying);
+                  const isExplicitSlot = data.animationState === slot;
+                  const shouldPlay = isExplicitSlot || (!data.animationState && ((isMoving && isRunSlot) || (!isMoving && isIdleSlot) || !latest.animationGroups.some(g => g.isPlaying)));
 
                   if (shouldPlay) {
                     latest.animationGroups.forEach(g => { if (g !== ag) g.stop(); });
-                    ag.play(ag.loopAnimation);
-                    latest.currentAnimationName = isMoving ? "run_fwd" : "idle";
+                    ag.play(isExplicitSlot ? false : ag.loopAnimation);
+                    latest.currentAnimationName = data.animationState || (isMoving ? "run_fwd" : "idle");
+
+                    if (isExplicitSlot) {
+                      ag.onAnimationEndObservable.addOnce(() => {
+                        if (id === 'local_player') {
+                          usePlayerStore.getState().hydratePlayer({ animationState: undefined });
+                        }
+                      });
+                    }
                   }
                 }).catch(e => console.error("[EntityRenderer] Failed to load external animation", mapping.sourcePath, e));
               }
@@ -670,6 +799,7 @@ export class EntityRenderer {
         lastSeen: now,
         modelUrl: data.modelUrl,
         spriteUrl: data.spriteUrl,
+        presentationSignature: data.presentationSignature,
       };
       this.sprites.set(id, sprite);
     }
@@ -679,21 +809,36 @@ export class EntityRenderer {
       const isIdleClip = (name: string) => /idle|stand|wait|breath|rest|still|default/i.test(name);
       const isActionClip = (name: string) => /attack|hit|punch|slash|cast|shoot|death|die|dead|hurt|damage|jump|fall|climb/i.test(name);
 
-      const targetAnimName = data.isMoving ? "run_fwd" : "idle";
+      const targetAnimName = data.animationState || (data.isMoving ? "run_fwd" : "idle");
       const walkAnim = sprite.animationGroups.find(a => isRunClip(a.name || ''));
       const idleAnim = sprite.animationGroups.find(a => isIdleClip(a.name || ''));
       const nonAction = sprite.animationGroups.find(a => !isActionClip(a.name || ''));
+      const explicitAnim = data.animationState ? sprite.animationGroups.find(a => a.name === data.animationState) : undefined;
 
-      let nextAnim = data.isMoving 
-        ? (walkAnim || (sprite.animationGroups.length > 1 ? sprite.animationGroups[1] : nonAction || sprite.animationGroups[0])) 
-        : (idleAnim || nonAction || sprite.animationGroups[0]);
+      let nextAnim = undefined;
+      if (explicitAnim) {
+        nextAnim = explicitAnim;
+      } else {
+        nextAnim = data.isMoving 
+          ? (walkAnim || (sprite.animationGroups.length > 1 ? sprite.animationGroups[1] : nonAction || sprite.animationGroups[0])) 
+          : (idleAnim || nonAction || sprite.animationGroups[0]);
+      }
 
       if (sprite.currentAnimationName !== targetAnimName || (nextAnim && !nextAnim.isPlaying)) {
         sprite.animationGroups.forEach(a => {
           if (a !== nextAnim) a.stop();
         });
         if (nextAnim && !nextAnim.isPlaying) {
-          nextAnim.play(nextAnim.loopAnimation ?? true);
+          const shouldLoop = data.animationState ? false : (nextAnim.loopAnimation ?? true);
+          nextAnim.play(shouldLoop);
+
+          if (data.animationState && !shouldLoop) {
+            nextAnim.onAnimationEndObservable.addOnce(() => {
+              if (id === 'local_player') {
+                usePlayerStore.getState().hydratePlayer({ animationState: undefined });
+              }
+            });
+          }
         }
         sprite.currentAnimationName = targetAnimName;
       }
@@ -744,11 +889,18 @@ export class EntityRenderer {
   // ── Cleanup ────────────────────────────────────────────────────────────────
 
   public dispose() {
+    if (this._diagnosticKeydown) {
+      window.removeEventListener('keydown', this._diagnosticKeydown);
+      this._diagnosticKeydown = undefined;
+    }
+
     if (this.scene) {
       this.scene.onBeforeRenderObservable.removeCallback(this.update);
     }
 
     for (const [, sprite] of this.sprites) {
+      sprite.attachmentAnimationGroups?.forEach((ag) => ag.dispose());
+      sprite.attachmentSkeletons?.forEach((s) => s.dispose());
       sprite.mesh.dispose();
       sprite.label?.dispose();
       sprite.gui?.dispose();

@@ -56,6 +56,7 @@ export interface GripTransform {
 
 export interface ModularAttachmentDef {
   modelUrl: string;
+  cdnUrl?: string;
   assetId?: string;
   socket?: string;
   attachOffset?: GripTransform;

@@ -6,6 +6,7 @@ import { FriendsList } from '@/web/components/messenger/friends-list';
 import { ChatWindow } from '@/web/components/messenger/chat-window';
 import { useMessenger } from '@/web/components/messenger/messenger-provider';
 import { useAuth } from '@/web/hooks/use-auth';
+import { useEditorStore } from '../editor/editor-store';
 import { Radio, Shield, Megaphone, Users, ExternalLink, Hammer, UserX, MapPin, X, Send } from 'lucide-react';
 import { HudPanelShell } from '../hud/HudPanelShell';
 import { soundSynth } from '@/engine/sound-synth';
@@ -153,7 +154,8 @@ export function GameChat() {
             sender: 'System',
             text:
               'Commands: /w [player] [msg], /invite [player], /p leave, /p join [leader]' +
-              (isModerator ? ', /announce [msg], /tp [player]' : ''),
+              (isModerator ? ', /announce [msg], /tp [player]' : '') +
+              (isAdmin ? ', /fly, /noclip' : ''),
             timestamp: Date.now(),
             type: 'SYSTEM' as const,
           },
@@ -203,6 +205,14 @@ export function GameChat() {
       } else {
         useGameStore.getState().showToast(`Player "${targetName}" not found on this map.`);
       }
+      setChatInput('');
+      return;
+    }
+
+    if (isAdmin && (text === '/fly' || text === '/noclip')) {
+      const editorStore = useEditorStore.getState();
+      editorStore.setStudioFreeCam(!editorStore.isStudioFreeCam);
+      useGameStore.getState().showToast(`Free-Cam (NoClip) ${!editorStore.isStudioFreeCam ? 'Enabled' : 'Disabled'}`);
       setChatInput('');
       return;
     }

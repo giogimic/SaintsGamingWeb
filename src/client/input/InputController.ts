@@ -28,6 +28,7 @@ export class InputController {
         // Fallback to legacy game store for the system menu until fully ported
         try {
           useGameStore.getState().toggleSystemMenu('keyboard');
+          (window as any).__intentionalPointerLockExit = true;
           document.exitPointerLock?.();
         } catch (e) {}
       }

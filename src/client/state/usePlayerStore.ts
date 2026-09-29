@@ -103,6 +103,7 @@ export interface PlayerData {
   creaturesCaught: string[];
   unlockedAbilities: string[];
   equippedAbilities: string[];
+  animationState?: string;
 }
 
 const INITIAL_SKILLS: Record<string, SkillData> = buildInitialSkills();
@@ -188,6 +189,7 @@ export const usePlayerStore = create<PlayerState>()(
         creaturesCaught: [],
         unlockedAbilities: [],
         equippedAbilities: [],
+        animationState: undefined,
       },
 
       setPlayerPosition: (pos, direction, isMoving) => set((s) => {

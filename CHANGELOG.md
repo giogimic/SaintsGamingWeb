@@ -1,3 +1,17 @@
+## [2.2.054] - 2026-09-29
+- **Admin Commands and Menu Toggle Fix**:
+  - **NoClip & Fly Commands (GameChat.tsx)**: Added /fly and /noclip chat commands accessible exclusively to admins. These commands toggle isStudioFreeCam in useEditorStore, safely detaching the camera and enabling collision-free 3D flight for map traversal and moderation.
+  - **Intentional Pointer Lock Exit (GameCanvas.tsx, InputManager.ts, InputController.ts)**: Fixed an issue where releasing a right-click camera drag incorrectly opened the Escape system menu. Introduced window.__intentionalPointerLockExit to safely skip triggering the menu when pointer lock is explicitly dropped by input logic.
+
+## [2.2.053] - 2026-09-28
+- **In-Game Modular Wardrobe, Outfit & Accessory Attachment Architecture**:
+  - **In-Game Modular Mesh & Socket Attachment (`EntityRenderer.ts`, `BabylonEngine.ts`, `babylonAttachmentHelpers.ts`)**: Implemented runtime attachment handling in Babylon.js for equipped outfits, clothing pieces, armor, hats, masks, eyewear, weapons, and accessories. Characters now load their full modular wardrobe in-game across both the live game client (`ExploringScene` / `GameCanvas.tsx` / `EntityRenderer.ts`) and Studio playtest canvas (`BabylonEngine.ts`), matching character creation 3D preview.
+  - **Skinned Retargeting & Bone Linking (`babylonAttachmentHelpers.ts`)**: Built `attachModularComponent` which detects skinned vs rigid modular pieces. For skinned wearables (shirts, jackets, pants, shoes, full outfits), it synchronizes clothing bones to base skeleton transform nodes by normalized bone names (`normalizeBoneName`) using `clothingBone.linkTransformNode(baseNode)`, keeping them perfectly aligned during locomotion and actions. Independent accessory animation groups are automatically stopped to prevent fighting the base skeleton.
+  - **Rigid Socket Parenting & Offsets (`babylonAttachmentHelpers.ts`)**: For rigid socket accessories (weapons, shields, hats, back items), resolves canonical sockets (`RightHandMount`, `LeftHandMount`, `HeadMount`, `ChestMount`, `SheathedBack`, etc.) to target bones via `findBabylonBone`, wrapping attachments in isolated transform nodes with custom position, rotation, and scale offsets.
+  - **Anti-Clipping Component Hiding (`hidesComponents`)**: Automatically evaluates `attachment.hidesComponents` to hide base character submeshes matching keyword patterns (e.g., hiding base body/legs/feet underneath heavy armor, robes, or full outfits).
+  - **Dynamic Outfit Invalidation & Asset Resolution (`EntityRenderer.ts`, `worldModelPresentation.ts`)**: Included `presentationSignature` and `modularAttachments` in sprite cache evaluation so equipping wardrobe changes dynamically rebuilds entity composites without stale cached meshes. Added `cdnUrl` fallback to attachment resolution.
+  - **Strict Version Alignment**: Synchronized `SITE_VERSION` defaults to `2.2.053` across `package.json`, `app/actions/settings.ts`, `app/(main)/admin/settings/page.tsx`, `app/(main)/layout.tsx`, `app/(ucp)/layout.tsx`, and `navbar.tsx`.
+
 ## [2.2.052] - 2026-09-28
 - **Resolve React Error #310 Hook Order Violation, Direct Asset 404s & In-Game Model Resolution**:
   - **React Error #310 Elimination (`CharacterDetailPreview.tsx`)**: Fixed a critical React Rules of Hooks violation where `modelPresentation = useMemo(...)` was positioned after an early return guard (`if (!character) return (...)`). This caused an unequal hook execution count between the initial empty character state and subsequent selected character renders, throwing minified React error #310, unmounting into `app/error.tsx`, and killing the Babylon game loop, WebGL context, and multiplayer sockets.
@@ -6991,5 +7005,6 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 
 ## [2.2.001]
 - **Studio Model Transform Controls**: Added scale, rotation, and grounding offset controls to the 3D Asset Studio UI. These are persisted within the presentation metadata and properly parsed by the engine so that large GLB models are scaled correctly in the world scene.
+
 
 

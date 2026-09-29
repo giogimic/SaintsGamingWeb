@@ -79,11 +79,11 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
       .filter((att: any) => att?.defaultVisible !== false)
       .map((att: any): ModularAttachmentDef | undefined => {
         const rawId = typeof att === 'string' ? att : att?.assetId;
-        const candidateUrl = typeof att === 'object' && att ? (att.modelUrl || att.source || att.url) : undefined;
+        const candidateUrl = typeof att === 'object' && att ? (att.modelUrl || att.source || att.url || att.cdnUrl) : undefined;
         const url = candidateUrl || resolveModelAssetUrl(rawId) || (rawId && /\.(glb|gltf)$/i.test(rawId) ? resolveEntitySpriteUrl(rawId) : undefined);
         if (!url) return undefined;
         const wardrobeItem = typeof att === 'string' ? { assetId: rawId, modelUrl: url } : { ...att, assetId: rawId, modelUrl: url };
-        const attachmentMode = getDefaultModelWardrobeAttachmentMode(wardrobeItem);
+        const attachmentMode = att?.attachmentMode || (att?.isModular ? 'SKINNED' : getDefaultModelWardrobeAttachmentMode(wardrobeItem));
         return {
           modelUrl: url,
           assetId: rawId,

@@ -955,7 +955,10 @@ public getCameraSettings() {
     if (targetMode === 'overview2_5d') {
       this.updateCameraAspect(this.continuousZoom);
       if (typeof document !== 'undefined' && document.pointerLockElement === this.engine.canvas) {
-        try { document.exitPointerLock(); } catch {}
+        try { 
+          (window as any).__intentionalPointerLockExit = true;
+          document.exitPointerLock(); 
+        } catch {}
       }
     }
   }
