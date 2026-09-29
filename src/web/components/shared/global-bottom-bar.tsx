@@ -78,7 +78,7 @@ interface ClientErrorLog {
 
 export function GlobalBottomBar({
   dbPermissionLevel,
-  siteVersion = "2.2.054",
+  siteVersion = "2.2.055",
 }: {
   dbPermissionLevel?: number;
   siteVersion?: string;

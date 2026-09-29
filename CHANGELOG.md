@@ -1,3 +1,13 @@
+## [2.2.055] - 2026-09-29
+- **FabLibrary Asset Taxonomy Fixes**:
+  - Expanded heuristics in modelWardrobe.ts to natively categorize FabLibrary items that were previously falling into the 'Others' unmapped slot.
+  - \Hairstyle_...\ now resolves to \hair\.
+  - \Male_emotion_...\ expressions now resolve to \ace\.
+  - \Clown_nose_...\ and \Pacifier_...\ resolve to \ccessory\ and \head_accessory\.
+  - \Outwear_...\ resolves to \jacket\.
+  - \Socks_...\ resolves to \shoes\.
+  - Base bodies resolve to \clothing\.
+
 ## [2.2.054] - 2026-09-29
 - **Admin Commands and Menu Toggle Fix**:
   - **NoClip & Fly Commands (GameChat.tsx)**: Added /fly and /noclip chat commands accessible exclusively to admins. These commands toggle isStudioFreeCam in useEditorStore, safely detaching the camera and enabling collision-free 3D flight for map traversal and moderation.
@@ -7005,6 +7015,7 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 
 ## [2.2.001]
 - **Studio Model Transform Controls**: Added scale, rotation, and grounding offset controls to the 3D Asset Studio UI. These are persisted within the presentation metadata and properly parsed by the engine so that large GLB models are scaled correctly in the world scene.
+
 
 
 

@@ -159,6 +159,17 @@ describe('modelWardrobeTaxonomy & Slot Separation', () => {
       expect(getModelWardrobeCategory({ assetId: 'sunglasses_test', category: 'sunglasses' })).toBe('head_accessory');
     });
 
+    it('resolves FabLibrary asset filenames correctly to avoid others', () => {
+      expect(getModelWardrobeCategory({ assetId: 'Hairstyle_male_010.glb', label: 'Hairstyle Male 010' })).toBe('hair');
+      expect(getModelWardrobeCategory({ assetId: 'Male_emotion_angry_003.glb', label: 'Male Emotion Angry' })).toBe('face');
+      expect(getModelWardrobeCategory({ assetId: 'Male_emotion_happy_002.glb', label: 'Male Emotion Happy' })).toBe('face');
+      expect(getModelWardrobeCategory({ assetId: 'Clown_nose_001.glb', label: 'Clown Nose 001' })).toBe('accessory');
+      expect(getModelWardrobeCategory({ assetId: 'Pacifier_001.glb', label: 'Pacifier 001' })).toBe('head_accessory');
+      expect(getModelWardrobeCategory({ assetId: 'Outwear_029.glb', label: 'Outwear 029' })).toBe('jacket');
+      expect(getModelWardrobeCategory({ assetId: 'Socks_008.glb', label: 'Socks 008' })).toBe('shoes');
+      expect(getModelWardrobeCategory({ assetId: 'Body_010.glb', label: 'Body 010' })).toBe('clothing');
+    });
+
     it('resolves animal ears to head_accessory and earrings and piercings to accessory without colliding with face', () => {
       expect(getModelWardrobeCategory({ assetId: 'cat_ears_01', label: 'Cat Ears Headband' })).toBe('head_accessory');
       expect(getModelWardrobeCategory({ assetId: 'bunny_ears_pink', label: 'Bunny Ears' })).toBe('head_accessory');
