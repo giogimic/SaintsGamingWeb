@@ -96,24 +96,48 @@ export function buildCanonicalGameAssetRecords(): CanonicalAssetSeedRecord[] {
     });
   }
 
-  // 2. Citizen Modular Wardrobe Pieces
-  const citizen = CANONICAL_BUILTIN_MODELS.citizen;
-  if (citizen?.modularParts) {
-    for (const part of citizen.modularParts) {
-      const partSource = `/game-assets/models/citizen/${part.meshName}.glb`;
+  // 2. Modular Wardrobe Pieces for Citizen, Brute, and Adventurer
+  const modularSets = [
+    {
+      model: CANONICAL_BUILTIN_MODELS.citizen,
+      pack: 'citizen-wardrobe',
+      fileSize: 450000,
+      getSource: (meshName: string) => `/game-assets/models/citizen/${meshName}.glb`,
+    },
+    {
+      model: CANONICAL_BUILTIN_MODELS.brute,
+      pack: 'brute-armor',
+      fileSize: 14379200,
+      getSource: () => `/game-assets/models/brute.glb`,
+    },
+    {
+      model: CANONICAL_BUILTIN_MODELS.adventurer,
+      pack: 'adventurer-gear',
+      fileSize: 15192864,
+      getSource: () => `/game-assets/models/adventurer.glb`,
+    },
+  ];
+
+  for (const set of modularSets) {
+    if (!set.model?.modularParts) continue;
+    const setName = set.model.id;
+    for (const part of set.model.modularParts) {
+      const partSource = set.getSource(part.meshName);
       const metadata = {
         name: part.label,
         cat: part.category,
         componentCategory: part.category,
         isModularComponent: true,
         defaultVisible: part.defaultVisible,
-        pack: "citizen-wardrobe",
-        modularSetName: "citizen",
+        pack: set.pack,
+        modularSetName: setName,
+        meshName: part.meshName,
         assetDefinition: {
-          modularSetName: "citizen",
+          modularSetName: setName,
+          meshName: part.meshName,
         },
         presentation: {
-          mode: "3D",
+          mode: '3D',
           modelUrl: partSource,
         },
       };
@@ -121,17 +145,17 @@ export function buildCanonicalGameAssetRecords(): CanonicalAssetSeedRecord[] {
       records.push({
         id: `builtin-piece-${part.id}`,
         gameId: null,
-        type: "MODEL",
+        type: 'MODEL',
         source: partSource,
         atlasSource: null,
         atlasFrame: null,
-        tags: JSON.stringify(["model", "3d", "modular", "character-component", "citizen", part.category]),
-        categories: JSON.stringify(["model", "modular", part.category]),
+        tags: JSON.stringify(['model', '3d', 'modular', 'character-component', setName, part.category]),
+        categories: JSON.stringify(['model', 'modular', part.category]),
         metadata: JSON.stringify(metadata),
-        customLabels: JSON.stringify({ en: `${part.label} (Citizen)`, name: `${part.label} (Citizen)` }),
+        customLabels: JSON.stringify({ en: `${part.label} (${set.model.name})`, name: `${part.label} (${set.model.name})` }),
         isActive: true,
         usageCount: 0,
-        fileSize: 450000,
+        fileSize: set.fileSize,
         cdnUrl: partSource,
       });
     }

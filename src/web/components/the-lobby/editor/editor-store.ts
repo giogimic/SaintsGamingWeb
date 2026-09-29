@@ -499,11 +499,15 @@ interface EditorState {
   setStudioMode: (mode: StudioMode) => void;
   activeAssetPicker: {
     filterType?: string;
+    categoryFilter?: 'ALL' | 'CHARACTERS' | 'MODULAR' | 'WEAPONS' | 'CREATURES' | 'PROPS' | '2D' | string;
+    slotFilter?: string;
     title?: string;
     onSelect: (assetId: string, asset?: any) => void;
   } | null;
   openAssetPicker: (picker: {
     filterType?: string;
+    categoryFilter?: 'ALL' | 'CHARACTERS' | 'MODULAR' | 'WEAPONS' | 'CREATURES' | 'PROPS' | '2D' | string;
+    slotFilter?: string;
     title?: string;
     onSelect: (assetId: string, asset?: any) => void;
   }) => void;

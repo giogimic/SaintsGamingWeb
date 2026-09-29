@@ -179,7 +179,8 @@ export function WorldModelSelector({
                 onClick={() => {
                   useEditorStore.getState().openAssetPicker({
                     filterType: 'MODEL',
-                    title: 'Select World 3D Model',
+                    categoryFilter: 'CHARACTERS',
+                    title: 'Select Base Playable Character',
                     onSelect: (selectedId) => {
                       onChange({ ...value, assetId: selectedId });
                     },

@@ -107,6 +107,16 @@ export function AssetUploadView({
   useEffect(() => {
     if (activeAssetPicker) {
       setActiveTab('library');
+      if (activeAssetPicker.categoryFilter) {
+        setLibraryCategoryFilter(activeAssetPicker.categoryFilter as any);
+      } else if (activeAssetPicker.filterType === 'CREATURE') {
+        setLibraryCategoryFilter('CREATURES');
+      } else if (activeAssetPicker.filterType === 'CHARACTER') {
+        setLibraryCategoryFilter('2D');
+      }
+      if (activeAssetPicker.slotFilter) {
+        setLibrarySlotFilter(activeAssetPicker.slotFilter as any);
+      }
     }
   }, [activeAssetPicker]);
 
@@ -131,7 +141,12 @@ export function AssetUploadView({
   const [libraryAssets, setLibraryAssets] = useState<GameAssetItem[]>([]);
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<'ALL' | 'CHARACTERS' | 'MODULAR' | 'WEAPONS' | 'CREATURES' | 'PROPS' | '2D'>('ALL');
+  const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<'ALL' | 'CHARACTERS' | 'MODULAR' | 'WEAPONS' | 'CREATURES' | 'PROPS' | '2D'>(
+    (activeAssetPicker?.categoryFilter as any) || (activeAssetPicker?.filterType === 'CREATURE' ? 'CREATURES' : 'ALL')
+  );
+  const [librarySlotFilter, setLibrarySlotFilter] = useState<'ALL' | 'head' | 'shirt' | 'pants' | 'shoes' | 'back' | 'accessory'>(
+    (activeAssetPicker?.slotFilter as any) || 'ALL'
+  );
   const [totalLibraryCount, setTotalLibraryCount] = useState(0);
   const [previewingAsset, setPreviewingAsset] = useState<GameAssetItem | null>(null);
   const libraryRequestId = useRef(0);
@@ -438,17 +453,63 @@ export function AssetUploadView({
       );
     }
     if (libraryCategoryFilter === 'CHARACTERS') {
-      list = list.filter(
-        (a) =>
-          (a.tags || []).some((t) => /character|hero|npc|actor/i.test(t)) ||
-          (a.categories || []).some((c) => /character|npc/i.test(c))
-      );
+      list = list.filter((a) => {
+        const isModular =
+          a.isModularComponent === true ||
+          a.metadata?.isModularComponent === true ||
+          (a.tags || []).includes('character-component') ||
+          (a.tags || []).includes('modular');
+        if (isModular) return false;
+        return (
+          (a.tags || []).some((t) => /playable|hero|character|humanoid|actor/i.test(t)) ||
+          (a.categories || []).some((c) => /character|npc/i.test(c)) ||
+          !a.isModularComponent
+        );
+      });
     } else if (libraryCategoryFilter === 'MODULAR') {
-      list = list.filter(
-        (a) =>
-          (a.tags || []).some((t) => /modular|piece|armor|hair|clothes/i.test(t)) ||
-          a.isModularComponent
-      );
+      list = list.filter((a) => {
+        const isModular =
+          a.isModularComponent === true ||
+          a.metadata?.isModularComponent === true ||
+          (a.tags || []).some((t) => /modular|piece|character-component|wardrobe|armor|clothes/i.test(t)) ||
+          (a.categories || []).includes('modular');
+        if (!isModular) return false;
+        if (librarySlotFilter !== 'ALL') {
+          const slot = (a.componentCategory || a.metadata?.componentCategory || a.metadata?.cat || '').toLowerCase();
+          const tags = (a.tags || []).map((t) => t.toLowerCase());
+          if (librarySlotFilter === 'head') {
+            return ['head', 'hair', 'hat', 'face', 'head_accessory', 'beard', 'mask'].some(
+              (s) => slot === s || tags.includes(s)
+            );
+          }
+          if (librarySlotFilter === 'shirt') {
+            return ['shirt', 'jacket', 'top', 'torso', 'clothing', 'armor'].some(
+              (s) => slot === s || tags.includes(s)
+            );
+          }
+          if (librarySlotFilter === 'pants') {
+            return ['pants', 'bottom', 'legs', 'shorts', 'slacks'].some(
+              (s) => slot === s || tags.includes(s)
+            );
+          }
+          if (librarySlotFilter === 'shoes') {
+            return ['shoes', 'feet', 'boots', 'sneakers', 'slippers', 'socks'].some(
+              (s) => slot === s || tags.includes(s)
+            );
+          }
+          if (librarySlotFilter === 'back') {
+            return ['back', 'cape', 'bag', 'backpack', 'wings', 'shoulder'].some(
+              (s) => slot === s || tags.includes(s)
+            );
+          }
+          if (librarySlotFilter === 'accessory') {
+            return ['accessory', 'gloves', 'belt', 'hands', 'tool', 'gear'].some(
+              (s) => slot === s || tags.includes(s)
+            );
+          }
+        }
+        return true;
+      });
     } else if (libraryCategoryFilter === 'WEAPONS') {
       list = list.filter(
         (a) =>
@@ -458,7 +519,7 @@ export function AssetUploadView({
     } else if (libraryCategoryFilter === 'CREATURES') {
       list = list.filter(
         (a) =>
-          (a.tags || []).some((t) => /creature|monster|beast|dragon/i.test(t)) ||
+          (a.tags || []).some((t) => /creature|monster|beast|dragon|golem/i.test(t)) ||
           (a.categories || []).some((c) => /creature|monster/i.test(c))
       );
     } else if (libraryCategoryFilter === 'PROPS') {
@@ -469,7 +530,7 @@ export function AssetUploadView({
       );
     }
     return list;
-  }, [libraryAssets, searchQuery, libraryCategoryFilter]);
+  }, [libraryAssets, searchQuery, libraryCategoryFilter, librarySlotFilter]);
 
   // If a 3D model is loaded, immediately show AssetDefinitionStudio!
   if (selectedFile?.name.match(/\.(fbx|glb|gltf|obj|vox|dae|stl|ply)$/i) && previewUrl) {
@@ -954,13 +1015,13 @@ export function AssetUploadView({
               <div className="flex items-center gap-1 flex-wrap">
                 {(
                   [
-                    { id: 'ALL', label: 'All Models' },
-                    { id: 'CHARACTERS', label: 'Characters' },
-                    { id: 'MODULAR', label: 'Modular' },
-                    { id: 'WEAPONS', label: 'Weapons' },
-                    { id: 'CREATURES', label: 'Creatures' },
-                    { id: 'PROPS', label: 'Props' },
-                    { id: '2D', label: '2D Sprites' },
+                    { id: 'ALL', label: 'All Models', icon: '📦' },
+                    { id: 'CHARACTERS', label: 'Playable Characters', icon: '👑' },
+                    { id: 'MODULAR', label: 'Modular Wardrobe', icon: '👕' },
+                    { id: 'CREATURES', label: 'Creatures & Monsters', icon: '🐉' },
+                    { id: 'WEAPONS', label: 'Weapons', icon: '⚔️' },
+                    { id: 'PROPS', label: 'Props', icon: '🧱' },
+                    { id: '2D', label: '2D Sprites', icon: '🖼️' },
                   ] as const
                 ).map((cat) => (
                   <button
@@ -970,13 +1031,14 @@ export function AssetUploadView({
                       soundSynth?.playUiClick?.();
                       setLibraryCategoryFilter(cat.id);
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer border ${
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer border flex items-center gap-1.5 ${
                       libraryCategoryFilter === cat.id
-                        ? 'bg-amber-600/30 border-amber-500 text-amber-300'
+                        ? 'bg-amber-600/30 border-amber-500 text-amber-300 shadow-sm'
                         : 'bg-black/30 border-slate-800 text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    {cat.label}
+                    <span>{cat.icon}</span>
+                    <span>{cat.label}</span>
                   </button>
                 ))}
               </div>
@@ -1005,6 +1067,43 @@ export function AssetUploadView({
               </div>
             </div>
 
+            {/* Slot Sub-Filters for Modular Wardrobe */}
+            {(libraryCategoryFilter === 'MODULAR' || libraryCategoryFilter === 'ALL') && (
+              <div className="bg-[#050b14]/90 border border-slate-800 rounded-xl px-3 py-2 flex items-center gap-1.5 flex-wrap">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 mr-1 flex items-center gap-1">
+                  <Filter className="w-3 h-3 text-cyan-400" />
+                  <span>Slot:</span>
+                </span>
+                {(
+                  [
+                    { id: 'ALL', label: 'All Slots' },
+                    { id: 'head', label: '🧢 Head & Hair' },
+                    { id: 'shirt', label: '👕 Tops & Torso' },
+                    { id: 'pants', label: '👖 Bottoms & Legs' },
+                    { id: 'shoes', label: '👟 Footwear' },
+                    { id: 'back', label: '🎒 Back & Cape' },
+                    { id: 'accessory', label: '🧤 Accessories' },
+                  ] as const
+                ).map((slot) => (
+                  <button
+                    key={slot.id}
+                    type="button"
+                    onClick={() => {
+                      soundSynth?.playUiClick?.();
+                      setLibrarySlotFilter(slot.id);
+                    }}
+                    className={`px-2 py-0.5 rounded text-[9.5px] font-semibold transition cursor-pointer border ${
+                      librarySlotFilter === slot.id
+                        ? 'bg-cyan-500/20 border-cyan-500/60 text-cyan-300 shadow-sm'
+                        : 'bg-black/20 border-slate-800/80 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {slot.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Model Catalog Grid */}
             {isLoadingLibrary ? (
               <div className="flex flex-col items-center justify-center py-20 text-slate-500 text-xs gap-3">
@@ -1032,26 +1131,48 @@ export function AssetUploadView({
               <div>
                 <div className="flex items-center justify-between text-[10px] text-slate-400 mb-2 font-mono">
                   <span>Showing <strong className="text-amber-400">{filteredLibraryAssets.length}</strong> assets</span>
-                  <span>Click "Select Model" to assign directly to entity</span>
+                  <span>Click "Select" to assign directly to entity</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {filteredLibraryAssets.map((asset) => {
                     const is3D = asset.type === 'MODEL' || asset.source?.endsWith('.glb') || asset.source?.endsWith('.fbx');
                     const rigFamily = asset.metadata?.rigAnalysis?.family || asset.metadata?.rigFamily;
-                    const structure = asset.metadata?.structure || (asset.isModularComponent ? 'Modular' : 'Complete');
+                    const isModular = Boolean(
+                      asset.isModularComponent ||
+                      asset.metadata?.isModularComponent ||
+                      (asset.tags || []).includes('character-component') ||
+                      (asset.tags || []).includes('modular')
+                    );
+                    const isCreature = (asset.tags || []).some((t) => /creature|monster|beast|dragon|golem/i.test(t));
+                    const isPlayableBase = !isModular && !isCreature && (
+                      (asset.tags || []).some((t) => /playable|hero|character|humanoid|actor/i.test(t)) ||
+                      (asset.categories || []).some((c) => /character|npc/i.test(c))
+                    );
+                    const slotName = asset.componentCategory || asset.metadata?.componentCategory || asset.metadata?.cat;
+                    const setName = asset.metadata?.modularSetName || asset.metadata?.assetDefinition?.modularSetName || (asset.tags || []).find((t) => ['citizen', 'brute', 'adventurer', 'golem'].includes(t.toLowerCase()));
 
                     return (
                       <div
                         key={asset.id}
-                        className="bg-[#07111c] border border-slate-800 hover:border-amber-500/50 rounded-xl p-3 flex flex-col justify-between transition-all group hover:bg-[#0c1828]"
+                        className={`bg-[#07111c] border rounded-xl p-3 flex flex-col justify-between transition-all group hover:bg-[#0c1828] ${
+                          isPlayableBase
+                            ? 'border-amber-500/40 hover:border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.06)]'
+                            : 'border-slate-800 hover:border-cyan-500/40'
+                        }`}
                       >
                         <div>
                           {/* Card Header & Visual Thumbnail */}
                           <div className="flex items-start gap-3 mb-2">
                             <div className="w-12 h-12 rounded-lg bg-black/50 border border-slate-700 flex items-center justify-center shrink-0 overflow-hidden group-hover:border-amber-500/50 transition-colors">
                               {is3D ? (
-                                <Cuboid className="w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
+                                isPlayableBase ? (
+                                  <User className="w-6 h-6 text-amber-400 group-hover:scale-110 transition-transform" />
+                                ) : isModular ? (
+                                  <Shirt className="w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
+                                ) : (
+                                  <Cuboid className="w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
+                                )
                               ) : (
                                 <ImageIcon className="w-6 h-6 text-amber-400" />
                               )}
@@ -1067,16 +1188,32 @@ export function AssetUploadView({
 
                               {/* Badges */}
                               <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                                <span className="px-1.5 py-0.2 rounded text-[8.5px] font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60">
-                                  {is3D ? '3D MODEL' : '2D SPRITE'}
-                                </span>
-                                {structure && (
-                                  <span className="px-1.5 py-0.2 rounded text-[8.5px] font-bold bg-amber-950/60 text-amber-300 border border-amber-800/60">
-                                    {structure}
+                                {isPlayableBase ? (
+                                  <span className="px-1.5 py-0.5 rounded text-[8.5px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                                    👑 PLAYABLE BASE
+                                  </span>
+                                ) : isModular ? (
+                                  <span className="px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-cyan-950/70 text-cyan-300 border border-cyan-800 flex items-center gap-1">
+                                    👕 MODULAR{slotName ? ` • ${String(slotName).toUpperCase()}` : ''}
+                                  </span>
+                                ) : isCreature ? (
+                                  <span className="px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-purple-950/70 text-purple-300 border border-purple-800 flex items-center gap-1">
+                                    🐉 CREATURE
+                                  </span>
+                                ) : (
+                                  <span className="px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60">
+                                    {is3D ? '3D MODEL' : '2D SPRITE'}
                                   </span>
                                 )}
+
+                                {setName && (
+                                  <span className="px-1.5 py-0.5 rounded text-[8px] font-mono bg-slate-800 text-slate-300 border border-slate-700 capitalize">
+                                    Set: {setName}
+                                  </span>
+                                )}
+
                                 {rigFamily && (
-                                  <span className="px-1.5 py-0.2 rounded text-[8.5px] font-bold bg-purple-950/60 text-purple-300 border border-purple-800/60">
+                                  <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-purple-950/60 text-purple-300 border border-purple-800/60">
                                     {rigFamily.replace('_', ' ')}
                                   </span>
                                 )}
@@ -1104,10 +1241,22 @@ export function AssetUploadView({
                             <button
                               type="button"
                               onClick={() => handleSelectAsset(asset)}
-                              className="flex-1 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-amber-950/40"
+                              className={`flex-1 px-3 py-1.5 rounded-lg text-white font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md ${
+                                isPlayableBase
+                                  ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-950/40'
+                                  : isModular
+                                    ? 'bg-cyan-600 hover:bg-cyan-500 shadow-cyan-950/40'
+                                    : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-950/40'
+                              }`}
                             >
                               <Check className="w-3.5 h-3.5" />
-                              <span>Select Model</span>
+                              <span>
+                                {activeAssetPicker?.categoryFilter === 'CHARACTERS' || isPlayableBase
+                                  ? 'Select Character Base'
+                                  : isModular
+                                    ? 'Equip Wardrobe Piece'
+                                    : 'Select Model'}
+                              </span>
                             </button>
                           ) : (
                             <button

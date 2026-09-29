@@ -6,7 +6,7 @@ import { OrbitControls, Environment, Grid } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three-stdlib';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
-import { resolveModelAssetUrl } from '@/shared/game/worldModelPresentation';
+import { resolveModelAssetUrl, getModelModularComponents } from '@/shared/game/worldModelPresentation';
 import { getDefaultModelWardrobeAttachmentMode, getDefaultModelWardrobeSocket } from '@/shared/game/modelWardrobe';
 import { normalizeBoneName } from '@/engine/animationRetarget';
 import { AssetManager } from '@/engine/assets/AssetManager';
@@ -217,10 +217,46 @@ function CompositeCharacter({
   useEffect(() => {
     if (!baseScene) return;
 
-    // Reset base mesh visibility
+    // Anti-clipping, Modular Submesh Activation & Socket Attachment Logic
+    const canonicalParts = getModelModularComponents(baseUrl);
+    const norm = (s: string) => s.toLowerCase().replace(/[-_\s]/g, '');
+
+    const partByMesh = new Map<string, any>();
+    for (const p of canonicalParts) {
+      const nm = norm(p.meshName);
+      partByMesh.set(nm, p);
+      if (p.meshName.toLowerCase().includes('outwear')) {
+        partByMesh.set(norm(p.meshName.replace(/outwear/i, 'outerwear')), p);
+      }
+    }
+
+    // Configure base mesh visibility according to canonical defaults and equipped attachments
     baseScene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
-        child.visible = true;
+        const cName = norm(child.name);
+        const part = partByMesh.get(cName);
+        if (part) {
+          // Check if an equipped attachment corresponds to this canonical part
+          const matchingAttachment = modularAttachments.find((att: any) => {
+            const rawId = norm(String(att.assetId || att.id || ''));
+            const meshName = norm(String(att.meshName || ''));
+            const modelUrl = norm(String(att.modelUrl || att.source || ''));
+            return (
+              (rawId && (rawId === norm(part.id) || rawId.endsWith(norm(part.id)))) ||
+              (meshName && meshName === cName) ||
+              (modelUrl && modelUrl.includes(cName))
+            );
+          });
+
+          if (matchingAttachment) {
+            child.visible = (matchingAttachment as any).defaultVisible !== false;
+          } else {
+            child.visible = Boolean(part.defaultVisible);
+          }
+        } else {
+          // Non-modular base mesh: visible by default
+          child.visible = true;
+        }
       }
     });
 
@@ -229,13 +265,18 @@ function CompositeCharacter({
     loadedAttachments.forEach((sub) => {
       (sub.attachment.hidesComponents || []).forEach((c) => hiddenKeywords.add(c.toLowerCase()));
     });
+    modularAttachments.forEach((att: any) => {
+      (att.hidesComponents || []).forEach((c: string) => hiddenKeywords.add(c.toLowerCase()));
+    });
 
     if (hiddenKeywords.size > 0) {
       baseScene.traverse((child) => {
         if ((child as THREE.Mesh).isMesh) {
           const meshName = child.name.toLowerCase();
+          const normMesh = norm(child.name);
           for (const kw of hiddenKeywords) {
-            if (meshName.includes(kw)) {
+            const normKw = norm(kw);
+            if (meshName.includes(kw) || normMesh.includes(normKw)) {
               child.visible = false;
               break;
             }

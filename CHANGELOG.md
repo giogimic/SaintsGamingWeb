@@ -1,3 +1,25 @@
+## [2.2.059] - 2026-09-29
+- **Modular Archetype Builds, Character Base vs Clothing Taxonomy, and Anti-Clipping 3D Previews**:
+  - **Archetype Base vs Modular Clothing Filtering (`AssetUploadView.tsx`)**:
+    - Introduced strict taxonomy separation between complete Playable Character Foundations (Archetype Bases like `Citizen`, `Brute`, `Adventurer`, `Golem`) and Modular Wardrobe Pieces (hats, shirts, pants, shoes, gear).
+    - Added dedicated category tabs: `👑 Playable Characters`, `👕 Modular Wardrobe`, `🐉 Creatures & Monsters`, `⚔️ Weapons`, `🧱 Props`, `🖼️ 2D Sprites`, and `📦 All Models`.
+    - Added slot sub-filter chips for modular browsing: `🧢 Head & Hair`, `👕 Tops & Torso`, `👖 Bottoms & Legs`, `👟 Footwear`, `🎒 Back & Cape`, `🧤 Accessories`.
+    - Implemented rich card visual badges: `👑 PLAYABLE BASE` with amber glow for foundational character bodies, `👕 MODULAR • <SLOT>` with cyan styling for clothing/armor, and character set indicators (`Set: Citizen`, `Set: Brute`, `Set: Adventurer`).
+    - Added contextual selection button labels (`Select Character Base` vs `Equip Wardrobe Piece`).
+  - **Anti-Clipping & Selective Submesh Rendering (`ArchetypeModelPreview3D.tsx`)**:
+    - Fixed multi-mesh rendering overlap bug where all submeshes rendered simultaneously.
+    - Integrated `getModelModularComponents(baseUrl)` to selectively respect canonical defaults and equipped modular attachments.
+    - Applied case-insensitive and hyphen/underscore normalized mesh matching, ensuring alternate items remain hidden while equipped parts render cleanly without clipping.
+  - **Full Modular Registration for Brute & Adventurer (`canonicalAssetsSync.ts`)**:
+    - Expanded canonical database synchronization to register all 8 Brute modular parts (`Helmet1`, `Torso1`, `Pants1`, `Boots1`, `ShoulderPad1`, `Cape1`, `BeltChains1`) and 6 Adventurer modular parts (`Man_Head_Mesh`, `Man_Pullover_Mesh`, `Man_Pants_Mesh`, `Man_Shoes_Mesh`, `Man_Bag_Mesh`, `Man_Arms_Mesh`).
+    - Canonical GameAsset catalog expanded from 34 to 48 registered assets.
+  - **Modular Wardrobe & Outfit Studio UX (`ModelWardrobeEditor.tsx`)**:
+    - Broadened model family group detection (`citizen`, `brute`, `adventurer`, `golem`) so selecting any character base immediately surfaces all matching pieces.
+    - Added quick-toggle scope pills: `★ Matching Character Pieces (X)` vs `All Modular Pieces (Y)`.
+    - Added direct `+ Browse Asset Library` modal picker for visually browsing and equipping modular pieces from the 3D library.
+  - **Global Version Synchronization**:
+    - Synchronized `SITE_VERSION` defaults to `2.2.059` across all 8 tracking files (`package.json`, `app/actions/settings.ts`, `app/(main)/admin/settings/page.tsx`, `app/(main)/layout.tsx`, `app/(ucp)/layout.tsx`, `src/web/components/shared/navbar.tsx`, `src/web/components/shared/global-bottom-bar.tsx`, `app/(main)/admin/dev/system/page.tsx`).
+
 ## [2.2.058] - 2026-09-29
 - **Canonical 3D Model Ingestion & Asset Library Discovery for Archetypes & Wardrobe**:
   - **Asset Library Database Synchronization (`canonicalAssetsSync.ts`)**:

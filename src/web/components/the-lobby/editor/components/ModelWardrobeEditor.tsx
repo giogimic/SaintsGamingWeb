@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, Shirt, Sparkles } from 'lucide-react';
+import { Search, Shirt, Sparkles, Plus, ExternalLink } from 'lucide-react';
 import { AssetManager, type GameAssetItem } from '@/engine/assets/AssetManager';
+import { useEditorStore } from '../editor-store';
 import {
   getModelWardrobeCategory,
   getDefaultModelWardrobeAttachmentMode,
@@ -25,13 +26,29 @@ function displayName(asset: WardrobeAsset): string {
   return asset.name || asset.metadata?.name || asset.customLabels?.name || asset.source.split('/').pop()?.replace(/\.[^.]+$/, '') || asset.id;
 }
 
-function getAssetGroupNames(asset: WardrobeAsset | null): string[] {
-  if (!asset) return [];
-  const presentation = asset.presentation || asset.metadata?.presentation || {};
-  const definition = presentation.assetDefinition || asset.metadata?.assetDefinition || {};
-  return [definition.modularSetName, displayName(asset)]
-    .filter((name): name is string => typeof name === 'string' && name.trim().length > 0)
-    .map((name) => name.trim().toLowerCase());
+function getAssetGroupNames(asset: WardrobeAsset | null, modelAssetId?: string): string[] {
+  const names = new Set<string>();
+  if (modelAssetId) {
+    const clean = modelAssetId.toLowerCase().replace(/^.*[\\/]/, '').replace(/\.(glb|gltf|fbx|obj)$/i, '');
+    names.add(clean);
+    if (clean.includes('citizen')) names.add('citizen');
+    if (clean.includes('brute')) names.add('brute');
+    if (clean.includes('adventurer')) names.add('adventurer');
+    if (clean.includes('golem')) names.add('golem');
+  }
+  if (asset) {
+    const presentation = asset.presentation || asset.metadata?.presentation || {};
+    const definition = presentation.assetDefinition || asset.metadata?.assetDefinition || {};
+    if (definition.modularSetName) names.add(definition.modularSetName.toLowerCase());
+    if (asset.metadata?.modularSetName) names.add(asset.metadata.modularSetName.toLowerCase());
+    const name = displayName(asset).toLowerCase();
+    names.add(name);
+    if (name.includes('citizen')) names.add('citizen');
+    if (name.includes('brute')) names.add('brute');
+    if (name.includes('adventurer')) names.add('adventurer');
+    if (name.includes('golem')) names.add('golem');
+  }
+  return Array.from(names);
 }
 
 function isModelAsset(asset: WardrobeAsset): boolean {
@@ -45,7 +62,7 @@ function isModularAsset(asset: WardrobeAsset): boolean {
       || asset.componentCategory
       || asset.metadata?.componentCategory
       || asset.metadata?.cat
-      || asset.tags?.some((tag) => ['modular', 'sprite-component'].includes(tag.toLowerCase())),
+      || asset.tags?.some((tag) => ['modular', 'sprite-component', 'character-component'].includes(tag.toLowerCase())),
   );
 }
 
@@ -56,7 +73,9 @@ export function ModelWardrobeEditor({
   allowCharacterCreationOptions = false,
   title = 'Outfit & Item Loadout',
 }: ModelWardrobeEditorProps) {
-  const [catalog, setCatalog] = useState<WardrobeAsset[]>([]);
+  const [matchedCatalog, setMatchedCatalog] = useState<WardrobeAsset[]>([]);
+  const [allCatalog, setAllCatalog] = useState<WardrobeAsset[]>([]);
+  const [viewScope, setViewScope] = useState<'MATCHED' | 'ALL'>('MATCHED');
   const [relatedIds, setRelatedIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -66,7 +85,8 @@ export function ModelWardrobeEditor({
   useEffect(() => {
     let cancelled = false;
     if (!modelAssetId) {
-      setCatalog([]);
+      setMatchedCatalog([]);
+      setAllCatalog([]);
       setRelatedIds([]);
       return;
     }
@@ -95,23 +115,38 @@ export function ModelWardrobeEditor({
         items = (await loadModelPages(false)).filter(isModularAsset);
       }
       const modelItems = items.filter((asset) => isModelAsset(asset) && asset.id !== modelAssetId);
-      const groupNames = getAssetGroupNames(baseAsset as WardrobeAsset | null);
+      const groupNames = getAssetGroupNames(baseAsset as WardrobeAsset | null, modelAssetId);
       const matched = groupNames.length > 0
         ? modelItems.filter((asset) => {
             const name = displayName(asset).toLowerCase();
-            return groupNames.some((group) => name.startsWith(`${group} - `) || name.startsWith(`${group} / `));
+            const set = (asset.metadata?.modularSetName || asset.metadata?.assetDefinition?.modularSetName || '').toLowerCase();
+            const tags = (asset.tags || []).map((t) => t.toLowerCase());
+            const source = (asset.source || '').toLowerCase();
+            return groupNames.some(
+              (g) =>
+                set === g ||
+                tags.includes(g) ||
+                source.includes(`/${g}/`) ||
+                source.includes(`${g}.glb`) ||
+                name.includes(g) ||
+                name.startsWith(`${g} - `) ||
+                name.startsWith(`${g} / `)
+            );
           })
         : [];
-      const visibleCatalog = matched.length > 0 ? matched : modelItems;
       if (cancelled) return;
-      setCatalog(visibleCatalog.sort((a, b) => displayName(a).localeCompare(displayName(b), undefined, { numeric: true, sensitivity: 'base' })));
+      const sortedAll = modelItems.sort((a, b) => displayName(a).localeCompare(displayName(b), undefined, { numeric: true, sensitivity: 'base' }));
+      const sortedMatched = matched.sort((a, b) => displayName(a).localeCompare(displayName(b), undefined, { numeric: true, sensitivity: 'base' }));
+      setAllCatalog(sortedAll);
+      setMatchedCatalog(sortedMatched);
       setRelatedIds(matched.map((asset) => asset.id));
       setIsLoading(false);
     };
 
     void load().catch(() => {
       if (!cancelled) {
-        setCatalog([]);
+        setMatchedCatalog([]);
+        setAllCatalog([]);
         setRelatedIds([]);
         setIsLoading(false);
       }
@@ -119,6 +154,59 @@ export function ModelWardrobeEditor({
 
     return () => { cancelled = true; };
   }, [modelAssetId]);
+
+  const catalog = useMemo(() => {
+    if (viewScope === 'MATCHED' && matchedCatalog.length > 0) {
+      return matchedCatalog;
+    }
+    return allCatalog;
+  }, [viewScope, matchedCatalog, allCatalog]);
+
+  const addSingleAsset = (asset: WardrobeAsset) => {
+    const modelUrl = asset.source || asset.cdnUrl || `/uploads/${asset.id}.glb`;
+    const category = getModelWardrobeCategory({
+      assetId: asset.id,
+      label: displayName(asset),
+      category: asset.componentCategory || asset.metadata?.componentCategory || asset.metadata?.cat || undefined,
+    });
+    const attachmentMode = getDefaultModelWardrobeAttachmentMode({ assetId: asset.id, label: displayName(asset), category });
+    const socket = attachmentMode === 'RIGID_SOCKET'
+      ? getDefaultModelWardrobeSocket({ assetId: asset.id, label: displayName(asset), category })
+      : undefined;
+    const newItem: ModelWardrobeItem = {
+      type: '3D Model',
+      assetId: asset.id,
+      modelUrl,
+      source: asset.source || asset.cdnUrl,
+      label: displayName(asset),
+      category,
+      slot: category,
+      isModular: true,
+      attachmentMode,
+      socket,
+      defaultVisible: true,
+      availableInCharacterCreation: allowCharacterCreationOptions,
+      hidesComponents: (asset as any).hidesComponents || [],
+    };
+    onChange([...value.filter((v) => v.assetId !== asset.id), newItem]);
+  };
+
+  const handleOpenModularLibrary = () => {
+    useEditorStore.getState().openAssetPicker({
+      filterType: 'MODEL',
+      categoryFilter: 'MODULAR',
+      title: 'Equip Modular Clothing / Armor',
+      onSelect: (selectedId, asset) => {
+        if (asset) {
+          addSingleAsset(asset);
+        } else {
+          void AssetManager.getInstance().getAsset(selectedId).then((loaded) => {
+            if (loaded) addSingleAsset(loaded as any);
+          });
+        }
+      },
+    });
+  };
 
   const configuredById = useMemo(() => new Map(value.map((item) => [item.assetId, item])), [value]);
   const filteredCatalog = useMemo(() => {
@@ -247,11 +335,55 @@ export function ModelWardrobeEditor({
           : 'Choose this character’s items, default visibility, and how each piece attaches to the model.'}
       </p>
 
-      {catalog.length > 0 && (
+      {/* Set Scope Pills and Browse Library Button */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {matchedCatalog.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setViewScope('MATCHED')}
+              className={`px-2.5 py-1 rounded text-[9.5px] font-bold transition cursor-pointer border flex items-center gap-1 ${
+                viewScope === 'MATCHED'
+                  ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-sm'
+                  : 'bg-black/30 border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Sparkles size={11} className="text-emerald-400" />
+              <span>Matching Character Pieces ({matchedCatalog.length})</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setViewScope('ALL')}
+            className={`px-2.5 py-1 rounded text-[9.5px] font-bold transition cursor-pointer border flex items-center gap-1 ${
+              viewScope === 'ALL'
+                ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-300 shadow-sm'
+                : 'bg-black/30 border-slate-800 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span>All Modular Pieces ({allCatalog.length})</span>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleOpenModularLibrary}
+          className="px-2.5 py-1 rounded text-[9.5px] font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 transition flex items-center gap-1 cursor-pointer shadow-sm"
+        >
+          <Plus size={11} />
+          <span>Browse Asset Library</span>
+        </button>
+      </div>
+
+      {(catalog.length > 0 || allCatalog.length > 0) && (
         <div className="flex items-center gap-1.5 rounded border border-slate-800 bg-black/30 px-2 py-1.5">
           <Search size={11} className="text-slate-500" />
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find clothing or equipment..." className="w-full bg-transparent text-[10px] text-slate-200 outline-none placeholder:text-slate-600" />
-          {relatedIds.length > 0 && <span className="whitespace-nowrap text-[8px] text-emerald-400"><Sparkles size={10} className="inline" /> linked set</span>}
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Filter clothing or equipment by name..."
+            className="w-full bg-transparent text-[10px] text-slate-200 outline-none placeholder:text-slate-600"
+          />
         </div>
       )}
       {(bulkAssets.length > 0 || value.length > 0) && (
