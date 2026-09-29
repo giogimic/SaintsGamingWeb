@@ -100,7 +100,7 @@ import { AssetManager } from './assets/AssetManager';
 import { applyAnimationProfileFallback } from '../shared/game/animationProfiles';
 import { getDefaultModelWardrobeSocket } from '../shared/game/modelWardrobe';
 import { attachModularComponent, findBabylonBone } from './helpers/babylonAttachmentHelpers';
-import { resolveModelAssetUrl } from '../shared/game/worldModelPresentation';
+import { resolveModelAssetUrl, CANONICAL_BUILTIN_MODELS } from '../shared/game/worldModelPresentation';
 import type { ModularAttachmentDef } from '../shared/game/canonicalAsset';
 
 export interface RenderedChunk {
@@ -4372,12 +4372,16 @@ export class BabylonEngine {
               || sourceAssetPresentation?.assetDefinition?.animations
               || sourceAsset?.metadata?.animations;
             const actorAnimations = pres?.animations || pres?.assetDefinition?.animations;
+            const canonicalDef = Object.values(CANONICAL_BUILTIN_MODELS).find(c =>
+              c.id === pres?.assetId || c.modelUrl === pres?.modelUrl || c.modelUrl === sourceAsset?.source
+            );
             const profileId = pres?.animationProfileId
               || pres?.assetDefinition?.animationProfileId
               || sourceAssetPresentation?.animationProfileId
               || sourceAssetPresentation?.assetDefinition?.animationProfileId
               || sourceAsset?.metadata?.animationProfileId
-              || sourceAsset?.metadata?.assetDefinition?.animationProfileId;
+              || sourceAsset?.metadata?.assetDefinition?.animationProfileId
+              || canonicalDef?.defaultAnimationProfileId;
             const mergedAnimationConfig = {
               ...(sourceAssetAnimations || {}),
               ...(actorAnimations || {}),
@@ -4428,8 +4432,11 @@ export class BabylonEngine {
                     mesh.metadata.animationGroups = mesh.metadata.animationGroups.filter((g: any) => g.name !== slot);
                     mesh.metadata.animationGroups.push(retargetedAg);
 
+                    // Reset cached resolved animations so Renderer picks up the newly attached clips
+                    mesh.metadata._resolvedAnims = null;
+
                     const isMoving = mesh.metadata.isMoving;
-                    const isRunSlot = slot.includes('run') || slot.includes('walk');
+                    const isRunSlot = slot.includes('run') || slot.includes('walk') || slot.includes('jog');
                     const isIdleSlot = slot.includes('idle');
                     const shouldPlay = (isMoving && isRunSlot) || (!isMoving && isIdleSlot) || !mesh.metadata.animationGroups.some((g: any) => g.isPlaying);
 

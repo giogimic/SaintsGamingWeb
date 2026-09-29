@@ -1,3 +1,27 @@
+## [2.2.061] - 2026-09-29
+- **In-Game 3D Character Animation Loading, Retargeting Cache Invalidation & Intelligent Server Routing**:
+  - **Animation Profile Exact Paths & Locomotion Slot Alignment (`animationProfiles.ts`)**:
+    - Discovered and corrected path mismatches where Paragon animation packs (such as `GreystoneManny`, `CountessManny`, etc.) store running clips under `Jog/Jog_Fwd.glb` rather than `Run_Fwd.glb`, and idle clips under `IdleAO/Idle.glb`.
+    - Updated `COMMON_SLOT_MAP` default locomotion entries to prioritize `Jog/Jog_Fwd`, `Jog/Jog_Bwd`, `Jog/Jog_Left`, `Jog/Jog_Right`.
+    - Added dedicated, explicit profile slot maps for `GreystoneManny`, `CountessManny`, `CrunchManny`, `FengMaoManny`, `GruxManny`, and `MurielManny`.
+  - **Intelligent Animation Target & Alias Resolution in Server (`server.ts`)**:
+    - Replaced fragile exact-path serving with `resolveAnimationTarget()` supporting in-memory file index caching.
+    - Implemented case-insensitive directory lookups to support Linux Ext4 file systems where case sensitivity previously broke requests.
+    - Added alias fallback mapping for common slot requests (`Idle` -> `IdleAO/Idle.glb`, `IdleAO/Idle_Pose.glb`, `Idle_Combat.glb`; `Run_Fwd` -> `Jog/Jog_Fwd.glb`, `Sprint/Sprint_Fwd.glb`, etc.).
+    - Implemented recursive profile file search as a robust fallback for nested hero subdirectories.
+  - **Babylon Retargeting Animation Group Cache Invalidation (`Renderer.ts`, `BabylonEngine.ts`)**:
+    - Fixed a critical race condition where `Renderer.ts` permanently cached an empty animation list (`runAnims: []`, `idleAnims: []`) because `mesh.metadata._resolvedAnims.groups !== groups` evaluated to `false` when the same array reference was asynchronously mutated upon retargeting.
+    - Updated `Renderer.ts` to invalidate its animation resolution cache whenever `mesh.metadata._resolvedAnims.count !== groups.length`.
+    - Updated `BabylonEngine.ts` to explicitly clear `mesh.metadata._resolvedAnims = null` whenever a retargeted group is attached to a mesh.
+  - **Canonical Builtin Model Fallback (`worldModelPresentation.ts`, `BabylonEngine.ts`)**:
+    - Ensured `CANONICAL_BUILTIN_MODELS` (e.g., `brute` -> `GreystoneManny`, `citizen` -> `MocapMobility`) are automatically inspected for default animation profiles when models load without an explicit runtime profile override.
+  - **Docker Compose Production Volume Mounts (`docker-compose.yml`)**:
+    - Added `/var/saints-gaming/Paragon_animations_glb` and `./public/animations` volume mounts to `docker-compose.yml` to ensure host animation files on Debian servers are accessible inside the production Docker container.
+  - **Automated Animation Profile Unit Tests (`animationProfiles.test.ts`)**:
+    - Added unit test suite covering profile slot resolution, default fallback mappings, and explicit hero profile overrides.
+  - **Global Version Synchronization**:
+    - Synchronized `SITE_VERSION` defaults to `2.2.061` across all 8 tracking files (`package.json`, `app/actions/settings.ts`, `app/(main)/admin/settings/page.tsx`, `app/(main)/layout.tsx`, `app/(ucp)/layout.tsx`, `src/web/components/shared/navbar.tsx`, `src/web/components/shared/global-bottom-bar.tsx`, `app/(main)/admin/dev/system/page.tsx`).
+
 ## [2.2.060] - 2026-09-29
 - **Multiplayer Duplicate Character Ghosting Elimination & Local Player Self-Filtering**:
   - **Local Player Hydration Integrity (`index.tsx`)**:

@@ -70,20 +70,132 @@ app.prepare().then(async () => {
           "C:\\saints-gaming\\animations",
         ].filter(Boolean) as string[];
 
-        let targetFile: string | null = null;
-        for (const root of possibleRoots) {
-          const testPath = path.join(root, decodedSuffix);
-          try {
-            if (fs.existsSync(testPath) && fs.statSync(testPath).isFile()) {
-              targetFile = testPath;
-              break;
-            }
-            if (!decodedSuffix.endsWith('.glb') && fs.existsSync(testPath + '.glb')) {
-              targetFile = testPath + '.glb';
-              break;
-            }
-          } catch {}
+        // Fast in-memory cache for resolved animation file paths
+        if (!(global as any).__animPathCache) {
+          (global as any).__animPathCache = new Map<string, string>();
         }
+        const animCache: Map<string, string> = (global as any).__animPathCache;
+
+        function resolveAnimationTarget(roots: string[], suffix: string): string | null {
+          const cacheKey = suffix.toLowerCase();
+          if (animCache.has(cacheKey)) {
+            const cached = animCache.get(cacheKey)!;
+            try {
+              if (fs.existsSync(cached) && fs.statSync(cached).isFile()) return cached;
+            } catch {}
+            animCache.delete(cacheKey);
+          }
+
+          for (const root of roots) {
+            try {
+              if (!fs.existsSync(root)) continue;
+
+              // 1. Direct path check
+              const directPath = path.join(root, suffix);
+              if (fs.existsSync(directPath) && fs.statSync(directPath).isFile()) {
+                animCache.set(cacheKey, directPath);
+                return directPath;
+              }
+              if (!suffix.endsWith('.glb') && fs.existsSync(directPath + '.glb') && fs.statSync(directPath + '.glb').isFile()) {
+                animCache.set(cacheKey, directPath + '.glb');
+                return directPath + '.glb';
+              }
+
+              // 2. Profile-aware alias & recursive search
+              const parts = suffix.replace(/\\/g, '/').split('/').filter(Boolean);
+              if (parts.length >= 2) {
+                const profileName = parts[0];
+                const remainder = parts.slice(1).join('/');
+                const baseName = path.basename(remainder, '.glb').toLowerCase();
+
+                // Case-insensitive profile folder match (critical on Linux ext4)
+                let profileDir = path.join(root, profileName);
+                if (!fs.existsSync(profileDir)) {
+                  try {
+                    const entries = fs.readdirSync(root, { withFileTypes: true });
+                    const match = entries.find((e: any) => e.isDirectory() && e.name.toLowerCase() === profileName.toLowerCase());
+                    if (match) profileDir = path.join(root, match.name);
+                  } catch {}
+                }
+
+                if (fs.existsSync(profileDir) && fs.statSync(profileDir).isDirectory()) {
+                  // Common Paragon folder aliases
+                  const candidateSubpaths: string[] = [];
+                  if (baseName === 'idle' || baseName.includes('idle')) {
+                    candidateSubpaths.push(
+                      'IdleAO/Idle.glb', 'IDLEAO/Idle.glb', 'AO_Idles/Idle.glb', 'IdleAO/idle.glb',
+                      'Jog/Idle.glb', 'Idle_Combat.glb', 'IDleAO/Idle_Pose.glb', 'Idle_Combat_Pose.glb',
+                      'Steel_Idle.glb', 'Idle.glb', 'idle.glb', '01_02_001_Start jogging.glb'
+                    );
+                  } else if (baseName === 'run_fwd' || baseName === 'jog_fwd' || baseName.includes('run') || baseName.includes('jog')) {
+                    candidateSubpaths.push(
+                      'Jog/Jog_Fwd.glb', 'Jog/jog_fwd.glb', 'Jog_Fwd.glb', 'Walk_Fwd.glb',
+                      'Run_Fwd.glb', 'run_fwd.glb', 'Sprint/Sprint_Fwd.glb', '01_02_006_jogging.glb'
+                    );
+                  } else if (baseName === 'run_bwd' || baseName === 'jog_bwd') {
+                    candidateSubpaths.push(
+                      'Jog/Jog_Bwd.glb', 'Jog_Bwd.glb', 'Walk_Bwd.glb', 'Run_Bwd.glb', '01_02_003_180 turn jogging.glb'
+                    );
+                  } else if (baseName === 'run_left' || baseName === 'jog_left') {
+                    candidateSubpaths.push(
+                      'Jog/Jog_Left.glb', 'Jog_Left.glb', 'Jog/Jog_Lft.glb', 'Walk_Left.glb', 'Run_Left.glb', '01_02_004_90 turn jogging_L.glb'
+                    );
+                  } else if (baseName === 'run_right' || baseName === 'jog_right') {
+                    candidateSubpaths.push(
+                      'Jog/Jog_Right.glb', 'Jog_Right.glb', 'Jog/Jog_Rt.glb', 'Walk_Right.glb', 'Run_Right.glb', '01_02_005_90 turn jogging_R.glb'
+                    );
+                  } else if (baseName === 'jump_start') {
+                    candidateSubpaths.push('Jump/Jump_Start.glb', 'Jump_Start.glb', '01_04_001_Jump.glb');
+                  } else if (baseName === 'jump_mid' || baseName === 'jump_fall') {
+                    candidateSubpaths.push('Jump/Jump_Apex.glb', 'Jump_Fall.glb', 'Jump_Fall_Loop.glb', 'Jump_Apex.glb', '01_04_004_Jump_F.glb');
+                  } else if (baseName === 'jump_end' || baseName === 'jump_land') {
+                    candidateSubpaths.push('Jump/Jump_Land.glb', 'Jump_Land.glb', 'Jump_InPlace_Land.glb', '01_04_005_Jump_B.glb');
+                  } else if (baseName === 'death') {
+                    candidateSubpaths.push('Death.glb', 'Death_A.glb', 'Death/Death_A.glb', 'Death_Fwd.glb', 'Death_Bwd.glb');
+                  }
+
+                  for (const sub of candidateSubpaths) {
+                    const subFullPath = path.join(profileDir, sub);
+                    if (fs.existsSync(subFullPath) && fs.statSync(subFullPath).isFile()) {
+                      animCache.set(cacheKey, subFullPath);
+                      return subFullPath;
+                    }
+                  }
+
+                  // Recursive case-insensitive file lookup within profileDir (max depth 3)
+                  const searchSubDir = (dir: string, depth = 0): string | null => {
+                    if (depth > 3) return null;
+                    try {
+                      const list = fs.readdirSync(dir, { withFileTypes: true });
+                      for (const item of list) {
+                        const full = path.join(dir, item.name);
+                        if (item.isFile()) {
+                          const itemLower = item.name.toLowerCase();
+                          if (itemLower === baseName + '.glb' || itemLower === baseName) {
+                            return full;
+                          }
+                        } else if (item.isDirectory()) {
+                          const found = searchSubDir(full, depth + 1);
+                          if (found) return found;
+                        }
+                      }
+                    } catch {}
+                    return null;
+                  };
+
+                  const found = searchSubDir(profileDir);
+                  if (found) {
+                    animCache.set(cacheKey, found);
+                    return found;
+                  }
+                }
+              }
+            } catch {}
+          }
+          return null;
+        }
+
+        const targetFile = resolveAnimationTarget(possibleRoots, decodedSuffix);
         
         if (targetFile) {
           const ext = path.extname(targetFile).toLowerCase();

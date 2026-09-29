@@ -249,10 +249,14 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
   const skeletonRequirements = model.skeletonRequirements ?? data.skeletonRequirements ?? data.assetDefinition?.skeletonRequirements;
   const materials = model.materials ?? data.materials ?? data.assetDefinition?.materials;
 
+  const canonicalDef = (rawId && CANONICAL_BUILTIN_MODELS[String(rawId).toLowerCase()])
+    || (model.assetId && CANONICAL_BUILTIN_MODELS[String(model.assetId).toLowerCase()])
+    || Object.values(CANONICAL_BUILTIN_MODELS).find(c => c.modelUrl === modelUrl);
+
   return {
     mode: '3D',
     assetId: model.assetId,
-    animationProfileId: model.animationProfileId ?? data.animationProfileId ?? data.assetDefinition?.animationProfileId,
+    animationProfileId: model.animationProfileId ?? data.animationProfileId ?? data.assetDefinition?.animationProfileId ?? canonicalDef?.defaultAnimationProfileId,
     modelUrl,
     modularModelUrls,
     modularAttachments,

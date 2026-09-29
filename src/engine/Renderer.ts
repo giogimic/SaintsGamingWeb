@@ -571,9 +571,9 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
           const isEntityWalking = state.isMoving || dist > 0.01;
           const groups = mesh.metadata.animationGroups;
           
-          if (!mesh.metadata._resolvedAnims || mesh.metadata._resolvedAnims.groups !== groups) {
-            const isRunClip = (name: string) => /run|walk|jog|sprint|locomotion|move|forward|fwd/i.test(name);
-            const isIdleClip = (name: string) => /idle|stand|wait|breath|rest|still|default/i.test(name);
+          if (!mesh.metadata._resolvedAnims || mesh.metadata._resolvedAnims.groups !== groups || mesh.metadata._resolvedAnims.count !== groups.length) {
+            const isRunClip = (name: string) => /run|walk|jog|sprint|locomotion|move|forward|fwd|01_02_006/i.test(name);
+            const isIdleClip = (name: string) => /idle|stand|wait|breath|rest|still|default|01_02_001/i.test(name);
             const isActionClip = (name: string) => /attack|hit|punch|slash|cast|shoot|death|die|dead|hurt|damage|jump|fall|climb/i.test(name);
 
             let runAnims = groups.filter((ag: any) => isRunClip(ag.name || ''));
@@ -592,6 +592,7 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
 
             mesh.metadata._resolvedAnims = {
               groups,
+              count: groups.length,
               runAnims,
               idleAnims,
             };
