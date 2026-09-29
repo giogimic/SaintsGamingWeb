@@ -1,4 +1,35 @@
-## [2.2.055] - 2026-09-29
+## [2.2.057] - 2026-09-29
+- **Creative Characters Bundling & Mixamo Animation Integration (`citizen.glb`)**:
+  - **Animation Rig Forensics & Compatibility**:
+    - Evaluated `Creative_Characters_FREE_-_Animated_Low_Poly_3D_Models-94fd60a2` from VaultCache. Verified that `Creative_Character_free.fbx` is rigged to the standard Mixamo Humanoid skeleton (`Hips`, `Spine`, `Spine1`, `Neck`, `Head`, `LeftShoulder`, `LeftArm`, `LeftForeArm`, `LeftHand`, `RightShoulder`, `RightArm`, `RightForeArm`, `RightHand`, `LeftUpLeg`, `LeftLeg`, `LeftFoot`, `LeftToeBase`, `RightUpLeg`, `RightLeg`, `RightFoot`, `RightToeBase`, plus fingers and prop attachment sockets).
+    - Confirmed 1-to-1 joint compatibility with Saints Gaming's built-in `MocapMobility` locomotion set (20 clips including jogging, 180 turn walks, crouching, jumping, idling).
+    - Confirmed dynamic compatibility with all 30+ Paragon animation profiles via bidirectional bone mapping in `src/engine/animationRetarget.ts` (`BONE_EQUIVALENCE_GROUPS`).
+  - **Rebranding & Asset Bundling**:
+    - Converted and bundled `Creative_Character_free.fbx` with embedded `Textures_4.png` into clean, production-ready `/game-assets/models/citizen.glb` (2.49 MB binary glTF).
+    - Extracted and published 30 individual modular parts into `/game-assets/models/citizen/` for modular wardrobe, head, hair, clothing, and accessory attachment.
+  - **Modular Architecture Integration (`worldModelPresentation.ts`)**:
+    - Registered `citizen` in `CANONICAL_BUILTIN_MODELS` with `skeleton: 'mixamo'`, `defaultAnimationProfileId: 'MocapMobility'`, and full modular part taxonomy.
+    - Configured base outfit defaults (`Body_010`, `Male_emotion_usual_001`, `Hairstyle_male_010`, `T_Shirt_009`, `Pants_010`, `Shoe_Sneakers_009`) while configuring 24 alternate accessories, costumes, hairstyles, and hats with `defaultVisible: false` to prevent visual mesh clipping.
+  - **Test Suite (`worldModelPresentation.test.ts`)**:
+    - Extended unit test coverage to verify canonical resolution and modular component querying for `citizen` (9/9 passing).
+
+## [2.2.056] - 2026-09-29
+- **Canonical Model Integration & Modular Systems Foundation**:
+  - **Canonical 3D Model Pipeline & Dedicated Assets**:
+    - Converted, optimized, and bundled three foundational high-performance PBR models into `/game-assets/models/`:
+      - `brute.glb` (13.71 MB): Unreal Manny skeleton, 11 modular meshes (`Helmet1`, `Head1`, `Head1_Eyes`, `Head1_teeth`, `Torso1`, `Pants1`, `Boots1`, `Shoulder_Belt1`, `ShoulderPad1`, `BeltChains1`, `Cape1`), 7 embedded 1024x1024 PBR textures.
+      - `adventurer.glb` (14.49 MB): Unreal Manny skeleton, 7 modular meshes (`Man_Shoes_Mesh`, `Man_Pants_Mesh`, `Man_Bag_Mesh`, `Man_Pullover_Mesh`, `Man_Eyes_Mesh`, `Man_Head_Mesh`, `Man_Arms_Mesh`), 6 embedded 1024x1024 PBR textures.
+      - `golem.glb` (2.46 MB): Creature custom rig, 4 embedded action combat animations (`LeftAttack`, `RightHandAttack`, `SmashAttack`, `StompAttack`), embedded 1024x1024 PBR texture.
+  - **Modular Architecture Integration (`worldModelPresentation.ts`)**:
+    - Created `CANONICAL_BUILTIN_MODELS` registry mapping clean, rebranded model aliases (`brute`, `adventurer`, `golem`, `stone_golem`) directly to `/game-assets/models/*.glb`.
+    - Added `getModelModularComponents` and `getCanonicalModelDef` exposing modular submesh metadata for builders, wardrobe selectors, and character customization systems.
+    - Updated `resolveModelAssetUrl` to automatically resolve canonical names and paths with zero 2D fallback collisions.
+  - **Static Asset Streaming & Range Support (`server.ts`)**:
+    - Expanded server fast-path streaming to support `/game-assets/` with HTTP 206 Partial Content range requests, correct `model/gltf-binary` MIME type, and CORS headers.
+  - **Test Suite (`worldModelPresentation.test.ts`)**:
+    - Added unit test coverage for canonical model resolution and modular component querying (9/9 passing).
+
+# [2.2.055] - 2026-09-29
 - **FabLibrary Asset Taxonomy Fixes**:
   - Expanded heuristics in modelWardrobe.ts to natively categorize FabLibrary items that were previously falling into the 'Others' unmapped slot.
   - \Hairstyle_...\ now resolves to \hair\.

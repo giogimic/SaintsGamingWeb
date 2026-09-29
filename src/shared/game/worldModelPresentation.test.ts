@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { resolveModelAssetUrl, getWorldModelPresentation } from './worldModelPresentation';
+import {
+  resolveModelAssetUrl,
+  getWorldModelPresentation,
+  getModelModularComponents,
+  getCanonicalModelDef,
+} from './worldModelPresentation';
 
 describe('worldModelPresentation', () => {
   describe('resolveModelAssetUrl', () => {
@@ -17,7 +22,18 @@ describe('worldModelPresentation', () => {
       expect(resolveModelAssetUrl('asset_custom_robe')).toBe('/uploads/asset_custom_robe.glb');
     });
 
+    it('resolves canonical built-in models without extensions', () => {
+      expect(resolveModelAssetUrl('brute')).toBe('/game-assets/models/brute.glb');
+      expect(resolveModelAssetUrl('adventurer')).toBe('/game-assets/models/adventurer.glb');
+      expect(resolveModelAssetUrl('citizen')).toBe('/game-assets/models/citizen.glb');
+      expect(resolveModelAssetUrl('golem')).toBe('/game-assets/models/golem.glb');
+    });
+
     it('resolves models with glb/gltf extensions to game-assets directory', () => {
+      expect(resolveModelAssetUrl('brute.glb')).toBe('/game-assets/models/brute.glb');
+      expect(resolveModelAssetUrl('adventurer.glb')).toBe('/game-assets/models/adventurer.glb');
+      expect(resolveModelAssetUrl('citizen.glb')).toBe('/game-assets/models/citizen.glb');
+      expect(resolveModelAssetUrl('golem.glb')).toBe('/game-assets/models/golem.glb');
       expect(resolveModelAssetUrl('paladin.glb')).toBe('/game-assets/models/paladin.glb');
       expect(resolveModelAssetUrl('/game-assets/models/wizard.glb')).toBe('/game-assets/models/wizard.glb');
     });
@@ -82,4 +98,50 @@ describe('worldModelPresentation', () => {
       expect(getWorldModelPresentation({ worldModel: { assetId: 'sprite_char', type: '2D Sprite' } })).toBeUndefined();
     });
   });
+
+  describe('canonical built-in models and modular parts', () => {
+    it('retrieves definitions for brute, adventurer, and golem', () => {
+      const brute = getCanonicalModelDef('brute');
+      expect(brute).toBeDefined();
+      expect(brute?.skeleton).toBe('manny');
+      expect(brute?.modelUrl).toBe('/game-assets/models/brute.glb');
+
+      const adventurer = getCanonicalModelDef('adventurer.glb');
+      expect(adventurer).toBeDefined();
+      expect(adventurer?.skeleton).toBe('manny');
+      expect(adventurer?.modelUrl).toBe('/game-assets/models/adventurer.glb');
+
+      const citizen = getCanonicalModelDef('citizen.glb');
+      expect(citizen).toBeDefined();
+      expect(citizen?.skeleton).toBe('mixamo');
+      expect(citizen?.defaultAnimationProfileId).toBe('MocapMobility');
+      expect(citizen?.modelUrl).toBe('/game-assets/models/citizen.glb');
+
+      const golem = getCanonicalModelDef('/game-assets/models/golem.glb');
+      expect(golem).toBeDefined();
+      expect(golem?.skeleton).toBe('creature_custom');
+      expect(golem?.embeddedAnimations).toContain('Golem|SmashAttack');
+    });
+
+    it('returns modular components for character builder and wardrobe', () => {
+      const bruteParts = getModelModularComponents('brute');
+      expect(bruteParts.length).toBeGreaterThan(0);
+      expect(bruteParts.some((p) => p.meshName === 'Helmet1')).toBe(true);
+      expect(bruteParts.some((p) => p.meshName === 'Torso1')).toBe(true);
+      expect(bruteParts.some((p) => p.meshName === 'Cape1')).toBe(true);
+
+      const adventurerParts = getModelModularComponents('adventurer');
+      expect(adventurerParts.length).toBeGreaterThan(0);
+      expect(adventurerParts.some((p) => p.meshName === 'Man_Pullover_Mesh')).toBe(true);
+      expect(adventurerParts.some((p) => p.meshName === 'Man_Pants_Mesh')).toBe(true);
+
+      const citizenParts = getModelModularComponents('citizen');
+      expect(citizenParts.length).toBeGreaterThan(0);
+      expect(citizenParts.some((p) => p.meshName === 'Body_010' && p.defaultVisible)).toBe(true);
+      expect(citizenParts.some((p) => p.meshName === 'Clown_nose_001' && !p.defaultVisible)).toBe(true);
+
+      expect(getModelModularComponents('unknown_model')).toEqual([]);
+    });
+  });
 });
+

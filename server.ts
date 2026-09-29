@@ -102,8 +102,8 @@ app.prepare().then(async () => {
         }
       }
 
-      // Serve dynamic uploads manually since Next.js caches public/ at build time
-      if (parsedUrl.pathname?.startsWith("/uploads/")) {
+      // Serve dynamic uploads and static game assets manually with Range streaming
+      if (parsedUrl.pathname?.startsWith("/uploads/") || parsedUrl.pathname?.startsWith("/game-assets/")) {
         const fs = require("fs");
         const path = require("path");
         // Prevent directory traversal and strip leading slashes for Windows path.join safety
