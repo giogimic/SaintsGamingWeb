@@ -18,6 +18,7 @@ import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 import { InventoryPicker } from '../components/InventoryPicker';
 import { ArchetypeModelPreview3D } from './ArchetypeModelPreview3D';
+import { getCharacterModelProfile } from '@/shared/game/characterProfiles';
 import { cn } from '@/shared/lib/utils';
 
 const EMPTY_HERO: StarterHeroData = {
@@ -179,7 +180,31 @@ export function ArchetypeEditorWorkspace() {
       parsed = JSON.parse(form.visualData || '{}');
       if (Array.isArray(parsed)) parsed = {}; // Migrate legacy array
     } catch {}
+    const prevAssetId = parsed.worldModel?.assetId;
     parsed.worldModel = val;
+
+    // When selecting a base model or changing it, auto-bundle all compatible modular parts from its profile
+    const profile = getCharacterModelProfile(val.assetId);
+    if (profile && (prevAssetId !== val.assetId || !Array.isArray(parsed.modularAttachments) || parsed.modularAttachments.length === 0)) {
+      const bundledAttachments: ModelWardrobeItem[] = profile.modularParts.map((part) => ({
+        type: '3D Model',
+        assetId: `builtin-piece-${part.id}`,
+        label: part.label,
+        category: part.category,
+        meshName: part.meshName,
+        modelUrl: profile.modelUrl,
+        source: profile.modelUrl,
+        attachmentMode: 'SKINNED',
+        isModular: true,
+        availableInCharacterCreation: true,
+        defaultVisible: Boolean(part.defaultVisible),
+      }));
+      parsed.modularAttachments = bundledAttachments;
+      if (parsed.worldModel) {
+        parsed.worldModel.modularAttachments = bundledAttachments;
+      }
+    }
+
     setForm(prev => ({
       ...prev,
       visualData: JSON.stringify(parsed),

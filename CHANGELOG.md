@@ -1,3 +1,23 @@
+## [2.2.068] - 2026-09-30
+- **Model Reorganization, Character Profiles, Naked Base Mesh Workflow & Animation Mapping**:
+  - **Asset Directory Sorting & Architecture (`quick assets/modes`)**:
+    - Reorganized loose FBX/GLB assets into structured directories (`humanoids/adventurer/`, `humanoids/stylized_girl/`, `humanoids/civilian_girl/`, `monsters/brute_monster/`, `monsters/shadow_golem/`).
+    - Catalogued modular submeshes, textures, and animation sources across humanoid and monster models.
+  - **Character Model Profiles & Strict Compatibility Boundaries (`characterProfiles.ts`, `worldModelPresentation.ts`)**:
+    - Introduced canonical `CharacterModelProfile` architecture defining base naked meshes, face variants, default-hidden modular clothes, and animation mappings.
+    - Added profiles for `adventurer`, `stylized_girl`, `brute`, `citizen`, and `shadow_golem`.
+    - Enforced strict compatibility filtering in `ModelWardrobeEditor.tsx`: prevented cross-skeleton and humanoid/monster item pollution.
+  - **Naked Base Model Creation & 1-Click Auto-Bundling (`character-creator.tsx`, `ArchetypeEditorWorkspace.tsx`, `WorldModelSelector.tsx`)**:
+    - Character creation now initializes heroes in a clean naked base state with face selection active and modular items added dynamically without clipping or mesh duplication.
+    - Studio archetype workspace auto-bundles all compatible wardrobe items upon profile selection.
+  - **Embedded Monster Animations Mapping (`Renderer.ts`)**:
+    - Extended animation resolver to honor `presentation.animations.mapped` action mappings for models with embedded clips.
+    - Mapped Shadow Golem attacks (`Golem|SmashAttack`, `Golem|StompAttack`) to idle and walk states, ensuring monsters animate properly in-engine.
+  - **Canonical Game Asset Database Synchronization (`canonicalAssetsSync.ts`)**:
+    - Registered and upserted 6 base models and 52 modular parts (58 assets total) into the database.
+  - **Global Version Synchronization**:
+    - Synchronized `SITE_VERSION` defaults to `2.2.068` across `package.json`, `app/actions/settings.ts`, `app/(main)/admin/settings/page.tsx`, `app/(main)/layout.tsx`, `app/(ucp)/layout.tsx`, and `src/web/components/shared/navbar.tsx`.
+
 ## [2.2.064] - 2026-09-30
 - **RPG Camera-Relative Movement & Asset Cleanup**:
   - Refactored `Renderer.ts` to sync the player character's rotation exclusively to the 3D Perspective Camera Yaw (`cameraYaw`), fixing movement visual alignment and delivering standard RPG "face forward relative to camera" behavior.

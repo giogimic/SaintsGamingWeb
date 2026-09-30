@@ -11,6 +11,10 @@ import {
 } from '@/shared/game/modelWardrobe';
 import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
 import { STANDARD_SOCKET_OPTIONS } from './WorldModelSelector';
+import {
+  getCharacterModelProfile,
+  isWardrobeItemCompatibleWithProfile,
+} from '@/shared/game/characterProfiles';
 
 interface ModelWardrobeEditorProps {
   modelAssetId: string;
@@ -115,27 +119,53 @@ export function ModelWardrobeEditor({
         items = (await loadModelPages(false)).filter(isModularAsset);
       }
       const modelItems = items.filter((asset) => isModelAsset(asset) && asset.id !== modelAssetId);
-      const groupNames = getAssetGroupNames(baseAsset as WardrobeAsset | null, modelAssetId);
-      const matched = groupNames.length > 0
+      const profile = getCharacterModelProfile(modelAssetId);
+      const matched = modelItems.filter((asset) => {
+        if (profile) {
+          const pack = asset.metadata?.pack || asset.metadata?.modularSetName || '';
+          const modularSetName = asset.metadata?.modularSetName || asset.metadata?.assetDefinition?.modularSetName || '';
+          const skeleton = asset.metadata?.skeleton || asset.metadata?.assetDefinition?.skeleton || '';
+          const tags = (asset.tags || []).map((t) => t.toLowerCase());
+          return isWardrobeItemCompatibleWithProfile(profile, { pack, modularSetName, skeleton, tags });
+        }
+        const fallbackGroupNames = [
+          modelAssetId.toLowerCase(),
+          (baseAsset?.metadata?.displayName || baseAsset?.id || '').toLowerCase(),
+          (baseAsset?.metadata?.modularSetName || baseAsset?.metadata?.assetDefinition?.modularSetName || '').toLowerCase(),
+          (baseAsset?.metadata?.skeleton || baseAsset?.metadata?.assetDefinition?.skeleton || '').toLowerCase(),
+          ...((baseAsset?.tags || []).map((t: string) => t.toLowerCase())),
+        ].filter(Boolean);
+        const name = displayName(asset).toLowerCase();
+        const set = (asset.metadata?.modularSetName || asset.metadata?.assetDefinition?.modularSetName || '').toLowerCase();
+        const tags = (asset.tags || []).map((t: string) => t.toLowerCase());
+        const source = (asset.source || '').toLowerCase();
+        return fallbackGroupNames.some(
+          (g: string) =>
+            set === g ||
+            tags.includes(g) ||
+            source.includes(`/${g}/`) ||
+            source.includes(`${g}.glb`) ||
+            name.includes(g) ||
+            name.startsWith(`${g} - `) ||
+            name.startsWith(`${g} / `)
+        );
+      });
+
+      // Filter allCatalog so that cross-skeleton or monster/humanoid mismatches are excluded
+      const compatibleAll = profile
         ? modelItems.filter((asset) => {
-            const name = displayName(asset).toLowerCase();
-            const set = (asset.metadata?.modularSetName || asset.metadata?.assetDefinition?.modularSetName || '').toLowerCase();
-            const tags = (asset.tags || []).map((t) => t.toLowerCase());
-            const source = (asset.source || '').toLowerCase();
-            return groupNames.some(
-              (g) =>
-                set === g ||
-                tags.includes(g) ||
-                source.includes(`/${g}/`) ||
-                source.includes(`${g}.glb`) ||
-                name.includes(g) ||
-                name.startsWith(`${g} - `) ||
-                name.startsWith(`${g} / `)
-            );
+            const assetSkeleton = asset.metadata?.skeleton || asset.metadata?.assetDefinition?.skeleton;
+            if (assetSkeleton && assetSkeleton !== profile.skeleton) return false;
+            // Never allow creature/monster items on humanoids or vice versa
+            const isMonsterItem = asset.categories?.some((c) => c.toLowerCase() === 'monster' || c.toLowerCase() === 'creature');
+            if (profile.category === 'character' && isMonsterItem) return false;
+            if (profile.category === 'monster' && !isMonsterItem && !asset.tags?.includes('monster')) return false;
+            return true;
           })
-        : [];
+        : modelItems;
+
       if (cancelled) return;
-      const sortedAll = modelItems.sort((a, b) => displayName(a).localeCompare(displayName(b), undefined, { numeric: true, sensitivity: 'base' }));
+      const sortedAll = compatibleAll.sort((a, b) => displayName(a).localeCompare(displayName(b), undefined, { numeric: true, sensitivity: 'base' }));
       const sortedMatched = matched.sort((a, b) => displayName(a).localeCompare(displayName(b), undefined, { numeric: true, sensitivity: 'base' }));
       setAllCatalog(sortedAll);
       setMatchedCatalog(sortedMatched);

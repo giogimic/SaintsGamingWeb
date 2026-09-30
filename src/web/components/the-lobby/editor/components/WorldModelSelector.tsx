@@ -3,6 +3,7 @@ import { Box, Image as ImageIcon, BoxSelect, Cuboid, MoreHorizontal, Crosshair, 
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 import { cn } from '@/shared/lib/utils';
 import { useEditorStore } from '../editor-store';
+import { CHARACTER_MODEL_PROFILES } from '@/shared/game/characterProfiles';
 
 export type WorldModelType = '2D Sprite' | '2D Box Sprite' | '3D Model' | 'Other';
 
@@ -172,7 +173,35 @@ export function WorldModelSelector({
             </button>
           ) : value.type === '3D Model' ? (
             <div className="w-full flex flex-col gap-2 p-3 bg-[#050b14] border border-cyan-500/30 rounded-lg transition text-left">
-              
+              {/* Quick Profile Presets */}
+              <div className="flex flex-wrap gap-1 mb-1">
+                {Object.values(CHARACTER_MODEL_PROFILES).map((p) => {
+                  const isCur = value.assetId === p.id || value.modelUrl === p.modelUrl || (value.assetId && value.assetId.includes(p.id));
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        onChange({
+                          ...value,
+                          assetId: p.id,
+                          modelUrl: p.modelUrl,
+                          source: p.modelUrl,
+                        });
+                      }}
+                      className={cn(
+                        "px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer border",
+                        isCur
+                          ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.3)]"
+                          : "bg-black/50 border-slate-800 text-slate-400 hover:text-white hover:border-slate-600"
+                      )}
+                    >
+                      {p.name}
+                    </button>
+                  );
+                })}
+              </div>
+
               {/* Added native AssetId selector like 2D Sprite */}
               <button
                 type="button"

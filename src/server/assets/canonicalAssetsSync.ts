@@ -50,10 +50,22 @@ export function buildCanonicalGameAssetRecords(): CanonicalAssetSeedRecord[] {
       fileSize: 15192864,
     },
     {
+      def: CANONICAL_BUILTIN_MODELS.stylized_girl,
+      tags: ["model", "3d", "character", "manny", "humanoid", "canonical", "stylized_girl", "dancer", "playable"],
+      categories: ["model", "character"],
+      fileSize: 3934616,
+    },
+    {
       def: CANONICAL_BUILTIN_MODELS.golem,
       tags: ["model", "3d", "creature", "monster", "beast", "canonical", "golem", "boss"],
       categories: ["model", "creature", "monster"],
       fileSize: 2582580,
+    },
+    {
+      def: CANONICAL_BUILTIN_MODELS.shadow_golem,
+      tags: ["model", "3d", "creature", "monster", "beast", "canonical", "shadow_golem", "boss"],
+      categories: ["model", "creature", "monster"],
+      fileSize: 3350000,
     },
   ];
 
@@ -96,7 +108,7 @@ export function buildCanonicalGameAssetRecords(): CanonicalAssetSeedRecord[] {
     });
   }
 
-  // 2. Modular Wardrobe Pieces for Citizen, Brute, and Adventurer
+  // 2. Modular Wardrobe Pieces for Citizen, Brute, Adventurer, and Stylized Girl
   const modularSets = [
     {
       model: CANONICAL_BUILTIN_MODELS.citizen,
@@ -108,13 +120,19 @@ export function buildCanonicalGameAssetRecords(): CanonicalAssetSeedRecord[] {
       model: CANONICAL_BUILTIN_MODELS.brute,
       pack: 'brute-armor',
       fileSize: 14379200,
-      getSource: () => `/game-assets/models/brute.glb`,
+      getSource: () => `/game-assets/models/humanoids/brute/brute.glb`,
     },
     {
       model: CANONICAL_BUILTIN_MODELS.adventurer,
       pack: 'adventurer-gear',
       fileSize: 15192864,
-      getSource: () => `/game-assets/models/adventurer.glb`,
+      getSource: () => `/game-assets/models/humanoids/adventurer/adventurer.glb`,
+    },
+    {
+      model: CANONICAL_BUILTIN_MODELS.stylized_girl,
+      pack: 'stylized-girl-outfit',
+      fileSize: 3934616,
+      getSource: () => `/game-assets/models/humanoids/stylized_girl/stylized_girl.glb`,
     },
   ];
 
@@ -129,12 +147,16 @@ export function buildCanonicalGameAssetRecords(): CanonicalAssetSeedRecord[] {
         componentCategory: part.category,
         isModularComponent: true,
         defaultVisible: part.defaultVisible,
+        availableInCharacterCreation: true,
+        isFaceVariant: Boolean((part as any).isFaceVariant),
+        skeleton: set.model.skeleton,
         pack: set.pack,
         modularSetName: setName,
         meshName: part.meshName,
         assetDefinition: {
           modularSetName: setName,
           meshName: part.meshName,
+          skeleton: set.model.skeleton,
         },
         presentation: {
           mode: '3D',

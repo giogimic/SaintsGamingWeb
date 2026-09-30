@@ -23,17 +23,17 @@ describe('worldModelPresentation', () => {
     });
 
     it('resolves canonical built-in models without extensions', () => {
-      expect(resolveModelAssetUrl('brute')).toBe('/game-assets/models/brute.glb');
-      expect(resolveModelAssetUrl('adventurer')).toBe('/game-assets/models/adventurer.glb');
+      expect(resolveModelAssetUrl('brute')).toBe('/game-assets/models/humanoids/brute/brute.glb');
+      expect(resolveModelAssetUrl('adventurer')).toBe('/game-assets/models/humanoids/adventurer/adventurer.glb');
       expect(resolveModelAssetUrl('citizen')).toBe('/game-assets/models/citizen.glb');
-      expect(resolveModelAssetUrl('golem')).toBe('/game-assets/models/golem.glb');
+      expect(resolveModelAssetUrl('golem')).toBe('/game-assets/models/creatures/golems/golem_base.glb');
     });
 
     it('resolves models with glb/gltf extensions to game-assets directory', () => {
-      expect(resolveModelAssetUrl('brute.glb')).toBe('/game-assets/models/brute.glb');
-      expect(resolveModelAssetUrl('adventurer.glb')).toBe('/game-assets/models/adventurer.glb');
+      expect(resolveModelAssetUrl('brute.glb')).toBe('/game-assets/models/humanoids/brute/brute.glb');
+      expect(resolveModelAssetUrl('adventurer.glb')).toBe('/game-assets/models/humanoids/adventurer/adventurer.glb');
       expect(resolveModelAssetUrl('citizen.glb')).toBe('/game-assets/models/citizen.glb');
-      expect(resolveModelAssetUrl('golem.glb')).toBe('/game-assets/models/golem.glb');
+      expect(resolveModelAssetUrl('golem.glb')).toBe('/game-assets/models/creatures/golems/golem_base.glb');
       expect(resolveModelAssetUrl('paladin.glb')).toBe('/game-assets/models/paladin.glb');
       expect(resolveModelAssetUrl('/game-assets/models/wizard.glb')).toBe('/game-assets/models/wizard.glb');
     });
@@ -104,12 +104,12 @@ describe('worldModelPresentation', () => {
       const brute = getCanonicalModelDef('brute');
       expect(brute).toBeDefined();
       expect(brute?.skeleton).toBe('manny');
-      expect(brute?.modelUrl).toBe('/game-assets/models/brute.glb');
+      expect(brute?.modelUrl).toBe('/game-assets/models/humanoids/brute/brute.glb');
 
       const adventurer = getCanonicalModelDef('adventurer.glb');
       expect(adventurer).toBeDefined();
       expect(adventurer?.skeleton).toBe('manny');
-      expect(adventurer?.modelUrl).toBe('/game-assets/models/adventurer.glb');
+      expect(adventurer?.modelUrl).toBe('/game-assets/models/humanoids/adventurer/adventurer.glb');
 
       const citizen = getCanonicalModelDef('citizen.glb');
       expect(citizen).toBeDefined();
@@ -117,7 +117,7 @@ describe('worldModelPresentation', () => {
       expect(citizen?.defaultAnimationProfileId).toBe('MocapMobility');
       expect(citizen?.modelUrl).toBe('/game-assets/models/citizen.glb');
 
-      const golem = getCanonicalModelDef('/game-assets/models/golem.glb');
+      const golem = getCanonicalModelDef('/game-assets/models/creatures/golems/golem_base.glb');
       expect(golem).toBeDefined();
       expect(golem?.skeleton).toBe('creature_custom');
       expect(golem?.embeddedAnimations).toContain('Golem|SmashAttack');

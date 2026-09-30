@@ -574,12 +574,18 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
           const groups = mesh.metadata.animationGroups;
           
           if (!mesh.metadata._resolvedAnims || mesh.metadata._resolvedAnims.groups !== groups || mesh.metadata._resolvedAnims.count !== groups.length) {
+            const mapped = state.presentation?.animations?.mapped || {};
             const isRunClip = (name: string) => /run|walk|jog|sprint|locomotion|move|forward|fwd|01_02_006/i.test(name);
             const isIdleClip = (name: string) => /idle|stand|wait|breath|rest|still|default|01_02_001/i.test(name);
             const isActionClip = (name: string) => /attack|hit|punch|slash|cast|shoot|death|die|dead|hurt|damage|jump|fall|climb/i.test(name);
 
-            let runAnims = groups.filter((ag: any) => isRunClip(ag.name || ''));
-            let idleAnims = groups.filter((ag: any) => isIdleClip(ag.name || ''));
+            let runAnims = mapped.walk || mapped.run
+              ? groups.filter((ag: any) => ag.name === mapped.walk || ag.name === mapped.run || (ag.name && (ag.name.includes(mapped.walk) || ag.name.includes(mapped.run))))
+              : groups.filter((ag: any) => isRunClip(ag.name || ''));
+
+            let idleAnims = mapped.idle
+              ? groups.filter((ag: any) => ag.name === mapped.idle || (ag.name && ag.name.includes(mapped.idle)))
+              : groups.filter((ag: any) => isIdleClip(ag.name || ''));
 
             // Prevent bone morphing by ensuring we only play exactly ONE animation for each state
             if (runAnims.length > 1) {
@@ -591,14 +597,14 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
               idleAnims = [idleAnims[0]];
             }
 
-            // If neither matched, look for non-action clips. Do NOT fallback to action clips.
+            // If neither matched, look for non-action clips. If still none (e.g. creature with only attack clips like Golem), fallback to available clips!
             const pool = groups.filter((ag: any) => !isActionClip(ag.name || ''));
 
-            if (idleAnims.length === 0 && pool.length > 0) {
-              idleAnims.push(pool[0]);
+            if (idleAnims.length === 0) {
+              idleAnims.push(pool.length > 0 ? pool[0] : groups[0]);
             }
-            if (runAnims.length === 0 && pool.length > 0) {
-              runAnims.push(pool.length > 1 ? pool[1] : pool[0]);
+            if (runAnims.length === 0) {
+              runAnims.push(pool.length > 1 ? pool[1] : (groups.length > 1 ? groups[1] : groups[0]));
             }
 
             mesh.metadata._resolvedAnims = {

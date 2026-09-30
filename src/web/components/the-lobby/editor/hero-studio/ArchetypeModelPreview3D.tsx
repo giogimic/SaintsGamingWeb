@@ -251,7 +251,18 @@ function CompositeCharacter({
           if (matchingAttachment) {
             child.visible = (matchingAttachment as any).defaultVisible !== false;
           } else {
-            child.visible = Boolean(part.defaultVisible);
+            // If another face variant is equipped, don't fallback to defaultVisible for this face
+            if (part.isFaceVariant) {
+              const activeFace = modularAttachments.some((att: any) => {
+                const rawId = norm(String(att.assetId || att.id || ''));
+                const mName = norm(String(att.meshName || ''));
+                const p = partByMesh.get(mName) || canonicalParts.find(cp => norm(cp.id) === rawId);
+                return p?.isFaceVariant && (att as any).defaultVisible !== false;
+              });
+              child.visible = activeFace ? false : Boolean(part.defaultVisible);
+            } else {
+              child.visible = Boolean(part.defaultVisible);
+            }
           }
         } else {
           // Non-modular base mesh: visible by default

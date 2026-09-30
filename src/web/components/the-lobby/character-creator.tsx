@@ -332,7 +332,14 @@ export function CharacterCreator({
     const initialWardrobe = parseModelWardrobeItems(hero.visualData);
     const hasCreationTagged = initialWardrobe.some((item) => item.availableInCharacterCreation);
     const defaultVisibleIds = initialWardrobe
-      .filter((item) => (hasCreationTagged ? item.availableInCharacterCreation : true) && item.defaultVisible !== false)
+      .filter((item) => {
+        const isOffered = hasCreationTagged ? item.availableInCharacterCreation : true;
+        if (!isOffered) return false;
+        if (item.category === 'face' || item.category === 'hair') {
+          return item.defaultVisible !== false;
+        }
+        return Boolean((item as any).isStarterOutfit);
+      })
       .map((item) => item.assetId);
     setSelectedWardrobeAssetIds(defaultVisibleIds);
     setClassId(hero.classId);
@@ -366,7 +373,14 @@ export function CharacterCreator({
     const rolledWardrobe = parseModelWardrobeItems(hero.visualData);
     const hasRolledCreationTagged = rolledWardrobe.some((item) => item.availableInCharacterCreation);
     const rolledVisibleIds = rolledWardrobe
-      .filter((item) => (hasRolledCreationTagged ? item.availableInCharacterCreation : true) && item.defaultVisible !== false)
+      .filter((item) => {
+        const isOffered = hasRolledCreationTagged ? item.availableInCharacterCreation : true;
+        if (!isOffered) return false;
+        if (item.category === 'face' || item.category === 'hair') {
+          return item.defaultVisible !== false;
+        }
+        return Boolean((item as any).isStarterOutfit);
+      })
       .map((item) => item.assetId);
     setSelectedWardrobeAssetIds(rolledVisibleIds);
     setClassId(hero.classId);
@@ -1174,7 +1188,7 @@ export function CharacterCreator({
                         <p className="text-xs text-muted-foreground">Choose the clothing and gear to wear.</p>
                         <button
                           type="button"
-                          onClick={() => setSelectedWardrobeAssetIds(wardrobeOptions.filter((item) => item.defaultVisible !== false).map((item) => item.assetId))}
+                          onClick={() => setSelectedWardrobeAssetIds(wardrobeOptions.filter((item) => (item.category === 'face' || item.category === 'hair' || (item as any).isStarterOutfit) && item.defaultVisible !== false).map((item) => item.assetId))}
                           className="shrink-0 rounded-lg border border-border/50 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:border-primary/50 hover:text-primary"
                         >
                           Reset to default
