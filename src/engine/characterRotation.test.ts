@@ -75,4 +75,36 @@ describe('Character Rotation and Camera-Relative Heading', () => {
     // Pressing D (dx = 1) facing North (yaw = 0) -> moveDx = 1 (East)
     expect(mapInput(1, 0, 0)).toEqual({ moveDx: 1, moveDy: 0 });
   });
+
+  it('computes continuous 3D movement angle facing forward for W regardless of camera yaw', () => {
+    function compute3DMoveAngle(inputX: number, inputZ: number, yaw: number) {
+      const length = Math.sqrt(inputX * inputX + inputZ * inputZ);
+      const normX = length > 0 ? inputX / length : 0;
+      const normZ = length > 0 ? inputZ / length : 0;
+      const moveX = normX * Math.cos(yaw) + normZ * Math.sin(yaw);
+      const moveZ = -normX * Math.sin(yaw) + normZ * Math.cos(yaw);
+      return Math.atan2(-moveX, moveZ);
+    }
+
+    // Pressing W (inputZ = 1, inputX = 0) at various camera yaws
+    const yaws = [0, Math.PI / 4, Math.PI / 2, Math.PI, -Math.PI / 2];
+    for (const yaw of yaws) {
+      const moveAngle = compute3DMoveAngle(0, 1, yaw);
+      // Normalized angle difference
+      let diff = Math.atan2(Math.sin(moveAngle - (-yaw)), Math.cos(moveAngle - (-yaw)));
+      expect(Math.abs(diff)).toBeLessThan(1e-5);
+    }
+
+    // Pressing S (inputZ = -1, inputX = 0) facing North (yaw = 0) -> faces backwards (towards camera, Math.PI)
+    const angleS = compute3DMoveAngle(0, -1, 0);
+    expect(Math.abs(angleS)).toBeCloseTo(Math.PI, 5);
+
+    // Pressing D (inputX = 1, inputZ = 0) facing North (yaw = 0) -> faces East (-Math.PI / 2)
+    const angleD = compute3DMoveAngle(1, 0, 0);
+    expect(angleD).toBeCloseTo(-Math.PI / 2, 5);
+
+    // Pressing A (inputX = -1, inputZ = 0) facing North (yaw = 0) -> faces West (Math.PI / 2)
+    const angleA = compute3DMoveAngle(-1, 0, 0);
+    expect(angleA).toBeCloseTo(Math.PI / 2, 5);
+  });
 });

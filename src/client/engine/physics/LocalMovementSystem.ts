@@ -24,9 +24,25 @@ export class LocalMovementSystem {
   private isGrounded = true;
   private voidRecoveryPending = false;
   private spawnReady = true;
+
+  // Heading & Rotation State
+  private currentMoveAngle: number | null = null;
+  private lastFacingAngle: number = 0;
   
   // Spirit Gate Physics Handoff
   private portalTransit = new PortalTransitSystem();
+
+  public getCurrentMoveAngle(): number | null {
+    return this.currentMoveAngle;
+  }
+
+  public getLastFacingAngle(): number {
+    return this.lastFacingAngle;
+  }
+
+  public setLastFacingAngle(angle: number) {
+    this.lastFacingAngle = angle;
+  }
 
   /** Clear stale fall velocity after an authoritative join or teleport. */
   public resetAfterTeleport() {
@@ -187,15 +203,17 @@ export class LocalMovementSystem {
     // A 3D map without streamed collision chunks is not safe to move through.
     // Previously this path skipped physics and still applied horizontal input.
     if (is3D && !voxelWorld) {
+      this.currentMoveAngle = null;
       if (playerStore.player.isMoving) {
-        playerStore.setPlayerPosition(currentPos, undefined, false);
+        playerStore.setPlayerPosition(currentPos, undefined, false, this.lastFacingAngle);
       }
       return;
     }
 
     if (!isMoving && !simulate3DPhysics) {
+      this.currentMoveAngle = null;
       if (playerStore.player.isMoving) {
-        playerStore.setPlayerPosition(currentPos, undefined, false);
+        playerStore.setPlayerPosition(currentPos, undefined, false, this.lastFacingAngle);
         socketManager.emit('player_move' as any, {
           x: currentPos.x,
           y: currentPos.y,
@@ -235,6 +253,14 @@ export class LocalMovementSystem {
         const moveX = normX * Math.cos(yaw) + normZ * Math.sin(yaw);
         const moveZ = -normX * Math.sin(yaw) + normZ * Math.cos(yaw);
         
+        if (isMoving) {
+          const moveAngle = Math.atan2(-moveX, moveZ);
+          this.currentMoveAngle = moveAngle;
+          this.lastFacingAngle = moveAngle;
+        } else {
+          this.currentMoveAngle = null;
+        }
+
         // Convert to delta-time movement (dt is in milliseconds)
         dx = moveX * speed * dtSec;
         dz = moveZ * speed * dtSec;
@@ -253,6 +279,18 @@ export class LocalMovementSystem {
         velocityY = this.verticalVelocity;
         velocityZ = moveZ * speed;
       } else {
+        if (newDirection) {
+          switch (newDirection) {
+            case 'down': this.lastFacingAngle = Math.PI; break;
+            case 'up': this.lastFacingAngle = 0; break;
+            case 'left': this.lastFacingAngle = Math.PI / 2; break;
+            case 'right': this.lastFacingAngle = -Math.PI / 2; break;
+          }
+          this.currentMoveAngle = this.lastFacingAngle;
+        } else {
+          this.currentMoveAngle = null;
+        }
+
         // Discrete 2D grid movement
         if (now - this.lastMoveCommandTime < this.MOVE_THROTTLE_MS) return;
         dx = inputX;
@@ -298,7 +336,7 @@ export class LocalMovementSystem {
         // 2D collision
         if (!this.isTileWalkable(targetX, targetY)) {
           if (playerStore.player.direction !== newDirection) {
-              playerStore.setPlayerPosition(currentPos, newDirection as any, false);
+              playerStore.setPlayerPosition(currentPos, newDirection as any, false, this.lastFacingAngle);
               if (now - this.lastMoveCommandTime > this.MOVE_THROTTLE_MS) {
                 socketManager.emit('player_move' as any, { x: currentPos.x, y: currentPos.y, z: currentPos.z, direction: newDirection });
                 this.lastMoveCommandTime = now;
@@ -310,7 +348,7 @@ export class LocalMovementSystem {
 
       // Update local position smoothly
       const direction = newDirection || playerStore.player.direction;
-      playerStore.setPlayerPosition({ x: targetX, y: targetY, z: targetZ }, direction as any, isMoving);
+      playerStore.setPlayerPosition({ x: targetX, y: targetY, z: targetZ }, direction as any, isMoving, this.lastFacingAngle);
 
       // Throttle network broadcast
       const isAirborne = simulate3DPhysics && !this.isGrounded;

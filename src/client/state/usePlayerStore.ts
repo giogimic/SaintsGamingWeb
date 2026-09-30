@@ -54,6 +54,7 @@ export interface PlayerData {
   position: Point2D;
   direction: Direction;
   isMoving: boolean;
+  rotationY?: number;
   level: number;
   xp: number;
   hp: number;
@@ -112,7 +113,7 @@ export interface PlayerState {
   player: PlayerData;
 
   // Position
-  setPlayerPosition: (pos: Point2D, direction?: Direction, isMoving?: boolean) => void;
+  setPlayerPosition: (pos: Point2D, direction?: Direction, isMoving?: boolean, rotationY?: number) => void;
 
   // Hydration
   hydratePlayer: (data: Partial<PlayerData>) => void;
@@ -192,10 +193,11 @@ export const usePlayerStore = create<PlayerState>()(
         animationState: undefined,
       },
 
-      setPlayerPosition: (pos, direction, isMoving) => set((s) => {
+      setPlayerPosition: (pos, direction, isMoving, rotationY) => set((s) => {
         s.player.position = pos;
         if (direction !== undefined) s.player.direction = direction;
         if (isMoving !== undefined) s.player.isMoving = isMoving;
+        if (rotationY !== undefined) s.player.rotationY = rotationY;
       }),
 
       hydratePlayer: (data) => set((s) => {

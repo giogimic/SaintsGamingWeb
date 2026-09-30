@@ -536,6 +536,10 @@ export class CameraManager {
       this.updateOrthoSize(this.camera.orthoTop || 10);
     }
   };
+
+  public isFirstPerson(): boolean {
+    return this.profile.distance <= 0.1 || this.settings.playerCameraStyle === 'firstperson';
+  }
 }
 
 export const cameraManager = new CameraManager();

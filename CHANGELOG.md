@@ -1,3 +1,24 @@
+## [2.2.077] - 2026-09-30
+- **3D Character Model Turning & Heading Interpolation**:
+  - **Entity Heading & Rotation System (`EntityRenderer.ts`)**:
+    - Resolved model rotation freeze where entities rendered at a static angle regardless of input, mouse-look, or movement direction.
+    - Added `targetRotationY` and `lastRotationY` tracking to `ManagedSprite` records.
+    - Fixed Babylon.js `rotationQuaternion` override bug: isolated asset calibration orientation (`rotY`) onto child `modelWrapper`, ensuring `mesh.rotationQuaternion = null` so Euler `mesh.rotation.y` smoothly controls character yaw.
+    - Implemented framerate-independent exponential angle interpolation in render ticks: `BABYLON.Scalar.LerpAngle(sprite.mesh.rotation.y, sprite.targetRotationY, Math.min(1.0, 18.0 * dt))` to prevent angular flipping across $\pm\pi$ boundary.
+    - Added dynamic local player heading resolution: aligns with movement velocity trajectory (`Math.atan2(-moveX, moveZ)`) when moving, adapts to camera forward view (`-cameraManager.yaw`) in pointer-lock/first-person, and persists last facing angle when orbiting in third-person.
+    - Added remote player heading resolution from network velocities (`Math.atan2(-vx, vz)`) and direction fallbacks.
+    - Added map entity (NPC/Monster/Creature) heading support from `facing`/`direction` metadata.
+    - Added 2D billboard sprite row offset (`vOffset`) updates so 2D character sheets turn to face down (row 0), left (row 1), right (row 2), and up (row 3).
+  - **Local Movement System (`LocalMovementSystem.ts`)**:
+    - Added `currentMoveAngle` and `lastFacingAngle` properties with getters/setter to track camera-relative 3D movement heading.
+    - Computed continuous 3D heading via `Math.atan2(-moveX, moveZ)` for WASD movements and passed heading to player store.
+  - **Player State (`usePlayerStore.ts`)**:
+    - Added optional `rotationY?: number` to `PlayerData` and `setPlayerPosition`.
+  - **Camera Manager (`CameraManager.ts`)**:
+    - Added `isFirstPerson()` helper to support first-person and pointer-locked camera heading detection.
+  - **Global Version Synchronization**:
+    - Synchronized `SITE_VERSION` defaults to `2.2.077` across `package.json`, `app/actions/settings.ts`, `app/(main)/admin/settings/page.tsx`, `app/(main)/layout.tsx`, `app/(ucp)/layout.tsx`, `src/web/components/shared/navbar.tsx`, and `AssetUploadView.tsx`.
+
 ## [2.2.076] - 2026-09-30
 - **MMO Game Viewport Full-Bleed & Bottom Cutoff Resolution**:
   - **Player Client Viewport (`PlayerClient.tsx`)**:

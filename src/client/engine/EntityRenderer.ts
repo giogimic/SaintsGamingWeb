@@ -18,6 +18,8 @@ import { useSessionStore } from '../state/useSessionStore';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
 import { getWorldModelPresentation, resolveModelAssetUrl, getModelModularComponents } from '@/shared/game/worldModelPresentation';
 import { mapMesher } from './MapMesher';
+import { cameraManager } from './CameraManager';
+import { localMovementSystem } from './physics/LocalMovementSystem';
 import { WrappedCharacterMesher } from './rendering/WrappedCharacterMesher';
 import { AssetManager } from '@/engine/assets/AssetManager';
 import { loadAndRetargetAnimation } from '@/engine/animationRetarget';
@@ -42,6 +44,9 @@ interface ManagedSprite {
   targetX: number;
   targetZ: number;
   targetY: number;
+  targetRotationY: number;
+  lastRotationY: number;
+  direction?: string;
   lastSeen: number;
   modelUrl?: string;
   spriteUrl?: string;
@@ -235,6 +240,29 @@ export class EntityRenderer {
       };
     }
 
+    let localRotationY: number;
+    const moveAngle = localMovementSystem.getCurrentMoveAngle();
+    const isPointerLocked = typeof document !== 'undefined' && document.pointerLockElement !== null;
+
+    if (moveAngle !== null) {
+      localRotationY = moveAngle;
+    } else if (isPointerLocked || cameraManager.isFirstPerson()) {
+      localRotationY = -(cameraManager.yaw || 0);
+      localMovementSystem.setLastFacingAngle(localRotationY);
+    } else if (player.rotationY !== undefined) {
+      localRotationY = player.rotationY;
+    } else if (player.direction) {
+      switch (player.direction) {
+        case 'down': localRotationY = Math.PI; break;
+        case 'up': localRotationY = 0; break;
+        case 'left': localRotationY = Math.PI / 2; break;
+        case 'right': localRotationY = -Math.PI / 2; break;
+        default: localRotationY = localMovementSystem.getLastFacingAngle();
+      }
+    } else {
+      localRotationY = localMovementSystem.getLastFacingAngle();
+    }
+
     this.upsertSprite('local_player', {
       x: player.position.x,
       y: is3D ? (player.position.z as number) : player.position.y,
@@ -251,6 +279,8 @@ export class EntityRenderer {
       animationState: player.animationState,
       modularAttachments: pAssetInfo.modularAttachments,
       presentationSignature: pAssetInfo.presentationSignature,
+      rotationY: localRotationY,
+      direction: player.direction,
     }, now);
 
     // 2. Remote Players
@@ -263,12 +293,27 @@ export class EntityRenderer {
       // Dead reckoning: predict position based on velocity
       let px = rp.x ?? 0;
       let py = rp.z !== undefined ? rp.z : (rp.y ?? 0);
+      const vx = rp.vx ?? 0;
+      const vz = rp.vz !== undefined ? rp.vz : (rp.vy ?? 0);
       if (rp.vx !== undefined && rp.vy !== undefined && rp.lastUpdateMs) {
         const elapsed = (now - rp.lastUpdateMs) / 1000.0;
         if (elapsed > 0 && elapsed < 2) {
           px += rp.vx * elapsed;
-          const depthVel = rp.vz !== undefined ? rp.vz : rp.vy;
-          py += depthVel * elapsed;
+          py += vz * elapsed;
+        }
+      }
+
+      let remoteRotY: number | undefined = undefined;
+      if (vx * vx + vz * vz > 0.01) {
+        remoteRotY = Math.atan2(-vx, vz);
+      } else if (rp.rotationY !== undefined) {
+        remoteRotY = rp.rotationY;
+      } else if (rp.direction) {
+        switch (rp.direction) {
+          case 'down': remoteRotY = Math.PI; break;
+          case 'up': remoteRotY = 0; break;
+          case 'left': remoteRotY = Math.PI / 2; break;
+          case 'right': remoteRotY = -Math.PI / 2; break;
         }
       }
 
@@ -297,12 +342,27 @@ export class EntityRenderer {
         isMoving: rp.isMoving,
         modularAttachments: rpAssetInfo.modularAttachments,
         presentationSignature: rpAssetInfo.presentationSignature,
+        rotationY: remoteRotY,
+        direction: rp.direction,
       }, now);
     }
 
     // 3. Map Entities (NPCs, Creatures)
     const mapEntities = useWorldStore.getState().mapEntities as any[];
     for (const ent of mapEntities) {
+      let entRotY: number | undefined = undefined;
+      const entFacing = ent.facing || ent.direction || ent.components?.facing || ent.components?.direction;
+      if (ent.rotationY !== undefined) {
+        entRotY = ent.rotationY;
+      } else if (entFacing) {
+        switch (entFacing) {
+          case 'down': entRotY = Math.PI; break;
+          case 'up': entRotY = 0; break;
+          case 'left': entRotY = Math.PI / 2; break;
+          case 'right': entRotY = -Math.PI / 2; break;
+        }
+      }
+
       const entAssetInfo = getEntityAssetInfo(ent.spriteKey, 'npc', ent.visualData ?? ent.components?.appearance);
       const entityScale = getActorScale(ent.visualData ?? ent.components?.appearance);
       if (entAssetInfo.isModel && entityScale !== undefined) {
@@ -327,6 +387,8 @@ export class EntityRenderer {
         isMoving: ent.isMoving,
         modularAttachments: entAssetInfo.modularAttachments,
         presentationSignature: entAssetInfo.presentationSignature,
+        rotationY: entRotY,
+        direction: entFacing,
       }, now);
     }
 
@@ -335,6 +397,18 @@ export class EntityRenderer {
       sprite.mesh.position.x = BABYLON.Scalar.Lerp(sprite.mesh.position.x, sprite.targetX, smoothFactor);
       sprite.mesh.position.z = BABYLON.Scalar.Lerp(sprite.mesh.position.z, sprite.targetZ, smoothFactor);
       sprite.mesh.position.y = BABYLON.Scalar.Lerp(sprite.mesh.position.y, sprite.targetY, smoothFactor);
+
+      if (sprite.targetRotationY !== undefined) {
+        if (sprite.mesh.rotationQuaternion) {
+          sprite.mesh.rotationQuaternion = null;
+        }
+        const turnSpeed = Math.min(1.0, 18.0 * dt);
+        sprite.mesh.rotation.y = BABYLON.Scalar.LerpAngle(
+          sprite.mesh.rotation.y,
+          sprite.targetRotationY,
+          turnSpeed
+        );
+      }
     }
 
     // 5. Clean up stale sprites (not seen for 5 seconds)
@@ -376,6 +450,8 @@ export class EntityRenderer {
       animationState?: string;
       modularAttachments?: ModularAttachmentDef[];
       presentationSignature?: string;
+      rotationY?: number;
+      direction?: string;
     },
     now: number
   ) {
@@ -448,8 +524,10 @@ export class EntityRenderer {
           
           const rotY = data.transform?.rotationY ?? 0;
           if (rotY !== 0) {
-            mesh.rotationQuaternion = BABYLON.Quaternion.RotationAxis(BABYLON.Axis.Y, (rotY * Math.PI) / 180);
+            modelWrapper.rotation = new BABYLON.Vector3(0, (rotY * Math.PI) / 180, 0);
           }
+          mesh.rotationQuaternion = null;
+          mesh.rotation = new BABYLON.Vector3(0, current.targetRotationY ?? 0, 0);
 
           mesh.computeWorldMatrix(true);
           modelWrapper.computeWorldMatrix(true); // CRITICAL: Must compute wrapper matrix before children
@@ -881,11 +959,16 @@ export class EntityRenderer {
         targetX: data.x,
         targetZ: is3D ? data.y : -data.y,
         targetY: is3DModel ? 0 : spriteH / 2,
+        targetRotationY: data.rotationY ?? 0,
+        lastRotationY: data.rotationY ?? 0,
+        direction: data.direction,
         lastSeen: now,
         modelUrl: data.modelUrl,
         spriteUrl: data.spriteUrl,
         presentationSignature: data.presentationSignature,
       };
+      mesh.rotationQuaternion = null;
+      mesh.rotation = new BABYLON.Vector3(0, data.rotationY ?? 0, 0);
       this.sprites.set(id, sprite);
     }
     
@@ -949,6 +1032,26 @@ export class EntityRenderer {
     // 3D models have origin at feet, so they rest directly on terrainY; 2D billboards center on origin
     const isModelEntity = Boolean(data.modelUrl || data.presentationType === '3D_MODEL');
     sprite.targetY = isModelEntity ? terrainY : terrainY + spriteH / 2;
+
+    if (data.rotationY !== undefined) {
+      sprite.targetRotationY = data.rotationY;
+      sprite.lastRotationY = data.rotationY;
+    }
+    if (data.direction !== undefined) {
+      sprite.direction = data.direction;
+      if (sprite.spriteUrl && sprite.mesh instanceof BABYLON.Mesh) {
+        const mat = sprite.mesh.material as BABYLON.StandardMaterial | null;
+        const tex = mat?.diffuseTexture as BABYLON.Texture | null;
+        if (tex) {
+          switch (data.direction) {
+            case 'down': tex.vOffset = 0; break;
+            case 'left': tex.vOffset = 0.25; break;
+            case 'right': tex.vOffset = 0.5; break;
+            case 'up': tex.vOffset = 0.75; break;
+          }
+        }
+      }
+    }
     
     sprite.lastSeen = now;
   }
