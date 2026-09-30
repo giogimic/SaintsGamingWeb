@@ -2168,12 +2168,9 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
         if (isTryingToMove) {
           if (isReadyForNextStep) {
-            const pos = state.player.position;
-            if (pos) {
-              if (now - lastBlockedTime >= 120) {
-                lastBlockedTime = now;
-                tryMovePlayerTo(pos.x + dx, pos.y + dy);
-              }
+            if (now - lastBlockedTime >= 120) {
+              lastBlockedTime = now;
+              tryMoveDirection(dx, dy);
             }
           }
         } else if (hasAutoWalk) {

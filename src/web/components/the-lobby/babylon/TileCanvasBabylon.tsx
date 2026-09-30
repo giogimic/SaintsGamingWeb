@@ -13,6 +13,7 @@ import { WorldSimulation } from '@/engine/WorldSimulation';
 import { FloatingHealthBars } from './FloatingHealthBar';
 import { LOBBY_TOUCH_INTERACT_EVENT, LOBBY_TOUCH_MOVE_EVENT } from '../MobileControls';
 import { globalGameplayInputController } from '../input/GameplayInputController';
+import { getWorldModelPresentation } from '@/shared/game/worldModelPresentation';
 
 
 import CraftingOverlay from '../crafting-overlay';
@@ -625,7 +626,8 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             chatMessage: liveStore.localChat || undefined,
             spriteConfig: freshPlayer.spriteConfig,
             hp: freshPlayer.hp,
-            maxHp: freshPlayer.maxHp
+            maxHp: freshPlayer.maxHp,
+            presentation: getWorldModelPresentation(freshPlayer.visualData)
           });
           babylonEngine.setEntityVisible('player_main', true);
 
@@ -748,7 +750,8 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             chatMessage: other.chatMessage,
             spriteConfig: (other as any).spriteConfig,
             hp: other.hp,
-            maxHp: other.maxHp
+            maxHp: other.maxHp,
+            presentation: getWorldModelPresentation((other as any).visualData)
           });
         }
       }
@@ -2155,12 +2158,9 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
         if (isTryingToMove) {
           if (isReadyForNextStep) {
-            const pos = state.player.position;
-            if (pos) {
-              if (now - lastBlockedTime >= 120) {
-                lastBlockedTime = now;
-                tryMovePlayerTo(pos.x + dx, pos.y + dy);
-              }
+            if (now - lastBlockedTime >= 120) {
+              lastBlockedTime = now;
+              tryMoveDirection(dx, dy);
             }
           }
         } else if (hasAutoWalk) {

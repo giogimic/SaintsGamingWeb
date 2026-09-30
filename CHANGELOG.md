@@ -1,3 +1,21 @@
+## [2.2.071] - 2026-09-30
+- **Adaptive Character Rotation, Camera-Relative Steering & 3D Animation Guarding**:
+  - **Adaptive Screen-Facing & 3D Character Rotation (`Renderer.ts`)**:
+    - Decoupled 3D mesh rotation from the animation group loading pipeline so rotation updates run continuously for all 3D entities regardless of whether external animations are loading, cached, or empty.
+    - Fixed rotation coordinate mapping (`Math.atan2(-moveDir.x, moveDir.z)`) to eliminate 180° inversion on the Z-axis, ensuring North (0 rad), South (π rad), West (π/2 rad), and East (-π/2 rad) movements match world heading without twitching or snap-backs.
+    - Implemented adaptive screen turning for the local player in 3D perspective mode: when the player turns the camera/screen, the character adaptively and naturally turns to face forward with the screen (`-(this.cameraYaw || 0)`), smoothly interpolating with framerate-independent `Scalar.LerpAngle` (`14.0 * deltaTime`).
+    - When moving, the character smoothly faces the movement direction; when stationary, it naturally re-aligns with the camera heading.
+  - **Camera-Relative Keyboard Navigation (`VoxelCanvasBabylon.tsx`, `TileCanvasBabylon.tsx`, `PlaytestRuntime.tsx`)**:
+    - Resolved critical input routing bug where the keyboard `gameLoop` in `VoxelCanvasBabylon` and `TileCanvasBabylon` was calling unmapped `tryMovePlayerTo` instead of `tryMoveDirection`.
+    - WASD inputs now correctly map relative to camera yaw via `globalGameplayInputController`, so pressing 'W' always moves forward in the direction the camera is facing, 'S' moves towards the camera, 'A' strafes left, and 'D' strafes right.
+    - Connected `globalGameplayInputController` in `PlaytestRuntime.tsx` to ensure studio playtest also benefits from camera-relative movement and sprint/jump intent options.
+  - **3D Animation Resolution & Runtime Guarding (`Renderer.ts`, `TileCanvasBabylon.tsx`)**:
+    - Added safe filtering for animation groups to prevent `TypeError: Cannot read properties of undefined (reading 'isPlaying')` when models initialize with 0 embedded clips or while retargeted clips load asynchronously.
+    - Added support for `run_fwd` and `walk_fwd` slot mappings in `Renderer.ts`.
+    - Injected `getWorldModelPresentation` into `TileCanvasBabylon` for both local player and multiplayer peers to enable full 3D model outfits and animations on Tile maps.
+  - **Global Version Synchronization**:
+    - Synchronized `SITE_VERSION` defaults to `2.2.071` across `package.json`, `app/actions/settings.ts`, `app/(main)/admin/settings/page.tsx`, `app/(main)/layout.tsx`, `app/(ucp)/layout.tsx`, and `src/web/components/shared/navbar.tsx`.
+
 ## [2.2.070] - 2026-09-30
 - **Fix Adventurer Model Doubling, Submesh Isolation, Complete Brute Monster Modular Pieces, and Female Model Removal**:
   - **Adventurer Model Doubling & Artifact Resolution (`ArchetypeModelPreview3D.tsx`, `BabylonEngine.ts`, `EntityRenderer.ts`, `ArchetypeEditorWorkspace.tsx`)**:

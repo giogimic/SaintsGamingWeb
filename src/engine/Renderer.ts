@@ -569,97 +569,149 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
         }
         
         // 3. 3D Model Animations & Rotation
-        if (state.presentation?.mode === '3D' && mesh.metadata?.animationGroups) {
+        if (state.presentation?.mode === '3D') {
           const isEntityWalking = state.isMoving || dist > 0.01;
-          const groups = mesh.metadata.animationGroups;
-          
-          if (!mesh.metadata._resolvedAnims || mesh.metadata._resolvedAnims.groups !== groups || mesh.metadata._resolvedAnims.count !== groups.length) {
-            const mapped = state.presentation?.animations?.mapped || {};
-            const isRunClip = (name: string) => /run|walk|jog|sprint|locomotion|move|forward|fwd|01_02_006/i.test(name);
-            const isIdleClip = (name: string) => /idle|stand|wait|breath|rest|still|default|01_02_001/i.test(name);
-            const isActionClip = (name: string) => /attack|hit|punch|slash|cast|shoot|death|die|dead|hurt|damage|jump|fall|climb/i.test(name);
+          const rawGroups = mesh.metadata?.animationGroups;
+          const groups = Array.isArray(rawGroups)
+            ? rawGroups.filter((ag: any) => ag && typeof ag.play === 'function' && !ag.isDisposed)
+            : [];
 
-            let runAnims = mapped.walk || mapped.run
-              ? groups.filter((ag: any) => ag.name === mapped.walk || ag.name === mapped.run || (ag.name && (ag.name.includes(mapped.walk) || ag.name.includes(mapped.run))))
-              : groups.filter((ag: any) => isRunClip(ag.name || ''));
+          if (groups.length > 0) {
+            if (
+              !mesh.metadata._resolvedAnims ||
+              mesh.metadata._resolvedAnims.groups !== groups ||
+              mesh.metadata._resolvedAnims.count !== groups.length
+            ) {
+              const mapped = state.presentation?.animations?.mapped || {};
+              const isRunClip = (name: string) =>
+                /run|walk|jog|sprint|locomotion|move|forward|fwd|01_02_006/i.test(name);
+              const isIdleClip = (name: string) =>
+                /idle|stand|wait|breath|rest|still|default|01_02_001/i.test(name);
+              const isActionClip = (name: string) =>
+                /attack|hit|punch|slash|cast|shoot|death|die|dead|hurt|damage|jump|fall|climb/i.test(name);
 
-            let idleAnims = mapped.idle
-              ? groups.filter((ag: any) => ag.name === mapped.idle || (ag.name && ag.name.includes(mapped.idle)))
-              : groups.filter((ag: any) => isIdleClip(ag.name || ''));
+              let runAnims = mapped.walk || mapped.run || mapped.run_fwd || mapped.walk_fwd
+                ? groups.filter((ag: any) => {
+                    const mRun = mapped.run || mapped.run_fwd;
+                    const mWalk = mapped.walk || mapped.walk_fwd;
+                    const runName = typeof mRun === 'string' ? mRun : mRun?.clip;
+                    const walkName = typeof mWalk === 'string' ? mWalk : mWalk?.clip;
+                    return (
+                      (runName && (ag.name === runName || ag.name.includes(runName))) ||
+                      (walkName && (ag.name === walkName || ag.name.includes(walkName))) ||
+                      ag.name === 'run' ||
+                      ag.name === 'run_fwd' ||
+                      ag.name === 'walk' ||
+                      ag.name === 'walk_fwd'
+                    );
+                  })
+                : groups.filter((ag: any) => isRunClip(ag.name || ''));
 
-            // Prevent bone morphing by ensuring we only play exactly ONE animation for each state
-            if (runAnims.length > 1) {
-              const fwdAnim = runAnims.find((ag: any) => /fwd|forward/i.test(ag.name || ''));
-              runAnims = [fwdAnim || runAnims[0]];
+              let idleAnims = mapped.idle
+                ? groups.filter((ag: any) => {
+                    const idleName = typeof mapped.idle === 'string' ? mapped.idle : mapped.idle?.clip;
+                    return (
+                      (idleName && (ag.name === idleName || ag.name.includes(idleName))) ||
+                      ag.name === 'idle'
+                    );
+                  })
+                : groups.filter((ag: any) => isIdleClip(ag.name || ''));
+
+              // Prevent bone morphing by ensuring we only play exactly ONE animation for each state
+              if (runAnims.length > 1) {
+                const fwdAnim = runAnims.find((ag: any) => /fwd|forward/i.test(ag.name || ''));
+                runAnims = [fwdAnim || runAnims[0]];
+              }
+
+              if (idleAnims.length > 1) {
+                idleAnims = [idleAnims[0]];
+              }
+
+              // If neither matched, look for non-action clips before falling back to arbitrary clips
+              const pool = groups.filter((ag: any) => !isActionClip(ag.name || ''));
+
+              if (idleAnims.length === 0 && (pool.length > 0 || groups.length > 0)) {
+                idleAnims.push(pool.length > 0 ? pool[0] : groups[0]);
+              }
+              if (runAnims.length === 0 && (pool.length > 0 || groups.length > 0)) {
+                runAnims.push(pool.length > 1 ? pool[1] : (groups.length > 1 ? groups[1] : (pool[0] || groups[0])));
+              }
+
+              // Guard against any undefined elements in animation arrays
+              idleAnims = idleAnims.filter((ag: any) => ag && typeof ag.play === 'function');
+              runAnims = runAnims.filter((ag: any) => ag && typeof ag.play === 'function');
+
+              mesh.metadata._resolvedAnims = {
+                groups,
+                count: groups.length,
+                runAnims,
+                idleAnims,
+              };
             }
 
-            if (idleAnims.length > 1) {
-              idleAnims = [idleAnims[0]];
-            }
+            const { runAnims, idleAnims } = mesh.metadata._resolvedAnims || { runAnims: [], idleAnims: [] };
+            const targetAnims = isEntityWalking ? runAnims : idleAnims;
 
-            // If neither matched, look for non-action clips. If still none (e.g. creature with only attack clips like Golem), fallback to available clips!
-            const pool = groups.filter((ag: any) => !isActionClip(ag.name || ''));
-
-            if (idleAnims.length === 0) {
-              idleAnims.push(pool.length > 0 ? pool[0] : groups[0]);
-            }
-            if (runAnims.length === 0) {
-              runAnims.push(pool.length > 1 ? pool[1] : (groups.length > 1 ? groups[1] : groups[0]));
-            }
-
-            mesh.metadata._resolvedAnims = {
-              groups,
-              count: groups.length,
-              runAnims,
-              idleAnims,
-            };
+            targetAnims.forEach((anim: any) => {
+              if (anim && !anim.isPlaying) anim.play(true);
+              
+              // Adjust speed ratio for run animation based on actual movement speed
+              if (isEntityWalking && dist > 0.01) {
+                 const speed = dist > 1.25 ? Math.min(14.0, dist * 5.5) : 4.0;
+                 if (anim) anim.speedRatio = speed / 4.0; 
+              } else if (anim) {
+                 anim.speedRatio = 1.0;
+              }
+            });
+            
+            // Stop all other animations to prevent bone morphing conflicts
+            groups.forEach((anim: any) => {
+              if (anim && !targetAnims.includes(anim) && anim.isPlaying) {
+                anim.stop();
+              }
+            });
           }
 
-          const { runAnims, idleAnims } = mesh.metadata._resolvedAnims;
-          const targetAnims = isEntityWalking ? runAnims : idleAnims;
-
-          targetAnims.forEach((anim: any) => {
-            if (!anim.isPlaying) anim.play(true);
-            
-            // Adjust speed ratio for run animation based on actual movement speed
-            if (isEntityWalking && dist > 0.01) {
-               const speed = dist > 1.25 ? Math.min(14.0, dist * 5.5) : 4.0;
-               anim.speedRatio = speed / 4.0; 
-            } else {
-               anim.speedRatio = 1.0;
-            }
-          });
-          
-          // Stop all other animations to prevent bone morphing conflicts
-          mesh.metadata.animationGroups.forEach((anim: any) => {
-            if (!targetAnims.includes(anim) && anim.isPlaying) {
-              anim.stop();
-            }
-          });
-          
-          // Rotate 3D mesh to face target position or explicit direction
+          // 4. 3D Mesh Rotation (Always active regardless of animation status)
           if (mesh.rotationQuaternion) {
             mesh.rotationQuaternion = null;
           }
           
           let targetAngle = mesh.rotation.y;
           
-          if (isEntityWalking && moveDir && moveDir.lengthSquared() > 0) {
-            targetAngle = Math.atan2(-moveDir.x, -moveDir.z);
-            mesh.metadata.lastRotationY = targetAngle;
-          } else if (state.direction) {
-            targetAngle = mesh.metadata.lastRotationY || 0;
-            switch(state.direction) {
-              case 'down': targetAngle = Math.PI; break;
-              case 'up': targetAngle = 0; break;
-              case 'left': targetAngle = Math.PI / 2; break;
-              case 'right': targetAngle = -Math.PI / 2; break;
+          if (state.isPlayer && this.camera && this.camera.mode === 0) {
+            // Local player in 3D perspective mode:
+            // When walking, face towards the active movement trajectory.
+            // When stationary or orbiting view, adaptively turn to align with the camera screen view.
+            if (isEntityWalking && moveDir && moveDir.lengthSquared() > 0.0001) {
+              targetAngle = Math.atan2(-moveDir.x, moveDir.z);
+              mesh.metadata.lastRotationY = targetAngle;
+            } else {
+              targetAngle = -(this.cameraYaw || 0);
+              mesh.metadata.lastRotationY = targetAngle;
+            }
+          } else {
+            // NPCs, remote players, or orthographic 2.5D mode:
+            if (isEntityWalking && moveDir && moveDir.lengthSquared() > 0.0001) {
+              targetAngle = Math.atan2(-moveDir.x, moveDir.z);
+              mesh.metadata.lastRotationY = targetAngle;
+            } else if (state.direction) {
+              switch (state.direction) {
+                case 'down': targetAngle = Math.PI; break;
+                case 'up': targetAngle = 0; break;
+                case 'left': targetAngle = Math.PI / 2; break;
+                case 'right': targetAngle = -Math.PI / 2; break;
+                default:
+                  targetAngle = mesh.metadata.lastRotationY ?? mesh.rotation.y;
+              }
+            } else if (mesh.metadata.lastRotationY !== undefined) {
+              targetAngle = mesh.metadata.lastRotationY;
             }
           }
 
-          // Smooth interpolation for natural turning
-          // Adjust 0.15 factor for faster/slower turn speed
-          mesh.rotation.y = Scalar.LerpAngle(mesh.rotation.y, targetAngle, 0.2);
+          // Smooth interpolation for natural turning (framerate-independent)
+          const turnSpeed = Math.min(1.0, 14.0 * deltaTime);
+          mesh.rotation.y = Scalar.LerpAngle(mesh.rotation.y, targetAngle, turnSpeed);
         }
       });
 

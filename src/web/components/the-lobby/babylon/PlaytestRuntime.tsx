@@ -28,6 +28,7 @@ import {
   evaluateTileTarget,
   type WorldTarget,
 } from "@/shared/game/worldTarget";
+import { globalGameplayInputController } from "../input/GameplayInputController";
 
 export interface PlaytestRuntimeProps {
   engine: BabylonEngine;
@@ -341,24 +342,19 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
     }
   };
 
-  const tryMoveDirection = (dx: number, dy: number) => {
-    const state = useGameStore.getState();
-    if (state.gameMode !== "EXPLORING") return;
-    const currentPlayer = state.player;
-    const curX = currentPlayer.position?.x ?? 6;
-    const curY = currentPlayer.position?.y ?? 2;
-
-    const isSprinting = isShiftHeldRef.current && !currentPlayer.isExhausted;
-    const isJumping = isSpaceHeldRef.current && !currentPlayer.isExhausted;
-
-    let moveDx = dx;
-    let moveDy = dy;
-    if (isSprinting) {
-      moveDx *= 2;
-      moveDy *= 2;
+  useEffect(() => {
+    if (engine) {
+      globalGameplayInputController.setEngineRef(engine);
     }
+    return () => {
+      globalGameplayInputController.setEngineRef(null);
+    };
+  }, [engine]);
 
-    tryMovePlayerTo(curX + moveDx, curY + moveDy, { isSprinting, isJumping });
+  const tryMoveDirection = (dx: number, dy: number) => {
+    const isSprinting = isShiftHeldRef.current;
+    const isJumping = isSpaceHeldRef.current;
+    globalGameplayInputController.tryMoveDirection(dx, dy, isSprinting, isJumping);
   };
   tryMoveDirectionRef.current = tryMoveDirection;
 
