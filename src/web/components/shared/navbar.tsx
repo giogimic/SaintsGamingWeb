@@ -44,7 +44,7 @@ export function Navbar({
   dbPermissionLevel,
   discordLink,
   showUcpLink = false,
-  siteVersion = "2.2.075",
+  siteVersion = "2.2.076",
   gameTitle = "The Lobby",
 }: {
   session: any | null;
@@ -77,7 +77,9 @@ export function Navbar({
         // ignore
       }
     }
-    useAppStore.getState().showBars();
+    if (!pathname?.startsWith("/lobby")) {
+      useAppStore.getState().showBars();
+    }
   }, [pathname]);
 
   const user = session?.user;

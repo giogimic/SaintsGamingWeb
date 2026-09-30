@@ -1,3 +1,21 @@
+## [2.2.076] - 2026-09-30
+- **MMO Game Viewport Full-Bleed & Bottom Cutoff Resolution**:
+  - **Player Client Viewport (`PlayerClient.tsx`)**:
+    - Removed legacy hardcoded `min-h-[calc(100vh-160px)]` container constraint that artificially truncated the game view 160px short of the viewport bottom.
+    - Updated container to `w-full h-full flex-1 flex flex-col min-h-0` for full vertical flex expansion.
+  - **Lobby Layout (`app/(main)/lobby/layout.tsx`)**:
+    - Updated container from ambiguous `flex-1` to explicit `w-full h-full flex-1 flex flex-col min-h-0 relative` so the lobby tree inherits 100% available viewport height without collapsing.
+  - **Main Layout Shell (`main-layout-shell.tsx`)**:
+    - Converted Lobby MMO route (`isLobby`) to true full-bleed container: `<main className="w-full h-full absolute inset-0 overflow-hidden">`.
+    - Eliminated layout padding collision (`pt-14 sm:pt-16 pb-12`) and flex sibling stacking that forced a 48px blank cutoff gap above the bottom bar.
+    - Preserved frosted-glass HUD overlay behavior for Navbar (`fixed top-0 z-[250]`) and GlobalBottomBar (`fixed bottom-0 z-[250]`) so the 3D scene renders seamlessly behind them.
+  - **Scene Hierarchy Flex Chain (`ClientApp.tsx`, `ExploringScene.tsx`)**:
+    - Added `min-h-0` to `ClientApp` and `ExploringScene` containers to prevent default CSS flex min-height constraints from restricting the Babylon.js canvas.
+  - **Navbar Lobby Guard (`navbar.tsx`)**:
+    - Guarded `showBars()` on navigation so entering `/lobby` respects immersive auto-hide behavior without race conditions.
+  - **Global Version Synchronization**:
+    - Synchronized `SITE_VERSION` defaults to `2.2.076` across `package.json`, `app/actions/settings.ts`, `app/(main)/admin/settings/page.tsx`, `app/(main)/layout.tsx`, `app/(ucp)/layout.tsx`, `src/web/components/shared/navbar.tsx`, and `AssetUploadView.tsx`.
+
 ## [2.2.075] - 2026-09-30
 - **Archetype-Unified Studio Redesign for NPCs, Monsters, and Creatures**:
   - **NPC Studio (`NpcEditorPanel.tsx`)**:

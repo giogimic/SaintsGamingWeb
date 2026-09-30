@@ -84,23 +84,20 @@ export function MainLayoutShell({
     );
   }
 
-  // Lobby MMO route: full-bleed viewport — the game canvas owns the entire screen between the navbar and bottomBar.
+  // Lobby MMO route: full-bleed viewport — the game canvas owns the entire screen.
+  // Navbar and bottomBar float as frosted glass HUD overlays on top of the world.
   if (isLobby) {
     return (
-      <div className="fixed inset-0 w-screen h-screen overflow-hidden selection:bg-primary/30 z-[100] bg-[#0a0a0f] flex flex-col">
-        <div className={`transition-all duration-300 ${isBarsHidden ? "-translate-y-full absolute top-0 w-full z-50 pointer-events-none" : "relative"}`}>
-          {navbar}
-        </div>
-        <main className={`flex-1 w-full h-full relative overflow-hidden transition-all duration-300 ${isBarsHidden ? "pt-0 pb-0" : "pt-14 sm:pt-16 pb-12"}`}>
+      <div className="fixed inset-0 w-screen h-screen overflow-hidden selection:bg-primary/30 z-[100] bg-[#0a0a0f]">
+        <main className="w-full h-full absolute inset-0 overflow-hidden">
           {children}
         </main>
+        {navbar}
         <div className={`transition-opacity duration-300 ${isBarsHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
           {commandPalette}
           {messengerPopup}
         </div>
-        <div className={`transition-all duration-300 ${isBarsHidden ? "translate-y-full absolute bottom-0 w-full z-50 pointer-events-none" : "relative"}`}>
-          {bottomBar}
-        </div>
+        {bottomBar}
         {toaster}
         <UserSettingsOverlayShell />
         <GlobalPostComposer />

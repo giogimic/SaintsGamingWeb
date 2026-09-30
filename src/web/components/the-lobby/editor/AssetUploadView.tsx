@@ -665,7 +665,7 @@ export function AssetUploadView({
           <div className="text-[10px] text-slate-500 flex items-center gap-2">
             <span>Saints 3D Asset Pipeline</span>
             <span className="text-slate-600">·</span>
-            <span className="text-[#cbb26a]">v2.2.075</span>
+            <span className="text-[#cbb26a]">v2.2.076</span>
           </div>
         )}
       </div>
